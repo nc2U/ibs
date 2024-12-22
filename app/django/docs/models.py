@@ -305,15 +305,21 @@ class LawsuitCase(models.Model):
 
 
 class ComLawsuitCase(LawsuitCase):
-    pass
     # company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사',
     #                             related_name='lawsuitcases')
+    class Meta:
+        ordering = ['-case_start_date', '-id']
+        verbose_name = '03. 본사 소송사건'
+        verbose_name_plural = '03. 본사 소송사건'
 
 
 class ProjectLawsuitCase(LawsuitCase):
-    pass
     # project = models.ForeignKey('project.Project', on_delete=models.SET_NULL, null=True, blank=True,
     #                             verbose_name='프로젝트', related_name='lawsuitcases')
+    class Meta:
+        ordering = ['-case_start_date', '-id']
+        verbose_name = '03. 현장 소송사건'
+        verbose_name_plural = '03. 현장 소송사건'
 
 
 class BaseModel(models.Model):
