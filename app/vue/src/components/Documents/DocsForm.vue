@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { inject, type PropType } from 'vue'
+import { type ComputedRef, inject, type PropType } from 'vue'
 import { ref, reactive, computed, onMounted, onUpdated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Docs, Link } from '@/store/types/docs'
+import type { Company } from '@/store/types/settings'
 import { AlertSecondary } from '@/utils/cssMixins'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -26,7 +27,7 @@ const refDelModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
-const company = inject('company')
+const company = inject<ComputedRef<Company>>('company')
 
 const attach = ref(true)
 const validated = ref(false)
@@ -128,7 +129,7 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = () => {
-  if (!props.docs) form.company = company.value?.pk
+  if (!props.docs && company?.value) form.company = company.value?.pk as number
   emit('on-submit', { ...form, newLinks: newLinks.value })
   validated.value = false
   refConfirmModal.value.close()
