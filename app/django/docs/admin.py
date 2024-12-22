@@ -97,7 +97,8 @@ class ComImageInline(admin.TabularInline):
 
 @admin.register(ComFile)
 class ComFileAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
+    list_display = ('id', 'docs', 'file_name')
+    list_filter = ('docs__company', 'docs__project')
 
 
 @admin.register(ComDocument)
@@ -127,7 +128,8 @@ class ProImageInline(admin.TabularInline):
 
 @admin.register(ProFile)
 class ProFileAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
+    list_display = ('id', 'docs', 'file_name')
+    list_filter = ('docs__company', 'docs__project')
 
 
 @admin.register(ProDocument)
