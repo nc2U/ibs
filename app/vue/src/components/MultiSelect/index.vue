@@ -14,4 +14,5 @@ import Multiselect from '@vueform/multiselect'
     :add-option-on="['enter', 'tab']"
     searchable
   />
+  <!--  :attrs="form.court ? {} : { required: true }"-->
 </template>

@@ -3,7 +3,7 @@ import { ref, reactive, computed, onMounted, onUpdated, type PropType } from 'vu
 import { useRoute, useRouter } from 'vue-router'
 import { type SuitCase } from '@/store/types/docs'
 import { courtChoices } from './components/court'
-import Multiselect from '@vueform/multiselect'
+import MultiSelect from '@/components/MultiSelect/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -175,17 +175,11 @@ onUpdated(() => dataSetup())
     <CRow class="mb-3">
       <CFormLabel for="related_case" class="col-md-2 col-form-label"> 관련사건</CFormLabel>
       <CCol md="4">
-        <Multiselect
+        <MultiSelect
           v-model="form.related_case"
+          mode="single"
           :options="getSuitCase"
           placeholder="관련 사건"
-          autocomplete="label"
-          :classes="{
-            search: 'form-control multiselect-search',
-            caret: 'multiselect-caret mr-4',
-          }"
-          :add-option-on="['enter', 'tab']"
-          searchable
         />
         <small class="text-blue-grey-lighten-2">
           본안 사건인 경우 원심(1심) 사건, 신청/집행 사건인 경우 관련 본안 사건 지정
@@ -208,18 +202,12 @@ onUpdated(() => dataSetup())
     <CRow class="mb-3">
       <CFormLabel for="related_case" class="col-md-2 col-form-label"> 법원명</CFormLabel>
       <CCol md="4">
-        <Multiselect
+        <MultiSelect
           v-model="form.court"
+          mode="single"
           :options="courtChoices"
           placeholder="법원 선택"
-          autocomplete="label"
-          :classes="{
-            search: 'form-control multiselect-search',
-            caret: 'multiselect-caret mr-4',
-          }"
           :attrs="form.court || form.other_agency ? {} : { required: true }"
-          :add-option-on="['enter', 'tab']"
-          searchable
         />
       </CCol>
 
