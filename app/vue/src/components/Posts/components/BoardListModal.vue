@@ -84,8 +84,8 @@ onUpdated(() => {
                   class="form-check-input"
                   style="margin-top: 6px"
                   :disabled="nowBoard === obj.pk"
-                  @change="brdChk"
                 />
+                <!--                  @change="brdChk"-->
                 <label :for="`board_${obj.pk}`" class="form-label form-check-label">
                   {{ obj.name }}
                 </label>
