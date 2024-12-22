@@ -60,9 +60,9 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('pk', 'board', 'board_name', 'issue_project', 'category',
-                  'cate_name', 'title', 'execution_date', 'content', 'hit', 'like', 'my_like',
-                  'scrape', 'my_scrape', 'blame', 'my_blame', 'ip', 'device', 'is_secret', 'password',
+        fields = ('pk', 'board', 'board_name', 'issue_project', 'category', 'cate_name',
+                  'title', 'content', 'hit', 'like', 'my_like', 'scrape', 'my_scrape',
+                  'blame', 'my_blame', 'ip', 'device', 'is_secret', 'password',
                   'is_hide_comment', 'is_notice', 'is_blind', 'deleted', 'links', 'files',
                   'comments', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
@@ -70,7 +70,7 @@ class PostSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_issue_project(obj):
         if obj.board and obj.board.issue_project:
-            return obj.board.issue_project.pk  # { "pk": obj.board.issue_project.pk,  "name": obj.board.issue_project.name }
+            return obj.board.issue_project.pk
         return None
 
     def get_collection(self):
