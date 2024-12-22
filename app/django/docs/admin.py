@@ -64,19 +64,10 @@ class ImageInline(admin.TabularInline):
     extra = 1
 
 
-@admin.register(Link)
-class LinkAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
-
-
 @admin.register(File)
 class FileAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
-
-
-@admin.register(Image)
-class ImageAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
+    list_display = ('id', 'docs', 'file_name')
+    list_filter = ('docs__company', 'docs__project')
 
 
 @admin.register(Document)
@@ -104,18 +95,8 @@ class ComImageInline(admin.TabularInline):
     extra = 1
 
 
-@admin.register(ComLink)
-class ComLinkAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
-
-
 @admin.register(ComFile)
 class ComFileAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
-
-
-@admin.register(ComImage)
-class ComImageAdmin(ImportExportMixin, admin.ModelAdmin):
     pass
 
 
@@ -144,18 +125,8 @@ class ProImageInline(admin.TabularInline):
     extra = 1
 
 
-@admin.register(ProLink)
-class ProLinkAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
-
-
 @admin.register(ProFile)
 class ProFileAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
-
-
-@admin.register(ProImage)
-class ProImageAdmin(ImportExportMixin, admin.ModelAdmin):
     pass
 
 
