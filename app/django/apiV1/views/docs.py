@@ -56,6 +56,28 @@ class LawSuitCaseViewSet(LawSuitCaseBase):
         return queryset
 
 
+class ComLawSuitCaseViewSet(LawSuitCaseBase):
+    serializer_class = ComLawSuitCaseSerializer
+
+    def get_queryset(self):
+        queryset = ComLawsuitCase.objects.all()
+        related = self.request.query_params.get('related_case')
+        if related:
+            queryset = queryset.filter(Q(pk=related) | Q(related_case=related))
+        return queryset
+
+
+class ProjectLawSuitCaseViewSet(LawSuitCaseBase):
+    serializer_class = ProjectLawSuitCaseSerializer
+
+    def get_queryset(self):
+        queryset = ProjectLawsuitCase.objects.all()
+        related = self.request.query_params.get('related_case')
+        if related:
+            queryset = queryset.filter(Q(pk=related) | Q(related_case=related))
+        return queryset
+
+
 class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
     serializer_class = SimpleLawSuitCaseSerializer
     pagination_class = PageNumberPaginationThreeThousand
@@ -122,7 +144,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
         return Response({'status': 'soft-deleted'}, status=status.HTTP_200_OK)
 
 
-
 class LinkViewSet(viewsets.ModelViewSet):
     queryset = Link.objects.all()
     serializer_class = LinkSerializer
@@ -150,4 +171,3 @@ class DocsInTrashViewSet(DocumentViewSet):
 
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
