@@ -108,9 +108,9 @@ export interface PatchPost {
   project?: number
   board?: number
   category?: number | null
-  lawsuit?: number | null
+  // lawsuit?: number | null
   title?: string
-  execution_date?: string | null
+  // execution_date?: string | null
   content?: string
   hit?: number
   like?: number
