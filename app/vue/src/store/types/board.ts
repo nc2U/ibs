@@ -44,6 +44,7 @@ export type Post = {
   pk?: number
   board: number | null
   board_name?: string
+  issue_project: number | null
   category: number | null
   cate_name?: string
   title: string
