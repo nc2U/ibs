@@ -191,6 +191,8 @@ export const useDocs = defineStore('docs', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  const removeDocs = () => (docs.value = null)
+
   const fetchDocsList = async (payload: DocsFilter) => {
     const { doc_type, page } = payload
     const limit = payload.limit || 10
@@ -413,6 +415,7 @@ export const useDocs = defineStore('docs', () => {
 
     docsPages,
     fetchDocs,
+    removeDocs,
     fetchDocsList,
     createDocs,
     updateDocs,
