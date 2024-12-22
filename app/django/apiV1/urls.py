@@ -148,6 +148,7 @@ router.register(r'post-trash-can', board.PostInTrashViewSet, basename='post-tras
 # docs
 router.register(r'doc-type', docs.DocTypeViewSet)
 router.register(r'category', docs.CategoryViewSet)
+router.register(r'suitcase', docs.LawSuitCaseViewSet)
 router.register(r'com-suitcase', docs.ComLawSuitCaseViewSet, basename='com-suitcase')
 router.register(r'pro-suitcase', docs.ProjectLawSuitCaseViewSet, basename='pro-suitcase')
 router.register(r'all-suitcase', docs.AllLawSuitCaseViewSet, basename='all-suitcase')
