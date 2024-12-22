@@ -22,19 +22,24 @@ class SallesBillInProjectSerializer(serializers.ModelSerializer):
 
 
 class ProjectSerializer(serializers.ModelSerializer):
+    company = serializers.SerializerMethodField(read_only=True)
     kind = serializers.ChoiceField(choices=Project.KIND_CHOICES)
     kind_desc = serializers.CharField(source='get_kind_display', read_only=True)
     salesbillissue = SallesBillInProjectSerializer(read_only=True)
 
     class Meta:
         model = Project
-        fields = ('pk', 'issue_project', 'name', 'order', 'kind', 'kind_desc', 'start_year',
-                  'is_direct_manage', 'is_returned_area', 'is_unit_set', 'local_zipcode',
-                  'local_address1', 'local_address2', 'local_address3', 'area_usage',
-                  'build_size', 'num_unit', 'buy_land_extent', 'scheme_land_extent',
-                  'donation_land_extent', 'on_floor_area', 'under_floor_area',
-                  'total_floor_area', 'build_area', 'floor_area_ratio', 'build_to_land_ratio',
-                  'num_legal_parking', 'num_planed_parking', 'salesbillissue')
+        fields = ('pk', 'company', 'issue_project', 'name', 'order', 'kind', 'kind_desc',
+                  'start_year', 'is_direct_manage', 'is_returned_area', 'is_unit_set',
+                  'local_zipcode', 'local_address1', 'local_address2', 'local_address3',
+                  'area_usage', 'build_size', 'num_unit', 'buy_land_extent', 'scheme_land_extent',
+                  'donation_land_extent', 'on_floor_area', 'under_floor_area', 'total_floor_area',
+                  'build_area', 'floor_area_ratio', 'build_to_land_ratio', 'num_legal_parking',
+                  'num_planed_parking', 'salesbillissue')
+
+    @staticmethod
+    def get_company(obj):
+        return obj.issue_project.company.pk
 
 
 class ProjectIncBudgetSerializer(serializers.ModelSerializer):
