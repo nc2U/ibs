@@ -392,20 +392,6 @@ class Document(BaseModel):
     #     self.save(update_fields=['deleted'])
 
 
-class ComDocument(Document):
-    class Meta:
-        ordering = ['-created']
-        verbose_name = '04. 본사 문서'
-        verbose_name_plural = '04. 본사 문서'
-
-
-class ProjectDocument(Document):
-    class Meta:
-        ordering = ['-created']
-        verbose_name = '04. 현장 문서'
-        verbose_name_plural = '04. 현장 문서'
-
-
 class Link(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서', related_name='links')
     link = models.URLField(max_length=500, verbose_name='링크')
