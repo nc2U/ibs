@@ -1,7 +1,9 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 from .models import (DocType, Category, LawsuitCase, ComLawsuitCase,
-                     ProjectLawsuitCase, Document, Link, File, Image)
+                     ProjectLawsuitCase, Document, Link, File, Image,
+                     ComDocument, ComLink, ComFile, ComImage, ProDocument,
+                     ProLink, ProFile, ProImage)
 
 
 @admin.register(DocType)
@@ -62,6 +64,21 @@ class ImageInline(admin.TabularInline):
     extra = 1
 
 
+@admin.register(Link)
+class LinkAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(File)
+class FileAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(Image)
+class ImageAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
 @admin.register(Document)
 class DocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'doc_type', 'project', 'category', 'title', 'execution_date')
@@ -70,3 +87,83 @@ class DocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('title', 'content')
     list_filter = ('doc_type', 'project', 'category')
     inlines = (LinkInline, FileInline, ImageInline)
+
+
+class ComLinkInline(admin.TabularInline):
+    model = ComLink
+    extra = 1
+
+
+class ComFileInline(admin.TabularInline):
+    model = ComFile
+    extra = 1
+
+
+class ComImageInline(admin.TabularInline):
+    model = ComImage
+    extra = 1
+
+
+@admin.register(ComLink)
+class ComLinkAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(ComFile)
+class ComFileAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(ComImage)
+class ComImageAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(ComDocument)
+class ComDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'doc_type', 'project', 'category', 'title', 'execution_date')
+    list_display_links = ('title',)
+    list_editable = ('doc_type', 'project', 'category', 'execution_date')
+    search_fields = ('title', 'content')
+    list_filter = ('doc_type', 'project', 'category')
+    inlines = (ComLinkInline, ComFileInline, ComImageInline)
+
+
+class ProLinkInline(admin.TabularInline):
+    model = ProLink
+    extra = 1
+
+
+class ProFileInline(admin.TabularInline):
+    model = ProFile
+    extra = 1
+
+
+class ProImageInline(admin.TabularInline):
+    model = ProImage
+    extra = 1
+
+
+@admin.register(ProLink)
+class ProLinkAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(ProFile)
+class ProFileAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(ProImage)
+class ProImageAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(ProDocument)
+class ProDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'doc_type', 'project', 'category', 'title', 'execution_date')
+    list_display_links = ('title',)
+    list_editable = ('doc_type', 'project', 'category', 'execution_date')
+    search_fields = ('title', 'content')
+    list_filter = ('doc_type', 'project', 'category')
+    inlines = (ProLinkInline, ProFileInline, ProImageInline)
