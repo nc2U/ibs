@@ -188,7 +188,6 @@ onUpdated(() => dataSetup())
     @submit.prevent="onSubmit"
   >
     <CRow class="mb-3">
-      company: {{ company?.pk }}
       <CFormLabel for="title" class="col-md-2 col-form-label">제목</CFormLabel>
       <CCol :md="typeNum === 2 ? 9 : 8">
         <CFormInput id="title" v-model="form.title" required placeholder="게시물 제목" />

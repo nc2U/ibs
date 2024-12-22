@@ -165,7 +165,7 @@ const toEdit = () => {
   })
 }
 
-const deleteConfirm = () => refDelModal.value.callModal()
+const deleteConfirm = () => refTrashModal.value.callModal()
 
 const toDelete = () => {
   if (userInfo?.value.is_superuser) toManage(88)
@@ -463,14 +463,6 @@ onMounted(() => {
 
   <AlertModal ref="refAlertModal" />
 
-  <ConfirmModal ref="refDelModal">
-    <template #header>알림</template>
-    <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
-    <template #footer>
-      <CButton color="danger" @click="toDelete">삭제</CButton>
-    </template>
-  </ConfirmModal>
-
   <TypeListModal
     ref="refTypeListModal"
     :now-type="docs?.doc_type ?? undefined"
@@ -493,6 +485,14 @@ onMounted(() => {
     <template #default>이 게시물을 휴지통으로 삭제 하시겠습니까?</template>
     <template #footer>
       <CButton color="danger" @click="toManage(88)">삭제</CButton>
+    </template>
+  </ConfirmModal>
+
+  <ConfirmModal ref="refDelModal">
+    <template #header>알림</template>
+    <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
+    <template #footer>
+      <CButton color="danger" @click="toDelete">삭제</CButton>
     </template>
   </ConfirmModal>
 </template>

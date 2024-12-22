@@ -563,61 +563,17 @@ class Image(models.Model):
 #         super().save(*args, **kwargs)
 
 
-# def delete_file_field(instance, field_name):
-#     """Delete the file of the given field if it exists."""
-#     field = getattr(instance, field_name, None)
-#     if field and hasattr(field, 'path') and os.path.isfile(field.path):
-#         os.remove(field.path)
-#
-#
-# @receiver(pre_delete)
-# def delete_file_on_delete(sender, instance, **kwargs):
-#     """Generic file deletion handler for models."""
-#     if hasattr(instance, 'file'):
-#         delete_file_field(instance, 'file')
-#     if hasattr(instance, 'image'):
-#         delete_file_field(instance, 'image')
+def delete_file_field(instance, field_name):
+    """Delete the file of the given field if it exists."""
+    field = getattr(instance, field_name, None)
+    if field and hasattr(field, 'path') and os.path.isfile(field.path):
+        os.remove(field.path)
 
-@receiver(pre_delete, sender=File)
+
+@receiver(pre_delete)
 def delete_file_on_delete(sender, instance, **kwargs):
-    # Check if the file exists before attempting to delete it
-    if instance.file:
-        if os.path.isfile(instance.file.path):
-            os.remove(instance.file.path)
-
-
-@receiver(pre_delete, sender=Image)
-def delete_file_on_delete(sender, instance, **kwargs):
-    # Check if the file exists before attempting to delete it
-    if instance.image:
-        if os.path.isfile(instance.image.path):
-            os.remove(instance.image.path)
-
-# @receiver(pre_delete, sender=ComImage)
-# def delete_file_on_delete(sender, instance, **kwargs):
-#     # Check if the file exists before attempting to delete it
-#     if instance.image:
-#         if os.path.isfile(instance.image.path):
-#             os.remove(instance.image.path)
-#
-# @receiver(pre_delete, sender=ComFile)
-# def delete_file_on_delete(sender, instance, **kwargs):
-#     # Check if the file exists before attempting to delete it
-#     if instance.file:
-#         if os.path.isfile(instance.file.path):
-#             os.remove(instance.file.path)
-#
-# @receiver(pre_delete, sender=ProFile)
-# def delete_file_on_delete(sender, instance, **kwargs):
-#     # Check if the file exists before attempting to delete it
-#     if instance.file:
-#         if os.path.isfile(instance.file.path):
-#             os.remove(instance.file.path)
-#
-#
-# @receiver(pre_delete, sender=ProImage)
-# def delete_file_on_delete(sender, instance, **kwargs):
-#     # Check if the file exists before attempting to delete it
-#     if instance.image:
-#         if os.path.isfile(instance.image.path):
-#             os.remove(instance.image.path)
+    """Generic file deletion handler for models."""
+    if hasattr(instance, 'file'):
+        delete_file_field(instance, 'file')
+    if hasattr(instance, 'image'):
+        delete_file_field(instance, 'image')
