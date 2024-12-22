@@ -175,7 +175,6 @@ class PostSerializer(serializers.ModelSerializer):
         validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
         validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
         instance.__dict__.update(**validated_data)
-        instance.project = validated_data.get('project', instance.project)
         instance.board = validated_data.get('board', instance.board)
         instance.category = validated_data.get('category', instance.category)
         instance.save()
@@ -293,7 +292,7 @@ class ImageSerializer(serializers.ModelSerializer):
 class SimplePostInCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('pk', 'project', 'board')
+        fields = ('pk', 'board')
 
 
 class CommentSerializer(serializers.ModelSerializer):
