@@ -30,13 +30,10 @@ const attach = ref(true)
 const validated = ref(false)
 const form = reactive<Post>({
   pk: undefined,
-  company: null,
-  project: null,
+  issue_project: null,
   board: props.boardNum,
   category: null,
-  lawsuit: null,
   title: '',
-  execution_date: null,
   content: '',
   ip: null,
   device: '',
@@ -54,13 +51,11 @@ const newLinks = ref<PostLink[]>([])
 const formsCheck = computed(() => {
   if (props.post) {
     const a = form.category === props.post.category
-    const b = form.lawsuit === props.post.lawsuit
-    const c = form.title === props.post.title
-    const d = form.execution_date === props.post.execution_date
-    const e = form.content === props.post.content
-    const f = form.is_notice === props.post.is_notice
+    const b = form.title === props.post.title
+    const c = form.content === props.post.content
+    const d = form.is_notice === props.post.is_notice
 
-    return a && b && c && d && e && f && attach.value
+    return a && b && c && d && attach.value
   } else return false
 })
 
@@ -142,13 +137,10 @@ const devideUri = (uri: string) => {
 const dataSetup = () => {
   if (props.post) {
     form.pk = props.post.pk
-    form.company = props.post.company
-    form.project = props.post.project
+    form.issue_project = props.post.issue_project
     form.board = props.post.board
     form.category = props.post.category
-    form.lawsuit = props.post.lawsuit
     form.title = props.post.title
-    form.execution_date = props.post.execution_date
     form.content = props.post.content
     // form.hit = props.post.hit
     // form.like = props.post.like
@@ -200,22 +192,6 @@ onUpdated(() => dataSetup())
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel v-if="boardNum === 3" for="inputPassword" class="col-sm-2 col-form-label">
-        사건번호 (사건번호 등록)
-      </CFormLabel>
-      <CCol v-if="boardNum === 3" md="3">
-        <Multiselect
-          v-model="form.lawsuit"
-          :options="getSuitCase"
-          placeholder="사건번호 선택"
-          autocomplete="label"
-          :classes="{ search: 'form-control multiselect-search' }"
-          :attrs="form.lawsuit ? {} : { required: true }"
-          :add-option-on="['enter', 'tab']"
-          searchable
-        />
-      </CCol>
-
       <CFormLabel
         for="category"
         class="col-sm-2 col-form-label"
@@ -230,20 +206,6 @@ onUpdated(() => dataSetup())
             {{ cate.name }}
           </option>
         </CFormSelect>
-      </CCol>
-
-      <CFormLabel
-        for="inputPassword"
-        class="col-sm-2 col-form-label"
-        :class="{ 'col-lg-1': boardNum === 3 }"
-      >
-        문서 발행일자
-      </CFormLabel>
-      <CCol :md="boardNum === 3 ? 2 : 3">
-        <DatePicker v-model="form.execution_date" placeholder="문서 발행일자" />
-      </CCol>
-      <CCol v-if="boardNum !== 3">
-        <v-checkbox-btn v-model="form.is_secret" label="비밀글" />
       </CCol>
     </CRow>
 

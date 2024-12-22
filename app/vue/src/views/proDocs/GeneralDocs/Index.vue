@@ -60,7 +60,6 @@ const pageSelect = (page: number) => {
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
-const company = computed(() => projStore.project?.company)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeProDocs)
@@ -90,7 +89,7 @@ const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
 watch(route, val => {
   if (val.params.docsId) fetchDocs(Number(val.params.docsId))
-  else docStore.docs = null
+  else docStore.removeDocs()
 })
 
 const docssRenewal = (page: number) => {
@@ -110,7 +109,6 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (project.value) {
     const { pk, ...getData } = payload
-    getData.company = company.value as null | number
     getData.project = project.value
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
@@ -177,10 +175,9 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
 }
 
 const dataReset = () => {
-  docStore.docs = null
+  docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0
-  docsFilter.value.company = ''
   router.replace({ name: `${mainViewName.value}` })
 }
 
