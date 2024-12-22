@@ -10,6 +10,7 @@ from rest_framework import serializers
 from accounts.models import User, Profile
 from apiV1.serializers.accounts import SimpleUserSerializer
 from board.models import Group, Board, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
+from work.models import IssueProject
 
 
 # Board --------------------------------------------------------------------------
@@ -45,6 +46,7 @@ class FilesInPostSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     board_name = serializers.SlugField(source='board', read_only=True)
+    issue_project = serializers.SerializerMethodField(read_only=True)
     cate_name = serializers.SlugField(source='category', read_only=True)
     links = LinksInPostSerializer(many=True, read_only=True)
     files = FilesInPostSerializer(many=True, read_only=True)
@@ -58,12 +60,18 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('pk', 'board', 'board_name', 'category',
+        fields = ('pk', 'board', 'board_name', 'issue_project', 'category',
                   'cate_name', 'title', 'execution_date', 'content', 'hit', 'like', 'my_like',
                   'scrape', 'my_scrape', 'blame', 'my_blame', 'ip', 'device', 'is_secret', 'password',
                   'is_hide_comment', 'is_notice', 'is_blind', 'deleted', 'links', 'files',
                   'comments', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
+
+    @staticmethod
+    def get_issue_project(obj):
+        if obj.board and obj.board.issue_project:
+            return obj.board.issue_project.pk  # { "pk": obj.board.issue_project.pk,  "name": obj.board.issue_project.name }
+        return None
 
     def get_collection(self):
         queryset = Post.objects.all()
