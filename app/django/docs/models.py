@@ -348,8 +348,8 @@ class Document(BaseModel):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사')
     project = models.ForeignKey('project.Project', on_delete=models.SET_NULL,
                                 null=True, blank=True, verbose_name='프로젝트')
-    work_project = models.ForeignKey('work.IssueProject', on_delete=models.SET_NULL, null=True, blank=True,
-                                     verbose_name='업무 프로젝트')
+    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.SET_NULL, null=True, blank=True,
+                                      verbose_name='업무 프로젝트')
     doc_type = models.ForeignKey(DocType, on_delete=models.PROTECT, verbose_name='유형')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리')
     lawsuit = models.ForeignKey(LawsuitCase, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='사건번호')
