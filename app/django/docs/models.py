@@ -422,14 +422,6 @@ class File(models.Model):
         super().save(*args, **kwargs)
 
 
-@receiver(pre_delete, sender=File)
-def delete_file_on_delete(sender, instance, **kwargs):
-    # Check if the file exists before attempting to delete it
-    if instance.file:
-        if os.path.isfile(instance.file.path):
-            os.remove(instance.file.path)
-
-
 class Image(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서',
                              related_name='images')
@@ -451,9 +443,183 @@ class Image(models.Model):
         super().save(*args, **kwargs)
 
 
-@receiver(pre_delete, sender=Image)
+# class ComDocument(Document):
+#     class Meta:
+#         ordering = ['-created']
+#         verbose_name = '04. 본사 문서'
+#         verbose_name_plural = '04. 본사 문서'
+#
+#
+# class ComLink(models.Model):
+#     docs = models.ForeignKey(ComDocument, on_delete=models.CASCADE, default=None, verbose_name='문서',
+#                              related_name='com_links')
+#     link = models.URLField(max_length=500, verbose_name='링크')
+#     hit = models.PositiveIntegerField('클릭수', default=0)
+#
+#     def __str__(self):
+#         return self.link
+#
+#
+# class ComFile(models.Model):
+#     docs = models.ForeignKey(ComDocument, on_delete=models.CASCADE, default=None, verbose_name='문서',
+#                              related_name='com_files')
+#     file = models.FileField(upload_to='docs/com/%Y/%m/%d/', verbose_name='파일')
+#     file_name = models.CharField('파일명', max_length=100, blank=True)
+#     file_type = models.CharField('타입', max_length=100, blank=True)
+#     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
+#     hit = models.PositiveIntegerField('다운로드수', default=0)
+#     created = models.DateTimeField(auto_now_add=True)
+#
+#     def __str__(self):
+#         return settings.MEDIA_URL
+#
+#     def save(self, *args, **kwargs):
+#         if self.file:
+#             self.file_name = self.file.name.split('/')[-1]
+#             mime = magic.Magic(mime=True)
+#             self.file_type = mime.from_buffer(self.file.read())
+#             self.file_size = self.file.size
+#         super().save(*args, **kwargs)
+#
+#
+# class ComImage(models.Model):
+#     docs = models.ForeignKey(ComDocument, on_delete=models.CASCADE, default=None, verbose_name='문서',
+#                              related_name='com_images')
+#     image = models.ImageField(upload_to='docs/com/img/%Y/%m/%d/', verbose_name='이미지')
+#     image_name = models.CharField('파일명', max_length=100, blank=True)
+#     image_type = models.CharField('타입', max_length=100, blank=True)
+#     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
+#     created = models.DateTimeField(auto_now_add=True)
+#
+#     def __str__(self):
+#         return settings.MEDIA_URL
+#
+#     def save(self, *args, **kwargs):
+#         if self.image:
+#             self.image_name = self.image.name.split('/')[-1]
+#             mime = magic.Magic(mime=True)
+#             self.image_type = mime.from_buffer(self.image.read())
+#             self.image_size = self.image.size
+#         super().save(*args, **kwargs)
+#
+#
+# class ProDocument(Document):
+#     class Meta:
+#         ordering = ['-created']
+#         verbose_name = '04. 현장 문서'
+#         verbose_name_plural = '04. 현장 문서'
+#
+#
+# class ProLink(models.Model):
+#     docs = models.ForeignKey(ProDocument, on_delete=models.CASCADE, default=None, verbose_name='문서',
+#                              related_name='pro_links')
+#     link = models.URLField(max_length=500, verbose_name='링크')
+#     hit = models.PositiveIntegerField('클릭수', default=0)
+#
+#     def __str__(self):
+#         return self.link
+#
+#
+# class ProFile(models.Model):
+#     docs = models.ForeignKey(ProDocument, on_delete=models.CASCADE, default=None, verbose_name='문서',
+#                              related_name='pro_files')
+#     file = models.FileField(upload_to='docs/pro/%Y/%m/%d/', verbose_name='파일')
+#     file_name = models.CharField('파일명', max_length=100, blank=True)
+#     file_type = models.CharField('타입', max_length=100, blank=True)
+#     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
+#     hit = models.PositiveIntegerField('다운로드수', default=0)
+#     created = models.DateTimeField(auto_now_add=True)
+#
+#     def __str__(self):
+#         return settings.MEDIA_URL
+#
+#     def save(self, *args, **kwargs):
+#         if self.file:
+#             self.file_name = self.file.name.split('/')[-1]
+#             mime = magic.Magic(mime=True)
+#             self.file_type = mime.from_buffer(self.file.read())
+#             self.file_size = self.file.size
+#         super().save(*args, **kwargs)
+#
+#
+# class ProImage(models.Model):
+#     docs = models.ForeignKey(ProDocument, on_delete=models.CASCADE, default=None, verbose_name='문서',
+#                              related_name='pro_images')
+#     image = models.ImageField(upload_to='docs/pro/img/%Y/%m/%d/', verbose_name='이미지')
+#     image_name = models.CharField('파일명', max_length=100, blank=True)
+#     image_type = models.CharField('타입', max_length=100, blank=True)
+#     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
+#     created = models.DateTimeField(auto_now_add=True)
+#
+#     def __str__(self):
+#         return settings.MEDIA_URL
+#
+#     def save(self, *args, **kwargs):
+#         if self.image:
+#             self.image_name = self.image.name.split('/')[-1]
+#             mime = magic.Magic(mime=True)
+#             self.image_type = mime.from_buffer(self.image.read())
+#             self.image_size = self.image.size
+#         super().save(*args, **kwargs)
+
+
+def delete_file_field(instance, field_name):
+    """Delete the file of the given field if it exists."""
+    field = getattr(instance, field_name, None)
+    if field and hasattr(field, 'path') and os.path.isfile(field.path):
+        os.remove(field.path)
+
+
+@receiver(pre_delete)
 def delete_file_on_delete(sender, instance, **kwargs):
-    # Check if the file exists before attempting to delete it
-    if instance.image:
-        if os.path.isfile(instance.image.path):
-            os.remove(instance.image.path)
+    """Generic file deletion handler for models."""
+    if hasattr(instance, 'file'):
+        delete_file_field(instance, 'file')
+    if hasattr(instance, 'image'):
+        delete_file_field(instance, 'image')
+
+# @receiver(pre_delete, sender=ComImage)
+# def delete_file_on_delete(sender, instance, **kwargs):
+#     # Check if the file exists before attempting to delete it
+#     if instance.image:
+#         if os.path.isfile(instance.image.path):
+#             os.remove(instance.image.path)
+
+# @receiver(pre_delete, sender=File)
+# def delete_file_on_delete(sender, instance, **kwargs):
+#     # Check if the file exists before attempting to delete it
+#     if instance.file:
+#         if os.path.isfile(instance.file.path):
+#             os.remove(instance.file.path)
+#
+#
+# @receiver(pre_delete, sender=Image)
+# def delete_file_on_delete(sender, instance, **kwargs):
+#     # Check if the file exists before attempting to delete it
+#     if instance.image:
+#         if os.path.isfile(instance.image.path):
+#             os.remove(instance.image.path)
+#
+#
+# @receiver(pre_delete, sender=ComFile)
+# def delete_file_on_delete(sender, instance, **kwargs):
+#     # Check if the file exists before attempting to delete it
+#     if instance.file:
+#         if os.path.isfile(instance.file.path):
+#             os.remove(instance.file.path)
+#
+#
+# @receiver(pre_delete, sender=ProFile)
+# def delete_file_on_delete(sender, instance, **kwargs):
+#     # Check if the file exists before attempting to delete it
+#     if instance.file:
+#         if os.path.isfile(instance.file.path):
+#             os.remove(instance.file.path)
+#
+#
+# @receiver(pre_delete, sender=ProImage)
+# def delete_file_on_delete(sender, instance, **kwargs):
+#     # Check if the file exists before attempting to delete it
+#     if instance.image:
+#         if os.path.isfile(instance.image.path):
+#             os.remove(instance.image.path)
