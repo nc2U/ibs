@@ -304,6 +304,18 @@ class LawsuitCase(models.Model):
         verbose_name_plural = '03. 소송사건'
 
 
+class ComLawsuitCase(LawsuitCase):
+    pass
+    # company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사',
+    #                             related_name='lawsuitcases')
+
+
+class ProjectLawsuitCase(LawsuitCase):
+    pass
+    # project = models.ForeignKey('project.Project', on_delete=models.SET_NULL, null=True, blank=True,
+    #                             verbose_name='프로젝트', related_name='lawsuitcases')
+
+
 class BaseModel(models.Model):
     deleted = models.DateTimeField('휴지통', null=True, blank=True)
 

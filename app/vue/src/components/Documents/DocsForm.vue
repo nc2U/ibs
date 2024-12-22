@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { PropType } from 'vue'
+import { inject, type PropType } from 'vue'
 import { ref, reactive, computed, onMounted, onUpdated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Docs, Link } from '@/store/types/docs'
@@ -25,6 +25,8 @@ const emit = defineEmits(['on-submit', 'file-upload', 'file-change', 'close'])
 const refDelModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
+
+const company = inject('company')
 
 const attach = ref(true)
 const validated = ref(false)
@@ -56,9 +58,8 @@ const formsCheck = computed(() => {
     const c = form.title === props.docs.title
     const d = form.execution_date === props.docs.execution_date
     const e = form.content === props.docs.content
-    const f = form.is_notice === props.docs.is_notice
 
-    return a && b && c && d && e && f && attach.value
+    return a && b && c && d && e && attach.value
   } else return false
 })
 
@@ -127,6 +128,7 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = () => {
+  if (!props.docs) form.company = company.value?.pk
   emit('on-submit', { ...form, newLinks: newLinks.value })
   validated.value = false
   refConfirmModal.value.close()
@@ -186,12 +188,10 @@ onUpdated(() => dataSetup())
     @submit.prevent="onSubmit"
   >
     <CRow class="mb-3">
+      company: {{ company?.pk }}
       <CFormLabel for="title" class="col-md-2 col-form-label">제목</CFormLabel>
       <CCol :md="typeNum === 2 ? 9 : 8">
         <CFormInput id="title" v-model="form.title" required placeholder="게시물 제목" />
-      </CCol>
-      <CCol v-if="typeNum !== 2">
-        <v-checkbox-btn v-model="form.is_notice" label="공지글" />
       </CCol>
     </CRow>
 

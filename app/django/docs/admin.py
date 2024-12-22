@@ -1,6 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
-from .models import DocType, Category, LawsuitCase, Document, Link, File, Image
+from .models import (DocType, Category, LawsuitCase, ComLawsuitCase,
+                     ProjectLawsuitCase, Document, Link, File, Image)
 
 
 @admin.register(DocType)
@@ -21,6 +22,24 @@ class CategoryAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(LawsuitCase)
 class LawsuitCaseAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'project', 'sort', 'level', '__str__', 'plaintiff', 'defendant', 'case_start_date')
+    list_display_links = ('__str__',)
+    list_editable = ('project', 'sort', 'level', 'case_start_date',)
+    list_filter = ('project', 'sort', 'level')
+    search_fields = ('case_number', 'case_name', 'plaintiff', 'defendant')
+
+
+@admin.register(ComLawsuitCase)
+class ComLawsuitCaseAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'project', 'sort', 'level', '__str__', 'plaintiff', 'defendant', 'case_start_date')
+    list_display_links = ('__str__',)
+    list_editable = ('project', 'sort', 'level', 'case_start_date',)
+    list_filter = ('project', 'sort', 'level')
+    search_fields = ('case_number', 'case_name', 'plaintiff', 'defendant')
+
+
+@admin.register(ProjectLawsuitCase)
+class ProjectLawsuitCaseAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'sort', 'level', '__str__', 'plaintiff', 'defendant', 'case_start_date')
     list_display_links = ('__str__',)
     list_editable = ('project', 'sort', 'level', 'case_start_date',)
