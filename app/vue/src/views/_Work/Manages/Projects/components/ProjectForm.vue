@@ -40,8 +40,8 @@ const comSelect = computed(() => comStore.comSelect)
 const form = reactive({
   pk: undefined as number | undefined,
   company: null as null | number,
+  is_real_dev: true,
   name: '',
-  is_real_dev: false,
   description: '',
   slug: '',
   homepage: null as string | null,
@@ -55,9 +55,9 @@ const form = reactive({
 
 const formsCheck = computed(() => {
   if (props.project) {
-    const a = (form.company = props.project.company)
-    const b = form.name === props.project.name
-    const c = form.is_real_dev === props.project.is_real_dev
+    const a = form.company === props.project.company
+    const b = form.is_real_dev === props.project.is_real_dev
+    const c = form.name === props.project.name
     const d = form.description === props.project.description
     const e = form.homepage === props.project.homepage
     const f = form.is_public === props.project.is_public
@@ -188,7 +188,7 @@ onBeforeMount(() => {
         <CRow class="mb-3">
           <CFormLabel class="required col-form-label text-right col-2">회사</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <MultiSelect v-model="form.company" :options="comSelect" mode="single" />
+            <MultiSelect v-model="form.company" :options="comSelect" mode="single" required />
           </CCol>
           <CCol class="col-md-4 pt-2">
             <CFormCheck

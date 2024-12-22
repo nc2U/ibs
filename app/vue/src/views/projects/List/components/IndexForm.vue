@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onBeforeMount, type PropType, onBeforeUpdate } from 'vue'
+import { ref, reactive, computed, onBeforeMount, type PropType, onUpdated } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { useStore } from '@/store'
 import { type Project } from '@/store/types/project'
 import type { IssueProject } from '@/store/types/work'
 import { callAddress, type AddressData } from '@/components/DaumPostcode/address'
+import { useProject } from '@/store/pinia/project'
 import { write_project } from '@/utils/pageAuth'
 import Datepicker from '@vuepic/vue-datepicker'
 import IssueProjectForm from './IssueProjectForm.vue'
@@ -23,7 +24,12 @@ const props = defineProps({
 
 const emit = defineEmits(['to-submit', 'reset-form', 'close', 'issue-pr-submit'])
 
-const issuePrSubmit = (payload: IssueProject) => emit('issue-pr-submit', payload)
+const projStore = useProject()
+const issuePrSubmit = async (payload: IssueProject) => {
+  emit('issue-pr-submit', payload)
+  await projStore.fetchProject(props.project.pk as number)
+  formDataSetup()
+}
 
 const refIssueForm = ref()
 
@@ -118,7 +124,6 @@ const refPostCode = ref()
 const address2 = ref()
 
 const store = useStore()
-const accountStore = useAccount()
 
 const onSubmit = (event: Event) => {
   if (write_project.value) {
@@ -190,7 +195,7 @@ const formDataSetup = () => {
 }
 
 onBeforeMount(() => formDataSetup())
-onBeforeUpdate(() => formDataSetup())
+onUpdated(() => formDataSetup())
 </script>
 
 <template>

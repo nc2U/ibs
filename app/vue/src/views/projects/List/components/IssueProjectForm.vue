@@ -10,7 +10,10 @@ const callModal = () => refIssueForm.value.callModal()
 defineExpose({ callModal })
 
 const emit = defineEmits(['on-submit'])
-const onSubmit = (payload: IssueProject) => emit('on-submit', payload)
+const onSubmit = (payload: IssueProject) => {
+  emit('on-submit', payload)
+  refIssueForm.value.close()
+}
 </script>
 
 <template>
