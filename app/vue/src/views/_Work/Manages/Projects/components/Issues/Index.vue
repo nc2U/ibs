@@ -84,7 +84,7 @@ watch(
       await workStore.fetchIssue(Number(nVal))
       await workStore.fetchIssueLogList({ issue: Number(nVal) })
       await workStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(nVal) })
-    } else workStore.issue = null
+    } else workStore.removeIssue()
   },
   { deep: true },
 )
@@ -107,7 +107,7 @@ onBeforeMount(async () => {
   await workStore.fetchTrackerList()
   await workStore.fetchStatusList()
   await workStore.fetchPriorityList()
-  await workStore.fetchVersionList(projId.value)
+  await workStore.fetchVersionList({ project: projId.value })
 })
 </script>
 
