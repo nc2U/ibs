@@ -113,16 +113,20 @@ def issue_log_changes(sender, instance, created, **kwargs):
 
     if created:
         user = instance.creator
+
+        addresses = [user.email]
+        if instance.assigned_to:
+            addresses.append(instance.assigned_to.email)
+
         # 생성 시 activity 만 기록
         ActivityLogEntry.objects.create(sort='1', project=instance.project, issue=instance, user=user)
         ##########################################
         # 생성 사용자를 제외한, 담당자에게 메일 전달
         ##########################################
-        if user or instance.assigned_to:  # and instance.assigned_to != user:  # 담당자에게 메일 전달
-            subject = f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 배정(요청) 되었습니다.' \
-                if instance.assigned_to else f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) 생성 되었습니다.'
+        subject = f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 배정(요청) 되었습니다.' \
+            if instance.assigned_to else f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) 생성 되었습니다.'
 
-            message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
+        message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
 	            <tbody>
 		            <tr>
 			            <!-- <td style="padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">주식회사 대영아이비에스</td> -->
@@ -205,19 +209,27 @@ def issue_log_changes(sender, instance, created, **kwargs):
 		            </tr>
 	            </tbody>
             </table>'''
-            addresses = [instance.assigned_to.email]
-            if user is not instance.assigned_to:
-                addresses.append(user.email)
-            try:
-                send_mail(subject=subject,
-                          message=message,
-                          html_message=message,
-                          from_email=settings.EMAIL_DEFAULT_SENDER,
-                          recipient_list=addresses)
-            except Exception:
-                pass
+
+        try:
+            send_mail(subject=subject,
+                      message=message,
+                      html_message=message,
+                      from_email=settings.EMAIL_DEFAULT_SENDER,
+                      recipient_list=addresses)
+        except Exception:
+            pass
+
     else:
         user = instance.updater
+        watchers = instance.watchers.all()
+        addresses = [watcher.email for watcher in watchers]  # 업무 관람자
+        if instance.creator.email not in addresses:  # 업무 생성자
+            addresses.append(instance.creator.email)
+        if instance.assigned_to.email not in addresses:  # 업무 담당자
+            addresses.append(instance.assigned_to.email)
+        if user is not instance.assigned_to:  # 업무 수정자
+            addresses.append(user.email)
+
         # 변경 시
         if details:
             # 변경 내용 기록이 있으면 업무 로그 기록
@@ -232,16 +244,10 @@ def issue_log_changes(sender, instance, created, **kwargs):
                 ################################################
                 # 업데이트 사용자를 제외한 생성자, 담당자, 열람자에게 메일 전달
                 ################################################
-                watchers = instance.watchers.all()
-                addresses = [watcher.email for watcher in watchers]
-                if instance.creator.email not in addresses:
-                    addresses.append(instance.creator.email)
-                if instance.assigned_to.email not in addresses:
-                    addresses.append(instance.assigned_to.email)
-                if addresses:
-                    subject = f'업무 [#{instance.pk}] - "{instance.subject}"의 상태가 {instance.status}(으)로 변경 되었습니다.'
-                    message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
-	            <tbody>
+
+                subject = f'업무 [#{instance.pk}] - "{instance.subject}"의 상태가 {instance.status}(으)로 변경 되었습니다.'
+                message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
+	                <tbody>
 		            <tr>
 			            <!-- <td style="padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">주식회사 대영아이비에스</td> -->
 			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
@@ -348,21 +354,21 @@ def issue_log_changes(sender, instance, created, **kwargs):
 			            </td>
 		            </tr>
 	            </tbody>
-            </table>'''
-                    try:
-                        send_mail(subject=subject,
-                                  message=message,
-                                  html_message=message,
-                                  from_email=settings.EMAIL_DEFAULT_SENDER,
-                                  recipient_list=addresses)
-                    except Exception:
-                        pass
+                </table>'''
+
+                try:
+                    send_mail(subject=subject,
+                              message=message,
+                              html_message=message,
+                              from_email=settings.EMAIL_DEFAULT_SENDER,
+                              recipient_list=addresses)
+                except Exception:
+                    pass
 
             if hasattr(instance, '_old_assigned_to'):
                 if user or instance.assigned_to:
                     subject = f'업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 재배정(요청) 되었습니다.' \
                         if instance.assigned_to else f'업무 [#{instance.pk}] - "{instance.subject}"의 담당자가 변경 되었습니다.'
-
                     message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
 	            <tbody>
 		            <tr>
@@ -446,9 +452,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 		            </tr>
 	            </tbody>
             </table>'''
-                    addresses = [instance.assigned_to.email]
-                    if user is not instance.assigned_to:
-                        addresses.append(user.email)
+
                     try:
                         send_mail(subject=subject,
                                   message=message,
