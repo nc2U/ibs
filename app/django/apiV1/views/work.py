@@ -66,11 +66,19 @@ class ModuleViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
 
+class VersionFilter(FilterSet):
+    status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')
+
+    class Meta:
+        model = Version
+        fields = ('project__slug', 'status')
+
+
 class VersionViewSet(viewsets.ModelViewSet):
     queryset = Version.objects.all()
     serializer_class = VersionSerializer
     permission_classes = (permissions.IsAuthenticated,)
-    filterset_fields = ('project__slug',)
+    filterset_class = VersionFilter
 
 
 class TrackerViewSet(viewsets.ModelViewSet):
