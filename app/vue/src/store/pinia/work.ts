@@ -198,11 +198,20 @@ export const useWork = defineStore('work', () => {
       .then(res => (version.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchVersionList = (project = '') =>
-    api
-      .get(`/version/?project__slug=${project}`)
+  const fetchVersionList = async (payload: {
+    project: string
+    status?: '' | '1' | '2' | '3'
+    exclude?: '' | '1' | '2' | '3'
+  }) => {
+    const { project } = payload
+    let url = `/version/?project__slug=${project}`
+    if (payload.status) url += `&status=${payload.status}`
+    if (payload.exclude) url += `&status__exclude=${payload.exclude}`
+    return await api
+      .get(url)
       .then(res => (versionList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
+  }
 
   const createVersion = (payload: Version) =>
     api
@@ -229,7 +238,7 @@ export const useWork = defineStore('work', () => {
     api
       .delete(`/version/${pk}/`)
       .then(async () => {
-        await fetchVersionList(project)
+        await fetchVersionList({ project, status: '', exclude: '' })
         await fetchIssueProject(project)
         message('warning', '알림!', '해당 버전이 삭제되었습니다!')
       })
@@ -302,7 +311,7 @@ export const useWork = defineStore('work', () => {
     api
       .delete(`/issue-category/${pk}/`)
       .then(async () => {
-        await fetchVersionList(project)
+        await fetchVersionList({ project, status: '', exclude: '' })
         await fetchIssueProject(project)
         message('warning', '알림!', '해당 업무 범주가 삭제되었습니다!')
       })
@@ -382,6 +391,8 @@ export const useWork = defineStore('work', () => {
       .get(`/issue/${pk}/`)
       .then(res => (issue.value = res.data))
       .catch(err => errorHandle(err.response.data))
+
+  const removeIssue = () => (issue.value = null)
 
   const fetchAllIssueList = (project?: string) =>
     api
@@ -781,6 +792,7 @@ export const useWork = defineStore('work', () => {
     fetchIssueByMember,
     issuePages,
     fetchIssue,
+    removeIssue,
     fetchAllIssueList,
     fetchIssueList,
     createIssue,
