@@ -210,7 +210,7 @@ onUpdated(() => formDataSetup())
                 v-model="form.issue_project"
                 mode="single"
                 :options="getProjects"
-                required
+                :attrs="form.issue_project ? {} : { required: true }"
                 placeholder="업무 프로젝트를 선택하세요."
               />
               <CFormFeedback invalid>업무 프로젝트를 선택하세요.</CFormFeedback>
