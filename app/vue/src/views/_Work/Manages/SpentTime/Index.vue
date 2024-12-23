@@ -56,7 +56,7 @@ onBeforeMount(async () => {
   await workStore.fetchAllIssueProjectList()
   await workStore.fetchTimeEntryList({})
   await workStore.fetchAllIssueList()
-  await workStore.fetchVersionList()
+  await workStore.fetchVersionList({ project: '' })
   await accStore.fetchUsersList()
 })
 </script>

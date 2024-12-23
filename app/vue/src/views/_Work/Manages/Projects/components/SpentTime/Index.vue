@@ -62,7 +62,7 @@ onBeforeMount(() => {
   workStore.fetchAllIssueProjectList()
   workStore.fetchAllIssueList(project.value)
   workStore.fetchTimeEntryList({ ...listFilter.value })
-  workStore.fetchVersionList(project.value)
+  workStore.fetchVersionList({ project: project.value })
 })
 </script>
 

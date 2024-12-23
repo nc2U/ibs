@@ -80,7 +80,8 @@ onBeforeMount(async () => {
   await workStore.fetchTrackerList()
   await workStore.fetchStatusList()
   await workStore.fetchPriorityList()
-  await workStore.fetchVersionList()
+  if (route.params.projId)
+    await workStore.fetchVersionList({ project: route.params.projId as string })
 
   await accStore.fetchUsersList()
 })
