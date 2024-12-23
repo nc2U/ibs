@@ -370,7 +370,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
                     subject = f'업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 재배정(요청) 되었습니다.' \
                         if instance.assigned_to else f'업무 [#{instance.pk}] - "{instance.subject}"의 담당자가 변경 되었습니다.'
                     message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
-	            <tbody>
+	                <tbody>
 		            <tr>
 			            <!-- <td style="padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">주식회사 대영아이비에스</td> -->
 			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
@@ -450,8 +450,8 @@ def issue_log_changes(sender, instance, created, **kwargs):
 				            <span><a href="mailto:{user.email}">{user.username} &lt;{user.email}&gt;</a></span>
 			            </td>
 		            </tr>
-	            </tbody>
-            </table>'''
+	                </tbody>
+                    </table>'''
 
                     try:
                         send_mail(subject=subject,
