@@ -118,9 +118,10 @@ def issue_log_changes(sender, instance, created, **kwargs):
         ##########################################
         # 생성 사용자를 제외한, 담당자에게 메일 전달
         ##########################################
-        if instance.assigned_to: # and instance.assigned_to != user:  # 담당자에게 메일 전달
-            subject = f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 (요청)배정 되었습니다.' \
+        if user or instance.assigned_to:  # and instance.assigned_to != user:  # 담당자에게 메일 전달
+            subject = f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 배정(요청) 되었습니다.' \
                 if instance.assigned_to else f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) 생성 되었습니다.'
+
             message = f'''<div style="font-size: 1.2em;">
             <h4><u>&lt;{user.username}&gt;님이 새 업무 [#{instance.pk}] "{instance.subject}"를 
             생성{"하여 &lt;" + instance.assigned_to.username + "&gt;님에게 (요청)배정" if instance.assigned_to else ""} 하였습니다.</u></h4>
@@ -135,6 +136,8 @@ def issue_log_changes(sender, instance, created, **kwargs):
             <p><strong>등록자</strong> : <a href="mailto:{user.email}">{user.username} &lt;{user.email}&gt;</a></p>
             </div></div>'''
             addresses = [instance.assigned_to.email]
+            if user is not instance.assigned_to:
+                addresses.append(user.email)
             try:
                 send_mail(subject=subject,
                           message=message,
@@ -181,8 +184,38 @@ def issue_log_changes(sender, instance, created, **kwargs):
                     <p><strong>처리기한</strong> : {instance.due_date if instance.due_date else ""}</p>
                     <p><strong>링크</strong> : <a href="{settings.DOMAIN_HOST}/cms/#/work/project/redmine/issue/{instance.pk}">[#{instance.pk}] 업무 - {instance.subject}</a></p>
                     <p><strong>등록자</strong> : <a href="mailto:{user.email}">{user.username} &lt;{user.email}&gt;</a></p>
-                    <p><strong>업무 관람자</strong> : {str(['<a href="mailto:'+w.email+'">'+w.username+' &lt;'+user.email+'&gt;</a>' for w in watchers])}</p>
+                    <p><strong>업무 관람자</strong> : {str(['<a href="mailto:' + w.email + '">' + w.username + ' &lt;' + user.email + '&gt;</a>' for w in watchers])}</p>
                     </div></div>'''
+                    try:
+                        send_mail(subject=subject,
+                                  message=message,
+                                  html_message=message,
+                                  from_email=settings.EMAIL_DEFAULT_SENDER,
+                                  recipient_list=addresses)
+                    except Exception:
+                        pass
+
+            if hasattr(instance, '_old_assigned_to'):
+                if user or instance.assigned_to:
+                    subject = f'업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 재배정(요청) 되었습니다.' \
+                        if instance.assigned_to else f'업무 [#{instance.pk}] - "{instance.subject}"의 담당자가 변경 되었습니다.'
+
+                    message = f'''<div style="font-size: 1.2em;">
+                    <h4><u>&lt;{user.username}&gt;님이 업무 [#{instance.pk}] "{instance.subject}"의 담당자를
+                    &lt;{instance._old_assigned_to.username}&gt;에서 &lt;{instance.assigned_to.username}&gt;(으)로 변경 하였습니다.</u></h4>
+                    <div style="padding-left: 20px">
+                    <div style="background: #FFFFDD; padding: 10px"><strong>업무</strong> : <strong>[#{instance.pk}] {instance.subject}</strong></div>
+                    <div style="background: #FFFFDD; padding: 10px"><strong>설명</strong> : <br/>{markdown2.markdown(instance.description)} </div>
+                    <p><strong>유형</strong> : {instance.tracker.name}</p>
+                    <p><strong>상태</strong> : {instance.status.name}</p>
+                    <p><strong>담당</strong> : {instance.assigned_to.username if instance.assigned_to else ""}</p>
+                    <p><strong>처리기한</strong> : {instance.due_date if instance.due_date else ""}</p>
+                    <p><strong>링크</strong> : <a href="{settings.DOMAIN_HOST}/cms/#/work/project/redmine/issue/{instance.pk}">[#{instance.pk}] 업무 - {instance.subject}</a></p>
+                    <p><strong>등록자</strong> : <a href="mailto:{user.email}">{user.username} &lt;{user.email}&gt;</a></p>
+                    </div></div>'''
+                    addresses = [instance.assigned_to.email]
+                    if user is not instance.assigned_to:
+                        addresses.append(user.email)
                     try:
                         send_mail(subject=subject,
                                   message=message,
