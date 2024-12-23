@@ -108,7 +108,7 @@ class IssueProjectSerializer(serializers.ModelSerializer):
     members = MemberInIssueProjectSerializer(many=True, read_only=True)
     allowed_roles = RoleInIssueProjectSerializer(many=True, read_only=True)
     trackers = TrackerInIssueProjectSerializer(many=True, read_only=True)
-    versions = VersionInIssueProjectSerializer(many=True, read_only=True)
+    versions = serializers.SerializerMethodField(read_only=True)
     categories = IssueCategoryInIssueProjectSerializer(many=True, read_only=True)
     activities = CodeActivityInIssueProjectSerializer(many=True, read_only=True)
     visible = serializers.SerializerMethodField(read_only=True)
@@ -126,6 +126,11 @@ class IssueProjectSerializer(serializers.ModelSerializer):
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
                   'activities', 'visible', 'total_estimated_hours', 'total_time_spent', 'family_tree',
                   'parent', 'parent_visible', 'sub_projects', 'user', 'my_perms', 'created', 'updated')
+
+    @staticmethod
+    def get_versions(obj):
+        versions = obj.versions.filter(status='1')
+        return VersionInIssueProjectSerializer(versions, many=True).data
 
     def get_sub_projects(self, obj):
         sub_projects = obj.issueproject_set.exclude(status='9')
