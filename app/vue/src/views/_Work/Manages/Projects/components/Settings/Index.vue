@@ -59,6 +59,7 @@ const AllProjects = computed(() => workStore.AllIssueProjects)
 const getRoles = computed(() => workStore.getRoles)
 const getTrackers = computed(() => workStore.getTrackers)
 const getActivities = computed(() => workStore.getActivities)
+const versionList = computed(() => workStore.versionList)
 
 const memberList = computed(() =>
   (issueProject.value
@@ -93,11 +94,19 @@ const submitActs = (payload: number[]) => {
   })
 }
 
+const versionFilter = async (status: '' | '1' | '2' | '3') => {
+  if (route.params.projId) {
+    const projId = route.params.projId as string
+    await workStore.fetchVersionList({ project: projId, status })
+  }
+}
+
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) await workStore.fetchIssueProject(to.params.projId as string)
   else {
-    workStore.issueProject = null
+    workStore.removeIssueProject()
     await workStore.fetchIssueProjectList({})
+    await workStore.fetchVersionList({ project: to.params.projId as string })
   }
 })
 
@@ -112,7 +121,11 @@ onBeforeMount(async () => {
   await workStore.fetchTrackerList()
   await workStore.fetchActivityList()
 
-  if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)
+  if (route.params.projId) {
+    const projId = route.params.projId as string
+    await workStore.fetchIssueProject(projId)
+    await workStore.fetchVersionList({ project: projId, status: '1' })
+  }
 })
 </script>
 
@@ -157,7 +170,8 @@ onBeforeMount(async () => {
 
     <Version
       v-if="menu === '버전'"
-      :versions="issueProject?.versions"
+      :versions="versionList"
+      @version-filter="versionFilter"
       @delete-version="deleteVersion"
     />
 

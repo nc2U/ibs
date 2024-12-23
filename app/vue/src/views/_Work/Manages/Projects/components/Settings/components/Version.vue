@@ -7,13 +7,16 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({ versions: { type: Array as PropType<Version[]>, default: () => [] } })
 
-const emit = defineEmits(['delete-version'])
+const emit = defineEmits(['version-filter', 'delete-version'])
 
 const RefVersionConfirm = ref()
 
+const status = ref('1')
 const deleteVersion = ref<number | null>(null)
 
 const textClass = ['text-primary', 'text-warning', 'text-secondary']
+
+const versionFilter = (e: any) => emit('version-filter', e.target.value)
 
 const toDelete = (ver: number) => {
   deleteVersion.value = ver
@@ -63,8 +66,8 @@ const deleteSubmit = () => {
               상태
             </CFormLabel>
             <CCol sm="2">
-              <CFormSelect>
-                <option value="0">모두</option>
+              <CFormSelect v-model="status" @change="versionFilter">
+                <option value="">모두</option>
                 <option value="1">진행</option>
                 <option value="2">잠김</option>
                 <option value="3">닫힘</option>
@@ -122,17 +125,28 @@ const deleteSubmit = () => {
 
         <CTableBody>
           <CTableRow v-for="ver in versions" :key="ver.pk" class="text-center">
-            <CTableDataCell class="text-left pl-4">{{ ver.name }}</CTableDataCell>
-            <CTableDataCell>
+            <CTableDataCell
+              class="text-left pl-4"
+              :class="{ 'text-secondary': ver.status === '3' }"
+            >
+              {{ ver.name }}
+            </CTableDataCell>
+            <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">
               <v-icon v-if="ver.is_default" icon="mdi-check-bold" color="success" size="sm" />
             </CTableDataCell>
-            <CTableDataCell>{{ ver.effective_date }}</CTableDataCell>
-            <CTableDataCell class="text-left">{{ ver.description }}</CTableDataCell>
+            <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">
+              {{ ver.effective_date }}
+            </CTableDataCell>
+            <CTableDataCell class="text-left" :class="{ 'text-secondary': ver.status === '3' }">
+              {{ ver.description }}
+            </CTableDataCell>
             <CTableDataCell :class="textClass[Number(ver.status) - 1]">
               {{ ver.status_desc }}
             </CTableDataCell>
-            <CTableDataCell>{{ ver.sharing_desc }}</CTableDataCell>
-            <CTableDataCell class="text-left">
+            <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">
+              {{ ver.sharing_desc }}
+            </CTableDataCell>
+            <CTableDataCell class="text-left" :class="{ 'text-secondary': ver.status === '3' }">
               <router-link
                 v-if="ver.wiki_page_title"
                 :to="{ name: '(위키) - 제목', params: { title: ver.wiki_page_title } }"
