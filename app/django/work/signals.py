@@ -356,14 +356,14 @@ def issue_log_changes(sender, instance, created, **kwargs):
 	            </tbody>
                 </table>'''
 
-                try:
-                    send_mail(subject=subject,
-                              message=message,
-                              html_message=message,
-                              from_email=settings.EMAIL_DEFAULT_SENDER,
-                              recipient_list=addresses)
-                except Exception:
-                    pass
+                # try:
+                #     send_mail(subject=subject,
+                #               message=message,
+                #               html_message=message,
+                #               from_email=settings.EMAIL_DEFAULT_SENDER,
+                #               recipient_list=addresses)
+                # except Exception:
+                #     pass
 
             if hasattr(instance, '_old_assigned_to'):
                 if user or instance.assigned_to:
