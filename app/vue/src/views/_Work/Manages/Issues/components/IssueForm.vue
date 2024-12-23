@@ -83,6 +83,20 @@ watch(
   },
 )
 
+watch(
+  () => form.value.status,
+  nVal => {
+    if (nVal === 5) form.value.done_ratio = 100
+  },
+)
+
+watch(
+  () => form.value.done_ratio,
+  nVal => {
+    if (nVal === 100) form.value.status = 5
+  },
+)
+
 const statuses = computed(() =>
   props.issue ? props.statusList : props.statusList.filter(s => s.pk === 1),
 )
