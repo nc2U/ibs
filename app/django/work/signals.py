@@ -309,7 +309,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 				            <strong>추정시간</strong>
 			            </td>
 			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.estimated_hours + " 시간" if instance.estimated_hours else "-"}</span>
+				            <span>{str(instance.estimated_hours) + " 시간" if instance.estimated_hours else "-"}</span>
 			            </td>
 		            </tr>
 		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
