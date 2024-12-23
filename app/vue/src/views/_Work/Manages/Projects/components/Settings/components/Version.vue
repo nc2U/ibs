@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, type PropType } from 'vue'
+import { ref, type PropType, nextTick } from 'vue'
 import type { Version } from '@/store/types/work'
 import { colorLight } from '@/utils/cssMixins'
 import NoData from '@/views/_Work/components/NoData.vue'
@@ -12,11 +12,20 @@ const emit = defineEmits(['version-filter', 'delete-version'])
 const RefVersionConfirm = ref()
 
 const status = ref('1')
+const search = ref('')
+
 const deleteVersion = ref<number | null>(null)
 
 const textClass = ['text-primary', 'text-warning', 'text-secondary']
 
-const versionFilter = (e: any) => emit('version-filter', e.target.value)
+const versionFilter = () => {
+  nextTick(() => emit('version-filter', { status: status.value, search: search.value }))
+}
+const formReset = () => {
+  status.value = '1'
+  search.value = ''
+  emit('version-filter', { status: status.value, search: search.value })
+}
 
 const toDelete = (ver: number) => {
   deleteVersion.value = ver
@@ -78,14 +87,16 @@ const deleteSubmit = () => {
               버전
             </CFormLabel>
             <CCol sm="2">
-              <CFormInput />
+              <CFormInput v-model="search" placeholder="검색어 입력" />
             </CCol>
 
             <CCol class="pt-1">
-              <CButton color="primary" size="sm" variant="outline">적용</CButton>
+              <CButton color="primary" size="sm" variant="outline" @click="versionFilter">
+                적용
+              </CButton>
               <span class="ml-2">
                 <v-icon icon="mdi-reload" size="sm" color="success" />
-                <router-link to="">지우기</router-link>
+                <router-link to="" @click="formReset">지우기</router-link>
               </span>
             </CCol>
           </CRow>

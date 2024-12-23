@@ -94,10 +94,11 @@ const submitActs = (payload: number[]) => {
   })
 }
 
-const versionFilter = async (status: '' | '1' | '2' | '3') => {
+const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: string }) => {
+  const { status, search } = payload
   if (route.params.projId) {
     const projId = route.params.projId as string
-    await workStore.fetchVersionList({ project: projId, status })
+    await workStore.fetchVersionList({ project: projId, status, search })
   }
 }
 

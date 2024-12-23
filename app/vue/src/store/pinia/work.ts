@@ -204,11 +204,13 @@ export const useWork = defineStore('work', () => {
     project: string
     status?: '' | '1' | '2' | '3'
     exclude?: '' | '1' | '2' | '3'
+    search?: string
   }) => {
     const { project } = payload
     let url = `/version/?project__slug=${project}`
     if (payload.status) url += `&status=${payload.status}`
     if (payload.exclude) url += `&status__exclude=${payload.exclude}`
+    if (payload.search) url += `&search=${payload.search}`
     return await api
       .get(url)
       .then(res => (versionList.value = res.data.results))
