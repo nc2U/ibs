@@ -1,8 +1,25 @@
 <script lang="ts" setup>
-import { onBeforeMount } from 'vue'
+import { computed, onBeforeMount } from 'vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
 
 const emit = defineEmits(['aside-visible'])
+
+const calendarOptions = computed(() => ({
+  timeZone: 'local',
+  plugins: [dayGridPlugin, interactionPlugin],
+  initialView: 'dayGridMonth',
+  weekends: true,
+  // dateClick: handleDateClick,
+  selectable: true,
+  height: 630,
+  showNonCurrentDates: false,
+  events: [{ title: 'Meeting', start: new Date() }],
+}))
+
+const handleDateClick = (arg: any) => alert('date click! ' + arg.dateStr)
 
 onBeforeMount(() => emit('aside-visible', true))
 </script>
@@ -17,7 +34,9 @@ onBeforeMount(() => emit('aside-visible', true))
   <SearchList />
 
   <CRow class="mb-3">
-    <CCol> Calendar!!!</CCol>
+    <CCol>
+      <FullCalendar :options="calendarOptions" />
+    </CCol>
   </CRow>
 
   <CRow>

@@ -210,7 +210,7 @@ onBeforeMount(async () => {
 
       <SpentTime v-if="routeName.includes('(소요시간)')" @aside-visible="asideVisible" />
 
-      <Gantt v-if="routeName === '(차트)'" @aside-visible="asideVisible" />
+      <Gantt v-if="routeName === '(간트차트)'" @aside-visible="asideVisible" />
 
       <Calendar v-if="routeName === '(달력)'" @aside-visible="asideVisible" />
 

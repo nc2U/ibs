@@ -5,10 +5,10 @@ import { useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 
 const cBody = ref()
 const company = inject<ComputedRef<Company>>('company')
