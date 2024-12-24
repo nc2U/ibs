@@ -6,8 +6,8 @@ const emit = defineEmits(['aside-visible'])
 
 const row1BarList = ref([
   {
-    myBeginDate: '2021-07-13 13:00',
-    myEndDate: '2021-07-13 19:00',
+    myBeginDate: '2024-12-25 13:00',
+    myEndDate: '2024-12-26 11:00',
     ganttBarConfig: {
       // each bar must have a nested ganttBarConfig object ...
       id: 'unique-id-1', // ... and a unique "id" property
@@ -18,8 +18,8 @@ const row1BarList = ref([
 
 const row2BarList = ref([
   {
-    myBeginDate: '2021-07-13 00:00',
-    myEndDate: '2021-07-14 02:00',
+    myBeginDate: '2024-12-27 00:00',
+    myEndDate: '2024-12-27 08:00',
     ganttBarConfig: {
       id: 'another-unique-id-2',
       hasHandles: true,
@@ -50,13 +50,13 @@ onBeforeMount(() => emit('aside-visible', true))
     <CCol class="col-3"> IBS</CCol>
     <CCol>
       <g-gantt-chart
-        chart-start="2021-07-12 12:00"
-        chart-end="2021-07-14 12:00"
-        precision="hour"
+        chart-start="2024-12-24 12:00"
+        chart-end="2024-12-31 12:00"
+        precision="date"
         bar-start="myBeginDate"
         bar-end="myEndDate"
       >
-        <g-gantt-row label="My row 1" :bars="row1BarList" />
+        <g-gantt-row label="메일 발송 ui 개선" :bars="row1BarList" />
         <g-gantt-row label="My row 2" :bars="row2BarList" />
       </g-gantt-chart>
     </CCol>
