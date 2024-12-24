@@ -32,6 +32,7 @@
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.15",
+    "@infectoone/vue-ganttastic": "^2.3.2",
     "@mdi/font": "^7.4.47",
     "@vueform/multiselect": "^2.6.10",
     "@vuepic/vue-datepicker": "^6.1.0",
@@ -91,5 +92,5 @@
     "vue-cli-plugin-vuetify": "^2.5.8",
     "vue-tsc": "^1.8.27"
   },
-  "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"
+  "packageManager": "pnpm@9.15.1+sha512.1acb565e6193efbebda772702950469150cf12bcc764262e7587e71d19dc98a423dff9536e57ea44c49bdf790ff694e83c27be5faa23d67e0c033b583be4bfcf"
 }
