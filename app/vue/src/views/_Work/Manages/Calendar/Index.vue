@@ -17,12 +17,14 @@ const comName = computed(() => company?.value?.name)
 const route = useRoute()
 
 const calendarOptions = computed(() => ({
+  timeZone: 'local',
   plugins: [dayGridPlugin, interactionPlugin],
   initialView: 'dayGridMonth',
   weekends: true,
   // dateClick: handleDateClick,
   selectable: true,
   height: 630,
+  showNonCurrentDates: false,
   events: [{ title: 'Meeting', start: new Date() }],
 }))
 
