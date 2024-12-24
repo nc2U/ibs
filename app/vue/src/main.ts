@@ -5,6 +5,7 @@ import { vMaska } from 'maska'
 import { CIcon } from '@coreui/icons-vue'
 import { iconsSet as icons } from '@/assets/icons'
 import { loadFonts } from '@/plugins/webfontloader'
+import ganttastic from '@infectoone/vue-ganttastic'
 import Cookies from 'js-cookie'
 import CoreuiVue from '@coreui/vue'
 import vuetify from '@/plugins/vuetify'
@@ -25,6 +26,7 @@ init().then(() =>
     app.use(router)
     app.use(vuetify)
     app.use(CoreuiVue, [])
+    app.use(ganttastic)
     app.provide('icons', icons)
     app.component('CIcon', CIcon)
     app.directive('maska', vMaska)
