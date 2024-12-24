@@ -5,6 +5,9 @@ import { useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 
 const cBody = ref()
@@ -12,6 +15,18 @@ const company = inject<ComputedRef<Company>>('company')
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()
+
+const calendarOptions = computed(() => ({
+  plugins: [dayGridPlugin, interactionPlugin],
+  initialView: 'dayGridMonth',
+  weekends: true,
+  // dateClick: handleDateClick,
+  selectable: true,
+  height: 630,
+  events: [{ title: 'Meeting', start: new Date() }],
+}))
+
+const handleDateClick = (arg: any) => alert('date click! ' + arg.dateStr)
 
 const sideNavCAll = () => cBody.value.toggle()
 </script>
@@ -30,7 +45,9 @@ const sideNavCAll = () => cBody.value.toggle()
       <SearchList />
 
       <CRow class="mb-3">
-        <CCol> Calendar!!!</CCol>
+        <CCol>
+          <FullCalendar :options="calendarOptions" />
+        </CCol>
       </CRow>
 
       <CRow>
