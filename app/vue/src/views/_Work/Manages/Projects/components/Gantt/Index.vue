@@ -1,8 +1,11 @@
 <script lang="ts" setup>
-import { onBeforeMount, ref } from 'vue'
+import { type ComputedRef, inject, onBeforeMount, ref } from 'vue'
+import { getToday } from '@/utils/baseMixins'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 
 const emit = defineEmits(['aside-visible'])
+
+const isDark = inject<ComputedRef<boolean>>('isDark')
 
 const row1BarList = ref([
   {
@@ -48,8 +51,8 @@ onBeforeMount(() => emit('aside-visible', true))
   <CRow class="mb-3">
     <CCol>
       <g-gantt-chart
-        style="border: #ddd 1px solid"
-        :current-time-label="new Date().toLocaleDateString('ko-KR')"
+        :style="`border-bottom: #${isDark ? '666' : 'ddd'} 1px solid`"
+        :current-time-label="getToday()"
         label-column-title="[인천] 석남동 조합"
         chart-start="2024-12-01 00:00"
         chart-end="2025-05-31 00:00"
@@ -59,20 +62,12 @@ onBeforeMount(() => emit('aside-visible', true))
         current-time
         label-column-width="450px"
         row-height="20"
+        :color-scheme="isDark ? 'slumber' : ''"
         grid
       >
         <g-gantt-row label="토지 목록 작성" :bars="row1BarList" />
         <g-gantt-row label="설립인가 신청" :bars="row2BarList" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
-        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row v-for="i in 10" label="" :bars="[]" :key="i" />
       </g-gantt-chart>
     </CCol>
   </CRow>
