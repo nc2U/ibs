@@ -17,26 +17,26 @@ const sideNavCAll = () => cBody.value.toggle()
 
 const row1BarList = ref([
   {
-    myBeginDate: '2021-07-13 13:00',
-    myEndDate: '2021-07-13 19:00',
+    sDate: '2024-12-13 00:00',
+    eDate: '2024-12-23 00:00',
     ganttBarConfig: {
       // each bar must have a nested ganttBarConfig object ...
       id: 'unique-id-1', // ... and a unique "id" property
-      label: 'Lorem ipsum dolor',
+      label: '0%',
     },
   },
 ])
 const row2BarList = ref([
   {
-    myBeginDate: '2021-07-13 00:00',
-    myEndDate: '2021-07-14 02:00',
+    sDate: '2024-12-26 00:00',
+    eDate: '2024-12-26 12:00',
     ganttBarConfig: {
       id: 'another-unique-id-2',
       hasHandles: true,
-      label: 'Hey, look at me',
+      label: '100%',
       style: {
         // arbitrary CSS styling for your bar
-        background: '#e09b69',
+        background: 'green',
         borderRadius: '20px',
         color: 'black',
       },
@@ -62,14 +62,14 @@ const row2BarList = ref([
         <CCol class="col-3"> IBS</CCol>
         <CCol>
           <g-gantt-chart
-            chart-start="2021-07-12 12:00"
-            chart-end="2021-07-14 12:00"
-            precision="hour"
-            bar-start="myBeginDate"
-            bar-end="myEndDate"
+            chart-start="2024-12-01 00:00"
+            chart-end="2025-05-31 00:00"
+            precision="week"
+            bar-start="sDate"
+            bar-end="eDate"
           >
-            <g-gantt-row label="My row 1" :bars="row1BarList" />
-            <g-gantt-row label="My row 2" :bars="row2BarList" />
+            <g-gantt-row label="1" :bars="row1BarList" />
+            <g-gantt-row label="2" :bars="row2BarList" />
           </g-gantt-chart>
         </CCol>
       </CRow>
