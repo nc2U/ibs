@@ -46,17 +46,33 @@ onBeforeMount(() => emit('aside-visible', true))
   <SearchList />
 
   <CRow class="mb-3">
-    <CCol class="col-3"> IBS</CCol>
     <CCol>
       <g-gantt-chart
+        style="border: #ddd 1px solid"
+        :current-time-label="new Date().toLocaleDateString('ko-KR')"
+        label-column-title="[인천] 석남동 조합"
         chart-start="2024-12-01 00:00"
         chart-end="2025-05-31 00:00"
         precision="week"
         bar-start="sDate"
         bar-end="eDate"
+        current-time
+        label-column-width="450px"
+        row-height="20"
+        grid
       >
-        <g-gantt-row label="1" :bars="row1BarList" />
-        <g-gantt-row label="2" :bars="row2BarList" />
+        <g-gantt-row label="토지 목록 작성" :bars="row1BarList" />
+        <g-gantt-row label="설립인가 신청" :bars="row2BarList" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row label="" :bars="[]" />
       </g-gantt-chart>
     </CCol>
   </CRow>
