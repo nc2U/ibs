@@ -130,7 +130,7 @@ const removeFile = (n: number) => {
     file_form.value = ''
   } else {
     const file_row = document.getElementById(`row-fn-${n}`)
-    file_row?.parentNode?.removeChild(file_row)
+    if (file_row !== null) file_row?.parentNode?.removeChild(file_row)
   }
   newFiles.value.splice(n - 1, 1)
 }
@@ -170,7 +170,7 @@ const workStore = useWork()
 const my_perms = computed(() => workStore.issueProject?.my_perms)
 
 watch(props, nVal => {
-  if (nVal.issueProject) form.value.project = nVal?.issueProject.slug
+  if (nVal.issueProject) form.value.project = nVal?.issueProject.slug as string
 })
 
 const watcherList = ref<{ pk: number; username: string }[]>([])
@@ -755,7 +755,7 @@ onBeforeMount(() => {
               </CRow>
             </div>
 
-            <CRow v-if="workManager || my_perms?.issue_comment_create" class="mb-3">
+            <CRow class="mb-3">
               <CCol>
                 <h6>댓글</h6>
                 <v-divider class="mt-0" />
