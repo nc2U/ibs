@@ -69,6 +69,6 @@ const rowBarList = ref([
       highlight-on-hover
       :key="row[0].ganttBarConfig.id"
     />
-    <g-gantt-row v-for="i in 10" label="" :bars="[]" :key="i" />
+    <g-gantt-row v-for="i in 15" label="" :bars="[]" :key="i" />
   </g-gantt-chart>
 </template>
