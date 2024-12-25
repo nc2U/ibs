@@ -9,9 +9,10 @@ const row1BarList = ref([
     sDate: '2024-12-13 00:00',
     eDate: '2024-12-23 00:00',
     ganttBarConfig: {
-      // each bar must have a nested ganttBarConfig object ...
-      id: 'unique-id-1', // ... and a unique "id" property
+      id: '1',
       label: '0%',
+      immobile: true,
+      html: '',
     },
   },
 ])
@@ -20,14 +21,16 @@ const row2BarList = ref([
     sDate: '2024-12-13 00:00',
     eDate: '2025-04-30 00:00',
     ganttBarConfig: {
-      id: 'another-unique-id-2',
-      hasHandles: true,
+      id: '2',
       label: '0%',
+      hasHandles: true,
+      immobile: true,
+      html: '',
       style: {
-        // arbitrary CSS styling for your bar
         background: 'lightgreen',
-        borderRadius: '20px',
-        color: 'black',
+        // color: 'black',
+        // borderRadius: '20px',
+        // fontSize: '',
       },
     },
   },
@@ -47,7 +50,7 @@ const row2BarList = ref([
     current-time
     label-column-width="450px"
     row-height="20"
-    :color-scheme="isDark ? 'slumber' : ''"
+    :color-scheme="isDark ? 'dark' : ''"
     grid
   >
     <g-gantt-row label="토지 목록 작성" :bars="row1BarList" />
