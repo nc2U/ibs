@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, ref } from 'vue'
+import { type ComputedRef, inject, ref } from 'vue'
 import { getToday } from '@/utils/baseMixins'
 import { GGanttChart } from '@infectoone/vue-ganttastic'
 
