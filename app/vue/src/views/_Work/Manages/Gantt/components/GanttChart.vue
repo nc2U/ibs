@@ -59,7 +59,7 @@ const onMouseleaveBar = (bar: any) => console.log(bar)
     precision="week"
     bar-start="sDate"
     bar-end="eDate"
-    row-height="20"
+    :row-height="20"
     label-column-width="450px"
     :color-scheme="isDark ? 'dark' : ''"
     current-time
