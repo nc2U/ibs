@@ -43,6 +43,9 @@ const rowBarList = ref([
     },
   ],
 ])
+
+const onMouseenterBar = (bar: any) => console.log(bar)
+const onMouseleaveBar = (bar: any) => console.log(bar)
 </script>
 
 <template>
@@ -56,11 +59,13 @@ const rowBarList = ref([
     precision="week"
     bar-start="sDate"
     bar-end="eDate"
-    current-time
     row-height="20"
     label-column-width="450px"
     :color-scheme="isDark ? 'dark' : ''"
+    current-time
     grid
+    @mouseenter-bar="onMouseenterBar($event.bar)"
+    @mouseleave-bar="onMouseleaveBar($event.bar)"
   >
     <g-gantt-row
       v-for="row in rowBarList"
