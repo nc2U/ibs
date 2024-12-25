@@ -1,9 +1,12 @@
 <script lang="ts" setup>
-import { type ComputedRef, inject, ref } from 'vue'
+import { computed, type ComputedRef, inject, ref } from 'vue'
 import { getToday } from '@/utils/baseMixins'
 import { GGanttChart } from '@infectoone/vue-ganttastic'
 
 const isDark = inject<ComputedRef<boolean>>('isDark')
+
+const chartStart = (date = new Date()) => new Date(date.getFullYear(), date.getMonth(), 1)
+const chartEnd = (date = new Date()) => new Date(date.getFullYear(), date.getMonth() + 6, 0)
 
 const rowBarList = ref([
   [
@@ -47,8 +50,8 @@ const rowBarList = ref([
     :style="`border-bottom: #${isDark ? '666' : 'ddd'} 1px solid`"
     :current-time-label="getToday()"
     label-column-title="[인천] 석남동 조합"
-    chart-start="2024-12-01"
-    chart-end="2025-05-31"
+    :chart-start="chartStart()"
+    :chart-end="chartEnd()"
     date-format="YYYY-MM-DD"
     precision="week"
     bar-start="sDate"
