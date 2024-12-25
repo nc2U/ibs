@@ -455,6 +455,10 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class IssueProjectForGanttSerializer(SimpleIssueProjectSerializer):
+    pass
+
+
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission

@@ -36,6 +36,11 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
+class IssueProjectForGanttViewSet(IssueProjectViewSet):
+    queryset = IssueProject.objects.all()
+    serializer_class = IssueProjectForGanttSerializer
+
+
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
