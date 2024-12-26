@@ -11,7 +11,7 @@ class CompanyBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
                     'number', 'holder', 'open_date', 'note', 'inactive')
     list_editable = ('order', 'number', 'inactive')
     list_display_links = ('depart', 'bankcode')
-    list_filter = ('depart', 'bankcode', 'holder')
+    list_filter = ('company', 'depart', 'bankcode', 'holder')
 
 
 class ProjectBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
