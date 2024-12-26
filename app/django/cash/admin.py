@@ -28,7 +28,8 @@ class CashBookAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('account_d1', 'account_d2', 'account_d3', 'content', 'trader', 'evidence')
     search_fields = ('account_d3', 'content', 'trader', 'note')
     list_display_links = ('deal_date', 'sort', 'bank_account')
-    list_filter = (('deal_date', DateRangeFilter), 'sort', 'account_d1', 'account_d2', 'account_d3', 'evidence')
+    list_filter = ('company', ('deal_date', DateRangeFilter), 'sort',
+                   'account_d1', 'account_d2', 'account_d3', 'evidence')
 
     def formatted_income(self, obj):
         return f'{intcomma(obj.income)} 원' if obj.income else '-'
