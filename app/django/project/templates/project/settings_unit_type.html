@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Project{% endblock %}
+{% block title %}IBS - Project{% endblock %}
 
 {% block content %}
     {% load static humanize widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="신규 프로젝트" title="세부 정보 관리" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="신규 프로젝트" title="세부 정보 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -23,7 +23,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                         </div>
@@ -147,7 +147,7 @@
                                                     </div>
                                                     {% if form.name.errors or form.average_price.errors or form.num_unit.errors %}
                                                         <div class="form-check col-1 align-self-center">
-                                                            <a href="{% url 'rebs:project:set-unit-type' %}" class="font-18"
+                                                            <a href="{% url 'ibs:project:set-unit-type' %}" class="font-18"
                                                                style="color: #999">
                                                                 <i class="mdi mdi-close-circle"
                                                                    data-formset-remove-form></i>

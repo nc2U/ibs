@@ -1,19 +1,19 @@
 {% extends 'layouts/registration-2.html' %}
 
-{% block title %}Sign Up | REBS{% endblock %}
+{% block title %}Sign Up | IBS{% endblock %}
 
 {% block content %}
-<!-- title-->
-<h4 class="mt-5">회원가입</h4>
-<p class="text-muted mb-4">Enter your ID and password to make account.</p>
+    <!-- title-->
+    <h4 class="mt-5">회원가입</h4>
+    <p class="text-muted mb-4">Enter your ID and password to make account.</p>
 
-{% include 'registration/register-form.html' %}
+    {% include 'registration/register-form.html' %}
 
-<!-- Footer-->
-<footer class="footer footer-alt">
-    <p class="text-muted">Already have account?
-        <a href="{% url 'login' %}" class="text-muted ml-1"><b class="text-primary">로그인</b></a>
-    </p>
-</footer>
+    <!-- Footer-->
+    <footer class="footer footer-alt">
+        <p class="text-muted">Already have account?
+            <a href="{% url 'login' %}" class="text-muted ml-1"><b class="text-primary">로그인</b></a>
+        </p>
+    </footer>
 
 {% endblock %}

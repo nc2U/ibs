@@ -1,0 +1,34 @@
+{% extends 'ibs/layouts/base.html' %}
+{% load static %}
+
+{% block third_party_css %}{% endblock %}
+
+{% block content %}
+
+    <!-- Start Content-->
+    <div class="container-fluid">
+
+        <!-- start page title -->
+        {% include 'ibs/partials/content_title.html' with title="계약 현황 조회" second_bs="분양 계약 관리" %}
+        <!-- end page title -->
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            content
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- container -->
+
+{% endblock %}
+
+{% block third_party_js %}{% endblock %}
+
+
+{% block demo_js %}{% endblock %}

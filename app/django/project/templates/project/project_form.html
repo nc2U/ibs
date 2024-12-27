@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Project{% endblock %}
+{% block title %}IBS - Project{% endblock %}
 
 {% block content %}
     {% load static widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="신규 프로젝트" title="프로젝트 관리" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="신규 프로젝트" title="프로젝트 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -98,7 +98,7 @@
 
 
 
-                                                            {% if request.user.is_superuser %}{% url 'rebs:project:delete' object.pk %}{% else %}javascript:alert('최고관리자만 삭제할 수 있습니다.'){% endif %}">
+                                                            {% if request.user.is_superuser %}{% url 'ibs:project:delete' object.pk %}{% else %}javascript:alert('최고관리자만 삭제할 수 있습니다.'){% endif %}">
                                                         <button type="button" class="btn btn-danger">삭제하기</button>
                                                     </a>
                                                 {% endif %}

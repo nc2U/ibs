@@ -11,7 +11,7 @@
 <body>
 <div class="float-center p-5 col-xl-10">
     <div class="my-5">
-        <h2 class="pb-3">Rebs 시스템 설정 :: Step1 - 최고관리자 생성</h2>
+        <h2 class="pb-3">IBS 시스템 설정 :: Step1 - 최고관리자 생성</h2>
     </div>
     <form class="row g-3 needs-validation" method="POST" novalidate>
         {% csrf_token %}
@@ -53,27 +53,27 @@
     </form>
 
     <script>
-        (() => {
-            'use strict'
+      (() => {
+        'use strict'
 
-            // Fetch all the forms we want to apply custom Bootstrap validation styles to
-            const forms = document.querySelectorAll('.needs-validation')
+        // Fetch all the forms we want to apply custom Bootstrap validation styles to
+        const forms = document.querySelectorAll('.needs-validation')
 
-            // Loop over them and prevent submission
-            Array.from(forms).forEach(form => {
-                form.addEventListener('submit', event => {
-                    const wrong_confirm = form.password.value !== form['password_confirm'].value
-                    if (!form.checkValidity() || wrong_confirm) {
-                        if (wrong_confirm) form['password_confirm'].setCustomValidity("Passwords don't match")
-                        else form['password_confirm'].setCustomValidity('')
-                        event.preventDefault()
-                        event.stopPropagation()
-                    }
+        // Loop over them and prevent submission
+        Array.from(forms).forEach(form => {
+          form.addEventListener('submit', event => {
+            const wrong_confirm = form.password.value !== form['password_confirm'].value
+            if (!form.checkValidity() || wrong_confirm) {
+              if (wrong_confirm) form['password_confirm'].setCustomValidity("Passwords don't match")
+              else form['password_confirm'].setCustomValidity('')
+              event.preventDefault()
+              event.stopPropagation()
+            }
 
-                    form.classList.add('was-validated')
-                }, false)
-            })
-        })()
+            form.classList.add('was-validated')
+          }, false)
+        })
+      })()
     </script>
 </div>
 </body>

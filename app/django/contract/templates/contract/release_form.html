@@ -1,8 +1,8 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
 {% load static humanize widget_tweaks %}
 
-{% block title %}Rebs - 계약 해지 관리{% endblock %}
+{% block title %}IBS - 계약 해지 관리{% endblock %}
 
 {% block content %}
 
@@ -10,7 +10,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="분양 계약 관리" third_bs="계약 정보 관리" title="계약 해지 관리" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="분양 계약 관리" third_bs="계약 정보 관리" title="계약 해지 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -24,7 +24,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                         </div>
@@ -45,7 +45,7 @@
                                                 {% elif contractor.contractorrelease.status >= '4' %}
                                                 onclick="alert('해지 완료된 계약입니다.')"
                                                 {% else %}
-                                                onclick="location.href='{% url 'rebs:contract:register' %}?project={{ contract.project_id }}&task=2&order_group={{ contract.order_group.id }}&type={{ contract.keyunit.unit_type.id }}&contract_unit={{ contract.keyunit.id }}&unit_number={{ contract.keyunit.houseunit.id }}&cont_id={{ contract.id }}&p={{ request.GET.page }}'"
+                                                onclick="location.href='{% url 'ibs:contract:register' %}?project={{ contract.project_id }}&task=2&order_group={{ contract.order_group.id }}&type={{ contract.keyunit.unit_type.id }}&contract_unit={{ contract.keyunit.id }}&unit_number={{ contract.keyunit.houseunit.id }}&cont_id={{ contract.id }}&p={{ request.GET.page }}'"
                                                 {% endif %}>
                                             등록 계약 변경
                                         </button>
@@ -54,7 +54,7 @@
                                         <button type="button" class="btn btn-light" onclick="alert('준비중!')">권리 의무 승계
                                         </button>
                                         <button type="button" class="btn btn-secondary"
-                                                onclick="location.href='{% url 'rebs:contract:release' %}?project={{ this_project.id }}'">
+                                                onclick="location.href='{% url 'ibs:contract:release' %}?project={{ this_project.id }}'">
                                             계약 해지 관리
                                         </button>
                                     </div>

@@ -1,7 +1,7 @@
 <ul class="nav nav-tabs mb-5">
     <li class="nav-item">
         <a href="
-                {% url 'rebs:contract:index' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+                {% url 'ibs:contract:index' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
            aria-expanded="{% if menu_order == '1' %}true{% else %}false{% endif %}"
            class="nav-link  {% if menu_order == '1' %}active{% endif %}">
             <i class="mdi mdi-deskphone d-md-none d-block"></i>
@@ -10,7 +10,8 @@
     </li>
     <li class="nav-item">
         <a href="
-                {% url 'rebs:contract:register' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+
+                {% url 'ibs:contract:register' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
            aria-expanded="{% if menu_order == '2' %}true{% else %}false{% endif %}"
            class="nav-link {% if menu_order == '2' %}active{% endif %}">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
@@ -19,7 +20,8 @@
     </li>
     <li class="nav-item">
         <a href="
-                {% url 'rebs:contract:release' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+
+                {% url 'ibs:contract:release' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
            aria-expanded="{% if menu_order == '3' %}true{% else %}false{% endif %}"
            class="nav-link {% if menu_order == '3' %}active{% endif %}">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
@@ -28,7 +30,8 @@
     </li>
     <li class="nav-item">
         <a href="
-                {% url 'rebs:contract:dashboard' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+
+                {% url 'ibs:contract:dashboard' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
            aria-expanded="{% if menu_order == '4' %}true{% else %}false{% endif %}"
            class="nav-link {% if menu_order == '4' %}active{% endif %}">
             <i class="mdi mdi-pencil-box-multiple-outline d-md-none d-block"></i>

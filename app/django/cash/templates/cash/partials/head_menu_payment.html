@@ -1,7 +1,8 @@
 <ul class="nav nav-tabs mb-5 bg-white">
     <li class="nav-item">
         <a href="
-                {% url 'rebs:cash-inout:payment-index' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+
+                {% url 'ibs:cash-inout:payment-index' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
            aria-expanded="{% if menu_order == '1' %}true{% else %}false{% endif %}"
            class="nav-link  {% if menu_order == '1' %}active{% endif %}">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
@@ -10,7 +11,8 @@
     </li>
     <li class="nav-item">
         <a href="
-                {% url 'rebs:cash-inout:payment-register' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+
+                {% url 'ibs:cash-inout:payment-register' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
            aria-expanded="{% if menu_order == '2' %}true{% else %}false{% endif %}"
            class="nav-link  {% if menu_order == '2' %}active{% endif %}">
             <i class="mdi mdi-pencil-box-multiple-outline d-md-none d-block"></i>

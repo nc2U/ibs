@@ -1,0 +1,98 @@
+{% if request.user.is_superuser or request.user.staffauth.project > '0' %}
+    <li class="side-nav-item">
+        <a href="javascript: void(0);" class="side-nav-link">
+            <i class="uil-map-marker-plus"></i>
+            <span> 신규 프로젝트 </span>
+            <span class="menu-arrow"></span>
+        </a>
+        <ul class="side-nav-second-level" aria-expanded="false">
+            <li>
+                <a href="{% url 'ibs:project:index' %}">프로젝트 관리
+                    <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                </a>
+            </li>
+            {% if 'project/create' in request.path %}
+                <li>
+                    <a href="{{ request.path }}">프로젝트 등록
+                        <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                    </a>
+                </li>
+            {% endif %}
+            {% if 'project/update' in request.path %}
+                <li>
+                    <a href="{{ request.path }}">프로젝트 수정
+                        <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                    </a>
+                </li>
+            {% endif %}
+            {% if 'project/delete' in request.path %}
+                <li>
+                    <a href="{{ request.path }}">프로젝트 삭제
+                        <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                    </a>
+                </li>
+            {% endif %}
+            <li class="side-nav-item">
+                <a href="javascript: void(0);" aria-expanded="false">
+                    세부 정보 관리
+                    <span class="menu-arrow"></span>
+                </a>
+                <ul class="side-nav-third-level" aria-expanded="false">
+                    <li>
+                        <a href="{% url 'ibs:project:set-ordergroup' %}">차수 분류 등록
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'ibs:project:set-unit-type' %}">타입 정보 등록
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'ibs:project:set-floor-type' %}">층별 조건 등록
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'ibs:project:set-sales-price' %}">분양 가격 등록
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'ibs:project:set-payment-order' %}">납부 회차 등록
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'ibs:project:set-down-payment' %}">계약 금액 등록
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="side-nav-item">
+                <a href="javascript: void(0);" aria-expanded="false">
+                    사업 부지 관리
+                    <span class="menu-arrow"></span>
+                </a>
+                <ul class="side-nav-third-level" aria-expanded="false">
+                    <li>
+                        <a href="{% url 'ibs:project:site' %}">지번 별 토지관리
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'ibs:project:site-owner' %}">소유자별 토지관리
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'ibs:project:site-contract' %}">사업부지 매입관리
+                            <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+{% endif %}

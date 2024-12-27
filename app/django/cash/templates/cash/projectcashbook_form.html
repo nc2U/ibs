@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs -  입출금 내역 등록{% endblock %}
+{% block title %}IBS -  입출금 내역 등록{% endblock %}
 
 {% block content %}
     {% load static widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="현장 자금 관리" title="입출금 내역 등록" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="현장 자금 관리" title="입출금 내역 등록" %}
         <!-- end page title -->
 
 
@@ -24,7 +24,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                         </div>

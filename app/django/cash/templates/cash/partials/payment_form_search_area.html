@@ -1,5 +1,5 @@
 <div class="row">
-    {% include 'rebs/partials/project_select.html' %}
+    {% include 'ibs/partials/project_select.html' %}
 
     <div class="col-sm-12 col-md-4">
         <div class="form-group row mb-3">
@@ -51,6 +51,7 @@
                 &nbsp;&nbsp;&nbsp;
             {% endfor %}
             <a href="?project=
+
 
 
                     {{ this_project.id }}{% for key, value in request.GET.items %}{% if key != 'project' and key != 'q' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">

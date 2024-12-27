@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Company List{% endblock %}
+{% block title %}IBS - Company List{% endblock %}
 
 {% block content %}
     {% load static humanize widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with second_bs="환경 설정" title="회사 정보" %}
+        {% include 'ibs/partials/content_title.html' with second_bs="환경 설정" title="회사 정보" %}
         <!-- end page title -->
 
         <div class="row">
@@ -151,7 +151,7 @@
                                 <div class="form-group mb-0 justify-content-end row">
                                     <div class="col-12">
                                         <button type="button" class="btn btn-light"
-                                                onclick="location.href='{% url 'rebs:company:index' %}'">취소하기
+                                                onclick="location.href='{% url 'ibs:company:index' %}'">취소하기
                                         </button>&nbsp;
                                         <button type="submit" class="btn btn-primary">등록하기</button>
                                     </div>

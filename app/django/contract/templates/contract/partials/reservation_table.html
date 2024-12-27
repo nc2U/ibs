@@ -30,7 +30,7 @@
             <tr>
                 <td scope="row"><input type="checkbox" disabled></td>
                 <td class="text-center"><a
-                        href="{% url 'rebs:contract:register' %}?project={{ object.project_id }}&task=1&order_group={{ object.order_group.id }}&type={{ object.keyunit.unit_type.id }}&contract_unit={{ object.keyunit.id }}&house_unit={{ object.keyunit.houseunit.id }}&cont_id={{ object.id }}&p={{ request.GET.page }}">
+                        href="{% url 'ibs:contract:register' %}?project={{ object.project_id }}&task=1&order_group={{ object.order_group.id }}&type={{ object.keyunit.unit_type.id }}&contract_unit={{ object.keyunit.id }}&house_unit={{ object.keyunit.houseunit.id }}&cont_id={{ object.id }}&p={{ request.GET.page }}">
                     {{ object.contractor.name }}
                 </a>
                 </td>

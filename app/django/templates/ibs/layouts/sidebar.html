@@ -1,0 +1,73 @@
+<!-- ========== Left Sidebar Start ========== -->
+
+<div class="left-side-menu">
+
+    {% include 'ibs/partials/logo.html' %}
+
+
+    <div class="h-100" id="left-side-menu-container" data-simplebar>
+
+        <!--- Sidemenu -->
+        <ul class="metismenu side-nav">
+
+            <li class="side-nav-title side-nav-item">Side Menu</li>
+
+            {% include 'ibs/layouts/partials/menu_dashboard.html' %}
+
+            {% include 'ibs/layouts/partials/menu_schedule.html' %}
+
+            <li class="side-nav-title side-nav-item">프로젝트 관리</li>
+
+            {# 프로젝트 - 분양 계약 관련 #}
+            {% include 'ibs/layouts/partials/menu_contract.html' %}
+
+            {# 프로젝트 - 분양 수납 관련 #}
+            {% include 'ibs/layouts/partials/menu_payment.html' %}
+
+            {# 프로젝트 - 고객 고지 관리 #}
+            {% include 'ibs/layouts/partials/menu_notice.html' %}
+
+            {# 프로젝트 - 자금 입출 관련 #}
+            {% include 'ibs/layouts/partials/menu_project_cash.html' %}
+
+            {# 프로젝트 - 문서 기록 관련 #}
+            {% include 'ibs/layouts/partials/menu_project_docs.html' %}
+
+            {# 프로젝트 - 신규 설정 관련 #}
+            {% include 'ibs/layouts/partials/menu_new_project.html' %}
+
+            <li class="side-nav-title side-nav-item">본사 관리</li>
+
+            {# 본사 - 자금 입출 관련 #}
+            {% include 'ibs/layouts/partials/menu_company_cash.html' %}
+
+            {# 본사 - 문서 기록 관련 #}
+            {% include 'ibs/layouts/partials/menu_company_docs.html' %}
+
+            {# 본사 - 인사 관리 관련 #}
+            {% include 'ibs/layouts/partials/menu_humanresource.html' %}
+
+            <li class="side-nav-title side-nav-item mt-1">기타 관리</li>
+
+            {# 본사 - 최상위 설정 관련 #}
+            {% include 'ibs/layouts/partials/menu_company_settings.html' %}
+        </ul>
+
+        <!-- Help Box -->
+        <!--        <div class="help-box text-white text-center">-->
+        <!--            <a href="javascript: void(0);" class="float-right close-btn text-white">-->
+        <!--                <i class="mdi mdi-close"></i>-->
+        <!--            </a>-->
+        <!--            <img src="/static/ibs/images/help-icon.svg" height="90" alt="Helper Icon Image"/>-->
+        <!--            <h5 class="mt-3">Unlimited Access</h5>-->
+        <!--            <p class="mb-3">Upgrade to plan to get access to unlimited reports</p>-->
+        <!--            <a href="javascript: void(0);" class="btn btn-outline-light btn-sm">Upgrade</a>-->
+        <!--        </div>-->
+        <!-- end Help Box -->
+        <!-- End Sidebar -->
+
+        <div class="clearfix"></div>
+    </div>
+    <!-- Sidebar -left -->
+</div>
+<!-- Left Sidebar End -->

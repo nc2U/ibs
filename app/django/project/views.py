@@ -25,7 +25,7 @@ class ProjectCreate(SuccessMessageMixin, LoginRequiredMixin, CreateView):
     model = Project
     form_class = ProjectForm
     success_message = '새 프로젝트가 등록되었습니다.'
-    success_url = reverse_lazy('rebs:project:index')
+    success_url = reverse_lazy('ibs:project:index')
 
     def form_valid(self, form):
         form.instance.company = Company.objects.first()
@@ -36,12 +36,12 @@ class ProjectUpdate(SuccessMessageMixin, LoginRequiredMixin, UpdateView):
     model = Project
     form_class = ProjectForm
     success_message = '해당 프로젝트의 수정사항이 적용되었습니다.'
-    success_url = reverse_lazy('rebs:project:index')
+    success_url = reverse_lazy('ibs:project:index')
 
 
 class ProjectDelete(LoginRequiredMixin, DeleteView):
     model = Project
-    success_url = reverse_lazy('rebs:project:index')
+    success_url = reverse_lazy('ibs:project:index')
 
 
 class SettingsOrderGroup(LoginRequiredMixin, FormView):
@@ -79,7 +79,7 @@ class SettingsOrderGroup(LoginRequiredMixin, FormView):
                 except IntegrityError:
                     pass
             project_query = '?project=' + self.request.GET.get('project') if self.request.GET.get('project') else ''
-            return redirect(reverse_lazy('rebs:project:set-ordergroup') + project_query)
+            return redirect(reverse_lazy('ibs:project:set-ordergroup') + project_query)
         return render(request, 'project/settings_ordergroup.html', {'formset': formset})
 
 
@@ -118,7 +118,7 @@ class SettingsUnitType(LoginRequiredMixin, FormView):
                 except IntegrityError:
                     pass
             project_query = '?project=' + self.request.GET.get('project') if self.request.GET.get('project') else ''
-            return redirect(reverse_lazy('rebs:project:set-unit-type') + project_query)
+            return redirect(reverse_lazy('ibs:project:set-unit-type') + project_query)
         return render(request, 'project/settings_unittype.html', {'formset': formset})
 
 
@@ -157,7 +157,7 @@ class SettingsFloorType(LoginRequiredMixin, FormView):
                 except IntegrityError:
                     pass
             project_query = '?project=' + self.request.GET.get('project') if self.request.GET.get('project') else ''
-            return redirect(reverse_lazy('rebs:project:set-floor-type') + project_query)
+            return redirect(reverse_lazy('ibs:project:set-floor-type') + project_query)
         return render(request, 'project/settings_floor.html', {'formset': formset})
 
 
@@ -238,7 +238,7 @@ class SettingsSalesPrice(LoginRequiredMixin, TemplateView):
 
         type = request.GET.get('type') if request.GET.get('type') else ''
         query_string = '?project=' + str(self.get_project().id) + '&group=' + str(og.id) + '&type=' + type
-        return redirect(reverse_lazy('rebs:project:set-sales-price') + query_string)
+        return redirect(reverse_lazy('ibs:project:set-sales-price') + query_string)
 
 
 class SettingsPaymentOrder(LoginRequiredMixin, FormView):
@@ -277,7 +277,7 @@ class SettingsPaymentOrder(LoginRequiredMixin, FormView):
                 except IntegrityError:
                     pass
             project_query = '?project=' + self.request.GET.get('project') if self.request.GET.get('project') else ''
-            return redirect(reverse_lazy('rebs:project:set-payment-order') + project_query)
+            return redirect(reverse_lazy('ibs:project:set-payment-order') + project_query)
         return render(request, 'project/settings_installment_order.html', {'formset': formset})
 
 
@@ -318,7 +318,7 @@ class SettingsDownPayment(LoginRequiredMixin, TemplateView):
 
         project = self.request.GET.get('project')
         query_string = '?project=' + project if project else ''
-        return redirect(reverse_lazy('rebs:project:set-down-payment') + query_string)
+        return redirect(reverse_lazy('ibs:project:set-down-payment') + query_string)
 
 
 class SiteManage(LoginRequiredMixin, ListView, FormView):
@@ -375,7 +375,7 @@ class SiteManage(LoginRequiredMixin, ListView, FormView):
                 query_str += 'page=' + self.request.GET.get('page') + '&' if self.request.GET.get('page') else ''
             if self.request.GET.get('project'):
                 query_str += 'project=' + self.request.GET.get('project')
-            return redirect(reverse_lazy('rebs:project:site') + query_str)
+            return redirect(reverse_lazy('ibs:project:site') + query_str)
         return render(request, 'project/site_manage.html', {'form': form})
 
 
@@ -383,7 +383,7 @@ def site_delete(*args, **kwargs):
     instance = Site.objects.get(pk=kwargs['pk'])
     instance.delete()
     query_str = '?' + str(args[0]).split('?')[1].split('\'')[0] if len(str(args[0]).split('?')) > 1 else ''
-    return redirect(reverse_lazy('rebs:project:site') + query_str)
+    return redirect(reverse_lazy('ibs:project:site') + query_str)
 
 
 class SiteOwnerManage(LoginRequiredMixin, ListView, FormView):
@@ -450,7 +450,7 @@ class SiteOwnerManage(LoginRequiredMixin, ListView, FormView):
                 query_str += 'page=' + self.request.GET.get('page') + '&' if self.request.GET.get('page') else ''
             if self.request.GET.get('project'):
                 query_str += 'project=' + self.request.GET.get('project')
-            return redirect(reverse_lazy('rebs:project:site-owner') + query_str)
+            return redirect(reverse_lazy('ibs:project:site-owner') + query_str)
         return render(request, 'project/site_owner_manage.html', {'form': form})
 
 
@@ -468,14 +468,14 @@ def site_relationship_update(request):
         query_str += 'page=' + request.GET.get('page') + '&'
     if request.GET.get('project'):
         query_str += 'project=' + request.GET.get('project')
-    return redirect(reverse_lazy('rebs:project:site-owner') + query_str)
+    return redirect(reverse_lazy('ibs:project:site-owner') + query_str)
 
 
 def site_relationship_delete(*args, **kwargs):
     instance = SiteOwnshipRelationship.objects.get(pk=kwargs['pk'])
     instance.delete()
     query_str = '?' + str(args[0]).split('?')[1].split('\'')[0] if len(str(args[0]).split('?')) > 1 else ''
-    return redirect(reverse_lazy('rebs:project:site-owner') + query_str)
+    return redirect(reverse_lazy('ibs:project:site-owner') + query_str)
 
 
 class SiteContractManage(LoginRequiredMixin, ListView, FormView):
@@ -564,7 +564,7 @@ class SiteContractManage(LoginRequiredMixin, ListView, FormView):
                 query_str += 'page=' + self.request.GET.get('page') + '&' if self.request.GET.get('page') else ''
             if self.request.GET.get('project'):
                 query_str += 'project=' + self.request.GET.get('project')
-            return redirect(reverse_lazy('rebs:project:site-contract') + query_str)
+            return redirect(reverse_lazy('ibs:project:site-contract') + query_str)
         return render(request, 'project/site_contract_manage.html', {'form': form})
 
 
@@ -572,4 +572,4 @@ def site_contract_delete(*args, **kwargs):
     instance = SiteContract.objects.get(pk=kwargs['pk'])
     instance.delete()
     query_str = '?' + str(args[0]).split('?')[1].split('\'')[0] if len(str(args[0]).split('?')) > 1 else ''
-    return redirect(reverse_lazy('rebs:project:site-contract') + query_str)
+    return redirect(reverse_lazy('ibs:project:site-contract') + query_str)

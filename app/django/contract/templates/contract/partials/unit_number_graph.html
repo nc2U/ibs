@@ -2,7 +2,7 @@
 <div class="mr-3 ml-3">
 
     {% if not types %}
-        {% include 'rebs/partials/no_data.html' %}
+        {% include 'ibs/partials/no_data.html' %}
     {% else %}
         {% for dong in dong_list %} {# 동 수만큼 반복 #}
             <div style="float: left;" class="m-1">
@@ -43,7 +43,7 @@
                                         <div style="width:{{ w }}px; height:{{ h }}px; text-align:center; font-size:{{ f }}px;"
                                              data-toggle="tooltip" title=""
                                              class="border {% if unit.key_unit.contract.contractor.status == '1' %}bg-success-lighten{% endif %} {% if unit.key_unit.contract.contractor.status == '2' %}bg-primary-lighten{% endif %}">
-                                            <a href="{% url 'rebs:contract:register' %}?project={{ this_project.id }}&task={{ unit.key_unit.contract.contractor.status }}&order_group={{ unit.key_unit.contract.order_group.id }}&type={{ unit.key_unit.unit_type.id }}&key_unit={{ unit.key_unit.id }}&unit_number={{ unit.key_unit.houseunit.id }}&cont_id={{ unit.key_unit.contract.id }}">
+                                            <a href="{% url 'ibs:contract:register' %}?project={{ this_project.id }}&task={{ unit.key_unit.contract.contractor.status }}&order_group={{ unit.key_unit.contract.order_group.id }}&type={{ unit.key_unit.unit_type.id }}&key_unit={{ unit.key_unit.id }}&unit_number={{ unit.key_unit.houseunit.id }}&cont_id={{ unit.key_unit.contract.id }}">
                                                 {{ unit.key_unit.contract.contractor.name }}
                                             </a>
                                         </div>

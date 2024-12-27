@@ -1,8 +1,8 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
 {% load static widget_tweaks humanize %}
 
-{% block title %}Rebs - 고객 고지 관리{% endblock %}
+{% block title %}IBS - 고객 고지 관리{% endblock %}
 
 {% block content %}
 
@@ -10,7 +10,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="고객 고지 관리" title="수납 고지서 발행" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="고객 고지 관리" title="수납 고지서 발행" %}
         <!-- end page title -->
 
         <div class="row">
@@ -24,7 +24,7 @@
 
                         <form class="form-horizontal p-0 col-12" name="form1" method="get">
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                         </form>

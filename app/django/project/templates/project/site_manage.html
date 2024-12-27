@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Project{% endblock %}
+{% block title %}IBS - Project{% endblock %}
 
 {% block content %}
     {% load humanize mathfilters widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="신규 프로젝트" title="토지 정보 관리" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="신규 프로젝트" title="토지 정보 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -23,7 +23,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                         </div>
@@ -86,7 +86,7 @@
                                             {% if request.user.is_superuser or request.user.staffauth.project > '1' %}
                                                 <div class="col-6 col-lg-1 text-center m-auto">
                                                     {% if request.GET.site %}<a href="
-                                                            {% url 'rebs:project:site' %}{% if request.GET.page %}?page={{ request.GET.page }}{% endif %}">Reset</a>{% endif %}
+                                                            {% url 'ibs:project:site' %}{% if request.GET.page %}?page={{ request.GET.page }}{% endif %}">Reset</a>{% endif %}
                                                 </div>
                                             {% endif %}
                                             <div class="col-6 col-lg-{% if request.user.is_superuser or request.user.staffauth.project > '1' %}1{% else %}2{% endif %} text-right m-auto">
@@ -156,7 +156,7 @@
                                             <td class="text-center">{{ object.order }}</td>
                                             <td class="text-center">{{ object.district }}</td>
                                             <td class="pl-3"><a
-                                                    href="{% url 'rebs:project:site' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}site={{ object.id }}">{{ object.lot_number }}</a>
+                                                    href="{% url 'ibs:project:site' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}site={{ object.id }}">{{ object.lot_number }}</a>
                                             </td>
                                             <td class="text-center">{{ object.site_purpose }}</td>
                                             <td class="text-right">{{ object.official_area|floatformat:2|intcomma|default:"-" }}</td>
@@ -171,7 +171,7 @@
                                                 {% endfor %}
                                             </td>
                                             <td class="text-center bg-dragula">
-                                                <a href="{% url 'rebs:project:site' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}site={{ object.id }}"
+                                                <a href="{% url 'ibs:project:site' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}site={{ object.id }}"
                                                    class="action-icon">
                                                     <i class="mdi mdi-pencil"></i></a>
                                                 <a href="javascript: site_del('{{ object }}', '{{ object.id }}');"
@@ -208,7 +208,7 @@
       }
 
       function site_del(obj, id) {
-        del_url = "/rebs/project/site-del/" + id + '?'
+        del_url = "/ibs/project/site-del/" + id + '?'
         {% if request.GET.page %}
           del_url += 'page={{ request.GET.page }}'
         {% endif %}

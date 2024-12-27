@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Project{% endblock %}
+{% block title %}IBS - Project{% endblock %}
 
 {% block content %}
     {% load widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="신규 프로젝트" title="프로젝트 관리" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="신규 프로젝트" title="프로젝트 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -35,7 +35,7 @@
                                                 <li class="text-danger font-18">"{{ object }}"</li>
                                             </ul>
                                             <div class="col-12 mb-5">
-                                                <input type="button" class="btn btn-light" onclick="location.href='{% url 'rebs:project:index' %}'"
+                                                <input type="button" class="btn btn-light" onclick="location.href='{% url 'ibs:project:index' %}'"
                                                        value="취소">
                                                 <input type="submit" class="btn btn-danger" value="삭제">
                                             </div>

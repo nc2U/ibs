@@ -254,6 +254,6 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
                                                 user=request.user)
                 bill_issue.save()
                 page = '?page=' + self.request.GET.get('page') if self.request.GET.get('page') else ''
-                return redirect(reverse_lazy('rebs:notice:bill') + page)
+                return redirect(reverse_lazy('ibs:notice:bill') + page)
 
         return render(request, 'notice/contractor_bill_publish.html', {'form': form})

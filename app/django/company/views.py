@@ -39,7 +39,7 @@ class CompanyRegisterView(LoginRequiredMixin, ListView, FormView):
             instance = form.save(commit=False)  # 클래스에 정의된 save() 메소드 호출
             instance.user = request.user
             instance.save()
-            return redirect(reverse_lazy('rebs:company:index'))
+            return redirect(reverse_lazy('ibs:company:index'))
         return render(request, 'company/company_list.html', {'form': form})
 
 
@@ -52,7 +52,7 @@ class CompanyCV(LoginRequiredMixin, CreateView):
         'es_date', 'op_date',
         'zipcode', 'address1', 'address2', 'address3'
     ]
-    success_url = reverse_lazy('rebs:company:index')
+    success_url = reverse_lazy('ibs:company:index')
 
     def form_valid(self, form):
         form.instance.user = self.request.user

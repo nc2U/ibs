@@ -1,0 +1,26 @@
+{% if request.user.is_superuser or request.user.staffauth.project_cash > '0' %}
+    <li class="side-nav-item">
+        <a href="javascript: void(0);" class="side-nav-link">
+            <i class="uil-money-withdrawal"></i>
+            <span> 현장 자금 관리 </span>
+            <span class="menu-arrow"></span>
+        </a>
+        <ul class="side-nav-second-level" aria-expanded="false">
+            <li>
+                <a href="{% url 'ibs:cash-inout:project-report' %}">현장별 자금 현황
+                    <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'ibs:cash-inout:project-index' %}">현장 입출금 내역
+                    <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'ibs:cash-inout:project-create' %}">입출금 내역 등록
+                    <span class="badge badge-pill badge-success-lighten font-10 float-right">Ok</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+{% endif %}

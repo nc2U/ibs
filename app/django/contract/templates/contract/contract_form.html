@@ -1,8 +1,8 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
 {% load static humanize widget_tweaks %}
 
-{% block title %}Rebs - {% if request.GET.cont_id %}등록 계약 수정{% else %}신규 계약 등록{% endif %}{% endblock %}
+{% block title %}IBS - {% if request.GET.cont_id %}등록 계약 수정{% else %}신규 계약 등록{% endif %}{% endblock %}
 
 {% block content %}
 
@@ -10,7 +10,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="공급 계약 관리" third_bs="계약 정보 관리" title="계약 등록 수정" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="공급 계약 관리" third_bs="계약 정보 관리" title="계약 등록 수정" %}
         <!-- end page title -->
 
         <div class="row">
@@ -24,7 +24,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                         </div>
@@ -44,7 +44,7 @@
                                             <button type="button" class="btn btn-light" onclick="alert('준비중!')">주소(연락처) 변경</button>
                                             <button type="button" class="btn btn-light" onclick="alert('준비중!')">권리 의무 승계</button>
                                             <button type="button" class="btn btn-light"
-                                                    onclick="location.href='{% url 'rebs:contract:release' %}?project={{ this_project.id }}&task={{ task }}&contractor={{ contractor.id }}{% if contractor.contractorrelease %}&release_id={{ contractor.contractorrelease.id }}{% endif %}'">
+                                                    onclick="location.href='{% url 'ibs:contract:release' %}?project={{ this_project.id }}&task={{ task }}&contractor={{ contractor.id }}{% if contractor.contractorrelease %}&release_id={{ contractor.contractorrelease.id }}{% endif %}'">
                                                 계약 해지 관리
                                             </button>
                                         </div>

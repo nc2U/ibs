@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Project{% endblock %}
+{% block title %}IBS - Project{% endblock %}
 
 {% block content %}
     {% load humanize %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="신규 프로젝트" title="프로젝트 관리" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="신규 프로젝트" title="프로젝트 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -49,7 +49,7 @@
                                     {% for object in object_list %}
                                         <tr>
                                             <td class="text-center"><a
-                                                    href="{% url 'rebs:project:update' object.pk %}">{{ object }}</a>
+                                                    href="{% url 'ibs:project:update' object.pk %}">{{ object }}</a>
                                             </td>
                                             <td class="text-center">{{ object.get_kind_display }}</td>
                                             <td class="text-right">
@@ -74,7 +74,7 @@
 
                             <div class="row col-12 mt-4">
                                 <div class="col-12 text-right">
-                                    <a href="{% url 'rebs:project:create' %}">
+                                    <a href="{% url 'ibs:project:create' %}">
                                         <button type="button" class="btn btn-primary">등록하기</button>
                                     </a>
                                 </div>

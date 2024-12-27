@@ -1,30 +1,35 @@
 <ul class="nav nav-tabs mb-5">
     <li class="nav-item">
-        <a href="{% url 'rebs:notice:bill' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}" class="nav-link {% if menu_order == '1' %}active{% endif %}">
+        <a href="{% url 'ibs:notice:bill' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+           class="nav-link {% if menu_order == '1' %}active{% endif %}">
             <i class="mdi mdi-deskphone d-md-none d-block"></i>
             <span class="d-none d-md-block">수납 고지서 발행</span>
         </a>
     </li>
     <li class="nav-item">
-        <a href="javascript:alert('준비중입니다!'){% if request.GET.project %}?project={{ request.GET.project }}{% endif %}" class="nav-link {% if menu_order == '2' %}active{% endif %}">
+        <a href="javascript:alert('준비중입니다!'){% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+           class="nav-link {% if menu_order == '2' %}active{% endif %}">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
             <span class="d-none d-md-block">SMS 발송 관리</span>
         </a>
     </li>
     <li class="nav-item">
-        <a href="javascript:alert('준비중입니다!'){% if request.GET.project %}?project={{ request.GET.project }}{% endif %}" class="nav-link {% if menu_order == '3' %}active{% endif %}">
+        <a href="javascript:alert('준비중입니다!'){% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+           class="nav-link {% if menu_order == '3' %}active{% endif %}">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
             <span class="d-none d-md-block">MAIL 발송 관리</span>
         </a>
     </li>
     <li class="nav-item">
-        <a href="javascript:alert('준비중입니다!'){% if request.GET.project %}?project={{ request.GET.project }}{% endif %}" class="nav-link {% if menu_order == '4' %}active{% endif %}">
+        <a href="javascript:alert('준비중입니다!'){% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+           class="nav-link {% if menu_order == '4' %}active{% endif %}">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
             <span class="d-none d-md-block">우편 라벨 관리</span>
         </a>
     </li>
     <li class="nav-item">
-        <a href="javascript:alert('준비중입니다!'){% if request.GET.project %}?project={{ request.GET.project }}{% endif %}" class="nav-link">
+        <a href="javascript:alert('준비중입니다!'){% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+           class="nav-link">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
             <span class="d-none d-md-block">발송 기록 관리</span>
         </a>

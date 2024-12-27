@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Company List{% endblock %}
+{% block title %}IBS - Company List{% endblock %}
 
 {% block content %}
     {% load static humanize widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="환경 설정" title="회사 정보" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="환경 설정" title="회사 정보" %}
         <!-- end page title -->
 
         <div class="row">
@@ -151,7 +151,7 @@
                                 <div class="row">
                                     <div class="form-group mb-0 justify-content-end row">
                                         <div class="col-12">
-                                            <button type="button" class="btn btn-light" onclick="location.href='{% url 'rebs:company:index' %}'">취소하기</button>&nbsp;
+                                            <button type="button" class="btn btn-light" onclick="location.href='{% url 'ibs:company:index' %}'">취소하기</button>&nbsp;
                                             <button type="submit" class="btn btn-success">수정하기</button>
                                         </div>
                                     </div>
@@ -263,7 +263,7 @@
                                         <div class="col-12">
                                             {% if request.user.is_superuser or request.user.staffauth.company_cash > '1' %}
                                                 <button class="btn btn-success"
-                                                    onclick=location.href="{% url 'rebs:company:index' %}?id={{ company.id }}">
+                                                    onclick=location.href="{% url 'ibs:company:index' %}?id={{ company.id }}">
                                                     수정하기
                                                 </button>
                                             {% else %}
@@ -300,7 +300,7 @@
                                     <div class="form-group mb-0 justify-content-end row">
                                         <div class="col-12">
                                             <button class="btn btn-outline-primary"
-                                                    onclick=location.href="{% url 'rebs:company:create' %}">
+                                                    onclick=location.href="{% url 'ibs:company:create' %}">
                                                 신규등록
                                             </button>
                                         </div>

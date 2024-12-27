@@ -11,7 +11,7 @@
 <body>
 <div class="float-center p-5 col-xl-10">
     <div class="my-5">
-        <h2 class="pb-3">Rebs 시스템 설정 :: Step3 - 프로젝트 생성</h2>
+        <h2 class="pb-3">IBS 시스템 설정 :: Step3 - 프로젝트 생성</h2>
     </div>
     <form class="row g-3 needs-validation" method="POST" novalidate>
         {% csrf_token %}
@@ -89,30 +89,30 @@
     </form>
 
     <script>
-        function pass_create_project() {
-            if (confirm('사이트에서 필요 시 프로젝트를 생성할 수 있습니다. 프로젝트 생성을 건너뛰시겠습니까?')) {
-                location.replace('{% url 'install:pass_create_project' %}')
-            }
+      function pass_create_project() {
+        if (confirm('사이트에서 필요 시 프로젝트를 생성할 수 있습니다. 프로젝트 생성을 건너뛰시겠습니까?')) {
+          location.replace('{% url 'install:pass_create_project' %}')
         }
-        
-        (() => {
-            'use strict'
+      }
 
-            // Fetch all the forms we want to apply custom Bootstrap validation styles to
-            const forms = document.querySelectorAll('.needs-validation')
+      (() => {
+        'use strict'
 
-            // Loop over them and prevent submission
-            Array.from(forms).forEach(form => {
-                form.addEventListener('submit', event => {
-                    if (!form.checkValidity()) {
-                        event.preventDefault()
-                        event.stopPropagation()
-                    }
+        // Fetch all the forms we want to apply custom Bootstrap validation styles to
+        const forms = document.querySelectorAll('.needs-validation')
 
-                    form.classList.add('was-validated')
-                }, false)
-            })
-        })()
+        // Loop over them and prevent submission
+        Array.from(forms).forEach(form => {
+          form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+
+            form.classList.add('was-validated')
+          }, false)
+        })
+      })()
     </script>
 </div>
 </body>

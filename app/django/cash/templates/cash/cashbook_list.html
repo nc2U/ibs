@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - 입출금 내역 조회{% endblock %}
+{% block title %}IBS - 입출금 내역 조회{% endblock %}
 
 {% block content %}
     {% load static humanize widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="본사 자금 관리" title="입출금 내역 조회" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="본사 자금 관리" title="입출금 내역 조회" %}
         <!-- end page title -->
 
         <div class="row">
@@ -120,10 +120,10 @@
                                             <td class="text-right bg-info-lighten">{{ inout.outlay|floatformat:"0"|intcomma|default:"-" }}</td>
                                             <td class="text-center">{{ inout.get_evidence_display }}</td>
                                             <td class="text-center">
-                                                {# <a href="javascript:auth_chk({% if request.user.staffauth.company_cash == '2' and inout.deal_date >= auth_date or request.user.is_superuser %}1{% else %}0{% endif %}, '{% url 'rebs:cash-inout:update' inout.pk %}', '')"#}
+                                                {# <a href="javascript:auth_chk({% if request.user.staffauth.company_cash == '2' and inout.deal_date >= auth_date or request.user.is_superuser %}1{% else %}0{% endif %}, '{% url 'ibs:cash-inout:update' inout.pk %}', '')"#}
                                                 <a href="javascript:alert('준비중입니다!')"
                                                    class="action-icon"><i class="mdi mdi-pencil"></i></a>
-                                                <a href="javascript:auth_chk({% if request.user.staffauth.company_cash == '2' and inout.deal_date >= auth_date or request.user.is_superuser %}1{% else %}0{% endif %}, '{% url 'rebs:cash-inout:delete' inout.pk %}', 'del')"
+                                                <a href="javascript:auth_chk({% if request.user.staffauth.company_cash == '2' and inout.deal_date >= auth_date or request.user.is_superuser %}1{% else %}0{% endif %}, '{% url 'ibs:cash-inout:delete' inout.pk %}', 'del')"
                                                    class="action-icon"><i class="mdi mdi-delete"></i></a>
                                             </td>
                                         </tr>

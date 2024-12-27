@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Project{% endblock %}
+{% block title %}IBS - Project{% endblock %}
 
 {% block content %}
     {% load static humanize mathfilters widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="신규 프로젝트" title="토지 정보 관리" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="신규 프로젝트" title="토지 정보 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -23,7 +23,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                         </div>
@@ -101,7 +101,7 @@
 
 
 
-                                                            {% url 'rebs:project:site-owner' %}{% if request.GET.page %}?page={{ request.GET.page }}{% endif %}">Reset</a>{% endif %}
+                                                            {% url 'ibs:project:site-owner' %}{% if request.GET.page %}?page={{ request.GET.page }}{% endif %}">Reset</a>{% endif %}
                                                 </div>
                                             {% endif %}
                                             <div class="col-6 col-lg-{% if request.user.is_superuser or request.user.staffauth.project > '1' %}1{% else %}2{% endif %} text-right m-auto">
@@ -185,7 +185,7 @@
                                                         <td class="text-center"
                                                             rowspan="{{ num }}">{{ object.get_own_sort_display }}</td>
                                                         <td class="text-center" rowspan="{{ num }}">
-                                                            <a href="{% url 'rebs:project:site-owner' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}id={{ object.id }}">{{ object }}</a>
+                                                            <a href="{% url 'ibs:project:site-owner' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}id={{ object.id }}">{{ object }}</a>
                                                         </td>
                                                         <td class="text-center"
                                                             rowspan="{{ num }}">{{ object.date_of_birth|date:"Y-m-d"|default:"-" }}</td>
@@ -263,7 +263,7 @@
         const date = document.getElementById('id_date_' + id).value
 
         if (confirm('해당 소유권 관련 정보를 업데이트 하시겠습니까??')) {
-          let base_url = "{% url 'rebs:project:site-relation' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}"
+          let base_url = "{% url 'ibs:project:site-relation' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}"
           var get_query = 'pk=' + id + '&ratio=' + ratio + '&area=' + area + '&date=' + date
           location.href = base_url + get_query
         } else {
@@ -272,7 +272,7 @@
       }
 
       function relationshipDelete(id) {
-        del_url = "/rebs/project/site-relation-delete/" + id + '?'
+        del_url = "/ibs/project/site-relation-delete/" + id + '?'
         {% if request.GET.page %}
           del_url += 'page={{ request.GET.page }}'
         {% endif %}

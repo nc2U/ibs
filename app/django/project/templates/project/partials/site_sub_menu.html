@@ -1,8 +1,17 @@
 <div class="btn-group mb-2">
     <button type="button" class="btn btn-{% if sub_menu_order == '1' %}primary{% else %}light{% endif %}"
-            {% if sub_menu_order != '1' %}onclick="location.href='{% url 'rebs:project:site' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>지번 별 토지관리</button>
+            {% if sub_menu_order != '1' %}onclick="location.href='
+                    {% url 'ibs:project:site' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
+        지번 별 토지관리
+    </button>
     <button type="button" class="btn btn-{% if sub_menu_order == '2' %}primary{% else %}light{% endif %}"
-            {% if sub_menu_order != '2' %}onclick="location.href='{% url 'rebs:project:site-owner' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>소유자별 토지관리</button>
+            {% if sub_menu_order != '2' %}onclick="location.href='
+                    {% url 'ibs:project:site-owner' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
+        소유자별 토지관리
+    </button>
     <button type="button" class="btn btn-{% if sub_menu_order == '3' %}primary{% else %}light{% endif %}"
-            {% if sub_menu_order != '3' %}onclick="location.href='{% url 'rebs:project:site-contract' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>사업부지 매입관리</button>
+            {% if sub_menu_order != '3' %}onclick="location.href='
+                    {% url 'ibs:project:site-contract' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
+        사업부지 매입관리
+    </button>
 </div>

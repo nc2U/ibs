@@ -42,7 +42,7 @@
                     data-placement="right" title=""
                     data-original-title="{{ object.note }}"
                         {% endif %}>
-                    <a href="{% url 'rebs:contract:release' %}?project={{ this_project.id }}&task={{ object.status }}&contractor={{ object.contractor.id }}&release_id={{ object.id }}">
+                    <a href="{% url 'ibs:contract:release' %}?project={{ this_project.id }}&task={{ object.status }}&contractor={{ object.contractor.id }}&release_id={{ object.id }}">
                         {{ object.contractor|truncatechars:"26" }}
                     </a>
                 </td>

@@ -21,7 +21,7 @@
                     <td class="text-center">{{ pay.deal_date|date:"Y-m-d"|default:"-" }}</td>
                     <td class="text-center">{{ pay.installment_order|default:"-" }}</td>
                     <td class="text-right">
-                        <a href="{% url 'rebs:cash-inout:payment-register' %}?project={{ this_project.id }}&type={{ request.GET.type }}&contract={{ request.GET.contract }}&payment_id={{ pay.id }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+                        <a href="{% url 'ibs:cash-inout:payment-register' %}?project={{ this_project.id }}&type={{ request.GET.type }}&contract={{ request.GET.contract }}&payment_id={{ pay.id }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
                            class="{% if pay.project_account_d3.id >= 62 %}text-danger{% endif %}">
                             {{ pay.income|default:"-"|intcomma }}
                         </a>
@@ -147,7 +147,7 @@
                         뒤로가기
                     </button>
                     <button type="button" class="btn btn-danger"
-                            onclick="location.href='{% url 'rebs:cash-inout:payment-delete' request.GET.payment_id %}?project={{ request.GET.project }}&type={{ request.GET.type }}&contract={{ request.GET.contract }}&payment_id={{ request.GET.payment_id }}'">
+                            onclick="location.href='{% url 'ibs:cash-inout:payment-delete' request.GET.payment_id %}?project={{ request.GET.project }}&type={{ request.GET.type }}&contract={{ request.GET.contract }}&payment_id={{ request.GET.payment_id }}'">
                         삭제확인
                     </button>
                 {% else %}

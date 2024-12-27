@@ -1,4 +1,4 @@
-[![CodeQL](https://github.com/austin-kho/Rebs/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/austin-kho/Rebs/actions/workflows/codeql-analysis.yml)
+[![CodeQL](https://github.com/austin-kho/ibs/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/austin-kho/ibs/actions/workflows/codeql-analysis.yml)
 
 # Django 5.0 + Vue3 + Svelte using Nginx + MariaDB (deploy as Docker or Kubernetes)
 
@@ -15,8 +15,8 @@
 #### 1. Clone this Repository
 
 ```bash
-git clone https://github.com/nc2U/rebs
-cd rebs
+git clone https://github.com/nc2U/ibs
+cd ibs
 ```
 
 #### 2. Copy docker-compose.yml

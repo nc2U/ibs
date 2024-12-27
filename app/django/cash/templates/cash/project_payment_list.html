@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - 전체 납부 내역{% endblock %}
+{% block title %}IBS - 전체 납부 내역{% endblock %}
 
 {% load static %}
 
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="분양 수납 관리" title="전체 납부 내역" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="분양 수납 관리" title="전체 납부 내역" %}
         <!-- end page title -->
 
         <div class="row">
@@ -23,7 +23,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                             <div class="row">

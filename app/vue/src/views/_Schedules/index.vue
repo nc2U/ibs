@@ -181,7 +181,7 @@ onBeforeMount(() => {
           <CCardHeader class="text-body">
             <CIcon name="cil-calendar" class="mr-2" />
             <h6 class="d-inline">Calendar</h6>
-            <CBadge color="primary" class="ml-2">Rebs</CBadge>
+            <CBadge color="primary" class="ml-2">IBS</CBadge>
           </CCardHeader>
           <CCardBody>
             <div class="demo-app text-body">

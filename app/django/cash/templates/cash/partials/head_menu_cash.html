@@ -1,6 +1,6 @@
 <ul class="nav nav-tabs mb-5">
     <li class="nav-item">
-        <a href="{% url 'rebs:cash-inout:report' %}"
+        <a href="{% url 'ibs:cash-inout:report' %}"
            aria-expanded="{% if menu_order == '1' %}true{% else %}false{% endif %}"
            class="nav-link  {% if menu_order == '1' %}active{% endif %}">
             <i class="mdi mdi-deskphone d-md-none d-block"></i>
@@ -8,7 +8,7 @@
         </a>
     </li>
     <li class="nav-item">
-        <a href="{% url 'rebs:cash-inout:index' %}"
+        <a href="{% url 'ibs:cash-inout:index' %}"
            aria-expanded="{% if menu_order == '2' %}true{% else %}false{% endif %}"
            class="nav-link  {% if menu_order == '2' %}active{% endif %}">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
@@ -16,7 +16,7 @@
         </a>
     </li>
     <li class="nav-item">
-        <a href="{% url 'rebs:cash-inout:create' %}"
+        <a href="{% url 'ibs:cash-inout:create' %}"
            aria-expanded="{% if menu_order == '3' %}true{% else %}false{% endif %}"
            class="nav-link  {% if menu_order == '3' %}active{% endif %}">
             <i class="mdi mdi-pencil-box-multiple-outline d-md-none d-block"></i>

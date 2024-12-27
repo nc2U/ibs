@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - 자금 입출금 내역{% endblock %}
+{% block title %}IBS - 자금 입출금 내역{% endblock %}
 
 {% block content %}
     {% load static humanize widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="현장 자금 관리" title="현장 입출금 내역" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="현장 자금 관리" title="현장 입출금 내역" %}
         <!-- end page title -->
 
         <div class="row">
@@ -23,7 +23,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
 
@@ -132,10 +132,10 @@
                                                 <td class="text-right bg-info-lighten">{{ inout.outlay|floatformat:"0"|intcomma|default:"-" }}</td>
                                                 <td class="text-center">{{ inout.get_evidence_display }}</td>
                                                 <td class="text-center">
-                                                    {# <a href="javascript:auth_chk({% if request.user.staffauth.project_cash == '2' and inout.deal_date >= auth_date or request.user.is_superuser %}1{% else %}0{% endif %}, '{% url 'rebs:cash-inout:project-update' inout.pk %}', '')"#}
+                                                    {# <a href="javascript:auth_chk({% if request.user.staffauth.project_cash == '2' and inout.deal_date >= auth_date or request.user.is_superuser %}1{% else %}0{% endif %}, '{% url 'ibs:cash-inout:project-update' inout.pk %}', '')"#}
                                                     <a href="javascript:alert('준비중입니다!')"
                                                        class="action-icon"><i class="mdi mdi-pencil"></i></a>
-                                                    <a href="javascript:auth_chk({% if request.user.staffauth.project_cash == '2' and inout.deal_date >= auth_date or request.user.is_superuser %}1{% else %}0{% endif %}, '{% url 'rebs:cash-inout:project-delete' inout.pk %}', 'del')"
+                                                    <a href="javascript:auth_chk({% if request.user.staffauth.project_cash == '2' and inout.deal_date >= auth_date or request.user.is_superuser %}1{% else %}0{% endif %}, '{% url 'ibs:cash-inout:project-delete' inout.pk %}', 'del')"
                                                        class="action-icon"><i class="mdi mdi-delete"></i></a>
                                                 </td>
                                             </tr>

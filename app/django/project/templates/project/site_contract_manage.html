@@ -1,6 +1,6 @@
-{% extends 'rebs/layouts/base.html' %}
+{% extends 'ibs/layouts/base.html' %}
 
-{% block title %}Rebs - Project{% endblock %}
+{% block title %}IBS - Project{% endblock %}
 
 {% block content %}
     {% load humanize mathfilters widget_tweaks %}
@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'rebs/partials/content_title.html' with  second_bs="신규 프로젝트" title="토지 정보 관리" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="신규 프로젝트" title="토지 정보 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -23,7 +23,7 @@
                             {% endwith %}
 
                             <div class="row">
-                                {% include 'rebs/partials/project_select.html' %}
+                                {% include 'ibs/partials/project_select.html' %}
                                 <div class="col-sm-12 col-md-6"></div>
                             </div>
                         </div>
@@ -161,7 +161,7 @@
                                             {% if request.user.is_superuser or request.user.staffauth.project > '1' %}
                                                 <div class="col-6 col-xl-1 text-right m-auto">
                                                     {% if request.GET.id %}
-                                                        <a class="btn btn-light" href="{% url 'rebs:project:site-contract' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}{% endif %}">변경취소</a>
+                                                        <a class="btn btn-light" href="{% url 'ibs:project:site-contract' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}{% endif %}">변경취소</a>
                                                     {% endif %}
                                                 </div>
                                             {% endif %}
@@ -229,7 +229,7 @@
                                         <tr>
                                             <td class="text-center">{{ object.pk }}</td>
                                             <td class="text-center">
-                                                <a href="{% url 'rebs:project:site-contract' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}id={{ object.id }}">{{ object.owner }}</a>
+                                                <a href="{% url 'ibs:project:site-contract' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}id={{ object.id }}">{{ object.owner }}</a>
                                             </td>
                                             <td class="text-center">{{ object.contract_date|date:"Y-m-d" }}</td>
                                             <td class="text-right">
@@ -250,7 +250,7 @@
                                                 {% if object.remain_pay_is_paid %}완료{% else %}-{% endif %}
                                             </td>
                                             <td class="text-center bg-dragula">
-                                                <a href="{% url 'rebs:project:site-contract' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}id={{ object.id }}"
+                                                <a href="{% url 'ibs:project:site-contract' %}?{% if request.GET.page %}page={{ request.GET.page }}&{% endif %}{% if request.GET.project %}project={{ request.GET.project }}&{% endif %}id={{ object.id }}"
                                                    class="action-icon">
                                                     <i class="mdi mdi-pencil"></i></a>
                                                 <a href="javascript: site_cont_del('{{ object }}', '{{ object.id }}');"
@@ -287,7 +287,7 @@
       }
 
       function site_cont_del(obj, id) {
-        del_url = "/rebs/project/site-contract-delete/" + id + '?'
+        del_url = "/ibs/project/site-contract-delete/" + id + '?'
         {% if request.GET.page %}
           del_url += 'page={{ request.GET.page }}'
         {% endif %}

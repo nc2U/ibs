@@ -2,27 +2,33 @@
 <div class="btn-group mb-2">
     <button type="button" class="btn btn-{% if sub_menu_order == '1' %}primary{% else %}light{% endif %}"
             {% if sub_menu_order != '1' %}
-            onclick="location.href='{% url 'rebs:project:set-ordergroup' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"
+            onclick="location.href='
+                    {% url 'ibs:project:set-ordergroup' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"
             {% endif %}>차수 분류 등록
     </button>
     <button type="button" class="btn btn-{% if sub_menu_order == '2' %}primary{% else %}light{% endif %}"
-            {% if sub_menu_order != '2' %}onclick="location.href='{% url 'rebs:project:set-unit-type' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
+            {% if sub_menu_order != '2' %}onclick="location.href='
+                    {% url 'ibs:project:set-unit-type' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
         타입 정보 등록
     </button>
     <button type="button" class="btn btn-{% if sub_menu_order == '3' %}primary{% else %}light{% endif %}"
-            {% if sub_menu_order != '3' %}onclick="location.href='{% url 'rebs:project:set-floor-type' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
+            {% if sub_menu_order != '3' %}onclick="location.href='
+                    {% url 'ibs:project:set-floor-type' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
         층별 조건 등록
     </button>
     <button type="button" class="btn btn-{% if sub_menu_order == '4' %}primary{% else %}light{% endif %}"
-            {% if sub_menu_order != '4' %}onclick="location.href='{% url 'rebs:project:set-sales-price' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
+            {% if sub_menu_order != '4' %}onclick="location.href='
+                    {% url 'ibs:project:set-sales-price' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
         분양 가격 등록
     </button>
     <button type="button" class="btn btn-{% if sub_menu_order == '5' %}primary{% else %}light{% endif %}"
-            {% if sub_menu_order != '5' %}onclick="location.href='{% url 'rebs:project:set-payment-order' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
+            {% if sub_menu_order != '5' %}onclick="location.href='
+                    {% url 'ibs:project:set-payment-order' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
         납부 회차 등록
     </button>
     <button type="button" class="btn btn-{% if sub_menu_order == '6' %}primary{% else %}light{% endif %}"
-            {% if sub_menu_order != '6' %}onclick="location.href='{% url 'rebs:project:set-down-payment' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
+            {% if sub_menu_order != '6' %}onclick="location.href='
+                    {% url 'ibs:project:set-down-payment' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}'"{% endif %}>
         계약 금액 등록
     </button>
 </div>
