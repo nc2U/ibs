@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onBeforeMount } from 'vue'
 import { useStore } from '@/store'
-import { useRebs } from '@/store/pinia/rebs'
+import { useIbs } from '@/store/pinia/ibs'
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
@@ -21,12 +21,12 @@ watch(isDark, nVal => {
   defaults.value.VCard.color = nVal ? 'success' : 'light'
 })
 
-const rebsStore = useRebs()
-const wiseWord = computed(() => rebsStore.wiseWord)
-const wiseWordsCount = computed(() => rebsStore.wiseWordsCount)
+const ibsStore = useIbs()
+const wiseWord = computed(() => ibsStore.wiseWord)
+const wiseWordsCount = computed(() => ibsStore.wiseWordsCount)
 
-const fetchWiseWordsList = () => rebsStore.fetchWiseWordsList()
-const fetchWiseWord = (pk: number) => rebsStore.fetchWiseWord(pk)
+const fetchWiseWordsList = () => ibsStore.fetchWiseWordsList()
+const fetchWiseWord = (pk: number) => ibsStore.fetchWiseWord(pk)
 
 const getPk = (max: number) => Math.floor(Math.random() * (max - 1) + 1)
 

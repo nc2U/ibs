@@ -9,7 +9,7 @@ export type WiseWord = {
   spoked_by: string
 }
 
-export const useRebs = defineStore('rebs', () => {
+export const useIbs = defineStore('ibs', () => {
   // states
   const wiseWordsList = ref<WiseWord[]>([])
   const wiseWordsCount = ref<number>(0)
