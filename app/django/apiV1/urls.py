@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import accounts
 from .views import company
-from .views import rebs
+from .views import ibs
 from .views import work
 from .views import project
 from .views import items
@@ -33,15 +33,15 @@ router.register(r'grade', company.JobGradeViewSet)
 router.register(r'position', company.PositionViewSet)
 router.register(r'duty-title', company.DutyTitleViewSet)
 router.register(r'staff', company.StaffViewSet)
-# rebs
-router.register(r'schedule', rebs.CalendarScheduleViewSet)
-router.register(r'account-sort', rebs.AccountSortViewSet)  # only list
-router.register(r'account-depth1', rebs.AccountSubD1ViewSet)  # only list
-router.register(r'account-depth2', rebs.AccountSubD2ViewSet)  # only list
-router.register(r'account-depth3', rebs.AccountSubD3ViewSet)  # only list
-router.register(r'project-account-depth2', rebs.ProjectAccountD2ViewSet)  # only list
-router.register(r'project-account-depth3', rebs.ProjectAccountD3ViewSet)  # only list
-router.register(r'wise-say', rebs.WiseSayViewSet)
+# ibs
+# router.register(r'schedule', ibs.CalendarScheduleViewSet)
+router.register(r'account-sort', ibs.AccountSortViewSet)  # only list
+router.register(r'account-depth1', ibs.AccountSubD1ViewSet)  # only list
+router.register(r'account-depth2', ibs.AccountSubD2ViewSet)  # only list
+router.register(r'account-depth3', ibs.AccountSubD3ViewSet)  # only list
+router.register(r'project-account-depth2', ibs.ProjectAccountD2ViewSet)  # only list
+router.register(r'project-account-depth3', ibs.ProjectAccountD3ViewSet)  # only list
+router.register(r'wise-say', ibs.WiseSayViewSet)
 # work
 router.register(r'issue-project', work.IssueProjectViewSet)
 router.register(r'role', work.RoleViewSet)
