@@ -94,16 +94,16 @@ class ProjectAccountD3(models.Model):
         verbose_name_plural = "06. 프로젝트 세부계정"
 
 
-# class CalendarSchedule(models.Model):
-#     title = models.CharField('일정 제목', max_length=100)
-#     all_day = models.BooleanField(default=True)
-#     start_date = models.DateField('시작 일자', null=True, blank=True)
-#     end_date = models.DateField('종료 일자', null=True, blank=True)
-#     start_time = models.DateTimeField('시작 시간', null=True, blank=True)
-#     end_time = models.DateTimeField('종료 시간', null=True, blank=True)
-#     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-#     created_at = models.DateTimeField('등록일', auto_now_add=True)
-#     updated_at = models.DateTimeField('수정일', auto_now=True)
+class CalendarSchedule(models.Model):
+    title = models.CharField('일정 제목', max_length=100)
+    all_day = models.BooleanField(default=True)
+    start_date = models.DateField('시작 일자', null=True, blank=True)
+    end_date = models.DateField('종료 일자', null=True, blank=True)
+    start_time = models.DateTimeField('시작 시간', null=True, blank=True)
+    end_time = models.DateTimeField('종료 시간', null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    created_at = models.DateTimeField('등록일', auto_now_add=True)
+    updated_at = models.DateTimeField('수정일', auto_now=True)
 
 
 class WiseSaying(models.Model):
