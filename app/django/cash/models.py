@@ -38,12 +38,12 @@ class CompanyBankAccount(models.Model):
 
 class CashBook(models.Model):
     company = models.ForeignKey('company.Company', on_delete=models.PROTECT, verbose_name='회사정보')
-    sort = models.ForeignKey('rebs.AccountSort', on_delete=models.PROTECT, verbose_name='구분')
-    account_d1 = models.ForeignKey('rebs.AccountSubD1', on_delete=models.SET_NULL, null=True, blank=True,
+    sort = models.ForeignKey('ibs.AccountSort', on_delete=models.PROTECT, verbose_name='구분')
+    account_d1 = models.ForeignKey('ibs.AccountSubD1', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name='계정대분류')
-    account_d2 = models.ForeignKey('rebs.AccountSubD2', on_delete=models.SET_NULL, null=True, blank=True,
+    account_d2 = models.ForeignKey('ibs.AccountSubD2', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name='계정중분류')
-    account_d3 = models.ForeignKey('rebs.AccountSubD3', on_delete=models.SET_NULL, null=True, blank=True,
+    account_d3 = models.ForeignKey('ibs.AccountSubD3', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name='세부계정')
     is_separate = models.BooleanField('상세 분리기록 등록', default=False,
                                       help_text='각기 다른 계정 항목이 1회에 같이 출금된 경우 이 항목을 체크')
@@ -99,11 +99,11 @@ class ProjectBankAccount(models.Model):
 
 class ProjectCashBook(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트')
-    sort = models.ForeignKey('rebs.AccountSort', on_delete=models.PROTECT,
+    sort = models.ForeignKey('ibs.AccountSort', on_delete=models.PROTECT,
                              verbose_name='구분')  # icp=True -> 1=수납 or 2=환불
-    project_account_d2 = models.ForeignKey('rebs.ProjectAccountD2', on_delete=models.PROTECT, null=True, blank=True,
+    project_account_d2 = models.ForeignKey('ibs.ProjectAccountD2', on_delete=models.PROTECT, null=True, blank=True,
                                            verbose_name='프로젝트 계정')
-    project_account_d3 = models.ForeignKey('rebs.ProjectAccountD3', on_delete=models.PROTECT, null=True, blank=True,
+    project_account_d3 = models.ForeignKey('ibs.ProjectAccountD3', on_delete=models.PROTECT, null=True, blank=True,
                                            verbose_name='프로젝트 세부계정')
     is_separate = models.BooleanField('상세 분리기록 등록', default=False,
                                       help_text='각기 다른 계정 항목이 1회에 같이 출금된 경우 이 항목을 체크')

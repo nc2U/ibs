@@ -13,8 +13,8 @@ from .forms import (CashSearchForm, ProjectCashSearchForm, PaymentSearchForm, Pa
 
 from .models import CompanyBankAccount, ProjectBankAccount, CashBook, ProjectCashBook
 from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment
-from rebs.models import (AccountSort, AccountSubD1, AccountSubD2, AccountSubD3,
-                         ProjectAccountD2, ProjectAccountD3)
+from ibs.models import (AccountSort, AccountSubD1, AccountSubD2, AccountSubD3,
+                        ProjectAccountD2, ProjectAccountD3)
 from company.models import Company
 from project.models import Project, ProjectOutBudget
 from items.models import UnitType, KeyUnit
@@ -160,7 +160,7 @@ class CashInoutLV(LoginRequiredMixin, ListView, FormView):
 class CashInoutCV(LoginRequiredMixin, CreateView):
     model = CashBook
     fields = ('deal_date',)
-    success_url = reverse_lazy('rebs:cash-inout:index')
+    success_url = reverse_lazy('ibs:cash-inout:index')
 
     def get_context_data(self, **kwargs):
         context = super(CashInoutCV, self).get_context_data(**kwargs)
@@ -205,7 +205,7 @@ class CashInoutUV(LoginRequiredMixin, UpdateView):
 def CashInoutDV(request, *args, **kwargs):
     cash_inout = CashBook.objects.get(pk=kwargs['pk'])
     cash_inout.delete()
-    return redirect(reverse_lazy('rebs:cash-inout:index'))
+    return redirect(reverse_lazy('ibs:cash-inout:index'))
 
 
 class ProjectCashReport(LoginRequiredMixin, TemplateView):
@@ -444,7 +444,7 @@ class ProjectCashInoutCV(SuccessMessageMixin, LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         project_query = '?project=' + self.request.POST.get('project')
-        return reverse_lazy('rebs:cash-inout:project-index') + project_query
+        return reverse_lazy('ibs:cash-inout:project-index') + project_query
 
     def get_context_data(self, **kwargs):
         context = super(ProjectCashInoutCV, self).get_context_data(**kwargs)
@@ -494,7 +494,7 @@ class ProjectCashInoutUV(SuccessMessageMixin, LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         project_query = '?project=' + self.request.POST.get('project')
-        return reverse_lazy('rebs:cash-inout:project-index') + project_query
+        return reverse_lazy('ibs:cash-inout:project-index') + project_query
 
     def get_context_data(self, **kwargs):
         context = super(ProjectCashInoutUV, self).get_context_data(**kwargs)
@@ -531,7 +531,7 @@ class ProjectCashInoutUV(SuccessMessageMixin, LoginRequiredMixin, UpdateView):
 def ProjectCashInoutDV(request, *args, **kwargs):
     cash_inout = ProjectCashBook.objects.get(pk=kwargs['pk'])
     cash_inout.delete()
-    return redirect(reverse_lazy('rebs:cash-inout:project-index'))
+    return redirect(reverse_lazy('ibs:cash-inout:project-index'))
 
 
 class SalesPaymentLV(LoginRequiredMixin, ListView, FormView):
@@ -635,7 +635,7 @@ class SalesPaymentRegister(LoginRequiredMixin, FormView):
         contract = self.request.GET.get('contract') if self.request.GET.get('contract') else ''
         q = self.request.GET.get('q') if self.request.GET.get('q') else ''
         project_query = '?project=' + project + '&type=' + type + '&contract=' + contract + '&q=' + q
-        return reverse_lazy('rebs:cash-inout:payment-register') + project_query
+        return reverse_lazy('ibs:cash-inout:payment-register') + project_query
 
     def get_form_kwargs(self):
         kwargs = super(SalesPaymentRegister, self).get_form_kwargs()
@@ -799,4 +799,4 @@ def paymentDeleteView(request, *args, **kwargs):
         'contract')
     payment = ProjectCashBook.objects.get(pk=kwargs['pk'])
     payment.delete()
-    return redirect(reverse_lazy('rebs:cash-inout:payment-register') + qs)
+    return redirect(reverse_lazy('ibs:cash-inout:payment-register') + qs)

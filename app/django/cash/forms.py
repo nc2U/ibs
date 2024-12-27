@@ -3,7 +3,7 @@ from django.forms.models import modelformset_factory
 
 from .models import CompanyBankAccount, CashBook, ProjectBankAccount, ProjectCashBook
 from payment.models import InstallmentPaymentOrder
-from rebs.models import ProjectAccountD2, ProjectAccountD3
+from ibs.models import ProjectAccountD2, ProjectAccountD3
 
 CashBookFormSet = modelformset_factory(
     CashBook,
