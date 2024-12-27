@@ -11,7 +11,7 @@ from contract.models import (OrderGroup, Contract, ContractPrice, Contractor,
 from items.models import UnitType, HouseUnit, KeyUnit
 from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment
 from project.models import Project, ProjectIncBudget
-from rebs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
+from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
 from .payment import SimpleInstallmentOrderSerializer, SimpleOrderGroupSerializer

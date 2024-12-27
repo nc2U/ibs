@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 # --------------------------------------------------------
-from rebs.models import ProjectAccountD3
+from ibs.models import ProjectAccountD3
 
 TODAY = date.today()
 

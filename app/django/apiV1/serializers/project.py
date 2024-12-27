@@ -7,7 +7,7 @@ from apiV1.serializers.accounts import SimpleUserSerializer
 from notice.models import SalesBillIssue
 from project.models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteOwner,
                             SiteOwnshipRelationship, SiteContract, SiteContractFile)
-from rebs.models import ProjectAccountD2, ProjectAccountD3
+from ibs.models import ProjectAccountD2, ProjectAccountD3
 from cash.models import ProjectCashBook
 
 

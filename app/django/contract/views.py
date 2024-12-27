@@ -13,7 +13,7 @@ from project.models import Project
 from items.models import UnitType, KeyUnit, BuildingUnit, HouseUnit
 from cash.models import ProjectBankAccount, ProjectCashBook
 from payment.models import InstallmentPaymentOrder
-from rebs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
+from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 
 from .forms import ContractRegisterForm, ContractPaymentForm, ContractorReleaseForm
 
@@ -169,7 +169,7 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
         query_str = query_str + '&sdate=' + sdate if sdate else query_str
         query_str = query_str + '&edate=' + edate if edate else query_str
         query_str = query_str + '&q=' + q if q else query_str
-        return reverse_lazy('rebs:contract:index') + query_str
+        return reverse_lazy('ibs:contract:index') + query_str
 
     def get_form(self, form_class=None):
         initial = {
@@ -554,7 +554,7 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
                 # 7. 계약 해지 정보 테이블 입력
                 form.save()
 
-                return redirect(reverse_lazy('rebs:contract:release') + '?project=' + str(self.get_project().id))
+                return redirect(reverse_lazy('ibs:contract:release') + '?project=' + str(self.get_project().id))
         else:
             return render(request, 'contract/release_form.html', {'form': form})
 

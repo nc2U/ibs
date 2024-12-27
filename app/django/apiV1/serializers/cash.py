@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from cash.models import BankCode, CompanyBankAccount, ProjectBankAccount, CashBook, ProjectCashBook, \
     CompanyCashBookCalculation, ProjectCashBookCalculation
-from rebs.models import AccountSubD1, AccountSubD2, AccountSubD3, ProjectAccountD2, ProjectAccountD3
+from ibs.models import AccountSubD1, AccountSubD2, AccountSubD3, ProjectAccountD2, ProjectAccountD3
 from .contract import SimpleUserSerializer
 
 

@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect
 from .models import User
 from company.models import Company
 from project.models import Project
-from rebs.models import ProjectAccountD3
+from ibs.models import ProjectAccountD3
 
 from .forms import UserCreationForm
 
@@ -92,7 +92,7 @@ def create_company(request):
 
 
 def load_seed_data():
-    cmd = 'python manage.py loaddata rebs/fixtures/seeds-data.json'
+    cmd = 'python manage.py loaddata ibs/fixtures/seeds-data.json'
     subprocess.call(cmd, shell=True)
 
 
