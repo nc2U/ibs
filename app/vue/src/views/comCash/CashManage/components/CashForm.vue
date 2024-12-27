@@ -599,8 +599,8 @@ onBeforeMount(() => dataSetup())
       </div>
 
       <div v-if="form.is_separate">
-        <hr v-if="cash.sepItems && cash.sepItems.length" />
-        <CRow v-if="cash.sepItems && cash.sepItems.length" class="mb-3">
+        <hr v-if="cash?.sepItems && cash.sepItems.length" />
+        <CRow v-if="cash?.sepItems && cash.sepItems.length" class="mb-3">
           <CCol>
             <strong>
               <CIcon name="cilDescription" class="mr-2" />
