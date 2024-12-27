@@ -326,6 +326,7 @@ APP_ORDER = [
     'contract',
     'cash',
     'rebs',
+    'ibs',
     'notice',
     'docs',
     'board',
