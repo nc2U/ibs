@@ -24,13 +24,13 @@ from rest_framework_simplejwt.views import (
 from django.views.generic import TemplateView, RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
-from rebs.views import CustomHandler404, install_check
+from ibs.views import CustomHandler404, install_check
 
 handler404 = CustomHandler404.as_view()
-handler500 = 'rebs.views.handler500'
+handler500 = 'ibs.views.handler500'
 
 admin.site.site_header = '관리자 페이지'  # default: "Django Administration"
-admin.site.site_title = 'Rebs 사이트 관리'  # default: "Django site admin"
+admin.site.site_title = 'IBS 사이트 관리'  # default: "Django site admin"
 
 urlpatterns = [
     path('install/', include('accounts.urls'), name='install'),
