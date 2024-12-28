@@ -455,8 +455,36 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class IssueProjectForGanttSerializer(SimpleIssueProjectSerializer):
-    pass
+class IssueProjectForGanttSerializer(serializers.ModelSerializer):
+    sub_projects = serializers.SerializerMethodField()
+    issues = serializers.SerializerMethodField()
+
+    class Meta:
+        model = IssueProject
+        fields = ('pk', 'company', 'name', 'slug', 'depth', 'sub_projects', 'issues')
+
+    def get_sub_projects(self, obj):
+        sub_projects = obj.issueproject_set.exclude(status='9')
+        request = self.context.get('request')
+
+        # Create a new serializer class without the 'my_perms' field
+        class SubProjectSerializer(self.__class__):
+            class Meta(self.__class__.Meta):
+                fields = tuple(
+                    f for f in self.__class__.Meta.fields if
+                    f not in ('company',))
+
+        return SubProjectSerializer(sub_projects, many=True, read_only=True, context=self.context).data
+
+    def get_issues(self, obj):
+        issues = obj.issue_set.filter(closed=None)
+
+        class IssuesSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = Issue
+                fields = ('pk', 'subject', 'start_date', 'due_date', 'done_ratio')
+
+        return IssuesSerializer(issues, many=True, read_only=True, context=self.context).data
 
 
 class PermissionSerializer(serializers.ModelSerializer):

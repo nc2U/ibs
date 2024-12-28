@@ -44,6 +44,7 @@ router.register(r'project-account-depth3', ibs.ProjectAccountD3ViewSet)  # only 
 router.register(r'wise-say', ibs.WiseSayViewSet)
 # work
 router.register(r'issue-project', work.IssueProjectViewSet)
+router.register(r'gantt-issues', work.IssueProjectForGanttViewSet, basename='gantt-issues')
 router.register(r'role', work.RoleViewSet)
 router.register(r'permission', work.PermissionViewSet)
 router.register(r'member', work.MemberViewSet)
