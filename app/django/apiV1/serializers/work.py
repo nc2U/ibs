@@ -456,12 +456,25 @@ class IssueProjectSerializer(serializers.ModelSerializer):
 
 
 class IssueProjectForGanttSerializer(serializers.ModelSerializer):
+    start_first = serializers.SerializerMethodField()
+    due_last = serializers.SerializerMethodField()
     sub_projects = serializers.SerializerMethodField()
     issues = serializers.SerializerMethodField()
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'company', 'name', 'slug', 'depth', 'sub_projects', 'issues')
+        fields = ('pk', 'company', 'name', 'slug', 'start_first',
+                  'due_last', 'depth', 'sub_projects', 'issues')
+
+    @staticmethod
+    def get_start_first(obj):
+        start = obj.issue_set.filter(closed=None).order_by('start_date').first()
+        return start.start_date if start else None
+
+    @staticmethod
+    def get_due_last(obj):
+        due = obj.issue_set.filter(closed=None).order_by('due_date').last()
+        return due.due_date if due else None
 
     def get_sub_projects(self, obj):
         sub_projects = obj.issueproject_set.exclude(status='9')

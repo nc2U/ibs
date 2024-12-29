@@ -131,6 +131,15 @@ export const useWork = defineStore('work', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // Gantt issues
+  const ganttIssues = ref([])
+
+  const fetchGanttIssues = async (proj = null) =>
+    api
+      .get(`/gantt-issues/?project=${proj || ''}`)
+      .then(res => (ganttIssues.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
   // Role & Permission states & getters
   const role = ref<Role | null>(null)
   const roleList = ref<Role[]>([])
@@ -740,6 +749,9 @@ export const useWork = defineStore('work', () => {
     updateIssueProject,
     patchIssueProject,
     deleteIssueProject,
+
+    ganttIssues,
+    fetchGanttIssues,
 
     role,
     roleList,

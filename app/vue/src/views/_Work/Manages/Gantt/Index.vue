@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, ref } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
+import { useWork } from '@/store/pinia/work'
 import type { Company } from '@/store/types/settings'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -15,7 +16,12 @@ const comName = computed(() => company?.value?.name)
 
 const route = useRoute()
 
+const workStore = useWork()
+const ganttIssues = computed(() => workStore.ganttIssues)
+
 const sideNavCAll = () => cBody.value.toggle()
+
+onBeforeMount(() => workStore.fetchGanttIssues())
 </script>
 
 <template>
@@ -33,7 +39,7 @@ const sideNavCAll = () => cBody.value.toggle()
 
       <CRow class="mb-3">
         <CCol>
-          <GanttChart />
+          <GanttChart :gantt-issues="ganttIssues" />
         </CCol>
       </CRow>
 
