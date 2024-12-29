@@ -52,26 +52,26 @@ const onMouseleaveBar = (bar: any) => console.log(bar)
 </script>
 
 <template>
-  <div v-for="gantt in ganttIssues" :key="gantt.pk">
-    <div v-if="gantt.depth == 0">
-      <span v-if="gantt.issues.length">
-        {{ gantt.name }}/{{ gantt.start_first }}/{{ gantt.due_last }}
-      </span>
-      <div v-for="issue in gantt.issues" :key="issue.pk">{{ issue }}</div>
-      <div v-if="gantt.sub_projects.length">
-        <div v-for="sub in gantt.sub_projects" :key="sub.pk">
-          <div v-if="sub.depth == 1" :class="`pl-${sub.depth * 3}`">
-            <span v-if="sub.issues.length">
-              {{ sub.name }}/{{ sub.start_first }}/{{ sub.due_last }}
-            </span>
-            <div v-for="issue in sub.issues" :key="issue.pk">
-              {{ issue }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!--  <div v-for="gantt in ganttIssues" :key="gantt.pk">-->
+  <!--    <div v-if="gantt.depth == 0">-->
+  <!--      <span v-if="gantt.issues.length">-->
+  <!--        {{ gantt.name }}/{{ gantt.start_first }}/{{ gantt.due_last }}-->
+  <!--      </span>-->
+  <!--      <div v-for="issue in gantt.issues" :key="issue.pk">{{ issue }}</div>-->
+  <!--      <div v-if="gantt.sub_projects.length">-->
+  <!--        <div v-for="sub in gantt.sub_projects" :key="sub.pk">-->
+  <!--          <div v-if="sub.depth == 1" :class="`pl-${sub.depth * 3}`">-->
+  <!--            <span v-if="sub.issues.length">-->
+  <!--              {{ sub.name }}/{{ sub.start_first }}/{{ sub.due_last }}-->
+  <!--            </span>-->
+  <!--            <div v-for="issue in sub.issues" :key="issue.pk">-->
+  <!--              {{ issue }}-->
+  <!--            </div>-->
+  <!--          </div>-->
+  <!--        </div>-->
+  <!--      </div>-->
+  <!--    </div>-->
+  <!--  </div>-->
   <g-gantt-chart
     :style="`border-bottom: #${isDark ? '666' : 'ddd'} 1px solid`"
     :current-time-label="getToday()"
