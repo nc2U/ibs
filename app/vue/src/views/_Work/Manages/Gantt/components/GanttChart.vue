@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { type ComputedRef, inject, ref } from 'vue'
+import { type ComputedRef, inject, type PropType, ref } from 'vue'
 import { getToday } from '@/utils/baseMixins'
+import type { GanttProject } from '@/store/types/work'
 import { GGanttChart } from '@infectoone/vue-ganttastic'
 
-defineProps({ ganttIssues: { type: Array, default: () => [] } })
+defineProps({ ganttIssues: { type: Array as PropType<GanttProject[]>, default: () => [] } })
 
 const isDark = inject<ComputedRef<boolean>>('isDark')
 
@@ -56,14 +57,14 @@ const onMouseleaveBar = (bar: any) => console.log(bar)
       <span v-if="gantt.issues.length">
         {{ gantt.name }}/{{ gantt.start_first }}/{{ gantt.due_last }}
       </span>
-      <div v-for="issue in gantt.issues" :key="issue">{{ issue }}</div>
+      <div v-for="issue in gantt.issues" :key="issue.pk">{{ issue }}</div>
       <div v-if="gantt.sub_projects.length">
         <div v-for="sub in gantt.sub_projects" :key="sub.pk">
           <div v-if="sub.depth == 1" :class="`pl-${sub.depth * 3}`">
             <span v-if="sub.issues.length">
               {{ sub.name }}/{{ sub.start_first }}/{{ sub.due_last }}
             </span>
-            <div v-for="issue in sub.issues" :key="issue">
+            <div v-for="issue in sub.issues" :key="issue.pk">
               {{ issue }}
             </div>
           </div>
