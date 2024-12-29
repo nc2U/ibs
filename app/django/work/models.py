@@ -441,7 +441,7 @@ class Issue(models.Model):
                                       related_name='watchers')
     is_private = models.BooleanField('비공개', default=False)
     estimated_hours = models.DecimalField('추정 소요시간', max_digits=5, decimal_places=2, null=True, blank=True)
-    start_date = models.DateField('시작 일자', null=True, blank=True)
+    start_date = models.DateField('시작 일자')
     due_date = models.DateField('완료 기한', null=True, blank=True)
     done_ratio = models.PositiveSmallIntegerField('진척도', default=0)
     closed = models.DateTimeField('완료', null=True, blank=True, help_text='상태가 완료로 입력된 시간. 한 번 완료하면 다시 진행으로 변경해도 남아있음.')

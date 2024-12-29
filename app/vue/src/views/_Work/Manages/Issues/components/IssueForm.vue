@@ -588,7 +588,7 @@ onBeforeMount(() => {
                     시작일자
                   </CFormLabel>
                   <CCol sm="8">
-                    <DatePicker v-model="form.start_date" id="start_date" />
+                    <DatePicker v-model="form.start_date" id="start_date" required />
                   </CCol>
                 </CRow>
 

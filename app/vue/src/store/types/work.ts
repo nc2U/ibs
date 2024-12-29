@@ -307,7 +307,7 @@ export interface Issue {
   watchers: SimpleUser[]
   is_private: boolean
   estimated_hours: number | null
-  start_date: string | null
+  start_date: string
   due_date: string | null
   done_ratio: number
   closed: string | null
