@@ -5,6 +5,8 @@ import { errorHandle, message } from '@/utils/helper'
 import type {
   ActLogEntryFilter,
   CodeValue,
+  GanttProject,
+  Gantts,
   Issue,
   IssueCategory,
   IssueComment,
@@ -132,7 +134,103 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
 
   // Gantt issues
-  const ganttIssues = ref([])
+  const ganttIssues = ref<GanttProject[]>([])
+
+  const getGantts = computed(() => {
+    const gantts = [] as Gantts[][]
+
+    ganttIssues.value.forEach(pj => {
+      if (pj.issues.length) {
+        gantts.push([
+          {
+            isProj: true,
+            depth: pj.depth,
+            name: pj.name,
+            start: pj.start_first,
+            due: pj.due_last ?? '',
+            ganttBarConfig: {
+              id: pj.pk,
+              label: pj.name,
+              immobile: false,
+              html: '',
+              style: {
+                color: '#fff',
+              },
+            },
+          },
+        ])
+
+        pj.issues.forEach(issue => {
+          gantts.push([
+            {
+              isProj: false,
+              depth: pj.depth,
+              name: `${issue.tracker} #${issue.pk}: ${issue.subject}`,
+              start: issue.start_date,
+              due: issue.due_date ?? '',
+              done_ratio: issue.done_ratio,
+              ganttBarConfig: {
+                id: issue.pk,
+                label: `${issue.done_ratio}%`,
+                immobile: false,
+                html: '',
+                style: {
+                  background: 'lightgreen',
+                },
+              },
+            },
+          ])
+        })
+      }
+
+      if (pj.sub_projects.length) {
+        pj.sub_projects.forEach(sub => {
+          gantts.push([
+            {
+              isProj: true,
+              depth: sub.depth,
+              name: sub.name,
+              start: sub.start_first,
+              due: sub.due_last ?? '',
+              ganttBarConfig: {
+                id: sub.pk,
+                label: sub.name,
+                immobile: false,
+                html: '',
+                style: {
+                  color: '#fff',
+                },
+              },
+            },
+          ])
+
+          sub.issues.forEach(issue => {
+            gantts.push([
+              {
+                isProj: false,
+                depth: sub.depth,
+                name: `${issue.tracker} #${issue.pk}: ${issue.subject}`,
+                start: issue.start_date,
+                due: issue.due_date ?? '',
+                done_ratio: issue.done_ratio,
+                ganttBarConfig: {
+                  id: issue.pk,
+                  label: `${issue.done_ratio}%`,
+                  immobile: false,
+                  html: '',
+                  style: {
+                    background: 'lightgreen',
+                  },
+                },
+              },
+            ])
+          })
+        })
+      }
+    })
+
+    return gantts
+  })
 
   const fetchGanttIssues = async (proj = null) =>
     api
@@ -751,6 +849,7 @@ export const useWork = defineStore('work', () => {
     deleteIssueProject,
 
     ganttIssues,
+    getGantts,
     fetchGanttIssues,
 
     role,

@@ -17,7 +17,7 @@ const comName = computed(() => company?.value?.name)
 const route = useRoute()
 
 const workStore = useWork()
-const ganttIssues = computed(() => workStore.ganttIssues)
+const getGantts = computed(() => workStore.getGantts)
 
 const sideNavCAll = () => cBody.value.toggle()
 
@@ -39,7 +39,7 @@ onBeforeMount(() => workStore.fetchGanttIssues())
 
       <CRow class="mb-3">
         <CCol>
-          <GanttChart :gantt-issues="ganttIssues" />
+          <GanttChart :gantts="getGantts" />
         </CCol>
       </CRow>
 
