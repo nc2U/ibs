@@ -1,11 +1,26 @@
 <script lang="ts" setup>
-import { type ComputedRef, inject, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useWork } from '@/store/pinia/work'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import GanttChart from '@/views/_Work/Manages/Gantt/components/GanttChart.vue'
 
 const emit = defineEmits(['aside-visible'])
 
-onBeforeMount(() => emit('aside-visible', true))
+const route = useRoute()
+
+const workStore = useWork()
+const getGantts = computed(() => workStore.getGantts)
+
+watch(
+  () => route.params.projId,
+  nVal => workStore.fetchGanttIssues(nVal),
+)
+
+onBeforeMount(() => {
+  emit('aside-visible', true)
+  if (route.params.projId) workStore.fetchGanttIssues(route.params.projId)
+})
 </script>
 
 <template>
@@ -19,7 +34,7 @@ onBeforeMount(() => emit('aside-visible', true))
 
   <CRow class="mb-3">
     <CCol>
-      <GanttChart />
+      <GanttChart :gantts="getGantts" />
     </CCol>
   </CRow>
 

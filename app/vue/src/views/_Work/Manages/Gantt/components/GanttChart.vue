@@ -37,6 +37,7 @@ const onMouseleaveBar = (bar: any) => console.log(bar)
     @mouseenter-bar="onMouseenterBar($event.bar)"
     @mouseleave-bar="onMouseleaveBar($event.bar)"
   >
+    <g-gantt-row label="" :bars="[]" />
     <g-gantt-row
       v-for="(gantt, i) in gantts"
       :label="gantt[0].name"
