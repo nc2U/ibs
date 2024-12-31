@@ -14,12 +14,14 @@ const getGantts = computed(() => workStore.getGantts)
 
 watch(
   () => route.params.projId,
-  nVal => workStore.fetchGanttIssues(nVal),
+  nVal => {
+    if (nVal) workStore.fetchGanttIssues(nVal as string)
+  },
 )
 
 onBeforeMount(() => {
   emit('aside-visible', true)
-  if (route.params.projId) workStore.fetchGanttIssues(route.params.projId)
+  if (route.params.projId) workStore.fetchGanttIssues(route.params.projId as string)
 })
 </script>
 

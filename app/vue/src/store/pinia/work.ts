@@ -232,7 +232,7 @@ export const useWork = defineStore('work', () => {
     return gantts
   })
 
-  const fetchGanttIssues = async (proj = null) =>
+  const fetchGanttIssues = async (proj?: string) =>
     api
       .get(`/gantt-issues/?project=${proj || ''}`)
       .then(res => (ganttIssues.value = res.data.results))
