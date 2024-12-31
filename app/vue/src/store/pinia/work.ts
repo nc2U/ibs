@@ -136,6 +136,16 @@ export const useWork = defineStore('work', () => {
   // Gantt issues
   const ganttIssues = ref<GanttProject[]>([])
 
+  const getBgColor = (ratio: number) => {
+    let color = ''
+    if (ratio > 80) color = '#DCE775'
+    else if (ratio >= 60) color = '#DCEDC8'
+    else if (ratio >= 40) color = '#E3F2FD'
+    else if (ratio >= 20) color = '#FFEBEE'
+    else color = '#FFCDD2'
+    return color
+  }
+
   const getGantts = computed(() => {
     const gantts = [] as Gantts[][]
 
@@ -175,7 +185,7 @@ export const useWork = defineStore('work', () => {
                 immobile: false,
                 html: '',
                 style: {
-                  background: 'lightgreen',
+                  background: getBgColor(issue.done_ratio ?? 0),
                 },
               },
             },
@@ -219,7 +229,7 @@ export const useWork = defineStore('work', () => {
                   immobile: false,
                   html: '',
                   style: {
-                    background: 'lightgreen',
+                    background: getBgColor(issue.done_ratio ?? 0),
                   },
                 },
               },
