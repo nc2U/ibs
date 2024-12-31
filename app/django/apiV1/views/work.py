@@ -40,6 +40,10 @@ class IssueProjectForGanttViewSet(IssueProjectViewSet):
     queryset = IssueProject.objects.filter(parent=None)
     serializer_class = IssueProjectForGanttSerializer
 
+    def get_queryset(self):
+        project = self.request.query_params.get('project', None)
+        return IssueProject.objects.all() if project else IssueProject.objects.filter(parent=None)
+
 
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()
