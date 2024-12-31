@@ -37,7 +37,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
 
 class IssueProjectForGanttViewSet(IssueProjectViewSet):
-    queryset = IssueProject.objects.all()
+    queryset = IssueProject.objects.filter(parent=None)
     serializer_class = IssueProjectForGanttSerializer
 
 

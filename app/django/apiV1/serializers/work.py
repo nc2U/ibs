@@ -493,9 +493,11 @@ class IssueProjectForGanttSerializer(serializers.ModelSerializer):
         issues = obj.issue_set.filter(closed=None)
 
         class IssuesSerializer(serializers.ModelSerializer):
+            tracker = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
             class Meta:
                 model = Issue
-                fields = ('pk', 'subject', 'start_date', 'due_date', 'done_ratio')
+                fields = ('pk', 'tracker', 'subject', 'start_date', 'due_date', 'done_ratio')
 
         return IssuesSerializer(issues, many=True, read_only=True, context=self.context).data
 
