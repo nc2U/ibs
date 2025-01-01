@@ -646,14 +646,6 @@ onBeforeMount(() => {
                         />
                       </template>
                     </v-slider>
-                    <!--                    <CFormRange-->
-                    <!--                      v-model.number="form.done_ratio"-->
-                    <!--                      :min="0"-->
-                    <!--                      :max="100"-->
-                    <!--                      :steps="10"-->
-                    <!--                      id="done_ratio"-->
-                    <!--                      :label="`${form.done_ratio}%`"-->
-                    <!--                    />-->
                   </CCol>
                 </CRow>
               </CCol>
