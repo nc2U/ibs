@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, type PropType } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref } from 'vue'
 import { GGanttChart } from '@infectoone/vue-ganttastic'
 import type { Gantts } from '@/store/types/work'
 import { getToday } from '@/utils/baseMixins'
@@ -8,17 +8,25 @@ const props = defineProps({ gantts: { type: Array as PropType<Gantts[][]>, defau
 
 const isDark = inject<ComputedRef<boolean>>('isDark')
 
-const chartStart = (date = new Date()) => {
+const chartStart = ref()
+const chartEnd = ref()
+
+const getChartStart = (date = new Date()) => {
   date.setDate(date.getDate() - 15)
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
-const chartEnd = (date = new Date()) => {
+const getChartEnd = (date = new Date()) => {
   date.setDate(date.getDate() - 15)
   return new Date(date.getFullYear(), date.getMonth() + 6, 0)
 }
 
 const style = computed(() => `border-bottom: #${isDark?.value ? '666' : 'ddd'} 1px solid`)
 const remain = computed(() => (props.gantts.length > 10 ? 5 : 15 - props.gantts.length))
+
+onBeforeMount(() => {
+  chartStart.value = getChartStart()
+  chartEnd.value = getChartEnd()
+})
 </script>
 
 <template>
@@ -27,8 +35,8 @@ const remain = computed(() => (props.gantts.length > 10 ? 5 : 15 - props.gantts.
     label-column-width="450px"
     label-column-title=" "
     :current-time-label="getToday()"
-    :chart-start="chartStart()"
-    :chart-end="chartEnd()"
+    :chart-start="chartStart"
+    :chart-end="chartEnd"
     date-format="YYYY-MM-DD"
     precision="week"
     bar-start="start"
