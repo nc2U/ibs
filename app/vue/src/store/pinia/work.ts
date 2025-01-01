@@ -138,9 +138,9 @@ export const useWork = defineStore('work', () => {
 
   const getBgColor = (ratio: number) => {
     let color = ''
-    if (ratio > 80) color = '#DCE775'
+    if (ratio > 80) color = '#C5E1A5'
     else if (ratio >= 60) color = '#DCEDC8'
-    else if (ratio >= 40) color = '#E3F2FD'
+    else if (ratio >= 40) color = '#F1F8E9'
     else if (ratio >= 20) color = '#FFEBEE'
     else color = '#FFCDD2'
     return color

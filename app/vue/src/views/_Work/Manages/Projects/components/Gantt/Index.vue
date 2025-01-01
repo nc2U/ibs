@@ -34,18 +34,5 @@ onBeforeMount(() => {
 
   <SearchList />
 
-  <CRow class="mb-3">
-    <CCol>
-      <GanttChart :gantts="getGantts" />
-    </CCol>
-  </CRow>
-
-  <CRow>
-    <CCol>
-      <CButtonGroup role="group">
-        <CButton color="primary" variant="outline" size="sm">« 뒤로</CButton>
-        <CButton color="primary" variant="outline" size="sm">다음 »</CButton>
-      </CButtonGroup>
-    </CCol>
-  </CRow>
+  <GanttChart :gantts="getGantts" />
 </template>

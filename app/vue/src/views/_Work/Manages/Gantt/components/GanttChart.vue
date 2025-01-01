@@ -30,30 +30,47 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <g-gantt-chart
-    :color-scheme="isDark ? 'dark' : ''"
-    label-column-width="450px"
-    label-column-title=" "
-    :current-time-label="getToday()"
-    :chart-start="chartStart"
-    :chart-end="chartEnd"
-    date-format="YYYY-MM-DD"
-    precision="week"
-    bar-start="start"
-    bar-end="due"
-    :row-height="20"
-    current-time
-    :style="style"
-    grid
-  >
-    <g-gantt-row label="" :bars="[]" />
-    <g-gantt-row
-      v-for="(gantt, i) in gantts"
-      :label="gantt[0].name"
-      :bars="gantt as any[]"
-      highlight-on-hover
-      :key="`gantt-${i}`"
-    />
-    <g-gantt-row v-for="i in remain" label="" :bars="[]" :key="`remain-${i}`" />
-  </g-gantt-chart>
+  {{ chartStart }}
+  <hr />
+  {{ chartEnd }}
+
+  <CRow class="mb-3">
+    <CCol>
+      <g-gantt-chart
+        :color-scheme="isDark ? 'dark' : ''"
+        label-column-width="450px"
+        label-column-title=" "
+        :current-time-label="getToday()"
+        :chart-start="chartStart"
+        :chart-end="chartEnd"
+        date-format="YYYY-MM-DD"
+        precision="week"
+        bar-start="start"
+        bar-end="due"
+        :row-height="20"
+        current-time
+        :style="style"
+        grid
+      >
+        <g-gantt-row label="" :bars="[]" />
+        <g-gantt-row
+          v-for="(gantt, i) in gantts"
+          :label="gantt[0].name"
+          :bars="gantt as any[]"
+          highlight-on-hover
+          :key="`gantt-${i}`"
+        />
+        <g-gantt-row v-for="i in remain" label="" :bars="[]" :key="`remain-${i}`" />
+      </g-gantt-chart>
+    </CCol>
+  </CRow>
+
+  <CRow>
+    <CCol>
+      <CButtonGroup role="group">
+        <CButton color="primary" variant="outline" size="sm">« 뒤로</CButton>
+        <CButton color="primary" variant="outline" size="sm">다음 »</CButton>
+      </CButtonGroup>
+    </CCol>
+  </CRow>
 </template>
