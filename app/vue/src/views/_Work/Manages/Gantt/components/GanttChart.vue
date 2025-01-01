@@ -8,20 +8,39 @@ const props = defineProps({ gantts: { type: Array as PropType<Gantts[][]>, defau
 
 const isDark = inject<ComputedRef<boolean>>('isDark')
 
+const baseDate = ref(new Date(new Date().setDate(new Date().getDate() - 15)))
+
 const chartStart = ref()
 const chartEnd = ref()
 
-const getChartStart = (date = new Date()) => {
-  date.setDate(date.getDate() - 15)
-  return new Date(date.getFullYear(), date.getMonth(), 1)
-}
-const getChartEnd = (date = new Date()) => {
-  date.setDate(date.getDate() - 15)
-  return new Date(date.getFullYear(), date.getMonth() + 6, 0)
-}
+const getChartStart = () => new Date(baseDate.value.getFullYear(), baseDate.value.getMonth(), 1)
+const getChartEnd = () => new Date(baseDate.value.getFullYear(), baseDate.value.getMonth() + 6, 0)
 
 const style = computed(() => `border-bottom: #${isDark?.value ? '666' : 'ddd'} 1px solid`)
 const remain = computed(() => (props.gantts.length > 10 ? 5 : 15 - props.gantts.length))
+
+const toMonthPrev = (n: number) => {
+  baseDate.value = new Date(baseDate.value.setMonth(baseDate.value.getMonth() - n))
+  chartStart.value = getChartStart()
+  chartEnd.value = getChartEnd()
+}
+
+const toMonthNext = (n: number) => {
+  baseDate.value = new Date(baseDate.value.setMonth(baseDate.value.getMonth() + n))
+  chartStart.value = getChartStart()
+  chartEnd.value = getChartEnd()
+}
+
+const prev = computed(() => {
+  const year = baseDate.value.getFullYear()
+  const month = baseDate.value.getMonth()
+  return month === 0 ? `12월 ${year}` : `${month}월`
+})
+const next = computed(() => {
+  const year = baseDate.value.getFullYear()
+  const month = baseDate.value.getMonth()
+  return month === 11 ? `01월 ${year + 1}` : `${month + 2}월`
+})
 
 onBeforeMount(() => {
   chartStart.value = getChartStart()
@@ -30,10 +49,12 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  {{ chartStart }}
-  <hr />
-  {{ chartEnd }}
-
+  <CRow class="mb-1">
+    <CCol class="text-right">
+      <a href="javascript:void(0)" @click="toMonthPrev(1)"> « {{ prev }}</a> |
+      <a href="javascript:void(0)" @click="toMonthNext(1)">{{ next }} »</a>
+    </CCol>
+  </CRow>
   <CRow class="mb-3">
     <CCol>
       <g-gantt-chart
@@ -68,8 +89,12 @@ onBeforeMount(() => {
   <CRow>
     <CCol>
       <CButtonGroup role="group">
-        <CButton color="primary" variant="outline" size="sm">« 뒤로</CButton>
-        <CButton color="primary" variant="outline" size="sm">다음 »</CButton>
+        <CButton color="primary" variant="outline" size="sm" @click="toMonthPrev(6)">
+          « 뒤로
+        </CButton>
+        <CButton color="primary" variant="outline" size="sm" @click="toMonthNext(6)">
+          다음 »
+        </CButton>
       </CButtonGroup>
     </CCol>
   </CRow>
