@@ -51,8 +51,13 @@ onBeforeMount(() => {
 <template>
   <CRow class="mb-1">
     <CCol class="text-right">
-      <a href="javascript:void(0)" @click="toMonthPrev(1)"> « {{ prev }}</a> |
-      <a href="javascript:void(0)" @click="toMonthNext(1)">{{ next }} »</a>
+      <span @click="toMonthPrev(1)" class="pointer">
+        « <a href="javascript:void(0)">{{ prev }}</a>
+      </span>
+      <span class="px-2">|</span>
+      <span @click="toMonthNext(1)" class="pointer">
+        <a href="javascript:void(0)">{{ next }}</a> »
+      </span>
     </CCol>
   </CRow>
   <CRow class="mb-3">
