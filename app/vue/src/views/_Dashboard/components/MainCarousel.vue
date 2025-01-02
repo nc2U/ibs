@@ -1,10 +1,13 @@
 <script lang="ts" setup>
 const imgSrc = [
-  'https://brdnc-buket.s3.ap-northeast-2.amazonaws.com/image/carousel/001.png',
-  'https://brdnc-buket.s3.ap-northeast-2.amazonaws.com/image/carousel/002.png',
-  'https://brdnc-buket.s3.ap-northeast-2.amazonaws.com/image/carousel/003.png',
-  'https://brdnc-buket.s3.ap-northeast-2.amazonaws.com/image/carousel/004.png',
-  'https://brdnc-buket.s3.ap-northeast-2.amazonaws.com/image/carousel/005.png',
+  'https://kr.object.iwinv.kr/ibs/media%2Fcarousel/001.jpg',
+  'https://kr.object.iwinv.kr/ibs/media%2Fcarousel/002.jpg',
+  'https://kr.object.iwinv.kr/ibs/media%2Fcarousel/003.jpg',
+  'https://kr.object.iwinv.kr/ibs/media%2Fcarousel/004.jpg',
+  'https://kr.object.iwinv.kr/ibs/media%2Fcarousel/007.jpg',
+  'https://kr.object.iwinv.kr/ibs/media%2Fcarousel/008.jpg',
+  'https://kr.object.iwinv.kr/ibs/media%2Fcarousel/009.jpg',
+  'https://kr.object.iwinv.kr/ibs/media%2Fcarousel/010.jpg',
 ]
 </script>
 <template>
