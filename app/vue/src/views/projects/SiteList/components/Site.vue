@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import { type Site } from '@/store/types/project'
-import { numFormat } from '@/utils/baseMixins'
+import { cutString, numFormat } from '@/utils/baseMixins'
 import { write_project_site } from '@/utils/pageAuth'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteForm from './SiteForm.vue'
@@ -47,7 +47,10 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
       {{ numFormat((site.returned_area as number) * 0.3025, 2) }}
     </CTableDataCell>
     <CTableDataCell class="text-left">
-      {{ owners.length ? owners.join(', ') : '' }}
+      {{ owners.length ? cutString(owners.join(', '), 48) : '' }}
+      <v-tooltip activator="parent" location="top">
+        {{ owners.length ? owners.join(', ') : '' }}
+      </v-tooltip>
     </CTableDataCell>
     <CTableDataCell>
       {{ site.dup_issue_date }}
