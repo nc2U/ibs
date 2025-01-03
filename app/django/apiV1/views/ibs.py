@@ -65,5 +65,5 @@ class ProjectAccountD3ViewSet(viewsets.ModelViewSet):
 class WiseSayViewSet(viewsets.ModelViewSet):
     queryset = WiseSaying.objects.all()
     serializer_class = WiseSaySerializer
-    pagination_class = PageNumberPaginationFifty
+    pagination_class = PageNumberPaginationThreeHundred
     permissions_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
