@@ -6,20 +6,23 @@ import { useIbs } from '@/store/pinia/ibs'
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
 
-const bgColor = computed(() => (isDark.value ? 'success' : 'light'))
+const colors = ref(['primary', 'info', 'warning', 'success']) // computed(() => (isDark.value ? 'primary' : 'primary'))
+
+const getColor = () => {
+  const randomIndex = Math.floor(Math.random() * colors.value.length)
+  defaults.value.VCard.color = colors.value[randomIndex]
+}
 
 const defaults = ref({
   global: {
     elevation: 5,
   },
   VCard: {
-    color: bgColor.value,
+    color: 'primary',
   },
 })
 
-watch(isDark, nVal => {
-  defaults.value.VCard.color = nVal ? 'success' : 'light'
-})
+watch(isDark, nVal => getColor())
 
 const ibsStore = useIbs()
 const wiseWord = computed(() => ibsStore.wiseWord)
@@ -31,6 +34,7 @@ const fetchWiseWord = (pk: number) => ibsStore.fetchWiseWord(pk)
 const getPk = (max: number) => Math.floor(Math.random() * (max - 1) + 1)
 
 onBeforeMount(async () => {
+  getColor()
   await fetchWiseWordsList()
   await fetchWiseWord(getPk(wiseWordsCount.value + 1))
   setInterval(() => {
