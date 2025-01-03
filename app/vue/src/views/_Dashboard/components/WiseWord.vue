@@ -3,6 +3,13 @@ import { ref, computed, watch, onBeforeMount } from 'vue'
 import { useStore } from '@/store'
 import { useIbs } from '@/store/pinia/ibs'
 
+const wiseWord = ref({
+  pk: 0,
+  saying_ko: '이또한 지나가리라.',
+  saying_en: 'This too shall pass.',
+  spoked_by: 'Et hoc transibit',
+})
+
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
 
@@ -43,21 +50,20 @@ const defaults = ref({
 watch(isDark, nVal => getColor())
 
 const ibsStore = useIbs()
-const wiseWord = computed(() => ibsStore.wiseWord)
-const wiseWordsCount = computed(() => ibsStore.wiseWordsCount)
+const wiseWordsList = computed(() => ibsStore.wiseWordsList)
+const counts = computed(() => ibsStore.wiseWordsCount)
 
 const fetchWiseWordsList = () => ibsStore.fetchWiseWordsList()
-const fetchWiseWord = (pk: number) => ibsStore.fetchWiseWord(pk)
 
-const getPk = (max: number) => Math.floor(Math.random() * (max - 1) + 1)
+const getIndex = () => Math.floor(Math.random() * counts.value)
 
 onBeforeMount(async () => {
   getColor()
   await fetchWiseWordsList()
-  await fetchWiseWord(getPk(wiseWordsCount.value + 1))
+  wiseWord.value = wiseWordsList.value[getIndex()]
   setInterval(() => {
     getColor()
-    fetchWiseWord(getPk(wiseWordsCount.value + 1))
+    wiseWord.value = wiseWordsList.value[getIndex()]
   }, 30000)
 })
 </script>
