@@ -22,12 +22,33 @@ class BankCodeViewSet(viewsets.ModelViewSet):
     serializer_class = BankCodeSerializer
 
 
+class ComBankAccFilter(FilterSet):
+    is_balance = BooleanFilter(method='_is_balance', label='잔고 여부')
+
+    class Meta:
+        model = CompanyBankAccount
+        fields = ('company', 'depart', 'is_hide', 'inactive', 'is_balance')
+
+    @staticmethod
+    def _is_balance(queryset, name, value):
+        # CashBook 모델의 income과 outlay를 합산해 비교
+        filtered_queryset = queryset.annotate(
+            total_income=Sum('cashbook__income'),
+            total_outlay=Sum('cashbook__outlay'),
+            balance=F('total_income') - F('total_outlay')
+        )
+        if value:  # True인 경우, 잔액이 양수인 경우만 필터링
+            return filtered_queryset.filter(balance__gt=0)
+        else:  # False인 경우, 잔액이 0 이하인 경우만 필터링
+            return filtered_queryset.filter(balance__lte=0)
+
+
 class ComBankAccountViewSet(viewsets.ModelViewSet):
     queryset = CompanyBankAccount.objects.all()
     serializer_class = CompanyBankAccountSerializer
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    filterset_fields = ('company', 'depart', 'is_hide', 'inactive')
+    filterset_class = ComBankAccFilter
 
 
 class BalanceByAccountViewSet(viewsets.ModelViewSet):

@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models.aggregates import Sum
 from rest_framework import serializers
 
 from cash.models import BankCode, CompanyBankAccount, ProjectBankAccount, CashBook, ProjectCashBook, \
@@ -15,10 +16,20 @@ class BankCodeSerializer(serializers.ModelSerializer):
 
 
 class CompanyBankAccountSerializer(serializers.ModelSerializer):
+    balance = serializers.SerializerMethodField()
+
     class Meta:
         model = CompanyBankAccount
         fields = ('pk', 'company', 'depart', 'bankcode', 'alias_name', 'number',
-                  'holder', 'open_date', 'note', 'is_hide', 'inactive')
+                  'holder', 'open_date', 'note', 'is_hide', 'inactive', 'balance')
+
+    @staticmethod
+    def get_balance(obj):
+        # 해당 계좌에 연결된 CashBook의 income - outlay 계산
+        related_cashbooks = CashBook.objects.filter(bank_account=obj.pk)
+        total_income = related_cashbooks.aggregate(Sum('income')).get('income__sum') or 0
+        total_outlay = related_cashbooks.aggregate(Sum('outlay')).get('outlay__sum') or 0
+        return total_income - total_outlay
 
 
 class BalanceByAccountSerializer(serializers.ModelSerializer):
