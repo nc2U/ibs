@@ -168,11 +168,11 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
         </CTableDataCell>
         <CTableDataCell class="text-left" :colspan="obj.account_opt ? 1 : 2">
           {{ obj.account_d3.name }}
-          <v-tooltip v-if="obj.basis_calc" activator="parent" location="right">
+          <v-tooltip v-if="obj.basis_calc" activator="parent" location="left">
             {{ obj.basis_calc }}
           </v-tooltip>
         </CTableDataCell>
-        <CTableDataCell v-show="isRevised === '0'" class="py-0 bg-blue-grey-lighten-5">
+        <CTableDataCell v-show="isRevised === '0'" class="py-0 bg-indigo-lighten-5">
           <span>{{ numFormat(obj.budget) }}</span>
         </CTableDataCell>
         <CTableDataCell
