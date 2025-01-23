@@ -22,7 +22,7 @@ class BankCodeViewSet(viewsets.ModelViewSet):
     serializer_class = BankCodeSerializer
 
 
-class ComBankAccFilter(FilterSet):
+class ComBankAccFilterSet(FilterSet):
     is_balance = BooleanFilter(method='_is_balance', label='잔고 여부')
 
     class Meta:
@@ -48,7 +48,7 @@ class ComBankAccountViewSet(viewsets.ModelViewSet):
     serializer_class = CompanyBankAccountSerializer
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    filterset_class = ComBankAccFilter
+    filterset_class = ComBankAccFilterSet
 
 
 class BalanceByAccountViewSet(viewsets.ModelViewSet):
@@ -132,12 +132,33 @@ class DateCashBookViewSet(CashBookViewSet):
                                        deal_date__exact=date).order_by('deal_date', 'created_at', 'id')
 
 
+class ProjectBankAccFilterSet(FilterSet):
+    is_balance = BooleanFilter(method='_is_balance', label='잔고 여부')
+
+    class Meta:
+        model = ProjectBankAccount
+        fields = ('project', 'is_hide', 'inactive', 'directpay', 'is_imprest', 'is_balance')
+
+    @staticmethod
+    def _is_balance(queryset, name, value):
+        # ProjectCashBook 모델의 income과 outlay를 합산해 비교
+        filtered_queryset = queryset.annotate(
+            total_income=Sum('projectcashbook__income'),
+            total_outlay=Sum('projectcashbook__outlay'),
+            balance=F('total_income') - F('total_outlay')
+        )
+        if value:  # True인 경우, 잔액이 양수인 경우만 필터링
+            return filtered_queryset.filter(balance__gt=0)
+        else:  # False인 경우, 잔액이 0 이하인 경우만 필터링
+            return filtered_queryset.filter(balance__lte=0)
+
+
 class ProjectBankAccountViewSet(viewsets.ModelViewSet):
     queryset = ProjectBankAccount.objects.all()
     serializer_class = ProjectBankAccountSerializer
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    filterset_fields = ('project', 'is_hide', 'inactive', 'directpay', 'is_imprest')
+    filterset_class = ProjectBankAccFilterSet
 
 
 class PrBalanceByAccountViewSet(viewsets.ModelViewSet):
