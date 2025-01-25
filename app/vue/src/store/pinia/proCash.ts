@@ -71,9 +71,11 @@ export const useProCash = defineStore('proCash', () => {
   )
   const allProBankAccountList = ref<ProBankAcc[]>([])
 
-  const fetchProBankAccList = async (project: number) =>
+  const fetchProBankAccList = async (project: number, is_balance?: '1') =>
     await api
-      .get(`/project-bank-account/?project=${project}&is_hide=false&inactive=false`)
+      .get(
+        `/project-bank-account/?project=${project}&is_hide=false&inactive=false&is_balance=${is_balance || ''}`,
+      )
       .then(res => (proBankAccountList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 

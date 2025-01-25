@@ -120,9 +120,11 @@ export const useComCash = defineStore('comCash', () => {
   )
   const allComBankList = ref<CompanyBank[]>([])
 
-  const fetchComBankAccList = async (company: number) =>
+  const fetchComBankAccList = async (company: number, is_balance?: '1') =>
     await api
-      .get(`/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
+      .get(
+        `/company-bank-account/?company=${company}&is_hide=false&inactive=false&is_balance=${is_balance || ''}`,
+      )
       .then(res => (comBankList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
