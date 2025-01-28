@@ -28,8 +28,11 @@ const fetchAllAccD2List = () => cashStore.fetchAllAccD2List()
 const fetchAllAccD3List = () => cashStore.fetchAllAccD3List()
 
 const fetchComBankAccList = (com: number) => cashStore.fetchComBankAccList(com)
-const fetchComBalanceByAccList = (com: { company: number; date: string }) =>
-  cashStore.fetchComBalanceByAccList(com)
+const fetchComBalanceByAccList = (com: {
+  company: number
+  date: string
+  is_balance?: 'true' | ''
+}) => cashStore.fetchComBalanceByAccList(com)
 const fetchDateCashBookList = (payload: { company: number; date: string }) =>
   cashStore.fetchDateCashBookList(payload)
 
@@ -79,6 +82,16 @@ const setDate = (dt: string) => {
   }
 }
 
+const isExistBalance = (val: 'true' | '') => {
+  if (company.value) {
+    fetchComBalanceByAccList({
+      company: company.value as number,
+      is_balance: val,
+      date: date.value,
+    })
+  }
+}
+
 const dataSetup = (pk: number) => {
   fetchComBankAccList(pk)
   fetchComBalanceByAccList({ company: pk, date: date.value })
@@ -125,7 +138,11 @@ onBeforeMount(() => {
 
       <TableTitleRow excel :url="excelUrl" :disabled="!company" />
 
-      <StatusByAccount v-if="compName === 'StatusByAccount'" :date="date" />
+      <StatusByAccount
+        v-if="compName === 'StatusByAccount'"
+        :date="date"
+        @is-exist-balance="isExistBalance"
+      />
 
       <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />
 

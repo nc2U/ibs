@@ -71,11 +71,9 @@ export const useProCash = defineStore('proCash', () => {
   )
   const allProBankAccountList = ref<ProBankAcc[]>([])
 
-  const fetchProBankAccList = async (project: number, is_balance?: '1') =>
+  const fetchProBankAccList = async (project: number) =>
     await api
-      .get(
-        `/project-bank-account/?project=${project}&is_hide=false&inactive=false&is_balance=${is_balance || ''}`,
-      )
+      .get(`/project-bank-account/?project=${project}&is_hide=false&inactive=false`)
       .then(res => (proBankAccountList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -127,10 +125,12 @@ export const useProCash = defineStore('proCash', () => {
   const fetchBalanceByAccList = async (payload: {
     project: number
     direct?: string
+    is_balance?: 'true' | ''
     date?: string
   }) => {
     const { project, date, direct = '0' } = payload
-    let url = `/pr-balance-by-acc/?project=${project}&bank_account__directpay=${direct}`
+    const is_balance = payload.is_balance ?? ''
+    let url = `/pr-balance-by-acc/?project=${project}&bank_account__directpay=${direct}&is_balance=${is_balance}`
     if (date) url += `&date=${date}`
     return await api
       .get(url)

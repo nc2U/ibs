@@ -40,8 +40,12 @@ const fetchProAllAccD2List = () => pCashStore.fetchProAllAccD2List()
 const fetchProAllAccD3List = () => pCashStore.fetchProAllAccD3List()
 const fetchProBankAccList = (proj: number) => pCashStore.fetchProBankAccList(proj)
 
-const fetchBalanceByAccList = (payload: { project: number; direct?: string; date?: string }) =>
-  pCashStore.fetchBalanceByAccList(payload)
+const fetchBalanceByAccList = (payload: {
+  project: number
+  direct?: string
+  date?: string
+  is_balance?: '' | 'true'
+}) => pCashStore.fetchBalanceByAccList(payload)
 const fetchDateCashBookList = (payload: { project: number; date: string }) =>
   pCashStore.fetchDateCashBookList(payload)
 
@@ -110,6 +114,17 @@ const patchBudget = (pk: number, budget: number, isRevised: boolean) => {
   }
 }
 
+const isExistBalance = (val: 'true' | '') => {
+  if (project.value) {
+    fetchBalanceByAccList({
+      project: project.value as number,
+      direct: direct.value,
+      is_balance: val,
+      date: date.value,
+    })
+  }
+}
+
 const directBalance = (val: boolean) => {
   direct.value = val ? 'i' : '0'
   if (project.value)
@@ -172,6 +187,7 @@ onBeforeMount(() => {
       <StatusByAccount
         v-if="compName === 'StatusByAccount'"
         :date="date"
+        @is-exist-balance="isExistBalance"
         @direct-balance="directBalance"
       />
       <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />

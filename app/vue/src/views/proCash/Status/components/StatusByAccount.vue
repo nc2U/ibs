@@ -7,7 +7,7 @@ import { TableSecondary } from '@/utils/cssMixins'
 
 defineProps({ date: { type: String, default: '' } })
 
-const emit = defineEmits(['direct-balance'])
+const emit = defineEmits(['is-exist-balance', 'direct-balance'])
 
 const preBalance = ref(0)
 const dateIncSum = ref(0)
@@ -54,6 +54,7 @@ const getSumTotal = () => {
   preBalance.value = dateIncTotalCalc - dateOutTotalCalc - (dateIncSumCalc - dateOutSumCalc)
 }
 
+const isExistBalance = (val: boolean) => emit('is-exist-balance', val ? 'true' : '')
 const directBalance = (val: boolean) => emit('direct-balance', val)
 </script>
 
@@ -77,7 +78,14 @@ const directBalance = (val: boolean) => emit('direct-balance', val)
           </strong>
           <small class="text-medium-emphasis"> ({{ date }}) 현재 </small>
         </CTableDataCell>
-        <CTableDataCell colspan="4">
+        <CTableDataCell>
+          <CFormSwitch
+            id="select-acc-sort"
+            label="잔고 존재 계좌"
+            @change="isExistBalance($event.target.checked)"
+          />
+        </CTableDataCell>
+        <CTableDataCell colspan="3">
           <CFormSwitch
             id="select-directpay"
             label="직불 용역비 계좌 포함"

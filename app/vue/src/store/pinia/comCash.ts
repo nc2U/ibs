@@ -120,11 +120,9 @@ export const useComCash = defineStore('comCash', () => {
   )
   const allComBankList = ref<CompanyBank[]>([])
 
-  const fetchComBankAccList = async (company: number, is_balance?: '1') =>
+  const fetchComBankAccList = async (company: number) =>
     await api
-      .get(
-        `/company-bank-account/?company=${company}&is_hide=false&inactive=false&is_balance=${is_balance || ''}`,
-      )
+      .get(`/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
       .then(res => (comBankList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -173,9 +171,14 @@ export const useComCash = defineStore('comCash', () => {
 
   const comBalanceByAccList = ref<BalanceByAccount[]>([])
 
-  const fetchComBalanceByAccList = async (payload: { company: number; date: string }) => {
+  const fetchComBalanceByAccList = async (payload: {
+    company: number
+    date: string
+    is_balance?: '' | 'true'
+  }) => {
     const { company, date } = payload
-    const dateUri = date ? `&date=${date}` : ''
+    const is_balance = payload.is_balance ?? ''
+    const dateUri = date ? `&is_balance=${is_balance}&date=${date}` : ''
     return await api
       .get(`/balance-by-acc/?company=${company}${dateUri}`)
       .then(res => (comBalanceByAccList.value = res.data.results))

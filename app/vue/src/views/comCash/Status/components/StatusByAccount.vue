@@ -6,6 +6,8 @@ import { TableSecondary } from '@/utils/cssMixins'
 
 defineProps({ date: { type: String, default: '' } })
 
+const emit = defineEmits(['is-exist-balance'])
+
 const preBalance = ref(0)
 const dateIncSum = ref(0)
 const dateOutSum = ref(0)
@@ -47,6 +49,8 @@ const getSumTotal = () => {
   preBalance.value = _dateIncTotal - _dateOutTotal - (_dateIncSum - _dateOutSum)
 }
 
+const isExistBalance = (val: boolean) => emit('is-exist-balance', val ? 'true' : '')
+
 onMounted(() => getSumTotal())
 watch(comBalanceByAccList, () => getSumTotal())
 </script>
@@ -64,12 +68,19 @@ watch(comBalanceByAccList, () => getSumTotal())
     </colgroup>
     <CTableHead>
       <CTableRow>
-        <CTableDataCell colspan="6">
+        <CTableDataCell colspan="2">
           <strong>
             <CIcon name="cilFolderOpen" />
             본사 계좌별 자금현황
           </strong>
           <small class="text-medium-emphasis"> ({{ date }}) 현재 </small>
+        </CTableDataCell>
+        <CTableDataCell colspan="4">
+          <CFormSwitch
+            id="select-acc-sort"
+            label="잔고 존재 계좌"
+            @change="isExistBalance($event.target.checked)"
+          />
         </CTableDataCell>
         <CTableDataCell class="text-right">(단위: 원)</CTableDataCell>
       </CTableRow>
@@ -100,7 +111,7 @@ watch(comBalanceByAccList, () => getSumTotal())
       </CTableRow>
 
       <CTableRow :color="TableSecondary" class="text-right">
-        <CTableHeaderCell colspan="3" class="text-center"> 현금성 자산 계 </CTableHeaderCell>
+        <CTableHeaderCell colspan="3" class="text-center"> 현금성 자산 계</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(preBalance) }}</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(dateIncSum) }}</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(dateOutSum) }}</CTableHeaderCell>
