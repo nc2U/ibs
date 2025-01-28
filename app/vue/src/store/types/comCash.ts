@@ -48,7 +48,7 @@ export interface CompanyBank {
   note: string
   is_hide: boolean
   inactive: boolean
-  balance: number
+  balance?: number
 }
 
 export interface BalanceByAccount {

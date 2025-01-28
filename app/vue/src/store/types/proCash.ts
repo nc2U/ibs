@@ -28,7 +28,7 @@ export interface ProBankAcc {
   inactive: boolean
   directpay: boolean
   is_imprest: boolean
-  balance: number
+  balance?: number
 }
 
 export interface BalanceByAccount {
