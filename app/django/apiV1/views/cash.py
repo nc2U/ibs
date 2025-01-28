@@ -30,11 +30,32 @@ class ComBankAccountViewSet(viewsets.ModelViewSet):
     filterset_fields = ('company', 'depart', 'is_hide', 'inactive')
 
 
+class BalanceByAccFilterSet(FilterSet):
+    is_balance = BooleanFilter(method='_is_balance', label='잔고 존재 여부')
+
+    class Meta:
+        model = CashBook
+        fields = ('company', 'is_balance')
+
+    @staticmethod
+    def _is_balance(queryset, name, value):
+        # ProjectCashBook 모델의 income과 outlay를 합산해 비교
+        filtered_queryset = queryset.annotate(
+            total_income=Sum('income'),
+            total_outlay=Sum('outlay'),
+            balance=F('total_income') - F('total_outlay')
+        )
+        if value:  # True인 경우, 잔액이 양수인 경우만 필터링
+            return filtered_queryset.filter(balance__gt=0)
+        else:  # False인 경우, 잔액이 0 이하인 경우만 필터링
+            return filtered_queryset.filter(balance__lte=0)
+
+
 class BalanceByAccountViewSet(viewsets.ModelViewSet):
     serializer_class = BalanceByAccountSerializer
     pagination_class = PageNumberPaginationOneHundred
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    filterset_fields = ('company',)
+    filterset_class = BalanceByAccFilterSet
 
     def get_queryset(self):
         date = self.request.query_params.get('date')
@@ -120,11 +141,32 @@ class ProjectBankAccountViewSet(viewsets.ModelViewSet):
     filterset_fields = ('project', 'is_hide', 'inactive', 'directpay', 'is_imprest')
 
 
+class PrBalanceByAccFilterSet(FilterSet):
+    is_balance = BooleanFilter(method='_is_balance', label='잔고 존재 여부')
+
+    class Meta:
+        model = ProjectCashBook
+        fields = ('project', 'bank_account__directpay', 'is_balance')
+
+    @staticmethod
+    def _is_balance(queryset, name, value):
+        # ProjectCashBook 모델의 income과 outlay를 합산해 비교
+        filtered_queryset = queryset.annotate(
+            total_income=Sum('income'),
+            total_outlay=Sum('outlay'),
+            balance=F('total_income') - F('total_outlay')
+        )
+        if value:  # True인 경우, 잔액이 양수인 경우만 필터링
+            return filtered_queryset.filter(balance__gt=0)
+        else:  # False인 경우, 잔액이 0 이하인 경우만 필터링
+            return filtered_queryset.filter(balance__lte=0)
+
+
 class PrBalanceByAccountViewSet(viewsets.ModelViewSet):
     serializer_class = PrBalanceByAccountSerializer
     pagination_class = PageNumberPaginationOneHundred
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    filterset_fields = ('project', 'bank_account__directpay')
+    filterset_class = PrBalanceByAccFilterSet
 
     def get_queryset(self):
         date = self.request.query_params.get('date')
