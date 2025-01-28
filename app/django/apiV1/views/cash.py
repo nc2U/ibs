@@ -22,33 +22,12 @@ class BankCodeViewSet(viewsets.ModelViewSet):
     serializer_class = BankCodeSerializer
 
 
-class ComBankAccFilterSet(FilterSet):
-    is_balance = BooleanFilter(method='_is_balance', label='잔고 여부')
-
-    class Meta:
-        model = CompanyBankAccount
-        fields = ('company', 'depart', 'is_hide', 'inactive', 'is_balance')
-
-    @staticmethod
-    def _is_balance(queryset, name, value):
-        # CashBook 모델의 income과 outlay를 합산해 비교
-        filtered_queryset = queryset.annotate(
-            total_income=Sum('cashbook__income'),
-            total_outlay=Sum('cashbook__outlay'),
-            balance=F('total_income') - F('total_outlay')
-        )
-        if value:  # True인 경우, 잔액이 양수인 경우만 필터링
-            return filtered_queryset.filter(balance__gt=0)
-        else:  # False인 경우, 잔액이 0 이하인 경우만 필터링
-            return filtered_queryset.filter(balance__lte=0)
-
-
 class ComBankAccountViewSet(viewsets.ModelViewSet):
     queryset = CompanyBankAccount.objects.all()
     serializer_class = CompanyBankAccountSerializer
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    filterset_class = ComBankAccFilterSet
+    filterset_fields = ('company', 'depart', 'is_hide', 'inactive')
 
 
 class BalanceByAccountViewSet(viewsets.ModelViewSet):
@@ -70,6 +49,7 @@ class BalanceByAccountViewSet(viewsets.ModelViewSet):
             .values('bank_acc', 'bank_num') \
             .annotate(inc_sum=Sum('income'),
                       out_sum=Sum('outlay'),
+                      balance=Sum('income') - Sum('outlay'),
                       date_inc=Sum(Case(
                           When(deal_date=date, then=F('income')),
                           default=0
@@ -132,33 +112,12 @@ class DateCashBookViewSet(CashBookViewSet):
                                        deal_date__exact=date).order_by('deal_date', 'created_at', 'id')
 
 
-class ProjectBankAccFilterSet(FilterSet):
-    is_balance = BooleanFilter(method='_is_balance', label='잔고 여부')
-
-    class Meta:
-        model = ProjectBankAccount
-        fields = ('project', 'is_hide', 'inactive', 'directpay', 'is_imprest', 'is_balance')
-
-    @staticmethod
-    def _is_balance(queryset, name, value):
-        # ProjectCashBook 모델의 income과 outlay를 합산해 비교
-        filtered_queryset = queryset.annotate(
-            total_income=Sum('projectcashbook__income'),
-            total_outlay=Sum('projectcashbook__outlay'),
-            balance=F('total_income') - F('total_outlay')
-        )
-        if value:  # True인 경우, 잔액이 양수인 경우만 필터링
-            return filtered_queryset.filter(balance__gt=0)
-        else:  # False인 경우, 잔액이 0 이하인 경우만 필터링
-            return filtered_queryset.filter(balance__lte=0)
-
-
 class ProjectBankAccountViewSet(viewsets.ModelViewSet):
     queryset = ProjectBankAccount.objects.all()
     serializer_class = ProjectBankAccountSerializer
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    filterset_class = ProjectBankAccFilterSet
+    filterset_fields = ('project', 'is_hide', 'inactive', 'directpay', 'is_imprest')
 
 
 class PrBalanceByAccountViewSet(viewsets.ModelViewSet):
@@ -181,6 +140,7 @@ class PrBalanceByAccountViewSet(viewsets.ModelViewSet):
             .values('bank_acc', 'bank_num') \
             .annotate(inc_sum=Sum('income'),
                       out_sum=Sum('outlay'),
+                      balance=Sum('income') - Sum('outlay'),
                       date_inc=Sum(Case(
                           When(deal_date=date, then=F('income')),
                           default=0

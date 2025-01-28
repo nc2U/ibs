@@ -16,20 +16,10 @@ class BankCodeSerializer(serializers.ModelSerializer):
 
 
 class CompanyBankAccountSerializer(serializers.ModelSerializer):
-    balance = serializers.SerializerMethodField()
-
     class Meta:
         model = CompanyBankAccount
         fields = ('pk', 'company', 'depart', 'bankcode', 'alias_name', 'number',
-                  'holder', 'open_date', 'note', 'is_hide', 'inactive', 'balance')
-
-    @staticmethod
-    def get_balance(obj):
-        # 해당 계좌에 연결된 CashBook의 income - outlay 계산
-        related_cashbooks = CashBook.objects.filter(is_separate=False, bank_account=obj.pk)
-        total_income = related_cashbooks.aggregate(Sum('income')).get('income__sum') or 0
-        total_outlay = related_cashbooks.aggregate(Sum('outlay')).get('outlay__sum') or 0
-        return total_income - total_outlay
+                  'holder', 'open_date', 'note', 'is_hide', 'inactive')
 
 
 class BalanceByAccountSerializer(serializers.ModelSerializer):
@@ -39,10 +29,11 @@ class BalanceByAccountSerializer(serializers.ModelSerializer):
     date_out = serializers.IntegerField()
     inc_sum = serializers.IntegerField()
     out_sum = serializers.IntegerField()
+    balance = serializers.IntegerField()
 
     class Meta:
         model = ProjectCashBook
-        fields = ('bank_acc', 'bank_num', 'date_inc', 'date_out', 'inc_sum', 'out_sum')
+        fields = ('bank_acc', 'bank_num', 'date_inc', 'date_out', 'inc_sum', 'out_sum', 'balance')
 
 
 class SepItemsInCashBookSerializer(serializers.ModelSerializer):
@@ -213,20 +204,10 @@ class CompanyLastDealDateSerializer(serializers.ModelSerializer):
 
 
 class ProjectBankAccountSerializer(serializers.ModelSerializer):
-    balance = serializers.SerializerMethodField()
-
     class Meta:
         model = ProjectBankAccount
         fields = ('pk', 'project', 'bankcode', 'alias_name', 'number', 'holder', 'open_date',
-                  'note', 'is_hide', 'inactive', 'directpay', 'is_imprest', 'balance')
-
-    @staticmethod
-    def get_balance(obj):
-        # 해당 계좌에 연결된 ProjectCashBook의 income - outlay 계산
-        related_cashbooks = ProjectCashBook.objects.filter(is_separate=False, bank_account=obj.pk)
-        total_income = related_cashbooks.aggregate(Sum('income')).get('income__sum') or 0
-        total_outlay = related_cashbooks.aggregate(Sum('outlay')).get('outlay__sum') or 0
-        return total_income - total_outlay
+                  'note', 'is_hide', 'inactive', 'directpay', 'is_imprest')
 
 
 class SepItemsInPrCashBookSerializer(serializers.ModelSerializer):
@@ -243,10 +224,11 @@ class PrBalanceByAccountSerializer(serializers.ModelSerializer):
     date_out = serializers.IntegerField()
     inc_sum = serializers.IntegerField()
     out_sum = serializers.IntegerField()
+    balance = serializers.IntegerField()
 
     class Meta:
         model = ProjectCashBook
-        fields = ('bank_acc', 'bank_num', 'date_inc', 'date_out', 'inc_sum', 'out_sum')
+        fields = ('bank_acc', 'bank_num', 'date_inc', 'date_out', 'inc_sum', 'out_sum', 'balance')
 
 
 class ProjectCashBookSerializer(serializers.ModelSerializer):
