@@ -1,5 +1,6 @@
 from datetime import datetime
 from django.db.models import Sum, F, Q, Case, When
+from django.template.defaultfilters import default
 from rest_framework import viewsets
 from django_filters.rest_framework import FilterSet
 from django_filters import DateFilter, BooleanFilter
@@ -41,8 +42,8 @@ class BalanceByAccFilterSet(FilterSet):
     def _is_balance(queryset, name, value):
         # ProjectCashBook 모델의 income과 outlay를 합산해 비교
         filtered_queryset = queryset.annotate(
-            total_income=Sum('income'),
-            total_outlay=Sum('outlay'),
+            total_income=Sum('income', default=0),
+            total_outlay=Sum('outlay', default=0),
             balance=F('total_income') - F('total_outlay')
         )
         if value:  # True인 경우, 잔액이 양수인 경우만 필터링
@@ -68,9 +69,9 @@ class BalanceByAccountViewSet(viewsets.ModelViewSet):
         return queryset.annotate(bank_acc=F('bank_account__alias_name'),
                                  bank_num=F('bank_account__number')) \
             .values('bank_acc', 'bank_num') \
-            .annotate(inc_sum=Sum('income'),
-                      out_sum=Sum('outlay'),
-                      balance=Sum('income') - Sum('outlay'),
+            .annotate(inc_sum=Sum('income', default=0),
+                      out_sum=Sum('outlay', default=0),
+                      balance=Sum('income', default=0) - Sum('outlay', default=0),
                       date_inc=Sum(Case(
                           When(deal_date=date, then=F('income')),
                           default=0
@@ -152,8 +153,8 @@ class PrBalanceByAccFilterSet(FilterSet):
     def _is_balance(queryset, name, value):
         # ProjectCashBook 모델의 income과 outlay를 합산해 비교
         filtered_queryset = queryset.annotate(
-            total_income=Sum('income'),
-            total_outlay=Sum('outlay'),
+            total_income=Sum('income', default=0),
+            total_outlay=Sum('outlay', default=0),
             balance=F('total_income') - F('total_outlay')
         )
         if value:  # True인 경우, 잔액이 양수인 경우만 필터링
@@ -180,9 +181,9 @@ class PrBalanceByAccountViewSet(viewsets.ModelViewSet):
         return queryset.annotate(bank_acc=F('bank_account__alias_name'),
                                  bank_num=F('bank_account__number')) \
             .values('bank_acc', 'bank_num') \
-            .annotate(inc_sum=Sum('income'),
-                      out_sum=Sum('outlay'),
-                      balance=Sum('income') - Sum('outlay'),
+            .annotate(inc_sum=Sum('income', default=0),
+                      out_sum=Sum('outlay', default=0),
+                      balance=Sum('income', default=0) - Sum('outlay', default=0),
                       date_inc=Sum(Case(
                           When(deal_date=date, then=F('income')),
                           default=0
