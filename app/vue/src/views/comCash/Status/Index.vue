@@ -94,7 +94,7 @@ const isExistBalance = (val: 'true' | '') => {
 
 const dataSetup = (pk: number) => {
   fetchComBankAccList(pk)
-  fetchComBalanceByAccList({ company: pk, date: date.value })
+  fetchComBalanceByAccList({ company: pk, date: date.value, is_balance: 'true' })
   fetchDateCashBookList({ company: pk, date: date.value })
   fetchComCashCalc(pk)
   fetchComLastDeal(pk)

@@ -18,6 +18,7 @@ import Calculated from '@/views/comCash/Status/components/Calculated.vue'
 
 const date = ref(getToday())
 const direct = ref('0')
+const isBalance = ref('true')
 const compName = ref('StatusByAccount')
 
 const projStore = useProject()
@@ -115,22 +116,25 @@ const patchBudget = (pk: number, budget: number, isRevised: boolean) => {
 }
 
 const isExistBalance = (val: 'true' | '') => {
+  isBalance.value = val ? 'true' : ''
   if (project.value) {
     fetchBalanceByAccList({
       project: project.value as number,
       direct: direct.value,
-      is_balance: val,
+      is_balance: isBalance.value,
       date: date.value,
     })
   }
 }
 
 const directBalance = (val: boolean) => {
+  isBalance.value = ''
   direct.value = val ? 'i' : '0'
   if (project.value)
     fetchBalanceByAccList({
       project: project.value as number,
       direct: direct.value,
+      is_balance: isBalance.value,
       date: date.value,
     })
 }
@@ -139,7 +143,7 @@ const dataSetup = (pk: number) => {
   fetchStatusOutBudgetList(pk)
   fetchExecAmountList(pk, date.value)
   fetchProBankAccList(pk)
-  fetchBalanceByAccList({ project: pk, date: date.value })
+  fetchBalanceByAccList({ project: pk, date: date.value, is_balance: 'true' })
   fetchDateCashBookList({ project: pk, date: date.value })
   fetchProCashCalc(pk)
   fetchProLastDeal(pk)
@@ -187,6 +191,7 @@ onBeforeMount(() => {
       <StatusByAccount
         v-if="compName === 'StatusByAccount'"
         :date="date"
+        :is-balance="isBalance"
         @is-exist-balance="isExistBalance"
         @direct-balance="directBalance"
       />

@@ -79,6 +79,7 @@ watch(comBalanceByAccList, () => getSumTotal())
           <CFormSwitch
             id="select-acc-sort"
             label="잔고 존재 계좌"
+            checked
             @change="isExistBalance($event.target.checked)"
           />
         </CTableDataCell>

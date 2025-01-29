@@ -5,7 +5,7 @@ import { type BalanceByAccount } from '@/store/types/proCash'
 import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 
-defineProps({ date: { type: String, default: '' } })
+defineProps({ date: { type: String, default: '' }, isBalance: { type: String, default: 'true' } })
 
 const emit = defineEmits(['is-exist-balance', 'direct-balance'])
 
@@ -54,7 +54,7 @@ const getSumTotal = () => {
   preBalance.value = dateIncTotalCalc - dateOutTotalCalc - (dateIncSumCalc - dateOutSumCalc)
 }
 
-const isExistBalance = (val: boolean) => emit('is-exist-balance', val ? 'true' : '')
+const isExistBalance = async (val: boolean) => emit('is-exist-balance', val)
 const directBalance = (val: boolean) => emit('direct-balance', val)
 </script>
 
@@ -82,6 +82,7 @@ const directBalance = (val: boolean) => emit('direct-balance', val)
           <CFormSwitch
             id="select-acc-sort"
             label="잔고 존재 계좌"
+            :checked="!!isBalance"
             @change="isExistBalance($event.target.checked)"
           />
         </CTableDataCell>
