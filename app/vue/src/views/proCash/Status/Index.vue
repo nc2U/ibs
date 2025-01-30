@@ -18,7 +18,7 @@ import Calculated from '@/views/comCash/Status/components/Calculated.vue'
 
 const date = ref(getToday())
 const direct = ref('0')
-const isBalance = ref('true')
+const isBalance = ref<'' | 'true'>('true')
 const compName = ref('StatusByAccount')
 
 const projStore = useProject()
