@@ -48,6 +48,7 @@ class CashBookSerializer(serializers.ModelSerializer):
     account_d1_desc = serializers.SerializerMethodField(read_only=True)
     account_d2_desc = serializers.SerializerMethodField(read_only=True)
     account_d3_desc = serializers.SerializerMethodField(read_only=True)
+    project_desc = serializers.SerializerMethodField(read_only=True)
     sepItems = SepItemsInCashBookSerializer(many=True, read_only=True)
     bank_account_desc = serializers.SerializerMethodField(read_only=True)
     evidence_desc = serializers.CharField(source='get_evidence_display', read_only=True)
@@ -56,9 +57,9 @@ class CashBookSerializer(serializers.ModelSerializer):
         model = CashBook
         fields = (
             'pk', 'company', 'sort', 'sort_desc', 'account_d1', 'account_d1_desc', 'account_d2',
-            'account_d2_desc', 'account_d3', 'project', 'account_d3_desc', 'is_separate',
-            'separated', 'sepItems', 'content', 'trader', 'bank_account', 'bank_account_desc',
-            'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date')
+            'account_d2_desc', 'account_d3', 'account_d3_desc', 'project', 'project_desc',
+            'is_separate', 'separated', 'sepItems', 'content', 'trader', 'bank_account',
+            'bank_account_desc', 'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date')
 
     @staticmethod
     def get_sort_desc(obj):
@@ -75,6 +76,10 @@ class CashBookSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_account_d3_desc(obj):
         return obj.account_d3.name if obj.account_d3 else None
+
+    @staticmethod
+    def get_project_desc(obj):
+        return obj.project.name if obj.project else None
 
     @staticmethod
     def get_bank_account_desc(obj):
