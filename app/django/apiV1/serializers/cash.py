@@ -1,10 +1,10 @@
 from django.db import transaction
-from django.db.models.aggregates import Sum
 from rest_framework import serializers
 
 from cash.models import BankCode, CompanyBankAccount, ProjectBankAccount, CashBook, ProjectCashBook, \
     CompanyCashBookCalculation, ProjectCashBookCalculation
-from ibs.models import AccountSubD1, AccountSubD2, AccountSubD3, ProjectAccountD2, ProjectAccountD3
+from ibs.models import AccountSubD1, AccountSubD2, AccountSubD3
+from project.models import Project
 from .contract import SimpleUserSerializer
 
 
@@ -55,8 +55,8 @@ class CashBookSerializer(serializers.ModelSerializer):
     class Meta:
         model = CashBook
         fields = (
-            'pk', 'company', 'sort', 'sort_desc', 'account_d1', 'account_d1_desc',
-            'account_d2', 'account_d2_desc', 'account_d3', 'account_d3_desc', 'is_separate',
+            'pk', 'company', 'sort', 'sort_desc', 'account_d1', 'account_d1_desc', 'account_d2',
+            'account_d2_desc', 'account_d3', 'project', 'account_d3_desc', 'is_separate',
             'separated', 'sepItems', 'content', 'trader', 'bank_account', 'bank_account_desc',
             'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date')
 
@@ -92,6 +92,7 @@ class CashBookSerializer(serializers.ModelSerializer):
             sep_cashbook_account_d1 = AccountSubD1.objects.get(pk=sep_data.get('account_d1'))
             sep_cashbook_account_d2 = AccountSubD2.objects.get(pk=sep_data.get('account_d2'))
             sep_cashbook_account_d3 = AccountSubD3.objects.get(pk=sep_data.get('account_d3'))
+            sep_cashbook_project = Project.objects.get(pk=sep_data.get('project'))
             sep_cashbook_content = sep_data.get('content')
             sep_cashbook_trader = sep_data.get('trader')
             sep_cashbook_income = sep_data.get('income')
@@ -104,6 +105,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         account_d1=sep_cashbook_account_d1,
                                         account_d2=sep_cashbook_account_d2,
                                         account_d3=sep_cashbook_account_d3,
+                                        project=sep_cashbook_project,
                                         separated=cashbook,
                                         content=sep_cashbook_content,
                                         trader=sep_cashbook_trader,
@@ -121,6 +123,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.account_d1 = sep_cashbook_account_d1
                 sep_cashbook.account_d2 = sep_cashbook_account_d2
                 sep_cashbook.account_d3 = sep_cashbook_account_d3
+                sep_cashbook.project = sep_cashbook_project
                 sep_cashbook.separated = cashbook
                 sep_cashbook.content = sep_cashbook_content
                 sep_cashbook.trader = sep_cashbook_trader
@@ -147,6 +150,7 @@ class CashBookSerializer(serializers.ModelSerializer):
             sep_cashbook_account_d1 = AccountSubD1.objects.get(pk=sep_data.get('account_d1'))
             sep_cashbook_account_d2 = AccountSubD2.objects.get(pk=sep_data.get('account_d2'))
             sep_cashbook_account_d3 = AccountSubD3.objects.get(pk=sep_data.get('account_d3'))
+            sep_cashbook_project = Project.objects.get(pk=sep_data.get('project'))
             sep_cashbook_content = sep_data.get('content')
             sep_cashbook_trader = sep_data.get('trader')
             sep_cashbook_income = sep_data.get('income')
@@ -159,6 +163,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         account_d1=sep_cashbook_account_d1,
                                         account_d2=sep_cashbook_account_d2,
                                         account_d3=sep_cashbook_account_d3,
+                                        project=sep_cashbook_project,
                                         separated=instance,
                                         content=sep_cashbook_content,
                                         trader=sep_cashbook_trader,
@@ -176,6 +181,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.account_d1 = sep_cashbook_account_d1
                 sep_cashbook.account_d2 = sep_cashbook_account_d2
                 sep_cashbook.account_d3 = sep_cashbook_account_d3
+                sep_cashbook.project = sep_cashbook_project
                 sep_cashbook.separated = instance
                 sep_cashbook.content = sep_cashbook_content
                 sep_cashbook.trader = sep_cashbook_trader

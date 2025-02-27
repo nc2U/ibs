@@ -71,6 +71,7 @@ export interface CashBook {
   account_d2_desc?: string
   account_d3: number | null
   account_d3_desc?: string
+  project: number | null
   is_separate: boolean
   separated: number | null
   sepItems?: SepItems[]
