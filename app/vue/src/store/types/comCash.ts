@@ -93,6 +93,7 @@ export interface SepItems {
   account_d1: number | null
   account_d2: number | null
   account_d3: number | null
+  project: number | null
   separated?: number | null
   content: string
   trader: string
