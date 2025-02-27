@@ -347,6 +347,7 @@ const dataSetup = () => {
     form.account_d1 = props.cash.account_d1
     form.account_d2 = props.cash.account_d2
     form.account_d3 = props.cash.account_d3
+    form.project = props.cash.project
     form.is_separate = props.cash.is_separate
     form.separated = props.cash.separated
     form.content = props.cash.content

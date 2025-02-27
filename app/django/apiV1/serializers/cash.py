@@ -147,6 +147,7 @@ class CashBookSerializer(serializers.ModelSerializer):
         instance.account_d1 = validated_data.get('account_d1', instance.account_d1)
         instance.account_d2 = validated_data.get('account_d2', instance.account_d2)
         instance.account_d3 = validated_data.get('account_d3', instance.account_d3)
+        instance.project = validated_data.get('project', instance.project)
         instance.save()
 
         # 2. sep 정보 확인 후 저장
