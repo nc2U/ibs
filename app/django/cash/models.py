@@ -45,6 +45,7 @@ class CashBook(models.Model):
                                    verbose_name='계정중분류')
     account_d3 = models.ForeignKey('ibs.AccountSubD3', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name='세부계정')
+    project = models.ForeignKey('project.Project', on_delete=models.SET_NULL, null=True, verbose_name='투입 프로젝트')
     is_separate = models.BooleanField('상세 분리기록 등록', default=False,
                                       help_text='각기 다른 계정 항목이 1회에 같이 출금된 경우 이 항목을 체크')
     separated = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sepItems',
