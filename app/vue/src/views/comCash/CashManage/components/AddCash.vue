@@ -5,7 +5,10 @@ import { AlertLight } from '@/utils/cssMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
 import CashForm from '@/views/comCash/CashManage/components/CashForm.vue'
 
-defineProps({ company: { type: Number, default: null } })
+defineProps({
+  company: { type: Number, default: null },
+  projects: { type: Array, default: () => [] },
+})
 const emit = defineEmits(['multi-submit', 'patch-d3-hide', 'on-bank-update'])
 
 const createFormModal = ref()
@@ -29,6 +32,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
     <template #header>본사 입출금 거래 건별 등록</template>
     <template #default>
       <CashForm
+        :projects="projects"
         @multi-submit="multiSubmit"
         @patch-d3-hide="patchD3Hide"
         @on-bank-update="onBankUpdate"

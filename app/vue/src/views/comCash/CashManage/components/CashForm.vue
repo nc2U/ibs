@@ -14,6 +14,7 @@ import BankAcc from './BankAcc.vue'
 
 const props = defineProps({
   cash: { type: Object as PropType<CashBook>, default: null },
+  projects: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close', 'patch-d3-hide', 'on-bank-update'])
@@ -23,11 +24,15 @@ const refAlertModal = ref()
 const refAccDepth = ref()
 const refBankAcc = ref()
 
+const showProjects = ref(false)
+const showSepProjects = ref(false)
+
 const sepItem = reactive<SepItems>({
   pk: null,
   account_d1: null,
   account_d2: null,
   account_d3: null,
+  project: null,
   content: '',
   trader: '',
   income: null,
@@ -45,6 +50,7 @@ const form = reactive<CashBook & { bank_account_to: null | number; charge: null 
   account_d1: null,
   account_d2: null,
   account_d3: null,
+  project: null,
 
   is_separate: false,
   separated: null as null | number,
@@ -68,16 +74,17 @@ const formsCheck = computed(() => {
     const c = form.account_d1 === props.cash.account_d1
     const d = form.account_d2 === props.cash.account_d2
     const e = form.account_d3 === props.cash.account_d3
-    const f = form.content === props.cash.content
-    const g = form.trader === props.cash.trader
-    const h = form.bank_account === props.cash.bank_account
-    const i = form.income === props.cash.income
-    const j = form.outlay === props.cash.outlay
-    const k = form.evidence === props.cash.evidence
-    const l = form.note === props.cash.note
-    const m = form.deal_date === props.cash.deal_date
+    const f = form.project === props.cash.project
+    const g = form.content === props.cash.content
+    const h = form.trader === props.cash.trader
+    const i = form.bank_account === props.cash.bank_account
+    const j = form.income === props.cash.income
+    const k = form.outlay === props.cash.outlay
+    const l = form.evidence === props.cash.evidence
+    const m = form.note === props.cash.note
+    const n = form.deal_date === props.cash.deal_date
 
-    return a && b && c && d && e && f && g && h && i && j && k && l && m
+    return a && b && c && d && e && f && g && h && i && j && k && l && m && n
   } else return false
 })
 
@@ -137,6 +144,7 @@ const sepUpdate = (sep: SepItems) => {
   sepItem.account_d1 = sep.account_d1
   sepItem.account_d2 = sep.account_d2
   sepItem.account_d3 = sep.account_d3
+  sepItem.project = sep.project
   sepItem.content = sep.content
   sepItem.trader = sep.trader
   sepItem.evidence = sep.evidence
@@ -150,6 +158,7 @@ const sepRemove = () => {
   sepItem.account_d1 = null
   sepItem.account_d2 = null
   sepItem.account_d3 = null
+  sepItem.project = null
   sepItem.content = ''
   sepItem.trader = ''
   sepItem.evidence = ''
@@ -182,24 +191,29 @@ const sort_change = (event: Event) => {
       form.account_d1 = 4
       form.account_d2 = null
       form.account_d3 = null
+      form.project = null
       form.outlay = null
     } else if (el.value === '2') {
       form.account_d1 = 5
       form.account_d2 = null
       form.account_d3 = null
+      form.project = null
       form.income = null
     } else if (el.value === '3') {
       form.account_d1 = 6
       form.account_d2 = 19
       form.account_d3 = 131
+      form.project = null
     } else if (el.value === '4') {
       form.account_d1 = 7
       form.account_d2 = 20
       form.account_d3 = 133
+      form.project = null
     } else {
       form.account_d1 = null
       form.account_d2 = null
       form.account_d3 = null
+      form.project = null
     }
     callAccount()
   } else {
@@ -207,6 +221,7 @@ const sort_change = (event: Event) => {
       sepItem.account_d1 = 4
       sepItem.account_d2 = null
       sepItem.account_d3 = null
+      form.project = null
       sepItem.outlay = null
       fetchFormAccD2List(1, 4)
     } else if (el.value === '2') {
@@ -214,12 +229,14 @@ const sort_change = (event: Event) => {
       sepItem.account_d1 = 5
       sepItem.account_d2 = null
       sepItem.account_d3 = null
+      form.project = null
       sepItem.income = null
       fetchFormAccD2List(2, 5)
     } else {
       sepItem.account_d1 = null
       sepItem.account_d2 = null
       sepItem.account_d3 = null
+      form.project = null
       callAccount()
     }
   }
@@ -255,6 +272,16 @@ const sepD2_change = () => {
     const d2 = sepItem.account_d2
     fetchFormAccD3List(sort, d1, d2)
   })
+}
+
+const d3_change = (event: Event) => {
+  const el = event.target as HTMLSelectElement
+  showProjects.value = el.value === '6'
+}
+
+const sepD3_change = (event: Event) => {
+  const el = event.target as HTMLSelectElement
+  showSepProjects.value = el.value === '6'
 }
 
 const accountStore = useAccount()
@@ -334,7 +361,10 @@ const dataSetup = () => {
   callAccount()
 }
 
-onBeforeMount(() => dataSetup())
+onBeforeMount(async () => {
+  await dataSetup()
+  if (form.account_d3 === 6) showProjects.value = true
+})
 </script>
 
 <template>
@@ -429,10 +459,31 @@ onBeforeMount(() => dataSetup())
                   v-model.number="form.account_d3"
                   :required="!form.is_separate"
                   :disabled="!form.account_d2 || form.is_separate"
+                  @change="d3_change"
                 >
                   <option value="">---------</option>
                   <option v-for="d3 in formAccD3List" :key="d3.pk" :value="d3.pk">
                     {{ d3.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3" v-show="showProjects">
+          <CCol sm="6"></CCol>
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label"> 투입 프로젝트</CFormLabel>
+              <CCol sm="8">
+                <CFormSelect
+                  v-model.number="form.project"
+                  :disabled="!form.account_d2 || form.is_separate"
+                >
+                  <option value="">---------</option>
+                  <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
+                    {{ proj.name }}
                   </option>
                 </CFormSelect>
               </CCol>
@@ -701,11 +752,34 @@ onBeforeMount(() => dataSetup())
                     <CFormSelect
                       v-model.number="sepItem.account_d3"
                       :disabled="!sepItem.account_d2"
+                      @change="sepD3_change"
                       required
                     >
                       <option value="">---------</option>
                       <option v-for="d3 in formAccD3List" :key="d3.pk" :value="d3.pk">
                         {{ d3.name }}
+                      </option>
+                    </CFormSelect>
+                  </CCol>
+                </CRow>
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3" v-show="showSepProjects">
+          <CCol sm="1"></CCol>
+          <CCol sm="11">
+            <CRow>
+              <CCol sm="6"></CCol>
+              <CCol sm="6">
+                <CRow>
+                  <CFormLabel class="col-sm-4 col-form-label"> 투입 프로젝트</CFormLabel>
+                  <CCol sm="8">
+                    <CFormSelect v-model.number="sepItem.project" :disabled="!sepItem.account_d2">
+                      <option value="">---------</option>
+                      <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
+                        {{ proj.name }}
                       </option>
                     </CFormSelect>
                   </CCol>

@@ -12,6 +12,7 @@ import ListController from '@/views/comCash/CashManage/components/ListController
 import AddCash from '@/views/comCash/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import CashList from '@/views/comCash/CashManage/components/CashList.vue'
+import { useProject } from '@/store/pinia/project'
 
 const listControl = ref()
 
@@ -43,6 +44,10 @@ const excelUrl = computed(() => {
 
 const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
+
+const proStore = useProject()
+const projectList = computed(() => proStore.projectList)
+const fetchProjectList = async () => proStore.fetchProjectList()
 
 const fetchCompany = (pk: number) => comStore.fetchCompany(pk)
 const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
@@ -179,6 +184,7 @@ const onBankUpdate = (payload: CompanyBank) => patchComBankAcc(payload)
 
 const dataSetup = (pk: number) => {
   fetchCompany(pk)
+  fetchProjectList()
   fetchAllDepartList(pk)
   fetchComBankAccList(pk)
   fetchAllComBankAccList(pk)
@@ -228,6 +234,7 @@ onBeforeMount(() => {
       <AddCash
         v-if="write_company_cash"
         :company="company as number"
+        :projects="projectList"
         @multi-submit="multiSubmit"
         @patch-d3-hide="patchD3Hide"
         @on-bank-update="onBankUpdate"
@@ -241,6 +248,7 @@ onBeforeMount(() => {
       />
       <CashList
         :company="company as number"
+        :projects="projectList"
         @page-select="pageSelect"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"

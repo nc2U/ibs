@@ -9,7 +9,10 @@ import Pagination from '@/components/Pagination'
 import AccDepth from './AccDepth.vue'
 import BankAcc from './BankAcc.vue'
 
-const props = defineProps({ company: Number, default: () => null })
+const props = defineProps({
+  company: { type: Number, default: null },
+  projects: { type: Array, default: () => [] },
+})
 const emit = defineEmits([
   'page-select',
   'multi-submit',
@@ -92,6 +95,7 @@ const accCallModal = () => {
         v-for="cash in cashBookList"
         :key="cash.pk as number"
         :cash="cash"
+        :projects="projects"
         :calculated="comCalculated?.calculated"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"

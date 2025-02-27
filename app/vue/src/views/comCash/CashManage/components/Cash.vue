@@ -11,6 +11,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 import CashForm from '@/views/comCash/CashManage/components/CashForm.vue'
 
 const props = defineProps({
+  projects: { type: Array, default: () => [] },
   cash: { type: Object as PropType<CashBook>, required: true },
   calculated: { type: String, default: '2000-01-01' },
 })
@@ -117,6 +118,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
     <template #default>
       <CashForm
         :cash="cash"
+        :projects="projects"
         @multi-submit="multiSubmit"
         @on-delete="deleteConfirm"
         @patch-d3-hide="patchD3Hide"
