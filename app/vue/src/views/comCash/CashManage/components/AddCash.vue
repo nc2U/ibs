@@ -1,13 +1,14 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { type PropType, ref } from 'vue'
 import type { CompanyBank, CashBook } from '@/store/types/comCash'
+import type { Project } from '@/store/types/project'
 import { AlertLight } from '@/utils/cssMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
 import CashForm from '@/views/comCash/CashManage/components/CashForm.vue'
 
 defineProps({
   company: { type: Number, default: null },
-  projects: { type: Array, default: () => [] },
+  projects: { type: Array as PropType<Project[]>, default: () => [] },
 })
 const emit = defineEmits(['multi-submit', 'patch-d3-hide', 'on-bank-update'])
 

@@ -3,6 +3,7 @@ import { ref, computed, type PropType } from 'vue'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import type { CompanyBank, CashBook } from '@/store/types/comCash'
+import type { Project } from '@/store/types/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import { numFormat, cutString, diffDate } from '@/utils/baseMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -11,7 +12,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 import CashForm from '@/views/comCash/CashManage/components/CashForm.vue'
 
 const props = defineProps({
-  projects: { type: Array, default: () => [] },
+  projects: { type: Array as PropType<Project[]>, default: () => [] },
   cash: { type: Object as PropType<CashBook>, required: true },
   calculated: { type: String, default: '2000-01-01' },
 })

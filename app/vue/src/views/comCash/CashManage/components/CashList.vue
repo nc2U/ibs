@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, type PropType } from 'vue'
 import { useComCash } from '@/store/pinia/comCash'
 import type { CompanyBank, CashBook } from '@/store/types/comCash'
+import type { Project } from '@/store/types/project'
 import { TableSecondary } from '@/utils/cssMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import Cash from '@/views/comCash/CashManage/components/Cash.vue'
@@ -11,7 +12,7 @@ import BankAcc from './BankAcc.vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
-  projects: { type: Array, default: () => [] },
+  projects: { type: Array as PropType<Project[]>, default: () => [] },
 })
 const emit = defineEmits([
   'page-select',

@@ -3,6 +3,7 @@ import { ref, reactive, computed, nextTick, onBeforeMount, type PropType } from 
 import { useAccount } from '@/store/pinia/account'
 import { useComCash } from '@/store/pinia/comCash'
 import type { CashBook, CompanyBank, SepItems } from '@/store/types/comCash'
+import type { Project } from '@/store/types/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import { getToday, diffDate, cutString, numFormat } from '@/utils/baseMixins'
@@ -14,7 +15,7 @@ import BankAcc from './BankAcc.vue'
 
 const props = defineProps({
   cash: { type: Object as PropType<CashBook>, default: null },
-  projects: { type: Array, default: () => [] },
+  projects: { type: Array as PropType<Project[]>, default: () => [] },
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close', 'patch-d3-hide', 'on-bank-update'])
