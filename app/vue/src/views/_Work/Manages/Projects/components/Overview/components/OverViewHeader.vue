@@ -8,7 +8,7 @@ const props = defineProps({
   project: { type: Object as PropType<IssueProject>, required: true },
 })
 
-const emit = defineEmits(['close-project', 'delete-project'])
+const emit = defineEmits(['close-project', 'reopen-project', 'delete-project'])
 
 const RefProjectCloseConfirm = ref()
 const RefProjectDeleteConfirm = ref()
@@ -16,8 +16,9 @@ const idForDelete = ref('')
 
 const router = useRouter()
 
-const projectClose = () => {
-  emit('close-project', props.project.slug)
+const patchProject = () => {
+  if (props.project.status === '1') emit('close-project', props.project.slug)
+  else emit('reopen-project', props.project.slug)
   RefProjectCloseConfirm.value.close()
 }
 
@@ -62,8 +63,12 @@ const projectDelete = () => {
             </CDropdownItem>
             <CDropdownItem class="form-text" @click="RefProjectCloseConfirm.callModal()">
               <router-link to="">
-                <v-icon icon="mdi-lock" color="warning" size="sm" />
-                닫기
+                <v-icon
+                  :icon="project.status === '1' ? 'mdi-lock' : 'mdi-lock-open'"
+                  :color="project.status === '1' ? 'warning' : 'secondary'"
+                  size="sm"
+                />
+                {{ project.status === '1' ? '닫기' : '다시 열기' }}
               </router-link>
             </CDropdownItem>
             <CDropdownItem class="form-text" @click="RefProjectDeleteConfirm.callModal()">
@@ -86,13 +91,22 @@ const projectDelete = () => {
 
   <ConfirmModal ref="RefProjectCloseConfirm">
     <template #icon>
-      <v-icon icon="mdi-arrow-right-bold-box" color="warning" class="mr-2" />
+      <v-icon
+        icon="mdi-arrow-right-bold-box"
+        :color="project.status === '1' ? 'warning' : 'success'"
+        class="mr-2"
+      />
     </template>
     <template #default>
-      '{{ project?.name }}' 프로젝트를 닫고 읽기 전용 프로젝트로 만드시겠습니까?
+      <span v-if="project.status === '1'">
+        '{{ project?.name }}' 프로젝트를 닫고 읽기 전용 프로젝트로 만드시겠습니까?
+      </span>
+      <span v-else>'{{ project?.name }}' 프로젝트를 다시 열고 진행 하시겠습니까?</span>
     </template>
     <template #footer>
-      <CButton color="warning" @click="projectClose">확인</CButton>
+      <CButton :color="project.status === '1' ? 'warning' : 'success'" @click="patchProject">
+        확인
+      </CButton>
     </template>
   </ConfirmModal>
 

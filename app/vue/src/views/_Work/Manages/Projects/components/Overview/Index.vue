@@ -61,6 +61,8 @@ watch(
 
 const closeProject = (slug: string) => patchIssueProject({ slug, status: '9' })
 
+const reopenProject = (slug: string) => patchIssueProject({ slug, status: '1' })
+
 const deleteProject = (slug: string) => {
   alert(`delete-project :: ${slug}`)
 }
@@ -77,8 +79,14 @@ onBeforeMount(() => {
   <OverViewHeader
     :project="iProject as IssueProject"
     @close-project="closeProject"
+    @reopen-project="reopenProject"
     @delete-project="deleteProject"
   />
+
+  <CAlert v-if="iProject.status === '9'" color="warning">
+    <v-icon icon="mdi-lock" color="warning" size="sm" />
+    이 프로젝트는 닫혀 있으며 읽기 전용입니다.
+  </CAlert>
 
   <CRow class="mb-2">
     <CCol>{{ iProject?.description }}</CCol>
