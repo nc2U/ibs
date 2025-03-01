@@ -114,6 +114,7 @@ onBeforeMount(async () => {
 <template>
   <IssueList
     v-if="route.name === '(업무)'"
+    :proj-status="issueProject.status"
     :issue-list="issueList"
     :all-projects="allProjects"
     :status-list="statusList"

@@ -10,6 +10,7 @@ import IssueDropDown from './IssueDropDown.vue'
 import Pagination from '@/components/Pagination'
 
 defineProps({
+  projStatus: { type: String, default: '' },
   issueList: { type: Array as PropType<Issue[]>, default: () => [] },
   allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
@@ -59,7 +60,10 @@ const watchControl = (payload: any, issuePk: number) => {
     </CCol>
 
     <CCol class="text-right">
-      <span v-if="workManager || my_perms?.issue_create" class="mr-2 form-text">
+      <span
+        v-if="projStatus !== '9' && (workManager || my_perms?.issue_create)"
+        class="mr-2 form-text"
+      >
         <v-icon icon="mdi-plus-circle" color="success" size="sm" />
         <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1"
           >새 업무만들기</router-link
@@ -89,14 +93,14 @@ const watchControl = (payload: any, issuePk: number) => {
                 요약
               </router-link>
             </CDropdownItem>
-            <CDropdownItem class="form-text" disabled>
+            <CDropdownItem v-if="projStatus !== '9'" class="form-text" disabled>
               <!--              <router-link to="">-->
               <v-icon icon="mdi-file-document-arrow-right" color="blue-lighten" size="sm" />
               가져오기
               <!--              </router-link>-->
             </CDropdownItem>
             <CDropdownItem
-              v-if="route.params.projId && workManager"
+              v-if="projStatus !== '9' && route.params.projId && workManager"
               class="form-text"
               @click="router.push({ name: '(설정)', query: { menu: '업무추적' } })"
             >
