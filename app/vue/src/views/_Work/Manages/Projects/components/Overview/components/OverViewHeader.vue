@@ -17,13 +17,13 @@ const idForDelete = ref('')
 const router = useRouter()
 
 const projectClose = () => {
-  emit('close-project', props.project?.pk)
+  emit('close-project', props.project.slug)
   RefProjectCloseConfirm.value.close()
 }
 
 const projectDelete = () => {
   if (idForDelete.value === (props.project?.slug as string)) {
-    emit('delete-project', props.project?.pk)
+    emit('delete-project', props.project.slug)
     RefProjectDeleteConfirm.value.close()
   } else idForDelete.value = ''
 }

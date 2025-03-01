@@ -110,9 +110,10 @@ export const useWork = defineStore('work', () => {
   const patchIssueProject = async (payload: {
     slug: string
     activities?: number[]
-    users: number[]
-    roles: number[]
+    users?: number[]
+    roles?: number[]
     del_mem?: number
+    status?: '1' | '9'
   }) => {
     const type = payload.del_mem ? 'warning' : 'success'
     return await api

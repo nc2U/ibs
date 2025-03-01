@@ -435,8 +435,8 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         module.save()
 
         # user에 대응하는 member 모델 생성
-        users = self.initial_data.get('users')
-        roles = self.initial_data.get('roles')
+        users = self.initial_data.get('users', [])
+        roles = self.initial_data.get('roles', [])
         del_mem = self.initial_data.get('del_mem', None)
 
         members = []
@@ -451,6 +451,11 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         elif del_mem is not None:
             member = Member.objects.get(pk=del_mem)
             member.delete()
+
+        # status (close or reopen)
+        status = self.initial_data.get('status', '1')
+        if status is not None:
+            instance.status = status
 
         return super().update(instance, validated_data)
 

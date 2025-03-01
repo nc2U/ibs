@@ -49,6 +49,9 @@ const computedMembers = computed(() => {
   return organizedData
 })
 
+const patchIssueProject = (payload: { slug: string; status?: '1' | '9' }) =>
+  workStore.patchIssueProject(payload)
+
 watch(
   () => iProject.value,
   nVal => {
@@ -56,12 +59,13 @@ watch(
   },
 )
 
-const closeProject = (proj: number) => {
-  alert(`close-project :: ${proj}`)
+const closeProject = (slug: string) => {
+  alert(`close-project :: ${slug}`)
+  patchIssueProject({ slug, status: '9' })
 }
 
-const deleteProject = (proj: number) => {
-  alert(`delete-project :: ${proj}`)
+const deleteProject = (slug: string) => {
+  alert(`delete-project :: ${slug}`)
 }
 
 onBeforeMount(() => {
