@@ -94,95 +94,95 @@ const resetForm = () => {
 <template>
   <CCallout color="primary" class="pb-0 mb-4" :class="bgLight">
     <CRow>
-      <CCol lg="3">
+      <CCol lg="9">
         <CRow>
-          <CCol md="6" class="mb-3">
-            <DatePicker
-              v-model="from_date"
-              placeholder="시작일 (From)"
-              @keydown.enter="listFiltering(1)"
-            />
-          </CCol>
-          <CCol md="6" class="mb-3">
-            <DatePicker
-              v-model="to_date"
-              placeholder="종료일 (To)"
-              @keydown.enter="listFiltering(1)"
-            />
-          </CCol>
-        </CRow>
-      </CCol>
-
-      <CCol lg="2">
-        <CRow>
-          <CCol md="6" class="mb-3">
-            <CFormSelect v-model="form.sort" @change="sortSelect">
-              <option value="">구분</option>
-              <option value="1">입금</option>
-              <option value="2">출금</option>
-            </CFormSelect>
+          <CCol lg="3">
+            <CRow>
+              <CCol md="6" class="mb-3">
+                <DatePicker
+                  v-model="from_date"
+                  placeholder="시작일 (From)"
+                  @keydown.enter="listFiltering(1)"
+                />
+              </CCol>
+              <CCol md="6" class="mb-3">
+                <DatePicker
+                  v-model="to_date"
+                  placeholder="종료일 (To)"
+                  @keydown.enter="listFiltering(1)"
+                />
+              </CCol>
+            </CRow>
           </CCol>
 
-          <CCol md="6" class="mb-3">
-            <CFormSelect v-model="form.account_d1" @change="accountD1Select">
-              <option value="">계정[대분류]</option>
-              <option v-for="acc1 in formAccD1List" :key="acc1.pk" :value="acc1.pk">
-                {{ acc1.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
-        </CRow>
-      </CCol>
+          <CCol lg="9">
+            <CRow>
+              <CCol md="6" lg="2" class="mb-3">
+                <CFormSelect v-model="form.sort" @change="sortSelect">
+                  <option value="">구분</option>
+                  <option value="1">입금</option>
+                  <option value="2">출금</option>
+                </CFormSelect>
+              </CCol>
 
-      <CCol lg="4">
-        <CRow>
-          <CCol md="3" lg="3" class="mb-3">
-            <CFormSelect
-              v-model="form.account_d2"
-              :disabled="!form.account_d1"
-              @change="accountD2Select"
-            >
-              <option value="">계정[중분류]</option>
-              <option v-for="acc2 in formAccD2List" :key="acc2.pk" :value="acc2.pk">
-                {{ acc2.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+              <CCol md="6" lg="2" class="mb-3">
+                <CFormSelect v-model="form.account_d1" @change="accountD1Select">
+                  <option value="">계정[대분류]</option>
+                  <option v-for="acc1 in formAccD1List" :key="acc1.pk" :value="acc1.pk">
+                    {{ acc1.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
 
-          <CCol md="3" lg="3" class="mb-3">
-            <CFormSelect
-              v-model="form.account_d3"
-              :disabled="!form.account_d1"
-              @change="listFiltering(1)"
-            >
-              <option value="">계정[소분류]</option>
-              <option v-for="acc3 in formAccD3List" :key="acc3.pk" :value="acc3.pk">
-                {{ acc3.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+              <CCol md="6" lg="2" class="mb-3">
+                <CFormSelect
+                  v-model="form.account_d2"
+                  :disabled="!form.account_d1"
+                  @change="accountD2Select"
+                >
+                  <option value="">계정[중분류]</option>
+                  <option v-for="acc2 in formAccD2List" :key="acc2.pk" :value="acc2.pk">
+                    {{ acc2.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
 
-          <CCol md="3" lg="3" class="mb-3">
-            <CFormSelect
-              v-model.number="form.project"
-              :disabled="!form.account_d3"
-              @change="listFiltering(1)"
-            >
-              <option value="">투입 프로젝트</option>
-              <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
-                {{ proj.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+              <CCol md="6" lg="2" class="mb-3">
+                <CFormSelect
+                  v-model="form.account_d3"
+                  :disabled="!form.account_d1"
+                  @change="listFiltering(1)"
+                >
+                  <option value="">계정[소분류]</option>
+                  <option v-for="acc3 in formAccD3List" :key="acc3.pk" :value="acc3.pk">
+                    {{ acc3.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
 
-          <CCol md="3" lg="3" class="pt-2 mb-3">
-            <CFormSwitch
-              v-model="form.is_return"
-              label="반환 정산 여부"
-              id="form-is-return"
-              :disabled="!form.account_d3"
-              @change="listFiltering(1)"
-            />
+              <CCol md="6" lg="2" class="mb-3">
+                <CFormSelect
+                  v-model.number="form.project"
+                  :disabled="!form.account_d3"
+                  @change="listFiltering(1)"
+                >
+                  <option value="">투입 프로젝트</option>
+                  <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
+                    {{ proj.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
+
+              <CCol md="6" lg="2" class="pt-2 mb-3">
+                <CFormSwitch
+                  v-model="form.is_return"
+                  label="반환 정산 여부"
+                  id="form-is-return"
+                  :disabled="!form.account_d3"
+                  @change="listFiltering(1)"
+                />
+              </CCol>
+            </CRow>
           </CCol>
         </CRow>
       </CCol>
