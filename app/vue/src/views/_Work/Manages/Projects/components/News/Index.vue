@@ -1,12 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount } from 'vue'
-import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
 import NoData from '@/views/_Work/components/NoData.vue'
 
 const emit = defineEmits(['aside-visible'])
-
-const route = useRoute()
 
 const newsList = computed(() => [])
 

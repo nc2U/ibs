@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useWork } from '@/store/pinia/work'
 import NoData from '@/views/_Work/components/NoData.vue'
 
 const emit = defineEmits(['aside-visible'])
 
-const route = useRoute()
-
 const docsList = computed(() => [])
+
+const workStore = useWork()
+const issueProject = computed(() => workStore.issueProject)
 
 onBeforeMount(() => emit('aside-visible', true))
 </script>
@@ -19,7 +20,7 @@ onBeforeMount(() => emit('aside-visible', true))
     </CCol>
 
     <CCol class="text-right">
-      <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2 form-text">
+      <span v-if="issueProject.status !== '9'" class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="sm" />
         <router-link to="" class="ml-1">새 문서</router-link>
       </span>
