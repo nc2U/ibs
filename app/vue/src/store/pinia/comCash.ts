@@ -24,6 +24,8 @@ export type DataFilter = {
   account_d1?: number | null
   account_d2?: number | null
   account_d3?: number | null
+  project?: number | null
+  is_return?: boolean
   bank_account?: number | null
   search?: string
 }

@@ -1,22 +1,26 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, type PropType } from 'vue'
+import type { Project } from '@/store/types/project'
 import { useComCash, type DataFilter } from '@/store/pinia/comCash'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import DatePicker from '@/components/DatePicker/index.vue'
 
+defineProps({ projects: { type: Array as PropType<Project[]>, default: () => [] } })
 const emit = defineEmits(['list-filtering'])
 
 const from_date = ref('')
 const to_date = ref('')
 
-const form = reactive<DataFilter>({
+const form = ref<DataFilter>({
   page: 1,
   company: null,
   sort: null,
   account_d1: null,
   account_d2: null,
   account_d3: null,
+  project: null,
+  is_return: false,
   bank_account: null,
   search: '',
 })
@@ -24,12 +28,12 @@ const form = reactive<DataFilter>({
 const formsCheck = computed(() => {
   const a = !from_date.value
   const b = !to_date.value
-  const c = !form.sort
-  const d = !form.account_d1
-  const e = !form.account_d2
-  const f = !form.account_d3
-  const g = !form.bank_account
-  const h = !form.search?.trim()
+  const c = !form.value.sort
+  const d = !form.value.account_d1
+  const e = !form.value.account_d2
+  const f = !form.value.account_d3
+  const g = !form.value.bank_account
+  const h = !form.value.search?.trim()
   return a && b && c && d && e && f && g && h
 })
 
@@ -46,25 +50,25 @@ watch(to_date, () => listFiltering(1))
 //   methods: {
 const sortSelect = () => {
   listFiltering(1)
-  form.account_d1 = null
-  form.account_d2 = null
-  form.account_d3 = null
+  form.value.account_d1 = null
+  form.value.account_d2 = null
+  form.value.account_d3 = null
 }
 const accountD1Select = () => {
   listFiltering(1)
-  form.account_d2 = null
-  form.account_d3 = null
+  form.value.account_d2 = null
+  form.value.account_d3 = null
 }
 const accountD2Select = () => {
   listFiltering(1)
-  form.account_d3 = null
+  form.value.account_d3 = null
 }
 
 const listFiltering = (page = 1) => {
-  form.page = page
-  form.search = form.search?.trim()
-  form.from_date = from_date.value
-  form.to_date = to_date.value
+  form.value.page = page
+  form.value.search = form.value.search?.trim()
+  form.value.from_date = from_date.value
+  form.value.to_date = to_date.value
   nextTick(() => {
     emit('list-filtering', { ...form })
   })
@@ -75,12 +79,12 @@ defineExpose({ listFiltering })
 const resetForm = () => {
   from_date.value = ''
   to_date.value = ''
-  form.sort = null
-  form.account_d1 = null
-  form.account_d2 = null
-  form.account_d3 = null
-  form.bank_account = null
-  form.search = ''
+  form.value.sort = null
+  form.value.account_d1 = null
+  form.value.account_d2 = null
+  form.value.account_d3 = null
+  form.value.bank_account = null
+  form.value.search = ''
   listFiltering(1)
 }
 </script>
@@ -107,9 +111,9 @@ const resetForm = () => {
         </CRow>
       </CCol>
 
-      <CCol lg="5">
+      <CCol lg="2">
         <CRow>
-          <CCol md="6" lg="3" class="mb-3">
+          <CCol md="6" class="mb-3">
             <CFormSelect v-model="form.sort" @change="sortSelect">
               <option value="">구분</option>
               <option value="1">입금</option>
@@ -117,7 +121,7 @@ const resetForm = () => {
             </CFormSelect>
           </CCol>
 
-          <CCol md="6" lg="3" class="mb-3">
+          <CCol md="6" class="mb-3">
             <CFormSelect v-model="form.account_d1" @change="accountD1Select">
               <option value="">계정[대분류]</option>
               <option v-for="acc1 in formAccD1List" :key="acc1.pk" :value="acc1.pk">
@@ -125,8 +129,12 @@ const resetForm = () => {
               </option>
             </CFormSelect>
           </CCol>
+        </CRow>
+      </CCol>
 
-          <CCol md="6" lg="3" class="mb-3">
+      <CCol lg="4">
+        <CRow>
+          <CCol md="3" lg="3" class="mb-3">
             <CFormSelect
               v-model="form.account_d2"
               :disabled="!form.account_d1"
@@ -139,7 +147,7 @@ const resetForm = () => {
             </CFormSelect>
           </CCol>
 
-          <CCol md="6" lg="3" class="mb-3">
+          <CCol md="3" lg="3" class="mb-3">
             <CFormSelect
               v-model="form.account_d3"
               :disabled="!form.account_d1"
@@ -151,10 +159,33 @@ const resetForm = () => {
               </option>
             </CFormSelect>
           </CCol>
+
+          <CCol md="3" lg="3" class="mb-3">
+            <CFormSelect
+              v-model="form.project"
+              :disabled="!form.account_d3"
+              @change="listFiltering(1)"
+            >
+              <option value="">투입 프로젝트</option>
+              <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
+                {{ proj.name }}
+              </option>
+            </CFormSelect>
+          </CCol>
+
+          <CCol md="3" lg="3" class="pt-2 mb-3">
+            <CFormSwitch
+              v-model="form.is_return"
+              label="반환 정산 여부"
+              id="form-is-return"
+              :disabled="!form.account_d3"
+              @change="listFiltering(1)"
+            />
+          </CCol>
         </CRow>
       </CCol>
 
-      <CCol lg="4">
+      <CCol lg="3">
         <CRow>
           <CCol md="6" lg="4" class="mb-3">
             <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">

@@ -230,7 +230,7 @@ onBeforeMount(() => {
   />
   <ContentBody>
     <CCardBody class="pb-5">
-      <ListController ref="listControl" @list-filtering="listFiltering" />
+      <ListController ref="listControl" :projects="projectList" @list-filtering="listFiltering" />
       <AddCash
         v-if="write_company_cash"
         :company="company as number"
