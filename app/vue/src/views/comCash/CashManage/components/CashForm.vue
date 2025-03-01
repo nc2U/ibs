@@ -34,6 +34,7 @@ const sepItem = reactive<SepItems>({
   account_d2: null,
   account_d3: null,
   project: null,
+  is_return: false,
   content: '',
   trader: '',
   income: null,
@@ -52,6 +53,7 @@ const form = reactive<CashBook & { bank_account_to: null | number; charge: null 
   account_d2: null,
   account_d3: null,
   project: null,
+  is_return: false,
 
   is_separate: false,
   separated: null as null | number,
@@ -76,16 +78,17 @@ const formsCheck = computed(() => {
     const d = form.account_d2 === props.cash.account_d2
     const e = form.account_d3 === props.cash.account_d3
     const f = form.project === props.cash.project
-    const g = form.content === props.cash.content
-    const h = form.trader === props.cash.trader
-    const i = form.bank_account === props.cash.bank_account
-    const j = form.income === props.cash.income
-    const k = form.outlay === props.cash.outlay
-    const l = form.evidence === props.cash.evidence
-    const m = form.note === props.cash.note
-    const n = form.deal_date === props.cash.deal_date
+    const g = form.is_return === props.cash.is_return
+    const h = form.content === props.cash.content
+    const i = form.trader === props.cash.trader
+    const j = form.bank_account === props.cash.bank_account
+    const k = form.income === props.cash.income
+    const l = form.outlay === props.cash.outlay
+    const m = form.evidence === props.cash.evidence
+    const n = form.note === props.cash.note
+    const o = form.deal_date === props.cash.deal_date
 
-    return a && b && c && d && e && f && g && h && i && j && k && l && m && n
+    return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o
   } else return false
 })
 
@@ -146,6 +149,7 @@ const sepUpdate = (sep: SepItems) => {
   sepItem.account_d2 = sep.account_d2
   sepItem.account_d3 = sep.account_d3
   sepItem.project = sep.project
+  sepItem.is_return = sep.is_return
   sepItem.content = sep.content
   sepItem.trader = sep.trader
   sepItem.evidence = sep.evidence
@@ -160,6 +164,7 @@ const sepRemove = () => {
   sepItem.account_d2 = null
   sepItem.account_d3 = null
   sepItem.project = null
+  sepItem.is_return = false
   sepItem.content = ''
   sepItem.trader = ''
   sepItem.evidence = ''
@@ -193,28 +198,33 @@ const sort_change = (event: Event) => {
       form.account_d2 = null
       form.account_d3 = null
       form.project = null
+      // form.is_return = false
       form.outlay = null
     } else if (el.value === '2') {
       form.account_d1 = 5
       form.account_d2 = null
       form.account_d3 = null
       form.project = null
+      // form.is_return = false
       form.income = null
     } else if (el.value === '3') {
       form.account_d1 = 6
       form.account_d2 = 19
       form.account_d3 = 131
       form.project = null
+      // form.is_return = false
     } else if (el.value === '4') {
       form.account_d1 = 7
       form.account_d2 = 20
       form.account_d3 = 133
       form.project = null
+      // form.is_return = false
     } else {
       form.account_d1 = null
       form.account_d2 = null
       form.account_d3 = null
       form.project = null
+      // form.is_return = false
     }
     callAccount()
   } else {
@@ -223,6 +233,7 @@ const sort_change = (event: Event) => {
       sepItem.account_d2 = null
       sepItem.account_d3 = null
       form.project = null
+      // form.is_return = false
       sepItem.outlay = null
       fetchFormAccD2List(1, 4)
     } else if (el.value === '2') {
@@ -231,6 +242,7 @@ const sort_change = (event: Event) => {
       sepItem.account_d2 = null
       sepItem.account_d3 = null
       form.project = null
+      // form.is_return = false
       sepItem.income = null
       fetchFormAccD2List(2, 5)
     } else {
@@ -238,6 +250,7 @@ const sort_change = (event: Event) => {
       sepItem.account_d2 = null
       sepItem.account_d3 = null
       form.project = null
+      // form.is_return = false
       callAccount()
     }
   }
@@ -349,6 +362,7 @@ const dataSetup = () => {
     form.account_d2 = props.cash.account_d2
     form.account_d3 = props.cash.account_d3
     form.project = props.cash.project
+    form.is_return = props.cash.is_return
     form.is_separate = props.cash.is_separate
     form.separated = props.cash.separated
     form.content = props.cash.content
@@ -474,7 +488,6 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3" v-show="showProjects">
-          <CCol sm="6"></CCol>
           <CCol sm="6">
             <CRow>
               <CFormLabel class="col-sm-4 col-form-label"> 투입 프로젝트</CFormLabel>
@@ -488,6 +501,19 @@ onBeforeMount(async () => {
                     {{ proj.name }}
                   </option>
                 </CFormSelect>
+              </CCol>
+            </CRow>
+          </CCol>
+
+          <CCol sm="6">
+            <CRow v-show="cash && cash.project">
+              <CFormLabel class="col-sm-4 col-form-label"> 반환 정산 여부</CFormLabel>
+              <CCol sm="8" class="pt-2">
+                <CFormSwitch
+                  v-model="form.is_return"
+                  label="프로젝트 대여금 반환 정산 여부"
+                  id="form-is-return"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -773,7 +799,6 @@ onBeforeMount(async () => {
           <CCol sm="1"></CCol>
           <CCol sm="11">
             <CRow>
-              <CCol sm="6"></CCol>
               <CCol sm="6">
                 <CRow>
                   <CFormLabel class="col-sm-4 col-form-label"> 투입 프로젝트</CFormLabel>
@@ -784,6 +809,19 @@ onBeforeMount(async () => {
                         {{ proj.name }}
                       </option>
                     </CFormSelect>
+                  </CCol>
+                </CRow>
+              </CCol>
+
+              <CCol sm="6">
+                <CRow v-show="sepItem.project">
+                  <CFormLabel class="col-sm-4 col-form-label"> 반환 정산 여부</CFormLabel>
+                  <CCol sm="8" class="pt-2">
+                    <CFormSwitch
+                      v-model="sepItem.is_return"
+                      label="프로젝트 대여금 반환 정산 여부"
+                      id="form-is-return"
+                    />
                   </CCol>
                 </CRow>
               </CCol>
