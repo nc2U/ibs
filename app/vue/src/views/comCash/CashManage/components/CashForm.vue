@@ -198,33 +198,28 @@ const sort_change = (event: Event) => {
       form.account_d2 = null
       form.account_d3 = null
       form.project = null
-      // form.is_return = false
       form.outlay = null
     } else if (el.value === '2') {
       form.account_d1 = 5
       form.account_d2 = null
       form.account_d3 = null
       form.project = null
-      // form.is_return = false
       form.income = null
     } else if (el.value === '3') {
       form.account_d1 = 6
       form.account_d2 = 19
       form.account_d3 = 131
       form.project = null
-      // form.is_return = false
     } else if (el.value === '4') {
       form.account_d1 = 7
       form.account_d2 = 20
       form.account_d3 = 133
       form.project = null
-      // form.is_return = false
     } else {
       form.account_d1 = null
       form.account_d2 = null
       form.account_d3 = null
       form.project = null
-      // form.is_return = false
     }
     callAccount()
   } else {
@@ -233,7 +228,6 @@ const sort_change = (event: Event) => {
       sepItem.account_d2 = null
       sepItem.account_d3 = null
       form.project = null
-      // form.is_return = false
       sepItem.outlay = null
       fetchFormAccD2List(1, 4)
     } else if (el.value === '2') {
@@ -242,7 +236,6 @@ const sort_change = (event: Event) => {
       sepItem.account_d2 = null
       sepItem.account_d3 = null
       form.project = null
-      // form.is_return = false
       sepItem.income = null
       fetchFormAccD2List(2, 5)
     } else {
@@ -250,7 +243,6 @@ const sort_change = (event: Event) => {
       sepItem.account_d2 = null
       sepItem.account_d3 = null
       form.project = null
-      // form.is_return = false
       callAccount()
     }
   }
@@ -820,7 +812,7 @@ onBeforeMount(async () => {
                     <CFormSwitch
                       v-model="sepItem.is_return"
                       label="프로젝트 대여금 반환 정산 여부"
-                      id="form-is-return"
+                      id="sepItem-is-return"
                     />
                   </CCol>
                 </CRow>
