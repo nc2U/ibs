@@ -69,6 +69,7 @@ onBeforeMount(() => {
 <template>
   <TimeEntryList
     v-if="route.name === '(소요시간)'"
+    :proj-status="issueProject?.status"
     :time-entry-list="timeEntryList"
     :sub-projects="issueProject?.sub_projects"
     :all-projects="allProjects"

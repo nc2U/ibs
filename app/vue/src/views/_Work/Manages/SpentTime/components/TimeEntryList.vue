@@ -11,6 +11,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TimeEntryReport from './TimeEntryReport.vue'
 
 defineProps({
+  projStatus: { type: String, default: '' },
   timeEntryList: { type: Array as PropType<TimeEntry[]>, default: () => [] },
   subProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
   allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
@@ -67,7 +68,7 @@ onBeforeMount(() => {
       <h5>소요시간</h5>
     </CCol>
 
-    <CCol class="text-right">
+    <CCol v-if="projStatus !== '9'" class="text-right">
       <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="sm" />
         <router-link
