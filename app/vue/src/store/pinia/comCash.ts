@@ -211,6 +211,8 @@ export const useComCash = defineStore('comCash', () => {
     if (payload.account_d1) url += `&account_d1=${payload.account_d1}`
     if (payload.account_d2) url += `&account_d2=${payload.account_d2}`
     if (payload.account_d3) url += `&account_d3=${payload.account_d3}`
+    if (payload.project) url += `&project=${payload.project}`
+    if (payload.is_return) url += `&is_return=${payload.is_return}`
     if (payload.bank_account) url += `&bank_account=${payload.bank_account}`
     if (payload.search) url += `&search=${payload.search}`
     const page = payload.page ? payload.page : 1

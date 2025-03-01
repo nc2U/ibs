@@ -95,6 +95,7 @@ const listFiltering = (payload: Filter) => {
   fetchFormAccD1List(sort)
   fetchFormAccD2List(sort, d1)
   fetchFormAccD3List(sort, d1, d2)
+  console.log(payload)
   if (company.value) fetchCashBookList(payload)
 }
 

@@ -162,7 +162,7 @@ const resetForm = () => {
 
           <CCol md="3" lg="3" class="mb-3">
             <CFormSelect
-              v-model="form.project"
+              v-model.number="form.project"
               :disabled="!form.account_d3"
               @change="listFiltering(1)"
             >
