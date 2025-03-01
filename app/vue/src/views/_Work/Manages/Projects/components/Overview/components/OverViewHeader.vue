@@ -55,7 +55,7 @@ const projectDelete = () => {
             <v-tooltip activator="parent" location="top">Actions</v-tooltip>
           </CDropdownToggle>
           <CDropdownMenu>
-            <CDropdownItem class="form-text">
+            <CDropdownItem v-if="project.status === '1'" class="form-text">
               <router-link :to="{ name: '프로젝트 - 추가', query: { parent: project?.pk } }">
                 <v-icon icon="mdi-plus-circle" color="success" size="sm" />
                 새 하위 프로젝트
@@ -77,7 +77,11 @@ const projectDelete = () => {
                 삭제
               </router-link>
             </CDropdownItem>
-            <CDropdownItem class="form-text" @click="router.push({ name: '(설정)' })">
+            <CDropdownItem
+              v-if="project.status === '1'"
+              class="form-text"
+              @click="router.push({ name: '(설정)' })"
+            >
               <router-link to="">
                 <v-icon icon="mdi-cog" color="secondary" size="sm" />
                 설정
