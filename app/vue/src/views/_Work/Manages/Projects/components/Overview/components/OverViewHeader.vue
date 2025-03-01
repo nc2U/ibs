@@ -8,6 +8,8 @@ const props = defineProps({
   project: { type: Object as PropType<IssueProject>, required: true },
 })
 
+const emit = defineEmits(['close-project', 'delete-project'])
+
 const RefProjectCloseConfirm = ref()
 const RefProjectDeleteConfirm = ref()
 const idForDelete = ref('')
@@ -15,13 +17,13 @@ const idForDelete = ref('')
 const router = useRouter()
 
 const projectClose = () => {
-  alert('close!!')
+  emit('close-project', props.project?.pk)
   RefProjectCloseConfirm.value.close()
 }
 
 const projectDelete = () => {
   if (idForDelete.value === (props.project?.slug as string)) {
-    alert('delete!!')
+    emit('delete-project', props.project?.pk)
     RefProjectDeleteConfirm.value.close()
   } else idForDelete.value = ''
 }
@@ -115,7 +117,9 @@ const projectDelete = () => {
       </div>
     </template>
     <template #footer>
-      <CButton color="danger" @click="projectDelete">삭제</CButton>
+      <CButton color="danger" @click="projectDelete" :disabled="idForDelete !== project?.slug">
+        삭제
+      </CButton>
     </template>
   </ConfirmModal>
 </template>

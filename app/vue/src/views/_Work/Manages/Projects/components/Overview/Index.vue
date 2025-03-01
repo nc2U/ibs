@@ -56,6 +56,14 @@ watch(
   },
 )
 
+const closeProject = (proj: number) => {
+  alert(`close-project :: ${proj}`)
+}
+
+const deleteProject = (proj: number) => {
+  alert(`delete-project :: ${proj}`)
+}
+
 onBeforeMount(() => {
   emit('aside-visible', false)
   if (iProject.value) {
@@ -65,7 +73,11 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <OverViewHeader :project="iProject as IssueProject" />
+  <OverViewHeader
+    :project="iProject as IssueProject"
+    @close-project="closeProject"
+    @delete-project="deleteProject"
+  />
 
   <CRow class="mb-2">
     <CCol>{{ iProject?.description }}</CCol>
