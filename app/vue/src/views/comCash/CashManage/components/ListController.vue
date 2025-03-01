@@ -83,6 +83,8 @@ const resetForm = () => {
   form.value.account_d1 = null
   form.value.account_d2 = null
   form.value.account_d3 = null
+  form.value.project = null
+  form.value.is_return = false
   form.value.bank_account = null
   form.value.search = ''
   listFiltering(1)
