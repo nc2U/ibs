@@ -88,8 +88,8 @@ class CashBookFilterSet(FilterSet):
 
     class Meta:
         model = CashBook
-        fields = ('company', 'from_deal_date', 'to_deal_date', 'sort',
-                  'account_d1', 'account_d2', 'account_d3', 'bank_account')
+        fields = ('company', 'from_deal_date', 'to_deal_date', 'sort', 'account_d1',
+                  'account_d2', 'account_d3', 'project', 'is_return', 'bank_account')
 
 
 class CashBookViewSet(viewsets.ModelViewSet):
