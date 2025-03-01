@@ -64,7 +64,10 @@ onBeforeMount(() => emit('aside-visible', true))
         <CCard class="my-2">
           <CCardBody class="project-set">
             <span v-if="proj.visible">
-              <router-link :to="{ name: '(개요)', params: { projId: proj.slug } }">
+              <router-link
+                :to="{ name: '(개요)', params: { projId: proj.slug } }"
+                :class="{ 'text-grey': proj.status === '9' }"
+              >
                 {{ proj.name }}
               </router-link>
               <v-icon

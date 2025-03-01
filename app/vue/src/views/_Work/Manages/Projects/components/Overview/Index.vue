@@ -59,10 +59,7 @@ watch(
   },
 )
 
-const closeProject = (slug: string) => {
-  alert(`close-project :: ${slug}`)
-  patchIssueProject({ slug, status: '9' })
-}
+const closeProject = (slug: string) => patchIssueProject({ slug, status: '9' })
 
 const deleteProject = (slug: string) => {
   alert(`delete-project :: ${slug}`)
