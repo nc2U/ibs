@@ -3,6 +3,7 @@ import { computed, type ComputedRef, inject, type PropType } from 'vue'
 import type { User } from '@/store/types/accounts'
 
 const props = defineProps({
+  projStatus: { type: String, default: '' },
   watchers: {
     type: Array as PropType<{ pk: number; username: string }[]>,
     default: () => [],
@@ -30,12 +31,12 @@ const goTimeEntry = () => emit('go-time-entry')
 
 <template>
   <CCol class="text-right form-text">
-    <span class="mr-2">
+    <span v-if="projStatus !== '9'" class="mr-2">
       <v-icon icon="mdi-pencil" color="amber" size="sm" />
       <router-link to="" class="ml-1" @click="callEditForm">편집</router-link>
     </span>
 
-    <span class="mr-2">
+    <span v-if="projStatus !== '9'" class="mr-2">
       <v-icon icon="mdi-timer-edit-outline" color="grey" size="sm" />
       <router-link to="" class="ml-1" @click="goTimeEntry">작업시간 기록</router-link>
     </span>
@@ -71,7 +72,7 @@ const goTimeEntry = () => emit('go-time-entry')
               링크 복사
             </router-link>
           </CDropdownItem>
-          <CDropdownItem class="form-text">
+          <CDropdownItem v-if="projStatus !== '9'" class="form-text">
             <router-link to="">
               <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" />
               업무 삭제

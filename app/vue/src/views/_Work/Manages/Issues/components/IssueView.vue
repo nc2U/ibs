@@ -159,6 +159,7 @@ onBeforeMount(async () => {
     </CCol>
 
     <IssueControl
+      :proj-status="issueProject.status"
       :watchers="issue.watchers"
       @call-edit-form="callEditForm"
       @go-time-entry="
@@ -342,7 +343,10 @@ onBeforeMount(async () => {
 
       <CRow class="mb-2">
         <CCol class="title">설명</CCol>
-        <CCol v-if="workManager || my_perms?.issue_comment_create" class="text-right form-text">
+        <CCol
+          v-if="issueProject.status !== '9' && (workManager || my_perms?.issue_comment_create)"
+          class="text-right form-text"
+        >
           <v-icon icon="mdi-comment-text-outline" size="sm" color="grey" class="mr-2" />
           <router-link to="" @click="callComment">댓글달기</router-link>
         </CCol>
@@ -354,15 +358,16 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <v-divider />
+      <v-divider v-if="issueProject.status !== '9' || issue.files.length" />
 
       <IssueFiles
         v-if="issue.files?.length"
+        :proj-status="issueProject.status"
         :issue-files="issue.files"
         @issue-file-control="fileControl"
       />
 
-      <CRow class="mb-2">
+      <CRow v-if="issueProject.status !== '9'" class="mb-2">
         <CCol class="col-10">
           <span class="title mr-2">하위 업무</span>
           <SubSummary
@@ -386,9 +391,9 @@ onBeforeMount(async () => {
         @unlink-sub-issue="unlinkSubIssue"
       />
 
-      <v-divider />
+      <v-divider v-if="issueProject.status !== '9'" />
 
-      <CRow>
+      <CRow v-if="issueProject.status !== '9'">
         <CCol class="col-10">
           <span class="title mr-2">연결된 업무</span>
           <RelSummary
@@ -402,22 +407,22 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <Relations
-        v-if="issue.related_issues.length"
-        :add-r-issue="addRIssue"
-        :related-issues="issue.related_issues"
-        :get-issues="getIssues"
-        @delete-relation="deleteRelation"
-        class="mt-2"
-      />
+      <!--      <Relations-->
+      <!--        v-if="issue.related_issues.length"-->
+      <!--        :add-r-issue="addRIssue"-->
+      <!--        :related-issues="issue.related_issues"-->
+      <!--        :get-issues="getIssues"-->
+      <!--        @delete-relation="deleteRelation"-->
+      <!--        class="mt-2"-->
+      <!--      />-->
 
-      <AddRelationForm
-        v-if="addRIssue"
-        :issue-pk="issue.pk"
-        :get-issues="getIssues"
-        @add-form-ctl="addFormCtl"
-        @add-rel-issue="addRelIssue"
-      />
+      <!--      <AddRelationForm-->
+      <!--        v-if="addRIssue"-->
+      <!--        :issue-pk="issue.pk"-->
+      <!--        :get-issues="getIssues"-->
+      <!--        @add-form-ctl="addFormCtl"-->
+      <!--        @add-rel-issue="addRelIssue"-->
+      <!--      />-->
     </CCardBody>
   </CCard>
 
@@ -432,6 +437,7 @@ onBeforeMount(async () => {
 
   <div>
     <IssueControl
+      :proj-status="issueProject.status"
       :watchers="issue.watchers"
       @call-edit-form="callEditForm"
       @go-time-entry="

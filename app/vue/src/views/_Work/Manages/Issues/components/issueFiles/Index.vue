@@ -5,6 +5,7 @@ import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
+  projStatus: { type: String, default: '' },
   issueFiles: { type: Array as PropType<IssueFile[]>, default: () => [] },
 })
 
@@ -86,7 +87,7 @@ onBeforeMount(async () => {
           <span v-if="file.description" class="mr-2">{{ file.description }}</span>
           <span class="file-desc2 mr-1"> {{ file.user.username }}, </span>
           <span class="file-desc2 mr-2">{{ timeFormat(file.created) }}</span>
-          <span>
+          <span v-if="projStatus !== '9'">
             <router-link to="">
               <v-icon
                 icon="mdi-trash-can-outline"
@@ -101,7 +102,7 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol v-if="i === 0" class="text-right form-text col-2">
-          <span class="mr-2">
+          <span v-if="projStatus !== '9'" class="mr-2">
             <router-link to="">
               <v-icon icon="mdi-pencil" color="amber" size="18" @click="editMode = !editMode" />
             </router-link>
@@ -167,7 +168,7 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 
-  <v-divider />
+  <v-divider v-if="projStatus !== '9'" />
 
   <ConfirmModal ref="RefDelFile">
     <template #default>이 파일 삭제를 계속 진행하시겠습니까?</template>
