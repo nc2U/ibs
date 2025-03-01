@@ -146,7 +146,8 @@ onBeforeRouteUpdate(async to => {
     await workStore.fetchIssueProject(to.params.projId as string)
     await workStore.fetchNewsList({ project: route.params.projId as string })
   } else {
-    workStore.issueProject = null
+    await workStore.fetchIssueProjectList({ status: '1' })
+    workStore.removeIssueProject()
     workStore.newsList = []
   }
 })
