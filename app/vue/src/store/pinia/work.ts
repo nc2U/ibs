@@ -76,9 +76,9 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchAllIssueProjectList = async (is_dev = '') =>
+  const fetchAllIssueProjectList = async (is_dev = '', p_isnull = '1') =>
     await api
-      .get(`/issue-project/?parent__isnull=1&is_real_dev=${is_dev}`)
+      .get(`/issue-project/?is_real_dev=${is_dev}&parent__isnull=${p_isnull}`)
       .then(res => (allProjects.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
