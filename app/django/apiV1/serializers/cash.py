@@ -57,8 +57,8 @@ class CashBookSerializer(serializers.ModelSerializer):
         model = CashBook
         fields = (
             'pk', 'company', 'sort', 'sort_desc', 'account_d1', 'account_d1_desc', 'account_d2',
-            'account_d2_desc', 'account_d3', 'account_d3_desc', 'project', 'project_desc',
-            'is_separate', 'separated', 'sepItems', 'content', 'trader', 'bank_account',
+            'account_d2_desc', 'account_d3', 'account_d3_desc', 'project', 'project_desc'
+            , 'is_return', 'is_separate', 'separated', 'sepItems', 'content', 'trader', 'bank_account',
             'bank_account_desc', 'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date')
 
     @staticmethod
@@ -98,6 +98,7 @@ class CashBookSerializer(serializers.ModelSerializer):
             sep_cashbook_account_d2 = AccountSubD2.objects.get(pk=sep_data.get('account_d2'))
             sep_cashbook_account_d3 = AccountSubD3.objects.get(pk=sep_data.get('account_d3'))
             sep_cashbook_project = Project.objects.get(pk=sep_data.get('project'))
+            sep_cashbook_is_return = sep_data.get('is_return')
             sep_cashbook_content = sep_data.get('content')
             sep_cashbook_trader = sep_data.get('trader')
             sep_cashbook_income = sep_data.get('income')
@@ -111,6 +112,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         account_d2=sep_cashbook_account_d2,
                                         account_d3=sep_cashbook_account_d3,
                                         project=sep_cashbook_project,
+                                        is_return=sep_cashbook_is_return,
                                         separated=cashbook,
                                         content=sep_cashbook_content,
                                         trader=sep_cashbook_trader,
@@ -129,6 +131,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.account_d2 = sep_cashbook_account_d2
                 sep_cashbook.account_d3 = sep_cashbook_account_d3
                 sep_cashbook.project = sep_cashbook_project
+                sep_cashbook.is_return = sep_cashbook_is_return
                 sep_cashbook.separated = cashbook
                 sep_cashbook.content = sep_cashbook_content
                 sep_cashbook.trader = sep_cashbook_trader
@@ -157,6 +160,7 @@ class CashBookSerializer(serializers.ModelSerializer):
             sep_cashbook_account_d2 = AccountSubD2.objects.get(pk=sep_data.get('account_d2'))
             sep_cashbook_account_d3 = AccountSubD3.objects.get(pk=sep_data.get('account_d3'))
             sep_cashbook_project = Project.objects.get(pk=sep_data.get('project'))
+            sep_cashbook_is_return = sep_data.get('is_return')
             sep_cashbook_content = sep_data.get('content')
             sep_cashbook_trader = sep_data.get('trader')
             sep_cashbook_income = sep_data.get('income')
@@ -170,6 +174,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         account_d2=sep_cashbook_account_d2,
                                         account_d3=sep_cashbook_account_d3,
                                         project=sep_cashbook_project,
+                                        is_return=sep_cashbook_is_return,
                                         separated=instance,
                                         content=sep_cashbook_content,
                                         trader=sep_cashbook_trader,
@@ -188,6 +193,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.account_d2 = sep_cashbook_account_d2
                 sep_cashbook.account_d3 = sep_cashbook_account_d3
                 sep_cashbook.project = sep_cashbook_project
+                sep_cashbook.is_return = sep_cashbook_is_return
                 sep_cashbook.separated = instance
                 sep_cashbook.content = sep_cashbook_content
                 sep_cashbook.trader = sep_cashbook_trader
