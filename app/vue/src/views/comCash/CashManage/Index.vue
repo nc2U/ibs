@@ -25,6 +25,8 @@ const dataFilter = ref<Filter>({
   account_d1: null,
   account_d2: null,
   account_d3: null,
+  project: null,
+  is_return: false,
   bank_account: null,
   search: '',
 })
@@ -36,10 +38,12 @@ const excelUrl = computed(() => {
   const d1 = dataFilter.value.account_d1 || ''
   const d2 = dataFilter.value.account_d2 || ''
   const d3 = dataFilter.value.account_d3 || ''
+  const pr = dataFilter.value.project || ''
+  const re = dataFilter.value.is_return || ''
   const ba = dataFilter.value.bank_account || ''
   const q = dataFilter.value.search
   const url = `/excel/cashbook/?company=${company.value}`
-  return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account_d1=${d1}&account_d2=${d2}&account_d3=${d3}&bank_account=${ba}&search_word=${q}`
+  return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account_d1=${d1}&account_d2=${d2}&account_d3=${d3}&project=${pr}&is_return=${re}&bank_account=${ba}&search_word=${q}`
 })
 
 const comStore = useCompany()

@@ -70,7 +70,7 @@ const listFiltering = (page = 1) => {
   form.value.from_date = from_date.value
   form.value.to_date = to_date.value
   nextTick(() => {
-    emit('list-filtering', { ...form })
+    emit('list-filtering', { ...form.value })
   })
 }
 
