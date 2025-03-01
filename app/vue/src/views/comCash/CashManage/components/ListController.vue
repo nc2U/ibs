@@ -189,7 +189,7 @@ const resetForm = () => {
 
       <CCol lg="3">
         <CRow>
-          <CCol md="6" lg="4" class="mb-3">
+          <CCol md="6" lg="5" class="mb-3">
             <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">
               <option value="">거래계좌</option>
               <option v-for="acc in allComBankList" :key="acc.pk" :value="acc.pk">
@@ -198,7 +198,7 @@ const resetForm = () => {
             </CFormSelect>
           </CCol>
 
-          <CCol md="6" lg="8" class="mb-3">
+          <CCol md="6" lg="7" class="mb-3">
             <CInputGroup class="flex-nowrap">
               <CFormInput
                 v-model="form.search"
