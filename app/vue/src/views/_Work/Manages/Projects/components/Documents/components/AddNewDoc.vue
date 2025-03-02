@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-defineProps({ projStatus: { type: Array, default: () => [] } })
+defineProps({ projStatus: { type: String, default: '' } })
 </script>
 
 <template>

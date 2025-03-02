@@ -5,7 +5,7 @@ import NoData from '@/views/_Work/components/NoData.vue'
 import AddNewDoc from './AddNewDoc.vue'
 
 defineProps({
-  projStatus: { type: Array, default: () => [] },
+  projStatus: { type: String, default: '' },
   docsList: { type: Array, default: () => [] },
 })
 

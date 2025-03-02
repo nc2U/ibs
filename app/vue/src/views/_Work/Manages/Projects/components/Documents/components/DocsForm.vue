@@ -5,7 +5,7 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import AddNewDoc from './AddNewDoc.vue'
 
 defineProps({
-  projStatus: { type: Array, default: () => [] },
+  projStatus: { type: String, default: '' },
 })
 </script>
 
