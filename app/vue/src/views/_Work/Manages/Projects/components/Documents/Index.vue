@@ -13,7 +13,9 @@ const route = useRoute()
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
 
-onBeforeMount(() => emit('aside-visible', true))
+onBeforeMount(() => {
+  emit('aside-visible', true)
+})
 </script>
 
 <template>
