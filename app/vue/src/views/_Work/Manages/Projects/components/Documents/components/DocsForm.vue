@@ -2,8 +2,9 @@
 import { onBeforeMount, type PropType, ref } from 'vue'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work'
-import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
+import MultiSelect from '@/components/MultiSelect/index.vue'
+import MdEditor from '@/components/MdEditor/Index.vue'
 import AddNewDoc from './AddNewDoc.vue'
 
 defineProps({
@@ -36,34 +37,39 @@ onBeforeMount(() => 1)
   <CRow>
     <CCard :color="colorLight" class="mb-3">
       <CCardBody>
-        <CRow class="mb-3">
-          <template v-if="realProject">
-            <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
-            <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-              <CFormSelect v-model.number="form.type" @change="cageChange">
-                <option :value="1">일반 문서</option>
-                <option :value="2">소송 기록</option>
-              </CFormSelect>
-            </CCol>
-          </template>
-
-          <template v-if="true">
-            <CFormLabel class="col-form-label text-right col-2">범주</CFormLabel>
-            <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-              <CFormSelect v-model.number="form.category">
-                <option value="">---------</option>
-                <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
-                  {{ cate.name }}
-                </option>
-              </CFormSelect>
-            </CCol>
-          </template>
+        <CRow v-if="realProject" class="mb-3">
+          <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
+          <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
+            <CFormSelect v-model.number="form.type" @change="cageChange">
+              <option :value="1">일반 문서</option>
+              <option :value="2">소송 기록</option>
+            </CFormSelect>
+          </CCol>
         </CRow>
 
-        <CRow v-if="realProject" class="mb-3">
+        <CRow class="mb-3">
+          <CFormLabel class="col-form-label text-right col-2">범주</CFormLabel>
+          <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
+            <CFormSelect v-model.number="form.category">
+              <option value="">---------</option>
+              <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
+                {{ cate.name }}
+              </option>
+            </CFormSelect>
+          </CCol>
+
+          <CFormLabel v-if="form.type === 1" class="col-form-label text-right col-2">
+            발행일자
+          </CFormLabel>
+          <CCol v-if="form.type === 1" class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
+            <DatePicker />
+          </CCol>
+        </CRow>
+
+        <CRow v-if="realProject && form.type === 2" class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">사건번호</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <DatePicker />
+            <MultiSelect />
           </CCol>
 
           <CFormLabel class="col-form-label text-right col-2">발행일자</CFormLabel>
