@@ -13,6 +13,7 @@ import type {
   Docs,
   TrashDocs as TP,
 } from '@/store/types/docs'
+import type { CodeValue } from '@/store/types/work'
 
 export type SuitCaseFilter = {
   company?: number | ''
@@ -65,6 +66,16 @@ export const useDocs = defineStore('docs', () => {
   const deleteDocType = () => 4
 
   const categoryList = ref<Category[]>([])
+
+  const getCategories = computed<CodeValue[]>(() =>
+    categoryList.value.map(c => ({
+      pk: c.pk as number,
+      name: c.name,
+      active: c.active,
+      default: c.default,
+      order: c.order,
+    })),
+  )
 
   const fetchCategoryList = (doc_type: number) =>
     api
@@ -388,6 +399,7 @@ export const useDocs = defineStore('docs', () => {
     deleteDocType,
 
     categoryList,
+    getCategories,
 
     fetchCategoryList,
     createCategory,

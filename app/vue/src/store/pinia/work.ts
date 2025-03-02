@@ -469,6 +469,11 @@ export const useWork = defineStore('work', () => {
       .then(res => (priorityList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  // code-docs-categories
+  const codeCategoryList = ref<CodeValue[]>([])
+
+  const fetchCodeCategoryList = () => []
+
   // issue states & getters
   const issue = ref<Issue | null>(null)
   const issueList = ref<Issue[]>([])
@@ -909,6 +914,9 @@ export const useWork = defineStore('work', () => {
 
     priorityList,
     fetchPriorityList,
+
+    codeCategoryList,
+    fetchCodeCategoryList,
 
     issue,
     issueList,

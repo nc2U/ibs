@@ -303,7 +303,7 @@ export interface CodeValue {
   name: string
   active: boolean
   default: boolean
-  order: number
+  order: number | null
 }
 
 export interface IssueFile {
