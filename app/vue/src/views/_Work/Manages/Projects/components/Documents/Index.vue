@@ -21,5 +21,5 @@ onBeforeMount(() => emit('aside-visible', true))
 
   <DocsView v-if="route.name === '(문서) - 보기'" />
 
-  <DocsForm v-if="route.name === '(문서) - 추가' || route.name === '(문서) - 편집'" />
+  <DocsForm v-if="route.name === '(문서) - 추가'" />
 </template>

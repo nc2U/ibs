@@ -211,21 +211,21 @@ onBeforeMount(async () => {
 
       <SpentTime v-if="routeName.includes('(소요시간)')" @aside-visible="asideVisible" />
 
-      <Gantt v-if="routeName === '(간트차트)'" @aside-visible="asideVisible" />
+      <Gantt v-if="routeName.includes('(간트차트)')" @aside-visible="asideVisible" />
 
-      <Calendar v-if="routeName === '(달력)'" @aside-visible="asideVisible" />
+      <Calendar v-if="routeName.includes('(달력)')" @aside-visible="asideVisible" />
 
-      <News v-if="routeName === '(공지)'" @aside-visible="asideVisible" />
+      <News v-if="routeName.includes('(공지)')" @aside-visible="asideVisible" />
 
-      <Documents v-if="routeName === '(문서)'" @aside-visible="asideVisible" />
+      <Documents v-if="routeName.includes('(문서)')" @aside-visible="asideVisible" />
 
       <Wiki v-if="routeName.includes('(위키)')" @aside-visible="asideVisible" />
 
-      <Forums v-if="routeName === '(게시판)'" @aside-visible="asideVisible" />
+      <Forums v-if="routeName.includes('(게시판)')" @aside-visible="asideVisible" />
 
-      <Files v-if="routeName === '(파일)'" @aside-visible="asideVisible" />
+      <Files v-if="routeName.includes('(파일)')" @aside-visible="asideVisible" />
 
-      <Repository v-if="routeName === '(저장소)'" @aside-visible="asideVisible" />
+      <Repository v-if="routeName.includes('(저장소)')" @aside-visible="asideVisible" />
 
       <Settings v-if="routeName.includes('(설정)')" @aside-visible="asideVisible" />
     </template>
