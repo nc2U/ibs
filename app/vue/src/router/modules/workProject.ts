@@ -119,6 +119,20 @@ const workProject = {
         {
           path: ':projId/document',
           name: '(문서)',
+          children: [
+            {
+              path: 'create',
+              name: '(문서) - 추가',
+            },
+            {
+              path: ':docId/update',
+              name: '(문서) - 편집',
+            },
+            {
+              path: ':docId/delete',
+              name: '(문서) - 삭제',
+            },
+          ],
         },
         {
           path: ':projId/wiki',
