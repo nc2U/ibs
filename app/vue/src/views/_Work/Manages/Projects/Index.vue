@@ -58,7 +58,7 @@ const projectNavMenus = computed(() => {
   if (modules.value?.document) menus = [...new Set([...menus, ...[{ no: 9, menu: '(문서)' }]])]
   if (modules.value?.wiki) menus = [...new Set([...menus, ...[{ no: 10, menu: '(위키)' }]])]
   if (modules.value?.file) menus = [...new Set([...menus, ...[{ no: 11, menu: '(파일)' }]])]
-  if (issueProject.value.status !== '9') menus = [...menus, ...[{ no: 12, menu: '(설정)' }]]
+  if (issueProject.value?.status !== '9') menus = [...menus, ...[{ no: 12, menu: '(설정)' }]]
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)
 })
