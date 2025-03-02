@@ -45,7 +45,7 @@ defineProps({
         <CRow class="">
           <CFormLabel class="col-form-label text-right col-2">파일</CFormLabel>
           <CCol class="col-sm-10">
-            <CFormInput />
+            <CFormInput type="file" />
           </CCol>
         </CRow>
       </CCardBody>
