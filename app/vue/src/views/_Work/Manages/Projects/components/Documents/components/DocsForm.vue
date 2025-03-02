@@ -1,9 +1,18 @@
-<script lang="ts" setup="">
+<script lang="ts" setup>
 import { ref } from 'vue'
+import AddNewDoc from './AddNewDoc.vue'
 
-const msg = ref('DocsForm')
+defineProps({
+  projStatus: { type: Array, default: () => [] },
+})
 </script>
 
 <template>
-  <h1>{{ msg }}</h1>
+  <CRow class="py-2">
+    <CCol>
+      <h5>새 문서</h5>
+    </CCol>
+
+    <AddNewDoc :proj-status="projStatus" />
+  </CRow>
 </template>

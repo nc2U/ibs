@@ -17,9 +17,9 @@ onBeforeMount(() => emit('aside-visible', true))
 </script>
 
 <template>
-  <DocsList v-if="route.name === '(문서)'" :proj-status="issueProject?.status" :docs-list="[]" />
+  <DocsForm v-if="route.name === '(문서) - 추가'" />
 
   <DocsView v-if="route.name === '(문서) - 보기'" />
 
-  <DocsForm v-if="route.name === '(문서) - 추가'" />
+  <DocsList v-else :proj-status="issueProject?.status" :docs-list="[]" />
 </template>
