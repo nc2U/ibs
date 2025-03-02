@@ -29,7 +29,7 @@ class DocTypeSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ('pk', 'doc_type', 'color', 'name', 'parent', 'order')
+        fields = ('pk', 'doc_type', 'color', 'name', 'parent', 'order', 'in_use')
 
 
 class FilesInLawSuitCaseSerializer(serializers.ModelSerializer):
