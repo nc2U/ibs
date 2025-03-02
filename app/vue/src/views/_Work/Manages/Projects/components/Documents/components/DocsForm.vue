@@ -47,22 +47,28 @@ onBeforeMount(() => 1)
           </CCol>
         </CRow>
 
-        <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">범주</CFormLabel>
-          <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <CFormSelect v-model.number="form.category">
-              <option value="">---------</option>
-              <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
-                {{ cate.name }}
-              </option>
-            </CFormSelect>
+        <CRow>
+          <CCol sm="12" lg="6" class="mb-3">
+            <CRow>
+              <CFormLabel class="col-form-label text-right col-2 col-lg-4">범주</CFormLabel>
+              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
+                <CFormSelect v-model.number="form.category">
+                  <option value="">---------</option>
+                  <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
+                    {{ cate.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
+            </CRow>
           </CCol>
 
-          <CFormLabel v-if="form.type === 1" class="col-form-label text-right col-2">
-            발행일자
-          </CFormLabel>
-          <CCol v-if="form.type === 1" class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <DatePicker />
+          <CCol v-if="form.type === 1" sm="12" lg="6" class="mb-3">
+            <CRow>
+              <CFormLabel class="col-form-label text-right col-2 col-lg-4"> 발행일자 </CFormLabel>
+              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
+                <DatePicker />
+              </CCol>
+            </CRow>
           </CCol>
         </CRow>
 
