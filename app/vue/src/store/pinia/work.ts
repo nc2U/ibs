@@ -472,7 +472,11 @@ export const useWork = defineStore('work', () => {
   // code-docs-categories
   const codeCategoryList = ref<CodeValue[]>([])
 
-  const fetchCodeCategoryList = () => []
+  const fetchCodeCategoryList = () =>
+    api
+      .get(`/code-docs-category/`)
+      .then(res => (codeCategoryList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
 
   // issue states & getters
   const issue = ref<Issue | null>(null)

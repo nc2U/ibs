@@ -1,11 +1,13 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { type PropType } from 'vue'
 import { colorLight } from '@/utils/cssMixins'
+import type { CodeValue } from '@/store/types/work'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import AddNewDoc from './AddNewDoc.vue'
 
 defineProps({
   projStatus: { type: String, default: '' },
+  categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
 </script>
 
@@ -24,7 +26,11 @@ defineProps({
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">범주</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <CFormSelect></CFormSelect>
+            <CFormSelect>
+              <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
+                {{ cate.name }}
+              </option>
+            </CFormSelect>
           </CCol>
         </CRow>
 
