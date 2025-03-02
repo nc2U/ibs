@@ -16,8 +16,12 @@ defineProps({
 const emit = defineEmits(['get-categories'])
 
 const form = ref({
-  type: 1,
+  doc_type: 1,
   category: null,
+  lawsuit: null,
+  execution_date: null,
+  title: '',
+  content: '',
 })
 
 const cageChange = event => emit('get-categories', event.target.value)
@@ -40,7 +44,7 @@ onBeforeMount(() => 1)
         <CRow v-if="realProject" class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <CFormSelect v-model.number="form.type" @change="cageChange">
+            <CFormSelect v-model.number="form.doc_type" @change="cageChange">
               <option :value="1">일반 문서</option>
               <option :value="2">소송 기록</option>
             </CFormSelect>
@@ -62,22 +66,22 @@ onBeforeMount(() => 1)
             </CRow>
           </CCol>
 
-          <CCol v-if="form.type === 1" sm="12" lg="6" class="mb-3">
+          <CCol v-if="form.doc_type === 1" sm="12" lg="6" class="mb-3">
             <CRow>
-              <CFormLabel class="col-form-label text-right col-2 col-lg-4"> 발행일자 </CFormLabel>
+              <CFormLabel class="col-form-label text-right col-2 col-lg-4"> 발행일자</CFormLabel>
               <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                <DatePicker />
+                <DatePicker v-model="form.execution_date" />
               </CCol>
             </CRow>
           </CCol>
         </CRow>
 
-        <CRow v-if="realProject && form.type === 2">
+        <CRow v-if="realProject && form.doc_type === 2">
           <CCol sm="12" lg="6" class="mb-3">
             <CRow>
               <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
               <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                <MultiSelect />
+                <MultiSelect v-model.number="form.lawsuit" />
               </CCol>
             </CRow>
           </CCol>
@@ -86,7 +90,7 @@ onBeforeMount(() => 1)
             <CRow>
               <CFormLabel class="col-form-label text-right col-2 col-lg-4">발행일자</CFormLabel>
               <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                <DatePicker />
+                <DatePicker v-model="form.execution_date" />
               </CCol>
             </CRow>
           </CCol>
@@ -95,14 +99,14 @@ onBeforeMount(() => 1)
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2 required">제목</CFormLabel>
           <CCol class="col-sm-10">
-            <CFormInput placeholder="문서 제목" />
+            <CFormInput v-model="form.title" placeholder="문서 제목" />
           </CCol>
         </CRow>
 
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
           <CCol class="col-sm-10">
-            <MdEditor placeholder="문서 내용 설명" />
+            <MdEditor v-model="form.content" placeholder="문서 내용 설명" />
           </CCol>
         </CRow>
 
