@@ -15,9 +15,9 @@ class DocTypeAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'doc_type', 'color', 'name', 'parent', 'order', 'in_use')
+    list_display = ('id', 'doc_type', 'color', 'name', 'parent', 'order', 'active', 'default')
     list_display_links = ('name',)
-    list_editable = ('doc_type', 'color', 'parent', 'order', 'in_use')
+    list_editable = ('doc_type', 'color', 'parent', 'order', 'active', 'default')
     search_fields = ('name',)
     list_filter = ('doc_type',)
 

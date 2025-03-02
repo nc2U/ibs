@@ -27,7 +27,8 @@ class Category(models.Model):
     name = models.CharField('이름', max_length=100)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 카테고리')
     order = models.PositiveSmallIntegerField('정렬 순서', default=0)
-    in_use = models.BooleanField('사용중', default=True)
+    active = models.BooleanField('사용중', default=True)
+    default = models.BooleanField('기본값', default=False)
 
     def __str__(self):
         return self.name
