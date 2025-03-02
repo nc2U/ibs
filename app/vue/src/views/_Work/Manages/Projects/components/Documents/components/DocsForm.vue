@@ -16,7 +16,7 @@ defineProps({
 const emit = defineEmits(['get-categories'])
 
 const form = ref({
-  type: '1',
+  type: 1,
   category: null,
 })
 
@@ -66,15 +66,23 @@ onBeforeMount(() => 1)
           </CCol>
         </CRow>
 
-        <CRow v-if="realProject && form.type === 2" class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">사건번호</CFormLabel>
-          <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <MultiSelect />
+        <CRow v-if="realProject && form.type === 2">
+          <CCol sm="12" lg="6" class="mb-3">
+            <CRow>
+              <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
+              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
+                <MultiSelect />
+              </CCol>
+            </CRow>
           </CCol>
 
-          <CFormLabel class="col-form-label text-right col-2">발행일자</CFormLabel>
-          <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <DatePicker />
+          <CCol sm="12" lg="6" class="mb-3">
+            <CRow>
+              <CFormLabel class="col-form-label text-right col-2 col-lg-4">발행일자</CFormLabel>
+              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
+                <DatePicker />
+              </CCol>
+            </CRow>
           </CCol>
         </CRow>
 
