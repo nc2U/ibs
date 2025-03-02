@@ -125,6 +125,10 @@ const workProject = {
               name: '(문서) - 추가',
             },
             {
+              path: ':docId',
+              name: '(문서) - 보기',
+            },
+            {
               path: ':docId/update',
               name: '(문서) - 편집',
             },
