@@ -11,6 +11,7 @@ export interface Category {
   name: string
   parent: number | null
   order: number | null
+  in_use: boolean
 }
 
 interface SimpleUser {
