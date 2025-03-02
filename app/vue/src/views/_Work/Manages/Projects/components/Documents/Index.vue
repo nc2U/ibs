@@ -18,7 +18,7 @@ const fetchCodeCategoryList = () => workStore.fetchCodeCategoryList()
 
 const docsStore = useDocs()
 const getCategories = computed(() => docsStore.getCategories)
-const fetchCategoryList = (type: '' | '1' | '2') => docsStore.fetchCategoryList(type)
+const fetchCategoryList = (type: number) => docsStore.fetchCategoryList(type)
 
 const realProject = computed(() => !!issueProject.value?.is_real_dev)
 
@@ -26,12 +26,12 @@ const categories = computed(() =>
   realProject.value ? getCategories.value : codeCategoryList.value,
 )
 
-const cateChange = (type: '1' | '2') => fetchCategoryList(type)
+const cateChange = (type: number) => fetchCategoryList(type)
 
 onBeforeMount(() => {
   emit('aside-visible', true)
   fetchCodeCategoryList()
-  fetchCategoryList('1')
+  fetchCategoryList(1)
 })
 </script>
 

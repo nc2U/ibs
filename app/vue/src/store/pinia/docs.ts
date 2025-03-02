@@ -77,9 +77,9 @@ export const useDocs = defineStore('docs', () => {
     })),
   )
 
-  const fetchCategoryList = (doc_type = '') =>
+  const fetchCategoryList = (type: number) =>
     api
-      .get(`/category/?doc_type=${doc_type}`)
+      .get(`/category/?doc_type=${type}`)
       .then(res => (categoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 

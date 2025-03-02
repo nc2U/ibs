@@ -3,7 +3,7 @@ import { onBeforeMount, type PropType, ref } from 'vue'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work'
 import MdEditor from '@/components/MdEditor/Index.vue'
-import DatePicker from '@/components/DatePicker/Index.vue'
+import DatePicker from '@/components/DatePicker/index.vue'
 import AddNewDoc from './AddNewDoc.vue'
 
 defineProps({
@@ -40,9 +40,9 @@ onBeforeMount(() => 1)
           <template v-if="realProject">
             <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
             <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-              <CFormSelect v-model="form.type" @change="cageChange">
-                <option value="1">일반 문서</option>
-                <option value="2">소송 기록</option>
+              <CFormSelect v-model.number="form.type" @change="cageChange">
+                <option :value="1">일반 문서</option>
+                <option :value="2">소송 기록</option>
               </CFormSelect>
             </CCol>
           </template>
