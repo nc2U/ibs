@@ -18,21 +18,30 @@ const fetchCodeCategoryList = () => workStore.fetchCodeCategoryList()
 
 const docsStore = useDocs()
 const getCategories = computed(() => docsStore.getCategories)
-const fetchCategoryList = (docType: number) => docsStore.fetchCategoryList(docType)
+const fetchCategoryList = (type: '' | '1' | '2') => docsStore.fetchCategoryList(type)
+
+const realProject = computed(() => !!issueProject.value?.is_real_dev)
 
 const categories = computed(() =>
-  issueProject.value?.is_real_dev ? getCategories.value : codeCategoryList.value,
+  realProject.value ? getCategories.value : codeCategoryList.value,
 )
+
+const cateChange = (type: '1' | '2') => fetchCategoryList(type)
 
 onBeforeMount(() => {
   emit('aside-visible', true)
   fetchCodeCategoryList()
-  fetchCategoryList(1)
+  fetchCategoryList('1')
 })
 </script>
 
 <template>
-  <DocsForm v-if="route.name === '(문서) - 추가'" :categories="categories" />
+  <DocsForm
+    v-if="route.name === '(문서) - 추가'"
+    :real-project="realProject"
+    :categories="categories"
+    @get-categories="cateChange"
+  />
 
   <DocsView v-if="route.name === '(문서) - 보기'" />
 

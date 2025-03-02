@@ -1,14 +1,27 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { onBeforeMount, type PropType, ref } from 'vue'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work'
 import MdEditor from '@/components/MdEditor/Index.vue'
+import DatePicker from '@/components/DatePicker/Index.vue'
 import AddNewDoc from './AddNewDoc.vue'
 
 defineProps({
   projStatus: { type: String, default: '' },
+  realProject: { type: Boolean, default: false },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
+
+const emit = defineEmits(['get-categories'])
+
+const form = ref({
+  type: '1',
+  category: null,
+})
+
+const cageChange = event => emit('get-categories', event.target.value)
+
+onBeforeMount(() => 1)
 </script>
 
 <template>
@@ -24,27 +37,52 @@ defineProps({
     <CCard :color="colorLight" class="mb-3">
       <CCardBody>
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">범주</CFormLabel>
+          <template v-if="realProject">
+            <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
+            <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
+              <CFormSelect v-model="form.type" @change="cageChange">
+                <option value="1">일반 문서</option>
+                <option value="2">소송 기록</option>
+              </CFormSelect>
+            </CCol>
+          </template>
+
+          <template v-if="true">
+            <CFormLabel class="col-form-label text-right col-2">범주</CFormLabel>
+            <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
+              <CFormSelect v-model.number="form.category">
+                <option value="">---------</option>
+                <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
+                  {{ cate.name }}
+                </option>
+              </CFormSelect>
+            </CCol>
+          </template>
+        </CRow>
+
+        <CRow v-if="realProject" class="mb-3">
+          <CFormLabel class="col-form-label text-right col-2">사건번호</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <CFormSelect>
-              <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
-                {{ cate.name }}
-              </option>
-            </CFormSelect>
+            <DatePicker />
+          </CCol>
+
+          <CFormLabel class="col-form-label text-right col-2">발행일자</CFormLabel>
+          <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
+            <DatePicker />
           </CCol>
         </CRow>
 
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2 required">제목</CFormLabel>
           <CCol class="col-sm-10">
-            <CFormInput />
+            <CFormInput placeholder="문서 제목" />
           </CCol>
         </CRow>
 
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
           <CCol class="col-sm-10">
-            <MdEditor></MdEditor>
+            <MdEditor placeholder="문서 내용 설명" />
           </CCol>
         </CRow>
 
