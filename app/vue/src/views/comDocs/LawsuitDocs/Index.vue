@@ -23,11 +23,8 @@ const fController = ref()
 const typeNumber = ref(2)
 const mainViewName = ref('본사 소송 문서')
 const docsFilter = ref<DocsFilter>({
-  company: '',
-  project: '',
-  doc_type: typeNumber.value,
-  is_com: true,
   issue_project: '',
+  doc_type: typeNumber.value,
   category: '',
   lawsuit: '',
   ordering: '-created',
@@ -48,8 +45,7 @@ const cngFiles = ref<
 
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
-  docsFilter.value.project = !!payload.is_com ? '' : payload.project
-  docsFilter.value.is_com = payload.is_com
+  docsFilter.value.issue_project = payload.issue_project
   docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search

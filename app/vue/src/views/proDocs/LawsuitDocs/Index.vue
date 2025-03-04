@@ -23,11 +23,9 @@ const fController = ref()
 const typeNumber = ref(2)
 const mainViewName = ref('현장 소송 문서')
 const docsFilter = ref<DocsFilter>({
+  issue_project: '',
   doc_type: typeNumber.value,
   category: '',
-  is_com: false,
-  project: '',
-  issue_project: '',
   lawsuit: '',
   ordering: '-created',
   search: '',
@@ -64,6 +62,7 @@ const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
 const company = computed(() => projStore.project?.company)
+const issue_project = computed(() => projStore.project?.issue_project)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeProDocs)

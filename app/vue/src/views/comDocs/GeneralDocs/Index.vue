@@ -23,11 +23,8 @@ const fController = ref()
 const typeNumber = ref(1)
 const mainViewName = ref('본사 일반 문서')
 const docsFilter = ref<DocsFilter>({
-  company: '',
-  project: '',
-  doc_type: typeNumber.value,
-  is_com: true,
   issue_project: '',
+  doc_type: typeNumber.value,
   category: '',
   ordering: '-created',
   search: '',

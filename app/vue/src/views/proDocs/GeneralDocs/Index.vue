@@ -18,16 +18,15 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
+import projects from '@/router/modules/projects'
 
 const fController = ref()
 const typeNumber = ref(1)
 const mainViewName = ref('현장 일반 문서')
 const docsFilter = ref<DocsFilter>({
+  issue_project: '',
   doc_type: typeNumber.value,
   category: '',
-  is_com: false,
-  project: '',
-  issue_project: '',
   ordering: '-created',
   search: '',
   page: 1,
@@ -61,6 +60,7 @@ const pageSelect = (page: number) => {
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
+const issue_project = computed(() => projStore.project?.issue_project)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeProDocs)
