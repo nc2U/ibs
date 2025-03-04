@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, computed, nextTick, onBeforeMount } from 'vue'
+import { ref, computed, nextTick, onBeforeMount } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
@@ -13,24 +13,20 @@ const props = defineProps({
 })
 const emit = defineEmits(['list-filter'])
 
-const form = reactive<DocsFilter>({
+const form = ref<DocsFilter>({
   limit: '',
-  company: '',
-  project: '',
-  is_com: props.comFrom,
+  issue_project: '',
   lawsuit: '',
   ordering: '-created',
   search: '',
 })
 
 const formsCheck = computed(() => {
-  const a = form.limit === ''
-  const b = form.is_com === !!props.comFrom
-  const c = !!props.comFrom ? form.project === '' : true
-  const d = !form.lawsuit
-  const e = form.ordering === '-created'
-  const f = form.search === ''
-  return a && b && c && d && e && f
+  const a = form.value.limit === ''
+  const b = !form.value.lawsuit
+  const c = form.value.ordering === '-created'
+  const d = form.value.search === ''
+  return a && b && c && d
 })
 
 const docsStore = useDocs()
@@ -45,25 +41,24 @@ const listFiltering = (page = 1) => {
   })
 }
 
-const firstSorting = (event: { target: { value: number | null } }) => {
-  const val = event.target.value
-  if (!val) form.is_com = props.comFrom ?? true
-  else {
-    form.is_com = false
-    form.project = val
-  }
-  listFiltering(1)
-}
+// const firstSorting = (event: { target: { value: number | null } }) => {
+//   const val = event.target.value
+//   // if (!val) form.value.is_com = props.comFrom ?? true
+//   // else {
+//   //   form.value.is_com = false
+//   //   form.value.project = val
+//   // }
+//   listFiltering(1)
+// }
 
-const projectChange = (project: number | null) => (form.project = project ?? '')
+const projectChange = (project: number | null) => (form.value.project = project ?? '')
 
 const resetForm = () => {
-  form.limit = ''
-  form.is_com = !!props.comFrom
-  form.project = ''
-  form.lawsuit = ''
-  form.ordering = '-created'
-  form.search = ''
+  form.value.limit = ''
+  form.value.issue_project = ''
+  form.value.lawsuit = ''
+  form.value.ordering = '-created'
+  form.value.search = ''
   listFiltering(1)
 }
 
@@ -75,13 +70,11 @@ const fetchProjectList = () => projectStore.fetchProjectList()
 onBeforeMount(() => {
   fetchProjectList()
   if (props.docsFilter) {
-    form.limit = props.docsFilter.limit
-    form.company = props.docsFilter.company
-    form.project = props.docsFilter.project
-    form.is_com = props.docsFilter.is_com
-    form.ordering = props.docsFilter.ordering
-    form.search = props.docsFilter.search
-    form.page = props.docsFilter.page
+    form.value.limit = props.docsFilter.limit
+    form.value.issue_project = props.docsFilter.issue_project
+    form.value.ordering = props.docsFilter.ordering
+    form.value.search = props.docsFilter.search
+    form.value.page = props.docsFilter.page
   }
 })
 </script>
@@ -101,14 +94,14 @@ onBeforeMount(() => {
             </CFormSelect>
           </CCol>
 
-          <CCol v-if="comFrom" md="6" lg="4" xl="3" class="mb-3">
-            <CFormSelect v-model="form.project" @change="firstSorting">
-              <option value="">본사</option>
-              <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">
-                {{ proj.label }}
-              </option>
-            </CFormSelect>
-          </CCol>
+          <!--          <CCol v-if="comFrom" md="6" lg="4" xl="3" class="mb-3">-->
+          <!--            <CFormSelect v-model="form.project" @change="firstSorting">-->
+          <!--              <option value="">본사</option>-->
+          <!--              <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">-->
+          <!--                {{ proj.label }}-->
+          <!--              </option>-->
+          <!--            </CFormSelect>-->
+          <!--          </CCol>-->
 
           <CCol md="6" lg="4" xl="3" class="mb-3">
             <CFormSelect v-model="form.ordering" @change="listFiltering(1)">
