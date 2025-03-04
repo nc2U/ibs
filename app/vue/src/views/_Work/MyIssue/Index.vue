@@ -109,7 +109,7 @@ onBeforeMount(() => {
                     color="grey"
                     size="16"
                     class="pointer"
-                    @click="itemClose(item.i)"
+                    @click="itemClose(Number(item.i))"
                   />
                 </span>
               </CCol>
