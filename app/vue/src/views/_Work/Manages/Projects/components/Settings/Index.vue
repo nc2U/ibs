@@ -103,11 +103,12 @@ const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: 
 }
 
 onBeforeRouteUpdate(async to => {
-  if (to.params.projId) await workStore.fetchIssueProject(to.params.projId as string)
-  else {
-    workStore.removeIssueProject()
-    await workStore.fetchIssueProjectList({})
+  if (to.params.projId) {
+    await workStore.fetchIssueProject(to.params.projId as string)
     await workStore.fetchVersionList({ project: to.params.projId as string })
+  } else {
+    workStore.removeIssueProject()
+    await workStore.fetchIssueProjectList({ status: '1' })
   }
 })
 
