@@ -51,7 +51,7 @@ const listFiltering = (page = 1) => {
 //   listFiltering(1)
 // }
 
-const projectChange = (project: number | null) => (form.value.project = project ?? '')
+// const projectChange = (project: number | null) => (form.value.project = project ?? '')
 
 const resetForm = () => {
   form.value.limit = ''
@@ -62,7 +62,7 @@ const resetForm = () => {
   listFiltering(1)
 }
 
-defineExpose({ listFiltering, projectChange, resetForm })
+defineExpose({ listFiltering, resetForm })
 
 const projectStore = useProject()
 const projSelect = computed(() => projectStore.projSelect)
