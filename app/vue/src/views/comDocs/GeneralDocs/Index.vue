@@ -18,6 +18,7 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
+import { useProject } from '@/store/pinia/project'
 
 const fController = ref()
 const typeNumber = ref(1)
@@ -44,12 +45,12 @@ const cngFiles = ref<
 
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
-  docsFilter.value.project = !!payload.is_com ? '' : payload.project
-  docsFilter.value.is_com = payload.is_com
+  // docsFilter.value.project = !!payload.is_com ? '' : payload.project
+  // docsFilter.value.is_com = payload.is_com
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
   docsFilter.value.limit = payload.limit
-  if (company.value) fetchDocsList({ ...docsFilter.value })
+  fetchDocsList({ ...docsFilter.value })
 }
 
 const selectCate = (cate: number) => {
@@ -65,6 +66,8 @@ const pageSelect = (page: number) => {
 
 const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
+const projStore = useProject()
+const issue_project = computed(() => projStore.project?.issue_project)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeComDocs)
@@ -99,7 +102,7 @@ const [route, router] = [
 
 watch(route, val => {
   if (val.params.DocsId) fetchDocs(Number(val.params.docsId))
-  else docStore.docs = null
+  else docStore.removeDocs()
 })
 
 const docsRenewal = (page: number) => {
@@ -117,9 +120,9 @@ const docsScrape = (docs: number) => {
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
-  if (company.value) {
+  if (issue_project.value) {
     const { pk, ...getData } = payload
-    getData.company = company.value
+    getData.issue_project = issue_project.value
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -178,14 +181,14 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchDocTypeList()
-  docsFilter.value.company = pk
+  docsFilter.value.issue_project = pk
   fetchCategoryList(typeNumber.value)
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
 }
 
 const dataReset = () => {
-  docStore.docs = null
+  docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0
   docsFilter.value.company = ''
@@ -197,9 +200,9 @@ const comSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(company.value || comStore.initComId, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(issue_project.value, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?.docsId))
+onBeforeMount(() => dataSetup(issue_project.value, route.params?.docsId))
 </script>
 
 <template>

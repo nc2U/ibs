@@ -18,6 +18,7 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
+import { useProject } from '@/store/pinia/project'
 
 const fController = ref()
 const typeNumber = ref(2)
@@ -64,8 +65,10 @@ const pageSelect = (page: number) => {
   listFiltering(docsFilter.value)
 }
 
-const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+// const comStore = useCompany()
+// const company = computed(() => comStore.company?.pk)
+const projStore = useProject()
+const issue_project = computed(() => projStore.project?.issue_project)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeComDocs)
@@ -102,7 +105,7 @@ const [route, router] = [
 
 watch(route, val => {
   if (val.params.docsId) fetchDocs(Number(val.params.docsId))
-  else docStore.docs = null
+  else docStore.removeDocs() //docs = null
 })
 
 const docsRenewal = (page: number) => {
@@ -119,9 +122,9 @@ const docsScrape = (docs: number) => {
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
-  if (company.value) {
+  if (issue_project.value) {
     const { pk, ...getData } = payload
-    getData.company = company.value
+    getData.issue_project = issue_project.value
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 

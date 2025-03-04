@@ -43,7 +43,7 @@ const listFiltering = (payload: DocsFilter) => {
   docsFilter.value.limit = payload.limit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
-  if (project.value) fetchDocsList({ ...docsFilter.value })
+  fetchDocsList({ ...docsFilter.value })
 }
 
 const selectCate = (cate: number) => {
@@ -58,7 +58,7 @@ const pageSelect = (page: number) => {
 }
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+// const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
 const issue_project = computed(() => projStore.project?.issue_project)
 
@@ -108,9 +108,9 @@ const docsScrape = (docs: number) => {
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
-  if (project.value) {
+  if (issue_project.value) {
     const { pk, ...getData } = payload
-    getData.project = project.value
+    getData.issue_project = issue_project.value
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -169,7 +169,7 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchDocTypeList()
-  docsFilter.value.project = pk
+  docsFilter.value.issue_project = pk
   fetchCategoryList(typeNumber.value)
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
@@ -187,9 +187,9 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(project.value || projStore.initProjId, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(issue_project.value, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId, route.params?.docsId))
+onBeforeMount(() => dataSetup(issue_project.value, route.params?.docsId))
 </script>
 
 <template>
