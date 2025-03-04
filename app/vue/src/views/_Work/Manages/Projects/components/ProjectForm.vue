@@ -53,6 +53,19 @@ const form = reactive({
   activities: [3, 4, 5, 6, 7, 8, 9, 10],
 })
 
+const module = reactive({
+  issue: true,
+  time: true,
+  news: true,
+  document: true,
+  file: true,
+  wiki: true,
+  repository: false,
+  forum: true,
+  calendar: true,
+  gantt: true,
+})
+
 const formsCheck = computed(() => {
   if (props.project) {
     const a = form.company === props.project.company
@@ -75,7 +88,19 @@ const formsCheck = computed(() => {
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.activities.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.activities?.map(a => a.pk).sort((a, b) => a - b))
-    return a && b && c && d && e && f && g && h && i && j && k
+    const l = module.issue === props.project.module?.issue
+    const o = module.time === props.project.module?.time
+    const p = module.news === props.project.module?.news
+    const q = module.document === props.project.module?.document
+    const r = module.file === props.project.module?.file
+    const s = module.repository === props.project.module?.repository
+    const t = module.forum === props.project.module?.forum
+    const u = module.calendar === props.project.module?.calendar
+    const v = module.gantt === props.project.module?.gantt
+
+    const first = a && b && c && d && e && f && g && h && i && j
+    const second = k && l && o && p && q && r && s && t && u && v
+    return first && second
   } else return false
 })
 
@@ -103,19 +128,6 @@ const getSlug = (event: { key: string; code: string }) => {
     form.slug = slug
   }
 }
-
-const module = reactive({
-  issue: true,
-  time: true,
-  news: true,
-  document: true,
-  file: true,
-  wiki: true,
-  repository: false,
-  forum: true,
-  calendar: true,
-  gantt: true,
-})
 
 const route = useRoute()
 
