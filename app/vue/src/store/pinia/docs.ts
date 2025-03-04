@@ -31,8 +31,8 @@ export type SuitCaseFilter = {
 
 export type DocsFilter = {
   company?: number | ''
-  issue_project?: number | ''
   project?: number | ''
+  issue_project?: number | ''
   doc_type?: number | ''
   is_notice?: boolean | ''
   is_com?: boolean

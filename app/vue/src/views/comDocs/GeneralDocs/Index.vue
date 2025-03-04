@@ -27,6 +27,7 @@ const docsFilter = ref<DocsFilter>({
   project: '',
   doc_type: typeNumber.value,
   is_com: true,
+  issue_project: '',
   category: '',
   ordering: '-created',
   search: '',
