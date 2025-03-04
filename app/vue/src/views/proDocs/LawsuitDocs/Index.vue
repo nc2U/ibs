@@ -94,7 +94,7 @@ const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
 watch(route, val => {
   if (val.params.docsId) fetchDocs(Number(val.params.docsId))
-  else docStore.docs = null
+  else docStore.removeDocs() //docs = null
 })
 
 const docsRenewal = (page: number) => {
@@ -111,10 +111,11 @@ const docsScrape = (docs: number) => {
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
-  if (project.value) {
+  if (issue_project.value) {
     const { pk, ...getData } = payload
-    getData.company = company.value as null | number
-    getData.project = project.value
+    // getData.company = company.value as null | number
+    // getData.project = project.value
+    getData.issue_project = issue_project.value
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 

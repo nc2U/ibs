@@ -191,7 +191,7 @@ const dataReset = () => {
   docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0
-  docsFilter.value.company = ''
+  // docsFilter.value.company = ''
   router.replace({ name: `${mainViewName.value}` })
 }
 
@@ -200,9 +200,9 @@ const comSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(issue_project.value, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(issue_project.value as number, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(issue_project.value, route.params?.docsId))
+onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsId))
 </script>
 
 <template>

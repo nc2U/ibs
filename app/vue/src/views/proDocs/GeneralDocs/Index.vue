@@ -187,9 +187,9 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(issue_project.value, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(issue_project.value as number, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(issue_project.value, route.params?.docsId))
+onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsId))
 </script>
 
 <template>
