@@ -191,7 +191,6 @@ const dataReset = () => {
   docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0
-  // docsFilter.value.company = ''
   router.replace({ name: `${mainViewName.value}` })
 }
 

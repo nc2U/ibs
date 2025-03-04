@@ -58,7 +58,7 @@ const pageSelect = (page: number) => {
 }
 
 const projStore = useProject()
-// const project = computed(() => projStore.project?.pk)
+const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
 const issue_project = computed(() => projStore.project?.issue_project)
 

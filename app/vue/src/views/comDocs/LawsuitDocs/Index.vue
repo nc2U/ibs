@@ -65,8 +65,8 @@ const pageSelect = (page: number) => {
   listFiltering(docsFilter.value)
 }
 
-// const comStore = useCompany()
-// const company = computed(() => comStore.company?.pk)
+const comStore = useCompany()
+const company = computed(() => comStore.company?.pk)
 const projStore = useProject()
 const issue_project = computed(() => projStore.project?.issue_project)
 
@@ -190,11 +190,9 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
   if (docsId) fetchDocs(Number(docsId))
 }
 const dataReset = () => {
-  // comStore.company = null
-  docStore.removeDocs() //docs = null
+  docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0
-  // docsFilter.value.company = ''
   router.replace({ name: `${mainViewName.value}` })
 }
 
@@ -234,6 +232,7 @@ onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsI
         />
 
         <DocsList
+          :company="company || undefined"
           :limit="docsFilter.limit || 10"
           :page="docsFilter.page || 1"
           :docs-list="docsList"
@@ -242,7 +241,6 @@ onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsI
           :write-auth="writeAuth"
           @page-select="pageSelect"
         />
-        <!--          :company="company || undefined"-->
       </div>
 
       <div v-else-if="route.name.includes('보기')">

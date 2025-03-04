@@ -174,18 +174,17 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchDocTypeList()
-  docsFilter.value.project = pk
+  docsFilter.value.issue_project = pk
   fetchCategoryList(typeNumber.value)
-  fetchAllSuitCaseList({ company: company.value ?? '', project: pk, is_com: false })
+  fetchAllSuitCaseList({ company: company.value ?? '', project: project.value, is_com: false })
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
 }
 
 const dataReset = () => {
-  docStore.docs = null
+  docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0
-  docsFilter.value.project = ''
   router.replace({ name: `${mainViewName.value}` })
 }
 
@@ -194,9 +193,9 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(project.value || projStore.initProjId, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(issue_project.value as number, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId, route.params?.docsId))
+onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsId))
 </script>
 
 <template>
