@@ -88,7 +88,7 @@ class DocumentFilterSet(FilterSet):
 
     class Meta:
         model = Document
-        fields = ('company', 'project', 'is_com', 'doc_type', 'category', 'lawsuit', 'user')
+        fields = ('company', 'project', 'is_com', 'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
 
 
 class DocumentViewSet(viewsets.ModelViewSet):

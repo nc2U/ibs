@@ -25,6 +25,7 @@ class IssueProject(models.Model):
     trackers = models.ManyToManyField('Tracker', blank=True, related_name='projects', verbose_name='허용유형')
     activities = models.ManyToManyField('CodeActivity', blank=True, verbose_name='작업분류(시간추적)')
     status = models.CharField('사용여부', max_length=1, default='1', choices=(('1', '사용'), ('9', '잠금보관(모든 접근이 차단됨)')))
+    order = models.PositiveSmallIntegerField('정렬순서', default=0)
     created = models.DateTimeField('추가', auto_now_add=True)
     updated = models.DateTimeField('편집', auto_now=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
@@ -106,7 +107,7 @@ class IssueProject(models.Model):
         return all_members
 
     class Meta:
-        ordering = ('id',)
+        ordering = ('order', 'id')
         verbose_name = '01. 프로젝트(업무)'
         verbose_name_plural = '01. 프로젝트(업무)'
 
