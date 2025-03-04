@@ -35,6 +35,7 @@ const form = reactive<Docs>({
   pk: undefined,
   company: null,
   project: null,
+  issue_project: null,
   doc_type: props.typeNum,
   category: null,
   lawsuit: null,
