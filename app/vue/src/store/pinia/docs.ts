@@ -30,12 +30,9 @@ export type SuitCaseFilter = {
 }
 
 export type DocsFilter = {
-  company?: number | ''
-  project?: number | ''
   issue_project?: number | ''
   doc_type?: number | ''
   is_notice?: boolean | ''
-  is_com?: boolean
   category?: number | ''
   lawsuit?: number | ''
   user?: number | ''
@@ -210,9 +207,7 @@ export const useDocs = defineStore('docs', () => {
     const limit = payload.limit || 10
     let url = `/docs/?limit=${limit}&page=${page ?? 1}`
     if (payload.doc_type) url += `&doc_type=${doc_type}`
-    if (payload.company) url += `&company=${payload.company}`
-    if (payload.is_com) url += `&is_com=${payload.is_com}`
-    if (payload.project) url += `&project=${payload.project}`
+    if (payload.issue_project) url += `&issue_project=${payload.issue_project}`
     if (payload.category) url += `&category=${payload.category}`
     if (payload.lawsuit) url += `&lawsuit=${payload.lawsuit}`
     if (payload.user) url += `&user=${payload.user}`
@@ -241,10 +236,8 @@ export const useDocs = defineStore('docs', () => {
       .post(`/docs/`, payload.form, config_headers)
       .then(async res => {
         await fetchDocsList({
-          company: res.data.company,
-          project: res.data.project,
+          issue_project: res.data.issue_project,
           doc_type: res.data.doc_type,
-          is_com: !payload.isProject,
           page: 1,
         })
         message()
@@ -263,10 +256,8 @@ export const useDocs = defineStore('docs', () => {
       .put(`/docs/${payload.pk}/`, payload.form, config_headers)
       .then(async res => {
         await fetchDocsList({
-          company: res.data.company,
-          project: res.data.project,
+          issue_project: res.data.issue_project,
           doc_type: res.data.doc_type,
-          is_com: !payload.isProject,
           page: 1,
         })
         await fetchDocs(res.data.pk)
@@ -284,7 +275,6 @@ export const useDocs = defineStore('docs', () => {
       .patch(`/docs/${data.pk}/`, data)
       .then(res =>
         fetchDocsList({
-          company: res.data.company,
           ...filter,
         }).then(() => fetchDocs(res.data.pk)),
       )
@@ -338,10 +328,8 @@ export const useDocs = defineStore('docs', () => {
       .patch(`/docs-trash-can/${pk}/`)
       .then(res =>
         fetchDocsList({
-          company: res.data.company,
-          project: res.data.project,
+          issue_project: res.data.issue_project,
           doc_type: res.data.doc_type,
-          is_com: !isProject,
           page: 1,
         }).then(() =>
           fetchTrashDocsList().then(() =>
