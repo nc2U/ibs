@@ -1,8 +1,6 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
-from .models import (DocType, Category, LawsuitCase, Document, Link,
-                     File, Image, ComDocument, ComLink, ComFile,
-                     ComImage, ProDocument, ProLink, ProFile, ProImage)
+from .models import DocType, Category, LawsuitCase, Document, Link, File, Image
 
 
 @admin.register(DocType)
