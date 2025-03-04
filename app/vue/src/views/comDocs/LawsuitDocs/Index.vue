@@ -51,7 +51,7 @@ const listFiltering = (payload: DocsFilter) => {
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
   docsFilter.value.limit = payload.limit
-  if (company.value) fetchDocsList({ ...docsFilter.value })
+  fetchDocsList({ ...docsFilter.value })
 }
 
 const selectCate = (cate: number) => {
@@ -183,18 +183,18 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchDocTypeList()
-  docsFilter.value.company = pk
+  docsFilter.value.issue_project = pk
   fetchCategoryList(typeNumber.value)
   fetchAllSuitCaseList({ is_com: true })
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
 }
 const dataReset = () => {
-  comStore.company = null
-  docStore.docs = null
+  // comStore.company = null
+  docStore.removeDocs() //docs = null
   docStore.docsList = []
   docStore.docsCount = 0
-  docsFilter.value.company = ''
+  // docsFilter.value.company = ''
   router.replace({ name: `${mainViewName.value}` })
 }
 
@@ -203,9 +203,9 @@ const comSelect = (target: number | null) => {
   if (target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(company.value || comStore.initComId, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(issue_project.value as number, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?.docsId))
+onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsId))
 </script>
 
 <template>
@@ -234,7 +234,6 @@ onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?
         />
 
         <DocsList
-          :company="company || undefined"
           :limit="docsFilter.limit || 10"
           :page="docsFilter.page || 1"
           :docs-list="docsList"
@@ -243,6 +242,7 @@ onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?
           :write-auth="writeAuth"
           @page-select="pageSelect"
         />
+        <!--          :company="company || undefined"-->
       </div>
 
       <div v-else-if="route.name.includes('보기')">
