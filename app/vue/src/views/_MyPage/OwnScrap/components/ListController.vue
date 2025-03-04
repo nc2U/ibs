@@ -2,7 +2,6 @@
 import { ref, computed, nextTick, onBeforeMount } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
-// import { type PostFilter, useDocument } from '@/store/pinia/document'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
@@ -39,38 +38,33 @@ const listFiltering = (page = 1) => {
   })
 }
 
-const firstSorting = (event: { target: { value: number | null } }) => {
-  const val = event.target.value
-  if (!val) form.value.is_com = props.comFrom ?? true
-  else {
-    form.value.is_com = false
-    form.value.project = val
-  }
-  listFiltering(1)
-}
+// const firstSorting = (event: { target: { value: number | null } }) => {
+//   const val = event.target.value
+//   if (!val) form.value.is_com = props.comFrom ?? true
+//   else {
+//     form.value.is_com = false
+//     form.value.project = val
+//   }
+//   listFiltering(1)
+// }
 
-const projectChange = (project: number | null) => (form.value.project = project ?? '')
+// const projectChange = (project: number | null) => (form.value.project = project ?? '')
 
 const resetForm = () => {
-  form.value.is_com = !!props.comFrom
-  form.value.project = ''
   form.value.lawsuit = ''
   form.value.ordering = '-created'
   form.value.search = ''
   listFiltering(1)
 }
 
-defineExpose({ listFiltering, projectChange, resetForm })
+defineExpose({ listFiltering, resetForm })
 
 const projectStore = useProject()
-const projSelect = computed(() => projectStore.projSelect)
+// const projSelect = computed(() => projectStore.projSelect)
 const fetchProjectList = () => projectStore.fetchProjectList()
 onBeforeMount(() => {
   fetchProjectList()
   if (props.docsFilter) {
-    form.value.company = props.docsFilter.company
-    form.value.project = props.docsFilter.project
-    form.value.is_com = props.docsFilter.is_com
     form.value.ordering = props.docsFilter.ordering
     form.value.search = props.docsFilter.search
     form.value.page = props.docsFilter.page
@@ -83,14 +77,14 @@ onBeforeMount(() => {
     <CRow>
       <CCol lg="6">
         <CRow>
-          <CCol v-if="comFrom" md="6" lg="5" xl="4" class="mb-3">
-            <CFormSelect v-model="form.project" @change="firstSorting">
-              <option value="">본사</option>
-              <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">
-                {{ proj.label }}
-              </option>
-            </CFormSelect>
-          </CCol>
+          <!--          <CCol v-if="comFrom" md="6" lg="5" xl="4" class="mb-3">-->
+          <!--            <CFormSelect v-model="form.project" @change="firstSorting">-->
+          <!--              <option value="">본사</option>-->
+          <!--              <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">-->
+          <!--                {{ proj.label }}-->
+          <!--              </option>-->
+          <!--            </CFormSelect>-->
+          <!--          </CCol>-->
 
           <CCol md="6" lg="5" xl="4" class="mb-3">
             <CFormSelect v-model="form.ordering" @change="listFiltering(1)">
