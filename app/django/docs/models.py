@@ -308,20 +308,6 @@ class LawsuitCase(models.Model):
         verbose_name_plural = '03. 소송사건'
 
 
-class ComLawsuitCase(LawsuitCase):
-    class Meta:
-        ordering = ['-case_start_date', '-id']
-        verbose_name = '03. 본사 소송사건'
-        verbose_name_plural = '03. 본사 소송사건'
-
-
-class ProjectLawsuitCase(LawsuitCase):
-    class Meta:
-        ordering = ['-case_start_date', '-id']
-        verbose_name = '03. 현장 소송사건'
-        verbose_name_plural = '03. 현장 소송사건'
-
-
 class BaseModel(models.Model):
     deleted = models.DateTimeField('휴지통', null=True, blank=True)
 

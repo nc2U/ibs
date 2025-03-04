@@ -9,8 +9,7 @@ from django.db.models import Q
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
-from docs.models import (DocType, Category, LawsuitCase, ComLawsuitCase,
-                         ProjectLawsuitCase, Document, Link, File, Image)
+from docs.models import DocType, Category, LawsuitCase, Document, Link, File, Image
 
 
 # Docs --------------------------------------------------------------------------
@@ -134,18 +133,6 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
         next_obj = (self.get_collection().order_by('case_start_date', 'id')
                     .filter(case_start_date__gt=obj.case_start_date).first())
         return next_obj.pk if next_obj else None
-
-
-class ComLawSuitCaseSerializer(LawSuitCaseSerializer):
-    class Meta:
-        model = ComLawsuitCase
-        fields = '__all__'
-
-
-class ProjectLawSuitCaseSerializer(LawSuitCaseSerializer):
-    class Meta:
-        model = ProjectLawsuitCase
-        fields = '__all__'
 
 
 class SimpleLawSuitCaseSerializer(serializers.ModelSerializer):

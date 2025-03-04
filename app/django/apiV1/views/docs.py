@@ -56,28 +56,6 @@ class LawSuitCaseViewSet(LawSuitCaseBase):
         return queryset
 
 
-class ComLawSuitCaseViewSet(LawSuitCaseBase):
-    serializer_class = ComLawSuitCaseSerializer
-
-    def get_queryset(self):
-        queryset = ComLawsuitCase.objects.all()
-        related = self.request.query_params.get('related_case')
-        if related:
-            queryset = queryset.filter(Q(pk=related) | Q(related_case=related))
-        return queryset
-
-
-class ProjectLawSuitCaseViewSet(LawSuitCaseBase):
-    serializer_class = ProjectLawSuitCaseSerializer
-
-    def get_queryset(self):
-        queryset = ProjectLawsuitCase.objects.all()
-        related = self.request.query_params.get('related_case')
-        if related:
-            queryset = queryset.filter(Q(pk=related) | Q(related_case=related))
-        return queryset
-
-
 class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
     serializer_class = SimpleLawSuitCaseSerializer
     pagination_class = PageNumberPaginationThreeThousand
