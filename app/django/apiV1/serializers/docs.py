@@ -183,16 +183,16 @@ class DocumentSerializer(serializers.ModelSerializer):
         query = self.context['request'].query_params
         company = query.get('company')
         project = query.get('project')
-        is_com = query.get('is_com')
+        # is_com = query.get('is_com')
         doc_type = query.get('doc_type')
         category = query.get('category')
         lawsuit = query.get('lawsuit')
         search = query.get('search')
 
-        queryset = queryset.filter(company_id=company) if company else queryset
-        queryset = queryset.filter(project_id=project) if project else queryset
-        queryset = queryset.filter(project__isnull=True) if is_com == 'true' else queryset
-        queryset = queryset.filter(project__isnull=False) if is_com == 'false' else queryset
+        queryset = queryset.filter(issue_project__company_id=company) if company else queryset
+        queryset = queryset.filter(issue_project__project_id=project) if project else queryset
+        # queryset = queryset.filter(project__isnull=True) if is_com == 'true' else queryset
+        # queryset = queryset.filter(project__isnull=False) if is_com == 'false' else queryset
         queryset = queryset.filter(doc_type_id=doc_type) if doc_type else queryset
         queryset = queryset.filter(category_id=category) if category else queryset
         queryset = queryset.filter(lawsuit_id=lawsuit) if lawsuit else queryset
