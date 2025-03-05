@@ -30,6 +30,8 @@ export type SuitCaseFilter = {
 }
 
 export type DocsFilter = {
+  company?: number | ''
+  project?: number | ''
   issue_project?: number | ''
   doc_type?: number | ''
   is_notice?: boolean | ''
@@ -203,11 +205,13 @@ export const useDocs = defineStore('docs', () => {
   const removeDocs = () => (docs.value = null)
 
   const fetchDocsList = async (payload: DocsFilter) => {
-    const { doc_type, page } = payload
+    const { company, project, doc_type, issue_project, page } = payload
     const limit = payload.limit || 10
     let url = `/docs/?limit=${limit}&page=${page ?? 1}`
-    if (payload.doc_type) url += `&doc_type=${doc_type}`
-    if (payload.issue_project) url += `&issue_project=${payload.issue_project}`
+    if (company) url += `&company=${company}`
+    if (project) url += `&project=${project}`
+    if (doc_type) url += `&doc_type=${doc_type}`
+    if (issue_project) url += `&issue_project=${issue_project}`
     if (payload.category) url += `&category=${payload.category}`
     if (payload.lawsuit) url += `&lawsuit=${payload.lawsuit}`
     if (payload.user) url += `&user=${payload.user}`

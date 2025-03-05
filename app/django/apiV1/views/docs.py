@@ -1,10 +1,12 @@
 from datetime import datetime
 
-from django_filters import BooleanFilter
+from django_filters import BooleanFilter, ModelChoiceFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 
+from company.models import Company
+from project.models import Project
 from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationThreeThousand
 from ..permission import *
 from ..serializers.docs import *
@@ -62,10 +64,15 @@ class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
 
 
 class DocumentFilterSet(FilterSet):
+    company = ModelChoiceFilter(field_name='issue_project__company',
+                                queryset=Company.objects.all(), label='회사')
+    project = ModelChoiceFilter(field_name='issue_project__project',
+                                queryset=Project.objects.all(),
+                                to_field_name='id', label='프로젝트')
+
     class Meta:
         model = Document
-        fields = ('issue_project__company', 'issue_project__project',
-                  'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
+        fields = ('company', 'project', 'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
