@@ -62,11 +62,10 @@ class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
 
 
 class DocumentFilterSet(FilterSet):
-    is_com = BooleanFilter(field_name='project', lookup_expr='isnull', label='본사')
-
     class Meta:
         model = Document
-        fields = ('company', 'project', 'is_com', 'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
+        fields = ('issue_project__company', 'issue_project__project',
+                  'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
 
 
 class DocumentViewSet(viewsets.ModelViewSet):

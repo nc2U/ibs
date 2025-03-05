@@ -168,10 +168,10 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'company', 'project', 'proj_name', 'issue_project', 'doc_type', 'type_name',
-                  'category', 'cate_name', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content',
-                  'hit', 'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind',
-                  'deleted', 'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
+        fields = ('pk', 'issue_project', 'proj_name', 'doc_type', 'type_name', 'category', 'cate_name',
+                  'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content', 'hit', 'scrape',
+                  'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
+                  'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
 
     @staticmethod
