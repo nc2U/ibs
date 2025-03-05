@@ -24,6 +24,8 @@ const fController = ref()
 const typeNumber = ref(1)
 const mainViewName = ref('본사 일반 문서')
 const docsFilter = ref<DocsFilter>({
+  company: '',
+  project: '',
   issue_project: '',
   doc_type: typeNumber.value,
   category: '',
@@ -181,7 +183,7 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchDocTypeList()
-  docsFilter.value.issue_project = pk
+  docsFilter.value.company = pk
   fetchCategoryList(typeNumber.value)
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
@@ -199,9 +201,9 @@ const comSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(issue_project.value as number, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsId))
+onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?.docsId))
 </script>
 
 <template>

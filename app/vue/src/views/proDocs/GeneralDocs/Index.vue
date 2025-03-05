@@ -24,6 +24,7 @@ const fController = ref()
 const typeNumber = ref(1)
 const mainViewName = ref('현장 일반 문서')
 const docsFilter = ref<DocsFilter>({
+  project: '',
   issue_project: '',
   doc_type: typeNumber.value,
   category: '',
@@ -40,6 +41,7 @@ const cngFiles = ref<{ pk: number; file: File }[]>([])
 
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
+  docsFilter.value.project = payload.project
   docsFilter.value.limit = payload.limit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
@@ -169,7 +171,7 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchDocTypeList()
-  docsFilter.value.issue_project = pk
+  docsFilter.value.project = pk
   fetchCategoryList(typeNumber.value)
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
@@ -187,9 +189,9 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(issue_project.value as number, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsId))
+onBeforeMount(() => dataSetup(project.value ?? projStore.initProjId, route.params?.docsId))
 </script>
 
 <template>

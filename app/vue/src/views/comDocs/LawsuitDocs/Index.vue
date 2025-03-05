@@ -24,6 +24,8 @@ const fController = ref()
 const typeNumber = ref(2)
 const mainViewName = ref('본사 소송 문서')
 const docsFilter = ref<DocsFilter>({
+  company: '',
+  project: '',
   issue_project: '',
   doc_type: typeNumber.value,
   category: '',
@@ -46,6 +48,8 @@ const cngFiles = ref<
 
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
+  docsFilter.value.company = payload.company
+  docsFilter.value.project = payload.project
   docsFilter.value.issue_project = payload.issue_project
   docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
@@ -183,7 +187,7 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchDocTypeList()
-  docsFilter.value.issue_project = pk
+  docsFilter.value.company = pk
   fetchCategoryList(typeNumber.value)
   fetchAllSuitCaseList({ is_com: true })
   fetchDocsList(docsFilter.value)
@@ -201,9 +205,9 @@ const comSelect = (target: number | null) => {
   if (target) dataSetup(target)
 }
 
-onBeforeRouteUpdate(to => dataSetup(issue_project.value as number, to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(issue_project.value as number, route.params?.docsId))
+onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?.docsId))
 </script>
 
 <template>
