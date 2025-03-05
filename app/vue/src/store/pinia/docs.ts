@@ -209,7 +209,7 @@ export const useDocs = defineStore('docs', () => {
     const limit = payload.limit || 10
     let url = `/docs/?limit=${limit}&page=${page ?? 1}`
     if (company) url += `&company=${company}`
-    if (project) url += `&project=${project}`
+    if (project) url += `&issue_project__project=${project}`
     if (doc_type) url += `&doc_type=${doc_type}`
     if (issue_project) url += `&issue_project=${issue_project}`
     if (payload.category) url += `&category=${payload.category}`
