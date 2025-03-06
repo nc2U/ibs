@@ -18,7 +18,6 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
-import projects from '@/router/modules/projects'
 
 const fController = ref()
 const typeNumber = ref(1)
