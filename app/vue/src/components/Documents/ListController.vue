@@ -44,11 +44,11 @@ const listFiltering = (page = 1) => {
 
 const firstSorting = (event: { target: { value: number | null } }) => {
   const val = event.target.value
-  if (!val) form.value.is_com = props.comFrom ?? true
-  else {
-    form.value.is_com = false
-    form.value.project = val
-  }
+  // if (!val) form.value.is_com = props.comFrom ?? true
+  // else {
+  //   form.value.is_com = false
+  //   form.value.project = val
+  // }
   listFiltering(1)
 }
 
@@ -88,7 +88,7 @@ onBeforeMount(() => {
 
 <template>
   <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4" :class="bgLight">
-    <div v-for="iproj in issueProjects" :key="iproj.pk">
+    <div v-for="iproj in issueProjects" :key="iproj.value">
       {{ iproj.label }}
     </div>
     <CRow>
