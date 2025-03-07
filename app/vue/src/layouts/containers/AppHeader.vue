@@ -43,7 +43,7 @@ const toggleAside = () => store.toggleAside()
       </CHeaderToggler>
 
       <CHeaderBrand class="mx-auto d-lg-none" to="/">
-        <CIcon :icon="logo1" height="35" alt="Logo" />
+        <CIcon :icon="logo1" height="33" alt="Logo" />
       </CHeaderBrand>
 
       <CHeaderNav class="d-none d-lg-flex me-auto">
@@ -100,7 +100,7 @@ const toggleAside = () => store.toggleAside()
         </router-link>
       </CHeaderNav>
 
-      <CHeaderToggler class="px-md-0 me-md-3" @click="toggleAside">
+      <CHeaderToggler class="px-md-0 me-md-3 d-none d-md-block" @click="toggleAside">
         <v-btn icon size="small" flat :color="theme">
           <v-icon icon="mdi-apps" size="large" />
         </v-btn>
