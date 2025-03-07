@@ -4,7 +4,7 @@ import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import type { User } from '@/store/types/accounts'
 import { directive as vFullscreen } from 'vue-fullscreen'
-import { logo } from '@/assets/brand/current-logo'
+import { logo1 } from '@/assets/brand/current-logo'
 import AppBreadcrumb from './AppBreadcrumb.vue'
 import AppHeaderDropdownAccnt from './AppHeaderDropdownAccnt.vue'
 import TagsView from '@/layouts/containers/TagsView.vue'
@@ -43,7 +43,7 @@ const toggleAside = () => store.toggleAside()
       </CHeaderToggler>
 
       <CHeaderBrand class="mx-auto d-lg-none" to="/">
-        <CIcon :icon="logo" height="48" alt="Logo" />
+        <CIcon :icon="logo1" height="35" alt="Logo" />
       </CHeaderBrand>
 
       <CHeaderNav class="d-none d-lg-flex me-auto">
