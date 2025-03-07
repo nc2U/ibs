@@ -5,6 +5,7 @@ import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
+import { useWork } from '@/store/pinia/work'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
@@ -41,17 +42,17 @@ const listFiltering = (page = 1) => {
   })
 }
 
-// const firstSorting = (event: { target: { value: number | null } }) => {
-//   const val = event.target.value
-//   // if (!val) form.value.is_com = props.comFrom ?? true
-//   // else {
-//   //   form.value.is_com = false
-//   //   form.value.project = val
-//   // }
-//   listFiltering(1)
-// }
+const firstSorting = (event: { target: { value: number | null } }) => {
+  const val = event.target.value
+  if (!val) form.value.is_com = props.comFrom ?? true
+  else {
+    form.value.is_com = false
+    form.value.project = val
+  }
+  listFiltering(1)
+}
 
-// const projectChange = (project: number | null) => (form.value.project = project ?? '')
+const projectChange = (project: number | null) => (form.value.project = project ?? '')
 
 const resetForm = () => {
   form.value.limit = ''
@@ -67,8 +68,12 @@ defineExpose({ listFiltering, resetForm })
 const projectStore = useProject()
 const projSelect = computed(() => projectStore.projSelect)
 const fetchProjectList = () => projectStore.fetchProjectList()
+
+const workStore = useWork()
+const issueProjects = computed(() => workStore.getAllProjects)
+const fetchIssueProjectList = (payload: any) => workStore.fetchAllIssueProjectList(payload)
+
 onBeforeMount(() => {
-  fetchProjectList()
   if (props.docsFilter) {
     form.value.limit = props.docsFilter.limit
     form.value.issue_project = props.docsFilter.issue_project
@@ -76,11 +81,16 @@ onBeforeMount(() => {
     form.value.search = props.docsFilter.search
     form.value.page = props.docsFilter.page
   }
+  fetchProjectList()
+  fetchIssueProjectList({})
 })
 </script>
 
 <template>
   <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4" :class="bgLight">
+    <div v-for="iproj in issueProjects" :key="iproj.pk">
+      {{ iproj.label }}
+    </div>
     <CRow>
       <CCol lg="6">
         <CRow>
@@ -94,14 +104,14 @@ onBeforeMount(() => {
             </CFormSelect>
           </CCol>
 
-          <!--          <CCol v-if="comFrom" md="6" lg="4" xl="3" class="mb-3">-->
-          <!--            <CFormSelect v-model="form.project" @change="firstSorting">-->
-          <!--              <option value="">본사</option>-->
-          <!--              <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">-->
-          <!--                {{ proj.label }}-->
-          <!--              </option>-->
-          <!--            </CFormSelect>-->
-          <!--          </CCol>-->
+          <CCol v-if="comFrom" md="6" lg="4" xl="3" class="mb-3">
+            <CFormSelect v-model="form.project" @change="firstSorting">
+              <option value="">본사</option>
+              <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">
+                {{ proj.label }}
+              </option>
+            </CFormSelect>
+          </CCol>
 
           <CCol md="6" lg="4" xl="3" class="mb-3">
             <CFormSelect v-model="form.ordering" @change="listFiltering(1)">
