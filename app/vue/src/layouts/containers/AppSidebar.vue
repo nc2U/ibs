@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useStore } from '@/store'
 import { AppSidebarNav } from './AppSidebarNav'
-import { logoNegative, sygnet } from '@/assets/brand/current-logo'
+import { logoNegative1, sygnet1 } from '@/assets/brand/current-logo'
 
 const store = useStore()
 
@@ -19,8 +19,8 @@ const sidebarVisible = computed(() => store.sidebarVisible)
     @visible-change="(event: any) => store.updateSidebarVisible(event)"
   >
     <CSidebarBrand>
-      <CIcon custom-class-name="sidebar-brand-full" :icon="logoNegative" :height="35" />
-      <CIcon custom-class-name="sidebar-brand-narrow" :icon="sygnet" :height="35" />
+      <CIcon custom-class-name="sidebar-brand-full" :icon="logoNegative1" :height="32" />
+      <CIcon custom-class-name="sidebar-brand-narrow" :icon="sygnet1" :height="32" />
     </CSidebarBrand>
 
     <AppSidebarNav />
