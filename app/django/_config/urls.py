@@ -15,6 +15,8 @@ Including another URLconf
 """
 import os
 from django.contrib import admin
+from django.contrib.auth import logout
+from django.shortcuts import redirect
 from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -32,6 +34,13 @@ handler500 = 'ibs.views.handler500'
 admin.site.site_header = '관리자 페이지'  # default: "Django Administration"
 admin.site.site_title = 'IBS 사이트 관리'  # default: "Django site admin"
 
+
+def custom_logout(request):
+    next_url = request.GET.get('next', 'accounts/login/')  # 기본값은 홈 페이지 ('/')
+    logout(request)
+    return redirect(next_url)
+
+
 urlpatterns = [
     path('install/', include('accounts.urls'), name='install'),
 
@@ -48,6 +57,7 @@ urlpatterns = [
     path('excel/', include('_excel.urls')),
 
     path('accounts/', include('allauth.urls')),
+    path('logout/', custom_logout, name='custom_logout'),
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
 
     path('', include('django.contrib.auth.urls')),  # 로그아웃 등 페이지 코드에 필요

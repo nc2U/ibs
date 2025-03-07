@@ -10,7 +10,8 @@
         <ul class="navbar-nav mr-auto w-100">
             <li class="nav-item w-100">
                 <form action="." method="GET" role="search">
-                    <input type="text" class="form-control form-control-dark" name="q" value="{{ request.GET.q }}" placeholder="Search" aria-label="Search" onclick="this.value=null">
+                    <input type="text" class="form-control form-control-dark" name="q" value="{{ request.GET.q }}"
+                           placeholder="Search" aria-label="Search" onclick="this.value=null">
                 </form>
             </li>
             <li class="nav-item">
@@ -25,7 +26,9 @@
 
                             <ul class="dropdown-menu dropdown-menu-right" role="menu" style="position:absolute;">
                                 <li style="text-align: center;">
-                                    <a class="dropdown-item" href="{% url 'logout' %}">Sign out</a>
+                                    <a class="dropdown-item" href="{% url 'custom_logout' %}?next={{ request.path }}">
+                                        Sign out
+                                    </a>
                                 </li>
                             </ul>
                         </li>
