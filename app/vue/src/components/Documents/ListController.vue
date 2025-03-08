@@ -2,10 +2,10 @@
 import { ref, computed, nextTick, onBeforeMount } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
+import { useWork } from '@/store/pinia/work'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
-import { useWork } from '@/store/pinia/work'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
