@@ -11,8 +11,9 @@ $high-emphasis-inverse: $white !default;
 $medium-emphasis-inverse: rgba($white, 0.87) !default;
 $disabled-inverse: rgba($white, 0.45) !default;
 
-$sidebar-nav-link-transition: background 0.15s ease,
-color 0.3s ease !default;
+$sidebar-nav-link-transition:
+  background 0.15s ease,
+  color 0.3s ease !default;
 //$sidebar-nav-link-active-color: #39f !default;
 
 // datepicker variation
@@ -34,12 +35,12 @@ $dp__preview_font_size: 0.8rem !default; // font size of the date preview in the
 // bootstrap
 $spacer: 1rem;
 $spacers: (
-        0: 0,
-        1: $spacer * 0.25,
-        2: $spacer * 0.5,
-        3: $spacer,
-        4: $spacer * 1.5,
-        5: $spacer * 3,
+  0: 0,
+  1: $spacer * 0.25,
+  2: $spacer * 0.5,
+  3: $spacer,
+  4: $spacer * 1.5,
+  5: $spacer * 3,
 );
 
 $enable-ltr: true;

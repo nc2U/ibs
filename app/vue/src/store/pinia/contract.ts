@@ -138,7 +138,7 @@ export const useContract = defineStore('contract', () => {
       .then(res => (contractor.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const removeContractor = () =>  (contractor.value = null)
+  const removeContractor = () => (contractor.value = null)
 
   const fetchContractorList = (project: number, search = '') => {
     api

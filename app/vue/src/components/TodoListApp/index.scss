@@ -1,8 +1,9 @@
 .todoapp {
-  font: 1rem 'Helvetica Neue',
-  Helvetica,
-  Arial,
-  sans-serif;
+  font:
+    1rem 'Helvetica Neue',
+    Helvetica,
+    Arial,
+    sans-serif;
   line-height: 1.4em;
   color: #4d4d4d;
   min-width: 230px;
@@ -43,8 +44,9 @@
     background: #fff;
     margin: 130px 0 40px 0;
     position: relative;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2),
-    0 25px 50px 0 rgba(0, 0, 0, 0.1);
+    box-shadow:
+      0 2px 4px 0 rgba(0, 0, 0, 0.2),
+      0 25px 50px 0 rgba(0, 0, 0, 0.1);
   }
 
   .todoapp input::-webkit-input-placeholder {
@@ -272,11 +274,12 @@
     left: 0;
     height: 40px;
     overflow: hidden;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2),
-    0 8px 0 -3px #f6f6f6,
-    0 9px 1px -3px rgba(0, 0, 0, 0.2),
-    0 16px 0 -6px #f6f6f6,
-    0 17px 2px -6px rgba(0, 0, 0, 0.2);
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.2),
+      0 8px 0 -3px #f6f6f6,
+      0 9px 1px -3px rgba(0, 0, 0, 0.2),
+      0 16px 0 -6px #f6f6f6,
+      0 17px 2px -6px rgba(0, 0, 0, 0.2);
   }
 
   .todo-count {
@@ -392,10 +395,11 @@
   }
 
   .footer:before {
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2),
-    0 8px 0 -3px #24252f,
-    0 9px 1px -3px rgba(0, 0, 0, 0.2),
-    0 16px 0 -6px #24252f,
-    0 17px 2px -6px rgba(0, 0, 0, 0.2);
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.2),
+      0 8px 0 -3px #24252f,
+      0 9px 1px -3px rgba(0, 0, 0, 0.2),
+      0 16px 0 -6px #24252f,
+      0 17px 2px -6px rgba(0, 0, 0, 0.2);
   }
 }

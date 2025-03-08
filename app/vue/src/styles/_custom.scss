@@ -169,7 +169,6 @@ a.page-link,
   text-overflow: ellipsis;
 }
 
-
 input[type='number'] {
   text-align: right;
 }
@@ -184,7 +183,7 @@ label.required {
 
 label.required::after {
   content: ' *';
-  color: #BA0000;
+  color: #ba0000;
 }
 
 .btn-primary,
@@ -441,12 +440,13 @@ label.required::after {
   }
 
   .v-table__wrapper table tr {
-    background-color: #24252F;
-    color: #E3E3E4;
+    background-color: #24252f;
+    color: #e3e3e4;
   }
 }
 
-.bold, .strong {
+.bold,
+.strong {
   font-weight: bold;
 }
 

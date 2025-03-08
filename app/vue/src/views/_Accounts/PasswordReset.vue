@@ -56,9 +56,9 @@ onBeforeMount(() => fetchResetTokenList(uid.value))
               </div>
             </CCardBody>
             <CCardBody v-else class="text-body">
-              <ResetForm @on-submit="onSubmit"/>
+              <ResetForm @on-submit="onSubmit" />
 
-              <SocialLogin/>
+              <SocialLogin />
             </CCardBody>
           </CCard>
         </CCol>
@@ -70,7 +70,7 @@ onBeforeMount(() => fetchResetTokenList(uid.value))
     <template #header>성공!</template>
     <template #default>비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인하십시오.</template>
     <template #footer>
-      <CButton color="primary" @click="router.push({name: 'Home'})">지금 로그인</CButton>
+      <CButton color="primary" @click="router.push({ name: 'Home' })">지금 로그인</CButton>
     </template>
   </AlertModal>
 </template>
