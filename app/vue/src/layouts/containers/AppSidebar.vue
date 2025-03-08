@@ -19,8 +19,8 @@ const sidebarVisible = computed(() => store.sidebarVisible)
     @visible-change="(event: any) => store.updateSidebarVisible(event)"
   >
     <CSidebarBrand>
-      <CIcon custom-class-name="sidebar-brand-full" :icon="logoNegative1" :height="32" />
-      <CIcon custom-class-name="sidebar-brand-narrow" :icon="sygnet1" :height="32" />
+      <CIcon custom-class-name="sidebar-brand-full" :icon="logoNegative1" :height="30" />
+      <CIcon custom-class-name="sidebar-brand-narrow" :icon="sygnet1" :height="30" />
     </CSidebarBrand>
 
     <AppSidebarNav />

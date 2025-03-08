@@ -43,7 +43,7 @@ const toggleAside = () => store.toggleAside()
       </CHeaderToggler>
 
       <CHeaderBrand class="mx-auto d-lg-none" to="/">
-        <CIcon :icon="logo1" height="33" alt="Logo" />
+        <CIcon :icon="logo1" height="30" alt="Logo" />
       </CHeaderBrand>
 
       <CHeaderNav class="d-none d-lg-flex me-auto">
