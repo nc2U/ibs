@@ -3,6 +3,7 @@ import { ref, computed, onBeforeMount } from 'vue'
 import { navMenu, pageTitle } from '@/views/comCash/_menu/headermixin'
 import { cutString } from '@/utils/baseMixins'
 import { useCompany } from '@/store/pinia/company'
+import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComCash, type DataFilter as Filter, type DataFilter } from '@/store/pinia/comCash'
 import type { CashBook, CompanyBank, SepItems } from '@/store/types/comCash'
@@ -12,7 +13,6 @@ import ListController from '@/views/comCash/CashManage/components/ListController
 import AddCash from '@/views/comCash/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import CashList from '@/views/comCash/CashManage/components/CashList.vue'
-import { useProject } from '@/store/pinia/project'
 
 const listControl = ref()
 
