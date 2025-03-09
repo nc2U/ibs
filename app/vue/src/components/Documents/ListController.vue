@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, onBeforeMount, type PropType } from 'vue'
+import { ref, computed, nextTick, onBeforeMount, type PropType, onBeforeUpdate } from 'vue'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
@@ -15,6 +15,7 @@ const emit = defineEmits(['list-filter'])
 
 const form = ref<DocsFilter>({
   limit: '',
+  project: '',
   issue_project: '',
   lawsuit: '',
   ordering: '-created',
@@ -63,6 +64,8 @@ const resetForm = () => {
 }
 
 defineExpose({ listFiltering, resetForm })
+
+onBeforeUpdate(() => (form.value.project = ''))
 
 onBeforeMount(async () => {
   if (props.docsFilter) {
