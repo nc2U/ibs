@@ -15,7 +15,7 @@ const emit = defineEmits(['list-filter'])
 
 const form = ref<DocsFilter>({
   limit: '',
-  project: '',
+  is_real_dev: '',
   issue_project: '',
   lawsuit: '',
   ordering: '-created',
@@ -24,10 +24,11 @@ const form = ref<DocsFilter>({
 
 const formsCheck = computed(() => {
   const a = form.value.limit === ''
-  const b = !form.value.lawsuit
-  const c = form.value.ordering === '-created'
-  const d = form.value.search === ''
-  return a && b && c && d
+  const b = form.value.issue_project === ''
+  const c = !form.value.lawsuit
+  const d = form.value.ordering === '-created'
+  const e = form.value.search === ''
+  return a && b && c && d && e
 })
 
 const docsStore = useDocs()
@@ -37,25 +38,23 @@ const listFiltering = (page = 1) => {
   nextTick(() => {
     emit('list-filter', {
       ...{ page },
-      ...form,
+      ...form.value,
     })
   })
 }
 
 const firstSorting = (event: { target: { value: number | null } }) => {
   const val = event.target.value
-  // if (!val) form.value.is_com = props.comFrom ?? true
-  // else {
-  //   form.value.is_com = false
-  //   form.value.project = val
-  // }
+  if (!val) form.value.is_real_dev = 'false'
+  else form.value.is_real_dev = 'true'
   listFiltering(1)
 }
 
-const projectChange = (project: number | null) => (form.value.issue_project = project ?? '')
+// const projectChange = (project: number | null) => (form.value.issue_project = project ?? '')
 
 const resetForm = () => {
   form.value.limit = ''
+  form.value.is_real_dev = ''
   form.value.issue_project = ''
   form.value.lawsuit = ''
   form.value.ordering = '-created'
@@ -70,6 +69,7 @@ onBeforeUpdate(() => (form.value.project = ''))
 onBeforeMount(async () => {
   if (props.docsFilter) {
     form.value.limit = props.docsFilter.limit
+    form.value.is_real_dev = props.docsFilter.is_real_dev
     form.value.issue_project = props.docsFilter.issue_project
     form.value.ordering = props.docsFilter.ordering
     form.value.search = props.docsFilter.search
@@ -94,7 +94,7 @@ onBeforeMount(async () => {
           </CCol>
 
           <CCol v-if="comFrom" md="6" lg="4" xl="3" class="mb-3">
-            <CFormSelect v-model="form.project" @change="firstSorting">
+            <CFormSelect v-model.number="form.issue_project" @change="firstSorting">
               <option value="">본사</option>
               <option v-for="proj in projects" :key="proj.value" :value="proj.value">
                 {{ proj.label }}

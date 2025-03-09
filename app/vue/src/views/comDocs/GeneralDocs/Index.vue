@@ -26,10 +26,9 @@ const typeNumber = ref(1)
 const mainViewName = ref('본사 일반 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
-  project: '',
   issue_project: '',
-  doc_type: typeNumber.value,
-  category: '',
+  is_real_dev: 'false',
+  project: '',
   ordering: '-created',
   search: '',
   page: 1,
@@ -50,6 +49,12 @@ const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   // docsFilter.value.project = !!payload.is_com ? '' : payload.project
   // docsFilter.value.is_com = payload.is_com
+  if (!payload.issue_project) {
+    docsFilter.value.company = company.value
+    docsFilter.value.issue_project = ''
+  } else docsFilter.value.issue_project = payload.issue_project
+  docsFilter.value.is_real_dev = payload.is_real_dev
+  docsFilter.value.project = payload.project
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
   docsFilter.value.limit = payload.limit
@@ -188,8 +193,8 @@ const fileHit = async (pk: number) => {
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
   await workStore.fetchAllIssueProjectList(pk, '1', '')
   await fetchDocTypeList()
-  docsFilter.value.company = pk
   await fetchCategoryList(typeNumber.value)
+  docsFilter.value.company = pk
   await fetchDocsList(docsFilter.value)
   if (docsId) await fetchDocs(Number(docsId))
 }
