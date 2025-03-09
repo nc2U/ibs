@@ -220,6 +220,7 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
         <ListController
           ref="fController"
           :com-from="true"
+          :company="company"
           :docs-filter="docsFilter"
           @list-filter="listFiltering"
         />
