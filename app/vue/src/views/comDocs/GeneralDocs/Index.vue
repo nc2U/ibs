@@ -203,9 +203,7 @@ const dataReset = () => {
 
 const comSelect = (target: number | null) => {
   dataReset()
-  if (!!target) {
-    dataSetup(target)
-  }
+  if (!!target) dataSetup(target)
 }
 
 onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
