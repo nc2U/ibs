@@ -1,15 +1,13 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, onBeforeMount } from 'vue'
-import { useProject } from '@/store/pinia/project'
+import { ref, computed, nextTick, onBeforeMount, type PropType } from 'vue'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
-import { useWork } from '@/store/pinia/work'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
-  comapny: { type: String, default: '' },
+  projects: { type: Array as PropType<{ label: string; value: number }[]>, default: () => [] },
   getSuitCase: { type: Object, default: null },
   docsFilter: { type: Object, required: true },
 })
@@ -66,9 +64,6 @@ const resetForm = () => {
 
 defineExpose({ listFiltering, resetForm })
 
-const workStore = useWork()
-const getAllProjects = computed(() => workStore.getAllProjects)
-
 onBeforeMount(async () => {
   if (props.docsFilter) {
     form.value.limit = props.docsFilter.limit
@@ -77,7 +72,6 @@ onBeforeMount(async () => {
     form.value.search = props.docsFilter.search
     form.value.page = props.docsFilter.page
   }
-  await workStore.fetchAllIssueProjectList(props.comapny, '1', '')
 })
 </script>
 
@@ -99,7 +93,7 @@ onBeforeMount(async () => {
           <CCol v-if="comFrom" md="6" lg="4" xl="3" class="mb-3">
             <CFormSelect v-model="form.project" @change="firstSorting">
               <option value="">본사</option>
-              <option v-for="proj in getAllProjects" :key="proj.value" :value="proj.value">
+              <option v-for="proj in projects" :key="proj.value" :value="proj.value">
                 {{ proj.label }}
               </option>
             </CFormSelect>

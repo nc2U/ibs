@@ -19,6 +19,7 @@ import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
 import { useProject } from '@/store/pinia/project'
+import { useWork } from '@/store/pinia/work'
 
 const fController = ref()
 const typeNumber = ref(1)
@@ -70,6 +71,9 @@ const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
 const projStore = useProject()
 const issue_project = computed(() => projStore.project?.issue_project)
+
+const workStore = useWork()
+const getAllProjects = computed(() => workStore.getAllProjects)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeComDocs)
@@ -181,12 +185,13 @@ const fileHit = async (pk: number) => {
   await patchFile({ pk, hit })
 }
 
-const dataSetup = (pk: number, docsId?: string | string[]) => {
-  fetchDocTypeList()
+const dataSetup = async (pk: number, docsId?: string | string[]) => {
+  await workStore.fetchAllIssueProjectList(pk, '1', '')
+  await fetchDocTypeList()
   docsFilter.value.company = pk
-  fetchCategoryList(typeNumber.value)
-  fetchDocsList(docsFilter.value)
-  if (docsId) fetchDocs(Number(docsId))
+  await fetchCategoryList(typeNumber.value)
+  await fetchDocsList(docsFilter.value)
+  if (docsId) await fetchDocs(Number(docsId))
 }
 
 const dataReset = () => {
@@ -198,7 +203,9 @@ const dataReset = () => {
 
 const comSelect = (target: number | null) => {
   dataReset()
-  if (!!target) dataSetup(target)
+  if (!!target) {
+    dataSetup(target)
+  }
 }
 
 onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
@@ -220,7 +227,7 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
         <ListController
           ref="fController"
           :com-from="true"
-          :company="company"
+          :projects="getAllProjects"
           :docs-filter="docsFilter"
           @list-filter="listFiltering"
         />
