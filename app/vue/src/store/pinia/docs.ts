@@ -31,6 +31,7 @@ export type SuitCaseFilter = {
 
 export type DocsFilter = {
   company?: number | ''
+  is_real_dev?: boolean
   project?: number | ''
   issue_project?: number | ''
   doc_type?: number | ''
