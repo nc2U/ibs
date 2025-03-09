@@ -59,6 +59,7 @@ export interface IssueProject {
 }
 
 export interface ProjectFilter {
+  company?: number
   parent__isnull?: boolean
   parent?: string
   status?: '1' | '9'

@@ -59,6 +59,7 @@ export const useWork = defineStore('work', () => {
   // actions
   const fetchIssueProjectList = async (payload: ProjectFilter) => {
     let url = `/issue-project/?1=1`
+    if (payload.company) `&company=${payload.company}`
     if (payload?.status) url += `&status=${payload?.status}`
     else if (payload?.status__exclude) url += `&status__exclude=${payload?.status__exclude}`
     if (payload?.parent) url += `&parent__slug=${payload.parent}`
@@ -76,9 +77,9 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchAllIssueProjectList = async (is_dev = '', p_isnull = '1') =>
+  const fetchAllIssueProjectList = async (com: number | null, is_dev = '', p_isnull = '1') =>
     await api
-      .get(`/issue-project/?is_real_dev=${is_dev}&parent__isnull=${p_isnull}`)
+      .get(`/issue-project/?company=${com ?? ''}&is_real_dev=${is_dev}&parent__isnull=${p_isnull}`)
       .then(res => (allProjects.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
