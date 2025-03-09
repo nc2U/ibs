@@ -66,10 +66,12 @@ class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
 class DocumentFilterSet(FilterSet):
     company = ModelChoiceFilter(field_name='issue_project__company',
                                 queryset=Company.objects.all(), label='회사')
+    is_real_dev = BooleanFilter(field_name='issue_project__is_real_dev', label='부동산 개발 프로젝트')
 
     class Meta:
         model = Document
-        fields = ('company', 'issue_project__project', 'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
+        fields = ('company', 'is_real_dev', 'issue_project__project',
+                  'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
