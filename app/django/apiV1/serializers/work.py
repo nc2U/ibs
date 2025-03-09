@@ -454,8 +454,7 @@ class IssueProjectSerializer(serializers.ModelSerializer):
 
         # status (close or reopen)
         status = self.initial_data.get('status', '1')
-        if status is not None:
-            instance.status = status
+        instance.status = status
 
         return super().update(instance, validated_data)
 
