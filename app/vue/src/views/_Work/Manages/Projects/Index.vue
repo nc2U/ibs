@@ -83,7 +83,6 @@ const modules = computed(() => issueProject.value?.module)
 const issue = computed(() => workStore.issue)
 
 const onSubmit = (payload: any) => {
-  payload.company = company?.value.pk
   workStore.createIssueProject(payload)
   setTimeout(() => {
     router.push({

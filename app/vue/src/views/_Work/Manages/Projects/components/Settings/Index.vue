@@ -69,10 +69,7 @@ const memberList = computed(() =>
 )
 const activityList = computed(() => workStore.activityList)
 
-const onSubmit = (payload: any) => {
-  payload.company = company?.value.pk
-  workStore.updateIssueProject(payload)
-}
+const onSubmit = (payload: any) => workStore.updateIssueProject(payload)
 
 const deleteVersion = (pk: number) => workStore.deleteVersion(pk, issueProject.value?.slug)
 
