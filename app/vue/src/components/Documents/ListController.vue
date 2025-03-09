@@ -9,7 +9,7 @@ import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
-  comapny: { type: Number, default: null },
+  comapny: { type: String, default: '' },
   getSuitCase: { type: Object, default: null },
   docsFilter: { type: Object, required: true },
 })
@@ -66,10 +66,6 @@ const resetForm = () => {
 
 defineExpose({ listFiltering, resetForm })
 
-// const projectStore = useProject()
-// const projSelect = computed(() => projectStore.projSelect)
-// const fetchProjectList = () => projectStore.fetchProjectList()
-
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
 
@@ -81,16 +77,12 @@ onBeforeMount(async () => {
     form.value.search = props.docsFilter.search
     form.value.page = props.docsFilter.page
   }
-  // await fetchProjectList()
   await workStore.fetchAllIssueProjectList(props.comapny, '1', '')
 })
 </script>
 
 <template>
   <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4" :class="bgLight">
-    <div v-for="iproj in getAllProjects" :key="iproj.value">
-      {{ iproj.label }}
-    </div>
     <CRow>
       <CCol lg="6">
         <CRow>

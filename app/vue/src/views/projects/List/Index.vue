@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount, watch } from 'vue'
-import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin1'
+import { computed, onBeforeMount, ref } from 'vue'
+import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin1'
 import { useWork } from '@/store/pinia/work'
 import { useProject } from '@/store/pinia/project'
 import { type Project } from '@/store/types/project'
@@ -31,11 +31,9 @@ const toSubmit = (payload: Project) => {
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
-const fetchAllIssueProjectList = (is_dev: '' | '1', p_isnull = '1') =>
-  workStore.fetchAllIssueProjectList(is_dev, p_isnull)
 const createIssueProject = (payload: IssueProject) => workStore.createIssueProject(payload)
 
-onBeforeMount(() => fetchAllIssueProjectList('1', ''))
+onBeforeMount(() => workStore.fetchAllIssueProjectList('', '1', ''))
 </script>
 
 <template>
