@@ -26,7 +26,7 @@ const mainViewName = ref('본사 일반 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
-  project__sort: '2',
+  proj_sort: '2',
   project: '',
   ordering: '-created',
   search: '',
@@ -50,7 +50,7 @@ const listFiltering = (payload: DocsFilter) => {
     docsFilter.value.company = company.value ?? ''
     docsFilter.value.issue_project = ''
   } else docsFilter.value.issue_project = payload.issue_project
-  docsFilter.value.project__sort = payload.project__sort
+  docsFilter.value.proj_sort = payload.proj_sort
   docsFilter.value.project = payload.project
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
