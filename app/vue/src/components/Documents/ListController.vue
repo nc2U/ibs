@@ -16,7 +16,7 @@ const emit = defineEmits(['list-filter'])
 const form = ref<DocsFilter>({
   limit: '',
   issue_project: '',
-  proj_sort: '2',
+  is_real_dev: '',
   lawsuit: '',
   ordering: '-created',
   search: '',
@@ -55,7 +55,7 @@ const firstSorting = (event: { target: { value: number | null } }) => {
 const resetForm = () => {
   form.value.limit = ''
   form.value.issue_project = ''
-  form.value.proj_sort = '2'
+  form.value.is_real_dev = ''
   form.value.lawsuit = ''
   form.value.ordering = '-created'
   form.value.search = ''
@@ -70,7 +70,7 @@ onBeforeMount(async () => {
   if (props.docsFilter) {
     form.value.limit = props.docsFilter.limit
     form.value.issue_project = props.docsFilter.issue_project
-    form.value.proj_sort = props.docsFilter.proj_sort
+    form.value.is_real_dev = props.docsFilter.is_real_dev
     form.value.ordering = props.docsFilter.ordering
     form.value.search = props.docsFilter.search
     form.value.page = props.docsFilter.page

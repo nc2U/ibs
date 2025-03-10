@@ -26,7 +26,7 @@ const mainViewName = ref('본사 일반 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
-  proj_sort: '2',
+  is_real_dev: '',
   project: '',
   ordering: '-created',
   search: '',
@@ -50,7 +50,7 @@ const listFiltering = (payload: DocsFilter) => {
     docsFilter.value.company = company.value ?? ''
     docsFilter.value.issue_project = ''
   } else docsFilter.value.issue_project = payload.issue_project
-  docsFilter.value.proj_sort = payload.proj_sort
+  docsFilter.value.is_real_dev = payload.is_real_dev
   docsFilter.value.project = payload.project
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
@@ -186,7 +186,7 @@ const fileHit = async (pk: number) => {
 }
 
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
-  await workStore.fetchAllIssueProjectList(pk, '2', '')
+  await workStore.fetchAllIssueProjectList(pk, '1', '')
   await fetchDocTypeList()
   await fetchCategoryList(typeNumber.value)
   docsFilter.value.company = pk

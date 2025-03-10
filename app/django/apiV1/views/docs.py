@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django_filters import BooleanFilter, ModelChoiceFilter, NumberFilter
+from django_filters import BooleanFilter, ModelChoiceFilter, NumberFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -66,12 +66,18 @@ class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
 class DocumentFilterSet(FilterSet):
     company = ModelChoiceFilter(field_name='issue_project__company',
                                 queryset=Company.objects.all(), label='회사')
-    proj_sort = BooleanFilter(field_name='issue_project__sort', label='프로젝트 종류')
+    is_real_dev = BooleanFilter(method='is_real_dev_proj', label='부동산개발 프로젝트')
 
     class Meta:
         model = Document
-        fields = ('company', 'proj_sort', 'issue_project__project',
+        fields = ('company', 'is_real_dev', 'issue_project__project',
                   'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
+
+    @staticmethod
+    def is_real_dev_proj(queryset, name, value):
+        if value:  # True 일 경우 값이 '2' 인 데이터만 반환
+            return queryset.filter(issue_project__sort='2')
+        return queryset.exclude(issue_project__sort='2')  # False 일 경우 '2'가 아닌 데이터만 반환
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
