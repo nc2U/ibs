@@ -33,8 +33,6 @@ const attach = ref(true)
 const validated = ref(false)
 const form = reactive<Docs>({
   pk: undefined,
-  company: null,
-  project: null,
   issue_project: null,
   doc_type: props.typeNum,
   category: null,
@@ -144,7 +142,6 @@ const devideUri = (uri: string) => {
 const dataSetup = () => {
   if (props.docs) {
     form.pk = props.docs.pk
-    form.company = props.docs.company
     form.project = props.docs.project
     form.doc_type = props.docs.doc_type
     form.category = props.docs.category

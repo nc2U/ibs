@@ -40,7 +40,9 @@ const comSelect = computed(() => comStore.comSelect)
 const form = reactive({
   pk: undefined as number | undefined,
   company: null as null | number,
+  is_com_manage: false,
   is_real_dev: true,
+  sort: '2',
   name: '',
   description: '',
   slug: '',
@@ -69,37 +71,38 @@ const module = reactive({
 const formsCheck = computed(() => {
   if (props.project) {
     const a = form.company === props.project.company
-    const b = form.is_real_dev === props.project.is_real_dev
-    const c = form.name === props.project.name
-    const d = form.description === props.project.description
-    const e = form.homepage === props.project.homepage
-    const f = form.is_public === props.project.is_public
-    const g = Number(form.parent) === Number(props.project.parent)
-    const h = form.is_inherit_members === props.project.is_inherit_members
-    const i =
+    const b = form.is_com_manage === props.project.is_com_manage
+    const c = form.is_real_dev === props.project.is_real_dev
+    const d = form.name === props.project.name
+    const e = form.description === props.project.description
+    const f = form.homepage === props.project.homepage
+    const g = form.is_public === props.project.is_public
+    const h = Number(form.parent) === Number(props.project.parent)
+    const i = form.is_inherit_members === props.project.is_inherit_members
+    const j =
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.allowed_roles.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.allowed_roles?.map(r => r.pk).sort((a, b) => a - b))
-    const j =
+    const k =
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.trackers.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.trackers?.map(t => t.pk).sort((a, b) => a - b))
-    const k =
+    const l =
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.activities.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.activities?.map(a => a.pk).sort((a, b) => a - b))
-    const l = module.issue === props.project.module?.issue
-    const o = module.time === props.project.module?.time
-    const p = module.news === props.project.module?.news
-    const q = module.document === props.project.module?.document
-    const r = module.file === props.project.module?.file
-    const s = module.repository === props.project.module?.repository
-    const t = module.forum === props.project.module?.forum
-    const u = module.calendar === props.project.module?.calendar
-    const v = module.gantt === props.project.module?.gantt
+    const m = module.issue === props.project.module?.issue
+    const n = module.time === props.project.module?.time
+    const o = module.news === props.project.module?.news
+    const p = module.document === props.project.module?.document
+    const q = module.file === props.project.module?.file
+    const r = module.repository === props.project.module?.repository
+    const s = module.forum === props.project.module?.forum
+    const t = module.calendar === props.project.module?.calendar
+    const u = module.gantt === props.project.module?.gantt
 
-    const first = a && b && c && d && e && f && g && h && i && j
-    const second = k && l && o && p && q && r && s && t && u && v
+    const first = a && b && c && d && e && f && g && h && i && j && k
+    const second = l && m && n && o && p && q && r && s && t && u
     return first && second
   } else return false
 })
@@ -148,8 +151,9 @@ const dataSetup = () => {
   if (props.project) {
     form.pk = props.project.pk
     form.company = props.project.company
-    form.name = props.project.name
+    form.is_com_manage = props.project.is_com_manage
     form.is_real_dev = !!props.project?.is_real_dev
+    form.name = props.project.name
     form.description = props.project.description
     form.slug = props.project.slug
     form.homepage = props.project.homepage
@@ -172,6 +176,12 @@ const dataSetup = () => {
     module.gantt = !!props.project.module?.gantt
   }
 }
+
+const sorts = ref([
+  { value: '1', label: '본사관리' },
+  { value: '2', label: '부동산개발' },
+  { value: '3', label: '기타 프로젝트' },
+])
 
 onMounted(() => dataSetup())
 onUpdated(() => dataSetup())
@@ -202,13 +212,7 @@ onBeforeMount(() => {
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
             <MultiSelect v-model="form.company" :options="comSelect" mode="single" required />
           </CCol>
-          <CCol class="col-md-4 pt-2">
-            <CFormCheck
-              v-model="form.is_real_dev"
-              label="부동산 개발 프로젝트 여부"
-              id="is_real_dev"
-            />
-          </CCol>
+          <CCol v-for="s in sorts" :key="s.value">{{ s.label }}</CCol>
         </CRow>
 
         <CRow class="mb-3">

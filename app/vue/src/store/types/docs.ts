@@ -72,8 +72,6 @@ export type Docs = {
     | Link[]
     | AFile[]
   pk?: number
-  company: number | null
-  project: number | null
   issue_project: number | null
   proj_name?: string
   doc_type: number | null

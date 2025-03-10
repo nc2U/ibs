@@ -28,8 +28,9 @@ export interface IssueProject {
   pk?: number
   company: number | null
   is_com_manage: boolean
-  name: string
   is_real_dev: boolean
+  sort: '1' | '2' | '3'
+  name: string
   slug: string
   description: string
   homepage: string | null

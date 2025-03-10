@@ -7,6 +7,7 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
+import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import { useDocs, type DocsFilter } from '@/store/pinia/docs'
@@ -18,8 +19,6 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
-import { useProject } from '@/store/pinia/project'
-import { useWork } from '@/store/pinia/work'
 
 const fController = ref()
 const typeNumber = ref(1)
@@ -47,8 +46,6 @@ const cngFiles = ref<
 
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
-  // docsFilter.value.project = !!payload.is_com ? '' : payload.project
-  // docsFilter.value.is_com = payload.is_com
   if (!payload.issue_project) {
     docsFilter.value.company = company.value ?? ''
     docsFilter.value.issue_project = ''
@@ -74,8 +71,6 @@ const pageSelect = (page: number) => {
 
 const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
-const projStore = useProject()
-const issue_project = computed(() => projStore.project?.issue_project)
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
@@ -131,9 +126,9 @@ const docsScrape = (docs: number) => {
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
-  if (issue_project.value) {
+  if (company.value) {
     const { pk, ...getData } = payload
-    getData.issue_project = issue_project.value
+    getData.issue_project = 1 //issue_project.value
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -226,6 +221,7 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
 
   <ContentBody>
     <CCardBody class="pb-5">
+      {{ comStore.company }}
       <div v-if="route.name === `${mainViewName}`" class="pt-3">
         <ListController
           ref="fController"
