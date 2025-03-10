@@ -26,7 +26,7 @@ const mainViewName = ref('본사 일반 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
-  is_real_dev: '',
+  is_real_dev: 'false',
   project: '',
   ordering: '-created',
   search: '',
@@ -186,7 +186,7 @@ const fileHit = async (pk: number) => {
 }
 
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
-  await workStore.fetchAllIssueProjectList(pk, '1', '')
+  await workStore.fetchAllIssueProjectList(pk, '2', '')
   await fetchDocTypeList()
   await fetchCategoryList(typeNumber.value)
   docsFilter.value.company = pk
