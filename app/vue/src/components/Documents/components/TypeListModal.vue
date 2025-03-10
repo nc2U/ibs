@@ -5,7 +5,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   nowType: { type: Number, default: null },
-  nowProject: { type: Number, default: null },
+  // nowProject: { type: Number, default: null },
   docTypeList: { type: Array as PropType<DocType[]>, default: () => [] },
   isCopy: { type: Boolean, default: false },
 })
@@ -19,8 +19,8 @@ const project = ref<number | null>(null)
 
 const formCheck = computed(() => {
   const a = doc_type.value == props.nowType
-  const b = project.value == props.nowProject
-  return a && b
+  // const b = project.value == props.nowProject
+  return a // && b
 })
 
 const onSubmit = () => {
@@ -34,12 +34,12 @@ const callModal = () => refListModal.value.callModal()
 defineExpose({ callModal })
 
 onBeforeMount(() => {
-  if (props.nowProject) project.value = props.nowProject
+  // if (props.nowProject) project.value = props.nowProject
 })
 
 onUpdated(() => {
   if (props.nowType) doc_type.value = props.nowType
-  if (props.nowProject) project.value = props.nowProject
+  // if (props.nowProject) project.value = props.nowProject
 })
 </script>
 

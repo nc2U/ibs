@@ -466,12 +466,12 @@ onMounted(() => {
   <TypeListModal
     ref="refTypeListModal"
     :now-type="docs?.doc_type ?? undefined"
-    :now-project="docs?.project ?? undefined"
     :doc-type-list="docTypeList"
     :is-copy="isCopy"
     @copy-docs="copyDocs"
     @move-docs="moveDocs"
   />
+  <!--    :now-project="docs?.project ?? undefined"-->
 
   <CateListModal
     ref="refCateListModal"

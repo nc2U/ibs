@@ -33,7 +33,7 @@ const getCategories = computed(() => docsStore.getCategories)
 const fetchCategoryList = (type: number) => docsStore.fetchCategoryList(type)
 const fetchDocsList = (payload: DocsFilter) => docsStore.fetchDocsList(payload)
 
-const realProject = computed(() => !!issueProject.value?.is_real_dev)
+const realProject = computed(() => issueProject.value?.sort === '2')
 
 const categories = computed(() =>
   realProject.value ? getCategories.value : codeCategoryList.value,
