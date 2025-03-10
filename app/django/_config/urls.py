@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.contrib.auth import logout
 from django.shortcuts import redirect
 from django.urls import path, include
+from django.utils.http import url_has_allowed_host_and_scheme
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenVerifyView,
@@ -37,6 +38,8 @@ admin.site.site_title = 'IBS 사이트 관리'  # default: "Django site admin"
 
 def custom_logout(request):
     next_url = request.GET.get('next', 'accounts/login/')  # 기본값은 홈 페이지 ('/')
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+        next_url = 'accounts/login/'  # fallback to a safe URL
     logout(request)
     return redirect(next_url)
 
