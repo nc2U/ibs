@@ -36,7 +36,7 @@ class RepositoryInline(admin.TabularInline):
 class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'company', 'sort', 'name', 'homepage', 'is_public', 'parent', 'slug', 'status', 'order')
     list_display_links = ('name',)
-    list_editable = ('sort', 'order')
+    list_editable = ('company', 'sort', 'order')
     inlines = (ModuleInline, MemberInline, VersionInline, IssueCategoryInline, RepositoryInline)
 
 

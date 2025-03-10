@@ -186,7 +186,7 @@ const fileHit = async (pk: number) => {
 }
 
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
-  await workStore.fetchAllIssueProjectList(pk, '1', '')
+  await workStore.fetchAllIssueProjectList(pk, '2', '')
   await fetchDocTypeList()
   await fetchCategoryList(typeNumber.value)
   docsFilter.value.company = pk
