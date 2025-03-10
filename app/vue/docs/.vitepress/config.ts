@@ -22,7 +22,7 @@ export default defineConfig({
     // lineNumbers: true,
   },
   themeConfig: {
-    logo: 'https://raw.githubusercontent.com/nc2U/ibs/5cb17e51c3cf430d2d54c10dc512425d170976d4/app/vue/docs/favicon.svg',
+    logo: 'https://raw.githubusercontent.com/nc2U/ibs/a39d44a6f22b37ce7444a5102fa7bb4d9b00db66/app/vue/docs/favicon.svg',
     siteTitle: 'IBS',
     nav: [
       { text: '가이드', link: '/intro/getting-started' },
