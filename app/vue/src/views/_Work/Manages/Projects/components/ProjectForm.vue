@@ -40,8 +40,6 @@ const comSelect = computed(() => comStore.comSelect)
 const form = reactive({
   pk: undefined as number | undefined,
   company: null as null | number,
-  is_com_manage: false,
-  is_real_dev: true,
   sort: '2',
   name: '',
   description: '',
@@ -71,38 +69,37 @@ const module = reactive({
 const formsCheck = computed(() => {
   if (props.project) {
     const a = form.company === props.project.company
-    const b = form.is_com_manage === props.project.is_com_manage
-    const c = form.is_real_dev === props.project.is_real_dev
-    const d = form.name === props.project.name
-    const e = form.description === props.project.description
-    const f = form.homepage === props.project.homepage
-    const g = form.is_public === props.project.is_public
-    const h = Number(form.parent) === Number(props.project.parent)
-    const i = form.is_inherit_members === props.project.is_inherit_members
-    const j =
+    const b = form.sort === props.project.sort
+    const c = form.name === props.project.name
+    const d = form.description === props.project.description
+    const e = form.homepage === props.project.homepage
+    const f = form.is_public === props.project.is_public
+    const g = Number(form.parent) === Number(props.project.parent)
+    const h = form.is_inherit_members === props.project.is_inherit_members
+    const i =
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.allowed_roles.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.allowed_roles?.map(r => r.pk).sort((a, b) => a - b))
-    const k =
+    const j =
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.trackers.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.trackers?.map(t => t.pk).sort((a, b) => a - b))
-    const l =
+    const k =
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.activities.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.activities?.map(a => a.pk).sort((a, b) => a - b))
-    const m = module.issue === props.project.module?.issue
-    const n = module.time === props.project.module?.time
-    const o = module.news === props.project.module?.news
-    const p = module.document === props.project.module?.document
-    const q = module.file === props.project.module?.file
-    const r = module.repository === props.project.module?.repository
-    const s = module.forum === props.project.module?.forum
-    const t = module.calendar === props.project.module?.calendar
-    const u = module.gantt === props.project.module?.gantt
+    const l = module.issue === props.project.module?.issue
+    const m = module.time === props.project.module?.time
+    const n = module.news === props.project.module?.news
+    const o = module.document === props.project.module?.document
+    const p = module.file === props.project.module?.file
+    const q = module.repository === props.project.module?.repository
+    const r = module.forum === props.project.module?.forum
+    const s = module.calendar === props.project.module?.calendar
+    const t = module.gantt === props.project.module?.gantt
 
-    const first = a && b && c && d && e && f && g && h && i && j && k
-    const second = l && m && n && o && p && q && r && s && t && u
+    const first = a && b && c && d && e && f && g && h && i && j
+    const second = k && l && m && n && o && p && q && r && s && t
     return first && second
   } else return false
 })
@@ -151,8 +148,7 @@ const dataSetup = () => {
   if (props.project) {
     form.pk = props.project.pk
     form.company = props.project.company
-    form.is_com_manage = props.project.is_com_manage
-    form.is_real_dev = !!props.project?.is_real_dev
+    form.sort = props.project.sort
     form.name = props.project.name
     form.description = props.project.description
     form.slug = props.project.slug
@@ -212,7 +208,32 @@ onBeforeMount(() => {
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
             <MultiSelect v-model="form.company" :options="comSelect" mode="single" required />
           </CCol>
-          <CCol v-for="s in sorts" :key="s.value">{{ s.label }}</CCol>
+          <CCol class="mt-2">
+            <CFormCheck
+              type="radio"
+              id="sort-1"
+              inline
+              label="본사관리"
+              value="1"
+              v-model="form.sort"
+            />
+            <CFormCheck
+              type="radio"
+              id="sort-2"
+              inline
+              label="부동산개발 프로젝트"
+              value="2"
+              v-model="form.sort"
+            />
+            <CFormCheck
+              type="radio"
+              id="sort-3"
+              inline
+              label="기타 프로젝트"
+              value="3"
+              v-model="form.sort"
+            />
+          </CCol>
         </CRow>
 
         <CRow class="mb-3">
