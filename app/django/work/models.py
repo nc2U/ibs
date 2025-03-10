@@ -11,8 +11,10 @@ from django.db.models.signals import pre_delete
 class IssueProject(models.Model):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name="회사")
     is_com_manage = models.BooleanField('본사관리', default=False)
-    name = models.CharField('이름', max_length=100)
     is_real_dev = models.BooleanField('부동산 개발 프로젝트', default=False)
+    SORT_CHOICES = (('1', '본사관리'), ('2', '부동산개발'), ('3', '기타 프로젝트'))
+    sort = models.CharField('유형', max_length=1, default='2', choices=SORT_CHOICES)
+    name = models.CharField('이름', max_length=100)
     slug = models.CharField('식별자', max_length=100, unique=True,
                             help_text='1에서 100글자 소문자(a-z), 숫자, 대쉬(-)와 밑줄(_)만 가능합니다. 식별자는 저장 후에는 수정할 수 없습니다.')
     description = models.TextField('설명', blank=True, default='')
