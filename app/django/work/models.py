@@ -10,6 +10,7 @@ from django.db.models.signals import pre_delete
 
 class IssueProject(models.Model):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name="회사")
+    is_com_manage = models.BooleanField('본사관리', default=False)
     name = models.CharField('이름', max_length=100)
     is_real_dev = models.BooleanField('부동산 개발 프로젝트', default=False)
     slug = models.CharField('식별자', max_length=100, unique=True,
