@@ -31,9 +31,9 @@ export type SuitCaseFilter = {
 
 export type DocsFilter = {
   company?: number | ''
-  is_real_dev?: '' | 'true' | 'false'
   project?: number | ''
   issue_project?: number | ''
+  proj_sort?: '1' | '2' | '3'
   doc_type?: number | ''
   is_notice?: boolean | ''
   category?: number | ''
@@ -206,12 +206,12 @@ export const useDocs = defineStore('docs', () => {
   const removeDocs = () => (docs.value = null)
 
   const fetchDocsList = async (payload: DocsFilter) => {
-    const { company, project, is_real_dev, doc_type, issue_project, page } = payload
+    const { company, project, proj_sort, doc_type, issue_project, page } = payload
     const limit = payload.limit || 10
     let url = `/docs/?limit=${limit}&page=${page ?? 1}`
     if (company) url += `&company=${company}`
     if (project) url += `&issue_project__project=${project}`
-    if (is_real_dev) url += `&is_real_dev=${is_real_dev}`
+    if (proj_sort) url += `&proj_sort=${proj_sort}`
     if (doc_type) url += `&doc_type=${doc_type}`
     if (issue_project) url += `&issue_project=${issue_project}`
     if (payload.category) url += `&category=${payload.category}`
