@@ -50,7 +50,7 @@ const listFiltering = (payload: DocsFilter) => {
   // docsFilter.value.project = !!payload.is_com ? '' : payload.project
   // docsFilter.value.is_com = payload.is_com
   if (!payload.issue_project) {
-    docsFilter.value.company = company.value
+    docsFilter.value.company = company.value ?? ''
     docsFilter.value.issue_project = ''
   } else docsFilter.value.issue_project = payload.issue_project
   docsFilter.value.is_real_dev = payload.is_real_dev
