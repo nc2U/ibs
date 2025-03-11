@@ -14,7 +14,7 @@ export interface Company {
   address3: string
   departments?: Department[]
   positions?: Positions[]
-  com_issue_project: number | null
+  com_issue_project?: number | null
 }
 
 export interface Logo {
