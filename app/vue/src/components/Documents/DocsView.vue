@@ -2,7 +2,7 @@
 import type { ComputedRef, PropType } from 'vue'
 import { ref, computed, watch, inject, onBeforeMount, onMounted } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
-import { useDocs } from '@/store/pinia/docs'
+import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import { type Docs } from '@/store/types/docs'
 import type { User } from '@/store/types/accounts'
@@ -23,7 +23,7 @@ const props = defineProps({
   viewRoute: { type: String, required: true },
   currPage: { type: Number, required: true },
   writeAuth: { type: Boolean, default: true },
-  docsFilter: { type: Object, default: null },
+  docsFilter: { type: Object as PropType<DocsFilter>, default: null },
 })
 
 const emit = defineEmits(['docs-hit', 'link-hit', 'file-hit', 'docs-scrape', 'docs-renewal'])
@@ -139,7 +139,7 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
       type_name: props.docs.type_name,
       project: el?.nProj,
       category: el?.nCate,
-      content: props.docs?.content,
+      content: props.docs?.content ?? '',
       docs: docs as number,
       state,
       filter: props.docsFilter,
@@ -208,6 +208,7 @@ onBeforeRouteUpdate((to, from) => {
 
 onBeforeMount(() => {
   if (docsId.value) {
+    docStore.fetchDocs(docsId.value)
     prev.value = getPrev(docsId.value)
     next.value = getNext(docsId.value)
   }

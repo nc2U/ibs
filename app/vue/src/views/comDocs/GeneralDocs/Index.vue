@@ -284,7 +284,7 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
 
       <div v-else-if="route.name.includes('수정')">
         <DocsForm
-          :board-num="typeNumber"
+          :type-num="typeNumber"
           :category-list="categoryList"
           :docs="docs as Docs"
           :view-route="mainViewName"

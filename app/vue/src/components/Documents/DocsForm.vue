@@ -5,11 +5,11 @@ import { useRoute, useRouter } from 'vue-router'
 import type { Docs, Link, AFile } from '@/store/types/docs'
 import type { Company } from '@/store/types/settings'
 import { AlertSecondary } from '@/utils/cssMixins'
+import Multiselect from '@vueform/multiselect'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
   sortName: { type: String, default: '【본사】' },
