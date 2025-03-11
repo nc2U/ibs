@@ -128,7 +128,7 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    getData.issue_project = 1 //issue_project.value
+    // getData.issue_project = 1 //issue_project.value
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -136,14 +136,14 @@ const onSubmit = async (payload: Docs & Attatches) => {
 
     for (const key in getData) {
       if (key === 'links' || key === 'files') {
-        getData[key]?.forEach(val => form.append(key, JSON.stringify(val)))
+        ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
       } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
         if (key === 'cngFiles') {
           getData[key]?.forEach(val => {
             form.append('cngPks', val.pk as any)
             form.append('cngFiles', val.file as Blob)
           })
-        } else getData[key]?.forEach(val => form.append(key, val as string | Blob))
+        } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
       } else {
         const formValue = getData[key] === null ? '' : getData[key]
         form.append(key, formValue as string)
