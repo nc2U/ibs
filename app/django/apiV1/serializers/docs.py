@@ -168,10 +168,11 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'issue_project', 'proj_name', 'doc_type', 'type_name', 'category', 'cate_name',
-                  'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content', 'hit', 'scrape',
-                  'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
-                  'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
+        fields = (
+            'pk', 'issue_project', 'proj_name', 'doc_type', 'type_name', 'category', 'cate_name',
+            'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content', 'hit', 'scrape',
+            'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
+            'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
 
     @staticmethod
@@ -182,17 +183,19 @@ class DocumentSerializer(serializers.ModelSerializer):
         queryset = Document.objects.all()
         query = self.context['request'].query_params
         company = query.get('company')
+        is_real_dev = query.get('is_real_dev')
+        is_real_dev = None if is_real_dev not in ('1', '2', '3') else is_real_dev
         project = query.get('project')
-        # is_com = query.get('is_com')
+        issue_project = query.get('issue_project')
         doc_type = query.get('doc_type')
         category = query.get('category')
         lawsuit = query.get('lawsuit')
         search = query.get('search')
 
         queryset = queryset.filter(issue_project__company_id=company) if company else queryset
+        queryset = queryset.filter(issue_project__sort=is_real_dev) if is_real_dev else queryset
         queryset = queryset.filter(issue_project__project_id=project) if project else queryset
-        # queryset = queryset.filter(project__isnull=True) if is_com == 'true' else queryset
-        # queryset = queryset.filter(project__isnull=False) if is_com == 'false' else queryset
+        queryset = queryset.filter(issue_project_id=issue_project) if issue_project else queryset
         queryset = queryset.filter(doc_type_id=doc_type) if doc_type else queryset
         queryset = queryset.filter(category_id=category) if category else queryset
         queryset = queryset.filter(lawsuit_id=lawsuit) if lawsuit else queryset
