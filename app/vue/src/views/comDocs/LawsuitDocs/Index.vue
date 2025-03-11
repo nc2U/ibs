@@ -27,6 +27,7 @@ const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
   is_real_dev: 'false',
+  doc_type: 2,
   category: '',
   lawsuit: '',
   ordering: '-created',
