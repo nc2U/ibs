@@ -127,7 +127,10 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    // getData.issue_project = 1 //issue_project.value
+    if (!payload.issue_project)
+      getData.issue_project = docsFilter.value.issue_project
+        ? docsFilter.value.issue_project
+        : (comStore.company?.com_issue_project ?? 1)
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 

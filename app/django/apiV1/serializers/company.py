@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff
+from work.models import IssueProject
 
 
 # Company --------------------------------------------------------------------------
@@ -19,12 +20,18 @@ class GradesInCompanySerializer(serializers.ModelSerializer):
 class CompanySerializer(serializers.ModelSerializer):
     departments = DepartsInCompanySerializer(many=True, read_only=True)
     grades = GradesInCompanySerializer(many=True, read_only=True)
+    com_issue_project = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Company
         fields = ('pk', 'name', 'ceo', 'tax_number', 'org_number', 'business_cond',
                   'business_even', 'es_date', 'op_date', 'zipcode', 'address1',
-                  'address2', 'address3', 'departments', 'grades')
+                  'address2', 'address3', 'departments', 'grades', 'com_issue_project')
+
+    @staticmethod
+    def get_com_issue_project(obj):
+        issue_project = IssueProject.objects.filter(company=obj, sort='1').first()
+        return issue_project.pk if issue_project else None
 
 
 class LogoSerializer(serializers.ModelSerializer):

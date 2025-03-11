@@ -91,9 +91,9 @@ const enableStore = (event: Event) => {
 }
 
 const editFile = (i: number) => {
-  if (form.files?.length) {
-    form.files[i].del = false
-    form.files[i].edit = !form.files[i].edit
+  if ((form.files as any[]).length) {
+    ;(form.files as any[])[i].del = false
+    ;(form.files as any[])[i].edit = !(form.files as any[])[i].edit
   }
 }
 
@@ -142,7 +142,7 @@ const devideUri = (uri: string) => {
 const dataSetup = () => {
   if (props.docs) {
     form.pk = props.docs.pk
-    form.project = props.docs.project
+    form.issue_project = props.docs.issue_project
     form.doc_type = props.docs.doc_type
     form.category = props.docs.category
     form.lawsuit = props.docs.lawsuit

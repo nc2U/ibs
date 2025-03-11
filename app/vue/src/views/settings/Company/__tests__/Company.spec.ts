@@ -39,6 +39,7 @@ describe('Company app test', () => {
     address1: '주소1',
     address2: '주소2',
     address3: '주소3',
+    com_issue_project: 5,
   }
 
   it('Company Detail company date check...', async () => {

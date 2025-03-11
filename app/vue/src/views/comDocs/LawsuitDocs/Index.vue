@@ -134,7 +134,10 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    // getData.issue_project = 1 // issue_project.value // Todo 1 : 폼으로 업무프로젝트 주입 후 정해서 올 것.
+    if (!payload.issue_project)
+      getData.issue_project = docsFilter.value.issue_project
+        ? docsFilter.value.issue_project
+        : (comStore.company?.com_issue_project ?? 1)
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
