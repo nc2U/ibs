@@ -162,7 +162,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
     } else {
       await createDocs({ form })
       await router.replace({ name: `${mainViewName.value}` })
-      fController.value.resetForm()
+      fController.value.resetForm(false)
     }
     newFiles.value = []
     cngFiles.value = []
