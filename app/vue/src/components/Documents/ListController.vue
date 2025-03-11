@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, onBeforeMount, type PropType, onBeforeUpdate } from 'vue'
+import { computed, nextTick, onBeforeMount, type PropType, ref } from 'vue'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
