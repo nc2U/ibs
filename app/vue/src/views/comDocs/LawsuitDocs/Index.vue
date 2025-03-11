@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeMount, watch } from 'vue'
-import { pageTitle, navMenu } from '@/views/comDocs/_menu/headermixin'
+import { computed, onBeforeMount, ref, watch } from 'vue'
+import { navMenu, pageTitle } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
   type RouteLocationNormalizedLoaded as LoadedRoute,
@@ -9,8 +9,9 @@ import {
 } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
+import { useWork } from '@/store/pinia/work'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
-import type { AFile, Attatches, Link, PatchDocs, Docs } from '@/store/types/docs'
+import type { AFile, Attatches, Docs, Link, PatchDocs } from '@/store/types/docs'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/components/Documents/ListController.vue'
@@ -18,8 +19,6 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
-import { useProject } from '@/store/pinia/project'
-import { useWork } from '@/store/pinia/work'
 
 const fController = ref()
 const typeNumber = ref(2)
@@ -28,7 +27,6 @@ const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
   is_real_dev: 'false',
-  project: '',
   category: '',
   lawsuit: '',
   ordering: '-created',
@@ -47,20 +45,22 @@ const cngFiles = ref<
   }[]
 >([])
 
-const listFiltering = (payload: DocsFilter) => {
+const listFiltering = async (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   if (!payload.issue_project) {
     docsFilter.value.company = company.value ?? ''
     docsFilter.value.issue_project = ''
-  } else docsFilter.value.issue_project = payload.issue_project
-  // docsFilter.value.company = payload.company
+    await fetchAllSuitCaseList({ is_com: true })
+  } else {
+    docsFilter.value.issue_project = payload.issue_project
+    await fetchAllSuitCaseList({ is_com: false })
+  }
   docsFilter.value.is_real_dev = payload.is_real_dev
-  docsFilter.value.project = payload.project
   docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
   docsFilter.value.limit = payload.limit
-  fetchDocsList({ ...docsFilter.value })
+  await fetchDocsList({ ...docsFilter.value })
 }
 
 const selectCate = (cate: number) => {
@@ -79,9 +79,6 @@ const company = computed(() => comStore.company?.pk)
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
-
-const projStore = useProject()
-const issue_project = computed(() => projStore.project?.issue_project)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeComDocs)
@@ -118,7 +115,7 @@ const [route, router] = [
 
 watch(route, val => {
   if (val.params.docsId) fetchDocs(Number(val.params.docsId))
-  else docStore.removeDocs() //docs = null
+  else docStore.removeDocs()
 })
 
 const docsRenewal = (page: number) => {
@@ -137,7 +134,7 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    // getData.issue_project = 1 // issue_project.value
+    // getData.issue_project = 1 // issue_project.value // Todo 1 : 폼으로 업무프로젝트 주입 후 정해서 올 것.
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -211,6 +208,8 @@ const dataReset = () => {
 }
 
 const comSelect = (target: number | null) => {
+  alert(target)
+  fController.value.resetForm()
   dataReset()
   if (target) dataSetup(target)
 }

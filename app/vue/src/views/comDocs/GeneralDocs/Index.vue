@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeMount, watch, nextTick } from 'vue'
-import { pageTitle, navMenu } from '@/views/comDocs/_menu/headermixin'
+import { computed, onBeforeMount, ref, watch } from 'vue'
+import { navMenu, pageTitle } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
   type RouteLocationNormalizedLoaded as Loaded,
@@ -10,8 +10,8 @@ import {
 import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
-import { useDocs, type DocsFilter } from '@/store/pinia/docs'
-import type { AFile, Attatches, Link, Docs, PatchDocs } from '@/store/types/docs'
+import { type DocsFilter, useDocs } from '@/store/pinia/docs'
+import type { AFile, Attatches, Docs, Link, PatchDocs } from '@/store/types/docs'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/components/Documents/ListController.vue'
@@ -27,7 +27,7 @@ const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
   is_real_dev: 'false',
-  project: '',
+  category: '',
   ordering: '-created',
   search: '',
   page: 1,
@@ -51,7 +51,6 @@ const listFiltering = (payload: DocsFilter) => {
     docsFilter.value.issue_project = ''
   } else docsFilter.value.issue_project = payload.issue_project
   docsFilter.value.is_real_dev = payload.is_real_dev
-  docsFilter.value.project = payload.project
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
   docsFilter.value.limit = payload.limit
@@ -202,6 +201,7 @@ const dataReset = () => {
 }
 
 const comSelect = (target: number | null) => {
+  fController.value.resetForm()
   dataReset()
   if (!!target) dataSetup(target)
 }

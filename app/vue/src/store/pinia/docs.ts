@@ -206,9 +206,11 @@ export const useDocs = defineStore('docs', () => {
   const removeDocs = () => (docs.value = null)
 
   const fetchDocsList = async (payload: DocsFilter) => {
-    const { company, project, is_real_dev, doc_type, issue_project, page } = payload
-    const limit = payload.limit || 10
-    let url = `/docs/?limit=${limit}&page=${page ?? 1}`
+    const limit = payload.limit ?? 10
+    const page = payload.page ?? 1
+    let url = `/docs/?limit=${limit}&page=${page}`
+
+    const { company, project, is_real_dev, doc_type, issue_project } = payload
     if (company) url += `&company=${company}`
     if (project) url += `&issue_project__project=${project}`
     if (is_real_dev) url += `&is_real_dev=${is_real_dev}`

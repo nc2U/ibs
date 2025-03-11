@@ -17,16 +17,17 @@ const form = ref<DocsFilter>({
   limit: '',
   issue_project: '',
   is_real_dev: '',
-  lawsuit: '',
   ordering: '-created',
+  lawsuit: '',
   search: '',
+  page: 1,
 })
 
 const formsCheck = computed(() => {
   const a = form.value.limit === ''
   const b = form.value.issue_project === ''
-  const c = !form.value.lawsuit
-  const d = form.value.ordering === '-created'
+  const c = form.value.ordering === '-created'
+  const d = !form.value.lawsuit
   const e = form.value.search === ''
   return a && b && c && d && e
 })
@@ -66,8 +67,6 @@ const resetForm = () => {
 }
 
 defineExpose({ listFiltering, resetForm })
-
-onBeforeUpdate(() => (form.value.issue_project = ''))
 
 onBeforeMount(async () => {
   if (props.docsFilter) {
