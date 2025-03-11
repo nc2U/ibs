@@ -2,7 +2,7 @@
 import { type ComputedRef, inject, type PropType } from 'vue'
 import { ref, reactive, computed, onMounted, onUpdated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { Docs, Link } from '@/store/types/docs'
+import type { Docs, Link, AFile } from '@/store/types/docs'
 import type { Company } from '@/store/types/settings'
 import { AlertSecondary } from '@/utils/cssMixins'
 import QuillEditor from '@/components/QuillEditor/index.vue'
@@ -128,7 +128,6 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = () => {
-  if (!props.docs && company?.value) form.company = company.value?.pk as number
   emit('on-submit', { ...form, newLinks: newLinks.value })
   validated.value = false
   refConfirmModal.value.close()
@@ -251,13 +250,13 @@ onUpdated(() => dataSetup())
     <CRow>
       <CFormLabel for="title" class="col-md-2 col-form-label">링크</CFormLabel>
       <CCol md="10" lg="8" xl="6">
-        <CRow v-if="docs && form.links?.length">
+        <CRow v-if="docs && (form.links as Link[]).length">
           <CAlert :color="AlertSecondary">
             <CCol>
-              <CInputGroup v-for="(link, i) in form.links" :key="link.pk" class="mb-2">
+              <CInputGroup v-for="(link, i) in form.links as Link[]" :key="link.pk" class="mb-2">
                 <CFormInput
                   :id="`docs-link-${link.pk}`"
-                  v-model="form.links[i].link"
+                  v-model="(form.links as Link[])[i].link"
                   size="sm"
                   placeholder="파일 링크"
                   @input="enableStore"
@@ -265,8 +264,7 @@ onUpdated(() => dataSetup())
                 <CInputGroupText id="basic-addon1" class="py-0">
                   <CFormCheck
                     :id="`del-link-${link.pk}`"
-                    v-model="form.links[i].del"
-                    :value="true"
+                    v-model="(form.links as Link[])[i].del"
                     @input="enableStore"
                     label="삭제"
                   />
@@ -300,10 +298,10 @@ onUpdated(() => dataSetup())
     <CRow class="mb-3">
       <CFormLabel for="title" class="col-md-2 col-form-label">파일</CFormLabel>
       <CCol md="10" lg="8" xl="6">
-        <CRow v-if="docs && form.files?.length">
+        <CRow v-if="docs && (form.files as AFile[]).length">
           <CAlert :color="AlertSecondary">
             <small>{{ devideUri(form.files[0].file ?? ' ')[0] }}</small>
-            <CCol v-for="(file, i) in form.files" :key="file.pk" xs="12" color="primary">
+            <CCol v-for="(file, i) in form.files as AFile[]" :key="file.pk" xs="12" color="primary">
               <small>
                 현재 :
                 <a :href="file.file" target="_blank">
@@ -311,12 +309,12 @@ onUpdated(() => dataSetup())
                 </a>
                 <span>
                   <CFormCheck
-                    v-model="form.files[i].del"
+                    v-model="(form.files as AFile[])[i].del"
                     :id="`del-file-${file.pk}`"
                     @input="enableStore"
                     label="삭제"
                     inline
-                    :disabled="form.files[i].edit"
+                    :disabled="(form.files as AFile[])[i].edit"
                     class="ml-4"
                   />
                   <CFormCheck
@@ -326,13 +324,13 @@ onUpdated(() => dataSetup())
                     @click="editFile(i)"
                   />
                 </span>
-                <CRow v-if="form.files[i].edit">
+                <CRow v-if="(form.files as AFile[])[i].edit">
                   <CCol>
                     <CInputGroup>
                       변경 : &nbsp;
                       <CFormInput
                         :id="`docs-file-${file.pk}`"
-                        v-model="form.files[i].newFile"
+                        v-model="(form.files as AFile[])[i].newFile"
                         size="sm"
                         type="file"
                         @input="fileChange($event, file.pk as number)"
