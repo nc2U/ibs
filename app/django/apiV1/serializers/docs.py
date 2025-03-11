@@ -155,6 +155,7 @@ class FilesInDocumentSerializer(serializers.ModelSerializer):
 
 class DocumentSerializer(serializers.ModelSerializer):
     proj_name = serializers.SlugField(source='issue_project', read_only=True)
+    proj_sort = serializers.SerializerMethodField(read_only=True)
     type_name = serializers.SerializerMethodField()
     cate_name = serializers.SlugField(source='category', read_only=True)
     lawsuit_name = serializers.SlugField(source='lawsuit', read_only=True)
@@ -168,11 +169,15 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'issue_project', 'proj_name', 'doc_type', 'type_name', 'category', 'cate_name',
-                  'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content', 'hit', 'scrape',
-                  'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
+        fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name', 'category',
+                  'cate_name', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content', 'hit',
+                  'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
                   'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
+
+    @staticmethod
+    def get_proj_sort(obj):
+        return obj.issue_project.sort if obj.issue_project else None
 
     @staticmethod
     def get_type_name(obj):
@@ -189,11 +194,13 @@ class DocumentSerializer(serializers.ModelSerializer):
         return user in users
 
     def get_prev_pk(self, obj):
-        prev_obj = self.get_collection().filter(created__lt=obj.created).first()
+        queryset = self.context['view'].filter_queryset(Document.objects.all())
+        prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-pk').first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
-        next_obj = self.get_collection().filter(created__gt=obj.created).order_by('created').first()
+        queryset = self.context['view'].filter_queryset(Document.objects.all())
+        next_obj = queryset.filter(pk__gt=obj.pk).order_by('pk').first()
         return next_obj.pk if next_obj else None
 
     def to_python(self, value):
