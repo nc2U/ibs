@@ -19,15 +19,16 @@ import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
 import { useProject } from '@/store/pinia/project'
+import { useWork } from '@/store/pinia/work'
 
 const fController = ref()
 const typeNumber = ref(2)
 const mainViewName = ref('본사 소송 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
-  project: '',
   issue_project: '',
-  doc_type: typeNumber.value,
+  is_real_dev: 'false',
+  project: '',
   category: '',
   lawsuit: '',
   ordering: '-created',
@@ -48,9 +49,13 @@ const cngFiles = ref<
 
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
-  docsFilter.value.company = payload.company
+  if (!payload.issue_project) {
+    docsFilter.value.company = company.value ?? ''
+    docsFilter.value.issue_project = ''
+  } else docsFilter.value.issue_project = payload.issue_project
+  // docsFilter.value.company = payload.company
+  docsFilter.value.is_real_dev = payload.is_real_dev
   docsFilter.value.project = payload.project
-  docsFilter.value.issue_project = payload.issue_project
   docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
@@ -71,6 +76,10 @@ const pageSelect = (page: number) => {
 
 const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
+
+const workStore = useWork()
+const getAllProjects = computed(() => workStore.getAllProjects)
+
 const projStore = useProject()
 const issue_project = computed(() => projStore.project?.issue_project)
 
@@ -185,13 +194,14 @@ const fileHit = async (pk: number) => {
   await patchFile({ pk, hit })
 }
 
-const dataSetup = (pk: number, docsId?: string | string[]) => {
-  fetchDocTypeList()
+const dataSetup = async (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
-  fetchCategoryList(typeNumber.value)
-  fetchAllSuitCaseList({ is_com: true })
-  fetchDocsList(docsFilter.value)
-  if (docsId) fetchDocs(Number(docsId))
+  await workStore.fetchAllIssueProjectList(pk, '2', '')
+  await fetchDocTypeList()
+  await fetchCategoryList(typeNumber.value)
+  await fetchAllSuitCaseList({ is_com: true })
+  await fetchDocsList(docsFilter.value)
+  if (docsId) await fetchDocs(Number(docsId))
 }
 const dataReset = () => {
   docStore.removeDocs()
@@ -224,6 +234,7 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
         <ListController
           ref="fController"
           :com-from="true"
+          :projects="getAllProjects"
           :get-suit-case="getSuitCase"
           :docs-filter="docsFilter"
           @list-filter="listFiltering"

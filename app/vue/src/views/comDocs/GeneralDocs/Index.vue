@@ -186,10 +186,10 @@ const fileHit = async (pk: number) => {
 }
 
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
+  docsFilter.value.company = pk
   await workStore.fetchAllIssueProjectList(pk, '2', '')
   await fetchDocTypeList()
   await fetchCategoryList(typeNumber.value)
-  docsFilter.value.company = pk
   await fetchDocsList(docsFilter.value)
   if (docsId) await fetchDocs(Number(docsId))
 }
