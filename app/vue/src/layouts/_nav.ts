@@ -55,15 +55,6 @@ const company_docs = {
     },
     {
       component: 'CNavItem',
-      name: '본사 공문 발송',
-      to: '/docs/official/letters',
-      badge: {
-        color: 'danger',
-        text: 'u.c',
-      },
-    },
-    {
-      component: 'CNavItem',
       name: '본사 소송 문서',
       to: '/docs/lawsuit/docs',
     },
@@ -71,6 +62,15 @@ const company_docs = {
       component: 'CNavItem',
       name: '본사 소송 사건',
       to: '/docs/lawsuit/case',
+    },
+    {
+      component: 'CNavItem',
+      name: '본사 공문 발송',
+      to: '/docs/official/letters',
+      badge: {
+        color: 'danger',
+        text: 'u.c',
+      },
     },
   ],
 }

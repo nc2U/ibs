@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount, watch } from 'vue'
-import { pageTitle, navMenu } from '@/views/comDocs/_menu/headermixin2'
+import { pageTitle, navMenu } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
   type RouteLocationNormalizedLoaded as LoadedRoute,
