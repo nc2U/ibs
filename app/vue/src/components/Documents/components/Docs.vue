@@ -13,7 +13,7 @@ const props = defineProps({
 const userInfo = inject<ComputedRef<User>>('userInfo')
 
 const sortName = computed(() => props.docs?.proj_name || '본사 문서')
-const sortColor = computed(() => (props.docs?.project ? 'success' : 'info'))
+const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'info'))
 </script>
 
 <template>

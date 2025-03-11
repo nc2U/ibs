@@ -74,6 +74,7 @@ export type Docs = {
   pk?: number
   issue_project: number | null
   proj_name?: string
+  proj_sort?: '1' | '2' | '3'
   doc_type: number | null
   type_name?: string
   category: number | null
