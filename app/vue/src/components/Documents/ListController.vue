@@ -56,14 +56,14 @@ const firstSorting = (event: { target: { value: number | null } }) => {
 
 // const projectChange = (project: number | null) => (form.value.issue_project = project ?? '')
 
-const resetForm = () => {
+const resetForm = (is_filter = true) => {
   form.value.limit = ''
   form.value.issue_project = ''
   form.value.is_real_dev = ''
   form.value.lawsuit = ''
   form.value.ordering = '-created'
   form.value.search = ''
-  listFiltering(1)
+  if (is_filter) listFiltering(1)
 }
 
 defineExpose({ listFiltering, resetForm })

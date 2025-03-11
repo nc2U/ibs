@@ -201,9 +201,10 @@ const dataReset = () => {
 }
 
 const comSelect = (target: number | null) => {
-  fController.value.resetForm()
+  fController.value.resetForm(false)
   dataReset()
   if (!!target) dataSetup(target)
+  else docStore.removeDocsList()
 }
 
 onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))

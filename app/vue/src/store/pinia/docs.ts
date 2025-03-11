@@ -231,6 +231,8 @@ export const useDocs = defineStore('docs', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const removeDocsList = () => (docsList.value = [])
+
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
   const createDocs = (
@@ -426,6 +428,7 @@ export const useDocs = defineStore('docs', () => {
     fetchDocs,
     removeDocs,
     fetchDocsList,
+    removeDocsList,
     createDocs,
     updateDocs,
     patchDocs,
