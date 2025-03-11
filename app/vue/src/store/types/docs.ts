@@ -87,7 +87,7 @@ export type Docs = {
   hit?: number
   scrape?: number
   my_scrape?: boolean
-  ip: string | null
+  ip?: string | null
   device: string
   is_secret: boolean
   password: string

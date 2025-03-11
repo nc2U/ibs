@@ -40,7 +40,6 @@ const form = reactive<Docs>({
   title: '',
   execution_date: null,
   content: '',
-  ip: null,
   device: '',
   is_secret: false,
   password: '',
@@ -148,10 +147,6 @@ const dataSetup = () => {
     form.title = props.docs.title
     form.execution_date = props.docs.execution_date
     form.content = props.docs.content
-    // form.hit = props.docs.hit
-    // form.like = props.docs.like
-    // form.blame = props.docs.blame
-    form.ip = props.docs.ip
     form.device = props.docs.device
     form.is_secret = props.docs.is_secret
     form.password = props.docs.password
