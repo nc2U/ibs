@@ -183,8 +183,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         queryset = Document.objects.all()
         query = self.context['request'].query_params
         company = query.get('company')
-        is_real_dev = query.get('is_real_dev')
-        is_real_dev = None if is_real_dev not in ('1', '2', '3') else is_real_dev
+        is_real_dev = query.get('is_real_dev') if query.get('is_real_dev') in ('1', '2', '3') else None
         project = query.get('project')
         issue_project = query.get('issue_project')
         doc_type = query.get('doc_type')
