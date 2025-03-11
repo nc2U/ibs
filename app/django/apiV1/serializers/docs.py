@@ -168,47 +168,15 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = (
-            'pk', 'issue_project', 'proj_name', 'doc_type', 'type_name', 'category', 'cate_name',
-            'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content', 'hit', 'scrape',
-            'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
-            'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
+        fields = ('pk', 'issue_project', 'proj_name', 'doc_type', 'type_name', 'category', 'cate_name',
+                  'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content', 'hit', 'scrape',
+                  'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
+                  'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
 
     @staticmethod
     def get_type_name(obj):
         return obj.doc_type.__str__()
-
-    def get_collection(self):
-        queryset = Document.objects.all()
-        query = self.context['request'].query_params
-        company = query.get('company')
-        is_real_dev = query.get('is_real_dev') if query.get('is_real_dev') in ('1', '2', '3') else None
-        project = query.get('project')
-        issue_project = query.get('issue_project')
-        doc_type = query.get('doc_type')
-        category = query.get('category')
-        lawsuit = query.get('lawsuit')
-        search = query.get('search')
-
-        queryset = queryset.filter(issue_project__company_id=company) if company else queryset
-        queryset = queryset.filter(issue_project__sort=is_real_dev) if is_real_dev else queryset
-        queryset = queryset.filter(issue_project__project_id=project) if project else queryset
-        queryset = queryset.filter(issue_project_id=issue_project) if issue_project else queryset
-        queryset = queryset.filter(doc_type_id=doc_type) if doc_type else queryset
-        queryset = queryset.filter(category_id=category) if category else queryset
-        queryset = queryset.filter(lawsuit_id=lawsuit) if lawsuit else queryset
-        queryset = queryset.filter(
-            Q(lawsuit__case_number__icontains=search) |
-            Q(lawsuit__case_name__icontains=search) |
-            Q(title__icontains=search) |
-            Q(content__icontains=search) |
-            Q(links__link__icontains=search) |
-            Q(files__file__icontains=search) |
-            Q(user__username__icontains=search)
-        ) if search else queryset
-
-        return queryset
 
     @staticmethod
     def get_scrape(obj):
