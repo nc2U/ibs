@@ -400,5 +400,5 @@ onUpdated(() => dataSetup())
 
   <AlertModal ref="refAlertModal" />
 
-  <ModalCaseForm ref="refCaseForm" @on-submit="caseCreate" />
+  <ModalCaseForm ref="refCaseForm" :get-suit-case="getSuitCase" @on-submit="caseCreate" />
 </template>

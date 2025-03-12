@@ -114,7 +114,7 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (project.value) {
     const { pk, ...getData } = payload
-    getData.issue_project = projStore.project.issue_project
+    getData.issue_project = projStore.project?.issue_project as number
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
