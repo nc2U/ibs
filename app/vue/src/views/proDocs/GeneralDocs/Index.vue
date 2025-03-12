@@ -24,13 +24,12 @@ const typeNumber = ref(1)
 const mainViewName = ref('현장 일반 문서')
 const docsFilter = ref<DocsFilter>({
   project: '',
-  issue_project: '',
   doc_type: typeNumber.value,
   category: '',
   ordering: '-created',
   search: '',
   page: 1,
-  limit: '',
+  limit: 10,
 })
 
 const heatedPage = ref<number[]>([])
@@ -39,12 +38,12 @@ const newFiles = ref<File[]>([])
 const cngFiles = ref<{ pk: number; file: File }[]>([])
 
 const listFiltering = (payload: DocsFilter) => {
-  payload.limit = payload.limit || 10
   docsFilter.value.project = payload.project
+  payload.limit = payload.limit || 10
   docsFilter.value.limit = payload.limit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
-  fetchDocsList({ ...docsFilter.value })
+  if (project.value) fetchDocsList({ ...docsFilter.value })
 }
 
 const selectCate = (cate: number) => {

@@ -24,14 +24,13 @@ const typeNumber = ref(2)
 const mainViewName = ref('현장 소송 문서')
 const docsFilter = ref<DocsFilter>({
   project: '',
-  issue_project: '',
   doc_type: typeNumber.value,
   category: '',
   lawsuit: '',
   ordering: '-created',
   search: '',
   page: 1,
-  limit: '',
+  limit: 10,
 })
 
 const heatedPage = ref<number[]>([])
@@ -40,11 +39,11 @@ const newFiles = ref<File[]>([])
 const cngFiles = ref<{ pk: number; file: File }[]>([])
 
 const listFiltering = (payload: DocsFilter) => {
+  docsFilter.value.project = payload.project
   payload.limit = payload.limit || 10
   docsFilter.value.limit = payload.limit
-  docsFilter.value.project = payload.project
-  docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
+  docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.search = payload.search
   if (project.value) fetchDocsList({ ...docsFilter.value })
 }
