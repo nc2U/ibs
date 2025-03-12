@@ -63,7 +63,6 @@ const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
 const company = computed(() => projStore.project?.company)
-const issue_project = computed(() => projStore.project?.issue_project)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeProDocs)
@@ -113,11 +112,9 @@ const docsScrape = (docs: number) => {
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
-  if (issue_project.value) {
+  if (project.value) {
     const { pk, ...getData } = payload
-    // getData.company = company.value as null | number
-    // getData.project = project.value
-    getData.issue_project = issue_project.value
+    getData.issue_project = projStore.project.issue_project
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -148,7 +145,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
     } else {
       await createDocs({ form, ...{ isProject: true } })
       await router.replace({ name: `${mainViewName.value}` })
-      fController.value.resetForm()
+      fController.value.resetForm(false)
     }
     newFiles.value = []
     cngFiles.value = []
@@ -175,10 +172,10 @@ const fileHit = async (pk: number) => {
 }
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
-  fetchDocTypeList()
   docsFilter.value.project = pk
+  fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
-  fetchAllSuitCaseList({ company: company.value ?? '', project: project.value, is_com: false })
+  fetchAllSuitCaseList({ company: company.value ?? '', project: project.value, is_com: false }) // Todo 프로젝트마다 변경 로직 구현
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
 }
@@ -191,8 +188,10 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
+  fController.value.resetForm(false)
   dataReset()
   if (!!target) dataSetup(target)
+  else docStore.removeDocsList()
 }
 
 onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.params?.docsId))

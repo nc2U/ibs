@@ -60,7 +60,6 @@ const pageSelect = (page: number) => {
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
-const issue_project = computed(() => projStore.project?.issue_project)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeProDocs)
@@ -109,9 +108,9 @@ const docsScrape = (docs: number) => {
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
-  if (issue_project.value) {
+  if (project.value) {
     const { pk, ...getData } = payload
-    getData.issue_project = issue_project.value
+    getData.issue_project = projStore.project.issue_project
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -142,7 +141,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
     } else {
       await createDocs({ form, ...{ isProject: true } })
       await router.replace({ name: `${mainViewName.value}` })
-      fController.value.resetForm()
+      fController.value.resetForm(false)
     }
     newFiles.value = []
     cngFiles.value = []
@@ -169,8 +168,8 @@ const fileHit = async (pk: number) => {
 }
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
-  fetchDocTypeList()
   docsFilter.value.project = pk
+  fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
@@ -184,8 +183,10 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
+  fController.value.resetForm(false)
   dataReset()
   if (!!target) dataSetup(target)
+  else docStore.removeDocsList()
 }
 
 onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.params?.docsId))
