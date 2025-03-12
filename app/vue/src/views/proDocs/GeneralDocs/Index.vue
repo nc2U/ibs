@@ -81,8 +81,9 @@ const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 
-const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
-const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
+const createDocs = (payload: { form: FormData; isProject: boolean }) => docStore.createDocs(payload)
+const updateDocs = (payload: { pk: number; form: FormData; isProject: boolean }) =>
+  docStore.updateDocs(payload)
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
 const patchLink = (payload: Link) => docStore.patchLink(payload)
 const patchFile = (payload: AFile) => docStore.patchFile(payload)
@@ -119,14 +120,14 @@ const onSubmit = async (payload: Docs & Attatches) => {
 
     for (const key in getData) {
       if (key === 'links' || key === 'files') {
-        getData[key]?.forEach(val => form.append(key, JSON.stringify(val)))
+        ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
       } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
         if (key === 'cngFiles') {
           getData[key]?.forEach(val => {
             form.append('cngPks', val.pk as any)
             form.append('cngFiles', val.file as Blob)
           })
-        } else getData[key]?.forEach(val => form.append(key, val as string | Blob))
+        } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
       } else {
         const formValue = getData[key] === null ? '' : getData[key]
         form.append(key, formValue as string)
