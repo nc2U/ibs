@@ -10,6 +10,7 @@ import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
 
 const props = defineProps({
   sortName: { type: String, default: '【본사】' },
@@ -26,6 +27,7 @@ const emit = defineEmits(['on-submit', 'file-upload', 'file-change', 'close'])
 const refDelModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
+const refCaseForm = ref()
 
 const company = inject<ComputedRef<Company>>('company')
 
@@ -191,7 +193,7 @@ onUpdated(() => dataSetup())
       <CFormLabel v-if="typeNum === 2" for="inputPassword" class="col-sm-2 col-form-label">
         사건번호 (사건번호 등록)
       </CFormLabel>
-      <CCol v-if="typeNum === 2" md="3">
+      <CCol v-if="typeNum === 2" md="2">
         <Multiselect
           v-model="form.lawsuit"
           :options="getSuitCase"
@@ -202,6 +204,17 @@ onUpdated(() => dataSetup())
           :add-option-on="['enter', 'tab']"
           searchable
         />
+      </CCol>
+      <CCol v-if="typeNum === 2" md="1" style="padding-top: 7px">
+        <div style="width: 20px">
+          <v-icon
+            icon="mdi-plus-circle"
+            color="success"
+            class="pointer"
+            @click="refCaseForm.callModal()"
+          />
+          <v-tooltip activator="parent" location="end">새 소송사건 등록하기</v-tooltip>
+        </div>
       </CCol>
 
       <CFormLabel
@@ -380,4 +393,6 @@ onUpdated(() => dataSetup())
   </ConfirmModal>
 
   <AlertModal ref="refAlertModal" />
+
+  <ModalCaseForm ref="refCaseForm" />
 </template>
