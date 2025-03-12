@@ -2,7 +2,7 @@
 import { type ComputedRef, inject, type PropType } from 'vue'
 import { ref, reactive, computed, onMounted, onUpdated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { Docs, Link, AFile } from '@/store/types/docs'
+import type { Docs, Link, AFile, SuitCase } from '@/store/types/docs'
 import type { Company } from '@/store/types/settings'
 import { AlertSecondary } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
@@ -132,6 +132,12 @@ const modalAction = () => {
   emit('on-submit', { ...form, newLinks: newLinks.value })
   validated.value = false
   refConfirmModal.value.close()
+}
+
+const caseCreate = (payload: SuitCase) => {
+  // case 생성하고
+  // 사건번호 폼에서 새로 생성한 case 를 선택 상태로 만들기
+  return
 }
 
 const devideUri = (uri: string) => {
@@ -394,5 +400,5 @@ onUpdated(() => dataSetup())
 
   <AlertModal ref="refAlertModal" />
 
-  <ModalCaseForm ref="refCaseForm" />
+  <ModalCaseForm ref="refCaseForm" @on-submit="caseCreate" />
 </template>

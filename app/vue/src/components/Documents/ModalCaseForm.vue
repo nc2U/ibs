@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import type { IssueProject } from '@/store/types/work'
+import type { SuitCase } from '@/store/types/docs'
 import FormModal from '@/components/Modals/FormModal.vue'
 import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 
@@ -10,7 +10,7 @@ const callModal = () => refIssueForm.value.callModal()
 defineExpose({ callModal })
 
 const emit = defineEmits(['on-submit'])
-const onSubmit = (payload: IssueProject) => {
+const onSubmit = (payload: SuitCase) => {
   emit('on-submit', payload)
   refIssueForm.value.close()
 }
@@ -20,7 +20,7 @@ const onSubmit = (payload: IssueProject) => {
   <FormModal ref="refIssueForm" :size="'xl'">
     <template #header>새 소송사건 생성</template>
     <template #default>
-      <CModalBody class="text-body">
+      <CModalBody class="text-body px-4">
         <CaseForm @on-submit="onSubmit" />
       </CModalBody>
     </template>
