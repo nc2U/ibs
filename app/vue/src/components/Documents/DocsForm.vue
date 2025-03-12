@@ -295,7 +295,7 @@ onUpdated(() => dataSetup())
       <CCol md="10" lg="8" xl="6">
         <CRow v-if="docs && (form.files as AFile[]).length">
           <CAlert :color="AlertSecondary">
-            <small>{{ devideUri(form.files[0].file ?? ' ')[0] }}</small>
+            <small>{{ devideUri((form.files as AFile[])[0]?.file ?? ' ')[0] }}</small>
             <CCol v-for="(file, i) in form.files as AFile[]" :key="file.pk" xs="12" color="primary">
               <small>
                 현재 :
