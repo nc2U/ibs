@@ -18,7 +18,7 @@ const suitCaseName = computed(() => {
 
 const store = useStore()
 const sortName = computed(() => props.suitCase?.proj_name || '본사 문서')
-const sortColor = computed(() => (props.suitCase?.project ? 'success' : 'info'))
+const sortColor = computed(() => (props.suitCase?.proj_sort === '2' ? 'success' : 'info'))
 const courtColor = computed(() => (store.theme !== 'dark' ? 'secondary' : 'default'))
 const agencyName = computed(() => {
   const agency = props.suitCase?.court_desc || props.suitCase?.other_agency

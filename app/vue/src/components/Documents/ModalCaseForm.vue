@@ -16,8 +16,7 @@ const callModal = () => refCaseForm.value.callModal()
 const validated = ref(false)
 const form = reactive<SuitCase>({
   pk: null,
-  company: null,
-  project: null,
+  issue_project: null, // Todo 데이터 생성 시 업무 프로젝트 주입하기
   sort: '',
   level: '',
   related_case: null,

@@ -24,8 +24,7 @@ const refAlertModal = ref()
 const validated = ref(false)
 const form = reactive<SuitCase>({
   pk: null,
-  company: null,
-  project: null,
+  issue_project: null,
   sort: '',
   level: '',
   related_case: null,
@@ -47,28 +46,27 @@ const form = reactive<SuitCase>({
 
 const formsCheck = computed(() => {
   if (props.suitcase) {
-    const a = form.company === props.suitcase.company
-    const b = form.project === props.suitcase.project
-    const c = form.sort === props.suitcase.sort
-    const d = form.level === props.suitcase.level
-    const e = form.related_case === props.suitcase.related_case
-    const f = form.court === props.suitcase.court
-    const g = form.other_agency === props.suitcase.other_agency
-    const h = form.case_number === props.suitcase.case_number
-    const i = form.case_name === props.suitcase.case_name
-    const j = form.plaintiff === props.suitcase.plaintiff
-    const k = form.plaintiff_attorney === props.suitcase.plaintiff_attorney
-    const l = form.plaintiff_case_price === props.suitcase.plaintiff_case_price
-    const m = form.defendant === props.suitcase.defendant
-    const n = form.defendant_attorney === props.suitcase.defendant_attorney
-    const o = form.defendant_case_price === props.suitcase.defendant_case_price
-    const p = form.related_debtor === props.suitcase.related_debtor
-    const q = form.case_start_date === props.suitcase.case_start_date
-    const r = form.case_end_date === props.suitcase.case_end_date
-    const s = form.summary === props.suitcase.summary
+    const a = form.issue_project === props.suitcase.issue_project
+    const b = form.sort === props.suitcase.sort
+    const c = form.level === props.suitcase.level
+    const d = form.related_case === props.suitcase.related_case
+    const e = form.court === props.suitcase.court
+    const f = form.other_agency === props.suitcase.other_agency
+    const g = form.case_number === props.suitcase.case_number
+    const h = form.case_name === props.suitcase.case_name
+    const i = form.plaintiff === props.suitcase.plaintiff
+    const j = form.plaintiff_attorney === props.suitcase.plaintiff_attorney
+    const k = form.plaintiff_case_price === props.suitcase.plaintiff_case_price
+    const l = form.defendant === props.suitcase.defendant
+    const m = form.defendant_attorney === props.suitcase.defendant_attorney
+    const n = form.defendant_case_price === props.suitcase.defendant_case_price
+    const o = form.related_debtor === props.suitcase.related_debtor
+    const p = form.case_start_date === props.suitcase.case_start_date
+    const q = form.case_end_date === props.suitcase.case_end_date
+    const r = form.summary === props.suitcase.summary
 
-    const group1 = a && b && c && d && e && f && g && h && i && j
-    const group2 = k && l && m && n && o && p && q && r && s
+    const group1 = a && b && c && d && e && f && g && h && i
+    const group2 = j && k && l && m && n && o && p && q && r
     return group1 && group2
   } else return false
 })
@@ -97,8 +95,7 @@ const modalAction = () => {
 const dataSetup = () => {
   if (props.suitcase) {
     form.pk = props.suitcase.pk
-    form.company = props.suitcase.company
-    form.project = props.suitcase.project
+    form.issue_project = props.suitcase.issue_project
     form.sort = props.suitcase.sort
     form.level = props.suitcase.level
     form.related_case = props.suitcase.related_case

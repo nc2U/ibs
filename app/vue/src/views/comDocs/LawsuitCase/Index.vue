@@ -24,6 +24,7 @@ const mainViewName = ref('본사 소송 사건')
 const caseFilter = ref<cFilter>({
   company: '',
   project: '',
+  issue_project: '',
   is_real_dev: '',
   court: '',
   related_case: '',
@@ -102,7 +103,8 @@ const onSubmit = (payload: SuitCase) => {
         params: { caseId: payload.pk },
       })
     } else {
-      payload.company = company.value || null
+      // payload.company = company.value || null
+      payload.issue_project = caseFilter.value.issue_project // Todo debugging
       createSuitCase(payload)
       router.replace({ name: `${mainViewName.value}` })
     }
@@ -132,7 +134,7 @@ const relatedFilter = (related: number) => {
 
 const dataSetup = (pk: number, caseId?: string | string[]) => {
   caseFilter.value.company = pk
-  fetchAllSuitCaseList({ is_real_dev: 'false' })
+  fetchAllSuitCaseList({ is_real_dev: false })
   fetchSuitCaseList(caseFilter.value)
   if (caseId) fetchSuitCase(Number(caseId))
 }

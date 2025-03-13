@@ -26,7 +26,7 @@ const mainViewName = ref('본사 소송 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
-  is_real_dev: 'false',
+  is_real_dev: false,
   doc_type: 2,
   category: '',
   lawsuit: '',
@@ -51,10 +51,10 @@ const listFiltering = async (payload: DocsFilter) => {
   if (!payload.issue_project) {
     docsFilter.value.company = company.value ?? ''
     docsFilter.value.issue_project = ''
-    await fetchAllSuitCaseList({ is_real_dev: 'false' })
+    await fetchAllSuitCaseList({ is_real_dev: false })
   } else {
     docsFilter.value.issue_project = payload.issue_project
-    await fetchAllSuitCaseList({ is_real_dev: 'true' })
+    await fetchAllSuitCaseList({ is_real_dev: true })
   }
   docsFilter.value.is_real_dev = payload.is_real_dev
   docsFilter.value.lawsuit = payload.lawsuit
@@ -201,7 +201,7 @@ const dataSetup = async (pk: number, docsId?: string | string[]) => {
   await fetchDocTypeList()
   await fetchCategoryList(typeNumber.value)
 
-  await fetchAllSuitCaseList({ is_real_dev: 'false' })
+  await fetchAllSuitCaseList({ is_real_dev: false })
 
   await fetchDocsList(docsFilter.value)
   if (docsId) await fetchDocs(Number(docsId))

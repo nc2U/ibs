@@ -24,6 +24,7 @@ export interface SuitCase {
   pk: number | null
   issue_project: number | null
   proj_name?: string
+  proj_sort?: '1' | '2' | '3' // 회사 / 부동산 프로젝트 / 기타
   sort: '' | '1' | '2' | '3' | '4' | '5'
   sort_desc?: string
   level: '' | '0' | '1' | '2' | '3'

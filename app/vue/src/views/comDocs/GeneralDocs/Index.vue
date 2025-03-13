@@ -26,7 +26,7 @@ const mainViewName = ref('본사 일반 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
-  is_real_dev: 'false',
+  is_real_dev: false,
   doc_type: 1,
   category: '',
   ordering: '-created',
