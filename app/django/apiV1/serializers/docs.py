@@ -39,6 +39,7 @@ class FilesInLawSuitCaseSerializer(serializers.ModelSerializer):
 
 class LawSuitCaseSerializer(serializers.ModelSerializer):
     proj_name = serializers.SlugField(source='issue_project', read_only=True)
+    proj_sort = serializers.SerializerMethodField(read_only=True)
     sort_desc = serializers.CharField(source='get_sort_display', read_only=True)
     level_desc = serializers.CharField(source='get_level_display', read_only=True)
     related_case_name = serializers.SlugField(source='related_case', read_only=True)
@@ -51,12 +52,16 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LawsuitCase
-        fields = ('pk', 'issue_project', 'proj_name', 'sort', 'sort_desc', 'level', 'level_desc',
+        fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'sort', 'sort_desc', 'level', 'level_desc',
                   'related_case', 'related_case_name', 'court', 'court_desc', 'other_agency', 'case_number',
                   'case_name', '__str__', 'plaintiff', 'plaintiff_attorney', 'plaintiff_case_price',
                   'defendant', 'defendant_attorney', 'defendant_case_price', 'related_debtor', 'case_start_date',
                   'case_end_date', 'summary', 'user', 'links', 'files', 'created', 'prev_pk', 'next_pk')
         read_only_fields = ('__str__',)
+
+    @staticmethod
+    def get_proj_sort(obj):
+        return obj.issue_project.sort if obj.issue_project else None
 
     @staticmethod
     def get_links(obj):
