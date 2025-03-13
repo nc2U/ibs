@@ -18,11 +18,12 @@ import type { CodeValue } from '@/store/types/work'
 export type SuitCaseFilter = {
   company?: number | ''
   project?: number | ''
-  is_com?: boolean
-  court?: string
+  is_real_dev?: '' | 'true' | 'false'
+  issue_project?: number | ''
   related_case?: number | ''
   sort?: '1' | '2' | '3' | '4' | '5' | ''
   level?: '1' | '2' | '3' | '4' | '5' | '6' | '7' | ''
+  court?: string
   in_progress?: boolean | ''
   search?: string
   page?: number
@@ -119,26 +120,27 @@ export const useDocs = defineStore('docs', () => {
       .catch(err => errorHandle(err.response.data))
 
   const getQueryStr = (payload: SuitCaseFilter) => {
-    const { project, is_com, in_progress, court, related_case, sort, level, search } = payload
+    const { company, project, issue_project, is_real_dev, in_progress, related_case } = payload
     let queryStr = ''
-    if (project) queryStr += `&project=${project}`
-    queryStr += `&is_com=${is_com ?? ''}`
+    if (company) queryStr += `&company=${company}`
+    if (project) queryStr += `&issue_project__project=${project}`
+    if (issue_project) queryStr += `issue_project=${issue_project}`
+    if (is_real_dev) queryStr += `&is_real_dev=${is_real_dev}`
     queryStr += `&in_progress=${in_progress ?? ''}`
-    if (court) queryStr += `&court=${court}`
     if (related_case) queryStr += `&related_case=${related_case}`
-    if (sort) queryStr += `&sort=${sort}`
-    if (level) queryStr += `&level=${level}`
-    if (search) queryStr += `&search=${search}`
+    if (payload.court) queryStr += `&court=${payload.court}`
+    if (payload.sort) queryStr += `&sort=${payload.sort}`
+    if (payload.level) queryStr += `&level=${payload.level}`
+    if (payload.search) queryStr += `&search=${payload.search}`
     return queryStr
   }
 
   const fetchSuitCaseList = async (payload: SuitCaseFilter) => {
     const limit = payload.limit || 10
     const page = payload.page || 1
-    const company = payload.company ?? ''
     const queryStr = getQueryStr(payload)
     return await api
-      .get(`/suitcase/?limit=${limit}&page=${page}&company=${company}${queryStr}`)
+      .get(`/suitcase/?limit=${limit}&page=${page}${queryStr}`)
       .then(res => {
         suitcaseList.value = res.data.results
         suitcaseCount.value = res.data.count
@@ -149,7 +151,7 @@ export const useDocs = defineStore('docs', () => {
   const fetchAllSuitCaseList = async (payload: SuitCaseFilter) => {
     const queryStr = getQueryStr(payload)
     return await api
-      .get(`/all-suitcase/?company=${payload.company ?? ''}&${queryStr}`)
+      .get(`/all-suitcase/?1=1&${queryStr}`)
       .then(res => (allSuitCaseList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
@@ -160,8 +162,13 @@ export const useDocs = defineStore('docs', () => {
     },
   ) => {
     const retData: SuitCaseFilter = payload.isProject
-      ? { company: payload.company ?? '', is_com: false, project: payload.project ?? '', page: 1 }
-      : { company: payload.company ?? '', is_com: true, page: 1 }
+      ? {
+          company: payload.company ?? '',
+          is_real_dev: 'true',
+          project: payload.project ?? '',
+          page: 1,
+        }
+      : { company: payload.company ?? '', is_real_dev: 'false', page: 1 }
     return await api
       .post(`/suitcase/`, payload)
       .then(() =>
