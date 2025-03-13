@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, computed, nextTick, onBeforeMount } from 'vue'
+import { ref, computed, nextTick, onBeforeMount } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
@@ -13,11 +13,11 @@ const props = defineProps({
 })
 const emit = defineEmits(['list-filter'])
 
-const form = reactive<SuitCaseFilter>({
-  limit: '',
+const form = ref<SuitCaseFilter>({
   company: '',
   project: '',
-  is_com: props.comFrom,
+  // issue_project: '',
+  is_real_dev: '',
   court: '',
   related_case: '',
   sort: '',
@@ -25,18 +25,20 @@ const form = reactive<SuitCaseFilter>({
   in_progress: '',
   search: '',
   page: 1,
+  limit: '',
 })
 
 const formsCheck = computed(() => {
-  const a = form.limit === ''
-  const b = form.is_com === !!props.comFrom
-  const c = !!props.comFrom ? form.project === '' : true
-  const d = form.court === ''
-  const e = form.related_case === ''
-  const f = form.sort === ''
-  const g = form.level === ''
-  const h = form.in_progress === ''
-  const i = form.search === ''
+  const a = form.value.limit === ''
+  // const b = form.is_com === !!props.comFrom
+  const b = form.value.is_real_dev === ''
+  const c = !!props.comFrom ? form.value.project === '' : true
+  const d = form.value.court === ''
+  const e = form.value.related_case === ''
+  const f = form.value.sort === ''
+  const g = form.value.level === ''
+  const h = form.value.in_progress === ''
+  const i = form.value.search === ''
   return a && b && c && d && e && f && g && h && i
 })
 
@@ -51,36 +53,37 @@ const getSuitCase = computed(() => docStore.getSuitCase)
 
 const listFiltering = (page = 1) => {
   nextTick(() => {
-    form.page = page
+    form.value.page = page
     emit('list-filter', { ...form })
   })
 }
 
 const firstSorting = (event: { target: { value: number | null } }) => {
   const val = event.target.value
-  if (!val) form.is_com = props.comFrom ?? true
-  else {
-    form.is_com = false
-    form.project = val
-  }
+  // if (!val) form.value.is_com = props.comFrom ?? true
+  // else {
+  //   form.value.is_com = false
+  //   form.value.project = val
+  // }
   listFiltering(1)
 }
 
-const courtChange = (court: string) => (form.court = court)
-const searchChange = (search: string) => (form.search = search)
-const relatedChange = (related: number) => (form.related_case = related)
-const projectChange = (project: number | null) => (form.project = project ?? '')
+const courtChange = (court: string) => (form.value.court = court)
+const searchChange = (search: string) => (form.value.search = search)
+const relatedChange = (related: number) => (form.value.related_case = related)
+const projectChange = (project: number | null) => (form.value.project = project ?? '')
 
 const resetForm = () => {
-  form.limit = ''
-  form.is_com = !!props.comFrom
-  form.project = ''
-  form.court = ''
-  form.related_case = ''
-  form.sort = ''
-  form.level = ''
-  form.in_progress = ''
-  form.search = ''
+  form.value.limit = ''
+  // form.value.is_com = !!props.comFrom
+  form.value.is_real_dev = ''
+  form.value.project = ''
+  form.value.court = ''
+  form.value.related_case = ''
+  form.value.sort = ''
+  form.value.level = ''
+  form.value.in_progress = ''
+  form.value.search = ''
   listFiltering(1)
 }
 
@@ -94,23 +97,24 @@ defineExpose({
 })
 
 const sortChange = () => {
-  form.level = ''
+  form.value.level = ''
   listFiltering(1)
 }
 
 onBeforeMount(() => {
   fetchProjectList()
   if (props.caseFilter) {
-    form.limit = props.caseFilter.limit
-    form.company = props.caseFilter.company
-    form.project = props.caseFilter.project
-    form.court = props.caseFilter.court
-    form.related_case = props.caseFilter.related_case
-    form.sort = props.caseFilter.sort
-    form.level = props.caseFilter.level
-    form.in_progress = props.caseFilter.in_progress
-    form.search = props.caseFilter.search
-    form.page = props.caseFilter.page
+    form.value.limit = props.caseFilter.limit
+    form.value.company = props.caseFilter.company
+    form.value.project = props.caseFilter.project
+    // form.value.is_real_dev = 'false'
+    form.value.court = props.caseFilter.court
+    form.value.related_case = props.caseFilter.related_case
+    form.value.sort = props.caseFilter.sort
+    form.value.level = props.caseFilter.level
+    form.value.in_progress = props.caseFilter.in_progress
+    form.value.search = props.caseFilter.search
+    form.value.page = props.caseFilter.page
   }
 })
 </script>

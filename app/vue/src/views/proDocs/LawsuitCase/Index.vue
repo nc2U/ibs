@@ -24,7 +24,8 @@ const mainViewName = ref('현장 소송 사건')
 const caseFilter = ref<cFilter>({
   company: '',
   project: '',
-  is_com: false,
+  // is_com: false,
+  is_real_dev: '',
   court: '',
   related_case: '',
   sort: '',
@@ -36,14 +37,15 @@ const caseFilter = ref<cFilter>({
 })
 
 const excelFilter = computed(
+  // Todo 퀴리 점검 할 것
   () =>
-    `is_com=false&project=${project.value}&sort=${caseFilter.value.sort}&level=${caseFilter.value.level}&court=${caseFilter.value.court}&in_progress=${caseFilter.value.in_progress}&search=${caseFilter.value.search}`,
+    `is_real_dev=${caseFilter.value.is_real_dev}&project=${project.value}&sort=${caseFilter.value.sort}&level=${caseFilter.value.level}&court=${caseFilter.value.court}&in_progress=${caseFilter.value.in_progress}&search=${caseFilter.value.search}`,
 )
 const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${excelFilter.value}`)
 
 const listFiltering = (payload: cFilter) => {
   payload.limit = payload.limit || 10
-  payload.is_com = false
+  payload.is_real_dev = 'true'
   payload.project = project.value ?? ''
   caseFilter.value = payload
   if (company.value) fetchSuitCaseList({ ...caseFilter.value })
@@ -145,7 +147,7 @@ const relatedFilter = (related: number) => {
 const dataSetup = (pk: number, caseId?: string | string[]) => {
   caseFilter.value.company = company.value ?? ''
   caseFilter.value.project = pk
-  fetchAllSuitCaseList({ company: company.value ?? '', is_com: false, project: pk })
+  fetchAllSuitCaseList({ company: company.value ?? '', is_real_dev: 'true', project: pk })
   fetchSuitCaseList(caseFilter.value)
   if (caseId) fetchSuitCase(Number(caseId))
 }

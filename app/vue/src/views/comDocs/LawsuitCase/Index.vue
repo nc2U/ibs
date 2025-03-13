@@ -24,7 +24,7 @@ const mainViewName = ref('본사 소송 사건')
 const caseFilter = ref<cFilter>({
   company: '',
   project: '',
-  is_com: true,
+  is_real_dev: 'false',
   court: '',
   related_case: '',
   sort: '',
@@ -37,14 +37,14 @@ const caseFilter = ref<cFilter>({
 
 const excelFilter = computed(
   () =>
-    `is_com=${caseFilter.value.is_com}&sort=${caseFilter.value.sort}&level=${caseFilter.value.level}&court=${caseFilter.value.court}&in_progress=${caseFilter.value.in_progress}&search=${caseFilter.value.search}`,
+    `is_real_dev=${caseFilter.value.is_real_dev}&sort=${caseFilter.value.sort}&level=${caseFilter.value.level}&court=${caseFilter.value.court}&in_progress=${caseFilter.value.in_progress}&search=${caseFilter.value.search}`,
 )
 const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${excelFilter.value}`)
 
 const listFiltering = (payload: cFilter) => {
   payload.limit = payload.limit || 10
   caseFilter.value = payload
-  caseFilter.value.project = !!payload.is_com ? '' : payload.project
+  // caseFilter.value.project = !!payload.is_com ? '' : payload.project
   if (company.value) fetchSuitCaseList({ ...caseFilter.value })
 }
 
@@ -90,7 +90,7 @@ const [route, router] = [useRoute() as LoadedRoute & { name: string }, useRouter
 
 watch(route, val => {
   if (val.params.caseId) fetchSuitCase(Number(val.params.caseId))
-  else docStore.suitcase = null
+  else docStore.removeSuitcase()
 })
 
 const onSubmit = (payload: SuitCase) => {
@@ -132,7 +132,7 @@ const relatedFilter = (related: number) => {
 
 const dataSetup = (pk: number, caseId?: string | string[]) => {
   caseFilter.value.company = pk
-  fetchAllSuitCaseList({ is_com: true })
+  fetchAllSuitCaseList({ is_real_dev: 'false' })
   fetchSuitCaseList(caseFilter.value)
   if (caseId) fetchSuitCase(Number(caseId))
 }

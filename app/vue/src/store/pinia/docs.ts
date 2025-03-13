@@ -111,6 +111,8 @@ export const useDocs = defineStore('docs', () => {
     })),
   )
 
+  const removeSuitcase = () => (suitcase.value = null)
+
   const casePages = (itemsPerPage: number) => Math.ceil(suitcaseCount.value / itemsPerPage)
 
   const fetchSuitCase = (pk: number) =>
@@ -418,6 +420,7 @@ export const useDocs = defineStore('docs', () => {
     getSuitCase,
     getCaseNav,
 
+    removeSuitcase,
     casePages,
     fetchSuitCase,
     fetchSuitCaseList,
