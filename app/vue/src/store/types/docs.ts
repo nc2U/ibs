@@ -22,8 +22,7 @@ interface SimpleUser {
 
 export interface SuitCase {
   pk: number | null
-  company: number | null
-  project: number | null
+  issue_project: number | null
   proj_name?: string
   sort: '' | '1' | '2' | '3' | '4' | '5'
   sort_desc?: string

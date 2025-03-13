@@ -46,10 +46,10 @@ const listFiltering = (page = 1) => {
 
 const firstSorting = (event: { target: { value: number | null } }) => {
   const val = event.target.value
-  if (!val) form.value.is_real_dev = 'false'
+  if (!val) form.value.is_real_dev = false
   else {
     form.value.issue_project = val
-    form.value.is_real_dev = 'true'
+    form.value.is_real_dev = true
   }
   listFiltering(1)
 }

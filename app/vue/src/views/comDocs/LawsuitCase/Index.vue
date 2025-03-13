@@ -24,7 +24,7 @@ const mainViewName = ref('본사 소송 사건')
 const caseFilter = ref<cFilter>({
   company: '',
   project: '',
-  is_real_dev: 'false',
+  is_real_dev: '',
   court: '',
   related_case: '',
   sort: '',
