@@ -45,7 +45,7 @@ const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${ex
 
 const listFiltering = (payload: cFilter) => {
   payload.limit = payload.limit || 10
-  payload.is_real_dev = 'true'
+  payload.is_real_dev = true
   payload.project = project.value ?? ''
   caseFilter.value = payload
   if (company.value) fetchSuitCaseList({ ...caseFilter.value })
@@ -105,8 +105,7 @@ const casesRenewal = (page: number) => {
 }
 
 const onSubmit = (payload: SuitCase & { isProject?: boolean }) => {
-  payload.company = company.value ?? null
-  payload.project = project.value ?? null
+  payload.issue_project = 1 // Todo debugging
 
   if (payload.pk) {
     updateSuitCase(payload)
@@ -115,7 +114,7 @@ const onSubmit = (payload: SuitCase & { isProject?: boolean }) => {
       params: { caseId: payload.pk },
     })
   } else {
-    payload.company = company.value || null
+    payload.issue_project = 1 // Todo debugging
     payload.isProject = true
     createSuitCase(payload)
     router.replace({ name: `${mainViewName.value}` })
@@ -147,7 +146,7 @@ const relatedFilter = (related: number) => {
 const dataSetup = (pk: number, caseId?: string | string[]) => {
   caseFilter.value.company = company.value ?? ''
   caseFilter.value.project = pk
-  fetchAllSuitCaseList({ company: company.value ?? '', is_real_dev: 'true', project: pk })
+  fetchAllSuitCaseList({ company: company.value ?? '', is_real_dev: true, project: pk })
   fetchSuitCaseList(caseFilter.value)
   if (caseId) fetchSuitCase(Number(caseId))
 }

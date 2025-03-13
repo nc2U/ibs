@@ -104,7 +104,7 @@ const onSubmit = (payload: SuitCase) => {
       })
     } else {
       // payload.company = company.value || null
-      payload.issue_project = caseFilter.value.issue_project // Todo debugging
+      payload.issue_project = caseFilter.value.issue_project || null // Todo debugging
       createSuitCase(payload)
       router.replace({ name: `${mainViewName.value}` })
     }

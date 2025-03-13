@@ -178,7 +178,7 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchAllSuitCaseList({
     company: company.value ?? '',
     project: project.value,
-    is_real_dev: 'true',
+    is_real_dev: true,
   }) // Todo 프로젝트마다 변경 로직 구현
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
