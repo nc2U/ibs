@@ -195,16 +195,17 @@ const fileHit = async (pk: number) => {
   await patchFile({ pk, hit })
 }
 
-const dataSetup = async (pk: number, docsId?: string | string[]) => {
+const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
-  await workStore.fetchAllIssueProjectList(pk, '2', '')
-  await fetchDocTypeList()
-  await fetchCategoryList(typeNumber.value)
-
-  await fetchAllSuitCaseList({ is_real_dev: false })
-
-  await fetchDocsList(docsFilter.value)
-  if (docsId) await fetchDocs(Number(docsId))
+  workStore.fetchAllIssueProjectList(pk, '2', '')
+  fetchDocTypeList()
+  fetchCategoryList(typeNumber.value)
+  fetchAllSuitCaseList({
+    company: pk,
+    is_real_dev: false,
+  })
+  fetchDocsList(docsFilter.value)
+  if (docsId) fetchDocs(Number(docsId))
 }
 const dataReset = () => {
   docStore.removeDocs()
