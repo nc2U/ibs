@@ -38,7 +38,7 @@ class FilesInLawSuitCaseSerializer(serializers.ModelSerializer):
 
 
 class LawSuitCaseSerializer(serializers.ModelSerializer):
-    proj_name = serializers.SlugField(source='project', read_only=True)
+    proj_name = serializers.SlugField(source='issue_project', read_only=True)
     sort_desc = serializers.CharField(source='get_sort_display', read_only=True)
     level_desc = serializers.CharField(source='get_level_display', read_only=True)
     related_case_name = serializers.SlugField(source='related_case', read_only=True)
@@ -51,7 +51,7 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LawsuitCase
-        fields = ('pk', 'company', 'project', 'proj_name', 'sort', 'sort_desc', 'level', 'level_desc',
+        fields = ('pk', 'issue_project', 'proj_name', 'sort', 'sort_desc', 'level', 'level_desc',
                   'related_case', 'related_case_name', 'court', 'court_desc', 'other_agency', 'case_number',
                   'case_name', '__str__', 'plaintiff', 'plaintiff_attorney', 'plaintiff_case_price',
                   'defendant', 'defendant_attorney', 'defendant_case_price', 'related_debtor', 'case_start_date',
@@ -88,50 +88,14 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
                     'file': settings.MEDIA_URL + file.get('file')})
         return files
 
-    def get_collection(self):
-        queryset = LawsuitCase.objects.all()
-        query = self.context['request'].query_params
-        company = query.get('company')
-        is_com = query.get('is_com')
-        project = query.get('project')
-        sort = query.get('sort')
-        level = query.get('level')
-        court = query.get('court')
-        in_progress = query.get('in_progress')
-        related = query.get('related_case')
-        search = query.get('search')
-
-        queryset = queryset.filter(company_id=company) if company else queryset
-        queryset = queryset.filter(project_id=project) if project else queryset
-        queryset = queryset.filter(project__isnull=True) if is_com == 'true' else queryset
-        queryset = queryset.filter(project__isnull=False) if is_com == 'false' else queryset
-        queryset = queryset.filter(court=court) if court else queryset
-        queryset = queryset.filter(Q(pk=related) | Q(related_case_id=related)) if related else queryset
-        queryset = queryset.filter(sort=sort) if sort else queryset
-        queryset = queryset.filter(level=level) if level else queryset
-        queryset = queryset.filter(case_end_date__isnull=True) if in_progress == 'true' else queryset
-        queryset = queryset.filter(case_end_date__isnull=False) if in_progress == 'false' else queryset
-        queryset = queryset.filter(
-            Q(other_agency__icontains=search) |
-            Q(case_number__icontains=search) |
-            Q(case_name__icontains=search) |
-            Q(plaintiff__icontains=search) |
-            Q(defendant__icontains=search) |
-            Q(case_start_date__icontains=search) |
-            Q(case_end_date__icontains=search) |
-            Q(summary__icontains=search)
-        ) if search else queryset
-
-        return queryset
-
     def get_prev_pk(self, obj):
-        prev_obj = (self.get_collection()
-                    .filter(case_start_date__lt=obj.case_start_date).first())
+        queryset = self.context['view'].filter_queryset(LawsuitCase.objects.all())
+        prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-case_start_date', '-pk').first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
-        next_obj = (self.get_collection().order_by('case_start_date', 'id')
-                    .filter(case_start_date__gt=obj.case_start_date).first())
+        queryset = self.context['view'].filter_queryset(LawsuitCase.objects.all())
+        next_obj = queryset.filter(pk__gt=obj.pk).order_by('case_start_date', 'pk').first()
         return next_obj.pk if next_obj else None
 
 

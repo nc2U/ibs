@@ -21,10 +21,10 @@ class CategoryAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(LawsuitCase)
 class LawsuitCaseAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'project', 'sort', 'level', '__str__', 'plaintiff', 'defendant', 'case_start_date')
+    list_display = ('id', 'issue_project', 'sort', 'level', '__str__', 'plaintiff', 'defendant', 'case_start_date')
     list_display_links = ('__str__',)
-    list_editable = ('project', 'sort', 'level', 'case_start_date',)
-    list_filter = ('project', 'sort', 'level')
+    list_editable = ('issue_project', 'sort', 'level', 'case_start_date',)
+    list_filter = ('issue_project', 'sort', 'level')
     search_fields = ('case_number', 'case_name', 'plaintiff', 'defendant')
 
 

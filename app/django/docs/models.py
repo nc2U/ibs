@@ -40,12 +40,7 @@ class Category(models.Model):
 
 
 class LawsuitCase(models.Model):
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사',
-                                related_name='lawsuitcases')
-    project = models.ForeignKey('project.Project', on_delete=models.SET_NULL, null=True, blank=True,
-                                verbose_name='프로젝트', related_name='lawsuitcases')
-    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.SET_NULL, null=True, blank=True,
-                                      verbose_name='업무 프로젝트')
+    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.CASCADE, verbose_name='업무 프로젝트')
     SORT_CHOICES = (('1', '민사'), ('2', '형사'), ('3', '행정'), ('4', '신청'), ('5', '집행'))
     sort = models.CharField('유형', max_length=1, choices=SORT_CHOICES)
     LEVEL_CHOICES = (

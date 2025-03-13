@@ -28,15 +28,24 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class LawSuitCaseFilterSet(FilterSet):
-    is_com = BooleanFilter(field_name='project', lookup_expr='isnull', label='본사')
+    company = ModelChoiceFilter(field_name='issue_project__company',
+                                queryset=Company.objects.all(), label='회사')
+    is_real_dev = BooleanFilter(method='is_real_dev_proj', label='부동산개발 프로젝트')
     in_progress = BooleanFilter(field_name='case_end_date', lookup_expr='isnull', label='진행중')
 
     class Meta:
         model = LawsuitCase
-        fields = ('company', 'is_com', 'project', 'sort', 'level', 'court', 'in_progress')
+        fields = ('company', 'is_real_dev', 'issue_project__project',
+                  'issue_project', 'sort', 'level', 'court', 'in_progress')
+
+    @staticmethod
+    def is_real_dev_proj(queryset, name, value):
+        if value:  # True 일 경우 값이 '2' 인 데이터만 반환
+            return queryset.filter(issue_project__sort='2')
+        return queryset.exclude(issue_project__sort='2')  # False 일 경우 '2'가 아닌 데이터만 반환
 
 
-class LawSuitCaseBase(viewsets.ModelViewSet):
+class LawSuitCaseViewSet(viewsets.ModelViewSet):
     queryset = LawsuitCase.objects.all()
     serializer_class = LawSuitCaseSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
@@ -48,14 +57,21 @@ class LawSuitCaseBase(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-
-class LawSuitCaseViewSet(LawSuitCaseBase):
     def get_queryset(self):
         queryset = LawsuitCase.objects.all()
         related = self.request.query_params.get('related_case')
         if related:
             queryset = queryset.filter(Q(pk=related) | Q(related_case=related))
         return queryset
+
+
+# class LawSuitCaseViewSet(LawSuitCaseBase):
+#     def get_queryset(self):
+#         queryset = LawsuitCase.objects.all()
+#         related = self.request.query_params.get('related_case')
+#         if related:
+#             queryset = queryset.filter(Q(pk=related) | Q(related_case=related))
+#         return queryset
 
 
 class AllLawSuitCaseViewSet(LawSuitCaseViewSet):

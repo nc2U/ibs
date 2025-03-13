@@ -200,7 +200,9 @@ const dataSetup = async (pk: number, docsId?: string | string[]) => {
   await workStore.fetchAllIssueProjectList(pk, '2', '')
   await fetchDocTypeList()
   await fetchCategoryList(typeNumber.value)
+
   await fetchAllSuitCaseList({ is_com: true })
+
   await fetchDocsList(docsFilter.value)
   if (docsId) await fetchDocs(Number(docsId))
 }
@@ -305,6 +307,7 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
           @on-submit="onSubmit"
         />
       </div>
+      {{ getSuitCase }}
     </CCardBody>
   </ContentBody>
 </template>
