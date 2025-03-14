@@ -26,7 +26,7 @@ const mainViewName = ref('본사 소송 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
-  doc_type: 2,
+  doc_type: typeNumber.value,
   category: '',
   lawsuit: '',
   ordering: '-created',
@@ -307,9 +307,6 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
           @on-submit="onSubmit"
         />
       </div>
-      {{ issue_project }}
-      <hr />
-      {{ getSuitCase }}
     </CCardBody>
   </ContentBody>
 </template>
