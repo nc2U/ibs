@@ -201,7 +201,7 @@ const dataReset = () => {
   docsFilter.value.issue_project = ''
   docsFilter.value.is_real_dev = 'false'
   docStore.removeDocs()
-  docStore.docsList = []
+  docStore.removeDocsList()
   docStore.docsCount = 0
   router.replace({ name: `${mainViewName.value}` })
 }
