@@ -203,12 +203,13 @@ watch(comIProject, val => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
+  docsFilter.value.issue_project = ''
   workStore.fetchAllIssueProjectList(pk, '2', '')
   fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
   fetchAllSuitCaseList({
     company: pk,
-    issue_project: docsFilter.value.issue_project || comIProject.value,
+    issue_project: comIProject.value,
   })
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
@@ -317,5 +318,6 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
         />
       </div>
     </CCardBody>
+    {{ docsFilter.issue_project }}
   </ContentBody>
 </template>
