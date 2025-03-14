@@ -28,18 +28,18 @@ const route = useRoute()
 const companyStore = useCompany()
 const projectStore = useProject()
 
-const comSelect = (com: number | null) => {
+const comSelect = async (com: number | null) => {
   if (!!com) {
     Cookies.set('curr-company', `${com}`)
-    companyStore.fetchCompany(com)
+    await companyStore.fetchCompany(com)
   } else companyStore.removeCompany()
   emit('com-select', com)
 }
 
-const projSelect = (proj: number | null) => {
+const projSelect = async (proj: number | null) => {
   if (!!proj) {
     Cookies.set('curr-project', `${proj}`)
-    projectStore.fetchProject(proj)
+    await projectStore.fetchProject(proj)
   } else projectStore.removeProject()
   emit('proj-select', proj)
 }

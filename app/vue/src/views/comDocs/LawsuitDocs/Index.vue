@@ -36,6 +36,12 @@ const docsFilter = ref<DocsFilter>({
   limit: 10,
 })
 
+const issue_project = computed(() =>
+  docsFilter.value.issue_project
+    ? docsFilter.value.issue_project
+    : (comStore.company?.com_issue_project ?? ''),
+)
+
 const heatedPage = ref<number[]>([])
 
 const newFiles = ref<File[]>([])
@@ -51,11 +57,9 @@ const listFiltering = async (payload: DocsFilter) => {
   if (!payload.issue_project) {
     docsFilter.value.company = company.value ?? ''
     docsFilter.value.issue_project = ''
-    await fetchAllSuitCaseList({ is_real_dev: false })
-  } else {
-    docsFilter.value.issue_project = payload.issue_project
-    await fetchAllSuitCaseList({ is_real_dev: true })
-  }
+  } else docsFilter.value.issue_project = payload.issue_project
+
+  await fetchAllSuitCaseList({ issue_project: issue_project.value })
   docsFilter.value.is_real_dev = payload.is_real_dev
   docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
@@ -202,7 +206,7 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchCategoryList(typeNumber.value)
   fetchAllSuitCaseList({
     company: pk,
-    is_real_dev: false,
+    issue_project: issue_project.value,
   })
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
@@ -214,10 +218,10 @@ const dataReset = () => {
   router.replace({ name: `${mainViewName.value}` })
 }
 
-const comSelect = (target: number | null) => {
+const comSelect = async (target: number | null) => {
   fController.value.resetForm(false)
   dataReset()
-  if (target) dataSetup(target)
+  if (target) await dataSetup(target)
   else docStore.removeDocsList()
 }
 
@@ -308,6 +312,8 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
           @on-submit="onSubmit"
         />
       </div>
+      {{ issue_project }}
+      <hr />
       {{ getSuitCase }}
     </CCardBody>
   </ContentBody>

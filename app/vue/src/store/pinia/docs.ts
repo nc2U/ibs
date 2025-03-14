@@ -126,7 +126,7 @@ export const useDocs = defineStore('docs', () => {
     let queryStr = ''
     if (company) queryStr += `&company=${company}`
     if (project) queryStr += `&issue_project__project=${project}`
-    if (issue_project) queryStr += `issue_project=${issue_project}`
+    if (issue_project) queryStr += `&issue_project=${issue_project}`
     if (is_real_dev) queryStr += `&is_real_dev=${is_real_dev}`
     queryStr += `&in_progress=${in_progress ?? ''}`
     if (related_case) queryStr += `&related_case=${related_case}`
@@ -153,7 +153,7 @@ export const useDocs = defineStore('docs', () => {
   const fetchAllSuitCaseList = async (payload: SuitCaseFilter) => {
     const queryStr = getQueryStr(payload)
     return await api
-      .get(`/all-suitcase/?1=1&${queryStr}`)
+      .get(`/all-suitcase/?1=1${queryStr}`)
       .then(res => (allSuitCaseList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
