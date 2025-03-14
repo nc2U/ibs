@@ -1,9 +1,7 @@
 <script lang="ts" setup>
-import { type ComputedRef, inject, type PropType } from 'vue'
-import { ref, reactive, computed, onMounted, onUpdated } from 'vue'
+import { computed, onMounted, onUpdated, type PropType, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { Docs, Link, AFile, SuitCase } from '@/store/types/docs'
-import type { Company } from '@/store/types/settings'
+import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import QuillEditor from '@/components/QuillEditor/index.vue'
@@ -22,14 +20,12 @@ const props = defineProps({
   writeAuth: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['on-submit', 'file-upload', 'file-change', 'close'])
+const emit = defineEmits(['on-submit', 'file-upload', 'file-change', 'create-lawsuit'])
 
 const refDelModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
 const refCaseForm = ref()
-
-const company = inject<ComputedRef<Company>>('company')
 
 const attach = ref(true)
 const validated = ref(false)
@@ -134,11 +130,7 @@ const modalAction = () => {
   refConfirmModal.value.close()
 }
 
-const caseCreate = (payload: SuitCase) => {
-  // case 생성하고
-  // 사건번호 폼에서 새로 생성한 case 를 선택 상태로 만들기
-  return
-}
+const caseCreate = (payload: SuitCase) => emit('create-lawsuit', payload)
 
 const devideUri = (uri: string) => {
   const devidedUri = decodeURI(uri).split('media/')
