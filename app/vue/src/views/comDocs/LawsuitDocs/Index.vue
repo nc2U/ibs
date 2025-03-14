@@ -196,7 +196,7 @@ const fileHit = async (pk: number) => {
 watch(comIProject, val => {
   if (val)
     fetchAllSuitCaseList({
-      company: company.value,
+      company: company.value as number,
       issue_project: val,
     })
 })
@@ -318,6 +318,5 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
         />
       </div>
     </CCardBody>
-    {{ docsFilter.issue_project }}
   </ContentBody>
 </template>
