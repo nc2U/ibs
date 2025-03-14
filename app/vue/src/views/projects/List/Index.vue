@@ -33,7 +33,7 @@ const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
 const createIssueProject = (payload: IssueProject) => workStore.createIssueProject(payload)
 
-onBeforeMount(() => workStore.fetchAllIssueProjectList('', '1', ''))
+onBeforeMount(() => workStore.fetchAllIssueProjectList('', '2', ''))
 </script>
 
 <template>
