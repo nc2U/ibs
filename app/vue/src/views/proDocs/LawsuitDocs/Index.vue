@@ -187,7 +187,7 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
-  fController.value.resetForm(false)
+  if (fController.value) fController.value.resetForm(false)
   dataReset()
   if (!!target) dataSetup(target)
   else docStore.removeDocsList()

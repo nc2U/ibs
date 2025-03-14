@@ -206,7 +206,6 @@ watch(comIProject, val => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
-  // docsFilter.value.issue_project = ''
   workStore.fetchAllIssueProjectList(pk, '2', '')
   fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
@@ -223,7 +222,7 @@ const dataReset = () => {
 }
 
 const comSelect = (target: number | null) => {
-  fController.value.resetForm(false)
+  if (fController.value) fController.value.resetForm(false)
   dataReset()
   if (target) dataSetup(target)
   else docStore.removeDocsList()

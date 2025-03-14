@@ -210,7 +210,7 @@ const dataReset = () => {
 }
 
 const comSelect = (target: number | null) => {
-  fController.value.resetForm(false)
+  if (fController.value) fController.value.resetForm(false)
   dataReset()
   if (!!target) dataSetup(target)
   else docStore.removeDocsList()
