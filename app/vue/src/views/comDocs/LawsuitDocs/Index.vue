@@ -206,14 +206,10 @@ watch(comIProject, val => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
-  docsFilter.value.issue_project = ''
+  // docsFilter.value.issue_project = ''
   workStore.fetchAllIssueProjectList(pk, '2', '')
   fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
-  fetchAllSuitCaseList({
-    company: pk,
-    issue_project: comIProject.value,
-  })
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
 }
@@ -235,7 +231,14 @@ const comSelect = (target: number | null) => {
 
 onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?.docsId))
+onBeforeMount(() => {
+  const com = company.value ?? comStore.initComId
+  fetchAllSuitCaseList({
+    company: com,
+    issue_project: comIProject.value,
+  })
+  dataSetup(com, route.params?.docsId)
+})
 </script>
 
 <template>

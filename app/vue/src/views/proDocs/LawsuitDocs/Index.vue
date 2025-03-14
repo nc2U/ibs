@@ -175,11 +175,6 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.project = pk
   fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
-  fetchAllSuitCaseList({
-    company: company.value ?? '',
-    project: project.value,
-    is_real_dev: true,
-  }) // Todo 프로젝트마다 변경 로직 구현
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
 }
@@ -200,7 +195,15 @@ const projSelect = (target: number | null) => {
 
 onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(project.value ?? projStore.initProjId, route.params?.docsId))
+onBeforeMount(() => {
+  const proj = project.value ?? projStore.initProjId
+  fetchAllSuitCaseList({
+    company: company.value ?? '',
+    project: proj,
+    is_real_dev: true,
+  }) // Todo 프로젝트마다 변경 로직 구현
+  dataSetup(proj, route.params?.docsId)
+})
 </script>
 
 <template>
