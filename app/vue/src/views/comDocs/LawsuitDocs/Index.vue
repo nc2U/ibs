@@ -26,6 +26,7 @@ const mainViewName = ref('본사 소송 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
+  is_real_dev: 'false',
   doc_type: typeNumber.value,
   category: '',
   lawsuit: '',
@@ -48,9 +49,13 @@ const cngFiles = ref<
 const listFiltering = async (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   if (!payload.issue_project) {
+    docsFilter.value.is_real_dev = 'false'
     docsFilter.value.company = company.value ?? ''
     docsFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
-  } else docsFilter.value.issue_project = payload.issue_project
+  } else {
+    docsFilter.value.is_real_dev = ''
+    docsFilter.value.issue_project = payload.issue_project
+  }
 
   await fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
   docsFilter.value.lawsuit = payload.lawsuit
@@ -189,7 +194,6 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
-  docsFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
   workStore.fetchAllIssueProjectList(pk, '2', '')
   fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
@@ -202,6 +206,7 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
 }
 const dataReset = () => {
   docsFilter.value.issue_project = ''
+  docsFilter.value.is_real_dev = 'false'
   docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0

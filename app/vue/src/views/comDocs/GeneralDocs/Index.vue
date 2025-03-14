@@ -199,6 +199,7 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
 
 const dataReset = () => {
   docsFilter.value.issue_project = ''
+  docsFilter.value.is_real_dev = 'false'
   docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0
