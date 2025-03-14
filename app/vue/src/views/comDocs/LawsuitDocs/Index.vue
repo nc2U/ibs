@@ -137,7 +137,10 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    if (!payload.issue_project) getData.issue_project = docsFilter.value.issue_project || null
+    if (!payload.issue_project)
+      getData.issue_project = docsFilter.value.issue_project
+        ? (docsFilter.value.issue_project as number)
+        : (comIProject.value as number)
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -223,10 +226,10 @@ const dataReset = () => {
   router.replace({ name: `${mainViewName.value}` })
 }
 
-const comSelect = async (target: number | null) => {
+const comSelect = (target: number | null) => {
   fController.value.resetForm(false)
   dataReset()
-  if (target) await dataSetup(target)
+  if (target) dataSetup(target)
   else docStore.removeDocsList()
 }
 

@@ -110,7 +110,7 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (project.value) {
     const { pk, ...getData } = payload
-    getData.issue_project = projStore.project?.issue_project as number
+    if (!payload.issue_project) getData.issue_project = projStore.project?.issue_project as number
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -177,7 +177,7 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
 
 const dataReset = () => {
   docStore.removeDocs()
-  docStore.docsList = []
+  docStore.removeDocsList()
   docStore.docsCount = 0
   router.replace({ name: `${mainViewName.value}` })
 }
