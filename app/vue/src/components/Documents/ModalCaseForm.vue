@@ -14,7 +14,7 @@ const refCaseForm = ref()
 const callModal = () => refCaseForm.value.callModal()
 
 const validated = ref(false)
-const form = reactive<SuitCase>({
+const form = ref<SuitCase>({
   pk: null,
   issue_project: null, // Todo 데이터 생성 시 업무 프로젝트 주입하기
   sort: '',
@@ -305,7 +305,7 @@ const modalAction = () => {
     <template #header>소송사건</template>
     <template #default> 소송사건 저장을 진행하시겠습니까?</template>
     <template #footer>
-      <CButton color="primary" @click="modalAction">저장</CButton>
+      <CButton color="success" @click="modalAction">저장</CButton>
     </template>
   </ConfirmModal>
 </template>

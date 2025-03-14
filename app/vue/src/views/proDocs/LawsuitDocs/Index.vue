@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeMount, watch } from 'vue'
-import { pageTitle, navMenu } from '@/views/proDocs/_menu/headermixin1'
+import { computed, onBeforeMount, ref, watch } from 'vue'
+import { navMenu, pageTitle } from '@/views/proDocs/_menu/headermixin1'
 import { useAccount } from '@/store/pinia/account'
 import { useProject } from '@/store/pinia/project'
 import {
@@ -9,8 +9,8 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
-import { useDocs, type DocsFilter, type SuitCaseFilter } from '@/store/pinia/docs'
-import type { AFile, Attatches, Link, Docs, PatchDocs } from '@/store/types/docs'
+import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
+import type { AFile, Attatches, Docs, Link, PatchDocs, SuitCase } from '@/store/types/docs'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/components/Documents/ListController.vue'
@@ -30,7 +30,7 @@ const docsFilter = ref<DocsFilter>({
   ordering: '-created',
   search: '',
   page: 1,
-  limit: 10,
+  limit: '',
 })
 
 const heatedPage = ref<number[]>([])
@@ -83,6 +83,7 @@ const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
+const createSuitCase = (payload: SuitCase) => docStore.createSuitCase(payload)
 
 const createDocs = (payload: { form: FormData; isProject: boolean }) => docStore.createDocs(payload)
 const updateDocs = (payload: { pk: number; form: FormData; isProject: boolean }) =>
@@ -152,6 +153,11 @@ const onSubmit = async (payload: Docs & Attatches) => {
   }
 }
 
+const createLawSuit = (payload: any) => {
+  if (!payload.issue_project) payload.issue_project = projStore.project?.issue_project as number
+  createSuitCase(payload)
+}
+
 const docsHit = async (pk: number) => {
   if (!heatedPage.value.includes(pk)) {
     heatedPage.value.push(pk)
@@ -177,6 +183,10 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchCategoryList(typeNumber.value)
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
+  fetchAllSuitCaseList({
+    project: pk,
+    is_real_dev: true,
+  }) // Todo 프로젝트마다 변경 로직 구현
 }
 
 const dataReset = () => {
@@ -197,11 +207,6 @@ onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.pa
 
 onBeforeMount(() => {
   const proj = project.value ?? projStore.initProjId
-  fetchAllSuitCaseList({
-    company: company.value ?? '',
-    project: proj,
-    is_real_dev: true,
-  }) // Todo 프로젝트마다 변경 로직 구현
   dataSetup(proj, route.params?.docsId)
 })
 </script>
@@ -271,6 +276,7 @@ onBeforeMount(() => {
           :write-auth="writeAuth"
           @file-upload="fileUpload"
           @on-submit="onSubmit"
+          @create-lawsuit="createLawSuit"
         />
       </div>
 
@@ -286,6 +292,7 @@ onBeforeMount(() => {
           @file-change="fileChange"
           @file-upload="fileUpload"
           @on-submit="onSubmit"
+          @create-lawsuit="createLawSuit"
         />
       </div>
     </CCardBody>

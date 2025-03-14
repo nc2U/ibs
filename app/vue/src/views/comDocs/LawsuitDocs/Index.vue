@@ -21,6 +21,7 @@ import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
 
 const fController = ref()
+const refDocsForm = ref()
 const typeNumber = ref(2)
 const mainViewName = ref('본사 소송 문서')
 const docsFilter = ref<DocsFilter>({
@@ -33,7 +34,7 @@ const docsFilter = ref<DocsFilter>({
   ordering: '-created',
   search: '',
   page: 1,
-  limit: 10,
+  limit: '',
 })
 
 const heatedPage = ref<number[]>([])
@@ -102,13 +103,13 @@ const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
+const createSuitCase = (payload: SuitCase) => docStore.createSuitCase(payload)
 
 const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
 const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
 const patchLink = (payload: Link) => docStore.patchLink(payload)
 const patchFile = (payload: AFile) => docStore.patchFile(payload)
-const createSuitCase = (payload: SuitCase) => docStore.createSuitCase(payload)
 
 const [route, router] = [
   useRoute() as LoadedRoute & {
@@ -183,7 +184,7 @@ const createLawSuit = (payload: any) => {
     payload.issue_project = docsFilter.value.issue_project
       ? (docsFilter.value.issue_project as number)
       : (comIProject.value as number)
-  createSuitCase(payload)
+  createSuitCase(payload).then(res => console.log(res))
 }
 
 const docsHit = async (pk: number) => {
@@ -308,6 +309,7 @@ onBeforeMount(() => {
 
       <div v-else-if="route.name.includes('작성')">
         <DocsForm
+          ref="refDocsForm"
           :type-num="typeNumber"
           :category-list="categoryList"
           :get-suit-case="getSuitCase"
@@ -321,6 +323,7 @@ onBeforeMount(() => {
 
       <div v-else-if="route.name.includes('수정')">
         <DocsForm
+          ref="refDocsForm"
           :type-num="typeNumber"
           :category-list="categoryList"
           :get-suit-case="getSuitCase"

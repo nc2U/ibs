@@ -168,9 +168,10 @@ export const useDocs = defineStore('docs', () => {
       : { is_real_dev: false, issue_project: payload.issue_project ?? '', page: 1 }
     return await api
       .post(`/suitcase/`, payload)
-      .then(() =>
-        fetchAllSuitCaseList(retData).then(() => fetchSuitCaseList(retData).then(() => message())),
-      )
+      .then(res => {
+        fetchAllSuitCaseList(retData).then(() => fetchSuitCaseList(retData).then(() => message()))
+        return res.data.results
+      })
       .catch(err => errorHandle(err.response.data))
   }
 

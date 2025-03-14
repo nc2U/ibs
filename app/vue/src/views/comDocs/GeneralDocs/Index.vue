@@ -32,7 +32,7 @@ const docsFilter = ref<DocsFilter>({
   ordering: '-created',
   search: '',
   page: 1,
-  limit: 10,
+  limit: '',
 })
 
 const heatedPage = ref<number[]>([])

@@ -25,7 +25,7 @@ const form = ref<DocsFilter>({
 
 const formsCheck = computed(() => {
   const a = form.value.limit === ''
-  const b = form.value.issue_project === ''
+  const b = props.comFrom ? form.value.issue_project === '' : true
   const c = form.value.ordering === '-created'
   const d = !form.value.lawsuit
   const e = form.value.search === ''
