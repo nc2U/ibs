@@ -38,8 +38,8 @@ const newFiles = ref<File[]>([])
 const cngFiles = ref<{ pk: number; file: File }[]>([])
 
 const listFiltering = (payload: DocsFilter) => {
-  docsFilter.value.project = payload.project
   payload.limit = payload.limit || 10
+  docsFilter.value.project = payload.project
   docsFilter.value.limit = payload.limit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
