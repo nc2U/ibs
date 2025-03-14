@@ -26,7 +26,6 @@ const mainViewName = ref('본사 소송 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
-  is_real_dev: false,
   doc_type: 2,
   category: '',
   lawsuit: '',
@@ -60,7 +59,6 @@ const listFiltering = async (payload: DocsFilter) => {
   } else docsFilter.value.issue_project = payload.issue_project
 
   await fetchAllSuitCaseList({ issue_project: issue_project.value })
-  docsFilter.value.is_real_dev = payload.is_real_dev
   docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
@@ -139,10 +137,7 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    if (!payload.issue_project)
-      getData.issue_project = docsFilter.value.issue_project
-        ? docsFilter.value.issue_project
-        : (comStore.company?.com_issue_project ?? 1)
+    if (!payload.issue_project) getData.issue_project = issue_project.value || null
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -173,7 +168,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
     } else {
       await createDocs({ form })
       await router.replace({ name: `${mainViewName.value}` })
-      // fController.value.resetForm(false)
     }
     newFiles.value = []
     cngFiles.value = []
@@ -212,6 +206,7 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
   if (docsId) fetchDocs(Number(docsId))
 }
 const dataReset = () => {
+  docsFilter.value.issue_project = ''
   docStore.removeDocs()
   docStore.docsList = []
   docStore.docsCount = 0
