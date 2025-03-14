@@ -46,7 +46,7 @@ const cngFiles = ref<
   }[]
 >([])
 
-const listFiltering = async (payload: DocsFilter) => {
+const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   if (!payload.issue_project) {
     docsFilter.value.is_real_dev = 'false'
@@ -57,12 +57,12 @@ const listFiltering = async (payload: DocsFilter) => {
     docsFilter.value.issue_project = payload.issue_project
   }
 
-  await fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
+  fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
   docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
   docsFilter.value.limit = payload.limit
-  await fetchDocsList({ ...docsFilter.value })
+  fetchDocsList({ ...docsFilter.value })
 }
 
 const selectCate = (cate: number) => {
@@ -78,6 +78,7 @@ const pageSelect = (page: number) => {
 
 const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
+const comIProject = computed(() => comStore.company?.com_issue_project ?? '')
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
@@ -192,6 +193,14 @@ const fileHit = async (pk: number) => {
   await patchFile({ pk, hit })
 }
 
+watch(comIProject, val => {
+  if (val)
+    fetchAllSuitCaseList({
+      company: company.value,
+      issue_project: val,
+    })
+})
+
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
   workStore.fetchAllIssueProjectList(pk, '2', '')
@@ -199,7 +208,7 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
   fetchCategoryList(typeNumber.value)
   fetchAllSuitCaseList({
     company: pk,
-    issue_project: docsFilter.value.issue_project,
+    issue_project: docsFilter.value.issue_project || comIProject.value,
   })
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))
