@@ -81,9 +81,12 @@ export const useWork = defineStore('work', () => {
     com: '' | number = '',
     sort: '1' | '2' | '3' = '2',
     p_isnull: '' | '1' = '1',
+    status: '1' | '9' = '1',
   ) =>
     await api
-      .get(`/issue-project/?company=${com}&sort=${sort}&parent__isnull=${p_isnull}`)
+      .get(
+        `/issue-project/?company=${com}&sort=${sort}&parent__isnull=${p_isnull}&status=${status}`,
+      )
       .then(res => (allProjects.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
