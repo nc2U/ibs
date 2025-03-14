@@ -229,6 +229,8 @@ class DocumentSerializer(serializers.ModelSerializer):
         validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
         validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
         instance.__dict__.update(**validated_data)
+        instance.category = validated_data.get('category', instance.category)
+        instance.lawsuit = validated_data.get('lawsuit', instance.lawsuit)
         instance.save()
 
         try:
