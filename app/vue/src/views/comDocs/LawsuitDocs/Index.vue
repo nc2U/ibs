@@ -11,7 +11,7 @@ import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
-import type { AFile, Attatches, Docs, Link, PatchDocs } from '@/store/types/docs'
+import type { AFile, Attatches, Docs, Link, PatchDocs, SuitCase } from '@/store/types/docs'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/components/Documents/ListController.vue'
@@ -108,6 +108,7 @@ const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateD
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
 const patchLink = (payload: Link) => docStore.patchLink(payload)
 const patchFile = (payload: AFile) => docStore.patchFile(payload)
+const createSuitCase = (payload: SuitCase) => docStore.createSuitCase(payload)
 
 const [route, router] = [
   useRoute() as LoadedRoute & {
@@ -175,6 +176,14 @@ const onSubmit = async (payload: Docs & Attatches) => {
     newFiles.value = []
     cngFiles.value = []
   }
+}
+
+const createLawSuit = (payload: any) => {
+  if (!payload.issue_project)
+    payload.issue_project = docsFilter.value.issue_project
+      ? (docsFilter.value.issue_project as number)
+      : (comIProject.value as number)
+  createSuitCase(payload)
 }
 
 const docsHit = async (pk: number) => {
@@ -306,6 +315,7 @@ onBeforeMount(() => {
           :write-auth="writeAuth"
           @file-upload="fileUpload"
           @on-submit="onSubmit"
+          @create-lawsuit="createLawSuit"
         />
       </div>
 
@@ -320,6 +330,7 @@ onBeforeMount(() => {
           @file-change="fileChange"
           @file-upload="fileUpload"
           @on-submit="onSubmit"
+          @create-lawsuit="createLawSuit"
         />
       </div>
     </CCardBody>
