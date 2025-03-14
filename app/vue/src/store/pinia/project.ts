@@ -36,9 +36,9 @@ export const useProject = defineStore('project', () => {
   )
 
   // actions
-  const fetchProjectList = () =>
+  const fetchProjectList = (status: '' | '1' | '9' = '1') =>
     api
-      .get('/project/')
+      .get(`/project/?issue_project__status=${status}`)
       .then(res => {
         projectList.value = res.data.results
         projectsCount.value = res.data.count
