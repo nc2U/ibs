@@ -7,9 +7,9 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
+import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
-import { useWork } from '@/store/pinia/work'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link, PatchDocs } from '@/store/types/docs'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
