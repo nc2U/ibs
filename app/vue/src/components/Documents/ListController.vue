@@ -9,7 +9,7 @@ const props = defineProps({
   comFrom: { type: Boolean, default: false },
   projects: { type: Array as PropType<{ label: string; value: number }[]>, default: () => [] },
   getSuitCase: { type: Object, default: null },
-  docsFilter: { type: Object, required: true },
+  docsFilter: { type: Object as PropType<DocsFilter>, required: true },
 })
 const emit = defineEmits(['list-filter'])
 
@@ -46,10 +46,10 @@ const listFiltering = (page = 1) => {
 
 const firstSorting = (event: { target: { value: number | null } }) => {
   const val = event.target.value
-  if (!val) form.value.is_real_dev = false
+  if (!val) form.value.is_real_dev = 'false'
   else {
     form.value.issue_project = val
-    form.value.is_real_dev = true
+    form.value.is_real_dev = 'true'
   }
   listFiltering(1)
 }
@@ -94,7 +94,6 @@ onBeforeMount(async () => {
               <!--              <option value="100">100 개</option>-->
             </CFormSelect>
           </CCol>
-
           <CCol v-if="comFrom" md="6" lg="4" xl="3" class="mb-3">
             <CFormSelect v-model.number="form.issue_project" @change="firstSorting">
               <option value="">본사</option>

@@ -35,12 +35,6 @@ const docsFilter = ref<DocsFilter>({
   limit: 10,
 })
 
-const issue_project = computed(() =>
-  docsFilter.value.issue_project
-    ? docsFilter.value.issue_project
-    : (comStore.company?.com_issue_project ?? ''),
-)
-
 const heatedPage = ref<number[]>([])
 
 const newFiles = ref<File[]>([])
@@ -55,10 +49,10 @@ const listFiltering = async (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   if (!payload.issue_project) {
     docsFilter.value.company = company.value ?? ''
-    docsFilter.value.issue_project = ''
+    docsFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
   } else docsFilter.value.issue_project = payload.issue_project
 
-  await fetchAllSuitCaseList({ issue_project: issue_project.value })
+  await fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
   docsFilter.value.lawsuit = payload.lawsuit
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
@@ -137,7 +131,7 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    if (!payload.issue_project) getData.issue_project = issue_project.value || null
+    if (!payload.issue_project) getData.issue_project = docsFilter.value.issue_project || null
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -195,12 +189,13 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
+  docsFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
   workStore.fetchAllIssueProjectList(pk, '2', '')
   fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
   fetchAllSuitCaseList({
     company: pk,
-    issue_project: issue_project.value,
+    issue_project: docsFilter.value.issue_project,
   })
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))

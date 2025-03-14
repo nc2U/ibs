@@ -34,7 +34,7 @@ export type DocsFilter = {
   company?: number | ''
   project?: number | ''
   issue_project?: number | ''
-  is_real_dev?: '' | boolean
+  is_real_dev?: '' | 'true' | 'false'
   doc_type?: number | ''
   is_notice?: boolean | ''
   category?: number | ''

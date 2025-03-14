@@ -26,6 +26,7 @@ const mainViewName = ref('본사 일반 문서')
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
+  is_real_dev: 'false',
   doc_type: typeNumber.value,
   category: '',
   ordering: '-created',
@@ -33,12 +34,6 @@ const docsFilter = ref<DocsFilter>({
   page: 1,
   limit: 10,
 })
-
-const issue_project = computed(() =>
-  docsFilter.value.issue_project
-    ? docsFilter.value.issue_project
-    : (comStore.company?.com_issue_project ?? ''),
-)
 
 const heatedPage = ref<number[]>([])
 
@@ -54,8 +49,12 @@ const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   if (!payload.issue_project) {
     docsFilter.value.company = company.value ?? ''
-    docsFilter.value.issue_project = ''
-  } else docsFilter.value.issue_project = payload.issue_project
+    docsFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
+    docsFilter.value.is_real_dev = 'false'
+  } else {
+    docsFilter.value.issue_project = payload.issue_project
+    docsFilter.value.is_real_dev = ''
+  }
 
   docsFilter.value.ordering = payload.ordering
   docsFilter.value.search = payload.search
@@ -133,7 +132,7 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    if (!payload.issue_project) getData.issue_project = issue_project.value || null
+    if (!payload.issue_project) getData.issue_project = docsFilter.value.issue_project || null
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
