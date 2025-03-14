@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.db.models import Sum, F, Case, When
+from django_filters.rest_framework import FilterSet, BooleanFilter
 from rest_framework import viewsets
 
 from ..pagination import *
@@ -11,10 +12,18 @@ TODAY = datetime.today().strftime('%Y-%m-%d')
 
 
 # Project --------------------------------------------------------------------------
+class ProjectFilterSet(FilterSet):
+    class Meta:
+        model = Project
+        fields = ('kind', 'start_year', 'is_direct_manage', 'is_returned_area',
+                  'is_unit_set', 'issue_project__status')
+
+
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    filterset_class = ProjectFilterSet
 
 
 class ProjectIncBudgetViewSet(viewsets.ModelViewSet):
