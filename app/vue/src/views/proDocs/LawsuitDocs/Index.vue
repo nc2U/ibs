@@ -205,10 +205,7 @@ const projSelect = (target: number | null) => {
 
 onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.params?.docsId))
 
-onBeforeMount(() => {
-  const proj = project.value ?? projStore.initProjId
-  dataSetup(proj, route.params?.docsId)
-})
+onBeforeMount(() => dataSetup(project.value ?? projStore.initProjId, route.params?.docsId))
 </script>
 
 <template>
