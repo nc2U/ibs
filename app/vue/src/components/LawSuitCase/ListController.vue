@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, onBeforeMount, type PropType } from 'vue'
+import { ref, computed, nextTick, onBeforeMount, type PropType, inject } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
@@ -13,6 +13,8 @@ const props = defineProps({
   caseFilter: { type: Object, required: true },
 })
 const emit = defineEmits(['list-filter'])
+
+const company = inject('company', null)
 
 const form = ref<SuitCaseFilter>({
   limit: '',
@@ -120,7 +122,11 @@ onBeforeMount(() => {
       <CCol :lg="comFrom ? 6 : 5">
         <CRow>
           <CCol :md="comFrom ? 3 : 4" class="mb-3">
-            <CFormSelect v-model.number="form.limit" @change="listFiltering(1)">
+            <CFormSelect
+              v-model.number="form.limit"
+              @change="listFiltering(1)"
+              :disabled="!company"
+            >
               <option value="">표시 개수</option>
               <option :value="10" :disabled="form.limit === '' || form.limit === 10">10 개</option>
               <option :value="30" :disabled="form.limit === 30">30 개</option>
@@ -129,7 +135,7 @@ onBeforeMount(() => {
             </CFormSelect>
           </CCol>
           <CCol v-if="comFrom" :md="comFrom ? 3 : 4" class="mb-3">
-            <CFormSelect v-model="form.issue_project" @change="firstSorting">
+            <CFormSelect v-model="form.issue_project" @change="firstSorting" :disabled="!company">
               <option value="">본사</option>
               <option v-for="proj in projects" :key="proj.value" :value="proj.value">
                 {{ proj.label }}
@@ -146,6 +152,7 @@ onBeforeMount(() => {
               :add-option-on="['enter', 'tab']"
               searchable
               @change="listFiltering(1)"
+              :disabled="!company"
             />
           </CCol>
 
@@ -159,6 +166,7 @@ onBeforeMount(() => {
               :add-option-on="['enter', 'tab']"
               searchable
               @change="listFiltering(1)"
+              :disabled="!company"
             />
           </CCol>
         </CRow>
@@ -167,7 +175,7 @@ onBeforeMount(() => {
       <CCol :lg="comFrom ? 6 : 7">
         <CRow>
           <CCol md="4" lg="3" class="mb-3">
-            <CFormSelect v-model="form.sort" @change="sortChange">
+            <CFormSelect v-model="form.sort" @change="sortChange" :disabled="!company">
               <option value="">사건유형 선택</option>
               <option value="1">민사</option>
               <option value="2">형사</option>
@@ -177,7 +185,7 @@ onBeforeMount(() => {
             </CFormSelect>
           </CCol>
           <CCol md="4" lg="3" class="mb-3">
-            <CFormSelect v-model="form.level" @change="listFiltering(1)">
+            <CFormSelect v-model="form.level" @change="listFiltering(1)" :disabled="!company">
               <option value="">사건심급 선택</option>
               <option v-if="!form.sort || form.sort <= '3'" value="1">1심</option>
               <option v-if="!form.sort || form.sort <= '3'" value="2">2심</option>
@@ -190,7 +198,7 @@ onBeforeMount(() => {
             </CFormSelect>
           </CCol>
           <CCol md="4" lg="3" class="mb-3">
-            <CFormSelect v-model="form.in_progress" @change="listFiltering(1)">
+            <CFormSelect v-model="form.in_progress" @change="listFiltering(1)" :disabled="!company">
               <option value="">전체 사건</option>
               <option :value="true">진행 사건</option>
               <option :value="false">종결 사건</option>
@@ -203,6 +211,7 @@ onBeforeMount(() => {
                 v-model="form.search"
                 placeholder="Search"
                 @keydown.enter="listFiltering(1)"
+                :disabled="!company"
               />
               <CInputGroupText @click="listFiltering(1)">검색</CInputGroupText>
             </CInputGroup>
