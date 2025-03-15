@@ -1,5 +1,3 @@
-[![CodeQL](https://github.com/austin-kho/ibs/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/austin-kho/ibs/actions/workflows/codeql-analysis.yml)
-
 # Django 5.1 + Vue3 + Svelte using Nginx + MariaDB (deploy as Docker or Kubernetes)
 
 ## Deploy Using Docker
