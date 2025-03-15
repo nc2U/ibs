@@ -152,15 +152,20 @@ const dataSetup = (pk: number, caseId?: string | string[]) => {
 }
 
 const dataReset = () => {
-  docStore.suitcaseList = []
+  // caseFilter.value.company = ''
+  caseFilter.value.issue_project = ''
+  caseFilter.value.is_real_dev = 'false'
+  docStore.removeSuitcase()
+  docStore.removeSuitcaseList()
   docStore.suitcaseCount = 0
-  caseFilter.value.company = ''
   router.replace({ name: `${mainViewName.value}` })
 }
 
 const comSelect = (target: number | null) => {
+  if (fController.value) fController.value.resetForm(false)
   dataReset()
   if (!!target) dataSetup(target)
+  else docStore.removeSuitcaseList()
 }
 
 const caseRenewal = (page: number) => {

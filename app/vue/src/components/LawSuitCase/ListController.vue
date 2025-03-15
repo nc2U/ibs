@@ -52,7 +52,7 @@ const getSuitCase = computed(() => docStore.getSuitCase)
 const listFiltering = (page = 1) => {
   nextTick(() => {
     form.value.page = page
-    emit('list-filter', { ...form })
+    emit('list-filter', { ...form.value })
   })
 }
 
@@ -75,7 +75,7 @@ const sortChange = () => {
   listFiltering(1)
 }
 
-const resetForm = () => {
+const resetForm = (is_filter = true) => {
   form.value.limit = ''
   form.value.issue_project = ''
   form.value.is_real_dev = ''
@@ -85,7 +85,7 @@ const resetForm = () => {
   form.value.level = ''
   form.value.in_progress = ''
   form.value.search = ''
-  listFiltering(1)
+  if (is_filter) listFiltering(1)
 }
 
 defineExpose({
@@ -128,7 +128,6 @@ onBeforeMount(() => {
               <!--              <option value="100">100 개</option>-->
             </CFormSelect>
           </CCol>
-
           <CCol v-if="comFrom" :md="comFrom ? 3 : 4" class="mb-3">
             <CFormSelect v-model="form.issue_project" @change="firstSorting">
               <option value="">본사</option>

@@ -37,10 +37,8 @@ const docsCount = computed(() => docsStore.docsCount)
 
 const listFiltering = (page = 1) => {
   nextTick(() => {
-    emit('list-filter', {
-      ...{ page },
-      ...form.value,
-    })
+    form.value.page = page
+    emit('list-filter', { ...form.value })
   })
 }
 
