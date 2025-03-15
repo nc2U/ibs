@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, onBeforeMount, type PropType, inject } from 'vue'
-import { useProject } from '@/store/pinia/project'
+import { computed, inject, nextTick, onBeforeMount, type PropType, ref } from 'vue'
 import { type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
@@ -19,7 +18,7 @@ const company = inject('company', null)
 const form = ref<SuitCaseFilter>({
   limit: '',
   issue_project: '',
-  is_real_dev: 'false',
+  is_real_dev: '',
   court: '',
   related_case: '',
   sort: '',
@@ -31,21 +30,15 @@ const form = ref<SuitCaseFilter>({
 
 const formsCheck = computed(() => {
   const a = form.value.limit === ''
-  const b = form.value.issue_project === ''
-  const c = form.value.is_real_dev === ''
-  const d = form.value.court === ''
-  const e = form.value.related_case === ''
-  const f = form.value.sort === ''
-  const g = form.value.level === ''
-  const h = form.value.in_progress === ''
-  const i = form.value.search === ''
-  return a && b && c && d && e && f && g && h && i
+  const b = props.comFrom ? form.value.issue_project === '' : true
+  const c = !form.value.court
+  const d = !form.value.related_case
+  const e = form.value.sort === ''
+  const f = form.value.level === ''
+  const g = form.value.in_progress === ''
+  const h = form.value.search === ''
+  return a && b && c && d && e && f && g && h
 })
-
-const projectStore = useProject()
-const projSelect = computed(() => projectStore.projSelect)
-
-const fetchProjectList = () => projectStore.fetchProjectList()
 
 const docStore = useDocs()
 const suitcaseCount = computed(() => docStore.suitcaseCount)
@@ -100,7 +93,6 @@ defineExpose({
 })
 
 onBeforeMount(() => {
-  fetchProjectList()
   if (props.caseFilter) {
     form.value.limit = props.caseFilter.limit
     form.value.issue_project = props.caseFilter.issue_project
@@ -117,6 +109,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
+  {{ form }}
   <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4" :class="bgLight">
     <CRow>
       <CCol :lg="comFrom ? 6 : 5">
@@ -131,7 +124,6 @@ onBeforeMount(() => {
               <option :value="10" :disabled="form.limit === '' || form.limit === 10">10 개</option>
               <option :value="30" :disabled="form.limit === 30">30 개</option>
               <option :value="50" :disabled="form.limit === 50">50 개</option>
-              <!--              <option value="100">100 개</option>-->
             </CFormSelect>
           </CCol>
           <CCol v-if="comFrom" :md="comFrom ? 3 : 4" class="mb-3">
