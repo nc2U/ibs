@@ -7,6 +7,7 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
+import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import { type SuitCaseFilter as cFilter, useDocs } from '@/store/pinia/docs'
@@ -18,7 +19,6 @@ import ListController from '@/components/LawSuitCase/ListController.vue'
 import CaseView from '@/components/LawSuitCase/CaseView.vue'
 import CaseList from '@/components/LawSuitCase/CaseList.vue'
 import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
-import { useWork } from '@/store/pinia/work'
 
 const fController = ref()
 const mainViewName = ref('본사 소송 사건')
@@ -36,17 +36,25 @@ const caseFilter = ref<cFilter>({
   limit: '',
 })
 
-const excelFilter = computed(
-  () =>
-    `is_real_dev=${caseFilter.value.is_real_dev}&sort=${caseFilter.value.sort}&level=${caseFilter.value.level}&court=${caseFilter.value.court}&in_progress=${caseFilter.value.in_progress}&search=${caseFilter.value.search}`,
-)
+const excelFilter = computed(() => {
+  const { is_real_dev, sort, level, court, in_progress, search } = caseFilter.value
+  return `is_real_dev=${is_real_dev}&sort=${sort}&level=${level}&court=${court}&in_progress=${in_progress}&search=${search}`
+})
 const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${excelFilter.value}`)
 
 const listFiltering = (payload: cFilter) => {
   payload.limit = payload.limit || 10
+  if (!payload.issue_project) {
+    caseFilter.value.company = company.value ?? ''
+    caseFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
+    caseFilter.value.is_real_dev = 'false'
+  } else {
+    caseFilter.value.issue_project = payload.issue_project
+    caseFilter.value.is_real_dev = ''
+  }
+
   caseFilter.value = payload
-  // caseFilter.value.project = !!payload.is_com ? '' : payload.project
-  if (company.value) fetchSuitCaseList({ ...caseFilter.value })
+  fetchSuitCaseList({ ...caseFilter.value })
 }
 
 const pageSelect = (page: number) => {
