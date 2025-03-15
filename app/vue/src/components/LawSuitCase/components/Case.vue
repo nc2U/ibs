@@ -46,7 +46,7 @@ const getCourt = (court: string | undefined) =>
 </script>
 
 <template>
-  <CTableRow v-if="suitCase" class="text-center">
+  <CTableRow v-if="suitCase" class="text-center" :color="suitCase.case_end_date ? 'light' : ''">
     <CTableDataCell class="text-left pl-4">
       <v-badge :color="sortColor" :content="sortName" offset-x="5" offset-y="-7" />
     </CTableDataCell>
