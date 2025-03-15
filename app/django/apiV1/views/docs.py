@@ -36,7 +36,7 @@ class LawSuitCaseFilterSet(FilterSet):
 
     class Meta:
         model = LawsuitCase
-        fields = ('company', 'is_real_dev', 'issue_project__project', 'issue_project',
+        fields = ('company', 'issue_project__project', 'is_real_dev', 'issue_project',
                   'related_case', 'sort', 'level', 'court', 'in_progress')
 
     @staticmethod
@@ -56,8 +56,9 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = LawSuitCaseFilterSet
-    search_fields = ('other_agency', 'case_number', 'case_name', 'plaintiff', 'plaintiff_attorney',
-                     'defendant', 'defendant_attorney', 'case_start_date', 'case_end_date', 'summary')
+    search_fields = ('other_agency', 'case_number', 'case_name', 'plaintiff',
+                     'plaintiff_attorney', 'defendant', 'defendant_attorney',
+                     'case_start_date', 'case_end_date', 'summary')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
