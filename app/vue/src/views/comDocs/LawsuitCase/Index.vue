@@ -54,6 +54,10 @@ const listFiltering = (payload: cFilter) => {
   }
 
   caseFilter.value = payload
+  const allCaseFilter = payload.issue_project
+    ? { issue_project: payload.issue_project }
+    : { company: company.value, is_real_dev: 'false' }
+  fetchAllSuitCaseList(allCaseFilter)
   fetchSuitCaseList({ ...caseFilter.value })
 }
 
@@ -146,7 +150,7 @@ const relatedFilter = (related: number) => {
 const dataSetup = (pk: number, caseId?: string | string[]) => {
   caseFilter.value.company = pk
   workStore.fetchAllIssueProjectList(pk, '2', '')
-  fetchAllSuitCaseList({ is_real_dev: 'false' })
+  fetchAllSuitCaseList({ company: pk, is_real_dev: 'false' })
   fetchSuitCaseList(caseFilter.value)
   if (caseId) fetchSuitCase(Number(caseId))
 }
@@ -188,6 +192,7 @@ onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?
 
   <ContentBody>
     <CCardBody class="pb-5">
+      {{ company }}
       <div v-if="route.name === `${mainViewName}`" class="pt-3">
         <ListController
           ref="fController"
