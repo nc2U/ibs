@@ -127,6 +127,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     proj_sort = serializers.SerializerMethodField(read_only=True)
     type_name = serializers.SerializerMethodField()
     cate_name = serializers.SlugField(source='category', read_only=True)
+    cate_color = serializers.SerializerMethodField(read_only=True)
     lawsuit_name = serializers.SlugField(source='lawsuit', read_only=True)
     links = LinksInDocumentSerializer(many=True, read_only=True)
     files = FilesInDocumentSerializer(many=True, read_only=True)
@@ -139,8 +140,8 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name', 'category',
-                  'cate_name', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content', 'hit',
-                  'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
+                  'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content',
+                  'hit', 'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
                   'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
 
@@ -151,6 +152,10 @@ class DocumentSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_type_name(obj):
         return obj.doc_type.__str__()
+
+    @staticmethod
+    def get_cate_color(obj):
+        return obj.category.color if obj.category else None
 
     @staticmethod
     def get_scrape(obj):

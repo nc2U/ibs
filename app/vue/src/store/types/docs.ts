@@ -79,6 +79,7 @@ export type Docs = {
   type_name?: string
   category: number | null
   cate_name?: string
+  cate_color?: string
   lawsuit: number | null | string
   lawsuit_name?: string
   title: string

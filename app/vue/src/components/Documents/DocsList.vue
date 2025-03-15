@@ -32,23 +32,25 @@ const pageSelect = (page: number) => emit('page-select', page)
 <template>
   <CTable hover responsive align="middle">
     <colgroup v-if="isLawsuit">
-      <col style="width: 8%" />
-      <col style="width: 10%" />
+      <col style="width: 6%" />
+      <col style="width: 7%" />
+      <col style="width: 9%" />
       <col style="width: 9%" />
       <col style="width: 20%" />
-      <col style="width: 27%" />
-      <col style="width: 9%" />
-      <col style="width: 12%" />
+      <col style="width: 25%" />
       <col style="width: 8%" />
+      <col style="width: 10%" />
+      <col style="width: 6%" />
     </colgroup>
     <colgroup v-else>
       <col style="width: 8%" />
       <col style="width: 10%" />
-      <col style="width: 11%" />
-      <col style="width: 34%" />
-      <col style="width: 12%" />
-      <col style="width: 15%" />
       <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 30%" />
+      <col style="width: 10%" />
+      <col style="width: 14%" />
+      <col style="width: 8%" />
     </colgroup>
 
     <CTableHead>
@@ -56,6 +58,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         <CTableHeaderCell scope="col">번호</CTableHeaderCell>
         <CTableHeaderCell scope="col">구분</CTableHeaderCell>
         <CTableHeaderCell scope="col">문서 발행일자</CTableHeaderCell>
+        <CTableHeaderCell scope="col">문서 범주</CTableHeaderCell>
         <CTableHeaderCell v-if="isLawsuit" scope="col">사건명</CTableHeaderCell>
         <CTableHeaderCell scope="col">문서 제목</CTableHeaderCell>
         <CTableHeaderCell scope="col">등록자</CTableHeaderCell>
