@@ -16,8 +16,6 @@ const emit = defineEmits(['list-filter'])
 
 const form = ref<SuitCaseFilter>({
   limit: '',
-  // company: '',
-  // project: '',
   issue_project: '',
   is_real_dev: '',
   court: '',
@@ -31,9 +29,8 @@ const form = ref<SuitCaseFilter>({
 
 const formsCheck = computed(() => {
   const a = form.value.limit === ''
-  // const b = form.is_com === !!props.comFrom
-  const b = form.value.is_real_dev === ''
-  const c = !!props.comFrom ? form.value.project === '' : true
+  const b = form.value.issue_project === ''
+  const c = form.value.is_real_dev === ''
   const d = form.value.court === ''
   const e = form.value.related_case === ''
   const f = form.value.sort === ''
@@ -61,11 +58,11 @@ const listFiltering = (page = 1) => {
 
 const firstSorting = (event: { target: { value: number | null } }) => {
   const val = event.target.value
-  // if (!val) form.value.is_com = props.comFrom ?? true
-  // else {
-  //   form.value.is_com = false
-  //   form.value.project = val
-  // }
+  if (!val) form.value.is_real_dev = 'false'
+  else {
+    form.value.issue_project = val
+    form.value.is_real_dev = 'true'
+  }
   listFiltering(1)
 }
 
@@ -73,12 +70,15 @@ const courtChange = (court: string) => (form.value.court = court)
 const searchChange = (search: string) => (form.value.search = search)
 const relatedChange = (related: number) => (form.value.related_case = related)
 const projectChange = (project: number | null) => (form.value.project = project ?? '')
+const sortChange = () => {
+  form.value.level = ''
+  listFiltering(1)
+}
 
 const resetForm = () => {
   form.value.limit = ''
-  // form.value.is_com = !!props.comFrom
+  form.value.issue_project = ''
   form.value.is_real_dev = ''
-  form.value.project = ''
   form.value.court = ''
   form.value.related_case = ''
   form.value.sort = ''
@@ -97,18 +97,12 @@ defineExpose({
   resetForm,
 })
 
-const sortChange = () => {
-  form.value.level = ''
-  listFiltering(1)
-}
-
 onBeforeMount(() => {
   fetchProjectList()
   if (props.caseFilter) {
     form.value.limit = props.caseFilter.limit
-    form.value.company = props.caseFilter.company
-    form.value.project = props.caseFilter.project
-    // form.value.is_real_dev = 'false'
+    form.value.issue_project = props.caseFilter.issue_project
+    form.value.is_real_dev = props.caseFilter.is_real_dev
     form.value.court = props.caseFilter.court
     form.value.related_case = props.caseFilter.related_case
     form.value.sort = props.caseFilter.sort

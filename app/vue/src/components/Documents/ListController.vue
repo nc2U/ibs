@@ -54,8 +54,6 @@ const firstSorting = (event: { target: { value: number | null } }) => {
   listFiltering(1)
 }
 
-// const projectChange = (project: number | null) => (form.value.issue_project = project ?? '')
-
 const resetForm = (is_filter = true) => {
   form.value.limit = ''
   form.value.issue_project = ''
