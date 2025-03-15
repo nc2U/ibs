@@ -189,7 +189,7 @@ onUpdated(() => dataSetup())
 
     <CRow class="mb-3">
       <CFormLabel v-if="typeNum === 2" for="inputPassword" class="col-sm-2 col-form-label">
-        사건번호 (사건번호 등록)
+        사건[등록] 번호
       </CFormLabel>
       <CCol v-if="typeNum === 2" md="2">
         <Multiselect
