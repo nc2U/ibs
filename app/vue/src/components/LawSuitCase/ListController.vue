@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, onBeforeMount } from 'vue'
+import { ref, computed, nextTick, onBeforeMount, type PropType } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
@@ -9,14 +9,16 @@ import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
+  projects: { type: Array as PropType<{ label: string; value: number }[]>, default: () => [] },
   caseFilter: { type: Object, required: true },
 })
 const emit = defineEmits(['list-filter'])
 
 const form = ref<SuitCaseFilter>({
-  company: '',
-  project: '',
-  // issue_project: '',
+  limit: '',
+  // company: '',
+  // project: '',
+  issue_project: '',
   is_real_dev: '',
   court: '',
   related_case: '',
@@ -25,7 +27,6 @@ const form = ref<SuitCaseFilter>({
   in_progress: '',
   search: '',
   page: 1,
-  limit: '',
 })
 
 const formsCheck = computed(() => {
@@ -135,9 +136,9 @@ onBeforeMount(() => {
           </CCol>
 
           <CCol v-if="comFrom" :md="comFrom ? 3 : 4" class="mb-3">
-            <CFormSelect v-model="form.project" @change="firstSorting">
+            <CFormSelect v-model="form.issue_project" @change="firstSorting">
               <option value="">본사</option>
-              <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">
+              <option v-for="proj in projects" :key="proj.value" :value="proj.value">
                 {{ proj.label }}
               </option>
             </CFormSelect>

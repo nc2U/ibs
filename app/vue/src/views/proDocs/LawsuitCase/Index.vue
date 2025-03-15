@@ -45,7 +45,7 @@ const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${ex
 
 const listFiltering = (payload: cFilter) => {
   payload.limit = payload.limit || 10
-  payload.is_real_dev = true
+  payload.is_real_dev = 'true'
   payload.project = project.value ?? ''
   caseFilter.value = payload
   if (company.value) fetchSuitCaseList({ ...caseFilter.value })
@@ -146,7 +146,7 @@ const relatedFilter = (related: number) => {
 const dataSetup = (pk: number, caseId?: string | string[]) => {
   caseFilter.value.company = company.value ?? ''
   caseFilter.value.project = pk
-  fetchAllSuitCaseList({ company: company.value ?? '', is_real_dev: true, project: pk })
+  fetchAllSuitCaseList({ company: company.value ?? '', is_real_dev: 'true', project: pk })
   fetchSuitCaseList(caseFilter.value)
   if (caseId) fetchSuitCase(Number(caseId))
 }

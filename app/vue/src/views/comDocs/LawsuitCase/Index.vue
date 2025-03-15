@@ -18,14 +18,14 @@ import ListController from '@/components/LawSuitCase/ListController.vue'
 import CaseView from '@/components/LawSuitCase/CaseView.vue'
 import CaseList from '@/components/LawSuitCase/CaseList.vue'
 import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
+import { useWork } from '@/store/pinia/work'
 
 const fController = ref()
 const mainViewName = ref('본사 소송 사건')
 const caseFilter = ref<cFilter>({
   company: '',
-  project: '',
   issue_project: '',
-  is_real_dev: '',
+  is_real_dev: 'false',
   court: '',
   related_case: '',
   sort: '',
@@ -59,6 +59,9 @@ const writeAuth = computed(() => accStore.writeComDocs)
 
 const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
+
+const workStore = useWork()
+const getAllProjects = computed(() => workStore.getAllProjects)
 
 const docStore = useDocs()
 const suitcase = computed(() => docStore.suitcase)
@@ -134,7 +137,8 @@ const relatedFilter = (related: number) => {
 
 const dataSetup = (pk: number, caseId?: string | string[]) => {
   caseFilter.value.company = pk
-  fetchAllSuitCaseList({ is_real_dev: false })
+  workStore.fetchAllIssueProjectList(pk, '2', '')
+  fetchAllSuitCaseList({ is_real_dev: 'false' })
   fetchSuitCaseList(caseFilter.value)
   if (caseId) fetchSuitCase(Number(caseId))
 }
@@ -175,6 +179,7 @@ onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?
         <ListController
           ref="fController"
           :com-from="true"
+          :projects="getAllProjects"
           :case-filter="caseFilter"
           @list-filter="listFiltering"
         />

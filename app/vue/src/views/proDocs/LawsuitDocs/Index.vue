@@ -185,7 +185,7 @@ const dataSetup = (pk: number, docsId?: string | string[]) => {
   if (docsId) fetchDocs(Number(docsId))
   fetchAllSuitCaseList({
     project: pk,
-    is_real_dev: true,
+    is_real_dev: 'true',
   }) // Todo 프로젝트마다 변경 로직 구현
 }
 

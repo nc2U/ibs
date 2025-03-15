@@ -18,7 +18,7 @@ import type { CodeValue } from '@/store/types/work'
 export type SuitCaseFilter = {
   company?: number | ''
   project?: number | ''
-  is_real_dev?: '' | boolean
+  is_real_dev?: '' | 'true' | 'false'
   issue_project?: number | ''
   related_case?: number | ''
   sort?: '1' | '2' | '3' | '4' | '5' | ''
@@ -164,8 +164,8 @@ export const useDocs = defineStore('docs', () => {
     },
   ) => {
     const retData: SuitCaseFilter = payload.isProject
-      ? { is_real_dev: true, issue_project: payload.issue_project ?? '', page: 1 }
-      : { is_real_dev: false, issue_project: payload.issue_project ?? '', page: 1 }
+      ? { is_real_dev: 'true', issue_project: payload.issue_project ?? '', page: 1 }
+      : { is_real_dev: 'false', issue_project: payload.issue_project ?? '', page: 1 }
     return await api
       .post(`/suitcase/`, payload)
       .then(res => {
