@@ -119,8 +119,7 @@ const onSubmit = (payload: SuitCase) => {
         params: { caseId: payload.pk },
       })
     } else {
-      // payload.company = company.value || null
-      payload.issue_project = caseFilter.value.issue_project || null // Todo debugging
+      payload.issue_project = caseFilter.value.issue_project || null
       createSuitCase(payload)
       router.replace({ name: `${mainViewName.value}` })
     }
@@ -157,7 +156,6 @@ const dataSetup = (pk: number, caseId?: string | string[]) => {
 }
 
 const dataReset = () => {
-  // caseFilter.value.company = ''
   caseFilter.value.issue_project = ''
   caseFilter.value.is_real_dev = 'false'
   docStore.removeSuitcase()
