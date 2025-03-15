@@ -161,12 +161,15 @@ export const useDocs = defineStore('docs', () => {
 
   const createSuitCase = async (
     payload: SuitCase & {
-      isProject?: boolean
+      is_real_dev?: boolean
     },
   ) => {
-    const retData: SuitCaseFilter = payload.isProject
-      ? { is_real_dev: 'true', issue_project: payload.issue_project ?? '', page: 1 }
-      : { is_real_dev: 'false', issue_project: payload.issue_project ?? '', page: 1 }
+    const is_real_dev = payload.is_real_dev ? 'true' : 'false'
+    const retData: SuitCaseFilter = {
+      is_real_dev,
+      issue_project: payload.issue_project ?? '',
+      page: 1,
+    }
     return await api
       .post(`/suitcase/`, payload)
       .then(res => {

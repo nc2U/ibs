@@ -24,7 +24,6 @@ const mainViewName = ref('현장 소송 사건')
 const caseFilter = ref<cFilter>({
   company: '',
   project: '',
-  // is_com: false,
   is_real_dev: '',
   court: '',
   related_case: '',
@@ -38,8 +37,10 @@ const caseFilter = ref<cFilter>({
 
 const excelFilter = computed(
   // Todo 퀴리 점검 할 것
-  () =>
-    `is_real_dev=${caseFilter.value.is_real_dev}&project=${project.value}&sort=${caseFilter.value.sort}&level=${caseFilter.value.level}&court=${caseFilter.value.court}&in_progress=${caseFilter.value.in_progress}&search=${caseFilter.value.search}`,
+  () => {
+    const { is_real_dev, sort, level, court, in_progress, search } = caseFilter.value
+    return `project=${project.value}&is_real_dev=${is_real_dev}&sort=${sort}&level=${level}&court=${court}&in_progress=${in_progress}&search=${search}`
+  },
 )
 const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${excelFilter.value}`)
 
@@ -96,7 +97,7 @@ const [route, router] = [useRoute() as LoadedRoute & { name: string }, useRouter
 
 watch(route, val => {
   if (val.params.caseId) fetchSuitCase(Number(val.params.caseId))
-  else docStore.suitcase = null
+  else docStore.removeSuitcase()
 })
 
 const casesRenewal = (page: number) => {
@@ -104,9 +105,7 @@ const casesRenewal = (page: number) => {
   fetchSuitCaseList(caseFilter.value)
 }
 
-const onSubmit = (payload: SuitCase & { isProject?: boolean }) => {
-  payload.issue_project = 1 // Todo debugging
-
+const onSubmit = (payload: SuitCase & { is_real_dev?: boolean }) => {
   if (payload.pk) {
     updateSuitCase(payload)
     router.replace({
@@ -114,8 +113,8 @@ const onSubmit = (payload: SuitCase & { isProject?: boolean }) => {
       params: { caseId: payload.pk },
     })
   } else {
-    payload.issue_project = 1 // Todo debugging
-    payload.isProject = true
+    payload.issue_project = projStore.project?.issue_project as number
+    payload.is_real_dev = true
     createSuitCase(payload)
     router.replace({ name: `${mainViewName.value}` })
   }
