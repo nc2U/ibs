@@ -17,7 +17,7 @@ const emit = defineEmits(['list-filter'])
 const form = ref<SuitCaseFilter>({
   limit: '',
   issue_project: '',
-  is_real_dev: '',
+  is_real_dev: 'false',
   court: '',
   related_case: '',
   sort: '',

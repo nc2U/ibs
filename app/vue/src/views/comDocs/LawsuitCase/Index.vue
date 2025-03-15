@@ -44,6 +44,7 @@ const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${ex
 
 const listFiltering = (payload: cFilter) => {
   payload.limit = payload.limit || 10
+  caseFilter.value.company = company.value
   if (!payload.issue_project) {
     caseFilter.value.company = company.value ?? ''
     caseFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
