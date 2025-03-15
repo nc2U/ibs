@@ -155,8 +155,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
 
 const createLawSuit = (payload: SuitCase) => {
   if (!payload.issue_project) payload.issue_project = projStore.project?.issue_project as number
-  console.log(payload)
-  // createSuitCase(payload)
+  createSuitCase(payload)
 }
 
 const docsHit = async (pk: number) => {

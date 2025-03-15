@@ -184,8 +184,7 @@ const createLawSuit = (payload: SuitCase) => {
     payload.issue_project = docsFilter.value.issue_project
       ? (docsFilter.value.issue_project as number)
       : (comIProject.value as number)
-  console.log(payload)
-  // createSuitCase(payload)
+  createSuitCase(payload)
 }
 
 const docsHit = async (pk: number) => {
