@@ -179,12 +179,13 @@ const onSubmit = async (payload: Docs & Attatches) => {
   }
 }
 
-const createLawSuit = (payload: any) => {
+const createLawSuit = (payload: SuitCase) => {
   if (!payload.issue_project)
     payload.issue_project = docsFilter.value.issue_project
       ? (docsFilter.value.issue_project as number)
       : (comIProject.value as number)
-  createSuitCase(payload).then(res => console.log(res))
+  console.log(payload)
+  // createSuitCase(payload)
 }
 
 const docsHit = async (pk: number) => {
