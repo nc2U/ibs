@@ -109,7 +109,6 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  {{ form }}
   <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4" :class="bgLight">
     <CRow>
       <CCol :lg="comFrom ? 6 : 5">
