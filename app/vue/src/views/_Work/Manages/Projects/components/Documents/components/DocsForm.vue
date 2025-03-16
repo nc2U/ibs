@@ -12,8 +12,6 @@ const props = defineProps({
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
 
-const emit = defineEmits(['get-categories'])
-
 const form = ref({
   doc_type: 1,
   category: null,
@@ -23,7 +21,7 @@ const form = ref({
   content: '',
 })
 
-const setDocType = (type: number) => (form.value.doc_type = type)
+const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
 
 defineExpose({ setDocType })
 

@@ -66,11 +66,12 @@ const categories = computed(() =>
 )
 
 const getDocsList = (target: unknown) => {
+  console.log(target)
   if (target === 1 || target === 2) {
     docsFilter.value.doc_type = target
-    refDocsForm.value.setDocType(target)
     fetchCategoryList(target)
     fetchDocsList(docsFilter.value)
+    if (route.name === '(문서) - 추가') refDocsForm.value.setDocType(target)
   }
 }
 
