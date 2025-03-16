@@ -12,6 +12,7 @@ import AddNewDoc from '@/views/_Work/Manages/Projects/components/Documents/compo
 const emit = defineEmits(['aside-visible'])
 
 const typeNumber = ref<1 | 2>(1)
+
 const types = ref<any[]>([
   { value: 1, label: '일반문서' },
   { value: 2, label: '소송문서' },
@@ -59,10 +60,8 @@ const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patc
 const patchLink = (payload: Link) => docStore.patchLink(payload)
 const patchFile = (payload: AFile) => docStore.patchFile(payload)
 
-const realProject = computed(() => issueProject.value?.sort === '2')
-
 const categories = computed(() =>
-  realProject.value ? getCategories.value : codeCategoryList.value,
+  issueProject.value.sort !== '3' ? getCategories.value : codeCategoryList.value,
 )
 
 const cateChange = (type: number) => fetchCategoryList(type)
@@ -93,7 +92,7 @@ onBeforeMount(async () => {
   </CRow>
 
   <CRow class="mb-3">
-    <CCol>
+    <CCol v-if="issueProject.sort !== '3'">
       <v-tabs v-model="typeNumber" density="compact">
         <v-tab
           v-for="type in types"
@@ -110,7 +109,7 @@ onBeforeMount(async () => {
 
   <DocsForm
     v-if="route.name === '(문서) - 추가'"
-    :real-project="realProject"
+    :project-sort="issueProject.sort"
     :categories="categories"
     @get-categories="cateChange"
   />

@@ -9,7 +9,7 @@ import AddNewDoc from './AddNewDoc.vue'
 
 defineProps({
   projStatus: { type: String, default: '' },
-  realProject: { type: Boolean, default: false },
+  projectSort: { type: String as PropType<'1' | '2' | '3'>, default: '2' },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
 
@@ -41,7 +41,7 @@ onBeforeMount(() => 1)
   <CRow>
     <CCard :color="colorLight" class="mb-3">
       <CCardBody>
-        <CRow v-if="realProject" class="mb-3">
+        <CRow v-if="projectSort !== '3'" class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
             <CFormSelect v-model.number="form.doc_type" @change="cageChange">
@@ -76,7 +76,7 @@ onBeforeMount(() => 1)
           </CCol>
         </CRow>
 
-        <CRow v-if="realProject && form.doc_type === 2">
+        <CRow v-if="projectSort !== '3' && form.doc_type === 2">
           <CCol sm="12" lg="6" class="mb-3">
             <CRow>
               <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
