@@ -42,16 +42,18 @@ const excelFilter = computed(() => {
 })
 const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${excelFilter.value}`)
 
+const formTitle = ref<string>('[본사]')
 const listFiltering = (payload: cFilter) => {
   payload.limit = payload.limit || 10
-  caseFilter.value.company = company.value as number
   if (!payload.issue_project) {
-    caseFilter.value.company = company.value ?? ''
+    caseFilter.value.company = company.value as number
     caseFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
     caseFilter.value.is_real_dev = 'false'
+    formTitle.value = '[본사]'
   } else {
     caseFilter.value.issue_project = payload.issue_project
     caseFilter.value.is_real_dev = ''
+    formTitle.value = getAllProjects.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
   caseFilter.value = payload
@@ -230,6 +232,7 @@ onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?
 
       <div v-else-if="route.name.includes('작성')">
         <CaseForm
+          :sort-name="formTitle"
           :get-suit-case="getSuitCase"
           :view-route="mainViewName"
           :write-auth="writeAuth"
@@ -239,6 +242,7 @@ onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?
 
       <div v-else-if="route.name.includes('수정')">
         <CaseForm
+          :sort-name="formTitle"
           :get-suit-case="getSuitCase"
           :suitcase="suitcase"
           :view-route="mainViewName"

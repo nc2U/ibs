@@ -45,15 +45,18 @@ const cngFiles = ref<
   }[]
 >([])
 
+const formTitle = ref<string>('[본사]')
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   if (!payload.issue_project) {
-    docsFilter.value.company = company.value ?? ''
+    docsFilter.value.company = company.value as number
     docsFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
     docsFilter.value.is_real_dev = 'false'
+    formTitle.value = '[본사]'
   } else {
     docsFilter.value.issue_project = payload.issue_project
     docsFilter.value.is_real_dev = ''
+    formTitle.value = getAllProjects.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
   docsFilter.value.ordering = payload.ordering
@@ -278,6 +281,7 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
 
       <div v-else-if="route.name.includes('작성')">
         <DocsForm
+          :sort-name="formTitle"
           :board-num="typeNumber"
           :category-list="categoryList"
           :view-route="mainViewName"
@@ -289,6 +293,7 @@ onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?
 
       <div v-else-if="route.name.includes('수정')">
         <DocsForm
+          :sort-name="formTitle"
           :type-num="typeNumber"
           :category-list="categoryList"
           :docs="docs as Docs"
