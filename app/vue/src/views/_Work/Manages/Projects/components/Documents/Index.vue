@@ -61,19 +61,23 @@ const patchLink = (payload: Link) => docStore.patchLink(payload)
 const patchFile = (payload: AFile) => docStore.patchFile(payload)
 
 const categories = computed(() =>
-  issueProject.value.sort !== '3' ? getCategories.value : codeCategoryList.value,
+  issueProject.value?.sort !== '3' ? getCategories.value : codeCategoryList.value,
 )
 
 const cateChange = (type: number) => fetchCategoryList(type)
 
-const dataSetup = (pk: number, docsId?: string | string[]) => {
-  docsFilter.value.issue_project = issueProject.value.pk
-  fetchAllIssueProjectList(pk, '2', '')
-  fetchDocTypeList()
-  fetchCodeCategoryList()
-  fetchCategoryList(typeNumber.value)
-  fetchDocsList(docsFilter.value)
-  if (docsId) fetchDocs(Number(docsId))
+const dataSetup = async (pk: number, docsId?: string | string[]) => {
+  if (route.params.projId) {
+    const projId = route.params.projId as string
+    await workStore.fetchIssueProject(projId)
+  }
+  docsFilter.value.issue_project = issueProject.value?.pk
+  await fetchAllIssueProjectList(pk, '2', '')
+  await fetchDocTypeList()
+  await fetchCodeCategoryList()
+  await fetchCategoryList(typeNumber.value)
+  await fetchDocsList(docsFilter.value)
+  if (docsId) await fetchDocs(Number(docsId))
 }
 
 onBeforeMount(async () => {
@@ -92,7 +96,7 @@ onBeforeMount(async () => {
   </CRow>
 
   <CRow class="mb-3">
-    <CCol v-if="issueProject.sort !== '3'">
+    <CCol v-if="issueProject?.sort !== '3'">
       <v-tabs v-model="typeNumber" density="compact">
         <v-tab
           v-for="type in types"
@@ -109,7 +113,7 @@ onBeforeMount(async () => {
 
   <DocsForm
     v-if="route.name === '(문서) - 추가'"
-    :project-sort="issueProject.sort"
+    :project-sort="issueProject?.sort"
     :categories="categories"
     @get-categories="cateChange"
   />
