@@ -60,10 +60,11 @@ const getActivities = computed(() => workStore.getActivities)
 const versionList = computed(() => workStore.versionList)
 
 const memberList = computed(() =>
-  (issueProject.value
-    ? issueProject.value.all_members
-    : [...new Map(workStore.memberList.map(m => [m.user.pk, m])).values()]
-  )?.map(m => m.user),
+  (
+    (issueProject.value
+      ? issueProject.value.all_members
+      : [...new Map(workStore.memberList.map(m => [m.user.pk, m])).values()]) as any[]
+  ).map(m => m.user),
 )
 const activityList = computed(() => workStore.activityList)
 
