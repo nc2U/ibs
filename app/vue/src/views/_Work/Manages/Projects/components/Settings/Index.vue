@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { ref, computed, inject, type ComputedRef, onBeforeMount } from 'vue'
-import type { Company } from '@/store/types/settings'
 import { type IssueCategory as ICategory } from '@/store/types/work'
 import { useWork } from '@/store/pinia/work'
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
@@ -19,7 +18,6 @@ const emit = defineEmits(['aside-visible'])
 
 const menu = ref('프로젝트')
 
-const company = inject<ComputedRef<Company>>('company')
 const workManager = inject<ComputedRef<boolean>>('workManager')
 
 const [route, router] = [useRoute(), useRouter()]
