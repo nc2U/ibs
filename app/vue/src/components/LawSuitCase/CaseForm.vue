@@ -9,7 +9,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
-  sortName: { type: String, default: '【본사】' },
+  sortName: { type: String, default: '[본사]' },
   getSuitCase: { type: Object, required: true },
   suitcase: { type: Object as PropType<SuitCase | null>, default: null },
   viewRoute: { type: String, required: true },

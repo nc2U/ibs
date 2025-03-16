@@ -11,7 +11,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
 
 const props = defineProps({
-  sortName: { type: String, default: '【본사】' },
+  sortName: { type: String, default: '[본사]' },
   typeNum: { type: Number, default: 1 },
   categoryList: { type: Object, required: true },
   getSuitCase: { type: Object, default: null },
