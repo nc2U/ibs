@@ -5,10 +5,9 @@ import type { CodeValue } from '@/store/types/work'
 import DatePicker from '@/components/DatePicker/index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
-import AddNewDoc from './AddNewDoc.vue'
 
-defineProps({
-  projStatus: { type: String, default: '' },
+const props = defineProps({
+  typeNumber: { type: Number, default: 1 },
   projectSort: { type: String as PropType<'1' | '2' | '3'>, default: '2' },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
@@ -24,9 +23,11 @@ const form = ref({
   content: '',
 })
 
-const cageChange = event => emit('get-categories', event.target.value)
+const setDocType = (type: number) => (form.value.doc_type = type)
 
-onBeforeMount(() => 1)
+defineExpose({ setDocType })
+
+onBeforeMount(() => (form.value.doc_type = props.typeNumber))
 </script>
 
 <template>
@@ -34,8 +35,6 @@ onBeforeMount(() => 1)
     <CCol>
       <h5>새 문서</h5>
     </CCol>
-
-    <AddNewDoc :proj-status="projStatus" />
   </CRow>
 
   <CRow>
@@ -44,7 +43,7 @@ onBeforeMount(() => 1)
         <CRow v-if="projectSort !== '3'" class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <CFormSelect v-model.number="form.doc_type" @change="cageChange">
+            <CFormSelect v-model.number="form.doc_type" disabled>
               <option :value="1">일반 문서</option>
               <option :value="2">소송 기록</option>
             </CFormSelect>

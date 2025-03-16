@@ -12,10 +12,11 @@ import AddNewDoc from '@/views/_Work/Manages/Projects/components/Documents/compo
 const emit = defineEmits(['aside-visible'])
 
 const typeNumber = ref<1 | 2>(1)
+const refDocsForm = ref()
 
 const types = ref<any[]>([
   { value: 1, label: '일반문서' },
-  { value: 2, label: '소송문서' },
+  { value: 2, label: '소송기록' },
 ])
 
 const docsFilter = ref<DocsFilter>({
@@ -64,7 +65,14 @@ const categories = computed(() =>
   issueProject.value?.sort !== '3' ? getCategories.value : codeCategoryList.value,
 )
 
-const cateChange = (type: number) => fetchCategoryList(type)
+const getDocsList = (target: unknown) => {
+  if (target === 1 || target === 2) {
+    docsFilter.value.doc_type = target
+    refDocsForm.value.setDocType(target)
+    fetchCategoryList(target)
+    fetchDocsList(docsFilter.value)
+  }
+}
 
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
   if (route.params.projId) {
@@ -82,7 +90,7 @@ const dataSetup = async (pk: number, docsId?: string | string[]) => {
 
 onBeforeMount(async () => {
   emit('aside-visible', true)
-  dataSetup(1, route.params?.docsId)
+  await dataSetup(1, route.params?.docsId)
 })
 </script>
 
@@ -92,12 +100,12 @@ onBeforeMount(async () => {
       <h5>문서</h5>
     </CCol>
 
-    <AddNewDoc v-if="route.name === '(문서)'" :proj-status="issueProject?.status" />
+    <AddNewDoc :proj-status="issueProject?.status" />
   </CRow>
 
   <CRow class="mb-3">
     <CCol v-if="issueProject?.sort !== '3'">
-      <v-tabs v-model="typeNumber" density="compact">
+      <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
         <v-tab
           v-for="type in types"
           :value="type.value"
@@ -112,10 +120,11 @@ onBeforeMount(async () => {
   </CRow>
 
   <DocsForm
+    ref="refDocsForm"
     v-if="route.name === '(문서) - 추가'"
     :project-sort="issueProject?.sort"
+    :type-number="typeNumber"
     :categories="categories"
-    @get-categories="cateChange"
   />
 
   <DocsView v-if="route.name === '(문서) - 보기'" />
