@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -20,6 +21,8 @@ const form = ref({
   title: '',
   content: '',
 })
+
+const router = useRouter()
 
 const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
 
@@ -120,7 +123,7 @@ onBeforeMount(() => (form.value.doc_type = props.typeNumber))
   <CRow class="mb-5">
     <CCol>
       <CButton type="submit" color="primary" variant="outline"> 저장</CButton>
-      <CButton color="light" type="submit">취소</CButton>
+      <CButton color="light" @click="router.replace({ name: '(문서)' })">취소</CButton>
     </CCol>
   </CRow>
 </template>

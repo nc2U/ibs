@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
+import type { IssueProject } from '@/store/types/work'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Link, PatchDocs } from '@/store/types/docs'
 import DocsList from './components/DocsList.vue'
@@ -32,7 +33,7 @@ const docsFilter = ref<DocsFilter>({
 const route = useRoute()
 
 const workStore = useWork()
-const issueProject = computed(() => workStore.issueProject)
+const issueProject = computed<IssueProject>(() => workStore.issueProject)
 const codeCategoryList = computed(() => workStore.codeCategoryList)
 const fetchCodeCategoryList = () => workStore.fetchCodeCategoryList()
 const fetchAllIssueProjectList = (
@@ -131,4 +132,8 @@ onBeforeMount(async () => {
   <DocsView v-if="route.name === '(문서) - 보기'" />
 
   <DocsList v-else :docs-list="docsList" />
+
+  <hr />
+
+  {{ route }}
 </template>
