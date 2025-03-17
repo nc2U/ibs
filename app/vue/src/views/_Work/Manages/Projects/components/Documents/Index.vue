@@ -75,6 +75,11 @@ const getDocsList = (target: unknown) => {
   }
 }
 
+const pageSelect = (page: number) => {
+  docsFilter.value.page = page
+  fetchDocsList(docsFilter.value)
+}
+
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
   if (route.params.projId) {
     const projId = route.params.projId as string
@@ -130,9 +135,5 @@ onBeforeMount(async () => {
 
   <DocsView v-if="route.name === '(문서) - 보기'" />
 
-  <DocsList v-else :docs-list="docsList" />
-
-  <hr />
-
-  {{ route }}
+  <DocsList v-else :docs-list="docsList" @page-select="pageSelect" />
 </template>
