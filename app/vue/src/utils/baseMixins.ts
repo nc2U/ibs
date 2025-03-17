@@ -50,7 +50,7 @@ export const timeFormat = (date: Date | number | string, short = false, split?: 
     .replace('T', ' ')
     .replace(/\..*/, '')
   formattedTime = !split ? formattedTime : formattedTime.replace(/-/g, split)
-  return !short ? formattedTime : formattedTime.substring(11, 16)
+  return !short ? formattedTime : formattedTime.substring(0, 16)
 }
 
 export const elapsedTime = (date: Date | number | string): string => {

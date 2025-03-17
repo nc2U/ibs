@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { message } from '@/utils/helper'
 import { timeFormat } from '@/utils/baseMixins'
-import type { PatchDocs, Docs } from '@/store/types/docs'
+import type { PatchDocs } from '@/store/types/docs'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 
 const docStore = useDocs()
