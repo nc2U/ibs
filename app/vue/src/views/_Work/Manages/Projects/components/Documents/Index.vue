@@ -75,6 +75,12 @@ const getDocsList = (target: unknown) => {
   }
 }
 
+const selectCate = (cate: number) => {
+  docsFilter.value.page = 1
+  docsFilter.value.category = cate
+  fetchDocsList(docsFilter.value)
+}
+
 const pageSelect = (page: number) => {
   docsFilter.value.page = page
   fetchDocsList(docsFilter.value)
@@ -135,5 +141,12 @@ onBeforeMount(async () => {
 
   <DocsView v-if="route.name === '(문서) - 보기'" />
 
-  <DocsList v-else :docs-list="docsList" @page-select="pageSelect" />
+  <DocsList
+    v-else
+    :category="docsFilter.category as number"
+    :category-list="categoryList"
+    :docs-list="docsList"
+    @select-cate="selectCate"
+    @page-select="pageSelect"
+  />
 </template>
