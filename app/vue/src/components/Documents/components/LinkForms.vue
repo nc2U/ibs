@@ -32,7 +32,7 @@ const enableStore = (event: Event) => {
 <template>
   <CRow>
     <CFormLabel for="title" class="col-form-label col-2">링크</CFormLabel>
-    <CCol class="col-sm-10 col-lg-8 col-xl-7">
+    <CCol class="col-sm-10 col-xl-8">
       <CRow v-if="docs && (form.links as Link[]).length">
         <CAlert :color="AlertSecondary">
           <CCol>

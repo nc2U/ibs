@@ -138,8 +138,8 @@ onBeforeMount(() => {
           </CCol>
         </CRow>
 
-        <LinkForms />
         <FileForms />
+        <LinkForms />
       </CCardBody>
     </CCard>
   </CRow>
