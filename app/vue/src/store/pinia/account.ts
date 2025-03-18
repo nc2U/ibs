@@ -181,6 +181,7 @@ export const useAccount = defineStore('account', () => {
       is_expired: boolean
     }[]
   >([])
+
   const fetchResetTokenList = (user: number) =>
     api
       .get(`/pass-reset-token/?user=${user}`)

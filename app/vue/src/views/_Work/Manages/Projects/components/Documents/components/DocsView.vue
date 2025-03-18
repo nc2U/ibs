@@ -27,7 +27,9 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
 
   <CRow class="mb-5">
     <CCol>
-      {{ docs.proj_name }} / {{ docs.cate_name }} ({{ timeFormat(docs.created, true, '/') }})
+      {{ docs.proj_name }} / {{ docs.cate_name }} ({{
+        timeFormat(docs.created as string, true, '/')
+      }})
     </CCol>
     <CCol></CCol>
   </CRow>

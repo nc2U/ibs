@@ -8,7 +8,6 @@ import Scrape from './Scrape.vue'
 import Pagination from '@/components/Pagination'
 
 defineProps({
-  docScrapeList: { type: Array as PropType<S[]>, default: () => [] },
   scrapeList: { type: Array as PropType<S[]>, default: () => [] },
   scrapeCount: { type: Number, default: 0 },
   viewRoute: { type: String, required: true },

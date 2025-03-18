@@ -11,7 +11,16 @@ const sort = ref<'docs' | 'board'>('docs')
 const page = ref<number>(1)
 
 const accStore = useAccount()
+
+// docs
 const docScrapeList = computed(() => accStore.docScrapeList)
+const docScrapeCount = computed(() => accStore.docScrapeCount)
+
+const fetchDocScrapeList = (page: number) => accStore.fetchDocScrapeList(page)
+const patchDocScrape = (pk: number, title: string) => accStore.patchDocScrape(pk, title)
+const deleteDocScrape = (pk: number) => accStore.deleteDocScrape(pk)
+
+// board
 const scrapeList = computed(() => accStore.scrapeList)
 const scrapeCount = computed(() => accStore.scrapeCount)
 
@@ -27,7 +36,10 @@ const pageSelect = (p: number) => {
   fetchScrapeList(p)
 }
 
-onBeforeMount(() => fetchScrapeList(page.value))
+onBeforeMount(() => {
+  fetchScrapeList(page.value)
+  fetchDocScrapeList(page.value)
+})
 </script>
 
 <template>
@@ -35,6 +47,7 @@ onBeforeMount(() => fetchScrapeList(page.value))
 
   <ContentBody>
     <CCardBody class="pb-5">
+      {{ sort }}
       <div class="pt-3">
         <CRow class="pb-2">
           <CCol sm="12" lg="9" xl="6">
@@ -71,16 +84,25 @@ onBeforeMount(() => fetchScrapeList(page.value))
 
         <ScrapeList
           v-if="sort === 'docs'"
-          :doc-scrape-list="docScrapeList"
-          :scrape-list="scrapeList"
-          :scrape-count="scrapeCount"
-          :view-route="mainViewName"
+          :scrape-list="docScrapeList"
+          :scrape-count="docScrapeCount"
+          :view-route="'문서 스크렙'"
           :page="page"
           @patch-title="patchTitle"
           @del-scrape="delScrape"
           @page-select="pageSelect"
         />
-        <div v-else>???</div>
+
+        <ScrapeList
+          v-else
+          :scrape-list="scrapeList"
+          :scrape-count="scrapeCount"
+          :view-route="'게시글 스크랩'"
+          :page="page"
+          @patch-title="patchTitle"
+          @del-scrape="delScrape"
+          @page-select="pageSelect"
+        />
       </div>
     </CCardBody>
   </ContentBody>
