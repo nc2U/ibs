@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
 import type { Docs } from '@/store/types/docs'
+import { elapsedTime, timeFormat } from '../../../../../../../utils/baseMixins'
 
 defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
 </script>
@@ -22,6 +23,13 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
         <router-link :to="{ name: '(문서) - 삭제' }" class="ml-1">삭제</router-link>
       </span>
     </CCol>
+  </CRow>
+
+  <CRow class="mb-5">
+    <CCol>
+      {{ docs.proj_name }} / {{ docs.cate_name }} ({{ timeFormat(docs.created, true, '/') }})
+    </CCol>
+    <CCol></CCol>
   </CRow>
 
   <CRow>
