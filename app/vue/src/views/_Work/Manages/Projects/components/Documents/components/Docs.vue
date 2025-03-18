@@ -15,7 +15,7 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
     <CCol sm="4" class="text-right">{{ timeFormat(docs.created as string, true, '/') }}</CCol>
   </CRow>
   <v-divider />
-  <CRow>
+  <CRow class="mb-2">
     <CCol class="text-body">
       <div v-html="sanitizeHtml(cutString(docs.content, 100) || '-기재 사항 없음-')" />
     </CCol>

@@ -30,7 +30,7 @@ const selectCate = (cate: number) => emit('select-cate', cate)
     :category="category"
     :category-list="categoryList"
     @select-cate="selectCate"
-    class="mb-3"
+    class="mb-4"
   />
 
   <NoData v-if="!docsList.length" class="mt-5" />
