@@ -10,7 +10,9 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
 <template>
   <CRow class="p-2">
     <CCol sm="8">
-      <router-link to="/docs">{{ cutString(docs.title, 38) }}</router-link>
+      <router-link :to="{ name: '(문서) - 보기', params: { docId: docs.pk } }">
+        {{ cutString(docs.title, 38) }}
+      </router-link>
     </CCol>
     <CCol sm="4" class="text-right">{{ timeFormat(docs.created as string, true, '/') }}</CCol>
   </CRow>

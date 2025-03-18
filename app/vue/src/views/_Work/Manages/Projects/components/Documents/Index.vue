@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Link, PatchDocs } from '@/store/types/docs'
@@ -86,7 +86,7 @@ const pageSelect = (page: number) => {
   fetchDocsList(docsFilter.value)
 }
 
-const dataSetup = async (pk: number, docsId?: string | string[]) => {
+const dataSetup = async (pk: number | '', docsId?: string | string[]) => {
   if (route.params.projId) {
     const projId = route.params.projId as string
     await workStore.fetchIssueProject(projId)
@@ -100,53 +100,57 @@ const dataSetup = async (pk: number, docsId?: string | string[]) => {
   if (docsId) await fetchDocs(Number(docsId))
 }
 
+onBeforeRouteUpdate(to => dataSetup('', to.params?.docsId))
+
 onBeforeMount(async () => {
   emit('aside-visible', true)
-  await dataSetup(1, route.params?.docsId)
+  await dataSetup('', route.params?.docsId)
 })
 </script>
 
 <template>
-  <CRow class="py-2">
-    <CCol>
-      <h5>문서</h5>
-    </CCol>
+  <template v-if="route.name !== '(문서) - 보기'">
+    <CRow class="py-2">
+      <CCol>
+        <h5>문서</h5>
+      </CCol>
 
-    <AddNewDoc :proj-status="issueProject?.status" />
-  </CRow>
+      <AddNewDoc :proj-status="issueProject?.status" />
+    </CRow>
 
-  <CRow class="mb-3">
-    <CCol v-if="issueProject?.sort !== '3'">
-      <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
-        <v-tab
-          v-for="type in types"
-          :value="type.value"
-          :key="type.value"
-          variant="tonal"
-          :active="typeNumber === type.value"
-        >
-          {{ type.label }}
-        </v-tab>
-      </v-tabs>
-    </CCol>
-  </CRow>
+    <CRow class="mb-3">
+      <CCol v-if="issueProject?.sort !== '3'">
+        <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
+          <v-tab
+            v-for="type in types"
+            :value="type.value"
+            :key="type.value"
+            variant="tonal"
+            :active="typeNumber === type.value"
+          >
+            {{ type.label }}
+          </v-tab>
+        </v-tabs>
+      </CCol>
+    </CRow>
 
-  <DocsForm
-    ref="refDocsForm"
-    v-if="route.name === '(문서) - 추가'"
-    :project-sort="issueProject?.sort"
-    :type-number="typeNumber"
-    :categories="categories"
-  />
+    <DocsForm
+      ref="refDocsForm"
+      v-if="route.name === '(문서) - 추가'"
+      :project-sort="issueProject?.sort"
+      :type-number="typeNumber"
+      :categories="categories"
+    />
 
-  <DocsView v-if="route.name === '(문서) - 보기'" />
+    <DocsList
+      v-else
+      :category="docsFilter.category as number"
+      :category-list="categoryList"
+      :docs-list="docsList"
+      @select-cate="selectCate"
+      @page-select="pageSelect"
+    />
+  </template>
 
-  <DocsList
-    v-else
-    :category="docsFilter.category as number"
-    :category-list="categoryList"
-    :docs-list="docsList"
-    @select-cate="selectCate"
-    @page-select="pageSelect"
-  />
+  <DocsView v-else :docs="docs as Document" />
 </template>
