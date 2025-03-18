@@ -147,14 +147,19 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class DocsInScrapeSerializer(serializers.ModelSerializer):
     type_name = serializers.SerializerMethodField(read_only=True)
+    proj_sort = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Document
-        fields = ('pk', 'doc_type', 'type_name', 'issue_project', 'title')
+        fields = ('pk', 'doc_type', 'type_name', 'issue_project', 'proj_sort', 'title')
 
     @staticmethod
     def get_type_name(obj):
         return obj.doc_type.get_type_display()
+
+    @staticmethod
+    def get_proj_sort(obj):
+        return obj.issue_project.sort if obj.issue_project else None
 
 
 class DocScrapeSerializer(serializers.ModelSerializer):
