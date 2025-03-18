@@ -60,9 +60,9 @@ const fileUpload = (event: Event) => {
 </script>
 
 <template>
-  <CRow class="mb-3">
-    <CFormLabel for="title" class="col-md-2 col-form-label">파일</CFormLabel>
-    <CCol md="10" lg="8" xl="6">
+  <CRow>
+    <CFormLabel for="title" class="col-form-label col-2">파일</CFormLabel>
+    <CCol class="col-sm-10 col-lg-8 col-xl-7">
       <CRow v-if="docs && (form.files as AFile[]).length">
         <CAlert :color="AlertSecondary">
           <small>{{ devideUri((form.files as AFile[])[0]?.file ?? ' ')[0] }}</small>

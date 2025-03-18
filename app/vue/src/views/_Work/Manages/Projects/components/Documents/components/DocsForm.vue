@@ -7,6 +7,8 @@ import type { CodeValue } from '@/store/types/work'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
+import FileForms from '@/components/Documents/components/FileForms.vue'
+import LinkForms from '@/components/Documents/components/LinkForms.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
@@ -136,12 +138,8 @@ onBeforeMount(() => {
           </CCol>
         </CRow>
 
-        <CRow class="">
-          <CFormLabel class="col-form-label text-right col-2">파일</CFormLabel>
-          <CCol class="col-sm-10">
-            <CFormInput type="file" />
-          </CCol>
-        </CRow>
+        <LinkForms />
+        <FileForms />
       </CCardBody>
     </CCard>
   </CRow>
