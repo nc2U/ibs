@@ -1,25 +1,32 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import type { Docs } from '@/store/types/docs'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work'
+import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
-import MdEditor from '@/components/MdEditor/Index.vue'
 
 const props = defineProps({
+  docs: { type: Object as PropType<Docs>, default: () => null },
   typeNumber: { type: Number, default: 1 },
   projectSort: { type: String as PropType<'1' | '2' | '3'>, default: '2' },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
 
-const form = ref({
+const form = ref<Docs>({
+  issue_project: null,
   doc_type: 1,
   category: null,
   lawsuit: null,
   execution_date: null,
   title: '',
   content: '',
+  device: '',
+  is_secret: false,
+  password: '',
+  is_blind: false,
 })
 
 const router = useRouter()
@@ -28,13 +35,28 @@ const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
 
 defineExpose({ setDocType })
 
-onBeforeMount(() => (form.value.doc_type = props.typeNumber))
+onBeforeMount(() => {
+  if (props.docs) {
+    form.value.issue_project = props.docs.issue_project
+    form.value.doc_type = props.docs.doc_type
+    form.value.category = props.docs.category
+    form.value.lawsuit = props.docs.lawsuit
+    form.value.execution_date = props.docs.execution_date
+    form.value.title = props.docs.title
+    form.value.content = props.docs.content
+    form.value.device = props.docs.device
+    form.value.is_secret = props.docs.is_secret
+    form.value.password = props.docs.password
+    form.value.is_blind = props.docs.is_blind
+  } else form.value.doc_type = props.typeNumber
+})
 </script>
 
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>새 문서</h5>
+      <h5 v-if="!docs">새 문서</h5>
+      <h5 v-else>문서</h5>
     </CCol>
   </CRow>
 
@@ -105,8 +127,12 @@ onBeforeMount(() => (form.value.doc_type = props.typeNumber))
 
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
-          <CCol class="col-sm-10">
-            <MdEditor v-model="form.content" placeholder="문서 내용 설명" />
+          <CCol class="col-sm-10 mb-5">
+            <QuillEditor
+              v-model:content="form.content"
+              placeholder="문서 내용 설명"
+              style="background: white"
+            />
           </CCol>
         </CRow>
 

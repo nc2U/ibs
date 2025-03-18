@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
-import type { AFile, Link, PatchDocs } from '@/store/types/docs'
+import type { AFile, Docs, Link, PatchDocs } from '@/store/types/docs'
 import DocsList from './components/DocsList.vue'
 import DocsView from './components/DocsView.vue'
 import DocsForm from './components/DocsForm.vue'
@@ -35,12 +35,12 @@ const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
 const codeCategoryList = computed(() => workStore.codeCategoryList)
 const fetchCodeCategoryList = () => workStore.fetchCodeCategoryList()
-const fetchAllIssueProjectList = (
-  com: '' | number = '',
-  sort: '1' | '2' | '3' = '2',
-  p_isnull: '' | '1' = '1',
-  status: '1' | '9' = '1',
-) => workStore.fetchAllIssueProjectList(com, sort, p_isnull, status)
+// const fetchAllIssueProjectList = (
+//   com: '' | number = '',
+//   sort: '1' | '2' | '3' = '2',
+//   p_isnull: '' | '1' = '1',
+//   status: '1' | '9' = '1',
+// ) => workStore.fetchAllIssueProjectList(com, sort, p_isnull, status)
 
 const docStore = useDocs()
 const docs = computed(() => docStore.docs)
@@ -86,30 +86,41 @@ const pageSelect = (page: number) => {
   fetchDocsList(docsFilter.value)
 }
 
-const dataSetup = async (pk: number | '', docsId?: string | string[]) => {
+const dataSetup = async (docId?: string | string[]) => {
   if (route.params.projId) {
     const projId = route.params.projId as string
     await workStore.fetchIssueProject(projId)
   }
+
   docsFilter.value.issue_project = issueProject.value?.pk
-  await fetchAllIssueProjectList(pk, '2', '')
+  // await fetchAllIssueProjectList(pk, '2', '')
   await fetchDocTypeList()
   await fetchCodeCategoryList()
   await fetchCategoryList(typeNumber.value)
   await fetchDocsList(docsFilter.value)
-  if (docsId) await fetchDocs(Number(docsId))
+  if (docId) await fetchDocs(Number(docId))
 }
 
-onBeforeRouteUpdate(to => dataSetup('', to.params?.docsId))
+onBeforeRouteUpdate(to => dataSetup(to.params?.docId))
 
 onBeforeMount(async () => {
   emit('aside-visible', true)
-  await dataSetup('', route.params?.docsId)
+  await dataSetup(route.params?.docId)
 })
 </script>
 
 <template>
-  <template v-if="route.name !== '(문서) - 보기'">
+  <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" />
+
+  <DocsForm
+    v-else-if="route.name === '(문서) - 편집'"
+    :project-sort="issueProject?.sort"
+    :type-number="typeNumber"
+    :categories="categories"
+    :docs="docs as Docs"
+  />
+
+  <template v-else>
     <CRow class="py-2">
       <CCol>
         <h5>문서</h5>
@@ -143,7 +154,6 @@ onBeforeMount(async () => {
     />
 
     <DocsList
-      v-else
       :category="docsFilter.category as number"
       :category-list="categoryList"
       :docs-list="docsList"
@@ -151,6 +161,4 @@ onBeforeMount(async () => {
       @page-select="pageSelect"
     />
   </template>
-
-  <DocsView v-else :docs="docs as Document" />
 </template>
