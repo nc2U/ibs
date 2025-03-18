@@ -14,7 +14,7 @@ const refConfirmModal = ref()
 const titleEdit = ref(false)
 const scrapeTitle = ref('')
 
-const viewRoute = computed(() => props.scrape?.post.board_name)
+const viewRoute = computed(() => props.scrape?.post?.board_name)
 
 const patchTitle = () => {
   emit('patch-title', props.scrape.pk, scrapeTitle.value)

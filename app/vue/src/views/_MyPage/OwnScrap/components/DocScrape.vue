@@ -15,7 +15,7 @@ const titleEdit = ref(false)
 const scrapeTitle = ref('')
 
 const viewRoute = computed(() => {
-  if (!!props.scrape?.docs?.proj_sort === '1') {
+  if (props.scrape?.docs?.proj_sort === '1') {
     // 본사관리
     if (props.scrape?.docs?.doc_type === 1) return '본사 일반 문서'
     else if (props.scrape?.docs?.doc_type === 2) return '본사 소송 문서'
