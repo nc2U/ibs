@@ -7,7 +7,7 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ScrapeList from '@/views/_MyPage/OwnScrap/components/ScrapeList.vue'
 
 const mainViewName = ref('스크랩')
-const sort = ref<'docs' | 'board'>('docs')
+const sort = ref<'docs' | 'post'>('docs')
 const page = ref<number>(1)
 
 const accStore = useAccount()
@@ -47,7 +47,6 @@ onBeforeMount(() => {
 
   <ContentBody>
     <CCardBody class="pb-5">
-      {{ sort }}
       <div class="pt-3">
         <CRow class="pb-2">
           <CCol sm="12" lg="9" xl="6">
@@ -67,10 +66,11 @@ onBeforeMount(() => {
                   label="문서"
                 />
               </CCol>
+
               <CCol class="d-grid gap-2 pl-0">
                 <CFormCheck
                   v-model="sort"
-                  value="board"
+                  value="post"
                   :button="{ color: 'success', variant: 'outline', shape: 'rounded-0' }"
                   type="radio"
                   name="options-outlined"
@@ -94,16 +94,18 @@ onBeforeMount(() => {
           @page-select="pageSelect"
         />
 
-        <ScrapeList
-          v-else
-          :scrape-list="scrapeList"
-          :scrape-count="scrapeCount"
-          :view-route="mainViewName"
-          :page="page"
-          @patch-title="patchTitle"
-          @del-scrape="delScrape"
-          @page-select="pageSelect"
-        />
+        <div v-else>구현중..</div>
+
+        <!--        <ScrapeList-->
+        <!--          v-else-->
+        <!--          :scrape-list="scrapeList"-->
+        <!--          :scrape-count="scrapeCount"-->
+        <!--          :view-route="mainViewName"-->
+        <!--          :page="page"-->
+        <!--          @patch-title="patchTitle"-->
+        <!--          @del-scrape="delScrape"-->
+        <!--          @page-select="pageSelect"-->
+        <!--        />-->
       </div>
     </CCardBody>
   </ContentBody>

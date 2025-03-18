@@ -5,7 +5,6 @@ import { cutString, timeFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
-  sort: { type: String as PropType<'docs' | 'board'>, default: 'docs' },
   scrape: { type: Object as PropType<S>, default: null },
 })
 
@@ -15,29 +14,7 @@ const refConfirmModal = ref()
 const titleEdit = ref(false)
 const scrapeTitle = ref('')
 
-const viewRoute = computed(() => {
-  if (props.sort === 'docs') {
-    if (!!props.scrape?.docs?.proj_sort === '1') {
-      // 본사관리
-      if (props.scrape?.docs?.doc_type === 1) return '본사 일반 문서'
-      else if (props.scrape?.docs?.doc_type === 2) return '본사 소송 문서'
-    } else if (props.scrape.docs?.proj_sort === '2') {
-      // 부동산개발 프로젝트
-      if (props.scrape.docs?.doc_type === 1) return '현장 일반 문서'
-      else if (props.scrape.docs?.doc_type === 2) return '현장 소송 문서'
-    }
-  } else if (props.sort === 'board') {
-    // if (props.scrape?.docs?.board === 1) return '공지 사항'
-    // if (!!props.scrape?.docs?.project) {
-    //   if (props.scrape.docs.board === 2) return '현장 일반 문서'
-    //   else if (props.scrape.docs.board === 3) return '현장 소송 문서'
-    // } else {
-    //   if (props.scrape?.docs?.board === 2) return '본사 일반 문서'
-    //   else if (props.scrape?.docs?.board === 3) return '본사 소송 문서'
-    // }
-    return '공지 사항'
-  }
-})
+const viewRoute = computed(() => '공지 사항')
 
 const patchTitle = () => {
   emit('patch-title', props.scrape.pk, scrapeTitle.value)
@@ -57,13 +34,13 @@ onBeforeMount(() => {
   <CTableRow v-if="scrape" class="text-center">
     <CTableDataCell>{{ scrape.docs?.pk }}</CTableDataCell>
     <CTableDataCell>
-      <router-link :to="{ name: viewRoute }">{{ scrape.docs?.board_name }}</router-link>
+      <router-link :to="{ name: viewRoute }">{{ viewRoute }}</router-link>
     </CTableDataCell>
     <CTableDataCell class="text-left">
       <span v-if="!titleEdit">
-        <router-link :to="{ name: `${viewRoute} - 보기`, params: { docsId: scrape.docs?.pk } }">
-          {{ cutString(scrape.title || scrape.docs?.title, 50) }}
-        </router-link>
+        <!--        <router-link :to="{ name: `${viewRoute} - 보기`, params: { docsId: scrape.docs?.pk } }">-->
+        <!--          {{ cutString(scrape.title || scrape.docs?.title, 50) }}-->
+        <!--        </router-link>-->
       </span>
       <span v-else>
         <CInputGroup>

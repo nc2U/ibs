@@ -4,7 +4,8 @@ import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 import { useAccount } from '@/store/pinia/account'
 import type { Scrape as S } from '@/store/types/accounts'
-import Scrape from './Scrape.vue'
+import DocScrape from './DocScrape.vue'
+import PostScrape from './PostScrape.vue'
 import Pagination from '@/components/Pagination'
 
 defineProps({
@@ -51,8 +52,8 @@ const delScrape = (pk: number) => emit('del-scrape', pk)
       </CTableRow>
     </CTableHead>
 
-    <CTableBody>
-      <Scrape
+    <CTableBody v-if="sort === 'docs'">
+      <DocScrape
         v-for="scrape in scrapeList"
         :key="scrape.pk"
         :sort="sort"
@@ -62,6 +63,18 @@ const delScrape = (pk: number) => emit('del-scrape', pk)
         @del-scrape="delScrape"
       />
     </CTableBody>
+
+    <!--    <CTableBody v-if="sort === 'post'">-->
+    <!--      <PostScrape-->
+    <!--        v-for="scrape in scrapeList"-->
+    <!--        :key="scrape.pk"-->
+    <!--        :sort="sort"-->
+    <!--        :scrape="scrape"-->
+    <!--        :view-route="viewRoute"-->
+    <!--        @patch-title="patchTitle"-->
+    <!--        @del-scrape="delScrape"-->
+    <!--      />-->
+    <!--    </CTableBody>-->
   </CTable>
 
   <CRow class="flex-lg-row flex-column-reverse">

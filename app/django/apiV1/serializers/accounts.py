@@ -182,7 +182,7 @@ class PostInScrapeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('pk', 'board', 'board_name', 'project', 'title')
+        fields = ('pk', 'board', 'board_name', 'title')
 
 
 class PostScrapeSerializer(serializers.ModelSerializer):
