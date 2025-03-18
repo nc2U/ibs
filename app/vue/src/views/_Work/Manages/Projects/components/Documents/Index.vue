@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
-import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
+import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Docs, Link, PatchDocs } from '@/store/types/docs'
+import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
 import DocsView from './components/DocsView.vue'
 import DocsForm from './components/DocsForm.vue'
-import AddNewDoc from '@/views/_Work/Manages/Projects/components/Documents/components/AddNewDoc.vue'
 
 const emit = defineEmits(['aside-visible'])
 
