@@ -18,7 +18,6 @@ defineProps({
 const emit = defineEmits(['page-select', 'select-cate'])
 
 const docsStore = useDocs()
-const docsCount = computed(() => docsStore.docsCount)
 const docsPages = (num: number) => docsStore.docsPages(num)
 const pageSelect = (page: number) => emit('page-select', page)
 
@@ -40,7 +39,6 @@ const selectCate = (cate: number) => emit('select-cate', cate)
   </CRow>
 
   <Pagination
-    v-if="docsCount > limit"
     :active-page="page"
     :pages="docsPages(limit)"
     class="mt-3"

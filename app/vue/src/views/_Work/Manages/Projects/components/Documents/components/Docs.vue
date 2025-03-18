@@ -17,7 +17,7 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
   <v-divider />
   <CRow class="mb-2">
     <CCol class="text-body">
-      <div v-html="sanitizeHtml(cutString(docs.content, 100) || '-기재 사항 없음-')" />
+      <div v-html="sanitizeHtml(cutString(docs.content, 80) || '-기재 사항 없음-')" />
     </CCol>
   </CRow>
 </template>
