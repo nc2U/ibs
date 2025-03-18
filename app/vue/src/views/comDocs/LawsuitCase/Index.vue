@@ -66,7 +66,7 @@ const listFiltering = (payload: cFilter) => {
 
 const pageSelect = (page: number) => {
   caseFilter.value.page = page
-  listFiltering(caseFilter.value)
+  fetchSuitCaseList(caseFilter.value)
 }
 
 const accStore = useAccount()

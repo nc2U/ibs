@@ -49,12 +49,12 @@ const listFiltering = (payload: DocsFilter) => {
 const selectCate = (cate: number) => {
   docsFilter.value.page = 1
   docsFilter.value.category = cate
-  listFiltering(docsFilter.value)
+  fetchDocsList(docsFilter.value)
 }
 
 const pageSelect = (page: number) => {
   docsFilter.value.page = page
-  listFiltering(docsFilter.value)
+  fetchDocsList(docsFilter.value)
 }
 
 const projStore = useProject()

@@ -56,6 +56,7 @@ const listFiltering = (payload: DocsFilter) => {
   } else {
     docsFilter.value.issue_project = payload.issue_project
     docsFilter.value.is_real_dev = ''
+    console.log(payload.issue_project)
     formTitle.value = getAllProjects.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
@@ -68,12 +69,12 @@ const listFiltering = (payload: DocsFilter) => {
 const selectCate = (cate: number) => {
   docsFilter.value.page = 1
   docsFilter.value.category = cate
-  listFiltering(docsFilter.value)
+  fetchDocsList(docsFilter.value)
 }
 
 const pageSelect = (page: number) => {
   docsFilter.value.page = page
-  listFiltering(docsFilter.value)
+  fetchDocsList(docsFilter.value)
 }
 
 const comStore = useCompany()
