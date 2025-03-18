@@ -150,7 +150,7 @@ class DocsInScrapeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'doc_type', 'type_name', 'project', 'title')
+        fields = ('pk', 'doc_type', 'type_name', 'issue_project', 'title')
 
     @staticmethod
     def get_type_name(obj):
