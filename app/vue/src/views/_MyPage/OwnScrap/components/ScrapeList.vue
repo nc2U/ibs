@@ -8,6 +8,7 @@ import Scrape from './Scrape.vue'
 import Pagination from '@/components/Pagination'
 
 defineProps({
+  sort: { type: String as PropType<'docs' | 'board'>, default: 'docs' },
   scrapeList: { type: Array as PropType<S[]>, default: () => [] },
   scrapeCount: { type: Number, default: 0 },
   viewRoute: { type: String, required: true },
@@ -54,6 +55,7 @@ const delScrape = (pk: number) => emit('del-scrape', pk)
       <Scrape
         v-for="scrape in scrapeList"
         :key="scrape.pk"
+        :sort="sort"
         :scrape="scrape"
         :view-route="viewRoute"
         @patch-title="patchTitle"

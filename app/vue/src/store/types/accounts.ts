@@ -67,7 +67,8 @@ export interface Scrape {
     pk: number
     doc_type: number
     type_name: string
-    project: number | null
+    issue_project: number | null
+    proj_sort: '1' | '2' | '3'
     title: string
   }
   post?: Post

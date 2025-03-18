@@ -84,9 +84,10 @@ onBeforeMount(() => {
 
         <ScrapeList
           v-if="sort === 'docs'"
+          :sort="sort"
           :scrape-list="docScrapeList"
           :scrape-count="docScrapeCount"
-          :view-route="'문서 스크렙'"
+          :view-route="mainViewName"
           :page="page"
           @patch-title="patchTitle"
           @del-scrape="delScrape"
@@ -97,7 +98,7 @@ onBeforeMount(() => {
           v-else
           :scrape-list="scrapeList"
           :scrape-count="scrapeCount"
-          :view-route="'게시글 스크랩'"
+          :view-route="mainViewName"
           :page="page"
           @patch-title="patchTitle"
           @del-scrape="delScrape"
