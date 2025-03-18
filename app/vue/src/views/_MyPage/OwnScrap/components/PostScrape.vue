@@ -14,7 +14,7 @@ const refConfirmModal = ref()
 const titleEdit = ref(false)
 const scrapeTitle = ref('')
 
-const viewRoute = computed(() => '공지 사항')
+const viewRoute = computed(() => props.scrape?.post.board_name)
 
 const patchTitle = () => {
   emit('patch-title', props.scrape.pk, scrapeTitle.value)
@@ -32,15 +32,15 @@ onBeforeMount(() => {
 
 <template>
   <CTableRow v-if="scrape" class="text-center">
-    <CTableDataCell>{{ scrape.docs?.pk }}</CTableDataCell>
+    <CTableDataCell>{{ scrape.post?.pk }}</CTableDataCell>
     <CTableDataCell>
       <router-link :to="{ name: viewRoute }">{{ viewRoute }}</router-link>
     </CTableDataCell>
     <CTableDataCell class="text-left">
       <span v-if="!titleEdit">
-        <!--        <router-link :to="{ name: `${viewRoute} - 보기`, params: { docsId: scrape.docs?.pk } }">-->
-        <!--          {{ cutString(scrape.title || scrape.docs?.title, 50) }}-->
-        <!--        </router-link>-->
+        <router-link :to="{ name: `${viewRoute} - 보기`, params: { postId: scrape.post?.pk } }">
+          {{ cutString(scrape.title || scrape.post?.title, 50) }}
+        </router-link>
       </span>
       <span v-else>
         <CInputGroup>

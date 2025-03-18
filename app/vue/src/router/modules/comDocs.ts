@@ -42,29 +42,6 @@ const comDocs = {
       ],
     },
     {
-      path: 'official/letters',
-      name: '본사 공문 발송',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/comDocs/OfficialLetter/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '본사 공문 발송', auth: true },
-      children: [
-        {
-          path: ':letterId(\\d+)',
-          name: '본사 공문 발송 - 보기',
-        },
-        {
-          path: ':letterId(\\d+)/update',
-          name: '본사 공문 발송 - 수정',
-        },
-        {
-          path: 'create',
-          name: '본사 공문 발송 - 작성',
-        },
-      ],
-    },
-    {
       path: 'lawsuit/docs',
       name: '본사 소송 문서',
       component: () =>
@@ -107,6 +84,29 @@ const comDocs = {
         {
           path: 'create',
           name: '본사 소송 사건 - 작성',
+        },
+      ],
+    },
+    {
+      path: 'official/letters',
+      name: '본사 공문 발송',
+      component: () =>
+        pageViewAuth.value
+          ? import('@/views/comDocs/OfficialLetter/Index.vue')
+          : import('@/views/_Accounts/NoAuth.vue'),
+      meta: { title: '본사 공문 발송', auth: true },
+      children: [
+        {
+          path: ':letterId(\\d+)',
+          name: '본사 공문 발송 - 보기',
+        },
+        {
+          path: ':letterId(\\d+)/update',
+          name: '본사 공문 발송 - 수정',
+        },
+        {
+          path: 'create',
+          name: '본사 공문 발송 - 작성',
         },
       ],
     },

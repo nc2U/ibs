@@ -4,7 +4,8 @@ import { navMenu, pageTitle } from '@/views/_MyPage/_menu/headermixin'
 import { useAccount } from '@/store/pinia/account'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
-import ScrapeList from '@/views/_MyPage/OwnScrap/components/ScrapeList.vue'
+import DocScrapeList from './components/DocScrapeList.vue'
+import PostScrapeList from './components/PostScrapeList.vue'
 
 const mainViewName = ref('스크랩')
 const sort = ref<'docs' | 'post'>('docs')
@@ -82,7 +83,7 @@ onBeforeMount(() => {
           </CCol>
         </CRow>
 
-        <ScrapeList
+        <DocScrapeList
           v-if="sort === 'docs'"
           :sort="sort"
           :scrape-list="docScrapeList"
@@ -94,18 +95,16 @@ onBeforeMount(() => {
           @page-select="pageSelect"
         />
 
-        <div v-else>구현중..</div>
-
-        <!--        <ScrapeList-->
-        <!--          v-else-->
-        <!--          :scrape-list="scrapeList"-->
-        <!--          :scrape-count="scrapeCount"-->
-        <!--          :view-route="mainViewName"-->
-        <!--          :page="page"-->
-        <!--          @patch-title="patchTitle"-->
-        <!--          @del-scrape="delScrape"-->
-        <!--          @page-select="pageSelect"-->
-        <!--        />-->
+        <PostScrapeList
+          v-else
+          :scrape-list="scrapeList"
+          :scrape-count="scrapeCount"
+          :view-route="mainViewName"
+          :page="page"
+          @patch-title="patchTitle"
+          @del-scrape="delScrape"
+          @page-select="pageSelect"
+        />
       </div>
     </CCardBody>
   </ContentBody>
