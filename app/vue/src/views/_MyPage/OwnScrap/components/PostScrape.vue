@@ -33,9 +33,11 @@ onBeforeMount(() => {
 <template>
   <CTableRow v-if="scrape" class="text-center">
     <CTableDataCell>{{ scrape.post?.pk }}</CTableDataCell>
+
     <CTableDataCell>
       <router-link :to="{ name: viewRoute }">{{ viewRoute }}</router-link>
     </CTableDataCell>
+
     <CTableDataCell class="text-left">
       <span v-if="!titleEdit">
         <router-link :to="{ name: `${viewRoute} - 보기`, params: { postId: scrape.post?.pk } }">
@@ -57,7 +59,9 @@ onBeforeMount(() => {
         </CInputGroup>
       </span>
     </CTableDataCell>
+
     <CTableDataCell>{{ timeFormat(scrape.created ?? '') }}</CTableDataCell>
+
     <CTableDataCell>
       <v-btn
         @click="titleEdit = !titleEdit"
@@ -68,6 +72,7 @@ onBeforeMount(() => {
         color="success"
       />
     </CTableDataCell>
+
     <CTableDataCell>
       <v-btn
         @click="delScrape"
