@@ -70,8 +70,14 @@ onMounted(() => {
       <CCol><h5>파일</h5></CCol>
     </CRow>
 
+    <CRow class="mb-2">
+      <CCol>
+        <v-icon icon="md-clipboard" color="warning" size="sm" />
+      </CCol>
+    </CRow>
+
     <CRow>
-      <CCol>ㅁㄴㅇㅁㄴㅇㄹㅁㄴㅇㄹ</CCol>
+      <CCol>파일추가</CCol>
     </CRow>
 
     <CRow class="mt-5">

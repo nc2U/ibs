@@ -7,8 +7,8 @@ import type { CodeValue } from '@/store/types/work'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
-import FileForms from '@/components/Documents/components/FileForms.vue'
-import LinkForms from '@/components/Documents/components/LinkForms.vue'
+import FileForms from '@/components/OtherParts/FileForms.vue'
+import LinkForms from '@/components/OtherParts/LinkForms.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
