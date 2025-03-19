@@ -5,6 +5,8 @@ import { useDocs } from '@/store/pinia/docs'
 import { useRoute, useRouter } from 'vue-router'
 import { timeFormat } from '@/utils/baseMixins'
 import sanitizeHtml from 'sanitize-html'
+import PostedFile from '@/components/OtherParts/PostedFile.vue'
+import PostedLink from '@/components/OtherParts/PostedLink.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, required: true },
@@ -66,18 +68,48 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <CRow>
-      <CCol><h5>파일</h5></CCol>
-    </CRow>
-
-    <CRow class="mb-2">
+    <CRow class="mb-5">
       <CCol>
-        <v-icon icon="md-clipboard" color="warning" size="sm" />
+        <CRow>
+          <CCol><h5>링크</h5></CCol>
+        </CRow>
+
+        <CRow class="mb-2">
+          <CCol>
+            <PostedLink />
+          </CCol>
+        </CRow>
+
+        <CRow>
+          <CCol>
+            <router-link to="#" @click.prevent="1">링크추가</router-link>
+          </CCol>
+        </CRow>
       </CCol>
     </CRow>
 
     <CRow>
-      <CCol>파일추가</CCol>
+      <CCol>
+        <CRow>
+          <CCol><h5>파일</h5></CCol>
+        </CRow>
+
+        <CRow class="mb-2">
+          <CCol>
+            <table>
+              <tr v-for="i in 3" :key="i">
+                <PostedFile :file="{}" />
+              </tr>
+            </table>
+          </CCol>
+        </CRow>
+
+        <CRow>
+          <CCol>
+            <router-link to="#" @click.prevent="1">파일추가</router-link>
+          </CCol>
+        </CRow>
+      </CCol>
     </CRow>
 
     <CRow class="mt-5">
