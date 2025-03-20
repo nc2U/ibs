@@ -117,9 +117,12 @@ class LinksInDocumentSerializer(serializers.ModelSerializer):
 
 
 class FilesInDocumentSerializer(serializers.ModelSerializer):
+    # user = serializers.SlugRelatedField(field_name='username', read_only=True)
+
     class Meta:
         model = File
-        fields = ('pk', 'docs', 'file', 'hit')
+        fields = ('pk', 'docs', 'file_name', 'file', 'file_type',
+                  'file_size', 'description', 'user', 'hit', 'created')
 
 
 class DocumentSerializer(serializers.ModelSerializer):

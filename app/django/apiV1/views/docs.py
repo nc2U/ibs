@@ -150,6 +150,9 @@ class FileViewSet(viewsets.ModelViewSet):
     serializer_class = FileSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
 
 class ImageViewSet(viewsets.ModelViewSet):
     queryset = Image.objects.all()
