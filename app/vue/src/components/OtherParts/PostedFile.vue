@@ -29,7 +29,7 @@ const delFileSubmit = () => {
   <td>
     <v-icon icon="mdi-paperclip" size="sm" class="mr-2" />
     <a :href="file.file" target="_blank"> {{ cutString(file.file_name, 60) }} </a>
-    <span class="ml-1">({{ humanizeFileSize(file.file_size) }})</span>
+    <span class="ml-1">({{ humanizeFileSize(file.file_size as number) }})</span>
     <span class="mx-2">
       <a :href="file.file" target="_blank">
         <v-icon icon="mdi-download" size="20" color="secondary" />
@@ -39,7 +39,7 @@ const delFileSubmit = () => {
   </td>
   <td class="px-2">{{ file.description }}</td>
   <td class="text-secondary">
-    <span>{{ file.user }}, {{ timeFormat(file.created, false, '/') }}</span>
+    <span>{{ file.user }}, {{ timeFormat(file.created as string, false, '/') }}</span>
     <span class="ml-2">
       <router-link to="">
         <v-icon
