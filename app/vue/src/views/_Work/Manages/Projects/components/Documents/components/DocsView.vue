@@ -20,6 +20,9 @@ const [route, router] = [useRoute(), useRouter()]
 
 const docId = computed(() => Number(route.params.docId))
 
+// file 관련 코드
+const fileDelete = (payload: FormData) => alert('준비중입니다!') // del_file 전달 파일 삭제 patch 실행
+
 onBeforeMount(() => {
   if (docId.value) {
     docStore.fetchDocs(docId.value)
@@ -68,25 +71,25 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <CRow class="mb-5">
-      <CCol>
-        <CRow>
-          <CCol><h5>링크</h5></CCol>
-        </CRow>
+    <!--    <CRow class="mb-5">-->
+    <!--      <CCol>-->
+    <!--        <CRow>-->
+    <!--          <CCol><h5>링크</h5></CCol>-->
+    <!--        </CRow>-->
 
-        <CRow class="mb-2">
-          <CCol>
-            <PostedLink />
-          </CCol>
-        </CRow>
+    <!--        <CRow class="mb-2">-->
+    <!--          <CCol>-->
+    <!--            <PostedLink />-->
+    <!--          </CCol>-->
+    <!--        </CRow>-->
 
-        <CRow>
-          <CCol>
-            <router-link to="#" @click.prevent="1">링크추가</router-link>
-          </CCol>
-        </CRow>
-      </CCol>
-    </CRow>
+    <!--        <CRow>-->
+    <!--          <CCol>-->
+    <!--            <router-link to="#" @click.prevent="1">링크추가</router-link>-->
+    <!--          </CCol>-->
+    <!--        </CRow>-->
+    <!--      </CCol>-->
+    <!--    </CRow>-->
 
     <CRow>
       <CCol>
@@ -97,18 +100,18 @@ onMounted(() => {
         <CRow class="mb-2">
           <CCol>
             <table>
-              <tr v-for="i in 3" :key="i">
-                <PostedFile :file="{}" />
+              <tr v-for="file in docs.files" :key="file.pk as number">
+                <PostedFile :file="file" @file-delete="fileDelete" />
               </tr>
             </table>
           </CCol>
         </CRow>
 
-        <CRow>
-          <CCol>
-            <router-link to="#" @click.prevent="1">파일추가</router-link>
-          </CCol>
-        </CRow>
+        <!--        <CRow>-->
+        <!--          <CCol>-->
+        <!--            <router-link to="#" @click.prevent="1">파일추가</router-link>-->
+        <!--          </CCol>-->
+        <!--        </CRow>-->
       </CCol>
     </CRow>
 

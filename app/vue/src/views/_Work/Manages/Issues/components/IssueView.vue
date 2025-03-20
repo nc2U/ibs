@@ -19,9 +19,7 @@ import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueFiles from './issueFiles/Index.vue'
 import SubIssues from './subIssues/Index.vue'
 import SubSummary from './subIssues/Summary.vue'
-import Relations from './relations/Index.vue'
 import RelSummary from './relations/Summary.vue'
-import AddRelationForm from './relations/AddRelationForm.vue'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },

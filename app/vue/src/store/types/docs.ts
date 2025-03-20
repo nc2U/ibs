@@ -116,8 +116,14 @@ export interface AFile {
   pk: null | number
   docs?: number
   file?: string
+  file_name?: string
+  file_type?: string
+  file_size?: number
+  description?: string
+  created?: string
+  user?: string
+  hit?: number
   newFile?: Blob
-  hit: number
   del?: boolean
   edit?: boolean
 }
