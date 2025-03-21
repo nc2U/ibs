@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onMounted, type PropType } from 'vue'
+import { computed, onBeforeMount, onMounted, type PropType, ref } from 'vue'
 import type { Docs } from '@/store/types/docs'
 import { useDocs } from '@/store/pinia/docs'
 import { useRoute, useRouter } from 'vue-router'
@@ -14,6 +14,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['docs-hit'])
+
+const addFileForm = ref(false)
 
 const docStore = useDocs()
 const [route, router] = [useRoute(), useRouter()]
@@ -38,7 +40,7 @@ onMounted(() => {
 
 <template>
   <div v-if="docs">
-    <CRow class="py-2">
+    <CRow class="pt-3">
       <CCol>
         <h5>{{ docs.title }}</h5>
       </CCol>
@@ -56,14 +58,17 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <CRow class="mb-5">
+    <v-divider class="mb-2" />
+
+    <CRow class="mb-5 text-grey">
       <CCol>
-        {{ docs.proj_name }} / {{ docs.cate_name }} ({{
+        {{ docs.proj_name }} ➤ {{ docs.cate_name }} ➤ ({{
           timeFormat(docs.created as string, true, '/')
         }})
       </CCol>
-      <CCol></CCol>
     </CRow>
+
+    <!--    <v-divider class="mb-5" />-->
 
     <CRow class="mb-5">
       <CCol>
@@ -97,7 +102,7 @@ onMounted(() => {
           <CCol><h5>파일</h5></CCol>
         </CRow>
 
-        <CRow class="mb-2">
+        <CRow class="mb-3">
           <CCol>
             <table>
               <tr v-for="file in docs.files" :key="file.pk as number">
@@ -107,11 +112,23 @@ onMounted(() => {
           </CCol>
         </CRow>
 
-        <!--        <CRow>-->
-        <!--          <CCol>-->
-        <!--            <router-link to="#" @click.prevent="1">파일추가</router-link>-->
-        <!--          </CCol>-->
-        <!--        </CRow>-->
+        <CRow class="mb-3">
+          <CCol>
+            <router-link to="#" @click.prevent="addFileForm = !addFileForm">파일추가</router-link>
+          </CCol>
+        </CRow>
+
+        <CRow v-if="addFileForm" class="p-3 mb-3 bg-light">
+          <CCol>
+            <CFormInput type="file" />
+          </CCol>
+        </CRow>
+
+        <CRow v-if="addFileForm">
+          <CCol>
+            <CButton color="light" size="sm">추가</CButton>
+          </CCol>
+        </CRow>
       </CCol>
     </CRow>
 
