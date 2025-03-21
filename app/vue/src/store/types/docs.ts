@@ -139,8 +139,7 @@ export type Attatches = {
 
 export interface PatchDocs {
   pk: number
-  company?: number
-  project?: number
+  issue_project?: number
   doc_type?: number
   category?: number | null
   lawsuit?: number | null
@@ -148,9 +147,7 @@ export interface PatchDocs {
   execution_date?: string | null
   content?: string
   hit?: number
-  like?: number
-  scrape?: number
-  blame?: number
+  // scrape?: number
   is_secret?: boolean
   password?: string
   is_blind?: boolean

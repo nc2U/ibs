@@ -35,12 +35,6 @@ const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
 const codeCategoryList = computed(() => workStore.codeCategoryList)
 const fetchCodeCategoryList = () => workStore.fetchCodeCategoryList()
-// const fetchAllIssueProjectList = (
-//   com: '' | number = '',
-//   sort: '1' | '2' | '3' = '2',
-//   p_isnull: '' | '1' = '1',
-//   status: '1' | '9' = '1',
-// ) => workStore.fetchAllIssueProjectList(com, sort, p_isnull, status)
 
 const docStore = useDocs()
 const docs = computed(() => docStore.docs)
@@ -86,6 +80,17 @@ const pageSelect = (page: number) => {
   fetchDocsList(docsFilter.value)
 }
 
+const heatedPage = ref<number[]>([])
+
+const docsHit = async (pk: number) => {
+  if (!heatedPage.value.includes(pk)) {
+    heatedPage.value.push(pk)
+    await fetchDocs(pk)
+    const hit = (docs.value?.hit ?? 0) + 1
+    await patchDocs({ pk, hit, filter: docsFilter.value })
+  }
+}
+
 const dataSetup = async (docId?: string | string[]) => {
   if (route.params.projId) {
     const projId = route.params.projId as string
@@ -93,7 +98,6 @@ const dataSetup = async (docId?: string | string[]) => {
   }
 
   docsFilter.value.issue_project = issueProject.value?.pk
-  // await fetchAllIssueProjectList(pk, '2', '')
   await fetchDocTypeList()
   await fetchCodeCategoryList()
   await fetchCategoryList(typeNumber.value)
@@ -110,7 +114,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" />
+  <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />
 
   <DocsForm
     v-else-if="route.name === '(문서) - 편집'"

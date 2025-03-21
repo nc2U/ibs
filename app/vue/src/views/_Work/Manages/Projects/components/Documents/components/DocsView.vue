@@ -5,6 +5,7 @@ import { useDocs } from '@/store/pinia/docs'
 import { useRoute, useRouter } from 'vue-router'
 import { timeFormat } from '@/utils/baseMixins'
 import sanitizeHtml from 'sanitize-html'
+import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import PostedFile from '@/components/OtherParts/PostedFile.vue'
 import PostedLink from '@/components/OtherParts/PostedLink.vue'
 
@@ -58,9 +59,7 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <v-divider class="mb-2" />
-
-    <CRow class="mb-5 text-grey">
+    <CRow class="text-grey">
       <CCol>
         {{ docs.proj_name }} ➤ {{ docs.cate_name }} ➤ ({{
           timeFormat(docs.created as string, true, '/')
@@ -68,33 +67,15 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <!--    <v-divider class="mb-5" />-->
+    <v-divider />
+
+    <PostInfo :docs="docs" />
 
     <CRow class="mb-5">
       <CCol>
         <div v-html="sanitizeHtml(docs.content)" />
       </CCol>
     </CRow>
-
-    <!--    <CRow class="mb-5">-->
-    <!--      <CCol>-->
-    <!--        <CRow>-->
-    <!--          <CCol><h5>링크</h5></CCol>-->
-    <!--        </CRow>-->
-
-    <!--        <CRow class="mb-2">-->
-    <!--          <CCol>-->
-    <!--            <PostedLink />-->
-    <!--          </CCol>-->
-    <!--        </CRow>-->
-
-    <!--        <CRow>-->
-    <!--          <CCol>-->
-    <!--            <router-link to="#" @click.prevent="1">링크추가</router-link>-->
-    <!--          </CCol>-->
-    <!--        </CRow>-->
-    <!--      </CCol>-->
-    <!--    </CRow>-->
 
     <CRow>
       <CCol>
