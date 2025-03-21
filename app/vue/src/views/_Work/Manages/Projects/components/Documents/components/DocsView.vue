@@ -93,7 +93,7 @@ onMounted(() => {
           </CCol>
         </CRow>
 
-        <CRow class="mb-3">
+        <CRow class="mb-2">
           <CCol>
             <router-link to="#" @click.prevent="addFileForm = !addFileForm">파일추가</router-link>
           </CCol>
@@ -113,7 +113,9 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <CRow class="mt-5">
+    <v-divider />
+
+    <CRow class="mt-4">
       <CCol class="text-right">
         <CButton color="light" @click="router.replace({ name: '(문서)' })" size="sm">
           목록으로
