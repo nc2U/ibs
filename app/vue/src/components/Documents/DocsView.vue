@@ -7,13 +7,13 @@ import { cutString, timeFormat } from '@/utils/baseMixins'
 import { type Docs } from '@/store/types/docs'
 import type { User } from '@/store/types/accounts'
 import type { Company } from '@/store/types/settings'
-import { toPrint, docsManageItems, toDocsManage } from '@/utils/docsMixins'
+import { docsManageItems, toDocsManage } from '@/utils/docsMixins'
 import sanitizeHtml from 'sanitize-html'
+import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TypeListModal from '@/components/Documents/components/TypeListModal.vue'
 import CateListModal from '@/components/Documents/components/CateListModal.vue'
-import PostInfo from '@/components/OtherParts/PostInfo.vue'
 
 const props = defineProps({
   typeNum: { type: Number, default: 1 },
