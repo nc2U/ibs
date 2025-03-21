@@ -336,7 +336,6 @@ onUpdated(() => dataSetup())
                       변경 : &nbsp;
                       <CFormInput
                         :id="`docs-file-${file.pk}`"
-                        v-model="(form.files as AFile[])[i].newFile"
                         size="sm"
                         type="file"
                         @input="fileChange($event, file.pk as number)"

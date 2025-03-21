@@ -167,22 +167,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
       }
     })
 
-    // for (const key in getData) {
-    //   if (key === 'links' || key === 'files') {
-    //     ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
-    //   } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
-    //     if (key === 'cngFiles') {
-    //       getData[key]?.forEach(val => {
-    //         form.append('cngPks', val.pk as any)
-    //         form.append('cngFiles', val.file as Blob)
-    //       })
-    //     } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
-    //   } else {
-    //     const formValue = getData[key] === null ? '' : getData[key]
-    //     form.append(key, formValue as string)
-    //   }
-    // }
-
     if (pk) {
       await updateDocs({ pk, form })
       await router.replace({ name: `${mainViewName.value} - 보기`, params: { docsId: pk } })
