@@ -135,38 +135,57 @@ const docsScrape = (docs: number) => {
 
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
-    const { pk, ...getData } = payload
+    const { pk, ...rest } = payload
+    const getData: Record<string, any> = { ...rest }
+
     if (!payload.issue_project)
-      getData.issue_project = docsFilter.value.issue_project
-        ? (docsFilter.value.issue_project as number)
-        : (comStore.company?.com_issue_project as number)
+      getData.issue_project =
+        docsFilter.value.issue_project ?? (comStore.company?.com_issue_project as number) ?? null
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
     const form = new FormData()
 
-    for (const key in getData) {
-      if (key === 'links' || key === 'files') {
-        ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
-      } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
-        if (key === 'cngFiles') {
-          getData[key]?.forEach(val => {
-            form.append('cngPks', val.pk as any)
-            form.append('cngFiles', val.file as Blob)
+    Object.entries(getData).forEach(([key, value]) => {
+      switch (key) {
+        case 'links':
+        case 'files':
+          value.forEach((val: any) => form.append(key, JSON.stringify(val)))
+          break
+        case 'newLinks':
+        case 'newFiles':
+          value.forEach((val: string | Blob) => form.append(key, val))
+          break
+        case 'cngFiles':
+          value.forEach((val: { pk: number; file: Blob }) => {
+            form.append('cngPks', val.pk.toString())
+            form.append('cngFiles', val.file)
           })
-        } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
-      } else {
-        const formValue = getData[key] === null ? '' : getData[key]
-        form.append(key, formValue as string)
+          break
+        default:
+          form.append(key, value ?? '')
       }
-    }
+    })
+
+    // for (const key in getData) {
+    //   if (key === 'links' || key === 'files') {
+    //     ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
+    //   } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
+    //     if (key === 'cngFiles') {
+    //       getData[key]?.forEach(val => {
+    //         form.append('cngPks', val.pk as any)
+    //         form.append('cngFiles', val.file as Blob)
+    //       })
+    //     } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
+    //   } else {
+    //     const formValue = getData[key] === null ? '' : getData[key]
+    //     form.append(key, formValue as string)
+    //   }
+    // }
 
     if (pk) {
       await updateDocs({ pk, form })
-      await router.replace({
-        name: `${mainViewName.value} - 보기`,
-        params: { docsId: pk },
-      })
+      await router.replace({ name: `${mainViewName.value} - 보기`, params: { docsId: pk } })
     } else {
       await createDocs({ form })
       await router.replace({ name: `${mainViewName.value}` })

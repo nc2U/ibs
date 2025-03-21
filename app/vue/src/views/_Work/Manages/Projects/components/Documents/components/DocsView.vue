@@ -13,7 +13,7 @@ const props = defineProps({
   heatedPage: { type: Array as PropType<number[]>, default: () => [] },
 })
 
-const emit = defineEmits(['docs-hit'])
+const emit = defineEmits(['docs-hit', 'file-upload'])
 
 const addFileForm = ref(false)
 
@@ -28,6 +28,26 @@ const fileDelete = (payload: FormData) => alert('준비중입니다!') // del_fi
 const addFile = () => {
   alert('readying...')
   addFileForm.value = false
+}
+
+// const attach = ref(true)
+
+const file = ref<File | null>(null)
+
+const fileStore = (event: Event) => {
+  const el = event.target as HTMLInputElement
+  // attach.value = !el.value
+
+  if (el.files) {
+    const loadFile = el.files[0]
+    file.value = loadFile
+  }
+}
+
+const fileUpload = (event: Event) => {
+  addFileForm.value = false
+  const { pk, issue_project, doc_type, title } = props.docs
+  emit('file-upload', { pk, issue_project, doc_type, title, file: file.value })
 }
 
 onBeforeMount(() => {
@@ -101,13 +121,13 @@ onMounted(() => {
 
         <CRow v-if="addFileForm" class="p-3 mb-3 bg-light">
           <CCol>
-            <CFormInput type="file" size="sm" />
+            <CFormInput type="file" size="sm" @input="fileStore" />
           </CCol>
         </CRow>
 
         <CRow v-if="addFileForm">
           <CCol>
-            <CButton color="light" size="sm" @click="addFile">추가</CButton>
+            <CButton color="light" size="sm" @click="fileUpload">추가</CButton>
           </CCol>
         </CRow>
       </CCol>

@@ -4,28 +4,46 @@ import type { AFile } from '@/store/types/docs'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-defineProps({ file: { type: Object as PropType<AFile>, required: true } })
+const props = defineProps({ file: { type: Object as PropType<AFile>, required: true } })
 
-const emit = defineEmits(['file-delete'])
+const emit = defineEmits(['file-change', 'file-delete'])
 
 const RefDelFile = ref()
+const attach = ref(true)
 const isEdit = ref(false)
 
-const editFile = (pk: number) => {
-  alert(pk)
+const form = ref({
+  file: {
+    pk: null,
+    file: '',
+    file_name: '',
+    file_type: '',
+    description: '',
+    newFile: undefined,
+    del: false,
+    edit: false,
+  } as AFile,
+})
+
+const fileChange = (event: Event, pk: number) => {
+  form.value.file.del = false
+  form.value.file.edit = !form.value.file.edit
+
+  const el = event.target as HTMLInputElement
+  attach.value = !el.value
+
+  if (el.files) {
+    const file = el.files[0]
+    emit('file-change', { pk, file })
+  }
 }
 
-const delFile = ref<number | null>(null)
-const delFileConfirm = (pk: number) => {
-  delFile.value = pk
-  RefDelFile.value.callModal()
-}
+const delFileConfirm = () => RefDelFile.value.callModal()
 
-const delFileSubmit = () => {
+const fileDelete = () => {
   const form = new FormData()
-  form.append('del_file', JSON.stringify(delFile.value))
+  form.append('del_file', JSON.stringify(props.file.pk as number))
   emit('file-delete', form)
-  delFile.value = null
   RefDelFile.value.close()
 }
 </script>
@@ -52,7 +70,7 @@ const delFileSubmit = () => {
       </router-link>
     </span>
     <span class="ml-2">
-      <router-link to="#" @click.prevent="delFileConfirm(file.pk as number)">
+      <router-link to="#" @click.prevent="delFileConfirm()">
         <v-icon icon="mdi-trash-can-outline" size="16" color="secondary" class="mr-2" />
         <v-tooltip activator="parent" location="top">삭제</v-tooltip>
       </router-link>
@@ -60,7 +78,10 @@ const delFileSubmit = () => {
     <div>
       <CInputGroup v-if="isEdit" size="sm">
         <CFormInput type="file" :aria-describedby="`file-edit-${file.pk}`" />
-        <CInputGroupText :id="`file-edit-${file.pk}`" @click="editFile(file.pk as number)">
+        <CInputGroupText
+          :id="`file-edit-${file.pk}`"
+          @click="fileChange($event, file.pk as number)"
+        >
           추가
         </CInputGroupText>
       </CInputGroup>
@@ -70,7 +91,7 @@ const delFileSubmit = () => {
   <ConfirmModal ref="RefDelFile">
     <template #default>이 파일을 삭제 하시겠습니까?</template>
     <template #footer>
-      <CButton color="warning" @click="delFileSubmit">삭제</CButton>
+      <CButton color="warning" @click="fileDelete">삭제</CButton>
     </template>
   </ConfirmModal>
 </template>
