@@ -7,7 +7,7 @@ import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 const docStore = useDocs()
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
 
-const copyCreateDocs = (payload: { docs: number; doc_type: number; project: number | null }) =>
+const copyCreateDocs = (payload: { docs: number; doc_type: number; issue_project: number }) =>
   docStore.copyDocs(payload)
 const deleteDocs = (pk: number, filter: DocsFilter) => docStore.deleteDocs(pk, filter)
 
@@ -80,9 +80,9 @@ const toTrashCan = async (docs: number, state: boolean, filter: DocsFilter) => {
 }
 
 interface ManagePayload {
+  issue_project: number | undefined
   doc_type: number | undefined
   type_name: string | undefined
-  project: number | undefined
   category: number | undefined
   content: string
   docs: number
@@ -92,24 +92,25 @@ interface ManagePayload {
 }
 
 export const toDocsManage = (fn: number, payload: ManagePayload) => {
-  const { docs, doc_type, project, category, content, type_name, manager, state, filter } = payload
-  if (fn === 11) return copyDocs(docs, doc_type as number, project)
+  const { issue_project, docs, doc_type, category, content, type_name, manager, state, filter } =
+    payload
+  if (fn === 11) return copyDocs(issue_project as number, docs, doc_type as number)
   if (fn === 22)
-    return moveDocs(docs, doc_type as number, type_name, project, content, manager, filter)
+    return moveDocs(docs, doc_type as number, type_name, issue_project, content, manager, filter)
   if (fn === 33) return changeCate(docs, category, filter)
   if (fn === 4) return toSecretDocs(docs, state, filter)
   if (fn === 7) return toBlind(docs, state, filter)
   if (fn === 88) return toTrashCan(docs, state, filter)
 }
 
-const copyDocs = (docs: number, doc_type: number, project: number | undefined) =>
-  copyCreateDocs({ docs, doc_type, project: project ?? null })
+const copyDocs = (docs: number, doc_type: number, issue_project: number) =>
+  copyCreateDocs({ docs, doc_type, issue_project })
 
 const moveDocs = (
   docs: number,
   doc_type: number,
   type_name: string | undefined,
-  project: number | undefined,
+  issue_project: number | undefined,
   org_content: string,
   manager: string,
   filter: DocsFilter,
@@ -117,7 +118,7 @@ const moveDocs = (
   const content = `${org_content}<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
     new Date(),
   )} ${type_name} 에서 이동됨]</p>`
-  patchDocs({ pk: docs, doc_type, project, content, filter }).then(() =>
+  patchDocs({ pk: docs, doc_type, issue_project, content, filter }).then(() =>
     message('success', '', '게시물 이동이 완료되었습니다.'),
   )
 }

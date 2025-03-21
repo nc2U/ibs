@@ -138,7 +138,7 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
     const payload = {
       doc_type: el?.nType,
       type_name: props.docs.type_name,
-      project: el?.nProj,
+      issue_project: el?.nProj,
       category: el?.nCate,
       content: props.docs?.content ?? '',
       docs: docs as number,
