@@ -4,10 +4,9 @@ import type { Docs } from '@/store/types/docs'
 import { useDocs } from '@/store/pinia/docs'
 import { useRoute, useRouter } from 'vue-router'
 import { timeFormat } from '@/utils/baseMixins'
-import sanitizeHtml from 'sanitize-html'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
+import PostContent from '@/components/OtherParts/PostContent.vue'
 import PostedFile from '@/components/OtherParts/PostedFile.vue'
-import PostedLink from '@/components/OtherParts/PostedLink.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, required: true },
@@ -71,11 +70,7 @@ onMounted(() => {
 
     <PostInfo :docs="docs" />
 
-    <CRow class="mb-5">
-      <CCol>
-        <div v-html="sanitizeHtml(docs.content)" />
-      </CCol>
-    </CRow>
+    <PostContent :content="docs.content" />
 
     <CRow>
       <CCol>

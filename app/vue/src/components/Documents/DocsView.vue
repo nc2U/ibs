@@ -1,15 +1,15 @@
 <script lang="ts" setup>
 import type { ComputedRef, PropType } from 'vue'
-import { ref, computed, watch, inject, onBeforeMount, onMounted } from 'vue'
+import { computed, inject, onBeforeMount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
-import { cutString, timeFormat } from '@/utils/baseMixins'
+import { cutString } from '@/utils/baseMixins'
 import { type Docs } from '@/store/types/docs'
 import type { User } from '@/store/types/accounts'
 import type { Company } from '@/store/types/settings'
 import { docsManageItems, toDocsManage } from '@/utils/docsMixins'
-import sanitizeHtml from 'sanitize-html'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
+import PostContent from '@/components/OtherParts/PostContent.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TypeListModal from '@/components/Documents/components/TypeListModal.vue'
@@ -240,31 +240,6 @@ onMounted(() => {
 
     <PostInfo :docs="docs" />
 
-    <!--    <CRow class="text-blue-grey mb-5">-->
-    <!--      <CCol>-->
-    <!--        <small class="mr-3">작성자 : {{ docs.user?.username }}</small>-->
-    <!--        <small class="mr-2">-->
-    <!--          <v-icon icon="mdi-eye" size="sm" />-->
-    <!--          <span class="ml-1">{{ docs.hit }}</span>-->
-    <!--        </small>-->
-    <!--        <small class="mr-2">-->
-    <!--          <v-icon icon="mdi-heart" size="sm" />-->
-    <!--          <span class="ml-1">{{ docs.like }}</span>-->
-    <!--        </small>-->
-    <!--        <small class="mr-2 text-btn" @click="toPrint(docs.title)">-->
-    <!--          <v-icon icon="mdi-printer" size="sm" />-->
-    <!--          <span class="ml-1">프린트</span>-->
-    <!--        </small>-->
-    <!--      </CCol>-->
-
-    <!--      <CCol class="text-right" md="3">-->
-    <!--        <small>-->
-    <!--          <v-icon icon="mdi-calendar-clock" size="small" />-->
-    <!--          <span class="ml-2">{{ timeFormat(docs.created ?? '') }}</span>-->
-    <!--        </small>-->
-    <!--      </CCol>-->
-    <!--    </CRow>-->
-
     <CRow v-if="docs.is_secret">
       <CCol>
         <CAlert color="info">
@@ -353,11 +328,7 @@ onMounted(() => {
         </CCol>
       </CRow>
 
-      <CRow class="my-5 p-3" id="print-area">
-        <CCol class="pb-5">
-          <div v-html="sanitizeHtml(docs.content)" />
-        </CCol>
-      </CRow>
+      <PostContent :content="docs.content" />
     </div>
 
     <CRow class="my-3 px-3">
