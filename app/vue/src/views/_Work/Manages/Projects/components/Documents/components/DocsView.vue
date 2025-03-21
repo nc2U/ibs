@@ -25,6 +25,11 @@ const docId = computed(() => Number(route.params.docId))
 // file 관련 코드
 const fileDelete = (payload: FormData) => alert('준비중입니다!') // del_file 전달 파일 삭제 patch 실행
 
+const addFile = () => {
+  alert('readying...')
+  addFileForm.value = false
+}
+
 onBeforeMount(() => {
   if (docId.value) {
     docStore.fetchDocs(docId.value)
@@ -96,13 +101,13 @@ onMounted(() => {
 
         <CRow v-if="addFileForm" class="p-3 mb-3 bg-light">
           <CCol>
-            <CFormInput type="file" />
+            <CFormInput type="file" size="sm" />
           </CCol>
         </CRow>
 
         <CRow v-if="addFileForm">
           <CCol>
-            <CButton color="light" size="sm">추가</CButton>
+            <CButton color="light" size="sm" @click="addFile">추가</CButton>
           </CCol>
         </CRow>
       </CCol>
