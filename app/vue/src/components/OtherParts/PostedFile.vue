@@ -38,6 +38,11 @@ const newFile = ref<DFile>({
   file: null,
   description: '',
 })
+const newFormSet = () => {
+  addFileForm.value = !addFileForm.value
+  resetFile('new')
+}
+
 const fileUpload = (event: Event) => {
   descShow.value = false
   addFileForm.value = false
@@ -56,7 +61,6 @@ const editFile = ref<DFile>({
   file: null,
   description: '',
 })
-
 const resetFile = (mode: 'new' | 'edit' | undefined) => {
   if (mode !== 'new') addFileForm.value = false
   if (mode !== 'edit') isEditForm.value = null
@@ -66,18 +70,15 @@ const resetFile = (mode: 'new' | 'edit' | undefined) => {
   editFile.value.file = null
   editFile.value.description = ''
 }
-
 const editFormSet = (pk: number) => {
-  resetFile()
   editFile.value.pk = pk
   isEditForm.value = isEditForm.value === pk ? null : pk
+  resetFile('edit')
 }
-
 const editFileChange = (event: Event) => {
   const el = event.target as HTMLInputElement
   if (el.files) editFile.value.file = el.files[0] || null
 }
-
 const fileChange = (pk: number) => {
   isEditForm.value = null
   if (editFile.value.file || editFile.value.description) {
@@ -184,7 +185,7 @@ const fileDelete = () => {
 
   <CRow class="mb-2">
     <CCol>
-      <router-link to="#" @click.prevent="addFileForm = !addFileForm">파일추가</router-link>
+      <router-link to="#" @click.prevent="newFormSet">파일추가</router-link>
     </CCol>
   </CRow>
 
