@@ -149,6 +149,8 @@ class FileViewSet(viewsets.ModelViewSet):
     queryset = File.objects.all()
     serializer_class = FileSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    filterset_fields = ('docs',)
+    search_fields = ('file_name', 'description')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

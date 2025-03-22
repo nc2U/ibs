@@ -300,12 +300,14 @@ class LinkSerializer(serializers.ModelSerializer):
 
 
 class FileSerializer(serializers.ModelSerializer):
+    user = serializers.SlugField(field_name='username', read_only=True)
+
     class Meta:
         model = File
         fields = ('pk', 'docs', 'file', 'file_name', 'file_type',
                   'file_size', 'description', 'hit', 'user', 'created')
 
-    readonly_fields = ('file_name', 'file_type', 'file_size', 'hit', 'user', 'created')
+    readonly_fields = ('file_name', 'file_type', 'file_size', 'hit', 'created')
 
 
 class ImageSerializer(serializers.ModelSerializer):
