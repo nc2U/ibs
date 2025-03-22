@@ -73,7 +73,7 @@ onMounted(() => {
           <CCol><h5>파일</h5></CCol>
         </CRow>
 
-        <PostedFile :files="docs.files" />
+        <PostedFile :docs="docs.pk as number" :files="docs.files" />
       </CCol>
     </CRow>
 

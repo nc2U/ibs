@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
-import type { AFile, Docs, Link, PatchDocs } from '@/store/types/docs'
+import type { Docs, PatchDocs } from '@/store/types/docs'
 import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
 import DocsView from './components/DocsView.vue'
@@ -43,17 +43,15 @@ const categoryList = computed(() => docStore.categoryList)
 const getCategories = computed(() => docStore.getCategories)
 
 const fetchDocTypeList = () => docStore.fetchDocTypeList()
-const fetchLink = (pk: number) => docStore.fetchLink(pk)
-const fetchFile = (pk: number) => docStore.fetchFile(pk)
 const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 
-const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
-const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
+// const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
+// const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
-const patchLink = (payload: Link) => docStore.patchLink(payload)
-const patchFile = (payload: AFile) => docStore.patchFile(payload)
+// const patchLink = (payload: Link) => docStore.patchLink(payload)
+// const patchFile = (pk: number, payload: FormData) => docStore.patchFile(pk, payload)
 
 const categories = computed(() =>
   issueProject.value?.sort !== '3' ? getCategories.value : codeCategoryList.value,

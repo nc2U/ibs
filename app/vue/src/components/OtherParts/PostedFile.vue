@@ -2,13 +2,22 @@
 import { type PropType, ref } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { useDocs } from '@/store/pinia/docs'
-import type { AFile } from '@/store/types/docs'
+import type { AFile, DFile } from '@/store/types/docs'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-const props = defineProps({ files: { type: Object as PropType<AFile[]>, default: () => [] } })
+const props = defineProps({
+  docs: { type: Number, required: true },
+  files: { type: Object as PropType<AFile[]>, default: () => [] },
+})
 
 const emit = defineEmits(['file-change', 'file-delete'])
+
+const newFile = ref<DFile>({
+  docs: null,
+  file: null,
+  description: '',
+})
 
 const docStore = useDocs()
 
@@ -16,52 +25,32 @@ const RefDelFile = ref()
 const isEdit = ref(false)
 
 const addFileForm = ref(false)
-const newFile = ref<File | null>(null)
 const inputKey = ref(0)
 const descShow = ref(false)
-const description = ref('')
 
 const handleFileChange = (event: Event) => {
   descShow.value = true
-
   const el = event.target as HTMLInputElement
-  if (el.files) newFile.value = el.files[0] || null
+  if (el.files) newFile.value.file = el.files[0] || null
 }
 
 const clearFile = () => {
   inputKey.value += 1 // 키 변경으로 새 <input> 생성
-  newFile.value = null
-  description.value = ''
   descShow.value = false
+  newFile.value.file = null
+  newFile.value.description = ''
 }
 
 const fileUpload = (event: Event) => {
   descShow.value = false
   addFileForm.value = false
-  
-  // const { pk, issue_project, doc_type, title, file.description } = props.docs
-  // emit('file-upload', { pk, issue_project, doc_type, title, file: newFile.value })
-}
 
-// const fileUpload = (payload: {
-//   pk: number
-//   issue_project: number
-//   // doc_type: string
-//   title: string
-//   file: File
-//   description: string
-// }) => {
-//   // // const { pk, issue_project, doc_type, title, file } = payload
-//   // const { pk, issue_project, title, file, description } = payload
-//   //
-//   // const form = new FormData()
-//   // form.append('issue_project', issue_project.toString())
-//   // // form.append('doc_type', doc_type)
-//   // form.append('title', title)
-//   // form.append('newFiles', file)
-//   // form.append('newDescs', description)
-//   // updateDocs({ pk, form })
-// }
+  const formData = new FormData()
+  formData.append('docs', props.docs.toString())
+  formData.append('file', newFile.value.file as Blob)
+  formData.append('description', newFile.value.description)
+  docStore.createFile(formData)
+}
 
 const fileChange = (event: Event, pk: number) => {
   // form.value.file.del = false
@@ -149,7 +138,7 @@ const fileDelete = (payload: FormData) => alert('준비중입니다!') // del_fi
     </CCol>
     <CCol>
       <CInputGroup v-if="descShow" size="sm">
-        <CFormInput v-model="description" placeholder="부가적인 설명" />
+        <CFormInput v-model="newFile.description" placeholder="부가적인 설명" />
         <CInputGroupText>
           <v-icon icon="mdi-trash-can-outline" size="16" @click="clearFile" />
         </CInputGroupText>
