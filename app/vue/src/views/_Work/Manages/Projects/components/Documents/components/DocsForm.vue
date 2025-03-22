@@ -18,6 +18,7 @@ const props = defineProps({
 })
 
 const form = ref<Docs>({
+  pk: undefined,
   issue_project: null,
   doc_type: 1,
   category: null,
@@ -39,6 +40,7 @@ defineExpose({ setDocType })
 
 onBeforeMount(() => {
   if (props.docs) {
+    form.value.pk = props.docs.pk
     form.value.issue_project = props.docs.issue_project
     form.value.doc_type = props.docs.doc_type
     form.value.category = props.docs.category
