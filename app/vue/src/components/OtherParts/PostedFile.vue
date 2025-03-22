@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { onBeforeMount, type PropType, ref } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { useDocs } from '@/store/pinia/docs'
 import type { AFile, DFile } from '@/store/types/docs'
@@ -19,8 +19,6 @@ const docStore = useDocs()
 const addFileForm = ref(false)
 const inputKey = ref(0)
 const descShow = ref(false)
-
-const isEditForm = ref<number | null>(null)
 
 const handleFileChange = (event: Event) => {
   descShow.value = true
@@ -52,29 +50,39 @@ const fileUpload = (event: Event) => {
 }
 
 // 파일 변경 로직
+const isEditForm = ref<number | null>(null)
 const editFile = ref<DFile>({
+  pk: undefined,
   docs: null,
   file: null,
   description: '',
 })
 
 const resetFile = () => {
-  editFile.value.docs = null
+  editFile.value.pk = undefined
   editFile.value.file = null
   editFile.value.description = ''
 }
 
 const editFormSet = (pk: number) => {
   resetFile()
+  editFile.value.pk = pk
   isEditForm.value = null | (isEditForm.value !== pk) ? pk : null
 }
 
-const fileChange = (event: Event, pk: number) => {
+const editFileChange = (event: Event) => {
   const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('file-change', { pk, file })
-  }
+  if (el.files) editFile.value.file = el.files[0] || null
+}
+
+const fileChange = (pk: number) => {
+  isEditForm.value = null
+  const formData = new FormData()
+  formData.append('docs', props.docs.toString())
+  formData.append('file', editFile.value.file as Blob)
+  formData.append('description', editFile.value.description)
+  docStore.patchFile(pk, formData)
+  resetFile()
 }
 
 // 파일 삭제 로직
@@ -89,9 +97,12 @@ const fileDelete = () => {
   delFilePk.value = null
   RefDelFile.value.close()
 }
+
+onBeforeMount(() => (editFile.value.docs = props.docs as number))
 </script>
 
 <template>
+  {{ editFile }}
   <CRow class="mb-3">
     <CCol>
       <table>
@@ -129,11 +140,11 @@ const fileDelete = () => {
                     <CFormInput
                       type="file"
                       :aria-describedby="`file-edit-${file.pk}`"
-                      @input="fileChange($event, file.pk as number)"
+                      @input="editFileChange($event)"
                     />
                     <CInputGroupText
                       :id="`file-edit-${file.pk}`"
-                      @click="fileChange($event, file.pk as number)"
+                      @click="fileChange(file.pk as number)"
                     >
                       변경
                     </CInputGroupText>
