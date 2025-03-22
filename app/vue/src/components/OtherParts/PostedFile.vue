@@ -67,7 +67,7 @@ const resetFile = () => {
 const editFormSet = (pk: number) => {
   resetFile()
   editFile.value.pk = pk
-  isEditForm.value = null | (isEditForm.value !== pk) ? pk : null
+  isEditForm.value = isEditForm.value === pk ? null : pk
 }
 
 const editFileChange = (event: Event) => {
@@ -77,11 +77,13 @@ const editFileChange = (event: Event) => {
 
 const fileChange = (pk: number) => {
   isEditForm.value = null
-  const formData = new FormData()
-  formData.append('docs', props.docs.toString())
-  formData.append('file', editFile.value.file as Blob)
-  formData.append('description', editFile.value.description)
-  docStore.patchFile(pk, formData)
+  if (editFile.value.file) {
+    const formData = new FormData()
+    formData.append('docs', props.docs.toString())
+    formData.append('file', editFile.value.file as Blob)
+    formData.append('description', editFile.value.description)
+    docStore.patchFile(pk, formData)
+  }
   resetFile()
 }
 
@@ -93,9 +95,11 @@ const delFileConfirm = (pk: number) => {
   RefDelFile.value.callModal()
 }
 const fileDelete = () => {
-  docStore.deleteFile(delFilePk.value, props.docs as number)
-  delFilePk.value = null
-  RefDelFile.value.close()
+  if (delFilePk.value) {
+    docStore.deleteFile(delFilePk.value as number, props.docs as number)
+    delFilePk.value = null
+    RefDelFile.value.close()
+  }
 }
 
 onBeforeMount(() => (editFile.value.docs = props.docs as number))
@@ -122,7 +126,7 @@ onBeforeMount(() => (editFile.value.docs = props.docs as number))
           <td class="text-secondary">
             <span>{{ file.user }}, {{ timeFormat(file.created as string, false, '/') }}</span>
             <span class="ml-2">
-              <router-link to="#" @click.prevent="editFormSet(file.pk)">
+              <router-link to="#" @click.prevent="editFormSet(file.pk as number)">
                 <v-icon icon="mdi-pencil" size="16" color="secondary" />
                 <v-tooltip activator="parent" location="top">변경</v-tooltip>
               </router-link>
