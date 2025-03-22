@@ -139,8 +139,8 @@ export type Attatches = {
 
 export type DFile = {
   pk?: number
-  docs: number
-  file: string
+  docs: number | null
+  file: File | string | null
   file_name?: string
   file_type?: string
   file_size?: number

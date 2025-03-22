@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
+import { useDocs } from '@/store/pinia/docs'
 import type { AFile } from '@/store/types/docs'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -9,32 +10,23 @@ const props = defineProps({ files: { type: Object as PropType<AFile[]>, default:
 
 const emit = defineEmits(['file-change', 'file-delete'])
 
+const docStore = useDocs()
+
 const RefDelFile = ref()
 const isEdit = ref(false)
 
-// // pk: number
-// // issue_project: number
-// // doc_type: string
-// // title: string
-// // file: File
-//
-// // const form = ref({
-// //   pk: null | number,
-// //   file: string,
-// //   file_type?: string,
-// //   file_size?: number,
-// //   description?: string,
-// //   del: false,
-// //   edit: false,
-// // })
-
 const addFileForm = ref(false)
-
 const newFile = ref<File | null>(null)
 const inputKey = ref(0)
-
 const descShow = ref(false)
 const description = ref('')
+
+const handleFileChange = (event: Event) => {
+  descShow.value = true
+
+  const el = event.target as HTMLInputElement
+  if (el.files) newFile.value = el.files[0] || null
+}
 
 const clearFile = () => {
   inputKey.value += 1 // 키 변경으로 새 <input> 생성
@@ -43,16 +35,10 @@ const clearFile = () => {
   descShow.value = false
 }
 
-const fileStore = (event: Event) => {
-  const el = event.target as HTMLInputElement
-  descShow.value = true
-
-  if (el.files) newFile.value = el.files[0] || null
-}
-
 const fileUpload = (event: Event) => {
   descShow.value = false
   addFileForm.value = false
+  
   // const { pk, issue_project, doc_type, title, file.description } = props.docs
   // emit('file-upload', { pk, issue_project, doc_type, title, file: newFile.value })
 }
@@ -159,7 +145,7 @@ const fileDelete = (payload: FormData) => alert('준비중입니다!') // del_fi
 
   <CRow v-if="addFileForm" class="p-3 mb-3" :class="bgLight">
     <CCol>
-      <CFormInput type="file" :key="inputKey" size="sm" @input="fileStore" />
+      <CFormInput type="file" :key="inputKey" size="sm" @input="handleFileChange" />
     </CCol>
     <CCol>
       <CInputGroup v-if="descShow" size="sm">

@@ -398,11 +398,15 @@ export const useDocs = defineStore('docs', () => {
       .then(res => (fileList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createFile = (pk: number) => 1
-
-  const patchFile = (payload: AFile) =>
+  const createFile = (payload: FormData) =>
     api
-      .patch(`/file/${payload.pk}/`, payload)
+      .post(`/file/`, payload, config_headers)
+      .then(res => fetchDocs(res.data.docs))
+      .catch(err => errorHandle(err.response.data))
+
+  const patchFile = (pk: number, payload: FormData) =>
+    api
+      .patch(`/file/${pk}/`, payload, config_headers)
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
 
