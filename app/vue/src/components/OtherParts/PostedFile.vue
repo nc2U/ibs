@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, ref } from 'vue'
+import { type PropType, ref } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { useDocs } from '@/store/pinia/docs'
 import type { AFile, DFile } from '@/store/types/docs'
@@ -16,8 +16,8 @@ const emit = defineEmits(['file-change', 'file-delete'])
 const docStore = useDocs()
 
 // 파일 폼 핸들링 로직
-const addFileForm = ref(false)
 const inputKey = ref(0)
+const addFileForm = ref(false)
 const descShow = ref(false)
 
 const handleFileChange = (event: Event) => {
@@ -26,11 +26,10 @@ const handleFileChange = (event: Event) => {
   if (el.files) newFile.value.file = el.files[0] || null
 }
 
-const clearFile = () => {
+const clearFile = (mode: 'new' | 'edit' | undefined) => {
   inputKey.value += 1 // 키 변경으로 새 <input> 생성
   descShow.value = false
-  newFile.value.file = null
-  newFile.value.description = ''
+  resetFile(mode)
 }
 
 // 파일 생성 로직
@@ -58,7 +57,11 @@ const editFile = ref<DFile>({
   description: '',
 })
 
-const resetFile = () => {
+const resetFile = (mode: 'new' | 'edit' | undefined) => {
+  if (mode !== 'new') addFileForm.value = false
+  if (mode !== 'edit') isEditForm.value = null
+  newFile.value.file = null
+  newFile.value.description = ''
   editFile.value.pk = undefined
   editFile.value.file = null
   editFile.value.description = ''
@@ -77,10 +80,10 @@ const editFileChange = (event: Event) => {
 
 const fileChange = (pk: number) => {
   isEditForm.value = null
-  if (editFile.value.file) {
+  if (editFile.value.file || editFile.value.description) {
     const formData = new FormData()
     formData.append('docs', props.docs.toString())
-    formData.append('file', editFile.value.file as Blob)
+    if (editFile.value.file) formData.append('file', editFile.value.file as Blob)
     formData.append('description', editFile.value.description)
     docStore.patchFile(pk, formData)
   }
@@ -101,8 +104,6 @@ const fileDelete = () => {
     RefDelFile.value.close()
   }
 }
-
-onBeforeMount(() => (editFile.value.docs = props.docs as number))
 </script>
 
 <template>
@@ -139,26 +140,39 @@ onBeforeMount(() => (editFile.value.docs = props.docs as number))
             <span v-if="isEditForm === file.pk">
               <CRow>
                 <CCol xs>
-                  <CInputGroup size="sm">
+                  <CInputGroup size="sm" style="width: 250px">
                     <CFormInput
                       type="file"
+                      :key="inputKey"
                       :aria-describedby="`file-edit-${file.pk}`"
                       @input="editFileChange($event)"
                     />
                     <CInputGroupText
                       :id="`file-edit-${file.pk}`"
-                      @click="fileChange(file.pk as number)"
+                      :color="editFile.file ? 'info' : 'secondary'"
+                      @click="clearFile"
                     >
-                      변경
+                      취소
                     </CInputGroupText>
                   </CInputGroup>
                 </CCol>
-                <CCol xs>
-                  <CFormInput
-                    v-model="editFile.description"
-                    placeholder="부가적인 설명"
-                    size="sm"
-                  />
+                <CCol v-if="editFile.file" xs>
+                  <CInputGroup size="sm" style="width: 250px">
+                    <CFormInput
+                      v-model="editFile.description"
+                      placeholder="부가적인 설명"
+                      size="sm"
+                    />
+                    <CInputGroupText>
+                      <v-icon icon="mdi-trash-can-outline" size="16" @click="clearFile('edit')" />
+                    </CInputGroupText>
+                  </CInputGroup>
+                </CCol>
+                <CCol v-if="editFile.file" xs>
+                  <CButton color="success" size="sm" @click="fileChange(file.pk as number)">
+                    변경
+                  </CButton>
+                  <CButton color="light" size="sm" @click="clearFile"> 취소 </CButton>
                 </CCol>
               </CRow>
             </span>
@@ -176,13 +190,17 @@ onBeforeMount(() => (editFile.value.docs = props.docs as number))
 
   <CRow v-if="addFileForm" class="p-3 mb-3" :class="bgLight">
     <CCol>
-      <CFormInput type="file" :key="inputKey" size="sm" @input="handleFileChange" />
+      <CInputGroup size="sm">
+        <CFormInput type="file" :key="inputKey" size="sm" @input="handleFileChange" />
+        <CInputGroupText v-if="newFile.file" @click="clearFile('new')">제거</CInputGroupText>
+      </CInputGroup>
     </CCol>
+
     <CCol>
       <CInputGroup v-if="descShow" size="sm">
         <CFormInput v-model="newFile.description" placeholder="부가적인 설명" />
         <CInputGroupText>
-          <v-icon icon="mdi-trash-can-outline" size="16" @click="clearFile" />
+          <v-icon icon="mdi-trash-can-outline" size="16" @click="clearFile('new')" />
         </CInputGroupText>
       </CInputGroup>
     </CCol>
@@ -190,7 +208,8 @@ onBeforeMount(() => (editFile.value.docs = props.docs as number))
 
   <CRow v-if="addFileForm">
     <CCol>
-      <CButton color="light" size="sm" @click="fileUpload">추가</CButton>
+      <CButton color="success" size="sm" @click="fileUpload">추가</CButton>
+      <CButton color="light" size="sm" @click="clearFile">취소</CButton>
     </CCol>
   </CRow>
 
