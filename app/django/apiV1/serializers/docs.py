@@ -300,7 +300,7 @@ class LinkSerializer(serializers.ModelSerializer):
 
 
 class FileSerializer(serializers.ModelSerializer):
-    user = serializers.SlugField(field_name='username', read_only=True)
+    user = serializers.SlugField(source='username', read_only=True)
 
     class Meta:
         model = File
@@ -321,7 +321,8 @@ class ImageSerializer(serializers.ModelSerializer):
 class DocumentInTrashSerializer(serializers.ModelSerializer):
     type_name = serializers.SerializerMethodField()
     cate_name = serializers.SlugField(source='category', read_only=True)
-    user = serializers.SlugField(read_only=True)
+    # user = serializers.SlugField(read_only=True)
+    user = serializers.SlugField(source='username', read_only=True)
 
     class Meta:
         model = Document
