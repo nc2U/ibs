@@ -404,7 +404,7 @@ export const useDocs = defineStore('docs', () => {
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
 
-  const patchFile = (pk: number, payload: FormData) =>
+  const patchFile = (pk: number, payload: FormData | any) =>
     api
       .patch(`/file/${pk}/`, payload, config_headers)
       .then(res => fetchDocs(res.data.docs))

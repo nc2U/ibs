@@ -81,7 +81,7 @@ const createSuitCase = (payload: SuitCase & { isProject?: boolean }) =>
 const updateSuitCase = (payload: SuitCase) => docStore.updateSuitCase(payload)
 const deleteSuitCase = (pk: number) => docStore.deleteSuitCase(pk)
 const patchLink = (payload: Link) => docStore.patchLink(payload)
-const patchFile = (payload: AFile) => docStore.patchFile(payload)
+const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
 const linkHit = async (pk: number) => {
   const link = (await fetchLink(pk)) as Link
   link.hit = (link.hit as number) + 1
@@ -90,7 +90,7 @@ const linkHit = async (pk: number) => {
 const fileHit = async (pk: number) => {
   const file = (await fetchFile(pk)) as AFile
   const hit = (file.hit as number) + 1
-  await patchFile({ pk, hit })
+  await patchFile(pk, { hit })
 }
 
 const [route, router] = [useRoute() as LoadedRoute & { name: string }, useRouter()]
