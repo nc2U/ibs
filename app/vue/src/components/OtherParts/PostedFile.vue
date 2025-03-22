@@ -20,7 +20,7 @@ const addFileForm = ref(false)
 const inputKey = ref(0)
 const descShow = ref(false)
 
-const isEdit = ref(false)
+const isEditForm = ref<number | null>(null)
 
 const handleFileChange = (event: Event) => {
   descShow.value = true
@@ -36,17 +36,14 @@ const clearFile = () => {
 }
 
 // 파일 생성 로직
-
 const newFile = ref<DFile>({
   docs: null,
   file: null,
   description: '',
 })
-
 const fileUpload = (event: Event) => {
   descShow.value = false
   addFileForm.value = false
-
   const formData = new FormData()
   formData.append('docs', props.docs.toString())
   formData.append('file', newFile.value.file as Blob)
@@ -55,6 +52,23 @@ const fileUpload = (event: Event) => {
 }
 
 // 파일 변경 로직
+const editFile = ref<DFile>({
+  docs: null,
+  file: null,
+  description: '',
+})
+
+const resetFile = () => {
+  editFile.value.docs = null
+  editFile.value.file = null
+  editFile.value.description = ''
+}
+
+const editFormSet = (pk: number) => {
+  resetFile()
+  isEditForm.value = null | (isEditForm.value !== pk) ? pk : null
+}
+
 const fileChange = (event: Event, pk: number) => {
   const el = event.target as HTMLInputElement
   if (el.files) {
@@ -97,7 +111,7 @@ const fileDelete = () => {
           <td class="text-secondary">
             <span>{{ file.user }}, {{ timeFormat(file.created as string, false, '/') }}</span>
             <span class="ml-2">
-              <router-link to="#" @click.prevent="isEdit = !isEdit">
+              <router-link to="#" @click.prevent="editFormSet(file.pk)">
                 <v-icon icon="mdi-pencil" size="16" color="secondary" />
                 <v-tooltip activator="parent" location="top">변경</v-tooltip>
               </router-link>
@@ -108,21 +122,32 @@ const fileDelete = () => {
                 <v-tooltip activator="parent" location="top">삭제</v-tooltip>
               </router-link>
             </span>
-            <div>
-              <CInputGroup v-if="isEdit" size="sm">
-                <CFormInput
-                  type="file"
-                  :aria-describedby="`file-edit-${file.pk}`"
-                  @input="fileChange($event, file.pk as number)"
-                />
-                <CInputGroupText
-                  :id="`file-edit-${file.pk}`"
-                  @click="fileChange($event, file.pk as number)"
-                >
-                  변경
-                </CInputGroupText>
-              </CInputGroup>
-            </div>
+            <span v-if="isEditForm === file.pk">
+              <CRow>
+                <CCol xs>
+                  <CInputGroup size="sm">
+                    <CFormInput
+                      type="file"
+                      :aria-describedby="`file-edit-${file.pk}`"
+                      @input="fileChange($event, file.pk as number)"
+                    />
+                    <CInputGroupText
+                      :id="`file-edit-${file.pk}`"
+                      @click="fileChange($event, file.pk as number)"
+                    >
+                      변경
+                    </CInputGroupText>
+                  </CInputGroup>
+                </CCol>
+                <CCol xs>
+                  <CFormInput
+                    v-model="editFile.description"
+                    placeholder="부가적인 설명"
+                    size="sm"
+                  />
+                </CCol>
+              </CRow>
+            </span>
           </td>
         </tr>
       </table>
