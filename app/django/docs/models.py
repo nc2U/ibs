@@ -376,9 +376,9 @@ class File(models.Model):
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
-    created = models.DateTimeField('등록일', auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_DEFAULT, default=1, verbose_name='등록자')
     hit = models.PositiveIntegerField('다운로드수', default=0)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_DEFAULT, default=1, verbose_name='등록자')
+    created = models.DateTimeField('등록일', auto_now_add=True)
 
     def __str__(self):
         return settings.MEDIA_URL

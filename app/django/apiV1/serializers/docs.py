@@ -302,13 +302,18 @@ class LinkSerializer(serializers.ModelSerializer):
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
-        fields = ('pk', 'docs', 'file', 'hit')
+        fields = ('pk', 'docs', 'file', 'file_name', 'file_type',
+                  'file_size', 'description', 'hit', 'user', 'created')
+
+    readonly_fields = ('file_name', 'file_type', 'file_size', 'hit', 'user', 'created')
 
 
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
-        fields = ('pk', 'docs', 'image')
+        fields = ('pk', 'docs', 'image', 'image_name', 'image_type', 'image_size', 'created')
+
+    readonly_fields = ('image_name', 'image_type', 'image_size', 'created')
 
 
 class DocumentInTrashSerializer(serializers.ModelSerializer):
