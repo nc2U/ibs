@@ -106,7 +106,6 @@ onBeforeMount(() => (editFile.value.docs = props.docs as number))
 </script>
 
 <template>
-  {{ editFile }}
   <CRow class="mb-3">
     <CCol>
       <table>
