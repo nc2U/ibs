@@ -7,6 +7,7 @@ import type {
   Category,
   AFile,
   Link,
+  DFile,
   PatchDocs,
   SuitCase,
   SimpleSuitCase,
@@ -382,7 +383,8 @@ export const useDocs = defineStore('docs', () => {
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
 
-  const file = ref<AFile | null>(null)
+  const file = ref<DFile | null>(null)
+  const fileList = ref<DFile[]>()
 
   const fetchFile = (pk: number) =>
     api
@@ -390,11 +392,21 @@ export const useDocs = defineStore('docs', () => {
       .then(res => (file.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
+  const fetchFileList = async (docs: number | '') =>
+    api
+      .get(`/file/?docs=${docs}`)
+      .then(res => (fileList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createFile = (pk: number) => 1
+
   const patchFile = (payload: AFile) =>
     api
       .patch(`/file/${payload.pk}/`, payload)
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
+
+  const deleteFile = (pk: number) => 1
 
   return {
     docType,
@@ -463,6 +475,9 @@ export const useDocs = defineStore('docs', () => {
 
     file,
     fetchFile,
+    fetchFileList,
+    createFile,
     patchFile,
+    deleteFile,
   }
 })

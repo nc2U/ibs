@@ -137,6 +137,19 @@ export type Attatches = {
   }[]
 }
 
+export type DFile = {
+  pk?: number
+  docs: number
+  file: string
+  file_name?: string
+  file_type?: string
+  file_size?: number
+  description: string
+  hit?: number
+  user?: string
+  created?: string
+}
+
 export interface PatchDocs {
   pk: number
   issue_project?: number
