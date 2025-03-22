@@ -363,7 +363,10 @@ class Document(BaseModel):
 class Link(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서', related_name='links')
     link = models.URLField(max_length=500, verbose_name='링크')
+    description = models.CharField('부가설명', max_length=255, blank=True, default='')
     hit = models.PositiveIntegerField('클릭수', default=0)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_DEFAULT, default=1, verbose_name='등록자')
+    created = models.DateTimeField('등록일', auto_now_add=True)
 
     def __str__(self):
         return self.link
