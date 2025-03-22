@@ -5,7 +5,7 @@ from django.db import models
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.dispatch import receiver
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_save, pre_delete
 
 
 class DocType(models.Model):
@@ -418,6 +418,29 @@ def delete_file_field(instance, field_name):
     field = getattr(instance, field_name, None)
     if field and hasattr(field, 'path') and os.path.isfile(field.path):
         os.remove(field.path)
+
+
+@receiver(pre_save, sender=File)
+@receiver(pre_save, sender=Image)
+def delete_old_file_on_update(sender, instance, **kwargs):
+    """Generic file deletion handler for models with file/image fields."""
+    if not instance.pk:  # 새 객체 생성 시는 아무 작업 안 함
+        return
+
+    try:
+        # 기존 객체를 데이터베이스에서 가져옴
+        old_instance = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        return
+
+    # 모델에 따라 처리할 필드 결정
+    field_name = 'file' if sender == File else 'image'
+    old_file = getattr(old_instance, field_name, None)
+    new_file = getattr(instance, field_name, None)
+
+    # 파일이 변경되었는지 확인
+    if old_file and old_file != new_file:
+        delete_file_field(old_instance, field_name)
 
 
 @receiver(pre_delete)
