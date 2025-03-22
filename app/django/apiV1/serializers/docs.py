@@ -294,9 +294,13 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 
 class LinkSerializer(serializers.ModelSerializer):
+    user = serializers.SlugField(read_only=True)
+
     class Meta:
         model = Link
-        fields = ('pk', 'docs', 'link', 'hit')
+        fields = ('pk', 'docs', 'link', 'description', 'hit', 'user', 'created')
+
+    readonly_fields = ('hit', 'created')
 
 
 class FileSerializer(serializers.ModelSerializer):

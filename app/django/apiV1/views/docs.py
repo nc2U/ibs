@@ -144,6 +144,9 @@ class LinkViewSet(viewsets.ModelViewSet):
     serializer_class = LinkSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
 
 class FileViewSet(viewsets.ModelViewSet):
     queryset = File.objects.all()
