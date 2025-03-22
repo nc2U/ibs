@@ -13,42 +13,12 @@ const props = defineProps({
   heatedPage: { type: Array as PropType<number[]>, default: () => [] },
 })
 
-const emit = defineEmits(['docs-hit', 'file-upload'])
-
-const addFileForm = ref(false)
+const emit = defineEmits(['docs-hit'])
 
 const docStore = useDocs()
 const [route, router] = [useRoute(), useRouter()]
 
 const docId = computed(() => Number(route.params.docId))
-
-// file 관련 코드
-const fileDelete = (payload: FormData) => alert('준비중입니다!') // del_file 전달 파일 삭제 patch 실행
-
-const addFile = () => {
-  alert('readying...')
-  addFileForm.value = false
-}
-
-// const attach = ref(true)
-
-const file = ref<File | null>(null)
-
-const fileStore = (event: Event) => {
-  const el = event.target as HTMLInputElement
-  // attach.value = !el.value
-
-  if (el.files) {
-    const loadFile = el.files[0]
-    file.value = loadFile
-  }
-}
-
-const fileUpload = (event: Event) => {
-  addFileForm.value = false
-  const { pk, issue_project, doc_type, title } = props.docs
-  emit('file-upload', { pk, issue_project, doc_type, title, file: file.value })
-}
 
 onBeforeMount(() => {
   if (docId.value) {
@@ -103,33 +73,7 @@ onMounted(() => {
           <CCol><h5>파일</h5></CCol>
         </CRow>
 
-        <CRow class="mb-3">
-          <CCol>
-            <table>
-              <tr v-for="file in docs.files" :key="file.pk as number">
-                <PostedFile :file="file" @file-delete="fileDelete" />
-              </tr>
-            </table>
-          </CCol>
-        </CRow>
-
-        <CRow class="mb-2">
-          <CCol>
-            <router-link to="#" @click.prevent="addFileForm = !addFileForm">파일추가</router-link>
-          </CCol>
-        </CRow>
-
-        <CRow v-if="addFileForm" class="p-3 mb-3 bg-light">
-          <CCol>
-            <CFormInput type="file" size="sm" @input="fileStore" />
-          </CCol>
-        </CRow>
-
-        <CRow v-if="addFileForm">
-          <CCol>
-            <CButton color="light" size="sm" @click="fileUpload">추가</CButton>
-          </CCol>
-        </CRow>
+        <PostedFile :files="docs.files" />
       </CCol>
     </CRow>
 

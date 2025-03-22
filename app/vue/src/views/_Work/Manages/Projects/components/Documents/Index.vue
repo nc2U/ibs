@@ -91,23 +91,6 @@ const docsHit = async (pk: number) => {
   }
 }
 
-const fileUpload = (payload: {
-  pk: number
-  issue_project: number
-  doc_type: string
-  title: string
-  file: File
-}) => {
-  const { pk, issue_project, doc_type, title, file } = payload
-
-  const form = new FormData()
-  form.append('issue_project', issue_project.toString())
-  form.append('doc_type', doc_type)
-  form.append('title', title)
-  form.append('newFiles', file)
-  updateDocs({ pk, form })
-}
-
 const dataSetup = async (docId?: string | string[]) => {
   if (route.params.projId) {
     const projId = route.params.projId as string
@@ -131,12 +114,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <DocsView
-    v-if="route.name === '(문서) - 보기'"
-    :docs="docs as Docs"
-    @docs-hit="docsHit"
-    @file-upload="fileUpload"
-  />
+  <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />
 
   <DocsForm
     v-else-if="route.name === '(문서) - 편집'"
