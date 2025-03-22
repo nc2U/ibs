@@ -13,20 +13,14 @@ const props = defineProps({
 
 const emit = defineEmits(['file-change', 'file-delete'])
 
-const newFile = ref<DFile>({
-  docs: null,
-  file: null,
-  description: '',
-})
-
 const docStore = useDocs()
 
-const RefDelFile = ref()
-const isEdit = ref(false)
-
+// 파일 폼 핸들링 로직
 const addFileForm = ref(false)
 const inputKey = ref(0)
 const descShow = ref(false)
+
+const isEdit = ref(false)
 
 const handleFileChange = (event: Event) => {
   descShow.value = true
@@ -41,6 +35,14 @@ const clearFile = () => {
   newFile.value.description = ''
 }
 
+// 파일 생성 로직
+
+const newFile = ref<DFile>({
+  docs: null,
+  file: null,
+  description: '',
+})
+
 const fileUpload = (event: Event) => {
   descShow.value = false
   addFileForm.value = false
@@ -52,10 +54,8 @@ const fileUpload = (event: Event) => {
   docStore.createFile(formData)
 }
 
+// 파일 변경 로직
 const fileChange = (event: Event, pk: number) => {
-  // form.value.file.del = false
-  // form.value.file.edit = !form.value.file.edit
-
   const el = event.target as HTMLInputElement
   if (el.files) {
     const file = el.files[0]
@@ -63,15 +63,18 @@ const fileChange = (event: Event, pk: number) => {
   }
 }
 
-const delFileConfirm = () => RefDelFile.value.callModal()
-
-const fileDelete = (payload: FormData) => alert('준비중입니다!') // del_file 전달 파일 삭제 patch 실행
-// const fileDelete = () => {
-//   const form = new FormData()
-//   form.append('del_file', JSON.stringify(props.file.pk as number))
-//   emit('file-delete', form)
-//   RefDelFile.value.close()
-// }
+// 파일 삭제 로직
+const RefDelFile = ref()
+const delFilePk = ref<number | null>(null)
+const delFileConfirm = (pk: number) => {
+  delFilePk.value = pk
+  RefDelFile.value.callModal()
+}
+const fileDelete = () => {
+  docStore.deleteFile(delFilePk.value, props.docs as number)
+  delFilePk.value = null
+  RefDelFile.value.close()
+}
 </script>
 
 <template>
@@ -100,7 +103,7 @@ const fileDelete = (payload: FormData) => alert('준비중입니다!') // del_fi
               </router-link>
             </span>
             <span class="ml-2">
-              <router-link to="#" @click.prevent="delFileConfirm()">
+              <router-link to="#" @click.prevent="delFileConfirm(file.pk as number)">
                 <v-icon icon="mdi-trash-can-outline" size="16" color="secondary" class="mr-2" />
                 <v-tooltip activator="parent" location="top">삭제</v-tooltip>
               </router-link>

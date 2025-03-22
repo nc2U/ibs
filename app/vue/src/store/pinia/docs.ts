@@ -410,7 +410,11 @@ export const useDocs = defineStore('docs', () => {
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
 
-  const deleteFile = (pk: number) => 1
+  const deleteFile = (pk: number, docs: number) =>
+    api
+      .delete(`/file/${pk}/`)
+      .then(() => fetchDocs(docs))
+      .catch(err => errorHandle(err.response.data))
 
   return {
     docType,
