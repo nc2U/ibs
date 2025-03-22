@@ -105,10 +105,13 @@ export type Docs = {
 }
 
 export interface Link {
-  pk: null | number
+  pk?: null | number
   docs: number
   link: string
-  hit: number
+  description: string
+  hit?: number
+  user?: string
+  created?: string
   del?: boolean
 }
 
