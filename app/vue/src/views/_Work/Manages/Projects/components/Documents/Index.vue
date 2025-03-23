@@ -116,6 +116,7 @@ onBeforeMount(async () => {
 
   <DocsForm
     v-else-if="route.name === '(문서) - 편집'"
+    :issue-project="issueProject?.pk as number"
     :project-sort="issueProject?.sort"
     :type-number="typeNumber"
     :categories="categories"
@@ -150,6 +151,7 @@ onBeforeMount(async () => {
     <DocsForm
       ref="refDocsForm"
       v-if="route.name === '(문서) - 추가'"
+      :issue-project="issueProject?.pk as number"
       :project-sort="issueProject?.sort"
       :type-number="typeNumber"
       :categories="categories"

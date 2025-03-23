@@ -14,6 +14,7 @@ import LinkForms from '@/components/OtherParts/LinkForms.vue'
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
   typeNumber: { type: Number, default: 1 },
+  issueProject: { type: Number, required: true },
   projectSort: { type: String as PropType<'1' | '2' | '3'>, default: '2' },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
@@ -70,7 +71,7 @@ const submitCheck = (event: Event) => {
     validated.value = true
   } else {
     validated.value = false
-    onSubmit({ ...form, newLinks: newLinks.value })
+    onSubmit({ ...form.value, newLinks: newLinks.value })
   } // refConfirmModal.value.callModal()
 }
 
@@ -78,9 +79,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
   const { pk, ...rest } = payload
   const getData: Record<string, any> = { ...rest }
 
-  // if (!payload.issue_project)
-  //   getData.issue_project =
-  //     docsFilter.value.issue_project ?? (comStore.company?.com_issue_project as number) ?? null
+  getData.issue_project = props.issueProject
   getData.newFiles = newFiles.value
   getData.cngFiles = cngFiles.value
 
