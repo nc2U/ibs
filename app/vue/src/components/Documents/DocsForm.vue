@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, onUpdated, type PropType, reactive, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUpdate, type PropType, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
@@ -156,8 +156,8 @@ const dataSetup = () => {
   }
 }
 
-onMounted(() => dataSetup())
-onUpdated(() => dataSetup())
+onBeforeMount(() => dataSetup())
+onBeforeUpdate(() => dataSetup())
 </script>
 
 <template>
