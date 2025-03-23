@@ -1,16 +1,18 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
 import type { AFile } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 
 const props = defineProps({ files: { type: Array as PropType<AFile[]>, default: () => [] } })
 
-const emit = defineEmits(['files-set'])
+const emit = defineEmits(['files-update'])
 
 const attach = ref(true)
 const form = ref<{ files: AFile[] }>({
   files: [],
 })
+
+const formUpdate = () => nextTick(() => emit('files-update', form.value.files))
 
 const range = (from: number, to: number): number[] =>
   from < to ? [from, ...range(from + 1, to)] : []
@@ -33,11 +35,17 @@ const enableStore = (event: Event) => {
   attach.value = !el.value
 }
 
+const delFile = (i: number) => {
+  ;(form.value.files as any[])[i].del = !(form.value.files as any[])[i].del
+  formUpdate()
+}
+
 const editFile = (i: number) => {
   if ((form.value.files as any[]).length) {
     ;(form.value.files as any[])[i].del = false
     ;(form.value.files as any[])[i].edit = !(form.value.files as any[])[i].edit
   }
+  formUpdate()
 }
 
 const fileChange = (event: Event, pk: number) => {
@@ -54,7 +62,7 @@ const fileUpload = (event: Event) => {
   const el = event.target as HTMLInputElement
   if (el.files) {
     const file = el.files[0]
-    emit('file-upload', file)
+    emit('files-upload', file)
   }
 }
 
@@ -64,7 +72,7 @@ const dataSetup = () => {
     file.del = false
     file.edit = false
   })
-  emit('file-set', form.value.files)
+  emit('files-update', form.value.files)
 }
 
 onBeforeMount(() => dataSetup())
@@ -86,14 +94,15 @@ onBeforeUpdate(() => dataSetup())
               </a>
               <span>
                 <CFormCheck
-                  v-model="(form.files as AFile[])[i].del"
                   :id="`del-file-${file.pk}`"
-                  @input="enableStore"
                   label="삭제"
                   inline
                   :disabled="(form.files as AFile[])[i].edit"
                   class="ml-4"
+                  @change="delFile(i)"
                 />
+                <!--                  v-model="(form.files as AFile[])[i].del"-->
+                <!--                  @input="enableStore"-->
                 <CFormCheck :id="`edit-file-${file.pk}`" label="변경" inline @click="editFile(i)" />
               </span>
               <CRow v-if="(form.files as AFile[])[i].edit">

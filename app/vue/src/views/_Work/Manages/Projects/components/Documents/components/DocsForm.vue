@@ -36,7 +36,10 @@ const form = ref<Docs>({
 
 const router = useRouter()
 
-const filesSet = (payload: AFile[]) => (form.value.files = payload)
+const filesUpdate = (payload: AFile[]) => {
+  form.value.files = payload
+  console.log({ ...form.value.files })
+}
 
 const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
 
@@ -146,7 +149,7 @@ onMounted(() => dataSetup())
             />
           </CCol>
         </CRow>
-        <FileForms :files="docs?.files ?? []" @files-set="filesSet" />
+        <FileForms :files="docs?.files ?? []" @files-update="filesUpdate" />
         <LinkForms />
       </CCardBody>
     </CCard>
