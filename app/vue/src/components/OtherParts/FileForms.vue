@@ -5,9 +5,8 @@ import { AlertSecondary } from '@/utils/cssMixins'
 
 const props = defineProps({ files: { type: Array as PropType<AFile[]>, default: () => [] } })
 
-const emit = defineEmits(['files-update'])
+const emit = defineEmits(['files-update', 'file-upload', 'file-change'])
 
-const attach = ref(true)
 const form = ref<{ files: AFile[] }>({
   files: [],
 })
@@ -30,14 +29,12 @@ const ctlFileNum = (n: number) => {
   else newFileNum.value = newFileNum.value - 1
 }
 
-const enableStore = (event: Event) => {
+const fileUpload = (event: Event) => {
   const el = event.target as HTMLInputElement
-  attach.value = !el.value
-}
-
-const delFile = (i: number) => {
-  ;(form.value.files as any[])[i].del = !(form.value.files as any[])[i].del
-  formUpdate()
+  if (el.files) {
+    const file = el.files[0]
+    emit('file-upload', file)
+  }
 }
 
 const editFile = (i: number) => {
@@ -49,7 +46,6 @@ const editFile = (i: number) => {
 }
 
 const fileChange = (event: Event, pk: number) => {
-  enableStore(event)
   const el = event.target as HTMLInputElement
   if (el.files) {
     const file = el.files[0]
@@ -57,13 +53,9 @@ const fileChange = (event: Event, pk: number) => {
   }
 }
 
-const fileUpload = (event: Event) => {
-  enableStore(event)
-  const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('files-upload', file)
-  }
+const delFile = (i: number) => {
+  ;(form.value.files as any[])[i].del = !(form.value.files as any[])[i].del
+  formUpdate()
 }
 
 const dataSetup = () => {
@@ -101,8 +93,6 @@ onBeforeUpdate(() => dataSetup())
                   class="ml-4"
                   @change="delFile(i)"
                 />
-                <!--                  v-model="(form.files as AFile[])[i].del"-->
-                <!--                  @input="enableStore"-->
                 <CFormCheck :id="`edit-file-${file.pk}`" label="변경" inline @click="editFile(i)" />
               </span>
               <CRow v-if="(form.files as AFile[])[i].edit">

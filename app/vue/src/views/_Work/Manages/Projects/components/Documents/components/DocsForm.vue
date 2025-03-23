@@ -41,6 +41,24 @@ const filesUpdate = (payload: AFile[]) => {
   console.log({ ...form.value.files })
 }
 
+const fileUpload = (event: Event) => {
+  // enableStore(event)
+  const el = event.target as HTMLInputElement
+  if (el.files) {
+    const file = el.files[0]
+    // emit('file-upload', file)
+  }
+}
+
+const fileChange = (event: Event, pk: number) => {
+  // enableStore(event)
+  const el = event.target as HTMLInputElement
+  if (el.files) {
+    const file = el.files[0]
+    // emit('file-change', { pk, file })
+  }
+}
+
 const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
 
 defineExpose({ setDocType })
@@ -149,7 +167,12 @@ onMounted(() => dataSetup())
             />
           </CCol>
         </CRow>
-        <FileForms :files="docs?.files ?? []" @files-update="filesUpdate" />
+        <FileForms
+          :files="docs?.files ?? []"
+          @files-update="filesUpdate"
+          @file-upload="fileUpload"
+          @file-change="fileChange"
+        />
         <LinkForms />
       </CCardBody>
     </CCard>
