@@ -2,7 +2,7 @@
 import { onMounted, onUpdated, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDocs } from '@/store/pinia/docs'
-import type { AFile, Attatches, Docs } from '@/store/types/docs'
+import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work'
 import QuillEditor from '@/components/QuillEditor/index.vue'
@@ -24,10 +24,11 @@ const docStore = useDocs()
 const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
 const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
 
+const validated = ref(false)
 const form = ref<Docs>({
   pk: undefined,
   issue_project: null,
-  doc_type: 1,
+  doc_type: props.typeNumber,
   category: null,
   lawsuit: null,
   execution_date: null,
@@ -49,6 +50,8 @@ const cngFiles = ref<
   }[]
 >([])
 
+const newLinks = ref<Link[]>([])
+
 const fileUpload = (file: File) => newFiles.value.push(file)
 
 const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(payload)
@@ -56,6 +59,19 @@ const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(
 const filesUpdate = (payload: AFile[]) => {
   form.value.files = payload
   console.log({ ...form.value.files })
+}
+
+const submitCheck = (event: Event) => {
+  const el = event.currentTarget as HTMLFormElement
+  if (!el.checkValidity()) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    validated.value = true
+  } else {
+    validated.value = false
+    onSubmit({ ...form, newLinks: newLinks.value })
+  } // refConfirmModal.value.callModal()
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
@@ -130,96 +146,104 @@ onMounted(() => dataSetup())
     </CCol>
   </CRow>
 
-  <CRow>
-    <CCard :color="colorLight" class="mb-3">
-      <CCardBody>
-        <CRow v-if="projectSort !== '3'" class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
-          <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <CFormSelect v-model.number="form.doc_type" disabled>
-              <option :value="1">일반 문서</option>
-              <option :value="2">소송 기록</option>
-            </CFormSelect>
-          </CCol>
-        </CRow>
+  <CForm
+    enctype="multipart/form-data"
+    class="needs-validation"
+    novalidate
+    :validated="validated"
+    @submit.prevent="submitCheck"
+  >
+    <CRow>
+      <CCard :color="colorLight" class="mb-3">
+        <CCardBody>
+          <CRow v-if="projectSort !== '3'" class="mb-3">
+            <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
+            <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
+              <CFormSelect v-model.number="form.doc_type" disabled required>
+                <option :value="1">일반 문서</option>
+                <option :value="2">소송 기록</option>
+              </CFormSelect>
+            </CCol>
+          </CRow>
 
-        <CRow>
-          <CCol sm="12" lg="6" class="mb-3">
-            <CRow>
-              <CFormLabel class="col-form-label text-right col-2 col-lg-4">범주</CFormLabel>
-              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                <CFormSelect v-model.number="form.category">
-                  <option value="">---------</option>
-                  <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
-                    {{ cate.name }}
-                  </option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
-          </CCol>
+          <CRow>
+            <CCol sm="12" lg="6" class="mb-3">
+              <CRow>
+                <CFormLabel class="col-form-label text-right col-2 col-lg-4">범주</CFormLabel>
+                <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
+                  <CFormSelect v-model.number="form.category">
+                    <option value="">---------</option>
+                    <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
+                      {{ cate.name }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
+              </CRow>
+            </CCol>
 
-          <CCol v-if="form.doc_type === 1" sm="12" lg="6" class="mb-3">
-            <CRow>
-              <CFormLabel class="col-form-label text-right col-2 col-lg-4"> 발행일자</CFormLabel>
-              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                <DatePicker v-model="form.execution_date" />
-              </CCol>
-            </CRow>
-          </CCol>
-        </CRow>
+            <CCol v-if="form.doc_type === 1" sm="12" lg="6" class="mb-3">
+              <CRow>
+                <CFormLabel class="col-form-label text-right col-2 col-lg-4"> 발행일자</CFormLabel>
+                <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
+                  <DatePicker v-model="form.execution_date" />
+                </CCol>
+              </CRow>
+            </CCol>
+          </CRow>
 
-        <CRow v-if="projectSort !== '3' && form.doc_type === 2">
-          <CCol sm="12" lg="6" class="mb-3">
-            <CRow>
-              <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
-              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                <MultiSelect v-model.number="form.lawsuit" />
-              </CCol>
-            </CRow>
-          </CCol>
+          <CRow v-if="projectSort !== '3' && form.doc_type === 2">
+            <CCol sm="12" lg="6" class="mb-3">
+              <CRow>
+                <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
+                <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
+                  <MultiSelect v-model.number="form.lawsuit" />
+                </CCol>
+              </CRow>
+            </CCol>
 
-          <CCol sm="12" lg="6" class="mb-3">
-            <CRow>
-              <CFormLabel class="col-form-label text-right col-2 col-lg-4">발행일자</CFormLabel>
-              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                <DatePicker v-model="form.execution_date" />
-              </CCol>
-            </CRow>
-          </CCol>
-        </CRow>
+            <CCol sm="12" lg="6" class="mb-3">
+              <CRow>
+                <CFormLabel class="col-form-label text-right col-2 col-lg-4">발행일자</CFormLabel>
+                <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
+                  <DatePicker v-model="form.execution_date" />
+                </CCol>
+              </CRow>
+            </CCol>
+          </CRow>
 
-        <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2 required">제목</CFormLabel>
-          <CCol class="col-sm-10">
-            <CFormInput v-model="form.title" placeholder="문서 제목" />
-          </CCol>
-        </CRow>
+          <CRow class="mb-3">
+            <CFormLabel class="col-form-label text-right col-2 required">제목</CFormLabel>
+            <CCol class="col-sm-10">
+              <CFormInput v-model="form.title" placeholder="문서 제목" required />
+            </CCol>
+          </CRow>
 
-        <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
-          <CCol class="col-sm-10 mb-5">
-            <QuillEditor
-              v-model:content="form.content"
-              placeholder="문서 내용 설명"
-              style="background: white"
-            />
-          </CCol>
-        </CRow>
-        <FileForms
-          :files="docs?.files ?? []"
-          @files-update="filesUpdate"
-          @file-upload="fileUpload"
-          @file-change="fileChange"
-        />
-        <LinkForms />
-      </CCardBody>
-    </CCard>
-  </CRow>
+          <CRow class="mb-3">
+            <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
+            <CCol class="col-sm-10 mb-5">
+              <QuillEditor
+                v-model:content="form.content"
+                placeholder="문서 내용 설명"
+                style="background: white"
+              />
+            </CCol>
+          </CRow>
+          <FileForms
+            :files="docs?.files ?? []"
+            @files-update="filesUpdate"
+            @file-upload="fileUpload"
+            @file-change="fileChange"
+          />
+          <LinkForms />
+        </CCardBody>
+      </CCard>
+    </CRow>
 
-  <CRow class="mb-5">
-    <CCol>
-      <CButton type="submit" color="primary" variant="outline"> 저장</CButton>
-      <CButton color="light" @click="router.replace({ name: '(문서)' })">취소</CButton>
-    </CCol>
-  </CRow>
+    <CRow class="mb-5">
+      <CCol>
+        <CButton type="submit" color="primary" variant="outline" size="sm"> 저장</CButton>
+        <CButton color="light" size="sm" @click="router.replace({ name: '(문서)' })">취소</CButton>
+      </CCol>
+    </CRow>
+  </CForm>
 </template>
