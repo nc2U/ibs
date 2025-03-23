@@ -5,7 +5,7 @@ import { AlertSecondary } from '@/utils/cssMixins'
 
 const props = defineProps({ files: { type: Array as PropType<AFile[]>, default: () => [] } })
 
-const emit = defineEmits(['file-upload', 'file-change'])
+const emit = defineEmits(['files-set'])
 
 const attach = ref(true)
 const form = ref<{ files: AFile[] }>({
@@ -64,6 +64,7 @@ const dataSetup = () => {
     file.del = false
     file.edit = false
   })
+  emit('file-set', form.value.files)
 }
 
 onBeforeMount(() => dataSetup())

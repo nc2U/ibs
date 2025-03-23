@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onMounted, onUpdated, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Docs } from '@/store/types/docs'
+import type { AFile, Docs } from '@/store/types/docs'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work'
 import QuillEditor from '@/components/QuillEditor/index.vue'
@@ -30,9 +30,13 @@ const form = ref<Docs>({
   is_secret: false,
   password: '',
   is_blind: false,
+  links: [],
+  files: [],
 })
 
 const router = useRouter()
+
+const filesSet = (payload: AFile[]) => (form.value.files = payload)
 
 const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
 
@@ -142,7 +146,7 @@ onMounted(() => dataSetup())
             />
           </CCol>
         </CRow>
-        <FileForms :files="docs?.files ?? []" />
+        <FileForms :files="docs?.files ?? []" @files-set="filesSet" />
         <LinkForms />
       </CCardBody>
     </CCard>
