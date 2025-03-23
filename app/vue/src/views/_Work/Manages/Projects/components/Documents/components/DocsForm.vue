@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { onMounted, onUpdated, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { AFile, Docs } from '@/store/types/docs'
+import { useDocs } from '@/store/pinia/docs'
+import type { AFile, Attatches, Docs } from '@/store/types/docs'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work'
 import QuillEditor from '@/components/QuillEditor/index.vue'
@@ -16,6 +17,12 @@ const props = defineProps({
   projectSort: { type: String as PropType<'1' | '2' | '3'>, default: '2' },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
+
+const router = useRouter()
+
+const docStore = useDocs()
+const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
+const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
 
 const form = ref<Docs>({
   pk: undefined,
@@ -34,29 +41,60 @@ const form = ref<Docs>({
   files: [],
 })
 
-const router = useRouter()
+const newFiles = ref<File[]>([])
+const cngFiles = ref<
+  {
+    pk: number
+    file: File
+  }[]
+>([])
+
+const fileUpload = (file: File) => newFiles.value.push(file)
+
+const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(payload)
 
 const filesUpdate = (payload: AFile[]) => {
   form.value.files = payload
   console.log({ ...form.value.files })
 }
 
-const fileUpload = (event: Event) => {
-  // enableStore(event)
-  const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    // emit('file-upload', file)
-  }
-}
+const onSubmit = async (payload: Docs & Attatches) => {
+  const { pk, ...rest } = payload
+  const getData: Record<string, any> = { ...rest }
 
-const fileChange = (event: Event, pk: number) => {
-  // enableStore(event)
-  const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    // emit('file-change', { pk, file })
+  // if (!payload.issue_project)
+  //   getData.issue_project =
+  //     docsFilter.value.issue_project ?? (comStore.company?.com_issue_project as number) ?? null
+  getData.newFiles = newFiles.value
+  getData.cngFiles = cngFiles.value
+
+  const form = new FormData()
+
+  for (const key in getData) {
+    if (key === 'links' || key === 'files') {
+      ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
+    } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
+      if (key === 'cngFiles') {
+        getData[key]?.forEach(val => {
+          form.append('cngPks', val.pk as any)
+          form.append('cngFiles', val.file as Blob)
+        })
+      } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
+    } else {
+      const formValue = getData[key] === null ? '' : getData[key]
+      form.append(key, formValue as string)
+    }
   }
+
+  if (pk) {
+    await updateDocs({ pk, form })
+    // await router.replace({ name: `${mainViewName.value} - 보기`, params: { docsId: pk } })
+  } else {
+    await createDocs({ form })
+    // await router.replace({ name: `${mainViewName.value}` })
+  }
+  newFiles.value = []
+  cngFiles.value = []
 }
 
 const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
