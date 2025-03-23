@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, ref } from 'vue'
+import { onMounted, onUpdated, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Docs } from '@/store/types/docs'
 import { colorLight } from '@/utils/cssMixins'
@@ -38,7 +38,7 @@ const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
 
 defineExpose({ setDocType })
 
-onBeforeMount(() => {
+const dataSetup = () => {
   if (props.docs) {
     form.value.pk = props.docs.pk
     form.value.issue_project = props.docs.issue_project
@@ -53,7 +53,10 @@ onBeforeMount(() => {
     form.value.password = props.docs.password
     form.value.is_blind = props.docs.is_blind
   } else form.value.doc_type = props.typeNumber
-})
+}
+
+onUpdated(() => dataSetup())
+onMounted(() => dataSetup())
 </script>
 
 <template>

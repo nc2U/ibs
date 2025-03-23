@@ -61,7 +61,7 @@ const editFile = ref<DFile>({
   file: null,
   description: '',
 })
-const resetFile = (mode: 'new' | 'edit' | undefined) => {
+const resetFile = (mode: 'new' | 'edit' | 'all' = 'all') => {
   if (mode !== 'new') addFileForm.value = false
   if (mode !== 'edit') isEditForm.value = null
   newFile.value.file = null

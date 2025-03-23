@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref } from 'vue'
+import { computed, onMounted, onUpdated, type PropType, ref } from 'vue'
 import type { AFile } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 
-defineProps({ files: { type: Array as PropType<AFile[]>, default: () => [] } })
+const props = defineProps({ files: { type: Array as PropType<AFile[]>, default: () => [] } })
 
 const emit = defineEmits(['file-upload', 'file-change'])
 
 const attach = ref(true)
-const form = ref({
+const form = ref<{ files: AFile[] }>({
   files: [],
 })
 
@@ -57,52 +57,59 @@ const fileUpload = (event: Event) => {
     emit('file-upload', file)
   }
 }
+
+const dataSetup = () => {
+  if (props.files) form.value.files = props.files
+}
+
+onMounted(() => dataSetup())
+onUpdated(() => dataSetup())
 </script>
 
 <template>
   <CRow>
-    {{ files?.length }}
     <CFormLabel for="title" class="col-form-label col-2">파일</CFormLabel>
     <CCol class="col-sm-10 col-xl-8">
-      <!--      <CRow v-if="(files as AFile[]).length">-->
-      <!--        <CAlert :color="AlertSecondary">-->
-      <!--          <small>{{ devideUri((files as AFile[])[0]?.file ?? ' ')[0] }}</small>-->
-      <!--          <CCol v-for="(file, i) in files as AFile[]" :key="file.pk" xs="12" color="primary">-->
-      <!--            <small>-->
-      <!--              현재 :-->
-      <!--              <a :href="file.file" target="_blank">-->
-      <!--                {{ devideUri(file.file ?? ' ')[1] }}-->
-      <!--              </a>-->
-      <!--              <span>-->
-      <!--                <CFormCheck-->
-      <!--                  v-model="(form.files as AFile[])[i].del"-->
-      <!--                  :id="`del-file-${file.pk}`"-->
-      <!--                  @input="enableStore"-->
-      <!--                  label="삭제"-->
-      <!--                  inline-->
-      <!--                  :disabled="(form.files as AFile[])[i].edit"-->
-      <!--                  class="ml-4"-->
-      <!--                />-->
-      <!--                <CFormCheck :id="`edit-file-${file.pk}`" label="변경" inline @click="editFile(i)" />-->
-      <!--              </span>-->
-      <!--              <CRow v-if="(form.files as AFile[])[i].edit">-->
-      <!--                <CCol>-->
-      <!--                  <CInputGroup>-->
-      <!--                    변경 : &nbsp;-->
-      <!--                    <CFormInput-->
-      <!--                      :id="`docs-file-${file.pk}`"-->
-      <!--                      v-model="(form.files as AFile[])[i].newFile"-->
-      <!--                      size="sm"-->
-      <!--                      type="file"-->
-      <!--                      @input="fileChange($event, file.pk as number)"-->
-      <!--                    />-->
-      <!--                  </CInputGroup>-->
-      <!--                </CCol>-->
-      <!--              </CRow>-->
-      <!--            </small>-->
-      <!--          </CCol>-->
-      <!--        </CAlert>-->
-      <!--      </CRow>-->
+      <CRow v-if="(files as AFile[]).length">
+        <CAlert :color="AlertSecondary">
+          <small>{{ devideUri((files as AFile[])[0]?.file ?? ' ')[0] }}</small>
+          <CCol v-for="(file, i) in files as AFile[]" :key="file.pk" xs="12" color="primary">
+            {{ file }}
+            <small>
+              현재 :
+              <a :href="file.file" target="_blank">
+                {{ devideUri(file.file ?? ' ')[1] }}
+              </a>
+              <span>
+                <!--                <CFormCheck-->
+                <!--                  v-model="(form.files as AFile[])[i].del"-->
+                <!--                  :id="`del-file-${file.pk}`"-->
+                <!--                  @input="enableStore"-->
+                <!--                  label="삭제"-->
+                <!--                  inline-->
+                <!--                  :disabled="(form.files as AFile[])[i].edit"-->
+                <!--                  class="ml-4"-->
+                <!--                />-->
+                <CFormCheck :id="`edit-file-${file.pk}`" label="변경" inline @click="editFile(i)" />
+              </span>
+              <!--              <CRow v-if="(form.files as AFile[])[i].edit">-->
+              <!--                <CCol>-->
+              <!--                  <CInputGroup>-->
+              <!--                    변경 : &nbsp;-->
+              <!--                    <CFormInput-->
+              <!--                      :id="`docs-file-${file.pk}`"-->
+              <!--                      v-model="(form.files as AFile[])[i].newFile"-->
+              <!--                      size="sm"-->
+              <!--                      type="file"-->
+              <!--                      @input="fileChange($event, file.pk as number)"-->
+              <!--                    />-->
+              <!--                  </CInputGroup>-->
+              <!--                </CCol>-->
+              <!--              </CRow>-->
+            </small>
+          </CCol>
+        </CAlert>
+      </CRow>
 
       <CRow class="mb-2">
         <CCol>

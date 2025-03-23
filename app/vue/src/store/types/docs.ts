@@ -163,7 +163,7 @@ export interface PatchDocs {
   execution_date?: string | null
   content?: string
   hit?: number
-  // scrape?: number
+  scrape?: number
   is_secret?: boolean
   password?: string
   is_blind?: boolean
