@@ -139,8 +139,7 @@ onBeforeMount(() => {
             />
           </CCol>
         </CRow>
-
-        <FileForms />
+        <FileForms :files="docs?.files ?? []" />
         <LinkForms />
       </CCardBody>
     </CCard>
