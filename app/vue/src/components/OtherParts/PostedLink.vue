@@ -24,7 +24,12 @@ const newLink = ref<Link>({
 
 const createLink = () => {
   newLink.value.docs = props.docs as number
-  if (newLink.value.link) docStore.createLink({ ...newLink.value })
+  if (newLink.value.link) {
+    if (!/^(https?:\/\/)/.test(newLink.value.link))
+      newLink.value.link = `https://${newLink.value.link}`
+    docStore.createLink({ ...newLink.value })
+    clearLink()
+  } else return
 }
 
 const clearLink = () => {
