@@ -280,7 +280,7 @@ onMounted(() => {
         </CCol>
 
         <CCol md="7" lg="6" xl="5">
-          <CRow v-if="docs.files && docs.files.length">
+          <CRow v-if="docs.files && docs.files.length" class="mb-3">
             <CCol>
               <CListGroup>
                 <CListGroupItem>File</CListGroupItem>
@@ -303,7 +303,7 @@ onMounted(() => {
             </CCol>
           </CRow>
 
-          <CRow v-if="!!docs.links && docs.links.length" class="mb-3">
+          <CRow v-if="!!docs.links && docs.links.length">
             <CCol>
               <CListGroup>
                 <CListGroupItem>Link</CListGroupItem>

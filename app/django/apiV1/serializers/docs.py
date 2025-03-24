@@ -111,9 +111,11 @@ class SimpleLawSuitCaseSerializer(serializers.ModelSerializer):
 
 
 class LinksInDocumentSerializer(serializers.ModelSerializer):
+    user = serializers.SlugField(read_only=True)
+
     class Meta:
         model = Link
-        fields = ('pk', 'docs', 'link', 'hit')
+        fields = ('pk', 'docs', 'link', 'description', 'user', 'hit', 'created')
 
 
 class FilesInDocumentSerializer(serializers.ModelSerializer):
