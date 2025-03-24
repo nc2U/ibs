@@ -1,11 +1,11 @@
 import os
-import magic
-
-from django.db import models
 from datetime import datetime, timedelta
+
+import magic
 from django.conf import settings
-from django.dispatch import receiver
+from django.db import models
 from django.db.models.signals import pre_save, pre_delete
+from django.dispatch import receiver
 
 
 class DocType(models.Model):
