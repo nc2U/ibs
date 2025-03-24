@@ -104,11 +104,21 @@ const clearLink = () => {
 
   <CRow v-if="addLinkForm" class="p-3 mb-3" :class="bgLight">
     <CCol>
-      <CFormInput v-model="newLink.link" size="sm" placeholder="새 파일 링크" />
+      <CFormInput
+        v-model="newLink.link"
+        @keydown.enter="createLink"
+        size="sm"
+        placeholder="새 파일 링크"
+      />
     </CCol>
 
     <CCol>
-      <CFormInput v-model="newLink.description" size="sm" placeholder="부가적인 설명" />
+      <CFormInput
+        v-model="newLink.description"
+        @keydown.enter="createLink"
+        size="sm"
+        placeholder="부가적인 설명"
+      />
     </CCol>
   </CRow>
 

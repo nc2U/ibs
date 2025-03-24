@@ -199,7 +199,11 @@ const fileDelete = () => {
 
     <CCol>
       <CInputGroup v-if="descShow" size="sm">
-        <CFormInput v-model="newFile.description" placeholder="부가적인 설명" />
+        <CFormInput
+          v-model="newFile.description"
+          @keydown.enter="fileUpload"
+          placeholder="부가적인 설명"
+        />
         <CInputGroupText>
           <v-icon icon="mdi-trash-can-outline" size="16" @click="clearFile('new')" />
         </CInputGroupText>

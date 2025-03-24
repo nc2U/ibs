@@ -1,9 +1,8 @@
 import json
 import os.path
-from urllib.parse import urlsplit, urlunsplit, urlparse
+from urllib.parse import urlparse
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from rest_framework import serializers
 
