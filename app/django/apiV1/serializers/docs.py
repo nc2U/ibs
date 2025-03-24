@@ -5,7 +5,6 @@ from urllib.parse import urlsplit, urlunsplit
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
