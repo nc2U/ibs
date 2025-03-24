@@ -91,7 +91,7 @@ watch(
 
 onBeforeMount(async () => {
   emit('aside-visible', true)
-  await workStore.fetchAllIssueProjectList('', '', '')
+  await workStore.fetchAllIssueProjectList()
 
   await workStore.fetchIssueProject(projId.value)
   await workStore.fetchAllIssueList(projId.value)

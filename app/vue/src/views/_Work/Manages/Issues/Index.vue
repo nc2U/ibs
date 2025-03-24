@@ -72,7 +72,7 @@ const pageSelect = (page: number) => {
 }
 
 onBeforeMount(async () => {
-  await workStore.fetchAllIssueProjectList('', '', '')
+  await workStore.fetchAllIssueProjectList()
   await workStore.fetchAllIssueList()
   if (!route.query) await workStore.fetchIssueList({ status__closed: '0' })
 
