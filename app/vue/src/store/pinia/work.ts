@@ -79,7 +79,7 @@ export const useWork = defineStore('work', () => {
 
   const fetchAllIssueProjectList = async (
     com: '' | number = '',
-    sort: '1' | '2' | '3' = '2',
+    sort: '' | '1' | '2' | '3' = '2',
     p_isnull: '' | '1' = '1',
     status: '1' | '9' = '1',
   ) =>
