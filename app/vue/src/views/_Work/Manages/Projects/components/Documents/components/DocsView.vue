@@ -7,6 +7,7 @@ import { timeFormat } from '@/utils/baseMixins'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import PostContent from '@/components/OtherParts/PostContent.vue'
 import PostedFile from '@/components/OtherParts/PostedFile.vue'
+import PostedLink from '@/components/OtherParts/PostedLink.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, required: true },
@@ -67,13 +68,23 @@ onMounted(() => {
 
     <PostContent :content="docs.content" />
 
-    <CRow>
+    <CRow v-if="docs.files?.length" class="mb-3">
       <CCol>
         <CRow>
           <CCol><h5>파일</h5></CCol>
         </CRow>
 
         <PostedFile :docs="docs.pk as number" :files="docs.files" />
+      </CCol>
+    </CRow>
+
+    <CRow v-if="docs.links?.length" class="mb-3">
+      <CCol>
+        <CRow>
+          <CCol><h5>링크</h5></CCol>
+        </CRow>
+
+        <PostedLink :docs="docs.pk as number" :links="docs.links" />
       </CCol>
     </CRow>
 

@@ -1,9 +1,7 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
-
-const msg = ref('Link')
+defineProps({ links: { type: Array, default: () => [] } })
 </script>
 
 <template>
-  <span>{{ msg }}</span>
+  {{ links }}
 </template>
