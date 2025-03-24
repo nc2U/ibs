@@ -28,6 +28,7 @@ const newLinkPush = () => {
   newLinks.value = []
   newLinkNum.value = 1
 }
+
 defineExpose({ newLinkPush })
 
 const dataSetup = () => {

@@ -263,8 +263,6 @@ onMounted(() => dataSetup())
       </CCol>
     </CRow>
   </CForm>
-  <hr />
-  {{ form.links }}
 
   <ConfirmModal ref="refConfirmModal">
     <!--    <template #header> {{ viewRoute }}</template>-->
