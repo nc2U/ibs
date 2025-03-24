@@ -27,6 +27,7 @@ const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
 const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
 
 const refFileForms = ref()
+const refLinkForms = ref()
 const refConfirmModal = ref()
 
 const validated = ref(false)
@@ -56,6 +57,7 @@ const cngFiles = ref<
 >([])
 
 const newLinks = ref<Link[]>([])
+const newLinkPush = (payload: Link[]) => payload.forEach(link => newLinks.value.push(link))
 
 const fileUpload = (file: File) => newFiles.value.push(file)
 
@@ -66,6 +68,8 @@ const filesUpdate = (payload: AFile[]) => {
   console.log({ ...form.value.files })
 }
 
+const linksUpdate = (payload: Link[]) => (form.value.links = payload)
+
 const submitCheck = (event: Event) => {
   const el = event.currentTarget as HTMLFormElement
   if (!el.checkValidity()) {
@@ -75,6 +79,7 @@ const submitCheck = (event: Event) => {
     validated.value = true
   } else {
     validated.value = false
+    refLinkForms.value.newLinkPush()
     onSubmit({ ...form.value, newLinks: newLinks.value })
     refFileForms.value.checkRelease()
   } // refConfirmModal.value.callModal()
@@ -241,7 +246,12 @@ onMounted(() => dataSetup())
             @file-change="fileChange"
           />
 
-          <LinkForms />
+          <LinkForms
+            ref="refLinkForms"
+            :links="docs?.links ?? []"
+            @links-update="linksUpdate"
+            @new-link-push="newLinkPush"
+          />
         </CCardBody>
       </CCard>
     </CRow>
