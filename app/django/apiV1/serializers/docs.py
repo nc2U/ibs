@@ -1,6 +1,6 @@
 import json
 import os.path
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit, urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -126,6 +126,14 @@ class FilesInDocumentSerializer(serializers.ModelSerializer):
                   'file_size', 'description', 'user', 'hit', 'created')
 
 
+def validate_link(value):
+    parsed_url = urlparse(value)
+    # 스키마(http, https)가 없으면 자동으로 'https://' 추가
+    if not parsed_url.scheme:
+        value = f"https://{value}"
+    return value
+
+
 class DocumentSerializer(serializers.ModelSerializer):
     proj_name = serializers.SlugField(source='issue_project', read_only=True)
     proj_sort = serializers.SerializerMethodField(read_only=True)
@@ -181,36 +189,6 @@ class DocumentSerializer(serializers.ModelSerializer):
         next_obj = queryset.filter(pk__gt=obj.pk).order_by('pk').first()
         return next_obj.pk if next_obj else None
 
-    def to_python(self, value):
-
-        def split_url(url):
-            """
-            Return a list of url parts via urlparse.urlsplit(), or raise
-            ValidationError for some malformed URLs.
-            """
-            try:
-                return list(urlsplit(url))
-            except ValueError:
-                # urlparse.urlsplit can raise a ValueError with some
-                # misformatted URLs.
-                raise ValidationError(self.error_messages['invalid'], code='invalid')
-
-        if value:
-            url_fields = split_url(value)
-            if not url_fields[0]:
-                # If no URL scheme given, assume http://
-                url_fields[0] = 'http'
-            if not url_fields[1]:
-                # Assume that if no domain is provided, that the path segment
-                # contains the domain.
-                url_fields[1] = url_fields[2]
-                url_fields[2] = ''
-                # Rebuild the url_fields list, since the domain segment may now
-                # contain the path too.
-                url_fields = split_url(urlunsplit(url_fields))
-            value = urlunsplit(url_fields)
-        return value
-
     @transaction.atomic
     def create(self, validated_data):
         validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
@@ -222,7 +200,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             new_links = self.initial_data.getlist('newLinks')
             if new_links:
                 for link in new_links:
-                    Link.objects.create(docs=docs, link=self.to_python(link))
+                    Link.objects.create(docs=docs, link=validate_link(link))
 
         # Files 처리
         if self.initial_data.get('newFiles'):
@@ -254,13 +232,13 @@ class DocumentSerializer(serializers.ModelSerializer):
                     if link.get('del'):
                         link_object.delete()
                     else:
-                        link_object.link = self.to_python(link.get('link'))
+                        link_object.link = validate_link(link.get('link'))
                         link_object.save()
 
             new_links = self.initial_data.getlist('newLinks')
             if new_links:
                 for link in new_links:
-                    Link.objects.create(docs=instance, link=self.to_python(link))
+                    Link.objects.create(docs=instance, link=validate_link(link))
 
             # Files 처리
             old_files = self.initial_data.getlist('files')
