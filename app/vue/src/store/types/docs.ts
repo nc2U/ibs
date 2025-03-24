@@ -106,7 +106,7 @@ export type Docs = {
 
 export interface Link {
   pk?: null | number
-  docs: number
+  docs: number | null
   link: string
   description: string
   hit?: number

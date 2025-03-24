@@ -369,6 +369,7 @@ export const useDocs = defineStore('docs', () => {
       )
       .catch(err => errorHandle(err.response.data))
 
+  // link
   const link = ref<Link | null>(null)
 
   const fetchLink = (pk: number) =>
@@ -377,12 +378,25 @@ export const useDocs = defineStore('docs', () => {
       .then(res => (link.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
+  const createLink = (payload: Link) =>
+    api
+      .post(`/link`, payload)
+      .then(res => fetchDocs(res.data.docs))
+      .catch(err => errorHandle(err.response.data))
+
   const patchLink = (payload: Link) =>
     api
       .patch(`/link/${payload.pk}/`, payload)
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
 
+  const deleteLink = (pk: number, docs: number) =>
+    api
+      .delete(`/link/${pk}/`)
+      .then(() => fetchDocs(docs))
+      .catch(err => errorHandle(err.response.data))
+
+  // file
   const file = ref<DFile | null>(null)
   const fileList = ref<DFile[]>()
 
@@ -479,7 +493,9 @@ export const useDocs = defineStore('docs', () => {
 
     link,
     fetchLink,
+    createLink,
     patchLink,
+    deleteLink,
 
     file,
     fetchFile,
