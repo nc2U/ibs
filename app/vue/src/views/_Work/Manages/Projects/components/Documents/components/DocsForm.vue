@@ -227,12 +227,14 @@ onMounted(() => dataSetup())
               />
             </CCol>
           </CRow>
+
           <FileForms
             :files="docs?.files ?? []"
             @files-update="filesUpdate"
             @file-upload="fileUpload"
             @file-change="fileChange"
           />
+
           <LinkForms />
         </CCardBody>
       </CCard>

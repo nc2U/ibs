@@ -37,7 +37,12 @@ const fileUpload = (event: Event) => {
   }
 }
 
-const editFile = (i: number) => {
+const editFile = (event: Event, i: number, pk: number) => {
+  const el = event.target as HTMLInputElement
+  const delForm = document.getElementById(`del-file-${pk}`) as HTMLInputElement
+  if (el.checked && delForm.checked) delForm.checked = false
+
+  if (el.value === 'true' && delForm.checked) delForm.checked = false
   if ((form.value.files as any[]).length) {
     ;(form.value.files as any[])[i].del = false
     ;(form.value.files as any[])[i].edit = !(form.value.files as any[])[i].edit
@@ -93,7 +98,12 @@ onBeforeUpdate(() => dataSetup())
                   class="ml-4"
                   @change="delFile(i)"
                 />
-                <CFormCheck :id="`edit-file-${file.pk}`" label="변경" inline @click="editFile(i)" />
+                <CFormCheck
+                  :id="`edit-file-${file.pk}`"
+                  label="변경"
+                  inline
+                  @click="editFile($event, i, file.pk)"
+                />
               </span>
               <CRow v-if="(form.files as AFile[])[i].edit">
                 <CCol>
