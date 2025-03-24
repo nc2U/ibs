@@ -280,29 +280,6 @@ onMounted(() => {
         </CCol>
 
         <CCol md="7" lg="6" xl="5">
-          <CRow v-if="!!docs.links && docs.links.length" class="mb-3">
-            <CCol>
-              <CListGroup>
-                <CListGroupItem>Link</CListGroupItem>
-                <CListGroupItem
-                  v-for="l in docs.links"
-                  :key="l.pk"
-                  class="d-flex justify-content-between align-items-center"
-                >
-                  <a :href="l.link" target="_blank" @click="linkHitUp(l.pk as number)">
-                    {{ cutString(l.link, 45) }}
-                  </a>
-                  <small>
-                    조회 수 :
-                    <CBadge color="info" shape="rounded-pill">
-                      {{ l.hit }}
-                    </CBadge>
-                  </small>
-                </CListGroupItem>
-              </CListGroup>
-            </CCol>
-          </CRow>
-
           <CRow v-if="docs.files && docs.files.length">
             <CCol>
               <CListGroup>
@@ -319,6 +296,29 @@ onMounted(() => {
                     다운로드 :
                     <CBadge color="success" shape="rounded-pill">
                       {{ f.hit }}
+                    </CBadge>
+                  </small>
+                </CListGroupItem>
+              </CListGroup>
+            </CCol>
+          </CRow>
+
+          <CRow v-if="!!docs.links && docs.links.length" class="mb-3">
+            <CCol>
+              <CListGroup>
+                <CListGroupItem>Link</CListGroupItem>
+                <CListGroupItem
+                  v-for="l in docs.links"
+                  :key="l.pk"
+                  class="d-flex justify-content-between align-items-center"
+                >
+                  <a :href="l.link" target="_blank" @click="linkHitUp(l.pk as number)">
+                    {{ cutString(l.link, 45) }}
+                  </a>
+                  <small>
+                    조회 수 :
+                    <CBadge color="info" shape="rounded-pill">
+                      {{ l.hit }}
                     </CBadge>
                   </small>
                 </CListGroupItem>

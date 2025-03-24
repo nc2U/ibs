@@ -253,54 +253,6 @@ onBeforeUpdate(() => dataSetup())
       </CCol>
     </CRow>
 
-    <CRow>
-      <CFormLabel for="title" class="col-md-2 col-form-label">링크</CFormLabel>
-      <CCol md="10" lg="8" xl="6">
-        <CRow v-if="docs && (form.links as Link[]).length">
-          <CAlert :color="AlertSecondary">
-            <CCol>
-              <CInputGroup v-for="(link, i) in form.links as Link[]" :key="link.pk" class="mb-2">
-                <CFormInput
-                  :id="`docs-link-${link.pk}`"
-                  v-model="(form.links as Link[])[i].link"
-                  size="sm"
-                  placeholder="파일 링크"
-                  @input="enableStore"
-                />
-                <CInputGroupText id="basic-addon1" class="py-0">
-                  <CFormCheck
-                    :id="`del-link-${link.pk}`"
-                    v-model="(form.links as Link[])[i].del"
-                    @input="enableStore"
-                    label="삭제"
-                  />
-                </CInputGroupText>
-              </CInputGroup>
-            </CCol>
-          </CAlert>
-        </CRow>
-
-        <CRow class="mb-2">
-          <CCol>
-            <CInputGroup v-for="lNum in newLinkRange" :key="`ln-${lNum}`" class="mb-2">
-              <CFormInput
-                :id="`link-${lNum}`"
-                v-model="newLinks[lNum]"
-                placeholder="파일 링크"
-                @input="enableStore"
-              />
-              <CInputGroupText id="basic-addon1" @click="ctlLinkNum(lNum)">
-                <v-icon
-                  :icon="`mdi-${lNum + 1 < newLinkNum ? 'minus' : 'plus'}-thick`"
-                  :color="lNum + 1 < newLinkNum ? 'error' : 'primary'"
-                />
-              </CInputGroupText>
-            </CInputGroup>
-          </CCol>
-        </CRow>
-      </CCol>
-    </CRow>
-
     <CRow class="mb-3">
       <CFormLabel for="title" class="col-md-2 col-form-label">파일</CFormLabel>
       <CCol md="10" lg="8" xl="6">
@@ -356,6 +308,54 @@ onBeforeUpdate(() => dataSetup())
                 <v-icon
                   :icon="`mdi-${fNum + 1 < newFileNum ? 'minus' : 'plus'}-thick`"
                   :color="fNum + 1 < newFileNum ? 'error' : 'primary'"
+                />
+              </CInputGroupText>
+            </CInputGroup>
+          </CCol>
+        </CRow>
+      </CCol>
+    </CRow>
+
+    <CRow>
+      <CFormLabel for="title" class="col-md-2 col-form-label">링크</CFormLabel>
+      <CCol md="10" lg="8" xl="6">
+        <CRow v-if="docs && (form.links as Link[]).length">
+          <CAlert :color="AlertSecondary">
+            <CCol>
+              <CInputGroup v-for="(link, i) in form.links as Link[]" :key="link.pk" class="mb-2">
+                <CFormInput
+                  :id="`docs-link-${link.pk}`"
+                  v-model="(form.links as Link[])[i].link"
+                  size="sm"
+                  placeholder="파일 링크"
+                  @input="enableStore"
+                />
+                <CInputGroupText id="basic-addon1" class="py-0">
+                  <CFormCheck
+                    :id="`del-link-${link.pk}`"
+                    v-model="(form.links as Link[])[i].del"
+                    @input="enableStore"
+                    label="삭제"
+                  />
+                </CInputGroupText>
+              </CInputGroup>
+            </CCol>
+          </CAlert>
+        </CRow>
+
+        <CRow class="mb-2">
+          <CCol>
+            <CInputGroup v-for="lNum in newLinkRange" :key="`ln-${lNum}`" class="mb-2">
+              <CFormInput
+                :id="`link-${lNum}`"
+                v-model="newLinks[lNum]"
+                placeholder="파일 링크"
+                @input="enableStore"
+              />
+              <CInputGroupText id="basic-addon1" @click="ctlLinkNum(lNum)">
+                <v-icon
+                  :icon="`mdi-${lNum + 1 < newLinkNum ? 'minus' : 'plus'}-thick`"
+                  :color="lNum + 1 < newLinkNum ? 'error' : 'primary'"
                 />
               </CInputGroupText>
             </CInputGroup>
