@@ -26,7 +26,7 @@ const handleFileChange = (event: Event) => {
   if (el.files) newFile.value.file = el.files[0] || null
 }
 
-const clearFile = (mode: 'new' | 'edit' | undefined) => {
+const clearFile = (mode: 'new' | 'edit' | 'all' = 'all') => {
   inputKey.value += 1 // 키 변경으로 새 <input> 생성
   descShow.value = false
   resetFile(mode)

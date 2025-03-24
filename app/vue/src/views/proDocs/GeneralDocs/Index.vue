@@ -83,7 +83,7 @@ const createDocs = (payload: { form: FormData; isProject: boolean }) => docStore
 const updateDocs = (payload: { pk: number; form: FormData; isProject: boolean }) =>
   docStore.updateDocs(payload)
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
-const patchLink = (payload: Link) => docStore.patchLink(payload)
+const patchLink = (pk: number, payload: Link) => docStore.patchLink(pk, payload)
 const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
 
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
@@ -156,7 +156,7 @@ const docsHit = async (pk: number) => {
 const linkHit = async (pk: number) => {
   const link = (await fetchLink(pk)) as Link
   link.hit = (link.hit as number) + 1
-  await patchLink(link)
+  await patchLink(pk, link)
 }
 const fileHit = async (pk: number) => {
   const file = (await fetchFile(pk)) as AFile

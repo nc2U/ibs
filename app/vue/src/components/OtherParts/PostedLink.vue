@@ -33,14 +33,52 @@ const createLink = () => {
   } else return
 }
 
-const clearLink = () => {
+const clearLink = (mode: 'new' | 'edit' | 'all' = 'all') => {
   newLink.value.docs = null
   newLink.value.link = ''
   newLink.value.description = ''
   addLinkForm.value = false
+  resetLink(mode)
 }
 
-// 파일 삭제 로직
+// 링크 변경 로직
+const isEditForm = ref<number | null>(null)
+const editLink = ref<Link>({
+  // pk: undefined,
+  docs: null,
+  link: '',
+  description: '',
+})
+
+const resetLink = (mode: 'new' | 'edit' | 'all' = 'all') => {
+  if (mode !== 'new') addLinkForm.value = false
+  if (mode !== 'edit') isEditForm.value = null
+  newLink.value.link = ''
+  newLink.value.description = ''
+  editLink.value.pk = undefined
+  editLink.value.link = ''
+  editLink.value.description = ''
+}
+const editFormSet = (pk: number) => {
+  editLink.value.pk = pk
+  isEditForm.value = isEditForm.value === pk ? null : pk
+  resetLink('edit')
+}
+
+const linkUpdate = (pk: number) => {
+  isEditForm.value = null
+  if (editLink.value.link || editLink.value.description) {
+    const link: { docs?: number; link?: string; description?: string } = {}
+    link.docs = props.docs as number
+    if (editLink.value.link) link.link = editLink.value.link
+    if (editLink.value.description) link.description = editLink.value.description
+    docStore.patchLink(pk, { ...link })
+    console.log({ ...link })
+  }
+  resetLink()
+}
+
+// 링크 삭제 로직
 const refDelLink = ref()
 const delLinkPk = ref<number | null>(null)
 const delLinkConfirm = (pk: number) => {
@@ -69,10 +107,10 @@ const linkDelete = () => {
           <td class="text-secondary">
             <span>{{ link.user }}, {{ timeFormat(link.created as string, false, '/') }}</span>
             <span class="ml-2">
-              <!--              <router-link to="#" @click.prevent="editFormSet(link.pk as number)">-->
-              <v-icon icon="mdi-pencil" size="16" color="secondary" />
-              <v-tooltip activator="parent" location="top">변경</v-tooltip>
-              <!--              </router-link>-->
+              <router-link to="#" @click.prevent="editFormSet(link.pk as number)">
+                <v-icon icon="mdi-pencil" size="16" color="secondary" />
+                <v-tooltip activator="parent" location="top">변경</v-tooltip>
+              </router-link>
             </span>
             <span class="ml-2">
               <router-link to="#" @click.prevent="delLinkConfirm(link.pk as number)">
@@ -80,37 +118,34 @@ const linkDelete = () => {
                 <v-tooltip activator="parent" location="top">삭제</v-tooltip>
               </router-link>
             </span>
-            <!--            <span v-if="isEditForm === link.pk">-->
-            <!--              <CRow>-->
-            <!--                <CCol xs>-->
-            <!--                  <CInputGroup size="sm" style="width: 250px">-->
-            <!--                    <CFormInput :aria-describedby="`link-edit-${link.pk}`" />-->
-            <!--                    &lt;!&ndash;                    @input="editFileChange($event)"&ndash;&gt;-->
-            <!--                    <CInputGroupText :id="`link-edit-${link.pk}`"> 취소 </CInputGroupText>-->
-            <!--                    &lt;!&ndash;                    :color="editFile.file ? 'info' : 'secondary'"&ndash;&gt;-->
-            <!--                    &lt;!&ndash;                      @click="clearFile"&ndash;&gt;-->
-            <!--                  </CInputGroup>-->
-            <!--                </CCol>-->
-            <!--                &lt;!&ndash;                <CCol v-if="editLink.file" xs>&ndash;&gt;-->
-            <!--                &lt;!&ndash;                  <CInputGroup size="sm" style="width: 250px">&ndash;&gt;-->
-            <!--                &lt;!&ndash;                    <CFormInput&ndash;&gt;-->
-            <!--                &lt;!&ndash;                      v-model="editLink.description"&ndash;&gt;-->
-            <!--                &lt;!&ndash;                      placeholder="부가적인 설명"&ndash;&gt;-->
-            <!--                &lt;!&ndash;                      size="sm"&ndash;&gt;-->
-            <!--                &lt;!&ndash;                    />&ndash;&gt;-->
-            <!--                &lt;!&ndash;                    <CInputGroupText>&ndash;&gt;-->
-            <!--                &lt;!&ndash;                      <v-icon icon="mdi-trash-can-outline" size="16" @click="clearLink('edit')" />&ndash;&gt;-->
-            <!--                &lt;!&ndash;                    </CInputGroupText>&ndash;&gt;-->
-            <!--                &lt;!&ndash;                  </CInputGroup>&ndash;&gt;-->
-            <!--                &lt;!&ndash;                </CCol>&ndash;&gt;-->
-            <!--                &lt;!&ndash;                <CCol v-if="editLink.file" xs>&ndash;&gt;-->
-            <!--                &lt;!&ndash;                  <CButton color="success" size="sm" @click="linkChange(link.pk as number)">&ndash;&gt;-->
-            <!--                &lt;!&ndash;                    변경&ndash;&gt;-->
-            <!--                &lt;!&ndash;                  </CButton>&ndash;&gt;-->
-            <!--                &lt;!&ndash;                  <CButton color="light" size="sm" @click="clearLink"> 취소 </CButton>&ndash;&gt;-->
-            <!--                &lt;!&ndash;                </CCol>&ndash;&gt;-->
-            <!--              </CRow>-->
-            <!--            </span>-->
+            <span v-if="isEditForm === link.pk">
+              <CRow>
+                <CCol xs>
+                  <CFormInput
+                    v-model="editLink.link"
+                    size="sm"
+                    inline
+                    placeholder="변경할 파일링크"
+                    @keydown.enter="linkUpdate(link.pk as number)"
+                  />
+                </CCol>
+                <CCol xs>
+                  <CFormInput
+                    v-model="editLink.description"
+                    inline
+                    placeholder="부가적인 설명"
+                    size="sm"
+                    @keydown.enter="linkUpdate(link.pk as number)"
+                  />
+                </CCol>
+                <CCol xs>
+                  <CButton color="success" size="sm" @click="linkUpdate(link.pk as number)">
+                    변경
+                  </CButton>
+                  <CButton color="light" size="sm" @click="clearLink()"> 취소 </CButton>
+                </CCol>
+              </CRow>
+            </span>
           </td>
         </tr>
       </table>

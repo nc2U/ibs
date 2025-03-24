@@ -80,12 +80,12 @@ const createSuitCase = (payload: SuitCase & { isProject?: boolean }) =>
   docStore.createSuitCase(payload)
 const updateSuitCase = (payload: SuitCase) => docStore.updateSuitCase(payload)
 const deleteSuitCase = (pk: number) => docStore.deleteSuitCase(pk)
-const patchLink = (payload: Link) => docStore.patchLink(payload)
+const patchLink = (pk: number, payload: Link) => docStore.patchLink(pk, payload)
 const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
 const linkHit = async (pk: number) => {
   const link = (await fetchLink(pk)) as Link
   link.hit = (link.hit as number) + 1
-  await patchLink(link)
+  await patchLink(pk, link)
 }
 const fileHit = async (pk: number) => {
   const file = (await fetchFile(pk)) as AFile

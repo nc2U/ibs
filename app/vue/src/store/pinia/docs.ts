@@ -384,9 +384,9 @@ export const useDocs = defineStore('docs', () => {
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
 
-  const patchLink = (payload: Link) =>
+  const patchLink = (pk: number, payload: Link | any) =>
     api
-      .patch(`/link/${payload.pk}/`, payload)
+      .patch(`/link/${pk}/`, payload)
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
 
