@@ -380,7 +380,7 @@ export const useDocs = defineStore('docs', () => {
 
   const createLink = (payload: Link) =>
     api
-      .post(`/link`, payload)
+      .post(`/link/`, payload)
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err.response.data))
 
