@@ -1,11 +1,38 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import type { Link } from '@/store/types/docs'
+import { useDocs } from '@/store/pinia/docs'
 import { timeFormat } from '@/utils/baseMixins'
+import { bgLight } from '@/utils/cssMixins'
 
-defineProps({ links: { type: Array as PropType<Link[]>, default: () => [] } })
+const props = defineProps({
+  docs: { type: Number, required: true },
+  links: { type: Array as PropType<Link[]>, default: () => [] },
+})
 
-const isEditForm = ref(false)
+const docStore = useDocs()
+
+// 링크 폼 핸들링 로직
+const addLinkForm = ref(false)
+
+// 링크 생성 로직
+const newLink = ref<Link>({
+  docs: null,
+  link: '',
+  description: '',
+})
+
+const createLink = () => {
+  newLink.value.docs = props.docs as number
+  if (newLink.value.link) docStore.createLink({ ...newLink.value })
+}
+
+const clearLink = () => {
+  newLink.value.docs = null
+  newLink.value.link = ''
+  newLink.value.description = ''
+  addLinkForm.value = false
+}
 </script>
 
 <template>
@@ -66,6 +93,29 @@ const isEditForm = ref(false)
           </td>
         </tr>
       </table>
+    </CCol>
+  </CRow>
+
+  <CRow class="mb-2">
+    <CCol>
+      <router-link to="#" @click.prevent="addLinkForm = !addLinkForm">링크추가</router-link>
+    </CCol>
+  </CRow>
+
+  <CRow v-if="addLinkForm" class="p-3 mb-3" :class="bgLight">
+    <CCol>
+      <CFormInput v-model="newLink.link" size="sm" placeholder="새 파일 링크" />
+    </CCol>
+
+    <CCol>
+      <CFormInput v-model="newLink.description" size="sm" placeholder="부가적인 설명" />
+    </CCol>
+  </CRow>
+
+  <CRow v-if="addLinkForm">
+    <CCol>
+      <CButton color="success" size="sm" @click="createLink">추가</CButton>
+      <CButton color="light" size="sm" @click="clearLink">취소</CButton>
     </CCol>
   </CRow>
 </template>

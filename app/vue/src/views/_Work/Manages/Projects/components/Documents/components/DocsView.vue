@@ -68,9 +68,9 @@ onMounted(() => {
 
     <PostContent :content="docs.content" />
 
-    <CRow v-if="docs.files?.length" class="mb-3">
+    <CRow class="mb-3">
       <CCol>
-        <CRow>
+        <CRow v-if="docs.files?.length">
           <CCol><h5>파일</h5></CCol>
         </CRow>
 
@@ -78,9 +78,9 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <CRow v-if="docs.links?.length" class="mb-3">
+    <CRow class="mb-3">
       <CCol>
-        <CRow>
+        <CRow v-if="docs.links?.length">
           <CCol><h5>링크</h5></CCol>
         </CRow>
 
