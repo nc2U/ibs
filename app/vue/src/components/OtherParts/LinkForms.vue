@@ -7,16 +7,12 @@ const props = defineProps({ links: { type: Array as PropType<Link[]>, default: (
 
 const emit = defineEmits(['links-update', 'new-link-push'])
 
-const form = ref<{ links: Link[] }>({
-  links: [],
-})
+const form = ref<{ links: Link[] }>({ links: [] })
 
 const formUpdate = () => nextTick(() => emit('links-update', form.value.links))
 
 const range = (from: number, to: number): number[] =>
   from < to ? [from, ...range(from + 1, to)] : []
-
-const newLinks = ref<Link[]>([])
 
 const newLinkNum = ref(1)
 const newLinkRange = computed(() => range(0, newLinkNum.value))
@@ -26,17 +22,19 @@ const ctlLinkNum = (n: number) => {
   else newLinkNum.value = newLinkNum.value - 1
 }
 
-const dataSetup = () => {
-  if (props.links) form.value.links = props.links
-  formUpdate()
-}
-
+const newLinks = ref<Link[]>([])
 const newLinkPush = () => {
   emit('new-link-push', newLinks.value)
   newLinks.value = []
   newLinkNum.value = 1
 }
 defineExpose({ newLinkPush })
+
+const dataSetup = () => {
+  if (props.links) form.value.links = props.links
+  form.value.links.forEach(link => (link.del = false))
+  formUpdate()
+}
 
 onBeforeUpdate(() => dataSetup())
 onBeforeMount(() => dataSetup())

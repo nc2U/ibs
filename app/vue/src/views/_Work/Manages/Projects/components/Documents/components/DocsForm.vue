@@ -44,8 +44,8 @@ const form = ref<Docs>({
   is_secret: false,
   password: '',
   is_blind: false,
-  links: [],
   files: [],
+  links: [],
 })
 
 const newFiles = ref<File[]>([])
@@ -263,6 +263,8 @@ onMounted(() => dataSetup())
       </CCol>
     </CRow>
   </CForm>
+  <hr />
+  {{ form.links }}
 
   <ConfirmModal ref="refConfirmModal">
     <!--    <template #header> {{ viewRoute }}</template>-->

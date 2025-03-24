@@ -7,9 +7,7 @@ const props = defineProps({ files: { type: Array as PropType<AFile[]>, default: 
 
 const emit = defineEmits(['files-update', 'file-upload', 'file-change'])
 
-const form = ref<{ files: AFile[] }>({
-  files: [],
-})
+const form = ref<{ files: AFile[] }>({ files: [] })
 
 const formUpdate = () => nextTick(() => emit('files-update', form.value.files))
 
@@ -63,6 +61,14 @@ const delFile = (i: number) => {
   formUpdate()
 }
 
+const checkRelease = () =>
+  form.value.files.forEach((f, i) => {
+    const editForm = document.getElementById(`edit-file-${i}`) as HTMLInputElement
+    if (editForm.checked) editForm.checked = false
+  })
+
+defineExpose({ checkRelease })
+
 const dataSetup = () => {
   if (props.files) form.value.files = props.files
   form.value.files.forEach(file => {
@@ -71,14 +77,6 @@ const dataSetup = () => {
   })
   formUpdate()
 }
-
-const checkRelease = () =>
-  form.value.files.forEach((f, i) => {
-    const editForm = document.getElementById(`edit-file-${i}`) as HTMLInputElement
-    if (editForm.checked) editForm.checked = false
-  })
-
-defineExpose({ checkRelease })
 
 onBeforeUpdate(() => dataSetup())
 onBeforeMount(() => dataSetup())
