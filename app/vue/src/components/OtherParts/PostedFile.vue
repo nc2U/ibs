@@ -92,17 +92,17 @@ const fileChange = (pk: number) => {
 }
 
 // 파일 삭제 로직
-const RefDelFile = ref()
+const refDelFile = ref()
 const delFilePk = ref<number | null>(null)
 const delFileConfirm = (pk: number) => {
   delFilePk.value = pk
-  RefDelFile.value.callModal()
+  refDelFile.value.callModal()
 }
 const fileDelete = () => {
   if (delFilePk.value) {
     docStore.deleteFile(delFilePk.value as number, props.docs as number)
     delFilePk.value = null
-    RefDelFile.value.close()
+    refDelFile.value.close()
   }
 }
 </script>
@@ -218,7 +218,7 @@ const fileDelete = () => {
     </CCol>
   </CRow>
 
-  <ConfirmModal ref="RefDelFile">
+  <ConfirmModal ref="refDelFile">
     <template #default>이 파일을 삭제 하시겠습니까?</template>
     <template #footer>
       <CButton color="warning" @click="fileDelete">삭제</CButton>

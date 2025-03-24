@@ -4,6 +4,7 @@ import type { Link } from '@/store/types/docs'
 import { useDocs } from '@/store/pinia/docs'
 import { timeFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   docs: { type: Number, required: true },
@@ -38,6 +39,21 @@ const clearLink = () => {
   newLink.value.description = ''
   addLinkForm.value = false
 }
+
+// 파일 삭제 로직
+const refDelLink = ref()
+const delLinkPk = ref<number | null>(null)
+const delLinkConfirm = (pk: number) => {
+  delLinkPk.value = pk
+  refDelLink.value.callModal()
+}
+const linkDelete = () => {
+  if (delLinkPk.value) {
+    docStore.deleteLink(delLinkPk.value as number, props.docs as number)
+    delLinkPk.value = null
+    refDelLink.value.close()
+  }
+}
 </script>
 
 <template>
@@ -59,10 +75,10 @@ const clearLink = () => {
               <!--              </router-link>-->
             </span>
             <span class="ml-2">
-              <!--              <router-link to="#" @click.prevent="delFileConfirm(link.pk as number)">-->
-              <v-icon icon="mdi-trash-can-outline" size="16" color="secondary" class="mr-2" />
-              <v-tooltip activator="parent" location="top">삭제</v-tooltip>
-              <!--              </router-link>-->
+              <router-link to="#" @click.prevent="delLinkConfirm(link.pk as number)">
+                <v-icon icon="mdi-trash-can-outline" size="16" color="secondary" class="mr-2" />
+                <v-tooltip activator="parent" location="top">삭제</v-tooltip>
+              </router-link>
             </span>
             <!--            <span v-if="isEditForm === link.pk">-->
             <!--              <CRow>-->
@@ -133,4 +149,11 @@ const clearLink = () => {
       <CButton color="light" size="sm" @click="clearLink">취소</CButton>
     </CCol>
   </CRow>
+
+  <ConfirmModal ref="refDelLink">
+    <template #default>이 링크를 삭제 하시겠습니까?</template>
+    <template #footer>
+      <CButton color="warning" @click="linkDelete">삭제</CButton>
+    </template>
+  </ConfirmModal>
 </template>
