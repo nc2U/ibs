@@ -25,6 +25,7 @@ const docStore = useDocs()
 const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
 const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
 
+const refFileForms = ref()
 const validated = ref(false)
 const form = ref<Docs>({
   pk: undefined,
@@ -72,6 +73,7 @@ const submitCheck = (event: Event) => {
   } else {
     validated.value = false
     onSubmit({ ...form.value, newLinks: newLinks.value })
+    refFileForms.value.checkRelease()
   } // refConfirmModal.value.callModal()
 }
 
@@ -229,6 +231,7 @@ onMounted(() => dataSetup())
           </CRow>
 
           <FileForms
+            ref="refFileForms"
             :files="docs?.files ?? []"
             @files-update="filesUpdate"
             @file-upload="fileUpload"

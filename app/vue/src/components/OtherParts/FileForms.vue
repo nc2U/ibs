@@ -37,9 +37,9 @@ const fileUpload = (event: Event) => {
   }
 }
 
-const editFile = (event: Event, i: number, pk: number) => {
+const editFile = (event: Event, i: number) => {
   const el = event.target as HTMLInputElement
-  const delForm = document.getElementById(`del-file-${pk}`) as HTMLInputElement
+  const delForm = document.getElementById(`del-file-${i}`) as HTMLInputElement
   if (el.checked && delForm.checked) delForm.checked = false
 
   if (el.value === 'true' && delForm.checked) delForm.checked = false
@@ -69,11 +69,19 @@ const dataSetup = () => {
     file.del = false
     file.edit = false
   })
-  emit('files-update', form.value.files)
+  formUpdate()
 }
 
-onBeforeMount(() => dataSetup())
+const checkRelease = () =>
+  form.value.files.forEach((f, i) => {
+    const editForm = document.getElementById(`edit-file-${i}`) as HTMLInputElement
+    if (editForm.checked) editForm.checked = false
+  })
+
+defineExpose({ checkRelease })
+
 onBeforeUpdate(() => dataSetup())
+onBeforeMount(() => dataSetup())
 </script>
 
 <template>
@@ -91,7 +99,7 @@ onBeforeUpdate(() => dataSetup())
               </a>
               <span>
                 <CFormCheck
-                  :id="`del-file-${file.pk}`"
+                  :id="`del-file-${i}`"
                   label="삭제"
                   inline
                   :disabled="(form.files as AFile[])[i].edit"
@@ -99,10 +107,10 @@ onBeforeUpdate(() => dataSetup())
                   @change="delFile(i)"
                 />
                 <CFormCheck
-                  :id="`edit-file-${file.pk}`"
+                  :id="`edit-file-${i}`"
                   label="변경"
                   inline
-                  @click="editFile($event, i, file.pk)"
+                  @click="editFile($event, i)"
                 />
               </span>
               <CRow v-if="(form.files as AFile[])[i].edit">
@@ -110,7 +118,7 @@ onBeforeUpdate(() => dataSetup())
                   <CInputGroup>
                     변경 : &nbsp;
                     <CFormInput
-                      :id="`docs-file-${file.pk}`"
+                      :id="`docs-file-${i}`"
                       size="sm"
                       type="file"
                       @input="fileChange($event, i)"
