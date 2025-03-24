@@ -10,6 +10,7 @@ import DatePicker from '@/components/DatePicker/index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
@@ -26,6 +27,8 @@ const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
 const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
 
 const refFileForms = ref()
+const refConfirmModal = ref()
+
 const validated = ref(false)
 const form = ref<Docs>({
   pk: undefined,
@@ -250,4 +253,12 @@ onMounted(() => dataSetup())
       </CCol>
     </CRow>
   </CForm>
+
+  <ConfirmModal ref="refConfirmModal">
+    <!--    <template #header> {{ viewRoute }}</template>-->
+    <!--    <template #default> {{ viewRoute }} 저장을 진행하시겠습니까?</template>-->
+    <!--    <template #footer>-->
+    <!--      <CButton :color="btnClass" @click="modalAction">저장</CButton>-->
+    <!--    </template>-->
+  </ConfirmModal>
 </template>
