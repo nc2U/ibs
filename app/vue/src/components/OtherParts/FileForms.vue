@@ -50,11 +50,11 @@ const editFile = (event: Event, i: number, pk: number) => {
   formUpdate()
 }
 
-const fileChange = (event: Event, pk: number) => {
+const fileChange = (event: Event, i: number) => {
   const el = event.target as HTMLInputElement
   if (el.files) {
-    const file = el.files[0]
-    emit('file-change', { pk, file })
+    ;(form.value.files as any[])[i].newFile = el.files[0]
+    formUpdate()
   }
 }
 
@@ -111,10 +111,9 @@ onBeforeUpdate(() => dataSetup())
                     변경 : &nbsp;
                     <CFormInput
                       :id="`docs-file-${file.pk}`"
-                      v-model="(form.files as AFile[])[i].newFile"
                       size="sm"
                       type="file"
-                      @input="fileChange($event, file.pk as number)"
+                      @input="fileChange($event, i)"
                     />
                   </CInputGroup>
                 </CCol>
