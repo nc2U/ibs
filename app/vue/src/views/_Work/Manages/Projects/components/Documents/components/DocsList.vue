@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import { useDocs } from '@/store/pinia/docs'
 import type { Docs as Document } from '@/store/types/docs'
 import NoData from '@/views/_Work/components/NoData.vue'
