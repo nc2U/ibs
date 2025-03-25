@@ -9,7 +9,7 @@ import type { IssueFilter } from '@/store/types/work'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import IssueList from './components/IssueList.vue'
-import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
+import IssueForm from './components/IssueForm.vue'
 
 const cBody = ref()
 const company = inject<ComputedRef<Company>>('company')

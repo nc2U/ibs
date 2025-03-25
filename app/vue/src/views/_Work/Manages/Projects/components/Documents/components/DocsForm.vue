@@ -113,10 +113,10 @@ const onSubmit = async (payload: Docs & Attatches) => {
 
   if (pk) {
     await updateDocs({ pk, form })
-    // await router.replace({ name: `${mainViewName.value} - 보기`, params: { docsId: pk } })
+    await router.replace({ name: `(문서) - 보기`, params: { docId: pk } })
   } else {
     await createDocs({ form })
-    // await router.replace({ name: `${mainViewName.value}` })
+    await router.replace({ name: `(문서)` })
   }
   newFiles.value = []
   cngFiles.value = []
