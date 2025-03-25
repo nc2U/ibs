@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
+import type { IssueProject } from '@/store/types/work'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import type { Docs, PatchDocs } from '@/store/types/docs'
 import AddNewDoc from './components/AddNewDoc.vue'
@@ -47,11 +48,7 @@ const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 
-// const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
-// const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateDocs(payload)
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
-// const patchLink = (payload: Link) => docStore.patchLink(payload)
-// const patchFile = (pk: number, payload: FormData) => docStore.patchFile(pk, payload)
 
 const categories = computed(() =>
   issueProject.value?.sort !== '3' ? getCategories.value : codeCategoryList.value,
@@ -116,20 +113,27 @@ onBeforeMount(async () => {
 
   <DocsForm
     v-else-if="route.name === '(문서) - 편집'"
-    :issue-project="issueProject?.pk as number"
-    :project-sort="issueProject?.sort"
+    :issue-project="issueProject as IssueProject"
     :type-number="typeNumber"
     :categories="categories"
     :docs="docs as Docs"
   />
 
   <template v-else>
+    <DocsForm
+      ref="refDocsForm"
+      v-if="route.name === '(문서) - 추가'"
+      :issue-project="issueProject as IssueProject"
+      :type-number="typeNumber"
+      :categories="categories"
+    />
+
     <CRow class="py-2">
       <CCol>
         <h5>문서</h5>
       </CCol>
 
-      <AddNewDoc :proj-status="issueProject?.status" />
+      <AddNewDoc v-if="route.name !== '(문서) - 추가'" :proj-status="issueProject?.status" />
     </CRow>
 
     <CRow class="mb-3">
@@ -147,15 +151,6 @@ onBeforeMount(async () => {
         </v-tabs>
       </CCol>
     </CRow>
-
-    <DocsForm
-      ref="refDocsForm"
-      v-if="route.name === '(문서) - 추가'"
-      :issue-project="issueProject?.pk as number"
-      :project-sort="issueProject?.sort"
-      :type-number="typeNumber"
-      :categories="categories"
-    />
 
     <DocsList
       :category="docsFilter.category as number"

@@ -1,26 +1,26 @@
 <script lang="ts" setup>
 import { onMounted, onUpdated, type PropType, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
 import { colorLight } from '@/utils/cssMixins'
-import type { CodeValue } from '@/store/types/work'
+import type { CodeValue, IssueProject } from '@/store/types/work'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import AddNewDoc from '@/views/_Work/Manages/Projects/components/Documents/components/AddNewDoc.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
   typeNumber: { type: Number, default: 1 },
-  issueProject: { type: Number, required: true },
-  projectSort: { type: String as PropType<'1' | '2' | '3'>, default: '2' },
+  issueProject: { type: Object as PropType<IssueProject>, required: true },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
 
-const router = useRouter()
+const [route, router] = [useRoute(), useRouter()]
 
 const docStore = useDocs()
 const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
@@ -89,7 +89,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
   const { pk, ...rest } = payload
   const getData: Record<string, any> = { ...rest }
 
-  getData.issue_project = props.issueProject
+  getData.issue_project = props.issueProject.pk
   getData.newFiles = newFiles.value
   getData.cngFiles = cngFiles.value
 
@@ -153,6 +153,8 @@ onMounted(() => dataSetup())
       <h5 v-if="!docs">새 문서</h5>
       <h5 v-else>문서</h5>
     </CCol>
+
+    <AddNewDoc v-if="route.name === '(문서) - 추가'" :proj-status="issueProject?.status" />
   </CRow>
 
   <CForm
@@ -165,7 +167,7 @@ onMounted(() => dataSetup())
     <CRow>
       <CCard :color="colorLight" class="mb-3">
         <CCardBody>
-          <CRow v-if="projectSort !== '3'" class="mb-3">
+          <CRow v-if="issueProject?.sort !== '3'" class="mb-3">
             <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
             <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
               <CFormSelect v-model.number="form.doc_type" disabled required>
@@ -200,7 +202,7 @@ onMounted(() => dataSetup())
             </CCol>
           </CRow>
 
-          <CRow v-if="projectSort !== '3' && form.doc_type === 2">
+          <CRow v-if="issueProject?.sort !== '3' && form.doc_type === 2">
             <CCol sm="12" lg="6" class="mb-3">
               <CRow>
                 <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
