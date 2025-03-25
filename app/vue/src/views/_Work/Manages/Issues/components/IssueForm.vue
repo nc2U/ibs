@@ -1,6 +1,16 @@
 <script lang="ts" setup>
 import { ref, onBeforeMount, type PropType, computed, watch, inject, type ComputedRef } from 'vue'
-import type { CodeValue, Issue, IssueFile, IssueProject, IssueStatus } from '@/store/types/work'
+import type {
+  CodeValue,
+  Issue,
+  IssueFile,
+  IssueProject,
+  IssueStatus,
+  Member,
+  SimpleCategory,
+  SimpleMember,
+  SimpleUser,
+} from '@/store/types/work'
 import type { User } from '@/store/types/accounts'
 import { isValidate } from '@/utils/helper'
 import { useRoute } from 'vue-router'
@@ -60,7 +70,8 @@ watch(
   async nVal => {
     if (nVal) {
       await workStore.fetchIssueProject(nVal)
-      watcherList.value = workStore.issueProject?.all_members?.map(m => m.user) ?? []
+      watcherList.value =
+        (workStore.issueProject?.all_members as SimpleMember[]).map(m => m.user) ?? []
     } else watcherList.value = memberList.value ?? []
   },
 )
@@ -167,7 +178,6 @@ const formsCheck = computed(() => {
 
 const route = useRoute()
 const workStore = useWork()
-const my_perms = computed(() => workStore.issueProject?.my_perms)
 
 watch(props, nVal => {
   if (nVal.issueProject) form.value.project = nVal?.issueProject.slug as string
@@ -176,10 +186,11 @@ watch(props, nVal => {
 const watcherList = ref<{ pk: number; username: string }[]>([])
 
 const memberList = computed(() =>
-  (props.issueProject
-    ? props.issueProject.all_members
-    : [...new Map(workStore.memberList.map(m => [m.user.pk, m])).values()]
-  )?.map(m => m.user),
+  (
+    (props.issueProject
+      ? props.issueProject.all_members
+      : [...new Map((workStore.memberList as Member[]).map(m => [m.user.pk, m])).values()]) as any
+  ).map(m => m.user),
 )
 
 watch(
@@ -191,7 +202,7 @@ const trackers = computed(() =>
   workStore.issueProject ? workStore.issueProject.trackers : workStore.trackerList,
 )
 
-const categories = computed(() => workStore.issueProject?.categories ?? [])
+const categories = computed(() => (workStore.issueProject?.categories as SimpleCategory[]) ?? [])
 const default_version = ref<number | null>(null)
 const versions = computed(() => workStore.issueProject?.versions ?? [])
 watch(versions, nVal => {
