@@ -55,8 +55,8 @@ const categories = computed(() =>
 )
 
 const getDocsList = (target: unknown) => {
-  console.log(target)
   if (target === 1 || target === 2) {
+    docsFilter.value.page = 1
     docsFilter.value.doc_type = target
     fetchCategoryList(target)
     fetchDocsList(docsFilter.value)
