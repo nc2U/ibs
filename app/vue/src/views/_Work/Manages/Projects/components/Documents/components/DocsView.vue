@@ -8,6 +8,7 @@ import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import PostContent from '@/components/OtherParts/PostContent.vue'
 import PostedFile from '@/components/OtherParts/PostedFile.vue'
 import PostedLink from '@/components/OtherParts/PostedLink.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, required: true },
@@ -16,10 +17,18 @@ const props = defineProps({
 
 const emit = defineEmits(['docs-hit'])
 
+const refConfirmModal = ref()
+
 const docStore = useDocs()
 const [route, router] = [useRoute(), useRouter()]
 
 const docId = computed(() => Number(route.params.docId))
+
+const modalAction = () => {
+  docStore.deleteDocs(props.docs.pk as number, {})
+  refConfirmModal.value.close()
+  router.push({ name: '(문서)' })
+}
 
 onBeforeMount(() => {
   if (docId.value) {
@@ -49,7 +58,9 @@ onMounted(() => {
 
         <span class="mr-2 form-text">
           <v-icon icon="mdi-trash-can-outline" color="secondary" size="sm" />
-          <router-link :to="{ name: '(문서) - 삭제' }" class="ml-1">삭제</router-link>
+          <router-link to="#" @click.prevent="refConfirmModal.callModal()" class="ml-1">
+            삭제
+          </router-link>
         </span>
       </CCol>
     </CRow>
@@ -98,4 +109,12 @@ onMounted(() => {
       </CCol>
     </CRow>
   </div>
+
+  <ConfirmModal ref="refConfirmModal">
+    <template #header>알림!</template>
+    <template #default> 이 문서를 삭제 합니다. 계속 진행 하시겠습니까?</template>
+    <template #footer>
+      <CButton color="warning" @click="modalAction">저장</CButton>
+    </template>
+  </ConfirmModal>
 </template>

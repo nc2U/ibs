@@ -24,10 +24,10 @@ const workProject = {
         //   path: ':projId/update',
         //   name: '프로젝트 - 수정',
         // },
-        {
-          path: ':projId/delete',
-          name: '프로젝트 - 삭제',
-        },
+        // {
+        //   path: ':projId/delete',
+        //   name: '프로젝트 - 삭제',
+        // },
         {
           path: ':projId',
           name: '(개요)',
@@ -52,10 +52,10 @@ const workProject = {
               path: ':verId/update',
               name: '(로드맵) - 수정',
             },
-            {
-              path: ':verId/delete',
-              name: '(로드맵) - 삭제',
-            },
+            // {
+            //   path: ':verId/delete',
+            //   name: '(로드맵) - 삭제',
+            // },
           ],
         },
         {
@@ -70,10 +70,10 @@ const workProject = {
               path: 'create',
               name: '(업무) - 추가',
             },
-            {
-              path: ':issueId/delete',
-              name: '(업무) - 삭제',
-            },
+            // {
+            //   path: ':issueId/delete',
+            //   name: '(업무) - 삭제',
+            // },
             {
               path: 'report',
               name: '(업무) - 보고서',
@@ -92,10 +92,10 @@ const workProject = {
               path: ':timeId/update',
               name: '(소요시간) - 편집',
             },
-            {
-              path: ':timeId/delete',
-              name: '(소요시간) - 삭제',
-            },
+            // {
+            //   path: ':timeId/delete',
+            //   name: '(소요시간) - 삭제',
+            // },
           ],
         },
         {
@@ -132,10 +132,10 @@ const workProject = {
               path: ':docId/update',
               name: '(문서) - 편집',
             },
-            {
-              path: ':docId/delete',
-              name: '(문서) - 삭제',
-            },
+            // {
+            //   path: ':docId/delete',
+            //   name: '(문서) - 삭제',
+            // },
           ],
         },
         {
@@ -209,10 +209,10 @@ const workProject = {
           path: ':timeId/update',
           name: '소요시간 - 편집',
         },
-        {
-          path: ':timeId/delete',
-          name: '소요시간 - 삭제',
-        },
+        // {
+        //   path: ':timeId/delete',
+        //   name: '소요시간 - 삭제',
+        // },
       ],
     },
     {
