@@ -134,7 +134,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 <b>새 업무 [#{instance.pk}] "{instance.subject}"</b>를 생성{"하여 &lt;" + instance.assigned_to.username + "&gt;님에게 배정(요청)" if instance.assigned_to else ""} 하였습니다.</p>
 			            </td>
 		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+		            <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
 			            <td width="101"  style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
 				            <strong>프로젝트</strong>
 			            </td>
@@ -261,7 +261,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 업무 [#{instance.pk}] "{instance.subject}"의 진행 상태를 [{instance._old_status}]에서 [{instance.status}](으)로 변경 하였습니다.</p>
 			            </td>
 		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+		            <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
 			            <td width="101"  style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
 				            <strong>프로젝트</strong>
 			            </td>
@@ -391,7 +391,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 업무 [#{instance.pk}] "{instance.subject}"의 담당자를 [{instance._old_assigned_to.username}]에서 [{instance.assigned_to.username}](으)로 변경 하였습니다.</p>
 			            </td>
 		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+		            <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
 			            <td width="101"  style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
 				            <strong>프로젝트</strong>
 			            </td>
