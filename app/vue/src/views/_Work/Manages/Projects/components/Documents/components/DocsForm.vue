@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, onUpdated, type PropType, ref } from 'vue'
+import { onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
@@ -143,8 +143,8 @@ const dataSetup = () => {
   } else form.value.doc_type = props.typeNumber
 }
 
-onUpdated(() => dataSetup())
-onMounted(() => dataSetup())
+onBeforeUpdate(() => dataSetup())
+onBeforeMount(() => dataSetup())
 </script>
 
 <template>
