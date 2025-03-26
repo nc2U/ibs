@@ -12,7 +12,6 @@ import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AddNewDoc from './AddNewDoc.vue'
-import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
