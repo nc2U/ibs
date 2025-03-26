@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { IssueProject } from '@/store/types/work'
-import { type DocsFilter, useDocs } from '@/store/pinia/docs'
+import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { Docs, PatchDocs } from '@/store/types/docs'
 import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
@@ -48,7 +48,7 @@ const fetchDocTypeList = () => docStore.fetchDocTypeList()
 const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
-
+const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
 
 const categories = computed(() =>
@@ -98,6 +98,7 @@ const dataSetup = async (docId?: string | string[]) => {
   await fetchCodeCategoryList()
   await fetchCategoryList(typeNumber.value)
   await fetchDocsList(docsFilter.value)
+  await fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
   if (docId) await fetchDocs(Number(docId))
 }
 
