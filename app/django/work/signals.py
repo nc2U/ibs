@@ -123,16 +123,23 @@ def issue_log_changes(sender, instance, created, **kwargs):
         ##########################################
         # 생성 사용자를 제외한, 담당자에게 메일 전달
         ##########################################
-        subject = f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 배정(요청) 되었습니다.' \
-            if instance.assigned_to else f'새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) 생성 되었습니다.'
+        subject = f'⌜{instance.project}⌟ - 새 업무 [#{instance.pk}] :: "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 배정(요청) 되었습니다.' \
+            if instance.assigned_to else f'[{instance.project}] - 새 업무 [#{instance.pk}] - "{instance.subject}" 이(가) 생성 되었습니다.'
 
         message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
 	            <tbody>
 		            <tr>
-			            <!-- <td style="padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">주식회사 대영아이비에스</td> -->
 			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <h3 style="font-size:16px;font-weight:bold;color:rgb(0,0,0)">(주) 대영아이비에스</h3>
-				            <p>[{user.username}]님이 <b>새 업무 [#{instance.pk}] "{instance.subject}"</b>를 생성{"하여 &lt;" + instance.assigned_to.username + "&gt;님에게 배정(요청)" if instance.assigned_to else ""} 하였습니다.</p>
+				            <img src="https://dyibs.com/static/ibs/images/logo.png" alt height="35" />
+				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 <b>새 업무 [#{instance.pk}] "{instance.subject}"</b>를 생성{"하여 &lt;" + instance.assigned_to.username + "&gt;님에게 배정(요청)" if instance.assigned_to else ""} 하였습니다.</p>
+			            </td>
+		            </tr>
+		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+			            <td width="101"  style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+				            <strong>프로젝트</strong>
+			            </td>
+			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+				            <strong>⌜{instance.project}⌟</strong>
 			            </td>
 		            </tr>
 		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
@@ -245,14 +252,21 @@ def issue_log_changes(sender, instance, created, **kwargs):
                 # 업데이트 사용자를 제외한 생성자, 담당자, 열람자에게 메일 전달
                 ################################################
 
-                subject = f'업무 [#{instance.pk}] - "{instance.subject}"의 상태가 {instance.status}(으)로 변경 되었습니다.'
+                subject = f'⌈{instance.project}⌋ - 업무 [#{instance.pk}] - "{instance.subject}"의 상태가 {instance.status}(으)로 변경 되었습니다.'
                 message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
 	                <tbody>
 		            <tr>
-			            <!-- <td style="padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">주식회사 대영아이비에스</td> -->
 			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span style="font-size:14px;font-weight:bold;color:rgb(0,0,0)">(주) 대영아이비에스</span>
-				            <p>[{user.username}]님이 업무 [#{instance.pk}] "{instance.subject}"의 진행 상태를 [{instance._old_status}]에서 [{instance.status}](으)로 변경 하였습니다.</p>
+				            <img src="https://dyibs.com/static/ibs/images/logo.png" alt height="35" />
+				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 업무 [#{instance.pk}] "{instance.subject}"의 진행 상태를 [{instance._old_status}]에서 [{instance.status}](으)로 변경 하였습니다.</p>
+			            </td>
+		            </tr>
+		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+			            <td width="101"  style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+				            <strong>프로젝트</strong>
+			            </td>
+			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+				            <strong>⌜{instance.project}⌟</strong>
 			            </td>
 		            </tr>
 		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
@@ -367,15 +381,22 @@ def issue_log_changes(sender, instance, created, **kwargs):
 
             if hasattr(instance, '_old_assigned_to'):
                 if user or instance.assigned_to:
-                    subject = f'업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 재배정(요청) 되었습니다.' \
-                        if instance.assigned_to else f'업무 [#{instance.pk}] - "{instance.subject}"의 담당자가 변경 되었습니다.'
+                    subject = f'⌈{instance.project}⌋ - 업무 [#{instance.pk}] - "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 재배정(요청) 되었습니다.' \
+                        if instance.assigned_to else f'[{instance.project}] - 업무 [#{instance.pk}] - "{instance.subject}"의 담당자가 변경 되었습니다.'
                     message = f'''<table width="600" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
 	                <tbody>
 		            <tr>
-			            <!-- <td style="padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">주식회사 대영아이비에스</td> -->
 			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span style="font-size:14px;font-weight:bold;color:rgb(0,0,0)">(주) 대영아이비에스</span>
-				            <p>[{user.username}]님이 업무 [#{instance.pk}] "{instance.subject}"의 담당자를 [{instance._old_assigned_to.username}]에서 [{instance.assigned_to.username}](으)로 변경 하였습니다.</p>
+				            <img src="https://dyibs.com/static/ibs/images/logo.png" alt height="35" />
+				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 업무 [#{instance.pk}] "{instance.subject}"의 담당자를 [{instance._old_assigned_to.username}]에서 [{instance.assigned_to.username}](으)로 변경 하였습니다.</p>
+			            </td>
+		            </tr>
+		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+			            <td width="101"  style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+				            <strong>프로젝트</strong>
+			            </td>
+			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+				            <strong>⌜{instance.project}⌟</strong>
 			            </td>
 		            </tr>
 		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
