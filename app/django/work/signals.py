@@ -139,7 +139,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 				            <strong>프로젝트</strong>
 			            </td>
 			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>⌜{instance.project}⌟</strong>
+				            <strong>&lt;{instance.project}&gt;</strong>
 			            </td>
 		            </tr>
 		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
@@ -266,7 +266,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 				            <strong>프로젝트</strong>
 			            </td>
 			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>⌜{instance.project}⌟</strong>
+				            <strong>&lt;{instance.project}&gt;</strong>
 			            </td>
 		            </tr>
 		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
@@ -396,7 +396,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 				            <strong>프로젝트</strong>
 			            </td>
 			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>⌜{instance.project}⌟</strong>
+				            <strong>&lt;{instance.project}&gt;</strong>
 			            </td>
 		            </tr>
 		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
