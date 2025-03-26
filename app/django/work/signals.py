@@ -130,7 +130,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 	            <tbody>
 		            <tr>
 			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <img src="https://dyibs.com/static/ibs/images/logo.png" alt height="35" />
+				            <img src="https://dyibs.com/static/ibs/images/logo.svg" alt height="35" />
 				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 <b>새 업무 [#{instance.pk}] "{instance.subject}"</b>을(를) 생성{"하여 &lt;" + instance.assigned_to.username + "&gt;님에게 배정(요청)" if instance.assigned_to else ""} 하였습니다.</p>
 			            </td>
 		            </tr>
@@ -257,7 +257,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 	                <tbody>
 		            <tr>
 			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <img src="https://dyibs.com/static/ibs/images/logo.png" alt height="35" />
+				            <img src="https://dyibs.com/static/ibs/images/logo.svg" alt height="35" />
 				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 업무 [#{instance.pk}] "{instance.subject}"의 진행 상태를 [{instance._old_status}]에서 [{instance.status}](으)로 변경 하였습니다.</p>
 			            </td>
 		            </tr>
@@ -387,7 +387,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
 	                <tbody>
 		            <tr>
 			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <img src="https://dyibs.com/static/ibs/images/logo.png" alt height="35" />
+				            <img src="https://dyibs.com/static/ibs/images/logo.svg" alt height="35" />
 				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 업무 [#{instance.pk}] "{instance.subject}"의 담당자를 [{instance._old_assigned_to.username}]에서 [{instance.assigned_to.username}](으)로 변경 하였습니다.</p>
 			            </td>
 		            </tr>
