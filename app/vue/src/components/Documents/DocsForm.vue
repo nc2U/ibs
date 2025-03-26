@@ -14,7 +14,7 @@ const props = defineProps({
   sortName: { type: String, default: '[본사]' },
   typeNum: { type: Number, default: 1 },
   categoryList: { type: Object, required: true },
-  getSuitCase: { type: Object, default: null },
+  getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   docs: { type: Object as PropType<Docs>, default: null },
   viewRoute: { type: String, required: true },
   writeAuth: { type: Boolean, default: true },

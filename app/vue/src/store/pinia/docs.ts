@@ -97,11 +97,11 @@ export const useDocs = defineStore('docs', () => {
 
   const getSuitCase = computed(() =>
     allSuitCaseList.value.map(s => ({
-      value: s.pk,
+      value: s.pk as number,
       label: s.__str__
         .replace('지방법원', '지법')
         .replace('고등법원', '고법')
-        .replace('대법원', '대법'),
+        .replace('대법원', '대법') as string,
     })),
   )
   const getCaseNav = computed(() =>

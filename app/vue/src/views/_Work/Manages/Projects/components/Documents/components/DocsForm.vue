@@ -12,12 +12,14 @@ import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AddNewDoc from './AddNewDoc.vue'
+import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
   typeNumber: { type: Number, default: 1 },
   issueProject: { type: Object as PropType<IssueProject>, required: true },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
+  getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
 })
 
 const [route, router] = [useRoute(), useRouter()]
@@ -207,7 +209,12 @@ onBeforeMount(() => dataSetup())
               <CRow>
                 <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
                 <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                  <MultiSelect v-model.number="form.lawsuit" />
+                  <MultiSelect
+                    v-model.number="form.lawsuit"
+                    :options="getSuitCase"
+                    :attrs="typeNumber === 2 ? { required: true } : {}"
+                    placeholder="사건번호 선택"
+                  />
                 </CCol>
               </CRow>
             </CCol>

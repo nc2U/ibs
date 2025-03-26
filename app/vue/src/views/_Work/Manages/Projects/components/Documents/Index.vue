@@ -42,6 +42,7 @@ const docs = computed(() => docStore.docs)
 const docsList = computed(() => docStore.docsList)
 const categoryList = computed(() => docStore.categoryList)
 const getCategories = computed(() => docStore.getCategories)
+const getSuitCase = computed(() => docStore.getSuitCase)
 
 const fetchDocTypeList = () => docStore.fetchDocTypeList()
 const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
@@ -116,6 +117,7 @@ onBeforeMount(async () => {
     :issue-project="issueProject as IssueProject"
     :type-number="typeNumber"
     :categories="categories"
+    :get-suit-case="getSuitCase"
     :docs="docs as Docs"
   />
 
@@ -126,6 +128,7 @@ onBeforeMount(async () => {
       :issue-project="issueProject as IssueProject"
       :type-number="typeNumber"
       :categories="categories"
+      :get-suit-case="getSuitCase"
     />
 
     <CRow class="py-2">
