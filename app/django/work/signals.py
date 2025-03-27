@@ -1,3 +1,5 @@
+import smtplib
+
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models.signals import pre_save, post_save, pre_delete
@@ -139,8 +141,12 @@ def issue_log_changes(sender, instance, created, **kwargs):
                       html_message=message,
                       from_email=settings.EMAIL_DEFAULT_SENDER,
                       recipient_list=addresses)
-        except Exception:
-            pass
+        except smtplib.SMTPAuthenticationError:
+            print("❌ 이메일 인증 실패: SMTP 사용자 이름 또는 비밀번호가 잘못되었습니다.")
+        except smtplib.SMTPRecipientsRefused:
+            print("❌ 이메일 수신자 거부: 이메일 주소를 확인하세요.")
+        except smtplib.SMTPException as e:
+            print(f"❌ 이메일 전송 실패: {e}")
 
     else:
         user = instance.updater
@@ -184,8 +190,12 @@ def issue_log_changes(sender, instance, created, **kwargs):
                               html_message=message,
                               from_email=settings.EMAIL_DEFAULT_SENDER,
                               recipient_list=addresses)
-                except Exception:
-                    pass
+                except smtplib.SMTPAuthenticationError:
+                    print("❌ 이메일 인증 실패: SMTP 사용자 이름 또는 비밀번호가 잘못되었습니다.")
+                except smtplib.SMTPRecipientsRefused:
+                    print("❌ 이메일 수신자 거부: 이메일 주소를 확인하세요.")
+                except smtplib.SMTPException as e:
+                    print(f"❌ 이메일 전송 실패: {e}")
 
             if hasattr(instance, 'old_assigned_to'):
                 if user or instance.assigned_to:
@@ -199,8 +209,12 @@ def issue_log_changes(sender, instance, created, **kwargs):
                                   html_message=message,
                                   from_email=settings.EMAIL_DEFAULT_SENDER,
                                   recipient_list=addresses)
-                    except Exception:
-                        pass
+                    except smtplib.SMTPAuthenticationError:
+                        print("❌ 이메일 인증 실패: SMTP 사용자 이름 또는 비밀번호가 잘못되었습니다.")
+                    except smtplib.SMTPRecipientsRefused:
+                        print("❌ 이메일 수신자 거부: 이메일 주소를 확인하세요.")
+                    except smtplib.SMTPException as e:
+                        print(f"❌ 이메일 전송 실패: {e}")
 
 
 @receiver(pre_delete, sender=Issue)
