@@ -1,9 +1,7 @@
-import markdown2
-
 from django.conf import settings
-from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.db.models.signals import pre_save, post_save, pre_delete
+from django.dispatch import receiver
 from django.template.loader import render_to_string
 
 from .models import (Issue, IssueRelation, IssueComment,
