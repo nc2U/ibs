@@ -131,7 +131,11 @@
       <strong>업무 관람자</strong>
     </td>
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-      <span>{str(['<a href="mailto:' + w.email + '">' + w.username + ' &lt;' + user.email + '&gt;</a>' for w in watchers])}</span>
+      <span>
+          {% for w in watchers %}
+              <a href="mailto:{{ w.email }}">{{ w.username }} &lt;{{ w.email }}&gt;</a>{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+      </span>
     </td>
   </tr>
   </tbody>

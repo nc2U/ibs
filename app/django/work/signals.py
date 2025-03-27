@@ -144,11 +144,6 @@ def issue_log_changes(sender, instance, created, **kwargs):
 
     else:
         user = instance.updater
-        context = {
-            'instance': instance,
-            'settings': settings,
-            'user': user,
-        }
         watchers = instance.watchers.all()
         addresses = [watcher.email for watcher in watchers]  # 업무 관람자
         if instance.creator.email not in addresses:  # 업무 생성자
@@ -157,6 +152,13 @@ def issue_log_changes(sender, instance, created, **kwargs):
             addresses.append(instance.assigned_to.email)
         if user is not instance.assigned_to:  # 업무 수정자
             addresses.append(user.email)
+
+        context = {
+            'instance': instance,
+            'settings': settings,
+            'user': user,
+            'watchers': watchers,
+        }
 
         # 변경 시
         if details:
