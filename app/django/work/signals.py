@@ -130,8 +130,8 @@ def issue_log_changes(sender, instance, created, **kwargs):
         ##########################################
         # 생성 사용자를 제외한, 담당자에게 메일 전달
         ##########################################
-        subject = f'⌜{instance.project}⌟ - 새 업무 [#{instance.pk}] :: "{instance.subject}"이(가) [{instance.assigned_to.username}]님에게 배정(요청) 되었습니다.' \
-            if instance.assigned_to else f'[{instance.project}] - 새 업무 [#{instance.pk}] :: "{instance.subject}"이(가) 생성 되었습니다.'
+        subject = f'⌜{instance.project}⌟ - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) [{instance.assigned_to.username}]님에게 배정(요청) 되었습니다.' \
+            if instance.assigned_to else f'[{instance.project}] - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 생성 되었습니다.'
 
         message = render_to_string('mail/issue_create.html', context)
 
@@ -175,7 +175,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
                 # 업데이트 사용자를 제외한 생성자, 담당자, 열람자에게 메일 전달
                 ################################################
 
-                subject = f'⌈{instance.project}⌋ - 업무 [#{instance.pk}] :: "{instance.subject}"의 상태가 {instance.status}(으)로 변경 되었습니다.'
+                subject = f'⌈{instance.project}⌋ - 업무 :: [#{instance.pk}] "{instance.subject}"의 상태가 {instance.status}(으)로 변경 되었습니다.'
                 message = render_to_string('mail/issue_progress.html', context)
 
                 try:
@@ -189,8 +189,8 @@ def issue_log_changes(sender, instance, created, **kwargs):
 
             if hasattr(instance, '_old_assigned_to'):
                 if user or instance.assigned_to:
-                    subject = f'⌈{instance.project}⌋ - 업무 [#{instance.pk}] :: "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 재배정(요청) 되었습니다.' \
-                        if instance.assigned_to else f'[{instance.project}] - 업무 [#{instance.pk}] :: "{instance.subject}"의 담당자가 변경 되었습니다.'
+                    subject = f'⌈{instance.project}⌋ - 업무 :: [#{instance.pk}] "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 재배정(요청) 되었습니다.' \
+                        if instance.assigned_to else f'[{instance.project}] - 업무 :: [#{instance.pk}] "{instance.subject}"의 담당자가 변경 되었습니다.'
                     message = render_to_string('mail/issue_reassign.html', context)
 
                     try:
