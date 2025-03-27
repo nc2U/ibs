@@ -206,7 +206,13 @@ onBeforeMount(() => {
         <CRow class="mb-3">
           <CFormLabel class="required col-form-label text-right col-2">회사</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
-            <MultiSelect v-model="form.company" :options="comSelect" mode="single" required />
+            <MultiSelect
+              v-model="form.company"
+              :options="comSelect"
+              mode="single"
+              placeholder="회사 선택"
+              required
+            />
           </CCol>
           <CCol class="mt-2">
             <CFormCheck
