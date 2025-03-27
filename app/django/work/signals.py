@@ -115,6 +115,12 @@ def issue_log_changes(sender, instance, created, **kwargs):
     if created:
         user = instance.creator
 
+        context = {
+            'instance': instance,
+            'settings': settings,
+            'user': user,
+        }
+
         addresses = [user.email]
         if instance.assigned_to:
             addresses.append(instance.assigned_to.email)
@@ -127,103 +133,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
         subject = f'⌜{instance.project}⌟ - 새 업무 [#{instance.pk}] :: "{instance.subject}"이(가) [{instance.assigned_to.username}]님에게 배정(요청) 되었습니다.' \
             if instance.assigned_to else f'[{instance.project}] - 새 업무 [#{instance.pk}] :: "{instance.subject}"이(가) 생성 되었습니다.'
 
-        context = {
-            'instance': instance,
-            'user': user,
-            'markdown2': markdown2
-        }
         message = render_to_string('mail/issue_create.html', context)
-
-        # message = f'''<table width="720" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
-        #         <tbody>
-        #             <tr>
-        # 	            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <img src="https://dyibs.com/static/ibs/images/logo.png" alt height="35" />
-        # 		            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 <b>새 업무 [#{instance.pk}] "{instance.subject}"</b>을(를) 생성{"하여 &lt;" + instance.assigned_to.username + "&gt;님에게 배정(요청)" if instance.assigned_to else ""} 하였습니다.</p>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
-        # 	            <td width="120"  style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>프로젝트</strong>
-        # 	            </td>
-        # 	            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>&lt;{instance.project}&gt;</strong>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; height: 46px;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>업무</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>[#{instance.pk}] {instance.subject}</strong>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; background: #FFFFDD;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>설명</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <span>{markdown2.markdown(instance.description)}</span>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>유형</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <span>{instance.tracker.name}</span>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>상태</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <span>{instance.status.name}</span>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>목표버전</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <span>{instance.fixed_version if instance.fixed_version else ""}</span>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>담당</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <span>{instance.assigned_to.username if instance.assigned_to else ""}</span>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>처리기한</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <span>{instance.due_date if instance.due_date else ""}</span>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>링크</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <span><a href="{settings.DOMAIN_HOST}/cms/#/work/project/redmine/issue/{instance.pk}">[#{instance.pk}] 업무 - {instance.subject}</a></span>
-        # 	            </td>
-        #             </tr>
-        #             <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <strong>등록자</strong>
-        # 	            </td>
-        # 	            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-        # 		            <span><a href="mailto:{user.email}">{user.username} &lt;{user.email}&gt;</a></span>
-        # 	            </td>
-        #             </tr>
-        #         </tbody>
-        #     </table>'''
 
         try:
             send_mail(subject=subject,
@@ -236,6 +146,11 @@ def issue_log_changes(sender, instance, created, **kwargs):
 
     else:
         user = instance.updater
+        context = {
+            'instance': instance,
+            'settings': settings,
+            'user': user,
+        }
         watchers = instance.watchers.all()
         addresses = [watcher.email for watcher in watchers]  # 업무 관람자
         if instance.creator.email not in addresses:  # 업무 생성자
@@ -261,122 +176,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
                 ################################################
 
                 subject = f'⌈{instance.project}⌋ - 업무 [#{instance.pk}] :: "{instance.subject}"의 상태가 {instance.status}(으)로 변경 되었습니다.'
-                message = f'''<table width="720" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
-	                <tbody>
-		            <tr>
-			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <img src="https://dyibs.com/static/ibs/images/logo.svg" alt height="35" />
-				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 업무 [#{instance.pk}] "{instance.subject}"의 진행 상태를 [{instance._old_status}]에서 [{instance.status}](으)로 변경 하였습니다.</p>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
-			            <td width="120"  style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>프로젝트</strong>
-			            </td>
-			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>&lt;{instance.project}&gt;</strong>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; height: 46px;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>업무</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>[#{instance.pk}] {instance.subject}</strong>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; background: #FFFFDD;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>설명</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{markdown2.markdown(instance.description)}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>유형</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.tracker.name}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>상태</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.status.name}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>목표버전</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.fixed_version if instance.fixed_version else ""}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>담당</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.assigned_to.username if instance.assigned_to else ""}</span>
-			            </td>
-		            </tr>
-		            
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>추정시간</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{str(instance.estimated_hours) + " 시간" if instance.estimated_hours else "-"}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>진척도</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.done_ratio}%</span>
-			            </td>
-		            </tr>
-		            
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>처리기한</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.due_date if instance.due_date else ""}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>링크</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span><a href="{settings.DOMAIN_HOST}/cms/#/work/project/redmine/issue/{instance.pk}">[#{instance.pk}] 업무 - {instance.subject}</a></span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>등록자</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span><a href="mailto:{user.email}">{user.username} &lt;{user.email}&gt;</a></span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>업무 관람자</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{str(['<a href="mailto:' + w.email + '">' + w.username + ' &lt;' + user.email + '&gt;</a>' for w in watchers])}</span>
-			            </td>
-		            </tr>
-	            </tbody>
-                </table>'''
+                message = render_to_string('mail/issue_progress.html', context)
 
                 try:
                     send_mail(subject=subject,
@@ -391,96 +191,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
                 if user or instance.assigned_to:
                     subject = f'⌈{instance.project}⌋ - 업무 [#{instance.pk}] :: "{instance.subject}" 이(가) [{instance.assigned_to.username}]님에게 재배정(요청) 되었습니다.' \
                         if instance.assigned_to else f'[{instance.project}] - 업무 [#{instance.pk}] :: "{instance.subject}"의 담당자가 변경 되었습니다.'
-                    message = f'''<table width="720" border="0" cellpadding="0" cellspacing="0" style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #348fe2; border-bottom:5px solid #348fe2;border-collapse: collapse;">
-	                <tbody>
-		            <tr>
-			            <td colspan="2" style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <img src="https://dyibs.com/static/ibs/images/logo.svg" alt height="35" />
-				            <p style="margin-top: 25px;">[{user.username}]님이 <b>{instance.project}</b> 프로젝트의 업무 [#{instance.pk}] "{instance.subject}"의 담당자를 [{instance._old_assigned_to.username}]에서 [{instance.assigned_to.username}](으)로 변경 하였습니다.</p>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
-			            <td width="120" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>프로젝트</strong>
-			            </td>
-			            <td width="600" style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>&lt;{instance.project}&gt;</strong>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; height: 46px;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>업무</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>[#{instance.pk}] {instance.subject}</strong>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; background: #FFFFDD;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>설명</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{markdown2.markdown(instance.description)}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>유형</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.tracker.name}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>상태</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.status.name}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>목표버전</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.fixed_version if instance.fixed_version else ""}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>담당</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.assigned_to.username if instance.assigned_to else ""}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>처리기한</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span>{instance.due_date if instance.due_date else ""}</span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>링크</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span><a href="{settings.DOMAIN_HOST}/cms/#/work/project/redmine/issue/{instance.pk}">[#{instance.pk}] 업무 - {instance.subject}</a></span>
-			            </td>
-		            </tr>
-		            <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <strong>등록자</strong>
-			            </td>
-			            <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-				            <span><a href="mailto:{user.email}">{user.username} &lt;{user.email}&gt;</a></span>
-			            </td>
-		            </tr>
-	                </tbody>
-                    </table>'''
+                    message = render_to_string('mail/issue_reassign.html', context)
 
                     try:
                         send_mail(subject=subject,

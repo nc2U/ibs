@@ -15,9 +15,8 @@
     <td colspan="2"
         style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
       <img src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo.png" alt height="35" />
-      <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 <b>새 업무 [#{{ instance.pk }}]
-        "{{ instance.subject }}"</b>을(를) 생성{% if instance.assigned_to %}하여 &lt;"{{ instance.assigned_to.username }}"&gt;
-        님에게 배정(요청){% else %} 하였습니다.{% endif %}</p>
+      <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 업무 [#{{ instance.pk }}]
+        "{{ instance.subject }}"의 진행 상태를 [{{ instance._old_status }}]에서 [{{ instance.status }}](으)로 변경 하였습니다.</p>
     </td>
   </tr>
   <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
@@ -88,14 +87,35 @@
   </tr>
   <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>추정시간</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>{{ instance.estimated_hours|default:"-" }}</span>
+    </td>
+  </tr>
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>진척도</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>{{ instance.done_ratio }}%</span>
+    </td>
+  </tr>
+
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>완료기한</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>{{ instance.due_date|default:"" }}</span>
+    </td>
+  </tr>
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
       <strong>링크</strong>
     </td>
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-      <span>
-        <a href="{{ settings.DOMAIN_HOST }}/cms/#/work/project/redmine/issue/{{ instance.pk }}">
-          [#{{ instance.pk }}] 업무 - {{ instance.subject }}
-        </a>
-      </span>
+      <span><a href="{{ settings.DOMAIN_HOST }}/cms/#/work/project/redmine/issue/{{ instance.pk }}">[#{{ instance.pk }}] 업무 - {{ instance.subject }}</a></span>
     </td>
   </tr>
   <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
@@ -104,6 +124,14 @@
     </td>
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
       <span><a href="mailto:{{ user.email }}">{{ user.username }} &lt;{{ user.email }}&gt;</a></span>
+    </td>
+  </tr>
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>업무 관람자</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>{str(['<a href="mailto:' + w.email + '">' + w.username + ' &lt;' + user.email + '&gt;</a>' for w in watchers])}</span>
     </td>
   </tr>
   </tbody>
