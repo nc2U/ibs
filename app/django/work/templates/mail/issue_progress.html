@@ -16,7 +16,7 @@
         style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
       <img src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo.png" alt height="35" />
       <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 업무 [#{{ instance.pk }}]
-        "{{ instance.subject }}"의 진행 상태를 [{{ instance._old_status }}]에서 [{{ instance.status }}](으)로 변경 하였습니다.</p>
+        "{{ instance.subject }}"의 진행 상태를 [{{ instance.old_status }}]에서 [{{ instance.status }}](으)로 변경 하였습니다.</p>
     </td>
   </tr>
   <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
