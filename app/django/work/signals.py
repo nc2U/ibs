@@ -151,13 +151,19 @@ def issue_log_changes(sender, instance, created, **kwargs):
     else:
         user = instance.updater
         watchers = instance.watchers.all()
+        if instance.old_assigned_to:
+            if instance.old_assigned_to in (instance.creator, user) or instance.old_assigned_to not in watchers:
+                pass
+            else:
+                instance.watchers.remove(instance.old_assigned_to)
+        if instance.creator not in watchers:  # 업무 생성자 추가
+            instance.watchers.add(instance.creator)
+        if instance.assigned_to not in watchers:  # 업무 담당자 추가
+            instance.watchers.add(instance.assigned_to)
+        if user is not instance.assigned_to:  # 현재 사용자 !== 업무 댬당자 => 현재 사용자 추가
+            instance.watchers.add(user)
+        watchers = instance.watchers.all()
         addresses = [watcher.email for watcher in watchers]  # 업무 관람자
-        if instance.creator.email not in addresses:  # 업무 생성자
-            addresses.append(instance.creator.email)
-        if instance.assigned_to.email not in addresses:  # 업무 담당자
-            addresses.append(instance.assigned_to.email)
-        if user is not instance.assigned_to:  # 업무 수정자
-            addresses.append(user.email)
 
         context = {
             'instance': instance,
