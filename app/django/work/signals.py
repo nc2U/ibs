@@ -150,22 +150,19 @@ def issue_log_changes(sender, instance, created, **kwargs):
 
     else:
         user = instance.updater
-        watchers = instance.watchers.all()
-        try:
-            if instance.old_assigned_to:
-                if instance.old_assigned_to in (instance.creator, user) or instance.old_assigned_to not in watchers:
-                    pass
-                else:
-                    instance.watchers.remove(instance.old_assigned_to)
-        except AttributeError:
-            pass
+        watchers = set(instance.watchers.all())  # Set 변환으로 검색 성능 향상
+        old_assigned_to = getattr(instance, "old_assigned_to", None)  # AttributeError 방지
+        if old_assigned_to and old_assigned_to not in {instance.creator, user} and old_assigned_to in watchers:
+            instance.watchers.remove(old_assigned_to)
+
         if instance.creator not in watchers:  # 업무 생성자 추가
             instance.watchers.add(instance.creator)
         if instance.assigned_to not in watchers:  # 업무 담당자 추가
             instance.watchers.add(instance.assigned_to)
         if user is not instance.assigned_to:  # 현재 사용자 !== 업무 댬당자 => 현재 사용자 추가
             instance.watchers.add(user)
-        watchers = instance.watchers.all()
+
+        watchers = set(instance.watchers.all())  # Set 변환으로 검색 성능 향상
         addresses = [watcher.email for watcher in watchers]  # 업무 관람자
 
         context = {
