@@ -151,11 +151,14 @@ def issue_log_changes(sender, instance, created, **kwargs):
     else:
         user = instance.updater
         watchers = instance.watchers.all()
-        if instance.old_assigned_to:
-            if instance.old_assigned_to in (instance.creator, user) or instance.old_assigned_to not in watchers:
-                pass
-            else:
-                instance.watchers.remove(instance.old_assigned_to)
+        try:
+            if instance.old_assigned_to:
+                if instance.old_assigned_to in (instance.creator, user) or instance.old_assigned_to not in watchers:
+                    pass
+                else:
+                    instance.watchers.remove(instance.old_assigned_to)
+        except AttributeError:
+            pass
         if instance.creator not in watchers:  # 업무 생성자 추가
             instance.watchers.add(instance.creator)
         if instance.assigned_to not in watchers:  # 업무 담당자 추가

@@ -133,7 +133,7 @@
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
       <span>
           {% for w in watchers %}
-              <a href="mailto:{{ w.email }}">{{ w.username }} &lt;{{ w.email }}&gt;</a>{% if not forloop.last %}, {% endif %}
+              <a href="mailto:{{ w.email }}">{{ w.username }}</a>{% if not forloop.last %}, {% endif %}
           {% endfor %}
       </span>
     </td>
