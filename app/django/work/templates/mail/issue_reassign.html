@@ -46,6 +46,18 @@
       <span>{{ instance.description|markdown|safe }}</span>
     </td>
   </tr>
+  {% if instance.files.exists %}
+      <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+          <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+              <strong>파일</strong>
+          </td>
+          <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+              {% for file in instance.files.all %}
+                  - <a href="{{ settings.DOMAIN_HOST }}/media/{{ file.file }}">{{ file.file_name }}</a><br />
+              {% endfor %}
+          </td>
+      </tr>
+  {% endif %}
   <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
       <strong>유형</strong>
