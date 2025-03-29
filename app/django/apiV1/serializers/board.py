@@ -23,7 +23,7 @@ class GroupSerializer(serializers.ModelSerializer):
 class BoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Board
-        fields = ('pk', 'group', 'board_type', 'issue_project', 'name', 'order', 'search_able', 'manager')
+        fields = ('pk', 'group', 'board_type', 'name', 'order', 'search_able', 'manager')
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -46,7 +46,6 @@ class FilesInPostSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     board_name = serializers.SlugField(source='board', read_only=True)
-    issue_project = serializers.SerializerMethodField(read_only=True)
     cate_name = serializers.SlugField(source='category', read_only=True)
     links = LinksInPostSerializer(many=True, read_only=True)
     files = FilesInPostSerializer(many=True, read_only=True)
@@ -66,12 +65,6 @@ class PostSerializer(serializers.ModelSerializer):
                   'is_hide_comment', 'is_notice', 'is_blind', 'deleted', 'links', 'files',
                   'comments', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
-
-    @staticmethod
-    def get_issue_project(obj):
-        if obj.board and obj.board.issue_project:
-            return obj.board.issue_project.pk
-        return None
 
     def get_collection(self):
         queryset = Post.objects.all()

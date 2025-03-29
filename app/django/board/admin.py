@@ -17,9 +17,9 @@ class CategoryInline(admin.TabularInline):
 
 @admin.register(Board)
 class BoardAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'group', 'board_type', 'issue_project', 'name', 'order', 'search_able')
+    list_display = ('id', 'group', 'board_type', 'name', 'order', 'search_able')
     list_display_links = ('name',)
-    list_editable = ('group', 'board_type', 'issue_project', 'order', 'search_able')
+    list_editable = ('group', 'board_type', 'order', 'search_able')
     search_fields = ('name',)
     list_filter = ('group', 'board_type')
     inlines = (CategoryInline,)
@@ -56,13 +56,10 @@ class CommentInline(admin.TabularInline):
 
 @admin.register(Post)
 class PostAdmin(ImportExportMixin, admin.ModelAdmin):
-    # list_display = ('id', 'board', 'is_notice', 'project', 'category', 'title')
-    list_display = ('id', 'board', 'is_notice', 'category', 'title')
+    list_display = ('id', 'board', 'issue_project', 'category', 'title', 'is_notice')
     list_display_links = ('title',)
-    # list_editable = ('board', 'is_notice', 'project', 'category')
-    list_editable = ('board', 'is_notice', 'category')
+    list_editable = ('board', 'issue_project', 'category', 'is_notice')
     search_fields = ('title', 'content')
-    # list_filter = ('board', 'is_notice', 'project', 'category')
     list_filter = ('board', 'is_notice', 'category')
     inlines = (LinkInline, FileInline, ImageInline, CommentInline)
 
