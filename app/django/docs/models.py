@@ -9,7 +9,7 @@ from django.dispatch import receiver
 
 
 class DocType(models.Model):
-    TYPE_CHOICES = (('1', '일반 문서'), ('2', '소송 기록'))
+    TYPE_CHOICES = (('1', '업무 문서'), ('2', '소송 기록'), ('3', '기타 문서'))
     type = models.CharField('이름', max_length=1, choices=TYPE_CHOICES)
 
     def __str__(self):
