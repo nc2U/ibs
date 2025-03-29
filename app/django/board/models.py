@@ -58,8 +58,6 @@ class PostCategory(models.Model):
 
 class Post(models.Model):
     board = models.ForeignKey(Board, on_delete=models.PROTECT, verbose_name='게시판')
-    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.SET_NULL, null=True, blank=True,
-                                      verbose_name='업무 프로젝트')
     category = models.ForeignKey(PostCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리')
     title = models.CharField('제목', max_length=255)
     content = models.TextField('내용', blank=True, default='')

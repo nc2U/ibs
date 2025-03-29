@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
+import { useBoard } from '@/store/pinia/board'
 import { useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import NoData from '@/views/_Work/components/NoData.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import NewsList from './components/NewsList.vue'
 
 const emit = defineEmits(['aside-visible'])
 
@@ -19,7 +21,14 @@ const sideNavCAll = () => cBody.value.toggle()
 
 const newsList = computed(() => [])
 
-onBeforeMount(() => emit('aside-visible', false))
+const boardStore = useBoard()
+const postList = computed(() => boardStore.postList)
+const noticeList = computed(() => boardStore.noticeList)
+
+onBeforeMount(() => {
+  emit('aside-visible', false)
+  boardStore.fetchPostList({ board: 1 })
+})
 </script>
 
 <template>
@@ -43,7 +52,7 @@ onBeforeMount(() => emit('aside-visible', false))
       <NoData v-if="!newsList.length" />
 
       <CRow v-else>
-        <CCol></CCol>
+        <NewsList />
       </CRow>
     </template>
 
