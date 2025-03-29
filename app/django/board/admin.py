@@ -17,13 +17,11 @@ class CategoryInline(admin.TabularInline):
 
 @admin.register(Board)
 class BoardAdmin(ImportExportMixin, admin.ModelAdmin):
-    # list_display = ('id', 'group', 'project', 'issue_project', 'name', 'is_notice', 'order', 'search_able')
-    list_display = ('id', 'group', 'name', 'is_notice', 'order', 'search_able')
+    list_display = ('id', 'group', 'board_type', 'issue_project', 'name', 'order', 'search_able')
     list_display_links = ('name',)
-    # list_editable = ('group', 'project', 'issue_project', 'is_notice', 'order', 'search_able')
-    list_editable = ('group', 'is_notice', 'order', 'search_able')
+    list_editable = ('group', 'order', 'search_able')
     search_fields = ('name',)
-    list_filter = ('group',)
+    list_filter = ('group', 'board_type')
     inlines = (CategoryInline,)
 
 

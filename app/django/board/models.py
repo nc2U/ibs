@@ -31,7 +31,7 @@ class Board(models.Model):
     issue_project = models.ForeignKey('work.IssueProject', on_delete=models.SET_NULL,
                                       null=True, blank=True, verbose_name='업무 프로젝트')
     name = models.CharField('이름', max_length=255)
-    is_notice = models.BooleanField('공지 게시판', default=False)
+    # is_notice = models.BooleanField('공지 게시판', default=False)
     order = models.PositiveSmallIntegerField('정렬 순서', default=0)
     search_able = models.BooleanField('검색사용', default=True)
     manager = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='관리자')
