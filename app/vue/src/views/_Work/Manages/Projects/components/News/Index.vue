@@ -1,16 +1,27 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount } from 'vue'
+import { computed, onBeforeMount, onBeforeUpdate } from 'vue'
 import { useWork } from '@/store/pinia/work'
+import { type PostFilter, useBoard } from '@/store/pinia/board'
 import NoData from '@/views/_Work/components/NoData.vue'
+import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 
 const emit = defineEmits(['aside-visible'])
-
-const newsList = computed(() => [])
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
 
-onBeforeMount(() => emit('aside-visible', false))
+const boardStore = useBoard()
+const postList = computed(() => boardStore.postList)
+const fetchPostList = (payload: PostFilter) => boardStore.fetchPostList(payload)
+
+const dataSetup = () => fetchPostList({ board: 1, issue_project: issueProject.value?.pk ?? '' })
+
+onBeforeUpdate(() => dataSetup())
+
+onBeforeMount(() => {
+  emit('aside-visible', false)
+  dataSetup()
+})
 </script>
 
 <template>
@@ -32,9 +43,9 @@ onBeforeMount(() => emit('aside-visible', false))
     </CCol>
   </CRow>
 
-  <NoData v-if="!newsList.length" />
+  <NoData v-if="!postList.length" />
 
   <CRow v-else>
-    <CCol></CCol>
+    <NewsList :post-list="postList" />
   </CRow>
 </template>

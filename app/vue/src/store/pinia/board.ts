@@ -109,7 +109,7 @@ export const useBoard = defineStore('board', () => {
 
   const fetchPostList = async (payload: PostFilter) => {
     const { board, page } = payload
-    let url = `/post/?page=${page ?? 1}&is_notice=false`
+    let url = `/post/?page=${page ?? 1}`
     if (payload.board) url += `&board=${board}`
     if (payload.issue_project) url += `&issue_project=${payload.issue_project}`
     if (payload.category) url += `&category=${payload.category}`

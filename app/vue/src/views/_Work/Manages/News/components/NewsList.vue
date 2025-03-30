@@ -1,9 +1,14 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import type { PropType } from 'vue'
+import type { Post } from '@/store/types/board'
 
-const msg = ref('공지 리스트')
+defineProps({
+  postList: { type: Array as PropType<Post[]>, default: () => [] },
+})
 </script>
 
 <template>
-  <h1>{{ msg }}</h1>
+  <div v-for="post in postList" :key="post.pk">
+    {{ post.title }}
+  </div>
 </template>

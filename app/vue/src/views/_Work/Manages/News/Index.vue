@@ -19,11 +19,8 @@ const comName = computed(() => company?.value?.name)
 
 const sideNavCAll = () => cBody.value.toggle()
 
-const newsList = computed(() => [])
-
 const boardStore = useBoard()
 const postList = computed(() => boardStore.postList)
-const noticeList = computed(() => boardStore.noticeList)
 
 onBeforeMount(() => {
   emit('aside-visible', false)
@@ -49,10 +46,10 @@ onBeforeMount(() => {
         </CCol>
       </CRow>
 
-      <NoData v-if="!newsList.length" />
+      <NoData v-if="!postList.length" />
 
       <CRow v-else>
-        <NewsList />
+        <NewsList :post-list="postList" />
       </CRow>
     </template>
 
