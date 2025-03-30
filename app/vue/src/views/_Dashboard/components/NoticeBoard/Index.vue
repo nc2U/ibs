@@ -16,7 +16,6 @@ const boardNumber = ref(1)
 const mainViewName = ref('공지 게시판')
 
 const postFilter = ref<PostFilter>({
-  company: '',
   board: boardNumber.value,
   category: '',
   ordering: '-created',
@@ -76,7 +75,6 @@ const updatePost = (payload: { pk: number; form: FormData }) => boardStore.updat
 const patchPost = (payload: PatchPost & { filter: PostFilter }) => boardStore.patchPost(payload)
 const patchLink = (payload: PostLink) => boardStore.patchLink(payload)
 const patchFile = (payload: PostFile) => boardStore.patchFile(payload)
-// const deletePost = (pk: number, filter: PostFilter) => boardStore.deletePost(pk, filter)
 
 const [route, router] = [
   useRoute() as Loaded & {
@@ -87,7 +85,7 @@ const [route, router] = [
 
 watch(route, val => {
   if (val.params.postId) fetchPost(Number(val.params.postId))
-  else boardStore.post = null
+  else boardStore.removePost()
 })
 
 const postsRenewal = (page: number) => {
@@ -126,7 +124,6 @@ const postScrape = (post: number) => {
 const onSubmit = async (payload: Post & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
-    getData.company = company.value
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -134,14 +131,14 @@ const onSubmit = async (payload: Post & Attatches) => {
 
     for (const key in getData) {
       if (key === 'links' || key === 'files') {
-        getData[key]?.forEach(val => form.append(key, JSON.stringify(val)))
+        ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
       } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
         if (key === 'cngFiles') {
           getData[key]?.forEach(val => {
             form.append('cngPks', val.pk as any)
             form.append('cngFiles', val.file as Blob)
           })
-        } else getData[key]?.forEach(val => form.append(key, val as string | Blob))
+        } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
       } else {
         const formValue = getData[key] === null ? '' : getData[key]
         form.append(key, formValue as string)
@@ -164,15 +161,14 @@ const onSubmit = async (payload: Post & Attatches) => {
   }
 }
 
-const dataSetup = (pk: number, postId?: string | string[]) => {
+const dataSetup = (postId?: string | string[]) => {
   fetchBoardList()
-  postFilter.value.company = pk
   fetchCategoryList(boardNumber.value)
   fetchPostList(postFilter.value)
   if (postId) fetchPost(Number(postId))
 }
 
-onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?.postId))
+onBeforeMount(() => dataSetup(route.params?.postId))
 </script>
 
 <template>

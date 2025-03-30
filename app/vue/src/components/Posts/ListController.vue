@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import { reactive, computed, nextTick, onBeforeMount } from 'vue'
+import { computed, nextTick, onBeforeMount, ref } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { numFormat } from '@/utils/baseMixins'
 import { useProject } from '@/store/pinia/project'
 import { type PostFilter, useBoard } from '@/store/pinia/board'
-import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
@@ -13,22 +12,18 @@ const props = defineProps({
 })
 const emit = defineEmits(['list-filter'])
 
-const form = reactive<PostFilter>({
-  company: '',
-  project: '',
-  is_com: props.comFrom,
-  lawsuit: '',
+const form = ref<PostFilter>({
+  issue_project: '',
   ordering: '-created',
   search: '',
+  page: 1,
 })
 
 const formsCheck = computed(() => {
-  const a = form.is_com === !!props.comFrom
-  const b = !!props.comFrom ? form.project === '' : true
-  const c = !form.lawsuit
-  const d = form.ordering === '-created'
-  const e = form.search === ''
-  return a && b && c && d && e
+  const a = form.value.issue_project === ''
+  const b = form.value.ordering === '-created'
+  const c = form.value.search === ''
+  return a && b && c
 })
 
 const boardStore = useBoard()
@@ -44,23 +39,17 @@ const listFiltering = (page = 1) => {
 }
 
 const firstSorting = (event: { target: { value: number | null } }) => {
-  const val = event.target.value
-  if (!val) form.is_com = props.comFrom ?? true
-  else {
-    form.is_com = false
-    form.project = val
-  }
+  form.value.issue_project = event.target.value ?? ''
+
   listFiltering(1)
 }
 
-const projectChange = (project: number | null) => (form.project = project ?? '')
+const projectChange = (project: number | null) => (form.value.issue_project = project ?? '')
 
 const resetForm = () => {
-  form.is_com = !!props.comFrom
-  form.project = ''
-  form.lawsuit = ''
-  form.ordering = '-created'
-  form.search = ''
+  form.value.issue_project = ''
+  form.value.ordering = '-created'
+  form.value.search = ''
   listFiltering(1)
 }
 
@@ -72,12 +61,10 @@ const fetchProjectList = () => projectStore.fetchProjectList()
 onBeforeMount(() => {
   fetchProjectList()
   if (props.postFilter) {
-    form.company = props.postFilter.company
-    form.project = props.postFilter.project
-    form.is_com = props.postFilter.is_com
-    form.ordering = props.postFilter.ordering
-    form.search = props.postFilter.search
-    form.page = props.postFilter.page
+    form.value.issue_project = props.postFilter.issue_project
+    form.value.ordering = props.postFilter.ordering
+    form.value.search = props.postFilter.search
+    form.value.page = props.postFilter.page
   }
 })
 </script>
@@ -88,7 +75,7 @@ onBeforeMount(() => {
       <CCol lg="6">
         <CRow>
           <CCol v-if="comFrom" md="6" lg="5" xl="4" class="mb-3">
-            <CFormSelect v-model="form.project" @change="firstSorting">
+            <CFormSelect v-model="form.issue_project" @change="firstSorting">
               <option value="">본사</option>
               <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">
                 {{ proj.label }}
@@ -111,18 +98,6 @@ onBeforeMount(() => {
 
       <CCol lg="6">
         <CRow class="justify-content-md-end">
-          <CCol v-if="getSuitCase" md="6" lg="5" class="mb-3">
-            <Multiselect
-              v-model="form.lawsuit"
-              :options="getSuitCase"
-              placeholder="사건번호"
-              autocomplete="label"
-              :classes="{ search: 'form-control multiselect-search' }"
-              :add-option-on="['enter', 'tab']"
-              searchable
-              @change="listFiltering(1)"
-            />
-          </CCol>
           <CCol md="6" lg="5" class="mb-3">
             <CInputGroup class="flex-nowrap">
               <CFormInput
