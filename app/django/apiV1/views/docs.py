@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.db.models import Q
 from django_filters import BooleanFilter, ModelChoiceFilter, NumberFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
