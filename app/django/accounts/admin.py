@@ -1,20 +1,20 @@
 from django.contrib import admin
-from import_export.admin import ImportExportMixin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
+from import_export.admin import ImportExportMixin
 
 from .forms import UserCreationForm, UserChangeForm
-from .models import User, StaffAuth, Profile, Todo, DocScrape  # , PostScrape
+from .models import User, DocScrape, StaffAuth  # , PostScrape
 
 
-# class StaffAuthInline(admin.StackedInline):
-#     model = StaffAuth
+class StaffAuthInline(admin.StackedInline):
+    model = StaffAuth
 
 
 # class ProfileInline(admin.StackedInline):
 #     model = Profile
-#
-#
+
+
 # class TodosInline(admin.StackedInline):
 #     model = Todo
 
@@ -47,7 +47,7 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
     search_fields = ('email', 'username')
     ordering = ('-date_joined',)
     filter_horizontal = ()
-    # inlines = (StaffAuthInline, ProfileInline, TodosInline)
+    inlines = (StaffAuthInline,)  # ProfileInline, TodosInline)
 
 
 @admin.register(DocScrape)
