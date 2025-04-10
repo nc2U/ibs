@@ -2429,8 +2429,6 @@ class ExportSites(View):
                     else:
                         worksheet.write(row_num, col_num, row[col_num - 1], bf)
 
-
-
         row_num += 1
         worksheet.set_row(row_num, 23)
 
@@ -2624,7 +2622,7 @@ class ExportSitesByOwner(View):
                 if col_num == 0:
                     worksheet.write(row_num, col_num, self.get_sort(row[col_num]), bf)
                 elif col_num == 7:
-                    worksheet.write(row_num, col_num, float(row[col_num - 1]) * 0.3025, bf)
+                    worksheet.write(row_num, col_num, float(row[col_num - 1] or 0) * 0.3025, bf)
                 else:
                     if col_num < 8:
                         worksheet.write(row_num, col_num, row[col_num], bf)
