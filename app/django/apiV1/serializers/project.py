@@ -112,7 +112,8 @@ class SiteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Site
         fields = ('pk', 'project', 'order', 'district', 'lot_number', 'site_purpose',
-                  'official_area', 'returned_area', 'rights_a', 'rights_b', 'dup_issue_date', 'owners')
+                  'official_area', 'returned_area', 'notice_price', 'rights_a',
+                  'rights_b', 'dup_issue_date', 'owners', 'note')
 
 
 class AllSiteSerializer(serializers.ModelSerializer):
@@ -153,8 +154,8 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SiteOwner
-        fields = ('pk', 'project', 'owner', 'date_of_birth', 'phone1', 'phone2',
-                  'zipcode', 'address1', 'address2', 'address3',
+        fields = ('pk', 'project', 'owner', 'use_consent', 'date_of_birth', 'phone1',
+                  'phone2', 'zipcode', 'address1', 'address2', 'address3',
                   'own_sort', 'own_sort_desc', 'sites', 'counsel_record')
 
     @transaction.atomic

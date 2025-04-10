@@ -118,7 +118,7 @@ class SiteOwnerViewSet(viewsets.ModelViewSet):
     serializer_class = SiteOwnerSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationOneHundred
-    filterset_fields = ('project', 'own_sort')
+    filterset_fields = ('project', 'own_sort', 'use_consent')
     search_fields = ('owner', 'phone1', 'phone2', 'sites__lot_number', 'counsel_record')
 
     def perform_create(self, serializer):
