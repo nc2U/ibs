@@ -213,11 +213,11 @@ export const useSite = defineStore('site', () => {
   const relationList = ref<Relation[]>([])
 
   const patchRelation = (payload: Relation & OwnerFilter) => {
-    const { pk, project, limit, page, sort, search, ...relationData } = payload
+    const { pk, project, limit, page, sort, is_use_consent, search, ...relationData } = payload
     api
       .patch(`/site-relation/${pk}/`, relationData)
       .then(() => {
-        fetchSiteOwnerList({ project, limit, page, sort, search })
+        fetchSiteOwnerList({ project, limit, page, sort, is_use_consent, search })
         message()
       })
       .catch(err => errorHandle(err.response.data))
