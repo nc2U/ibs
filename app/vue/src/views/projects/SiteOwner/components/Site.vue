@@ -28,6 +28,7 @@ const form = reactive<semiRel>({
   owned_area: '',
   acquisition_date: null,
 })
+const use_consent = ref(false)
 
 const calcArea = ref(0)
 
@@ -61,6 +62,7 @@ onBeforeMount(() => {
     form.acquisition_date = props.site.acquisition_date
     calcArea.value = (Number(props.site.owned_area) || 0) * 0.3025
   }
+  if (props.owner) use_consent.value = props.owner.use_consent
 })
 </script>
 
@@ -102,6 +104,9 @@ onBeforeMount(() => {
   </CTableDataCell>
   <CTableDataCell class="text-right" color="warning">
     {{ numFormat(calcArea, 4) }}
+  </CTableDataCell>
+  <CTableDataCell color="">
+    <CFormCheck v-model="use_consent" id="use-consent-list" disabled />
   </CTableDataCell>
   <CTableDataCell class="text-left">
     <DatePicker

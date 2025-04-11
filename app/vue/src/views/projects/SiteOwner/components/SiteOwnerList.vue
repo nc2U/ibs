@@ -24,15 +24,16 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive bordered align="middle">
     <colgroup>
-      <col style="width: 5%" />
+      <col style="width: 6%" />
+      <col style="width: 9%" />
       <col style="width: 10%" />
-      <col style="width: 11%" />
-      <col style="width: 13%" />
+      <col style="width: 12%" />
       <col style="width: 10%" />
-      <col style="width: 11%" />
-      <col style="width: 11%" />
       <col style="width: 10%" />
-      <col style="width: 11%" />
+      <col style="width: 10%" />
+      <col style="width: 9%" />
+      <col style="width: 6%" />
+      <col style="width: 10%" />
       <col v-if="write_project_site" style="width: 4%" />
       <col v-if="write_project_site" style="width: 4%" />
     </colgroup>
@@ -40,7 +41,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     <CTableHead :color="TableSecondary">
       <CTableRow class="text-center">
         <CTableHeaderCell colspan="5" :color="TableInfo"> 소유자 관련 정보</CTableHeaderCell>
-        <CTableHeaderCell :colspan="write_project_site ? 6 : 4" :color="TableSuccess">
+        <CTableHeaderCell :colspan="write_project_site ? 7 : 5" :color="TableSuccess">
           소유권 관련 정보
         </CTableHeaderCell>
       </CTableRow>
@@ -54,6 +55,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell colspan="2" scope="col">
           소유면적 <span v-if="isReturned">(환지면적 기준)</span>
         </CTableHeaderCell>
+        <CTableHeaderCell rowspan="2" scope="col">사용동의</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col"> 소유권 취득일</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project_site" rowspan="2" colspan="2" scope="col">
           비고
