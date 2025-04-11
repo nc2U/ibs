@@ -18,11 +18,12 @@ export type SiteFilter = {
   search?: string
 }
 
-export type OwnerFilter = {
+export interface OwnerFilter {
   project: number | null
+  sort?: string
   limit?: number | ''
   page?: number
-  sort?: string
+  is_use_consent?: '' | '0' | '1'
   search?: string
 }
 
@@ -163,10 +164,10 @@ export const useSite = defineStore('site', () => {
   }
 
   const fetchSiteOwnerList = (payload: OwnerFilter) => {
-    const { project, limit, page, sort, search } = payload
+    const { project, limit, page, sort, is_use_consent, search } = payload
     api
       .get(
-        `/site-owner/?project=${project}&limit=${limit || 10}&page=${page || 1}&own_sort=${sort || ''}&search=${search || ''}`,
+        `/site-owner/?project=${project}&limit=${limit || 10}&page=${page || 1}&own_sort=${sort || ''}&use_consent=${is_use_consent || ''}&search=${search || ''}`,
       )
       .then(res => {
         siteOwnerList.value = res.data.results
@@ -176,14 +177,12 @@ export const useSite = defineStore('site', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const createSiteOwner = (
-    payload: SiteOwner & { limit: number; page: number; sort: string; search: string },
-  ) => {
-    const { limit, page, sort, search, ...formData } = payload
+  const createSiteOwner = (payload: SiteOwner & OwnerFilter) => {
+    const { limit, page, sort, is_use_consent, search, ...formData } = payload
     api
       .post(`/site-owner/`, formData)
       .then(res => {
-        fetchSiteOwnerList({ project: res.data.project, limit, page, sort, search })
+        fetchSiteOwnerList({ project: res.data.project, limit, page, sort, is_use_consent, search })
         message()
         console.log('--->', res.data, res.data.sites)
       })
@@ -191,11 +190,11 @@ export const useSite = defineStore('site', () => {
   }
 
   const updateSiteOwner = (payload: SiteOwner & OwnerFilter) => {
-    const { pk, limit, page, sort, search, ...formData } = payload
+    const { pk, limit, page, sort, is_use_consent, search, ...formData } = payload
     api
       .put(`/site-owner/${pk}/`, formData)
       .then(res => {
-        fetchSiteOwnerList({ project: res.data.project, limit, page, sort, search })
+        fetchSiteOwnerList({ project: res.data.project, limit, page, sort, is_use_consent, search })
         message()
       })
       .catch(err => errorHandle(err.response.data))

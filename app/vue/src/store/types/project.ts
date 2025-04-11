@@ -188,8 +188,10 @@ export interface Site {
   site_purpose: string
   official_area: string
   returned_area: number | null
+  notice_price: number | null
   rights_a: string
   rights_b: string
+  note: string
   dup_issue_date: string | null
   owners?: SimpleOwner[]
 }
@@ -206,6 +208,7 @@ export interface SiteOwner {
   pk: number | null
   project: number | null
   owner: string
+  use_consent: boolean
   date_of_birth: string | null
   phone1: string
   phone2: string

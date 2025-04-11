@@ -27,9 +27,11 @@ const form = reactive({
   site_purpose: '',
   official_area: '',
   returned_area: null as number | null,
+  notice_price: null,
   rights_a: '',
   rights_b: '',
   dup_issue_date: null as null | string,
+  note: '',
 })
 
 const projectStore = useProject()
@@ -47,11 +49,13 @@ const formsCheck = computed(() => {
     const e = form.site_purpose === props.site.site_purpose
     const f = form.official_area === props.site.official_area
     const g = form.returned_area === props.site.returned_area
-    const h = form.rights_a === props.site.rights_a
-    const i = form.rights_b === props.site.rights_b
-    const j = form.dup_issue_date === props.site.dup_issue_date
+    const h = form.notice_price === props.site.notice_price
+    const i = form.rights_a === props.site.rights_a
+    const j = form.rights_b === props.site.rights_b
+    const k = form.dup_issue_date === props.site.dup_issue_date
+    const l = form.note === props.site.note
 
-    return a && b && c && d && e && f && g && h && i && j
+    return a && b && c && d && e && f && g && h && i && j && k && l
   } else return false
 })
 
@@ -90,6 +94,7 @@ const dataSetup = () => {
     form.site_purpose = props.site.site_purpose
     form.official_area = props.site.official_area
     form.returned_area = props.site.returned_area
+    form.notice_price = props.site.notice_price
     form.rights_a = props.site.rights_a
     form.rights_b = props.site.rights_b
     form.dup_issue_date = props.site.dup_issue_date
@@ -205,6 +210,20 @@ onBeforeMount(() => dataSetup())
                   :required="false"
                   maxlength="10"
                   placeholder="등기부 발급일"
+                />
+              </CCol>
+            </CRow>
+          </CCol>
+
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label"> 공시지가</CFormLabel>
+              <CCol sm="8">
+                <CFormInput
+                  v-model.number="form.notice_price"
+                  type="number"
+                  :required="false"
+                  placeholder="공시지가"
                 />
               </CCol>
             </CRow>

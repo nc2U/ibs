@@ -53,6 +53,7 @@ type inputData = SiteOwner & {
   limit: number
   page: number
   sort: string
+  use_consent: '' | '0' | '1'
   search: string
 }
 
