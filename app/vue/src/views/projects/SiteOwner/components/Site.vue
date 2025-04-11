@@ -102,9 +102,6 @@ onBeforeMount(() => {
   <CTableDataCell class="text-right" color="warning">
     {{ numFormat(calcArea, 4) }}
   </CTableDataCell>
-  <CTableDataCell :color="owner.use_consent ? 'success' : ''">
-    {{ owner.use_consent ? '동의' : '' }}
-  </CTableDataCell>
   <CTableDataCell class="text-left">
     <DatePicker
       v-model="form.acquisition_date"
@@ -113,6 +110,9 @@ onBeforeMount(() => {
       placeholder="소유권 취득일"
       @keydown.enter="relPatch"
     />
+  </CTableDataCell>
+  <CTableDataCell :color="owner.use_consent ? 'success' : ''">
+    {{ owner.use_consent ? '동의' : '' }}
   </CTableDataCell>
   <CTableDataCell v-if="write_project_site">
     <CButton color="success" size="sm" :disabled="formsCheck" @click="relPatch"> 적용</CButton>
