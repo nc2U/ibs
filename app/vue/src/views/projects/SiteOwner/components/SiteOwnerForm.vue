@@ -61,7 +61,9 @@ const formsCheck = computed(() => {
     const b = form.owner === props.owner.owner
     const c = form.use_consent === props.owner.use_consent
     const d = form.date_of_birth === props.owner.date_of_birth
-    const e = form.sites == props.owner.sites.map((s: SimpleSite) => s.site)
+    const e =
+      JSON.stringify(form.sites) ===
+      JSON.stringify(props.owner.sites.map((s: SimpleSite) => s.site))
     const f = form.phone1 === props.owner.phone1
     const g = form.phone2 === props.owner.phone2
     const h = form.zipcode === props.owner.zipcode
@@ -160,6 +162,7 @@ onBeforeMount(() => dataSetup())
                   v-model="form.use_consent"
                   label="토지사용 동의(승낙) 여부"
                   id="use-consent"
+                  :disabled="!owner"
                 />
               </CCol>
             </CRow>
