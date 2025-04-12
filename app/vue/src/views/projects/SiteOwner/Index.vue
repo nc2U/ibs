@@ -121,7 +121,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
         @multi-submit="multiSubmit"
       />
       <TableTitleRow title="부지 소유자 목록" excel :url="excelUrl" :disabled="!project">
-        <span v-if="project" class="pt-1 text-success">
+        <span v-if="project" class="text-success" style="padding-top: 7px">
           소유자 면적 :
           {{ numFormat(getOwnersTotal as number, 2) }}m<sup>2</sup> ({{
             numFormat((getOwnersTotal as number) * 0.3025, 2)
