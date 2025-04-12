@@ -148,7 +148,7 @@ const dataSetup = () => {
     form.total_price = props.contract.total_price
     form.contract_area = props.contract.contract_area
     form.down_pay1 = props.contract.down_pay1
-    form.down_pay2_date = props.contract.down_pay2_date
+    form.down_pay1_date = props.contract.down_pay1_date
     form.down_pay1_is_paid = props.contract.down_pay1_is_paid
     form.down_pay2 = props.contract.down_pay2
     form.down_pay2_date = props.contract.down_pay2_date
@@ -297,7 +297,6 @@ onBeforeMount(() => dataSetup())
               <CCol sm="8">
                 <DatePicker
                   v-model="form.down_pay1_date"
-                  :required="false"
                   maxlength="10"
                   placeholder="계약금 1차 지급일"
                 />
@@ -337,7 +336,6 @@ onBeforeMount(() => dataSetup())
               <CCol sm="8">
                 <DatePicker
                   v-model="form.down_pay2_date"
-                  :required="false"
                   maxlength="10"
                   placeholder="계약금 2차 지급일"
                 />
@@ -377,7 +375,6 @@ onBeforeMount(() => dataSetup())
               <CCol sm="8">
                 <DatePicker
                   v-model="form.inter_pay1_date"
-                  :required="false"
                   maxlength="10"
                   placeholder="중도금 1차 지급일"
                 />
@@ -417,7 +414,6 @@ onBeforeMount(() => dataSetup())
               <CCol sm="8">
                 <DatePicker
                   v-model="form.inter_pay2_date"
-                  :required="false"
                   maxlength="10"
                   placeholder="중도금 2차 지급일"
                 />
@@ -458,7 +454,6 @@ onBeforeMount(() => dataSetup())
               <CCol sm="8">
                 <DatePicker
                   v-model="form.remain_pay_date"
-                  :required="false"
                   maxlength="10"
                   placeholder="잔금 지급일"
                 />
