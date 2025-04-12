@@ -276,6 +276,7 @@ onBeforeMount(() => dataSetup())
                     v-model.number="form.down_pay1"
                     type="number"
                     min="0"
+                    required
                     placeholder="계약금 - 1차"
                   />
                   <CInputGroupText>

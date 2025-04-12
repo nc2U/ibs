@@ -245,7 +245,7 @@ class SiteContractSerializer(serializers.ModelSerializer):
         site_contract = SiteContract.objects.create(**validated_data)
         site_contract.save()
 
-        owner = SiteOwner.objects.get(pk=site_contract.owner)
+        owner = SiteOwner.objects.get(pk=site_contract.owner.id)
         owner.use_consent = True
         owner.save()
 

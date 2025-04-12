@@ -62,7 +62,7 @@ const multiSubmit = (payload: SiteContract) => {
 
   for (const key in data) form.set(key, data[key] ?? '')
 
-  if (payload.pk) onUpdate(pk, form)
+  if (pk) onUpdate(pk, form)
   else onCreate(form)
 }
 
