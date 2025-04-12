@@ -251,6 +251,22 @@ onBeforeMount(() => dataSetup())
             </CRow>
           </CCol>
         </CRow>
+
+        <v-divider />
+        <CRow class="mb-3">
+          <CCol sm="12">
+            <CRow>
+              <CFormLabel class="col-sm-2 col-form-label"> 비고</CFormLabel>
+              <CCol sm="10">
+                <CFormTextarea
+                  v-model="form.note"
+                  rows="4"
+                  placeholder="지상 건축물 등 기타 관련 참고 사항"
+                />
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
       </div>
     </CModalBody>
 

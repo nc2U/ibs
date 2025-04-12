@@ -5,9 +5,9 @@
 #
 # Copyright 2013-2020, John McNamara, jmcnamara@cpan.org
 #
+import datetime
 import io
 import json
-import datetime
 
 import xlsxwriter
 import xlwt
@@ -2299,7 +2299,7 @@ class ExportSites(View):
         ) if search else obj_list
         # -------------------- get_queryset finish -------------------- #
 
-        rows_cnt = 7 if project.is_returned_area else 5
+        rows_cnt = 9 if project.is_returned_area else 7
         rows_cnt = rows_cnt if not rights else rows_cnt + 2
 
         # 1. Title
@@ -2345,9 +2345,13 @@ class ExportSites(View):
             header_src.append(['환지면적', 'returned_area', 13])
             header_src.append(['', '', 13])
 
+        header_src.append(['공시지가', 'notice_price', 15])
+
         if rights:
             header_src.append(['갑구 권리제한사항', 'rights_a', 18])
             header_src.append(['을구 권리제한사항', 'rights_b', 18])
+
+        header_src.append(['비고', 'note', 20])
 
         titles = []  # 헤더명
         params = []  # 헤더 컬럼(db)

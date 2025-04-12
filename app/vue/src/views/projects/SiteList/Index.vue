@@ -103,18 +103,15 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
       />
       <AddSite v-if="write_project_site" :project="project as number" @multi-submit="multiSubmit" />
       <TableTitleRow title="사업 부지 목록" excel :url="excelUrl" :disabled="!project">
-        <span v-if="project" class="pt-1 text-success">
+        <span v-if="project" class="text-success" style="padding-top: 7px">
           총 면적 : {{ numFormat(totalArea as number, 2) }}m<sup>2</sup> ({{
             numFormat((totalArea as number) * 0.3025, 2)
           }}
           평) 등록
         </span>
-        <CFormCheck
-          v-model="rights"
-          id="include-rights"
-          label="권리제한사항 포함"
-          class="ml-3 pt-1"
-        />
+        <span style="padding-top: 7px">
+          <CFormCheck v-model="rights" id="include-rights" label="권리제한사항 포함" class="ml-3" />
+        </span>
       </TableTitleRow>
       <SiteList
         :is-returned="isReturned"
