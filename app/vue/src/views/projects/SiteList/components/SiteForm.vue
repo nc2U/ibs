@@ -168,7 +168,7 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 공부상 면적 - m<sup>2</sup></CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 공부상 면적(㎡)</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.official_area"
@@ -176,21 +176,21 @@ onBeforeMount(() => dataSetup())
                   required
                   min="0"
                   step="0.0000001"
-                  placeholder="공부상 면적"
+                  placeholder="공부상 면적(㎡)"
                 />
               </CCol>
             </CRow>
           </CCol>
           <CCol sm="6">
             <CRow v-if="isReturned">
-              <CFormLabel class="col-sm-4 col-form-label"> 환지 면적 - m<sup>2</sup></CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 환지 면적(㎡)</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.returned_area"
                   type="number"
                   min="0"
                   step="0.0000001"
-                  placeholder="환지 면적"
+                  placeholder="환지 면적(㎡)"
                 />
               </CCol>
             </CRow>
@@ -254,7 +254,7 @@ onBeforeMount(() => dataSetup())
         </CRow>
 
         <v-divider />
-        
+
         <CRow class="mb-3">
           <CCol sm="12">
             <CRow>
