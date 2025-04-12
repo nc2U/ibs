@@ -2410,6 +2410,13 @@ class ExportSites(View):
             row = list(row)
 
             for col_num, title in enumerate(titles):
+                left_col_num = 8 if project.is_returned_area else 6
+                if col_num > left_col_num:
+                    body_format['align'] = 'left'
+                elif col_num == left_col_num:
+                    body_format['align'] = 'right'
+                else:
+                    body_format['align'] = 'center'
                 # css 정렬
                 if col_num in area_col_num:
                     body_format['num_format'] = 43
