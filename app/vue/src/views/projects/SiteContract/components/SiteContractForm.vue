@@ -221,14 +221,14 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 총 계약면적</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 총 계약면적(㎡)</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.contract_area"
                   type="number"
                   min="0"
                   step="0.0000001"
-                  placeholder="총 계약면적"
+                  placeholder="총 계약면적(㎡)"
                 />
               </CCol>
             </CRow>
