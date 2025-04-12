@@ -2525,7 +2525,7 @@ class ExportSitesByOwner(View):
         ) if search else obj_list
         # -------------------- get_queryset finish -------------------- #
 
-        rows_cnt = 8
+        rows_cnt = 9
 
         # 1. Title
         row_num = 0
@@ -2565,6 +2565,7 @@ class ExportSitesByOwner(View):
             ['소유지분(%)', 'relations__ownership_ratio', 10],
             [area_title, 'relations__owned_area', 12],
             ['', '', 12],
+            ['사용동의', 'use_consent', 12],
             ['소유권 취득일', 'relations__acquisition_date', 15]
         ]
 
@@ -2632,18 +2633,19 @@ class ExportSitesByOwner(View):
 
                 if col_num == 0:
                     worksheet.write(row_num, col_num, self.get_sort(row[col_num]), bf)
+                elif col_num < 7:
+                    worksheet.write(row_num, col_num, row[col_num], bf)
                 elif col_num == 7:
                     worksheet.write(row_num, col_num, float(row[col_num - 1] or 0) * 0.3025, bf)
+                elif col_num == 8:
+                    worksheet.write(row_num, col_num, '동의' if row[col_num - 1] else '', bf)
                 else:
-                    if col_num < 8:
-                        worksheet.write(row_num, col_num, row[col_num], bf)
-                    else:
-                        worksheet.write(row_num, col_num, row[col_num - 1], bf)
+                    worksheet.write(row_num, col_num, row[col_num - 1], bf)
 
         row_num += 1
         worksheet.set_row(row_num, 23)
 
-        sum_area = sum([a[6] for a in rows])
+        sum_area = sum([a[6] or 0 for a in rows])
 
         for col_num, title in enumerate(titles):
             # css 정렬
