@@ -249,8 +249,10 @@ export interface SiteContract {
   total_price: number | null
   contract_area: number | null
   down_pay1: number | null
+  down_pay1_date: string | null
   down_pay1_is_paid: boolean
   down_pay2: number | null
+  down_pay2_date: string | null
   down_pay2_is_paid: boolean
   inter_pay1: number | null
   inter_pay1_date: string | null
