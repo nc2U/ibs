@@ -233,17 +233,21 @@ class SiteContractSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SiteContract
-        fields = ('pk', 'project', 'owner', 'owner_desc', 'contract_date', 'total_price', 'contract_area', 'down_pay1',
-                  'down_pay1_is_paid', 'down_pay2', 'down_pay2_date', 'down_pay2_is_paid',
-                  'inter_pay1', 'inter_pay1_date', 'inter_pay1_is_paid', 'inter_pay2',
-                  'inter_pay2_date', 'inter_pay2_is_paid', 'remain_pay', 'remain_pay_date',
-                  'remain_pay_is_paid', 'ownership_completion', 'acc_bank', 'acc_number',
-                  'acc_owner', 'site_cont_files', 'note')
+        fields = ('pk', 'project', 'owner', 'owner_desc', 'contract_date', 'total_price',
+                  'contract_area', 'down_pay1', 'down_pay1_date', 'down_pay1_is_paid', 'down_pay2',
+                  'down_pay2_date', 'down_pay2_is_paid', 'inter_pay1', 'inter_pay1_date',
+                  'inter_pay1_is_paid', 'inter_pay2', 'inter_pay2_date', 'inter_pay2_is_paid',
+                  'remain_pay', 'remain_pay_date', 'remain_pay_is_paid', 'ownership_completion',
+                  'acc_bank', 'acc_number', 'acc_owner', 'site_cont_files', 'note')
 
     @transaction.atomic
     def create(self, validated_data):
         site_contract = SiteContract.objects.create(**validated_data)
         site_contract.save()
+
+        owner = SiteOwner.objects.get(pk=site_contract.owner)
+        owner.use_consent = True
+        owner.save()
 
         new_file = self.initial_data.get('newFile', None)
         if new_file:
