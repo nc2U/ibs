@@ -98,6 +98,7 @@ const dataSetup = () => {
     form.rights_a = props.site.rights_a
     form.rights_b = props.site.rights_b
     form.dup_issue_date = props.site.dup_issue_date
+    form.note = props.site.note
   } else {
     form.project = project.value
     form.order = siteStore.siteCount + 1
@@ -253,6 +254,7 @@ onBeforeMount(() => dataSetup())
         </CRow>
 
         <v-divider />
+        
         <CRow class="mb-3">
           <CCol sm="12">
             <CRow>
