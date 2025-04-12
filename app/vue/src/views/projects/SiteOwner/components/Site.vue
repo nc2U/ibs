@@ -111,7 +111,7 @@ onBeforeMount(() => {
       @keydown.enter="relPatch"
     />
   </CTableDataCell>
-  <CTableDataCell :color="owner.use_consent ? 'success' : ''">
+  <CTableDataCell :class="{ 'bg-success': owner.use_consent }">
     {{ owner.use_consent ? '동의' : '' }}
   </CTableDataCell>
   <CTableDataCell v-if="write_project_site">

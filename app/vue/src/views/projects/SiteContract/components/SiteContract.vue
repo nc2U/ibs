@@ -6,9 +6,7 @@ import { write_project_site } from '@/utils/pageAuth'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteContractForm from './SiteContractForm.vue'
 
-defineProps({
-  contract: { type: Object as PropType<SiteContract>, required: true },
-})
+defineProps({ contract: { type: Object as PropType<SiteContract>, required: true } })
 
 const emit = defineEmits(['multi-submit', 'on-delete'])
 
@@ -17,8 +15,6 @@ const updateFormModal = ref()
 const showDetail = () => updateFormModal.value.callModal()
 const multiSubmit = (payload: SiteContract) => emit('multi-submit', payload)
 const onDelete = (payload: { pk: number; project: number }) => emit('on-delete', payload)
-const isDoneText = (bool: boolean) => (bool ? '완료' : '-')
-const isDoneClass = (bool: boolean) => (bool ? 'bg-success' : '')
 </script>
 
 <template>
@@ -46,14 +42,14 @@ const isDoneClass = (bool: boolean) => (bool ? 'bg-success' : '')
     <CTableDataCell class="text-right">
       {{ numFormat(contract.down_pay1 as number) }}
     </CTableDataCell>
-    <CTableDataCell :class="isDoneClass(contract.down_pay1_is_paid)">
-      {{ isDoneText(contract.down_pay1_is_paid) }}
+    <CTableDataCell :class="{ 'bg-success': contract.down_pay1_is_paid }">
+      {{ contract.down_pay1_is_paid ? '완료' : '' }}
     </CTableDataCell>
     <CTableDataCell class="text-right">
       {{ numFormat(contract.remain_pay as number) }}
     </CTableDataCell>
-    <CTableDataCell :class="isDoneClass(contract.remain_pay_is_paid)">
-      {{ isDoneText(contract.remain_pay_is_paid) }}
+    <CTableDataCell :class="{ 'bg-success': contract.remain_pay_is_paid }">
+      {{ contract.remain_pay_is_paid ? '완료' : '' }}
     </CTableDataCell>
     <CTableDataCell>
       <span v-if="!!contract.site_cont_files.length" class="pointer">
