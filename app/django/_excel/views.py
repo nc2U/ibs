@@ -2345,13 +2345,13 @@ class ExportSites(View):
             header_src.append(['환지면적', 'returned_area', 13])
             header_src.append(['', '', 13])
 
-        header_src.append(['공시지가', 'notice_price', 15])
+        header_src.append(['공시지가', 'notice_price', 14])
 
         if rights:
             header_src.append(['갑구 권리제한사항', 'rights_a', 18])
             header_src.append(['을구 권리제한사항', 'rights_b', 18])
 
-        header_src.append(['비고', 'note', 20])
+        header_src.append(['비고', 'note', 30])
 
         titles = []  # 헤더명
         params = []  # 헤더 컬럼(db)
