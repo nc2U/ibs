@@ -2720,7 +2720,7 @@ class ExportSitesContracts(View):
         ) if search else obj_list
         # --------------------- get_queryset finish --------------------- #
 
-        rows_cnt = 12
+        rows_cnt = 18
 
         # 1. Title
         row_num = 0
@@ -2756,10 +2756,16 @@ class ExportSitesContracts(View):
                       ['', '', 10],
                       ['총 매매대금', 'total_price', 16],
                       ['계약금1', 'down_pay1', 13],
+                      ['지급일', 'down_pay1_date', 13],
                       ['지급여부', 'down_pay1_is_paid', 9],
                       ['계약금2', 'down_pay2', 13],
-                      ['중도금', 'inter_pay1', 13],
+                      ['지급일', 'down_pay2_date', 13],
+                      ['중도금1', 'inter_pay1', 13],
+                      ['지급일', 'inter_pay1_date', 13],
+                      ['중도금2', 'inter_pay2', 13],
+                      ['지급일', 'inter_pay2_date', 13],
                       ['잔금', 'remain_pay', 15],
+                      ['지급일', 'remain_pay_date', 13],
                       ['지급여부', 'remain_pay_is_paid', 9],
                       ['비고', 'note', 30]]
 
@@ -2818,7 +2824,7 @@ class ExportSitesContracts(View):
                     body_format['align'] = 'left'
                 else:
                     body_format['align'] = 'center'
-                if col_num == 2:
+                if col_num in (2, 7, 10, 12, 14, 16):
                     body_format['num_format'] = 'yyyy-mm-dd'
                 elif col_num in (3, 4):
                     body_format['num_format'] = 43
@@ -2841,10 +2847,11 @@ class ExportSitesContracts(View):
 
         sum_cont_area = sum([a[3] for a in rows])
         sum_cont_price = sum([a[4] for a in rows])
-        sum_cont_down1 = sum([a[5] for a in rows if a[5]])
-        sum_cont_down2 = sum([a[7] for a in rows if a[7]])
-        sum_cont_inter = sum([a[8] for a in rows if a[8]])
-        sum_cont_rmain = sum([a[9] for a in rows])
+        sum_cont_down1 = sum([a[5] or 0 for a in rows])
+        sum_cont_down2 = sum([a[8] or 0 for a in rows])
+        sum_cont_inter1 = sum([a[10] or 0 for a in rows])
+        sum_cont_inter2 = sum([a[12] or 0 for a in rows])
+        sum_cont_rmain = sum([a[14] or 0 for a in rows])
 
         for col_num, title in enumerate(titles):
             # css 정렬
@@ -2867,11 +2874,13 @@ class ExportSitesContracts(View):
                 worksheet.write(row_num, col_num, sum_cont_price, sum_format)
             elif col_num == 6:
                 worksheet.write(row_num, col_num, sum_cont_down1, sum_format)
-            elif col_num == 8:
-                worksheet.write(row_num, col_num, sum_cont_down2, sum_format)
             elif col_num == 9:
-                worksheet.write(row_num, col_num, sum_cont_inter, sum_format)
-            elif col_num == 10:
+                worksheet.write(row_num, col_num, sum_cont_down2, sum_format)
+            elif col_num == 11:
+                worksheet.write(row_num, col_num, sum_cont_inter1, sum_format)
+            elif col_num == 13:
+                worksheet.write(row_num, col_num, sum_cont_inter2, sum_format)
+            elif col_num == 15:
                 worksheet.write(row_num, col_num, sum_cont_rmain, sum_format)
             else:
                 worksheet.write(row_num, col_num, None, sum_format)
