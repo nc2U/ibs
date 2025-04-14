@@ -122,7 +122,7 @@ class Site(models.Model):
         return f'{self.district} {self.lot_number}'
 
     class Meta:
-        ordering = ('-project', '-order', 'lot_number')
+        ordering = ('-project', 'order', 'lot_number')
         verbose_name = '04. 사업부지 목록'
         verbose_name_plural = '04. 사업부지 목록'
 
