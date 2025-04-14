@@ -48,7 +48,7 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
     </CTableDataCell>
     <CTableDataCell class="text-left">
       {{ owners.length ? cutString(owners.join(', '), 48) : '' }}
-      <v-tooltip activator="parent" location="top">
+      <v-tooltip v-if="owners.length" activator="parent" location="top">
         {{ owners.length ? owners.join(', ') : '' }}
       </v-tooltip>
     </CTableDataCell>
