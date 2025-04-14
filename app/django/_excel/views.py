@@ -5,9 +5,9 @@
 #
 # Copyright 2013-2020, John McNamara, jmcnamara@cpan.org
 #
+import datetime
 import io
 import json
-import datetime
 
 import xlsxwriter
 import xlwt
@@ -2299,7 +2299,7 @@ class ExportSites(View):
         ) if search else obj_list
         # -------------------- get_queryset finish -------------------- #
 
-        rows_cnt = 7 if project.is_returned_area else 5
+        rows_cnt = 9 if project.is_returned_area else 7
         rows_cnt = rows_cnt if not rights else rows_cnt + 2
 
         # 1. Title
@@ -2345,9 +2345,13 @@ class ExportSites(View):
             header_src.append(['환지면적', 'returned_area', 13])
             header_src.append(['', '', 13])
 
+        header_src.append(['공시지가', 'notice_price', 14])
+
         if rights:
             header_src.append(['갑구 권리제한사항', 'rights_a', 18])
             header_src.append(['을구 권리제한사항', 'rights_b', 18])
+
+        header_src.append(['비고', 'note', 30])
 
         titles = []  # 헤더명
         params = []  # 헤더 컬럼(db)
@@ -2406,6 +2410,13 @@ class ExportSites(View):
             row = list(row)
 
             for col_num, title in enumerate(titles):
+                left_col_num = 8 if project.is_returned_area else 6
+                if col_num > left_col_num:
+                    body_format['align'] = 'left'
+                elif col_num == left_col_num:
+                    body_format['align'] = 'right'
+                else:
+                    body_format['align'] = 'center'
                 # css 정렬
                 if col_num in area_col_num:
                     body_format['num_format'] = 43
@@ -2514,7 +2525,7 @@ class ExportSitesByOwner(View):
         ) if search else obj_list
         # -------------------- get_queryset finish -------------------- #
 
-        rows_cnt = 8
+        rows_cnt = 9
 
         # 1. Title
         row_num = 0
@@ -2554,6 +2565,7 @@ class ExportSitesByOwner(View):
             ['소유지분(%)', 'relations__ownership_ratio', 10],
             [area_title, 'relations__owned_area', 12],
             ['', '', 12],
+            ['사용동의', 'use_consent', 12],
             ['소유권 취득일', 'relations__acquisition_date', 15]
         ]
 
@@ -2621,18 +2633,19 @@ class ExportSitesByOwner(View):
 
                 if col_num == 0:
                     worksheet.write(row_num, col_num, self.get_sort(row[col_num]), bf)
+                elif col_num < 7:
+                    worksheet.write(row_num, col_num, row[col_num], bf)
                 elif col_num == 7:
                     worksheet.write(row_num, col_num, float(row[col_num - 1] or 0) * 0.3025, bf)
+                elif col_num == 8:
+                    worksheet.write(row_num, col_num, '동의' if row[col_num - 1] else '', bf)
                 else:
-                    if col_num < 8:
-                        worksheet.write(row_num, col_num, row[col_num], bf)
-                    else:
-                        worksheet.write(row_num, col_num, row[col_num - 1], bf)
+                    worksheet.write(row_num, col_num, row[col_num - 1], bf)
 
         row_num += 1
         worksheet.set_row(row_num, 23)
 
-        sum_area = sum([a[6] for a in rows])
+        sum_area = sum([a[6] or 0 for a in rows])
 
         for col_num, title in enumerate(titles):
             # css 정렬
@@ -2707,7 +2720,7 @@ class ExportSitesContracts(View):
         ) if search else obj_list
         # --------------------- get_queryset finish --------------------- #
 
-        rows_cnt = 12
+        rows_cnt = 18
 
         # 1. Title
         row_num = 0
@@ -2743,10 +2756,16 @@ class ExportSitesContracts(View):
                       ['', '', 10],
                       ['총 매매대금', 'total_price', 16],
                       ['계약금1', 'down_pay1', 13],
+                      ['지급일', 'down_pay1_date', 13],
                       ['지급여부', 'down_pay1_is_paid', 9],
                       ['계약금2', 'down_pay2', 13],
-                      ['중도금', 'inter_pay1', 13],
+                      ['지급일', 'down_pay2_date', 13],
+                      ['중도금1', 'inter_pay1', 13],
+                      ['지급일', 'inter_pay1_date', 13],
+                      ['중도금2', 'inter_pay2', 13],
+                      ['지급일', 'inter_pay2_date', 13],
                       ['잔금', 'remain_pay', 15],
+                      ['지급일', 'remain_pay_date', 13],
                       ['지급여부', 'remain_pay_is_paid', 9],
                       ['비고', 'note', 30]]
 
@@ -2805,7 +2824,7 @@ class ExportSitesContracts(View):
                     body_format['align'] = 'left'
                 else:
                     body_format['align'] = 'center'
-                if col_num == 2:
+                if col_num in (2, 7, 10, 12, 14, 16):
                     body_format['num_format'] = 'yyyy-mm-dd'
                 elif col_num in (3, 4):
                     body_format['num_format'] = 43
@@ -2828,10 +2847,11 @@ class ExportSitesContracts(View):
 
         sum_cont_area = sum([a[3] for a in rows])
         sum_cont_price = sum([a[4] for a in rows])
-        sum_cont_down1 = sum([a[5] for a in rows if a[5]])
-        sum_cont_down2 = sum([a[7] for a in rows if a[7]])
-        sum_cont_inter = sum([a[8] for a in rows if a[8]])
-        sum_cont_rmain = sum([a[9] for a in rows])
+        sum_cont_down1 = sum([a[5] or 0 for a in rows])
+        sum_cont_down2 = sum([a[8] or 0 for a in rows])
+        sum_cont_inter1 = sum([a[10] or 0 for a in rows])
+        sum_cont_inter2 = sum([a[12] or 0 for a in rows])
+        sum_cont_rmain = sum([a[14] or 0 for a in rows])
 
         for col_num, title in enumerate(titles):
             # css 정렬
@@ -2854,11 +2874,13 @@ class ExportSitesContracts(View):
                 worksheet.write(row_num, col_num, sum_cont_price, sum_format)
             elif col_num == 6:
                 worksheet.write(row_num, col_num, sum_cont_down1, sum_format)
-            elif col_num == 8:
-                worksheet.write(row_num, col_num, sum_cont_down2, sum_format)
             elif col_num == 9:
-                worksheet.write(row_num, col_num, sum_cont_inter, sum_format)
-            elif col_num == 10:
+                worksheet.write(row_num, col_num, sum_cont_down2, sum_format)
+            elif col_num == 11:
+                worksheet.write(row_num, col_num, sum_cont_inter1, sum_format)
+            elif col_num == 13:
+                worksheet.write(row_num, col_num, sum_cont_inter2, sum_format)
+            elif col_num == 15:
                 worksheet.write(row_num, col_num, sum_cont_rmain, sum_format)
             else:
                 worksheet.write(row_num, col_num, None, sum_format)

@@ -30,8 +30,10 @@ const form = reactive<SiteContract>({
   total_price: null,
   contract_area: null,
   down_pay1: null,
+  down_pay1_date: null,
   down_pay1_is_paid: false,
   down_pay2: null,
+  down_pay2_date: null,
   down_pay2_is_paid: false,
   inter_pay1: null,
   inter_pay1_date: null as string | null,
@@ -60,32 +62,34 @@ const formsCheck = computed(() => {
     const c = form.total_price === props.contract.total_price
     const d = form.contract_area === props.contract.contract_area
     const e = form.down_pay1 === props.contract.down_pay1
-    const f = form.down_pay1_is_paid === props.contract.down_pay1_is_paid
-    const g = form.down_pay2 === props.contract.down_pay2
-    const h = form.down_pay2_is_paid === props.contract.down_pay2_is_paid
-    const i = form.inter_pay1 === props.contract.inter_pay1
-    const j = form.inter_pay1_date === props.contract.inter_pay1_date
-    const k = form.inter_pay1_is_paid === props.contract.inter_pay1_is_paid
-    const l = form.inter_pay2 === props.contract.inter_pay2
-    const m = form.inter_pay2_date === props.contract.inter_pay2_date
-    const n = form.inter_pay2_is_paid === props.contract.inter_pay2_is_paid
-    const o = form.remain_pay === props.contract.remain_pay
-    const p = form.remain_pay_date === props.contract.remain_pay_date
-    const q = form.remain_pay_is_paid === props.contract.remain_pay_is_paid
-    const r = form.ownership_completion === props.contract.ownership_completion
-    const s = form.acc_bank === props.contract.acc_bank
-    const t = form.acc_number === props.contract.acc_number
-    const u = form.acc_owner === props.contract.acc_owner
-    const v = form.note === props.contract.note
+    const f = form.down_pay1_date === props.contract.down_pay1_date
+    const g = form.down_pay1_is_paid === props.contract.down_pay1_is_paid
+    const h = form.down_pay2 === props.contract.down_pay2
+    const i = form.down_pay2_date === props.contract.down_pay2_date
+    const j = form.down_pay2_is_paid === props.contract.down_pay2_is_paid
+    const k = form.inter_pay1 === props.contract.inter_pay1
+    const l = form.inter_pay1_date === props.contract.inter_pay1_date
+    const m = form.inter_pay1_is_paid === props.contract.inter_pay1_is_paid
+    const n = form.inter_pay2 === props.contract.inter_pay2
+    const o = form.inter_pay2_date === props.contract.inter_pay2_date
+    const p = form.inter_pay2_is_paid === props.contract.inter_pay2_is_paid
+    const q = form.remain_pay === props.contract.remain_pay
+    const r = form.remain_pay_date === props.contract.remain_pay_date
+    const s = form.remain_pay_is_paid === props.contract.remain_pay_is_paid
+    const t = form.ownership_completion === props.contract.ownership_completion
+    const u = form.acc_bank === props.contract.acc_bank
+    const v = form.acc_number === props.contract.acc_number
+    const w = form.acc_owner === props.contract.acc_owner
+    const x = form.note === props.contract.note
 
-    const w = !newFile.value
-    const x = !editFile.value
-    const y = !cngFile.value
-    const z = !delFile.value
+    const y = !newFile.value
+    const z = !editFile.value
+    const ba = !cngFile.value
+    const bc = !delFile.value
 
     const sky = a && b && c && d && e && f && g && h && i
     const sea = j && k && l && m && n && o && p && q && r
-    const air = s && t && u && v && w && x && y && z
+    const air = s && t && u && v && w && x && y && z && ba && bc
 
     return sky && sea && air
   } else return false
@@ -144,8 +148,10 @@ const dataSetup = () => {
     form.total_price = props.contract.total_price
     form.contract_area = props.contract.contract_area
     form.down_pay1 = props.contract.down_pay1
+    form.down_pay1_date = props.contract.down_pay1_date
     form.down_pay1_is_paid = props.contract.down_pay1_is_paid
     form.down_pay2 = props.contract.down_pay2
+    form.down_pay2_date = props.contract.down_pay2_date
     form.down_pay2_is_paid = props.contract.down_pay2_is_paid
     form.inter_pay1 = props.contract.inter_pay1
     form.inter_pay1_date = props.contract.inter_pay1_date
@@ -215,14 +221,14 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 총 계약면적</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 총 계약면적(㎡)</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.contract_area"
                   type="number"
                   min="0"
                   step="0.0000001"
-                  placeholder="총 계약면적"
+                  placeholder="총 계약면적(㎡)"
                 />
               </CCol>
             </CRow>
@@ -270,6 +276,7 @@ onBeforeMount(() => dataSetup())
                     v-model.number="form.down_pay1"
                     type="number"
                     min="0"
+                    required
                     placeholder="계약금 - 1차"
                   />
                   <CInputGroupText>
@@ -285,6 +292,21 @@ onBeforeMount(() => dataSetup())
             </CRow>
           </CCol>
 
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label"> 지급 일자</CFormLabel>
+              <CCol sm="8">
+                <DatePicker
+                  v-model="form.down_pay1_date"
+                  maxlength="10"
+                  placeholder="계약금 1차 지급일"
+                />
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
+
+        <CRow>
           <CCol sm="6">
             <CRow>
               <CFormLabel class="col-sm-4 col-form-label"> 계약금 (2차)</CFormLabel>
@@ -305,6 +327,19 @@ onBeforeMount(() => dataSetup())
                     />
                   </CInputGroupText>
                 </CInputGroup>
+              </CCol>
+            </CRow>
+          </CCol>
+
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label"> 지급 일자</CFormLabel>
+              <CCol sm="8">
+                <DatePicker
+                  v-model="form.down_pay2_date"
+                  maxlength="10"
+                  placeholder="계약금 2차 지급일"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -341,7 +376,6 @@ onBeforeMount(() => dataSetup())
               <CCol sm="8">
                 <DatePicker
                   v-model="form.inter_pay1_date"
-                  :required="false"
                   maxlength="10"
                   placeholder="중도금 1차 지급일"
                 />
@@ -381,7 +415,6 @@ onBeforeMount(() => dataSetup())
               <CCol sm="8">
                 <DatePicker
                   v-model="form.inter_pay2_date"
-                  :required="false"
                   maxlength="10"
                   placeholder="중도금 2차 지급일"
                 />
@@ -393,7 +426,7 @@ onBeforeMount(() => dataSetup())
         <CRow>
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">계약 잔금</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label">잔금</CFormLabel>
               <CCol sm="8">
                 <CInputGroup class="mb-3">
                   <CFormInput
@@ -422,7 +455,6 @@ onBeforeMount(() => dataSetup())
               <CCol sm="8">
                 <DatePicker
                   v-model="form.remain_pay_date"
-                  :required="false"
                   maxlength="10"
                   placeholder="잔금 지급일"
                 />

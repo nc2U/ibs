@@ -179,6 +179,7 @@ class SiteContract(models.Model):
     total_price = models.PositiveBigIntegerField('총매매대금')
     contract_area = models.DecimalField('계약면적', max_digits=12, decimal_places=7, null=True, blank=True)
     down_pay1 = models.PositiveBigIntegerField('계약금1', null=True, blank=True)
+    down_pay1_date = models.DateField('계약금1 지급일', null=True, blank=True)
     down_pay1_is_paid = models.BooleanField('계약금1 지급여부', default=False)
     down_pay2 = models.PositiveBigIntegerField('계약금2', null=True, blank=True)
     down_pay2_date = models.DateField('계약금2 지급일', null=True, blank=True)

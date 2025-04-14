@@ -62,7 +62,7 @@ const multiSubmit = (payload: SiteContract) => {
 
   for (const key in data) form.set(key, data[key] ?? '')
 
-  if (payload.pk) onUpdate(pk, form)
+  if (pk) onUpdate(pk, form)
   else onCreate(form)
 }
 
@@ -110,7 +110,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
         @multi-submit="multiSubmit"
       />
       <TableTitleRow title="부지 매입계약 목록" excel :url="excelUrl" :disabled="!project">
-        <span v-if="project" class="pt-1 text-success">
+        <span v-if="project" class="text-success" style="padding-top: 7px">
           총 계약 면적 :
           {{ numFormat(getContsTotal as number, 2) }}
           m<sup>2</sup> ({{ numFormat((getContsTotal as number) * 0.3025, 2) }}

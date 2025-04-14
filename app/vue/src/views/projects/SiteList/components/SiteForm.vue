@@ -98,6 +98,7 @@ const dataSetup = () => {
     form.rights_a = props.site.rights_a
     form.rights_b = props.site.rights_b
     form.dup_issue_date = props.site.dup_issue_date
+    form.note = props.site.note
   } else {
     form.project = project.value
     form.order = siteStore.siteCount + 1
@@ -167,7 +168,7 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 공부상 면적 - m<sup>2</sup></CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 공부상 면적(㎡)</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.official_area"
@@ -175,21 +176,21 @@ onBeforeMount(() => dataSetup())
                   required
                   min="0"
                   step="0.0000001"
-                  placeholder="공부상 면적"
+                  placeholder="공부상 면적(㎡)"
                 />
               </CCol>
             </CRow>
           </CCol>
           <CCol sm="6">
             <CRow v-if="isReturned">
-              <CFormLabel class="col-sm-4 col-form-label"> 환지 면적 - m<sup>2</sup></CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 환지 면적(㎡)</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.returned_area"
                   type="number"
                   min="0"
                   step="0.0000001"
-                  placeholder="환지 면적"
+                  placeholder="환지 면적(㎡)"
                 />
               </CCol>
             </CRow>
@@ -247,6 +248,23 @@ onBeforeMount(() => dataSetup())
               <CFormLabel class="col-sm-2 col-form-label"> 을구 권리 제한 사항</CFormLabel>
               <CCol sm="10">
                 <CFormTextarea v-model="form.rights_b" rows="4" placeholder="을구 권리 제한 사항" />
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
+
+        <v-divider />
+
+        <CRow class="mb-3">
+          <CCol sm="12">
+            <CRow>
+              <CFormLabel class="col-sm-2 col-form-label"> 비고</CFormLabel>
+              <CCol sm="10">
+                <CFormTextarea
+                  v-model="form.note"
+                  rows="4"
+                  placeholder="지상 건축물 등 기타 관련 참고 사항"
+                />
               </CCol>
             </CRow>
           </CCol>

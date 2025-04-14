@@ -20,6 +20,7 @@ const dataFilter = ref<OwnerFilter>({
   limit: '',
   page: 1,
   sort: '',
+  is_use_consent: '',
   search: '',
 })
 
@@ -62,16 +63,16 @@ const onCreate = (payload: inputData) => siteStore.createSiteOwner(payload)
 const onUpdate = (payload: inputData) => siteStore.updateSiteOwner(payload)
 
 const relationPatch = (payload: Relation) => {
-  const { page, sort, search } = dataFilter.value
+  const { page, sort, is_use_consent, search } = dataFilter.value
   if (project.value) {
-    const data = { project: project.value, page, sort, search, ...payload }
+    const data = { project: project.value, page, sort, is_use_consent, search, ...payload }
     siteStore.patchRelation(data)
   }
 }
 
 const multiSubmit = (payload: SiteOwner) => {
-  const { limit, page, sort, search } = dataFilter.value
-  const submitData = { ...payload, limit, page, sort, search } as inputData
+  const { limit, page, sort, is_use_consent, search } = dataFilter.value
+  const submitData = { ...payload, limit, page, sort, is_use_consent, search } as inputData
   if (payload.pk) onUpdate(submitData)
   else onCreate(submitData)
 }
@@ -120,7 +121,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
         @multi-submit="multiSubmit"
       />
       <TableTitleRow title="부지 소유자 목록" excel :url="excelUrl" :disabled="!project">
-        <span v-if="project" class="pt-1 text-success">
+        <span v-if="project" class="text-success" style="padding-top: 7px">
           소유자 면적 :
           {{ numFormat(getOwnersTotal as number, 2) }}m<sup>2</sup> ({{
             numFormat((getOwnersTotal as number) * 0.3025, 2)

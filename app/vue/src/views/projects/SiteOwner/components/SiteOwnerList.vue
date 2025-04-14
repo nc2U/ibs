@@ -32,8 +32,8 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 10%" />
       <col style="width: 10%" />
       <col style="width: 9%" />
-      <col style="width: 6%" />
       <col style="width: 10%" />
+      <col style="width: 6%" />
       <col v-if="write_project_site" style="width: 4%" />
       <col v-if="write_project_site" style="width: 4%" />
     </colgroup>
@@ -55,8 +55,8 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell colspan="2" scope="col">
           소유면적 <span v-if="isReturned">(환지면적 기준)</span>
         </CTableHeaderCell>
-        <CTableHeaderCell rowspan="2" scope="col">사용동의</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col"> 소유권 취득일</CTableHeaderCell>
+        <CTableHeaderCell rowspan="2" scope="col">사용동의</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project_site" rowspan="2" colspan="2" scope="col">
           비고
         </CTableHeaderCell>
