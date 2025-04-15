@@ -2565,8 +2565,8 @@ class ExportSitesByOwner(View):
             ['소유지분(%)', 'relations__ownership_ratio', 10],
             [area_title, 'relations__owned_area', 12],
             ['', '', 12],
-            ['사용동의', 'use_consent', 12],
-            ['소유권 취득일', 'relations__acquisition_date', 15]
+            ['취득일자', 'relations__acquisition_date', 15],
+            ['사용동의', 'use_consent', 12]
         ]
 
         titles = []  # 헤더명
@@ -2575,7 +2575,6 @@ class ExportSitesByOwner(View):
 
         for src in header_src:  # 요청된 컬럼 개수 만큼 반복 (1-2-3... -> i)
             titles.append(src[0])  # 일련번호
-            # params.append(src[1])  # serial_number
             widths.append(src[2])  # 10
 
         # Adjust the column width.
@@ -2623,7 +2622,7 @@ class ExportSitesByOwner(View):
 
                 row = (site_count, owner.own_sort, owner.owner, owner.date_of_birth,
                        owner.phone1, lot_number, ownership_ratio, owned_area,
-                       owner.use_consent, acquisition_date)
+                       acquisition_date, owner.use_consent)
                 rows.append(row)
 
         # Turn off some of the warnings:
@@ -2634,6 +2633,7 @@ class ExportSitesByOwner(View):
             for col_num, cell_data in enumerate(titles):
                 row = list(row)
 
+                # format setting
                 if col_num in (2, 8):
                     body_format['num_format'] = 'yyyy-mm-dd'
 
@@ -2642,6 +2642,7 @@ class ExportSitesByOwner(View):
 
                 bf = workbook.add_format(body_format)
 
+                # value setting
                 if col_num == 0:
                     cell_value = self.get_sort(row[col_num + 1])
                 elif col_num < 7:
@@ -2649,13 +2650,12 @@ class ExportSitesByOwner(View):
                 elif col_num == 7:
                     cell_value = float(row[col_num] or 0) * 0.3025
                 elif col_num == 8:
-                    cell_value = '동의' if row[col_num] else ''
-                else:
                     cell_value = row[col_num]
-
-                if 3 < col_num < 8:
-                    worksheet.write(row_num, col_num, cell_value, bf)
                 else:
+                    cell_value = '동의' if row[col_num] else ''
+
+                # merge setting
+                if col_num not in (4, 5, 6, 7):
                     if row[0] > 1:
                         try:
                             worksheet.merge_range(row_num, col_num, row_num + row[0] - 1, col_num, cell_value, bf)
@@ -2663,11 +2663,13 @@ class ExportSitesByOwner(View):
                             pass
                     else:
                         worksheet.write(row_num, col_num, cell_value, bf)
+                else:
+                    worksheet.write(row_num, col_num, cell_value, bf)
 
         row_num += 1
         worksheet.set_row(row_num, 23)
 
-        sum_area = sum([a[7] or 0 for a in rows])
+        sum_area = sum([a[7] or 0 for a in rows])  # 면적 합계
 
         for col_num, title in enumerate(titles):
             # css 정렬
@@ -2682,7 +2684,7 @@ class ExportSitesByOwner(View):
             elif col_num == 6:
                 worksheet.write(row_num, col_num, sum_area, sum_format)
             elif col_num == 7:
-                worksheet.write(row_num, col_num, float(sum_area) * 0.3025, sum_format)
+                worksheet.write(row_num, col_num, float(sum_area or 0) * 0.3025, sum_format)
             else:
                 worksheet.write(row_num, col_num, None, sum_format)
         #################################################################
