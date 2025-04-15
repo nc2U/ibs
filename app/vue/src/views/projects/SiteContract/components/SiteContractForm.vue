@@ -84,12 +84,12 @@ const formsCheck = computed(() => {
 
     const y = !newFile.value
     const z = !editFile.value
-    const ba = !cngFile.value
-    const bc = !delFile.value
+    const a1 = !cngFile.value
+    const b1 = !delFile.value
 
     const sky = a && b && c && d && e && f && g && h && i
     const sea = j && k && l && m && n && o && p && q && r
-    const air = s && t && u && v && w && x && y && z && ba && bc
+    const air = s && t && u && v && w && x && y && z && a1 && b1
 
     return sky && sea && air
   } else return false
