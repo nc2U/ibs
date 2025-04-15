@@ -294,7 +294,7 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 지급 일자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 지급 약정일</CFormLabel>
               <CCol sm="8">
                 <DatePicker
                   v-model="form.down_pay1_date"
@@ -333,7 +333,7 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 지급 일자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 지급 약정일</CFormLabel>
               <CCol sm="8">
                 <DatePicker
                   v-model="form.down_pay2_date"
@@ -372,7 +372,7 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 지급 일자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 지급 약정일</CFormLabel>
               <CCol sm="8">
                 <DatePicker
                   v-model="form.inter_pay1_date"
@@ -411,7 +411,7 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 지급 일자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 지급 약정일</CFormLabel>
               <CCol sm="8">
                 <DatePicker
                   v-model="form.inter_pay2_date"
@@ -451,7 +451,7 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 지급 일자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label"> 지급 약정일</CFormLabel>
               <CCol sm="8">
                 <DatePicker
                   v-model="form.remain_pay_date"
