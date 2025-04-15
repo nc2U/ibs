@@ -33,10 +33,10 @@ class ProjectOutBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
 class SiteAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = (
         'order', 'project', '__str__', 'site_purpose', 'official_area',
-        'returned_area', 'dup_issue_date', 'rights_a', 'rights_b')
+        'returned_area', 'notice_price', 'dup_issue_date')
     list_display_links = ('project', '__str__',)
-    list_editable = ('official_area', 'returned_area')
-    search_fields = ('__str__',)
+    list_editable = ('order', 'official_area', 'returned_area', 'notice_price', 'dup_issue_date')
+    search_fields = ('district', 'lot_number',)
     list_filter = ('project', 'site_purpose')
 
 
