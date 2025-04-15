@@ -2514,7 +2514,7 @@ class ExportSitesByOwner(View):
         project = Project.objects.get(pk=request.GET.get('project'))
         own_sort = request.GET.get('own_sort')
         search = request.GET.get('search')
-        obj_list = SiteOwner.objects.filter(project=project).order_by('owner', 'id')
+        obj_list = SiteOwner.objects.prefetch_related('sites', 'relations__site').filter(project=project).order_by('id')
         obj_list = obj_list.filter(own_sort=own_sort) if own_sort else obj_list
         obj_list = obj_list.filter(
             Q(owner__icontains=search) |
@@ -2570,12 +2570,12 @@ class ExportSitesByOwner(View):
         ]
 
         titles = []  # 헤더명
-        params = []  # 헤더 컬럼(db)
+        # params = []  # 헤더 컬럼(db)
         widths = []  # 헤더 넓이
 
         for src in header_src:  # 요청된 컬럼 개수 만큼 반복 (1-2-3... -> i)
             titles.append(src[0])  # 일련번호
-            params.append(src[1])  # serial_number
+            # params.append(src[1])  # serial_number
             widths.append(src[2])  # 10
 
         # Adjust the column width.
@@ -2600,9 +2600,6 @@ class ExportSitesByOwner(View):
         #################################################################
         # 4. Body
         # Get some data to write to the spreadsheet.
-
-        # data = obj_list.values_list(*params)
-
         body_format = {
             'border': True,
             'align': 'center',
@@ -2610,10 +2607,24 @@ class ExportSitesByOwner(View):
             'num_format': '#,##0.00',
         }
 
-        while '' in params:
-            params.remove('')
+        # while '' in params:
+        #     params.remove('')
 
-        rows = obj_list.values_list(*params)
+        # rows = obj_list.values_list(*params)
+        rows = []
+        for owner in obj_list:
+            site_count = owner.sites.count()
+
+            for relation in owner.relations.all():
+                lot_number = relation.site.lot_number
+                ownership_ratio = relation.ownership_ratio
+                owned_area = relation.owned_area
+                acquisition_date = relation.acquisition_date
+
+                row = (site_count, owner.own_sort, owner.owner, owner.date_of_birth,
+                       owner.phone1, lot_number, ownership_ratio, owned_area,
+                       owner.use_consent, acquisition_date)
+                rows.append(row)
 
         # Turn off some of the warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'D:E'})
@@ -2632,20 +2643,31 @@ class ExportSitesByOwner(View):
                 bf = workbook.add_format(body_format)
 
                 if col_num == 0:
-                    worksheet.write(row_num, col_num, self.get_sort(row[col_num]), bf)
+                    cell_value = self.get_sort(row[col_num + 1])
                 elif col_num < 7:
-                    worksheet.write(row_num, col_num, row[col_num], bf)
+                    cell_value = row[col_num + 1]
                 elif col_num == 7:
-                    worksheet.write(row_num, col_num, float(row[col_num - 1] or 0) * 0.3025, bf)
+                    cell_value = float(row[col_num] or 0) * 0.3025
                 elif col_num == 8:
-                    worksheet.write(row_num, col_num, '동의' if row[col_num - 1] else '', bf)
+                    cell_value = '동의' if row[col_num] else ''
                 else:
-                    worksheet.write(row_num, col_num, row[col_num - 1], bf)
+                    cell_value = row[col_num]
+
+                if 3 < col_num < 8:
+                    worksheet.write(row_num, col_num, cell_value, bf)
+                else:
+                    if row[0] > 1:
+                        try:
+                            worksheet.merge_range(row_num, col_num, row_num + row[0] - 1, col_num, cell_value, bf)
+                        except Exception:
+                            pass
+                    else:
+                        worksheet.write(row_num, col_num, cell_value, bf)
 
         row_num += 1
         worksheet.set_row(row_num, 23)
 
-        sum_area = sum([a[6] or 0 for a in rows])
+        sum_area = sum([a[7] or 0 for a in rows])
 
         for col_num, title in enumerate(titles):
             # css 정렬
