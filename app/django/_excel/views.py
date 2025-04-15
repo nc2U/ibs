@@ -2733,7 +2733,7 @@ class ExportSitesContracts(View):
         project = Project.objects.get(pk=request.GET.get('project'))
         own_sort = request.GET.get('own_sort')
         search = request.GET.get('search')
-        obj_list = SiteContract.objects.filter(project=project).order_by('contract_date', 'id')
+        obj_list = SiteContract.objects.filter(project=project).order_by('owner__id')
         obj_list = obj_list.filter(owner__own_sort=own_sort) if own_sort else obj_list
         obj_list = obj_list.filter(
             Q(owner__owner__icontains=search) |
