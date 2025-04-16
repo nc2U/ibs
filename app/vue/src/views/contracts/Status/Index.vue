@@ -71,7 +71,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
     <CCardBody class="pb-5">
       <ContSummary />
       <TableTitleRow excel :url="excelUrl" :disabled="!project">
-        <div class="p-1">
+        <div class="p-2">
           <CFormSwitch
             id="flexCheckDefault"
             v-model="isContor"
