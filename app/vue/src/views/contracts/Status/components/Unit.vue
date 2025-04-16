@@ -62,6 +62,7 @@ const isHold = computed(() => props.unit?.is_hold || '')
               name: '계약 등록 수정',
               query: { contractor: contorPk },
             }"
+            class="dark-link"
           >
             {{ contorName }}
           </router-link>
@@ -155,7 +156,7 @@ $hold: #999;
   }
 
   .cont {
-    background: darken($cont, 20%);
+    background: darken($cont, 40%);
   }
 
   .hold {
