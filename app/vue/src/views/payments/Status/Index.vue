@@ -16,7 +16,8 @@ import OverallSummary from './components/OverallSummary.vue'
 const date = ref(getToday())
 const menu = ref('수납현황')
 
-const excelUrl = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
+const excelUrl1 = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
+const excelUrl2 = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
 
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
@@ -33,6 +34,7 @@ const fetchContSummaryList = (proj: number, date?: string) =>
 
 const payStore = usePayment()
 const fetchPaySumList = (proj: number, date?: string) => payStore.fetchPaySumList(proj, date)
+const fetchPayOrderList = (proj: number) => payStore.fetchPayOrderList(proj)
 
 const setDate = (d: string) => {
   date.value = d
@@ -48,6 +50,7 @@ const dataSetup = (pk: number) => {
   fetchContSummaryList(pk)
   fetchIncBudgetList(pk)
   fetchPaySumList(pk)
+  fetchPayOrderList(pk)
 }
 
 const dataReset = () => {
@@ -91,11 +94,11 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
       </v-tabs>
 
       <template v-if="menu === '수납현황'">
-        <TableTitleRow excel :url="excelUrl" :disabled="!project" />
+        <TableTitleRow excel :url="excelUrl1" :disabled="!project" />
         <PaymentStatus :date="date" />
       </template>
       <template v-else>
-        <TableTitleRow excel :url="excelUrl" :disabled="!project" />
+        <TableTitleRow excel :url="excelUrl2" :disabled="true" />
         <OverallSummary :date="date" />
       </template>
     </CCardBody>
