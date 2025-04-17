@@ -42,12 +42,12 @@ const payOrderList = computed(() => payStore.payOrderList)
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
-        <CTableDataCell rowspan="4" class="text-center">분양</CTableDataCell>
-        <CTableDataCell class="text-center">분양(000)</CTableDataCell>
+        <CTableDataCell rowspan="4" class="text-center">계약</CTableDataCell>
+        <CTableDataCell class="text-center">계약(000)</CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
-        <CTableDataCell class="text-center">미분양(000)</CTableDataCell>
+        <CTableDataCell class="text-center">미계약(000)</CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
@@ -55,12 +55,12 @@ const payOrderList = computed(() => payStore.payOrderList)
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
-        <CTableDataCell class="text-center">분양율(000)</CTableDataCell>
+        <CTableDataCell class="text-center">계약율(000)</CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
-        <CTableDataCell rowspan="5" class="text-center">입금</CTableDataCell>
-        <CTableDataCell class="text-center">입금액</CTableDataCell>
+        <CTableDataCell rowspan="5" class="text-center">수납</CTableDataCell>
+        <CTableDataCell class="text-center">수납액</CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
@@ -76,7 +76,7 @@ const payOrderList = computed(() => payStore.payOrderList)
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
-        <CTableDataCell class="text-center">납입율</CTableDataCell>
+        <CTableDataCell class="text-center">수납율</CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
