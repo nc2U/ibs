@@ -11,8 +11,10 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import DateChoicer from '@/views/payments/Status/components/DateChoicer.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import PaymentStatus from './components/PaymentStatus.vue'
+import OverallSummary from './components/OverallSummary.vue'
 
 const date = ref(getToday())
+const menu = ref('수납현황')
 
 const excelUrl = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
 
@@ -74,10 +76,28 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
 
   <ContentBody>
     <CCardBody class="pb-5">
-      <DateChoicer @set-date="setDate" />
+      <DateChoicer @set-date="setDate" class="mb-4" />
 
-      <TableTitleRow excel :url="excelUrl" :disabled="!project" />
-      <PaymentStatus :date="date" />
+      <v-tabs v-model="menu" density="compact">
+        <v-tab
+          v-for="m in ['수납현황', '총괄집계']"
+          :value="m"
+          :key="m"
+          variant="tonal"
+          :active="menu === m"
+        >
+          {{ m }}
+        </v-tab>
+      </v-tabs>
+
+      <template v-if="menu === '수납현황'">
+        <TableTitleRow excel :url="excelUrl" :disabled="!project" />
+        <PaymentStatus :date="date" />
+      </template>
+      <template v-else>
+        <TableTitleRow excel :url="excelUrl" :disabled="!project" />
+        <OverallSummary :date="date" />
+      </template>
     </CCardBody>
   </ContentBody>
 </template>
