@@ -31,7 +31,7 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
                     'activation', 'contractor', 'contractprice', 'is_sup_cont',
                     'sup_cont_date', 'created_at', 'user')
     list_display_links = ('project', 'serial_number',)
-    list_filter = ('project', 'order_group', 'unit_type', 'activation')
+    list_filter = ('project', 'order_group', 'unit_type', 'activation', 'contractor__status')
     search_fields = ('serial_number', 'contractor__name')
     inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin]
 
@@ -47,11 +47,11 @@ class CContactInline(ImportExportMixin, admin.TabularInline):
 
 
 class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'birth_date', 'gender', 'qualification', 'status', 'is_active',
-                    'reservation_date', 'contract_date', 'created_at', 'updated_at')
+    list_display = ('id', 'name', 'birth_date', 'gender', 'qualification', 'status',
+                    'is_active', 'reservation_date', 'contract_date', 'created_at')
     search_fields = ('name',)
     list_display_links = ('name',)
-    list_filter = ('contract__order_group', 'contract__unit_type',
+    list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',
                    'contract_date', 'gender', 'qualification', 'status')
     list_editable = ('gender', 'qualification', 'is_active')
     inlines = (CContactInline, CAdressInline)
