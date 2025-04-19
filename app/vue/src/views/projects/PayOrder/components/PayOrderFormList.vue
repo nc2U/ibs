@@ -19,21 +19,21 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
   <CTable hover responsive>
     <colgroup>
       <col style="width: 6%" />
+      <col style="width: 5%" />
+      <col style="width: 5%" />
       <col style="width: 6%" />
+      <col style="width: 5%" />
       <col style="width: 6%" />
+      <col style="width: 7%" />
+      <col style="width: 5%" />
+      <col style="width: 8%" />
+      <col style="width: 5%" />
       <col style="width: 6%" />
+      <col style="width: 5%" />
+      <col style="width: 8%" />
       <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
+      <col style="width: 5%" />
+      <col style="width: 8%" />
       <col v-if="write_project" style="width: 6%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
