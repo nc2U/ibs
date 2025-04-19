@@ -24,7 +24,6 @@ export interface PayOrder {
   pay_ratio?: number | null
   pay_due_date?: string | null
   days_since_prev?: number | null
-  is_calc_start?: boolean
   is_prep_discount?: boolean
   prep_discount_ratio?: number | null
   prep_ref_date?: string | null
