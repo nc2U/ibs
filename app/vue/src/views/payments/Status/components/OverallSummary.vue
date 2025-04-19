@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
 import { usePayment } from '@/store/pinia/payment'
+import type { PayOrder } from '@/store/types/payment'
 import { numFormat } from '@/utils/baseMixins'
 
 defineProps({
@@ -9,7 +10,7 @@ defineProps({
 })
 
 const payStore = usePayment()
-const payOrderList = computed(() => payStore.payOrderList)
+const payOrderList = computed<PayOrder[]>(() => payStore.payOrderList)
 </script>
 
 <template>
@@ -36,10 +37,12 @@ const payOrderList = computed(() => payStore.payOrderList)
     </CTableHead>
 
     <CTableBody>
-      <CTableRow>
-        <CTableDataCell class="text-center">기본</CTableDataCell>
-        <CTableDataCell class="text-center">약정일</CTableDataCell>
-        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      <CTableRow class="text-center">
+        <CTableDataCell>기본</CTableDataCell>
+        <CTableDataCell>약정일</CTableDataCell>
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk">
+          {{ order.pay_due_date }}
+        </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="4" class="text-center">계약</CTableDataCell>

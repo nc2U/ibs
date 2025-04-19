@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
+import type { Project } from '@/store/types/project'
 import { useProjectData } from '@/store/pinia/project_data'
 import { type ContFilter, useContract } from '@/store/pinia/contract'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
@@ -24,7 +25,7 @@ const filteredStr = ref(`&status=${status.value}`)
 const printItems = ref(['1', '3', '4', '5', '8', '12', '13'])
 
 const projStore = useProject()
-const project = computed(() => projStore.project)
+const project = computed<Project>(() => projStore.project)
 watch(project, nVal => {
   unitSet.value = nVal?.is_unit_set || false
   if (!!nVal)
