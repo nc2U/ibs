@@ -95,12 +95,12 @@ router.register(r'all-house-unit', items.AllHouseUnitViewSet, basename='all-hous
 router.register(r'unit-summary', items.HouseUnitSummaryViewSet, basename='unit-summary')
 router.register(r'option-item', items.OptionItemViewSet, basename='option-item')
 # payment
+router.register(r'pay-order', payment.InstallmentOrderViewSet)
+router.register(r'price', payment.SalesPriceViewSet)
+router.register(r'down-payment', payment.DownPaymentViewSet)
 router.register(r'payment', payment.PaymentViewSet, basename='payment')  # only list
 router.register(r'all-payment', payment.AllPaymentViewSet, basename='all-payment')  # only list
 router.register(r'payment-sum', payment.PaymentSummaryViewSet, basename='payment-sum')  # only list
-router.register(r'price', payment.SalesPriceViewSet)
-router.register(r'pay-order', payment.InstallmentOrderViewSet)
-router.register(r'down-payment', payment.DownPaymentViewSet)
 # cash
 router.register(r'bank-code', cash.BankCodeViewSet)
 router.register(r'company-bank-account', cash.ComBankAccountViewSet)

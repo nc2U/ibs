@@ -17,6 +17,38 @@ TODAY = datetime.today().strftime('%Y-%m-%d')
 
 # Payment --------------------------------------------------------------------------
 
+
+class InstallmentOrderViewSet(viewsets.ModelViewSet):
+    queryset = InstallmentPaymentOrder.objects.all()
+    serializer_class = InstallmentOrderSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    pagination_class = PageNumberPaginationTwenty
+    filterset_fields = ('project', 'pay_sort', 'is_pm_cost')
+    search_fields = ('pay_name', 'alias_name')
+
+
+class SalesPriceViewSet(viewsets.ModelViewSet):
+    queryset = SalesPriceByGT.objects.all()
+    serializer_class = SalesPriceSerializer
+    pagination_class = PageNumberPaginationFifty
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    filterset_fields = ('project', 'order_group', 'unit_type')
+
+
+class DownPaymentViewSet(viewsets.ModelViewSet):
+    queryset = DownPayment.objects.all()
+    serializer_class = DownPaymentSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    pagination_class = PageNumberPaginationTwenty
+    filterset_fields = ('project', 'order_group', 'unit_type')
+
+
+class OverDueRuleViewSet(viewsets.ModelViewSet):
+    queryset = OverDueRule.objects.all()
+    serializer_class = OverDueRuleSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+
 class PaymentViewSet(ProjectCashBookViewSet):
     serializer_class = PaymentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
@@ -55,7 +87,6 @@ class PaymentSummaryViewSet(viewsets.ModelViewSet):
             .values('order_group', 'unit_type') \
             .annotate(paid_sum=Sum('income'))
 
-
 # class ContNumByTypeViewSet(viewsets.ModelViewSet):
 #     """
 #     타입별 계약 건수
@@ -82,34 +113,3 @@ class PaymentSummaryViewSet(viewsets.ModelViewSet):
 #         return Contract.objects.filter(activation=True, contractor__status=2) \
 #             .values('order_group', 'unit_type') \
 #             .annotate(num_cont=Count('unit_type'))
-
-
-class SalesPriceViewSet(viewsets.ModelViewSet):
-    queryset = SalesPriceByGT.objects.all()
-    serializer_class = SalesPriceSerializer
-    pagination_class = PageNumberPaginationFifty
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    filterset_fields = ('project', 'order_group', 'unit_type')
-
-
-class InstallmentOrderViewSet(viewsets.ModelViewSet):
-    queryset = InstallmentPaymentOrder.objects.all()
-    serializer_class = InstallmentOrderSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('project', 'pay_sort', 'is_pm_cost')
-    search_fields = ('pay_name', 'alias_name')
-
-
-class DownPaymentViewSet(viewsets.ModelViewSet):
-    queryset = DownPayment.objects.all()
-    serializer_class = DownPaymentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('project', 'order_group', 'unit_type')
-
-
-class OverDueRuleViewSet(viewsets.ModelViewSet):
-    queryset = OverDueRule.objects.all()
-    serializer_class = OverDueRuleSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)

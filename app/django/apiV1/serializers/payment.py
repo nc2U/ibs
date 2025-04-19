@@ -2,11 +2,40 @@ from rest_framework import serializers
 
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import OrderGroup, Contract, Contractor
-from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment, OverDueRule
+from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment, OverDueRule
 from .items import SimpleUnitTypeSerializer
 
 
 # Payment --------------------------------------------------------------------------
+
+
+class InstallmentOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstallmentPaymentOrder
+        fields = ('pk', 'project', '__str__', 'pay_sort', 'pay_code', 'pay_time',
+                  'pay_name', 'alias_name', 'is_pm_cost', 'pay_amt', 'pay_ratio',
+                  'pay_due_date', 'days_since_prev', 'is_prep_discount', 'prep_discount_ratio',
+                  'prep_ref_date', 'is_late_penalty', 'late_penalty_ratio', 'extra_due_date')
+
+
+class SalesPriceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SalesPriceByGT
+        fields = ('pk', 'project', 'order_group', 'unit_type', 'unit_floor_type',
+                  'price_build', 'price_land', 'price_tax', 'price')
+
+
+class DownPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DownPayment
+        fields = ('pk', 'project', 'order_group', 'unit_type', 'payment_amount')
+
+
+class OverDueRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OverDueRule
+        fields = ('pk', 'project', 'term_start', 'term_end', 'rate_year')
+
 
 class SimpleOrderGroupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,31 +84,3 @@ class PaymentSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectCashBook
         fields = ('order_group', 'unit_type', 'paid_sum')
-
-
-class SalesPriceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SalesPriceByGT
-        fields = ('pk', 'project', 'order_group', 'unit_type', 'unit_floor_type',
-                  'price_build', 'price_land', 'price_tax', 'price')
-
-
-class InstallmentOrderSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InstallmentPaymentOrder
-        fields = ('pk', 'project', '__str__', 'pay_sort', 'pay_code', 'pay_time',
-                  'pay_name', 'alias_name', 'is_pm_cost', 'pay_amt', 'pay_ratio',
-                  'pay_due_date', 'days_since_prev', 'is_prep_discount', 'prep_discount_ratio',
-                  'prep_ref_date', 'is_late_penalty', 'late_penalty_ratio', 'extra_due_date')
-
-
-class DownPaymentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DownPayment
-        fields = ('pk', 'project', 'order_group', 'unit_type', 'payment_amount')
-
-
-class OverDueRuleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OverDueRule
-        fields = ('pk', 'project', 'term_start', 'term_end', 'rate_year')
