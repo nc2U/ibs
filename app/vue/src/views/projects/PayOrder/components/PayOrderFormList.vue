@@ -18,30 +18,42 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive>
     <colgroup>
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col v-if="write_project" style="width: 10%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col style="width: 6%" />
+      <col v-if="write_project" style="width: 6%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
         <CTableHeaderCell>종류</CTableHeaderCell>
         <CTableHeaderCell>납입회차 코드</CTableHeaderCell>
         <CTableHeaderCell>납부순서</CTableHeaderCell>
-        <CTableHeaderCell>납부비율(%)</CTableHeaderCell>
-        <CTableHeaderCell>PM용역비 여부</CTableHeaderCell>
         <CTableHeaderCell>납부회차명</CTableHeaderCell>
         <CTableHeaderCell>회차 별칭</CTableHeaderCell>
+        <CTableHeaderCell>PM용역비 여부</CTableHeaderCell>
+        <CTableHeaderCell>약정금액</CTableHeaderCell>
+        <CTableHeaderCell>납부비율(%)</CTableHeaderCell>
+        <CTableHeaderCell>납부약정일</CTableHeaderCell>
         <CTableHeaderCell>전회기준 경과일수</CTableHeaderCell>
-        <CTableHeaderCell>납부기한일</CTableHeaderCell>
-        <CTableHeaderCell>납부유예일</CTableHeaderCell>
+        <CTableHeaderCell>선납할인 적용</CTableHeaderCell>
+        <CTableHeaderCell>선납할인율</CTableHeaderCell>
+        <CTableHeaderCell>선납기준일</CTableHeaderCell>
+        <CTableHeaderCell>연체가산 적용</CTableHeaderCell>
+        <CTableHeaderCell>연체가산율</CTableHeaderCell>
+        <CTableHeaderCell>연체기준일</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>

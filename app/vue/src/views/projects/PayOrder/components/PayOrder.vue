@@ -1,42 +1,55 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, onBeforeMount, nextTick } from 'vue'
+import { ref, reactive, computed, onBeforeMount, nextTick, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { write_project } from '@/utils/pageAuth'
+import type { PayOrder } from '@/store/types/payment'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const emit = defineEmits(['on-update', 'on-delete'])
-const props = defineProps({ payOrder: { type: Object, required: true } })
+const props = defineProps({ payOrder: { type: Object as PropType<PayOrder>, required: true } })
 
-const form = reactive({
+const form = reactive<PayOrder>({
   pay_sort: '',
-  pay_code: null as string | null,
-  pay_time: null as string | null,
-  pay_ratio: null,
-  is_pm_cost: false,
+  pay_code: null,
+  pay_time: null,
   pay_name: '',
   alias_name: '',
-  days_since_prev: null as string | null,
-  pay_due_date: null as string | null,
-  extra_due_date: null as string | null,
+  is_pm_cost: false,
+  pay_amt: null,
+  pay_ratio: null,
+  pay_due_date: null,
+  days_since_prev: null,
+  is_prep_discount: false,
+  prep_discount_ratio: null,
+  prep_ref_date: null,
+  is_late_penalty: false,
+  late_penalty_ratio: null,
+  extra_due_date: null,
 })
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const formsCheck = computed(() => {
-  const a = form.pay_sort === props.payOrder.pay_sort
-  const b = form.pay_code === props.payOrder.pay_code
-  const c = form.pay_time === props.payOrder.pay_time
-  const d = form.pay_ratio === props.payOrder.pay_ratio
-  const e = form.is_pm_cost === props.payOrder.is_pm_cost
-  const f = form.pay_name === props.payOrder.pay_name
-  const g = form.alias_name === props.payOrder.alias_name
-  const h = form.days_since_prev === props.payOrder.days_since_prev
-  const i = form.pay_due_date === props.payOrder.pay_due_date
-  const j = form.extra_due_date === props.payOrder.extra_due_date
-  return a && b && c && d && e && f && g && h && i && j
+  const a = form.pay_sort === props.payOrder?.pay_sort
+  const b = form.pay_code === props.payOrder?.pay_code
+  const c = form.pay_time === props.payOrder?.pay_time
+  const d = form.pay_name === props.payOrder?.pay_name
+  const e = form.alias_name === props.payOrder?.alias_name
+  const f = form.is_pm_cost === props.payOrder?.is_pm_cost
+  const g = form.pay_amt === props.payOrder?.pay_amt
+  const h = form.pay_ratio === props.payOrder?.pay_ratio
+  const i = form.pay_due_date === props.payOrder?.pay_due_date
+  const j = form.days_since_prev === props.payOrder?.days_since_prev
+  const k = form.is_prep_discount === props.payOrder?.is_prep_discount
+  const l = form.prep_discount_ratio === props.payOrder?.prep_discount_ratio
+  const m = form.prep_ref_date === props.payOrder?.prep_ref_date
+  const n = form.is_late_penalty === props.payOrder?.is_late_penalty
+  const o = form.late_penalty_ratio === props.payOrder?.late_penalty_ratio
+  const p = form.extra_due_date === props.payOrder?.extra_due_date
+  return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p
 })
 
 const formCheck = (bool: boolean) => {
@@ -65,21 +78,27 @@ const onDeletePayOrder = () => {
   }
 }
 const modalAction = () => {
-  emit('on-delete', props.payOrder.pk)
+  emit('on-delete', props.payOrder?.pk)
   refConfirmModal.value.close()
 }
 
 const dataSetup = () => {
-  form.pay_sort = props.payOrder.pay_sort
-  form.pay_code = props.payOrder.pay_code
-  form.pay_time = props.payOrder.pay_time
-  form.pay_ratio = props.payOrder.pay_ratio
-  form.is_pm_cost = props.payOrder.is_pm_cost
-  form.pay_name = props.payOrder.pay_name
-  form.alias_name = props.payOrder.alias_name
-  form.days_since_prev = props.payOrder.days_since_prev
-  form.pay_due_date = props.payOrder.pay_due_date
-  form.extra_due_date = props.payOrder.extra_due_date
+  form.pay_sort = props.payOrder?.pay_sort
+  form.pay_code = props.payOrder?.pay_code
+  form.pay_time = props.payOrder?.pay_time
+  form.pay_name = props.payOrder?.pay_name
+  form.alias_name = props.payOrder?.alias_name
+  form.is_pm_cost = props.payOrder?.is_pm_cost
+  form.pay_amt = props.payOrder?.pay_amt
+  form.pay_ratio = props.payOrder?.pay_ratio
+  form.pay_due_date = props.payOrder?.pay_due_date
+  form.days_since_prev = props.payOrder?.days_since_prev
+  form.is_prep_discount = props.payOrder?.is_prep_discount
+  form.prep_discount_ratio = props.payOrder?.prep_discount_ratio
+  form.prep_ref_date = props.payOrder?.prep_ref_date
+  form.is_late_penalty = props.payOrder?.is_late_penalty
+  form.late_penalty_ratio = props.payOrder?.late_penalty_ratio
+  form.extra_due_date = props.payOrder?.extra_due_date
 }
 
 onBeforeMount(() => dataSetup())
@@ -115,24 +134,6 @@ onBeforeMount(() => dataSetup())
         @keypress.enter="formCheck(form.pay_time !== payOrder.pay_time)"
       />
     </CTableDataCell>
-
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.pay_ratio"
-        placeholder="납부비율"
-        type="number"
-        min="0"
-        @keypress.enter="formCheck(form.pay_ratio !== payOrder.pay_ratio)"
-        :disabled="form.pay_sort === '3'"
-      />
-    </CTableDataCell>
-
-    <CTableDataCell>
-      <CCol class="pt-2 pl-3">
-        <CFormSwitch v-model="form.is_pm_cost" />
-      </CCol>
-    </CTableDataCell>
-
     <CTableDataCell>
       <CFormInput
         v-model="form.pay_name"
@@ -152,7 +153,39 @@ onBeforeMount(() => dataSetup())
         @keypress.enter="formCheck(form.alias_name !== payOrder.alias_name)"
       />
     </CTableDataCell>
-
+    <CTableDataCell>
+      <CCol class="pt-2 pl-3">
+        <CFormSwitch v-model="form.is_pm_cost" label="PM용역비" />
+      </CCol>
+    </CTableDataCell>
+    <CTableDataCell>
+      <CFormInput
+        v-model.number="form.pay_amt"
+        placeholder="납부 약정액"
+        type="number"
+        min="0"
+        @keypress.enter="formCheck(form.pay_amt !== payOrder.pay_amt)"
+      />
+    </CTableDataCell>
+    <CTableDataCell>
+      <CFormInput
+        v-model.number="form.pay_ratio"
+        placeholder="납부비율"
+        type="number"
+        min="0"
+        @keypress.enter="formCheck(form.pay_ratio !== payOrder.pay_ratio)"
+        :disabled="form.pay_sort === '3'"
+      />
+    </CTableDataCell>
+    <CTableDataCell>
+      <DatePicker
+        v-model="form.pay_due_date"
+        maxlength="10"
+        placeholder="납부약정일"
+        :required="false"
+        @keypress.enter="formCheck(form.pay_due_date !== payOrder.pay_due_date)"
+      />
+    </CTableDataCell>
     <CTableDataCell>
       <CFormInput
         v-model="form.days_since_prev"
@@ -163,22 +196,48 @@ onBeforeMount(() => dataSetup())
         @keypress.enter="formCheck(form.days_since_prev !== payOrder.days_since_prev)"
       />
     </CTableDataCell>
-
     <CTableDataCell>
-      <DatePicker
-        v-model="form.pay_due_date"
-        maxlength="10"
-        placeholder="납부기한일"
-        :required="false"
-        @keypress.enter="formCheck(form.pay_due_date !== payOrder.pay_due_date)"
+      <CCol class="pt-2 pl-3">
+        <CFormSwitch v-model="form.is_prep_discount" label="선납할인" />
+      </CCol>
+    </CTableDataCell>
+    <CTableDataCell>
+      <CFormInput
+        v-model.number="form.prep_discount_ratio"
+        placeholder="선납할인율"
+        type="number"
+        min="0"
+        @keypress.enter="formCheck(form.prep_discount_ratio !== payOrder.prep_discount_ratio)"
       />
     </CTableDataCell>
-
+    <CTableDataCell>
+      <DatePicker
+        v-model="form.prep_ref_date"
+        maxlength="10"
+        placeholder="선납기준일"
+        :required="false"
+        @keypress.enter="formCheck(form.prep_ref_date !== payOrder.prep_ref_date)"
+      />
+    </CTableDataCell>
+    <CTableDataCell>
+      <CCol class="pt-2 pl-3">
+        <CFormSwitch v-model="form.is_late_penalty" label="연체가산" />
+      </CCol>
+    </CTableDataCell>
+    <CTableDataCell>
+      <CFormInput
+        v-model.number="form.late_penalty_ratio"
+        placeholder="연체가산율"
+        type="number"
+        min="0"
+        @keypress.enter="formCheck(form.late_penalty_ratio !== payOrder.late_penalty_ratio)"
+      />
+    </CTableDataCell>
     <CTableDataCell>
       <DatePicker
         v-model="form.extra_due_date"
         maxlength="10"
-        placeholder="납부유예일"
+        placeholder="연체기준일"
         :required="false"
         @keypress.enter="formCheck(form.extra_due_date !== payOrder.extra_due_date)"
       />

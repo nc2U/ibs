@@ -53,8 +53,8 @@ const dueTotal = computed(() => {
     )
     .map((o: PayOrder) => o.pay_time)
 
-  dueOrder.forEach((el: number | undefined) => {
-    commitment.push(getCommits(el))
+  dueOrder.forEach((el: number | null | undefined) => {
+    if (el) commitment.push(getCommits(el))
   })
   return commitment.length !== 0 ? commitment.reduce((x, y) => x + y) : 0
 })
@@ -62,8 +62,8 @@ const dueTotal = computed(() => {
 const getCommits = (el: number | undefined) => {
   // 약정금 구하기
   const down = downPayList.value
-    .filter((d: DownPay) => d.order_group === props.contract.order_group)
-    .filter(d => d.unit_type === props.contract.unit_type)
+    .filter((d: DownPay) => d.order_group === props.contract?.order_group)
+    .filter(d => d.unit_type === props.contract?.unit_type)
     .map(d => d.payment_amount)[0] // 1. downPayList, 2. payByOrder, 3. 분양가 / 총회차수
 
   const order = payOrderList.value.find((o: PayOrder) => o.pay_time === el)
