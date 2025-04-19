@@ -16,12 +16,15 @@ class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(InstallmentPaymentOrder)
 class InstallmentPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'pay_name', 'pay_sort', 'pay_code', 'is_calc_start',
-                    'pay_time', 'pay_ratio', 'alias_name', 'is_pm_cost', 'days_since_prev',
-                    'pay_due_date', 'extra_due_date')
+    list_display = ('id', 'project', 'pay_sort', 'pay_name', 'pay_code', 'pay_ratio', 'pay_amt',
+                    'alias_name', 'is_pm_cost', 'is_prep_discount', 'prep_discount_ratio',
+                    'is_late_penalty', 'late_penalty_ratio', 'days_since_prev',
+                    'pay_due_date', 'prep_ref_date', 'extra_due_date')
     search_fields = ('pay_name', 'alias_name',)
-    list_editable = ('alias_name', 'is_pm_cost', 'is_calc_start', 'days_since_prev', 'pay_due_date', 'extra_due_date')
-    list_display_links = ('project', 'pay_name',)
+    list_editable = ('pay_ratio', 'pay_amt', 'alias_name', 'is_pm_cost', 'is_prep_discount',
+                     'prep_discount_ratio', 'is_late_penalty', 'late_penalty_ratio', 'days_since_prev',
+                     'pay_due_date', 'prep_ref_date', 'extra_due_date')
+    list_display_links = ('project', 'pay_sort', 'pay_name',)
     list_filter = ('project', 'pay_sort')
 
 
@@ -44,7 +47,7 @@ class OverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(SpecialPaymentOrder)
 class SpecialPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'pay_name', 'pay_sort', 'pay_code', 'is_calc_start',
-                    'pay_time', 'alias_name', 'days_since_prev', 'pay_due_date', 'extra_due_date')
+                    'alias_name', 'days_since_prev', 'pay_due_date', 'extra_due_date')
     search_fields = ('pay_name', 'alias_name',)
     list_editable = ('is_calc_start', 'alias_name', 'days_since_prev', 'pay_due_date', 'extra_due_date')
     list_display_links = ('project', 'pay_name',)

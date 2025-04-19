@@ -26,7 +26,7 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     pay_sort = models.CharField('종류', max_length=1, choices=SORT_CHOICES, default='1')
     pay_code = models.PositiveSmallIntegerField('납입회차 코드', help_text='프로젝트 내에서 모든 납부회차를 고유 순서대로 숫자로 부여한다.')
     pay_time = models.PositiveSmallIntegerField('납부순서',
-                                                help_text='''동일 납부회차에 2가지 항목을 별도로 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
+                                                help_text='''동일 납부회차에 2가지 항목을 분리해서 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
                                                 하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.''')
     pay_ratio = models.DecimalField('회당 납부비율(%)', max_digits=5, decimal_places=2, null=True, blank=True,
                                     help_text='''분양가 대비 납부비율, 계약금 항목인 경우 Downpayment 
@@ -35,13 +35,19 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
                                           help_text='약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)')
     is_pm_cost = models.BooleanField('PM용역비 여부', default=False)
     is_calc_start = models.BooleanField('할인/가산 시작 여부', default=False)
+    is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
+    prep_discount_ratio = models.DecimalField('선납할인율(%)', max_digits=5, decimal_places=2, null=True, blank=True)
+    is_late_penalty = models.BooleanField('연체가산 적용 여부', default=False)
+    late_penalty_ratio = models.DecimalField('연체가산율(%)', max_digits=5, decimal_places=2, null=True, blank=True)
     pay_name = models.CharField('납부회차 명', max_length=20)
     alias_name = models.CharField('회차 별칭', max_length=20, blank=True)
     days_since_prev = models.PositiveSmallIntegerField('전회 기준 경과일수', null=True, blank=True,
                                                        help_text="전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수")
     pay_due_date = models.DateField('냡부 약정일', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
+    prep_ref_date = models.DateField('선납 기준일', null=True, blank=True,
+                                     help_text='선납 할인 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 선납 기준일로 우선 적용한다.')
     extra_due_date = models.DateField('연체 기준일', null=True, blank=True,
-                                      help_text='연체료 계산 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 연체 기준일을 연체료 계산 기준으로 한다.')
+                                      help_text='연체료 계산 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선 적용한다.')
 
     def __str__(self):
         return f'[{self.get_pay_sort_display()}] - {self.pay_name}'
