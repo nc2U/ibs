@@ -155,7 +155,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CCol class="pt-2 pl-3">
-        <CFormSwitch v-model="form.is_pm_cost" label="PM용역비" />
+        <CFormSwitch v-model="form.is_pm_cost" :id="`ipc-${payOrder.pk}`" label="PM용역비" />
       </CCol>
     </CTableDataCell>
     <CTableDataCell>
@@ -198,7 +198,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CCol class="pt-2 pl-3">
-        <CFormSwitch v-model="form.is_prep_discount" label="선납할인" />
+        <CFormSwitch v-model="form.is_prep_discount" :id="`ipd-${payOrder.pk}`" label="선납할인" />
       </CCol>
     </CTableDataCell>
     <CTableDataCell>
@@ -221,7 +221,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CCol class="pt-2 pl-3">
-        <CFormSwitch v-model="form.is_late_penalty" label="연체가산" />
+        <CFormSwitch v-model="form.is_late_penalty" :id="`ilp-${payOrder.pk}`" label="연체가산" />
       </CCol>
     </CTableDataCell>
     <CTableDataCell>
