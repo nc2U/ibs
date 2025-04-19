@@ -39,14 +39,14 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
         <CTableHeaderCell>종류</CTableHeaderCell>
-        <CTableHeaderCell>
+        <CTableHeaderCell class="cursor-help">
           납입회차 코드
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
           <v-tooltip activator="parent" location="top">
             프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능
           </v-tooltip>
         </CTableHeaderCell>
-        <CTableHeaderCell>
+        <CTableHeaderCell class="cursor-help">
           납부순서
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
           <v-tooltip activator="parent" location="top">
@@ -57,14 +57,14 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>납부회차명</CTableHeaderCell>
         <CTableHeaderCell>회차 별칭</CTableHeaderCell>
         <CTableHeaderCell>PM용역비 여부</CTableHeaderCell>
-        <CTableHeaderCell>
+        <CTableHeaderCell class="cursor-help">
           약정금액
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
           <v-tooltip activator="parent" location="top">
             약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)
           </v-tooltip>
         </CTableHeaderCell>
-        <CTableHeaderCell>
+        <CTableHeaderCell class="cursor-help">
           납부비율(%)
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
           <v-tooltip activator="parent" location="top">
@@ -73,7 +73,7 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
           </v-tooltip>
         </CTableHeaderCell>
         <CTableHeaderCell>납부약정일</CTableHeaderCell>
-        <CTableHeaderCell>
+        <CTableHeaderCell class="cursor-help">
           전회기준 경과일수
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
           <v-tooltip activator="parent" location="top">
@@ -82,7 +82,7 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
         </CTableHeaderCell>
         <CTableHeaderCell>선납할인 적용</CTableHeaderCell>
         <CTableHeaderCell>선납할인율</CTableHeaderCell>
-        <CTableHeaderCell>
+        <CTableHeaderCell class="cursor-help">
           선납기준일
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
           <v-tooltip activator="parent" location="top">
@@ -91,7 +91,7 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
         </CTableHeaderCell>
         <CTableHeaderCell>연체가산 적용</CTableHeaderCell>
         <CTableHeaderCell>연체가산율</CTableHeaderCell>
-        <CTableHeaderCell>
+        <CTableHeaderCell class="cursor-help">
           연체기준일
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
           <v-tooltip activator="parent" location="top">
