@@ -28,17 +28,17 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     pay_time = models.PositiveSmallIntegerField('납부순서',
                                                 help_text='''동일 납부회차에 2가지 항목을 분리해서 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
                                                 하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.''')
-    pay_ratio = models.DecimalField('회당 납부비율(%)', max_digits=5, decimal_places=2, null=True, blank=True,
-                                    help_text='''분양가 대비 납부비율, 계약금 항목인 경우 Downpayment 
-                                    테이블 데이터 우선, 잔금 항목인 경우 분양가와 비교 차액 데이터 우선''')
-    pay_amt = models.PositiveIntegerField('납부 약정금액', null=True, blank=True,
-                                          help_text='약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)')
     pay_name = models.CharField('납부회차 명', max_length=20)
     alias_name = models.CharField('회차 별칭', max_length=20, blank=True)
     is_pm_cost = models.BooleanField('PM용역비 여부', default=False)
+    pay_amt = models.PositiveIntegerField('납부 약정금액', null=True, blank=True,
+                                          help_text='약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)')
+    pay_ratio = models.DecimalField('회당 납부비율(%)', max_digits=5, decimal_places=2, null=True, blank=True,
+                                    help_text='''분양가 대비 납부비율, 계약금 항목인 경우 Downpayment 
+                                    테이블 데이터 우선, 잔금 항목인 경우 분양가와 비교 차액 데이터 우선''')
+    pay_due_date = models.DateField('냡부 약정일', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
     days_since_prev = models.PositiveSmallIntegerField('전회 기준 경과일수', null=True, blank=True,
                                                        help_text="전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수")
-    pay_due_date = models.DateField('냡부 약정일', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
     is_calc_start = models.BooleanField('할인/가산 시작 여부', default=False)
     is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
     prep_discount_ratio = models.DecimalField('선납할인율(%)', max_digits=5, decimal_places=2, null=True, blank=True)
