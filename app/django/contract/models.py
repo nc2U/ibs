@@ -52,6 +52,8 @@ class ContractPrice(models.Model):
     price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
     price_tax = models.PositiveIntegerField('부가세', null=True, blank=True)
     down_pay = models.PositiveIntegerField('계약금', help_text='계약금 분납 시 회당 납부하는 금액 기재')
+    biz_agency_fee = models.PositiveIntegerField('업무대행비', null=True, blank=True)
+    is_included_baf = models.BooleanField('업무대행비 포함 여부', default=False)
     middle_pay = models.PositiveIntegerField('중도금', help_text='중도금 분납 시 회당 납부하는 금액 기재')
     remain_pay = models.PositiveIntegerField('잔금', help_text='잔금 분납 시 회당 납부하는 금액 기재')
 
