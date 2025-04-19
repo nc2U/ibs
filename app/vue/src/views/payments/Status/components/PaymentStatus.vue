@@ -83,7 +83,7 @@ const totalBudget = computed(
         <CTableDataCell colspan="9">
           <strong>
             <CIcon name="cilFolderOpen" />
-            차수 및 타입별 수납 현황
+            차수 및 타입별 수납 요약
           </strong>
           <small class="text-medium-emphasis"> ({{ date }}) 현재 </small>
         </CTableDataCell>
@@ -182,7 +182,7 @@ const totalBudget = computed(
       <CTableRow class="text-center text-danger" style="height: 200px">
         <CTableDataCell colspan="10">
           [
-          <router-link :to="{ name: '수입 예산 등록' }"> 수입 예산 등록 </router-link>
+          <router-link :to="{ name: '수입 예산 등록' }"> 수입 예산 등록</router-link>
           ] >> [신규 프로젝트] > [수입 예산 항목]에서 데이터를 등록하세요.
         </CTableDataCell>
       </CTableRow>
@@ -190,7 +190,7 @@ const totalBudget = computed(
 
     <CTableHead>
       <CTableRow class="text-right" :color="TableSecondary">
-        <CTableHeaderCell colspan="2" class="text-center"> 합계 </CTableHeaderCell>
+        <CTableHeaderCell colspan="2" class="text-center"> 합계</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <!-- 계획 세대수 합계 -->
         <CTableHeaderCell>{{ numFormat(totalBudgetNum) }}</CTableHeaderCell>

@@ -14,7 +14,7 @@ import PaymentStatus from './components/PaymentStatus.vue'
 import OverallSummary from './components/OverallSummary.vue'
 
 const date = ref(getToday())
-const menu = ref('수납현황')
+const menu = ref('수납요약')
 
 const excelUrl1 = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
 const excelUrl2 = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
@@ -83,7 +83,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
 
       <v-tabs v-model="menu" density="compact">
         <v-tab
-          v-for="m in ['수납현황', '총괄집계']"
+          v-for="m in ['수납요약', '총괄집계']"
           :value="m"
           :key="m"
           variant="tonal"
@@ -93,7 +93,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
         </v-tab>
       </v-tabs>
 
-      <template v-if="menu === '수납현황'">
+      <template v-if="menu === '수납요약'">
         <TableTitleRow excel :url="excelUrl1" :disabled="!project" />
         <PaymentStatus :date="date" />
       </template>
