@@ -101,7 +101,7 @@ const resetForm = () => {
                   :disabled="disabled"
                 />
                 <v-tooltip activator="parent" location="start">
-                  프로젝트 내에서 모든 납부회차를 고유 순서대로 숫자로 부여한다.'
+                  프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능
                 </v-tooltip>
               </CCol>
               <CCol lg="6" xl="3" class="mb-3">
