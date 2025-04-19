@@ -329,13 +329,13 @@ const project = {
       items: [
         {
           component: 'CNavItem',
-          name: '공급 가격 등록',
-          to: '/project/settings/price',
+          name: '납부 회차 등록',
+          to: '/project/settings/payment-order',
         },
         {
           component: 'CNavItem',
-          name: '납부 회차 등록',
-          to: '/project/settings/payment-order',
+          name: '공급 가격 등록',
+          to: '/project/settings/price',
         },
         {
           component: 'CNavItem',
