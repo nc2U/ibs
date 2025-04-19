@@ -67,9 +67,10 @@ class SalesPriceSerializer(serializers.ModelSerializer):
 class InstallmentOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstallmentPaymentOrder
-        fields = ('pk', 'project', '__str__', 'pay_sort', 'pay_code', 'pay_time',
-                  'pay_ratio', 'pay_amt', 'is_pm_cost', 'pay_name', 'alias_name',
-                  'days_since_prev', 'pay_due_date', 'extra_due_date')
+        fields = ('pk', 'project', '__str__', 'pay_sort', 'pay_code', 'pay_time', 'pay_ratio',
+                  'pay_amt', 'pay_name', 'alias_name', 'is_pm_cost', 'days_since_prev',
+                  'pay_due_date', 'is_calc_start', 'is_prep_discount', 'prep_discount_ratio',
+                  'prep_ref_date', 'is_late_penalty', 'late_penalty_ratio', 'extra_due_date')
 
 
 class DownPaymentSerializer(serializers.ModelSerializer):
