@@ -25,7 +25,7 @@ const filteredStr = ref(`&status=${status.value}`)
 const printItems = ref(['1', '3', '4', '5', '8', '12', '13'])
 
 const projStore = useProject()
-const project = computed<Project>(() => projStore.project)
+const project = computed<Project | null>(() => projStore.project)
 watch(project, nVal => {
   unitSet.value = nVal?.is_unit_set || false
   if (!!nVal)
