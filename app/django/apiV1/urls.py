@@ -158,8 +158,9 @@ router.register(r'image', docs.ImageViewSet)
 router.register(r'docs-trash-can', docs.DocsInTrashViewSet, basename='docs-trash-can')
 
 urlpatterns = router.urls
+urlpatterns += [
+    path('cont-aggregate/<int:project_id>/', contract.ContractAggreateView.as_view(), name='cont-aggregate')]
 urlpatterns += [path('issue-by-member/', work.IssueCountByMemberView.as_view(), name='issue-by-member')]
-
 urlpatterns += [path('admin-create-user/', accounts.AdminCreateUserView.as_view(), name='admin-create-user')]
 urlpatterns += [path('check-password/', accounts.CheckPasswordView.as_view(), name='check-password')]
 urlpatterns += [path('change-password/', accounts.ChangePasswordView.as_view(), name='change-password')]

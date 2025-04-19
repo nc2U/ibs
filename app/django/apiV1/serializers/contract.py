@@ -693,6 +693,12 @@ class ContSummarySerializer(serializers.ModelSerializer):
         fields = ('order_group', 'unit_type', 'conts_num', 'price_sum')
 
 
+class ContractAggregateSerializer(serializers.Serializer):
+    total_units = serializers.IntegerField()
+    subs_count = serializers.IntegerField()
+    conts_count = serializers.IntegerField()
+
+
 class ContractInContractorSerializer(serializers.ModelSerializer):
     keyunit = serializers.PrimaryKeyRelatedField(read_only=True)
 

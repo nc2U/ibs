@@ -1,16 +1,17 @@
 from django.db.models import Count, Sum
-from rest_framework import viewsets
-from django_filters.rest_framework import FilterSet
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
-
-from ..permission import *
-from ..serializers.contract import *
-from ..pagination import PageNumberPaginationThreeThousand
+from django_filters.rest_framework import FilterSet
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor,
                              ContractorAddress, ContractorContact,
                              Succession, ContractorRelease)
 from items.models import BuildingUnit
+from ..pagination import PageNumberPaginationThreeThousand
+from ..permission import *
+from ..serializers.contract import *
 
 
 # Contract --------------------------------------------------------------------------
@@ -113,6 +114,33 @@ class ContSummaryViewSet(viewsets.ModelViewSet):
             .values('order_group', 'unit_type') \
             .annotate(conts_num=Count('order_group')) \
             .annotate(price_sum=Sum('contractprice__price'))
+
+
+class ContractAggreateView(APIView):
+    def get(self, request, project_id):
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return Response({'detail': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 해당 프로젝트와 연결된 계약들
+        contracts = Contract.objects.filter(project=project)
+
+        # 계약 ID 목록 추출
+        contract_ids = contracts.values_list('id', flat=True)
+
+        # 계약 ID를 가진 Contractor를 기준으로 count
+        subs_count = Contractor.objects.filter(contract_id__in=contract_ids, status='1').count()
+        conts_count = Contractor.objects.filter(contract_id__in=contract_ids, status='2').count()
+
+        data = {
+            'total_units': project.num_unit or 0,
+            'subs_count': subs_count,
+            'conts_count': conts_count,
+        }
+
+        serializer = ContractAggregateSerializer(data)
+        return Response(serializer.data)
 
 
 class ContractorViewSet(viewsets.ModelViewSet):
