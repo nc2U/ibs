@@ -100,9 +100,9 @@ const resetForm = () => {
                   required
                   :disabled="disabled"
                 />
-                <CFormText>
+                <v-tooltip activator="parent" location="start">
                   프로젝트 내에서 모든 납부회차를 고유 순서대로 숫자로 부여한다.'
-                </CFormText>
+                </v-tooltip>
               </CCol>
               <CCol lg="6" xl="3" class="mb-3">
                 <CFormInput
@@ -113,10 +113,10 @@ const resetForm = () => {
                   required
                   :disabled="disabled"
                 />
-                <CFormText>
+                <v-tooltip activator="parent" location="start">
                   동일 납부회차에 2가지 항목을 별도로 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
                   하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.
-                </CFormText>
+                </v-tooltip>
               </CCol>
               <CCol lg="6" xl="3" class="mb-3">
                 <CFormInput
@@ -160,9 +160,9 @@ const resetForm = () => {
                   placeholder="납부 약정금액"
                   :disabled="disabled || form.pay_sort === '3'"
                 />
-                <CFormText>
+                <v-tooltip activator="parent" location="start">
                   약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)
-                </CFormText>
+                </v-tooltip>
               </CCol>
               <CCol lg="6" xl="3" class="mb-3">
                 <CFormInput
@@ -172,10 +172,10 @@ const resetForm = () => {
                   placeholder="납부비율(공급가대비)"
                   :disabled="disabled || form.pay_sort === '3'"
                 />
-                <CFormText>
+                <v-tooltip activator="parent" location="start">
                   분양가 대비 납부비율, 계약금 항목인 경우 "계약 금액 등록" 데이터 우선, 잔금 항목인
                   경우 "공급 가격 등록" 데이터와 비교 차액 데이터 우선
-                </CFormText>
+                </v-tooltip>
               </CCol>
             </CRow>
           </CCol>
@@ -201,9 +201,9 @@ const resetForm = () => {
                   placeholder="전회 기준 경과일수"
                   :disabled="disabled"
                 />
-                <CFormText>
+                <v-tooltip activator="parent" location="start">
                   전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수
-                </CFormText>
+                </v-tooltip>
               </CCol>
               <CCol lg="6" xl="3" class="mb-3">
                 <CRow>
@@ -238,10 +238,10 @@ const resetForm = () => {
                   :required="false"
                   :disabled="disabled"
                 />
-                <CFormText class="text-grey">
+                <v-tooltip activator="parent" location="start">
                   선납 할인 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 선납 기준일로 우선
                   적용한다.
-                </CFormText>
+                </v-tooltip>
               </CCol>
 
               <CCol lg="6" xl="3" class="mb-3">
@@ -273,10 +273,10 @@ const resetForm = () => {
                   :required="false"
                   :disabled="disabled"
                 />
-                <CFormText class="text-grey">
+                <v-tooltip activator="parent" location="start">
                   연체료 계산 기준은 납부기한일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선
                   적용한다.
-                </CFormText>
+                </v-tooltip>
               </CCol>
             </CRow>
           </CCol>
