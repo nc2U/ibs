@@ -19,11 +19,17 @@ export interface PayOrder {
   pay_time?: number
   pay_ratio?: number | null
   pay_amt?: number | null
-  is_pm_cost?: boolean
   pay_name?: string
   alias_name?: string
+  is_pm_cost?: boolean
   days_since_prev?: number | null
   pay_due_date?: string | null
+  is_calc_start?: boolean
+  is_prep_discount?: boolean
+  prep_discount_ratio?: number | null
+  prep_ref_date?: string | null
+  is_late_penalty?: boolean
+  late_penalty_ratio?: number | null
   extra_due_date?: string | null
 }
 
