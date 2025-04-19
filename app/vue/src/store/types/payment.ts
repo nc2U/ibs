@@ -1,15 +1,3 @@
-export interface Price {
-  pk: number
-  project: number
-  order_group: number
-  unit_type: number
-  unit_floor_type: number
-  price_build: number
-  price_land: number
-  price_tax: number
-  price: number
-}
-
 export interface PayOrder {
   pk?: number | null
   project?: number
@@ -30,6 +18,23 @@ export interface PayOrder {
   is_late_penalty?: boolean
   late_penalty_ratio?: number | null
   extra_due_date?: string | null
+}
+
+export interface Price {
+  pk: number
+  project: number
+  order_group: number
+  unit_type: number
+  unit_floor_type: number
+  price_build: number
+  price_land: number
+  price_tax: number
+  price: number
+  down_pay: number | null
+  biz_agency_fee: number | null
+  is_included_baf: false
+  middle_pay: number | null
+  remain_pay: number | null
 }
 
 export interface DownPay {
