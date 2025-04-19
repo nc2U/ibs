@@ -1,28 +1,6 @@
 from django.db import models
 
 
-class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    order_group = models.ForeignKey('contract.OrderGroup', on_delete=models.PROTECT, verbose_name='차수')
-    unit_type = models.ForeignKey('items.UnitType', on_delete=models.PROTECT, verbose_name='타입')
-    unit_floor_type = models.ForeignKey('items.UnitFloorType', on_delete=models.PROTECT, verbose_name='층별타입')
-    price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
-    price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
-    price_tax = models.PositiveIntegerField('부가세', null=True, blank=True)
-    price = models.PositiveIntegerField('분양가격')
-    down_pay = models.PositiveIntegerField('계약금', null=True, blank=True, help_text='계약금 분납 시 회당 납부하는 금액 기재')
-    middle_pay = models.PositiveIntegerField('중도금', null=True, blank=True, help_text='중도금 분납 시 회당 납부하는 금액 기재')
-    remain_pay = models.PositiveIntegerField('잔금', null=True, blank=True, help_text='잔금 분납 시 회당 납부하는 금액 기재')
-
-    def __str__(self):
-        return f'{self.price}'
-
-    class Meta:
-        ordering = ('order_group', 'unit_type', 'unit_floor_type', 'project')
-        verbose_name = '01. 프로젝트 분양가 관리'
-        verbose_name_plural = '01. 프로젝트 분양가 관리'
-
-
 class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'))
@@ -57,8 +35,30 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
 
     class Meta:
         ordering = ['-project', 'pay_code']
-        verbose_name = '02. 납입회차 관리'
-        verbose_name_plural = '02. 납입회차 관리'
+        verbose_name = '01. 납입회차 관리'
+        verbose_name_plural = '01. 납입회차 관리'
+
+
+class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    order_group = models.ForeignKey('contract.OrderGroup', on_delete=models.PROTECT, verbose_name='차수')
+    unit_type = models.ForeignKey('items.UnitType', on_delete=models.PROTECT, verbose_name='타입')
+    unit_floor_type = models.ForeignKey('items.UnitFloorType', on_delete=models.PROTECT, verbose_name='층별타입')
+    price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
+    price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
+    price_tax = models.PositiveIntegerField('부가세', null=True, blank=True)
+    price = models.PositiveIntegerField('분양가격')
+    down_pay = models.PositiveIntegerField('계약금', null=True, blank=True, help_text='계약금 분납 시 회당 납부하는 금액 기재')
+    middle_pay = models.PositiveIntegerField('중도금', null=True, blank=True, help_text='중도금 분납 시 회당 납부하는 금액 기재')
+    remain_pay = models.PositiveIntegerField('잔금', null=True, blank=True, help_text='잔금 분납 시 회당 납부하는 금액 기재')
+
+    def __str__(self):
+        return f'{self.price}'
+
+    class Meta:
+        ordering = ('order_group', 'unit_type', 'unit_floor_type', 'project')
+        verbose_name = '02. 프로젝트 분양가 관리'
+        verbose_name_plural = '02. 프로젝트 분양가 관리'
 
 
 class DownPayment(models.Model):
@@ -73,8 +73,8 @@ class DownPayment(models.Model):
 
     class Meta:
         ordering = ('id',)
-        verbose_name = '03. 타입별 계약금 관리'
-        verbose_name_plural = '03. 타입별 계약금 관리'
+        verbose_name = '03. 타입별 계약금 일괄 관리'
+        verbose_name_plural = '03. 타입별 계약금 일괄 관리'
 
 
 class OverDueRule(models.Model):

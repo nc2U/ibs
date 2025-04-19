@@ -1,17 +1,8 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from .models import (SalesPriceByGT, InstallmentPaymentOrder, DownPayment, OverDueRule,
+from .models import (InstallmentPaymentOrder, SalesPriceByGT, DownPayment, OverDueRule,
                      SpecialPaymentOrder, SpecialDownPay, SpecialOverDueRule)
-
-
-@admin.register(SalesPriceByGT)
-class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'order_group', 'unit_type', 'unit_floor_type',
-                    'price_build', 'price_land', 'price_tax', 'price')
-    list_display_links = ('project', 'unit_type', 'unit_floor_type')
-    list_editable = ('price_build', 'price_land', 'price_tax', 'price')
-    list_filter = ('project', 'order_group', 'unit_type')
 
 
 @admin.register(InstallmentPaymentOrder)
@@ -26,6 +17,15 @@ class InstallmentPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
                      'pay_due_date', 'prep_ref_date', 'extra_due_date')
     list_display_links = ('project', 'pay_sort')
     list_filter = ('project', 'pay_sort')
+
+
+@admin.register(SalesPriceByGT)
+class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'project', 'order_group', 'unit_type', 'unit_floor_type',
+                    'price_build', 'price_land', 'price_tax', 'price')
+    list_display_links = ('project', 'unit_type', 'unit_floor_type')
+    list_editable = ('price_build', 'price_land', 'price_tax', 'price')
+    list_filter = ('project', 'order_group', 'unit_type')
 
 
 @admin.register(DownPayment)
