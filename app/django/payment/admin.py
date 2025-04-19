@@ -16,10 +16,10 @@ class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(InstallmentPaymentOrder)
 class InstallmentPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'pay_sort', 'pay_name', 'pay_code', 'pay_ratio', 'pay_amt',
-                    'alias_name', 'is_pm_cost', 'is_prep_discount', 'prep_discount_ratio',
-                    'is_late_penalty', 'late_penalty_ratio', 'days_since_prev',
-                    'pay_due_date', 'prep_ref_date', 'extra_due_date')
+    list_display = ('id', 'project', 'pay_sort', 'pay_name', 'pay_code', 'pay_ratio',
+                    'pay_amt', 'alias_name', 'is_pm_cost', 'days_since_prev', 'pay_due_date',
+                    'is_prep_discount', 'prep_discount_ratio', 'prep_ref_date',
+                    'is_late_penalty', 'late_penalty_ratio', 'extra_due_date')
     search_fields = ('pay_name', 'alias_name',)
     list_editable = ('pay_ratio', 'pay_amt', 'alias_name', 'is_pm_cost', 'is_prep_discount',
                      'prep_discount_ratio', 'is_late_penalty', 'late_penalty_ratio', 'days_since_prev',

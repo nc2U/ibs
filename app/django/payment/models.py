@@ -33,19 +33,19 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
                                     테이블 데이터 우선, 잔금 항목인 경우 분양가와 비교 차액 데이터 우선''')
     pay_amt = models.PositiveIntegerField('납부 약정금액', null=True, blank=True,
                                           help_text='약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)')
-    is_pm_cost = models.BooleanField('PM용역비 여부', default=False)
-    is_calc_start = models.BooleanField('할인/가산 시작 여부', default=False)
-    is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
-    prep_discount_ratio = models.DecimalField('선납할인율(%)', max_digits=5, decimal_places=2, null=True, blank=True)
-    is_late_penalty = models.BooleanField('연체가산 적용 여부', default=False)
-    late_penalty_ratio = models.DecimalField('연체가산율(%)', max_digits=5, decimal_places=2, null=True, blank=True)
     pay_name = models.CharField('납부회차 명', max_length=20)
     alias_name = models.CharField('회차 별칭', max_length=20, blank=True)
+    is_pm_cost = models.BooleanField('PM용역비 여부', default=False)
     days_since_prev = models.PositiveSmallIntegerField('전회 기준 경과일수', null=True, blank=True,
                                                        help_text="전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수")
     pay_due_date = models.DateField('냡부 약정일', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
+    is_calc_start = models.BooleanField('할인/가산 시작 여부', default=False)
+    is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
+    prep_discount_ratio = models.DecimalField('선납할인율(%)', max_digits=5, decimal_places=2, null=True, blank=True)
     prep_ref_date = models.DateField('선납 기준일', null=True, blank=True,
                                      help_text='선납 할인 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 선납 기준일로 우선 적용한다.')
+    is_late_penalty = models.BooleanField('연체가산 적용 여부', default=False)
+    late_penalty_ratio = models.DecimalField('연체가산율(%)', max_digits=5, decimal_places=2, null=True, blank=True)
     extra_due_date = models.DateField('연체 기준일', null=True, blank=True,
                                       help_text='연체료 계산 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선 적용한다.')
 
