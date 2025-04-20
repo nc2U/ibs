@@ -141,10 +141,14 @@ def get_pay_amount(instance, price, is_set=False):
             down = instance.contractprice.down_pay
             middle = instance.contractprice.middle_pay
             remain = instance.contractprice.remain_pay
+            biz_agency_fee = instance.contractprice.biz_agency_fee
+            is_included_baf = instance.contractprice.is_included_baf
         else:  # 쓰기 요청일 때
             down_pay = 0
             middle_pay = 0
             remain_pay = 0
+            biz_agency_fee = 0
+            is_included_baf = False
 
             try:
                 house_unit = instance.keyunit.houseunit
@@ -152,6 +156,8 @@ def get_pay_amount(instance, price, is_set=False):
                 down_pay = sales_price.down_pay
                 middle_pay = sales_price.middle_pay
                 remain_pay = sales_price.remain_pay
+                biz_agency_fee = sales_price.biz_agency_fee
+                is_included_baf = sales_price.is_included_baf
             except ObjectDoesNotExist:
                 pass
 
@@ -181,12 +187,16 @@ def get_pay_amount(instance, price, is_set=False):
             down = down_pay if down_pay else down
             middle = middle_pay if middle_pay else middle
             remain = remain_pay if remain_pay else remain
+            biz_agency_fee = biz_agency_fee if biz_agency_fee else 0
+            is_included_baf = is_included_baf if is_included_baf else False
     except ObjectDoesNotExist:
         down = 0
         middle = 0
         remain = 0
+        biz_agency_fee = 0
+        is_included_baf = False
 
-    return down, middle, remain
+    return down, middle, remain, biz_agency_fee, is_included_baf
 
 
 class ContractSerializer(serializers.ModelSerializer):
@@ -220,6 +230,8 @@ class ContractSerializer(serializers.ModelSerializer):
                 cont_price.price_land = price[2]
                 cont_price.price_tax = price[3]
                 cont_price.down_pay = pay_amount[0]
+                cont_price.biz_agency_fee = pay_amount[3]
+                cont_price.is_included_baf = pay_amount[4]
                 cont_price.middle_pay = pay_amount[1]
                 cont_price.remain_pay = pay_amount[2]
                 cont_price.save()
@@ -231,10 +243,11 @@ class ContractSerializer(serializers.ModelSerializer):
                                            price_land=price[2],
                                            price_tax=price[3],
                                            down_pay=pay_amount[0],
+                                           biz_agency_fee=pay_amount[3],
+                                           is_included_baf=pay_amount[4],
                                            middle_pay=pay_amount[1],
                                            remain_pay=pay_amount[2])
                 cont_price.save()
-
         return instance
 
 
@@ -362,6 +375,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                    price_land=price[2],
                                    price_tax=price[3],
                                    down_pay=pay_amount[0],
+                                   biz_agency_fee=pay_amount[3],
+                                   is_included_baf=pay_amount[4],
                                    middle_pay=pay_amount[1],
                                    remain_pay=pay_amount[2])
         cont_price.save()
@@ -562,6 +577,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
                 cont_price.price_land = price[2]
                 cont_price.price_tax = price[3]
                 cont_price.down_pay = pay_amount[0]
+                cont_price.biz_agency_fee = pay_amount[3]
+                cont_price.is_included_baf = pay_amount[4]
                 cont_price.middle_pay = pay_amount[1]
                 cont_price.remain_pay = pay_amount[2]
                 cont_price.save()
@@ -573,6 +590,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                        price_land=price[2],
                                        price_tax=price[3],
                                        down_pay=pay_amount[0],
+                                       biz_agency_fee=pay_amount[3],
+                                       is_included_baf=pay_amount[4],
                                        middle_pay=pay_amount[1],
                                        remain_pay=pay_amount[2])
             cont_price.save()
