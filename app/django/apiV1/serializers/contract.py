@@ -8,10 +8,10 @@ from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor,
                              ContractorAddress, ContractorContact,
                              Succession, ContractorRelease, ContractFile)
-from items.models import UnitType, HouseUnit, KeyUnit
-from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment
-from project.models import Project, ProjectIncBudget
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
+from items.models import UnitType, HouseUnit, KeyUnit
+from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment
+from project.models import Project, ProjectIncBudget
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
 from .payment import SimpleInstallmentOrderSerializer, SimpleOrderGroupSerializer
@@ -79,13 +79,28 @@ def get_cont_price(instance, houseunit=None, is_set=False):
     :param houseunit: 쓰기일 때 해당 계약 객체의 타입을 특정하기 위한 파라미터
     :param is_set: 쓰기 여부 -> 계약건 가격 설정을 위한 값을 불러올 때 True
     """
+    price = 0
+    price_build = 0
+    price_land = 0
+    price_tax = 0
+    down_pay = 0
+    biz_agency_fee = 0
+    is_included_baf = False
+    middle_pay = 0
+    remain_pay = 0
+
     try:
-        if instance.contractprice and not is_set:
+        if instance.contractprice and not is_set:  # 불러 오기 - 계약 건 가격 등록 되어 있고, 쓰기가 아닌 읽기 요청일 때
             price = instance.contractprice.price
             price_build = instance.contractprice.price_build
             price_land = instance.contractprice.price_land
             price_tax = instance.contractprice.price_tax
-        else:
+            down_pay = instance.contractprice.down_pay
+            biz_agency_fee = instance.contractprice.biz_agency_fee
+            is_included_baf = instance.contractprice.is_included_baf
+            middle_pay = instance.contractprice.middle_pay
+            remain_pay = instance.contractprice.remain_pay
+        else:  # 등록 하기 - 계약 건 가격 등록 되어 있지 않거나 가격 등록(쓰기) 요청일 때
             try:
                 # 기본값 설정 -> 2. 프로젝트 예산에서 설정한 타입별 평균값을 불러와 기본값으로 설정
                 price = ProjectIncBudget.objects.get(project=instance.project,
@@ -95,11 +110,7 @@ def get_cont_price(instance, houseunit=None, is_set=False):
                 # 기본값 설정 -> 1. 예산 설정 값이 없으면 프로젝트 타입별 평균값을 불러와 기본값으로 설정
                 price = UnitType.objects.get(pk=instance.unit_type).average_price
             except UnitType.DoesNotExist:
-                price = 0
-
-            price_build = None
-            price_land = None
-            price_tax = None
+                pass
 
             if houseunit:
                 try:
@@ -111,15 +122,17 @@ def get_cont_price(instance, houseunit=None, is_set=False):
                     price_build = sales_price.price_build
                     price_land = sales_price.price_land
                     price_tax = sales_price.price_tax
+                    down_pay = sales_price.down_pay
+                    biz_agency_fee = sales_price.biz_agency_fee
+                    is_included_baf = sales_price.is_included_baf
+                    middle_pay = sales_price.middle_pay
+                    remain_pay = sales_price.remain_pay
                 except SalesPriceByGT.DoesNotExist:
                     pass
     except ObjectDoesNotExist:
-        price = 0
-        price_build = 0
-        price_land = 0
-        price_tax = 0
+        pass
 
-    return price, price_build, price_land, price_tax
+    return price, price_build, price_land, price_tax, down_pay, biz_agency_fee, is_included_baf, middle_pay, remain_pay
 
 
 def get_pay_amount(instance, price, is_set=False):
