@@ -72,6 +72,17 @@ class ContractorInContractSerializer(serializers.ModelSerializer):
                   'reservation_date', 'contract_date', 'is_active', 'note')
 
 
+def get_sale_price_by_gt(contract, houseunit):
+    try:
+        # 공급가격 테이블 객체를 불러와 가격 데이터 반환
+        sales_price = SalesPriceByGT.objects.get(order_group=contract.order_group,
+                                                 unit_type=contract.unit_type,
+                                                 unit_floor_type=houseunit.floor_type)
+    except SalesPriceByGT.DoesNotExist:
+        sales_price = None
+    return sales_price
+
+
 def get_cont_price(instance, houseunit=None, is_set=False):
     """
     :: 계약 객체의 가격 쓰기 또는 읽기 함수
@@ -83,11 +94,6 @@ def get_cont_price(instance, houseunit=None, is_set=False):
     price_build = 0
     price_land = 0
     price_tax = 0
-    down_pay = 0
-    biz_agency_fee = 0
-    is_included_baf = False
-    middle_pay = 0
-    remain_pay = 0
 
     try:
         if instance.contractprice and not is_set:  # 불러 오기 - 계약 건 가격 등록 되어 있고, 쓰기가 아닌 읽기 요청일 때
@@ -95,27 +101,15 @@ def get_cont_price(instance, houseunit=None, is_set=False):
             price_build = instance.contractprice.price_build
             price_land = instance.contractprice.price_land
             price_tax = instance.contractprice.price_tax
-            down_pay = instance.contractprice.down_pay
-            biz_agency_fee = instance.contractprice.biz_agency_fee
-            is_included_baf = instance.contractprice.is_included_baf
-            middle_pay = instance.contractprice.middle_pay
-            remain_pay = instance.contractprice.remain_pay
         else:  # 등록 하기 - 계약 건 가격 등록 되어 있지 않거나 가격 등록(쓰기) 요청일 때
             if houseunit:  # 동호수 지정된 경우 (floor_type 지정 시)
                 try:
                     # 공급가격 테이블 객체를 불러와 가격 데이터 반환
-                    sales_price = SalesPriceByGT.objects.get(order_group=instance.order_group,
-                                                             unit_type=instance.unit_type,
-                                                             unit_floor_type=houseunit.floor_type)
+                    sales_price = get_sale_price_by_gt(instance, houseunit)
                     price = sales_price.price
                     price_build = sales_price.price_build
                     price_land = sales_price.price_land
                     price_tax = sales_price.price_tax
-                    down_pay = sales_price.down_pay
-                    biz_agency_fee = sales_price.biz_agency_fee
-                    is_included_baf = sales_price.is_included_baf
-                    middle_pay = sales_price.middle_pay
-                    remain_pay = sales_price.remain_pay
                 except SalesPriceByGT.DoesNotExist:
                     pass
             else:  # 동호수 미지정 시 (floor_type 미지정 시)
@@ -132,31 +126,44 @@ def get_cont_price(instance, houseunit=None, is_set=False):
     except ObjectDoesNotExist:
         pass
 
-    return price, price_build, price_land, price_tax, down_pay, biz_agency_fee, is_included_baf, middle_pay, remain_pay
+    return price, price_build, price_land, price_tax
 
 
 def get_pay_amount(instance, price, is_set=False):
     """
-    :: 납입회차 종류별 약정금 읽기 / 쓰기 함수
+    :: 납입 회차 종류별 약정금 읽기 / 쓰기 함수
     :param instance: 계약 객체 (읽기일 때 이 객체의 가격 객체가 있으면 이 파라미터만 사용)
     :param price: 쓰기일 때 회차별 비율에 의한 값 설정 시 기준 값(가격)
     :param is_set: 쓰기 여부
     """
     try:
-        if instance.contractprice and not is_set:
+        if instance.contractprice and not is_set:  # 읽기 요청일 때
             down = instance.contractprice.down_pay
             middle = instance.contractprice.middle_pay
             remain = instance.contractprice.remain_pay
-        else:
-            install_order = InstallmentPaymentOrder.objects.filter(project=instance.project)
+        else:  # 쓰기 요청일 때
+            down_pay = 0
+            middle_pay = 0
+            remain_pay = 0
 
-            downs = install_order.filter(pay_sort='1')  # 계약금 분류 회차 리스트
-            middles = install_order.filter(pay_sort='2')  # 중도금 분류 회차 리스트
-            remains = install_order.filter(pay_sort='3')  # 잔금 분류 회차 리스트
+            try:
+                house_unit = instance.keyunit.houseunit
+                sales_price = get_sale_price_by_gt(instance, house_unit)
+                down_pay = sales_price.down_pay
+                middle_pay = sales_price.middle_pay
+                remain_pay = sales_price.remain_pay
+            except ObjectDoesNotExist:
+                pass
 
-            down_num = len(downs.distinct().values_list('pay_code'))  # 계약금 분납 회수
-            middle_num = len(middles.distinct().values_list('pay_code'))  # 중도금 분납 회수
-            remain_num = len(remains.distinct().values_list('pay_code'))  # 잔금 분납 회수
+            install_orders = InstallmentPaymentOrder.objects.filter(project=instance.project)
+
+            downs = install_orders.filter(pay_sort='1')  # 계약금 분류 회차 목록
+            middles = install_orders.filter(pay_sort='2')  # 중도금 분류 회차 목록
+            remains = install_orders.filter(pay_sort='3')  # 잔금 분류 회차 목록
+
+            down_num = len(downs.distinct().values_list('pay_code'))  # 계약금 분납 회차수
+            middle_num = len(middles.distinct().values_list('pay_code'))  # 중도금 분납 회차수
+            remain_num = len(remains.distinct().values_list('pay_code'))  # 잔금 분납 회차수
 
             down_ratio = downs.first().pay_ratio / 100 if downs.first().pay_ratio else 0.1  # 회차별 계약금 비율(기본값 10%)
             middle_ratio = middles.first().pay_ratio / 100 if middles.first().pay_ratio else 0.1  # 회차별 중도금 비율(기본값 10%)
@@ -170,6 +177,10 @@ def get_pay_amount(instance, price, is_set=False):
             remain = (price - (price * middle_ratio * middle_num) - (down * down_num)) / remain_num  # 계약금/중도금 공제 잔금액
 
             middle = price * middle_ratio
+
+            down = down_pay if down_pay else down
+            middle = middle_pay if middle_pay else middle
+            remain = remain_pay if remain_pay else remain
     except ObjectDoesNotExist:
         down = 0
         middle = 0
