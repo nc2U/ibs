@@ -101,18 +101,7 @@ def get_cont_price(instance, houseunit=None, is_set=False):
             middle_pay = instance.contractprice.middle_pay
             remain_pay = instance.contractprice.remain_pay
         else:  # 등록 하기 - 계약 건 가격 등록 되어 있지 않거나 가격 등록(쓰기) 요청일 때
-            try:
-                # 기본값 설정 -> 2. 프로젝트 예산에서 설정한 타입별 평균값을 불러와 기본값으로 설정
-                price = ProjectIncBudget.objects.get(project=instance.project,
-                                                     order_group=instance.order_group,
-                                                     unit_type=instance.unit_type).average_price
-            except ProjectIncBudget.DoesNotExist:
-                # 기본값 설정 -> 1. 예산 설정 값이 없으면 프로젝트 타입별 평균값을 불러와 기본값으로 설정
-                price = UnitType.objects.get(pk=instance.unit_type).average_price
-            except UnitType.DoesNotExist:
-                pass
-
-            if houseunit:
+            if houseunit:  # 동호수 지정된 경우 (floor_type 지정 시)
                 try:
                     # 공급가격 테이블 객체를 불러와 가격 데이터 반환
                     sales_price = SalesPriceByGT.objects.get(order_group=instance.order_group,
@@ -128,6 +117,17 @@ def get_cont_price(instance, houseunit=None, is_set=False):
                     middle_pay = sales_price.middle_pay
                     remain_pay = sales_price.remain_pay
                 except SalesPriceByGT.DoesNotExist:
+                    pass
+            else:  # 동호수 미지정 시 (floor_type 미지정 시)
+                try:
+                    # 기본값 설정 -> 1. 프로젝트 예산에서 설정한 타입별 평균값을 불러와 기본값으로 설정
+                    price = ProjectIncBudget.objects.get(project=instance.project,
+                                                         order_group=instance.order_group,
+                                                         unit_type=instance.unit_type).average_price
+                except ProjectIncBudget.DoesNotExist:  # 수입 예산 미등록 시
+                    # 기본값 설정 -> 2. 예산 설정 값이 없으면 프로젝트 타입별 평균값을 불러와 기본값으로 설정
+                    price = UnitType.objects.get(pk=instance.unit_type).average_price
+                except UnitType.DoesNotExist:
                     pass
     except ObjectDoesNotExist:
         pass
