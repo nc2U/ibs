@@ -324,6 +324,23 @@ const project = {
     },
     {
       component: 'CNavItem',
+      name: '예산 등록 관리',
+      icon: 'cil-exposure',
+      items: [
+        {
+          component: 'CNavItem',
+          name: '수입 예산 등록',
+          to: '/project/manage/inc-budget',
+        },
+        {
+          component: 'CNavItem',
+          name: '지출 예산 등록',
+          to: '/project/manage/out-budget',
+        },
+      ],
+    },
+    {
+      component: 'CNavItem',
       name: '분양 계약 조건',
       icon: 'cil-cog',
       items: [
@@ -346,23 +363,6 @@ const project = {
           component: 'CNavItem',
           name: '옵션 품목 등록',
           to: '/project/settings/options',
-        },
-      ],
-    },
-    {
-      component: 'CNavItem',
-      name: '예산 등록 관리',
-      icon: 'cil-exposure',
-      items: [
-        {
-          component: 'CNavItem',
-          name: '수입 예산 등록',
-          to: '/project/manage/inc-budget',
-        },
-        {
-          component: 'CNavItem',
-          name: '지출 예산 등록',
-          to: '/project/manage/out-budget',
         },
       ],
     },
