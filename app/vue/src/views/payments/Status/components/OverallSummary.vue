@@ -41,98 +41,96 @@ const payOrderList = computed<PayOrder[]>(() => payStore.payOrderList)
       </CTableRow>
     </CTableHead>
 
-    <CTableBody>
-      <template v-if="payOrderList.length">
-        <CTableRow class="text-center">
-          <CTableDataCell>기본</CTableDataCell>
-          <CTableDataCell>약정일</CTableDataCell>
-          <CTableDataCell v-for="order in payOrderList" :key="order.pk">
-            {{ order.pay_due_date }}
-          </CTableDataCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell rowspan="4" class="text-center">계약</CTableDataCell>
-          <CTableDataCell class="text-center">계약(000)</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">미계약(000)</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">총계(000)</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">계약율(000)</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell rowspan="5" class="text-center">수납</CTableDataCell>
-          <CTableDataCell class="text-center">수납액</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">할인료</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">연체료</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">실수납액</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">수납율</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell rowspan="5" class="text-center">기간도래</CTableDataCell>
-          <CTableDataCell class="text-center">약정금액</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">미수금</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">미수율</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">연체료</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">소계</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">기간미도래</CTableDataCell>
-          <CTableDataCell class="text-center">미수금</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell rowspan="2" class="text-center">총계</CTableDataCell>
-          <CTableDataCell class="text-center">미수금</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableDataCell class="text-center">미수율</CTableDataCell>
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
-        </CTableRow>
-      </template>
-      <template v-else>
-        <CTableRow>
-          <CTableDataCell colspan="12" style="height: 200px; text-align: center">
-            [
-            <router-link :to="{ name: '납부 회차 등록' }"> 납부 회차 등록</router-link>
-            ] >> [ 현장 등록 관리 ] > [ 분양 계약 조건 ]에서 데이터를 등록하세요.
-          </CTableDataCell>
-        </CTableRow>
-      </template>
+    <CTableBody v-if="payOrderList.length">
+      <CTableRow class="text-center">
+        <CTableDataCell>기본</CTableDataCell>
+        <CTableDataCell>약정일</CTableDataCell>
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk">
+          {{ order.pay_due_date }}
+        </CTableDataCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell rowspan="4" class="text-center">계약</CTableDataCell>
+        <CTableDataCell class="text-center">계약(000)</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">미계약(000)</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">총계(000)</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">계약율(000)</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell rowspan="5" class="text-center">수납</CTableDataCell>
+        <CTableDataCell class="text-center">수납액</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">할인료</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">연체료</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">실수납액</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">수납율</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell rowspan="5" class="text-center">기간도래</CTableDataCell>
+        <CTableDataCell class="text-center">약정금액</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">미수금</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">미수율</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">연체료</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">소계</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">기간미도래</CTableDataCell>
+        <CTableDataCell class="text-center">미수금</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell rowspan="2" class="text-center">총계</CTableDataCell>
+        <CTableDataCell class="text-center">미수금</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableDataCell class="text-center">미수율</CTableDataCell>
+        <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
+      </CTableRow>
+    </CTableBody>
+    <CTableBody v-else>
+      <CTableRow>
+        <CTableDataCell colspan="12" style="height: 200px; text-align: center">
+          [
+          <router-link :to="{ name: '납부 회차 등록' }"> 납부 회차 등록</router-link>
+          ] >> [ 현장 등록 관리 ] > [ 분양 계약 조건 ]에서 데이터를 등록하세요.
+        </CTableDataCell>
+      </CTableRow>
     </CTableBody>
   </CTable>
 </template>
