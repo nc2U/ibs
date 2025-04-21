@@ -4,11 +4,12 @@ import { useProjectData } from '@/store/pinia/project_data'
 import { type BuildingUnit } from '@/store/types/project'
 import { AlertLight } from '@/utils/cssMixins'
 import { write_project } from '@/utils/pageAuth'
+import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ project: { type: Number, default: null } })
-const emit = defineEmits(['bldg-select', 'unit-register'])
+const emit = defineEmits(['bldg-select', 'dong-register', 'unit-register'])
 
 const projReset = () => {
   form.building = null
@@ -17,6 +18,9 @@ const projReset = () => {
 
 defineExpose({ projReset })
 
+const validated = ref(false)
+
+const refBuildForm = ref()
 const refConfirmModal = ref()
 const refAlertModal = ref()
 
@@ -62,6 +66,24 @@ watch(form, val => {
   else if (!val.type) reset(3)
   else if (!val.minFloor) reset(4)
 })
+
+const dong = ref('')
+
+const onSubmit = (event: Event) => {
+  if (write_project.value) {
+    const e = event.currentTarget as HTMLSelectElement
+    if (!e.checkValidity()) {
+      event.preventDefault()
+      event.stopPropagation()
+
+      validated.value = true
+    } else {
+      emit('dong-register', dong.value)
+      dong.value = ''
+      refBuildForm.value.close()
+    }
+  }
+}
 
 const reset = (n: number) => {
   if (n == 1) {
@@ -144,6 +166,15 @@ const modalAction = () => {
           </CCol>
         </CRow>
       </CCol>
+      <CCol v-if="write_project" class="pt-1">
+        <v-icon
+          icon="mdi mdi-plus-thick"
+          size="16"
+          color="success"
+          class="pointer"
+          @click="refBuildForm.callModal()"
+        />
+      </CCol>
     </CRow>
   </CCallout>
 
@@ -224,6 +255,26 @@ const modalAction = () => {
       호수(유니트) 일괄등록
     </CButton>
   </CAlert>
+
+  <FormModal ref="refBuildForm">
+    <template #header>동 추가</template>
+    <template #default>
+      <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
+        <CModalBody class="text-body">
+          <CRow class="p-2">
+            <CFormLabel for="dong" class="col-sm-3 col-form-label">동(건물)</CFormLabel>
+            <CCol sm="8">
+              <CFormInput v-model="dong" required id="dong" placeholder="동(건물) 이름" />
+            </CCol>
+          </CRow>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="light" @click="refBuildForm.close()"> 닫기</CButton>
+          <CButton type="submit" color="primary">저장</CButton>
+        </CModalFooter>
+      </CForm>
+    </template>
+  </FormModal>
 
   <ConfirmModal ref="refConfirmModal">
     <template #header> 호수(유니트) 정보</template>

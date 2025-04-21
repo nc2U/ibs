@@ -30,6 +30,7 @@ const fetchBuildingList = (projId: number) => pDataStore.fetchBuildingList(projI
 const fetchHouseUnitList = (projId: number, bldg?: number) =>
   pDataStore.fetchHouseUnitList(projId, bldg)
 
+const createBuilding = (payload: any) => pDataStore.createBuilding(payload)
 const createUnit = (payload: CreateUnit) => pDataStore.createUnit(payload)
 const patchUnit = (payload: HouseUnit & { bldg: number }) => pDataStore.patchUnit(payload)
 const deleteUnit = (pk: number, proj: number, type: number) => pDataStore.deleteUnit(pk, proj, type)
@@ -56,6 +57,10 @@ type OriginalUnit = {
     end: number
     name: string
   }[]
+}
+
+const dongRegister = (dong: string) => {
+  if (!!project.value) createBuilding({ project: project.value, name: dong })
 }
 
 const unitRegister = (payload: OriginalUnit) => {
@@ -171,6 +176,7 @@ onBeforeRouteLeave(() => dataReset())
         ref="refUnitController"
         :project="project as number"
         @bldg-select="bldgSelect"
+        @dong-register="dongRegister"
         @unit-register="unitRegister"
       />
       <UnitTable :bldg-name="bldgName" @on-update="onUpdate" @on-delete="onDelete" />
