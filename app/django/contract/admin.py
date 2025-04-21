@@ -60,7 +60,7 @@ class CContactInline(ImportExportMixin, admin.TabularInline):
 
 @admin.register(Contractor)
 class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'birth_date', 'gender', 'qualification', 'status',
+    list_display = ('id', 'name', 'contract', 'birth_date', 'gender', 'qualification', 'status',
                     'is_active', 'reservation_date', 'contract_date', 'created_at')
     search_fields = ('name',)
     list_display_links = ('name',)
