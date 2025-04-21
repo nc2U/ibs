@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
 from django.utils.html import format_html
 from import_export.admin import ImportExportMixin
 
@@ -27,11 +28,30 @@ class UnitFloorTypeAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project',)
 
 
+class HasContractFilter(SimpleListFilter):
+    title = 'contract 연결 여부'
+    parameter_name = 'contract_isnull'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('ok', 'contract 있음'),
+            ('no', 'contract 없음'),
+        )
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == 'ok':
+            return queryset.filter(contract__isnull=False)
+        elif value == 'no':
+            return queryset.filter(contract__isnull=True)
+        return queryset
+
+
 class KeyUnitAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'unit_code', 'unit_type', 'contract')
     search_fields = ('unit_code',)
     list_display_links = ('project', 'unit_code',)
-    list_filter = ('project', 'unit_type', 'contract')
+    list_filter = ('project', 'unit_type', HasContractFilter, 'contract')
 
 
 class BuindingUnitAdmin(ImportExportMixin, admin.ModelAdmin):
