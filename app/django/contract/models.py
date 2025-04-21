@@ -62,8 +62,8 @@ class ContractPrice(models.Model):
 
     class Meta:
         ordering = ('-contract__project', 'contract')
-        verbose_name = '분양대금 정보'
-        verbose_name_plural = '분양대금 정보'
+        verbose_name = '03. 분양대금 정보'
+        verbose_name_plural = '03. 분양대금 정보'
 
 
 def get_contract_file_name(instance, filename):
@@ -131,8 +131,8 @@ class Contractor(models.Model):
         return f'{self.name}({self.contract.serial_number if self.contract else self.prev_contract.serial_number})'
 
     class Meta:
-        verbose_name = '03. 계약자 정보'
-        verbose_name_plural = '03. 계약자 정보'
+        verbose_name = '04. 계약자 정보'
+        verbose_name_plural = '04. 계약자 정보'
 
 
 class ContractorAddress(models.Model):
@@ -154,8 +154,8 @@ class ContractorAddress(models.Model):
         return f'[주소] - {self.contractor}'
 
     class Meta:
-        verbose_name = '04. 계약자 주소'
-        verbose_name_plural = '04. 계약자 주소'
+        verbose_name = '05. 계약자 주소'
+        verbose_name_plural = '05. 계약자 주소'
 
 
 class ContractorContact(models.Model):
@@ -173,8 +173,8 @@ class ContractorContact(models.Model):
         return f'[연락처] - {self.contractor}'
 
     class Meta:
-        verbose_name = '05. 계약자 연락처'
-        verbose_name_plural = '05. 계약자 연락처'
+        verbose_name = '06. 계약자 연락처'
+        verbose_name_plural = '06. 계약자 연락처'
 
 
 class Succession(models.Model):
@@ -198,8 +198,8 @@ class Succession(models.Model):
 
     class Meta:
         ordering = ['-apply_date', '-trading_date', '-id']
-        verbose_name = '06. 권리 의무 승계'
-        verbose_name_plural = '06. 권리 의무 승계'
+        verbose_name = '07. 권리 의무 승계'
+        verbose_name_plural = '07. 권리 의무 승계'
 
 
 class ContractorRelease(models.Model):
@@ -223,5 +223,5 @@ class ContractorRelease(models.Model):
         return f'{self.contractor}'
 
     class Meta:
-        verbose_name = '07. 계약 해지 정보'
-        verbose_name_plural = '07. 계약 해지 정보'
+        verbose_name = '08. 계약 해지 정보'
+        verbose_name_plural = '08. 계약 해지 정보'

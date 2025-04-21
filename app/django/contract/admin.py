@@ -5,6 +5,7 @@ from .models import (OrderGroup, Contract, ContractPrice, ContractFile,
                      Succession, ContractorRelease)
 
 
+@admin.register(OrderGroup)
 class OrderGroupAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'order_group_name', 'order_number', 'sort')
     list_display_links = ('project', 'order_group_name',)
@@ -26,6 +27,7 @@ class ContractFileAdmin(admin.StackedInline):
     extra = 0
 
 
+@admin.register(Contract)
 class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'serial_number', 'order_group', 'unit_type',
                     'activation', 'contractor', 'contractprice', 'is_sup_cont',
@@ -34,6 +36,16 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'order_group', 'unit_type', 'activation', 'contractor__status')
     search_fields = ('serial_number', 'contractor__name')
     inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin]
+
+
+@admin.register(ContractPrice)
+class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'contract', 'price', 'price_build', 'price_land', 'price_tax',
+                    'down_pay', 'biz_agency_fee', 'is_included_baf', 'middle_pay', 'remain_pay')
+    list_display_links = ('contract',)
+    list_editable = ('price', 'price_build', 'price_land', 'price_tax')
+    list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',
+                   'contract__activation', 'contract__contractor__status')
 
 
 class CAdressInline(ImportExportMixin, admin.StackedInline):
@@ -46,6 +58,7 @@ class CContactInline(ImportExportMixin, admin.TabularInline):
     extra = 0
 
 
+@admin.register(Contractor)
 class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'name', 'birth_date', 'gender', 'qualification', 'status',
                     'is_active', 'reservation_date', 'contract_date', 'created_at')
@@ -57,15 +70,18 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (CContactInline, CAdressInline)
 
 
+@admin.register(ContractorAddress)
 class CAdressAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('__str__', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3',
                     'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3')
 
 
+@admin.register(ContractorContact)
 class CContactAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('__str__', 'cell_phone', 'home_phone', 'other_phone', 'email')
 
 
+@admin.register(Succession)
 class SuccessionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'contract', 'seller', 'buyer', 'apply_date', 'trading_date',
                     'is_approval', 'approval_date', 'user')
@@ -74,17 +90,9 @@ class SuccessionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('is_approval', 'approval_date')
 
 
+@admin.register(ContractorRelease)
 class ContractorReleaseAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'contractor', 'status', 'refund_amount',
                     'refund_account_bank', 'refund_account_number',
                     'refund_account_depositor', 'request_date', 'completion_date')
     list_editable = ('request_date', 'completion_date')
-
-
-admin.site.register(OrderGroup, OrderGroupAdmin)
-admin.site.register(Contract, ContractAdmin)
-admin.site.register(Contractor, ContactorAdmin)
-admin.site.register(ContractorAddress, CAdressAdmin)
-admin.site.register(ContractorContact, CContactAdmin)
-admin.site.register(Succession, SuccessionAdmin)
-admin.site.register(ContractorRelease, ContractorReleaseAdmin)
