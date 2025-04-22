@@ -29,7 +29,7 @@ class ContractFileAdmin(admin.StackedInline):
 
 @admin.register(Contract)
 class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'serial_number', 'order_group', 'unit_type',
+    list_display = ('id', 'project', 'serial_number', 'key_unit', 'order_group', 'unit_type',
                     'activation', 'contractor', 'contractprice', 'is_sup_cont',
                     'sup_cont_date', 'created_at', 'user')
     list_display_links = ('project', 'serial_number',)

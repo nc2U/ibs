@@ -31,6 +31,8 @@ class Contract(models.Model):
     activation = models.BooleanField('계약 활성 여부', default=True)
     is_sup_cont = models.BooleanField('공급계약 체결여부', default=False)
     sup_cont_date = models.DateField('공급계약 체결일', null=True, blank=True)
+    key_unit = models.OneToOneField('items.KeyUnit', on_delete=models.SET_NULL, null=True, blank=True,
+                                    verbose_name='계약유닛', related_name='contract')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,

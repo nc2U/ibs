@@ -51,8 +51,6 @@ class KeyUnit(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트', related_name='units')
     unit_type = models.ForeignKey(UnitType, on_delete=models.PROTECT, verbose_name='타입')
     unit_code = models.CharField('코드번호', max_length=8)
-    contract = models.OneToOneField('contract.Contract', on_delete=models.SET_NULL, null=True, blank=True,
-                                    verbose_name='계약')
 
     def __str__(self):
         return f'{self.unit_code}'
