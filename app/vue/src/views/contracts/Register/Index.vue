@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/contracts/_menu/headermixin'
+import type { Project } from '@/store/types/project'
 import { type UnitFilter, useContract } from '@/store/pinia/contract'
 import type { Contract, Contractor } from '@/store/types/contract'
 import { useRoute, useRouter } from 'vue-router'
@@ -21,9 +22,9 @@ const contract = computed<Contract | null>(() => contStore.contract)
 const contractor = computed<Contractor | null>(() => contStore.contractor)
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
-const unitSet = computed(() => projStore.project?.is_unit_set)
-const isUnion = computed(() => !projStore.project?.is_direct_manage)
+const project = computed(() => (projStore.project as Project)?.pk)
+const unitSet = computed(() => (projStore.project as Project).is_unit_set)
+const isUnion = computed(() => !(projStore.project as Project).is_direct_manage)
 
 const fetchContract = (cont: number) => contStore.fetchContract(cont)
 
