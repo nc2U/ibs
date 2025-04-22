@@ -151,7 +151,7 @@ def get_pay_amount(instance, price, is_set=False):
             is_included_baf = False
 
             try:
-                house_unit = instance.keyunit.houseunit
+                house_unit = instance.key_unit.houseunit
                 sales_price = get_sale_price_by_gt(instance, house_unit)
                 down_pay = sales_price.down_pay
                 middle_pay = sales_price.middle_pay
@@ -212,7 +212,7 @@ class ContractSerializer(serializers.ModelSerializer):
 
         for contract in contracts:
             try:
-                house_unit = contract.keyunit.houseunit
+                house_unit = contract.key_unit.houseunit
             except ObjectDoesNotExist:
                 house_unit = None
             price = get_cont_price(contract, house_unit, True)
@@ -283,7 +283,7 @@ class ContractFileInContractSetSerializer(serializers.ModelSerializer):
 
 class ContractSetSerializer(serializers.ModelSerializer):
     order_group_sort = serializers.SerializerMethodField(read_only=True)
-    keyunit = KeyUnitInContractSerializer(read_only=True)
+    key_unit = KeyUnitInContractSerializer(read_only=True)
     contractprice = ContPriceInContractSerializer(read_only=True)
     contractor = ContractorInContractSerializer(read_only=True)
     payments = serializers.SerializerMethodField(read_only=True)
@@ -296,7 +296,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
         fields = ('pk', 'project', 'order_group_sort', 'order_group', 'unit_type', 'serial_number',
-                  'activation', 'is_sup_cont', 'sup_cont_date', 'keyunit', 'contractprice', 'contractor',
+                  'activation', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice', 'contractor',
                   'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'unit_type_desc', 'contract_files')
 
     @staticmethod
@@ -348,10 +348,10 @@ class ContractSetSerializer(serializers.ModelSerializer):
             ContractFile.objects.create(contract=contract, file=new_file, user=user)
 
         # 2. 계약 유닛 연결
-        keyunit_data = self.initial_data.get('keyunit')
-        keyunit = KeyUnit.objects.get(pk=keyunit_data)
-        keyunit.contract = contract
-        keyunit.save()
+        unit_pk = self.initial_data.get('key_unit')
+        key_unit = KeyUnit.objects.get(pk=unit_pk)
+        contract.key_unit = key_unit
+        contract.save()
 
         # 분양가격 설정 데이터 불러오기
         price = get_cont_price(contract)
@@ -361,7 +361,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
         if self.initial_data.get('houseunit'):
             house_unit_data = self.initial_data.get('houseunit')
             house_unit = HouseUnit.objects.get(pk=house_unit_data)
-            house_unit.key_unit = keyunit
+            house_unit.key_unit = key_unit
             house_unit.save()
 
             # 분양가격 설정 데이터 불러오기
@@ -474,7 +474,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
         instance.__dict__.update(**validated_data)
         instance.order_group = validated_data.get('order_group', instance.order_group)
         instance.unit_type = validated_data.get('unit_type', instance.unit_type)
-        instance.save()
 
         new_file = self.initial_data.get('newFile', None)
         if new_file:
@@ -513,17 +512,17 @@ class ContractSetSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"File with ID {del_file} does not exist.")
 
         # 1-2. 동호수 변경 여부 확인 및 변경 사항 적용
-        keyunit_pk = self.initial_data.get('keyunit')  # keyunit => pk
+        unit_pk = self.initial_data.get('key_unit')  # key_unit => pk
         houseunit_pk = self.initial_data.get('houseunit')  # house_unit => pk
 
-        keyunit = KeyUnit.objects.get(pk=keyunit_pk)
+        key_unit = KeyUnit.objects.get(pk=unit_pk)
         house_unit = HouseUnit.objects.get(pk=houseunit_pk) if houseunit_pk else None
 
         same_unit_exist = False  # 동호가 있고 수정되지 않았는지 여부
 
-        if instance.keyunit.pk != keyunit_pk:  # 계약유닛(keyunit)이 수정된 경우
+        if instance.key_unit.pk != unit_pk:  # 계약유닛(key_unit)이 수정된 경우
             try:  # 종전 동호수가 있는 경우
-                old_houseunit = instance.keyunit.houseunit
+                old_houseunit = instance.key_unit.houseunit
                 if old_houseunit != houseunit_pk:  # 동호수가 수정된 경우
                     old_houseunit.key_unit = None  # 해당 동호수를 삭제
                     old_houseunit.save()
@@ -533,31 +532,27 @@ class ContractSetSerializer(serializers.ModelSerializer):
                 pass
 
             # 2. 계약 유닛 연결
-            old_keyunit = instance.keyunit
-            old_keyunit.contract = None  # 종전 계약의 계약유닛 삭제
-            old_keyunit.save()
-            keyunit.contract = instance  # 현재 계약건과 변경 유닛을 연결
-            keyunit.save()
+            instance.key_unit = key_unit
 
             # 3. 동호수 연결
             if houseunit_pk:
-                house_unit.key_unit = keyunit  # 동호수를 계약유닛과 연결
+                house_unit.key_unit = key_unit  # 동호수를 계약유닛과 연결
                 house_unit.save()
-        else:  # 계약유닛(keyunit)이 수정되지 않은 경우
+        else:  # 계약유닛(key_unit)이 수정되지 않은 경우
             try:  # 종전 동호수가 있는 경우
-                old_houseunit = instance.keyunit.houseunit
+                old_houseunit = instance.key_unit.houseunit
                 if old_houseunit != houseunit_pk:  # 동호수가 수정된 경우
                     old_houseunit.key_unit = None  # 먼저 종전 동호수 삭제
                     old_houseunit.save()
 
                     # 3. 동호수 연결
                     if houseunit_pk:
-                        house_unit.key_unit = instance.keyunit  # 변경 동호수를 기존 계약유닛과 연결
+                        house_unit.key_unit = key_unit  # 변경 동호수를 기존 계약유닛과 연결
                         house_unit.save()
             except ObjectDoesNotExist:  # 종전 동호수가 없는 경우
                 # 3. 동호수 연결
                 if houseunit_pk:
-                    house_unit.key_unit = keyunit  # 동호수를 계약유닛과 연결
+                    house_unit.key_unit = key_unit  # 동호수를 계약유닛과 연결
                     house_unit.save()
 
         # 4. 계약가격 정보 등록
@@ -689,7 +684,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                                                 income=payment_income,
                                                                 deal_date=payment_deal_date)
                 create_payment.save()
-
+        instance.save()
         return instance
 
 
@@ -743,11 +738,11 @@ class ContractAggregateSerializer(serializers.Serializer):
 
 
 class ContractInContractorSerializer(serializers.ModelSerializer):
-    keyunit = serializers.PrimaryKeyRelatedField(read_only=True)
+    key_unit = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Contract
-        fields = ('pk', 'serial_number', 'keyunit')
+        fields = ('pk', 'serial_number', 'key_unit')
 
 
 class SuccessionInContractorSerializer(serializers.ModelSerializer):
@@ -960,22 +955,20 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
             contract = contractor.contract
             contract.serial_number = f"{contract.serial_number}-terminated-{completion_date}"
             contract.activation = False  # 일련번호 활성 해제
-            contract.save()
 
-            # 2. 키유닛과 계약 간 연결 해제
-            keyunit = KeyUnit.objects.get(contract=contract)
-            keyunit.contract = None
-            keyunit.save()
-
-            # 3. 동호수 연결 해제
+            # 2. 동호수 연결 해제
             unit = None
             try:  # 동호수 존재 여부 확인
-                unit = keyunit.houseunit
+                unit = contract.key_unit.houseunit
             except ObjectDoesNotExist:
                 pass
             if unit:  # 동호수 존재 시 삭제
                 unit.key_unit = None
                 unit.save()
+
+            # 3. 키유닛과 계약 간 연결 해제
+            contract.key_unit = None
+            contract.save()
 
             # 4. 해당 납부분담금 환불처리
             sort = AccountSort.objects.get(pk=1)  # 입금 종류 선택(1=입금, 2=출금)
