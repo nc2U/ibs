@@ -541,7 +541,7 @@ onBeforeRouteLeave(() => formDataReset())
             @change="setKeyCode"
           >
             <option value="">---------</option>
-            <option v-for="ku in getKeyUnits" :key="ku.value" :value="ku.value">
+            <option v-for="ku in getKeyUnits.slice(0, 1)" :key="ku.value" :value="ku.value">
               {{ ku.label }}
             </option>
           </CFormSelect>

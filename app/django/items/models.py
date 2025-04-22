@@ -56,7 +56,7 @@ class KeyUnit(models.Model):
         return f'{self.unit_code}'
 
     class Meta:
-        ordering = ['-id', '-project']
+        ordering = ['id', '-project']
         verbose_name = '03. 계약 유닛'
         verbose_name_plural = '03. 계약 유닛'
 
