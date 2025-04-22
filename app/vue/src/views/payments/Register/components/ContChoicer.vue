@@ -106,8 +106,8 @@ onMounted(() => pageInit())
           ] (타입 :
           {{ contract.unit_type_desc.name }}
           {{
-            contract.keyunit?.houseunit
-              ? contract.keyunit.houseunit.__str__
+            contract.key_unit?.houseunit
+              ? contract.key_unit.houseunit.__str__
               : '--- 동호수 현재 미정 ---'
           }}
           |

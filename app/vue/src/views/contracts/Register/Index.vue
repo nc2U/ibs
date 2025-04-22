@@ -71,7 +71,7 @@ watch(contract, newVal => {
       unit_type: newVal.unit_type,
       contract: newVal.pk,
     })
-    if (newVal.keyunit?.houseunit) {
+    if (newVal.key_unit?.houseunit) {
       fetchHouseUnitList({
         project: project.value,
         unit_type: newVal.unit_type,

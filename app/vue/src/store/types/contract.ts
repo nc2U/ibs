@@ -29,7 +29,7 @@ export interface Contract {
   activation: boolean
   is_sup_cont: boolean
   sup_cont_date: string | null
-  keyunit: KeyUnit | null
+  key_unit: KeyUnit | null
   contractprice: ContPrice | null
   contractor: ContractorInContract | null
   payments: Payment[]

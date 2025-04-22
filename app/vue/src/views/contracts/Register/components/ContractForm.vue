@@ -65,12 +65,12 @@ const form = reactive({
   is_sup_cont: false,
   sup_cont_date: null,
 
-  // keyunit & houseunit
-  keyunit: null as number | null, // 4
-  keyunit_code: '',
+  // key_unit & houseunit
+  key_unit: null as number | null, // 4
+  key_unit_code: '',
   houseunit: null as number | null, // 5
   houseunit_code: '',
-  // cont_keyunit: '', // 디비 계약 유닛
+  // cont_key_unit: '', // 디비 계약 유닛
   // cont_houseunit: '', // 디비 동호 유닛
   contract_files: [] as ContractFile[], // scan File
 
@@ -155,8 +155,8 @@ const formsCheck = computed(() => {
 
     const a = form.order_group === props.contract.order_group
     const b = form.unit_type === props.contract.unit_type
-    const c = form.keyunit === props.contract.keyunit?.pk
-    const d = form.houseunit === props.contract.keyunit?.houseunit?.pk
+    const c = form.key_unit === props.contract.key_unit?.pk
+    const d = form.houseunit === props.contract.key_unit?.houseunit?.pk
     const e = form.is_sup_cont === props.contract.is_sup_cont
     const f = form.sup_cont_date === props.contract.sup_cont_date
     const g = form.reservation_date === props.contractor.reservation_date
@@ -238,8 +238,8 @@ const setOGSort = () => {
 const setKeyCode = () => {
   nextTick(() => {
     form.houseunit = null
-    form.keyunit_code = form.keyunit ? getKUCode(Number(form.keyunit)) : ''
-    form.serial_number = form.keyunit ? `${form.keyunit_code}-${form.order_group}` : ''
+    form.key_unit_code = form.key_unit ? getKUCode(Number(form.key_unit)) : ''
+    form.serial_number = form.key_unit ? `${form.key_unit_code}-${form.order_group}` : ''
   })
 }
 
@@ -257,7 +257,7 @@ const typeSelect = () => {
         : { unit_type: form.unit_type, available: 'true' }
 
     emit('type-select', payload)
-    form.keyunit = null
+    form.key_unit = null
     form.houseunit = null
   })
 }
@@ -280,9 +280,9 @@ const formDataReset = () => {
   form.serial_number = ''
   form.is_sup_cont = false
   form.sup_cont_date = null
-  form.keyunit = null
+  form.key_unit = null
   form.houseunit = null
-  form.keyunit_code = ''
+  form.key_unit_code = ''
   form.contract_files = []
 
   // form.contractor = null
@@ -331,9 +331,9 @@ const formDataSetup = () => {
     form.serial_number = props.contract.serial_number
     form.is_sup_cont = form.is_sup_cont || props.contract.is_sup_cont
     form.sup_cont_date = form.sup_cont_date ?? props.contract.sup_cont_date
-    form.keyunit = props.contract.keyunit?.pk
-    form.keyunit_code = props.contract.keyunit?.unit_code
-    form.houseunit = props.contract.keyunit?.houseunit?.pk
+    form.key_unit = props.contract.key_unit?.pk
+    form.key_unit_code = props.contract.key_unit?.unit_code
+    form.houseunit = props.contract.key_unit?.houseunit?.pk
     form.contract_files = props.contract.contract_files
 
     // contractor
@@ -535,7 +535,7 @@ onBeforeRouteLeave(() => formDataReset())
         <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> {{ contLabel }}코드</CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <CFormSelect
-            v-model.number="form.keyunit"
+            v-model.number="form.key_unit"
             required
             :disabled="form.unit_type === null && !contract"
             @change="setKeyCode"
@@ -560,7 +560,7 @@ onBeforeRouteLeave(() => formDataReset())
             }"
             :add-option-on="['enter', 'tab']"
             searchable
-            :disabled="form.keyunit === null && !contract"
+            :disabled="form.key_unit === null && !contract"
           />
           <CFormFeedback invalid>동호수를 선택하세요.</CFormFeedback>
         </CCol>

@@ -47,10 +47,10 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
     </CTableDataCell>
     <CTableDataCell
       class="text-left"
-      :class="contract.keyunit?.houseunit !== null ? '' : 'text-danger'"
+      :class="contract.key_unit?.houseunit !== null ? '' : 'text-danger'"
     >
       <router-link :to="{ name: '계약 등록 수정', query: { contractor } }">
-        {{ contract.keyunit?.houseunit ? contract.keyunit?.houseunit.__str__ : '미정' }}
+        {{ contract.key_unit?.houseunit ? contract.key_unit?.houseunit.__str__ : '미정' }}
       </router-link>
     </CTableDataCell>
     <CTableDataCell>{{ contract.contractor?.contract_date }}</CTableDataCell>
