@@ -166,7 +166,9 @@ watch(
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label" :class="bgLight"> 입사일</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required" :class="bgLight">
+                입사일
+              </CFormLabel>
               <CCol sm="8">
                 <DatePicker v-model="form.date_join" maxlength="10" placeholder="입사일" required />
               </CCol>
@@ -176,7 +178,9 @@ watch(
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label" :class="bgLight"> 성명</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required" :class="bgLight">
+                성명
+              </CFormLabel>
               <CCol sm="8">
                 <CFormInput v-model="form.name" required placeholder="성명" />
               </CCol>
@@ -185,7 +189,7 @@ watch(
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label" :class="bgLight">
+              <CFormLabel class="col-sm-4 col-form-label required" :class="bgLight">
                 주민등록번호
               </CFormLabel>
               <CCol sm="8">
@@ -206,7 +210,9 @@ watch(
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label" :class="bgLight"> 휴대전화</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required" :class="bgLight">
+                휴대전화
+              </CFormLabel>
               <CCol sm="8">
                 <input
                   v-model="form.personal_phone"

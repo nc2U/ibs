@@ -97,7 +97,7 @@ onBeforeMount(() => formDataSet())
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">구분</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">구분</CFormLabel>
             <CCol sm="8" class="text-left">
               <CFormSelect v-model="form.status" required>
                 <option value="">---------</option>
@@ -118,7 +118,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 환불(예정)금액</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required"> 환불(예정)금액</CFormLabel>
             <CCol sm="8">
               <CFormInput
                 v-model.number="form.refund_amount"
@@ -133,7 +133,7 @@ onBeforeMount(() => formDataSet())
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 거래은행(환불계좌)</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required"> 거래은행(환불계좌)</CFormLabel>
             <CCol sm="8">
               <CFormInput
                 v-model="form.refund_account_bank"
@@ -149,7 +149,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 계좌번호(환불계좌)</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required"> 계좌번호(환불계좌)</CFormLabel>
             <CCol sm="8">
               <CFormInput
                 v-model="form.refund_account_number"
@@ -163,7 +163,7 @@ onBeforeMount(() => formDataSet())
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 예금주(환불계좌)</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required"> 예금주(환불계좌)</CFormLabel>
             <CCol sm="8">
               <CFormInput
                 v-model="form.refund_account_depositor"
@@ -179,7 +179,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-3">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 해지신청일</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required"> 해지신청일</CFormLabel>
             <CCol sm="8">
               <DatePicker v-model="form.request_date" required placeholder="해지신청일" />
             </CCol>

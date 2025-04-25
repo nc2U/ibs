@@ -141,7 +141,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">납부회차</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">납부회차</CFormLabel>
             <CCol sm="8">
               <CFormSelect v-model="form.installment_order" required>
                 <option value="">---------</option>
@@ -154,7 +154,7 @@ onBeforeMount(() => formDataSet())
         </CCol>
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">수납계좌</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">수납계좌</CFormLabel>
             <CCol sm="8">
               <CFormSelect v-model="form.bank_account" required>
                 <option value="">---------</option>
@@ -170,7 +170,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">수납금액</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">수납금액</CFormLabel>
             <CCol sm="8">
               <CFormInput
                 v-model.number="form.income"
@@ -185,7 +185,7 @@ onBeforeMount(() => formDataSet())
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">입금자명</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">입금자명</CFormLabel>
             <CCol sm="8">
               <CFormInput
                 v-model="form.trader"
@@ -226,12 +226,12 @@ onBeforeMount(() => formDataSet())
     </CModalBody>
 
     <CModalFooter>
-      <CButton type="button" color="light" @click="$emit('close')"> 닫기 </CButton>
+      <CButton type="button" color="light" @click="$emit('close')"> 닫기</CButton>
       <slot name="footer">
         <CButton type="submit" :color="payment ? 'success' : 'primary'" :disabled="formsCheck">
           저장
         </CButton>
-        <CButton v-if="payment" type="button" color="danger" @click="deleteConfirm"> 삭제 </CButton>
+        <CButton v-if="payment" type="button" color="danger" @click="deleteConfirm"> 삭제</CButton>
       </slot>
     </CModalFooter>
   </CForm>

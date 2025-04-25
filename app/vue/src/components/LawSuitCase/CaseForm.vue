@@ -141,7 +141,7 @@ onUpdated(() => dataSetup())
     @submit.prevent="onSubmit"
   >
     <CRow class="mb-3">
-      <CFormLabel for="sort" class="col-md-2 col-form-label">유형</CFormLabel>
+      <CFormLabel for="sort" class="col-md-2 col-form-label required">유형</CFormLabel>
       <CCol md="4">
         <CFormSelect id="sort" v-model="form.sort" required>
           <option value="">사건유형 선택</option>
@@ -153,7 +153,7 @@ onUpdated(() => dataSetup())
         </CFormSelect>
       </CCol>
 
-      <CFormLabel for="level" class="col-md-2 col-form-label">심급</CFormLabel>
+      <CFormLabel for="level" class="col-md-2 col-form-label required">심급</CFormLabel>
       <CCol md="4">
         <CFormSelect id="level" v-model="form.level" required>
           <option value="">사건심급 선택</option>
@@ -197,7 +197,7 @@ onUpdated(() => dataSetup())
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel for="related_case" class="col-md-2 col-form-label"> 법원명</CFormLabel>
+      <CFormLabel for="related_case" class="col-md-2 col-form-label required"> 법원명</CFormLabel>
       <CCol md="4">
         <MultiSelect
           v-model="form.court"
@@ -223,7 +223,7 @@ onUpdated(() => dataSetup())
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel for="case_number" class="col-md-2 col-form-label"> 사건번호</CFormLabel>
+      <CFormLabel for="case_number" class="col-md-2 col-form-label required"> 사건번호</CFormLabel>
       <CCol md="4">
         <CFormInput
           id="case_number"
@@ -234,7 +234,7 @@ onUpdated(() => dataSetup())
         />
       </CCol>
 
-      <CFormLabel for="case_name" class="col-md-2 col-form-label"> 사건명</CFormLabel>
+      <CFormLabel for="case_name" class="col-md-2 col-form-label required"> 사건명</CFormLabel>
       <CCol md="4">
         <CFormInput
           id="case_name"
@@ -247,7 +247,9 @@ onUpdated(() => dataSetup())
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel for="plaintiff" class="col-md-2 col-form-label"> 원고(채권자)</CFormLabel>
+      <CFormLabel for="plaintiff" class="col-md-2 col-form-label required">
+        원고(채권자)
+      </CFormLabel>
       <CCol md="4">
         <CFormInput
           id="plaintiff"
@@ -258,7 +260,9 @@ onUpdated(() => dataSetup())
         />
       </CCol>
 
-      <CFormLabel for="defendant" class="col-md-2 col-form-label"> 피고(채무자)</CFormLabel>
+      <CFormLabel for="defendant" class="col-md-2 col-form-label required">
+        피고(채무자)
+      </CFormLabel>
       <CCol md="4">
         <CFormInput
           id="defendant"
@@ -321,7 +325,9 @@ onUpdated(() => dataSetup())
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel for="case_start_date" class="col-md-2 col-form-label"> 사건개시일</CFormLabel>
+      <CFormLabel for="case_start_date" class="col-md-2 col-form-label required">
+        사건개시일
+      </CFormLabel>
       <CCol md="4">
         <DatePicker
           id="case_start_date"

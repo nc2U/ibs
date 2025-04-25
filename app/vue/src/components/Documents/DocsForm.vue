@@ -181,14 +181,14 @@ onBeforeUpdate(() => dataSetup())
     @submit.prevent="onSubmit"
   >
     <CRow class="mb-3">
-      <CFormLabel for="title" class="col-md-2 col-form-label">제목</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label required">제목</CFormLabel>
       <CCol :md="typeNum === 2 ? 9 : 8">
         <CFormInput id="title" v-model="form.title" required placeholder="게시물 제목" />
       </CCol>
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel v-if="typeNum === 2" for="inputPassword" class="col-sm-2 col-form-label">
+      <CFormLabel v-if="typeNum === 2" for="inputPassword" class="col-sm-2 col-form-label required">
         사건[등록] 번호
       </CFormLabel>
       <CCol v-if="typeNum === 2" md="2">
@@ -217,7 +217,7 @@ onBeforeUpdate(() => dataSetup())
 
       <CFormLabel
         for="category"
-        class="col-sm-2 col-form-label"
+        class="col-sm-2 col-form-label required"
         :class="{ 'col-lg-1': typeNum === 2 }"
       >
         카테고리

@@ -96,7 +96,7 @@ onBeforeMount(() => formDataSetup())
         <CRow class="mb-3">
           <CCol sm="12">
             <CRow>
-              <CFormLabel class="col-sm-2 col-form-label">직위명</CFormLabel>
+              <CFormLabel class="col-sm-2 col-form-label required">직위명</CFormLabel>
               <CCol sm="10">
                 <CFormInput v-model="form.name" required placeholder="직위명" />
               </CCol>

@@ -382,7 +382,7 @@ onBeforeMount(async () => {
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">거래일자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">거래일자</CFormLabel>
               <CCol sm="8">
                 <DatePicker
                   v-model="form.deal_date"
@@ -417,7 +417,9 @@ onBeforeMount(async () => {
           </CCol>
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label required"> 계정[대분류]</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label" :class="{ required: !form.is_separate }">
+                계정[대분류]
+              </CFormLabel>
               <CCol sm="8">
                 <CFormSelect
                   v-model.number="form.account_d1"
@@ -438,7 +440,9 @@ onBeforeMount(async () => {
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label required"> 계정[중분류]</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label" :class="{ required: !form.is_separate }">
+                계정[중분류]
+              </CFormLabel>
               <CCol sm="8">
                 <CFormSelect
                   v-model.number="form.account_d2"
@@ -456,7 +460,7 @@ onBeforeMount(async () => {
           </CCol>
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label required">
+              <CFormLabel class="col-sm-4 col-form-label" :class="{ required: !form.is_separate }">
                 계정[소분류]
                 <a href="javascript:void(0)">
                   <CIcon name="cilCog" @click="refAccDepth.callModal()" />
@@ -528,13 +532,14 @@ onBeforeMount(async () => {
           </CCol>
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">거래처</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">거래처</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model="form.trader"
                   maxlength="20"
                   placeholder="거래처"
                   :disabled="!form.sort"
+                  required
                 />
               </CCol>
             </CRow>
@@ -563,7 +568,9 @@ onBeforeMount(async () => {
 
           <CCol sm="6">
             <CRow v-if="form.sort === 2">
-              <CFormLabel class="col-sm-4 col-form-label required">지출증빙</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label" :class="{ required: !form.is_separate }">
+                지출증빙
+              </CFormLabel>
               <CCol sm="8">
                 <CFormSelect
                   v-model="form.evidence"
@@ -714,7 +721,7 @@ onBeforeMount(async () => {
             <CRow>
               <CCol sm="6">
                 <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label">구분</CFormLabel>
+                  <CFormLabel class="col-sm-4 col-form-label required">구분</CFormLabel>
                   <CCol sm="8">
                     <CFormSelect v-model.number="form.sort" disabled>
                       <option value="">---------</option>
@@ -727,7 +734,7 @@ onBeforeMount(async () => {
 
               <CCol sm="6">
                 <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label"> 계정[대분류]</CFormLabel>
+                  <CFormLabel class="col-sm-4 col-form-label required"> 계정[대분류]</CFormLabel>
                   <CCol sm="8">
                     <CFormSelect
                       v-model.number="sepItem.account_d1"
@@ -753,7 +760,7 @@ onBeforeMount(async () => {
             <CRow>
               <CCol sm="6">
                 <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label"> 계정[중분류]</CFormLabel>
+                  <CFormLabel class="col-sm-4 col-form-label required"> 계정[중분류]</CFormLabel>
                   <CCol sm="8">
                     <CFormSelect
                       v-model.number="sepItem.account_d2"
@@ -771,7 +778,7 @@ onBeforeMount(async () => {
               </CCol>
               <CCol sm="6">
                 <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label"> 계정[소분류]</CFormLabel>
+                  <CFormLabel class="col-sm-4 col-form-label required"> 계정[소분류]</CFormLabel>
                   <CCol sm="8">
                     <CFormSelect
                       v-model.number="sepItem.account_d3"
@@ -831,15 +838,20 @@ onBeforeMount(async () => {
             <CRow>
               <CCol sm="6">
                 <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label"> 적요</CFormLabel>
+                  <CFormLabel class="col-sm-4 col-form-label required"> 적요</CFormLabel>
                   <CCol sm="8">
-                    <CFormInput v-model="sepItem.content" maxlength="50" placeholder="거래 내용" />
+                    <CFormInput
+                      v-model="sepItem.content"
+                      maxlength="50"
+                      placeholder="거래 내용"
+                      required
+                    />
                   </CCol>
                 </CRow>
               </CCol>
               <CCol sm="6">
                 <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label"> 거래처</CFormLabel>
+                  <CFormLabel class="col-sm-4 col-form-label required"> 거래처</CFormLabel>
                   <CCol sm="8">
                     <CFormInput
                       v-model="sepItem.trader"
@@ -874,7 +886,7 @@ onBeforeMount(async () => {
 
               <CCol sm="6">
                 <CRow v-if="form.sort === 2">
-                  <CFormLabel class="col-sm-4 col-form-label"> 지출증빙</CFormLabel>
+                  <CFormLabel class="col-sm-4 col-form-label required"> 지출증빙</CFormLabel>
                   <CCol sm="8">
                     <CFormSelect v-model="sepItem.evidence" required>
                       <option value="">---------</option>
@@ -900,7 +912,12 @@ onBeforeMount(async () => {
             <CRow>
               <CCol sm="6">
                 <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label"> 출금액</CFormLabel>
+                  <CFormLabel
+                    class="col-sm-4 col-form-label"
+                    :class="{ required: form.sort === 2 }"
+                  >
+                    출금액
+                  </CFormLabel>
                   <CCol sm="8">
                     <CFormInput
                       v-model.number="sepItem.outlay"
@@ -916,7 +933,12 @@ onBeforeMount(async () => {
 
               <CCol sm="6">
                 <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label"> 입금액</CFormLabel>
+                  <CFormLabel
+                    class="col-sm-4 col-form-label"
+                    :class="{ required: form.sort === 1 }"
+                  >
+                    입금액
+                  </CFormLabel>
                   <CCol sm="8">
                     <CFormInput
                       v-model.number="sepItem.income"

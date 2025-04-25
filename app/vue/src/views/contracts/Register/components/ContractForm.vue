@@ -500,7 +500,7 @@ onBeforeRouteLeave(() => formDataReset())
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 차수</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 차수</CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <CFormSelect
             v-model.number="form.order_group"
@@ -516,7 +516,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>차수그룹을 선택하세요.</CFormFeedback>
         </CCol>
 
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 타입</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 타입</CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <CFormSelect
             v-model.number="form.unit_type"
@@ -532,7 +532,9 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>유니트 타입을 선택하세요.</CFormFeedback>
         </CCol>
 
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> {{ contLabel }}코드</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required">
+          {{ contLabel }}코드
+        </CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <CFormSelect
             v-model.number="form.key_unit"
@@ -601,7 +603,9 @@ onBeforeRouteLeave(() => formDataReset())
       <v-divider />
 
       <CRow class="mb-3">
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> {{ contLabel }}일자</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required">
+          {{ contLabel }}일자
+        </CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <DatePicker
             v-show="form.status === '1'"
@@ -619,7 +623,9 @@ onBeforeRouteLeave(() => formDataReset())
           />
         </CCol>
 
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> {{ contLabel }}자명</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required">
+          {{ contLabel }}자명
+        </CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <CFormInput
             v-model="form.name"
@@ -631,7 +637,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid> {{ contLabel }}자명을 입력하세요.</CFormFeedback>
         </CCol>
 
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 생년월일</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 생년월일</CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <DatePicker
             v-model="form.birth_date"
@@ -684,7 +690,7 @@ onBeforeRouteLeave(() => formDataReset())
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 휴대전화</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 휴대전화</CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <input
             v-model="form.cell_phone"
@@ -874,7 +880,7 @@ onBeforeRouteLeave(() => formDataReset())
       </CRow>
 
       <CRow v-show="isContract" class="mb-sm-3 mb-lg-0">
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 주민등록 주소</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 주민등록 주소</CFormLabel>
 
         <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
           <CInputGroup>
@@ -933,7 +939,7 @@ onBeforeRouteLeave(() => formDataReset())
       </CRow>
 
       <CRow v-show="isContract" class="mb-sm-3 mb-lg-0">
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 우편수령 주소</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 우편수령 주소</CFormLabel>
         <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
           <CInputGroup>
             <CInputGroupText @click="refPostCode.initiate(3)"> 우편번호</CInputGroupText>

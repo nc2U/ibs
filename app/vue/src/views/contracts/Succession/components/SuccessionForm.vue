@@ -234,7 +234,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">승계신청일</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">승계신청일</CFormLabel>
             <CCol sm="8">
               <DatePicker v-model="form.apply_date" required placeholder="승계신청일" />
             </CCol>
@@ -243,7 +243,7 @@ onBeforeMount(() => formDataSet())
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 매매계약일</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required"> 매매계약일</CFormLabel>
             <CCol sm="8">
               <DatePicker v-model="form.trading_date" required placeholder="매매계약일" />
             </CCol>
@@ -258,7 +258,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">양수계약자</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">양수계약자</CFormLabel>
             <CCol sm="8">
               <CFormInput v-model="buyer_data.name" required placeholder="양수계약자 성명" />
             </CCol>
@@ -269,7 +269,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">생년월일</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">생년월일</CFormLabel>
             <CCol sm="8">
               <DatePicker v-model="buyer_data.birth_date" required placeholder="생년월일" />
             </CCol>
@@ -278,7 +278,7 @@ onBeforeMount(() => formDataSet())
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">성별</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">성별</CFormLabel>
             <CCol sm="8" class="pt-2">
               <div class="form-check form-check-inline">
                 <input
@@ -310,7 +310,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label">휴대전화</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">휴대전화</CFormLabel>
             <CCol sm="8">
               <input
                 v-model="buyer_data.cell_phone"
@@ -372,7 +372,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol>
           <CRow class="mb-2">
-            <CFormLabel class="col-sm-2 col-form-label"> 주민등록주소</CFormLabel>
+            <CFormLabel class="col-sm-2 col-form-label required"> 주민등록주소</CFormLabel>
             <CCol xs="4">
               <CInputGroup>
                 <CInputGroupText @click="postCode.initiate(2)"> 우편번호</CInputGroupText>
@@ -421,7 +421,7 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol>
           <CRow class="mb-2">
-            <CFormLabel class="col-sm-2 col-form-label"> 우편송달주소</CFormLabel>
+            <CFormLabel class="col-sm-2 col-form-label required"> 우편송달주소</CFormLabel>
             <CCol xs="4">
               <CInputGroup>
                 <CInputGroupText @click="postCode.initiate(3)"> 우편번호</CInputGroupText>
