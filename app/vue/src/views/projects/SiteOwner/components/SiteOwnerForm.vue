@@ -172,7 +172,7 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">소유자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">소유자</CFormLabel>
               <CCol sm="8">
                 <CFormInput v-model="form.owner" maxlength="20" required placeholder="소유자" />
               </CCol>
@@ -197,14 +197,13 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="12">
             <CRow>
-              <CFormLabel class="col-sm-2 col-form-label"> 소유부지</CFormLabel>
+              <CFormLabel class="col-sm-2 col-form-label required"> 소유부지</CFormLabel>
               <CCol sm="10">
                 <Multiselect
                   v-model="form.sites"
                   :options="getSites"
                   placeholder="소유부지 :: 필수 입력"
                   :attrs="form.sites.length ? {} : { required: true }"
-                  :classes="{ search: 'form-control multiselect-search' }"
                 />
               </CCol>
             </CRow>

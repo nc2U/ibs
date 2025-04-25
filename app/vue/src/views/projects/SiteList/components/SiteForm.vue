@@ -132,7 +132,7 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">행정 동</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">행정 동</CFormLabel>
               <CCol sm="8">
                 <CFormInput v-model="form.district" required maxlength="10" placeholder="행정 동" />
               </CCol>
@@ -143,7 +143,7 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">지번</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">지번</CFormLabel>
               <CCol sm="8">
                 <CFormInput v-model="form.lot_number" required maxlength="10" placeholder="지번" />
               </CCol>
@@ -152,7 +152,7 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">지목</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">지목</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model="form.site_purpose"
@@ -168,7 +168,7 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 공부상 면적(㎡)</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required"> 공부상 면적(㎡)</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.official_area"

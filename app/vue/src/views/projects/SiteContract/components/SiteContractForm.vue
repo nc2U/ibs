@@ -203,7 +203,7 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">소유자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">소유자</CFormLabel>
               <CCol sm="8">
                 <Multiselect
                   v-model.number="form.owner"
@@ -238,7 +238,7 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 총 매매가격</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required"> 총 매매가격</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.total_price"
@@ -253,7 +253,7 @@ onBeforeMount(() => dataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 계약 체결일</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required"> 계약 체결일</CFormLabel>
               <CCol sm="8">
                 <DatePicker
                   v-model="form.contract_date"
@@ -269,7 +269,7 @@ onBeforeMount(() => dataSetup())
         <CRow>
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 계약금 (1차)</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required"> 계약금 (1차)</CFormLabel>
               <CCol sm="8">
                 <CInputGroup class="mb-3">
                   <CFormInput
@@ -426,7 +426,7 @@ onBeforeMount(() => dataSetup())
         <CRow>
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">잔금</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">잔금</CFormLabel>
               <CCol sm="8">
                 <CInputGroup class="mb-3">
                   <CFormInput
@@ -466,7 +466,7 @@ onBeforeMount(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="12">
             <CRow>
-              <CFormLabel class="col-sm-2 col-form-label"> 입금 은행</CFormLabel>
+              <CFormLabel class="col-sm-2 col-form-label required"> 입금 은행</CFormLabel>
               <CCol sm="3">
                 <CFormInput
                   v-model="form.acc_bank"
