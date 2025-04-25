@@ -204,7 +204,7 @@ onUpdated(() => formDataSetup())
       <CRow>
         <CCol xl="11" class="pt-3">
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label">업무 프로젝트</CFormLabel>
+            <CFormLabel class="col-md-2 col-form-label required">업무 프로젝트</CFormLabel>
             <CCol md="10" lg="4" class="mb-md-3">
               <MultiSelect
                 v-model="form.issue_project"
@@ -228,7 +228,7 @@ onUpdated(() => formDataSetup())
             </CCol>
           </CRow>
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 프로젝트명</CFormLabel>
+            <CFormLabel class="col-md-2 col-form-label required"> 프로젝트명</CFormLabel>
             <CCol md="10" lg="4" class="mb-md-3">
               <CFormInput
                 v-model="form.name"
@@ -253,7 +253,7 @@ onUpdated(() => formDataSetup())
           </CRow>
 
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 프로젝트종류</CFormLabel>
+            <CFormLabel class="col-md-2 col-form-label required"> 프로젝트종류</CFormLabel>
             <CCol md="10" lg="4" class="mb-md-3">
               <CFormSelect v-model="form.kind" required>
                 <option value="">프로젝트 종류</option>
@@ -269,7 +269,7 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid>프로젝트종류를 선택하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label"> 사업개시년도</CFormLabel>
+            <CFormLabel class="col-md-2 col-form-label required"> 사업개시년도</CFormLabel>
             <CCol md="10" lg="4" class="mb-md-3">
               <Datepicker
                 v-model.number="form.start_year"
@@ -380,7 +380,7 @@ onUpdated(() => formDataSetup())
           </CRow>
 
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 용도지역지구</CFormLabel>
+            <CFormLabel class="col-md-2 col-form-label required"> 용도지역지구</CFormLabel>
             <CCol md="10" lg="4" class="mb-md-3">
               <CFormInput
                 v-model="form.area_usage"
@@ -392,7 +392,7 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid>용도지역지구를 입력하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label"> 건축규모</CFormLabel>
+            <CFormLabel class="col-md-2 col-form-label required"> 건축규모</CFormLabel>
             <CCol md="10" lg="4" class="mb-md-3">
               <CFormInput
                 v-model="form.build_size"
