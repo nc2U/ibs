@@ -145,7 +145,7 @@ class ContractorAddress(models.Model):
     id_address3 = models.CharField('참고항목', max_length=30, blank=True)
     dm_zipcode = models.CharField('우편번호', max_length=5)
     dm_address1 = models.CharField('우편송부 주소', max_length=50)
-    dm_address2 = models.CharField('상세주소', max_length=30, blank=True)
+    dm_address2 = models.CharField('상세주소', max_length=50, blank=True)
     dm_address3 = models.CharField('참고항목', max_length=30, blank=True)
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)

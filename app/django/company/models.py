@@ -16,8 +16,8 @@ class Company(models.Model):
     op_date = models.DateField('개업일자', null=True, blank=True)
     zipcode = models.CharField('우편번호', max_length=5, blank=True)
     address1 = models.CharField('주소', max_length=35, blank=True)
-    address2 = models.CharField('상세주소', max_length=20, blank=True)
-    address3 = models.CharField('참고항목', max_length=20, blank=True)
+    address2 = models.CharField('상세주소', max_length=50, blank=True)
+    address3 = models.CharField('참고항목', max_length=30, blank=True)
 
     class Meta:
         verbose_name = "01. 회사 정보"
