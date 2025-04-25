@@ -2655,7 +2655,7 @@ class ExportSitesByOwner(View):
                     cell_value = '동의' if row[col_num] else ''
 
                 # merge setting
-                if col_num not in (4, 5, 6, 7):
+                if col_num not in (4, 5, 6, 7, 8, 9):
                     if row[0] > 1:
                         try:
                             worksheet.merge_range(row_num, col_num, row_num + row[0] - 1, col_num, cell_value, bf)
