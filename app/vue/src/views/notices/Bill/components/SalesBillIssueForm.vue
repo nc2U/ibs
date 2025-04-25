@@ -371,7 +371,7 @@ onUpdated(() => formDataSetup())
             ref="address2"
             v-model="form.address2"
             placeholder="상세 주소"
-            maxlngth="20"
+            maxlngth="50"
             required
           />
         </CCol>
@@ -379,7 +379,7 @@ onUpdated(() => formDataSetup())
         <CCol class="d-none d-sm-block d-md-none" sm="4" />
 
         <CCol sm="8" md="5" xl="3" class="mb-1">
-          <CFormInput v-model="form.address3" placeholder="참고항목" maxlength="20" required />
+          <CFormInput v-model="form.address3" placeholder="참고항목" maxlength="30" required />
         </CCol>
       </CRow>
 

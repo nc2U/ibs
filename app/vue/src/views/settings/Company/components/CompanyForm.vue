@@ -280,7 +280,7 @@ onBeforeMount(() => formDataSetup())
             id="address2"
             type="text"
             placeholder="상세주소를 입력하세요"
-            maxlength="20"
+            maxlength="50"
             required
           />
           <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
@@ -291,7 +291,7 @@ onBeforeMount(() => formDataSetup())
             id="address3"
             type="text"
             placeholder="나머지 주소를 입력하세요"
-            maxlength="20"
+            maxlength="30"
           />
           <CFormFeedback invalid>나머지 주소를 입력하세요.</CFormFeedback>
         </CCol>

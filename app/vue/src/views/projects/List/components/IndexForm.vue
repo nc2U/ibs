@@ -363,7 +363,7 @@ onUpdated(() => formDataSetup())
                 ref="address2"
                 v-model="form.local_address2"
                 type="text"
-                maxlength="20"
+                maxlength="50"
                 placeholder="상세주소를 입력하세요"
               />
               <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
@@ -372,7 +372,7 @@ onUpdated(() => formDataSetup())
               <CFormInput
                 v-model="form.local_address3"
                 type="text"
-                maxlength="20"
+                maxlength="30"
                 placeholder="참고항목을 입력하세요"
               />
               <CFormFeedback invalid>참고항목을 입력하세요.</CFormFeedback>

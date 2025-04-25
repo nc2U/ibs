@@ -913,7 +913,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormInput
             ref="address21"
             v-model="form.id_address2"
-            maxlength="20"
+            maxlength="50"
             placeholder="상세주소를 입력하세요"
             :disabled="!isContract"
           />
@@ -925,7 +925,7 @@ onBeforeRouteLeave(() => formDataReset())
         <CCol sm="10" md="5" lg="2">
           <CFormInput
             v-model="form.id_address3"
-            maxlength="20"
+            maxlength="30"
             placeholder="참고항목을 입력하세요"
             :disabled="!isContract"
           />
@@ -971,7 +971,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormInput
             ref="address22"
             v-model="form.dm_address2"
-            maxlength="30"
+            maxlength="50"
             placeholder="상세주소를 입력하세요"
             :disabled="!isContract"
           />
