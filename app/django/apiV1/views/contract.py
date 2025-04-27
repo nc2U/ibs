@@ -130,13 +130,16 @@ class ContractAggreateView(APIView):
         contract_ids = contracts.values_list('id', flat=True)
 
         # 계약 ID를 가진 Contractor를 기준으로 count
-        subs_count = Contractor.objects.filter(contract_id__in=contract_ids, status='1').count()
-        conts_count = Contractor.objects.filter(contract_id__in=contract_ids, status='2').count()
+        contractors = Contractor.objects.filter(contract__project=project)
+        subs_num = contractors.filter(contract_id__in=contract_ids, status='1').count()
+        conts_num = contractors.filter(contract_id__in=contract_ids, status='2').count()
+        non_conts_num = project.num_unit - conts_num if project.num_unit else 0
 
         data = {
             'total_units': project.num_unit or 0,
-            'subs_count': subs_count,
-            'conts_count': conts_count,
+            'subs_num': subs_num,
+            'conts_num': conts_num,
+            'non_conts_num': non_conts_num
         }
 
         serializer = ContractAggregateSerializer(data)

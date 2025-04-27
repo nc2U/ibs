@@ -733,8 +733,9 @@ class ContSummarySerializer(serializers.ModelSerializer):
 
 class ContractAggregateSerializer(serializers.Serializer):
     total_units = serializers.IntegerField()
-    subs_count = serializers.IntegerField()
-    conts_count = serializers.IntegerField()
+    subs_num = serializers.IntegerField()
+    conts_num = serializers.IntegerField()
+    non_conts_num = serializers.IntegerField()
 
 
 class ContractInContractorSerializer(serializers.ModelSerializer):

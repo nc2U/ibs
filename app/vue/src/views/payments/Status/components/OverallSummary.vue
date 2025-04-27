@@ -4,6 +4,7 @@ import { TableSecondary } from '@/utils/cssMixins'
 import { usePayment } from '@/store/pinia/payment'
 import type { PayOrder } from '@/store/types/payment'
 import { numFormat } from '@/utils/baseMixins'
+import { useContract } from '@/store/pinia/contract'
 
 defineProps({
   date: { type: String, default: '' },
@@ -11,6 +12,9 @@ defineProps({
 
 const payStore = usePayment()
 const payOrderList = computed<PayOrder[]>(() => payStore.payOrderList)
+
+const contStore = useContract()
+const contAggregate = computed(() => contStore.contAggregate)
 </script>
 
 <template>
@@ -51,19 +55,25 @@ const payOrderList = computed<PayOrder[]>(() => payStore.payOrderList)
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="4" class="text-center">계약</CTableDataCell>
-        <CTableDataCell class="text-center">계약(000)</CTableDataCell>
+        <CTableDataCell class="text-center">
+          계약({{ numFormat(contAggregate.conts_num) }})
+        </CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
-        <CTableDataCell class="text-center">미계약(000)</CTableDataCell>
+        <CTableDataCell class="text-center">
+          미계약({{ numFormat(contAggregate.non_conts_num) }})
+        </CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
-        <CTableDataCell class="text-center">총계(000)</CTableDataCell>
+        <CTableDataCell class="text-center">
+          총계({{ numFormat(contAggregate.total_units) }})
+        </CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
-        <CTableDataCell class="text-center">계약율(000)</CTableDataCell>
+        <CTableDataCell class="text-center">계약율</CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
