@@ -56,19 +56,19 @@ const contAggregate = computed(() => contStore.contAggregate)
       <CTableRow>
         <CTableDataCell rowspan="4" class="text-center">계약</CTableDataCell>
         <CTableDataCell class="text-center">
-          계약({{ numFormat(contAggregate.conts_num) }})
+          계약({{ numFormat(contAggregate?.conts_num ?? 0) }})
         </CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">
-          미계약({{ numFormat(contAggregate.non_conts_num) }})
+          미계약({{ numFormat(contAggregate?.non_conts_num ?? 0) }})
         </CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">
-          총계({{ numFormat(contAggregate.total_units) }})
+          총계({{ numFormat(contAggregate?.total_units ?? 0) }})
         </CTableDataCell>
         <CTableHeaderCell v-for="order in payOrderList" :key="order.pk"></CTableHeaderCell>
       </CTableRow>
