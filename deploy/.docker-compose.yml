@@ -1,5 +1,18 @@
 services:
-  
+
+  postgres:
+    container_name: ibs-postgres
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: my-db-name # 실제 데이터로 수정
+      POSTGRES_USER: my-db-user # 실제 데이터로 수정
+      POSTGRES_PASSWORD: my-db-password # 실제 데이터로 수정
+    volumes:
+      - ../volume/data:/var/lib/postgresql/data
+      - ../volume/backups:/var/backups
+      - ../volume/initdb/postgres:/docker-entrypoint-initdb.d
+
   mariadb:
     container_name: ibs-mariadb
     image: mariadb
@@ -14,7 +27,7 @@ services:
     volumes:
       - ../volume/mysql:/var/lib/mysql
       - ../volume/backups:/var/backups
-      - ../volume/sql:/docker-entrypoint-initdb.d
+      - ../volume/initdb/mariadb:/docker-entrypoint-initdb.d
   
   web:
     container_name: ibs-web
