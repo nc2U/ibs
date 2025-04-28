@@ -44,8 +44,9 @@ prod.py
 db.sqlite3
 dist
 
-# mysql data
-mysql
+# mysql & postgres data
+volume/mysql
+volume/data
 
 # virtualize
 venv/
