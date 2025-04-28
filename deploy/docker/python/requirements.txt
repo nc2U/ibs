@@ -1,6 +1,8 @@
 Django==5.2
 uWSGI==2.0.29
 mysqlclient==2.2.7
+psycopg2-binary==2.9.10
+psycopg2==2.9.10
 python-magic==0.4.27
 django-widget-tweaks==1.5.0
 django-markdown2==0.3.1
