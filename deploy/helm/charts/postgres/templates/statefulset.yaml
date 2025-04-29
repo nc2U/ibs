@@ -38,8 +38,8 @@ spec:
                 cp /mnt/config/primary.sql /docker-entrypoint-initdb.d/init.sql
               else
                 # This file holds SQL for connecting to secondary
-                cp /mnt/config/replica.conf /var/lib/postgresql/data/pgdata/postgresql.auto.conf
-                touch /var/lib/postgresql/data/pgdata/standby.signal
+                # cp /mnt/config/replica.conf /var/lib/postgresql/data/pgdata/postgresql.auto.conf
+                # touch /var/lib/postgresql/data/pgdata/standby.signal
               fi
           volumeMounts:
             - name: {{ include "postgres.fullname" . }}-replica
