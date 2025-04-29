@@ -41,13 +41,13 @@ spec:
 {{/*                # cp /mnt/config/replica.conf /var/lib/postgresql/data/pgdata/postgresql.auto.conf*/}}
 {{/*                # touch /var/lib/postgresql/data/pgdata/standby.signal*/}}
 {{/*              fi*/}}
-          volumeMounts:
-            - name: {{ include "postgres.fullname" . }}-replica
-              mountPath: /mnt/config
-            - name: postgres-conf
-              mountPath: /etc/postgresql
-            - name: initdb-d
-              mountPath: /docker-entrypoint-initdb.d
+{{/*          volumeMounts:*/}}
+{{/*            - name: {{ include "postgres.fullname" . }}-replica*/}}
+{{/*              mountPath: /mnt/config*/}}
+{{/*            - name: postgres-conf*/}}
+{{/*              mountPath: /etc/postgresql*/}}
+{{/*            - name: initdb-d*/}}
+{{/*              mountPath: /docker-entrypoint-initdb.d*/}}
       restartPolicy: Always
       containers:
         - name: {{ .Chart.Name }}
