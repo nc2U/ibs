@@ -123,6 +123,9 @@ WSGI_APPLICATION = '_config.wsgi.application'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 DB_TYPE = os.getenv('DATABASE_TYPE') or 'mariadb'
+DB_ENGINE = 'mysql' if DB_TYPE == 'mariadb' else 'postgresql'
+DEFAULT_DB_PORT = '3306' if DB_TYPE == 'mariadb' else '5432'
+DB_PORT = DEFAULT_DB_PORT  # os.getenv('DATABASE_PORT') or DEFAULT_DB_PORT
 MASTER_HOST = DB_TYPE if 'local' in os.getenv('DJANGO_SETTINGS_MODULE') \
     else f'{DB_TYPE}-0.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local'
 DEFAULT_OPTIONS = {
@@ -130,36 +133,36 @@ DEFAULT_OPTIONS = {
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
 } if DB_TYPE == 'mariadb' else {'connect_timeout': 10, }
-SLAVE_OPTIONS = {'charset': 'utf8mb4', 'connect_timeout': 10} if DB_TYPE == 'mariadb' else {'connect_timeout': 10, }
+SLAVE_OPTIONS = {'charset': 'utf8mb4', 'connect_timeout': 10, } if DB_TYPE == 'mariadb' else {'connect_timeout': 10, }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': f'django.db.backends.{DB_ENGINE}',
         'NAME': os.getenv('DATABASE_NAME'),
         'USER': os.getenv('DATABASE_USER'),
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         "DEFAULT-CHARACTER-SET": 'utf8',
         'HOST': MASTER_HOST,
-        'PORT': 3306,
+        'PORT': DB_PORT,
         'OPTIONS': DEFAULT_OPTIONS,
     },
     'slave1': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': f'django.db.backends.{DB_ENGINE}',
         'NAME': os.getenv('DATABASE_NAME'),
         'USER': os.getenv('DATABASE_USER'),
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         "DEFAULT-CHARACTER-SET": 'utf8',
         'HOST': f'{DB_TYPE}-1.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local',
-        'PORT': 3306,
+        'PORT': DB_PORT,
         'OPTIONS': SLAVE_OPTIONS,
     },
     'slave2': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': f'django.db.backends.{DB_ENGINE}',
         'NAME': os.getenv('DATABASE_NAME'),
         'USER': os.getenv('DATABASE_USER'),
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         "DEFAULT-CHARACTER-SET": 'utf8',
         'HOST': f'{DB_TYPE}-2.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local',
-        'PORT': 3306,
+        'PORT': DB_PORT,
         'OPTIONS': SLAVE_OPTIONS,
     }
 }
