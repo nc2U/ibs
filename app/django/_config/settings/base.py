@@ -124,7 +124,7 @@ WSGI_APPLICATION = '_config.wsgi.application'
 
 DB_TYPE = os.getenv('DATABASE_TYPE') or 'mariadb'
 MASTER_HOST = DB_TYPE if 'local' in os.getenv('DJANGO_SETTINGS_MODULE') \
-    else f'mariadb-0.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local'
+    else f'{DB_TYPE}-0.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local'
 DEFAULT_OPTIONS = {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
     'charset': 'utf8mb4',  # 캐릭터셋 설정
