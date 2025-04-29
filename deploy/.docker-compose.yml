@@ -52,7 +52,7 @@ services:
       - ../app:/app
     environment:
       DATABASE_TYPE: mariadb  # mariadb | postgres (default: mariadb)
-      DATABASE_PORT: 5432  # default: 3306
+      DATABASE_PORT: 3306  # default: 3306
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
