@@ -123,7 +123,7 @@ spec:
           emptyDir: { }
         - name: dump-backup
           persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-{{ include "mariadb.fullname" . }}-{{ .Values.global.appMode }}-backup-pvc
+            claimName: {{ .Release.Name }}-db-{{ .Values.global.appMode }}-backup-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
