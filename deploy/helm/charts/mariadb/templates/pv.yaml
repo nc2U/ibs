@@ -24,7 +24,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Release.Name }}-{{ include "mariadb.fullname" . }}-{{ .Values.global.appMode }}-sql-pv
+  name: {{ .Release.Name }}-db-{{ .Values.global.appMode }}-sql-pv
 spec:
   storageClassName: init-sql-{{ .Values.global.appMode }}
   capacity:
@@ -47,7 +47,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Release.Name }}-{{ include "mariadb.fullname" . }}-{{ .Values.global.appMode }}-backup-pv
+  name: {{ .Release.Name }}-db-{{ .Values.global.appMode }}-backup-pv
 spec:
   storageClassName: dump-backup-{{ .Values.global.appMode }}
   capacity:
