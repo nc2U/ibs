@@ -39,9 +39,9 @@ spec:
   nfs:
     server: {{ .Values.global.nfsServerHost }}
     {{- if eq .Values.global.appMode "prod" }}
-    path: {{ .Values.global.nfsPath }}/prod/volume/sql
+    path: {{ .Values.global.nfsPath }}/prod/volume/initdb/mariadb
     {{- else if eq .Values.global.appMode "dev" }}
-    path: {{ .Values.global.nfsPath }}/dev/volume/sql
+    path: {{ .Values.global.nfsPath }}/dev/volume/initdb/mariadb
     {{- end }}
 ---
 apiVersion: v1
