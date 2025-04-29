@@ -36,6 +36,7 @@ services:
     volumes:
       - ../app:/app
     environment:
+      DATABASE_TYPE: mariadb  # postgres | mariadb (default: mariadb)
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
