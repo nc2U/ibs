@@ -1,4 +1,4 @@
-# Django 5.1 + Vue3 + Svelte using Nginx + MariaDB (deploy as Docker or Kubernetes)
+# Django 5.2 + Vue3 + Svelte using Nginx + MariaDB or PostgreSQL (deploy as Docker or Kubernetes)
 
 ## Deploy Using Docker
 
@@ -29,10 +29,15 @@ cp docker-compose.yml.tmpl docker-compose.yml
 Check what must be defined in docker-compose.yml file.
 
 - required:
+    - POSTGRES_DB
+    - POSTGRES_USER
+    - POSTGRES_PASSWORD
     - MYSQL_DATABASE
     - MYSQL_USER
     - MYSQL_PASSWORD
     - MYSQL_ROOT_PASSWORD
+    - DATABASE_TYPE
+    - DATABASE_PORT
     - DATABASE_NAME
     - DATABASE_USER
     - DATABASE_PASSWORD
@@ -46,13 +51,21 @@ Check what must be defined in docker-compose.yml file.
 
 Enter the actual data for your environment as described in the following items.
 
+- postgres:
+    - POSTGRES_DB: my-db-name # **postgresql database information**
+    - POSTGRES_USER: my-db-user # **postgresql database information**
+    - POSTGRES_PASSWORD: my-db-password # **postgresql database information**
+
 - master:
     - MYSQL_DATABASE: my-db-name # **mysql database information**
     - MYSQL_USER: my-db-user # **mysql database information**
     - MYSQL_PASSWORD: my-db-password # **mysql database information**
     - MYSQL_ROOT_PASSWORD: my-db-root-password # **mysql database information**
     - TZ: Asia/Seoul # **mysql database information**
+
 - web:
+    - DATABASE_TYPE: mariadb # **mariadb | postgres, default = mariadb, db to use**
+    - DATABASE_PORT: 3306 # **3306 | 5432, default = 3306, db port to use**
     - DATABASE_NAME: my-db-name # **mysql database information**
     - DATABASE_USER: my-db-user # **mysql database information**
     - DATABASE_PASSWORD: my-db-password # **mysql database information**
