@@ -25,22 +25,22 @@ spec:
             - |
               set -ex
               echo 'Starting PostgreSQL init container'
-              # Check config map to directory that already exists
-              # (but must be used as a volume for main container)
-              # Statefulset has sticky identity, number should be last
-              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
-              ordinal=${BASH_REMATCH[1]}
-              # Copy appropriate conf.d files from config-map to
-              # postgres-config volume (emptyDir) depending on pod number
-              if [[ $ordinal -eq 0 ]]; then
-                # Create the users needed for replication on primary on a volume
-                # initdb (emptyDir)
-                cp /mnt/config/primary.sql /docker-entrypoint-initdb.d/init.sql
-              else
-                # This file holds SQL for connecting to secondary
-                # cp /mnt/config/replica.conf /var/lib/postgresql/data/pgdata/postgresql.auto.conf
-                # touch /var/lib/postgresql/data/pgdata/standby.signal
-              fi
+{{/*              # Check config map to directory that already exists*/}}
+{{/*              # (but must be used as a volume for main container)*/}}
+{{/*              # Statefulset has sticky identity, number should be last*/}}
+{{/*              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1*/}}
+{{/*              ordinal=${BASH_REMATCH[1]}*/}}
+{{/*              # Copy appropriate conf.d files from config-map to*/}}
+{{/*              # postgres-config volume (emptyDir) depending on pod number*/}}
+{{/*              if [[ $ordinal -eq 0 ]]; then*/}}
+{{/*                # Create the users needed for replication on primary on a volume*/}}
+{{/*                # initdb (emptyDir)*/}}
+{{/*                cp /mnt/config/primary.sql /docker-entrypoint-initdb.d/init.sql*/}}
+{{/*              else*/}}
+{{/*                # This file holds SQL for connecting to secondary*/}}
+{{/*                # cp /mnt/config/replica.conf /var/lib/postgresql/data/pgdata/postgresql.auto.conf*/}}
+{{/*                # touch /var/lib/postgresql/data/pgdata/standby.signal*/}}
+{{/*              fi*/}}
           volumeMounts:
             - name: {{ include "postgres.fullname" . }}-replica
               mountPath: /mnt/config
