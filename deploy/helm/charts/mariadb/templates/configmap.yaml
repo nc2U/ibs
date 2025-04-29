@@ -23,8 +23,7 @@ data:
     log-basename=ibs           # used to be independent of hostname changes (otherwise is in data/mysql)
 
   primary.sql: |
-    CREATE
-    USER '{{ .Release.Name }}'@'%' IDENTIFIED BY '{{ .Values.global.dbPassword }}';
+    CREATE USER '{{ .Release.Name }}'@'%' IDENTIFIED BY '{{ .Values.global.dbPassword }}';
     GRANT REPLICATION REPLICA ON *.* TO '{{ .Release.Name }}'@'%';
     GRANT ALL PRIVILEGES ON *.* TO '{{ .Release.Name }}'@'%';
     CREATE DATABASE {{ .Release.Name }};
