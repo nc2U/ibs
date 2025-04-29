@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgres.fullname" . }}-config
+data:
+  USER: "{{ .Release.Name }}"
+  DATABASE: "{{ .Release.Name }}"
+  TZ: "Asia/Seoul"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgres.fullname" . }}-init-scripts
+data:
+  primary.sql: |
+    CREATE USER "{{ .Release.Name }}" WITH ENCRYPTED PASSWORD '{{ .Values.global.dbPassword }}';
+    CREATE DATABASE "{{ .Release.Name }}" OWNER "{{ .Release.Name }}";
+    ALTER ROLE "{{ .Release.Name }}" WITH SUPERUSER;
+
+  replica.conf: |
+    standby_mode = 'on'
+    primary_conninfo = 'host=postgres-0.{{ .Values.global.dbServiceName }}.{{ .Release.Namespace }}.svc.cluster.local port=5432 user={{ .Release.Name }} password={{ .Values.global.dbPassword }} application_name=replica'
+    trigger_file = '/tmp/postgresql.trigger.5432'

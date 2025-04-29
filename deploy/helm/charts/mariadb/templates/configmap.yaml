@@ -30,8 +30,7 @@ data:
     CREATE DATABASE {{ .Release.Name }};
 
   secondary.sql: |
-    #
-    We have to know name of sts (`mariadb`) and service `mariadb-service` in advance as an FQDN.No need to use master_port
+    # We have to know name of sts (`mariadb`) and service `mariadb-service` in advance as an FQDN.No need to use master_port
     CHANGE MASTER TO
     MASTER_HOST='mariadb-0.{{ .Values.global.dbServiceName }}.{{ .Release.Namespace }}.svc.cluster.local', # mariadb-0.<headless service name>.<namespace name>.svc.cluster.local
     MASTER_USER='{{ .Release.Name }}',
