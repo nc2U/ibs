@@ -8,6 +8,7 @@ services:
       POSTGRES_DB: my-db-name # 실제 데이터로 수정
       POSTGRES_USER: my-db-user # 실제 데이터로 수정
       POSTGRES_PASSWORD: my-db-password # 실제 데이터로 수정
+      TZ: Asia/Seoul
     volumes:
       - ../volume/data:/var/lib/postgresql/data
       - ../volume/backups:/var/backups
