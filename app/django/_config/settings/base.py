@@ -122,9 +122,15 @@ WSGI_APPLICATION = '_config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-MASTER_HOST = 'mariadb' if 'local' in os.getenv('DJANGO_SETTINGS_MODULE') \
+DB_TYPE = os.getenv('DATABASE_TYPE') or 'mariadb'
+MASTER_HOST = DB_TYPE if 'local' in os.getenv('DJANGO_SETTINGS_MODULE') \
     else f'mariadb-0.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local'
-
+DEFAULT_OPTIONS = {
+    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
+    'charset': 'utf8mb4',  # 캐릭터셋 설정
+    'connect_timeout': 10,  # 연결 타임아웃 설정
+} if DB_TYPE == 'mariadb' else {'connect_timeout': 10, }
+SLAVE_OPTIONS = {'charset': 'utf8mb4', 'connect_timeout': 10} if DB_TYPE == 'mariadb' else {'connect_timeout': 10, }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -134,11 +140,7 @@ DATABASES = {
         "DEFAULT-CHARACTER-SET": 'utf8',
         'HOST': MASTER_HOST,
         'PORT': 3306,
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
-            'charset': 'utf8mb4',  # 캐릭터셋 설정
-            'connect_timeout': 10,  # 연결 타임아웃 설정
-        },
+        'OPTIONS': DEFAULT_OPTIONS,
     },
     'slave1': {
         'ENGINE': 'django.db.backends.mysql',
@@ -146,12 +148,9 @@ DATABASES = {
         'USER': os.getenv('DATABASE_USER'),
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': f'mariadb-1.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local',
+        'HOST': f'{DB_TYPE}-1.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local',
         'PORT': 3306,
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'connect_timeout': 10,
-        },
+        'OPTIONS': SLAVE_OPTIONS,
     },
     'slave2': {
         'ENGINE': 'django.db.backends.mysql',
@@ -159,12 +158,9 @@ DATABASES = {
         'USER': os.getenv('DATABASE_USER'),
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': f'mariadb-2.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local',
+        'HOST': f'{DB_TYPE}-2.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local',
         'PORT': 3306,
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'connect_timeout': 10,
-        },
+        'OPTIONS': SLAVE_OPTIONS,
     }
 }
 
