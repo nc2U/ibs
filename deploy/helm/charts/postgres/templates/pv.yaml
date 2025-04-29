@@ -16,9 +16,9 @@
 {{/*  nfs:*/}}
 {{/*    server: {{ .Values.global.cicdServerHost }}*/}}
 {{/*    {{- if eq .Values.global.appMode "prod" }}*/}}
-{{/*    path: {{ .Values.global.cicdPath }}/prod/volume/mysql*/}}
+{{/*    path: {{ .Values.global.cicdPath }}/prod/volume/data*/}}
 {{/*    {{- else if eq .Values.global.appMode "dev" }}*/}}
-{{/*    path: {{ .Values.global.cicdPath }}/dev/volume/mysql*/}}
+{{/*    path: {{ .Values.global.cicdPath }}/dev/volume/data*/}}
 {{/*    {{- end }}*/}}
 {{/*---*/}}
 {{/*apiVersion: v1*/}}
@@ -39,15 +39,15 @@
 {{/*  nfs:*/}}
 {{/*    server: {{ .Values.global.nfsServerHost }}*/}}
 {{/*    {{- if eq .Values.global.appMode "prod" }}*/}}
-{{/*    path: {{ .Values.global.nfsPath }}/prod/volume/sql*/}}
+{{/*    path: {{ .Values.global.nfsPath }}/prod/volume/initdb/postgres*/}}
 {{/*    {{- else if eq .Values.global.appMode "dev" }}*/}}
-{{/*    path: {{ .Values.global.nfsPath }}/dev/volume/sql*/}}
+{{/*    path: {{ .Values.global.nfsPath }}/dev/volume/initdb/postgres*/}}
 {{/*    {{- end }}*/}}
 {{/*---*/}}
 {{/*apiVersion: v1*/}}
 {{/*kind: PersistentVolume*/}}
 {{/*metadata:*/}}
-{{/*  name: {{ .Release.Name }}-{{ include "postgres.fullname" . }}-{{ .Values.global.appMode }}-backup-pv*/}}
+{{/*  name: {{ .Release.Name }}-db-{{ .Values.global.appMode }}-backup-pv*/}}
 {{/*spec:*/}}
 {{/*  storageClassName: dump-backup-{{ .Values.global.appMode }}*/}}
 {{/*  capacity:*/}}
