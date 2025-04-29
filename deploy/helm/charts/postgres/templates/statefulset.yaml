@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgres.fullname" . }}
+spec:
+  serviceName: {{ include "postgres.fullname" . }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "postgres.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "postgres.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: init-{{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - bash
+            - "-c"
+            - |
+              set -ex
+              echo 'Starting PostgreSQL init container'
+              # Check config map to directory that already exists
+              # (but must be used as a volume for main container)
+              # Statefulset has sticky identity, number should be last
+              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+              ordinal=${BASH_REMATCH[1]}
+              # Copy appropriate conf.d files from config-map to
+              # postgres-config volume (emptyDir) depending on pod number
+              if [[ $ordinal -eq 0 ]]; then
+                # Create the users needed for replication on primary on a volume
+                # initdb (emptyDir)
+                cp /mnt/config/primary.sql /docker-entrypoint-initdb.d/init.sql
+              else
+                # This file holds SQL for connecting to secondary
+                cp /mnt/config/replica.conf /var/lib/postgresql/data/pgdata/postgresql.auto.conf
+                touch /var/lib/postgresql/data/pgdata/standby.signal
+              fi
+          volumeMounts:
+            - name: {{ include "postgres.fullname" . }}-replica
+              mountPath: /mnt/config
+            - name: postgres-conf
+              mountPath: /etc/postgresql
+            - name: initdb-d
+              mountPath: /docker-entrypoint-initdb.d
+      restartPolicy: Always
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            # Using Secrets
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-db-auth
+                  key: PASSWORD
+          envFrom:
+            - configMapRef:
+                name: {{ include "postgres.fullname" . }}-config
+          ports:
+            - containerPort: 5432
+              name: postgres-port
+              protocol: TCP
+          startupProbe:
+            exec:
+              command: [ "pg_isready", "-U", "{{ .Release.Name }}", "-d", "{{ .Release.Name }}" ]
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 10
+            successThreshold: 1
+          readinessProbe:
+            exec:
+              command: [ "pg_isready", "-U", "{{ .Release.Name }}", "-d", "{{ .Release.Name }}" ]
+            periodSeconds: 30          # 30초마다 상태 확인
+            timeoutSeconds: 1          # 1초 후에 실패로 간주
+            failureThreshold: 5        # 몇 번 실패해야 Pod를 실패로 판단할 것인지
+            successThreshold: 1        # 몇 번 성공해야 Ready 상태로 간주할 것인지
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-conf
+              mountPath: /etc/postgresql
+            - name: initdb-d
+              mountPath: /docker-entrypoint-initdb.d
+            - name: dump-backup
+              mountPath: /var/backups
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: {{ include "postgres.fullname" . }}-replica # for init to main
+          configMap:
+            name: {{ include "postgres.fullname" . }}-replica-cm
+            #defaultMode: 0544
+        - name: postgres-conf # for init to main
+          emptyDir: { }
+        - name: initdb-d # for init to main
+          emptyDir: { }
+        - name: dump-backup
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-{{ include "postgres.fullname" . }}-{{ .Values.global.appMode }}-backup-pvc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: "nfs-client"
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.volumes.dataPvcStorage }}

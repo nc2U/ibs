@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-{{ include "postgres.fullname" . }}-{{ .Values.global.appMode }}-data-pv
+spec:
+  storageClassName: mysql-data-{{ .Values.global.appMode }}
+  capacity:
+    storage: {{ .Values.volumes.dataPvStorage }}
+  accessModes:
+    {{- range .Values.volumes.dataAccessModes }}
+    - {{ . }}
+    {{- end }}
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    server: {{ .Values.global.cicdServerHost }}
+    {{- if eq .Values.global.appMode "prod" }}
+    path: {{ .Values.global.cicdPath }}/prod/volume/mysql
+    {{- else if eq .Values.global.appMode "dev" }}
+    path: {{ .Values.global.cicdPath }}/dev/volume/mysql
+    {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-{{ include "postgres.fullname" . }}-{{ .Values.global.appMode }}-sql-pv
+spec:
+  storageClassName: init-sql-{{ .Values.global.appMode }}
+  capacity:
+    storage: {{ .Values.volumes.sqlPvStorage }}
+  accessModes:
+    {{- range .Values.volumes.sqlAccessModes }}
+    - {{ . }}
+    {{- end }}
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    server: {{ .Values.global.nfsServerHost }}
+    {{- if eq .Values.global.appMode "prod" }}
+    path: {{ .Values.global.nfsPath }}/prod/volume/sql
+    {{- else if eq .Values.global.appMode "dev" }}
+    path: {{ .Values.global.nfsPath }}/dev/volume/sql
+    {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-{{ include "postgres.fullname" . }}-{{ .Values.global.appMode }}-backup-pv
+spec:
+  storageClassName: dump-backup-{{ .Values.global.appMode }}
+  capacity:
+    storage: {{ .Values.volumes.backupPvStorage }}
+  accessModes:
+    {{- range .Values.volumes.backupAccessModes }}
+    - {{ . }}
+    {{- end }}
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    {{- if eq .Values.global.appMode "prod" }}
+    path: {{ .Values.global.nfsPath }}/prod/volume/backups
+    {{- else if eq .Values.global.appMode "dev" }}
+    path: {{ .Values.global.nfsPath }}/dev/volume/backups
+    {{- end}}
+    server: {{ .Values.global.nfsServerHost }}
