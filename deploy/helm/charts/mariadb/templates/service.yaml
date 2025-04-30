@@ -1,3 +1,4 @@
+{{- if .Values.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -12,19 +13,4 @@ spec:
   clusterIP: None
   selector:
     {{- include "mariadb.selectorLabels" . | nindent 4 }}
----
-{{/*apiVersion: v1*/}}
-{{/*kind: Service*/}}
-{{/*metadata:*/}}
-{{/*  name: {{ include "mariadb.fullname" . }}-svc*/}}
-{{/*  labels:*/}}
-{{/*    app: mariadb-svc*/}}
-{{/*spec:*/}}
-{{/*  type: {{ .Values.service.type }}*/}}
-{{/*  ports:*/}}
-{{/*    - port: {{ .Values.service.port }}*/}}
-{{/*      targetPort: mysql*/}}
-{{/*      protocol: TCP*/}}
-{{/*      name: mysql*/}}
-{{/*  selector:*/}}
-{{/*    app: mariadb-svc*/}}
+{{- end }}

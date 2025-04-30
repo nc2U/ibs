@@ -1,3 +1,4 @@
+{{- if .Values.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -32,3 +33,4 @@ data:
       echo "Starting base backup from primary..."
       pg_basebackup -h {{ include "postgres.fullname" . }}-0.{{ .Values.global.dbServiceName }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
     fi
+{{- end }}
