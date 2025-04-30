@@ -8,8 +8,8 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      name: postgres-port
       protocol: TCP
-      name: http
+  clusterIP: None
   selector:
     {{- include "postgres.selectorLabels" . | nindent 4 }}

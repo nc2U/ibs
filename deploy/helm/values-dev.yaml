@@ -6,6 +6,7 @@ global:
   appMode: dev
   dbType: "postgres"
   dbPort: "5432"
+  dbServiceName: "postgres"
 
 postgres:
   replicaCount: 1
