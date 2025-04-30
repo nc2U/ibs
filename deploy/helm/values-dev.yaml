@@ -9,7 +9,7 @@ global:
   dbServiceName: "postgres"
 
 postgres:
-  replicaCount: 1
+  replicaCount: 3
   volumes:
     dataPvStorage: 500Mi
     dataPvcStorage: 500Mi
