@@ -23,7 +23,6 @@ fullnameOverride: ""
 mariadb:
   enabled: true
 
-
 postgres:
   enabled: true
 
