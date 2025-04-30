@@ -53,7 +53,7 @@ spec:
             successThreshold: 1
           readinessProbe:
             exec:
-              command: [ "nc", "-zv", "{{ .Values.global.dbServiceName }}", "3306" ]
+              command: [ "nc", "-zv", "{{ .Values.global.dbServiceName }}", "{{ .Values.global.dbPort }}" ]
             initialDelaySeconds: 20    # 컨테이너 시작 후 30초 후에 Probe 시작
             periodSeconds: 30          # 30초마다 상태 확인
             timeoutSeconds: 1          # 5초 후에 실패로 간주
