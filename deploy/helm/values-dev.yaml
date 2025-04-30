@@ -6,7 +6,6 @@ global:
   appMode: dev
   dbType: "postgres"
   dbPort: "5432"
-  dbServiceName: "postgres"
 
 mariadb:
   enabled: false

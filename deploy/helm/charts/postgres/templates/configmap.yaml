@@ -31,6 +31,6 @@ data:
     set -e
     if [ ! -s "$PGDATA/PG_VERSION" ]; then
       echo "Starting base backup from primary..."
-      pg_basebackup -h {{ include "postgres.fullname" . }}-0.{{ .Values.global.dbServiceName }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
+      pg_basebackup -h {{ include "postgres.fullname" . }}-0.{{ .Values.global.dbType }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
     fi
 {{- end }}
