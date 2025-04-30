@@ -24,7 +24,7 @@ spec:
             - "-c"
             - |
               set -ex
-              echo "Starting init-postgresql"
+              echo "Starting init-postgres"
               [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
               ordinal=${BASH_REMATCH[1]}
               if [[ $ordinal -eq 0 ]]; then
@@ -38,7 +38,7 @@ spec:
           volumeMounts:
             - name: {{ include "postgres.fullname" . }}-replica
               mountPath: /mnt/replica-config
-            - name: postgresql-config
+            - name: postgres-conf
               mountPath: /mnt/config
             - name: initdb-d
               mountPath: /docker-entrypoint-initdb.d
