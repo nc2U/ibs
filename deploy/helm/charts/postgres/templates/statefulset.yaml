@@ -51,11 +51,11 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             # Using Secrets
-            - name: PASSWORD
+            - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: postgres-db-auth
-                  key: PASSWORD
+                  key: POSTGRES_PASSWORD
           envFrom:
             - configMapRef:
                 name: {{ include "postgres.fullname" . }}-config

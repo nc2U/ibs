@@ -3,8 +3,8 @@ kind: ConfigMap
 metadata:
   name: {{ include "postgres.fullname" . }}-config
 data:
-  USER: "{{ .Release.Name }}"
-  DATABASE: "{{ .Release.Name }}"
+  POSTGRES_USER: "{{ .Release.Name }}"
+  POSTGRES_DB: "{{ .Release.Name }}"
   TZ: "Asia/Seoul"
 ---
 apiVersion: v1
