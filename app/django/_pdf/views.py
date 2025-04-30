@@ -884,7 +884,7 @@ class PdfExportCalculation(View):
         payment_orders = SpecialPaymentOrder.objects.filter(project=project)  # 전체 납부회차 컬렉션
 
         try:
-            unit = contract.keyunit.houseunit
+            unit = contract.key_unit.houseunit
         except ObjectDoesNotExist:
             unit = None
 
