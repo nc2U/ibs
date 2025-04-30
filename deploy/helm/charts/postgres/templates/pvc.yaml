@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ .Release.Name }}-{{ include "postgres.fullname" . }}-{{ .Values.global.appMode }}-data-pvc
 spec:
-  storageClassName: mysql-data-{{ .Values.global.appMode }}
+  storageClassName: postgres-data-{{ .Values.global.appMode }}
   accessModes:
   {{- range .Values.volumes.dataAccessModes }}
     - {{ . }}
