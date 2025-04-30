@@ -18,14 +18,14 @@ data:
     wal_keep_size = 64
     hot_standby = on
 
-    replica.conf: |
+  replica.conf: |
     hot_standby = on
 
-    primary.sql: |
+  primary.sql: |
     CREATE ROLE {{ .Release.Name }} WITH REPLICATION LOGIN ENCRYPTED PASSWORD '{{ .Values.global.dbPassword }}';
     CREATE DATABASE {{ .Release.Name }};
 
-    secondary.sh: |
+  secondary.sh: |
     #!/bin/bash
     set -e
     if [ ! -s "$PGDATA/PG_VERSION" ]; then
