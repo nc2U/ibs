@@ -95,8 +95,8 @@ jobs:
             --set 'nginx.ingress.tls[0].hosts[1]'=www.${{ secrets.DOMAIN_NAME }} \
             --set 'nginx.ingress.tls[0].hosts[2]'=dyibs.co.kr \
             --set 'nginx.ingress.tls[0].hosts[3]'=brdnc.co.kr \
-            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert \
-            --atomic --cleanup-on-fail
+            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
+#            --atomic --cleanup-on-fail
       
       # slack --> notification
       - name: Send slack when failed
