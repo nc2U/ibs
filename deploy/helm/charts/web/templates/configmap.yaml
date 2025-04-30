@@ -1,5 +1,7 @@
 apiVersion: v1
 data:
+  DATABASE_TYPE: "{{ .Values.global.dbType }}"
+  DATABASE_PORT: "{{ .Values.global.dbPort }}"
   DATABASE_NAME: "{{ .Release.Name }}"
   DATABASE_USER: "{{ .Release.Name }}"
   DOMAIN_HOST: "{{ .Values.global.domainHost }}"
