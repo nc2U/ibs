@@ -6,7 +6,7 @@ global:
   appMode: prod
   dbType: "postgres" # "mariadb"
   dbPort: "5432" # "3306"
-  dbServiceName: "mariadb"
+  dbServiceName: "postgres" # "mariadb"
   dbPassword: "{{ randAlphaNum 5 }}"
   nfsServerHost: "nfs-server-host"
   nfsPath: "nfs-path" # nfs volume path
