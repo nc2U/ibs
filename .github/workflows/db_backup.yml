@@ -38,7 +38,8 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-                  kubectl exec -it -n ibs-prod mariadb-0 -- sh /var/backups/script_dump.sh
+                  kubectl exec -it -n ibs-prod mariadb-0 -- sh /var/backups/mariadb_dump.sh
+                  kubectl exec -it -n ibs-prod postgres-0 -- sh /var/backups/postgres_dump.sh
       
       # slack --> notification
       - name: Send slack when failed
