@@ -10,14 +10,25 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "postgres.fullname" . }}-init-scripts
+  name: {{ include "postgres.fullname" . }}-replica-cm
 data:
-  primary.sql: |
-    CREATE USER "{{ .Release.Name }}" WITH ENCRYPTED PASSWORD '{{ .Values.global.dbPassword }}';
-    CREATE DATABASE "{{ .Release.Name }}" OWNER "{{ .Release.Name }}";
-    ALTER ROLE "{{ .Release.Name }}" WITH SUPERUSER;
+  primary.conf: |
+    wal_level = replica
+    max_wal_senders = 10
+    wal_keep_size = 64
+    hot_standby = on
 
-  replica.conf: |
-    standby_mode = 'on'
-    primary_conninfo = 'host={{ include "postgres.fullname" . }}-0.{{ .Values.global.dbServiceName }}.{{ .Release.Namespace }}.svc.cluster.local port=5432 user={{ .Release.Name }} password={{ .Values.global.dbPassword }} application_name=replica'
-    trigger_file = '/tmp/postgresql.trigger.5432'
+    replica.conf: |
+    hot_standby = on
+
+    primary.sql: |
+    CREATE ROLE {{ .Release.Name }} WITH REPLICATION LOGIN ENCRYPTED PASSWORD '{{ .Values.global.dbPassword }}';
+    CREATE DATABASE {{ .Release.Name }};
+
+    secondary.sh: |
+    #!/bin/bash
+    set -e
+    if [ ! -s "$PGDATA/PG_VERSION" ]; then
+      echo "Starting base backup from primary..."
+      pg_basebackup -h {{ include "postgres.fullname" . }}-0.{{ .Values.global.dbServiceName }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
+    fi

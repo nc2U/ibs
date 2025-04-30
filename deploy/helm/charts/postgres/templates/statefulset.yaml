@@ -24,28 +24,22 @@ spec:
             - "-c"
             - |
               set -ex
-              echo 'Starting PostgreSQL init container'
-              # Check config map to directory that already exists
-              # (but must be used as a volume for main container)
-              # Statefulset has sticky identity, number should be last
+              echo "Starting init-postgresql"
               [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
               ordinal=${BASH_REMATCH[1]}
-              # Copy appropriate conf.d files from config-map to
-              # postgres-config volume (emptyDir) depending on pod number
               if [[ $ordinal -eq 0 ]]; then
-                # Create the users needed for replication on primary on a volume
-                # initdb (emptyDir)
-                cp /mnt/config/primary.sql /docker-entrypoint-initdb.d/init.sql
+                cp /mnt/replica-config/primary.conf /mnt/config/postgresql.conf
+                cp /mnt/replica-config/primary.sql /docker-entrypoint-initdb.d/init.sql
               else
-                # This file holds SQL for connecting to secondary
-                # cp /mnt/config/replica.conf /var/lib/postgresql/data/pgdata/postgresql.auto.conf
-                # touch /var/lib/postgresql/data/pgdata/standby.signal
+                cp /mnt/replica-config/replica.conf /mnt/config/postgresql.conf
+                cp /mnt/replica-config/secondary.sh /mnt/config/secondary.sh
+                chmod +x /mnt/config/secondary.sh
               fi
           volumeMounts:
-            - name: {{ include "postgres.fullname" . }}-init
+            - name: {{ include "postgres.fullname" . }}-replica
+              mountPath: /mnt/replica-config
+            - name: postgresql-config
               mountPath: /mnt/config
-            - name: postgres-conf
-              mountPath: /etc/postgresql
             - name: initdb-d
               mountPath: /docker-entrypoint-initdb.d
       restartPolicy: Always
@@ -87,7 +81,8 @@ spec:
             - name: data
               mountPath: /var/lib/postgresql/data
             - name: postgres-conf
-              mountPath: /etc/postgresql
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
             - name: initdb-d
               mountPath: /docker-entrypoint-initdb.d
             - name: dump-backup
@@ -95,9 +90,9 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: {{ include "postgres.fullname" . }}-init # for init to main
+        - name: {{ include "postgres.fullname" . }}-replica # for init to main
           configMap:
-            name: {{ include "postgres.fullname" . }}-init-scripts
+            name: {{ include "postgres.fullname" . }}-replica-cm
             #defaultMode: 0544
         - name: postgres-conf # for init to main
           emptyDir: { }
