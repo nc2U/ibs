@@ -81,10 +81,10 @@ class ExportContracts(View):
                       ['일련번호', 'serial_number', 10],
                       ['등록상태', 'contractor__qualification', 8],
                       ['차수', 'order_group__order_group_name', 10],
-                      ['타입', 'keyunit__unit_type__name', 7],
+                      ['타입', 'key_unit__unit_type__name', 7],
                       [f'{t_name}자', 'contractor__name', 10],
-                      ['동', 'keyunit__houseunit__building_unit__name', 7],
-                      ['호수', 'keyunit__houseunit__name', 7],
+                      ['동', 'key_unit__houseunit__building_unit__name', 7],
+                      ['호수', 'key_unit__houseunit__name', 7],
                       [f'{t_name}일자', 'contractor__contract_date', 12],
                       ['건물가', 'contractor__contract__contractprice__price_build', 12],
                       ['대지가', 'contractor__contract__contractprice__price_land', 12],
@@ -168,9 +168,9 @@ class ExportContracts(View):
         queryset = queryset.filter(contractor__status=status) if status else queryset
         queryset = queryset.filter(order_group=group) if group else queryset
         queryset = queryset.filter(unit_type=type) if type else queryset
-        queryset = queryset.filter(keyunit__houseunit__building_unit=dong) if dong else queryset
+        queryset = queryset.filter(key_unit__houseunit__building_unit=dong) if dong else queryset
         null_qry = True if is_null == '1' else False
-        queryset = queryset.filter(keyunit__houseunit__isnull=null_qry) if is_null else queryset
+        queryset = queryset.filter(key_unit__houseunit__isnull=null_qry) if is_null else queryset
         queryset = queryset.filter(contractor__qualification=quali) if quali else queryset
         sup_qry = True if sup == 'true' else False
         queryset = queryset.filter(is_sup_cont=sup_qry) if sup else queryset
@@ -287,7 +287,7 @@ class ExportApplicants(View):
         header_src = [[],
                       ['일련번호', 'serial_number', 10],
                       ['차수', 'order_group__order_group_name', 10],
-                      ['타입', 'keyunit__unit_type__name', 7],
+                      ['타입', 'key_unit__unit_type__name', 7],
                       ['청약자', 'contractor__name', 10],
                       ['청약일자', 'contractor__reservation_date', 12],
                       ['연락처[1]', 'contractor__contractorcontact__cell_phone', 14],
@@ -298,8 +298,8 @@ class ExportApplicants(View):
 
         if project.is_unit_set:
             header_src.append(
-                ['동', 'keyunit__houseunit__building_unit', 7],
-                ['호수', 'keyunit__houseunit__name', 7]
+                ['동', 'key_unit__houseunit__building_unit', 7],
+                ['호수', 'key_unit__houseunit__name', 7]
             )
 
         # 1. Title
@@ -348,7 +348,7 @@ class ExportApplicants(View):
         # 4. Body
         # Get some data to write to the spreadsheet.
         data = Contract.objects.filter(project=project,
-                                       keyunit__contract__isnull=False,
+                                       key_unit__isnull=False,
                                        contractor__status='1')
 
         data = data.values_list(*params)
@@ -887,7 +887,7 @@ def export_payments_xls(request):
     resources = [
         ['거래일자', 'deal_date'],
         ['차수', 'contract__order_group__order_group_name'],
-        ['타입', 'contract__keyunit__unit_type__name'],
+        ['타입', 'contract__key_unit__unit_type__name'],
         ['일련번호', 'contract__serial_number'],
         ['계약자', 'contract__contractor__name'],
         ['입금 금액', 'income'],
@@ -996,7 +996,7 @@ class ExportPayments(View):
         header_src = [
             ['거래일자', 'deal_date', 12],
             ['차수', 'contract__order_group__order_group_name', 12],
-            ['타입', 'contract__keyunit__unit_type__name', 10],
+            ['타입', 'contract__key_unit__unit_type__name', 10],
             ['일련번호', 'contract__serial_number', 12],
             ['계약자', 'contract__contractor__name', 11],
             ['입금 금액', 'income', 12],
@@ -1007,8 +1007,8 @@ class ExportPayments(View):
         ]
 
         if project.is_unit_set:
-            header_src.insert(4, ['동', 'contract__keyunit__houseunit__building_unit__name', 7])
-            header_src.insert(5, ['호수', 'contract__keyunit__houseunit__name', 7])
+            header_src.insert(4, ['동', 'contract__key_unit__houseunit__building_unit__name', 7])
+            header_src.insert(5, ['호수', 'contract__key_unit__houseunit__name', 7])
 
         # 1. Title
         row_num = 0
@@ -1225,15 +1225,15 @@ class ExportPaymentsByCont(View):
             ['계약번호', 'serial_number', 10],
             ['성명', 'contractor__name', 10],
             ['차수', 'order_group__order_group_name', 10],
-            ['타입', 'keyunit__unit_type__name', 7],
+            ['타입', 'key_unit__unit_type__name', 7],
             ['계약일', 'contractor__contract_date', 12],
             ['기납부 총액', '', 14],
             ['미납내역', '', 13],
         ]
 
         if project.is_unit_set:
-            header_src.insert(4, ['동', 'keyunit__houseunit__building_unit__name', 7])
-            header_src.insert(5, ['호수', 'keyunit__houseunit__name', 7])
+            header_src.insert(4, ['동', 'key_unit__houseunit__building_unit__name', 7])
+            header_src.insert(5, ['호수', 'key_unit__houseunit__name', 7])
 
         # PayOrders columns insert
         for i, po in enumerate(due_pay_orders):
