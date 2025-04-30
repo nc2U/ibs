@@ -21,6 +21,13 @@ global:
 nameOverride: ""
 fullnameOverride: ""
 
+mariadb:
+  enabled: true
+
+
+postgres:
+  enabled: false
+
 nginx:
   service:
     type: LoadBalancer

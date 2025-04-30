@@ -8,8 +8,9 @@ global:
   dbPort: "5432"
   dbServiceName: "postgres"
 
-postgres:
-  replicaCount: 2
+mariadb:
+  enabled: false
+  replicaCount: 1
   volumes:
     dataPvStorage: 500Mi
     dataPvcStorage: 500Mi
@@ -17,12 +18,13 @@ postgres:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
-mariadb:
-  replicaCount: 1
+postgres:
+  enabled: true
+  replicaCount: 2
   volumes:
     dataPvStorage: 500Mi
     dataPvcStorage: 500Mi
-    
+
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
