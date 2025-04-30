@@ -416,7 +416,7 @@ class PdfExportBill(View):
         bill_data['contract'] = contract = get_contract(cont_id)
 
         try:
-            unit = contract.keyunit.houseunit
+            unit = contract.key_unit.houseunit
         except ObjectDoesNotExist:
             unit = None
 
@@ -577,8 +577,8 @@ class PdfExportBill(View):
         """
         contractor = contract.contractor.name
         cont_date = contract.contractor.contract_date
-        cont_no = contract.keyunit.houseunit if unit else contract.serial_number
-        cont_type = contract.unit_type or contract.keyunit.unit_type
+        cont_no = contract.key_unit.houseunit if unit else contract.serial_number
+        cont_type = contract.unit_type or contract.key_unit.unit_type
 
         return {
             'contractor': contractor,

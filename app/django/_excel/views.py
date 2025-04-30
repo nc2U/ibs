@@ -1346,13 +1346,13 @@ class ExportPaymentsByCont(View):
                                                    order_group__order_group_name=row[3],
                                                    unit_type__name=row[4])
             try:
-                floor = contract.keyunit.houseunit.floor_type
+                floor = contract.key_unit.houseunit.floor_type
                 cont_price = prices.get(unit_floor_type=floor).price  # 분양가
             except ObjectDoesNotExist:
                 cont_price = ProjectIncBudget.objects.get(order_group__order_group_name=row[3],
                                                           unit_type__name=row[4]).average_price
             except ProjectIncBudget.DoesNotExsist:
-                price = contract.keyunit.unit_type.average_price
+                price = contract.key_unit.unit_type.average_price
                 cont_price = price if price else 0  # 분양가
 
             for pi, po in enumerate(due_pay_orders):  # 회차별 납입 내역 삽입
@@ -1369,7 +1369,7 @@ class ExportPaymentsByCont(View):
                         down_pay = DownPayment.objects.get(
                             project_id=project,
                             order_group=contract.order_group,
-                            unit_type=contract.keyunit.unit_type)
+                            unit_type=contract.key_unit.unit_type)
                         due_amt = down_pay.payment_amount
                     except DownPayment.DoesNotExist:
                         pn = round(down_num / 2)
