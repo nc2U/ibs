@@ -10,6 +10,7 @@ import {
 import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
+import type { Company } from '@/store/types/settings.ts'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link, PatchDocs } from '@/store/types/docs'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -50,7 +51,7 @@ const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   if (!payload.issue_project) {
     docsFilter.value.company = company.value as number
-    docsFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
+    docsFilter.value.issue_project = (comStore.company as Company)?.com_issue_project ?? ''
     docsFilter.value.is_real_dev = 'false'
     formTitle.value = '[본사]'
   } else {
@@ -140,7 +141,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
 
     if (!payload.issue_project)
       getData.issue_project =
-        docsFilter.value.issue_project ?? (comStore.company?.com_issue_project as number) ?? null
+        ((comStore.company as Company)?.com_issue_project as number) ?? docsFilter.value.issue_project ??  null
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
