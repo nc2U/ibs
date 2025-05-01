@@ -2,7 +2,7 @@
 DATE=$(date +"%Y-%m-%d")
 SQL_FILE="/var/backups/backup-postgres-${DATE}.sql"
 
-PGPASSWORD="${POSTGRES_PASSWORD}" psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -f "${SQL_FILE}"
+psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" --set ON_ERROR_STOP=on -f "${SQL_FILE}" 2> restore_error.log
 
 
 # 복원 성공 여부 확인
