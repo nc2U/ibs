@@ -46,7 +46,7 @@ dist
 
 # mysql & postgres data
 volume/mysql
-volume/data
+volume/postgres
 
 # virtualize
 venv/
