@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { loadFonts } from '@/plugins/webfontloader'
-import { vMaska } from 'maska'
+import { vMaska } from "maska/vue"
 import { CIcon } from '@coreui/icons-vue'
 import { iconsSet as icons } from '@/assets/icons'
 import router from '@/router'

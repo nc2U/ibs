@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { useStore } from '@/store'
-import { vMaska } from 'maska'
+import { vMaska } from "maska/vue"
 import Datepicker from '@vuepic/vue-datepicker'
 
 defineProps({
