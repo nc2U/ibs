@@ -58,14 +58,14 @@ jobs:
           command: |
             if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
               helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+            fi
+            if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
+              helm upgrade --install nfs-subdir-external-provisioner \
+                nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+                  -n kube-system \
+                  --set nfs.server=${{ secrets.CICD_HOST }} \
+                  --set nfs.path=/mnt/nfs-subdir-external-provisioner
             fi;
-#            if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
-#              helm upgrade --install nfs-subdir-external-provisioner \
-#                nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
-#                  -n kube-system \
-#                  --set nfs.server=${{ secrets.CICD_HOST }} \
-#                  --set nfs.path=/mnt/nfs-subdir-external-provisioner
-#            fi;
             cd ${{ secrets.CICD_PATH }}/dev
             kubectl apply -f deploy/kubectl/class-roles; cd deploy/helm
             
