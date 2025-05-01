@@ -161,7 +161,7 @@ const delSubmit = () => {
       </CRow>
       <v-divider class="mt-0 mb-2" />
       <div class="history pl-0 text-body">
-        <VueMarkdownIt v-if="!editMode" :source="log.comment?.content + '\n' ?? '\n'" />
+        <VueMarkdownIt v-if="!editMode" :source="log.comment?.content + '\n' || '\n'" />
         <span v-else>
           <MdEditor v-model="content" style="height: 150px" class="mb-1" placeholder="Comment.." />
           <CFormCheck id="private_comment" label="비공개 댓글" />
