@@ -4,10 +4,10 @@ metadata:
   name: run-{{ .Values.global.appMode }}-nfs-client-provisioner
 subjects:
   - kind: ServiceAccount
-    name: {{ include "mariadb.serviceAccountName" . }}-nfs-client-provisioner
+    name: {{ include "mariadb.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
   - kind: ServiceAccount
-    name: {{ include "postgres.serviceAccountName" . }}-nfs-client-provisioner
+    name: {{ include "postgres.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
@@ -31,10 +31,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "mariadb.serviceAccountName" . }}-nfs-client-provisioner
+    name: {{ include "mariadb.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
   - kind: ServiceAccount
-    name: {{ include "postgres.serviceAccountName" . }}-nfs-client-provisioner
+    name: {{ include "postgres.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
