@@ -18,4 +18,3 @@ rules:
   - apiGroups: [ "" ]
     resources: [ "events" ]
     verbs: [ "create", "update", "patch" ]
----
