@@ -35,10 +35,10 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             if kubectl get pod -n ibs-dev mariadb-0 >/dev/null 2>&1; then
-              kubectl exec -it -n ibs-dev mariadb-0 -- bash /var/backups/script_restore.sh
+              kubectl exec -it -n ibs-dev mariadb-0 -- bash /var/backups/restore_mariadb.sh
             fi
             if kubectl get pod -n ibs-dev postgres-0 >/dev/null 2>&1; then
-              kubectl exec -it -n ibs-dev mariadb-0 -- bash /var/backups/script_restore.sh
+              kubectl exec -it -n ibs-dev mariadb-0 -- bash /var/backups/restore_postgres.sh
             fi
 
       # slack --> notification
