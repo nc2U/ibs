@@ -10,6 +10,7 @@ import {
 import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
+import type { Company } from '@/store/types/settings.ts'
 import { type SuitCaseFilter as cFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Link, SuitCase } from '@/store/types/docs'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -73,7 +74,7 @@ const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeComDocs)
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+const company = computed(() => (comStore.company as Company)?.pk)
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
@@ -113,7 +114,9 @@ watch(route, val => {
 })
 
 const onSubmit = (payload: SuitCase) => {
-  if (!!company.value)
+  if (!!company.value) {
+    console.log(payload)
+
     if (payload.pk) {
       updateSuitCase(payload)
       router.replace({
@@ -121,10 +124,11 @@ const onSubmit = (payload: SuitCase) => {
         params: { caseId: payload.pk },
       })
     } else {
-      payload.issue_project = caseFilter.value.issue_project || null
+      payload.issue_project = ((comStore.company as Company)?.com_issue_project as number) ?? null
       createSuitCase(payload)
       router.replace({ name: `${mainViewName.value}` })
     }
+  }
 }
 
 const onDelete = (pk: number) => deleteSuitCase(pk)
