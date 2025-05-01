@@ -18,6 +18,7 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
+import type { Project } from '@/store/types/project.ts'
 
 const fController = ref()
 const typeNumber = ref(1)
@@ -110,7 +111,8 @@ const docsScrape = (docs: number) => {
 const onSubmit = async (payload: Docs & Attatches) => {
   if (project.value) {
     const { pk, ...getData } = payload
-    if (!payload.issue_project) getData.issue_project = projStore.project?.issue_project as number
+    if (!payload.issue_project)
+      getData.issue_project = (projStore.project as Project)?.issue_project as number
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
