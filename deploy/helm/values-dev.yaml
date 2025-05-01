@@ -8,7 +8,7 @@ global:
   dbPort: "5432"
 
 mariadb:
-  enabled: true
+  enabled: false
   replicaCount: 1
   volumes:
     dataPvStorage: 500Mi
