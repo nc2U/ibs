@@ -21,7 +21,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 mariadb:
-  enabled: true
+  enabled: false
 
 postgres:
   enabled: true
