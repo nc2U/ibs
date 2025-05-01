@@ -63,7 +63,8 @@ jobs:
                   -n kube-system \
                   --set nfs.server=${{ secrets.CICD_HOST }} \
                   --set nfs.path=/mnt/nfs-subdir-external-provisioner
-            fi; cd ${{ secrets.CICD_PATH }}/dev
+            fi
+            cd ${{ secrets.CICD_PATH }}/dev
             kubectl apply -f deploy/kubectl/class-roles; cd deploy/helm
             
             helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values.yaml \
