@@ -10,6 +10,7 @@ import {
 import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
+import type { Company } from '@/store/types/settings.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link, PatchDocs, SuitCase } from '@/store/types/docs'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -81,8 +82,8 @@ const pageSelect = (page: number) => {
 }
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
-const comIProject = computed(() => comStore.company?.com_issue_project ?? '')
+const company = computed(() => (comStore.company as Company)?.pk)
+const comIProject = computed(() => (comStore.company as Company)?.com_issue_project ?? '')
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
@@ -143,9 +144,8 @@ const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
     const { pk, ...getData } = payload
     if (!payload.issue_project)
-      getData.issue_project = docsFilter.value.issue_project
-        ? (docsFilter.value.issue_project as number)
-        : (comIProject.value as number)
+      getData.issue_project =
+        (comIProject.value as number) ?? docsFilter.value.issue_project ?? null
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
