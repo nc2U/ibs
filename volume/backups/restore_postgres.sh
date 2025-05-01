@@ -1,8 +1,8 @@
 #!/bin/bash
 DATE=$(date +"%Y-%m-%d")
-SQL_FILE="/var/backups/backup-postgres-${DATE}.sql"
+SQL_FILE="/var/backups/backup-postgres-${DATE}.dump"
 
-psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -f "${SQL_FILE}" 2> restore_error.log
+pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -F c "${SQL_FILE}" 2> restore_error.log
 
 
 # 복원 성공 여부 확인
