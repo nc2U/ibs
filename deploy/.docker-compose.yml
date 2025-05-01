@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: my-db-password # 실제 데이터로 수정
       TZ: Asia/Seoul
     volumes:
-      - ../volume/postgres:/var/lib/postgresql/data
+      - ../volume/pgdata:/var/lib/postgresql/data
       - ../volume/backups:/var/backups
       - ../volume/initdb/postgres:/docker-entrypoint-initdb.d
 
