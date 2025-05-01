@@ -12,7 +12,7 @@ mariadb-dump -u"${USER}" -p"${PASSWORD}" "${DATABASE}" --ignore-table="${DATABAS
 
 # 백업이 성공했는지 확인
 if [ $? -eq 0 ]; then
-    echo "Backup completed successfully: ${SQL_FILE}"
+    echo "MARIADB Backup completed successfully: ${SQL_FILE}"
 else
-    echo "Backup failed"
+    echo "MARIADB Backup failed"
 fi
