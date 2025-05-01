@@ -6,7 +6,7 @@ import type { User } from '@/store/types/accounts'
 import { directive as vFullscreen } from 'vue-fullscreen'
 import { logo } from '@/assets/brand/current-logo'
 import AppBreadcrumb from './AppBreadcrumb.vue'
-import AppHeaderDropdownAccnt from './AppHeaderDropdownAccnt.vue'
+import AppHeaderDropdown from './AppHeaderDropdown.vue'
 import TagsView from '@/layouts/containers/TagsView.vue'
 
 const store = useStore()
@@ -90,7 +90,7 @@ const toggleAside = () => store.toggleAside()
       </CHeaderNav>
 
       <CHeaderNav class="mr-4">
-        <AppHeaderDropdownAccnt
+        <AppHeaderDropdown
           v-if="isAuthorized"
           :user-info="userInfo as User"
           :profile="profile"

@@ -14,8 +14,8 @@ const sidebarVisible = computed(() => store.sidebarVisible)
   <CSidebar
     position="fixed"
     self-hiding="md"
-    :unfoldable="sidebarUnfoldable"
-    :visible="sidebarVisible"
+    :unfoldable="!!sidebarUnfoldable"
+    :visible="!!sidebarVisible"
     @visible-change="(event: any) => store.updateSidebarVisible(event)"
   >
     <CSidebarBrand>

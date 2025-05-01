@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { CContainer } from '@coreui/vue'
 import AppSidebar from '@/layouts/containers/AppSidebar.vue'
 import AppHeader from '@/layouts/containers/AppHeader.vue'
 import AppFooter from '@/layouts/containers/AppFooter.vue'

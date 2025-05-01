@@ -4,7 +4,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { createVuetify } from 'vuetify'
 import CoreuiVue from '@coreui/vue'
 
-import AppHeaderDropdownAccnt from '@/layouts/containers/AppHeaderDropdownAccnt.vue'
+import AppHeaderDropdown from '@/layouts/containers/AppHeaderDropdown.vue'
 
 const vuetify = createVuetify()
 
@@ -20,7 +20,7 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
       }
     })
 
-    const wrapper = mount(AppHeaderDropdownAccnt, {
+    const wrapper = mount(AppHeaderDropdown, {
       global: {
         plugins: [createTestingPinia(), vuetify, CoreuiVue],
         mocks: {},
