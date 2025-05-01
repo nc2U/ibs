@@ -1,6 +1,6 @@
 #!/bin/bash
 DATE=$(date +"%Y-%m-%d")
-SQL_FILE=/var/backups/backup-postgres-${DATE}.dump
+SQL_FILE=/var/backups/backup-postgres-${DATE}.sql
 
 # (2) in case you run this more than once a day,
 # remove the previous version of the file
