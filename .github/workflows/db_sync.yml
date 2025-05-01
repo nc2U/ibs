@@ -34,8 +34,13 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-                  kubectl exec -it -n ibs-dev mariadb-0 -- bash /var/backups/script_restore.sh
-      
+            if kubectl get pod -n ibs-dev mariadb-0 >/dev/null 2>&1; then
+              kubectl exec -it -n ibs-dev mariadb-0 -- bash /var/backups/script_restore.sh
+            fi
+            if kubectl get pod -n ibs-dev postgres-0 >/dev/null 2>&1; then
+              kubectl exec -it -n ibs-dev mariadb-0 -- bash /var/backups/script_restore.sh
+            fi
+
       # slack --> notification
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
