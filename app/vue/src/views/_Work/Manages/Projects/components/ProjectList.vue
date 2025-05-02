@@ -68,24 +68,3 @@ onBeforeMount(() => emit('aside-visible', true))
     </CCol>
   </CRow>
 </template>
-
-<style lang="scss" scoped>
-.project-set {
-  padding-bottom: 0;
-}
-
-.project-set a {
-  font-weight: bold;
-  font-size: 1.13em;
-}
-
-.project-set .child {
-  a {
-    font-size: 0.96em;
-    font-weight: normal;
-  }
-
-  padding-left: 12px;
-  border-left: 3px solid #ddd;
-}
-</style>
