@@ -60,9 +60,9 @@ onBeforeMount(() => emit('aside-visible', true))
 
   <CRow v-else>
     <template v-for="proj in projectList" :key="proj.pk">
-      <CCol v-if="hasVisible(proj)" sm="12" lg="6" xl="4">
+      <CCol sm="12" md="6" lg="4" xl="3">
         <CCard class="my-2">
-          <CCardBody class="project-set">
+          <CCardBody v-if="hasVisible(proj)" class="project-set">
             <span v-if="proj.visible">
               <router-link
                 :to="{ name: '(개요)', params: { projId: proj.slug } }"
