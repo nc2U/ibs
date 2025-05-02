@@ -80,7 +80,7 @@ const getActivities = computed(() => workStore.getActivities)
 
 const modules = computed(() => issueProject.value?.module)
 
-const issue = computed<Issue>(() => workStore.issue)
+const issue = computed<Issue | null>(() => workStore.issue)
 
 const onSubmit = (payload: any) => {
   workStore.createIssueProject(payload)
