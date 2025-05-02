@@ -5,7 +5,7 @@ import { dateFormat } from '@/utils/baseMixins'
 import { useWork } from '@/store/pinia/work'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import type { Company } from '@/store/types/settings'
-import type { ActLogEntryFilter, IssueProject } from '@/store/types/work'
+import type { ActLogEntryFilter, Issue, IssueProject } from '@/store/types/work'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ProjectList from '@/views/_Work/Manages/Projects/components/ProjectList.vue'
@@ -80,7 +80,7 @@ const getActivities = computed(() => workStore.getActivities)
 
 const modules = computed(() => issueProject.value?.module)
 
-const issue = computed(() => workStore.issue)
+const issue = computed<Issue>(() => workStore.issue)
 
 const onSubmit = (payload: any) => {
   workStore.createIssueProject(payload)

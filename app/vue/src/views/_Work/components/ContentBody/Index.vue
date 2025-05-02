@@ -26,7 +26,7 @@ defineExpose({ toggle })
       <slot> Under Construction!</slot>
     </CCol>
 
-    <CCol v-if="aside" class="text-body p-4 d-none d-lg-block col-lg-3">
+    <CCol v-if="aside" class="text-body p-4 d-none d-xl-block col-lg-2">
       <slot name="aside"> Under Construction!</slot>
     </CCol>
 
