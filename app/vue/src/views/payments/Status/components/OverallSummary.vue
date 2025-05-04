@@ -6,9 +6,7 @@ import type { PayOrder } from '@/store/types/payment'
 import { numFormat } from '@/utils/baseMixins'
 import { useContract } from '@/store/pinia/contract'
 
-defineProps({
-  date: { type: String, default: '' },
-})
+defineProps({ date: { type: String, default: '' } })
 
 const payStore = usePayment()
 const payOrderList = computed<PayOrder[]>(() => payStore.payOrderList)
