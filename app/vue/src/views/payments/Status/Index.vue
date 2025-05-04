@@ -31,7 +31,6 @@ const contStore = useContract()
 const fetchOrderGroupList = (proj: number) => contStore.fetchOrderGroupList(proj)
 const fetchContSummaryList = (proj: number, date?: string) =>
   contStore.fetchContSummaryList(proj, date)
-const fetchContAggregate = (proj: number) => contStore.fetchContAggregate(proj)
 
 const payStore = usePayment()
 const fetchPaySumList = (proj: number, date?: string) => payStore.fetchPaySumList(proj, date)
@@ -52,7 +51,8 @@ const dataSetup = (pk: number) => {
   fetchIncBudgetList(pk)
   fetchPaySumList(pk)
   fetchPayOrderList(pk)
-  fetchContAggregate(pk)
+  contStore.fetchContAggregate(pk)
+  contStore.fetchContPriceSum(pk)
 }
 
 const dataReset = () => {
@@ -62,6 +62,7 @@ const dataReset = () => {
   projStore.proIncBudgetList = []
   payStore.paySumList = []
   contStore.removeContAggregate()
+  contStore.removeContPriceSum()
 }
 
 const projSelect = (target: number | null) => {

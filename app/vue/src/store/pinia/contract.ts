@@ -150,6 +150,17 @@ export const useContract = defineStore('contract', () => {
   // state & getters
   const subsSummaryList = ref<SubsSummary[]>([])
   const contSummaryList = ref<ContSummary[]>([])
+  const contAggregate = ref<{
+    total_units: number
+    subs_num: number
+    conts_num: number
+    non_conts_num: number
+  } | null>()
+  const contPriceSum = ref<{
+    down_pay_sum: number
+    middle_pay_sum: number
+    remain_pay_sum: number
+  } | null>(null)
 
   // actions
   const fetchSubsSummaryList = (project: number) =>
@@ -164,13 +175,6 @@ export const useContract = defineStore('contract', () => {
       .then(res => (contSummaryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const contAggregate = ref<{
-    total_units: number
-    subs_num: number
-    conts_num: number
-    non_conts_num: number
-  } | null>()
-
   const removeContAggregate = () => (contAggregate.value = null)
 
   const fetchContAggregate = (project: number) =>
@@ -178,6 +182,14 @@ export const useContract = defineStore('contract', () => {
       .get(`/cont-aggregate/${project}/`)
       .then(res => (contAggregate.value = res.data))
       .catch(err => errorHandle(err.response.data))
+
+  const fetchContPriceSum = (project: number) =>
+    api
+      .get(`/cont-price-sum/${project}/`)
+      .then(res => (contPriceSum.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const removeContPriceSum = () => (contPriceSum.value = null)
 
   const orderGroupList = ref<OrderGroup[]>([])
   const getOrderGroups = computed(() =>
@@ -409,13 +421,15 @@ export const useContract = defineStore('contract', () => {
 
     subsSummaryList,
     contSummaryList,
+    contAggregate,
+    contPriceSum,
 
     fetchSubsSummaryList,
     fetchContSummaryList,
-
-    contAggregate,
     removeContAggregate,
     fetchContAggregate,
+    fetchContPriceSum,
+    removeContPriceSum,
 
     orderGroupList,
     getOrderGroups,
