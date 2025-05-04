@@ -60,9 +60,15 @@ const contPriceSum = computed(() => contStore.contPriceSum)
           계약({{ numFormat(contAggregate?.conts_num ?? 0) }})
         </CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
-          <span v-if="order.pay_sort === '1'">{{ numFormat(contPriceSum.down_pay_sum) }}</span>
-          <span v-if="order.pay_sort === '2'">{{ numFormat(contPriceSum.middle_pay_sum) }}</span>
-          <span v-if="order.pay_sort === '3'">{{ numFormat(contPriceSum.remain_pay_sum) }}</span>
+          <span v-if="order.pay_sort === '1'">
+            {{ numFormat(contPriceSum?.down_pay_sum ?? 0) }}
+          </span>
+          <span v-if="order.pay_sort === '2'">
+            {{ numFormat(contPriceSum?.middle_pay_sum ?? 0) }}
+          </span>
+          <span v-if="order.pay_sort === '3'">
+            {{ numFormat(contPriceSum?.remain_pay_sum ?? 0) }}
+          </span>
         </CTableDataCell>
       </CTableRow>
       <CTableRow>
