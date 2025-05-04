@@ -738,6 +738,12 @@ class ContractAggregateSerializer(serializers.Serializer):
     non_conts_num = serializers.IntegerField()
 
 
+class ContPriceSumSerializer(serializers.Serializer):
+    down_pay_sum = serializers.IntegerField()
+    middle_pay_sum = serializers.IntegerField()
+    remain_pay_sum = serializers.IntegerField()
+
+
 class ContractInContractorSerializer(serializers.ModelSerializer):
     key_unit = serializers.PrimaryKeyRelatedField(read_only=True)
 

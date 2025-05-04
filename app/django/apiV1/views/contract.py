@@ -117,6 +117,8 @@ class ContSummaryViewSet(viewsets.ModelViewSet):
 
 
 class ContractAggreateView(APIView):
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
     def get(self, request, project_id):
         try:
             project = Project.objects.get(pk=project_id)
@@ -143,6 +145,21 @@ class ContractAggreateView(APIView):
         }
 
         serializer = ContractAggregateSerializer(data)
+        return Response(serializer.data)
+
+
+class ContPriceSumView(APIView):
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+    def get(self, request, project_id, ):
+        totals = ContractPrice.objects.filter(contract__project_id=project_id,
+                                              contract__activation=True,
+                                              contract__contractor__status='2').aggregate(
+            down_pay_sum=Sum('down_pay'),
+            middle_pay_sum=Sum('middle_pay'),
+            remain_pay_sum=Sum('remain_pay'),
+        )
+        serializer = ContPriceSumSerializer(totals)
         return Response(serializer.data)
 
 
