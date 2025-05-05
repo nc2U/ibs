@@ -31,15 +31,11 @@ api.interceptors.response.use(
     close() // 에러 발생 시 진행바 닫기
     if (error.response && error.response.status === 401) {
       const redirectPath = Cookies.get('redirectPath') || '/'
-      try {
-        // 로그인 페이지로 리다이렉트
-        await router.push({
-          name: 'Login',
-          query: { redirect: redirectPath },
-        })
-      } catch (err) {
-        console.error('Router push error:', err) // 디버깅 로그
-      }
+      // 로그인 페이지로 리다이렉트
+      await router.push({
+        name: 'Login',
+        query: { redirect: redirectPath },
+      })
     }
     return Promise.reject(error)
   },
