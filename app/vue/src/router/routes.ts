@@ -1,7 +1,5 @@
-import { computed } from 'vue'
 import { useStore } from '@/store'
 import { hashCode } from '@/utils/helper'
-import { useAccount } from '@/store/pinia/account'
 import { type RouteRecordRaw } from 'vue-router'
 
 /* Layout Containers */
@@ -81,13 +79,6 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: 'Not-Found', except: true },
       },
     ],
-    beforeEnter: to => {
-      if (to.matched.some(r => r.meta.auth)) {
-        const isAuth = computed(() => useAccount().isAuthorized)
-        if (isAuth.value) return true
-        else return { name: 'Login', query: { redirect: to.fullPath } }
-      }
-    },
   },
   {
     path: '/accounts/login',
