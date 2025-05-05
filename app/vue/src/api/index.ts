@@ -3,15 +3,11 @@ import router from '@/router'
 import Cookies from 'js-cookie'
 import { start, close } from '@/utils/nprogress'
 
-const api = axios.create({
-  baseURL: '/api/v1/',
-  withCredentials: true, // 쿠키를 포함한 요청 (CSRF 및 세션 쿠키용)
-})
+const api = axios.create({ baseURL: '/api/v1/' })
 
 // 요청 인터셉터
 api.interceptors.request.use(
   config => {
-    // 현재 경로 저장
     start() // 진행바 시작
     return config
   },
