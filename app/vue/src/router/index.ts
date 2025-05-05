@@ -8,7 +8,8 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.name !== 'Login') Cookies.set('redirectPath', to.path)
+  if (!!to.meta.auth) Cookies.set('redirectPath', to.path)
+  else Cookies.set('redirectPath', '/')
   next()
 })
 
