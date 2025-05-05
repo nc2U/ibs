@@ -9,7 +9,6 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   if (!!to.meta.auth) Cookies.set('redirectPath', to.path)
-  else Cookies.set('redirectPath', '/')
   next()
 })
 
