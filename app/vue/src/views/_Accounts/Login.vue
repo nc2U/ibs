@@ -11,7 +11,10 @@ const accStore = useAccount()
 const router = useRouter()
 
 const onSubmit = (payload: { email: string; password: string; redirect: string }) =>
-  accStore.login(payload).then(() => router.push({ name: 'Home' }))
+  accStore.login(payload).then(() => {
+    if (payload.redirect) router.push(payload.redirect)
+    else router.push({ name: 'Home' })
+  })
 
 const toLogin = () => (formName.value = 'login')
 const findPass = () => (formName.value = 'pass')
