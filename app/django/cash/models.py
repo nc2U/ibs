@@ -7,7 +7,7 @@ from project.models import Project
 
 class BankCode(models.Model):
     code = models.CharField(max_length=3, unique=True)
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, db_index=True)
 
     def __str__(self):
         return self.name
@@ -19,7 +19,7 @@ class CompanyBankAccount(models.Model):
     depart = models.ForeignKey('company.Department', on_delete=models.SET_NULL, null=True, blank=True,
                                verbose_name='관리부서')
     bankcode = models.ForeignKey(BankCode, on_delete=models.PROTECT, verbose_name='거래은행')
-    alias_name = models.CharField('계좌별칭', max_length=20)
+    alias_name = models.CharField('계좌별칭', max_length=20, db_index=True)
     number = models.CharField('계좌번호', max_length=30, blank=True)
     holder = models.CharField('예금주', max_length=20, blank=True)
     open_date = models.DateField('개설일자', null=True, blank=True)
@@ -80,7 +80,7 @@ class ProjectBankAccount(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     order = models.PositiveSmallIntegerField('순서', null=True, blank=True)
     bankcode = models.ForeignKey(BankCode, on_delete=models.PROTECT, verbose_name='은행코드')
-    alias_name = models.CharField('계좌별칭', max_length=20)
+    alias_name = models.CharField('계좌별칭', max_length=20, db_index=True)
     number = models.CharField('계좌번호', max_length=30, blank=True)
     holder = models.CharField('예금주', max_length=20, blank=True)
     open_date = models.DateField('개설일자', null=True, blank=True)

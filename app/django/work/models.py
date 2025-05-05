@@ -12,7 +12,7 @@ class IssueProject(models.Model):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name="회사")
     SORT_CHOICES = (('1', '본사관리'), ('2', '부동산개발'), ('3', '기타 프로젝트'))
     sort = models.CharField('유형', max_length=1, default='2', choices=SORT_CHOICES)
-    name = models.CharField('이름', max_length=100)
+    name = models.CharField('이름', max_length=100, db_index=True)
     slug = models.CharField('식별자', max_length=100, unique=True,
                             help_text='1에서 100글자 소문자(a-z), 숫자, 대쉬(-)와 밑줄(_)만 가능합니다. 식별자는 저장 후에는 수정할 수 없습니다.')
     description = models.TextField('설명', blank=True, default='')
@@ -131,7 +131,7 @@ class Module(models.Model):
 
 
 class Role(models.Model):
-    name = models.CharField('이름', max_length=20)
+    name = models.CharField('이름', max_length=20, db_index=True)
     assignable = models.BooleanField('업무 위탁 권한', default=True)
     ISSUE_VIEW_PERM = (('ALL', '모든 업무'), ('PUB', '비공개 업무 제외'), ('PRI', '직접 생성 또는 담당한 업무'))
     issue_visible = models.CharField('업무 보기 권한', max_length=3, choices=ISSUE_VIEW_PERM, default='PUB')
@@ -265,7 +265,7 @@ class Member(models.Model):
 
 class Version(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='versions')
-    name = models.CharField('이름', max_length=20)
+    name = models.CharField('이름', max_length=20, db_index=True)
     status = models.CharField('상태', max_length=1, choices=(('1', '진행'), ('2', '잠김'), ('3', '닫힘')), default='1')
     SHARING_CHOICES = (
         ('0', '공유 없음'), ('1', '하위 프로젝트'), ('2', '상위 및 하위 프로젝트'), ('3', '최상위 및 모든 하위 프로젝트'), ('4', '모든 프로젝트'))
@@ -286,7 +286,7 @@ class Version(models.Model):
 
 
 class Tracker(models.Model):
-    name = models.CharField('이름', max_length=100)
+    name = models.CharField('이름', max_length=100, db_index=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
     is_in_roadmap = models.BooleanField('로드맵에 표시', default=True)
     default_status = models.ForeignKey('IssueStatus', on_delete=models.PROTECT, verbose_name='초기 상태')
@@ -306,7 +306,7 @@ class Tracker(models.Model):
 
 class IssueCategory(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='categories')
-    name = models.CharField('범주', max_length=100)
+    name = models.CharField('범주', max_length=100, db_index=True)
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                     null=True, blank=True, verbose_name='담당자')
 
@@ -320,7 +320,7 @@ class IssueCategory(models.Model):
 
 
 class IssueStatus(models.Model):
-    name = models.CharField('이름', max_length=20)
+    name = models.CharField('이름', max_length=20, db_index=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
     closed = models.BooleanField('완료 상태', default=False)
     order = models.PositiveSmallIntegerField('정렬', default=1)
@@ -373,7 +373,7 @@ class Repository(models.Model):
 
 
 class CodeActivity(models.Model):
-    name = models.CharField('이름', max_length=50)
+    name = models.CharField('이름', max_length=50, db_index=True)
     active = models.BooleanField('사용중', default=True)
     default = models.BooleanField('기본값', default=False)
     order = models.PositiveSmallIntegerField('정렬', default=1)
@@ -391,7 +391,7 @@ class CodeActivity(models.Model):
 
 
 class CodeIssuePriority(models.Model):
-    name = models.CharField('이름', max_length=20)
+    name = models.CharField('이름', max_length=20, db_index=True)
     active = models.BooleanField('사용중', default=True)
     default = models.BooleanField('기본값', default=False)
     order = models.PositiveSmallIntegerField('정렬', default=1)
@@ -409,7 +409,7 @@ class CodeIssuePriority(models.Model):
 
 
 class CodeDocsCategory(models.Model):
-    name = models.CharField('이름', max_length=20)
+    name = models.CharField('이름', max_length=20, db_index=True)
     active = models.BooleanField('사용중', default=True)
     default = models.BooleanField('기본값', default=False)
     order = models.PositiveSmallIntegerField('정렬', default=1)
@@ -431,7 +431,7 @@ class Issue(models.Model):
     tracker = models.ForeignKey(Tracker, on_delete=models.PROTECT, verbose_name='유형')
     status = models.ForeignKey(IssueStatus, on_delete=models.PROTECT, verbose_name='상태')
     priority = models.ForeignKey(CodeIssuePriority, on_delete=models.PROTECT, verbose_name='우선순위')
-    subject = models.CharField(max_length=100, verbose_name='제목')
+    subject = models.CharField(max_length=100, verbose_name='제목', db_index=True)
     description = models.TextField(verbose_name='설명', blank=True, default='')
     category = models.ForeignKey(IssueCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='범주')
     fixed_version = models.ForeignKey(Version, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='목표 버전',
@@ -494,7 +494,7 @@ def get_issue_file_path(instance, filename):
 class IssueFile(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, default=None, verbose_name='업무', related_name='files')
     file = models.FileField(upload_to=get_issue_file_path, verbose_name='파일')
-    file_name = models.CharField('파일명', max_length=100, blank=True)
+    file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
@@ -555,7 +555,7 @@ class TimeEntry(models.Model):
 
 class News(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
-    title = models.CharField('제목', max_length=255)
+    title = models.CharField('제목', max_length=255, db_index=True)
     summary = models.CharField('요약', max_length=255, blank=True, default='')
     description = models.TextField('설명', blank=True, default='')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='저자')
@@ -578,7 +578,7 @@ def get_news_file_path(instance, filename):
 class NewsFile(models.Model):
     news = models.ForeignKey(News, on_delete=models.CASCADE, default=None, verbose_name='공지', related_name='files')
     file = models.FileField(upload_to=get_news_file_path, verbose_name='파일')
-    file_name = models.CharField('파일명', max_length=100, blank=True)
+    file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     description = models.CharField('부가설명', max_length=255, blank=True, default='')

@@ -9,8 +9,8 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     pay_time = models.PositiveSmallIntegerField('납부순서',
                                                 help_text='''동일 납부회차에 2가지 항목을 분리해서 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
                                                 하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.''')
-    pay_name = models.CharField('납부회차 명', max_length=20)
-    alias_name = models.CharField('회차 별칭', max_length=20, blank=True)
+    pay_name = models.CharField('납부회차 명', max_length=20, db_index=True)
+    alias_name = models.CharField('회차 별칭', max_length=20, blank=True, db_index=True)
     is_pm_cost = models.BooleanField('PM용역비 여부', default=False)
     pay_amt = models.PositiveIntegerField('납부 약정금액', null=True, blank=True,
                                           help_text='약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)')

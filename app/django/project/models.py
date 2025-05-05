@@ -9,7 +9,7 @@ from django.dispatch import receiver
 
 class Project(models.Model):
     issue_project = models.OneToOneField('work.IssueProject', on_delete=models.CASCADE, verbose_name="업무 프로젝트")
-    name = models.CharField('프로젝트명', max_length=30, unique=True)
+    name = models.CharField('프로젝트명', max_length=30, unique=True, db_index=True)
     order = models.PositiveSmallIntegerField('정렬순서', default=100)
     KIND_CHOICES = (
         ('1', '공동주택(아파트)'),
@@ -105,7 +105,7 @@ class Site(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트')
     order = models.PositiveSmallIntegerField('순서')
     district = models.CharField('행정동', max_length=10)
-    lot_number = models.CharField('지번', max_length=10)
+    lot_number = models.CharField('지번', max_length=10, db_index=True)
     site_purpose = models.CharField('지목', max_length=10)
     official_area = models.DecimalField('대지면적', max_digits=12, decimal_places=7)
     returned_area = models.DecimalField('환지면적', max_digits=12, decimal_places=7, null=True, blank=True)
@@ -129,7 +129,7 @@ class Site(models.Model):
 
 class SiteOwner(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트')
-    owner = models.CharField('소유자', max_length=20)
+    owner = models.CharField('소유자', max_length=20, db_index=True)
     use_consent = models.BooleanField('사용동의 여부', default=False)
     date_of_birth = models.DateField('생년월일', null=True, blank=True)
     phone1 = models.CharField('주연락처', max_length=13, blank=True)
@@ -222,7 +222,7 @@ class SiteContractFile(models.Model):
     site_contract = models.ForeignKey(SiteContract, on_delete=models.CASCADE, default=None, verbose_name='계약서',
                                       related_name='site_cont_files')
     file = models.FileField(upload_to=get_cont_file, verbose_name='파일경로')
-    file_name = models.CharField('파일명', max_length=100, blank=True)
+    file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)

@@ -12,7 +12,7 @@ class OrderGroup(models.Model):
     order_number = models.PositiveSmallIntegerField('차수')
     SORT_CHOICES = (('1', '조합모집'), ('2', '일반분양'))
     sort = models.CharField('구분', max_length=1, choices=SORT_CHOICES, default='1')
-    order_group_name = models.CharField('차수명', max_length=20)
+    order_group_name = models.CharField('차수명', max_length=20, db_index=True)
 
     def __str__(self):
         return self.order_group_name
@@ -25,7 +25,7 @@ class OrderGroup(models.Model):
 
 class Contract(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트')
-    serial_number = models.CharField('계약 일련 번호', max_length=30, unique=True)
+    serial_number = models.CharField('계약 일련 번호', max_length=30, unique=True, db_index=True)
     order_group = models.ForeignKey(OrderGroup, on_delete=models.PROTECT, verbose_name='차수')
     unit_type = models.ForeignKey('items.UnitType', on_delete=models.PROTECT, verbose_name='타입')
     activation = models.BooleanField('계약 활성 여부', default=True)
@@ -81,7 +81,7 @@ class ContractFile(models.Model):
     contract = models.ForeignKey(Contract, on_delete=models.CASCADE, default=None, verbose_name='계약서',
                                  related_name='contract_files')
     file = models.FileField(upload_to=get_contract_file_name, verbose_name='파일경로')
-    file_name = models.CharField('파일명', max_length=100, blank=True)
+    file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -112,7 +112,7 @@ class Contractor(models.Model):
     prev_contract = models.ForeignKey('Contract', on_delete=models.SET_NULL, null=True, blank=True,
                                       related_name='prev_contractors', verbose_name='종전 계약건',
                                       help_text='계약해지/양도승계 전 계약건')
-    name = models.CharField('계약자명', max_length=20)
+    name = models.CharField('계약자명', max_length=20, db_index=True)
     birth_date = models.DateField('생년월일', null=True, blank=True)
     GENDER_CHOICES = (('M', '남자'), ('F', '여자'))
     gender = models.CharField('성별', max_length=1, choices=GENDER_CHOICES, blank=True)

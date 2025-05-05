@@ -24,7 +24,7 @@ class DocType(models.Model):
 class Category(models.Model):
     doc_type = models.ForeignKey(DocType, on_delete=models.CASCADE, verbose_name='유형')
     color = models.CharField('색상', max_length=21, null=True, blank=True)
-    name = models.CharField('이름', max_length=100)
+    name = models.CharField('이름', max_length=100, db_index=True)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 카테고리')
     order = models.PositiveSmallIntegerField('정렬 순서', default=0)
     active = models.BooleanField('사용중', default=True)
@@ -277,7 +277,7 @@ class LawsuitCase(models.Model):
     other_agency = models.CharField('기타 처리기관', max_length=30, blank=True, default='',
                                     help_text='사건 유형이 기소 전 형사 사건인 경우 해당 수사기관을 기재')
     case_number = models.CharField('사건번호', max_length=20)
-    case_name = models.CharField('사건명', max_length=30)
+    case_name = models.CharField('사건명', max_length=30, db_index=True)
     plaintiff = models.CharField('원고(신청인)', max_length=30, blank=True, default='')
     plaintiff_attorney = models.CharField('원고 대리인', max_length=50, blank=True, default='')
     plaintiff_case_price = models.PositiveIntegerField('원고 소가', null=True, blank=True)
@@ -330,7 +330,7 @@ class Document(BaseModel):
     doc_type = models.ForeignKey(DocType, on_delete=models.PROTECT, verbose_name='유형')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리')
     lawsuit = models.ForeignKey(LawsuitCase, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='사건번호')
-    title = models.CharField('제목', max_length=255)
+    title = models.CharField('제목', max_length=255, db_index=True)
     execution_date = models.DateField('문서 시행일자', null=True, blank=True, help_text='문서 발신/수신/시행일자')
     content = models.TextField('내용', blank=True, default='')
     hit = models.PositiveIntegerField('조회수', default=0)
@@ -375,7 +375,7 @@ class Link(models.Model):
 class File(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서', related_name='files')
     file = models.FileField(upload_to='docs/%Y/%m/%d/', verbose_name='파일')
-    file_name = models.CharField('파일명', max_length=100, blank=True)
+    file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
@@ -399,7 +399,7 @@ class Image(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서',
                              related_name='images')
     image = models.ImageField(upload_to='docs/img/%Y/%m/%d/', verbose_name='이미지')
-    image_name = models.CharField('파일명', max_length=100, blank=True)
+    image_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     image_type = models.CharField('타입', max_length=100, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)

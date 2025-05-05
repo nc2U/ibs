@@ -12,7 +12,7 @@ class UnitType(models.Model):
         ('6', '기타')
     )
     sort = models.CharField('타입종류', max_length=1, choices=SORT_CHOICES)
-    name = models.CharField('타입명칭', max_length=10)
+    name = models.CharField('타입명칭', max_length=10, db_index=True)
     color = models.CharField('타입색상', max_length=20)
     actual_area = models.DecimalField('전용면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
     supply_area = models.DecimalField('공급면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
@@ -36,7 +36,7 @@ class UnitFloorType(models.Model):  # 층별 타입
     end_floor = models.SmallIntegerField('종료 층')
     extra_cond = models.CharField('방향/위치', max_length=20, blank=True,
                                   help_text='동일범위의 층범위를 방향/위치 등으로 구분해야 할 필요가 있는 경우 입력')
-    alias_name = models.CharField('층별 범위 명칭', max_length=20)
+    alias_name = models.CharField('층별 범위 명칭', max_length=20, db_index=True)
 
     def __str__(self):
         return self.alias_name
@@ -50,7 +50,7 @@ class UnitFloorType(models.Model):  # 층별 타입
 class KeyUnit(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트', related_name='units')
     unit_type = models.ForeignKey(UnitType, on_delete=models.PROTECT, verbose_name='타입')
-    unit_code = models.CharField('코드번호', max_length=8)
+    unit_code = models.CharField('코드번호', max_length=8, db_index=True)
 
     def __str__(self):
         return f'{self.unit_code}'
@@ -63,7 +63,7 @@ class KeyUnit(models.Model):
 
 class BuildingUnit(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트')
-    name = models.CharField('동(건물)이름', max_length=10)
+    name = models.CharField('동(건물)이름', max_length=10, db_index=True)
 
     class Meta:
         ordering = ('-project', 'id')
@@ -79,7 +79,7 @@ class HouseUnit(models.Model):
     floor_type = models.ForeignKey(UnitFloorType, on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name='층범위 타입')
     building_unit = models.ForeignKey(BuildingUnit, on_delete=models.PROTECT, verbose_name='동수')
-    name = models.CharField('호수', max_length=5, blank=True)
+    name = models.CharField('호수', max_length=5, blank=True, db_index=True)
     key_unit = models.OneToOneField(KeyUnit, on_delete=models.SET_NULL, null=True, blank=True,
                                     verbose_name='계약유닛')
     bldg_line = models.PositiveSmallIntegerField('라인')
@@ -100,7 +100,7 @@ class OptionItem(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     types = models.ManyToManyField('UnitType', verbose_name='타입구분')
     opt_code = models.CharField('품목코드', max_length=20, blank=True, null=True)
-    opt_name = models.CharField('품목이름', max_length=100)
+    opt_name = models.CharField('품목이름', max_length=100, db_index=True)
     opt_desc = models.CharField('세부옵션', max_length=200, blank=True, null=True)
     opt_maker = models.CharField('제조사', max_length=20, blank=True, null=True)
     opt_price = models.PositiveIntegerField(verbose_name='옵션가격')

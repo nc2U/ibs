@@ -9,7 +9,7 @@ from django.conf import settings
 
 class Book(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    title = models.CharField('제목', max_length=100)
+    title = models.CharField('제목', max_length=100, db_index=True)
     disclosure = models.BooleanField('공개 허용 여부', default=False)
     author = models.CharField('저자', max_length=50)
     translator = models.CharField('번역자', max_length=50, blank=True)
@@ -33,7 +33,7 @@ class Subject(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='subjects')
     seq = models.PositiveSmallIntegerField('순서')
-    title = models.CharField('단원 명칭', max_length=100)
+    title = models.CharField('단원 명칭', max_length=100, db_index=True)
 
     class SubLevel(models.IntegerChoices):
         _1 = 1

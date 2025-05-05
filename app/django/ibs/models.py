@@ -3,7 +3,7 @@ from django.conf import settings
 
 
 class AccountSort(models.Model):
-    name = models.CharField(max_length=2)
+    name = models.CharField(max_length=2, db_index=True)
 
     def __str__(self):
         return self.name
@@ -17,7 +17,7 @@ class AccountSort(models.Model):
 class AccountSubD1(models.Model):
     sorts = models.ManyToManyField('ibs.AccountSort')
     code = models.CharField(max_length=3)
-    name = models.CharField(max_length=10)
+    name = models.CharField(max_length=10, db_index=True)
     description = models.CharField(max_length=20)
 
     def __str__(self):
@@ -32,7 +32,7 @@ class AccountSubD1(models.Model):
 class AccountSubD2(models.Model):
     d1 = models.ForeignKey(AccountSubD1, on_delete=models.CASCADE, related_name='acc_d2s')
     code = models.CharField(max_length=3)
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, db_index=True)
     description = models.CharField(max_length=50)
 
     def __str__(self):
@@ -48,7 +48,7 @@ class AccountSubD3(models.Model):
     sort = models.ForeignKey(AccountSort, on_delete=models.CASCADE)
     d2 = models.ForeignKey(AccountSubD2, on_delete=models.CASCADE, related_name='acc_d3s')
     code = models.CharField(max_length=3)
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, db_index=True)
     is_hide = models.BooleanField(default=False)
     is_special = models.BooleanField(default=False)
     description = models.CharField(max_length=50)
@@ -65,7 +65,7 @@ class AccountSubD3(models.Model):
 class ProjectAccountD2(models.Model):
     d1 = models.ForeignKey(AccountSubD1, on_delete=models.CASCADE, related_name='pro_d2s')
     code = models.CharField(max_length=3)
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, db_index=True)
     description = models.CharField(max_length=50, blank=True)
 
     def __str__(self):
@@ -82,7 +82,7 @@ class ProjectAccountD3(models.Model):
     d2 = models.ForeignKey(ProjectAccountD2, on_delete=models.CASCADE, related_name='pro_d3s')
     code = models.CharField(max_length=3)
     is_related_contract = models.BooleanField(default=False)
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, db_index=True)
     description = models.CharField(max_length=50, blank=True)
 
     def __str__(self):
@@ -95,7 +95,7 @@ class ProjectAccountD3(models.Model):
 
 
 class CalendarSchedule(models.Model):
-    title = models.CharField('일정 제목', max_length=100)
+    title = models.CharField('일정 제목', max_length=100, db_index=True)
     all_day = models.BooleanField(default=True)
     start_date = models.DateField('시작 일자', null=True, blank=True)
     end_date = models.DateField('종료 일자', null=True, blank=True)
