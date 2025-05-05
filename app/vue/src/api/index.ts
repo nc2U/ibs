@@ -30,12 +30,12 @@ api.interceptors.response.use(
   async error => {
     close() // 에러 발생 시 진행바 닫기
     if (error.response && error.response.status === 401) {
-      const cookie = Cookies.get('redirectPath') || '/'
+      const redirectPath = Cookies.get('redirectPath') || '/'
       try {
         // 로그인 페이지로 리다이렉트
         await router.push({
           name: 'Login',
-          query: { redirect: cookie },
+          query: { redirect: redirectPath },
         })
       } catch (err) {
         console.error('Router push error:', err) // 디버깅 로그
