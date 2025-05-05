@@ -23,8 +23,8 @@ const contractor = computed<Contractor | null>(() => contStore.contractor)
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
-const unitSet = computed(() => (projStore.project as Project).is_unit_set)
-const isUnion = computed(() => !(projStore.project as Project).is_direct_manage)
+const unitSet = computed(() => (projStore.project as Project)?.is_unit_set)
+const isUnion = computed(() => !(projStore.project as Project)?.is_direct_manage)
 
 const fetchContract = (cont: number) => contStore.fetchContract(cont)
 
