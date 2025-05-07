@@ -82,10 +82,10 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       </span>
     </CTableDataCell>
     <CTableDataCell v-if="write_contract">
-      <CButton
+      <v-btn
         type="button"
         color="success"
-        size="sm"
+        size="small"
         @click="
           router.push({
             name: '계약 등록 수정',
@@ -94,7 +94,7 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
         "
       >
         수정
-      </CButton>
+      </v-btn>
     </CTableDataCell>
   </CTableRow>
 </template>

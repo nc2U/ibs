@@ -219,7 +219,7 @@ onMounted(() => {
         </strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-right mb-0">
-        <CButton color="info" size="sm" @click="resetForm"> 검색조건 초기화</CButton>
+        <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>
       </CCol>
     </CRow>
   </CCallout>

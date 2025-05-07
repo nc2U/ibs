@@ -790,9 +790,9 @@ onBeforeRouteLeave(() => formDataReset())
                   {{ payment.installment_order.__str__ }}
                 </CCol>
                 <CCol>
-                  <CButton type="button" color="success" size="sm" @click="payUpdate(payment)">
+                  <v-btn type="button" color="success" size="small" @click="payUpdate(payment)">
                     수정
-                  </CButton>
+                  </v-btn>
                 </CCol>
               </CRow>
             </CCol>
@@ -1028,19 +1028,19 @@ onBeforeRouteLeave(() => formDataReset())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <CButton type="button" color="secondary" @click="router.push({ name: '계약 내역 조회' })">
+      <v-btn type="button" color="secondary" @click="router.push({ name: '계약 내역 조회' })">
         목록으로
-      </CButton>
-      <CButton type="button" color="light" @click="formDataReset"> 취소</CButton>
-      <CButton
+      </v-btn>
+      <v-btn type="button" color="light" @click="formDataReset"> 취소</v-btn>
+      <v-btn
         v-if="write_contract && contract"
         type="button"
-        color="danger"
+        color="warning"
         @click="deleteContract"
       >
         삭제
-      </CButton>
-      <CButton
+      </v-btn>
+      <v-btn
         v-if="write_contract"
         type="submit"
         :color="contract ? 'success' : 'primary'"
@@ -1048,7 +1048,7 @@ onBeforeRouteLeave(() => formDataReset())
       >
         <CIcon name="cil-check-circle" />
         저장
-      </CButton>
+      </v-btn>
     </CCardFooter>
   </CForm>
 
@@ -1058,7 +1058,7 @@ onBeforeRouteLeave(() => formDataReset())
     <template #header>프로젝트정보 삭제</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
-      <CButton color="danger" disabled>삭제</CButton>
+      <v-btn color="warning" disabled>삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -1068,7 +1068,7 @@ onBeforeRouteLeave(() => formDataReset())
       {{ contLabel }} 정보 {{ contract ? '수정등록' : '신규등록' }}을 진행하시겠습니까?
     </template>
     <template #footer>
-      <CButton :color="contract ? 'success' : 'primary'" @click="modalAction"> 저장</CButton>
+      <v-btn :color="contract ? 'success' : 'primary'" @click="modalAction"> 저장</v-btn>
     </template>
   </ConfirmModal>
 

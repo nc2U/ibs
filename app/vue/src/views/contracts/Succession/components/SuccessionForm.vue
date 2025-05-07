@@ -518,14 +518,14 @@ onBeforeMount(() => formDataSet())
     </CModalBody>
 
     <CModalFooter>
-      <CButton type="button" color="light" @click="emit('close')"> 닫기</CButton>
+      <v-btn type="button" color="light" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <CButton type="submit" :color="isSuccession ? 'success' : 'primary'" :disabled="formsCheck">
+        <v-btn type="submit" :color="isSuccession ? 'success' : 'primary'" :disabled="formsCheck">
           저장
-        </CButton>
-        <CButton v-if="isSuccession" type="button" color="danger" @click="deleteConfirm">
+        </v-btn>
+        <v-btn v-if="isSuccession" type="button" color="warning" @click="deleteConfirm">
           삭제
-        </CButton>
+        </v-btn>
       </slot>
     </CModalFooter>
   </CForm>
@@ -538,7 +538,7 @@ onBeforeMount(() => formDataSet())
       삭제 후 복구할 수 없습니다. 해당 권리 의무 승계 정보 삭제를 진행하시겠습니까?
     </template>
     <template #footer>
-      <CButton color="danger" @click="modalAction">삭제</CButton>
+      <v-btn color="warning" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 

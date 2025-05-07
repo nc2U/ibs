@@ -9,8 +9,8 @@ const callForm = () => emit('call-form')
 
 <template>
   <CAlert :color="AlertLight" variant="solid" class="text-right">
-    <CButton :color="isSuccession ? 'success' : 'primary'" @click="callForm">
+    <v-btn :color="isSuccession ? 'success' : 'primary'" @click="callForm">
       {{ isSuccession ? '수정하기' : '등록하기' }}
-    </CButton>
+    </v-btn>
   </CAlert>
 </template>

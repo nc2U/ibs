@@ -15,8 +15,8 @@ const isRelease = computed(() => route.name === '계약 해지 관리')
 </script>
 
 <template>
-  <CButtonGroup role="group" aria-label="Basic example" class="mb-3">
-    <CButton
+  <v-btn-group density="compact" role="group" aria-label="Basic example" class="mb-3">
+    <v-btn
       :color="isRegister ? 'primary' : 'light'"
       :disabled="!contOn || !contractor"
       @click="
@@ -27,11 +27,11 @@ const isRelease = computed(() => route.name === '계약 해지 관리')
       "
     >
       계약 등록 수정
-    </CButton>
-    <!--    <CButton :color="isContorInfo ? 'info' : 'light'" disabled>-->
+    </v-btn>
+    <!--    <v-btn size="small" :color="isContorInfo ? 'info' : 'light'" disabled>-->
     <!--      계약자 정보 변경-->
-    <!--    </CButton>-->
-    <CButton
+    <!--    </v-btn>-->
+    <v-btn
       :color="isSuccession ? 'success' : 'light'"
       :disabled="!contOn || !contractor"
       @click="
@@ -42,9 +42,9 @@ const isRelease = computed(() => route.name === '계약 해지 관리')
       "
     >
       권리 의무 승계
-    </CButton>
-    <CButton
-      :color="isRelease ? 'danger' : 'light'"
+    </v-btn>
+    <v-btn
+      :color="isRelease ? 'warning' : 'light'"
       :disabled="!contractor"
       @click="
         router.push({
@@ -54,6 +54,6 @@ const isRelease = computed(() => route.name === '계약 해지 관리')
       "
     >
       계약 해지 관리
-    </CButton>
-  </CButtonGroup>
+    </v-btn>
+  </v-btn-group>
 </template>

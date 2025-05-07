@@ -18,12 +18,12 @@ const callFormModal = () => emit('call-form', props.contractor.pk)
 
 <template>
   <CAlert :color="AlertLight" variant="solid" class="text-right">
-    <CButton
-      :color="contRelease ? 'warning' : 'danger'"
+    <v-btn
+      :color="contRelease ? 'secondary' : 'warning'"
       :disabled="isSuccession"
       @click="callFormModal"
     >
       {{ contRelease ? '수정하기' : '등록하기' }}
-    </CButton>
+    </v-btn>
   </CAlert>
 </template>

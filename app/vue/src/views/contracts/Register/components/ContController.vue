@@ -49,17 +49,17 @@ const setContractor = (pk: number) => {
             color="warning"
             class="p-1 pl-3 mb-2"
           >
-            <CButton
+            <v-btn
               v-for="contractor in contractorList"
               :key="contractor.pk"
               type="button"
               color="primary"
-              variant="outline"
-              size="sm"
+              variant="outlined"
+              size="small"
               @click="setContractor(contractor.pk)"
             >
               {{ contractor.__str__ }}
-            </CButton>
+            </v-btn>
           </CCol>
           <CCol v-if="search && contractorList.length === 0" class="text-danger py-2">
             검색 결과가 없습니다.
