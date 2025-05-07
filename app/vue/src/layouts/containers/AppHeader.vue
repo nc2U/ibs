@@ -38,8 +38,13 @@ const toggleAside = () => store.toggleAside()
   <CHeader position="sticky" class="pb-0">
     <CContainer fluid>
       <CHeaderToggler class="ps-1" @click="toggleSidebar">
-        <v-icon v-if="isVisible" icon="mdi mdi-format-indent-decrease" size="small" />
-        <v-icon v-else icon="mdi mdi-format-indent-increase" size="small" />
+        <v-icon
+          v-if="isVisible"
+          icon="mdi mdi-format-indent-decrease"
+          size="small"
+          class="text-50"
+        />
+        <v-icon v-else icon="mdi mdi-format-indent-increase" size="small" class="text-50" />
       </CHeaderToggler>
 
       <CHeaderBrand class="mx-auto d-lg-none" to="/">
@@ -52,7 +57,7 @@ const toggleAside = () => store.toggleAside()
 
       <CHeaderNav class="ms-auto me-4">
         <CHeaderToggler v-fullscreen.teleport="options" class="d-none d-lg-block">
-          <v-icon large :icon="screenIcon" />
+          <v-icon large :icon="screenIcon" class="text-50" />
           <v-tooltip activator="parent" location="bottom">
             {{ screenGuide }}
           </v-tooltip>
@@ -90,11 +95,7 @@ const toggleAside = () => store.toggleAside()
       </CHeaderNav>
 
       <CHeaderNav class="mr-4">
-        <AppHeaderDropdown
-          v-if="isAuthorized"
-          :user-info="userInfo as User"
-          :profile="profile"
-        />
+        <AppHeaderDropdown v-if="isAuthorized" :user-info="userInfo as User" :profile="profile" />
         <router-link v-else :to="{ name: 'Login' }" class="btn btn-outline-primary">
           로그인
         </router-link>
@@ -102,7 +103,7 @@ const toggleAside = () => store.toggleAside()
 
       <CHeaderToggler class="px-md-0 me-md-3 d-none d-md-block" @click="toggleAside">
         <v-btn icon size="small" flat :color="theme">
-          <v-icon icon="mdi-apps" size="large" />
+          <v-icon icon="mdi-apps" size="large" class="text-50" />
         </v-btn>
       </CHeaderToggler>
     </CContainer>
