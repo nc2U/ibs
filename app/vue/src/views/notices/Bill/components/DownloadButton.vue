@@ -49,9 +49,9 @@ const printBill = () => {
   <CAlert :color="AlertSecondary" class="pb-2">
     <CRow class="p-0 m-0">
       <CCol>
-        <CButton color="primary" :disabled="!contracts.length" @click="printBill">
+        <v-btn color="primary" :disabled="!contracts.length" @click="printBill">
           선택 건별 고지서 내려받기
-        </CButton>
+        </v-btn>
       </CCol>
       <CCol class="text-right">
         <v-checkbox-btn v-model="noPrice" color="success" label="가격정보 미표시" inline />

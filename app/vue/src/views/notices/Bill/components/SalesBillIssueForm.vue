@@ -405,9 +405,9 @@ onUpdated(() => formDataSetup())
       </CRow>
 
       <CAlert v-if="write_notice" color="secondary" class="text-right">
-        <CButton type="submit" :color="btnClass" :disabled="!project || formsCheck">
+        <v-btn type="submit" :color="btnClass" :disabled="!project || formsCheck">
           {{ confirmText }}
-        </CButton>
+        </v-btn>
       </CAlert>
     </CCollapse>
   </CForm>
@@ -418,7 +418,7 @@ onUpdated(() => formDataSetup())
     <template #header> 수납 고지서 발행 정보</template>
     <template #default> 수납 고지서 발행 정보 {{ confirmText }}을(를) 진행하시겠습니까?</template>
     <template #footer>
-      <CButton :color="btnClass" @click="modalAction">저장</CButton>
+      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 
