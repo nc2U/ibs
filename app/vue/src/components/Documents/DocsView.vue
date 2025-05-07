@@ -459,7 +459,7 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>이 게시물을 휴지통으로 삭제 하시겠습니까?</template>
     <template #footer>
-      <CButton color="danger" @click="toManage(88)">삭제</CButton>
+      <v-btn color="danger" @click="toManage(88)">삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -467,7 +467,7 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
     <template #footer>
-      <CButton color="danger" @click="toDelete">삭제</CButton>
+      <v-btn color="danger" @click="toDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

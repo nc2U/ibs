@@ -305,7 +305,7 @@ const modalAction = () => {
     <template #header>소송사건</template>
     <template #default> 소송사건 저장을 진행하시겠습니까?</template>
     <template #footer>
-      <CButton color="success" @click="modalAction">저장</CButton>
+      <v-btn color="success" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 </template>
