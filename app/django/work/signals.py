@@ -139,7 +139,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
             send_mail(subject=subject,
                       message=message,
                       html_message=message,
-                      from_email=settings.EMAIL_DEFAULT_SENDER,
+                      from_email=settings.DEFAULT_FROM_EMAIL,
                       recipient_list=addresses)
         except smtplib.SMTPAuthenticationError:
             print("❌ 이메일 인증 실패: SMTP 사용자 이름 또는 비밀번호가 잘못되었습니다.")
@@ -194,7 +194,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
                     send_mail(subject=subject,
                               message=message,
                               html_message=message,
-                              from_email=settings.EMAIL_DEFAULT_SENDER,
+                              from_email=settings.DEFAULT_FROM_EMAIL,
                               recipient_list=addresses)
                 except smtplib.SMTPAuthenticationError:
                     print("❌ 이메일 인증 실패: SMTP 사용자 이름 또는 비밀번호가 잘못되었습니다.")
@@ -213,7 +213,7 @@ def issue_log_changes(sender, instance, created, **kwargs):
                         send_mail(subject=subject,
                                   message=message,
                                   html_message=message,
-                                  from_email=settings.EMAIL_DEFAULT_SENDER,
+                                  from_email=settings.DEFAULT_FROM_EMAIL,
                                   recipient_list=addresses)
                     except smtplib.SMTPAuthenticationError:
                         print("❌ 이메일 인증 실패: SMTP 사용자 이름 또는 비밀번호가 잘못되었습니다.")

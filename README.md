@@ -46,7 +46,7 @@ Check what must be defined in docker-compose.yml file.
     - EMAIL_PORT
     - EMAIL_HOST_USER
     - EMAIL_HOST_PASSWORD
-    - EMAIL_DEFAULT_SENDER
+    - DEFAULT_FROM_EMAIL
     - DJANGO_SETTINGS_MODULE
 
 Enter the actual data for your environment as described in the following items.
@@ -74,7 +74,7 @@ Enter the actual data for your environment as described in the following items.
     - EMAIL_PORT: 588 # **default is 587**
     - EMAIL_HOST_USER: **your-access-id-or-email**
     - EMAIL_HOST_PASSWORD: **your-access-password**
-    - EMAIL_DEFAULT_SENDER: **your-email@example.com**
+    - DEFAULT_FROM_EMAIL: **your-email@example.com**
     - DJANGO_SETTINGS_MODULE: app.settings.prod # **settings mode -> app.settings.prod** or **app.settings.local**
 
 #### 4. Django setting
@@ -215,7 +215,7 @@ create Repository secrets with the keys and values below.
 - DOCKERHUB_USER: # docker hub user id (If you manage your images in your own Docker hub)
 - DOMAIN_HOST: # full address (https://abc.com/ for getting url)
 - DOMAIN_NANE: # domain address (for ingress)
-- EMAIL_DEFAULT_SENDER: # your-email@example.com
+- DEFAULT_FROM_EMAIL: # your-email@example.com
 - EMAIL_HOST: # your-smtp-server.com
 - EMAIL_HOST_PASSWORD: # your-access-password
 - EMAIL_HOST_USER: # your-access-id-or-email

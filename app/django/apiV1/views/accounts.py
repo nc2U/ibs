@@ -146,7 +146,7 @@ class PasswordResetRequestView(APIView):
             # Send the password reset email
             subject = f'[IBS] {user.username}님 계정 비밀번호 초기화 링크 안내드립니다.'
             message = f'비밀번호를 재설정 하기 위해서 다음 링크를 클릭 하세요: \n{reset_link}\n\n이 링크는 발송 후 10분 후에 만료됩니다.'
-            send_mail(subject, message, settings.EMAIL_DEFAULT_SENDER, [email])
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
 
             return Response({'detail': '비밀번호 재설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
 
@@ -255,7 +255,7 @@ class AdminCreateUserView(APIView):
                     message = f'''[IBS]를 시작하기 위해 다음 사용자 정보를 이용해 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}\n\n로그인 및 각 메뉴에 대한 접근 권한은 관리자에게 문의하십시오.'''
 
                 try:
-                    send_mail(subject, message, settings.EMAIL_DEFAULT_SENDER, [email])
+                    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
                 except Exception as e:
                     return Response({'detail': '이메일 발송 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

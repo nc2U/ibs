@@ -15,7 +15,7 @@ global:
   emailHost: "smtp-server.com" # your-smtp-server.com
   emailHostUser: "email@example.com" # 'your-email@example.com
   emailHostPassword: "{{ randAlphaNum 5 }}" # your-email-password
-  emailDefaultSender: "email@example.com"
+  defaultFromEmail: "email@example.com"
 
 nameOverride: ""
 fullnameOverride: ""

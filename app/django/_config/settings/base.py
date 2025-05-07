@@ -242,7 +242,7 @@ EMAIL_PORT = os.getenv('EMAIL_PORT', 587)
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # 'your accessId or accessEmail'
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # 'your-email-password'
-EMAIL_DEFAULT_SENDER = os.getenv('EMAIL_DEFAULT_SENDER')  # 'your-email@example.com'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')  # 'your-email@example.com'
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
