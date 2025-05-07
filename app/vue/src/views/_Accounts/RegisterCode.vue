@@ -67,12 +67,17 @@ const onSubmit = (event: Event) => {
               >
                 <CRow class="mb-2">
                   <CCol>
-                    <CFormInput v-model="registerCode" type="password" required />
+                    <CFormInput
+                      v-model="registerCode"
+                      type="password"
+                      required
+                      placeholder="계정 생성코드"
+                    />
                   </CCol>
                 </CRow>
                 <CRow>
                   <CCol class="d-grid gap-2 mb-2">
-                    <CButton size="lg" class="btn btn-primary" type="submit"> 제출하기</CButton>
+                    <v-btn size="large" color="primary" type="submit"> 제출하기</v-btn>
                   </CCol>
                 </CRow>
               </CForm>

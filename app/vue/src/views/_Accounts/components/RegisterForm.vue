@@ -112,7 +112,7 @@ const router = useRouter()
 
     <CRow>
       <CCol class="d-grid">
-        <CButton type="submit" size="lg" color="primary">회원 가입</CButton>
+        <v-btn type="submit" size="large" color="primary">회원 가입</v-btn>
       </CCol>
     </CRow>
 

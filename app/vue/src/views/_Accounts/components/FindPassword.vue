@@ -53,7 +53,7 @@ const toLogin = () => emit('to-login')
 
     <CRow>
       <CCol xs="12" class="d-grid">
-        <CButton color="info" class="px-4" size="lg" type="submit">이메일 전송하기</CButton>
+        <v-btn color="info" class="px-4" size="large" type="submit">이메일 전송하기</v-btn>
       </CCol>
     </CRow>
     <CRow>

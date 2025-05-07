@@ -90,7 +90,7 @@ onMounted(() => (redirect.value = route.query?.redirect))
         </CButton>
       </CCol>
       <CCol xs="12" class="d-grid">
-        <CButton color="primary" size="lg" class="px-4" type="submit">로그인</CButton>
+        <v-btn color="primary" size="large" type="submit">로그인</v-btn>
       </CCol>
     </CRow>
   </CForm>
