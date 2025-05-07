@@ -494,7 +494,7 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
     <template #footer>
-      <CButton color="danger" @click="toDelete">삭제</CButton>
+      <v-btn color="danger" @click="toDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -504,9 +504,9 @@ onMounted(() => {
       이 게시글을 신고 {{ post.my_blame ? '를 취소' : '' }} 하시겠습니까?<br /><br />
     </template>
     <template #footer>
-      <CButton :color="post.my_blame ? 'secondary' : 'danger'" @click="blameAction">
+      <v-btn :color="post.my_blame ? 'secondary' : 'danger'" @click="blameAction">
         {{ post.my_blame ? '취소' : '신고' }}
-      </CButton>
+      </v-btn>
     </template>
   </ConfirmModal>
 
@@ -531,7 +531,7 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>이 게시물을 휴지통으로 삭제 하시겠습니까?</template>
     <template #footer>
-      <CButton color="danger" @click="toManage(88)">삭제</CButton>
+      <v-btn color="danger" @click="toManage(88)">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

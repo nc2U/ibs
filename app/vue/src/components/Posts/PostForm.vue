@@ -216,7 +216,7 @@ onUpdated(() => dataSetup())
       </CCol>
     </CRow>
 
-    <CRow>
+    <CRow class="mt-3 bg-success-lighten">
       <CFormLabel for="title" class="col-md-2 col-form-label">링크</CFormLabel>
       <CCol md="10" lg="8" xl="6">
         <CRow v-if="post && form.links?.length">
@@ -331,10 +331,10 @@ onUpdated(() => dataSetup())
 
     <CRow>
       <CCol class="text-right">
-        <CButton color="light" @click="router.push({ name: `${viewRoute}` })"> 목록으로</CButton>
-        <CButton v-if="route.params.postId" color="light" @click="router.go(-1)"> 뒤로</CButton>
-        <!--        <CButton :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</CButton>-->
-        <CButton color="warning" type="submit" disabled> 업데이트 중 ...</CButton>
+        <v-btn color="light" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
+        <v-btn v-if="route.params.postId" color="light" @click="router.go(-1)"> 뒤로</v-btn>
+        <!--        <v-btn :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</CButton>-->
+        <v-btn color="warning" type="submit" disabled> 업데이트 중 ...</v-btn>
       </CCol>
     </CRow>
   </CForm>
@@ -343,7 +343,7 @@ onUpdated(() => dataSetup())
     <template #header> {{ viewRoute }}</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
-      <CButton color="danger" disabled>삭제</CButton>
+      <v-btn color="danger" disabled>삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -351,7 +351,7 @@ onUpdated(() => dataSetup())
     <template #header> {{ viewRoute }}</template>
     <template #default> {{ viewRoute }} 저장을 진행하시겠습니까?</template>
     <template #footer>
-      <CButton :color="btnClass" @click="modalAction">저장</CButton>
+      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 
