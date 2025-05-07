@@ -284,7 +284,7 @@ const resetForm = () => {
       </CCol>
 
       <CCol xl="1" class="mb-3 text-right">
-        <CButton color="primary" type="submit" :disabled="disabled"> 회차추가</CButton>
+        <v-btn color="primary" type="submit" :disabled="disabled"> 회차추가</v-btn>
       </CCol>
     </CRow>
   </CForm>
@@ -293,7 +293,7 @@ const resetForm = () => {
     <template #header> 납부 회차 등록</template>
     <template #default> 프로젝트의 납부 회차 정보 등록을 진행하시겠습니까?</template>
     <template #footer>
-      <CButton color="primary" @click="modalAction">저장</CButton>
+      <v-btn color="primary" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 

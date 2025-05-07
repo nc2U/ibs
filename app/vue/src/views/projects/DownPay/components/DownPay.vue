@@ -94,10 +94,10 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
 
     <CTableDataCell v-if="write_project" class="text-center">
-      <CButton color="success" size="sm" :disabled="formsCheck" @click="onUpdateDownPay">
+      <v-btn color="success" size="small" :disabled="formsCheck" @click="onUpdateDownPay">
         수정
-      </CButton>
-      <CButton color="danger" size="sm" @click="onDeleteDownPay">삭제</CButton>
+      </v-btn>
+      <v-btn color="warning" size="small" @click="onDeleteDownPay">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -107,7 +107,7 @@ onBeforeMount(() => dataSetup())
       해당 데이터를 삭제하면 이후 복구할 수 없습니다. 이 계약 조건 정보를 삭제 하시겠습니까?
     </template>
     <template #footer>
-      <CButton color="danger" @click="modalAction">삭제</CButton>
+      <v-btn color="warning" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 

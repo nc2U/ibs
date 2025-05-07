@@ -146,10 +146,10 @@ const delFileSubmit = () => {
       <span v-else>이 파일 삭제를 취소 하시겠습니까?</span>
     </template>
     <template #footer>
-      <CButton :color="!deleted ? 'warning' : 'success'" @click="delFileSubmit">
+      <v-btn :color="!deleted ? 'warning' : 'success'" @click="delFileSubmit">
         <span v-if="!deleted">삭제</span>
         <span v-else>취소</span>
-      </CButton>
+      </v-btn>
     </template>
   </ConfirmModal>
 </template>

@@ -162,7 +162,7 @@ const resetForm = () => {
           </CCol>
 
           <CCol lg="2" class="d-grid gap-2 d-lg-block mb-3">
-            <CButton color="primary" type="submit" :disabled="disabled"> 타입추가</CButton>
+            <v-btn color="primary" type="submit" :disabled="disabled"> 타입추가</v-btn>
           </CCol>
         </CRow>
       </CCol>
@@ -173,7 +173,7 @@ const resetForm = () => {
     <template #header> 타입 정보 등록</template>
     <template #default> 프로젝트의 타입 정보 등록을 진행하시겠습니까?</template>
     <template #footer>
-      <CButton color="primary" @click="modalAction">저장</CButton>
+      <v-btn color="primary" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 

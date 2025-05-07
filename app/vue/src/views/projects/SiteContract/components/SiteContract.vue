@@ -66,7 +66,7 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
       </span>
     </CTableDataCell>
     <CTableDataCell v-if="write_project_site">
-      <CButton color="info" size="sm" @click="showDetail">확인</CButton>
+      <v-btn color="info" size="small" @click="showDetail">확인</v-btn>
     </CTableDataCell>
   </CTableRow>
 

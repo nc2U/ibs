@@ -138,10 +138,8 @@ onMounted(() => dataSetup())
       />
     </CTableDataCell>
     <CTableDataCell v-if="write_project">
-      <CButton color="success" size="sm" :disabled="formCheck" @click="onUpdateUnit">
-        수정
-      </CButton>
-      <CButton color="danger" size="sm" @click="onDeleteUnit">삭제</CButton>
+      <v-btn color="success" size="small" :disabled="formCheck" @click="onUpdateUnit"> 수정 </v-btn>
+      <v-btn color="warning" size="small" @click="onDeleteUnit">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -152,7 +150,7 @@ onMounted(() => dataSetup())
       삭제됩니다. 해당 호수 유닛을 삭제 하시겠습니까?
     </template>
     <template #footer>
-      <CButton color="danger" @click="delConfirm">삭제</CButton>
+      <v-btn color="warning" @click="delConfirm">삭제</v-btn>
     </template>
   </ConfirmModal>
 

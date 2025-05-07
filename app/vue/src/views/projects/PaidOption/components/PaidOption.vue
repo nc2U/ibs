@@ -157,10 +157,10 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
 
     <CTableDataCell v-if="write_project" class="text-center">
-      <CButton color="success" size="sm" :disabled="formsCheck" @click="onUpdateOption">
+      <v-btn color="success" size="small" :disabled="formsCheck" @click="onUpdateOption">
         수정
-      </CButton>
-      <CButton color="danger" size="sm" @click="onDeleteOption">삭제</CButton>
+      </v-btn>
+      <v-btn color="warning" size="small" @click="onDeleteOption">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -168,7 +168,7 @@ onBeforeMount(() => dataSetup())
     <template #header> 옵션 정보 삭제</template>
     <template #default> 이 유상 옵션 데이터를 삭제 하시겠습니까?</template>
     <template #footer>
-      <CButton color="danger" @click="modalAction">삭제</CButton>
+      <v-btn color="warning" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 

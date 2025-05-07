@@ -21,9 +21,7 @@ const multiSubmit = (payload: Site) => emit('multi-submit', payload)
 
 <template>
   <CAlert :color="AlertLight" variant="solid" class="text-right">
-    <CButton color="primary" :disabled="!project" @click="createConfirm">
-      사업 부지 신규등록
-    </CButton>
+    <v-btn color="primary" :disabled="!project" @click="createConfirm"> 사업 부지 신규등록 </v-btn>
   </CAlert>
 
   <FormModal ref="refFormModal" size="lg">

@@ -251,9 +251,9 @@ const modalAction = () => {
   </CAlert>
 
   <CAlert v-if="write_project" :color="AlertLight" variant="solid" class="text-right">
-    <CButton color="primary" :disabled="!project || !form.minFloor" @click="unitRegister">
+    <v-btn color="primary" :disabled="!project || !form.minFloor" @click="unitRegister">
       호수(유니트) 일괄등록
-    </CButton>
+    </v-btn>
   </CAlert>
 
   <FormModal ref="refBuildForm">
@@ -269,8 +269,8 @@ const modalAction = () => {
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <CButton color="light" @click="refBuildForm.close()"> 닫기</CButton>
-          <CButton type="submit" color="primary">저장</CButton>
+          <v-btn color="light" @click="refBuildForm.close()"> 닫기</v-btn>
+          <v-btn type="submit" color="primary">저장</v-btn>
         </CModalFooter>
       </CForm>
     </template>
@@ -292,7 +292,7 @@ const modalAction = () => {
       <p>상기 호수(유니트)정보의 일괄등록을 진행하시겠습니까?</p>
     </template>
     <template #footer>
-      <CButton color="primary" @click="modalAction">일괄등록</CButton>
+      <v-btn color="primary" @click="modalAction">일괄등록</v-btn>
     </template>
   </ConfirmModal>
 

@@ -560,12 +560,12 @@ onUpdated(() => formDataSetup())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <CButton type="button" color="light" @click="emit('reset-form')"> 취소</CButton>
-      <CButton v-if="project" type="button" color="danger" @click="deleteProject"> 삭제</CButton>
-      <CButton type="submit" :color="btnClass" :disabled="formsCheck">
+      <v-btn type="button" color="light" @click="emit('reset-form')"> 취소</v-btn>
+      <v-btn v-if="project" type="button" color="warning" @click="deleteProject"> 삭제</v-btn>
+      <v-btn type="submit" :color="btnClass" :disabled="formsCheck">
         <CIcon name="cil-check-circle" />
         저장
-      </CButton>
+      </v-btn>
     </CCardFooter>
   </CForm>
 
@@ -575,7 +575,7 @@ onUpdated(() => formDataSetup())
     <template #header> 프로젝트정보 삭제</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
-      <CButton color="danger" disabled>삭제</CButton>
+      <v-btn color="warning" disabled>삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -583,7 +583,7 @@ onUpdated(() => formDataSetup())
     <template #header> 프로젝트정보 {{ confirmText }}</template>
     <template #default> 프로젝트정보 {{ confirmText }}을 진행하시겠습니까?</template>
     <template #footer>
-      <CButton :color="btnClass" @click="modalAction">저장</CButton>
+      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 

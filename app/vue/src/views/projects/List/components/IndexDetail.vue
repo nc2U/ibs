@@ -171,16 +171,16 @@ const toUpdate = () => {
   <CCardFooter v-if="write_project">
     <CRow class="justify-content-between">
       <CCol xs="auto">
-        <CButton type="button" color="success" :disabled="!project" @click="toUpdate">
+        <v-btn type="button" color="success" :disabled="!project" @click="toUpdate">
           <CIcon name="cil-check-circle" />
           수정하기
-        </CButton>
+        </v-btn>
       </CCol>
       <CCol xs="auto">
-        <CButton type="button" color="primary" @click="toCreate">
+        <v-btn type="button" color="primary" @click="toCreate">
           <CIcon name="cil-check-circle" />
           등록하기
-        </CButton>
+        </v-btn>
       </CCol>
     </CRow>
   </CCardFooter>

@@ -62,10 +62,10 @@ onBeforeMount(() => dataSetup())
       />
     </CTableDataCell>
     <CTableDataCell v-if="write_project" class="text-center">
-      <CButton color="success" size="sm" :disabled="formsCheck" @click="onUpdateBuilding">
+      <v-btn color="success" size="small" :disabled="formsCheck" @click="onUpdateBuilding">
         수정
-      </CButton>
-      <CButton color="danger" size="sm" @click="onDeleteBuilding">삭제</CButton>
+      </v-btn>
+      <v-btn color="warning" size="small" @click="onDeleteBuilding">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -76,7 +76,7 @@ onBeforeMount(() => dataSetup())
       합니다. 해당 동(건물)을 삭제 하시겠습니까?
     </template>
     <template #footer>
-      <CButton color="danger" @click="modalAction">삭제</CButton>
+      <v-btn color="warning" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 
