@@ -704,11 +704,21 @@ class SimpleContractSerializer(serializers.ModelSerializer):
         return str(obj.contractor)
 
 
+class InstallAmountInContractPriceSerializer(serializers.Serializer):
+    pay_code = serializers.IntegerField()
+    pay_time = serializers.IntegerField()
+    alias_name = serializers.CharField()
+    pay_amt = serializers.IntegerField()
+    is_pm_cost = serializers.BooleanField()
+
+
 class ContractPriceSerializer(serializers.ModelSerializer):
+    install_amount = InstallAmountInContractPriceSerializer(many=True)
+
     class Meta:
         model = ContractPrice
         fields = ('pk', 'contract', 'price', 'price_build', 'price_land',
-                  'price_tax', 'down_pay', 'middle_pay', 'remain_pay')
+                  'price_tax', 'install_amount', 'down_pay', 'middle_pay', 'remain_pay')
 
 
 class SubsSummarySerializer(serializers.ModelSerializer):
