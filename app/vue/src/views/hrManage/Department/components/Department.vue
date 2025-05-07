@@ -38,7 +38,7 @@ const getUpperName = (up: number | null) => {
     <CTableDataCell>{{ department.name }}</CTableDataCell>
     <CTableDataCell class="text-left">{{ department.task }}</CTableDataCell>
     <CTableDataCell v-if="write_human_resource">
-      <CButton color="info" size="sm" @click="showDetail">확인</CButton>
+      <v-btn color="info" size="small" @click="showDetail">확인</v-btn>
     </CTableDataCell>
   </CTableRow>
 

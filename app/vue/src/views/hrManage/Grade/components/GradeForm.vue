@@ -154,12 +154,12 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <CButton type="button" color="light" @click="$emit('close')"> 닫기</CButton>
+      <v-btn type="button" color="light" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <CButton type="submit" :color="grade ? 'success' : 'primary'" :disabled="formsCheck">
+        <v-btn type="submit" :color="grade ? 'success' : 'primary'" :disabled="formsCheck">
           저장
-        </CButton>
-        <CButton v-if="grade" type="button" color="danger" @click="deleteConfirm"> 삭제</CButton>
+        </v-btn>
+        <v-btn v-if="grade" type="button" color="warning" @click="deleteConfirm"> 삭제</v-btn>
       </slot>
     </CModalFooter>
   </CForm>
@@ -170,7 +170,7 @@ onBeforeMount(() => formDataSetup())
       삭제한 데이터는 복구할 수 없습니다. 해당 정보를 삭제하시겠습니까?
     </template>
     <template #footer>
-      <CButton color="danger" @click="deleteObject(grade.pk)">삭제</CButton>
+      <v-btn color="warning" @click="deleteObject(grade.pk)">삭제</v-btn>
     </template>
   </ConfirmModal>
 

@@ -22,9 +22,7 @@ const multiSubmit = (payload: Grade) => emit('multi-submit', payload)
 
 <template>
   <CAlert :color="AlertSecondary" class="text-right">
-    <CButton color="primary" :disabled="!company" @click="createConfirm">
-      직급 정보 신규등록
-    </CButton>
+    <v-btn color="primary" :disabled="!company" @click="createConfirm"> 직급 정보 신규등록 </v-btn>
   </CAlert>
 
   <FormModal ref="refFormModal" size="lg">

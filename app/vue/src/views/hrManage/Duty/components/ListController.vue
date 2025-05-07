@@ -57,7 +57,7 @@ defineExpose({ listFiltering })
         <strong> 직책 수 조회 결과 : {{ numFormat(dutysCount) }} 건 </strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-right mb-0">
-        <CButton color="info" size="sm" @click="resetForm"> 검색조건 초기화</CButton>
+        <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>
       </CCol>
     </CRow>
   </CCallout>

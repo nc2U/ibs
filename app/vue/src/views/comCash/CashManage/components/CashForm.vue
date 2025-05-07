@@ -970,29 +970,19 @@ onBeforeMount(async () => {
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" color="light" @click="emit('close')" size="small"> 닫기</v-btn>
+      <v-btn type="button" color="light" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn
-          v-if="sepItem.pk"
-          type="button"
-          color="dark"
-          variant="outlined"
-          @click="sepRemove"
-          size="small"
-        >
+        <v-btn v-if="sepItem.pk" type="button" color="dark" variant="outlined" @click="sepRemove">
           취소
         </v-btn>
         <v-btn
           type="submit"
           :color="isModify ? 'success' : 'primary'"
           :disabled="formsCheck && requireItem"
-          size="small"
         >
           저장
         </v-btn>
-        <v-btn v-if="isModify" type="button" color="warning" @click="deleteConfirm" size="small">
-          삭제</v-btn
-        >
+        <v-btn v-if="isModify" type="button" color="warning" @click="deleteConfirm">삭제</v-btn>
       </slot>
     </CModalFooter>
   </CForm>
