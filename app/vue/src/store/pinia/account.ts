@@ -123,7 +123,7 @@ export const useAccount = defineStore('account', () => {
           delete api.defaults.headers.common.Authorization
           Cookies.remove('accessToken')
         })
-    } else return Promise.resolve()
+    } else return await Promise.resolve()
   }
 
   const logout = () => {

@@ -20,9 +20,9 @@ app.use(pinia)
 const accStore = useAccount()
 const cookie = Cookies.get('accessToken')
 
-const init = async () => {
-  if (cookie) await accStore.loginByToken(cookie)
-}
+const init = async () =>
+   await accStore.loginByToken(cookie)
+
 
 ;(async () => {
   await init()
