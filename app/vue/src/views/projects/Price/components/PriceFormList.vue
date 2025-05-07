@@ -41,7 +41,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 8%" />
       <col style="width: 8%" />
       <col style="width: 8%" />
-      <col v-if="write_project" style="width: %" />
+      <col v-if="write_project" style="width: 8%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
@@ -75,7 +75,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-else>
       <CTableRow>
-        <CTableDataCell :colspan="8" class="text-center p-5 text-info">
+        <CTableDataCell :colspan="write_project ? 13 : 12" class="text-center p-5 text-info">
           {{ msg }}
         </CTableDataCell>
       </CTableRow>
@@ -83,7 +83,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-if="!msg && floorTypeList.length === 0">
       <CTableRow>
-        <CTableDataCell :colspan="8" class="text-center p-5 text-danger">
+        <CTableDataCell :colspan="write_project ? 13 : 12" class="text-center p-5 text-danger">
           <p>
             <CIcon name="cilWarning" />
             등록된 [층별조건] 데이터가 없습니다!
