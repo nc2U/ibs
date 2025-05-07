@@ -292,8 +292,8 @@ const modalAction = () => {
 
           <CRow>
             <CCol class="text-right">
-              <CButton color="light" @click="refCaseForm.close()"> 닫기</CButton>
-              <CButton color="primary" type="submit"> 저장하기</CButton>
+              <v-btn color="light" @click="refCaseForm.close()"> 닫기</v-btn>
+              <v-btn color="primary" type="submit"> 저장하기</v-btn>
             </CCol>
           </CRow>
         </CForm>

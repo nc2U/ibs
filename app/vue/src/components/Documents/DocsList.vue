@@ -96,7 +96,7 @@ const pageSelect = (page: number) => emit('page-select', page)
       />
     </CCol>
     <CCol lg="4" class="text-right pt-3">
-      <CButton
+      <v-btn
         v-if="writeAuth"
         color="primary"
         class="px-5"
@@ -104,7 +104,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         @click="router.push({ name: `${viewRoute} - 작성` })"
       >
         등록하기
-      </CButton>
+      </v-btn>
     </CCol>
   </CRow>
 </template>

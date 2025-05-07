@@ -352,9 +352,9 @@ onUpdated(() => dataSetup())
 
     <CRow>
       <CCol class="text-right">
-        <CButton color="light" @click="router.push({ name: `${viewRoute}` })"> 목록으로</CButton>
-        <CButton v-if="route.params.caseId" color="light" @click="router.go(-1)"> 뒤로</CButton>
-        <CButton :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</CButton>
+        <v-btn color="light" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
+        <v-btn v-if="route.params.caseId" color="light" @click="router.go(-1)"> 뒤로</v-btn>
+        <v-btn :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</v-btn>
       </CCol>
     </CRow>
   </CForm>

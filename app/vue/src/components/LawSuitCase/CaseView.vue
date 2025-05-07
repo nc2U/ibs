@@ -438,13 +438,13 @@ onBeforeMount(() => {
         </CButtonGroup>
       </CCol>
       <CCol class="text-right">
-        <CButton
+        <v-btn
           v-if="writeAuth"
           color="primary"
           @click="router.push({ name: `${viewRoute} - 작성` })"
         >
           신규등록
-        </CButton>
+        </v-btn>
       </CCol>
     </CRow>
   </div>
