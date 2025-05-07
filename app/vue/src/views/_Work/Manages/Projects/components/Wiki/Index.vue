@@ -54,8 +54,8 @@ onBeforeMount(() => {
 
   <CRow>
     <CCol>
-      <CButton color="primary">저장</CButton>
-      <CButton color="light">취소</CButton>
+      <v-btn color="primary">저장</v-btn>
+      <v-btn color="light">취소</v-btn>
     </CCol>
   </CRow>
 </template>

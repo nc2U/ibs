@@ -81,7 +81,7 @@ const deleteCategory = () => {
 
   <ConfirmModal ref="RefCateDelConfirm">
     <template #footer>
-      <CButton color="danger" @click="deleteCategory">삭제</CButton>
+      <v-btn color="warning" @click="deleteCategory">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

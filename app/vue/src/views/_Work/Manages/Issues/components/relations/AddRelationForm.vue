@@ -14,7 +14,7 @@ const emit = defineEmits(['add-rel-issue', 'add-form-ctl'])
 const validated = ref(false)
 
 const relIssue = ref<IssueRelation>({
-  issue: props.issuePk,
+  issue: props.issuePk as number,
   issue_to: null,
   relation_type: 'relates',
   delay: null,
@@ -77,8 +77,8 @@ const addRelIssue = (event: Event) => {
         <CFormLabel class="col-sm-1 col-form-label"> 일</CFormLabel>
       </template>
       <CCol class="pt-1">
-        <CButton type="submit" color="primary" size="sm">추가</CButton>
-        <CButton color="light" size="sm" @click="addFormCtl(false)">취소</CButton>
+        <v-btn type="submit" color="primary" size="small">추가</v-btn>
+        <v-btn color="light" size="small" @click="addFormCtl(false)">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>

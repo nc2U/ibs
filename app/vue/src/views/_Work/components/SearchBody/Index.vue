@@ -150,7 +150,7 @@ onBeforeRouteLeave((to, from, next) => {
 
       <CRow class="mt-2">
         <CCol>
-          <CButton color="secondary" variant="outline" size="sm" @click="goSearch">검색</CButton>
+          <v-btn color="secondary" variant="outlined" size="small" @click="goSearch">검색</v-btn>
         </CCol>
       </CRow>
 

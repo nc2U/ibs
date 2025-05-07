@@ -88,7 +88,7 @@ const light = computed(() => (!isDark?.value ? 'light' : ''))
 
   <CRow>
     <CCol>
-      <CButton color="primary" size="sm" variant="outline">저장</CButton>
+      <v-btn color="primary" size="small" variant="outlined">저장</v-btn>
     </CCol>
   </CRow>
 </template>

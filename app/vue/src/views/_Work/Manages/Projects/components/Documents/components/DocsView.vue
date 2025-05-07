@@ -103,9 +103,9 @@ onMounted(() => {
 
     <CRow class="mt-4">
       <CCol class="text-right">
-        <CButton color="light" @click="router.replace({ name: '(문서)' })" size="sm">
+        <v-btn color="light" @click="router.replace({ name: '(문서)' })" size="small">
           목록으로
-        </CButton>
+        </v-btn>
       </CCol>
     </CRow>
   </div>
@@ -114,7 +114,7 @@ onMounted(() => {
     <template #header>알림!</template>
     <template #default> 이 문서를 삭제 합니다. 계속 진행 하시겠습니까?</template>
     <template #footer>
-      <CButton color="warning" @click="modalAction">저장</CButton>
+      <v-btn color="warning" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 </template>

@@ -104,9 +104,9 @@ onBeforeMount(async () => {
 
     <CRow>
       <CCol>
-        <CButton type="submit" :color="category ? 'success' : 'primary'" :disabled="formsCheck">
+        <v-btn type="submit" :color="category ? 'success' : 'primary'" :disabled="formsCheck">
           저장
-        </CButton>
+        </v-btn>
       </CCol>
     </CRow>
   </CForm>

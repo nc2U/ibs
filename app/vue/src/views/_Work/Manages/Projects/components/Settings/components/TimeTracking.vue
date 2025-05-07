@@ -70,7 +70,7 @@ onBeforeMount(() => {
 
   <CRow>
     <CCol>
-      <CButton color="primary" size="sm" variant="outline" @click="submitActs">저장</CButton>
+      <v-btn color="primary" size="small" variant="outlined" @click="submitActs">저장</v-btn>
     </CCol>
   </CRow>
 </template>

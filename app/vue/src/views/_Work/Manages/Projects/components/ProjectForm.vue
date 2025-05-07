@@ -406,10 +406,10 @@ onBeforeMount(() => {
 
     <CRow>
       <CCol>
-        <CButton type="submit" :color="!project ? 'primary' : 'success'" :disabled="formsCheck">
+        <v-btn type="submit" :color="!project ? 'primary' : 'success'" :disabled="formsCheck">
           저장
-        </CButton>
-        <!--        <CButton color="primary" type="submit">저장 후 계속하기</CButton>-->
+        </v-btn>
+        <!--        <v-btn color="primary" type="submit">저장 후 계속하기</CButton>-->
       </CCol>
     </CRow>
   </CForm>

@@ -79,7 +79,7 @@ onBeforeMount(() => {
 
       <CRow v-if="addUser">
         <CCol class="text-right pt-3 mr-2">
-          <CButton color="warning" size="sm" @click="userAdding">목록추가</CButton>
+          <v-btn color="info" size="small" @click="userAdding">목록추가</v-btn>
         </CCol>
       </CRow>
 
@@ -99,7 +99,7 @@ onBeforeMount(() => {
     </template>
 
     <template #footer>
-      <CButton color="primary" @click="watcherAddSubmit">추가</CButton>
+      <v-btn color="primary" :disabled="!addMembers.length" @click="watcherAddSubmit">추가</v-btn>
     </template>
   </ConfirmModal>
 </template>

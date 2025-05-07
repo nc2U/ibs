@@ -266,8 +266,8 @@ onBeforeMount(() => dataSetup())
 
     <CRow class="mb-5">
       <CCol>
-        <CButton type="submit" color="primary" variant="outline" size="sm"> 저장</CButton>
-        <CButton color="light" size="sm" @click="router.replace({ name: '(문서)' })">취소</CButton>
+        <v-btn type="submit" color="primary" variant="outlined" size="small"> 저장</v-btn>
+        <v-btn color="light" size="small" @click="router.replace({ name: '(문서)' })">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>
@@ -276,7 +276,7 @@ onBeforeMount(() => dataSetup())
     <!--    <template #header> {{ viewRoute }}</template>-->
     <!--    <template #default> {{ viewRoute }} 저장을 진행하시겠습니까?</template>-->
     <!--    <template #footer>-->
-    <!--      <CButton :color="btnClass" @click="modalAction">저장</CButton>-->
+    <!--      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>-->
     <!--    </template>-->
   </ConfirmModal>
 </template>

@@ -61,8 +61,8 @@ const closeModal = () => emit('close')
       </CRow>
     </CModalBody>
     <CModalFooter>
-      <CButton color="light" @click="closeModal"> 닫기</CButton>
-      <CButton type="submit" color="primary">저장</CButton>
+      <v-btn color="light" @click="closeModal"> 닫기</v-btn>
+      <v-btn type="submit" color="primary">저장</v-btn>
     </CModalFooter>
   </CForm>
 </template>

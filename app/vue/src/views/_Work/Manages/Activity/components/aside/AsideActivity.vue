@@ -150,7 +150,7 @@ onBeforeMount(() => {
 
   <CRow>
     <CCol>
-      <CButton color="dark" size="sm" @click="filterActivity">적용</CButton>
+      <v-btn color="blue-grey-darken-1" size="small" @click="filterActivity">적용</v-btn>
     </CCol>
   </CRow>
 </template>

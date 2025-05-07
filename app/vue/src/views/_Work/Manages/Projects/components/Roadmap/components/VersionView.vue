@@ -179,7 +179,7 @@ onBeforeMount(() => {
 
   <ConfirmModal ref="RefVersionConfirm">
     <template #footer>
-      <CButton color="warning" @click="deleteSubmit">삭제</CButton>
+      <v-btn color="warning" @click="deleteSubmit">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

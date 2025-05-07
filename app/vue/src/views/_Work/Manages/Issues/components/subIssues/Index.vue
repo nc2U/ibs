@@ -168,7 +168,7 @@ const unlinkSubIssue = () => {
     <template #header>하위 업무 관계 지우기</template>
     <template #default> 계속 진행하시겠습니까?</template>
     <template #footer>
-      <CButton color="warning" @click="unlinkSubIssue">확인</CButton>
+      <v-btn color="warning" @click="unlinkSubIssue">확인</v-btn>
     </template>
   </ConfirmModal>
 </template>

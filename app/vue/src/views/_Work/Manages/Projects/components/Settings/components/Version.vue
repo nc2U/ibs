@@ -91,9 +91,9 @@ const deleteSubmit = () => {
             </CCol>
 
             <CCol class="pt-1">
-              <CButton color="primary" size="sm" variant="outline" @click="versionFilter">
+              <v-btn color="primary" size="small" variant="outlined" @click="versionFilter">
                 적용
-              </CButton>
+              </v-btn>
               <span class="ml-2">
                 <v-icon icon="mdi-reload" size="sm" color="success" />
                 <router-link to="" @click="formReset">지우기</router-link>
@@ -187,7 +187,7 @@ const deleteSubmit = () => {
 
   <ConfirmModal ref="RefVersionConfirm">
     <template #footer>
-      <CButton color="danger" @click="deleteSubmit">삭제</CButton>
+      <v-btn color="warning" @click="deleteSubmit">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

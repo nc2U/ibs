@@ -108,9 +108,9 @@ const projectDelete = () => {
       <span v-else>'{{ project?.name }}' 프로젝트를 다시 열고 진행 하시겠습니까?</span>
     </template>
     <template #footer>
-      <CButton :color="project.status === '1' ? 'warning' : 'success'" @click="patchProject">
+      <v-btn :color="project.status === '1' ? 'warning' : 'success'" @click="patchProject">
         확인
-      </CButton>
+      </v-btn>
     </template>
   </ConfirmModal>
 
@@ -135,9 +135,9 @@ const projectDelete = () => {
       </div>
     </template>
     <template #footer>
-      <CButton color="danger" @click="projectDelete" :disabled="idForDelete !== project?.slug">
+      <v-btn color="warning" @click="projectDelete" :disabled="idForDelete !== project?.slug">
         삭제
-      </CButton>
+      </v-btn>
     </template>
   </ConfirmModal>
 </template>

@@ -173,7 +173,7 @@ onBeforeMount(async () => {
   <ConfirmModal ref="RefDelFile">
     <template #default>이 파일 삭제를 계속 진행하시겠습니까?</template>
     <template #footer>
-      <CButton color="warning" @click="delFileSubmit">삭제</CButton>
+      <v-btn color="warning" @click="delFileSubmit">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

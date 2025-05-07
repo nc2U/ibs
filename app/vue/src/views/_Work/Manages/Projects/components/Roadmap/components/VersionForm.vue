@@ -168,9 +168,9 @@ onBeforeMount(async () => {
         </CCardBody>
       </CCard>
 
-      <CButton type="submit" :color="version ? 'success' : 'primary'" :disabled="formsCheck">
+      <v-btn type="submit" :color="version ? 'success' : 'primary'" :disabled="formsCheck">
         저장
-      </CButton>
+      </v-btn>
     </CForm>
   </CRow>
 </template>

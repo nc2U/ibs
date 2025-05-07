@@ -200,25 +200,25 @@ onBeforeMount(() => accStore.fetchUsersList())
                   </span>
                 </div>
 
-                <CButton
+                <v-btn
                   color="success"
-                  size="sm"
+                  size="small"
                   type="button"
                   class="mt-2"
                   @click="editSubmit(mem, memberRole)"
                 >
                   저장
-                </CButton>
-                <CButton
+                </v-btn>
+                <v-btn
                   color="secondary"
-                  variant="outline"
-                  size="sm"
+                  variant="outlined"
+                  size="small"
                   type="button"
                   @click="cancelEdit"
                   class="mt-2"
                 >
                   취소
-                </CButton>
+                </v-btn>
               </div>
               <div v-else>
                 <span
@@ -298,8 +298,8 @@ onBeforeMount(() => accStore.fetchUsersList())
           </CCard>
         </CModalBody>
         <CModalFooter>
-          <CButton color="light" @click="memberFormModal.close"> 닫기</CButton>
-          <CButton color="primary" type="submit">추가</CButton>
+          <v-btn color="light" @click="memberFormModal.close"> 닫기</v-btn>
+          <v-btn color="primary" type="submit">추가</v-btn>
         </CModalFooter>
       </CForm>
     </template>
@@ -307,7 +307,7 @@ onBeforeMount(() => accStore.fetchUsersList())
 
   <ConfirmModal ref="memberConfirmModal">
     <template #footer>
-      <CButton color="warning" @click="deleteSubmit">삭제</CButton>
+      <v-btn color="warning" @click="deleteSubmit">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

@@ -166,15 +166,15 @@ const delSubmit = () => {
           <MdEditor v-model="content" style="height: 150px" class="mb-1" placeholder="Comment.." />
           <CFormCheck id="private_comment" label="비공개 댓글" />
           <div class="my-3">
-            <CButton color="success" size="sm" @click="commentSubmit">저장</CButton>
-            <CButton color="light" size="sm" @click="() => (editMode = false)">취소</CButton>
+            <v-btn color="success" size="small" @click="commentSubmit">저장</v-btn>
+            <v-btn color="light" size="small" @click="() => (editMode = false)">취소</v-btn>
           </div>
         </span>
       </div>
 
       <ConfirmModal ref="RefDelConfirm">
         <template #footer>
-          <CButton color="danger" @click="delSubmit">확인</CButton>
+          <v-btn color="warning" @click="delSubmit">확인</v-btn>
         </template>
       </ConfirmModal>
     </CCol>
