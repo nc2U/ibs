@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { loadFonts } from '@/plugins/webfontloader'
-import { vMaska } from "maska/vue"
+import { vMaska } from 'maska/vue'
 import { CIcon } from '@coreui/icons-vue'
 import { iconsSet as icons } from '@/assets/icons'
 import '@/styles/style.scss'
@@ -20,9 +20,7 @@ app.use(pinia)
 const accStore = useAccount()
 const cookie = Cookies.get('accessToken')
 
-const init = async () =>
-   await accStore.loginByToken(cookie)
-
+const init = () => accStore.loginByToken(cookie)
 
 ;(async () => {
   await init()
