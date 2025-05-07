@@ -242,6 +242,7 @@ class ContractSerializer(serializers.ModelSerializer):
                                            price_build=price[1],
                                            price_land=price[2],
                                            price_tax=price[3],
+                                           install_amount=[],
                                            down_pay=pay_amount[0],
                                            biz_agency_fee=pay_amount[3],
                                            is_included_baf=pay_amount[4],
@@ -705,8 +706,10 @@ class SimpleContractSerializer(serializers.ModelSerializer):
 
 
 class InstallAmountInContractPriceSerializer(serializers.Serializer):
+    pay_sort = serializers.CharField()
     pay_code = serializers.IntegerField()
     pay_time = serializers.IntegerField()
+    pay_name = serializers.CharField()
     alias_name = serializers.CharField()
     pay_amt = serializers.IntegerField()
     is_pm_cost = serializers.BooleanField()
