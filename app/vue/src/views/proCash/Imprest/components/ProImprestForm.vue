@@ -681,14 +681,14 @@ onBeforeMount(() => formDataSetup())
               {{ sep.income ? numFormat(sep.income) : numFormat(sep.outlay as number) }}
             </CCol>
             <CCol sm="2" class="text-right">
-              <CButton
+              <v-btn
                 type="button"
                 color="success"
-                size="sm"
+                size="small"
                 @click="sepUpdate(sep as ProjectCashBook)"
               >
                 수정
-              </CButton>
+              </v-btn>
             </CCol>
           </CRow>
         </div>
@@ -922,21 +922,19 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <CButton type="button" color="light" @click="emit('close')"> 닫기</CButton>
+      <v-btn type="button" color="light" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <CButton v-if="sepItem.pk" type="button" color="dark" variant="outline" @click="sepRemove">
+        <v-btn v-if="sepItem.pk" type="button" color="light" variant="outlined" @click="sepRemove">
           취소
-        </CButton>
-        <CButton
+        </v-btn>
+        <v-btn
           type="submit"
           :color="isModify ? 'success' : 'primary'"
           :disabled="formsCheck && requireItem"
         >
           저장
-        </CButton>
-        <CButton v-if="isModify" type="button" color="danger" @click="deleteConfirm">
-          삭제
-        </CButton>
+        </v-btn>
+        <v-btn v-if="isModify" type="button" color="warning" @click="deleteConfirm"> 삭제</v-btn>
       </slot>
     </CModalFooter>
   </CForm>

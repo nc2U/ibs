@@ -104,7 +104,11 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
           <small class="text-medium-emphasis"> ({{ date }}) 기준 </small>
         </CTableDataCell>
         <CTableDataCell class="text-center">
-          <CButtonGroup size="sm" role="group" aria-label="Basic checkbox toggle button group">
+          <v-btn-group
+            density="compact"
+            role="group"
+            aria-label="Basic checkbox toggle button group"
+          >
             <CFormCheck
               type="radio"
               :button="{ color: 'dark', variant: 'outline' }"
@@ -127,7 +131,7 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
               v-model="isRevised"
               @click="updateRevised"
             />
-          </CButtonGroup>
+          </v-btn-group>
         </CTableDataCell>
         <CTableDataCell colspan="4" class="text-right">(단위: 원)</CTableDataCell>
       </CTableRow>

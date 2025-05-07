@@ -96,7 +96,7 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
     </CTableDataCell>
     <CTableDataCell>{{ proCash.evidence_desc }}</CTableDataCell>
     <CTableDataCell v-if="write_project_cash">
-      <CButton color="info" size="sm" @click="showDetail" :disabled="!allowedPeriod">확인</CButton>
+      <v-btn color="info" size="small" @click="showDetail" :disabled="!allowedPeriod">확인</v-btn>
     </CTableDataCell>
   </CTableRow>
 
