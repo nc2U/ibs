@@ -403,15 +403,15 @@ onBeforeMount(() => {
 
     <CRow class="py-4">
       <CCol>
-        <CButtonGroup role="group">
-          <CButton v-if="editAuth" color="success" :disabled="!writeAuth" @click="toEdit">
+        <v-btn-group density="compact" role="group">
+          <v-btn v-if="editAuth" color="success" :disabled="!writeAuth" @click="toEdit">
             수정
-          </CButton>
-          <CButton v-if="editAuth" color="danger" :disabled="!writeAuth" @click="deleteConfirm">
+          </v-btn>
+          <v-btn v-if="editAuth" color="warning" :disabled="!writeAuth" @click="deleteConfirm">
             삭제
-          </CButton>
-          <CButton color="light" @click="router.push({ name: `${viewRoute}` })"> 목록</CButton>
-          <CButton
+          </v-btn>
+          <v-btn color="light" @click="router.push({ name: `${viewRoute}` })"> 목록</v-btn>
+          <v-btn
             color="light"
             :disabled="!prev"
             @click="
@@ -422,8 +422,8 @@ onBeforeMount(() => {
             "
           >
             이전
-          </CButton>
-          <CButton
+          </v-btn>
+          <v-btn
             color="light"
             :disabled="!next"
             @click="
@@ -434,8 +434,8 @@ onBeforeMount(() => {
             "
           >
             다음
-          </CButton>
-        </CButtonGroup>
+          </v-btn>
+        </v-btn-group>
       </CCol>
       <CCol class="text-right">
         <v-btn
@@ -455,7 +455,7 @@ onBeforeMount(() => {
     <template #header>알림</template>
     <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
     <template #footer>
-      <CButton color="danger" @click="toDelete">삭제</CButton>
+      <v-btn color="warning" @click="toDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

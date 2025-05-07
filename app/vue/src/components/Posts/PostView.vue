@@ -442,15 +442,15 @@ onMounted(() => {
 
     <CRow class="py-2">
       <CCol>
-        <CButtonGroup role="group">
-          <CButton v-if="editAuth" color="success" :disabled="!writeAuth" @click="toEdit">
+        <v-btn-group density="compact" role="group">
+          <v-btn v-if="editAuth" color="success" :disabled="!writeAuth" @click="toEdit">
             수정
-          </CButton>
-          <CButton v-if="editAuth" color="danger" :disabled="!writeAuth" @click="deleteConfirm">
+          </v-btn>
+          <v-btn v-if="editAuth" color="warning" :disabled="!writeAuth" @click="deleteConfirm">
             삭제
-          </CButton>
-          <CButton color="secondary" @click="router.push({ name: `${viewRoute}` })"> 목록</CButton>
-          <CButton
+          </v-btn>
+          <v-btn color="secondary" @click="router.push({ name: `${viewRoute}` })"> 목록</v-btn>
+          <v-btn
             color="light"
             :disabled="!prev || reOrder"
             @click="
@@ -461,8 +461,8 @@ onMounted(() => {
             "
           >
             이전
-          </CButton>
-          <CButton
+          </v-btn>
+          <v-btn
             color="light"
             :disabled="!next || reOrder"
             @click="
@@ -473,8 +473,8 @@ onMounted(() => {
             "
           >
             다음
-          </CButton>
-        </CButtonGroup>
+          </v-btn>
+        </v-btn-group>
       </CCol>
       <CCol class="text-right">
         <v-btn
