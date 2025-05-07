@@ -5,12 +5,12 @@ import { loadFonts } from '@/plugins/webfontloader'
 import { vMaska } from "maska/vue"
 import { CIcon } from '@coreui/icons-vue'
 import { iconsSet as icons } from '@/assets/icons'
+import '@/styles/style.scss'
 import router from '@/router'
 import Cookies from 'js-cookie'
 import CoreuiVue from '@coreui/vue'
 import vuetify from '@/plugins/vuetify'
 import ganttastic from '@infectoone/vue-ganttastic'
-import '@/styles/style.scss'
 import App from './App.vue'
 
 const app = createApp(App)
