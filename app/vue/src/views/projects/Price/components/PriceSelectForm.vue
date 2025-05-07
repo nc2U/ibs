@@ -79,15 +79,15 @@ const modalAction = () => {
       <CCol md="4" class="mb-2">
         <CRow class="justify-content-end">
           <CCol xl="6" class="d-grid gap-2">
-            <CButton
+            <v-btn
               v-if="superAuth"
               type="button"
-              color="dark"
+              color="blue-grey-darken-2"
               :disabled="!project"
               @click="contPriceSet"
             >
               전체 계약건 공급가 재설정
-            </CButton>
+            </v-btn>
           </CCol>
         </CRow>
       </CCol>
@@ -110,7 +110,7 @@ const modalAction = () => {
       </p>
     </template>
     <template #footer>
-      <CButton color="dark" @click="modalAction">재설정</CButton>
+      <v-btn color="blue-grey-darken-2" @click="modalAction">재설정</v-btn>
     </template>
   </ConfirmModal>
 </template>

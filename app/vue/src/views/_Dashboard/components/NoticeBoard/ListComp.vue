@@ -37,8 +37,8 @@ const userInfo = inject<ComputedRef<User>>('userInfo')
                   v-if="item.is_notice"
                   color="primary"
                   content="!"
-                  offset-x="20"
                   offset-y="-7"
+                  class="mr-4"
                 />
                 <router-link
                   v-if="!item.is_secret || userInfo?.is_superuser || userInfo?.pk === item.user?.pk"
