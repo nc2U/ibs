@@ -228,9 +228,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-# ACCOUNT_EMAIL_REQUIRED = True  # email 필드 사용 o
+ACCOUNT_EMAIL_REQUIRED = True  # email 필드 사용 o
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password*']
-ACCOUNT_LOGIN_METHODS = ['email']
 # ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # username 필드 사용 x
 # ACCOUNT_USERNAME_REQUIRED = False  # username 필드 사용 x
 
