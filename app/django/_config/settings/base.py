@@ -228,13 +228,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
+ACCOUNT_LOGIN_METHODS = ['email']
 ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password*']
-
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True  # email 필드 사용 o
-ACCOUNT_USERNAME_REQUIRED = False  # username 필드 사용 x
-ACCOUNT_EMAIL_VERIFICATION = 'optional'        # 이메일 인증 요구 수준
-ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5               # (선택) 로그인 시도 제한
 
 # EMAIL SETTINGS
 DOMAIN_HOST = os.getenv('DOMAIN_HOST', 'http://localhost/')  # ex: 'https://abc.com/'
