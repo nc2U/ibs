@@ -66,6 +66,11 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
       />
+      <CTableRow v-if="!siteList.length">
+        <CTableDataCell colspan="13" class="text-center p-5 text-danger">
+          등록된 데이터가 없습니다.
+        </CTableDataCell>
+      </CTableRow>
     </CTableBody>
   </CTable>
 

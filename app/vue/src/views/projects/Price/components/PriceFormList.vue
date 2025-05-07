@@ -86,9 +86,12 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableDataCell :colspan="write_project ? 13 : 12" class="text-center p-5 text-danger">
           <p>
             <CIcon name="cilWarning" />
-            등록된 [층별조건] 데이터가 없습니다!
+            등록된 [
+            <router-link :to="{ name: '층별 조건 등록' }">층별조건</router-link>
+            ] 데이터가 없습니다! 먼저 [
+            <router-link :to="{ name: '층별 조건 등록' }">층별조건</router-link>
+            ]을 등록한 후 진행하세요.
           </p>
-          <p>먼저 [층별조건]을 등록한 후 진행하세요.</p>
         </CTableDataCell>
       </CTableRow>
     </CTableBody>
