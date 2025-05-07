@@ -231,9 +231,9 @@ onBeforeUpdate(() => dataSetup())
 
         <CRow>
           <CCol sm="12" class="text-right pt-1">
-            <CButton :color="bankAcc ? 'success' : 'primary'" type="submit" :disabled="formsCheck">
+            <v-btn :color="bankAcc ? 'success' : 'primary'" type="submit" :disabled="formsCheck">
               거래계좌 정보 <span v-if="bankAcc">저장</span><span v-else>추가</span>하기
-            </CButton>
+            </v-btn>
           </CCol>
         </CRow>
       </div>
@@ -248,7 +248,7 @@ onBeforeUpdate(() => dataSetup())
       거래계좌 정보를 <span v-if="bankAcc">저장</span><span v-else>추가</span>하시겠습니까?
     </template>
     <template #footer>
-      <CButton :color="bankAcc ? 'success' : 'primary'" @click="onBankAccSubmit">저장</CButton>
+      <v-btn :color="bankAcc ? 'success' : 'primary'" @click="onBankAccSubmit">저장</v-btn>
     </template>
   </ConfirmModal>
 

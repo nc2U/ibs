@@ -110,7 +110,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
     </CTableDataCell>
     <CTableDataCell>{{ cash.evidence_desc }}</CTableDataCell>
     <CTableDataCell v-if="write_company_cash">
-      <CButton color="info" size="sm" @click="showDetail" :disabled="!allowedPeriod"> 확인</CButton>
+      <v-btn color="info" size="small" @click="showDetail" :disabled="!allowedPeriod"> 확인</v-btn>
     </CTableDataCell>
   </CTableRow>
 

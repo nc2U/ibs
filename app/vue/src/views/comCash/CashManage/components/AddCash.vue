@@ -26,7 +26,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 
 <template>
   <CAlert :color="AlertLight" variant="solid" class="text-right">
-    <CButton color="primary" :disabled="!company" @click="createConfirm"> 신규등록</CButton>
+    <v-btn color="primary" :disabled="!company" @click="createConfirm"> 신규등록</v-btn>
   </CAlert>
 
   <FormModal ref="createFormModal" size="lg">
