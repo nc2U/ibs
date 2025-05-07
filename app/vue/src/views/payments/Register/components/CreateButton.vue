@@ -22,9 +22,9 @@ const createObject = (payload: ProjectCashBook) => {
 
 <template>
   <CAlert :color="AlertLight" variant="solid" class="text-right">
-    <CButton type="button" color="primary" :disabled="btnActive" @click="showDetail">
+    <v-btn type="button" color="primary" :disabled="btnActive" @click="showDetail">
       신규납부 등록
-    </CButton>
+    </v-btn>
   </CAlert>
 
   <FormModal ref="createFormModal" size="lg">

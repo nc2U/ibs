@@ -74,17 +74,17 @@ onMounted(() => pageInit())
     </CRow>
     <CRow>
       <CCol v-if="contractList.length !== 0" color="warning" class="p-2 pl-3">
-        <CButton
+        <v-btn
           v-for="cont in contractList"
           :key="cont.pk"
           type="button"
-          color="dark"
-          variant="outline"
-          size="sm"
+          color="#546E7A"
+          variant="outlined"
+          size="small"
           @click="getContract(cont.pk)"
         >
           {{ `${cont.contractor?.name}(${cont.serial_number})` }}
-        </CButton>
+        </v-btn>
       </CCol>
       <CCol v-else class="mt-3 m-2" :class="textClass">
         {{ msg }}

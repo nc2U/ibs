@@ -92,17 +92,17 @@ const modalAction = () => {
         </CRow>
         <CRow>
           <CCol v-if="contactList.length !== 0" color="warning" class="p-2 pl-3">
-            <CButton
+            <v-btn
               v-for="c in contactList"
               :key="c.pk"
               type="button"
-              color="dark"
-              variant="outline"
-              size="sm"
+              color="#546E7A"
+              variant="outlined"
+              size="small"
               @click="contMatching(c)"
             >
               {{ `${c.contractor?.name}(${c.serial_number})` }}
-            </CButton>
+            </v-btn>
           </CCol>
           <CCol v-else class="mt-3 m-2" :class="textClass">
             {{ msg }}
@@ -134,7 +134,7 @@ const modalAction = () => {
       >&gt; 계약 건의 납부대금으로 등록합니다.
     </template>
     <template #footer>
-      <CButton color="primary" @click="modalAction">저장</CButton>
+      <v-btn color="primary" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 
