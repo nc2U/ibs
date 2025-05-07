@@ -29,8 +29,8 @@ defineExpose({ callModal, close })
     <slot>
       <CModalBody class="text-body"> Form here...</CModalBody>
       <CModalFooter>
-        <CButton color="light" @click="() => (visible = false)"> 닫기</CButton>
-        <CButton color="primary">확인</CButton>
+        <v-btn color="light" @click="() => (visible = false)"> 닫기</v-btn>
+        <v-btn color="primary">확인</v-btn>
       </CModalFooter>
     </slot>
   </CModal>
