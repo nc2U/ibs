@@ -93,14 +93,14 @@ onBeforeMount(() => {
 
   <CRow>
     <CCol>
-      <CButtonGroup role="group">
-        <CButton color="primary" variant="outline" size="sm" @click="toMonthPrev(6)">
+      <v-btn-group density="compact" role="group">
+        <v-btn color="primary" variant="outlined" size="small" @click="toMonthPrev(6)">
           « 뒤로
-        </CButton>
-        <CButton color="primary" variant="outline" size="sm" @click="toMonthNext(6)">
+        </v-btn>
+        <v-btn color="primary" variant="outlined" size="small" @click="toMonthNext(6)">
           다음 »
-        </CButton>
-      </CButtonGroup>
+        </v-btn>
+      </v-btn-group>
     </CCol>
   </CRow>
 </template>

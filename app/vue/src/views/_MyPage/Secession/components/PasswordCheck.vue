@@ -78,7 +78,7 @@ defineExpose({ passReset, getPass })
       <CRow class="mb-3">
         <CCol class="col-sm-2 col-lg-1"></CCol>
         <CCol sm="6" lg="4" xl="3" class="text-right">
-          <CButton type="submit" color="danger">확인</CButton>
+          <v-btn type="submit" color="danger">확인</v-btn>
         </CCol>
       </CRow>
     </CForm>

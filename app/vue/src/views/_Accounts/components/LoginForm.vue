@@ -67,15 +67,15 @@ onMounted(() => (redirect.value = route.query?.redirect))
         placeholder="비밀번호를 입력해주세요"
         required
       />
-      <CButton
+      <v-btn
         type="button"
         color="secondary"
-        variant="outline"
+        variant="outlined"
         id="button-addon2"
         @click="showPassword = !showPassword"
       >
         <v-icon :icon="!showPassword ? 'mdi-eye' : 'mdi-eye-off'" />
-      </CButton>
+      </v-btn>
       <CFormFeedback invalid>비밀번호를 입력하세요.</CFormFeedback>
     </CInputGroup>
     <CRow>

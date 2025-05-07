@@ -262,7 +262,7 @@ onBeforeMount(() => {
 
     <ConfirmModal ref="RefDelConfirm">
       <template #footer>
-        <CButton color="danger" @click="delSubmit">확인</CButton>
+        <v-btn color="warning" @click="delSubmit">확인</v-btn>
       </template>
     </ConfirmModal>
   </div>

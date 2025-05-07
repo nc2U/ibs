@@ -135,7 +135,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
       삭제한 데이터는 복구할 수 없습니다. 해당 입출금 거래 정보를 삭제하시겠습니까?
     </template>
     <template #footer>
-      <CButton color="danger" @click="deleteObject">삭제</CButton>
+      <v-btn color="warning" @click="deleteObject">삭제</v-btn>
     </template>
   </ConfirmModal>
 

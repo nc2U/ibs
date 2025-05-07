@@ -231,10 +231,10 @@ onBeforeMount(() => {
         </CRow>
       </CModalBody>
       <CModalFooter>
-        <CButton color="light" @click="refFormModal.close"> 닫기</CButton>
-        <CButton v-if="mode === 'create'" color="primary" @click="eventManagement"> 등록</CButton>
-        <CButton v-if="mode === 'update'" color="success" @click="eventManagement"> 수정</CButton>
-        <CButton v-if="mode === 'update'" color="danger" @click="removeConfirm"> 삭제</CButton>
+        <v-btn color="light" @click="refFormModal.close"> 닫기</v-btn>
+        <v-btn v-if="mode === 'create'" color="primary" @click="eventManagement"> 등록</v-btn>
+        <v-btn v-if="mode === 'update'" color="success" @click="eventManagement"> 수정</v-btn>
+        <v-btn v-if="mode === 'update'" color="warning" @click="removeConfirm"> 삭제</v-btn>
       </CModalFooter>
     </template>
   </FormModal>
@@ -246,7 +246,7 @@ onBeforeMount(() => {
     <template #header> 진행 일정 - 이벤트 삭제</template>
     [{{ eventTitle }}] - 삭제 후 복구할 수 없습니다. 해당 일정을 삭제 하시겠습니까?
     <template #footer>
-      <CButton color="danger" @click="eventRemove">삭제</CButton>
+      <v-btn color="warning" @click="eventRemove">삭제</v-btn>
     </template>
   </ConfirmModal>
 

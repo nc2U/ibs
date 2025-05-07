@@ -47,9 +47,7 @@ const router = useRouter()
 
         <CRow class="mb-3">
           <CCol class="text-right">
-            <CButton color="info" @click="router.push({ name: '정보 수정' })">
-              회원정보 변경
-            </CButton>
+            <v-btn color="info" @click="router.push({ name: '정보 수정' })"> 회원정보 변경 </v-btn>
           </CCol>
         </CRow>
       </CCol>

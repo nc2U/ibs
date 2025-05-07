@@ -170,10 +170,10 @@ const fileDelete = () => {
                   </CInputGroup>
                 </CCol>
                 <CCol v-if="editFile.file" xs>
-                  <CButton color="success" size="sm" @click="fileChange(file.pk as number)">
+                  <v-btn color="success" size="small" @click="fileChange(file.pk as number)">
                     변경
-                  </CButton>
-                  <CButton color="light" size="sm" @click="clearFile"> 취소 </CButton>
+                  </v-btn>
+                  <v-btn color="light" size="small" @click="clearFile"> 취소 </v-btn>
                 </CCol>
               </CRow>
             </span>
@@ -213,15 +213,15 @@ const fileDelete = () => {
 
   <CRow v-if="addFileForm">
     <CCol>
-      <CButton color="success" size="sm" @click="fileUpload">추가</CButton>
-      <CButton color="light" size="sm" @click="clearFile">취소</CButton>
+      <v-btn color="success" size="small" @click="fileUpload">추가</v-btn>
+      <v-btn color="light" size="small" @click="clearFile">취소</v-btn>
     </CCol>
   </CRow>
 
   <ConfirmModal ref="refDelFile">
     <template #default>이 파일을 삭제 하시겠습니까?</template>
     <template #footer>
-      <CButton color="warning" @click="fileDelete">삭제</CButton>
+      <v-btn color="warning" @click="fileDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

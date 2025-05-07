@@ -59,15 +59,15 @@ const onSubmit = (event: Event) => {
               aria-label="password"
               aria-describedby="password"
             />
-            <CButton
+            <v-btn
               type="button"
               color="secondary"
-              variant="outline"
+              variant="outlined"
               id="button-addon2"
               @click="showPassword = !showPassword"
             >
               <v-icon :icon="!showPassword ? 'mdi-eye' : 'mdi-eye-off'" />
-            </CButton>
+            </v-btn>
             <CFormFeedback invalid>현재 비밀번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
@@ -84,15 +84,15 @@ const onSubmit = (event: Event) => {
               aria-label="password"
               aria-describedby="password"
             />
-            <CButton
+            <v-btn
               type="button"
               color="secondary"
-              variant="outline"
+              variant="outlined"
               id="button-addon2"
               @click="showPassword = !showPassword"
             >
               <v-icon :icon="!showPassword ? 'mdi-eye' : 'mdi-eye-off'" />
-            </CButton>
+            </v-btn>
             <CFormFeedback invalid>새로운 비밀번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
@@ -109,15 +109,15 @@ const onSubmit = (event: Event) => {
               aria-label="password"
               aria-describedby="password"
             />
-            <CButton
+            <v-btn
               type="button"
               color="secondary"
-              variant="outline"
+              variant="outlined"
               id="button-addon2"
               @click="showPassword = !showPassword"
             >
               <v-icon :icon="!showPassword ? 'mdi-eye' : 'mdi-eye-off'" />
-            </CButton>
+            </v-btn>
             <CFormFeedback invalid>비밀번호를 한번 더 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
@@ -125,7 +125,7 @@ const onSubmit = (event: Event) => {
       <CRow class="mb-3">
         <CCol class="col-sm-4 col-lg-2"></CCol>
         <CCol sm="6" lg="4" xl="3" class="text-right">
-          <CButton type="submit" color="success">수정하기</CButton>
+          <v-btn type="submit" color="success">수정하기</v-btn>
         </CCol>
       </CRow>
     </CForm>

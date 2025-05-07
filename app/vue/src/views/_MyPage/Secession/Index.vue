@@ -64,7 +64,7 @@ const removeUser = () => {
       획인을 누르면 탈퇴가 진행됩니다.
     </template>
     <template #footer>
-      <CButton color="danger" @click="modalAction"> 확인</CButton>
+      <v-btn color="danger" @click="modalAction"> 확인</v-btn>
     </template>
   </ConfirmModal>
 </template>

@@ -225,10 +225,10 @@ onBeforeMount(() => {
       </CCard>
 
       <CCol>
-        <CButton type="submit" :color="timeEntry ? 'success' : 'primary'" :disabled="formCheck">
+        <v-btn type="submit" :color="timeEntry ? 'success' : 'primary'" :disabled="formCheck">
           확인
-        </CButton>
-        <CButton type="button" color="light" @click="closeForm">취소</CButton>
+        </v-btn>
+        <v-btn type="button" color="light" @click="closeForm">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>

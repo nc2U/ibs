@@ -62,13 +62,11 @@ const router = useRouter()
 
     <CRow class="py-2">
       <CCol class="text-right">
-        <CButtonGroup role="group">
-          <CButton color="secondary" @click="router.push({ name: `${viewRoute}` })">
-            목록으로
-          </CButton>
-          <CButton color="success" @click="restoreDocs"> 복원하기</CButton>
-          <CButton color="danger" @click="deleteDocs"> 삭제하기</CButton>
-        </CButtonGroup>
+        <v-btn-group density="compact" role="group">
+          <v-btn color="secondary" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
+          <v-btn color="success" @click="restoreDocs"> 복원하기</v-btn>
+          <v-btn color="warning" @click="deleteDocs"> 삭제하기</v-btn>
+        </v-btn-group>
       </CCol>
     </CRow>
   </div>

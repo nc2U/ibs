@@ -130,7 +130,7 @@ onMounted(() => formDataSetup())
             <CFormLabel class="col-sm-4 col-form-label"> 패스워드</CFormLabel>
 
             <CCol sm="8">
-              <CButton type="button" @click="passChange" color="secondary">패스워드 변경</CButton>
+              <v-btn type="button" @click="passChange" color="secondary">패스워드 변경</v-btn>
             </CCol>
           </CRow>
 
@@ -195,11 +195,11 @@ onMounted(() => formDataSetup())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <CButton type="button" color="light" @click="formDataReset"> 취소</CButton>
-      <CButton type="submit" :color="btnClass" :disabled="formsCheck">
+      <v-btn type="button" color="light" @click="formDataReset"> 취소</v-btn>
+      <v-btn type="submit" :color="btnClass" :disabled="formsCheck">
         <CIcon name="cil-check-circle" />
         {{ confirmText }}
-      </CButton>
+      </v-btn>
     </CCardFooter>
   </CForm>
 
@@ -207,9 +207,9 @@ onMounted(() => formDataSetup())
     <template #header>프로필 정보</template>
     <template #default> 프로필 정보 {{ confirmText }}을 진행하시겠습니까?</template>
     <template #footer>
-      <CButton :color="btnClass" @click="modalAction">
+      <v-btn :color="btnClass" @click="modalAction">
         {{ confirmText }}
-      </CButton>
+      </v-btn>
     </template>
   </ConfirmModal>
 

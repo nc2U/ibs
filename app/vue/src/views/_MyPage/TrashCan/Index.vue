@@ -147,7 +147,7 @@ onBeforeMount(() => {
     <template #header>알림</template>
     <template #default>이 게시물을 휴지통으로부터 복원 하시겠습니까?</template>
     <template #footer>
-      <CButton color="success" @click="resModalAction">삭제 복원</CButton>
+      <v-btn color="success" @click="resModalAction">삭제 복원</v-btn>
     </template>
   </ConfirmModal>
 
@@ -155,7 +155,7 @@ onBeforeMount(() => {
     <template #header>알림</template>
     <template #default>삭제 후 복원할 수 없읍니다. 이 게시물을 삭제 하시겠습니까?</template>
     <template #footer>
-      <CButton color="danger" @click="delModalAction">완전 삭제</CButton>
+      <v-btn color="warning" @click="delModalAction">완전 삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

@@ -63,9 +63,9 @@ onBeforeMount(() => {
             :aria-describedby="`alias-title-${scrape.pk}`"
             @keydown.enter="patchTitle"
           />
-          <CButton @click="patchTitle" type="button" color="info" :id="`alias-title-${scrape.pk}`">
+          <v-btn @click="patchTitle" type="button" color="info" :id="`alias-title-${scrape.pk}`">
             저장
-          </CButton>
+          </v-btn>
         </CInputGroup>
       </span>
     </CTableDataCell>
@@ -99,7 +99,7 @@ onBeforeMount(() => {
     <template #header> 스크랩 정보 삭제</template>
     <template #default> 삭제 후 복구할 수 없습니다. 스크랩 삭제를 진행하시겠습니까?</template>
     <template #footer>
-      <CButton color="danger" @click="modalAction"> 삭제</CButton>
+      <v-btn color="warning" @click="modalAction"> 삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

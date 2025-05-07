@@ -87,18 +87,18 @@ onBeforeMount(() => {
 
   <CRow>
     <CCol>
-      <CButtonGroup role="group">
-        <CButton color="primary" variant="outline" size="sm" @click="toBack">« 뒤로</CButton>
-        <CButton
+      <v-btn-group density="compact" role="group">
+        <v-btn color="primary" variant="outlined" size="small" @click="toBack">« 뒤로</v-btn>
+        <v-btn
           v-if="dateFormat(toDate) < dateFormat(new Date())"
           color="primary"
-          variant="outline"
-          size="sm"
+          variant="outlined"
+          size="small"
           @click="toNext"
         >
           다음 »
-        </CButton>
-      </CButtonGroup>
+        </v-btn>
+      </v-btn-group>
     </CCol>
   </CRow>
 </template>

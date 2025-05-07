@@ -50,15 +50,15 @@ const onSubmit = (event: Event) => {
               aria-label="password"
               aria-describedby="password"
             />
-            <CButton
+            <v-btn
               type="button"
               color="secondary"
-              variant="outline"
+              variant="outlined"
               id="button-addon2"
               @click="showPassword = !showPassword"
             >
               <v-icon :icon="!showPassword ? 'mdi-eye' : 'mdi-eye-off'" />
-            </CButton>
+            </v-btn>
           </CInputGroup>
           <div class="form-text">
             외부로부터 회원님의 정보를 안전하게 보호하기 위해 비밀번호를 확인하셔야 합니다.
@@ -68,7 +68,7 @@ const onSubmit = (event: Event) => {
       <CRow class="mb-3">
         <CCol class="col-sm-2 col-lg-1"></CCol>
         <CCol sm="6" lg="4" xl="3" class="text-right">
-          <CButton type="submit" color="info">확인</CButton>
+          <v-btn type="submit" color="info">확인</v-btn>
         </CCol>
       </CRow>
     </CForm>

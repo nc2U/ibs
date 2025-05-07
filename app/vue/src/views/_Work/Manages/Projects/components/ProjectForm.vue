@@ -409,7 +409,7 @@ onBeforeMount(() => {
         <v-btn type="submit" :color="!project ? 'primary' : 'success'" :disabled="formsCheck">
           저장
         </v-btn>
-        <!--        <v-btn color="primary" type="submit">저장 후 계속하기</CButton>-->
+        <!--        <v-btn color="primary" type="submit">저장 후 계속하기</v-btn>-->
       </CCol>
     </CRow>
   </CForm>

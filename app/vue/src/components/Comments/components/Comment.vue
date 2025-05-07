@@ -124,9 +124,9 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       이 댓글을 신고 {{ comment.my_blame ? '를 취소' : '' }} 하시겠습니까?<br /><br />
     </template>
     <template #footer>
-      <CButton :color="comment.my_blame ? 'secondary' : 'danger'" @click="blameAction">
+      <v-btn :color="comment.my_blame ? 'secondary' : 'warning'" @click="blameAction">
         {{ comment.my_blame ? '취소' : '신고' }}
-      </CButton>
+      </v-btn>
     </template>
   </ConfirmModal>
 </template>

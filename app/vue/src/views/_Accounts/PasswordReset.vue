@@ -70,7 +70,7 @@ onBeforeMount(() => fetchResetTokenList(uid.value))
     <template #header>성공!</template>
     <template #default>비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인하십시오.</template>
     <template #footer>
-      <CButton color="primary" @click="router.push({ name: 'Home' })">지금 로그인</CButton>
+      <v-btn color="primary" @click="router.push({ name: 'Home' })">지금 로그인</v-btn>
     </template>
   </AlertModal>
 </template>
