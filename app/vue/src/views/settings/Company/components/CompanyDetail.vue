@@ -113,16 +113,16 @@ const toCreate = () => {
   <CCardFooter v-if="write_company_settings">
     <CRow class="justify-content-between">
       <CCol xs="auto">
-        <CButton type="button" color="success" :disabled="!company" @click="toEdit">
+        <v-btn type="button" color="success" :disabled="!company" @click="toEdit">
           <v-icon icon="mdi mdi-check-circle-outline" size="small" />
           수정하기
-        </CButton>
+        </v-btn>
       </CCol>
       <CCol xs="auto">
-        <CButton type="button" color="primary" @click="toCreate">
+        <v-btn type="button" color="primary" @click="toCreate">
           <v-icon icon="mdi mdi-check-circle-outline" size="small" />
           등록하기
-        </CButton>
+        </v-btn>
       </CCol>
     </CRow>
   </CCardFooter>

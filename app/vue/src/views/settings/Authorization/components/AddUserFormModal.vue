@@ -125,9 +125,9 @@ defineExpose({ callModal })
               />
             </CCol>
             <CCol sm="4">
-              <CButton color="secondary" size="sm" class="mt-1" @click="generatePassword">
+              <v-btn color="secondary" size="small" class="mt-1" @click="generatePassword">
                 임의 패스워드 생성
-              </CButton>
+              </v-btn>
             </CCol>
           </CRow>
           <CRow class="mb-4" style="height: 45px">
@@ -148,8 +148,8 @@ defineExpose({ callModal })
               <div class="p-1 mb-1 bg-yellow-lighten-1 text-center" style="width: 90px">
                 {{ genPass }}
               </div>
-              <CButton color="light" size="sm" @click="genPass = ''">취소</CButton>
-              <CButton color="success" size="sm" @click="applyGen">적용</CButton>
+              <v-btn color="light" size="small" @click="genPass = ''">취소</v-btn>
+              <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
             </CCol>
           </CRow>
 
@@ -205,8 +205,8 @@ defineExpose({ callModal })
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <CButton color="light" @click="() => refFormModal.close()"> 닫기</CButton>
-          <CButton type="submit" color="primary">확인</CButton>
+          <v-btn color="light" @click="() => refFormModal.close()"> 닫기</v-btn>
+          <v-btn type="submit" color="primary">확인</v-btn>
         </CModalFooter>
       </CForm>
     </template>

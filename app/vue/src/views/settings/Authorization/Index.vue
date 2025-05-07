@@ -247,7 +247,7 @@ onBeforeMount(() => {
 
     <template #footer>
       <CCardFooter class="text-right">
-        <CButton
+        <v-btn
           type="button"
           :color="isStaffAuth ? 'success' : 'primary'"
           :disabled="!comId || formsCheck"
@@ -255,7 +255,7 @@ onBeforeMount(() => {
         >
           <CIcon name="cil-check-circle" />
           저장
-        </CButton>
+        </v-btn>
       </CCardFooter>
     </template>
 
@@ -265,7 +265,7 @@ onBeforeMount(() => {
       <template #header>사용자 권한설정</template>
       <template #default>사용자 권한설정 저장을 진행하시겠습니까?</template>
       <template #footer>
-        <CButton :color="isStaffAuth ? 'success' : 'primary'" @click="modalAction"> 저장</CButton>
+        <v-btn :color="isStaffAuth ? 'success' : 'primary'" @click="modalAction"> 저장</v-btn>
       </template>
     </ConfirmModal>
 
