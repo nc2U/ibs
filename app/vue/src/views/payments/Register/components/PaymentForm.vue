@@ -226,12 +226,19 @@ onBeforeMount(() => formDataSet())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" color="light" @click="$emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" color="light" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn type="submit" :color="payment ? 'success' : 'primary'" :disabled="formsCheck">
+        <v-btn
+          type="submit"
+          size="small"
+          :color="payment ? 'success' : 'primary'"
+          :disabled="formsCheck"
+        >
           저장
         </v-btn>
-        <v-btn v-if="payment" type="button" color="warning" @click="deleteConfirm"> 삭제</v-btn>
+        <v-btn v-if="payment" type="button" size="small" color="warning" @click="deleteConfirm">
+          삭제
+        </v-btn>
       </slot>
     </CModalFooter>
   </CForm>
@@ -243,7 +250,7 @@ onBeforeMount(() => formDataSet())
       해당 건별 수납 정보 계약 건 귀속 해제(변경)를 진행하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="success" @click="modalAction">변경</v-btn>
+      <v-btn color="success" size="small" @click="modalAction">변경</v-btn>
     </template>
   </ConfirmModal>
 
@@ -253,7 +260,7 @@ onBeforeMount(() => formDataSet())
       삭제 후 복구할 수 없습니다. 해당 건별 수납 정보 삭제를 진행하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="onDelete">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="onDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 

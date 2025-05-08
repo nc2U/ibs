@@ -59,9 +59,9 @@ const contMatching = (contract: Contract) => {
 }
 
 const modalAction = () => {
-  const pk = props.payment.pk
-  const contract = cont.value?.pk
-  const content = `${cont.value?.contractor?.name}[${cont.value?.serial_number}] 대금납부`
+  const pk = props.payment?.pk
+  const contract = (cont.value as Contract)?.pk
+  const content = `${(cont.value as Contract)?.contractor?.name}[${(cont.value as Contract)?.serial_number}] 대금납부`
   emit('pay-match', { pk, contract, content })
   pageInit()
   emit('close')
@@ -134,7 +134,7 @@ const modalAction = () => {
       >&gt; 계약 건의 납부대금으로 등록합니다.
     </template>
     <template #footer>
-      <v-btn color="primary" @click="modalAction">저장</v-btn>
+      <v-btn color="primary" size="small" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 

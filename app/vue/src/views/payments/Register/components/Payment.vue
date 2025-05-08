@@ -55,7 +55,7 @@ const deleteObject = () => emit('on-delete', props.payment.pk)
     <CTableDataCell>{{ payment.bank_account.alias_name }}</CTableDataCell>
     <CTableDataCell>{{ payment.trader }}</CTableDataCell>
     <CTableDataCell v-if="write_payment">
-      <v-btn type="button" color="info" size="small" @click="showDetail"> 보기</v-btn>
+      <v-btn type="button" color="info" size="x-small" @click="showDetail"> 보기</v-btn>
     </CTableDataCell>
   </CTableRow>
 

@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
+import type { Contract } from '@/store/types/contract.ts'
 import { type AllPayment, type PayOrder } from '@/store/types/payment'
 import { numFormat, getToday, addDaysToDate } from '@/utils/baseMixins'
 
 const props = defineProps({
-  contract: { type: Object, default: null },
+  contract: { type: Object as PropType<Contract>, default: null },
   order: { type: Object as PropType<PayOrder>, default: null },
   commit: { type: Number, default: 0 },
   price: { type: Number, default: 0 },
@@ -14,11 +15,11 @@ const props = defineProps({
 })
 
 const dueDate = computed(() => {
-  const contDate = props.contract.contractor.contract_date
-  if (props.order.pay_code === 1) return contDate
+  const contDate = props.contract?.contractor?.contract_date
+  if (props.order?.pay_code === 1) return contDate
   else {
-    if (props.order.days_since_prev) return addDaysToDate(contDate, 30)
-    else return props.order.extra_due_date || props.order.pay_due_date || '-'
+    if (props.order?.days_since_prev) return addDaysToDate(contDate ?? '', 30)
+    else return props.order?.extra_due_date || props.order?.pay_due_date || '-'
   }
 })
 
@@ -26,7 +27,7 @@ const paidByOrder = computed(() => {
   // 당회차 납부 총액
   const paid = props.paymentList
     .filter((p: AllPayment) => !!p.installment_order)
-    .filter(p => p.installment_order.pk === props.order.pk)
+    .filter(p => p.installment_order.pk === props.order?.pk)
     .map(p => p.income)
 
   return paid.length === 0 ? 0 : paid.reduce((x: number, y: number) => x + y, 0)

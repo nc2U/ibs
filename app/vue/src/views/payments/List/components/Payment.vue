@@ -74,7 +74,7 @@ const payMatch = (payload: ProjectCashBook) => emit('pay-match', payload)
     <CTableDataCell>{{ payment.bank_account }}</CTableDataCell>
     <CTableDataCell>{{ payment.trader }}</CTableDataCell>
     <CTableDataCell v-if="write_payment">
-      <v-btn type="button" color="info" size="small" @click="toManage"> 확인</v-btn>
+      <v-btn type="button" color="info" size="x-small" @click="toManage"> 확인</v-btn>
     </CTableDataCell>
   </CTableRow>
 
