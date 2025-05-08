@@ -53,6 +53,14 @@ class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = [PaymentPerInstallmentInline]
 
 
+@admin.register(PaymentPerInstallment)
+class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'cont_price', 'pay_order', 'amount')
+    list_display_links = ('cont_price',)
+    list_editable = ('amount',)
+    list_filter = ('cont_price__contract__project',)
+
+
 class CAdressInline(ImportExportMixin, admin.StackedInline):
     model = ContractorAddress
     extra = 0
