@@ -115,9 +115,9 @@ onBeforeMount(() => {
     {{ owner.use_consent ? '동의' : '' }}
   </CTableDataCell>
   <CTableDataCell v-if="write_project_site">
-    <v-btn color="success" size="small" :disabled="formsCheck" @click="relPatch"> 적용</v-btn>
+    <v-btn color="success" size="x-small" :disabled="formsCheck" @click="relPatch"> 적용</v-btn>
   </CTableDataCell>
   <CTableDataCell v-if="index === 0 && write_project_site" :rowspan="sitesNum">
-    <v-btn color="info" size="small" @click="showDetail"> 확인</v-btn>
+    <v-btn color="info" size="x-small" @click="showDetail"> 확인</v-btn>
   </CTableDataCell>
 </template>

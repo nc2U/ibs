@@ -104,7 +104,7 @@ onBeforeMount(() => dataSetup())
       차수그룹을 삭제 하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 

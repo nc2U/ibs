@@ -311,12 +311,19 @@ onBeforeMount(() => dataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" color="light" @click="$emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" color="light" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn type="submit" :color="owner ? 'success' : 'primary'" :disabled="formsCheck">
+        <v-btn
+          type="submit"
+          size="small"
+          :color="owner ? 'success' : 'primary'"
+          :disabled="formsCheck"
+        >
           저장
         </v-btn>
-        <v-btn v-if="owner" type="button" color="warning" @click="deleteConfirm"> 삭제</v-btn>
+        <v-btn v-if="owner" size="small" type="button" color="warning" @click="deleteConfirm">
+          삭제
+        </v-btn>
       </slot>
     </CModalFooter>
 
@@ -329,7 +336,7 @@ onBeforeMount(() => dataSetup())
       삭제한 데이터는 복구할 수 없습니다. 해당 사업 부지 정보를 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="deleteObject">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="deleteObject">삭제</v-btn>
     </template>
   </ConfirmModal>
 
