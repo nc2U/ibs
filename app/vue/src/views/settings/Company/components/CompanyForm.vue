@@ -276,7 +276,7 @@ onBeforeMount(() => formDataSetup())
           />
           <CFormFeedback invalid>회사주소를 입력하세요.</CFormFeedback>
         </CCol>
-        <CCol xs="2" class="d-none d-md-block d-xl-none"></CCol>
+        <CCol xs="2" class="d-none d-sm-block d-lg-none"></CCol>
         <CCol md="5" lg="6" xl="2" class="mb-3">
           <CFormInput
             ref="address2"
@@ -318,7 +318,7 @@ onBeforeMount(() => formDataSetup())
     <template #header> 회사정보</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
-      <v-btn color="warning" disabled>삭제</v-btn>
+      <v-btn color="warning" size="small" disabled>삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -326,7 +326,7 @@ onBeforeMount(() => formDataSetup())
     <template #header>회사정보</template>
     <template #default> 회사정보 {{ confirmText }}을 진행하시겠습니까?</template>
     <template #footer>
-      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>
+      <v-btn :color="btnClass" size="small" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 

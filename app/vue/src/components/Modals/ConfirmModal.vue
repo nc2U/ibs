@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 
 defineProps({ size: { type: String, default: '' } })
 
@@ -46,7 +47,7 @@ defineExpose({ callModal, close })
       </slot>
     </CModalBody>
     <CModalFooter>
-      <v-btn color="light" size="small" @click="() => (visible = false)"> 닫기</v-btn>
+      <v-btn :color="btnLight" size="small" @click="() => (visible = false)"> 닫기</v-btn>
       <slot name="footer">
         <v-btn color="primary">Save changes</v-btn>
       </slot>

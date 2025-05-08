@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const emit = defineEmits(['on-submit'])
@@ -125,7 +126,7 @@ defineExpose({ callModal })
               />
             </CCol>
             <CCol sm="4">
-              <v-btn color="secondary" size="small" class="mt-1" @click="generatePassword">
+              <v-btn color="info" size="small" class="mt-1" @click="generatePassword">
                 임의 패스워드 생성
               </v-btn>
             </CCol>
@@ -205,8 +206,8 @@ defineExpose({ callModal })
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn color="light" @click="() => refFormModal.close()"> 닫기</v-btn>
-          <v-btn type="submit" color="primary">확인</v-btn>
+          <v-btn :color="btnLight" size="small" @click="() => refFormModal.close()"> 닫기</v-btn>
+          <v-btn type="submit" size="small" color="primary">확인</v-btn>
         </CModalFooter>
       </CForm>
     </template>

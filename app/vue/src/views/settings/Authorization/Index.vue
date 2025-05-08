@@ -265,7 +265,9 @@ onBeforeMount(() => {
       <template #header>사용자 권한설정</template>
       <template #default>사용자 권한설정 저장을 진행하시겠습니까?</template>
       <template #footer>
-        <v-btn :color="isStaffAuth ? 'success' : 'primary'" @click="modalAction"> 저장</v-btn>
+        <v-btn size="small" :color="isStaffAuth ? 'success' : 'primary'" @click="modalAction">
+          저장</v-btn
+        >
       </template>
     </ConfirmModal>
 
