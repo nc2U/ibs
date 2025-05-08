@@ -3,7 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
 import { useCompany } from '@/store/pinia/company'
 import { write_human_resource } from '@/utils/pageAuth'
-import { type Grade, type ComFilter } from '@/store/types/company'
+import type { Company } from '@/store/types/settings.ts'
+import type { Grade, ComFilter } from '@/store/types/company'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from './components/ListController.vue'
@@ -21,8 +22,8 @@ const dataFilter = ref<ComFilter>({
 })
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
-const comName = computed(() => comStore.company?.name || undefined)
+const company = computed(() => (comStore.company as Company)?.pk)
+const comName = computed(() => (comStore.company as Company)?.name || undefined)
 
 const excelUrl = computed(
   () => `/excel/grades/?company=${company.value}&search=${dataFilter.value.q}`,

@@ -38,7 +38,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     <CTableDataCell class="text-left">{{ positions }}</CTableDataCell>
     <CTableDataCell class="text-left">{{ grade.criteria_new }}</CTableDataCell>
     <CTableDataCell v-if="write_human_resource">
-      <v-btn color="info" size="small" @click="showDetail">확인</v-btn>
+      <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>
     </CTableDataCell>
   </CTableRow>
 

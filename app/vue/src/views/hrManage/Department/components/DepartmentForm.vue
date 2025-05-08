@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount, watch } from 'vue'
+import { ref, computed, onBeforeMount, watch, type PropType } from 'vue'
 import { isValidate } from '@/utils/helper'
 import { write_human_resource } from '@/utils/pageAuth'
 import { useCompany } from '@/store/pinia/company'
@@ -10,7 +10,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   company: { type: String, default: null },
-  department: { type: Object, default: null },
+  department: { type: Object as PropType<Department>, default: null },
 })
 
 watch(
@@ -137,12 +137,19 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" color="light" @click="$emit('close')"> 닫기</v-btn>
+      <v-btn type="button" color="light" size="small" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn type="submit" :color="department ? 'success' : 'primary'" :disabled="formsCheck">
+        <v-btn
+          type="submit"
+          :color="department ? 'success' : 'primary'"
+          size="small"
+          :disabled="formsCheck"
+        >
           저장
         </v-btn>
-        <v-btn v-if="department" type="button" color="warning" @click="deleteConfirm"> 삭제</v-btn>
+        <v-btn v-if="department" type="button" color="warning" size="small" @click="deleteConfirm">
+          삭제
+        </v-btn>
       </slot>
     </CModalFooter>
   </CForm>
@@ -153,7 +160,9 @@ onBeforeMount(() => formDataSetup())
       삭제한 데이터는 복구할 수 없습니다. 해당 정보를 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="deleteObject(department.pk)"> 삭제</v-btn>
+      <v-btn color="warning" size="small" @click="deleteObject(department.pk as number)">
+        삭제
+      </v-btn>
     </template>
   </ConfirmModal>
 
