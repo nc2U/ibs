@@ -18,12 +18,12 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive>
     <colgroup>
-      <col style="width: 6%" />
+      <col style="width: 7%" />
       <col style="width: 5%" />
       <col style="width: 5%" />
-      <col style="width: 6%" />
       <col style="width: 5%" />
       <col style="width: 6%" />
+      <col style="width: 5%" />
       <col style="width: 7%" />
       <col style="width: 5%" />
       <col style="width: 8%" />
@@ -39,8 +39,9 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
         <CTableHeaderCell>종류</CTableHeaderCell>
+        <CTableHeaderCell>공급가 포함 여부</CTableHeaderCell>
         <CTableHeaderCell class="cursor-help">
-          납입회차 코드
+          회차코드
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
           <v-tooltip activator="parent" location="top">
             프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능
@@ -54,9 +55,8 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
             납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.
           </v-tooltip>
         </CTableHeaderCell>
-        <CTableHeaderCell>납부회차명</CTableHeaderCell>
-        <CTableHeaderCell>회차 별칭</CTableHeaderCell>
-        <CTableHeaderCell>PM용역비 여부</CTableHeaderCell>
+        <CTableHeaderCell>회차 명</CTableHeaderCell>
+        <CTableHeaderCell>별칭</CTableHeaderCell>
         <CTableHeaderCell class="cursor-help">
           약정금액
           <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />

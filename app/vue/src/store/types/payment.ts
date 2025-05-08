@@ -3,6 +3,7 @@ export interface PayOrder {
   project?: number
   __str__?: string
   pay_sort?: string
+  is_except_price?: boolean
   pay_code?: number | null
   pay_time?: number | null
   pay_name?: string

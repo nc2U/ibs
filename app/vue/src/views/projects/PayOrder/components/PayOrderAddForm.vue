@@ -15,6 +15,7 @@ const refConfirmModal = ref()
 const validated = ref(false)
 const form = reactive({
   pay_sort: '',
+  is_except_price: false,
   pay_code: null as string | null,
   pay_time: null as string | null,
   pay_name: '',
@@ -57,6 +58,7 @@ const modalAction = () => {
 
 const resetForm = () => {
   form.pay_sort = ''
+  form.is_except_price = false
   form.pay_code = null
   form.pay_time = null
   form.pay_name = ''
@@ -87,7 +89,23 @@ const resetForm = () => {
                   <option value="1">계약금</option>
                   <option value="2">중도금</option>
                   <option value="3">잔 금</option>
+                  <option value="4">기타 부담금</option>
+                  <option value="5">제세 공과금</option>
+                  <option value="6">금융 비용</option>
+                  <option value="7">업무 대행비</option>
                 </CFormSelect>
+              </CCol>
+              <CCol lg="6" xl="3" class="mb-3">
+                <CRow>
+                  <CCol class="pt-2 col-form-label">
+                    <CFormSwitch
+                      v-model="form.is_except_price"
+                      id="is_prep_discount"
+                      label="공급가 불포함"
+                      :disabled="disabled"
+                    />
+                  </CCol>
+                </CRow>
               </CCol>
               <CCol lg="6" xl="3" class="mb-3">
                 <CFormInput
@@ -116,6 +134,11 @@ const resetForm = () => {
                   하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.
                 </v-tooltip>
               </CCol>
+            </CRow>
+          </CCol>
+
+          <CCol xl="6">
+            <CRow>
               <CCol lg="6" xl="3" class="mb-3">
                 <CFormInput
                   v-model="form.pay_name"
@@ -125,11 +148,6 @@ const resetForm = () => {
                   :disabled="disabled"
                 />
               </CCol>
-            </CRow>
-          </CCol>
-
-          <CCol xl="6">
-            <CRow>
               <CCol lg="6" xl="3" class="mb-3">
                 <CFormInput
                   v-model="form.alias_name"
