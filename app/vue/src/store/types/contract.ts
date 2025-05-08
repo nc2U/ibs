@@ -19,6 +19,22 @@ export interface ContractFile {
   edit?: boolean
 }
 
+interface ContractorInContract {
+  pk: number
+  name: string
+  birth_date: string | null
+  gender: 'M' | 'F' | ''
+  qualification: '1' | '2' | '3' | '4'
+  qualifi_display: '일반분양' | '미인가' | '인가' | '부적격'
+  contractoraddress: ContractorAddress
+  contractorcontact: ContractorContact
+  status: '1' | '2' | '3' | '4' | '5'
+  reservation_date: string | null
+  contract_date: string | null
+  is_active: boolean
+  note: string
+}
+
 export interface Contract {
   pk: number
   project: number
@@ -67,25 +83,41 @@ export interface ContPrice {
   remain_pay: number
 }
 
-interface ContractorInContract {
+export interface Contractor {
   pk: number
+  contract: number
   name: string
-  qualification: '1' | '2' | '3' | '4'
+  __str__: string
+  birth_date: string
+  gender: 'M' | 'F' | ''
+  qualification: '1' | '2' | '3' | '4' | ''
   qualifi_display: '일반분양' | '미인가' | '인가' | '부적격'
-  contractoraddress: ContractorAddress | null
-  contractorcontact: ContractorContact | null
-  status: string
+  status: '1' | '2' | '3' | '4' | '5' | ''
+  reservation_date: string | null
   contract_date: string | null
+  is_active: boolean
+  note: string
+  succession: Succession | null
+  contractorrelease: number | null
 }
 
-interface ContractorAddress {
+export interface ContractorAddress {
   pk: number
+  id_zipcode: string
+  id_address1: string
+  id_address2: string
+  id_address3: string
+  dm_zipcode: string
   dm_address1: string
+  dm_address2: string
+  dm_address3: string
 }
 
-interface ContractorContact {
+export interface ContractorContact {
   pk: number
   cell_phone: string
+  home_phone: string
+  other_phone: string
   email: string
 }
 
@@ -141,23 +173,6 @@ export interface DownPayment {
   unit_type: number
   number_payments: number
   payment_amount: number
-}
-
-export interface Contractor {
-  pk: number
-  contract: number
-  name: string
-  __str__: string
-  birth_date: string | null
-  gender: string
-  qualification: '1' | '2' | '3' | '4'
-  qualifi_display?: '일반분양' | '미인가' | '인가' | '부적격'
-  status: string
-  reservation_date: string | null
-  contract_date: string | null
-  note: string
-  succession: SimpleSuccession
-  contractorrelease: number | null
 }
 
 interface SimpleSuccession {

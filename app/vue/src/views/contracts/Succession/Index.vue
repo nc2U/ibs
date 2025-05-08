@@ -5,7 +5,7 @@ import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useRoute, useRouter } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
-import type { BuyerForm, Succession } from '@/store/types/contract'
+import type { BuyerForm, Contractor, Succession } from '@/store/types/contract'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContNavigation from '@/views/contracts/Register/components/ContNavigation.vue'
@@ -29,8 +29,8 @@ const project = computed(() => projStore.project?.pk)
 const downloadUrl = computed(() => `/excel/successions/?project=${project.value}`)
 
 const contStore = useContract()
-const contractor = computed(() => contStore.contractor)
-const succession = computed(() => contStore.succession)
+const contractor = computed<Contractor | null>(() => contStore.contractor)
+const succession = computed<Succession | null>(() => contStore.succession)
 const isSuccession = computed(() => !!succession.value && !succession.value.is_approval)
 
 const fetchContract = (cont: number) => contStore.fetchContract(cont)
@@ -59,7 +59,7 @@ watch(route, val => {
 
 watch(contractor, val => {
   if (val?.contract) fetchContract(val.contract)
-  if (val?.succession) fetchSuccession(val.succession.pk)
+  if (val?.succession) fetchSuccession(val.succession?.pk as number)
   else {
     contStore.contract = null
     contStore.succession = null

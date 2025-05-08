@@ -17,7 +17,14 @@ import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
 import { type PayOrder } from '@/store/types/payment'
-import { type Payment, type Contractor, type ContractFile } from '@/store/types/contract'
+import type {
+  Payment,
+  Contract,
+  Contractor,
+  ContractFile,
+  ContractorContact,
+  ContractorAddress,
+} from '@/store/types/contract'
 import { isValidate } from '@/utils/helper'
 import { numFormat, diffDate } from '@/utils/baseMixins'
 import { write_contract } from '@/utils/pageAuth'
@@ -34,7 +41,7 @@ import DatePicker from '@/components/DatePicker/index.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
-  contract: { type: Object, default: null },
+  contract: { type: Object as PropType<Contract>, default: null },
   contractor: { type: Object as PropType<Contractor>, default: null },
   unitSet: { type: Boolean, default: false },
   isUnion: { type: Boolean, default: false },
@@ -63,11 +70,11 @@ const form = reactive({
   serial_number: '',
   activation: true,
   is_sup_cont: false,
-  sup_cont_date: null,
+  sup_cont_date: null as string | null,
 
   // key_unit & houseunit
   key_unit: null as number | null, // 4
-  key_unit_code: '',
+  key_unit_code: '' as string,
   houseunit: null as number | null, // 5
   houseunit_code: '',
   // cont_key_unit: '', // 디비 계약 유닛
@@ -79,7 +86,7 @@ const form = reactive({
   birth_date: null as string | null, // 8
   gender: '', // 9
   qualification: '2',
-  status: null as null | string, // 1
+  status: '' as '1' | '2' | '3' | '4' | '5' | '', // 1
   reservation_date: null as string | null, // 6-1
   contract_date: null as string | null, // 6-2
   note: '', // 28
@@ -150,8 +157,10 @@ const downPayments = computed(() =>
 
 const formsCheck = computed(() => {
   if (props.contract && props.contractor) {
-    const contact = props.contract.contractor?.contractorcontact
-    const address = props.contract.contractor?.contractoraddress
+    const contact: ContractorContact | null | undefined =
+      props.contract.contractor?.contractorcontact
+    const address: ContractorAddress | null | undefined =
+      props.contract.contractor?.contractoraddress
 
     const a = form.order_group === props.contract.order_group
     const b = form.unit_type === props.contract.unit_type
@@ -165,7 +174,7 @@ const formsCheck = computed(() => {
     const j = form.birth_date === props.contractor.birth_date
     const k = form.gender === props.contractor?.gender
     const l = form.qualification === props.contractor?.qualification
-    const m = form.cell_phone === contact.cell_phone
+    const m = form.cell_phone === contact?.cell_phone
     const n = form.home_phone === contact?.home_phone
     const o = form.other_phone === contact?.other_phone
     const p = form.email === contact?.email
@@ -174,15 +183,15 @@ const formsCheck = computed(() => {
     const s = !form.bank_account
     const t = !form.trader
     const u = !form.installment_order
-    const v = form.id_zipcode === address.id_zipcode
-    const w = form.id_address1 === address.id_address1
-    const x = form.id_address2 === address.id_address2
-    const y = form.id_address3 === address.id_address3
-    const z = form.dm_zipcode === address.dm_zipcode
-    const a1 = form.dm_address1 === address.dm_address1
-    const b1 = form.dm_address2 === address.dm_address2
-    const c1 = form.dm_address3 === address.dm_address3
-    const d1 = form.note === props.contract.contractor.note
+    const v = form.id_zipcode === address?.id_zipcode
+    const w = form.id_address1 === address?.id_address1
+    const x = form.id_address2 === address?.id_address2
+    const y = form.id_address3 === address?.id_address3
+    const z = form.dm_zipcode === address?.dm_zipcode
+    const a1 = form.dm_address1 === address?.dm_address1
+    const b1 = form.dm_address2 === address?.dm_address2
+    const c1 = form.dm_address3 === address?.dm_address3
+    const d1 = form.note === props.contract.contractor?.note
 
     const e1 = !newFile.value
     const f1 = !editFile.value
@@ -330,40 +339,40 @@ const formDataSetup = () => {
     form.unit_type = props.contract.unit_type
     form.serial_number = props.contract.serial_number
     form.is_sup_cont = form.is_sup_cont || props.contract.is_sup_cont
-    form.sup_cont_date = form.sup_cont_date ?? props.contract.sup_cont_date
-    form.key_unit = props.contract.key_unit?.pk
-    form.key_unit_code = props.contract.key_unit?.unit_code
-    form.houseunit = props.contract.key_unit?.houseunit?.pk
+    form.sup_cont_date = form.sup_cont_date ?? props.contract.sup_cont_date ?? ''
+    form.key_unit = props.contract.key_unit?.pk ?? null
+    form.key_unit_code = props.contract.key_unit?.unit_code ?? ''
+    form.houseunit = props.contract.key_unit?.houseunit?.pk ?? null
     form.contract_files = props.contract.contract_files
 
     // contractor
-    form.name = props.contract.contractor.name
-    form.birth_date = props.contract.contractor.birth_date
-    form.gender = props.contract.contractor.gender // 9
-    form.qualification = props.contract.contractor.qualification // 10
-    form.status = props.contract.contractor.status
+    form.name = props.contract.contractor?.name ?? ''
+    form.birth_date = props.contract.contractor?.birth_date ?? null
+    form.gender = props.contract.contractor?.gender ?? '' // 9
+    form.qualification = props.contract.contractor?.qualification ?? '' // 10
+    form.status = props.contract.contractor?.status ?? ''
     form.reservation_date = props.contractor?.reservation_date ?? null
     form.contract_date = props.contractor?.contract_date ?? null
-    form.note = props.contract.contractor.note
+    form.note = props.contract.contractor?.note ?? ''
 
     // address
-    if (props.contract.contractor.status === '2') {
-      const address = props.contract.contractor.contractoraddress
-      form.id_zipcode = address.id_zipcode // 20
-      form.id_address1 = address.id_address1 // 21
-      form.id_address2 = form.id_address2 || address.id_address2 // 22
-      form.id_address3 = form.id_address3 || address.id_address3 // 23
-      form.dm_zipcode = address.dm_zipcode // 24
-      form.dm_address1 = address.dm_address1
-      form.dm_address2 = form.dm_address2 || address.dm_address2 // 26
-      form.dm_address3 = form.dm_address3 || address.dm_address3 // 27
+    if (props.contract.contractor?.status === '2') {
+      const address = props.contract.contractor?.contractoraddress
+      form.id_zipcode = address?.id_zipcode ?? '' // 20
+      form.id_address1 = address?.id_address1 ?? '' // 21
+      form.id_address2 = address?.id_address2 ?? '' // 22
+      form.id_address3 = address?.id_address3 ?? '' // 23
+      form.dm_zipcode = address?.dm_zipcode ?? '' // 24
+      form.dm_address1 = address?.dm_address1 ?? ''
+      form.dm_address2 = address?.dm_address2 ?? '' // 26
+      form.dm_address3 = address?.dm_address3 ?? '' // 27
     }
     // contact
     const contact = props.contract.contractor?.contractorcontact
-    form.cell_phone = contact.cell_phone
-    form.home_phone = form.home_phone || contact.home_phone // 11 // 12
-    form.other_phone = form.other_phone || contact.other_phone // 13
-    form.email = form.email || contact.email // 14
+    form.cell_phone = contact?.cell_phone ?? ''
+    form.home_phone = contact?.home_phone ?? '' // 11 // 12
+    form.other_phone = contact?.other_phone ?? '' // 13
+    form.email = contact?.email ?? '' // 14
 
     sameAddrBtnSet(matchAddr.value)
   }
@@ -747,73 +756,125 @@ onBeforeRouteLeave(() => formDataReset())
         <CAlert :color="isDark ? 'default' : 'secondary'" class="pt-3 pb-sm-3 pb-lg-0">
           <CRow v-if="downPayments.length" class="mb-3">
             <CCol>
-              <CRow
-                v-for="(payment, i) in downPayments as Payment[]"
-                :key="payment.pk"
-                class="text-center mb-1"
-                :class="form.payment === payment.pk ? 'text-success text-decoration-underline' : ''"
-              >
-                <CCol>
-                  계약금
-                  <router-link
-                    v-c-tooltip="'건별 수납 관리'"
-                    :to="{
-                      name: '건별 수납 관리',
-                      query: { contract: contract.pk },
-                    }"
+              <CTable borderless hover small color="light" responsive>
+                <CTableBody>
+                  <CTableRow
+                    v-for="(payment, i) in downPayments as Payment[]"
+                    :key="payment.pk"
+                    class="text-center mb-1"
+                    :color="form.payment === payment.pk ? 'primary' : ''"
                   >
-                    납부내역
-                  </router-link>
-                  [{{ i + 1 }}]
-                </CCol>
-                <CCol class="text-right">{{ payment.deal_date }}</CCol>
-                <CCol class="text-right">
-                  <router-link
-                    v-c-tooltip="'건별 수납 관리'"
-                    :to="{
-                      name: '건별 수납 관리',
-                      query: { contract: contract.pk },
-                    }"
-                  >
-                    {{ numFormat(payment.income) }}
-                  </router-link>
-                </CCol>
-                <CCol>
-                  {{
-                    allProBankAccountList
-                      .filter(b => b.pk === payment.bank_account)
-                      .map(b => b.alias_name)[0]
-                  }}
-                </CCol>
-                <CCol>{{ payment.trader }}</CCol>
-                <CCol>
-                  {{ payment.installment_order.__str__ }}
-                </CCol>
-                <CCol>
-                  <v-btn type="button" color="success" size="small" @click="payUpdate(payment)">
-                    수정
-                  </v-btn>
-                </CCol>
-              </CRow>
+                    <CTableDataCell>
+                      계약금
+                      <router-link
+                        v-c-tooltip="'건별 수납 관리'"
+                        :to="{
+                          name: '건별 수납 관리',
+                          query: { contract: contract.pk },
+                        }"
+                      >
+                        납부내역
+                      </router-link>
+                      [{{ i + 1 }}]
+                    </CTableDataCell>
+                    <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
+                    <CTableDataCell class="text-right">
+                      <router-link
+                        v-c-tooltip="'건별 수납 관리'"
+                        :to="{
+                          name: '건별 수납 관리',
+                          query: { contract: contract.pk },
+                        }"
+                      >
+                        {{ numFormat(payment.income) }}
+                      </router-link>
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {{
+                        allProBankAccountList
+                          .filter(b => b.pk === payment.bank_account)
+                          .map(b => b.alias_name)[0]
+                      }}
+                    </CTableDataCell>
+                    <CTableDataCell>{{ payment.trader }}</CTableDataCell>
+                    <CTableDataCell>{{ payment.installment_order.__str__ }}</CTableDataCell>
+                    <CTableDataCell>
+                      <v-btn
+                        type="button"
+                        color="success"
+                        size="x-small"
+                        @click="payUpdate(payment)"
+                      >
+                        수정
+                      </v-btn>
+                    </CTableDataCell>
+                  </CTableRow>
+                </CTableBody>
+              </CTable>
+              <!--              <CRow-->
+              <!--                v-for="(payment, i) in downPayments as Payment[]"-->
+              <!--                :key="payment.pk"-->
+              <!--                class="text-center mb-1"-->
+              <!--                :class="form.payment === payment.pk ? 'text-success text-decoration-underline' : ''"-->
+              <!--              >-->
+              <!--                <CCol>-->
+              <!--                  계약금-->
+              <!--                  <router-link-->
+              <!--                    v-c-tooltip="'건별 수납 관리'"-->
+              <!--                    :to="{-->
+              <!--                      name: '건별 수납 관리',-->
+              <!--                      query: { contract: contract.pk },-->
+              <!--                    }"-->
+              <!--                  >-->
+              <!--                    납부내역-->
+              <!--                  </router-link>-->
+              <!--                  [{{ i + 1 }}]-->
+              <!--                </CCol>-->
+              <!--                <CCol class="text-right">{{ payment.deal_date }}</CCol>-->
+              <!--                <CCol class="text-right">-->
+              <!--                  <router-link-->
+              <!--                    v-c-tooltip="'건별 수납 관리'"-->
+              <!--                    :to="{-->
+              <!--                      name: '건별 수납 관리',-->
+              <!--                      query: { contract: contract.pk },-->
+              <!--                    }"-->
+              <!--                  >-->
+              <!--                    {{ numFormat(payment.income) }}-->
+              <!--                  </router-link>-->
+              <!--                </CCol>-->
+              <!--                <CCol>-->
+              <!--                  {{-->
+              <!--                    allProBankAccountList-->
+              <!--                      .filter(b => b.pk === payment.bank_account)-->
+              <!--                      .map(b => b.alias_name)[0]-->
+              <!--                  }}-->
+              <!--                </CCol>-->
+              <!--                <CCol>{{ payment.trader }}</CCol>-->
+              <!--                <CCol>-->
+              <!--                  {{ payment.installment_order.__str__ }}-->
+              <!--                </CCol>-->
+              <!--                <CCol>-->
+              <!--                  <v-btn type="button" color="success" size="x-small" @click="payUpdate(payment)">-->
+              <!--                    수정-->
+              <!--                  </v-btn>-->
+              <!--                </CCol>-->
+              <!--              </CRow>-->
             </CCol>
           </CRow>
+
           <CRow>
-            <CFormLabel class="col-sm-2 col-lg-1 col-form-label">
+            <CFormLabel sm="2" class="col-lg-1 col-form-label">
               {{ contLabel }}금 {{ !form.payment ? '등록' : '수정' }}
             </CFormLabel>
-            <CCol sm="10" lg="2" class="mb-3 mb-lg-0">
+            <CCol sm="12" lg="2" class="mb-3">
               <DatePicker
                 v-model="form.deal_date"
                 placeholder="입금일자"
                 maxlength="10"
                 :disabled="noStatus"
               />
-              <!--                :required="!contract"-->
             </CCol>
-
-            <CCol sm="2" class="d-none d-sm-block d-lg-none"></CCol>
-
-            <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
+            <CCol sm="12" md="6" lg="2" class="mb-3">
               <CFormInput
                 v-model.number="form.income"
                 type="number"
@@ -824,10 +885,7 @@ onBeforeRouteLeave(() => formDataReset())
               />
               <CFormFeedback invalid>입금액을 입력하세요.</CFormFeedback>
             </CCol>
-
-            <CCol sm="2" class="d-none d-sm-block d-md-none"></CCol>
-
-            <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
+            <CCol sm="12" md="6" lg="2" class="mb-3">
               <CFormSelect
                 v-model="form.bank_account"
                 :required="form.deal_date"
@@ -840,10 +898,7 @@ onBeforeRouteLeave(() => formDataReset())
               </CFormSelect>
               <CFormFeedback invalid>납부계좌를 선택하세요.</CFormFeedback>
             </CCol>
-
-            <CCol sm="2" class="d-none d-sm-block d-lg-none"></CCol>
-
-            <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
+            <CCol sm="12" md="6" lg="2" class="mb-3">
               <CFormInput
                 v-model="form.trader"
                 maxlength="20"
@@ -853,10 +908,7 @@ onBeforeRouteLeave(() => formDataReset())
               />
               <CFormFeedback invalid>입금자명을 입력하세요.</CFormFeedback>
             </CCol>
-
-            <CCol sm="2" class="d-none d-sm-block d-md-none"></CCol>
-
-            <CCol sm="10" md="5" lg="2" class="mb-md-3 mb-lg-0">
+            <CCol sm="12" md="6" lg="2" class="mb-3">
               <CFormSelect
                 v-model="form.installment_order"
                 :required="form.deal_date"
@@ -869,20 +921,17 @@ onBeforeRouteLeave(() => formDataReset())
               </CFormSelect>
               <CFormFeedback invalid>납부회차를 선택하세요.</CFormFeedback>
             </CCol>
-
-            <CCol sm="2" class="d-none d-sm-block d-lg-none"></CCol>
-
-            <CCol v-if="form.payment" xs="3" md="2" lg="1" class="pt-2 mb-3">
+            <CCol v-if="form.payment" xs="3" md="2" lg="1" class="pt-1 mb-3">
               <a href="javascript:void(0)" @click="payReset">Reset</a>
             </CCol>
           </CRow>
         </CAlert>
       </CRow>
 
-      <CRow v-show="isContract" class="mb-sm-3 mb-lg-0">
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 주민등록 주소</CFormLabel>
+      <CRow v-show="isContract" class="mb-3">
+        <CFormLabel sm="2" class="col-lg-1 col-form-label required"> 주민등록 주소</CFormLabel>
 
-        <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-3 mb-lg-0">
           <CInputGroup>
             <CInputGroupText @click="refPostCode.initiate(2)"> 우편번호</CInputGroupText>
             <CFormInput
@@ -898,10 +947,7 @@ onBeforeRouteLeave(() => formDataReset())
             <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
-
-        <CCol sm="2" class="d-none d-sm-block d-md-none"></CCol>
-
-        <CCol sm="10" md="5" lg="4" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="4" class="mb-3 mb-lg-0">
           <CFormInput
             v-model="form.id_address1"
             maxlength="35"
@@ -913,9 +959,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>주민등록 주소를 입력하세요.</CFormFeedback>
         </CCol>
 
-        <CCol sm="2" class="d-none d-sm-block d-lg-none"></CCol>
-
-        <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-3 mb-lg-0">
           <CFormInput
             ref="address21"
             v-model="form.id_address2"
@@ -926,9 +970,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
         </CCol>
 
-        <CCol sm="2" class="d-none d-sm-block d-md-none"></CCol>
-
-        <CCol sm="10" md="5" lg="2">
+        <CCol sm="12" md="6" lg="2">
           <CFormInput
             v-model="form.id_address3"
             maxlength="30"
@@ -938,9 +980,9 @@ onBeforeRouteLeave(() => formDataReset())
         </CCol>
       </CRow>
 
-      <CRow v-show="isContract" class="mb-sm-3 mb-lg-0">
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 우편수령 주소</CFormLabel>
-        <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
+      <CRow v-show="isContract" class="mb-3">
+        <CFormLabel sm="2" class="col-lg-1 col-form-label required"> 우편수령 주소</CFormLabel>
+        <CCol sm="12" md="6" lg="2" class="mb-3 mb-lg-0">
           <CInputGroup>
             <CInputGroupText @click="refPostCode.initiate(3)"> 우편번호</CInputGroupText>
             <CFormInput
@@ -956,10 +998,7 @@ onBeforeRouteLeave(() => formDataReset())
             <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
-
-        <CCol sm="2" class="d-none d-sm-block d-md-none"></CCol>
-
-        <CCol sm="10" md="5" lg="4" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="4" class="mb-3 mb-lg-0">
           <CFormInput
             v-model="form.dm_address1"
             maxlength="50"
@@ -970,10 +1009,7 @@ onBeforeRouteLeave(() => formDataReset())
           />
           <CFormFeedback invalid> 우편물 수령 주소를 입력하세요.</CFormFeedback>
         </CCol>
-
-        <CCol sm="2" class="d-none d-sm-block d-lg-none"></CCol>
-
-        <CCol sm="10" md="5" lg="2" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-3 mb-lg-0">
           <CFormInput
             ref="address22"
             v-model="form.dm_address2"
@@ -983,10 +1019,7 @@ onBeforeRouteLeave(() => formDataReset())
           />
           <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
         </CCol>
-
-        <CCol sm="2" class="d-none d-sm-block d-md-none"></CCol>
-
-        <CCol sm="10" md="5" lg="2">
+        <CCol sm="12" md="6" lg="2">
           <CFormInput
             v-model="form.dm_address3"
             maxlength="30"
@@ -994,10 +1027,7 @@ onBeforeRouteLeave(() => formDataReset())
             :disabled="!isContract"
           />
         </CCol>
-
-        <CCol sm="2" class="d-none d-sm-block d-lg-none"></CCol>
-
-        <CCol sm="10" lg="1">
+        <CCol sm="12" lg="1">
           <v-checkbox-btn
             id="to-same"
             v-model="sameAddr"
@@ -1009,7 +1039,7 @@ onBeforeRouteLeave(() => formDataReset())
         </CCol>
       </CRow>
 
-      <CRow class="mb-sm-3 mb-lg-0">
+      <CRow class="mb-3">
         <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 비고</CFormLabel>
         <CCol sm="10" lg="11" class="mb-md-3 mb-lg-0">
           <CFormTextarea v-model="form.note" placeholder="기타 특이사항" :disabled="noStatus" />
@@ -1031,7 +1061,7 @@ onBeforeRouteLeave(() => formDataReset())
       <v-btn type="button" color="secondary" @click="router.push({ name: '계약 내역 조회' })">
         목록으로
       </v-btn>
-      <v-btn type="button" color="light" @click="formDataReset"> 취소</v-btn>
+      <v-btn type="button" color="secondary" @click="formDataReset"> 취소</v-btn>
       <v-btn
         v-if="write_contract && contract"
         type="button"
@@ -1058,7 +1088,7 @@ onBeforeRouteLeave(() => formDataReset())
     <template #header>프로젝트정보 삭제</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
-      <v-btn color="warning" disabled>삭제</v-btn>
+      <v-btn color="warning" size="small" disabled>삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -1068,7 +1098,9 @@ onBeforeRouteLeave(() => formDataReset())
       {{ contLabel }} 정보 {{ contract ? '수정등록' : '신규등록' }}을 진행하시겠습니까?
     </template>
     <template #footer>
-      <v-btn :color="contract ? 'success' : 'primary'" @click="modalAction"> 저장</v-btn>
+      <v-btn :color="contract ? 'success' : 'primary'" size="small" @click="modalAction">
+        저장
+      </v-btn>
     </template>
   </ConfirmModal>
 
