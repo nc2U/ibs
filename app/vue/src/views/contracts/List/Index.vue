@@ -124,9 +124,9 @@ onBeforeMount(() => {
       <TableTitleRow title="계약현황" excel :url="excelUrl" :disabled="!project">
         <v-btn
           size="small"
-          rounded="pill"
+          rounded="0"
           flat
-          class="text-blue-accent-4"
+          class="text-blue-accent-4 mt-1"
           style="font-size: 0.825em"
           @click="visible = !visible"
         >
