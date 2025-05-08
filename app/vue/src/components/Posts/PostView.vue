@@ -443,15 +443,30 @@ onMounted(() => {
     <CRow class="py-2">
       <CCol>
         <v-btn-group density="compact" role="group">
-          <v-btn v-if="editAuth" color="success" :disabled="!writeAuth" @click="toEdit">
+          <v-btn
+            v-if="editAuth"
+            color="success"
+            size="small"
+            :disabled="!writeAuth"
+            @click="toEdit"
+          >
             수정
           </v-btn>
-          <v-btn v-if="editAuth" color="warning" :disabled="!writeAuth" @click="deleteConfirm">
+          <v-btn
+            v-if="editAuth"
+            color="warning"
+            size="small"
+            :disabled="!writeAuth"
+            @click="deleteConfirm"
+          >
             삭제
           </v-btn>
-          <v-btn color="secondary" @click="router.push({ name: `${viewRoute}` })"> 목록</v-btn>
+          <v-btn color="secondary" size="small" @click="router.push({ name: `${viewRoute}` })">
+            목록
+          </v-btn>
           <v-btn
             color="light"
+            size="small"
             :disabled="!prev || reOrder"
             @click="
               router.push({
@@ -464,6 +479,7 @@ onMounted(() => {
           </v-btn>
           <v-btn
             color="light"
+            size="small"
             :disabled="!next || reOrder"
             @click="
               router.push({
@@ -494,7 +510,7 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
     <template #footer>
-      <v-btn color="danger" @click="toDelete">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="toDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -504,7 +520,7 @@ onMounted(() => {
       이 게시글을 신고 {{ post.my_blame ? '를 취소' : '' }} 하시겠습니까?<br /><br />
     </template>
     <template #footer>
-      <v-btn :color="post.my_blame ? 'secondary' : 'danger'" @click="blameAction">
+      <v-btn :color="post.my_blame ? 'secondary' : 'warning'" size="small" @click="blameAction">
         {{ post.my_blame ? '취소' : '신고' }}
       </v-btn>
     </template>
