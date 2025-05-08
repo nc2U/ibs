@@ -560,7 +560,7 @@ class PdfExportBill(View):
             unpaid = sum_pay_amount - paid_sum_total  # 약정액 누계 - 총 납부액
             unpaid = unpaid if unpaid > 0 else 0  # 음수(초과 납부 시)는 0 으로 설정
             info['unpaid_amount'] = unpaid if unpaid < pay_amount else pay_amount  # 미납액
-            pm_cost_sum += pay_amount if order.is_pm_cost else 0  # PM 용역비 합계
+            pm_cost_sum += pay_amount if order.pay_sort == '7' else 0  # PM 용역비 합계
             info['pm_cost_sum'] = pm_cost_sum  # PM 용역비 합계
 
             order_info_list.append(info)

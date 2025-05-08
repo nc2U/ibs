@@ -54,7 +54,6 @@
                                             <th class="text-center">종류</th>
                                             <th class="text-center">납입회차 코드</th>
                                             <th class="text-center">납부순서</th>
-                                            <th class="text-center">PM용역비 여부</th>
                                             <th class="text-center">납부회차 명</th>
                                             <th class="text-center">별칭 이름</th>
                                             <th class="text-center">납부기한일</th>
@@ -78,12 +77,6 @@
                                                 <td class="text-center">
                                                     {{ form.pay_time|add_class:"form-control text-right"|attr:"placeholder:납부순서" }}
                                                     <span class="text-danger">{{ form.pay_time.errors }}</span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <div class="custom-control custom-switch">
-                                                        {{ form.is_pm_cost|add_class:"custom-control-input" }}
-                                                        <label class="custom-control-label" for="{{ form.is_pm_cost.id_for_label }}"></label>
-                                                    </div>
                                                 </td>
                                                 <td class="text-center">
                                                     {{ form.pay_name|add_class:"form-control"|attr:"placeholder:납부회차 명" }}

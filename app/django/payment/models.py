@@ -3,17 +3,17 @@ from django.db import models
 
 class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'))
+    SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '기타 부담금'), ('5', '제세 공과금'), ('6', '금융 비용'), ('7', '업무 대행비'))
     pay_sort = models.CharField('종류', max_length=1, choices=SORT_CHOICES, default='1')
+    is_except_price = models.BooleanField('공급가 불포함 여부', default=False, help_text='취등록세, 후불 이자 등 공급가 불포함 항목인지 여부')
     pay_code = models.PositiveSmallIntegerField('납입회차 코드', help_text='프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능')
     pay_time = models.PositiveSmallIntegerField('납부순서',
                                                 help_text='''동일 납부회차에 2가지 항목을 분리해서 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
                                                 하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.''')
     pay_name = models.CharField('납부회차 명', max_length=20, db_index=True)
     alias_name = models.CharField('회차 별칭', max_length=20, blank=True, db_index=True)
-    is_pm_cost = models.BooleanField('PM용역비 여부', default=False)
     pay_amt = models.PositiveIntegerField('납부 약정금액', null=True, blank=True,
-                                          help_text='약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)')
+                                          help_text='약정금이 차수, 타입/층수에 관계 없이 정액인 경우 설정 (예: 세대별 업무대행비)')
     pay_ratio = models.DecimalField('회당 납부비율(%)', max_digits=5, decimal_places=2, null=True, blank=True,
                                     help_text='''분양가 대비 납부비율, 계약금 항목인 경우 Downpayment 
                                     테이블 데이터 우선, 잔금 항목인 경우 분양가와 비교 차액 데이터 우선''')

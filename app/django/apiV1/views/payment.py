@@ -23,7 +23,7 @@ class InstallmentOrderViewSet(viewsets.ModelViewSet):
     serializer_class = InstallmentOrderSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('project', 'pay_sort', 'is_pm_cost')
+    filterset_fields = ('project', 'pay_sort')
     search_fields = ('pay_name', 'alias_name')
 
 
