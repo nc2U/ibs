@@ -391,15 +391,30 @@ onMounted(() => {
     <CRow class="py-2">
       <CCol>
         <v-btn-group density="compact" role="group">
-          <v-btn v-if="editAuth" color="success" :disabled="!writeAuth" @click="toEdit">
+          <v-btn
+            v-if="editAuth"
+            color="success"
+            size="small"
+            :disabled="!writeAuth"
+            @click="toEdit"
+          >
             수정
           </v-btn>
-          <v-btn v-if="editAuth" color="warning" :disabled="!writeAuth" @click="deleteConfirm">
+          <v-btn
+            v-if="editAuth"
+            color="warning"
+            size="small"
+            :disabled="!writeAuth"
+            @click="deleteConfirm"
+          >
             삭제
           </v-btn>
-          <v-btn color="secondary" @click="router.push({ name: `${viewRoute}` })"> 목록</v-btn>
+          <v-btn color="secondary" size="small" @click="router.push({ name: `${viewRoute}` })">
+            목록
+          </v-btn>
           <v-btn
             color="light"
+            size="small"
             :disabled="!prev || reOrder"
             @click="
               router.push({
@@ -446,7 +461,6 @@ onMounted(() => {
     @copy-docs="copyDocs"
     @move-docs="moveDocs"
   />
-  <!--    :now-project="docs?.project ?? undefined"-->
 
   <CateListModal
     ref="refCateListModal"
@@ -459,7 +473,7 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>이 게시물을 휴지통으로 삭제 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="danger" @click="toManage(88)">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="toManage(88)">삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -467,7 +481,7 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
     <template #footer>
-      <v-btn color="danger" @click="toDelete">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="toDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

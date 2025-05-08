@@ -103,10 +103,15 @@ onUpdated(() => {
       </CRow>
     </template>
     <template #footer>
-      <v-btn :color="isCopy ? 'info' : 'warning'" @click="onSubmit" :disabled="formCheck">
+      <v-btn
+        :color="isCopy ? 'info' : 'warning'"
+        size="small"
+        @click="onSubmit"
+        :disabled="formCheck"
+      >
         게시물 {{ isCopy ? '복사' : '이동' }}
       </v-btn>
-      <v-btn color="light" @click="refListModal.close()">닫기</v-btn>
+      <v-btn color="light" size="small" @click="refListModal.close()">닫기</v-btn>
     </template>
   </AlertModal>
 </template>

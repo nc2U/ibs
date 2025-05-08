@@ -63,8 +63,10 @@ defineExpose({ callModal })
       </CRow>
     </template>
     <template #footer>
-      <v-btn color="warning" @click="onSubmit" :disabled="!category">카테고리 변경</v-btn>
-      <v-btn color="light" @click="refListModal.close()">닫기</v-btn>
+      <v-btn color="warning" size="small" @click="onSubmit" :disabled="!category">
+        카테고리 변경
+      </v-btn>
+      <v-btn color="light" size="small" @click="refListModal.close()">닫기</v-btn>
     </template>
   </AlertModal>
 </template>

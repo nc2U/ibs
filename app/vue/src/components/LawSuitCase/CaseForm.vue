@@ -363,7 +363,7 @@ onUpdated(() => dataSetup())
     <template #header> {{ viewRoute }}</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
-      <v-btn color="warning" disabled>삭제</v-btn>
+      <v-btn color="warning" size="small" disabled>삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -371,7 +371,7 @@ onUpdated(() => dataSetup())
     <template #header> {{ viewRoute }}</template>
     <template #default> {{ viewRoute }} 저장을 진행하시겠습니까?</template>
     <template #footer>
-      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>
+      <v-btn :color="btnClass" size="small" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 

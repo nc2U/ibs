@@ -292,8 +292,8 @@ const modalAction = () => {
 
           <CRow>
             <CCol class="text-right">
-              <v-btn color="light" @click="refCaseForm.close()"> 닫기</v-btn>
-              <v-btn color="primary" type="submit"> 저장하기</v-btn>
+              <v-btn color="light" size="small" @click="refCaseForm.close()"> 닫기</v-btn>
+              <v-btn color="primary" type="submit" size="small"> 저장하기</v-btn>
             </CCol>
           </CRow>
         </CForm>
@@ -305,7 +305,7 @@ const modalAction = () => {
     <template #header>소송사건</template>
     <template #default> 소송사건 저장을 진행하시겠습니까?</template>
     <template #footer>
-      <v-btn color="success" @click="modalAction">저장</v-btn>
+      <v-btn color="success" size="small" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 </template>
