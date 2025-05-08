@@ -22,7 +22,7 @@ defineExpose({ toggle })
 
 <template>
   <CRow class="flex-grow-1">
-    <CCol class="text-body main p-4 px-lg-5">
+    <CCol class="text-body main p-4 px-lg-5 mx-3">
       <slot> Under Construction!</slot>
     </CCol>
 
@@ -63,7 +63,7 @@ defineExpose({ toggle })
               <CNavItem v-for="(menu, i) in navMenu" :key="i">
                 <CNavLink
                   @click="goToMenu(menu as string)"
-                  :active="route.name === menu || route.meta.title === menu"
+                  :active="route.name === menu || (route.meta as any).title === menu"
                   class="pl-3"
                 >
                   {{ menu }}
