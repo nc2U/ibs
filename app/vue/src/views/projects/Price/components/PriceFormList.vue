@@ -52,11 +52,12 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>대지가(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>부가세(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>분양가격(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>계약금(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>업무대행비(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>
-        <CTableHeaderCell>중도금(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>잔금(단위:원)</CTableHeaderCell>
+<!--        <CTableHeaderCell>계약금(단위:원)</CTableHeaderCell>-->
+<!--        <CTableHeaderCell>업무대행비(단위:원)</CTableHeaderCell>-->
+<!--        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>-->
+<!--        <CTableHeaderCell>중도금(단위:원)</CTableHeaderCell>-->
+<!--        <CTableHeaderCell>잔금(단위:원)</CTableHeaderCell>-->
+                <CTableHeaderCell>회차/약정액등록</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>

@@ -184,45 +184,46 @@ onUpdated(() => {
         @keydown.enter="onStorePrice"
       />
     </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.down_pay"
-        type="number"
-        min="0"
-        placeholder="계약금"
-        @keydown.enter="onStorePrice"
-      />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.biz_agency_fee"
-        type="number"
-        min="0"
-        placeholder="업무대행비"
-        @keydown.enter="onStorePrice"
-      />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormSwitch v-model="form.is_included_baf" :id="`iib-${price?.pk}`" label="업대비 포함" />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.middle_pay"
-        type="number"
-        min="0"
-        placeholder="중도금"
-        @keydown.enter="onStorePrice"
-      />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.remain_pay"
-        type="number"
-        min="0"
-        placeholder="잔금"
-        @keydown.enter="onStorePrice"
-      />
-    </CTableDataCell>
+<!--    <CTableDataCell>-->
+<!--      <CFormInput-->
+<!--        v-model.number="form.down_pay"-->
+<!--        type="number"-->
+<!--        min="0"-->
+<!--        placeholder="계약금"-->
+<!--        @keydown.enter="onStorePrice"-->
+<!--      />-->
+<!--    </CTableDataCell>-->
+<!--    <CTableDataCell>-->
+<!--      <CFormInput-->
+<!--        v-model.number="form.biz_agency_fee"-->
+<!--        type="number"-->
+<!--        min="0"-->
+<!--        placeholder="업무대행비"-->
+<!--        @keydown.enter="onStorePrice"-->
+<!--      />-->
+<!--    </CTableDataCell>-->
+<!--    <CTableDataCell>-->
+<!--      <CFormSwitch v-model="form.is_included_baf" :id="`iib-${price?.pk}`" label="업대비 포함" />-->
+<!--    </CTableDataCell>-->
+<!--    <CTableDataCell>-->
+<!--      <CFormInput-->
+<!--        v-model.number="form.middle_pay"-->
+<!--        type="number"-->
+<!--        min="0"-->
+<!--        placeholder="중도금"-->
+<!--        @keydown.enter="onStorePrice"-->
+<!--      />-->
+<!--    </CTableDataCell>-->
+<!--    <CTableDataCell>-->
+<!--      <CFormInput-->
+<!--        v-model.number="form.remain_pay"-->
+<!--        type="number"-->
+<!--        min="0"-->
+<!--        placeholder="잔금"-->
+<!--        @keydown.enter="onStorePrice"-->
+<!--      />-->
+<!--    </CTableDataCell>-->
+    <CTableDataCell></CTableDataCell>
     <CTableDataCell v-if="write_project" class="text-center">
       <v-btn :color="btnColor" size="small" :disabled="formsCheck" @click="onStorePrice">
         {{ btnTitle }}
