@@ -85,7 +85,7 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       <v-btn
         type="button"
         color="success"
-        size="small"
+        size="x-small"
         @click="
           router.push({
             name: '계약 등록 수정',

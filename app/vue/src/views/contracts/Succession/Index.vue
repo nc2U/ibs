@@ -24,7 +24,7 @@ const successionFormModal = ref()
 const successionAlertModal = ref()
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as any)?.pk)
 
 const downloadUrl = computed(() => `/excel/successions/?project=${project.value}`)
 

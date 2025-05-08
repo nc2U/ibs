@@ -17,14 +17,14 @@ const getStatus = (num: string) => {
 }
 
 const textColor = computed(() => {
-  if (props.release.status === '0') return 'text-primary'
-  else if (props.release.status === '3') return 'text-danger'
+  if (props.release?.status === '0') return 'text-primary'
+  else if (props.release?.status === '3') return 'text-danger'
   else return ''
 })
 
 const buttonColor = computed(() => {
-  if (props.release.status === '0') return 'info'
-  else if (props.release.status === '3') return 'warning'
+  if (props.release?.status === '0') return 'info'
+  else if (props.release?.status === '3') return 'warning'
   else return 'secondary'
 })
 
@@ -59,6 +59,6 @@ const callFormModal = () => emit('call-form', props.release?.contractor)
     {{ release.completion_date }}
   </CTableDataCell>
   <CTableDataCell class="text-center">
-    <v-btn type="button" :color="buttonColor" size="small" @click="callFormModal"> 확인</v-btn>
+    <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal"> 확인</v-btn>
   </CTableDataCell>
 </template>

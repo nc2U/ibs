@@ -213,12 +213,19 @@ onBeforeMount(() => formDataSet())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" color="light" @click="emit('close')"> 닫기</v-btn>
+      <v-btn type="button" color="light" size="small" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn type="submit" :color="release ? 'success' : 'primary'" :disabled="formsCheck">
+        <v-btn
+          type="submit"
+          :color="release ? 'success' : 'primary'"
+          size="small"
+          :disabled="formsCheck"
+        >
           저장
         </v-btn>
-        <v-btn v-if="release" type="button" color="warning" @click="deleteConfirm"> 삭제</v-btn>
+        <v-btn v-if="release" type="button" color="warning" size="small" @click="deleteConfirm">
+          삭제
+        </v-btn>
       </slot>
     </CModalFooter>
   </CForm>
@@ -229,7 +236,7 @@ onBeforeMount(() => formDataSet())
       삭제 후 복구할 수 없습니다. 해당 건별 수납 정보 삭제를 진행하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 

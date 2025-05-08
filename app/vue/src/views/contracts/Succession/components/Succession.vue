@@ -55,6 +55,6 @@ const callFormModal = () => {
     {{ done ? '완료' : '' }}
   </CTableDataCell>
   <CTableDataCell class="text-center">
-    <v-btn type="button" :color="buttonColor" size="small" @click="callFormModal"> 확인</v-btn>
+    <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal"> 확인</v-btn>
   </CTableDataCell>
 </template>
