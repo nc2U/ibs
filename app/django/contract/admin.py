@@ -1,8 +1,8 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 from .models import (OrderGroup, Contract, ContractPrice, ContractFile,
-                     Contractor, ContractorAddress, ContractorContact,
-                     Succession, ContractorRelease)
+                     PaymentPerInstallment, Contractor, ContractorAddress,
+                     ContractorContact, Succession, ContractorRelease)
 
 
 @admin.register(OrderGroup)
@@ -38,6 +38,10 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin]
 
 
+class PaymentPerInstallmentInline(admin.TabularInline):
+    model = PaymentPerInstallment
+    extra = 0
+
 @admin.register(ContractPrice)
 class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'contract', 'price', 'price_build', 'price_land', 'price_tax',
@@ -46,6 +50,7 @@ class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('price', 'price_build', 'price_land', 'price_tax')
     list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',
                    'contract__activation', 'contract__contractor__status')
+    inlines = [PaymentPerInstallmentInline]
 
 
 class CAdressInline(ImportExportMixin, admin.StackedInline):
