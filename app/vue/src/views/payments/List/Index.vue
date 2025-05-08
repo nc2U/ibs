@@ -161,8 +161,8 @@ onBeforeRouteLeave(() => {
           style="font-size: 0.8em"
           :disabled="!project"
         >
-          <v-radio label="수납건별" value="1" class="pr-3" />
-          <v-radio label="계약자별" value="2" />
+          <v-radio label="수납건별" value="1" class="pt-1 pr-3" />
+          <v-radio label="계약자별" value="2" class="pt-1" />
         </v-radio-group>
       </TableTitleRow>
       <PaymentList

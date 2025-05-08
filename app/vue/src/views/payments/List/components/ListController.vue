@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, nextTick, watch } from 'vue'
+import { bgLight } from '@/utils/cssMixins'
+import { numFormat } from '@/utils/baseMixins.ts'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
-import { bgLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/index.vue'
 
@@ -207,7 +208,7 @@ defineExpose({ listFiltering })
     </CRow>
     <CRow>
       <CCol color="warning" class="p-2 pl-3">
-        <strong>납부 건수 조회 결과 : {{ paymentsCount }} 건</strong>
+        <strong>납부 건수 조회 결과 : {{ numFormat(paymentsCount, 0, 0) }} 건</strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-right mb-0">
         <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>
