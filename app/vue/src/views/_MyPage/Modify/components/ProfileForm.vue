@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onMounted, type PropType } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { type Profile, type User } from '@/store/types/accounts'
 import DatePicker from '@/components/DatePicker/index.vue'
 import AvatarInput from './AvatarInput.vue'
@@ -130,7 +131,7 @@ onMounted(() => formDataSetup())
             <CFormLabel class="col-sm-4 col-form-label"> 패스워드</CFormLabel>
 
             <CCol sm="8">
-              <v-btn type="button" @click="passChange" color="secondary">패스워드 변경</v-btn>
+              <v-btn type="button" @click="passChange" :color="btnLight">패스워드 변경</v-btn>
             </CCol>
           </CRow>
 

@@ -27,6 +27,7 @@ import type {
 } from '@/store/types/contract'
 import { isValidate } from '@/utils/helper'
 import { numFormat, diffDate } from '@/utils/baseMixins'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import Multiselect from '@vueform/multiselect'
@@ -1058,10 +1059,10 @@ onBeforeRouteLeave(() => formDataReset())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" color="secondary" @click="router.push({ name: '계약 내역 조회' })">
+      <v-btn type="button" :color="btnLight" @click="router.push({ name: '계약 내역 조회' })">
         목록으로
       </v-btn>
-      <v-btn type="button" color="secondary" @click="formDataReset"> 취소</v-btn>
+      <v-btn type="button" :color="btnLight" @click="formDataReset"> 취소</v-btn>
       <v-btn
         v-if="write_contract && contract"
         type="button"
@@ -1076,7 +1077,7 @@ onBeforeRouteLeave(() => formDataReset())
         :color="contract ? 'success' : 'primary'"
         :disabled="!form.status || formsCheck"
       >
-        <CIcon name="cil-check-circle" />
+        <v-icon icon="mdi-check-circle-outline" class="mr-2" />
         저장
       </v-btn>
     </CCardFooter>

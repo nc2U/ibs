@@ -2,6 +2,7 @@
 import type { ComputedRef, PropType } from 'vue'
 import { ref, computed, watch, inject, onBeforeMount, onMounted } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { useBoard } from '@/store/pinia/board'
 import { type Post } from '@/store/types/board'
 import type { Company } from '@/store/types/settings'
@@ -461,7 +462,7 @@ onMounted(() => {
           >
             삭제
           </v-btn>
-          <v-btn color="secondary" size="small" @click="router.push({ name: `${viewRoute}` })">
+          <v-btn :color="btnLight" size="small" @click="router.push({ name: `${viewRoute}` })">
             목록
           </v-btn>
           <v-btn

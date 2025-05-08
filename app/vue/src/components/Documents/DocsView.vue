@@ -5,6 +5,7 @@ import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { cutString } from '@/utils/baseMixins'
 import { type Docs } from '@/store/types/docs'
+import { btnLight } from '@/utils/cssMixins.ts'
 import type { User } from '@/store/types/accounts'
 import type { Company } from '@/store/types/settings'
 import { docsManageItems, toDocsManage } from '@/utils/docsMixins'
@@ -409,7 +410,7 @@ onMounted(() => {
           >
             삭제
           </v-btn>
-          <v-btn color="secondary" size="small" @click="router.push({ name: `${viewRoute}` })">
+          <v-btn :color="btnLight" size="small" @click="router.push({ name: `${viewRoute}` })">
             목록
           </v-btn>
           <v-btn
