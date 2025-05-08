@@ -684,7 +684,7 @@ onBeforeMount(() => formDataSetup())
               <v-btn
                 type="button"
                 color="success"
-                size="small"
+                size="x-small"
                 @click="sepUpdate(sep as ProjectCashBook)"
               >
                 수정
@@ -922,19 +922,29 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" color="light" @click="emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" color="light" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn v-if="sepItem.pk" type="button" color="light" variant="outlined" @click="sepRemove">
+        <v-btn
+          v-if="sepItem.pk"
+          size="small"
+          type="button"
+          color="light"
+          variant="outlined"
+          @click="sepRemove"
+        >
           취소
         </v-btn>
         <v-btn
           type="submit"
+          size="small"
           :color="isModify ? 'success' : 'primary'"
           :disabled="formsCheck && requireItem"
         >
           저장
         </v-btn>
-        <v-btn v-if="isModify" type="button" color="warning" @click="deleteConfirm"> 삭제</v-btn>
+        <v-btn v-if="isModify" size="small" type="button" color="warning" @click="deleteConfirm">
+          삭제
+        </v-btn>
       </slot>
     </CModalFooter>
   </CForm>
@@ -945,7 +955,7 @@ onBeforeMount(() => formDataSetup())
       삭제한 데이터는 복구할 수 없습니다. 해당 입출금 거래 정보를 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="deleteObject">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="deleteObject">삭제</v-btn>
     </template>
   </ConfirmModal>
 
