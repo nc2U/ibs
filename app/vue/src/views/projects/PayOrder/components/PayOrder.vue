@@ -16,7 +16,6 @@ const form = reactive<PayOrder>({
   pay_time: null,
   pay_name: '',
   alias_name: '',
-  is_pm_cost: false,
   pay_amt: null,
   pay_ratio: null,
   pay_due_date: null,
@@ -38,18 +37,17 @@ const formsCheck = computed(() => {
   const c = form.pay_time === props.payOrder?.pay_time
   const d = form.pay_name === props.payOrder?.pay_name
   const e = form.alias_name === props.payOrder?.alias_name
-  const f = form.is_pm_cost === props.payOrder?.is_pm_cost
-  const g = form.pay_amt === props.payOrder?.pay_amt
-  const h = form.pay_ratio === props.payOrder?.pay_ratio
-  const i = form.pay_due_date === props.payOrder?.pay_due_date
-  const j = form.days_since_prev === props.payOrder?.days_since_prev
-  const k = form.is_prep_discount === props.payOrder?.is_prep_discount
-  const l = form.prep_discount_ratio === props.payOrder?.prep_discount_ratio
-  const m = form.prep_ref_date === props.payOrder?.prep_ref_date
-  const n = form.is_late_penalty === props.payOrder?.is_late_penalty
-  const o = form.late_penalty_ratio === props.payOrder?.late_penalty_ratio
-  const p = form.extra_due_date === props.payOrder?.extra_due_date
-  return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p
+  const f = form.pay_amt === props.payOrder?.pay_amt
+  const g = form.pay_ratio === props.payOrder?.pay_ratio
+  const h = form.pay_due_date === props.payOrder?.pay_due_date
+  const i = form.days_since_prev === props.payOrder?.days_since_prev
+  const j = form.is_prep_discount === props.payOrder?.is_prep_discount
+  const k = form.prep_discount_ratio === props.payOrder?.prep_discount_ratio
+  const l = form.prep_ref_date === props.payOrder?.prep_ref_date
+  const m = form.is_late_penalty === props.payOrder?.is_late_penalty
+  const n = form.late_penalty_ratio === props.payOrder?.late_penalty_ratio
+  const o = form.extra_due_date === props.payOrder?.extra_due_date
+  return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o
 })
 
 const formCheck = (bool: boolean) => {
@@ -88,7 +86,6 @@ const dataSetup = () => {
   form.pay_time = props.payOrder?.pay_time
   form.pay_name = props.payOrder?.pay_name
   form.alias_name = props.payOrder?.alias_name
-  form.is_pm_cost = props.payOrder?.is_pm_cost
   form.pay_amt = props.payOrder?.pay_amt
   form.pay_ratio = props.payOrder?.pay_ratio
   form.pay_due_date = props.payOrder?.pay_due_date
@@ -152,11 +149,6 @@ onBeforeMount(() => dataSetup())
         required
         @keypress.enter="formCheck(form.alias_name !== payOrder.alias_name)"
       />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CCol class="pt-2 pl-3">
-        <CFormSwitch v-model="form.is_pm_cost" :id="`ipc-${payOrder.pk}`" label="PM용역비" />
-      </CCol>
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput

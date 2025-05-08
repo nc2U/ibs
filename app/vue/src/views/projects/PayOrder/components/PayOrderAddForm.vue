@@ -19,7 +19,6 @@ const form = reactive({
   pay_time: null as string | null,
   pay_name: '',
   alias_name: '',
-  is_pm_cost: false,
   pay_amt: null,
   pay_ratio: null,
   pay_due_date: null as string | null,
@@ -62,7 +61,6 @@ const resetForm = () => {
   form.pay_time = null
   form.pay_name = ''
   form.alias_name = ''
-  form.is_pm_cost = false
   form.pay_amt = null
   form.pay_ratio = null
   form.pay_due_date = null
@@ -139,18 +137,6 @@ const resetForm = () => {
                   placeholder="별칭 이름"
                   :disabled="disabled"
                 />
-              </CCol>
-              <CCol lg="6" xl="3" class="mb-3">
-                <CRow>
-                  <CCol class="pt-2 col-form-label">
-                    <CFormSwitch
-                      v-model="form.is_pm_cost"
-                      id="is_pm_cost"
-                      label="PM용역비"
-                      :disabled="disabled"
-                    />
-                  </CCol>
-                </CRow>
               </CCol>
               <CCol lg="6" xl="3" class="mb-3">
                 <CFormInput

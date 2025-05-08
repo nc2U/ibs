@@ -7,7 +7,6 @@ export interface PayOrder {
   pay_time?: number | null
   pay_name?: string
   alias_name?: string
-  is_pm_cost?: boolean
   pay_amt?: number | null
   pay_ratio?: number | null
   pay_due_date?: string | null
