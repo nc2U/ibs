@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { isValidate } from '@/utils/helper'
+import { btnLight } from '@/utils/cssMixins.ts'
 import DatePicker from '@/components/DatePicker/index.vue'
 
 const emit = defineEmits(['create-version', 'close'])
@@ -103,7 +104,7 @@ const closeModal = () => emit('close')
     </CModalBody>
 
     <CModalFooter>
-      <v-btn color="light" @click="closeModal">닫기</v-btn>
+      <v-btn :color="btnLight" @click="closeModal">닫기</v-btn>
       <v-btn type="submit" color="primary">저장</v-btn>
     </CModalFooter>
   </CForm>

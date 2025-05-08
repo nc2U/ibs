@@ -3,7 +3,7 @@ import { ref, computed, onBeforeMount, type PropType, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper'
 import { useWork } from '@/store/pinia/work'
-import { colorLight } from '@/utils/cssMixins'
+import { btnLight, colorLight } from '@/utils/cssMixins'
 import { dateFormat } from '@/utils/baseMixins'
 import type { IssueProject } from '@/store/types/work'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -228,7 +228,7 @@ onBeforeMount(() => {
         <v-btn type="submit" :color="timeEntry ? 'success' : 'primary'" :disabled="formCheck">
           확인
         </v-btn>
-        <v-btn type="button" color="light" @click="closeForm">취소</v-btn>
+        <v-btn type="button" :color="btnLight" @click="closeForm">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>

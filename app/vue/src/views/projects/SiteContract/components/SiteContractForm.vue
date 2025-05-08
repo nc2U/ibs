@@ -3,6 +3,7 @@ import { ref, reactive, computed, watch, onBeforeMount } from 'vue'
 import { useSite } from '@/store/pinia/project_site'
 import { isValidate } from '@/utils/helper'
 import { type SiteContract } from '@/store/types/project'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -518,7 +519,7 @@ onBeforeMount(() => dataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" color="light" @click="emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" :color="btnLight" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"

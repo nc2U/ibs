@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
+import { btnLight } from '@/utils/cssMixins.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 
 const emit = defineEmits(['aside-visible'])
@@ -55,7 +56,7 @@ onBeforeMount(() => {
   <CRow>
     <CCol>
       <v-btn color="primary">저장</v-btn>
-      <v-btn color="light">취소</v-btn>
+      <v-btn :color="btnLight">취소</v-btn>
     </CCol>
   </CRow>
 </template>

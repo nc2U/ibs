@@ -16,7 +16,7 @@ import { isValidate } from '@/utils/helper'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
 import { dateFormat } from '@/utils/baseMixins'
-import { colorLight } from '@/utils/cssMixins'
+import { btnLight, colorLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -832,7 +832,7 @@ onBeforeMount(() => {
       <v-btn type="submit" :color="issue ? 'success' : 'primary'" :disabled="formsCheck">
         확인
       </v-btn>
-      <v-btn type="button" color="light" @click="closeForm">취소</v-btn>
+      <v-btn type="button" :color="btnLight" @click="closeForm">취소</v-btn>
     </CForm>
   </CRow>
 

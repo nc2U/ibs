@@ -4,6 +4,7 @@ import { useProject } from '@/store/pinia/project'
 import { useSite } from '@/store/pinia/project_site'
 import { isValidate } from '@/utils/helper'
 import { type Site } from '@/store/types/project'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -273,7 +274,7 @@ onBeforeMount(() => dataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" color="light" @click="$emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" :color="btnLight" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"

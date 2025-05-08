@@ -4,6 +4,7 @@ import type { IssueLogEntry } from '@/store/types/work'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
 import type { User } from '@/store/types/accounts'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
 import MdEditor from '@/components/MdEditor/Index.vue'
@@ -167,7 +168,7 @@ const delSubmit = () => {
           <CFormCheck id="private_comment" label="비공개 댓글" />
           <div class="my-3">
             <v-btn color="success" size="small" @click="commentSubmit">저장</v-btn>
-            <v-btn color="light" size="small" @click="() => (editMode = false)">취소</v-btn>
+            <v-btn :color="btnLight" size="small" @click="() => (editMode = false)">취소</v-btn>
           </div>
         </span>
       </div>

@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import Multiselect from '@vueform/multiselect'
 import { type PropType, ref } from 'vue'
-import type { IssueRelation } from '@/store/types/work'
 import { isValidate } from '@/utils/helper'
+import { btnLight } from '@/utils/cssMixins.ts'
+import type { IssueRelation } from '@/store/types/work'
 
 const props = defineProps({
   issuePk: { type: Number, required: true },
@@ -78,7 +79,7 @@ const addRelIssue = (event: Event) => {
       </template>
       <CCol class="pt-1">
         <v-btn type="submit" color="primary" size="small">추가</v-btn>
-        <v-btn color="light" size="small" @click="addFormCtl(false)">취소</v-btn>
+        <v-btn :color="btnLight" size="small" @click="addFormCtl(false)">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>
