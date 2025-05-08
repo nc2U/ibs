@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { usePayment } from '@/store/pinia/payment'
+import type { Contract } from '@/store/types/contract.ts'
 import { type AllPayment, type DownPay, type PayOrder, type Price } from '@/store/types/payment'
 import { numFormat, getToday } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 import Order from '@/views/payments/Register/components/Order.vue'
 
 const props = defineProps({
-  contract: { type: Object, default: null },
+  contract: { type: Object as PropType<Contract>, default: null },
   paymentList: { type: Array as PropType<AllPayment[]>, default: () => [] },
 })
 
@@ -18,11 +19,14 @@ const downPayList = computed(() => paymentStore.downPayList)
 
 const thisPrice = computed(() => {
   if (props.contract) {
-    return props.contract.keyunit.houseunit
-      ? priceList.value
-          .filter((p: Price) => p.unit_floor_type === props.contract.keyunit.houseunit.floor_type)
-          .map((p: Price) => p.price)[0]
-      : Math.ceil(props.contract.unit_type.average_price / 10000) * 10000
+    if (props.contract.contractprice) return props.contract.contractprice?.price
+    else if (props.contract.key_unit?.houseunit && priceList.value.length)
+      return priceList.value
+        .filter((p: Price) => p.unit_floor_type === props.contract?.key_unit?.houseunit?.floor_type)
+        .map((p: Price) => p.price)[0]
+    else if (!!props.contract.unit_type_desc.average_price)
+      return Math.ceil(props.contract.unit_type_desc.average_price / 10000) * 10000
+    else return 0
   }
   return 0
 })

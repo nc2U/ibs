@@ -41,6 +41,7 @@ export interface Contract {
   order_group_sort: '1' | '2' // '조합모집' | '일반분양'
   order_group: number
   unit_type: number
+  unit_type_desc: UnitType
   serial_number: string
   activation: boolean
   is_sup_cont: boolean
@@ -56,7 +57,6 @@ export interface Contract {
     sort: string
     order_group_name: string
   }
-  unit_type_desc: UnitType
   contract_files: ContractFile[]
 }
 

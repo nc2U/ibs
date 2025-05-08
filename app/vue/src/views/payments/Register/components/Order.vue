@@ -18,7 +18,8 @@ const dueDate = computed(() => {
   const contDate = props.contract?.contractor?.contract_date
   if (props.order?.pay_code === 1) return contDate
   else {
-    if (props.order?.days_since_prev) return addDaysToDate(contDate ?? '', 30)
+    if (props.order?.days_since_prev)
+      return addDaysToDate(contDate as Date | string, props.order?.days_since_prev as number)
     else return props.order?.extra_due_date || props.order?.pay_due_date || '-'
   }
 })
@@ -35,7 +36,7 @@ const paidByOrder = computed(() => {
 
 const calculated = computed(() => {
   const duePay = paidByOrder.value - props.commit
-  return dueDate.value !== '-' && dueDate.value <= getToday() ? duePay : 0
+  return dueDate.value !== '-' && (dueDate.value as Date | string) <= getToday() ? duePay : 0
 })
 
 const calcClass = () => {
