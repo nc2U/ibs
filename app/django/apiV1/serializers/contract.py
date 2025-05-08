@@ -283,6 +283,7 @@ class ContractFileInContractSetSerializer(serializers.ModelSerializer):
 
 class ContractSetSerializer(serializers.ModelSerializer):
     order_group_sort = serializers.SerializerMethodField(read_only=True)
+    unit_type_desc = SimpleUnitTypeSerializer(source='unit_type', read_only=True)
     key_unit = KeyUnitInContractSerializer(read_only=True)
     contractprice = ContPriceInContractSerializer(read_only=True)
     contractor = ContractorInContractSerializer(read_only=True)
@@ -290,14 +291,13 @@ class ContractSetSerializer(serializers.ModelSerializer):
     last_paid_order = serializers.SerializerMethodField(read_only=True)
     total_paid = serializers.SerializerMethodField(read_only=True)
     order_group_desc = SimpleOrderGroupSerializer(source='order_group', read_only=True)
-    unit_type_desc = SimpleUnitTypeSerializer(source='unit_type', read_only=True)
     contract_files = ContractFileInContractSetSerializer(many=True, read_only=True)
 
     class Meta:
         model = Contract
-        fields = ('pk', 'project', 'order_group_sort', 'order_group', 'unit_type', 'serial_number',
-                  'activation', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice', 'contractor',
-                  'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'unit_type_desc', 'contract_files')
+        fields = ('pk', 'project', 'order_group_sort', 'order_group', 'unit_type', 'unit_type_desc',
+                  'serial_number', 'activation', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice',
+                  'contractor', 'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'contract_files')
 
     @staticmethod
     def get_order_group_sort(obj):  # '1': 조합모집 or '2': 일반분양
