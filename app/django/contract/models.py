@@ -47,28 +47,6 @@ class Contract(models.Model):
         verbose_name_plural = '02. 계약 정보'
 
 
-class ContractPrice(models.Model):
-    contract = models.OneToOneField(Contract, on_delete=models.SET_NULL, null=True)
-    price = models.PositiveIntegerField('분양가격')
-    price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
-    price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
-    price_tax = models.PositiveIntegerField('부가세', null=True, blank=True)
-    install_amount = models.JSONField('회차별 납부금액', default=list, blank=True, null=True)
-    down_pay = models.PositiveIntegerField('계약금', help_text='계약금 분납 시 회당 납부하는 금액 기재')
-    biz_agency_fee = models.PositiveIntegerField('업무대행비', null=True, blank=True)
-    is_included_baf = models.BooleanField('업무대행비 포함 여부', default=False)
-    middle_pay = models.PositiveIntegerField('중도금', help_text='중도금 분납 시 회당 납부하는 금액 기재')
-    remain_pay = models.PositiveIntegerField('잔금', help_text='잔금 분납 시 회당 납부하는 금액 기재')
-
-    def __str__(self):
-        return f'{self.price}'
-
-    class Meta:
-        ordering = ('-contract__project', 'contract')
-        verbose_name = '03. 분양대금 정보'
-        verbose_name_plural = '03. 분양대금 정보'
-
-
 def get_contract_file_name(instance, filename):
     return '/'.join(
         ['contract',
@@ -106,6 +84,36 @@ def delete_file_on_delete(sender, instance, **kwargs):
     if instance.file:
         if os.path.isfile(instance.file.path):
             os.remove(instance.file.path)
+
+
+class ContractPrice(models.Model):
+    contract = models.OneToOneField(Contract, on_delete=models.SET_NULL, null=True)
+    price = models.PositiveIntegerField('분양가격')
+    price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
+    price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
+    price_tax = models.PositiveIntegerField('부가세', null=True, blank=True)
+    down_pay = models.PositiveIntegerField('계약금', help_text='계약금 분납 시 회당 납부하는 금액 기재')
+    biz_agency_fee = models.PositiveIntegerField('업무대행비', null=True, blank=True)
+    is_included_baf = models.BooleanField('업무대행비 포함 여부', default=False)
+    middle_pay = models.PositiveIntegerField('중도금', help_text='중도금 분납 시 회당 납부하는 금액 기재')
+    remain_pay = models.PositiveIntegerField('잔금', help_text='잔금 분납 시 회당 납부하는 금액 기재')
+
+    def __str__(self):
+        return f'{self.price}'
+
+    class Meta:
+        ordering = ('-contract__project', 'contract')
+        verbose_name = '03. 분양대금 정보'
+        verbose_name_plural = '03. 분양대금 정보'
+
+
+class PaymentPerInstallment(models.Model):
+    cont_price = models.ForeignKey(ContractPrice, on_delete=models.CASCADE, verbose_name='공급 가격')
+    pay_order = models.ForeignKey('payment.InstallmentPaymentOrder', on_delete=models.CASCADE, verbose_name='납부 회차')
+    amount = models.PositiveIntegerField('납부 약정금액')
+
+    class Meta:
+        ordering = ('cont_price__contract__project', 'pay_order', 'cont_price')
 
 
 class Contractor(models.Model):
