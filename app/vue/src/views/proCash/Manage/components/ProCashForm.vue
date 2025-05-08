@@ -912,7 +912,7 @@ onBeforeMount(() => formDataSetup())
     <CModalFooter>
       <v-btn type="button" color="light" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn v-if="sepItem.pk" type="button" color="light" variant="outline" @click="sepRemove">
+        <v-btn v-if="sepItem.pk" type="button" color="light" variant="outlined" @click="sepRemove">
           취소
         </v-btn>
         <v-btn

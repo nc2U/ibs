@@ -318,7 +318,7 @@ onBeforeMount(() => formDataSetup())
     <template #header> 회사정보</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
-      <v-btn color="warning" disabled="">삭제</v-btn>
+      <v-btn color="warning" disabled>삭제</v-btn>
     </template>
   </ConfirmModal>
 

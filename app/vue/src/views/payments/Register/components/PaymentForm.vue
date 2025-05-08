@@ -42,10 +42,10 @@ const form = reactive({
 const formsCheck = computed(() => {
   if (props.payment) {
     const io = props.payment.installment_order ? props.payment.installment_order.pk : null
-    const a = form.installment_order && form.installment_order === io
-    const b = form.trader && form.trader === props.payment.trader
-    const c = form.bank_account && form.bank_account === props.payment.bank_account.pk
-    const d = form.income && form.income === props.payment.income
+    const a = form.installment_order === io
+    const b = form.trader === props.payment.trader
+    const c = form.bank_account === props.payment.bank_account.pk
+    const d = form.income === props.payment.income
     const e = form.note === props.payment.note
     const f = form.deal_date === props.payment.deal_date
     const g = removeCont.value === false
