@@ -34,7 +34,7 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
         return f'[{self.get_pay_sort_display()}] - {self.pay_name}'
 
     class Meta:
-        ordering = ['-project', 'pay_code']
+        ordering = ['-project', 'pay_code', 'pay_time']
         verbose_name = '01. 납입회차 관리'
         verbose_name_plural = '01. 납입회차 관리'
 
