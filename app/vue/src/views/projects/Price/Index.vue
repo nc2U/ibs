@@ -61,6 +61,7 @@ const fetchPriceList = (pFilters: PriceFilter) => payStore.fetchPriceList(pFilte
 const createPrice = (payload: Price) => payStore.createPrice(payload)
 const updatePrice = (payload: Price) => payStore.updatePrice(payload)
 const deletePrice = (payload: PriceFilter & { pk: number }) => payStore.deletePrice(payload)
+const fetchPayOrderList = (proj: number) => payStore.fetchPayOrderList(proj)
 
 // 차수 선택 시 실행 함수
 const orderSelect = (order: number) => {
@@ -101,6 +102,7 @@ const dataSetup = (pk: number) => {
   fetchOrderGroupList(pk)
   fetchTypeList(pk)
   fetchFloorTypeList(pk)
+  fetchPayOrderList(pk)
   priceMessage.value = '공급가격을 입력하기 위해 [차수 정보]를 선택하여 주십시요.'
 }
 
@@ -109,6 +111,7 @@ const dataReset = () => {
   contStore.orderGroupList = []
   pDataStore.unitTypeList = []
   pDataStore.floorTypeList = []
+  payStore.payOrderList = []
   selectForm.value.dataReset()
 }
 

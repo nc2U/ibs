@@ -17,6 +17,7 @@ const projectDataStore = useProjectData()
 const floorTypeList = computed(() => projectDataStore.floorTypeList)
 
 const paymentStore = usePayment()
+const payOrderList = computed(() => paymentStore.payOrderList)
 const priceList = computed(() => paymentStore.priceList)
 
 const getPrice = (floor: number) => priceList.value.filter((p: P) => p.unit_floor_type === floor)[0]
@@ -57,7 +58,10 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 <!--        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>-->
 <!--        <CTableHeaderCell>중도금(단위:원)</CTableHeaderCell>-->
 <!--        <CTableHeaderCell>잔금(단위:원)</CTableHeaderCell>-->
-                <CTableHeaderCell>회차/약정액등록</CTableHeaderCell>
+        <CTableHeaderCell colspan="2">
+          기타 약정회차 등록
+          <v-icon icon="mdi-plus-circle" size="16" color="success" class="pointer" />
+        </CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
@@ -68,6 +72,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         :p-filters="pFilters"
         :floor="floor"
         :price="getPrice(floor.pk)"
+        :pay-order-list="payOrderList"
         @on-create="onCreate"
         @on-update="onUpdate"
         @on-delete="onDelete"
