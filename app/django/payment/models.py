@@ -59,8 +59,8 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
 
     class Meta:
         ordering = ('order_group', 'unit_type', 'unit_floor_type', 'project')
-        verbose_name = '02. 프로젝트 분양가 관리'
-        verbose_name_plural = '02. 프로젝트 분양가 관리'
+        verbose_name = '02. 기준 공급가격 관리'
+        verbose_name_plural = '02. 기준 공급가격 관리'
 
 
 class DownPayment(models.Model):
@@ -75,8 +75,8 @@ class DownPayment(models.Model):
 
     class Meta:
         ordering = ('id',)
-        verbose_name = '03. 타입별 계약금 일괄 관리'
-        verbose_name_plural = '03. 타입별 계약금 일괄 관리'
+        verbose_name = '03. 타입별 일괄 계약금'
+        verbose_name_plural = '03. 타입별 일괄 계약금'
 
 
 class OverDueRule(models.Model):

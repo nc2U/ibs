@@ -103,8 +103,8 @@ class ContractPrice(models.Model):
 
     class Meta:
         ordering = ('-contract__project', 'contract')
-        verbose_name = '03. 분양대금 정보'
-        verbose_name_plural = '03. 분양대금 정보'
+        verbose_name = '03. 계약 건별 공급가격'
+        verbose_name_plural = '03. 계약 건별 공급가격'
 
 
 class PaymentPerInstallment(models.Model):

@@ -58,7 +58,8 @@ class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'cont_price', 'pay_order', 'amount')
     list_display_links = ('cont_price',)
     list_editable = ('amount',)
-    list_filter = ('cont_price__contract__project',)
+    list_filter = ('cont_price__contract__project', 'cont_price__contract__order_group',
+                   'cont_price__contract__unit_type', 'cont_price__contract__activation')
 
 
 class CAdressInline(ImportExportMixin, admin.StackedInline):
