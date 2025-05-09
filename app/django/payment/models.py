@@ -20,7 +20,6 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     pay_due_date = models.DateField('냡부 약정일', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
     days_since_prev = models.PositiveSmallIntegerField('전회 기준 경과일수', null=True, blank=True,
                                                        help_text="전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수")
-    is_calc_start = models.BooleanField('할인/가산 시작 여부', default=False)
     is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
     prep_discount_ratio = models.DecimalField('선납할인율(%)', max_digits=5, decimal_places=2, null=True, blank=True)
     prep_ref_date = models.DateField('선납 기준일', null=True, blank=True,
@@ -107,7 +106,6 @@ class SpecialPaymentOrder(models.Model):  # 가산금 / 할인액 계산을 위�
     alias_name = models.CharField('회차 별칭', max_length=20, blank=True)
     days_since_prev = models.PositiveSmallIntegerField('전회 기준 경과일수', null=True, blank=True,
                                                        help_text="전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수")
-    is_calc_start = models.BooleanField('할인/가산 시작 여부', default=False)
     is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
     is_late_penalty = models.BooleanField('연체가산 적용 여부', default=False)
     pay_due_date = models.DateField('지정 납부기한', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
