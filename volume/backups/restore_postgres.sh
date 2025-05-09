@@ -1,6 +1,6 @@
 #!/bin/bash
 DATE=$(date +"%Y-%m-%d")
-SQL_FILE="/var/backups/backup-postgres-${DATE}.dump"
+SQL_FILE="/var/backups/bu-postgres-${DATE}.dump"
 
 ps_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" "${SQL_FILE}"
 
