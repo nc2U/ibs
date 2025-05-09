@@ -18,7 +18,7 @@ else
     echo "File ${MARIADB_BACKUP_FILE} does not exist."
 fi
 
-POSTGRES_BACKUP_FILE="${SCRIPT_DIR}/backup-postgres-${DATE}.sql"  # 스크립트 디렉터리를 기준으로 파일 경로 설정
+POSTGRES_BACKUP_FILE="${SCRIPT_DIR}/backup-postgres-${DATE}.dump"  # 스크립트 디렉터리를 기준으로 파일 경로 설정
 # 파일 존재 여부 확인
 if [ -f "${POSTGRES_BACKUP_FILE}" ]; then
     # 파일 복사
