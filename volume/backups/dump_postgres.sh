@@ -9,7 +9,8 @@ find /var/backups -name "*.dump" -mtime +2 -type f -delete
 
 # (3) do the postgres database backup (dump)
 pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
-  --exclude-table=django_migrations \
+  --schema="${POSTGRES_USER}" \
+  --exclude-table="${POSTGRES_USER}".django_migrations \
   --data-only \
   --no-owner \
   --no-privileges \

@@ -2,7 +2,13 @@
 DATE=$(date +"%Y-%m-%d")
 SQL_FILE="/var/backups/bu-postgres-${DATE}.dump"
 
-ps_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" "${SQL_FILE}"
+pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+  --data-only \
+  --disable-triggers \
+  --no-owner \
+  --no-privileges \
+  --schema="${POSTGRES_USER}" \
+  "${SQL_FILE}"
 
 # 복원 성공 여부 확인
 if [ $? -eq 0 ]; then
