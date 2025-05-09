@@ -25,6 +25,8 @@ data:
   primary.sql: |
     CREATE ROLE {{ .Release.Name }} WITH REPLICATION LOGIN ENCRYPTED PASSWORD '{{ .Values.global.dbPassword }}';
     CREATE DATABASE {{ .Release.Name }};
+    CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
+    GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
 
   secondary.sh: |
     #!/bin/bash
