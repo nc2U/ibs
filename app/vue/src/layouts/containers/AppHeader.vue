@@ -63,11 +63,10 @@ const toggleAside = () => store.toggleAside()
           </v-tooltip>
         </CHeaderToggler>
 
-        <v-btn-group density="compact" aria-label="Theme switch">
+        <CButtonGroup size="sm" aria-label="Theme switch">
           <CFormCheck
             id="btn-light-theme"
             type="radio"
-            size="small"
             :button="{ color: 'primary' }"
             name="theme-switch"
             auto-complete="off"
@@ -75,13 +74,12 @@ const toggleAside = () => store.toggleAside()
             @change="toggleTheme('default')"
           >
             <template #label>
-              <CIcon icon="cil-sun" />
+              <CIcon icon="cil-sun" size="sm" style="margin-top: 5px" />
             </template>
           </CFormCheck>
           <CFormCheck
             id="btn-dark-theme"
             type="radio"
-            size="small"
             :button="{ color: 'primary' }"
             name="theme-switch"
             auto-complete="off"
@@ -89,10 +87,10 @@ const toggleAside = () => store.toggleAside()
             @change="toggleTheme('dark')"
           >
             <template #label>
-              <CIcon icon="cil-moon" />
+              <CIcon icon="cil-moon" size="sm" style="margin-top: 5px" />
             </template>
           </CFormCheck>
-        </v-btn-group>
+        </CButtonGroup>
       </CHeaderNav>
 
       <CHeaderNav class="mr-4">
