@@ -4,9 +4,9 @@
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/bu-postgres-${DATE}.dump"
 
-pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -n ibs \
-   --clean --if-exists --no-owner --no-privileges --disable-triggers \
-   --exit-on-error -Fc "${SQL_FILE}"
+#pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -n ibs \
+#   --clean --if-exists --no-owner --no-privileges --disable-triggers \
+#   --exit-on-error -Fc "${SQL_FILE}"
 
 # 복원 성공 여부 확인
 if [ $? -eq 0 ]; then
@@ -22,9 +22,12 @@ DO \$\$
 DECLARE
     r RECORD;
 BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'ibs' AND tablename != 'django_migrations')
+    FOR r IN (
+        SELECT tablename FROM pg_tables
+        WHERE schemaname = '${POSTGRES_USER}' AND tablename != 'django_migrations'
+    )
     LOOP
-        EXECUTE 'TRUNCATE TABLE $POSTGRES_USER.' || quote_ident(r.tablename) || ' CASCADE';
+        EXECUTE 'TRUNCATE TABLE ${POSTGRES_USER}.' || quote_ident(r.tablename) || ' CASCADE';
     END LOOP;
 END \$\$;
 "
@@ -36,7 +39,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # 백업 파일 복원
-psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$DUMP_FILE"
+pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+ -n "${POSTGRES_USER}" --data-only --disable-triggers --exit-on-error "$DUMP_FILE"
 
 # 복원 결과 확인
 if [ $? -eq 0 ]; then

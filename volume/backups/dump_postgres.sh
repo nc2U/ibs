@@ -8,8 +8,10 @@ DUMP_FILE=/var/backups/bu-postgres-${DATE}.dump
 find /var/backups -name "*.dump" -mtime +2 -type f -delete
 
 # pg_dump로 ibs 스키마의 데이터만 추출 (django_migrations 제외)
-pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -n "$POSTGRES_USER" \
-  --data-only --exclude-table="$POSTGRES_USER".django_migrations -Fc -f "${DUMP_FILE}"
+pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  --data-only --schema="${POSTGRES_USER}" \
+  --exclude-table="$POSTGRES_USER".django_migrations \
+  --column-inserts -Fc -f "${DUMP_FILE}"
 
 # 백업이 성공했는지 확인
 if [ $? -eq 0 ]; then
