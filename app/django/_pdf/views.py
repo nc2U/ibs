@@ -3,7 +3,7 @@ from itertools import accumulate
 # --------------------------------------------------------
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
@@ -39,9 +39,9 @@ def get_simple_orders(payment_orders, contract, amount, is_past=False):
 
     amount_total = 0
     try:
-        calc_start = payment_orders.filter(is_calc_start=True).first().pay_code
+        calc_start = payment_orders.filter(Q(is_prep_discount=True)|Q(is_late_penalty=True)).first().pay_code
     except AttributeError:
-        calc_start = 3
+        calc_start = 2
     for order in payment_orders:
         if is_past:
             amt = amount['1'] if order.pay_code < 5 else amount['2']
@@ -547,7 +547,7 @@ class PdfExportBill(View):
 
         # 지연가산금 관련 계산 시작 회차 ----------------------------------------------
         try:
-            calc_start_code = payment_orders.filter(is_calc_start=True)[0].pay_code
+            calc_start_code = payment_orders.filter(Q(is_prep_discount=True)|Q(is_late_penalty=True))[0].pay_code
         except IndexError:
             calc_start_code = 2
 
@@ -666,7 +666,7 @@ class PdfExportBill(View):
         late_fee_sum = 0
 
         try:
-            calc_start_code = payment_orders.filter(is_calc_start=True)[0].pay_code
+            calc_start_code = payment_orders.filter(Q(is_prep_discount=True)|Q(is_late_penalty=True))[0].pay_code
         except IndexError:
             calc_start_code = 2
 
