@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, watch, type PropType } from 'vue'
 import { isValidate } from '@/utils/helper'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_human_resource } from '@/utils/pageAuth'
 import { useCompany } from '@/store/pinia/company'
 import { type Department } from '@/store/types/company'
@@ -137,7 +138,7 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" color="light" size="small" @click="$emit('close')"> 닫기</v-btn>
+      <v-btn type="button" :color="btnLight" size="small" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"

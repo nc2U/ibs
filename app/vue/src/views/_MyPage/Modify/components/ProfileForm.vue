@@ -196,7 +196,7 @@ onMounted(() => formDataSetup())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" color="light" @click="formDataReset"> 취소</v-btn>
+      <v-btn type="button" :color="btnLight" @click="formDataReset"> 취소</v-btn>
       <v-btn type="submit" :color="btnClass" :disabled="formsCheck">
         <CIcon name="cil-check-circle" />
         {{ confirmText }}

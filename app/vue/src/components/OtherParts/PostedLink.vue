@@ -3,7 +3,7 @@ import { type PropType, ref } from 'vue'
 import type { Link } from '@/store/types/docs'
 import { useDocs } from '@/store/pinia/docs'
 import { timeFormat } from '@/utils/baseMixins'
-import { bgLight } from '@/utils/cssMixins'
+import { bgLight, btnLight } from '@/utils/cssMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
@@ -142,7 +142,7 @@ const linkDelete = () => {
                   <v-btn color="success" size="small" @click="linkUpdate(link.pk as number)">
                     변경
                   </v-btn>
-                  <v-btn color="light" size="small" @click="clearLink()"> 취소 </v-btn>
+                  <v-btn :color="btnLight" size="small" @click="clearLink()"> 취소 </v-btn>
                 </CCol>
               </CRow>
             </span>
@@ -181,7 +181,7 @@ const linkDelete = () => {
   <CRow v-if="addLinkForm">
     <CCol>
       <v-btn color="success" size="small" @click="createLink">추가</v-btn>
-      <v-btn color="light" size="small" @click="clearLink">취소</v-btn>
+      <v-btn :color="btnLight" size="small" @click="clearLink">취소</v-btn>
     </CCol>
   </CRow>
 

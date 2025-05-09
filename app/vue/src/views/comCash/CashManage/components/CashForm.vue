@@ -4,6 +4,7 @@ import { useAccount } from '@/store/pinia/account'
 import { useComCash } from '@/store/pinia/comCash'
 import type { CashBook, CompanyBank, SepItems } from '@/store/types/comCash'
 import type { Project } from '@/store/types/project'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import { getToday, diffDate, cutString, numFormat } from '@/utils/baseMixins'
@@ -970,9 +971,9 @@ onBeforeMount(async () => {
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" color="light" size="small" @click="emit('close')"> 닫기</v-btn>
+      <v-btn type="button" :color="btnLight" size="small" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn v-if="sepItem.pk" type="button" color="dark" variant="outlined" @click="sepRemove">
+        <v-btn v-if="sepItem.pk" type="button" :color="btnLight" variant="outlined" @click="sepRemove">
           취소
         </v-btn>
         <v-btn

@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onMounted, type PropType, ref } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 import type { Docs } from '@/store/types/docs'
 import { useDocs } from '@/store/pinia/docs'
 import { useRoute, useRouter } from 'vue-router'
@@ -103,7 +104,7 @@ onMounted(() => {
 
     <CRow class="mt-4">
       <CCol class="text-right">
-        <v-btn color="light" @click="router.replace({ name: '(문서)' })" size="small">
+        <v-btn :color="btnLight" @click="router.replace({ name: '(문서)' })" size="small">
           목록으로
         </v-btn>
       </CCol>

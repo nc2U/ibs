@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import type { PostCategory } from '@/store/types/board'
+import { btnLight } from '@/utils/cssMixins.ts'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 defineProps({
@@ -66,7 +67,7 @@ defineExpose({ callModal })
       <v-btn color="warning" size="small" @click="onSubmit" :disabled="!category">
         카테고리 변경
       </v-btn>
-      <v-btn color="light" size="small" @click="refListModal.close()">닫기</v-btn>
+      <v-btn :color="btnLight" size="small" @click="refListModal.close()">닫기</v-btn>
     </template>
   </AlertModal>
 </template>

@@ -6,6 +6,7 @@ import { type Project } from '@/store/types/project'
 import type { IssueProject } from '@/store/types/work'
 import { callAddress, type AddressData } from '@/components/DaumPostcode/address'
 import { useProject } from '@/store/pinia/project'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import Datepicker from '@vuepic/vue-datepicker'
 import IssueProjectForm from './IssueProjectForm.vue'
@@ -560,7 +561,7 @@ onUpdated(() => formDataSetup())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" color="light" @click="emit('reset-form')"> 취소</v-btn>
+      <v-btn type="button" :color="btnLight" @click="emit('reset-form')"> 취소</v-btn>
       <v-btn v-if="project" type="button" color="warning" @click="deleteProject"> 삭제</v-btn>
       <v-btn type="submit" :color="btnClass" :disabled="formsCheck">
         <CIcon name="cil-check-circle" />

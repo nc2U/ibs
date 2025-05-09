@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType, onBeforeMount, onUpdated, nextTick } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 import type { Board } from '@/store/types/board'
 import { useProject } from '@/store/pinia/project'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -111,7 +112,7 @@ onUpdated(() => {
       >
         게시물 {{ isCopy ? '복사' : '이동' }}
       </v-btn>
-      <v-btn color="light" size="small" @click="refListModal.close()">닫기</v-btn>
+      <v-btn :color="btnLight" size="small" @click="refListModal.close()">닫기</v-btn>
     </template>
   </AlertModal>
 </template>

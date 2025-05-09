@@ -2,7 +2,7 @@
 import type { PropType } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBoard } from '@/store/pinia/board'
-import { TableSecondary } from '@/utils/cssMixins'
+import { btnLight, TableSecondary } from '@/utils/cssMixins'
 import type { Post as P } from '@/store/types/board'
 import TopPosts from '@/components/Posts/components/TopPosts.vue'
 import Post from './components/Post.vue'
@@ -78,7 +78,7 @@ const pageSelect = (page: number) => emit('page-select', page)
       />
     </CCol>
     <CCol lg="4" class="text-right pt-3">
-      <v-btn v-if="toHome" color="light" class="px-5" @click="router.push({ name: `대 시 보 드` })">
+      <v-btn v-if="toHome" :color="btnLight" class="px-5" @click="router.push({ name: `대 시 보 드` })">
         홈으로
       </v-btn>
       <v-btn

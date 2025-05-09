@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useProjectData } from '@/store/pinia/project_data'
 import { type BuildingUnit } from '@/store/types/project'
-import { AlertLight } from '@/utils/cssMixins'
+import { AlertLight, btnLight } from '@/utils/cssMixins'
 import { write_project } from '@/utils/pageAuth'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -269,7 +269,7 @@ const modalAction = () => {
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn color="light" @click="refBuildForm.close()"> 닫기</v-btn>
+          <v-btn :color="btnLight" @click="refBuildForm.close()"> 닫기</v-btn>
           <v-btn type="submit" color="primary">저장</v-btn>
         </CModalFooter>
       </CForm>

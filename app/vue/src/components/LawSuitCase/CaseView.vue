@@ -5,7 +5,7 @@ import { useDocs } from '@/store/pinia/docs'
 import type { SuitCase } from '@/store/types/docs'
 import type { User } from '@/store/types/accounts'
 import type { Company } from '@/store/types/settings'
-import { TableSecondary } from '@/utils/cssMixins'
+import { btnLight, TableSecondary } from '@/utils/cssMixins'
 import { timeFormat, numFormat } from '@/utils/baseMixins'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -422,11 +422,11 @@ onBeforeMount(() => {
           >
             삭제
           </v-btn>
-          <v-btn color="light" size="small" @click="router.push({ name: `${viewRoute}` })">
+          <v-btn :color="btnLight" size="small" @click="router.push({ name: `${viewRoute}` })">
             목록
           </v-btn>
           <v-btn
-            color="light"
+            :color="btnLight"
             size="small"
             :disabled="!prev"
             @click="
@@ -439,7 +439,7 @@ onBeforeMount(() => {
             이전
           </v-btn>
           <v-btn
-            color="light"
+            :color="btnLight"
             size="small"
             :disabled="!next"
             @click="

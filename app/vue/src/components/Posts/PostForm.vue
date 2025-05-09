@@ -3,7 +3,7 @@ import type { PropType } from 'vue'
 import { ref, reactive, computed, onMounted, onUpdated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Post, PostLink } from '@/store/types/board'
-import { AlertSecondary } from '@/utils/cssMixins'
+import { AlertSecondary, btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -331,8 +331,8 @@ onUpdated(() => dataSetup())
 
     <CRow>
       <CCol class="text-right">
-        <v-btn color="light" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
-        <v-btn v-if="route.params.postId" color="light" @click="router.go(-1)"> 뒤로</v-btn>
+        <v-btn :color="btnLight" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
+        <v-btn v-if="route.params.postId" :color="btnLight" @click="router.go(-1)"> 뒤로</v-btn>
         <!--        <v-btn :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</CButton>-->
         <v-btn color="warning" type="submit" disabled> 업데이트 중 ...</v-btn>
       </CCol>

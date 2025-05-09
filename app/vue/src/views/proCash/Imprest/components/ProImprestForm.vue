@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, nextTick, onBeforeMount, type PropType, inject, watch } from 'vue'
 import { isValidate } from '@/utils/helper'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project_cash } from '@/utils/pageAuth'
 import { getToday, diffDate, numFormat, cutString } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account'
@@ -922,13 +923,13 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" color="light" @click="emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" :color="btnLight" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           v-if="sepItem.pk"
           size="small"
           type="button"
-          color="light"
+          :color="btnLight"
           variant="outlined"
           @click="sepRemove"
         >

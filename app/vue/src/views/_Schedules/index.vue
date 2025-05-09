@@ -12,6 +12,7 @@ import type {
   EventChangeArg,
   CalendarOptions,
 } from '@fullcalendar/core'
+import { btnLight } from '@/utils/cssMixins.ts'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -231,7 +232,7 @@ onBeforeMount(() => {
         </CRow>
       </CModalBody>
       <CModalFooter>
-        <v-btn color="light" @click="refFormModal.close"> 닫기</v-btn>
+        <v-btn :color="btnLight" @click="refFormModal.close"> 닫기</v-btn>
         <v-btn v-if="mode === 'create'" color="primary" @click="eventManagement"> 등록</v-btn>
         <v-btn v-if="mode === 'update'" color="success" @click="eventManagement"> 수정</v-btn>
         <v-btn v-if="mode === 'update'" color="warning" @click="removeConfirm"> 삭제</v-btn>

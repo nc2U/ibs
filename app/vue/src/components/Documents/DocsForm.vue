@@ -2,7 +2,7 @@
 import { computed, onBeforeMount, onBeforeUpdate, type PropType, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
-import { AlertSecondary } from '@/utils/cssMixins'
+import { AlertSecondary, btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -366,8 +366,8 @@ onBeforeUpdate(() => dataSetup())
 
     <CRow>
       <CCol class="text-right">
-        <v-btn color="light" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
-        <v-btn v-if="route.params.docsId" color="light" @click="router.go(-1)"> 뒤로</v-btn>
+        <v-btn :color="btnLight" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
+        <v-btn v-if="route.params.docsId" :color="btnLight" @click="router.go(-1)"> 뒤로</v-btn>
         <v-btn :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</v-btn>
       </CCol>
     </CRow>

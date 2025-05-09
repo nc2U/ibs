@@ -149,7 +149,7 @@ defineExpose({ callModal })
               <div class="p-1 mb-1 bg-yellow-lighten-1 text-center" style="width: 90px">
                 {{ genPass }}
               </div>
-              <v-btn color="light" size="small" @click="genPass = ''">취소</v-btn>
+              <v-btn :color="btnLight" size="small" @click="genPass = ''">취소</v-btn>
               <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
             </CCol>
           </CRow>

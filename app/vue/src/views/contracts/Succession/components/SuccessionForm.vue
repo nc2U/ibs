@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount, nextTick, type PropType } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract'
@@ -518,7 +519,7 @@ onBeforeMount(() => formDataSet())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" color="light" @click="emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" :color="btnLight" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"

@@ -2,6 +2,7 @@
 import { ref, computed, onBeforeMount, watch, type PropType } from 'vue'
 import { useCompany } from '@/store/pinia/company'
 import { isValidate } from '@/utils/helper'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_human_resource } from '@/utils/pageAuth'
 import { type Position } from '@/store/types/company'
 import Multiselect from '@vueform/multiselect'
@@ -138,7 +139,7 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" color="light" @click="$emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" :color="btnLight" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"

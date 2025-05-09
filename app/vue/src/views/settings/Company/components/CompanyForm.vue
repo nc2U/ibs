@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, reactive, ref } from 'vue'
-import { useAccount } from '@/store/pinia/account'
-import { type Company } from '@/store/types/settings'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_company_settings } from '@/utils/pageAuth'
+import { type Company } from '@/store/types/settings'
+import { useAccount } from '@/store/pinia/account'
 import { callAddress, type AddressData } from '@/components/DaumPostcode/address'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -303,7 +304,7 @@ onBeforeMount(() => formDataSetup())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" color="light" @click="emit('reset-form')"> 취소</v-btn>
+      <v-btn type="button" :color="btnLight" @click="emit('reset-form')"> 취소</v-btn>
       <v-btn v-if="company" type="button" color="warning" @click="deleteCompany"> 삭제</v-btn>
       <v-btn type="submit" :color="btnClass" :disabled="formsCheck">
         <v-icon icon="mdi mdi-check-circle-outline" size="small" />

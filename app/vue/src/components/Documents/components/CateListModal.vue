@@ -2,6 +2,7 @@
 import { type PropType, ref } from 'vue'
 import type { Category } from '@/store/types/docs'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 
 defineProps({
   nowCate: { type: Number, default: null },
@@ -66,7 +67,7 @@ defineExpose({ callModal })
       <v-btn color="warning" size="small" @click="onSubmit" :disabled="!category">
         카테고리 변경
       </v-btn>
-      <v-btn color="light" size="small" @click="refListModal.close()">닫기</v-btn>
+      <v-btn :color="btnLight" size="small" @click="refListModal.close()">닫기</v-btn>
     </template>
   </AlertModal>
 </template>

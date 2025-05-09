@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount } from 'vue'
+import { isValidate } from '@/utils/helper'
 import { useProject } from '@/store/pinia/project'
 import { useSite } from '@/store/pinia/project_site'
-import { type SimpleSite, type SiteOwner } from '@/store/types/project'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
-import { isValidate } from '@/utils/helper'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
+import { type SimpleSite, type SiteOwner } from '@/store/types/project'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -311,7 +312,7 @@ onBeforeMount(() => dataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" color="light" @click="$emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" :color="btnLight" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"

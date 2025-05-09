@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, watch, type PropType } from 'vue'
 import { isValidate } from '@/utils/helper'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_human_resource } from '@/utils/pageAuth'
 import { type Duty } from '@/store/types/company'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -110,7 +111,7 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" color="light" @click="$emit('close')"> 닫기</v-btn>
+      <v-btn type="button" size="small" :color="btnLight" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"

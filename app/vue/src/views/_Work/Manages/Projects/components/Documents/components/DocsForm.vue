@@ -3,7 +3,7 @@ import { onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
-import { colorLight } from '@/utils/cssMixins'
+import { btnLight, colorLight } from '@/utils/cssMixins'
 import type { CodeValue, IssueProject } from '@/store/types/work'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -267,7 +267,7 @@ onBeforeMount(() => dataSetup())
     <CRow class="mb-5">
       <CCol>
         <v-btn type="submit" color="primary" variant="outlined" size="small"> 저장</v-btn>
-        <v-btn color="light" size="small" @click="router.replace({ name: '(문서)' })">취소</v-btn>
+        <v-btn :color="btnLight" size="small" @click="router.replace({ name: '(문서)' })">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>

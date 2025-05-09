@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, inject, type ComputedRef } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work'
 import type { IssueProject, SimpleMember } from '@/store/types/work'
@@ -298,7 +299,7 @@ onBeforeMount(() => accStore.fetchUsersList())
           </CCard>
         </CModalBody>
         <CModalFooter>
-          <v-btn color="light" @click="memberFormModal.close"> 닫기</v-btn>
+          <v-btn :color="btnLight" @click="memberFormModal.close"> 닫기</v-btn>
           <v-btn color="primary" type="submit">추가</v-btn>
         </CModalFooter>
       </CForm>
