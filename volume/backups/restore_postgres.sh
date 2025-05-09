@@ -5,7 +5,8 @@ DATE=$(date +"%Y-%m-%d")
 SQL_FILE="/var/backups/bu-postgres-${DATE}.dump"
 
 pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
-   --clean --no-owner --no-privileges --disable-triggers "${SQL_FILE}"
+   --clean --if-exists --no-owner --no-privileges --disable-triggers \
+   --exit-on-error -Fc "${SQL_FILE}"
 
 # 복원 성공 여부 확인
 if [ $? -eq 0 ]; then

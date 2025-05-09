@@ -9,10 +9,8 @@ find /var/backups -name "*.dump" -mtime +2 -type f -delete
 
 # 백업 실행 (시퀀스 포함)
 pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
-  --schema="${POSTGRES_USER}" \
-  --exclude-table="${POSTGRES_USER}".django_migrations \
-  --no-owner --no-privileges --column-inserts  \
-  -Fc -f "${SQL_FILE}"
+  --schema="${POSTGRES_USER}" --exclude-table="${POSTGRES_USER}".django_migrations \
+  --no-owner --no-privileges --column-inserts -Fc > "${SQL_FILE}"
 
 # 백업이 성공했는지 확인
 if [ $? -eq 0 ]; then
