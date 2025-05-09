@@ -97,7 +97,10 @@ class CashBookSerializer(serializers.ModelSerializer):
             sep_cashbook_account_d1 = AccountSubD1.objects.get(pk=sep_data.get('account_d1'))
             sep_cashbook_account_d2 = AccountSubD2.objects.get(pk=sep_data.get('account_d2'))
             sep_cashbook_account_d3 = AccountSubD3.objects.get(pk=sep_data.get('account_d3'))
-            sep_cashbook_project = Project.objects.get(pk=sep_data.get('project'))
+            try:
+                sep_cashbook_project = Project.objects.get(pk=sep_data.get('project'))
+            except Project.DoesNotExist:
+                sep_cashbook_project = None
             sep_cashbook_is_return = sep_data.get('is_return')
             sep_cashbook_content = sep_data.get('content')
             sep_cashbook_trader = sep_data.get('trader')
@@ -160,7 +163,10 @@ class CashBookSerializer(serializers.ModelSerializer):
             sep_cashbook_account_d1 = AccountSubD1.objects.get(pk=sep_data.get('account_d1'))
             sep_cashbook_account_d2 = AccountSubD2.objects.get(pk=sep_data.get('account_d2'))
             sep_cashbook_account_d3 = AccountSubD3.objects.get(pk=sep_data.get('account_d3'))
-            sep_cashbook_project = Project.objects.get(pk=sep_data.get('project'))
+            try:
+                sep_cashbook_project = Project.objects.get(pk=sep_data.get('project'))
+            except Project.DoesNotExist:
+                sep_cashbook_project = None
             sep_cashbook_is_return = sep_data.get('is_return')
             sep_cashbook_content = sep_data.get('content')
             sep_cashbook_trader = sep_data.get('trader')
