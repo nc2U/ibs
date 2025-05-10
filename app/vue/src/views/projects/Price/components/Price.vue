@@ -236,10 +236,10 @@ onUpdated(() => {
       <CFormInput type="number" min="0" placeholder="기타 약정금액" />
     </CTableDataCell>
     <CTableDataCell v-if="write_project" class="text-center">
-      <v-btn :color="btnColor" size="small" :disabled="formsCheck" @click="onStorePrice">
+      <v-btn :color="btnColor" size="x-small" :disabled="formsCheck" @click="onStorePrice">
         {{ btnTitle }}
       </v-btn>
-      <v-btn color="warning" size="small" :disabled="!price" @click="deletePrice"> 삭제</v-btn>
+      <v-btn color="warning" size="x-small" :disabled="!price" @click="deletePrice"> 삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -249,7 +249,7 @@ onUpdated(() => {
       해당 데이터를 삭제하면 이후 복구할 수 없습니다. 이 공급가격 정보를 삭제 하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 
