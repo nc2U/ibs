@@ -23,8 +23,17 @@ data:
     hot_standby = on
 
   primary.sql: |
-    CREATE ROLE {{ .Release.Name }} WITH REPLICATION LOGIN ENCRYPTED PASSWORD '{{ .Values.global.dbPassword }}';
-    CREATE DATABASE {{ .Release.Name }};
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Release.Name }}') THEN
+        CREATE ROLE {{ .Release.Name }} WITH REPLICATION LOGIN ENCRYPTED PASSWORD '{{ .Values.global.dbPassword }}';
+      END IF;
+    END $$;
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .Release.Name }}') THEN
+        CREATE DATABASE {{ .Release.Name }};
+      END IF;
+    END $$;
+    \c {{ .Release.Name }}
     CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
     GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
 
