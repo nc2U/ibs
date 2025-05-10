@@ -42,10 +42,9 @@ pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" --data-only --no-owner --no
 # 복원 결과 확인
 if [ $? -eq 0 ]; then
     echo "데이터 복원 완료!"
+    # 임시 파일 삭제
+    rm -f "${DUMP_FILE}"
 else
     echo "데이터 복원 실패!" >&2
     exit 1
 fi
-
-# 임시 파일 삭제
-rm -f "${DUMP_FILE}"
