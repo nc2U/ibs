@@ -2,7 +2,7 @@
 
 # 복원 대상 파일 지정
 DATE=$(date +"%Y-%m-%d")
-DUMP_FILE="/var/backups/bu-postgres-${DATE}.dump"
+DUMP_FILE="/var/backups/data-postgres-${DATE}.dump"
 
 #pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -n ibs \
 #   --clean --if-exists --no-owner --no-privileges --disable-triggers \

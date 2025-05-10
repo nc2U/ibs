@@ -2,7 +2,7 @@
 
 # 환경 변수 설정
 DATE=$(date +"%Y-%m-%d")
-DUMP_FILE=/var/backups/bu-postgres-${DATE}.dump
+DUMP_FILE=/var/backups/data-postgres-${DATE}.dump
 
 # 이전 백업 삭제 (예: 2일 이상된 파일)
 find /var/backups -name "*.dump" -mtime +2 -type f -delete

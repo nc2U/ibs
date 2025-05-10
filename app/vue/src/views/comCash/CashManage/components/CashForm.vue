@@ -537,7 +537,7 @@ onBeforeMount(async () => {
               <CCol sm="8">
                 <CFormInput
                   v-model="form.trader"
-                  maxlength="20"
+                  maxlength="25"
                   placeholder="거래처"
                   :disabled="!form.sort"
                   required
@@ -856,7 +856,7 @@ onBeforeMount(async () => {
                   <CCol sm="8">
                     <CFormInput
                       v-model="sepItem.trader"
-                      maxlength="20"
+                      maxlength="25"
                       placeholder="거래처 (수납자)"
                       required
                     />

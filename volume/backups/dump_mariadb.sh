@@ -1,6 +1,6 @@
 #!/bin/bash
 DATE=$(date +"%Y-%m-%d")
-SQL_FILE=/var/backups/bu-mariadb-${DATE}.sql
+SQL_FILE=/var/backups/data-mariadb-${DATE}.sql
 
 # (2) in case you run this more than once a day,
 # remove the previous version of the file
