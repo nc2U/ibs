@@ -173,7 +173,7 @@ const resetForm = () => {
                   v-model="form.pay_ratio"
                   maxlength="20"
                   type="number"
-                  placeholder="납부비율(공급가대비)"
+                  placeholder="납부비율(%, 공급가대비)"
                   :disabled="disabled || form.pay_sort === '3'"
                 />
                 <v-tooltip activator="parent" location="start">

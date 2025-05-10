@@ -262,7 +262,7 @@ onBeforeMount(() => dataSetup())
       정보가 삭제됩니다. 이 납부 회차 정보를 삭제 하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 
