@@ -17,7 +17,7 @@ class UnitType(models.Model):
     actual_area = models.DecimalField('전용면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
     supply_area = models.DecimalField('공급면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
     contract_area = models.DecimalField('계약면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
-    average_price = models.PositiveIntegerField('평균가격', null=True, blank=True)
+    average_price = models.PositiveBigIntegerField('평균가격', null=True, blank=True)
     num_unit = models.PositiveSmallIntegerField('세대수')
 
     def __str__(self):
