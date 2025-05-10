@@ -213,6 +213,8 @@ def get_amount(order, pay_amount):
         amount = pay_amount.middle_pay
     elif order.pay_sort == '3':
         amount = pay_amount.remain_pay
+    else:
+        amount = amount
 
     # 공급가 테이블 -> 특별 회차 및 약정금 등록 시 해당 데이터 적용
     amount = order.pay_amt if order.pay_amt else amount

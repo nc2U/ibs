@@ -46,7 +46,7 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
     price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
     price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
     price_tax = models.PositiveIntegerField('부가세', null=True, blank=True)
-    price = models.PositiveIntegerField('분양가격')
+    price = models.PositiveIntegerField('기준 공급가격')
     down_pay = models.PositiveIntegerField('계약금', null=True, blank=True, help_text='계약금 분납 시 회당 납부하는 금액 기재')
     biz_agency_fee = models.PositiveIntegerField('업무대행비', null=True, blank=True)
     is_included_baf = models.BooleanField('업무대행비 포함 여부', default=False)
@@ -60,6 +60,12 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
         ordering = ('order_group', 'unit_type', 'unit_floor_type', 'project')
         verbose_name = '02. 기준 공급가격 관리'
         verbose_name_plural = '02. 기준 공급가격 관리'
+
+
+class SpecialAmount(models.Model):
+    sales_price = models.ForeignKey(SalesPriceByGT, on_delete=models.CASCADE, verbose_name='기준 공급가격')
+    pay_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.CASCADE, verbose_name='납부 회차')
+    amount = models.PositiveIntegerField('납부 약정금액', help_text='이 데이터 등록 시 기준 공급가 * 회당 납부비율을 적용하지 않고 이 데이터를 우선 적용')
 
 
 class DownPayment(models.Model):
