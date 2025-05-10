@@ -58,8 +58,8 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
 
     class Meta:
         ordering = ('order_group', 'unit_type', 'unit_floor_type', 'project')
-        verbose_name = '02. 기준 공급가격 관리'
-        verbose_name_plural = '02. 기준 공급가격 관리'
+        verbose_name = '02. 기준 공급가격'
+        verbose_name_plural = '02. 기준 공급가격'
 
 
 class SpecialAmount(models.Model):

@@ -1,7 +1,8 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from .models import (InstallmentPaymentOrder, SalesPriceByGT, DownPayment, OverDueRule,
+from .models import (InstallmentPaymentOrder, SalesPriceByGT,
+                     SpecialAmount, DownPayment, OverDueRule,
                      SpecialPaymentOrder, SpecialDownPay, SpecialOverDueRule)
 
 
@@ -19,6 +20,11 @@ class InstallmentPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'pay_sort')
 
 
+class SpecialAmountInline(admin.TabularInline):
+    model = SpecialAmount
+    extra = 1
+
+
 @admin.register(SalesPriceByGT)
 class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'order_group', 'unit_type', 'unit_floor_type',
@@ -26,6 +32,7 @@ class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project', 'unit_type', 'unit_floor_type')
     list_editable = ('price_build', 'price_land', 'price_tax', 'price')
     list_filter = ('project', 'order_group', 'unit_type')
+    inlines = (SpecialAmountInline,)
 
 
 @admin.register(DownPayment)
