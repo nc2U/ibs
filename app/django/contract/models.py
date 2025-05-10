@@ -111,6 +111,7 @@ class PaymentPerInstallment(models.Model):
     cont_price = models.ForeignKey(ContractPrice, on_delete=models.CASCADE, verbose_name='공급 가격')
     pay_order = models.ForeignKey('payment.InstallmentPaymentOrder', on_delete=models.CASCADE, verbose_name='납부 회차')
     amount = models.PositiveIntegerField('납부 약정금액')
+    disable = models.BooleanField('비활성', default=False)
 
     class Meta:
         ordering = ('cont_price__contract__project', 'pay_order', 'cont_price')

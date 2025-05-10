@@ -5,8 +5,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from cash.models import ProjectBankAccount, ProjectCashBook
-from contract.models import (OrderGroup, Contract, ContractPrice, Contractor,
-                             ContractorAddress, ContractorContact,
+from contract.models import (OrderGroup, Contract, ContractPrice, PaymentPerInstallment,
+                             Contractor, ContractorAddress, ContractorContact,
                              Succession, ContractorRelease, ContractFile)
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import UnitType, HouseUnit, KeyUnit
@@ -72,6 +72,10 @@ class ContractorInContractSerializer(serializers.ModelSerializer):
                   'reservation_date', 'contract_date', 'is_active', 'note')
 
 
+def get_installments(project):
+    return InstallmentPaymentOrder.objects.filter(project=project)
+
+
 def get_sale_price_by_gt(contract, houseunit):
     try:
         # 공급가격 테이블 객체를 불러와 가격 데이터 반환
@@ -85,7 +89,9 @@ def get_sale_price_by_gt(contract, houseunit):
 
 def get_cont_price(instance, houseunit=None, is_set=False):
     """
-    :: 계약 객체의 가격 쓰기 또는 읽기 함수
+    :: 계약 객체의 가격 쓰기 또는 읽기 함수,
+    :: 읽기 가격 참조 순서 -> 1. 계약 공급가, 2. 기준 공급가, 3. 수입 예산 평균가, 4. 타입 평균가
+    :: 쓰기 가격 참조 순서 -> 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가
     :param instance: 계약 객체 (읽기일 때 이 객체의 가격 객체가 있으면 이 파라미터만 사용)
     :param houseunit: 쓰기일 때 해당 계약 객체의 타입을 특정하기 위한 파라미터
     :param is_set: 쓰기 여부 -> 계약건 가격 설정을 위한 값을 불러올 때 True
@@ -161,7 +167,7 @@ def get_pay_amount(instance, price, is_set=False):
             except ObjectDoesNotExist:
                 pass
 
-            install_orders = InstallmentPaymentOrder.objects.filter(project=instance.project)
+            install_orders = get_installments(instance.project)
 
             downs = install_orders.filter(pay_sort='1')  # 계약금 분류 회차 목록
             middles = install_orders.filter(pay_sort='2')  # 중도금 분류 회차 목록
@@ -199,6 +205,20 @@ def get_pay_amount(instance, price, is_set=False):
     return down, middle, remain, biz_agency_fee, is_included_baf
 
 
+def get_amount(order, pay_amount):
+    amount = 0
+    if order.pay_sort == '1':
+        amount = pay_amount.down_pay
+    elif order.pay_sort == '2':
+        amount = pay_amount.middle_pay
+    elif order.pay_sort == '3':
+        amount = pay_amount.remain_pay
+
+    # 공급가 테이블 -> 특별 회차 및 약정금 등록 시 해당 데이터 적용
+    amount = order.pay_amt if order.pay_amt else amount
+    return amount
+
+
 class ContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
@@ -206,34 +226,38 @@ class ContractSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        # instance.__dict__.update(**validated_data)
-        # instance.save()
+        # 현재 유효한 계약 목록 가져 오기
         contracts = Contract.objects.filter(project=instance.project, activation=True)
+        installments = get_installments(instance.project)
 
-        for contract in contracts:
+        for contract in contracts: # 유효 계약 건 마다 적용
             try:
-                house_unit = contract.key_unit.houseunit
+                house_unit = contract.key_unit.houseunit # 동호 지정 여부 확인
             except ObjectDoesNotExist:
                 house_unit = None
+
+            # 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가 순 참조 공급가 가져 오기
             price = get_cont_price(contract, house_unit, True)
+            # 회당 납부 금액 가져 오기 -> (계약금, 중도금, 잔금, 업대비, 업대비 포함 여부)
             pay_amount = get_pay_amount(contract, price[0], True)
 
+            # 계약 건별 공급 가격 정보 설정
             try:  # 계약가격 정보 존재 여부 확인
                 cont_price = contract.contractprice
             except ContractPrice.DoesNotExist:
                 cont_price = None
 
-            if cont_price:  # 계약가격 데이터가 존재하는 경우
-                # 계약 가격 정보 업데이트
+            if cont_price:  # 계약가격 데이터가 존재하는 경우 계약 가격 정보 업데이트
                 cont_price.price = price[0]
                 cont_price.price_build = price[1]
                 cont_price.price_land = price[2]
                 cont_price.price_tax = price[3]
-                cont_price.down_pay = pay_amount[0]
-                cont_price.biz_agency_fee = pay_amount[3]
-                cont_price.is_included_baf = pay_amount[4]
-                cont_price.middle_pay = pay_amount[1]
-                cont_price.remain_pay = pay_amount[2]
+                # 이하 삭제 후 PaymentPerInstallment 로 대체 예정
+                # cont_price.down_pay = pay_amount[0]
+                # cont_price.biz_agency_fee = pay_amount[3]
+                # cont_price.is_included_baf = pay_amount[4]
+                # cont_price.middle_pay = pay_amount[1]
+                # cont_price.remain_pay = pay_amount[2]
                 cont_price.save()
 
             else:  # 계약가격 데이터가 존재하지 않는 경우 계약 가격 정보 생성
@@ -241,13 +265,50 @@ class ContractSerializer(serializers.ModelSerializer):
                                            price=price[0],
                                            price_build=price[1],
                                            price_land=price[2],
-                                           price_tax=price[3],
-                                           down_pay=pay_amount[0],
-                                           biz_agency_fee=pay_amount[3],
-                                           is_included_baf=pay_amount[4],
-                                           middle_pay=pay_amount[1],
-                                           remain_pay=pay_amount[2])
+                                           price_tax=price[3])
+                                           # 이하 삭제 후 PaymentPerInstallment 로 대체 예정
+                                           # down_pay=pay_amount[0],
+                                           # biz_agency_fee=pay_amount[3],
+                                           # is_included_baf=pay_amount[4],
+                                           # middle_pay=pay_amount[1],
+                                           # remain_pay=pay_amount[2])
                 cont_price.save()
+
+            # 계약 건별 공급 가격 -> PaymentPerInstallment(회차별 납부 금액) 설정
+            try:
+                payments_install = PaymentPerInstallment.objects.filter(cont_price=cont_price)
+            except ObjectDoesNotExist:
+                payments_install = None
+
+            if payments_install:
+                for i, order in enumerate(installments):
+                    amount = get_amount(order, pay_amount)
+                    if payments_install[i]:
+                        payment = payments_install[i]
+                        payment.cont_price = cont_price
+                        payment.pay_order = order
+                        payment.amount = amount
+                        payment.disable = False
+                    else:
+                        payment = PaymentPerInstallment(cont_price=cont_price,
+                                                        pay_order=order,
+                                                        amount=amount)
+                    payment.save()
+                # 기존 등록된 회차 수가 납부 회차 보다 많을 경우 초과 등록된 객체 비 활성화
+                if len(payments_install) > len(installments):
+                    for i, payment in enumerate(payments_install):
+                        if i >= len(installments):
+                            payment.disable = True
+                            payment.save()
+
+            else:
+                for order in installments:
+                    amount = get_amount(order, pay_amount)
+                    payment = PaymentPerInstallment(cont_price=cont_price,
+                                                    pay_order=order,
+                                                    amount=amount)
+                    payment.save()
+
         return instance
 
 
@@ -324,7 +385,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         due_amt = 0  # 총 약정액
         order_data = {}  # 회차 데이터
-        payment_orders = InstallmentPaymentOrder.objects.filter(project=instance.project)
+        payment_orders = get_installments(instance.project)
 
         for order in payment_orders:
             sort = int(order.pay_sort) - 1
