@@ -31,13 +31,6 @@ spec:
               if [[ $ordinal -eq 0 ]]; then
                 cp /mnt/replica-config/primary.conf /mnt/config/postgresql.conf
                 cp /mnt/replica-config/primary.sql /docker-entrypoint-initdb.d/init.sql
-
-                # 기존 데이터베이스 확인 및 primary.sql 실행
-                if [ -f /var/lib/postgresql/data/PG_VERSION ]; then
-                  echo "Existing database found, executing primary.sql manually"
-                  export PGPASSWORD=$(cat /run/secrets/postgres-db-auth/POSTGRES_PASSWORD)
-                  psql -U {{ .Release.Name }} -d {{ .Release.Name }} -f /mnt/replica-config/primary.sql
-                fi
               else
                 cp /mnt/replica-config/replica.conf /mnt/config/postgresql.conf
                 cp /mnt/replica-config/secondary.sh /mnt/config/secondary.sh
