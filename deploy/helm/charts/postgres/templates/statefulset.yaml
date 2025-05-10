@@ -31,6 +31,25 @@ spec:
               if [[ $ordinal -eq 0 ]]; then
                 cp /mnt/replica-config/primary.conf /mnt/config/postgresql.conf
                 cp /mnt/replica-config/primary.sql /docker-entrypoint-initdb.d/init.sql
+                # 기존 데이터베이스 확인 및 primary.sql 실행
+                if [ -f /var/lib/postgresql/data/PG_VERSION ]; then
+                  echo "Existing database found, executing primary.sql manually"
+                  psql -U {{ .Release.Name }} -d postgres <<'EOF'
+                  DO \$\$ BEGIN
+                    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Release.Name }}') THEN
+                      CREATE ROLE {{ .Release.Name }} WITH REPLICATION LOGIN ENCRYPTED PASSWORD '{{ .Values.global.dbPassword }}';
+                    END IF;
+                  END \$\$;
+                  DO \$\$ BEGIN
+                    IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .Release.Name }}') THEN
+                      CREATE DATABASE {{ .Release.Name }};
+                    END IF;
+                  END \$\$;
+                  \c {{ .Release.Name }}
+                  CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
+                  GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
+                  EOF
+                fi
               else
                 cp /mnt/replica-config/replica.conf /mnt/config/postgresql.conf
                 cp /mnt/replica-config/secondary.sh /mnt/config/secondary.sh
