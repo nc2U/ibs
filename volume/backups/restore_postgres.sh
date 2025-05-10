@@ -5,7 +5,7 @@ DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/data-postgres-${DATE}.dump"
 
 # 외래 키 제약 조건 비활성화
-psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "
 DO \$\$
 DECLARE
     r RECORD;
@@ -18,7 +18,7 @@ END \$\$;
 "
 
 # 서버 B의 ibs 스키마에서 django_migrations를 제외한 테이블 데이터 삭제
-psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "
 DO \$\$
 DECLARE
     r RECORD;
@@ -37,7 +37,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 백업 파일 복원
-pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE"
+pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "${DUMP_FILE}"
 
 # 복원 결과 확인
 if [ $? -eq 0 ]; then
@@ -48,4 +48,4 @@ else
 fi
 
 # 임시 파일 삭제
-rm -f "$DUMP_FILE"
+rm -f "${DUMP_FILE}"
