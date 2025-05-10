@@ -4,17 +4,6 @@
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/data-postgres-${DATE}.dump"
 
-#pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -n ibs \
-#   --clean --if-exists --no-owner --no-privileges --disable-triggers \
-#   --exit-on-error -Fc "${SQL_FILE}"
-
-# 복원 성공 여부 확인
-if [ $? -eq 0 ]; then
-    echo "POSTGRES Database restoration completed successfully: ${DUMP_FILE}"
-else
-    echo "POSTGRES Database restoration failed"
-fi
-
 # 외래 키 제약 조건 비활성화
 psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
 DO \$\$
