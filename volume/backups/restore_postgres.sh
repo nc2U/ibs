@@ -22,10 +22,7 @@ DO \$\$
 DECLARE
     r RECORD;
 BEGIN
-    FOR r IN (
-        SELECT tablename FROM pg_tables
-        WHERE schemaname = '${POSTGRES_USER}' AND tablename != 'django_migrations'
-    )
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = '${POSTGRES_USER}' AND tablename != 'django_migrations')
     LOOP
         EXECUTE 'TRUNCATE TABLE ${POSTGRES_USER}.' || quote_ident(r.tablename) || ' CASCADE';
     END LOOP;
@@ -39,8 +36,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 백업 파일 복원
-pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
- -n "${POSTGRES_USER}" --data-only --disable-triggers --exit-on-error "$DUMP_FILE"
+pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --data-only --no-owner --no-privileges "$DUMP_FILE"
 
 # 복원 결과 확인
 if [ $? -eq 0 ]; then
