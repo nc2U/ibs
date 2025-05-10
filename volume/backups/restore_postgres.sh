@@ -32,7 +32,7 @@ END \$\$;
 
 # TRUNCATE 결과 확인
 if [ $? -ne 0 ]; then
-    echo "테이블 데이터 삭제 실패" >&2
+    echo "테이블 데이터 삭제 실패!" >&2
     exit 1
 fi
 
@@ -41,9 +41,9 @@ pg_restore -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" --data-only --no-owner --no
 
 # 복원 결과 확인
 if [ $? -eq 0 ]; then
-    echo "데이터 복원 완료"
+    echo "데이터 복원 완료!"
 else
-    echo "데이터 복원 실패" >&2
+    echo "데이터 복원 실패!" >&2
     exit 1
 fi
 
