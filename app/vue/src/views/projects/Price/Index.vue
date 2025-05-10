@@ -13,6 +13,7 @@ import PriceSelectForm from '@/views/projects/Price/components/PriceSelectForm.v
 import PriceFormList from '@/views/projects/Price/components/PriceFormList.vue'
 
 const selectForm = ref()
+const sort = ref<'1' | '2' | '3' | '4' | '5' | '6'>('1')
 const order_group = ref<number | null>(null)
 const unit_type = ref<number | null>(null)
 
@@ -63,11 +64,15 @@ const updatePrice = (payload: Price) => payStore.updatePrice(payload)
 const deletePrice = (payload: PriceFilter & { pk: number }) => payStore.deletePrice(payload)
 const fetchPayOrderList = (proj: number) => payStore.fetchPayOrderList(proj)
 
+// 구분 선택 시 실행 함수
+const sortSelect = (proj_sort: any) => {
+  sort.value = proj_sort
+}
+
 // 차수 선택 시 실행 함수
 const orderSelect = (order: number) => {
   order_group.value = order // order_group pk 값 할당
-  const sort = orderGroupList.value.filter(o => o.pk == order).map(o => o.sort)[0]
-  if (project.value) fetchTypeList(project.value, sort !== '1' ? undefined : '1')
+  if (project.value) fetchTypeList(project.value, sort.value)
   priceMessage.value = !order
     ? '공급가격을 입력하기 위해 [차수 정보]를 선택하여 주십시요.'
     : '공급가격을 입력하기 위해 [타입 정보]를 선택하여 주십시요.'
@@ -75,11 +80,10 @@ const orderSelect = (order: number) => {
 }
 // 타입 선택 시 실행 함수
 const typeSelect = (type: number) => {
-  const sort = unitTypeList.value.filter(tp => tp.pk == type)[0].sort || ''
   unit_type.value = type // unit_type pk 값 할당
   priceMessage.value = !type ? '공급가격을 입력하기 위해 [타입 정보]를 선택하여 주십시요.' : ''
-  if (project.value && sort) {
-    fetchFloorTypeList(project.value, sort).then(() => {
+  if (project.value && sort.value) {
+    fetchFloorTypeList(project.value, sort.value).then(() => {
       pFilters.project = project.value
       pFilters.order_group = order_group.value
       pFilters.unit_type = unit_type.value
@@ -100,8 +104,8 @@ const contPriceSet = () => {
 const dataSetup = (pk: number) => {
   fetchContList(pk)
   fetchOrderGroupList(pk)
-  fetchTypeList(pk)
-  fetchFloorTypeList(pk)
+  fetchTypeList(pk, sort.value)
+  fetchFloorTypeList(pk, sort.value)
   fetchPayOrderList(pk)
   priceMessage.value = '공급가격을 입력하기 위해 [차수 정보]를 선택하여 주십시요.'
 }
@@ -139,6 +143,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
         :project="project as number"
         :orders="orderGroupList"
         :types="unitTypeList"
+        @on-sort-select="sortSelect"
         @on-order-select="orderSelect"
         @on-type-select="typeSelect"
         @cont-price-set="contPriceSet"

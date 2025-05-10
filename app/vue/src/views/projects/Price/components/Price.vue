@@ -13,7 +13,6 @@ const props = defineProps({
   floor: { type: Object as PropType<UnitFloorType>, required: true },
   pFilters: { type: Object, default: null },
   price: { type: Object as PropType<Price>, default: null },
-  payOrderList: { type: Array as PropType<PayOrder[]>, default: () => [] },
 })
 
 const emit = defineEmits(['on-create', 'on-update', 'on-delete'])
@@ -26,11 +25,11 @@ const form = reactive({
   price_land: null as number | null,
   price_tax: null as number | null,
   price: null as number | null,
-  // down_pay: null as number | null,
-  // biz_agency_fee: null as number | null,
-  // is_included_baf: false,
-  // middle_pay: null as number | null,
-  // remain_pay: null as number | null,
+  down_pay: null as number | null,
+  biz_agency_fee: null as number | null,
+  is_included_baf: false,
+  middle_pay: null as number | null,
+  remain_pay: null as number | null,
 })
 
 watch(form, val => {
@@ -38,11 +37,11 @@ watch(form, val => {
   if (!val.price_land) form.price_land = null
   if (!val.price_tax) form.price_tax = null
   if (!val.price) form.price = null
-  // if (!val.down_pay) form.down_pay = null
-  // if (!val.biz_agency_fee) form.biz_agency_fee = null
-  // if (!val.is_included_baf) form.is_included_baf = false
-  // if (!val.middle_pay) form.middle_pay = null
-  // if (!val.remain_pay) form.remain_pay = null
+  if (!val.down_pay) form.down_pay = null
+  if (!val.biz_agency_fee) form.biz_agency_fee = null
+  if (!val.is_included_baf) form.is_included_baf = false
+  if (!val.middle_pay) form.middle_pay = null
+  if (!val.remain_pay) form.remain_pay = null
 })
 
 watch(props, val => {
@@ -58,23 +57,23 @@ const formsCheck = computed(() => {
     const b = form.price_land === props.price.price_land
     const c = form.price_tax === props.price.price_tax
     const d = form.price === props.price.price || !props.price
-    // const e = form.down_pay === props.price.down_pay || !props.price
-    // const f = form.biz_agency_fee === props.price.biz_agency_fee || !props.price
-    // const g = form.is_included_baf === props.price.is_included_baf || !props.price
-    // const h = form.middle_pay === props.price.middle_pay || !props.price
-    // const i = form.remain_pay === props.price.remain_pay || !props.price
-    return a && b && c && d // && e && f && g && h && i
+    const e = form.down_pay === props.price.down_pay || !props.price
+    const f = form.biz_agency_fee === props.price.biz_agency_fee || !props.price
+    const g = form.is_included_baf === props.price.is_included_baf || !props.price
+    const h = form.middle_pay === props.price.middle_pay || !props.price
+    const i = form.remain_pay === props.price.remain_pay || !props.price
+    return a && b && c && d && e && f && g && h && i
   } else {
     return (
       !form.price_build &&
       !form.price_land &&
       !form.price_tax &&
-      !form.price // &&
-      // !form.down_pay &&
-      // !form.biz_agency_fee &&
-      // !form.is_included_baf &&
-      // !form.middle_pay &&
-      // !form.remain_pay
+      !form.price &&
+      !form.down_pay &&
+      !form.biz_agency_fee &&
+      !form.is_included_baf &&
+      !form.middle_pay &&
+      !form.remain_pay
     )
   }
 })
@@ -110,11 +109,11 @@ const dataSetup = () => {
     form.price_land = props.price.price_land
     form.price_tax = props.price.price_tax
     form.price = props.price.price
-    // form.down_pay = props.price.down_pay
-    // form.biz_agency_fee = props.price.biz_agency_fee
-    // form.is_included_baf = props.price.is_included_baf
-    // form.middle_pay = props.price.middle_pay
-    // form.remain_pay = props.price.remain_pay
+    form.down_pay = props.price.down_pay
+    form.biz_agency_fee = props.price.biz_agency_fee
+    form.is_included_baf = props.price.is_included_baf
+    form.middle_pay = props.price.middle_pay
+    form.remain_pay = props.price.remain_pay
   }
 }
 
@@ -123,11 +122,11 @@ const dataReset = () => {
   form.price_land = null
   form.price_tax = null
   form.price = null
-  // form.down_pay = null
-  // form.biz_agency_fee = null
-  // form.is_included_baf = false
-  // form.middle_pay = null
-  // form.remain_pay = null
+  form.down_pay = null
+  form.biz_agency_fee = null
+  form.is_included_baf = false
+  form.middle_pay = null
+  form.remain_pay = null
 }
 
 onMounted(() => dataSetup())
@@ -185,55 +184,44 @@ onUpdated(() => {
         @keydown.enter="onStorePrice"
       />
     </CTableDataCell>
-<!--    <CTableDataCell>-->
-<!--      <CFormInput-->
-<!--        v-model.number="form.down_pay"-->
-<!--        type="number"-->
-<!--        min="0"-->
-<!--        placeholder="계약금"-->
-<!--        @keydown.enter="onStorePrice"-->
-<!--      />-->
-<!--    </CTableDataCell>-->
-<!--    <CTableDataCell>-->
-<!--      <CFormInput-->
-<!--        v-model.number="form.biz_agency_fee"-->
-<!--        type="number"-->
-<!--        min="0"-->
-<!--        placeholder="업무대행비"-->
-<!--        @keydown.enter="onStorePrice"-->
-<!--      />-->
-<!--    </CTableDataCell>-->
-<!--    <CTableDataCell>-->
-<!--      <CFormSwitch v-model="form.is_included_baf" :id="`iib-${price?.pk}`" label="업대비 포함" />-->
-<!--    </CTableDataCell>-->
-<!--    <CTableDataCell>-->
-<!--      <CFormInput-->
-<!--        v-model.number="form.middle_pay"-->
-<!--        type="number"-->
-<!--        min="0"-->
-<!--        placeholder="중도금"-->
-<!--        @keydown.enter="onStorePrice"-->
-<!--      />-->
-<!--    </CTableDataCell>-->
-<!--    <CTableDataCell>-->
-<!--      <CFormInput-->
-<!--        v-model.number="form.remain_pay"-->
-<!--        type="number"-->
-<!--        min="0"-->
-<!--        placeholder="잔금"-->
-<!--        @keydown.enter="onStorePrice"-->
-<!--      />-->
-<!--    </CTableDataCell>-->
     <CTableDataCell>
-      <CFormSelect>
-        <option>---------</option>
-        <option v-for="po in payOrderList" :value="po?.pk" :key="po?.pk as number">
-          {{ po.pay_name }}
-        </option>
-      </CFormSelect>
+      <CFormInput
+        v-model.number="form.down_pay"
+        type="number"
+        min="0"
+        placeholder="계약금"
+        @keydown.enter="onStorePrice"
+      />
     </CTableDataCell>
     <CTableDataCell>
-      <CFormInput type="number" min="0" placeholder="기타 약정금액" />
+      <CFormInput
+        v-model.number="form.biz_agency_fee"
+        type="number"
+        min="0"
+        placeholder="업무대행비"
+        @keydown.enter="onStorePrice"
+      />
+    </CTableDataCell>
+    <CTableDataCell>
+      <CFormSwitch v-model="form.is_included_baf" :id="`iib-${price?.pk}`" label="업대비 포함" />
+    </CTableDataCell>
+    <CTableDataCell>
+      <CFormInput
+        v-model.number="form.middle_pay"
+        type="number"
+        min="0"
+        placeholder="중도금"
+        @keydown.enter="onStorePrice"
+      />
+    </CTableDataCell>
+    <CTableDataCell>
+      <CFormInput
+        v-model.number="form.remain_pay"
+        type="number"
+        min="0"
+        placeholder="잔금"
+        @keydown.enter="onStorePrice"
+      />
     </CTableDataCell>
     <CTableDataCell v-if="write_project" class="text-center">
       <v-btn :color="btnColor" size="x-small" :disabled="formsCheck" @click="onStorePrice">

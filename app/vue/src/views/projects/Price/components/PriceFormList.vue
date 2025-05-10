@@ -53,15 +53,11 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>대지가(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>부가세(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>분양가격(단위:원)</CTableHeaderCell>
-<!--        <CTableHeaderCell>계약금(단위:원)</CTableHeaderCell>-->
-<!--        <CTableHeaderCell>업무대행비(단위:원)</CTableHeaderCell>-->
-<!--        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>-->
-<!--        <CTableHeaderCell>중도금(단위:원)</CTableHeaderCell>-->
-<!--        <CTableHeaderCell>잔금(단위:원)</CTableHeaderCell>-->
-        <CTableHeaderCell colspan="2">
-          기타 약정회차 등록
-          <v-icon icon="mdi-plus-circle" size="16" color="success" class="pointer" />
-        </CTableHeaderCell>
+        <CTableHeaderCell>계약금(단위:원)</CTableHeaderCell>
+        <CTableHeaderCell>업무대행비(단위:원)</CTableHeaderCell>
+        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>
+        <CTableHeaderCell>중도금(단위:원)</CTableHeaderCell>
+        <CTableHeaderCell>잔금(단위:원)</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>

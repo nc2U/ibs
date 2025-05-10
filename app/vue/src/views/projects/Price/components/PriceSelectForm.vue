@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, type PropType } from 'vue'
+import { ref, computed, type PropType, onMounted } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { type OrderGroup } from '@/store/types/contract'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -10,21 +10,31 @@ defineProps({
   types: { type: Object, default: null },
 })
 
-const emit = defineEmits(['on-order-select', 'on-type-select', 'cont-price-set'])
+const emit = defineEmits(['on-sort-select', 'on-order-select', 'on-type-select', 'cont-price-set'])
 
 const refConfirmModal = ref()
 
-const order = ref<number | null>(null)
-const type = ref<number | null>(null)
+const form = ref({
+  sort: '1',
+  order: null,
+  type: null,
+})
 
 const dataReset = () => {
-  order.value = null
-  type.value = null
+  form.value.sort = '1'
+  form.value.order = null
+  form.value.type = null
 }
 defineExpose({ dataReset })
 
+const onSortSelect = (e: Event) => {
+  form.value.order = null
+  form.value.type = null
+  emit('on-sort-select', (e.target as HTMLSelectElement).value)
+}
+
 const onOrderSelect = (e: Event) => {
-  type.value = null
+  form.value.type = null
   emit('on-order-select', (e.target as HTMLSelectElement).value)
 }
 const onTypeSelect = (e: Event) => emit('on-type-select', (e.target as HTMLSelectElement).value)
@@ -38,18 +48,40 @@ const modalAction = () => {
   emit('cont-price-set')
   refConfirmModal.value.close()
 }
+
+onMounted(() => {
+  dataReset()
+  emit('on-sort-select', form.value.sort)
+})
 </script>
 
 <template>
   <CCallout color="warning" class="pb-2 mb-4">
     <CRow>
-      <CCol md="4" class="mb-2">
+      <CCol md="3" class="mb-2">
         <CRow>
-          <CFormLabel for="sel1" class="col-sm-3 col-form-label"> 차수선택</CFormLabel>
-          <CCol sm="9">
+          <CFormLabel for="sel1" class="col-sm-4 col-form-label"> 구분</CFormLabel>
+          <CCol sm="8">
+            <CFormSelect v-model="form.sort" :disabled="!project" @change="onSortSelect">
+              <option value="">---------</option>
+              <option value="1">공동주택</option>
+              <option value="2">오피스텔</option>
+              <option value="3">숙박시설</option>
+              <option value="4">지식산업센터</option>
+              <option value="5">근린생활시설</option>
+              <option value="6">기타</option>
+            </CFormSelect>
+          </CCol>
+        </CRow>
+      </CCol>
+
+      <CCol md="3" class="mb-2">
+        <CRow>
+          <CFormLabel for="sel1" class="col-sm-4 col-form-label"> 차수선택</CFormLabel>
+          <CCol sm="8">
             <CFormSelect
               id="sel1"
-              v-model.number="order"
+              v-model.number="form.order"
               :disabled="!project"
               @change="onOrderSelect"
             >
@@ -62,11 +94,11 @@ const modalAction = () => {
         </CRow>
       </CCol>
 
-      <CCol md="4" class="mb-2">
+      <CCol md="3" class="mb-2">
         <CRow>
-          <CFormLabel for="sel2" class="col-sm-3 col-form-label"> 타입선택</CFormLabel>
-          <CCol sm="9">
-            <CFormSelect id="sel2" v-model="type" :disabled="!order" @change="onTypeSelect">
+          <CFormLabel for="sel2" class="col-sm-4 col-form-label"> 타입선택</CFormLabel>
+          <CCol sm="8">
+            <CFormSelect id="sel2" v-model="form.type" :disabled="!form.order" @change="onTypeSelect">
               <option value="">---------</option>
               <option v-for="t in types" :key="t.pk" :value="t.pk">
                 {{ t.name }}
@@ -76,9 +108,9 @@ const modalAction = () => {
         </CRow>
       </CCol>
 
-      <CCol md="4" class="mb-2">
+      <CCol md="3" class="mb-2">
         <CRow class="justify-content-end">
-          <CCol xl="6" class="d-grid gap-2">
+          <CCol xl="8" class="d-grid gap-2">
             <v-btn
               v-if="superAuth"
               type="button"
