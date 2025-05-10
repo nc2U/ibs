@@ -35,6 +35,15 @@ class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (SpecialAmountInline,)
 
 
+@admin.register(SpecialAmount)
+class SpecialAmountAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'sales_price', 'pay_order', 'amount')
+    list_display_links = ('sales_price',)
+    list_editable = ('amount',)
+    list_filter = ('sales_price__project', 'sales_price__order_group',
+                   'sales_price__unit_type', 'pay_order')
+
+
 @admin.register(DownPayment)
 class DownPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'order_group', 'unit_type', 'payment_amount')

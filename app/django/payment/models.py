@@ -67,6 +67,11 @@ class SpecialAmount(models.Model):
     pay_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.CASCADE, verbose_name='납부 회차')
     amount = models.PositiveIntegerField('납부 약정금액', help_text='이 데이터 등록 시 기준 공급가 * 회당 납부비율을 적용하지 않고 이 데이터를 우선 적용')
 
+    class Meta:
+        ordering = ('id',)
+        verbose_name = '03. 특별 약정금액'
+        verbose_name_plural = '03. 특별 약정금액'
+
 
 class DownPayment(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
@@ -80,8 +85,8 @@ class DownPayment(models.Model):
 
     class Meta:
         ordering = ('id',)
-        verbose_name = '03. 타입별 일괄 계약금'
-        verbose_name_plural = '03. 타입별 일괄 계약금'
+        verbose_name = '04. 타입별 일괄 계약금'
+        verbose_name_plural = '04. 타입별 일괄 계약금'
 
 
 class OverDueRule(models.Model):
@@ -97,8 +102,8 @@ class OverDueRule(models.Model):
 
     class Meta:
         ordering = ('-project', 'term_start', 'term_end')
-        verbose_name = '04. 선납할인/연체이율 관리'
-        verbose_name_plural = '04. 선납할인/연체이율 관리'
+        verbose_name = '05. 선납할인/연체이율 관리'
+        verbose_name_plural = '05. 선납할인/연체이율 관리'
 
 
 class SpecialPaymentOrder(models.Model):  # 가산금 / 할인액 계산을 위한 별도 테이블
@@ -123,8 +128,8 @@ class SpecialPaymentOrder(models.Model):  # 가산금 / 할인액 계산을 위�
 
     class Meta:
         ordering = ['-project', 'pay_code']
-        verbose_name = '05. 특별 납입회차'
-        verbose_name_plural = '05. 특별 납입회차'
+        verbose_name = '06. 특별 납입회차'
+        verbose_name_plural = '06. 특별 납입회차'
 
 
 class SpecialDownPay(models.Model):
@@ -140,8 +145,8 @@ class SpecialDownPay(models.Model):
 
     class Meta:
         ordering = ('id',)
-        verbose_name = '06. 특별 회차별 납입금'
-        verbose_name_plural = '06. 특별 회차별 납입금'
+        verbose_name = '07. 특별 회차별 납입금'
+        verbose_name_plural = '07. 특별 회차별 납입금'
 
 
 class SpecialOverDueRule(models.Model):  # 가산금 / 할인액 계산을 위한 별도 테이블
@@ -157,5 +162,5 @@ class SpecialOverDueRule(models.Model):  # 가산금 / 할인액 계산을 위�
 
     class Meta:
         ordering = ('-project', 'term_start', 'term_end')
-        verbose_name = '07. 특별 선납할인/연체이율'
-        verbose_name_plural = '07. 특별 선납할인/연체이율'
+        verbose_name = '08. 특별 선납할인/연체이율'
+        verbose_name_plural = '08. 특별 선납할인/연체이율'
