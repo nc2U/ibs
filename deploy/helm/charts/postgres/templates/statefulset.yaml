@@ -31,6 +31,7 @@ spec:
               if [[ $ordinal -eq 0 ]]; then
                 cp /mnt/replica-config/primary.conf /mnt/config/postgresql.conf
                 cp /mnt/replica-config/primary.sql /docker-entrypoint-initdb.d/init.sql
+
                 # 기존 데이터베이스 확인 및 primary.sql 실행
                 if [ -f /var/lib/postgresql/data/PG_VERSION ]; then
                   echo "Existing database found, executing primary.sql manually"
@@ -48,7 +49,7 @@ spec:
                   \c {{ .Release.Name }}
                   CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
                   GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
-                  EOF
+              EOF
                 fi
               else
                 cp /mnt/replica-config/replica.conf /mnt/config/postgresql.conf
