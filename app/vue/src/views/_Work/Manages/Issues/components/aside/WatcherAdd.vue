@@ -59,8 +59,7 @@ const callModal = () => refConfirmModal.value.callModal()
 defineExpose({ callModal })
 
 const watcherAddSubmit = () => {
-  const users = addMembers.value.filter(m => addUsers.value.includes(m.pk))
-  emit('watcher-add-submit', users)
+  emit('watcher-add-submit', addUsers.value)
   refConfirmModal.value.close()
 }
 
@@ -99,7 +98,9 @@ onBeforeMount(() => {
     </template>
 
     <template #footer>
-      <v-btn color="primary" :disabled="!addMembers.length" @click="watcherAddSubmit">추가</v-btn>
+      <v-btn color="primary" size="small" :disabled="!addMembers.length" @click="watcherAddSubmit">
+        추가
+      </v-btn>
     </template>
   </ConfirmModal>
 </template>

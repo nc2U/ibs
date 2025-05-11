@@ -16,17 +16,16 @@ const workManager = inject('workManager')
 const route = useRoute()
 
 const workStore = useWork()
-const watcherAddSubmit = (payload: { pk: number; username: string }[]) => {
+const watcherAddSubmit = (payload: number[]) => {
   const form = new FormData()
-  const watchers = [...payload.map(p => p.pk)]
-  watchers.forEach(val => form.append('watchers', JSON.stringify(val)))
-  workStore.patchIssue(props.issuePk, form)
+  payload.forEach(val => form.append('watchers', JSON.stringify(val)))
+  workStore.patchIssue(props.issuePk as number, form)
 }
 
 const delWatcher = (pk: number) => {
   const form = new FormData()
   form.append('del_watcher', JSON.stringify(pk))
-  workStore.patchIssue(props.issuePk, form)
+  workStore.patchIssue(props.issuePk as number, form)
 }
 </script>
 
