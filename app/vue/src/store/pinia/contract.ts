@@ -200,9 +200,9 @@ export const useContract = defineStore('contract', () => {
     })),
   )
 
-  const fetchOrderGroupList = (project: number) =>
+  const fetchOrderGroupList = (project: number, sort = '') =>
     api
-      .get(`/order-group/?project=${project}`)
+      .get(`/order-group/?project=${project}&&sort=${sort}`)
       .then(res => (orderGroupList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 

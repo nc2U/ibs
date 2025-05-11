@@ -49,7 +49,8 @@ const condTexts = computed(() => {
 provide('condTexts', condTexts)
 
 const fetchContList = (projId: number) => contStore.fetchContList(projId)
-const fetchOrderGroupList = (projId: number) => contStore.fetchOrderGroupList(projId)
+const fetchOrderGroupList = (projId: number, sort: '' | '1' | '2' = '') =>
+  contStore.fetchOrderGroupList(projId, sort)
 const allContPriceSet = (payload: SimpleCont) => contStore.allContPriceSet(payload)
 
 const fetchTypeList = (projId: number, sort?: '1' | '2' | '3' | '4' | '5' | '6') =>
@@ -67,6 +68,17 @@ const fetchPayOrderList = (proj: number) => payStore.fetchPayOrderList(proj)
 // 구분 선택 시 실행 함수
 const sortSelect = (proj_sort: any) => {
   sort.value = proj_sort
+  const og_sort = proj_sort !== '1' ? '2' : ''
+
+  if (project.value) {
+    fetchOrderGroupList(project.value, og_sort)
+    fetchFloorTypeList(project.value, sort.value).then(() => {
+      pFilters.project = project.value
+      pFilters.order_group = order_group.value
+      pFilters.unit_type = unit_type.value
+      fetchPriceList(pFilters) // 가격 상태 저장 실행
+    })
+  }
 }
 
 // 차수 선택 시 실행 함수

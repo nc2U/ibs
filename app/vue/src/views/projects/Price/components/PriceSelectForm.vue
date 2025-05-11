@@ -98,7 +98,12 @@ onMounted(() => {
         <CRow>
           <CFormLabel for="sel2" class="col-sm-4 col-form-label"> 타입선택</CFormLabel>
           <CCol sm="8">
-            <CFormSelect id="sel2" v-model="form.type" :disabled="!form.order" @change="onTypeSelect">
+            <CFormSelect
+              id="sel2"
+              v-model="form.type"
+              :disabled="!form.order"
+              @change="onTypeSelect"
+            >
               <option value="">---------</option>
               <option v-for="t in types" :key="t.pk" :value="t.pk">
                 {{ t.name }}
