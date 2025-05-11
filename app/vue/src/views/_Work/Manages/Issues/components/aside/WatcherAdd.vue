@@ -59,7 +59,7 @@ const callModal = () => refConfirmModal.value.callModal()
 defineExpose({ callModal })
 
 const watcherAddSubmit = () => {
-  emit('watcher-add-submit', addUsers.value)
+  emit('watcher-add-submit', [...addUsers.value])
   refConfirmModal.value.close()
 }
 
@@ -98,7 +98,7 @@ onBeforeMount(() => {
     </template>
 
     <template #footer>
-      <v-btn color="primary" size="small" :disabled="!addMembers.length" @click="watcherAddSubmit">
+      <v-btn color="primary" size="small" :disabled="!addUsers.length" @click="watcherAddSubmit">
         추가
       </v-btn>
     </template>

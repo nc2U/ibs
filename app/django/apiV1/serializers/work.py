@@ -905,7 +905,7 @@ class IssueSerializer(serializers.ModelSerializer):
         watchers = self.initial_data.getlist('watchers', [])
         if watchers:
             for watcher in watchers:
-                instance.watchers.add(watcher)
+                instance.watchers.add(int(watcher))
 
         del_watcher = self.initial_data.get('del_watcher', None)
         if del_watcher:

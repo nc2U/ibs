@@ -18,7 +18,7 @@ const route = useRoute()
 const workStore = useWork()
 const watcherAddSubmit = (payload: number[]) => {
   const form = new FormData()
-  payload.forEach(val => form.append('watchers', JSON.stringify(val)))
+  payload.forEach(val => form.append('watchers', val.toString()))
   workStore.patchIssue(props.issuePk as number, form)
 }
 
