@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from rangefilter.filters import DateRangeFilter
 from import_export.admin import ImportExportMixin
 from .models import (IssueProject, Module, Role, Permission, Member, Tracker, IssueCategory,
@@ -43,6 +44,8 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
 class PermissionInline(admin.StackedInline):
     model = Permission
     extra = 1
+    max_num = 1
+    can_delete = False
 
 
 @admin.register(Role)
@@ -51,6 +54,21 @@ class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
                     'user_visible', 'default_time_activity')
     list_display_links = ('name',)
     inlines = (PermissionInline,)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # Permission이 없으면 자동 생성
+        if not hasattr(obj, 'permission'):
+            Permission.objects.create(role=obj)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model == Permission:
+            instances = formset.save(commit=False)
+            for instance in instances:
+                instance.role = form.instance
+                instance.save()
+        else:
+            formset.save()
 
 
 @admin.register(Member)
