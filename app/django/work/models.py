@@ -248,6 +248,9 @@ class Permission(models.Model):
     def __str__(self):
         return f'{self.role.name} - 권한'
 
+    class Meta:
+        ordering = ('id',)
+        
 
 class Member(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='구성원')
