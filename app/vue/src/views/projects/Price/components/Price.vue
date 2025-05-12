@@ -6,6 +6,7 @@ import { type UnitFloorType } from '@/store/types/project'
 import { write_project } from '@/utils/pageAuth'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
 
 const condTexts = inject<{ orderText: string; typeText: string }>('condTexts')
 
@@ -17,8 +18,9 @@ const props = defineProps({
 
 const emit = defineEmits(['on-create', 'on-update', 'on-delete'])
 
-const refAlertModal = ref()
+const refFormModal = ref()
 const refConfirmModal = ref()
+const refAlertModal = ref()
 
 const form = reactive({
   price_build: null as number | null,
@@ -184,52 +186,57 @@ onUpdated(() => {
         @keydown.enter="onStorePrice"
       />
     </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.down_pay"
-        type="number"
-        min="0"
-        placeholder="계약금"
-        @keydown.enter="onStorePrice"
-      />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.biz_agency_fee"
-        type="number"
-        min="0"
-        placeholder="업무대행비"
-        @keydown.enter="onStorePrice"
-      />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormSwitch v-model="form.is_included_baf" :id="`iib-${price?.pk}`" label="업대비 포함" />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.middle_pay"
-        type="number"
-        min="0"
-        placeholder="중도금"
-        @keydown.enter="onStorePrice"
-      />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model.number="form.remain_pay"
-        type="number"
-        min="0"
-        placeholder="잔금"
-        @keydown.enter="onStorePrice"
-      />
-    </CTableDataCell>
-    <CTableDataCell v-if="write_project" class="text-center">
+    <!--    <CTableDataCell>-->
+    <!--      <CFormInput-->
+    <!--        v-model.number="form.down_pay"-->
+    <!--        type="number"-->
+    <!--        min="0"-->
+    <!--        placeholder="계약금"-->
+    <!--        @keydown.enter="onStorePrice"-->
+    <!--      />-->
+    <!--    </CTableDataCell>-->
+    <!--    <CTableDataCell>-->
+    <!--      <CFormInput-->
+    <!--        v-model.number="form.biz_agency_fee"-->
+    <!--        type="number"-->
+    <!--        min="0"-->
+    <!--        placeholder="업무대행비"-->
+    <!--        @keydown.enter="onStorePrice"-->
+    <!--      />-->
+    <!--    </CTableDataCell>-->
+    <!--    <CTableDataCell>-->
+    <!--      <CFormSwitch v-model="form.is_included_baf" :id="`iib-${price?.pk}`" label="업대비 포함" />-->
+    <!--    </CTableDataCell>-->
+    <!--    <CTableDataCell>-->
+    <!--      <CFormInput-->
+    <!--        v-model.number="form.middle_pay"-->
+    <!--        type="number"-->
+    <!--        min="0"-->
+    <!--        placeholder="중도금"-->
+    <!--        @keydown.enter="onStorePrice"-->
+    <!--      />-->
+    <!--    </CTableDataCell>-->
+    <!--    <CTableDataCell>-->
+    <!--      <CFormInput-->
+    <!--        v-model.number="form.remain_pay"-->
+    <!--        type="number"-->
+    <!--        min="0"-->
+    <!--        placeholder="잔금"-->
+    <!--        @keydown.enter="onStorePrice"-->
+    <!--      />-->
+    <!--    </CTableDataCell>-->
+    <CTableDataCell v-if="write_project" class="text-center pt-3">
       <v-btn :color="btnColor" size="x-small" :disabled="formsCheck" @click="onStorePrice">
         {{ btnTitle }}
       </v-btn>
       <v-btn color="warning" size="x-small" :disabled="!price" @click="deletePrice"> 삭제</v-btn>
     </CTableDataCell>
+    <CTableDataCell v-if="write_project" class="text-center pt-3">
+      <v-btn color="primary" size="x-small" @click="refFormModal.callModal()"> 추가</v-btn>
+    </CTableDataCell>
   </CTableRow>
+
+  <FormModal ref="refFormModal"></FormModal>
 
   <ConfirmModal ref="refConfirmModal">
     <template #header> 공급가격 삭제</template>

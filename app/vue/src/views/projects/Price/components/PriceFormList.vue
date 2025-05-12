@@ -30,19 +30,20 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive>
     <colgroup>
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
       <col style="width: 8%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
       <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col v-if="write_project" style="width: 8%" />
+      <!--      <col style="width: 7%" />-->
+      <!--      <col style="width: 7%" />-->
+      <!--      <col style="width: 7%" />-->
+      <!--      <col style="width: 7%" />-->
+      <!--      <col style="width: 7%" />-->
+      <col v-if="write_project" style="width: 7%" />
+      <col v-if="write_project" style="width: 5%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
@@ -53,12 +54,13 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>대지가(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>부가세(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>분양가격(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>계약금(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>업무대행비(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>
-        <CTableHeaderCell>중도금(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>잔금(단위:원)</CTableHeaderCell>
+        <!--        <CTableHeaderCell>계약금(단위:원)</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell>업무대행비(단위:원)</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell>중도금(단위:원)</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell>잔금(단위:원)</CTableHeaderCell>-->
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="write_project">특별약정 추가</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody v-if="!msg">
