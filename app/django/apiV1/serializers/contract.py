@@ -232,9 +232,9 @@ class ContractSerializer(serializers.ModelSerializer):
         contracts = Contract.objects.filter(project=instance.project, activation=True)
         installments = get_installments(instance.project)
 
-        for contract in contracts: # 유효 계약 건 마다 적용
+        for contract in contracts:  # 유효 계약 건 마다 적용
             try:
-                house_unit = contract.key_unit.houseunit # 동호 지정 여부 확인
+                house_unit = contract.key_unit.houseunit  # 동호 지정 여부 확인
             except ObjectDoesNotExist:
                 house_unit = None
 
@@ -268,12 +268,12 @@ class ContractSerializer(serializers.ModelSerializer):
                                            price_build=price[1],
                                            price_land=price[2],
                                            price_tax=price[3])
-                                           # 이하 삭제 후 PaymentPerInstallment 로 대체 예정
-                                           # down_pay=pay_amount[0],
-                                           # biz_agency_fee=pay_amount[3],
-                                           # is_included_baf=pay_amount[4],
-                                           # middle_pay=pay_amount[1],
-                                           # remain_pay=pay_amount[2])
+                # 이하 삭제 후 PaymentPerInstallment 로 대체 예정
+                # down_pay=pay_amount[0],
+                # biz_agency_fee=pay_amount[3],
+                # is_included_baf=pay_amount[4],
+                # middle_pay=pay_amount[1],
+                # remain_pay=pay_amount[2])
                 cont_price.save()
 
             # 계약 건별 공급 가격 -> PaymentPerInstallment(회차별 납부 금액) 설정
