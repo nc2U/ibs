@@ -5,6 +5,7 @@ import { pageTitle, navMenu } from '@/views/comCash/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
 import { useComCash } from '@/store/pinia/comCash'
 import { getToday } from '@/utils/baseMixins'
+import type { Company } from '@/store/types/settings.ts'
 import type { ComCalculated } from '@/store/types/comCash'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -19,7 +20,7 @@ const date = ref(getToday())
 const compName = ref('StatusByAccount')
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+const company = computed(() => (comStore.company as Company)?.pk)
 
 const cashStore = useComCash()
 const fetchAccSortList = () => cashStore.fetchAccSortList()
@@ -47,7 +48,7 @@ const comLastDealDate = computed(() => cashStore.comLastDealDate) // 최종 거�
 const isCalculated = computed(
   () =>
     !!comCalculated.value &&
-    comCalculated.value.calculated >= (comLastDealDate.value?.deal_date ?? 0),
+    comCalculated.value.calculated >= (comLastDealDate.value?.deal_date ?? ''),
 ) // 최종 정산 일자 이후에 거래 기록이 없음 === true
 
 const checkBalance = () => {
