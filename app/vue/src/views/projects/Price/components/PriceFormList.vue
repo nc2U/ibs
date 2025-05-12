@@ -70,7 +70,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         :p-filters="pFilters"
         :floor="floor"
         :price="getPrice(floor.pk)"
-        :pay-order-list="payOrderList"
+        :pay-orders="payOrderList"
         @on-create="onCreate"
         @on-update="onUpdate"
         @on-delete="onDelete"

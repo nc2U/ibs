@@ -16,6 +16,7 @@ const props = defineProps({
   floor: { type: Object as PropType<UnitFloorType>, required: true },
   pFilters: { type: Object, default: null },
   price: { type: Object as PropType<Price>, default: null },
+  payOrders: { type: Array as PropType<PayOrder[]>, default: () => [] },
 })
 
 const emit = defineEmits(['on-create', 'on-update', 'on-delete'])
@@ -255,6 +256,9 @@ onUpdated(() => {
             <CCol sm="8">
               <CFormSelect>
                 <option value="">---------</option>
+                <option v-for="po in payOrders" :value="po.pk" :key="po.pk">
+                  {{ po.pay_name }}
+                </option>
               </CFormSelect>
             </CCol>
           </CRow>

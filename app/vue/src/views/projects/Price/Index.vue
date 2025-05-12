@@ -163,6 +163,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
       <PriceFormList
         :msg="priceMessage"
         :p-filters="pFilters"
+        :pay-orders="payStore.payOrderList"
         @on-create="onCreatePrice"
         @on-update="onUpdatePrice"
         @on-delete="onDeletePrice"
