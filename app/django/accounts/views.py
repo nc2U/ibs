@@ -1,15 +1,17 @@
 import subprocess
+
 from django import forms
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView
-from django.urls import reverse_lazy
-from django.shortcuts import render, redirect
-from .models import User
-from company.models import Company
-from project.models import Project
-from ibs.models import ProjectAccountD3
 
+from company.models import Company
+from ibs.models import ProjectAccountD3
+from project.models import Project
+from work.models import IssueProject, Module
 from .forms import UserCreationForm
+from .models import User
 
 
 class UserCreateView(CreateView):
@@ -98,6 +100,9 @@ def load_seed_data():
 
 def create_project(request):
     d3 = ProjectAccountD3.objects.exists()
+    if not d3:
+        load_seed_data()
+
     if request.method == 'POST':
         company = request.POST.get('company')
         name = request.POST.get('name')
@@ -109,7 +114,32 @@ def create_project(request):
         local_address3 = request.POST.get('local_address3')
         area_usage = request.POST.get('area_usage')
         build_size = request.POST.get('build_size')
-        Project.objects.create(company_id=company,
+
+        kind_name = {'1': '공동주택(아파트)',
+                     '2': '공동주택(타운하우스)',
+                     '3': '주상복합(아파트)',
+                     '4': '주상복합(오피스텔)',
+                     '5': '근린생활시설',
+                     '6': '생활형숙박시설',
+                     '7': '지식산업센터',
+                     '8': '기타'}[kind]
+
+        issue_project  = IssueProject.objects.create(company_id=company,
+                                    sort='2',
+                                    name=name,
+                                    slug='proj-1',
+                                    description=f'{name} {kind_name} 신축사업',
+                                    user_id=1)
+        issue_project.allowed_roles.add(*[6, 7, 8])
+        issue_project.trackers.add(*[4, 5, 6, 7])
+        issue_project.activities.add(3, 4, 5, 6, 7, 8)
+        issue_project.save()
+
+        Module(project=issue_project, issue=True, time=True, news=True,
+               document=True, file=True, wiki=True, repository=False,
+               forum=True, calendar=True, gantt=True).save()
+
+        Project.objects.create(issue_project=issue_project,
                                name=name,
                                kind=kind,
                                start_year=start_year,
@@ -120,8 +150,6 @@ def create_project(request):
                                area_usage=area_usage,
                                build_size=build_size)
 
-        if not d3:
-            load_seed_data()
         return redirect('/')
     else:
         if d3:
