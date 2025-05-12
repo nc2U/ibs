@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, watch, onMounted, onUpdated, inject, type PropType } from 'vue'
+import { numFormat } from '@/utils/baseMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import type { PayOrder, Price } from '@/store/types/payment'
 import { type UnitFloorType } from '@/store/types/project'
@@ -8,7 +9,6 @@ import { write_project } from '@/utils/pageAuth'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
-import { numFormat } from '@/utils/baseMixins.ts'
 
 const condTexts = inject<{ orderText: string; typeText: string }>('condTexts')
 
@@ -256,7 +256,7 @@ onUpdated(() => {
             <CCol sm="8">
               <CFormSelect>
                 <option value="">---------</option>
-                <option v-for="po in payOrders" :value="po.pk" :key="po.pk">
+                <option v-for="po in payOrders" :value="po?.pk as number" :key="po?.pk as number">
                   {{ po.pay_name }}
                 </option>
               </CFormSelect>
