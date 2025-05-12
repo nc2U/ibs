@@ -10,7 +10,7 @@ defineProps({
   company: { type: Number, default: null },
   projects: { type: Array as PropType<Project[]>, default: () => [] },
 })
-const emit = defineEmits(['multi-submit', 'patch-d3-hide', 'on-bank-update'])
+const emit = defineEmits(['multi-submit', 'patch-d3-hide', 'on-bank-create', 'on-bank-update'])
 
 const createFormModal = ref()
 
@@ -21,6 +21,7 @@ const multiSubmit = (payload: { formData: CashBook; sepData: CashBook | null }) 
 
 const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => emit('patch-d3-hide', payload)
 
+const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
 const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 </script>
 
@@ -36,6 +37,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
         :projects="projects"
         @multi-submit="multiSubmit"
         @patch-d3-hide="patchD3Hide"
+        @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
         @close="createFormModal.close()"
       />

@@ -14,8 +14,8 @@ const props = defineProps({
 })
 const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 
-const refConfirmModal = ref()
 const refAlertModal = ref()
+const refConfirmModal = ref()
 
 const validated = ref(false)
 
@@ -248,7 +248,9 @@ onBeforeUpdate(() => dataSetup())
       거래계좌 정보를 <span v-if="bankAcc">저장</span><span v-else>추가</span>하시겠습니까?
     </template>
     <template #footer>
-      <v-btn :color="bankAcc ? 'success' : 'primary'" @click="onBankAccSubmit">저장</v-btn>
+      <v-btn size="small" :color="bankAcc ? 'success' : 'primary'" @click="onBankAccSubmit">
+        저장
+      </v-btn>
     </template>
   </ConfirmModal>
 

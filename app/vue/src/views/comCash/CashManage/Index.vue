@@ -242,6 +242,7 @@ onBeforeMount(() => {
         :projects="projectList"
         @multi-submit="multiSubmit"
         @patch-d3-hide="patchD3Hide"
+        @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
       />
       <TableTitleRow

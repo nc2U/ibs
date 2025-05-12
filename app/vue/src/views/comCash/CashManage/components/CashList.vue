@@ -101,6 +101,7 @@ const accCallModal = () => {
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @patch-d3-hide="patchD3Hide"
+        @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
       />
     </CTableBody>

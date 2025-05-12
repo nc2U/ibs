@@ -17,7 +17,13 @@ const props = defineProps({
   calculated: { type: String, default: '2000-01-01' },
 })
 
-const emit = defineEmits(['multi-submit', 'on-delete', 'patch-d3-hide', 'on-bank-update'])
+const emit = defineEmits([
+  'multi-submit',
+  'on-delete',
+  'patch-d3-hide',
+  'on-bank-create',
+  'on-bank-update',
+])
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -67,6 +73,7 @@ const deleteObject = () => {
 
 const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => emit('patch-d3-hide', payload)
 
+const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
 const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 </script>
 
@@ -111,8 +118,8 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
     <CTableDataCell>{{ cash.evidence_desc }}</CTableDataCell>
     <CTableDataCell v-if="write_company_cash">
       <v-btn color="info" size="x-small" @click="showDetail" :disabled="!allowedPeriod">
-        확인</v-btn
-      >
+        확인
+      </v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -125,6 +132,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
         @multi-submit="multiSubmit"
         @on-delete="deleteConfirm"
         @patch-d3-hide="patchD3Hide"
+        @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
         @close="updateFormModal.close()"
       />

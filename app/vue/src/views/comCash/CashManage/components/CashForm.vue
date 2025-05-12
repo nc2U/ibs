@@ -19,7 +19,14 @@ const props = defineProps({
   projects: { type: Array as PropType<Project[]>, default: () => [] },
 })
 
-const emit = defineEmits(['multi-submit', 'on-delete', 'close', 'patch-d3-hide', 'on-bank-update'])
+const emit = defineEmits([
+  'multi-submit',
+  'on-delete',
+  'close',
+  'patch-d3-hide',
+  'on-bank-create',
+  'on-bank-update',
+])
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -344,6 +351,7 @@ const deleteObject = () => {
 
 const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => emit('patch-d3-hide', payload)
 
+const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
 const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 
 const dataSetup = () => {
@@ -973,7 +981,13 @@ onBeforeMount(async () => {
     <CModalFooter>
       <v-btn type="button" :color="btnLight" size="small" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
-        <v-btn v-if="sepItem.pk" type="button" :color="btnLight" variant="outlined" @click="sepRemove">
+        <v-btn
+          v-if="sepItem.pk"
+          type="button"
+          :color="btnLight"
+          variant="outlined"
+          @click="sepRemove"
+        >
           취소
         </v-btn>
         <v-btn
@@ -1005,5 +1019,5 @@ onBeforeMount(async () => {
 
   <AccDepth ref="refAccDepth" @patch-d3-hide="patchD3Hide" />
 
-  <BankAcc ref="refBankAcc" @on-bank-update="onBankUpdate" />
+  <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
 </template>
