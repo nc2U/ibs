@@ -1,3 +1,4 @@
+import datetime
 import subprocess
 
 from django import forms
@@ -6,6 +7,7 @@ from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView
 
+from cash.models import CompanyCashBookCalculation, ProjectCashBookCalculation
 from company.models import Company
 from ibs.models import ProjectAccountD3
 from project.models import Project
@@ -74,10 +76,12 @@ def create_company(request):
         tax_number = request.POST.get('tax_number')
         ceo = request.POST.get('ceo')
         org_number = request.POST.get('org_number')
-        Company.objects.create(name=name,
-                               tax_number=tax_number,
-                               ceo=ceo,
-                               org_number=org_number)
+        company = Company.objects.create(name=name,
+                                         tax_number=tax_number,
+                                         ceo=ceo,
+                                         org_number=org_number)
+        company.save()
+        CompanyCashBookCalculation.objects.create(company=company, calculated=datetime.date.today(), user_id=1)
         return redirect('/install/create/project/')
     else:
         is_d3 = ProjectAccountD3.objects.exists()
@@ -124,12 +128,12 @@ def create_project(request):
                      '7': '지식산업센터',
                      '8': '기타'}[kind]
 
-        issue_project  = IssueProject.objects.create(company_id=company,
-                                    sort='2',
-                                    name=name,
-                                    slug='proj1',
-                                    description=f'{name} {kind_name} 신축사업',
-                                    user_id=1)
+        issue_project = IssueProject.objects.create(company_id=company,
+                                                    sort='2',
+                                                    name=name,
+                                                    slug='proj1',
+                                                    description=f'{name} {kind_name} 신축사업',
+                                                    user_id=1)
         issue_project.allowed_roles.add(*[6, 7, 8])
         issue_project.trackers.add(*[4, 5, 6, 7])
         issue_project.activities.add(3, 4, 5, 6, 7, 8)
@@ -139,17 +143,18 @@ def create_project(request):
                document=True, file=True, wiki=True, repository=False,
                forum=True, calendar=True, gantt=True).save()
 
-        Project.objects.create(issue_project=issue_project,
-                               name=name,
-                               kind=kind,
-                               start_year=start_year,
-                               local_zipcode=local_zipcode,
-                               local_address1=local_address1,
-                               local_address2=local_address2,
-                               local_address3=local_address3,
-                               area_usage=area_usage,
-                               build_size=build_size)
-
+        project = Project.objects.create(issue_project=issue_project,
+                                         name=name,
+                                         kind=kind,
+                                         start_year=start_year,
+                                         local_zipcode=local_zipcode,
+                                         local_address1=local_address1,
+                                         local_address2=local_address2,
+                                         local_address3=local_address3,
+                                         area_usage=area_usage,
+                                         build_size=build_size)
+        project.save()
+        ProjectCashBookCalculation.objects.create(project=project, calculated=datetime.date.today(), user_id=1)
         return redirect('/')
     else:
         if d3:
