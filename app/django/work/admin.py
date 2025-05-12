@@ -53,6 +53,12 @@ class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (PermissionInline,)
 
 
+@admin.register(Permission)
+class PermissionAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'role')
+    list_display_links = ('role',)
+
+
 @admin.register(Member)
 class MemberAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'user', 'project', 'get_roles', 'created')
