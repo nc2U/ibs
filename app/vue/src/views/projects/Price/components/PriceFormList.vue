@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { write_project } from '@/utils/pageAuth'
-import { usePayment } from '@/store/pinia/payment'
-import { useProjectData } from '@/store/pinia/project_data'
 import { TableSecondary } from '@/utils/cssMixins'
 import { type Price as P } from '@/store/types/payment'
+import { usePayment } from '@/store/pinia/payment'
+import { useProjectData } from '@/store/pinia/project_data'
 import Price from '@/views/projects/Price/components/Price.vue'
 
 defineProps({
