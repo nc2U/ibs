@@ -273,7 +273,7 @@ onUpdated(() => {
         </CModalBody>
         <CModalFooter>
           <v-btn :color="btnLight" size="small" @click="refFormModal.close()"> 닫기</v-btn>
-          <v-btn color="primary" size="small">확인</v-btn>
+          <v-btn color="primary" size="small" disabled>확인</v-btn>
         </CModalFooter>
       </CForm>
     </template>
