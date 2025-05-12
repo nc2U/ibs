@@ -127,7 +127,7 @@ def create_project(request):
         issue_project  = IssueProject.objects.create(company_id=company,
                                     sort='2',
                                     name=name,
-                                    slug='proj-1',
+                                    slug='proj1',
                                     description=f'{name} {kind_name} 신축사업',
                                     user_id=1)
         issue_project.allowed_roles.add(*[6, 7, 8])
