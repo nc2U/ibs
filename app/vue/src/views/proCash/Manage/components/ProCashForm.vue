@@ -22,7 +22,7 @@ const props = defineProps({
 const transfers = inject<number[]>('transfers')
 const cancels = inject<number[]>('cancels')
 
-const emit = defineEmits(['multi-submit', 'on-delete', 'close', 'on-bank-update'])
+const emit = defineEmits(['multi-submit', 'on-delete', 'close', 'on-bank-create', 'on-bank-update'])
 
 const refBankAcc = ref()
 const refDelModal = ref()
@@ -327,6 +327,7 @@ const deleteObject = () => {
   emit('close')
 }
 
+const onBankCreate = (payload: ProBankAcc) => emit('on-bank-create', payload)
 const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
 
 const formDataSetup = () => {
@@ -953,5 +954,5 @@ onBeforeMount(() => formDataSetup())
 
   <AlertModal ref="refAlertModal" />
 
-  <BankAcc ref="refBankAcc" @on-bank-update="onBankUpdate" />
+  <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
 </template>

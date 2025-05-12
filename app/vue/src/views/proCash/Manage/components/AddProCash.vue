@@ -6,7 +6,7 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import ProCashForm from '@/views/proCash/Manage/components/ProCashForm.vue'
 
 defineProps({ project: { type: Number, default: null } })
-const emit = defineEmits(['multi-submit', 'on-bank-update'])
+const emit = defineEmits(['multi-submit', 'on-bank-create', 'on-bank-update'])
 
 const createFormModal = ref()
 
@@ -15,6 +15,7 @@ const createConfirm = () => createFormModal.value.callModal()
 const multiSubmit = (payload: { formData: ProjectCashBook; sepData: ProjectCashBook | null }) =>
   emit('multi-submit', payload)
 
+const onBankCreate = (payload: ProBankAcc) => emit('on-bank-create', payload)
 const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
 </script>
 
@@ -28,6 +29,7 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
     <template #default>
       <ProCashForm
         @multi-submit="multiSubmit"
+        @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
         @close="createFormModal.close()"
       />

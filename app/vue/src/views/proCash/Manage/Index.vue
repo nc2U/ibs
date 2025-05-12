@@ -287,6 +287,7 @@ onBeforeMount(() => {
         v-if="write_project_cash"
         :project="project"
         @multi-submit="multiSubmit"
+        @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
       />
       <TableTitleRow

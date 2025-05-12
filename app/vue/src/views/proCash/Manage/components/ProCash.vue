@@ -13,7 +13,7 @@ const props = defineProps({
   calculated: { type: String, default: '2000-01-01' },
 })
 
-const emit = defineEmits(['multi-submit', 'on-delete', 'on-bank-update'])
+const emit = defineEmits(['multi-submit', 'on-delete', 'on-bank-create', 'on-bank-update'])
 
 const updateFormModal = ref()
 
@@ -51,6 +51,7 @@ const multiSubmit = (payload: { formData: ProjectCashBook; sepData: ProjectCashB
 
 const onDelete = (payload: { project: number; pk: number }) => emit('on-delete', payload)
 
+const onBankCreate = (payload: ProBankAcc) => emit('on-bank-create', payload)
 const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
 </script>
 
@@ -108,6 +109,7 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @close="updateFormModal.close()"
+        @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
       />
     </template>

@@ -61,7 +61,7 @@ const proLastDealDate = computed(() => pCashStore.proLastDealDate) // 최종 거
 const isCalculated = computed(
   () =>
     !!proCalculated.value &&
-    proCalculated.value.calculated >= (proLastDealDate.value?.deal_date ?? 0),
+    proCalculated.value.calculated >= (proLastDealDate.value?.deal_date ?? ''),
 ) // 최종 정산 일자 이후에 거래 기록이 없음 === true
 
 const checkBalance = () => {

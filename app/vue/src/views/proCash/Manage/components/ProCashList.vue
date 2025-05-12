@@ -90,6 +90,7 @@ const accCallModal = () => {
         :calculated="proCalculated?.calculated"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
+        @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
       />
     </CTableBody>
