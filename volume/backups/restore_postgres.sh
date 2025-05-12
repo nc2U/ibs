@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# 환경변수
+SCHEMA="${POSTGRES_USER}"
 # 복원 대상 파일 지정
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/data-postgres-${DATE}.dump"
@@ -10,9 +11,9 @@ DO \$\$
 DECLARE
     r RECORD;
 BEGIN
-    FOR r IN (SELECT constraint_name, table_name FROM information_schema.table_constraints WHERE constraint_type = 'FOREIGN KEY' AND table_schema = '$POSTGRES_USER')
+    FOR r IN (SELECT constraint_name, table_name FROM information_schema.table_constraints WHERE constraint_type = 'FOREIGN KEY' AND table_schema = '$SCHEMA')
     LOOP
-        EXECUTE 'ALTER TABLE $POSTGRES_USER.' || quote_ident(r.table_name) || ' DROP CONSTRAINT ' || quote_ident(r.constraint_name);
+        EXECUTE 'ALTER TABLE $SCHEMA.' || quote_ident(r.table_name) || ' DROP CONSTRAINT ' || quote_ident(r.constraint_name);
     END LOOP;
 END \$\$;
 "
@@ -23,9 +24,9 @@ DO \$\$
 DECLARE
     r RECORD;
 BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = '$POSTGRES_USER' AND tablename != 'django_migrations')
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = '$SCHEMA' AND tablename != 'django_migrations')
     LOOP
-        EXECUTE 'TRUNCATE TABLE $POSTGRES_USER.' || quote_ident(r.tablename) || ' CASCADE';
+        EXECUTE 'TRUNCATE TABLE $SCHEMA.' || quote_ident(r.tablename) || ' CASCADE';
     END LOOP;
 END \$\$;
 "
