@@ -36,15 +36,6 @@ const comCash = {
           : import('@/views/_Accounts/NoAuth.vue'),
       meta: { title: '본사 출납 내역', auth: true },
     },
-    {
-      path: 'debt',
-      name: '채권 채무 관리',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/comCash/DebtManage/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '채권 채무 관리', auth: true },
-    },
   ],
 }
 
