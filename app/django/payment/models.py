@@ -3,7 +3,8 @@ from django.db import models
 
 class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '기타 부담금'), ('5', '제세 공과금'), ('6', '금융 비용'), ('7', '업무 대행비'))
+    SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '기타 부담금'), ('5', '제세 공과금'), ('6', '금융 비용'),
+                    ('7', '업무 대행비'))
     pay_sort = models.CharField('종류', max_length=1, choices=SORT_CHOICES, default='1')
     is_except_price = models.BooleanField('공급가 불포함 여부', default=False, help_text='취등록세, 후불 이자 등 공급가 불포함 항목인지 여부')
     pay_code = models.PositiveSmallIntegerField('납입회차 코드', help_text='프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능')
@@ -65,7 +66,8 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
 class SpecialAmount(models.Model):
     sales_price = models.ForeignKey(SalesPriceByGT, on_delete=models.CASCADE, verbose_name='기준 공급가격')
     pay_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.CASCADE, verbose_name='납부 회차')
-    amount = models.PositiveIntegerField('납부 약정금액', help_text='이 데이터 등록 시 기준 공급가 * 회당 납부비율을 적용하지 않고 이 데이터를 우선 적용')
+    amount = models.PositiveIntegerField('납부 약정금액',
+                                         help_text='일반 납부회차의 경우 기준 공급가 * 회당 납부비율을 적용 하나, 이 데이터 등록 시 예외적으로 이 데이터를 우선 적용함')
 
     class Meta:
         ordering = ('id',)

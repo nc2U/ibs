@@ -3,10 +3,12 @@ import { ref, reactive, computed, watch, onMounted, onUpdated, inject, type Prop
 import { useAccount } from '@/store/pinia/account'
 import type { PayOrder, Price } from '@/store/types/payment'
 import { type UnitFloorType } from '@/store/types/project'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import { numFormat } from '@/utils/baseMixins.ts'
 
 const condTexts = inject<{ orderText: string; typeText: string }>('condTexts')
 
@@ -236,7 +238,46 @@ onUpdated(() => {
     </CTableDataCell>
   </CTableRow>
 
-  <FormModal ref="refFormModal"></FormModal>
+  <FormModal ref="refFormModal">
+    <template #header>특별약정 추가</template>
+    <template #default>
+      <CForm>
+        <CModalBody class="text-body">
+          <CRow class="mb-3">
+            <CFormLabel for="inputEmail3" class="col-sm-4 col-form-label">기준 공급가</CFormLabel>
+            <CCol sm="8" class="pt-2">
+              <span class="text-primary bold">{{ numFormat(price.price) }} </span>
+              ({{ condTexts?.orderText }} / {{ condTexts?.typeText }} / {{ floor.alias_name }})
+            </CCol>
+          </CRow>
+          <CRow class="mb-3">
+            <CFormLabel for="inputEmail3" class="col-sm-4 col-form-label">지정 납부회차</CFormLabel>
+            <CCol sm="8">
+              <CFormSelect>
+                <option value="">---------</option>
+              </CFormSelect>
+            </CCol>
+          </CRow>
+          <CRow class="mb-3">
+            <CFormLabel for="inputPassword3" class="col-sm-4 col-form-label">
+              납부 약정금액
+            </CFormLabel>
+            <CCol sm="8">
+              <CFormInput
+                type="number"
+                placeholder="특별 지정 납부 약정금액"
+                text="일반 납부회차의 경우 기준 공급가 * 회당 납부비율을 적용 하나, 이 데이터 등록 시 예외적으로 이 데이터를 우선 적용함"
+              />
+            </CCol>
+          </CRow>
+        </CModalBody>
+        <CModalFooter>
+          <v-btn :color="btnLight" size="small" @click="refFormModal.close()"> 닫기</v-btn>
+          <v-btn color="primary" size="small">확인</v-btn>
+        </CModalFooter>
+      </CForm>
+    </template>
+  </FormModal>
 
   <ConfirmModal ref="refConfirmModal">
     <template #header> 공급가격 삭제</template>
