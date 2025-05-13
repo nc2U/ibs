@@ -42,7 +42,7 @@ class UnitFloorType(models.Model):  # 층별 타입
         return self.alias_name
 
     class Meta:
-        ordering = ['-project', '-end_floor', '-id']
+        ordering = ['-project', 'sort', '-end_floor']
         verbose_name = '02. 층별 조건'
         verbose_name_plural = '02. 층별 조건'
 

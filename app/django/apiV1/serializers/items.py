@@ -37,6 +37,7 @@ class KeyUnitSerializer(serializers.ModelSerializer):
     class Meta:
         model = KeyUnit
         fields = ('pk', 'project', 'unit_type', 'unit_code', 'houseunit', 'contract')
+        read_only_fields = ('contract',)
 
 
 class HouseUnitSerializer(serializers.ModelSerializer):

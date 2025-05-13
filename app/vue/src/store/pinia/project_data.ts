@@ -205,19 +205,15 @@ export const useProjectData = defineStore('projectData', () => {
       .then(res => (numUnitByType.value = res.data.count))
       .catch(err => errorHandle(err.response.data))
 
-  const createUnit = (payload: CreateUnit) => {
+  const createUnit = async (payload: CreateUnit) => {
     const { project, unit_type, ...restPayload } = payload
     const { unit_code, ...unitPayload } = restPayload
     const houseUnits = { ...{ project, unit_type }, ...unitPayload }
     const keyUnits = { project, unit_type, unit_code }
-    api
-      .post(`/house-unit/`, houseUnits)
-      .then(() =>
-        fetchNumUnitByType(project, unit_type).then(() =>
-          api.post(`/key-unit/`, keyUnits).catch(err => errorHandle(err.response.data)),
-        ),
-      )
-      .catch(err => errorHandle(err.response.data))
+
+    await api.post(`/house-unit/`, houseUnits).catch(err => errorHandle(err.response.data))
+    await fetchNumUnitByType(project, unit_type)
+    await api.post(`/key-unit/`, keyUnits).catch(err => errorHandle(err.response.data))
   }
 
   const updateUnit = async (payload: HouseUnit) => {
