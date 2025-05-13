@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType, onMounted } from 'vue'
 import { useAccount } from '@/store/pinia/account'
-import { type OrderGroup } from '@/store/types/contract'
+import type { OrderGroup } from '@/store/types/contract'
+import type { UnitType } from '@/store/types/project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-defineProps({
+const props = defineProps({
   project: { type: Number, default: null },
-  orders: { type: Object as PropType<OrderGroup[]>, default: null },
-  types: { type: Object, default: null },
+  orders: { type: Array as PropType<OrderGroup[]>, default: () => [] },
+  types: { type: Array as PropType<UnitType[]>, default: () => [] },
 })
 
 const emit = defineEmits(['on-sort-select', 'on-order-select', 'on-type-select', 'cont-price-set'])
@@ -25,6 +26,7 @@ const dataReset = () => {
   form.value.order = null
   form.value.type = null
 }
+
 defineExpose({ dataReset })
 
 const onSortSelect = (e: Event) => {
@@ -37,6 +39,7 @@ const onOrderSelect = (e: Event) => {
   form.value.type = null
   emit('on-order-select', (e.target as HTMLSelectElement).value)
 }
+
 const onTypeSelect = (e: Event) => emit('on-type-select', (e.target as HTMLSelectElement).value)
 
 const accStore = useAccount()
