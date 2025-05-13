@@ -211,10 +211,7 @@ export const useProjectData = defineStore('projectData', () => {
     const houseUnits = { ...{ project, unit_type }, ...unitPayload }
     const keyUnits = { project, unit_type, unit_code }
 
-    await api
-      .post(`/house-unit/`, houseUnits)
-      .then(res => fetchHouseUnitList(project, res.data.building_unit.pk))
-      .catch(err => errorHandle(err.response.data))
+    await api.post(`/house-unit/`, houseUnits).catch(err => errorHandle(err.response.data))
     await api.post(`/key-unit/`, keyUnits).catch(err => errorHandle(err.response.data))
     await fetchNumUnitByType(project, unit_type)
   }
