@@ -18,27 +18,29 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive>
     <colgroup>
-      <col style="width: 7%" />
+      <col style="width: 6%" />
+      <col style="width: 5%" />
       <col style="width: 5%" />
       <col style="width: 4%" />
       <col style="width: 4%" />
       <col style="width: 6%" />
       <col style="width: 5%" />
+      <col style="width: 6%" />
+      <col style="width: 5%" />
       <col style="width: 7%" />
       <col style="width: 5%" />
-      <col style="width: 8%" />
-      <col style="width: 5%" />
       <col style="width: 6%" />
       <col style="width: 5%" />
-      <col style="width: 8%" />
+      <col style="width: 7%" />
       <col style="width: 6%" />
       <col style="width: 5%" />
-      <col style="width: 8%" />
+      <col style="width: 7%" />
       <col v-if="write_project" style="width: 6%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
-        <CTableHeaderCell>종류</CTableHeaderCell>
+        <CTableHeaderCell>타입종류</CTableHeaderCell>
+        <CTableHeaderCell>회차종류</CTableHeaderCell>
         <CTableHeaderCell>공급가 포함 여부</CTableHeaderCell>
         <CTableHeaderCell class="cursor-help">
           회차코드

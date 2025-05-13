@@ -11,8 +11,8 @@ const emit = defineEmits(['on-update', 'on-delete'])
 const props = defineProps({ payOrder: { type: Object as PropType<PayOrder>, required: true } })
 
 const form = reactive<PayOrder>({
-  pay_sort: '',
   type_sort: '1',
+  pay_sort: '',
   is_except_price: false,
   pay_code: null,
   pay_time: null,
@@ -34,23 +34,24 @@ const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const formsCheck = computed(() => {
-  const a = form.pay_sort === props.payOrder?.pay_sort
-  const b = form.is_except_price === props.payOrder?.is_except_price
-  const c = form.pay_code === props.payOrder?.pay_code
-  const d = form.pay_time === props.payOrder?.pay_time
-  const e = form.pay_name === props.payOrder?.pay_name
-  const f = form.alias_name === props.payOrder?.alias_name
-  const g = form.pay_amt === props.payOrder?.pay_amt
-  const h = form.pay_ratio === props.payOrder?.pay_ratio
-  const i = form.pay_due_date === props.payOrder?.pay_due_date
-  const j = form.days_since_prev === props.payOrder?.days_since_prev
-  const k = form.is_prep_discount === props.payOrder?.is_prep_discount
-  const l = form.prep_discount_ratio === props.payOrder?.prep_discount_ratio
-  const m = form.prep_ref_date === props.payOrder?.prep_ref_date
-  const n = form.is_late_penalty === props.payOrder?.is_late_penalty
-  const o = form.late_penalty_ratio === props.payOrder?.late_penalty_ratio
-  const p = form.extra_due_date === props.payOrder?.extra_due_date
-  return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p
+  const a = form.type_sort === props.payOrder?.type_sort
+  const b = form.pay_sort === props.payOrder?.pay_sort
+  const c = form.is_except_price === props.payOrder?.is_except_price
+  const d = form.pay_code === props.payOrder?.pay_code
+  const e = form.pay_time === props.payOrder?.pay_time
+  const f = form.pay_name === props.payOrder?.pay_name
+  const g = form.alias_name === props.payOrder?.alias_name
+  const h = form.pay_amt === props.payOrder?.pay_amt
+  const i = form.pay_ratio === props.payOrder?.pay_ratio
+  const j = form.pay_due_date === props.payOrder?.pay_due_date
+  const k = form.days_since_prev === props.payOrder?.days_since_prev
+  const l = form.is_prep_discount === props.payOrder?.is_prep_discount
+  const m = form.prep_discount_ratio === props.payOrder?.prep_discount_ratio
+  const n = form.prep_ref_date === props.payOrder?.prep_ref_date
+  const o = form.is_late_penalty === props.payOrder?.is_late_penalty
+  const p = form.late_penalty_ratio === props.payOrder?.late_penalty_ratio
+  const q = form.extra_due_date === props.payOrder?.extra_due_date
+  return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p && q
 })
 
 const formCheck = (bool: boolean) => {
@@ -84,6 +85,7 @@ const modalAction = () => {
 }
 
 const dataSetup = () => {
+  form.type_sort = props.payOrder?.type_sort
   form.pay_sort = props.payOrder?.pay_sort
   form.is_except_price = props.payOrder?.is_except_price
   form.pay_code = props.payOrder?.pay_code
@@ -107,6 +109,17 @@ onBeforeMount(() => dataSetup())
 
 <template>
   <CTableRow>
+    <CTableDataCell>
+      <CFormSelect v-model="form.type_sort" required>
+        <option value="">타입 종류</option>
+        <option value="1">공동주택</option>
+        <option value="2">오피스텔</option>
+        <option value="3">숙박시설</option>
+        <option value="4">지식산업센터</option>
+        <option value="5">근린생활시설</option>
+        <option value="6">기타</option>
+      </CFormSelect>
+    </CTableDataCell>
     <CTableDataCell>
       <CFormSelect v-model="form.pay_sort" required @change="remainChk">
         <option value="">종류선택</option>
