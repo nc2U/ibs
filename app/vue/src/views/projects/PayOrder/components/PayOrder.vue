@@ -248,7 +248,7 @@ onBeforeMount(() => dataSetup())
       />
     </CTableDataCell>
 
-    <CTableDataCell v-if="write_project" class="text-center">
+    <CTableDataCell v-if="write_project" class="text-center pt-3">
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdatePayOrder">
         수정
       </v-btn>

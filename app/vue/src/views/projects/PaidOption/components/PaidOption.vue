@@ -156,11 +156,11 @@ onBeforeMount(() => dataSetup())
       />
     </CTableDataCell>
 
-    <CTableDataCell v-if="write_project" class="text-center">
-      <v-btn color="success" size="small" :disabled="formsCheck" @click="onUpdateOption">
+    <CTableDataCell v-if="write_project" class="text-center pt-3">
+      <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateOption">
         수정
       </v-btn>
-      <v-btn color="warning" size="small" @click="onDeleteOption">삭제</v-btn>
+      <v-btn color="warning" size="x-small" @click="onDeleteOption">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

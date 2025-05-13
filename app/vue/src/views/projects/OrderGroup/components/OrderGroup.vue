@@ -89,11 +89,11 @@ onBeforeMount(() => dataSetup())
         @keypress.enter="formCheck(form.order_group_name !== order.order_group_name)"
       />
     </CTableDataCell>
-    <CTableDataCell v-if="write_project" class="text-center">
-      <v-btn color="success" size="small" :disabled="formsCheck" @click="onUpdateOrder">
+    <CTableDataCell v-if="write_project" class="text-center pt-3">
+      <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateOrder">
         수정
       </v-btn>
-      <v-btn color="warning" size="small" @click="onDeleteOrder">삭제</v-btn>
+      <v-btn color="warning" size="x-small" @click="onDeleteOrder">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 
