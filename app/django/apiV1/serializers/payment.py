@@ -20,11 +20,17 @@ class InstallmentOrderSerializer(serializers.ModelSerializer):
 
 
 class SalesPriceSerializer(serializers.ModelSerializer):
+    price_setting = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = SalesPriceByGT
-        fields = ('pk', 'project', 'order_group', 'unit_type', 'unit_floor_type',
-                  'price_build', 'price_land', 'price_tax', 'price', 'down_pay',
-                  'biz_agency_fee', 'is_included_baf', 'middle_pay', 'remain_pay')
+        fields = ('pk', 'project', 'order_group', 'unit_type', 'price_setting',
+                  'unit_floor_type', 'price_build', 'price_land', 'price_tax', 'price',
+                  'down_pay', 'biz_agency_fee', 'is_included_baf', 'middle_pay', 'remain_pay')
+
+    @staticmethod
+    def get_price_setting(obj):
+        return obj.unit_type.price_setting if obj.unit_type else None
 
 
 class DownPaymentSerializer(serializers.ModelSerializer):

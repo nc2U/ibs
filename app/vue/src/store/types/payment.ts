@@ -26,6 +26,7 @@ export interface Price {
   project: number
   order_group: number
   unit_type: number
+  price_setting: string | null
   unit_floor_type: number
   price_build: number
   price_land: number
