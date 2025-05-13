@@ -12,6 +12,7 @@ const props = defineProps({ payOrder: { type: Object as PropType<PayOrder>, requ
 
 const form = reactive<PayOrder>({
   pay_sort: '',
+  type_sort: '1',
   is_except_price: false,
   pay_code: null,
   pay_time: null,

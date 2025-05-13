@@ -2,8 +2,8 @@ export interface PayOrder {
   pk?: number | null
   project?: number
   __str__?: string
-  type_sort?: '1' | '2' | '3' | '4' | '5' | '6'
-  pay_sort?: '1' | '2' | '3' | '4' | '5' | '6' | '7'
+  type_sort?: '1' | '2' | '3' | '4' | '5' | '6' | ''
+  pay_sort?: '1' | '2' | '3' | '4' | '5' | '6' | '7' | ''
   is_except_price?: boolean
   pay_code?: number | null
   pay_time?: number | null
