@@ -12,6 +12,7 @@ import { type ProBankAcc, type ProjectCashBook, type ProSepItems } from '@/store
 import BankAcc from './BankAcc.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
+import ContChoicer from '@/components/ContChoicer/Index.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -450,6 +451,7 @@ onBeforeMount(() => formDataSetup())
             <CRow>
               <CFormLabel class="col-sm-4 col-form-label"> 계약(자)정보</CFormLabel>
               <CCol sm="8">
+                <!--                <ContChoicer />-->
                 <MultiSelect
                   v-model.number="form.contract"
                   mode="single"
