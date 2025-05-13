@@ -3,9 +3,9 @@ from django.db import models
 
 class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '기타 부담금'), ('5', '제세 공과금'), ('6', '금융 비용'),
-                    ('7', '업무 대행비'))
-    pay_sort = models.CharField('종류', max_length=1, choices=SORT_CHOICES, default='1')
+    PAY_SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '기타 부담금'), ('5', '제세 공과금'), ('6', '금융 비용'),
+                        ('7', '업무 대행비'))
+    pay_sort = models.CharField('종류', max_length=1, choices=PAY_SORT_CHOICES, default='1')
     is_except_price = models.BooleanField('공급가 불포함 여부', default=False, help_text='취등록세, 후불 이자 등 공급가 불포함 항목인지 여부')
     pay_code = models.PositiveSmallIntegerField('납입회차 코드', help_text='프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능')
     pay_time = models.PositiveSmallIntegerField('납부순서',
@@ -110,7 +110,7 @@ class OverDueRule(models.Model):
 
 class SpecialPaymentOrder(models.Model):  # 가산금 / 할인액 계산을 위한 별도 테이블
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    pay_sort = models.CharField('종류', max_length=1, choices=InstallmentPaymentOrder.SORT_CHOICES, default='1')
+    pay_sort = models.CharField('종류', max_length=1, choices=InstallmentPaymentOrder.PAY_SORT_CHOICES, default='1')
     pay_code = models.PositiveSmallIntegerField('납입회차 코드', help_text='프로젝트 내에서 모든 납부회차를 고유 순서대로 숫자로 부여한다.')
     pay_time = models.PositiveSmallIntegerField('납부순서',
                                                 help_text='''동일 납부회차에 2가지 항목을 별도로 납부하여야 하는 경우(ex: 분담금 + 업무대행료)

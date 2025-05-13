@@ -292,7 +292,7 @@ const modalAction = () => {
       <p>상기 호수(유니트)정보의 일괄등록을 진행하시겠습니까?</p>
     </template>
     <template #footer>
-      <v-btn color="primary" @click="modalAction">일괄등록</v-btn>
+      <v-btn color="primary" size="small" @click="modalAction">일괄등록</v-btn>
     </template>
   </ConfirmModal>
 
