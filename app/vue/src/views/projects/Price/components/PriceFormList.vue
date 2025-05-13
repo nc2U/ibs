@@ -10,6 +10,7 @@ import Price from '@/views/projects/Price/components/Price.vue'
 defineProps({
   msg: { type: String, default: '' },
   pFilters: { type: Object, default: null },
+  priceSetting: { type: String, default: '2' },
 })
 const emit = defineEmits(['on-create', 'on-update', 'on-delete'])
 
@@ -53,7 +54,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>건물가(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>대지가(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>부가세(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell>분양가격(단위:원)</CTableHeaderCell>
+        <CTableHeaderCell>기준공급가(단위:원)</CTableHeaderCell>
         <!--        <CTableHeaderCell>계약금(단위:원)</CTableHeaderCell>-->
         <!--        <CTableHeaderCell>업무대행비(단위:원)</CTableHeaderCell>-->
         <!--        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>-->

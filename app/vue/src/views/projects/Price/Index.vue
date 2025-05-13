@@ -16,6 +16,7 @@ const selectForm = ref()
 const sort = ref<'1' | '2' | '3' | '4' | '5' | '6'>('1')
 const order_group = ref<number | null>(null)
 const unit_type = ref<number | null>(null)
+const priceSetting = ref<'1' | '2' | '3'>('2')
 
 const pFilters = reactive<PriceFilter>({
   project: null,
@@ -90,10 +91,18 @@ const orderSelect = (order: number) => {
     : '공급가격을 입력하기 위해 [타입 정보]를 선택하여 주십시요.'
   payStore.priceList = [] // 가격 상태 초기화
 }
+
 // 타입 선택 시 실행 함수
 const typeSelect = (type: number) => {
   unit_type.value = type // unit_type pk 값 할당
   priceMessage.value = !type ? '공급가격을 입력하기 위해 [타입 정보]를 선택하여 주십시요.' : ''
+  // type.price_setting -> '1', '2', '3'
+  if (type) priceSetting.value = unitTypeList.value.filter(t => t.pk == type)[0].price_setting
+  else priceSetting.value = '2'
+  // '1' 이면 타입별 가격 설정
+  // '2' 이면 층타입별 가격 설정
+  // '3' 이면 호별 가격 설정
+
   if (project.value && sort.value) {
     fetchFloorTypeList(project.value, sort.value).then(() => {
       pFilters.project = project.value
@@ -163,6 +172,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
       <PriceFormList
         :msg="priceMessage"
         :p-filters="pFilters"
+        :price-setting="priceSetting"
         :pay-orders="payStore.payOrderList"
         @on-create="onCreatePrice"
         @on-update="onUpdatePrice"

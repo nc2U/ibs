@@ -50,7 +50,7 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
     price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
     price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
     price_tax = models.PositiveIntegerField('부가세', null=True, blank=True)
-    price = models.PositiveIntegerField('기준 공급가격')
+    price = models.PositiveIntegerField('기준공급가')
     down_pay = models.PositiveIntegerField('계약금', null=True, blank=True, help_text='계약금 분납 시 회당 납부하는 금액 기재')
     biz_agency_fee = models.PositiveIntegerField('업무대행비', null=True, blank=True)
     is_included_baf = models.BooleanField('업무대행비 포함 여부', default=False)
