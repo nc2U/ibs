@@ -169,7 +169,7 @@ onBeforeMount(() => dataSetup())
     <template #header> 수입 예산 삭제</template>
     <template #default> 해당 수입 예산 항목을 삭제 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">삭제</v-btn>
+      <v-btn size="small" color="warning" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 

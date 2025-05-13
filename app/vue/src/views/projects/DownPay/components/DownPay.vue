@@ -107,7 +107,7 @@ onBeforeMount(() => dataSetup())
       해당 데이터를 삭제하면 이후 복구할 수 없습니다. 이 계약 조건 정보를 삭제 하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">삭제</v-btn>
+      <v-btn size="small" color="warning" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 

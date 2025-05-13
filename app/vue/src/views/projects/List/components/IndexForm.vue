@@ -576,7 +576,7 @@ onUpdated(() => formDataSetup())
     <template #header> 프로젝트정보 삭제</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
-      <v-btn color="warning" disabled>삭제</v-btn>
+      <v-btn size="small" color="warning" disabled>삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -584,7 +584,7 @@ onUpdated(() => formDataSetup())
     <template #header> 프로젝트정보 {{ confirmText }}</template>
     <template #default> 프로젝트정보 {{ confirmText }}을 진행하시겠습니까?</template>
     <template #footer>
-      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>
+      <v-btn size="small" :color="btnClass" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 
