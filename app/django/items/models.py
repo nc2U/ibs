@@ -11,10 +11,10 @@ class UnitType(models.Model):
     actual_area = models.DecimalField('전용면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
     supply_area = models.DecimalField('공급면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
     contract_area = models.DecimalField('계약면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
-    num_unit = models.PositiveSmallIntegerField('세대수')
+    average_price = models.PositiveBigIntegerField('평균가격', null=True, blank=True)
     PRICE_SET_CHOICES = (('1', '타입별 설정'), ('2', '층타입 설정'), ('3', '호별 설정'))
     price_setting = models.CharField('공급가 설정 방법', choices=PRICE_SET_CHOICES, default='2')
-    average_price = models.PositiveBigIntegerField('평균가격', null=True, blank=True)
+    num_unit = models.PositiveSmallIntegerField('세대수')
 
     def __str__(self):
         return self.name
