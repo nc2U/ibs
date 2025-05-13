@@ -1,8 +1,11 @@
 <script lang="ts" setup>
 import { inject, reactive, ref } from 'vue'
 import { write_project } from '@/utils/pageAuth'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+
+defineProps({ disabled: Boolean })
+const emit = defineEmits(['on-submit'])
 
 export type SortType = {
   value: '1' | '2' | '3' | '4' | '5' | '6'
@@ -10,8 +13,6 @@ export type SortType = {
 }
 
 const typeSort = inject<SortType[]>('typeSort')
-defineProps({ disabled: Boolean })
-const emit = defineEmits(['on-submit'])
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -25,6 +26,7 @@ const form = reactive({
   supply_area: null,
   contract_area: null,
   average_price: null,
+  price_setting: '',
   num_unit: null,
 })
 
@@ -60,6 +62,7 @@ const resetForm = () => {
   form.supply_area = null
   form.contract_area = null
   form.average_price = null
+  form.price_setting = ''
   form.num_unit = null
 }
 </script>
@@ -69,7 +72,7 @@ const resetForm = () => {
     <CRow class="p-2">
       <CCol lg="3">
         <CRow>
-          <CCol lg="6" class="mb-2">
+          <CCol lg="5" class="mb-2">
             <CFormSelect v-model="form.sort" required :disabled="disabled">
               <option value="">타입종류</option>
               <option v-for="tp in typeSort" :key="tp.value" :value="tp.value">
@@ -78,7 +81,7 @@ const resetForm = () => {
             </CFormSelect>
           </CCol>
 
-          <CCol lg="6" class="mb-2">
+          <CCol lg="5" class="mb-2">
             <CFormInput
               v-model="form.name"
               maxlength="10"
@@ -87,12 +90,8 @@ const resetForm = () => {
               :disabled="disabled"
             />
           </CCol>
-        </CRow>
-      </CCol>
 
-      <CCol lg="1">
-        <CRow>
-          <CCol lg="12" class="mb-2">
+          <CCol lg="2" class="mb-2">
             <CFormInput
               v-model="form.color"
               title="타입색상"
@@ -117,7 +116,6 @@ const resetForm = () => {
             />
             <CFormFeedback invalid> 전용면적을 소소점4자리 이하로 입력하세요.</CFormFeedback>
           </CCol>
-
           <CCol lg="2" class="mb-2">
             <CFormInput
               v-model.number="form.supply_area"
@@ -152,6 +150,15 @@ const resetForm = () => {
           </CCol>
 
           <CCol lg="2" class="mb-2">
+            <CFormSelect v-model="form.price_setting" required :disabled="disabled">
+              <option value="">공급가 설정 옵션</option>
+              <option value="1">타입별 설정</option>
+              <option value="2">층타입별 설정</option>
+              <option value="3">호별 설정</option>
+            </CFormSelect>
+          </CCol>
+
+          <CCol lg="2" class="mb-2">
             <CFormInput
               v-model.number="form.num_unit"
               placeholder="세대수"
@@ -160,8 +167,12 @@ const resetForm = () => {
               :disabled="disabled"
             />
           </CCol>
+        </CRow>
+      </CCol>
 
-          <CCol lg="2" class="d-grid gap-2 d-lg-block mb-3">
+      <CCol lg="1">
+        <CRow>
+          <CCol lg="12" class="d-grid gap-2 d-lg-block mb-3">
             <v-btn color="primary" type="submit" :disabled="disabled"> 타입추가</v-btn>
           </CCol>
         </CRow>

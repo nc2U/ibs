@@ -18,6 +18,7 @@ const form = reactive({
   supply_area: null,
   contract_area: null,
   average_price: null,
+  price_setting: '',
   num_unit: null,
 })
 
@@ -32,8 +33,9 @@ const formsCheck = computed(() => {
   const e = form.supply_area === props.type.supply_area
   const f = form.contract_area === props.type.contract_area
   const g = form.average_price === props.type.average_price
-  const h = form.num_unit === props.type.num_unit
-  return a && b && c && d && e && f && g && h
+  const h = form.price_setting === props.type.price_setting
+  const i = form.num_unit === props.type.num_unit
+  return a && b && c && d && e && f && g && h && i
 })
 
 const formCheck = (bool: boolean) => {
@@ -68,6 +70,7 @@ const dataSetup = () => {
   form.supply_area = props.type.supply_area
   form.contract_area = props.type.contract_area
   form.average_price = props.type.average_price
+  form.price_setting = props.type.price_setting
   form.num_unit = props.type.num_unit
 }
 
@@ -137,6 +140,14 @@ onBeforeMount(() => dataSetup())
       />
     </CTableDataCell>
     <CTableDataCell>
+      <CFormSelect v-model="form.price_setting" required>
+        <option value="">공급가 설정 옵션</option>
+        <option value="1">타입별 설정</option>
+        <option value="2">층타입별 설정</option>
+        <option value="3">호별 설정</option>
+      </CFormSelect>
+    </CTableDataCell>
+    <CTableDataCell>
       <CFormInput
         v-model.number="form.num_unit"
         placeholder="세대수"
@@ -147,10 +158,10 @@ onBeforeMount(() => dataSetup())
       />
     </CTableDataCell>
     <CTableDataCell v-if="write_project" class="text-center">
-      <v-btn color="success" size="small" :disabled="formsCheck" @click="onUpdateType">
+      <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateType">
         수정
       </v-btn>
-      <v-btn color="warning" size="small" @click="onDeleteType">삭제</v-btn>
+      <v-btn color="warning" size="x-small" @click="onDeleteType">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

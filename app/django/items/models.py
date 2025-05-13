@@ -13,7 +13,7 @@ class UnitType(models.Model):
     contract_area = models.DecimalField('계약면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
     average_price = models.PositiveBigIntegerField('평균가격', null=True, blank=True)
     PRICE_SET_CHOICES = (('1', '타입별 설정'), ('2', '층타입별 설정'), ('3', '호별 설정'))
-    price_setting = models.CharField('공급가 설정 방법', choices=PRICE_SET_CHOICES, default='2')
+    price_setting = models.CharField('공급가 설정 옵션', choices=PRICE_SET_CHOICES, default='2')
     num_unit = models.PositiveSmallIntegerField('세대수')
 
     def __str__(self):

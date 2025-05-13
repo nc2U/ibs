@@ -20,11 +20,12 @@ const onDeleteType = (pk: number) => emit('on-delete', pk)
     <colgroup>
       <col style="width: 11%" />
       <col style="width: 11%" />
-      <col style="width: 9%" />
-      <col style="width: 12%" />
-      <col style="width: 12%" />
-      <col style="width: 12%" />
-      <col style="width: 13%" />
+      <col style="width: 5%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 11%" />
+      <col style="width: 11%" />
+      <col style="width: 11%" />
       <col style="width: 10%" />
       <col v-if="write_project" style="width: 10%" />
     </colgroup>
@@ -37,6 +38,7 @@ const onDeleteType = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>공급면적(m<sup>2</sup>)</CTableHeaderCell>
         <CTableHeaderCell>계약면적(m<sup>2</sup>)</CTableHeaderCell>
         <CTableHeaderCell>평균가격</CTableHeaderCell>
+        <CTableHeaderCell>공급가 설정 옵션</CTableHeaderCell>
         <CTableHeaderCell>세대수</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">비 고</CTableHeaderCell>
       </CTableRow>
