@@ -154,7 +154,7 @@ const resetForm = () => {
           </CCol>
 
           <CCol lg="2" class="mb-2">
-            <CFormSelect v-model="form.price_setting" :disabled="disabled">
+            <CFormSelect v-model="form.price_setting" required :disabled="disabled">
               <option value="">공급가 설정 옵션</option>
               <option value="1">타입별 설정</option>
               <option value="2">층타입별 설정</option>

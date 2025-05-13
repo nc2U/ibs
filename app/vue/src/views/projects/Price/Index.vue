@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, reactive, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin6'
-import { type Price } from '@/store/types/payment'
+import type { Price } from '@/store/types/payment'
+import type { Project } from '@/store/types/project.ts'
 import { type PriceFilter, usePayment } from '@/store/pinia/payment'
 import type { OrderGroup, SimpleCont, UnitType } from '@/store/types/contract'
 import { useProject } from '@/store/pinia/project'
@@ -16,7 +17,7 @@ const selectForm = ref()
 const sort = ref<'1' | '2' | '3' | '4' | '5' | '6'>('1')
 const order_group = ref<number | null>(null)
 const unit_type = ref<number | null>(null)
-const priceSetting = ref<'1' | '2' | '3'>('2')
+const priceSetting = ref<'1' | '2' | '3' | ''>('2')
 
 const pFilters = reactive<PriceFilter>({
   project: null,
@@ -27,7 +28,7 @@ const pFilters = reactive<PriceFilter>({
 const priceMessage = ref('')
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const contStore = useContract()
 const contList = computed(() => contStore.contList)
@@ -41,9 +42,7 @@ const condTexts = computed(() => {
   const orderText = orderGroupList.value
     .filter((o: OrderGroup) => o.pk == order_group.value)
     .map((o: OrderGroup) => o.order_group_name)[0]
-  const typeText = unitTypeList.value
-    .filter((t: UnitType) => t.pk == unit_type.value)
-    .map((t: UnitType) => t.name)[0]
+  const typeText = unitTypeList.value.filter(t => t.pk == unit_type.value).map(t => t.name)[0]
   return { orderText, typeText }
 })
 

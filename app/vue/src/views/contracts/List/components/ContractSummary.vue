@@ -80,7 +80,7 @@ const contNum = (order: number | null, type?: number) => {
         </CTableDataCell>
         <!--  타입별 세대수 -->
         <CTableDataCell>
-          {{ numFormat(type.num_unit) }}{{ type.sort === '1' ? '세대' : '실' }}
+          {{ numFormat(type.num_unit as number) }}{{ type.sort === '1' ? '세대' : '실' }}
         </CTableDataCell>
         <!-- 타입별 청약건수-->
         <CTableDataCell>{{ numFormat(subsNum(type.pk)) }}</CTableDataCell>
@@ -95,15 +95,19 @@ const contNum = (order: number | null, type?: number) => {
         </CTableDataCell>
         <!--잔여세대-->
         <CTableDataCell>
-          {{ numFormat(type.num_unit - contNum(null, type.pk) - subsNum(type.pk)) }}
+          {{ numFormat((type.num_unit as number) - contNum(null, type.pk) - subsNum(type.pk)) }}
         </CTableDataCell>
         <!-- 계약율-->
         <CTableDataCell>
-          {{ ratioFormat((contNum(null, type.pk) / type.num_unit) * 100) }}
+          {{ ratioFormat((contNum(null, type.pk) / (type?.num_unit as number)) * 100) }}
         </CTableDataCell>
         <!-- 분양율(청약+계약)-->
         <CTableDataCell>
-          {{ ratioFormat(((contNum(null, type.pk) + subsNum(type.pk)) / type.num_unit) * 100) }}
+          {{
+            ratioFormat(
+              ((contNum(null, type.pk) + subsNum(type.pk)) / (type.num_unit as number)) * 100,
+            )
+          }}
         </CTableDataCell>
       </CTableRow>
 

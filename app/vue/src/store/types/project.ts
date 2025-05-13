@@ -31,17 +31,17 @@ export interface Project {
 }
 
 export interface UnitType {
-  pk: number
-  project: number
+  pk?: number
+  project?: number
+  sort: '1' | '2' | '3' | '4' | '5' | '6' | ''
   name: string
-  sort: '1' | '2' | '3' | '4' | '5' | '6'
   color: string
   actual_area: number | null
   supply_area: number | null
   contract_area: number | null
-  average_price: number
-  price_setting: '1' | '2' | '3' // 타입별, 층타입별, 호별
-  num_unit: number
+  average_price: number | null
+  price_setting: '1' | '2' | '3' | '' // 타입별, 층타입별, 호별
+  num_unit: number | null
 }
 
 export interface ProIncBudget {

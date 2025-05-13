@@ -48,7 +48,7 @@ const typeNameLength = computed(() => {
 const maxUnits = computed(() =>
   Math.max.apply(
     {},
-    unitTypeList.value.map((t: { num_unit: number }) => t.num_unit),
+    unitTypeList.value.map(t => t.num_unit as number),
   ),
 )
 
@@ -120,7 +120,7 @@ const bldgSelect = (event: Event) => {
 const typeSelect = (event: Event) => {
   typeName.value = (event.target as HTMLSelectElement).value
     ? unitTypeList.value.filter(
-        (t: { pk: number }) => t.pk.toString() == (event.target as HTMLSelectElement).value,
+        t => (t.pk as number).toString() == (event.target as HTMLSelectElement).value,
       )[0].name
     : ''
   fetchNumUnitByType(props.project, Number((event.target as HTMLSelectElement).value))

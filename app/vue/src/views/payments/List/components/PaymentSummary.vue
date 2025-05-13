@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { TableSecondary } from '@/utils/cssMixins'
+import type { UnitType } from '@/store/types/project.ts'
+import { numFormat } from '@/utils/baseMixins'
+import { usePayment } from '@/store/pinia/payment'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
-import { usePayment } from '@/store/pinia/payment'
 import { useProjectData } from '@/store/pinia/project_data'
-import { numFormat } from '@/utils/baseMixins'
-import { TableSecondary } from '@/utils/cssMixins'
 
 defineProps({ project: { type: Number, default: null } })
 
@@ -16,7 +17,7 @@ const contStore = useContract()
 const contSum = computed(() => contStore.contSummaryList)
 
 const proDataStore = useProjectData()
-const unitTypeList = computed(() => proDataStore.unitTypeList)
+const unitTypeList = computed<UnitType[]>(() => proDataStore.unitTypeList)
 
 const paymentStore = usePayment()
 const paySumList = computed(() => paymentStore.paySumList)
@@ -72,19 +73,19 @@ const getPaidByType = (ut: number) =>
           {{ type.name }}
         </CTableHeaderCell>
         <CTableDataCell>
-          {{ numFormat(getBudgetByType(type.pk)) }}
+          {{ numFormat(getBudgetByType(type.pk as number)) }}
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getContByType(type.pk)) }}
+          {{ numFormat(getContByType(type.pk as number)) }}
         </CTableDataCell>
         <CTableDataCell class="text-primary">
-          {{ numFormat(getPaidByType(type.pk)) }}
+          {{ numFormat(getPaidByType(type.pk as number)) }}
         </CTableDataCell>
         <CTableDataCell class="text-danger">
-          {{ numFormat(getContByType(type.pk) - getPaidByType(type.pk)) }}
+          {{ numFormat(getContByType(type.pk as number) - getPaidByType(type.pk as number)) }}
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getBudgetByType(type.pk) - getContByType(type.pk)) }}
+          {{ numFormat(getBudgetByType(type.pk as number) - getContByType(type.pk as number)) }}
         </CTableDataCell>
       </CTableRow>
 

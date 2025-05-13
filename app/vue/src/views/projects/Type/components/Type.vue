@@ -1,16 +1,17 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, onBeforeMount, inject } from 'vue'
+import { ref, reactive, computed, onBeforeMount, inject, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { write_project } from '@/utils/pageAuth'
-import { type SortType } from './TypeAddForm.vue'
+import type { SortType } from './TypeAddForm.vue'
+import type { UnitType } from '@/store/types/project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const typeSort = inject<SortType[]>('typeSort')
-const props = defineProps({ type: { type: Object, required: true } })
+const props = defineProps({ type: { type: Object as PropType<UnitType>, required: true } })
 const emit = defineEmits(['on-update', 'on-delete'])
 
-const form = reactive({
+const form = ref({
   sort: '',
   name: '',
   color: '',
@@ -26,15 +27,15 @@ const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const formsCheck = computed(() => {
-  const a = form.sort === props.type.sort
-  const b = form.name === props.type.name
-  const c = form.color === props.type.color
-  const d = form.actual_area === props.type.actual_area
-  const e = form.supply_area === props.type.supply_area
-  const f = form.contract_area === props.type.contract_area
-  const g = form.average_price === props.type.average_price
-  const h = form.price_setting === props.type.price_setting
-  const i = form.num_unit === props.type.num_unit
+  const a = form.value.sort === props.type?.sort
+  const b = form.value.name === props.type?.name
+  const c = form.value.color === props.type?.color
+  const d = form.value.actual_area === props.type?.actual_area
+  const e = form.value.supply_area === props.type?.supply_area
+  const f = form.value.contract_area === props.type?.contract_area
+  const g = form.value.average_price === props.type?.average_price
+  const h = form.value.price_setting === props.type?.price_setting
+  const i = form.value.num_unit === props.type?.num_unit
   return a && b && c && d && e && f && g && h && i
 })
 
@@ -44,7 +45,7 @@ const formCheck = (bool: boolean) => {
 }
 const onUpdateType = () => {
   if (write_project.value) {
-    const pk = props.type.pk
+    const pk = props.type?.pk
     emit('on-update', { ...{ pk }, ...form })
   } else {
     refAlertModal.value.callModal()
@@ -59,19 +60,21 @@ const onDeleteType = () => {
   }
 }
 const modalAction = () => {
-  emit('on-delete', props.type.pk)
+  emit('on-delete', props.type?.pk)
   refConfirmModal.value.close()
 }
 const dataSetup = () => {
-  form.sort = props.type.sort
-  form.name = props.type.name
-  form.color = props.type.color
-  form.actual_area = props.type.actual_area
-  form.supply_area = props.type.supply_area
-  form.contract_area = props.type.contract_area
-  form.average_price = props.type.average_price
-  form.price_setting = props.type.price_setting
-  form.num_unit = props.type.num_unit
+  if (props.type) {
+    form.value.sort = props.type.sort as '1' | '2' | '3' | '4' | '5' | '6'
+    form.value.name = props.type.name as string
+    form.value.color = props.type.color as string
+    form.value.actual_area = props.type.actual_area as any
+    form.value.supply_area = props.type.supply_area as any
+    form.value.contract_area = props.type.contract_area as any
+    form.value.average_price = props.type.average_price as any
+    form.value.price_setting = props.type.price_setting
+    form.value.num_unit = props.type.num_unit as any
+  }
 }
 
 onBeforeMount(() => dataSetup())
@@ -140,8 +143,7 @@ onBeforeMount(() => dataSetup())
       />
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.price_setting">
-        <option value="">공급가 설정 옵션</option>
+      <CFormSelect v-model="form.price_setting" required>
         <option value="1">타입별 설정</option>
         <option value="2">층타입별 설정</option>
         <option value="3">호별 설정</option>
