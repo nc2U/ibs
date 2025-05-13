@@ -1,8 +1,11 @@
 from django.db import models
 
+from items.models import UnitType
+
 
 class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    type_sort = models.CharField('타입종류', max_length=1, choices=UnitType.SORT_CHOICES, default='1')
     PAY_SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '기타 부담금'), ('5', '제세 공과금'), ('6', '금융 비용'),
                         ('7', '업무 대행비'))
     pay_sort = models.CharField('종류', max_length=1, choices=PAY_SORT_CHOICES, default='1')

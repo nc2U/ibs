@@ -3,22 +3,18 @@ from django.db import models
 
 class UnitType(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트', related_name='types')
-    SORT_CHOICES = (
-        ('1', '공동주택'),
-        ('2', '오피스텔'),
-        ('3', '숙박시설'),
-        ('4', '지식산업센터'),
-        ('5', '근린생활시설'),
-        ('6', '기타')
-    )
+    SORT_CHOICES = (('1', '공동주택'), ('2', '오피스텔'), ('3', '숙박시설'),
+                    ('4', '지식산업센터'), ('5', '근린생활시설'), ('6', '기타'))
     sort = models.CharField('타입종류', max_length=1, choices=SORT_CHOICES)
     name = models.CharField('타입명칭', max_length=10, db_index=True)
     color = models.CharField('타입색상', max_length=20)
     actual_area = models.DecimalField('전용면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
     supply_area = models.DecimalField('공급면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
     contract_area = models.DecimalField('계약면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
-    average_price = models.PositiveBigIntegerField('평균가격', null=True, blank=True)
     num_unit = models.PositiveSmallIntegerField('세대수')
+    PRICE_SET_CHOICES = (('1', '타입별 설정'), ('2', '층타입 설정'), ('3', '호별 설정'))
+    price_setting = models.CharField('공급가 설정 방법', choices=PRICE_SET_CHOICES, default='2')
+    average_price = models.PositiveBigIntegerField('평균가격', null=True, blank=True)
 
     def __str__(self):
         return self.name
