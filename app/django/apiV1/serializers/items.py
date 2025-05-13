@@ -8,9 +8,9 @@ from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUn
 class UnitTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = UnitType
-        fields = (
-            'pk', 'project', 'name', 'sort', 'color', 'actual_area',
-            'supply_area', 'contract_area', 'average_price', 'num_unit')
+        fields = ('pk', 'project', 'sort', 'name', 'color',
+                  'actual_area', 'supply_area', 'contract_area',
+                  'average_price', 'price_setting', 'num_unit')
 
 
 class SimpleUnitTypeSerializer(serializers.ModelSerializer):

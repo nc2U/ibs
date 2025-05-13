@@ -40,6 +40,7 @@ export interface UnitType {
   supply_area: number | null
   contract_area: number | null
   average_price: number
+  price_setting: '1' | '2' | '3' // 타입별, 층타입별, 호별
   num_unit: number
 }
 

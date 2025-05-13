@@ -2,6 +2,7 @@ export interface PayOrder {
   pk?: number | null
   project?: number
   __str__?: string
+  type_sort?: '1' | '2' | '3' | '4' | '5' | '6'
   pay_sort?: string
   is_except_price?: boolean
   pay_code?: number | null

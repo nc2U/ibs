@@ -12,10 +12,11 @@ from .items import SimpleUnitTypeSerializer
 class InstallmentOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstallmentPaymentOrder
-        fields = ('pk', 'project', '__str__', 'pay_sort', 'pay_code', 'pay_time',
-                  'pay_name', 'alias_name', 'pay_amt', 'pay_ratio', 'pay_due_date',
-                  'days_since_prev', 'is_prep_discount', 'prep_discount_ratio',
-                  'prep_ref_date', 'is_late_penalty', 'late_penalty_ratio', 'extra_due_date')
+        fields = ('pk', 'project', '__str__', 'type_sort', 'pay_sort',
+                  'pay_code', 'pay_time', 'pay_name', 'alias_name',
+                  'pay_amt', 'pay_ratio', 'pay_due_date', 'days_since_prev',
+                  'is_prep_discount', 'prep_discount_ratio', 'prep_ref_date',
+                  'is_late_penalty', 'late_penalty_ratio', 'extra_due_date')
 
 
 class SalesPriceSerializer(serializers.ModelSerializer):
