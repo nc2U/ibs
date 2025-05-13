@@ -72,7 +72,7 @@ const resetForm = () => {
     <CRow class="p-2">
       <CCol lg="3">
         <CRow>
-          <CCol lg="5" class="mb-2">
+          <CCol lg="6" class="mb-2">
             <CFormSelect v-model="form.sort" required :disabled="disabled">
               <option value="">타입종류</option>
               <option v-for="tp in typeSort" :key="tp.value" :value="tp.value">
@@ -81,7 +81,7 @@ const resetForm = () => {
             </CFormSelect>
           </CCol>
 
-          <CCol lg="5" class="mb-2">
+          <CCol lg="6" class="mb-2">
             <CFormInput
               v-model="form.name"
               maxlength="10"
@@ -90,8 +90,12 @@ const resetForm = () => {
               :disabled="disabled"
             />
           </CCol>
+        </CRow>
+      </CCol>
 
-          <CCol lg="2" class="mb-2">
+      <CCol lg="1">
+        <CRow>
+          <CCol lg="12" class="mb-2">
             <CFormInput
               v-model="form.color"
               title="타입색상"
@@ -103,7 +107,7 @@ const resetForm = () => {
         </CRow>
       </CCol>
 
-      <CCol lg="8">
+      <CCol lg="7">
         <CRow>
           <CCol lg="2" class="mb-2">
             <CFormInput
@@ -150,7 +154,7 @@ const resetForm = () => {
           </CCol>
 
           <CCol lg="2" class="mb-2">
-            <CFormSelect v-model="form.price_setting" required :disabled="disabled">
+            <CFormSelect v-model="form.price_setting" :disabled="disabled">
               <option value="">공급가 설정 옵션</option>
               <option value="1">타입별 설정</option>
               <option value="2">층타입별 설정</option>
