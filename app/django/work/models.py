@@ -250,7 +250,7 @@ class Permission(models.Model):
 
     class Meta:
         ordering = ('id',)
-        
+
 
 class Member(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='구성원')
@@ -373,6 +373,15 @@ class Repository(models.Model):
         ordering = ('id',)
         verbose_name = '09. 저장소'
         verbose_name_plural = '09. 저장소'
+
+
+class Commit(models.Model):
+    repo = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='commits')
+    commit_hash = models.CharField(max_length=40)
+    message = models.TextField()
+    author = models.CharField(max_length=100)
+    date = models.DateTimeField()
+    issues = models.ManyToManyField('Issue', blank=True)
 
 
 class CodeActivity(models.Model):
