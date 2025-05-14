@@ -12,7 +12,7 @@ from work.models import Repository, Commit, Issue
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         for repo in Repository.objects.all():
-            commits_data = self.fetch_commits(f"{repo.github_api_url}/commits", repo.author)
+            commits_data = self.fetch_commits(f"{repo.github_api_url}/commits", repo.github_token)
             if not commits_data:
                 continue
 
