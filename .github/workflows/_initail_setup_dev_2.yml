@@ -21,7 +21,7 @@ jobs:
           ref: 'develop'
       
       # Django collectstatic & migrate
-      - name: Django collectstatic & migrate (ci/cd server)
+      - name: Django collectstatic & migrate (ci/cd server) & fetch_commits
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.CICD_HOST }}
