@@ -467,9 +467,9 @@ export const useWork = defineStore('work', () => {
       .then(res => (repository.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchRepositoryList = async () =>
+  const fetchRepositoryList = async (proj: number | '' = '', d = '', r = '') =>
     await api
-      .get(`/repository/`)
+      .get(`/repository/?project=${proj}&is_default=${d}&is_report=${r}`)
       .then(res => (repositoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 

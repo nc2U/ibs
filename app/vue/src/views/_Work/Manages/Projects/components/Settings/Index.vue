@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { ref, computed, inject, type ComputedRef, onBeforeMount } from 'vue'
-import { type IssueCategory as ICategory } from '@/store/types/work'
+import { type IssueCategory as ICategory, type IssueProject } from '@/store/types/work'
 import { useWork } from '@/store/pinia/work'
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
@@ -50,12 +50,13 @@ const settingMenus = computed(() => {
 })
 
 const workStore = useWork()
-const issueProject = computed(() => workStore.issueProject)
-const my_perms = computed(() => workStore.issueProject?.my_perms)
+const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
+const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
 const modules = computed(() => issueProject.value?.module)
 const AllProjects = computed(() => workStore.AllIssueProjects)
 const getRoles = computed(() => workStore.getRoles)
 const getTrackers = computed(() => workStore.getTrackers)
+const repositoryList = computed(() => workStore.repositoryList)
 const getActivities = computed(() => workStore.getActivities)
 const versionList = computed(() => workStore.versionList)
 
@@ -117,6 +118,7 @@ onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({})
   await workStore.fetchRoleList()
   await workStore.fetchTrackerList()
+  await workStore.fetchRepositoryList(issueProject.value?.pk ?? '')
   await workStore.fetchActivityList()
 
   if (route.params.projId) {
@@ -179,7 +181,11 @@ onBeforeMount(async () => {
       @delete-category="deleteCategory"
     />
 
-    <Repository v-if="menu === '저장소'" />
+    <Repository
+      v-if="menu === '저장소'"
+      :proj-id="issueProject?.slug as string"
+      :repo-list="repositoryList"
+    />
 
     <Forum v-if="menu === '게시판'" />
 
