@@ -34,6 +34,7 @@ jobs:
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py collectstatic --no-input
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py makemigrations accounts book board cash company contract docs ibs items notice payment project work
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py migrate
+            kubectl exec -it -n ibs-dev $web_pod -- python manage.py fetch_commits
       
       # Node.js 사용
       - name: Use Node.js
