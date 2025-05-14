@@ -357,17 +357,14 @@ class Workflow(models.Model):
 
 class Repository(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
-    SCM_CHOICES = (('1', 'Git'),)
-    scm = models.CharField('종류', max_length=10, choices=SCM_CHOICES, default='1')
     is_default = models.BooleanField('주저장소', default=True)
     slug = models.CharField('식별자', max_length=20, unique=True, blank=True, null=True,
                             help_text='1 에서 255 글자 소문자(a-z),숫자,대쉬(-)와 밑줄(_)만 가능합니다. 식별자는 저장후에는 수정할 수 없습니다.')
-    path = models.CharField('저장소 경로', max_length=255, help_text='로컬의 bare 저장소 (예: //gitrepo, c:\\gitrepo)')
-    path_encoding = models.CharField('경로 인코딩', max_length=20, default='UTF-8', help_text='기본: UTF-8')
+    github_api_url = models.URLField('깃헙 API 주소', help_text="https://api.github.com/repos/{owner}/{repo}")
     is_report = models.BooleanField('파일이나 폴더의 마지막 커밋을 보고', default=False)
 
     def __str__(self):
-        return self.scm
+        return f'{self.slug} (github)'
 
     class Meta:
         ordering = ('id',)
@@ -377,7 +374,7 @@ class Repository(models.Model):
 
 class Commit(models.Model):
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='commits')
-    commit_hash = models.CharField(max_length=40)
+    commit_hash = models.CharField(max_length=40, unique=True)
     message = models.TextField()
     author = models.CharField(max_length=100)
     date = models.DateTimeField()
