@@ -299,6 +299,16 @@ export interface IssueStatus {
   order: number
 }
 
+export interface Repository {
+  pk?: number
+  project: number
+  is_default: boolean
+  slug: string
+  github_api_url: string
+  github_token: string | null
+  is_report: boolean
+}
+
 export interface CodeValue {
   pk: number
   name: string

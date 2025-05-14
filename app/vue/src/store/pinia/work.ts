@@ -18,6 +18,7 @@ import type {
   Member,
   News,
   ProjectFilter,
+  Repository,
   Role,
   TimeEntry,
   TimeEntryFilter,
@@ -454,6 +455,49 @@ export const useWork = defineStore('work', () => {
     api
       .get(`/issue-status/`)
       .then(res => (statusList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  // Repository states & getters
+  const repository = ref<Repository | null>(null)
+  const repositoryList = ref<Repository[]>([])
+
+  const fetchRepository = async (pk: number) =>
+    await api
+      .get(`/repository/${pk}/`)
+      .then(res => (repository.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchRepositoryList = async () =>
+    await api
+      .get(`/repository/`)
+      .then(res => (repositoryList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createRepository = async (payload: Repository) =>
+    await api
+      .post(`/repository/`, payload)
+      .then(async res => {
+        await fetchRepository(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchRepository = async (pk: number, payload: any) =>
+    await api
+      .patch(`/repository/${pk}/`, payload)
+      .then(async res => {
+        await fetchRepository(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteRepository = async (pk: number) =>
+    await api
+      .delete(`/repository/${pk}/`)
+      .then(async () => {
+        await fetchRepositoryList()
+        message('warning', '알림!', '해당 저장소가 삭제되었습니다!')
+      })
       .catch(err => errorHandle(err.response.data))
 
   // code-activity states & getters
@@ -910,7 +954,6 @@ export const useWork = defineStore('work', () => {
 
     category,
     categoryList,
-
     fetchCategory,
     fetchCategoryList,
     createCategory,
@@ -919,6 +962,14 @@ export const useWork = defineStore('work', () => {
 
     statusList,
     fetchStatusList,
+
+    repository,
+    repositoryList,
+    fetchRepository,
+    fetchRepositoryList,
+    createRepository,
+    patchRepository,
+    deleteRepository,
 
     activityList,
     getActivities,
