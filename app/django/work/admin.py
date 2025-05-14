@@ -129,7 +129,10 @@ class CommitInline(admin.TabularInline):
 
 @admin.register(Repository)
 class RepositoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('project', 'is_default', 'slug', 'github_api_url', 'is_report')
+    list_display = ('id', 'project', 'is_default', 'slug', 'github_api_url', 'is_report')
+    list_display_links = ('project', 'slug')
+    list_editable = ('is_default', 'is_report')
+    list_filter = ('project', 'is_default', 'is_report')
     inlines = (CommitInline,)
 
 
