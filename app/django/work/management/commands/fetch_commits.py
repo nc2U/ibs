@@ -20,19 +20,28 @@ class Command(BaseCommand):
 
             commits_to_create = []
             for item in commits_data:
-                commit_hash = item['sha']
-                author = item['commit']['author']['name']
-                date = item['commit']['author']['date']
-                message = item['commit']['message']
+                try:
+                    commit_hash = item['sha']
+                    author = item['commit']['author']['name']
+                    date_str = item['commit']['author']['date']
+                    message = item['commit']['message']
 
-                if not Commit.objects.filter(repo=repo, commit_hash=commit_hash).exists():
-                    commits_to_create.append(Commit(
-                        repo=repo,
-                        commit_hash=commit_hash,
-                        author=author,
-                        date=datetime.fromisoformat(date.replace('Z', '+00:00')),
-                        message=message
-                    ))
+                    if not all([commit_hash, author, date_str, message is not None]):
+                        self.stderr.write(self.style.WARNING(f"Skipping invalid commit data: {item}"))
+                        continue
+
+                    date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    if not Commit.objects.filter(repo=repo, commit_hash=commit_hash).exists():
+                        commits_to_create.append(Commit(
+                            repo=repo,
+                            commit_hash=commit_hash,
+                            author=author,
+                            date=date,
+                            message=message
+                        ))
+                except (KeyError, ValueError) as e:
+                    self.stderr.write(self.style.WARNING(f"Invalid commit data: {e}"))
+                    continue
 
             Commit.objects.bulk_create(commits_to_create, ignore_conflicts=True)
             self.stdout.write(
