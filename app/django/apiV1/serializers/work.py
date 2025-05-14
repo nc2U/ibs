@@ -8,10 +8,10 @@ from rest_framework import serializers
 
 from accounts.models import User
 from apiV1.serializers.accounts import SimpleUserSerializer
-from work.models import (IssueProject, Role, Permission, Member, Module, Version,
-                         IssueCategory, Repository, Tracker, IssueStatus, Workflow,
-                         CodeActivity, CodeIssuePriority, CodeDocsCategory, Issue, IssueRelation,
-                         IssueFile, IssueComment, TimeEntry, Search, ActivityLogEntry, IssueLogEntry, News)
+from work.models import (IssueProject, Role, Permission, Member, Module, Version, IssueCategory,
+                         Repository, Commit, Tracker, IssueStatus, Workflow, CodeActivity,
+                         CodeIssuePriority, CodeDocsCategory, Issue, IssueRelation, IssueFile,
+                         IssueComment, TimeEntry, Search, ActivityLogEntry, IssueLogEntry, News)
 
 
 # Work --------------------------------------------------------------------------
@@ -744,8 +744,14 @@ class WorkflowSerializer(serializers.ModelSerializer):
 class RepositorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
-        fields = ('pk', 'project', 'scm', 'is_default',
-                  'slug', 'path', 'path_encoding', 'is_report')
+        fields = ('pk', 'project', 'is_default', 'slug',
+                  'github_api_url', 'github_token', 'is_report')
+
+
+class CommitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Commit
+        fields = ('pk', 'repo', 'commit_hash', 'message', 'author', 'date', 'issues')
 
 
 class CodeActivitySerializer(serializers.ModelSerializer):
