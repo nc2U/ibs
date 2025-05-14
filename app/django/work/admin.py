@@ -133,6 +133,13 @@ class RepositoryAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (CommitInline,)
 
 
+@admin.register(Commit)
+class CommitAdmin(admin.ModelAdmin):
+    list_display = ('id', 'repo', 'commit_hash', 'author', 'date')
+    list_display_links = ('commit_hash',)
+    list_filter = ('repo', 'issues')
+
+
 @admin.register(CodeActivity)
 class CodeActivityAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'active', 'default', 'order', 'user')

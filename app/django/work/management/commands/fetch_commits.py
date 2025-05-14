@@ -14,9 +14,12 @@ class Command(BaseCommand):
         for repo in Repository.objects.all():
             commits_data = self.fetch_commits(f"{repo.github_api_url}/commits", repo.github_token)
             if not commits_data:
+                self.stdout.write(self.style.WARNING(f"No commits retrieved from {repo.github_api_url}"))
                 continue
 
             commits_to_create = []
+            commit_hashes = []
+            existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
             for item in commits_data:
                 try:
                     commit_hash = item['sha']
@@ -27,8 +30,6 @@ class Command(BaseCommand):
                         self.stderr.write(self.style.WARNING(f"Skipping invalid commit data: {item}"))
                         continue
                     date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-
-                    existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
                     if commit_hash not in existing_hashes:
                         commit = Commit(
                             repo=repo,
@@ -37,7 +38,8 @@ class Command(BaseCommand):
                             date=date,
                             message=message
                         )
-                        commits_to_create.append((commit, message))
+                        commits_to_create.append(commit)
+                        commit_hashes.append((commit_hash, message))
                 except (KeyError, ValueError) as e:
                     self.stderr.write(self.style.WARNING(f"Invalid commit data: {e}"))
                     continue
@@ -46,14 +48,37 @@ class Command(BaseCommand):
                 with transaction.atomic():
                     try:
                         Commit.objects.bulk_create(commits_to_create, ignore_conflicts=True)
+                        self.stdout.write(self.style.SUCCESS(f"Created {len(commits_to_create)} commits"))
+                        # 저장된 커밋 재조회
+                        saved_commits = Commit.objects.filter(
+                            repo=repo,
+                            commit_hash__in=[c.commit_hash for c in commits_to_create])
+                        commit_map = {c.commit_hash: c for c in saved_commits}
+                        for commit_hash, message in commit_hashes:
+                            commit = commit_map.get(commit_hash)
+                            if not commit:
+                                self.stderr.write(
+                                    self.style.WARNING(f"Commit {commit_hash} was not saved (possibly ignored)"))
+                                continue
+                            issue_numbers = re.findall(r'#(\d+)', message)
+                            issue_ids = [int(num) for num in issue_numbers]
+                            # Project와 Repository 매핑 가정
+                            try:
+                                project = repo.project  # Repository에 project 필드 가정
+                                valid_issues = Issue.objects.filter(pk__in=issue_ids, project=project)
+                            except AttributeError:
+                                self.stderr.write(
+                                    self.style.WARNING(f"No project linked to repository {repo.github_api_url}"))
+                                continue
+                            if valid_issues:
+                                commit.issues.set(valid_issues)
+                                self.stdout.write(
+                                    self.style.WARNING(f"Linked {len(valid_issues)} issues to commit {commit_hash}"))
                     except Exception as e:
                         self.stderr.write(self.style.ERROR(f"Bulk create failed: {e}"))
-                    for commit, message in commits_to_create:
-                        issue_numbers = re.findall(r'#(\d+)', message)
-                        issue_ids = [int(num) for num in issue_numbers]
-                        valid_issues = Issue.objects.filter(pk__in=issue_ids, repo=repo)
-                        if valid_issues:
-                            commit.issues.set(valid_issues)
+                        raise
+            else:
+                self.stdout.write(self.style.WARNING(f"No new commits to create for {repo.github_api_url}"))
 
             self.stdout.write(
                 self.style.SUCCESS(
@@ -74,7 +99,6 @@ class Command(BaseCommand):
                     break
                 commits_data.extend(page_data)
                 page += 1
-                # 요청 제한 로깅
                 remaining = response.headers.get('X-RateLimit-Remaining')
                 if remaining and int(remaining) < 100:
                     reset = datetime.fromtimestamp(int(response.headers.get('X-RateLimit-Reset', 0)))
@@ -91,5 +115,5 @@ class Command(BaseCommand):
             except requests.RequestException as e:
                 self.stderr.write(self.style.ERROR(f"GitHub API page {page} request failed for {api_url}: {e}"))
                 return commits_data
-        self.stdout.write(self.style.NOTICE(f"Retrieved {len(commits_data)} commits from {api_url}"))
+        self.stdout.write(self.style.WARNING(f"Retrieved {len(commits_data)} commits from {api_url}"))
         return commits_data

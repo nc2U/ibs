@@ -365,7 +365,7 @@ class Repository(models.Model):
     is_report = models.BooleanField('파일이나 폴더의 마지막 커밋을 보고', default=False)
 
     def __str__(self):
-        return f'{self.slug} (github)'
+        return f'{self.slug} (git 저장소)'
 
     class Meta:
         ordering = ('id',)
@@ -380,6 +380,11 @@ class Commit(models.Model):
     author = models.CharField(max_length=100, default='Unknown')
     date = models.DateTimeField(db_index=True)
     issues = models.ManyToManyField('Issue', blank=True)
+
+    class Meta:
+        ordering = ('-id',)
+        verbose_name = '10. 커미트'
+        verbose_name_plural = '10. 커미트'
 
 
 class CodeActivity(models.Model):
@@ -396,8 +401,8 @@ class CodeActivity(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '10. 작업분류(시간추적)'
-        verbose_name_plural = '10. 작업분류(시간추적)'
+        verbose_name = '11. 작업분류(시간추적)'
+        verbose_name_plural = '11. 작업분류(시간추적)'
 
 
 class CodeIssuePriority(models.Model):
@@ -414,8 +419,8 @@ class CodeIssuePriority(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '11. 업무 우선순위'
-        verbose_name_plural = '11. 업무 우선순위'
+        verbose_name = '12. 업무 우선순위'
+        verbose_name_plural = '12. 업무 우선순위'
 
 
 class CodeDocsCategory(models.Model):
@@ -432,8 +437,8 @@ class CodeDocsCategory(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '12. 문서 범주'
-        verbose_name_plural = '12. 문서 범주'
+        verbose_name = '13. 문서 범주'
+        verbose_name_plural = '13. 문서 범주'
 
 
 class Issue(models.Model):
@@ -469,8 +474,8 @@ class Issue(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '13. 업무(작업)'
-        verbose_name_plural = '13. 업무(작업)'
+        verbose_name = '14. 업무(작업)'
+        verbose_name_plural = '14. 업무(작업)'
 
 
 class IssueRelation(models.Model):
@@ -575,8 +580,8 @@ class News(models.Model):
         return self.title
 
     class Meta:
-        verbose_name = '14. 공지'
-        verbose_name_plural = '14. 공지'
+        verbose_name = '15. 공지'
+        verbose_name_plural = '15. 공지'
 
 
 def get_news_file_path(instance, filename):
@@ -641,8 +646,8 @@ class ActivityLogEntry(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '15. 작업 내역'
-        verbose_name_plural = '15. 작업 내역'
+        verbose_name = '16. 작업 내역'
+        verbose_name_plural = '16. 작업 내역'
 
 
 class SequentialIntegerField(models.IntegerField):
@@ -677,8 +682,8 @@ class IssueLogEntry(models.Model):
         return f"{self.action} - {self.timestamp}"
 
     class Meta:
-        verbose_name = '16. 업무 로그'
-        verbose_name_plural = '16. 업무 로그'
+        verbose_name = '17. 업무 로그'
+        verbose_name_plural = '17. 업무 로그'
 
 
 class Search(models.Model):
