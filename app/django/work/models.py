@@ -361,6 +361,7 @@ class Repository(models.Model):
     slug = models.CharField('식별자', max_length=20, unique=True, blank=True, null=True,
                             help_text='1 에서 255 글자 소문자(a-z),숫자,대쉬(-)와 밑줄(_)만 가능합니다. 식별자는 저장후에는 수정할 수 없습니다.')
     github_api_url = models.URLField('깃헙 API 주소', help_text="https://api.github.com/repos/{owner}/{repo}")
+    github_token = models.CharField('깃헙 토큰', max_length=255, null=True, blank=True)
     is_report = models.BooleanField('파일이나 폴더의 마지막 커밋을 보고', default=False)
 
     def __str__(self):
@@ -375,9 +376,9 @@ class Repository(models.Model):
 class Commit(models.Model):
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='commits')
     commit_hash = models.CharField(max_length=40, unique=True)
-    message = models.TextField()
-    author = models.CharField(max_length=100)
-    date = models.DateTimeField()
+    message = models.TextField(default='')
+    author = models.CharField(max_length=100, default='Unknown')
+    date = models.DateTimeField(db_index=True)
     issues = models.ManyToManyField('Issue', blank=True)
 
 
