@@ -10,9 +10,20 @@ from work.models import Repository, Commit, Issue
 
 
 class Command(BaseCommand):
+    help = "Fetch commits from GitHub repositories"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--limit',
+            type=int,
+            default=None,
+            help='Limit the number of commits to fetch (default: fetch all)',
+        )
+
     def handle(self, *args, **kwargs):
+        limit = kwargs.get('limit')  # 명령줄에서 --limit으로 전달된 값
         for repo in Repository.objects.all():
-            commits_data = self.fetch_commits(f"{repo.github_api_url}/commits", repo.github_token)
+            commits_data = self.fetch_commits(f"{repo.github_api_url}/commits", repo.github_token, limit=limit)
             if not commits_data:
                 self.stdout.write(self.style.WARNING(f"No commits retrieved from {repo.github_api_url}"))
                 continue
@@ -61,11 +72,8 @@ class Command(BaseCommand):
                                     self.style.WARNING(f"Commit {commit_hash} was not saved (possibly ignored)"))
                                 continue
                             issue_numbers = re.findall(r'#(\d+)', message)
-                            issue_ids = [int(num) for num in issue_numbers]
-                            # Project와 Repository 매핑 가정
                             try:
-                                project = repo.project  # Repository에 project 필드 가정
-                                valid_issues = Issue.objects.filter(pk__in=issue_ids, project=project)
+                                valid_issues = Issue.objects.filter(pk__in=issue_numbers)
                             except AttributeError:
                                 self.stderr.write(
                                     self.style.WARNING(f"No project linked to repository {repo.github_api_url}"))
@@ -86,18 +94,25 @@ class Command(BaseCommand):
                     f"Fetched {len(commits_to_create)} new commits from {repo.github_api_url}"
                 ))
 
-    def fetch_commits(self, api_url, token=None):
+    def fetch_commits(self, api_url, token=None, limit=None):
         commits_data = []
         page = 1
         headers = {'Authorization': f'token {token}'}
+        # limit이 None이 아니면 per_page를 limit과 100 중 작은 값으로 설정
+        per_page = min(limit, 100) if limit is not None else 100
+
         while True:
             try:
-                response = requests.get(api_url, headers=headers, params={'page': page, 'per_page': 100})
+                response = requests.get(api_url, headers=headers, params={'page': page, 'per_page': per_page})
                 response.raise_for_status()
                 page_data = response.json()
                 if not page_data:
                     break
                 commits_data.extend(page_data)
+                # limit이 설정된 경우, 필요한 만큼만 유지하고 종료
+                if limit is not None and len(commits_data) >= limit:
+                    commits_data = commits_data[:limit]
+                    break
                 page += 1
                 remaining = response.headers.get('X-RateLimit-Remaining')
                 if remaining and int(remaining) < 100:
