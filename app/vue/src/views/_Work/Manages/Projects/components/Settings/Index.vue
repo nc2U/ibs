@@ -99,6 +99,8 @@ const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: 
   }
 }
 
+const delRepository = (pk: number) => alert(`--- ok! del repository --- ${pk}`)
+
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
     await workStore.fetchIssueProject(to.params.projId as string)
@@ -185,6 +187,7 @@ onBeforeMount(async () => {
       v-if="menu === '저장소'"
       :proj-id="issueProject?.slug as string"
       :repo-list="repositoryList"
+      @del-repository="delRepository"
     />
 
     <Forum v-if="menu === '게시판'" />
