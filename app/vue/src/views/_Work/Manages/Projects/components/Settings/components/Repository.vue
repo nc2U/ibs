@@ -5,17 +5,19 @@ import type { Repository } from '@/store/types/work.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { isValidate } from '@/utils/helper.ts'
 
 defineProps({
   projId: { type: String, required: true },
   repoList: { type: Array as PropType<Repository[]>, default: () => [] },
 })
 
-const emit = defineEmits(['del-repository'])
+const emit = defineEmits(['create-repo', 'delete-repo'])
 
 const refFormModal = ref()
 const refDeleteCheck = ref()
 
+const validated = ref(false)
 const form = ref({
   project: '',
   is_default: false,
@@ -25,6 +27,25 @@ const form = ref({
   is_report: false,
 })
 
+const resetForm = () => {
+  form.value.project = ''
+  form.value.is_default = false
+  form.value.slug = ''
+  form.value.github_api_url = ''
+  form.value.github_token = ''
+  form.value.is_report = false
+}
+
+const onSubmit = (event: Event) => {
+  if (isValidate(event)) validated.value = isValidate(event)
+  else {
+    emit('create-repo', { ...form.value })
+    validated.value = false
+    resetForm()
+    refFormModal.value.close()
+  }
+}
+
 // repository delete!
 const delRepoPk = ref<number | null>(null)
 const delRepository = (repo: number) => {
@@ -32,7 +53,7 @@ const delRepository = (repo: number) => {
   refDeleteCheck.value.callModal('저장소 삭제', '계속 진행 하시겠습니까?', null, 'amber')
 }
 const modalAction = () => {
-  emit('del-repository', delRepoPk.value)
+  emit('delete-repo', delRepoPk.value)
   delRepoPk.value = null
   refDeleteCheck.value.close()
 }
@@ -100,7 +121,7 @@ const modalAction = () => {
 
   <FormModal ref="refFormModal">
     <template #header>저장소 추가</template>
-    <CForm>
+    <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
       <template #default>
         <CModalBody class="text-body">
           <CRow class="mb-3">
@@ -130,6 +151,7 @@ const modalAction = () => {
               <CFormInput
                 v-model="form.github_api_url"
                 id="githubApiForm"
+                required
                 placeholder="Github API"
               />
             </CCol>
@@ -162,7 +184,7 @@ const modalAction = () => {
         </CModalBody>
         <CModalFooter>
           <v-btn :color="btnLight" size="small" @click="refFormModal.close()"> 닫기</v-btn>
-          <v-btn color="primary" size="small">확인</v-btn>
+          <v-btn type="submit" color="primary" size="small">확인</v-btn>
         </CModalFooter>
       </template>
     </CForm>

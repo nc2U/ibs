@@ -99,7 +99,11 @@ const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: 
   }
 }
 
-const delRepository = (pk: number) => alert(`--- ok! del repository --- ${pk}`)
+const createRepo = (payload: any) => {
+  payload.project = issueProject.value?.pk
+  workStore.createRepository(payload)
+}
+const deleteRepo = (pk: number, proj: number | undefined) => workStore.deleteRepository(pk, proj)
 
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
@@ -187,7 +191,8 @@ onBeforeMount(async () => {
       v-if="menu === '저장소'"
       :proj-id="issueProject?.slug as string"
       :repo-list="repositoryList"
-      @del-repository="delRepository"
+      @create-repo="createRepo"
+      @delete-repo="deleteRepo"
     />
 
     <Forum v-if="menu === '게시판'" />

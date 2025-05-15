@@ -478,6 +478,7 @@ export const useWork = defineStore('work', () => {
       .post(`/repository/`, payload)
       .then(async res => {
         await fetchRepository(res.data.pk)
+        await fetchRepositoryList(res.data.project.pk)
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -487,15 +488,16 @@ export const useWork = defineStore('work', () => {
       .patch(`/repository/${pk}/`, payload)
       .then(async res => {
         await fetchRepository(res.data.pk)
+        await fetchRepositoryList(res.data.project.pk)
         message()
       })
       .catch(err => errorHandle(err.response.data))
 
-  const deleteRepository = async (pk: number) =>
+  const deleteRepository = async (pk: number, proj: number | null = null) =>
     await api
       .delete(`/repository/${pk}/`)
       .then(async () => {
-        await fetchRepositoryList()
+        await fetchRepositoryList(proj ?? '')
         message('warning', '알림!', '해당 저장소가 삭제되었습니다!')
       })
       .catch(err => errorHandle(err.response.data))
