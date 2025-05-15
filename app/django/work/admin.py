@@ -1,7 +1,7 @@
 from django.contrib import admin
-from django import forms
-from rangefilter.filters import DateRangeFilter
 from import_export.admin import ImportExportMixin
+from rangefilter.filters import DateRangeFilter
+
 from .models import (IssueProject, Module, Role, Permission, Member, Tracker,
                      IssueCategory, IssueStatus, Workflow, Version, Repository,
                      Commit, CodeActivity, CodeIssuePriority, CodeDocsCategory,
@@ -122,18 +122,12 @@ class WorkflowAdmin(ImportExportMixin, admin.ModelAdmin):
     get_new_statuses.short_description = '허용 업무 상태'
 
 
-class CommitInline(admin.TabularInline):
-    model = Commit
-    extra = 1
-
-
 @admin.register(Repository)
 class RepositoryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'is_default', 'slug', 'github_api_url', 'is_report')
     list_display_links = ('project', 'slug')
     list_editable = ('is_default', 'is_report')
     list_filter = ('project', 'is_default', 'is_report')
-    inlines = (CommitInline,)
 
 
 @admin.register(Commit)
