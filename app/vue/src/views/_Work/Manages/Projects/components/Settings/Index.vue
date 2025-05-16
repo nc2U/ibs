@@ -99,9 +99,10 @@ const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: 
   }
 }
 
-const createRepo = (payload: any) => {
-  payload.project = issueProject.value?.pk
-  workStore.createRepository(payload)
+const submitRepo = (payload: any) => {
+  if (!payload.project) payload.project = issueProject.value?.pk
+  if (!payload.pk) workStore.createRepository(payload)
+  else workStore.patchRepository(payload)
 }
 const deleteRepo = (pk: number, proj: number | undefined) => workStore.deleteRepository(pk, proj)
 
@@ -191,7 +192,7 @@ onBeforeMount(async () => {
       v-if="menu === '저장소'"
       :proj-id="issueProject?.slug as string"
       :repo-list="repositoryList"
-      @create-repo="createRepo"
+      @submit-repo="submitRepo"
       @delete-repo="deleteRepo"
     />
 

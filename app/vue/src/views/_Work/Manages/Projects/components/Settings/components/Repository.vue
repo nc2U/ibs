@@ -1,25 +1,26 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
+import { isValidate } from '@/utils/helper.ts'
 import { btnLight, TableSecondary } from '@/utils/cssMixins.ts'
 import type { Repository } from '@/store/types/work.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { isValidate } from '@/utils/helper.ts'
 
 defineProps({
   projId: { type: String, required: true },
   repoList: { type: Array as PropType<Repository[]>, default: () => [] },
 })
 
-const emit = defineEmits(['create-repo', 'delete-repo'])
+const emit = defineEmits(['submit-repo', 'delete-repo'])
 
 const refFormModal = ref()
 const refDeleteCheck = ref()
 
 const validated = ref(false)
 const form = ref({
-  project: '',
+  pk: undefined as undefined | number,
+  project: '' as '' | number,
   is_default: false,
   slug: '',
   github_api_url: '',
@@ -28,6 +29,7 @@ const form = ref({
 })
 
 const resetForm = () => {
+  form.value.pk = undefined
   form.value.project = ''
   form.value.is_default = false
   form.value.slug = ''
@@ -39,11 +41,32 @@ const resetForm = () => {
 const onSubmit = (event: Event) => {
   if (isValidate(event)) validated.value = isValidate(event)
   else {
-    emit('create-repo', { ...form.value })
+    emit('submit-repo', { ...form.value })
     validated.value = false
     resetForm()
     refFormModal.value.close()
   }
+}
+
+const toEditRepo = (repo: Repository) => {
+  form.value.pk = repo.pk
+  form.value.project = repo.project
+  form.value.is_default = repo.is_default
+  form.value.slug = repo.slug
+  form.value.github_api_url = repo.github_api_url
+  form.value.github_token = repo.github_token
+  form.value.is_report = repo.is_report
+  refFormModal.value.callModal()
+}
+
+const addRepoFunc = () => {
+  resetForm()
+  refFormModal.value.callModal()
+}
+
+const formModalClose = () => {
+  resetForm()
+  refFormModal.value.close()
 }
 
 // repository delete!
@@ -64,7 +87,7 @@ const modalAction = () => {
     <CCol>
       <span class="mr-2">
         <v-icon icon="mdi-plus-circle" color="success" size="sm" />
-        <router-link to="" @click="refFormModal.callModal()" class="ml-1">저장소 추가</router-link>
+        <router-link to="" @click="addRepoFunc" class="ml-1">저장소 추가</router-link>
       </span>
     </CCol>
   </CRow>
@@ -106,7 +129,7 @@ const modalAction = () => {
               </span>
               <span class="mr-2">
                 <v-icon icon="mdi-pencil" color="success" size="16" />
-                <router-link to="">편집</router-link>
+                <router-link to="#" @click="toEditRepo(repo)">편집</router-link>
               </span>
               <span>
                 <v-icon icon="mdi-trash-can-outline" color="warning" size="16" />
@@ -120,7 +143,7 @@ const modalAction = () => {
   </CRow>
 
   <FormModal ref="refFormModal">
-    <template #header>저장소 추가</template>
+    <template #header>저장소 {{ form.pk ? '수정' : '추가' }}</template>
     <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
       <template #default>
         <CModalBody class="text-body">
@@ -139,6 +162,7 @@ const modalAction = () => {
                 placeholder="식별자"
                 maxlength="255"
                 required
+                :disabled="form.pk"
                 text="1 에서 255 글자 소문자(a-z),숫자,대쉬(-)와 밑줄(_)만 가능합니다. 식별자는 저장후에는 수정할 수 없습니다."
               />
             </CCol>
@@ -183,8 +207,8 @@ const modalAction = () => {
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn :color="btnLight" size="small" @click="refFormModal.close()"> 닫기</v-btn>
-          <v-btn type="submit" color="primary" size="small">확인</v-btn>
+          <v-btn :color="btnLight" size="small" @click="formModalClose"> 닫기</v-btn>
+          <v-btn type="submit" :color="form.pk ? 'success' : 'primary'" size="small">확인</v-btn>
         </CModalFooter>
       </template>
     </CForm>

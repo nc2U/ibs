@@ -483,9 +483,9 @@ export const useWork = defineStore('work', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const patchRepository = async (pk: number, payload: any) =>
+  const patchRepository = async (payload: Repository) =>
     await api
-      .patch(`/repository/${pk}/`, payload)
+      .patch(`/repository/${payload.pk as number}/`, payload)
       .then(async res => {
         await fetchRepository(res.data.pk)
         await fetchRepositoryList(res.data.project.pk)
