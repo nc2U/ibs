@@ -5,6 +5,7 @@ import { errorHandle, message } from '@/utils/helper'
 import type {
   ActLogEntryFilter,
   CodeValue,
+  Commit,
   GanttProject,
   Gantts,
   Issue,
@@ -502,6 +503,30 @@ export const useWork = defineStore('work', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // commit states & getters
+  const commit = ref<Commit | null>(null)
+  const commitList = ref<Commit[]>([])
+  const commitCount = ref<number>(0)
+
+  const commitPages = (itemPerPage: number) => Math.ceil(commitCount.value / itemPerPage)
+
+  const fetchCommit = async (pk: number) =>
+    await api
+      .get(`/commit/${pk}/`)
+      .then(res => (commit.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchCommitList = async (repo?: number, issues?: number[]) => {
+    const issueQuery = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
+    return await api
+      .get(`/commit/?repo=${repo ?? ''}${issueQuery}`)
+      .then(res => {
+        commitList.value = res.data.results
+        commitCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
   // code-activity states & getters
   const activityList = ref<CodeValue[]>([])
   const getActivities = computed(() =>
@@ -972,6 +997,12 @@ export const useWork = defineStore('work', () => {
     createRepository,
     patchRepository,
     deleteRepository,
+
+    commit,
+    commitList,
+    commitCount,
+    fetchCommit,
+    fetchCommitList,
 
     activityList,
     getActivities,

@@ -1,13 +1,19 @@
 <script lang="ts" setup>
-import { useRoute } from 'vue-router'
+import { useWork } from '@/store/pinia/work.ts'
+import Revisions from './components/Revisions.vue'
+import { computed, onBeforeMount } from 'vue'
 
-const route = useRoute()
+const workStore = useWork()
+const commitList = computed(() => workStore.commitList)
+
+const fetchCommitList = (repo?: number, issues?: number[]) =>
+  workStore.fetchCommitList(repo, issues)
+
+onBeforeMount(() => {
+  fetchCommitList()
+})
 </script>
 
 <template>
-  <CRow class="py-2">
-    <CCol>
-      <h5>{{ route.name }}</h5>
-    </CCol>
-  </CRow>
+  <Revisions :commit-list="commitList" />
 </template>

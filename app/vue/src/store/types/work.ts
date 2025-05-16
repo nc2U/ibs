@@ -309,6 +309,16 @@ export interface Repository {
   is_report: boolean
 }
 
+export interface Commit {
+  pk: number
+  repo: number
+  commit_hash: string
+  message: string
+  author: string
+  date: string
+  issues: number[]
+}
+
 export interface CodeValue {
   pk: number
   name: string
