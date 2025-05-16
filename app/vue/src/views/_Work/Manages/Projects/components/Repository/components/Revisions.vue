@@ -1,10 +1,19 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import type { Commit } from '@/store/types/work.ts'
+import { timeFormat } from '@/utils/baseMixins.ts'
 
 defineProps({ commitList: { type: Array as PropType<Commit[]>, default: () => [] } })
 
 const revSort = ref<'latest' | 'all'>('latest')
+
+const stanChk = (pk: number) => {
+  alert(pk)
+}
+
+const compChk = (pk: number) => {
+  alert(pk)
+}
 </script>
 
 <template>
@@ -21,20 +30,60 @@ const revSort = ref<'latest' | 'all'>('latest')
   </CRow>
 
   <CTable hover responsive striped>
+    <colgroup>
+      <col style="width: 4%" />
+      <col style="width: 2%" />
+      <col style="width: 5%" />
+      <col style="width: 14%" />
+      <col style="width: 16%" />
+      <col style="width: 61%" />
+    </colgroup>
     <CTableHead>
-      <CTableRow>
+      <CTableRow class="text-center">
         <CTableHeaderCell>#</CTableHeaderCell>
+        <CTableHeaderCell></CTableHeaderCell>
+        <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell>일자</CTableHeaderCell>
         <CTableHeaderCell>작성자</CTableHeaderCell>
         <CTableHeaderCell>설명</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow v-for="commit in commitList" :key="commit.pk">
-        <CTableDataCell>{{ commit.pk }}</CTableDataCell>
-        <CTableDataCell>{{ commit.date }}</CTableDataCell>
-        <CTableDataCell>{{ commit.author }}</CTableDataCell>
-        <CTableDataCell>{{ commit.message }}</CTableDataCell>
+      <CTableRow v-for="(commit, i) in commitList" :key="commit.pk">
+        <CTableDataCell class="text-center">
+          <span class="mr-5">{{ commit.pk }}</span>
+        </CTableDataCell>
+        <CTableDataCell>
+          <CFormCheck
+            v-if="i !== commitList.length - 1"
+            type="radio"
+            name="first"
+            :id="`${commit.pk}-1`"
+            @change="stanChk(commit.pk)"
+          />
+        </CTableDataCell>
+        <CTableDataCell>
+          <CFormCheck
+            v-if="i !== 0"
+            type="radio"
+            name="second"
+            :id="`${commit.pk}-2`"
+            @change="compChk(commit.pk)"
+          />
+        </CTableDataCell>
+        <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>
+        <CTableDataCell class="text-center">
+          <router-link to="">{{ commit.author }}</router-link>
+        </CTableDataCell>
+        <CTableDataCell>
+          {{ commit.message }}
+          <template v-if="commit.issues.length">
+            (<span v-for="(issue, i) in commit.issues" :key="issue">
+              <template v-if="i > 0">, </template>
+              <router-link to="">#{{ issue }} </router-link> </span
+            >)
+          </template>
+        </CTableDataCell>
       </CTableRow>
     </CTableBody>
   </CTable>
