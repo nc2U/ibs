@@ -19,14 +19,14 @@ export default defineConfig({
     vuetify({
       autoImport: true,
     }),
-    VuetifyPlugin(),
+    // VuetifyPlugin(),
   ],
   define: { 'process.env': {} },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
-    extensions: ['.js', '.json', '.jsx', '.mjs', '.ts', 'mts', '.tsx', '.vue'],
+    extensions: ['.js', '.json', '.jsx', '.mjs', '.ts', '.mts', '.tsx', '.vue'],
   },
   server: {
     proxy: {

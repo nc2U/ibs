@@ -6,15 +6,20 @@
     "cypress.config.*",
     "nightwatch.conf.*",
     "playwright.config.*",
-    ".eslintrc.cjs",
-    ".prettierrc.json"
+    ".eslintrc.cjs"
+    //    ".prettierrc.json"
   ],
   "compilerOptions": {
     "composite": true,
+    "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
+    "allowImportingTsExtensions": true,
     "types": [
-      "node"
+      "node",
+      "vitest",
+      "cypress",
+      "playwright"
     ]
   }
 }
