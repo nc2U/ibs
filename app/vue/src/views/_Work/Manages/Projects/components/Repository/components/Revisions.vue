@@ -44,10 +44,6 @@ onMounted(() => {
       <v-btn>차이점 보기</v-btn>
     </CCol>
   </CRow>
-  refCommit : {{ refCommit }} <br />
-  comCommit : {{ comCommit }}
-  <hr />
-
   <CTable hover responsive striped>
     <colgroup>
       <col style="width: 4%" />
