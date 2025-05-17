@@ -1,19 +1,35 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
-import type { Commit } from '@/store/types/work.ts'
+import { nextTick, onBeforeMount, onMounted, type PropType, ref, watch } from 'vue'
 import { timeFormat } from '@/utils/baseMixins.ts'
+import type { Commit } from '@/store/types/work.ts'
 
-defineProps({ commitList: { type: Array as PropType<Commit[]>, default: () => [] } })
+const props = defineProps({ commitList: { type: Array as PropType<Commit[]>, default: () => [] } })
+
+watch(
+  () => props.commitList,
+  newVal => {
+    if (newVal.length >= 2) {
+      refCommit.value = String(newVal[0].pk)
+      comCommit.value = String(newVal[1].pk)
+    }
+  },
+  { immediate: true },
+)
 
 const revSort = ref<'latest' | 'all'>('latest')
 
-const stanChk = (pk: number) => {
-  alert(pk)
+const refCommit = ref<string>('')
+const comCommit = ref<string>('')
+
+const changeRef = (pk: number) => (comCommit.value = String(pk - 1))
+const changeCom = (pk: number) => {
+  if (Number(refCommit.value) <= pk) refCommit.value = String(pk + 1)
 }
 
-const compChk = (pk: number) => {
-  alert(pk)
-}
+onMounted(() => {
+  refCommit.value = String(props.commitList.map(c => c.pk)[0])
+  comCommit.value = String(props.commitList.map(c => c.pk)[1])
+})
 </script>
 
 <template>
@@ -28,6 +44,9 @@ const compChk = (pk: number) => {
       <v-btn>차이점 보기</v-btn>
     </CCol>
   </CRow>
+  refCommit : {{ refCommit }} <br />
+  comCommit : {{ comCommit }}
+  <hr />
 
   <CTable hover responsive striped>
     <colgroup>
@@ -57,18 +76,25 @@ const compChk = (pk: number) => {
           <CFormCheck
             v-if="i !== commitList.length - 1"
             type="radio"
-            name="first"
             :id="`${commit.pk}-1`"
-            @change="stanChk(commit.pk)"
+            name="refCommit"
+            :label="String(commit.pk)"
+            :value="String(commit.pk)"
+            v-model="refCommit"
+            @change="changeRef(commit.pk)"
           />
         </CTableDataCell>
+
         <CTableDataCell>
           <CFormCheck
             v-if="i !== 0"
             type="radio"
-            name="second"
             :id="`${commit.pk}-2`"
-            @change="compChk(commit.pk)"
+            name="comCommit"
+            :label="String(commit.pk)"
+            :value="String(commit.pk)"
+            v-model="comCommit"
+            @change="changeCom(commit.pk)"
           />
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>
