@@ -516,11 +516,18 @@ export const useWork = defineStore('work', () => {
       .then(res => (commit.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchCommitList = async (payload: { repo?: number; issues?: number[]; page?: number }) => {
-    const { repo, issues, page } = payload
+  const fetchCommitList = async (payload: {
+    project?: string
+    repo?: number
+    issues?: number[]
+    page?: number
+  }) => {
+    const { project, repo, issues, page } = payload
     const issueQuery = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
     return await api
-      .get(`/commit/?page=${page ?? 1}&repo=${repo ?? ''}${issueQuery}`)
+      .get(
+        `/commit/?page=${page ?? 1}&repo_project=${project ?? ''}&repo=${repo ?? ''}${issueQuery}`,
+      )
       .then(res => {
         commitList.value = res.data.results
         commitCount.value = res.data.count
