@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { nextTick, onBeforeMount, onMounted, type PropType, ref, watch } from 'vue'
+import { onBeforeMount, type PropType, ref, watch } from 'vue'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import type { Commit } from '@/store/types/work.ts'
 
@@ -13,7 +13,6 @@ watch(
       comCommit.value = String(newVal[1].pk)
     }
   },
-  { immediate: true },
 )
 
 const revSort = ref<'latest' | 'all'>('latest')
@@ -26,7 +25,7 @@ const changeCom = (pk: number) => {
   if (Number(refCommit.value) <= pk) refCommit.value = String(pk + 1)
 }
 
-onMounted(() => {
+onBeforeMount(() => {
   refCommit.value = String(props.commitList.map(c => c.pk)[0])
   comCommit.value = String(props.commitList.map(c => c.pk)[1])
 })
@@ -74,7 +73,6 @@ onMounted(() => {
             type="radio"
             :id="`${commit.pk}-1`"
             name="refCommit"
-            :label="String(commit.pk)"
             :value="String(commit.pk)"
             v-model="refCommit"
             @change="changeRef(commit.pk)"
@@ -87,7 +85,6 @@ onMounted(() => {
             type="radio"
             :id="`${commit.pk}-2`"
             name="comCommit"
-            :label="String(commit.pk)"
             :value="String(commit.pk)"
             v-model="comCommit"
             @change="changeCom(commit.pk)"
