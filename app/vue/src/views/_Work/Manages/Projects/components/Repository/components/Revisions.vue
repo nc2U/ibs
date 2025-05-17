@@ -1,7 +1,9 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref, watch } from 'vue'
 import { timeFormat } from '@/utils/baseMixins.ts'
+import { useWork } from '@/store/pinia/work.ts'
 import type { Commit } from '@/store/types/work.ts'
+import Pagination from '@/components/Pagination'
 
 const props = defineProps({ commitList: { type: Array as PropType<Commit[]>, default: () => [] } })
 
@@ -15,6 +17,8 @@ watch(
   },
 )
 
+const emit = defineEmits(['page-select'])
+
 const revSort = ref<'latest' | 'all'>('latest')
 
 const refCommit = ref<string>('')
@@ -24,6 +28,10 @@ const changeRef = (pk: number) => (comCommit.value = String(pk - 1))
 const changeCom = (pk: number) => {
   if (Number(refCommit.value) <= pk) refCommit.value = String(pk + 1)
 }
+
+const workStore = useWork()
+const commitPages = (page: number) => workStore.commitPages(page)
+const pageSelect = (page: number) => emit('page-select', page)
 
 onBeforeMount(() => {
   refCommit.value = String(props.commitList.map(c => c.pk)[0])
@@ -118,5 +126,12 @@ onBeforeMount(() => {
       <router-link to="" @click="() => (revSort = 'all')">전체 리비전 보기</router-link>
     </CCol>
   </CRow>
-  <CRow v-else> Pagination...</CRow>
+  <CRow v-else>
+    <Pagination
+      :active-page="1"
+      :limit="8"
+      :pages="commitPages(10)"
+      @active-page-change="pageSelect"
+    />
+  </CRow>
 </template>

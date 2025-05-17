@@ -6,14 +6,16 @@ import { computed, onBeforeMount } from 'vue'
 const workStore = useWork()
 const commitList = computed(() => workStore.commitList)
 
-const fetchCommitList = (repo?: number, issues?: number[]) =>
-  workStore.fetchCommitList(repo, issues)
+const fetchCommitList = (payload: { repo?: number; issues?: number[]; page?: number }) =>
+  workStore.fetchCommitList(payload)
+
+const pageSelect = (page: number) => fetchCommitList({ page })
 
 onBeforeMount(() => {
-  fetchCommitList()
+  fetchCommitList({})
 })
 </script>
 
 <template>
-  <Revisions :commit-list="commitList" />
+  <Revisions :commit-list="commitList" @page-select="pageSelect" />
 </template>
