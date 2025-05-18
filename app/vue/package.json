@@ -41,6 +41,7 @@
     "axios": "^1.9.0",
     "buffer": "^6.0.3",
     "core-js": "^3.42.0",
+    "diff2html": "^3.4.51",
     "grid-layout-plus": "^1.0.6",
     "js-cookie": "^3.0.5",
     "maska": "^3.1.1",
