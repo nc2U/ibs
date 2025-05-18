@@ -18,7 +18,7 @@ const workStore = useWork()
 const repo = computed(() => workStore.repository)
 const repoList = computed(() => workStore.repositoryList)
 const commitList = computed(() => workStore.commitList)
-const repoApi = computed(() => workStore.repoApi)
+const githubRepoApi = computed(() => workStore.githubRepoApi)
 
 const fetchRepo = (pk: number) => workStore.fetchRepo(pk)
 const fetchRepoList = (project?: number, is_default?: string) =>

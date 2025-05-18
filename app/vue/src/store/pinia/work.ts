@@ -461,7 +461,7 @@ export const useWork = defineStore('work', () => {
   // Repository states & getters
   const repository = ref<Repository | null>(null)
   const repositoryList = ref<Repository[]>([])
-  const repoApi = ref<any>(null)
+  const githubRepoApi = ref<any>(null)
 
   const fetchRepo = async (pk: number) =>
     await api
@@ -475,7 +475,7 @@ export const useWork = defineStore('work', () => {
               Authorization: `token ${res.data.github_token}`,
             },
           })
-          .then(res => (repoApi.value = res.data))
+          .then(res => (githubRepoApi.value = res.data))
           .catch(err => errorHandle(err.response.data))
       })
       .catch(err => errorHandle(err.response.data))
@@ -1013,7 +1013,7 @@ export const useWork = defineStore('work', () => {
 
     repository,
     repositoryList,
-    repoApi,
+    githubRepoApi,
     fetchRepo,
     fetchRepoList,
     createRepo,
