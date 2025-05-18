@@ -15,7 +15,7 @@ const commitFilter = ref({
 })
 
 const workStore = useWork()
-const repo = computed<Repository>(() => workStore.repository)
+const repo = computed<Repository | null>(() => workStore.repository)
 const repoList = computed(() => workStore.repositoryList)
 const commitList = computed(() => workStore.commitList)
 const githubApiUrl = computed<any>(() => (workStore.githubRepoApi as any)?.url || '')
@@ -49,9 +49,14 @@ const baseSet = (pk: number) => (basePk.value = pk)
 const getDiff = () => {
   fetchDiff(
     `${githubApiUrl.value}/compare/${diffs.value.baseCommit?.commit_hash}...${diffs.value.headCommit?.commit_hash}`,
-    `${repo.value.github_token}`,
+    `${repo.value?.github_token}`,
   )
   viewPageSort.value = 'diff'
+}
+
+const getBack = () => {
+  viewPageSort.value = 'revisions'
+  workStore.removeDiffApi()
 }
 
 const pageSelect = (page: number) => {
@@ -81,6 +86,6 @@ onBeforeMount(async () => {
     :head-commit="diffs.headCommit as Commit"
     :base-commit="diffs.baseCommit as Commit"
     :github-diff-api="githubDiffApi"
-    @get-back="() => (viewPageSort = 'revisions')"
+    @get-back="getBack"
   />
 </template>

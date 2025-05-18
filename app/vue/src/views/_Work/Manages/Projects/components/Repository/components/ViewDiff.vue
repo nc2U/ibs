@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, type PropType, ref, watch } from 'vue'
+import { onMounted, type PropType, ref, watch } from 'vue'
 import { btnSecondary } from '@/utils/cssMixins.ts'
 import type { Commit } from '@/store/types/work.ts'
 import { html } from 'diff2html'
@@ -8,51 +8,36 @@ import 'diff2html/bundles/css/diff2html.min.css'
 const props = defineProps({
   headCommit: { type: Object as PropType<Commit>, required: true },
   baseCommit: { type: Object as PropType<Commit>, required: true },
-  githubDiffApi: { type: Object as PropType<{ files: any }>, required: true },
+  githubDiffApi: { type: Object as PropType<any>, required: true },
 })
+
+watch(
+  () => props.githubDiffApi,
+  newVal => getDiffCode(newVal),
+)
 
 const emit = defineEmits(['get-back'])
 
 const getBack = () => emit('get-back')
 
-const diffContainer = ref<HTMLElement | null>(null)
 const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
 
-const diffCode = computed(
-  () =>
-    props.githubDiffApi?.files
-      ?.map((f: any) => f.patch)
-      .filter(Boolean)
-      .join('\n') || '',
+watch(
+  () => outputFormat.value,
+  newVal => getDiffCode(props.githubDiffApi),
 )
 
-const fetchDiff = () => {
-  if (diffContainer.value) {
-    ;(diffContainer.value as HTMLElement).innerHTML = html(diffCode.value, {
-      drawFileList: true,
-      matching: 'lines',
-      outputFormat: outputFormat.value,
-    })
-  }
+const diffHtml = ref('')
+
+const getDiffCode = (diff: string) => {
+  diffHtml.value = html(diff, {
+    drawFileList: false,
+    matching: 'lines',
+    outputFormat: outputFormat.value,
+  })
 }
 
-onMounted(() => {
-  nextTick(() => {
-    fetchDiff()
-  })
-})
-
-watch(outputFormat, fetchDiff)
-
-watch(
-  () => props.githubDiffApi,
-  newVal => {
-    if (newVal?.files?.length && diffContainer.value) {
-      fetchDiff()
-    }
-  },
-  { immediate: true, deep: true },
-)
+onMounted(async () => getDiffCode(props.githubDiffApi))
 </script>
 
 <template>
@@ -86,9 +71,16 @@ watch(
     </CCol>
   </CRow>
 
-  <div ref="diffContainer"></div>
+  <CRow class="mb-4">
+    <CCol>
+      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="getBack">돌아가기</v-btn>
+    </CCol>
+  </CRow>
 
-  <CRow class="mt-5">
+  <div v-if="diffHtml" v-html="diffHtml" class="diff-container" />
+  <div v-else>로딩 중...</div>
+
+  <CRow class="mt-4">
     <CCol>
       <v-btn size="small" variant="outlined" :color="btnSecondary" @click="getBack">돌아가기</v-btn>
     </CCol>

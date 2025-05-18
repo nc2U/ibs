@@ -464,11 +464,13 @@ export const useWork = defineStore('work', () => {
   const githubRepoApi = ref<any>(null)
   const githubDiffApi = ref<any>(null)
 
+  const removeDiffApi = () => (githubDiffApi.value = null)
+
   const fetchDiff = (url: string, token: string) =>
     api
       .get(url, {
         headers: {
-          Accept: 'application/vnd.github.v3+json',
+          Accept: 'application/vnd.github.diff',
           Authorization: `token ${token}`,
         },
       })
@@ -1027,6 +1029,7 @@ export const useWork = defineStore('work', () => {
     repositoryList,
     githubRepoApi,
     githubDiffApi,
+    removeDiffApi,
     fetchDiff,
     fetchRepo,
     fetchRepoList,
