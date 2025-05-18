@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import { timeFormat } from '@/utils/baseMixins.ts'
-import { useWork } from '@/store/pinia/work.ts'
 import type { Commit } from '@/store/types/work.ts'
+import { useWork } from '@/store/pinia/work.ts'
+import { timeFormat } from '@/utils/baseMixins.ts'
 import Pagination from '@/components/Pagination'
 
 const props = defineProps({ commitList: { type: Array as PropType<Commit[]>, default: () => [] } })
@@ -33,8 +33,8 @@ watch(basePk, newVal => {
   if (newVal) emit('base-set', Number(newVal))
 })
 
-const changeRef = (pk: number) => (basePk.value = String(pk - 1))
-const changeCom = (pk: number) => {
+const updateBase = (pk: number) => (basePk.value = String(pk - 1))
+const updateHead = (pk: number) => {
   if (Number(headPk.value) <= pk) headPk.value = String(pk + 1)
 }
 
@@ -102,7 +102,7 @@ onBeforeMount(() => {
             name="headPk"
             :value="String(commit.pk)"
             v-model="headPk"
-            @change="changeRef(commit.pk)"
+            @change="updateBase(commit.pk)"
           />
         </CTableDataCell>
 
@@ -114,7 +114,7 @@ onBeforeMount(() => {
             name="basePk"
             :value="String(commit.pk)"
             v-model="basePk"
-            @change="changeCom(commit.pk)"
+            @change="updateHead(commit.pk)"
           />
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>
