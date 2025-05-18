@@ -1,13 +1,14 @@
 <script lang="ts" setup>
-import { computed, onMounted, type PropType, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, type PropType, ref, watch } from 'vue'
 import { btnSecondary } from '@/utils/cssMixins.ts'
 import type { Commit } from '@/store/types/work.ts'
-import 'diff2html/bundles/css/diff2html.min.css'
 import { html } from 'diff2html'
+import 'diff2html/bundles/css/diff2html.min.css'
 
 const props = defineProps({
   headCommit: { type: Object as PropType<Commit>, required: true },
   baseCommit: { type: Object as PropType<Commit>, required: true },
+  githubDiffApi: { type: Object as PropType<{ files: any }>, required: true },
 })
 
 const emit = defineEmits(['get-back'])
@@ -17,30 +18,17 @@ const getBack = () => emit('get-back')
 const diffContainer = ref<HTMLElement | null>(null)
 const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
 
-// 예시 API 엔드포인트 (공개 저장소에서 token 없이 사용 가능, rate limit 주의)
-const owner = 'nc2u'
-const repo = 'ibs'
-const base = computed(() => props.baseCommit?.commit_hash ?? '')
-const head = computed(() => props.headCommit?.commit_hash ?? '')
-
-const fetchDiff = async () => {
-  const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/compare/${base.value}...${head.value}`,
-    {
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-      },
-    },
-  )
-  const data = await res.json()
-  const patches =
-    data.files
+const diffCode = computed(
+  () =>
+    props.githubDiffApi?.files
       ?.map((f: any) => f.patch)
       .filter(Boolean)
-      .join('\n') || ''
+      .join('\n') || '',
+)
 
+const fetchDiff = () => {
   if (diffContainer.value) {
-    ;(diffContainer.value as HTMLElement).innerHTML = html(patches, {
+    ;(diffContainer.value as HTMLElement).innerHTML = html(diffCode.value, {
       drawFileList: true,
       matching: 'lines',
       outputFormat: outputFormat.value,
@@ -48,9 +36,23 @@ const fetchDiff = async () => {
   }
 }
 
-onMounted(fetchDiff)
+onMounted(() => {
+  nextTick(() => {
+    fetchDiff()
+  })
+})
 
 watch(outputFormat, fetchDiff)
+
+watch(
+  () => props.githubDiffApi,
+  newVal => {
+    if (newVal?.files?.length && diffContainer.value) {
+      fetchDiff()
+    }
+  },
+  { immediate: true, deep: true },
+)
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, inject, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
-import type { Commit, IssueProject } from '@/store/types/work.ts'
+import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
 
@@ -15,11 +15,13 @@ const commitFilter = ref({
 })
 
 const workStore = useWork()
-const repo = computed(() => workStore.repository)
+const repo = computed<Repository>(() => workStore.repository)
 const repoList = computed(() => workStore.repositoryList)
 const commitList = computed(() => workStore.commitList)
-const githubRepoApi = computed(() => workStore.githubRepoApi)
+const githubApiUrl = computed<any>(() => (workStore.githubRepoApi as any)?.url || '')
+const githubDiffApi = computed<any>(() => workStore.githubDiffApi)
 
+const fetchDiff = (url: string, token: string) => workStore.fetchDiff(url, token)
 const fetchRepo = (pk: number) => workStore.fetchRepo(pk)
 const fetchRepoList = (project?: number, is_default?: string) =>
   workStore.fetchRepoList(project, is_default)
@@ -44,7 +46,13 @@ const diffs = computed<{ headCommit: Commit | null; baseCommit: Commit | null }>
 const headSet = (pk: number) => (headPk.value = pk)
 const baseSet = (pk: number) => (basePk.value = pk)
 
-const getDiff = () => (viewPageSort.value = 'diff')
+const getDiff = () => {
+  fetchDiff(
+    `${githubApiUrl.value}/compare/${diffs.value.baseCommit?.commit_hash}...${diffs.value.headCommit?.commit_hash}`,
+    `${repo.value.github_token}`,
+  )
+  viewPageSort.value = 'diff'
+}
 
 const pageSelect = (page: number) => {
   commitFilter.value.page = page
@@ -72,6 +80,7 @@ onBeforeMount(async () => {
     v-else
     :head-commit="diffs.headCommit as Commit"
     :base-commit="diffs.baseCommit as Commit"
+    :github-diff-api="githubDiffApi"
     @get-back="() => (viewPageSort = 'revisions')"
   />
 </template>

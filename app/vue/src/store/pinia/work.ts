@@ -462,6 +462,18 @@ export const useWork = defineStore('work', () => {
   const repository = ref<Repository | null>(null)
   const repositoryList = ref<Repository[]>([])
   const githubRepoApi = ref<any>(null)
+  const githubDiffApi = ref<any>(null)
+
+  const fetchDiff = (url: string, token: string) =>
+    api
+      .get(url, {
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+          Authorization: `token ${token}`,
+        },
+      })
+      .then(res => (githubDiffApi.value = res.data))
+      .catch(err => errorHandle(err.response.data))
 
   const fetchRepo = async (pk: number) =>
     await api
@@ -1014,6 +1026,8 @@ export const useWork = defineStore('work', () => {
     repository,
     repositoryList,
     githubRepoApi,
+    githubDiffApi,
+    fetchDiff,
     fetchRepo,
     fetchRepoList,
     createRepo,
