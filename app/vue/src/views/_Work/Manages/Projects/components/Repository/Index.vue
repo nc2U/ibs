@@ -27,19 +27,20 @@ const fetchCommitList = (payload: {
 
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
-const diffs = ref<{ headCommit: Commit | null; baseCommit: Commit | null }>({
-  headCommit: null,
-  baseCommit: null,
-})
+const headPk = ref<number | null>(null)
+const basePk = ref<number | null>(null)
 
-const headSet = (pk: number) =>
-  (diffs.value.headCommit = commitList.value.filter(c => c.pk === pk)[0])
-const baseSet = (pk: number) =>
-  (diffs.value.baseCommit = commitList.value.filter(c => c.pk === pk)[0])
+const diffs = computed<{ headCommit: Commit | null; baseCommit: Commit | null }>(() => ({
+  headCommit: commitList.value.filter(c => c.pk === 10218)[0] || null,
+  baseCommit: commitList.value.filter(c => c.pk === basePk.value)[0] || null,
+}))
+
+const headSet = (pk: number) => (headPk.value = pk)
+const baseSet = (pk: number) => (basePk.value = pk)
 
 const getDiff = (payload: { headCommit: number; baseCommit: number }) => {
-  diffs.value.headCommit = commitList.value.filter(c => c.pk === payload.headCommit)[0]
-  diffs.value.baseCommit = commitList.value.filter(c => c.pk === payload.baseCommit)[0]
+  // diffs.value.headCommit = commitList.value.filter(c => c.pk === payload.headCommit)[0]
+  // diffs.value.baseCommit = commitList.value.filter(c => c.pk === payload.baseCommit)[0]
   viewPageSort.value = 'diff'
   console.log(diffs)
 }
@@ -70,6 +71,4 @@ onBeforeMount(() => {
     :base-commit="diffs.baseCommit"
     @get-back="() => (viewPageSort = 'revisions')"
   />
-
-  {{ diffs }}
 </template>
