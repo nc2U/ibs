@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import { btnSecondary } from '@/utils/cssMixins.ts'
 
 defineProps({
-  refCommit: { type: Number, required: true },
-  comCommit: { type: Number, required: true },
+  headCommit: { type: Number, required: true },
+  baseCommit: { type: Number, required: true },
 })
 
 const emit = defineEmits(['get-back'])
@@ -17,7 +17,7 @@ const getBack = () => emit('get-back')
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>리비전 {{ refCommit }} : {{ comCommit }}</h5>
+      <h5>리비전 {{ headCommit }} : {{ baseCommit }}</h5>
     </CCol>
   </CRow>
 
@@ -56,14 +56,16 @@ const getBack = () => emit('get-back')
         </colgroup>
         <CTableHead>
           <CTableRow>
-            <CTableHeaderCell :colspan="viewSort === '1' ? 3 : 4">a</CTableHeaderCell>
+            <CTableHeaderCell :colspan="viewSort === '1' ? 3 : 4">
+              {{ 'a' }}
+            </CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
           <CTableRow>
-            <CTableDataCell>{{ refCommit }}</CTableDataCell>
+            <CTableDataCell>{{ headCommit }}</CTableDataCell>
             <CTableDataCell v-if="viewSort === '2'">asdf</CTableDataCell>
-            <CTableDataCell>{{ comCommit }}</CTableDataCell>
+            <CTableDataCell>{{ baseCommit }}</CTableDataCell>
             <CTableDataCell>asdf</CTableDataCell>
           </CTableRow>
         </CTableBody>

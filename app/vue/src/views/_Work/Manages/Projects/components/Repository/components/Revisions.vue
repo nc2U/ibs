@@ -11,8 +11,8 @@ watch(
   () => props.commitList,
   newVal => {
     if (newVal.length >= 2) {
-      refCommit.value = String(newVal[0].pk)
-      comCommit.value = String(newVal[1].pk)
+      headCommit.value = String(newVal[0].pk)
+      baseCommit.value = String(newVal[1].pk)
     }
   },
 )
@@ -24,23 +24,24 @@ const commits = computed(() =>
   getListSort.value === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
 
-const refCommit = ref<string>('')
-const comCommit = ref<string>('')
+const headCommit = ref<string>('')
+const baseCommit = ref<string>('')
 
-const changeRef = (pk: number) => (comCommit.value = String(pk - 1))
+const changeRef = (pk: number) => (baseCommit.value = String(pk - 1))
 const changeCom = (pk: number) => {
-  if (Number(refCommit.value) <= pk) refCommit.value = String(pk + 1)
+  if (Number(headCommit.value) <= pk) headCommit.value = String(pk + 1)
 }
 
-const getDiff = () => emit('get-diff', { refCommit: refCommit.value, comCommit: comCommit.value })
+const getDiff = () =>
+  emit('get-diff', { headCommit: headCommit.value, baseCommit: baseCommit.value })
 
 const workStore = useWork()
 const commitPages = (page: number) => workStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 
 onBeforeMount(() => {
-  refCommit.value = String(props.commitList.map(c => c.pk)[0])
-  comCommit.value = String(props.commitList.map(c => c.pk)[1])
+  headCommit.value = String(props.commitList.map(c => c.pk)[0])
+  baseCommit.value = String(props.commitList.map(c => c.pk)[1])
 })
 </script>
 
@@ -85,9 +86,9 @@ onBeforeMount(() => {
             v-if="i !== commits.length - 1"
             type="radio"
             :id="`${commit.pk}-1`"
-            name="refCommit"
+            name="headCommit"
             :value="String(commit.pk)"
-            v-model="refCommit"
+            v-model="headCommit"
             @change="changeRef(commit.pk)"
           />
         </CTableDataCell>
@@ -97,9 +98,9 @@ onBeforeMount(() => {
             v-if="i !== 0"
             type="radio"
             :id="`${commit.pk}-2`"
-            name="comCommit"
+            name="baseCommit"
             :value="String(commit.pk)"
-            v-model="comCommit"
+            v-model="baseCommit"
             @change="changeCom(commit.pk)"
           />
         </CTableDataCell>

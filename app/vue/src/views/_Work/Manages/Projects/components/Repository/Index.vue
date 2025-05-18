@@ -26,14 +26,14 @@ const fetchCommitList = (payload: {
 }) => workStore.fetchCommitList(payload)
 
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
-const diffs = ref<{ refCommit: number; comCommit: number }>({
-  refCommit: 2,
-  comCommit: 1,
+const diffs = ref<{ headCommit: number; baseCommit: number }>({
+  headCommit: 2,
+  baseCommit: 1,
 })
 
 const getDiff = (payload: any) => {
-  diffs.value.refCommit = payload.refCommit
-  diffs.value.comCommit = payload.comCommit
+  diffs.value.headCommit = payload.headCommit
+  diffs.value.baseCommit = payload.baseCommit
   viewPageSort.value = 'diff'
   console.log(diffs)
 }
@@ -58,8 +58,8 @@ onBeforeMount(() => {
 
   <ViewDiff
     v-else
-    :ref-commit="diffs.refCommit"
-    :com-commit="diffs.comCommit"
+    :head-commit="diffs.headCommit"
+    :base-commit="diffs.baseCommit"
     @get-back="() => (viewPageSort = 'revisions')"
   />
 </template>
