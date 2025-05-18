@@ -23,10 +23,10 @@ const isDark = inject('isDark')
     </CCardBody>
 
     <CCardText class="mx-3 mb-2 form-text">
-      <router-link v-if="project.status === '1'" :to="{ name: '(소요시간) - 추가' }">
+      <router-link v-if="project?.status === '1'" :to="{ name: '(소요시간) - 추가' }">
         작업시간 기록
       </router-link>
-      <span v-if="project.status === '1'" class="px-2">|</span>
+      <span v-if="project?.status === '1'" class="px-2">|</span>
       <router-link :to="{ name: '(소요시간)' }">자세히</router-link>
       <span class="px-2">|</span>
       <router-link :to="{ name: '(소요시간)', query: { report: '1' } }">보고서</router-link>
