@@ -125,7 +125,7 @@ onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({})
   await workStore.fetchRoleList()
   await workStore.fetchTrackerList()
-  await workStore.fetchRepositoryList(issueProject.value?.pk ?? '')
+  await workStore.fetchRepoList(issueProject.value?.pk ?? '')
   await workStore.fetchActivityList()
 
   if (route.params.projId) {

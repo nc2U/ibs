@@ -462,43 +462,43 @@ export const useWork = defineStore('work', () => {
   const repository = ref<Repository | null>(null)
   const repositoryList = ref<Repository[]>([])
 
-  const fetchRepository = async (pk: number) =>
+  const fetchRepo = async (pk: number) =>
     await api
       .get(`/repository/${pk}/`)
       .then(res => (repository.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchRepositoryList = async (proj: number | '' = '', d = '', r = '') =>
+  const fetchRepoList = async (proj: number | '' = '', d = '', r = '') =>
     await api
       .get(`/repository/?project=${proj}&is_default=${d}&is_report=${r}`)
       .then(res => (repositoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createRepository = async (payload: Repository) =>
+  const createRepo = async (payload: Repository) =>
     await api
       .post(`/repository/`, payload)
       .then(async res => {
-        await fetchRepository(res.data.pk)
-        await fetchRepositoryList(res.data.project.pk)
+        await fetchRepo(res.data.pk)
+        await fetchRepoList(res.data.project.pk)
         message()
       })
       .catch(err => errorHandle(err.response.data))
 
-  const patchRepository = async (payload: Repository) =>
+  const patchRepo = async (payload: Repository) =>
     await api
       .patch(`/repository/${payload.pk as number}/`, payload)
       .then(async res => {
-        await fetchRepository(res.data.pk)
-        await fetchRepositoryList(res.data.project.pk)
+        await fetchRepo(res.data.pk)
+        await fetchRepoList(res.data.project.pk)
         message()
       })
       .catch(err => errorHandle(err.response.data))
 
-  const deleteRepository = async (pk: number, proj: number | null = null) =>
+  const deleteRepo = async (pk: number, proj: number | null = null) =>
     await api
       .delete(`/repository/${pk}/`)
       .then(async () => {
-        await fetchRepositoryList(proj ?? '')
+        await fetchRepoList(proj ?? '')
         message('warning', '알림!', '해당 저장소가 삭제되었습니다!')
       })
       .catch(err => errorHandle(err.response.data))
@@ -1001,11 +1001,11 @@ export const useWork = defineStore('work', () => {
 
     repository,
     repositoryList,
-    fetchRepository,
-    fetchRepositoryList,
-    createRepository,
-    patchRepository,
-    deleteRepository,
+    fetchRepo,
+    fetchRepoList,
+    createRepo,
+    patchRepo,
+    deleteRepo,
 
     commit,
     commitList,
