@@ -101,10 +101,10 @@ const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: 
 
 const submitRepo = (payload: any) => {
   if (!payload.project) payload.project = issueProject.value?.pk
-  if (!payload.pk) workStore.createRepository(payload)
-  else workStore.patchRepository(payload)
+  if (!payload.pk) workStore.createRepo(payload)
+  else workStore.patchRepo(payload)
 }
-const deleteRepo = (pk: number, proj: number | undefined) => workStore.deleteRepository(pk, proj)
+const deleteRepo = (pk: number, proj: number | undefined) => workStore.deleteRepo(pk, proj)
 
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
