@@ -149,6 +149,7 @@ class CommitViewSet(viewsets.ModelViewSet):
     queryset = Commit.objects.all()
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationTwentyFive
     filterset_fields = ('repo__project', 'repo', 'issues')
 
 

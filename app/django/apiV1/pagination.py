@@ -101,6 +101,19 @@ class PageNumberPaginationFifty(PageNumberPagination):
         })
 
 
+class PageNumberPaginationTwentyFive(PageNumberPagination):
+    page_size = 25
+    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
+
+    def get_paginated_response(self, data):
+        return Response({
+            'count': self.page.paginator.count,
+            'next': self.get_next_link(),
+            'previous': self.get_previous_link(),
+            'results': data
+        })
+
+
 class PageNumberPaginationTwenty(PageNumberPagination):
     page_size = 20
 
