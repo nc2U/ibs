@@ -17,7 +17,7 @@ watch(
   },
 )
 
-const emit = defineEmits(['page-select'])
+const emit = defineEmits(['get-diff', 'page-select'])
 
 const getListSort = ref<'latest' | 'all'>('latest')
 const commits = computed(() =>
@@ -31,6 +31,8 @@ const changeRef = (pk: number) => (comCommit.value = String(pk - 1))
 const changeCom = (pk: number) => {
   if (Number(refCommit.value) <= pk) refCommit.value = String(pk + 1)
 }
+
+const getDiff = () => emit('get-diff', { refCommit: refCommit.value, comCommit: comCommit.value })
 
 const workStore = useWork()
 const commitPages = (page: number) => workStore.commitPages(page)
@@ -48,10 +50,10 @@ onBeforeMount(() => {
       <h5>{{ getListSort === 'all' ? '리비전' : '최근 리비전' }}</h5>
     </CCol>
   </CRow>
-  
+
   <CRow class="my-5">
     <CCol>
-      <v-btn>차이점 보기</v-btn>
+      <v-btn size="small" variant="outlined" color="primary" @click="getDiff">차이점 보기</v-btn>
     </CCol>
   </CRow>
   <CTable hover responsive striped small>
@@ -120,7 +122,7 @@ onBeforeMount(() => {
 
   <CRow class="my-5">
     <CCol>
-      <v-btn>차이점 보기</v-btn>
+      <v-btn size="small" variant="outlined" color="primary" @click="getDiff">차이점 보기</v-btn>
     </CCol>
   </CRow>
 

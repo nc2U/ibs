@@ -36,4 +36,5 @@ export const AlertLight = computed(() => (isDark.value ? '' : 'light'))
 export const bgLight = computed(() => (isDark.value ? '' : 'bg-light'))
 export const colorLight = computed(() => (isDark.value ? '' : 'light'))
 
+export const btnSecondary = computed(() => (isDark.value ? 'secondary' : 'dark'))
 export const btnLight = computed(() => (isDark.value ? 'grey-lighten-2' : 'light'))
