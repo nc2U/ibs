@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import { useWork } from '@/store/pinia/work.ts'
 import type { Commit } from '@/store/types/work.ts'
@@ -19,7 +19,10 @@ watch(
 
 const emit = defineEmits(['page-select'])
 
-const revSort = ref<'latest' | 'all'>('latest')
+const getListSort = ref<'latest' | 'all'>('latest')
+const commits = computed(() =>
+  getListSort.value === 'all' ? props.commitList : props.commitList.slice(0, 10),
+)
 
 const refCommit = ref<string>('')
 const comCommit = ref<string>('')
@@ -42,16 +45,16 @@ onBeforeMount(() => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>{{ revSort === 'all' ? '리비전' : '최근 리비전' }}</h5>
+      <h5>{{ getListSort === 'all' ? '리비전' : '최근 리비전' }}</h5>
     </CCol>
   </CRow>
-
+  
   <CRow class="my-5">
     <CCol>
       <v-btn>차이점 보기</v-btn>
     </CCol>
   </CRow>
-  <CTable hover responsive striped>
+  <CTable hover responsive striped small>
     <colgroup>
       <col style="width: 4%" />
       <col style="width: 2%" />
@@ -71,13 +74,13 @@ onBeforeMount(() => {
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow v-for="(commit, i) in commitList" :key="commit.pk">
+      <CTableRow v-for="(commit, i) in commits" :key="commit.pk">
         <CTableDataCell class="text-center">
           <span class="mr-5">{{ commit.pk }}</span>
         </CTableDataCell>
         <CTableDataCell>
           <CFormCheck
-            v-if="i !== commitList.length - 1"
+            v-if="i !== commits.length - 1"
             type="radio"
             :id="`${commit.pk}-1`"
             name="refCommit"
@@ -121,17 +124,21 @@ onBeforeMount(() => {
     </CCol>
   </CRow>
 
-  <CRow v-if="revSort === 'latest'">
-    <CCol>
-      <router-link to="" @click="() => (revSort = 'all')">전체 리비전 보기</router-link>
-    </CCol>
-  </CRow>
-  <CRow v-else>
+  <CRow v-if="getListSort === 'all'">
     <Pagination
       :active-page="1"
       :limit="8"
-      :pages="commitPages(10)"
+      :pages="commitPages(25)"
       @active-page-change="pageSelect"
     />
+  </CRow>
+
+  <CRow>
+    <CCol v-if="getListSort === 'latest'">
+      <router-link to="" @click="() => (getListSort = 'all')">전체 리비전 보기</router-link>
+    </CCol>
+    <CCol v-else>
+      <router-link to="" @click="() => (getListSort = 'latest')">최근 리비전 보기</router-link>
+    </CCol>
   </CRow>
 </template>

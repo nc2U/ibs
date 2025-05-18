@@ -521,13 +521,14 @@ export const useWork = defineStore('work', () => {
     repo?: number
     issues?: number[]
     page?: number
+    limit?: number
   }) => {
-    const { project, repo, issues, page } = payload
+    const { project, repo, issues, page, limit } = payload
+    const filterQuery = `repo_project=${project ?? ''}&repo=${repo ?? ''}`
     const issueQuery = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
+    const paginationQuery = `&page=${page}&limit=${limit ?? ''}`
     return await api
-      .get(
-        `/commit/?page=${page ?? 1}&repo_project=${project ?? ''}&repo=${repo ?? ''}${issueQuery}`,
-      )
+      .get(`/commit/?${filterQuery}&${issueQuery}&${paginationQuery}`)
       .then(res => {
         commitList.value = res.data.results
         commitCount.value = res.data.count
