@@ -8,7 +8,7 @@ import Pagination from '@/components/Pagination'
 const props = defineProps({
   page: { type: Number, required: true },
   commitList: { type: Array as PropType<Commit[]>, default: () => [] },
-  getListSort: { type: Array as PropType<'latest' | 'all'>, default: 'latest' },
+  getListSort: { type: String as PropType<'latest' | 'all'>, default: 'latest' },
 })
 
 watch(
