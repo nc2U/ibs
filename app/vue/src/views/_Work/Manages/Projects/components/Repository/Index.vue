@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { computed, inject, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
+import type { IssueProject } from '@/store/types/work.ts'
 import Revisions from './components/Revisions.vue'
 
-const project = inject('iProject')
+const project = inject<IssueProject | null>('iProject')
 const workStore = useWork()
 const commitList = computed(() => workStore.commitList)
 
@@ -15,14 +16,17 @@ const commitFilter = ref({
 })
 
 const fetchCommitList = (payload: {
-  project?: string
+  project?: number
   repo?: number
   issues?: number[]
   page?: number
   limit?: number
 }) => workStore.fetchCommitList(payload)
 
-const pageSelect = (page: number) => fetchCommitList({ project: project?.pk, page })
+const pageSelect = (page: number) => {
+  commitFilter.value.page = page
+  fetchCommitList(commitFilter.value)
+}
 
 onBeforeMount(() => {
   fetchCommitList(commitFilter.value)

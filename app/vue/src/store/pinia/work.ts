@@ -517,7 +517,7 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
 
   const fetchCommitList = async (payload: {
-    project?: string
+    project?: number
     repo?: number
     issues?: number[]
     page?: number
