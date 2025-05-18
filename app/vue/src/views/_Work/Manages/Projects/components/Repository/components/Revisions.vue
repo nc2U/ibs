@@ -59,7 +59,15 @@ onBeforeMount(() => {
 
   <CRow class="my-5">
     <CCol>
-      <v-btn size="small" variant="outlined" color="primary" @click="getDiff">차이점 보기</v-btn>
+      <v-btn
+        size="small"
+        variant="outlined"
+        color="primary"
+        :disabled="commitList.length < 3"
+        @click="getDiff"
+      >
+        차이점 보기
+      </v-btn>
     </CCol>
   </CRow>
   <CTable hover responsive striped small>
@@ -128,7 +136,15 @@ onBeforeMount(() => {
 
   <CRow class="my-5">
     <CCol>
-      <v-btn size="small" variant="outlined" color="primary" @click="getDiff">차이점 보기</v-btn>
+      <v-btn
+        size="small"
+        variant="outlined"
+        color="primary"
+        :disabled="commitList.length < 3"
+        @click="getDiff"
+      >
+        차이점 보기
+      </v-btn>
     </CCol>
   </CRow>
 

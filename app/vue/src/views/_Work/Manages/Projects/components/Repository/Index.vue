@@ -3,7 +3,7 @@ import { computed, inject, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
 import type { Commit, IssueProject } from '@/store/types/work.ts'
 import Revisions from './components/Revisions.vue'
-import ViewDiff from '@/views/_Work/Manages/Projects/components/Repository/components/ViewDiff.vue'
+import ViewDiff from './components/ViewDiff.vue'
 
 const project = inject<IssueProject | null>('iProject')
 
@@ -15,8 +15,14 @@ const commitFilter = ref({
 })
 
 const workStore = useWork()
+const repo = computed(() => workStore.repository)
+const repoList = computed(() => workStore.repositoryList)
 const commitList = computed(() => workStore.commitList)
+const repoApi = computed(() => workStore.repoApi)
 
+const fetchRepo = (pk: number) => workStore.fetchRepo(pk)
+const fetchRepoList = (project?: number, is_default?: string) =>
+  workStore.fetchRepoList(project, is_default)
 const fetchCommitList = (payload: {
   project?: number
   repo?: number
@@ -50,8 +56,10 @@ const pageSelect = (page: number) => {
   fetchCommitList(commitFilter.value)
 }
 
-onBeforeMount(() => {
-  fetchCommitList(commitFilter.value)
+onBeforeMount(async () => {
+  await fetchRepoList(1, 'true')
+  await fetchCommitList(commitFilter.value)
+  if (repoList.value.length) await fetchRepo(repoList.value[0].pk as number)
 })
 </script>
 
@@ -67,8 +75,8 @@ onBeforeMount(() => {
 
   <ViewDiff
     v-else
-    :head-commit="diffs.headCommit"
-    :base-commit="diffs.baseCommit"
+    :head-commit="diffs.headCommit as Commit"
+    :base-commit="diffs.baseCommit as Commit"
     @get-back="() => (viewPageSort = 'revisions')"
   />
 </template>

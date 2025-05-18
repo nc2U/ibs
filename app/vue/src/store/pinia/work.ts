@@ -461,16 +461,28 @@ export const useWork = defineStore('work', () => {
   // Repository states & getters
   const repository = ref<Repository | null>(null)
   const repositoryList = ref<Repository[]>([])
+  const repoApi = ref<any>(null)
 
   const fetchRepo = async (pk: number) =>
     await api
       .get(`/repository/${pk}/`)
-      .then(res => (repository.value = res.data))
+      .then(async res => {
+        repository.value = res.data
+        await api
+          .get(`${res.data.github_api_url}`, {
+            headers: {
+              Accept: 'application/vnd.github.diff',
+              Authorization: `token ${res.data.github_token}`,
+            },
+          })
+          .then(res => (repoApi.value = res.data))
+          .catch(err => errorHandle(err.response.data))
+      })
       .catch(err => errorHandle(err.response.data))
 
-  const fetchRepoList = async (proj: number | '' = '', d = '', r = '') =>
+  const fetchRepoList = async (project: number | '' = '', is_default = '', is_report = '') =>
     await api
-      .get(`/repository/?project=${proj}&is_default=${d}&is_report=${r}`)
+      .get(`/repository/?project=${project}&is_default=${is_default}&is_report=${is_report}`)
       .then(res => (repositoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -1001,6 +1013,7 @@ export const useWork = defineStore('work', () => {
 
     repository,
     repositoryList,
+    repoApi,
     fetchRepo,
     fetchRepoList,
     createRepo,
