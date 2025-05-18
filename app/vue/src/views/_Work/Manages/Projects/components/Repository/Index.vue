@@ -1,14 +1,11 @@
 <script lang="ts" setup>
 import { computed, inject, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
-import type { IssueProject } from '@/store/types/work.ts'
+import type { Commit, IssueProject } from '@/store/types/work.ts'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from '@/views/_Work/Manages/Projects/components/Repository/components/ViewDiff.vue'
 
 const project = inject<IssueProject | null>('iProject')
-
-const workStore = useWork()
-const commitList = computed(() => workStore.commitList)
 
 const commitFilter = ref({
   project: project?.pk,
@@ -16,6 +13,9 @@ const commitFilter = ref({
   page: 1,
   limit: 25,
 })
+
+const workStore = useWork()
+const commitList = computed(() => workStore.commitList)
 
 const fetchCommitList = (payload: {
   project?: number
@@ -26,14 +26,20 @@ const fetchCommitList = (payload: {
 }) => workStore.fetchCommitList(payload)
 
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
-const diffs = ref<{ headCommit: number; baseCommit: number }>({
-  headCommit: 2,
-  baseCommit: 1,
+
+const diffs = ref<{ headCommit: Commit | null; baseCommit: Commit | null }>({
+  headCommit: null,
+  baseCommit: null,
 })
 
-const getDiff = (payload: any) => {
-  diffs.value.headCommit = payload.headCommit
-  diffs.value.baseCommit = payload.baseCommit
+const headSet = (pk: number) =>
+  (diffs.value.headCommit = commitList.value.filter(c => c.pk === pk)[0])
+const baseSet = (pk: number) =>
+  (diffs.value.baseCommit = commitList.value.filter(c => c.pk === pk)[0])
+
+const getDiff = (payload: { headCommit: number; baseCommit: number }) => {
+  diffs.value.headCommit = commitList.value.filter(c => c.pk === payload.headCommit)[0]
+  diffs.value.baseCommit = commitList.value.filter(c => c.pk === payload.baseCommit)[0]
   viewPageSort.value = 'diff'
   console.log(diffs)
 }
@@ -52,6 +58,8 @@ onBeforeMount(() => {
   <Revisions
     v-if="viewPageSort === 'revisions'"
     :commit-list="commitList"
+    @head-set="headSet"
+    @base-set="baseSet"
     @get-diff="getDiff"
     @page-select="pageSelect"
   />
@@ -62,4 +70,6 @@ onBeforeMount(() => {
     :base-commit="diffs.baseCommit"
     @get-back="() => (viewPageSort = 'revisions')"
   />
+
+  {{ diffs }}
 </template>

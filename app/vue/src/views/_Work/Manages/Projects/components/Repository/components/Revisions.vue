@@ -11,37 +11,42 @@ watch(
   () => props.commitList,
   newVal => {
     if (newVal.length >= 2) {
-      headCommit.value = String(newVal[0].pk)
-      baseCommit.value = String(newVal[1].pk)
+      headPk.value = String(newVal[0].pk)
+      basePk.value = String(newVal[1].pk)
     }
   },
 )
 
-const emit = defineEmits(['get-diff', 'page-select'])
+const emit = defineEmits(['head-set', 'base-set', 'get-diff', 'page-select'])
 
 const getListSort = ref<'latest' | 'all'>('latest')
 const commits = computed(() =>
   getListSort.value === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
 
-const headCommit = ref<string>('')
-const baseCommit = ref<string>('')
+const headPk = ref<string>('')
+watch(headPk, newVal => {
+  if (newVal) emit('head-set', Number(newVal))
+})
+const basePk = ref<string>('')
+watch(basePk, newVal => {
+  if (newVal) emit('base-set', Number(newVal))
+})
 
-const changeRef = (pk: number) => (baseCommit.value = String(pk - 1))
+const changeRef = (pk: number) => (basePk.value = String(pk - 1))
 const changeCom = (pk: number) => {
-  if (Number(headCommit.value) <= pk) headCommit.value = String(pk + 1)
+  if (Number(headPk.value) <= pk) headPk.value = String(pk + 1)
 }
 
-const getDiff = () =>
-  emit('get-diff', { headCommit: headCommit.value, baseCommit: baseCommit.value })
+const getDiff = () => emit('get-diff', { headPk: headPk.value, basePk: basePk.value })
 
 const workStore = useWork()
 const commitPages = (page: number) => workStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 
 onBeforeMount(() => {
-  headCommit.value = String(props.commitList.map(c => c.pk)[0])
-  baseCommit.value = String(props.commitList.map(c => c.pk)[1])
+  headPk.value = String(props.commitList.map(c => c.pk)[0])
+  basePk.value = String(props.commitList.map(c => c.pk)[1])
 })
 </script>
 
@@ -86,9 +91,9 @@ onBeforeMount(() => {
             v-if="i !== commits.length - 1"
             type="radio"
             :id="`${commit.pk}-1`"
-            name="headCommit"
+            name="headPk"
             :value="String(commit.pk)"
-            v-model="headCommit"
+            v-model="headPk"
             @change="changeRef(commit.pk)"
           />
         </CTableDataCell>
@@ -98,9 +103,9 @@ onBeforeMount(() => {
             v-if="i !== 0"
             type="radio"
             :id="`${commit.pk}-2`"
-            name="baseCommit"
+            name="basePk"
             :value="String(commit.pk)"
-            v-model="baseCommit"
+            v-model="basePk"
             @change="changeCom(commit.pk)"
           />
         </CTableDataCell>
