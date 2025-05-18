@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { onMounted, type PropType, ref, watch } from 'vue'
-import { btnSecondary } from '@/utils/cssMixins.ts'
+import { computed, onMounted, type PropType, ref, watch } from 'vue'
+import { bgLight, btnSecondary } from '@/utils/cssMixins.ts'
 import type { Commit } from '@/store/types/work.ts'
 import { html } from 'diff2html'
 import 'diff2html/bundles/css/diff2html.min.css'
@@ -8,6 +8,7 @@ import 'diff2html/bundles/css/diff2html.min.css'
 const props = defineProps({
   headCommit: { type: Object as PropType<Commit>, required: true },
   baseCommit: { type: Object as PropType<Commit>, required: true },
+  githubApiUrl: { type: String as PropType<string>, required: true },
   githubDiffApi: { type: Object as PropType<any>, required: true },
 })
 
@@ -37,6 +38,11 @@ const getDiffCode = (diff: string) => {
   })
 }
 
+const hasContent = computed(() => {
+  const text = diffHtml.value.replace(/<[^>]*>/g, '').trim()
+  return text.length > 0
+})
+
 onMounted(async () => getDiffCode(props.githubDiffApi))
 </script>
 
@@ -46,7 +52,6 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
       <h5>리비전 {{ headCommit.pk }} : {{ baseCommit.pk }}</h5>
     </CCol>
   </CRow>
-
   <CRow class="mb-5">
     <CCol>
       차이점 보기 :
@@ -79,6 +84,37 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
 
   <div v-if="diffHtml" v-html="diffHtml" class="diff-container" />
   <div v-else>로딩 중...</div>
+
+  <div v-if="diffHtml && !hasContent" class="p-4" :class="bgLight">
+    <CRow class="text-center">
+      <CCol class="pb-5">
+        <v-icon icon="mdi-file-arrow-left-right-outline" size="24" class="mb-3" />
+        <h4 class="mb-4">There isn’t anything to compare.</h4>
+
+        <span class="strong">{{ headCommit.commit_hash }}</span> 는
+        <span class="strong">{{ baseCommit.commit_hash }} </span> 의 모든 커밋으로 최신 상태입니다.
+        <p>
+          비교를 위해
+          <a
+            :href="`${githubApiUrl}/compare/${baseCommit.commit_hash}...${headCommit.commit_hash}`"
+            class="underline"
+          >
+            베이스 커밋을 변경
+          </a>
+          해 보세요.
+        </p>
+      </CCol>
+    </CRow>
+
+    <CRow class="mt-5">
+      <CCol>
+        <v-icon icon="mdi-invoice-text-plus-outline" size="18" />
+        Showing
+        <router-link to="" class="strong">0 changed files</router-link>
+        with 0 additions and 0 deletions.
+      </CCol>
+    </CRow>
+  </div>
 
   <CRow class="mt-4">
     <CCol>

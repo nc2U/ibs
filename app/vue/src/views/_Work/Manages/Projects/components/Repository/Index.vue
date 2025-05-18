@@ -7,7 +7,7 @@ import ViewDiff from './components/ViewDiff.vue'
 
 const project = inject<IssueProject | null>('iProject')
 
-const commitFilter = ref({
+const cFilter = ref({
   project: project?.pk,
   repo: undefined,
   page: 1,
@@ -32,6 +32,9 @@ const fetchCommitList = (payload: {
   page?: number
   limit?: number
 }) => workStore.fetchCommitList(payload)
+
+const getListSort = ref<'latest' | 'all'>('latest')
+const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
 
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
@@ -60,13 +63,13 @@ const getBack = () => {
 }
 
 const pageSelect = (page: number) => {
-  commitFilter.value.page = page
-  fetchCommitList(commitFilter.value)
+  cFilter.value.page = page
+  fetchCommitList(cFilter.value)
 }
 
 onBeforeMount(async () => {
   await fetchRepoList(1, 'true')
-  await fetchCommitList(commitFilter.value)
+  await fetchCommitList(cFilter.value)
   if (repoList.value.length) await fetchRepo(repoList.value[0].pk as number)
 })
 </script>
@@ -74,10 +77,13 @@ onBeforeMount(async () => {
 <template>
   <Revisions
     v-if="viewPageSort === 'revisions'"
+    :page="cFilter.page"
     :commit-list="commitList"
+    :get-list-sort="getListSort"
     @head-set="headSet"
     @base-set="baseSet"
     @get-diff="getDiff"
+    @get-list-sort="changeListSort"
     @page-select="pageSelect"
   />
 
@@ -85,6 +91,7 @@ onBeforeMount(async () => {
     v-else
     :head-commit="diffs.headCommit as Commit"
     :base-commit="diffs.baseCommit as Commit"
+    :github-api-url="githubApiUrl"
     :github-diff-api="githubDiffApi"
     @get-back="getBack"
   />

@@ -5,7 +5,11 @@ import { useWork } from '@/store/pinia/work.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import Pagination from '@/components/Pagination'
 
-const props = defineProps({ commitList: { type: Array as PropType<Commit[]>, default: () => [] } })
+const props = defineProps({
+  page: { type: Number, required: true },
+  commitList: { type: Array as PropType<Commit[]>, default: () => [] },
+  getListSort: { type: Array as PropType<'latest' | 'all'>, default: 'latest' },
+})
 
 watch(
   () => props.commitList,
@@ -17,11 +21,16 @@ watch(
   },
 )
 
-const emit = defineEmits(['head-set', 'base-set', 'get-diff', 'page-select'])
+const emit = defineEmits(['head-set', 'base-set', 'get-list-sort', 'get-diff', 'page-select'])
 
-const getListSort = ref<'latest' | 'all'>('latest')
+watch(
+  () => props.getListSort,
+  newVal => {
+    if (newVal === 'latest') emit('page-select', 1)
+  },
+)
 const commits = computed(() =>
-  getListSort.value === 'all' ? props.commitList : props.commitList.slice(0, 10),
+  props.getListSort === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
 
 const headPk = ref<string>('')
@@ -150,7 +159,7 @@ onBeforeMount(() => {
 
   <CRow v-if="getListSort === 'all'">
     <Pagination
-      :active-page="1"
+      :active-page="page"
       :limit="8"
       :pages="commitPages(25)"
       @active-page-change="pageSelect"
@@ -159,10 +168,10 @@ onBeforeMount(() => {
 
   <CRow>
     <CCol v-if="getListSort === 'latest'">
-      <router-link to="" @click="() => (getListSort = 'all')">전체 리비전 보기</router-link>
+      <router-link to="" @click="emit('get-list-sort', 'all')">전체 리비전 보기</router-link>
     </CCol>
     <CCol v-else>
-      <router-link to="" @click="() => (getListSort = 'latest')">최근 리비전 보기</router-link>
+      <router-link to="" @click="emit('get-list-sort', 'latest')">최근 리비전 보기</router-link>
     </CCol>
   </CRow>
 </template>
