@@ -130,7 +130,7 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
   }
 
   .d2h-info {
-    background-color: #181924;
+    background-color: #474850;
     color: #999;
   }
 
@@ -143,13 +143,13 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
 
   .d2h-ins,
   .d2h-ins > .line-num2 {
-    background-color: #3a7a4b;
+    background-color: #68d985;
     color: #fff;
   }
 
   .d2h-del,
   .d2h-del > .line-num1 {
-    background-color: #9c4b4b;
+    background-color: #f37575;
     color: #fff;
   }
 
@@ -160,7 +160,7 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
 
   .d2h-emptyplaceholder,
   .d2h-code-side-emptyplaceholder {
-    background-color: #555;
+    background-color: #3d3e4e;
   }
 
   ins {
