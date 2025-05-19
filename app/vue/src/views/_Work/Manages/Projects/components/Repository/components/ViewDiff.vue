@@ -122,3 +122,63 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
     </CCol>
   </CRow>
 </template>
+
+<style lang="scss">
+.dark-theme {
+  .d2h-file-header {
+    background-color: #1c1d26;
+  }
+
+  .d2h-info {
+    background-color: #181924;
+    color: #999;
+  }
+
+  .line-num1,
+  .line-num2,
+  .d2h-cntx {
+    background-color: #1c1d26;
+    color: #ddd;
+  }
+
+  .d2h-ins,
+  .d2h-ins > .line-num2 {
+    background-color: #3a7a4b;
+    color: #fff;
+  }
+
+  .d2h-del,
+  .d2h-del > .line-num1 {
+    background-color: #9c4b4b;
+    color: #fff;
+  }
+
+  .d2h-tag {
+    background-color: #181924;
+    color: #ccc;
+  }
+
+  .d2h-emptyplaceholder,
+  .d2h-code-side-emptyplaceholder {
+    background-color: #555;
+  }
+
+  ins {
+    background-color: #3a7a4b;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  del {
+    background-color: #9c4b4b;
+  }
+
+  .d2h-ins.d2h-change {
+    background-color: #68d985;
+  }
+
+  .d2h-del.d2h-change {
+    background-color: #f37575;
+  }
+}
+</style>
