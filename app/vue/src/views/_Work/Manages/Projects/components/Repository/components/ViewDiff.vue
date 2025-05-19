@@ -130,7 +130,7 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
   }
 
   .d2h-info {
-    background-color: #474850;
+    background-color: #2e2f3b;
     color: #999;
   }
 
@@ -160,7 +160,7 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
 
   .d2h-emptyplaceholder,
   .d2h-code-side-emptyplaceholder {
-    background-color: #3d3e4e;
+    background-color: #6c6e7a;
   }
 
   ins {

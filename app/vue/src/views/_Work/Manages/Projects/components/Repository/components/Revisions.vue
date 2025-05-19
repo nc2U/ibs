@@ -29,6 +29,7 @@ watch(
     if (newVal === 'latest') emit('page-select', 1)
   },
 )
+
 const commits = computed(() =>
   props.getListSort === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
