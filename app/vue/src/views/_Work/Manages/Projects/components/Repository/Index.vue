@@ -75,7 +75,6 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  {{ headPk }} // {{ basePk }}
   <Revisions
     v-if="viewPageSort === 'revisions'"
     :page="cFilter.page"
