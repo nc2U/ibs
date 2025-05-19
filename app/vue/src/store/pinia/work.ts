@@ -550,9 +550,9 @@ export const useWork = defineStore('work', () => {
     limit?: number
   }) => {
     const { project, repo, issues, page, limit } = payload
-    const filterQuery = `repo_project=${project ?? ''}&repo=${repo ?? ''}`
+    const filterQuery = `repo__project=${project ?? ''}&repo=${repo ?? ''}`
     const issueQuery = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
-    const paginationQuery = `&page=${page}&limit=${limit ?? ''}`
+    const paginationQuery = `page=${page}&limit=${limit ?? ''}`
     return await api
       .get(`/commit/?${filterQuery}&${issueQuery}&${paginationQuery}`)
       .then(res => {

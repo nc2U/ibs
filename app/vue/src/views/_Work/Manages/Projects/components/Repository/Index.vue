@@ -1,21 +1,29 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
 
-const project = inject<IssueProject | null>('iProject')
-
 const cFilter = ref({
-  project: project?.pk,
-  repo: undefined,
+  project: undefined as number | undefined,
+  repo: undefined as number | undefined,
   page: 1,
   limit: 25,
 })
 
 const workStore = useWork()
+const project = computed<IssueProject | null>(() => workStore.issueProject)
+watch(project, nVal => {
+  if (nVal) {
+    cFilter.value.project = nVal?.pk as number
+    fetchCommitList(cFilter.value)
+  }
+})
 const repo = computed<Repository | null>(() => workStore.repository)
+watch(repo, nVal => {
+  if (nVal) cFilter.value.repo = nVal.pk as number
+})
 const repoList = computed(() => workStore.repositoryList)
 const commitList = computed(() => workStore.commitList)
 const githubApiUrl = computed<any>(() => (workStore.githubRepoApi as any)?.url || '')
@@ -69,8 +77,10 @@ const pageSelect = (page: number) => {
 
 onBeforeMount(async () => {
   await fetchRepoList(1, 'true')
-  await fetchCommitList(cFilter.value)
   if (repoList.value.length) await fetchRepo(repoList.value[0].pk as number)
+  cFilter.value.project = project.value?.pk as number
+  cFilter.value.repo = repo.value?.pk as number
+  fetchCommitList(cFilter.value)
 })
 </script>
 

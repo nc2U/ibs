@@ -73,7 +73,7 @@ onBeforeMount(() => {
     </CCol>
   </CRow>
 
-  <CRow class="my-5">
+  <CRow class="my-4">
     <CCol>
       <v-btn
         size="small"
@@ -150,7 +150,7 @@ onBeforeMount(() => {
     </CTableBody>
   </CTable>
 
-  <CRow class="my-5">
+  <CRow class="my-4">
     <CCol>
       <v-btn
         size="small"

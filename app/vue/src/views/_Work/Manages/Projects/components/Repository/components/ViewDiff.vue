@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref, watch } from 'vue'
-import { bgLight, btnSecondary } from '@/utils/cssMixins.ts'
+import { btnSecondary } from '@/utils/cssMixins.ts'
 import type { Commit } from '@/store/types/work.ts'
 import { html } from 'diff2html'
 import 'diff2html/bundles/css/diff2html.min.css'
@@ -85,7 +85,7 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
   <div v-if="diffHtml" v-html="diffHtml" class="diff-container" />
   <div v-else>로딩 중...</div>
 
-  <div v-if="diffHtml && !hasContent" class="p-4" :class="bgLight">
+  <div v-if="diffHtml && !hasContent" class="p-4 bg-warning">
     <CRow class="text-center">
       <CCol class="pb-5">
         <v-icon icon="mdi-file-arrow-left-right-outline" size="24" class="mb-3" />
