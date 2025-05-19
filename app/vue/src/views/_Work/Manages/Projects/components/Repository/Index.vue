@@ -75,11 +75,14 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  {{ headPk }} // {{ basePk }}
   <Revisions
     v-if="viewPageSort === 'revisions'"
     :page="cFilter.page"
     :commit-list="commitList"
     :get-list-sort="getListSort"
+    :parent-head-pk="String(headPk ?? '')"
+    :parent-base-pk="String(basePk ?? '')"
     @head-set="headSet"
     @base-set="baseSet"
     @get-diff="getDiff"
@@ -88,7 +91,7 @@ onBeforeMount(async () => {
   />
 
   <ViewDiff
-    v-else
+    v-if="viewPageSort === 'diff'"
     :head-commit="diffs.headCommit as Commit"
     :base-commit="diffs.baseCommit as Commit"
     :github-api-url="githubApiUrl"

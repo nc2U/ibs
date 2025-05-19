@@ -9,6 +9,8 @@ const props = defineProps({
   page: { type: Number, required: true },
   commitList: { type: Array as PropType<Commit[]>, default: () => [] },
   getListSort: { type: String as PropType<'latest' | 'all'>, default: 'latest' },
+  parentHeadPk: { type: String, default: '' },
+  parentBasePk: { type: String, default: '' },
 })
 
 watch(
@@ -55,8 +57,12 @@ const commitPages = (page: number) => workStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 
 onBeforeMount(() => {
-  headPk.value = String(props.commitList.map(c => c.pk)[0])
-  basePk.value = String(props.commitList.map(c => c.pk)[1])
+  headPk.value = props.parentHeadPk
+    ? props.parentHeadPk
+    : String(props.commitList.map(c => c.pk)[0])
+  basePk.value = props.parentBasePk
+    ? props.parentBasePk
+    : String(props.commitList.map(c => c.pk)[1])
 })
 </script>
 
