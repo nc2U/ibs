@@ -89,8 +89,8 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
   <div v-else>로딩 중...</div>
 
   <div v-if="diffHtml && !hasContent" class="p-4">
-    <CRow class="text-center">
-      <CCol class="py-5">
+    <CRow class="pb-5 text-center">
+      <CCol>
         <svg
           aria-hidden="true"
           height="26"
@@ -112,7 +112,7 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
             d="M10.095 22.28a.75.75 0 0 1 0-1.06l1.22-1.22H7.25a3.75 3.75 0 0 1-3.75-3.75V7.5a.75.75 0 0 1 1.5 0v8.75a2.25 2.25 0 0 0 2.25 2.25h4.064l-1.22-1.22a.748.748 0 0 1 .332-1.265.75.75 0 0 1 .729.205l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0Z"
           ></path>
         </svg>
-        <h4 class="mb-4">비교할 것이 없습니다.</h4>
+        <h5 class="mb-4">비교할 것이 없습니다.</h5>
 
         <span class="strong">{{ baseCommit.commit_hash }}</span> 는 최신 버전입니다.
         <span class="strong">{{ headCommit.commit_hash }}</span>
