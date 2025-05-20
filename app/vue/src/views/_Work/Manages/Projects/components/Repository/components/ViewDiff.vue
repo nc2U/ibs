@@ -4,6 +4,7 @@ import { btnSecondary } from '@/utils/cssMixins.ts'
 import type { Commit } from '@/store/types/work.ts'
 import { html } from 'diff2html'
 import 'diff2html/bundles/css/diff2html.min.css'
+import sanitizeHtml from 'sanitize-html'
 
 const props = defineProps({
   headCommit: { type: Object as PropType<Commit>, required: true },
@@ -39,7 +40,7 @@ const getDiffCode = (diff: string) => {
 }
 
 const hasContent = computed(() => {
-  const text = diffHtml.value.replace(/<[^>]*>/g, '').trim()
+  const text = sanitizeHtml(diffHtml.value, { allowedTags: [], allowedAttributes: {} }).trim()
   return text.length > 0
 })
 
