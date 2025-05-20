@@ -4,7 +4,7 @@ from datetime import datetime
 
 import requests
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 from work.models import Repository, Commit, Issue
 
@@ -13,44 +13,45 @@ class Command(BaseCommand):
     help = "Fetch commits from GitHub repositories"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            '--limit',
-            type=int,
-            default=None,
-            help='Limit the number of commits to fetch (default: fetch all)',
-        )
+        parser.add_argument('--limit', type=int, default=None, help='Limit the number of commits to fetch')
 
     def handle(self, *args, **kwargs):
         limit = kwargs.get('limit')  # 명령줄에서 --limit으로 전달된 값
+
         for repo in Repository.objects.all():
-            commits_data = self.fetch_commits(f"{repo.github_api_url}/commits", repo.github_token, limit=limit)
+            commits_data = self.fetch_commits(api_url=f"{repo.github_api_url}/commits",
+                                              token=repo.github_token,
+                                              limit=limit)
             if not commits_data:
                 self.stdout.write(self.style.WARNING(f"No commits retrieved from {repo.github_api_url}"))
                 continue
 
+            # existing_hashes = set(
+            #     Commit.objects.filter(repo=repo)
+            #     .order_by('-date')[:1000]  # 최근 1000개만 비교
+            #     .values_list('commit_hash', flat=True))
+
             commits_to_create = []
             commit_hashes = []
-            existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
+
             for item in commits_data:
                 try:
                     commit_hash = item['sha']
-                    author = item['commit']['author'].get('name', 'Unknown')
-                    date_str = item['commit']['author'].get('date')
-                    message = item['commit'].get('message', '')
-                    if not all([commit_hash, author, date_str, message is not None]):
+                    commit_data = item.get('commit', {})
+                    author = commit_data.get('author', {}).get('name', 'Unknown')
+                    date_str = commit_data.get('author', {}).get('date')
+                    message = commit_data.get('message', '')
+                    if not all([commit_hash, author, date_str]):
                         self.stderr.write(self.style.WARNING(f"Skipping invalid commit data: {item}"))
                         continue
                     date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                    if commit_hash not in existing_hashes:
-                        commit = Commit(
-                            repo=repo,
-                            commit_hash=commit_hash,
-                            author=author,
-                            date=date,
-                            message=message
-                        )
-                        commits_to_create.append(commit)
-                        commit_hashes.append((commit_hash, message))
+                    commits_to_create.append(Commit(
+                        repo=repo,
+                        commit_hash=commit_hash,
+                        author=author,
+                        date=date,
+                        message=message))
+                    commit_hashes.append((commit_hash, message))
                 except (KeyError, ValueError) as e:
                     self.stderr.write(self.style.WARNING(f"Invalid commit data: {e}"))
                     continue
@@ -60,29 +61,29 @@ class Command(BaseCommand):
                     try:
                         Commit.objects.bulk_create(commits_to_create, ignore_conflicts=True)
                         self.stdout.write(self.style.SUCCESS(f"Created {len(commits_to_create)} commits"))
-                        # 저장된 커밋 재조회
-                        saved_commits = Commit.objects.filter(
+                        # 이슈 연결을 위해 저장된 커밋 확인
+                        saved_hashes = set(Commit.objects.filter(
                             repo=repo,
-                            commit_hash__in=[c.commit_hash for c in commits_to_create])
-                        commit_map = {c.commit_hash: c for c in saved_commits}
+                            commit_hash__in=[c.commit_hash for c in commits_to_create]
+                        ).values_list('commit_hash', flat=True))
                         for commit_hash, message in commit_hashes:
-                            commit = commit_map.get(commit_hash)
-                            if not commit:
-                                self.stderr.write(
-                                    self.style.WARNING(f"Commit {commit_hash} was not saved (possibly ignored)"))
+                            if commit_hash not in saved_hashes:
+                                self.stderr.write(self.style.WARNING(f"Commit {commit_hash} was not saved"))
                                 continue
                             issue_numbers = re.findall(r'#(\d+)', message)
-                            try:
-                                valid_issues = Issue.objects.filter(pk__in=issue_numbers)
-                            except AttributeError:
-                                self.stderr.write(
-                                    self.style.WARNING(f"No project linked to repository {repo.github_api_url}"))
-                                continue
-                            if valid_issues:
-                                commit.issues.set(valid_issues)
-                                self.stdout.write(
-                                    self.style.WARNING(f"Linked {len(valid_issues)} issues to commit {commit_hash}"))
-                    except Exception as e:
+                            if issue_numbers:
+                                try:
+                                    valid_issues = Issue.objects.filter(project=repo.project, pk__in=issue_numbers)
+                                    if valid_issues:
+                                        commit = Commit.objects.get(commit_hash=commit_hash)
+                                        commit.issues.add(*valid_issues)  # 벌크로 이슈 추가
+                                        self.stdout.write(self.style.WARNING(
+                                            f"Linked {len(valid_issues)} issues to commit {commit_hash}"))
+                                except AttributeError:
+                                    self.stderr.write(
+                                        self.style.WARNING(f"No project linked to repository {repo.github_api_url}"))
+                                    continue
+                    except IntegrityError as e:
                         self.stderr.write(self.style.ERROR(f"Bulk create failed: {e}"))
                         raise
             else:
@@ -91,8 +92,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS(
                     f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-                    f"Fetched {len(commits_to_create)} new commits from {repo.github_api_url}"
-                ))
+                    f"Fetched {len(commits_to_create)} new commits from {repo.github_api_url}"))
 
     def fetch_commits(self, api_url, token=None, limit=None):
         commits_data = []
@@ -130,5 +130,7 @@ class Command(BaseCommand):
             except requests.RequestException as e:
                 self.stderr.write(self.style.ERROR(f"GitHub API page {page} request failed for {api_url}: {e}"))
                 return commits_data
+
+        commits_data = sorted(commits_data, key=lambda x: x['commit']['committer']['date'])  # 오래된 순서로 정렬
         self.stdout.write(self.style.WARNING(f"Retrieved {len(commits_data)} commits from {api_url}"))
         return commits_data
