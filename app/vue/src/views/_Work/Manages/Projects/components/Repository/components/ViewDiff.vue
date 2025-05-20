@@ -147,6 +147,13 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
     background-color: #1c1d26;
   }
 
+  .d2h-file-wrapper,
+  .d2h-file-header,
+  .d2h-code-linenumber,
+  .d2h-code-side-linenumber {
+    border-color: #4d4e57 !important;
+  }
+
   .d2h-info {
     background-color: #2e2f3b;
     color: #999;
