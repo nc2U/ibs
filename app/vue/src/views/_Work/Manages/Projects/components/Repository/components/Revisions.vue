@@ -79,7 +79,7 @@ onBeforeMount(() => {
         size="small"
         variant="outlined"
         color="primary"
-        :disabled="commitList.length < 3"
+        :disabled="commitList.length < 2"
         @click="getDiff"
       >
         차이점 보기
@@ -156,7 +156,7 @@ onBeforeMount(() => {
         size="small"
         variant="outlined"
         color="primary"
-        :disabled="commitList.length < 3"
+        :disabled="commitList.length < 2"
         @click="getDiff"
       >
         차이점 보기
