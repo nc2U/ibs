@@ -57,11 +57,12 @@ const diffs = computed<{ headCommit: Commit | null; baseCommit: Commit | null }>
 const headSet = (pk: number) => (headPk.value = pk)
 const baseSet = (pk: number) => (basePk.value = pk)
 
-const getDiff = () => {
-  fetchDiff(
-    `${githubApiUrl.value}/compare/${diffs.value.baseCommit?.commit_hash}...${diffs.value.headCommit?.commit_hash}`,
-    `${repo.value?.github_token}`,
-  )
+const getDiff = (reverse = false) => {
+  const diff_hash = !reverse
+    ? `${diffs.value.baseCommit?.commit_hash}...${diffs.value.headCommit?.commit_hash}`
+    : `${diffs.value.headCommit?.commit_hash}...${diffs.value.baseCommit?.commit_hash}`
+
+  fetchDiff(`${githubApiUrl.value}/compare/${diff_hash}`, `${repo.value?.github_token}`)
   viewPageSort.value = 'diff'
 }
 
@@ -105,6 +106,7 @@ onBeforeMount(async () => {
     :base-commit="diffs.baseCommit as Commit"
     :github-api-url="githubApiUrl"
     :github-diff-api="githubDiffApi"
+    @get-diff="getDiff"
     @get-back="getBack"
   />
 </template>

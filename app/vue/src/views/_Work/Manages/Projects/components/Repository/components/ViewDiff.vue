@@ -18,7 +18,7 @@ watch(
   newVal => getDiffCode(newVal),
 )
 
-const emit = defineEmits(['get-back'])
+const emit = defineEmits(['get-back', 'get-diff'])
 
 const getBack = () => emit('get-back')
 
@@ -43,6 +43,8 @@ const hasContent = computed(() => {
   const text = sanitizeHtml(diffHtml.value, { allowedTags: [], allowedAttributes: {} }).trim()
   return text.length > 0
 })
+
+const getDiff = () => emit('get-diff', true)
 
 onMounted(async () => getDiffCode(props.githubDiffApi))
 </script>
@@ -86,32 +88,47 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
   <div v-if="diffHtml" v-html="diffHtml" class="diff-container" />
   <div v-else>로딩 중...</div>
 
-  <div v-if="diffHtml && !hasContent" class="p-4 bg-warning">
+  <div v-if="diffHtml && !hasContent" class="p-4">
     <CRow class="text-center">
-      <CCol class="pb-5">
-        <v-icon icon="mdi-file-arrow-left-right-outline" size="24" class="mb-3" />
-        <h4 class="mb-4">There isn’t anything to compare.</h4>
+      <CCol class="py-5">
+        <svg
+          aria-hidden="true"
+          height="26"
+          viewBox="0 0 24 24"
+          version="1.1"
+          width="26"
+          data-view-component="true"
+          class="octicon octicon-git-compare blankslate-icon mb-4"
+          stroke="grey"
+          fill="grey"
+        >
+          <path
+            d="M16.5 19.25a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0Zm3.25-1.75a1.75 1.75 0 1 0 .001 3.501 1.75 1.75 0 0 0-.001-3.501Z"
+          ></path>
+          <path
+            d="M13.905 1.72a.75.75 0 0 1 0 1.06L12.685 4h4.065a3.75 3.75 0 0 1 3.75 3.75v8.75a.75.75 0 0 1-1.5 0V7.75a2.25 2.25 0 0 0-2.25-2.25h-4.064l1.22 1.22a.75.75 0 0 1-1.061 1.06l-2.5-2.5a.75.75 0 0 1 0-1.06l2.5-2.5a.75.75 0 0 1 1.06 0ZM7.5 4.75a3.25 3.25 0 1 1-6.5 0 3.25 3.25 0 0 1 6.5 0ZM4.25 6.5a1.75 1.75 0 1 0-.001-3.501A1.75 1.75 0 0 0 4.25 6.5Z"
+          ></path>
+          <path
+            d="M10.095 22.28a.75.75 0 0 1 0-1.06l1.22-1.22H7.25a3.75 3.75 0 0 1-3.75-3.75V7.5a.75.75 0 0 1 1.5 0v8.75a2.25 2.25 0 0 0 2.25 2.25h4.064l-1.22-1.22a.748.748 0 0 1 .332-1.265.75.75 0 0 1 .729.205l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0Z"
+          ></path>
+        </svg>
+        <h4 class="mb-4">비교할 것이 없습니다.</h4>
 
-        <span class="strong">{{ headCommit.commit_hash }}</span> 는
-        <span class="strong">{{ baseCommit.commit_hash }} </span> 의 모든 커밋으로 최신 상태입니다.
-        <p>
-          비교를 위해
-          <a
-            :href="`${githubApiUrl}/compare/${baseCommit.commit_hash}...${headCommit.commit_hash}`"
-            class="underline"
-          >
-            베이스 커밋을 변경
-          </a>
+        <span class="strong">{{ baseCommit.commit_hash }}</span> 는 최신 버전입니다.
+        <span class="strong">{{ headCommit.commit_hash }}</span>
+        <span>
+          의 커밋, 비교를 위해
+          <router-link to="#" @click="getDiff"><u>베이스를 전환</u></router-link>
           해 보세요.
-        </p>
+        </span>
       </CCol>
     </CRow>
 
     <CRow class="mt-5">
-      <CCol>
-        <v-icon icon="mdi-invoice-text-plus-outline" size="18" />
+      <CCol class="pt-5">
+        <v-icon icon="mdi-invoice-text-plus-outline" size="18" color="grey" />
         Showing
-        <router-link to="" class="strong">0 changed files</router-link>
+        <router-link to="#" class="strong">0 changed files</router-link>
         with 0 additions and 0 deletions.
       </CCol>
     </CRow>

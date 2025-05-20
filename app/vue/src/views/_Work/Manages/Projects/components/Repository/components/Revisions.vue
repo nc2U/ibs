@@ -50,7 +50,7 @@ const updateHead = (pk: number) => {
   if (Number(headPk.value) <= pk) headPk.value = String(pk + 1)
 }
 
-const getDiff = () => emit('get-diff', { headPk: headPk.value, basePk: basePk.value })
+const getDiff = () => emit('get-diff', false)
 
 const workStore = useWork()
 const commitPages = (page: number) => workStore.commitPages(page)
