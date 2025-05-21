@@ -189,13 +189,13 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
   }
 
   ins {
-    background-color: #31503d;
+    background-color: #3d644d;
     color: #fff;
     text-decoration: none;
   }
 
   del {
-    background-color: #5c3539;
+    background-color: #6a3d42;
   }
 
   .d2h-ins.d2h-change {
