@@ -4,7 +4,7 @@ set -eu
 # 변수 설정
 SCHEMA="${POSTGRES_USER}"
 DATE=$(date +"%Y-%m-%d")
-DUMP_FILE="/var/backups/data-postgres-${DATE}.dump"
+DUMP_FILE="/var/backups/backup-postgres-${DATE}.dump"
 LOG_FILE="/var/backups/backup-${DATE}.log"
 
 # 환경 변수 확인
