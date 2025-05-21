@@ -168,13 +168,13 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
 
   .d2h-ins,
   .d2h-ins > .line-num2 {
-    background-color: #68d985;
+    background-color: #263834;
     color: #fff;
   }
 
   .d2h-del,
   .d2h-del > .line-num1 {
-    background-color: #f37575;
+    background-color: #352c33;
     color: #fff;
   }
 
@@ -185,25 +185,25 @@ onMounted(async () => getDiffCode(props.githubDiffApi))
 
   .d2h-emptyplaceholder,
   .d2h-code-side-emptyplaceholder {
-    background-color: #6c6e7a;
+    background-color: #383940;
   }
 
   ins {
-    background-color: #3a7a4b;
+    background-color: #31503d;
     color: #fff;
     text-decoration: none;
   }
 
   del {
-    background-color: #9c4b4b;
+    background-color: #5c3539;
   }
 
   .d2h-ins.d2h-change {
-    background-color: #68d985;
+    background-color: #263834;
   }
 
   .d2h-del.d2h-change {
-    background-color: #f37575;
+    background-color: #352c33;
   }
 }
 </style>
