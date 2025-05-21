@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
+import { useGithub } from '@/store/pinia/work_github.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
 import Subversion from './components/Subversion.vue'
 import Revisions from './components/Revisions.vue'
@@ -26,7 +27,7 @@ watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
 })
 const repoList = computed(() => workStore.repositoryList)
-const commitList = computed(() => workStore.commitList)
+const commitList = computed<Commit[]>(() => workStore.commitList)
 const githubApiUrl = computed<any>(() => (workStore.githubRepoApi as any)?.url || '')
 const githubDiffApi = computed<any>(() => workStore.githubDiffApi)
 
@@ -41,6 +42,11 @@ const fetchCommitList = (payload: {
   page?: number
   limit?: number
 }) => workStore.fetchCommitList(payload)
+
+// get github api
+const ghStore = useGithub()
+const branches = computed(() => ghStore.branches)
+const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
 
 const getListSort = ref<'latest' | 'all'>('latest')
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
@@ -82,12 +88,13 @@ onBeforeMount(async () => {
   if (repoList.value.length) await fetchRepo(repoList.value[0].pk as number)
   cFilter.value.project = project.value?.pk as number
   cFilter.value.repo = repo.value?.pk as number
-  fetchCommitList(cFilter.value)
+  await fetchBranches(repo.value?.github_api_url ?? '', repo.value?.github_token)
+  await fetchCommitList(cFilter.value)
 })
 </script>
 
 <template>
-  <Subversion />
+  <Subversion :branches="branches" />
 
   <Revisions
     v-if="viewPageSort === 'revisions'"

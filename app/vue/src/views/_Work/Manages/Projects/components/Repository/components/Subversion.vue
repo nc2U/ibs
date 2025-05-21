@@ -1,7 +1,10 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { elapsedTime } from '@/utils/baseMixins.ts'
 
-const msg = ref('SVN')
+defineProps({
+  branches: { type: Array, default: () => [] },
+  tags: { type: Array, default: () => [] },
+})
 </script>
 
 <template>
@@ -14,7 +17,7 @@ const msg = ref('SVN')
       </h5>
     </CCol>
   </CRow>
-
+  
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
