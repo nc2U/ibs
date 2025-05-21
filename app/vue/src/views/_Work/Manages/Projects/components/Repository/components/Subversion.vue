@@ -40,7 +40,7 @@ const msg = ref('SVN')
           <CTableRow>
             <CTableDataCell>
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-              <v-icon icon="mdi-folder" color="#EFDAA8" size="16" class="pointer mr-1" />
+              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               <router-link to="">branches</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
@@ -54,7 +54,7 @@ const msg = ref('SVN')
           <CTableRow>
             <CTableDataCell>
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-              <v-icon icon="mdi-folder" color="#EFDAA8" size="16" class="pointer mr-1" />
+              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               <router-link to="">tags</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
@@ -68,7 +68,7 @@ const msg = ref('SVN')
           <CTableRow>
             <CTableDataCell>
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-              <v-icon icon="mdi-folder" color="#EFDAA8" size="16" class="pointer mr-1" />
+              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               <router-link to="">trunk</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
