@@ -26,11 +26,6 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"No commits retrieved from {repo.github_api_url}"))
                 continue
 
-            # existing_hashes = set(
-            #     Commit.objects.filter(repo=repo)
-            #     .order_by('-date')[:1000]  # 최근 1000개만 비교
-            #     .values_list('commit_hash', flat=True))
-
             commits_to_create = []
             commit_hashes = []
 
