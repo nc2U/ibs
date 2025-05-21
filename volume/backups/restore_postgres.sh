@@ -59,21 +59,14 @@ BEGIN
         RAISE EXCEPTION 'Schema $SCHEMA does not exist';
     END IF;
 
-    FOR r IN (
-            SELECT c.relname AS tablename
-            FROM pg_class c
-            WHERE c.relkind = 'r'
-            AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA')
-            AND c.relname != 'django_migrations')
+    FOR r IN (SELECT c.relname AS tablename FROM pg_class c WHERE c.relkind = 'r'
+              AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA')
+              AND c.relname != 'django_migrations')
     LOOP
         BEGIN
-            IF EXISTS (
-                SELECT 1
-                FROM pg_depend d
-                JOIN pg_class s ON d.refobjid = s.oid
+            IF EXISTS (SELECT 1 FROM pg_depend d JOIN pg_class s ON d.refobjid = s.oid
                 WHERE d.objid = (SELECT oid FROM pg_class WHERE relname = r.tablename AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA'))
-                AND s.relkind = 'S'
-            ) THEN
+                AND s.relkind = 'S') THEN
                 EXECUTE 'TRUNCATE TABLE ' || quote_ident('$SCHEMA') || '.' || quote_ident(r.tablename) || ' CASCADE RESTART IDENTITY';
                 -- RAISE NOTICE 'Truncated table %.% with RESTART IDENTITY', '$SCHEMA', r.tablename;
             ELSE
@@ -104,21 +97,12 @@ DECLARE
     row_count INTEGER;
 BEGIN
     -- RAISE NOTICE '--- Table row counts after TRUNCATE ---';
-    FOR r IN (
-        SELECT tablename
-        FROM pg_tables
-        WHERE schemaname = '$SCHEMA' AND tablename != 'django_migrations'
-    )
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = '$SCHEMA' AND tablename != 'django_migrations')
     LOOP
-        EXECUTE format(
-            'SELECT COUNT(*) FROM %I.%I',
-            '$SCHEMA',
-            r.tablename
-        ) INTO row_count;
-
+        EXECUTE format('SELECT COUNT(*) FROM %I.%I', '$SCHEMA', r.tablename) INTO row_count;
         -- RAISE NOTICE 'Table %.% count: %', current_schema, r.tablename, row_count;
     END LOOP;
-    RAISE NOTICE 'Completed checking tables count is 0 in schema $SCHEMA';
+    RAISE NOTICE 'Completed checked each table data count 0 in schema $SCHEMA';
 END \$\$;
 "
 
@@ -136,18 +120,11 @@ if [ $? -eq 0 ]; then
     DECLARE
         r RECORD;
     BEGIN
-        FOR r IN (
-            SELECT c.relname AS tablename
-            FROM pg_class c
-            JOIN pg_depend d ON c.oid = d.objid
-            JOIN pg_class s ON d.refobjid = s.oid
-            WHERE c.relkind = 'r'
-            AND s.relkind = 'S'
-            AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA')
-        )
+        FOR r IN (SELECT c.relname AS tablename FROM pg_class c JOIN pg_depend d ON c.oid = d.objid JOIN pg_class s ON d.refobjid = s.oid
+            WHERE c.relkind = 'r' AND s.relkind = 'S' AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA'))
         LOOP
             EXECUTE 'SELECT setval(pg_get_serial_sequence(' || quote_literal('$SCHEMA.' || r.tablename) || ', ''id''),
-                                   (SELECT COALESCE(MAX(id), 0) + 1 FROM ' || quote_ident('$SCHEMA') || '.' || quote_ident(r.tablename) || '))';
+                    (SELECT COALESCE(MAX(id), 0) + 1 FROM ' || quote_ident('$SCHEMA') || '.' || quote_ident(r.tablename) || '))';
             RAISE NOTICE 'Reset sequence for table %.%', '$SCHEMA', r.tablename;
         END LOOP;
     END \$\$;
