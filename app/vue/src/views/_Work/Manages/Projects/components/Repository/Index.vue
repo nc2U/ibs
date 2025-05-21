@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
+import Subversion from './components/Subversion.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
 
@@ -86,6 +87,8 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <Subversion />
+
   <Revisions
     v-if="viewPageSort === 'revisions'"
     :page="cFilter.page"
