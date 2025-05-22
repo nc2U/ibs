@@ -1,10 +1,15 @@
 <script lang="ts" setup>
+import { ref } from 'vue'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 
 defineProps({
   branches: { type: Array, default: () => [] },
   tags: { type: Array, default: () => [] },
 })
+
+const branchFold = ref(false)
+const tagFold = ref(false)
+const trunkFold = ref(false)
 </script>
 
 <template>
@@ -42,7 +47,12 @@ defineProps({
         <CTableBody>
           <CTableRow>
             <CTableDataCell>
-              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              <v-icon
+                :icon="`mdi-chevron-${branchFold ? 'down' : 'right'}`"
+                size="16"
+                class="pointer mr-1"
+                @click="branchFold = !branchFold"
+              />
               <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               <router-link to="">branches</router-link>
             </CTableDataCell>
@@ -56,7 +66,12 @@ defineProps({
           </CTableRow>
           <CTableRow>
             <CTableDataCell>
-              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              <v-icon
+                :icon="`mdi-chevron-${tagFold ? 'down' : 'right'}`"
+                size="16"
+                class="pointer mr-1"
+                @click="tagFold = !tagFold"
+              />
               <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               <router-link to="">tags</router-link>
             </CTableDataCell>
@@ -70,7 +85,12 @@ defineProps({
           </CTableRow>
           <CTableRow>
             <CTableDataCell>
-              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              <v-icon
+                :icon="`mdi-chevron-${trunkFold ? 'down' : 'right'}`"
+                size="16"
+                class="pointer mr-1"
+                @click="trunkFold = !trunkFold"
+              />
               <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               <router-link to="">trunk</router-link>
             </CTableDataCell>
