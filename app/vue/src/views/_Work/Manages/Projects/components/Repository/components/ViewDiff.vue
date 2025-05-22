@@ -9,11 +9,11 @@ import sanitizeHtml from 'sanitize-html'
 const props = defineProps({
   headCommit: { type: Object as PropType<Commit>, required: true },
   baseCommit: { type: Object as PropType<Commit>, required: true },
-  githubDiffApi: { type: Object as PropType<any>, required: true },
+  diffApi: { type: Object as PropType<any>, required: true },
 })
 
 watch(
-  () => props.githubDiffApi,
+  () => props.diffApi,
   newVal => getDiffCode(newVal),
 )
 
@@ -25,7 +25,7 @@ const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
 
 watch(
   () => outputFormat.value,
-  newVal => getDiffCode(props.githubDiffApi),
+  newVal => getDiffCode(props.diffApi),
 )
 
 const diffHtml = ref('')
@@ -45,7 +45,7 @@ const hasContent = computed(() => {
 
 const getDiff = () => emit('get-diff', true)
 
-onMounted(async () => getDiffCode(props.githubDiffApi))
+onMounted(async () => getDiffCode(props.diffApi))
 </script>
 
 <template>

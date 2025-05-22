@@ -29,10 +29,7 @@ watch(repo, nVal => {
 })
 const repoList = computed(() => workStore.repositoryList)
 const commitList = computed<Commit[]>(() => workStore.commitList)
-const githubApiUrl = computed<any>(() => (workStore.githubRepoApi as any)?.url || '')
-const githubDiffApi = computed<any>(() => workStore.githubDiffApi)
 
-const fetchDiff = (url: string, token: string) => workStore.fetchDiff(url, token)
 const fetchRepo = (pk: number) => workStore.fetchRepo(pk)
 const fetchRepoList = (project?: number, is_default?: string) =>
   workStore.fetchRepoList(project, is_default)
@@ -49,6 +46,12 @@ const ghStore = useGithub()
 const branches = computed<Branch[]>(() => ghStore.branches)
 const tags = computed<Tag[]>(() => ghStore.tags)
 const trunk = computed<Branch | null>(() => ghStore.trunk)
+
+const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
+const diffApi = computed<any>(() => ghStore.diffApi)
+
+const fetchDiff = (url: string, token: string) => ghStore.fetchDiffApi(url, token)
+
 const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
 const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
 
@@ -79,7 +82,7 @@ const getDiff = (reverse = false) => {
 
 const getBack = () => {
   viewPageSort.value = 'revisions'
-  workStore.removeDiffApi()
+  ghStore.removeDiffApi()
 }
 
 const pageSelect = (page: number) => {
@@ -124,7 +127,7 @@ onBeforeMount(async () => {
     v-if="viewPageSort === 'diff'"
     :head-commit="diffs.headCommit as Commit"
     :base-commit="diffs.baseCommit as Commit"
-    :github-diff-api="githubDiffApi"
+    :diff-api="diffApi"
     @get-diff="getDiff"
     @get-back="getBack"
   />

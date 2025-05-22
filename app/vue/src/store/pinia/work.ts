@@ -26,6 +26,9 @@ import type {
   Tracker,
   Version,
 } from '@/store/types/work'
+import { useGithub } from '@/store/pinia/work_github.ts'
+
+const githubStore = useGithub()
 
 export const useWork = defineStore('work', () => {
   // Issue Project states & getters
@@ -461,36 +464,16 @@ export const useWork = defineStore('work', () => {
   // Repository states & getters
   const repository = ref<Repository | null>(null)
   const repositoryList = ref<Repository[]>([])
-  const githubRepoApi = ref<any>(null)
-  const githubDiffApi = ref<any>(null)
-
-  const removeDiffApi = () => (githubDiffApi.value = null)
-
-  const fetchDiff = (url: string, token: string) =>
-    api
-      .get(url, {
-        headers: {
-          Accept: 'application/vnd.github.diff',
-          Authorization: `token ${token}`,
-        },
-      })
-      .then(res => (githubDiffApi.value = res.data))
-      .catch(err => errorHandle(err.response.data))
 
   const fetchRepo = async (pk: number) =>
     await api
       .get(`/repository/${pk}/`)
       .then(async res => {
         repository.value = res.data
-        await api
-          .get(`https://api.github.com/repos/${res.data.owner}/${res.data.slug}`, {
-            headers: {
-              Accept: 'application/vnd.github.diff',
-              Authorization: `token ${res.data.github_token}`,
-            },
-          })
-          .then(res => (githubRepoApi.value = res.data))
-          .catch(err => errorHandle(err.response.data))
+        await githubStore.fetchRepoApi(
+          `https://api.github.com/repos/${res.data.owner}/${res.data.slug}`,
+          res.data.github_token,
+        )
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -1027,10 +1010,6 @@ export const useWork = defineStore('work', () => {
 
     repository,
     repositoryList,
-    githubRepoApi,
-    githubDiffApi,
-    removeDiffApi,
-    fetchDiff,
     fetchRepo,
     fetchRepoList,
     createRepo,

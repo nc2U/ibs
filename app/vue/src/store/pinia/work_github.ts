@@ -6,10 +6,7 @@ import { useWork } from '@/store/pinia/work.ts'
 import type { Commit } from '@/store/types/work.ts'
 import type { Branch, Tag } from '@/store/types/work_github.ts'
 
-const workStore = useWork()
-
 export const useGithub = defineStore('github', () => {
-  // GET /repos/{owner}/{repo}/branches
   const repoApi = ref<any>(null)
 
   const fetchRepoApi = async (url: string, token: string = '') =>
@@ -19,6 +16,20 @@ export const useGithub = defineStore('github', () => {
       })
       .then(res => (repoApi.value = res.data))
       .catch(err => errorHandle(err.response))
+
+  const diffApi = ref<any>(null)
+
+  const removeDiffApi = () => (diffApi.value = null)
+  const fetchDiffApi = (url: string, token: string) =>
+    api
+      .get(url, {
+        headers: {
+          Accept: 'application/vnd.github.diff',
+          Authorization: `token ${token}`,
+        },
+      })
+      .then(res => (diffApi.value = res.data))
+      .catch(err => errorHandle(err.response.data))
 
   const branches = ref<Branch[]>([])
   const trunk = ref<Branch | null>(null)
@@ -47,6 +58,10 @@ export const useGithub = defineStore('github', () => {
   return {
     repoApi,
     fetchRepoApi,
+
+    diffApi,
+    removeDiffApi,
+    fetchDiffApi,
 
     branches,
     trunk,
