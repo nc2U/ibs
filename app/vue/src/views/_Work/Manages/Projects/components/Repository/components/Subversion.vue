@@ -12,12 +12,12 @@ defineProps({
     <CCol>
       <h5>
         <span><router-link to="">SVN</router-link></span>
-        <span v-if="1 == 2">/ <router-link to="">branches</router-link></span>
-        <span v-if="1 == 2">/ <router-link to="">aaa</router-link></span>
+        <!--        <span v-if="1 == 2">/ <router-link to="">branches</router-link></span>-->
+        <!--        <span v-if="1 == 2">/ <router-link to="">aaa</router-link></span>-->
       </h5>
     </CCol>
   </CRow>
-  
+
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
