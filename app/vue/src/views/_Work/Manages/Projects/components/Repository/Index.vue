@@ -95,7 +95,7 @@ onBeforeMount(async () => {
   if (repo.value) {
     cFilter.value.repo = repo.value?.pk as number
     await fetchCommitList(cFilter.value)
-    const url = `api.github.com/repos/${repo.value.owner}/${repo.value.slug}`
+    const url = githubApiUrl.value
     const token = repo.value.github_token ?? ''
     await fetchBranches(url, token)
     await fetchTags(url, token)
@@ -124,7 +124,6 @@ onBeforeMount(async () => {
     v-if="viewPageSort === 'diff'"
     :head-commit="diffs.headCommit as Commit"
     :base-commit="diffs.baseCommit as Commit"
-    :github-api-url="githubApiUrl"
     :github-diff-api="githubDiffApi"
     @get-diff="getDiff"
     @get-back="getBack"

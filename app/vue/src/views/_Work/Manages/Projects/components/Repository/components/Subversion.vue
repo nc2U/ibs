@@ -24,7 +24,7 @@ const trunkFold = ref(false)
       </h5>
     </CCol>
   </CRow>
-  {{ trunk }}
+  
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>

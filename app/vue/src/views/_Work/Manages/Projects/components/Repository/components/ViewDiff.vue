@@ -9,7 +9,6 @@ import sanitizeHtml from 'sanitize-html'
 const props = defineProps({
   headCommit: { type: Object as PropType<Commit>, required: true },
   baseCommit: { type: Object as PropType<Commit>, required: true },
-  githubApiUrl: { type: String as PropType<string>, required: true },
   githubDiffApi: { type: Object as PropType<any>, required: true },
 })
 

@@ -483,7 +483,7 @@ export const useWork = defineStore('work', () => {
       .then(async res => {
         repository.value = res.data
         await api
-          .get(`api.github.com/repos/${res.data.owner}/${res.data.slug}`, {
+          .get(`https://api.github.com/repos/${res.data.owner}/${res.data.slug}`, {
             headers: {
               Accept: 'application/vnd.github.diff',
               Authorization: `token ${res.data.github_token}`,
