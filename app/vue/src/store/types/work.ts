@@ -303,6 +303,7 @@ export interface Repository {
   pk?: number
   project: number
   is_default: boolean
+  owner: string
   slug: string
   github_api_url: string
   github_token: string
