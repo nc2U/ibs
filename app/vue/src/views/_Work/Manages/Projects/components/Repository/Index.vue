@@ -95,7 +95,7 @@ onBeforeMount(async () => {
   if (repo.value) {
     cFilter.value.repo = repo.value?.pk as number
     await fetchCommitList(cFilter.value)
-    const url = repo.value.github_api_url ?? ''
+    const url = `api.github.com/repos/${repo.value.owner}/${repo.value.slug}`
     const token = repo.value.github_token ?? ''
     await fetchBranches(url, token)
     await fetchTags(url, token)

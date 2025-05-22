@@ -24,7 +24,6 @@ const form = ref({
   is_default: false,
   owner: '',
   slug: '',
-  github_api_url: '',
   github_token: '',
   is_report: false,
 })
@@ -35,7 +34,6 @@ const resetForm = () => {
   form.value.is_default = false
   form.value.owner = ''
   form.value.slug = ''
-  form.value.github_api_url = ''
   form.value.github_token = ''
   form.value.is_report = false
 }
@@ -56,7 +54,6 @@ const toEditRepo = (repo: Repository) => {
   form.value.is_default = repo.is_default
   form.value.owner = repo.owner
   form.value.slug = repo.slug
-  form.value.github_api_url = repo.github_api_url
   form.value.github_token = repo.github_token
   form.value.is_report = repo.is_report
   refFormModal.value.callModal()
@@ -102,16 +99,21 @@ const modalAction = () => {
       <CTable hover striped small>
         <CTableHead>
           <CTableRow :color="TableSecondary" class="text-center">
+            <CTableHeaderCell>소유자</CTableHeaderCell>
             <CTableHeaderCell>식별자</CTableHeaderCell>
             <CTableHeaderCell>주 저쟝소</CTableHeaderCell>
             <CTableHeaderCell>형상관리시스템</CTableHeaderCell>
-            <CTableHeaderCell>저장소(api)</CTableHeaderCell>
             <CTableHeaderCell>비고</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
           <CTableRow v-for="repo in repoList" :key="repo.pk" class="text-center">
-            <CTableDataCell class="text-left pl-3">
+            <CTableDataCell class="pl-3">
+              <router-link :to="{ name: '(저장소)', params: { projId } }">
+                {{ repo.owner }}
+              </router-link>
+            </CTableDataCell>
+            <CTableDataCell class="pl-3">
               <router-link :to="{ name: '(저장소)', params: { projId } }">
                 {{ repo.slug }}
               </router-link>
@@ -120,11 +122,6 @@ const modalAction = () => {
               <v-icon v-if="repo.is_default" icon="mdi-check-bold" size="16" color="success" />
             </CTableDataCell>
             <CTableDataCell>Git</CTableDataCell>
-            <CTableDataCell>
-              <router-link :to="{ name: '(저장소)', params: { projId } }">
-                {{ repo.github_api_url }}
-              </router-link>
-            </CTableDataCell>
             <CTableDataCell>
               <span class="mr-2">
                 <v-icon icon="mdi-account-multiple" color="info" size="16" />
@@ -180,20 +177,6 @@ const modalAction = () => {
               />
             </CCol>
           </CRow>
-          <!--          <CRow class="mb-3">-->
-          <!--            <CFormLabel for="githubApiForm" class="col-sm-3 col-form-label required">-->
-          <!--              깃허브 API-->
-          <!--            </CFormLabel>-->
-          <!--            <CCol sm="9">-->
-          <!--              <CFormInput-->
-          <!--                v-model="form.github_api_url"-->
-          <!--                id="githubApiForm"-->
-          <!--                required-->
-          <!--                placeholder="Github API"-->
-          <!--              />-->
-          <!--            </CCol>-->
-          <!--          </CRow>-->
-
           <CRow class="mb-3 required">
             <CFormLabel for="githubTokenForm" class="col-sm-3 col-form-label required">
               깃허브 토큰

@@ -305,7 +305,6 @@ export interface Repository {
   is_default: boolean
   owner: string
   slug: string
-  github_api_url: string
   github_token: string
   is_report: boolean
 }

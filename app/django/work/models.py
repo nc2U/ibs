@@ -361,7 +361,6 @@ class Repository(models.Model):
     owner = models.CharField('소유자', max_length=50)
     slug = models.CharField('식별자', max_length=255, unique=True,
                             help_text='1 에서 255 글자 소문자(a-z),숫자,대쉬(-)와 밑줄(_)만 가능합니다. 식별자는 저장후에는 수정할 수 없습니다.')
-    github_api_url = models.URLField('깃헙 API 주소', help_text="https://api.github.com/repos/{owner}/{repo}")
     github_token = models.CharField('깃헙 토큰', max_length=255)
     is_report = models.BooleanField('파일이나 폴더의 마지막 커밋을 보고', default=False)
 

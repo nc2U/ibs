@@ -754,8 +754,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
 class RepositorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
-        fields = ('pk', 'project', 'is_default', 'owner', 'slug',
-                  'github_api_url', 'github_token', 'is_report')
+        fields = ('pk', 'project', 'is_default', 'owner', 'slug', 'github_token', 'is_report')
 
 
 class CommitSerializer(serializers.ModelSerializer):
