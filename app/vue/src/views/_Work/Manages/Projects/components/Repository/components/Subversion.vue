@@ -4,8 +4,8 @@ import { elapsedTime } from '@/utils/baseMixins.ts'
 
 defineProps({
   branches: { type: Array, default: () => [] },
-  commits: { type: Array, default: () => [] },
   tags: { type: Array, default: () => [] },
+  trunk: { type: Object, default: () => null },
 })
 
 const branchFold = ref(false)
@@ -23,9 +23,7 @@ const trunkFold = ref(false)
       </h5>
     </CCol>
   </CRow>
-
-  {{ commits }}
-
+  {{ trunk }}
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
@@ -68,8 +66,11 @@ const trunkFold = ref(false)
             <CTableDataCell> #127 fetch_commits.py update</CTableDataCell>
           </CTableRow>
           <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
-            <CTableDataCell class="pl-5">{{ branch.name }}</CTableDataCell>
-            <CTableDataCell>{{ branch.commit.url }}</CTableDataCell>
+            <CTableDataCell class="pl-5">
+              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              {{ branch.name }}
+            </CTableDataCell>
+            <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
@@ -94,8 +95,8 @@ const trunkFold = ref(false)
             <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
             <CTableDataCell> #127 view diff update</CTableDataCell>
           </CTableRow>
-          <CTableRow v-if="tagFold" v-for="i in 5" :key="i">
-            <CTableDataCell class="pl-5">tag {{ i }}</CTableDataCell>
+          <CTableRow v-if="tagFold" v-for="(tag, i) in tags" :key="i">
+            <CTableDataCell class="pl-5">{{ tag.name }}</CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>

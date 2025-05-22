@@ -46,8 +46,10 @@ const fetchCommitList = (payload: {
 // get github api
 const ghStore = useGithub()
 const branches = computed(() => ghStore.branches)
-const commits = computed(() => ghStore.commits)
+const tags = computed(() => ghStore.tags)
+const trunk = computed(() => ghStore.trunk)
 const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
+const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
 
 const getListSort = ref<'latest' | 'all'>('latest')
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
@@ -88,14 +90,20 @@ onBeforeMount(async () => {
   await fetchRepoList(1, 'true')
   if (repoList.value.length) await fetchRepo(repoList.value[0].pk as number)
   cFilter.value.project = project.value?.pk as number
-  cFilter.value.repo = repo.value?.pk as number
-  await fetchBranches(repo.value?.github_api_url ?? '', repo.value?.github_token)
-  await fetchCommitList(cFilter.value)
+
+  if (repo.value) {
+    cFilter.value.repo = repo.value?.pk as number
+    await fetchCommitList(cFilter.value)
+    const url = repo.value.github_api_url ?? ''
+    const token = repo.value.github_token ?? ''
+    await fetchBranches(url, token)
+    await fetchTags(url, token)
+  }
 })
 </script>
 
 <template>
-  <Subversion :branches="branches" :commits="commits" />
+  <Subversion :branches="branches" :tags="tags" :trunk="trunk" />
 
   <Revisions
     v-if="viewPageSort === 'revisions'"
