@@ -422,16 +422,27 @@ class IssueProjectSerializer(serializers.ModelSerializer):
             instance.activities.set(activities)
 
         module = instance.module
-        module.issue = self.initial_data.get('issue', True)
-        module.time = self.initial_data.get('time', True)
-        module.news = self.initial_data.get('news', True)
-        module.document = self.initial_data.get('document', True)
-        module.file = self.initial_data.get('file', True)
-        module.wiki = self.initial_data.get('wiki', True)
-        module.repository = self.initial_data.get('repository', False)
-        module.forum = self.initial_data.get('forum', True)
-        module.calendar = self.initial_data.get('calendar', True)
-        module.gantt = self.initial_data.get('gantt', True)
+
+        if self.initial_data.get('issue'):
+            module.issue = self.initial_data.get('issue')
+        if self.initial_data.get('time'):
+            module.time = self.initial_data.get('time')
+        if self.initial_data.get('news'):
+            module.news = self.initial_data.get('news')
+        if self.initial_data.get('document'):
+            module.document = self.initial_data.get('document')
+        if self.initial_data.get('file'):
+            module.file = self.initial_data.get('file')
+        if self.initial_data.get('wiki'):
+            module.wiki = self.initial_data.get('wiki')
+        if self.initial_data.get('repository'):
+            module.repository = self.initial_data.get('repository')
+        if self.initial_data.get('forum'):
+            module.forum = self.initial_data.get('forum')
+        if self.initial_data.get('calendar'):
+            module.calendar = self.initial_data.get('calendar')
+        if self.initial_data.get('gantt'):
+            module.gantt = self.initial_data.get('gantt')
         module.save()
 
         # user에 대응하는 member 모델 생성
@@ -447,7 +458,6 @@ class IssueProjectSerializer(serializers.ModelSerializer):
                 member_instance.roles.add(*roles)
                 member_instance.save()
                 members.append(member_instance.pk)
-
         elif del_mem is not None:
             member = Member.objects.get(pk=del_mem)
             member.delete()
