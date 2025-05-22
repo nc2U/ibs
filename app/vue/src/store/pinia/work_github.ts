@@ -4,15 +4,7 @@ import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
 import { useWork } from '@/store/pinia/work.ts'
 import type { Commit } from '@/store/types/work.ts'
-
-interface Branch {
-  name: string
-  commit: {
-    sha: string
-    url: string
-  }
-  protected: boolean
-}
+import type { Branch, Tag } from '@/store/types/work_github.ts'
 
 const workStore = useWork()
 
@@ -42,7 +34,7 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
   }
 
-  const tags = ref<any[]>([])
+  const tags = ref<Tag[]>([])
 
   const fetchTags = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }

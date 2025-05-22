@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { type PropType, ref } from 'vue'
 import { elapsedTime } from '@/utils/baseMixins.ts'
+import type { Branch, Tag } from '@/store/types/work_github.ts'
 
 defineProps({
-  branches: { type: Array, default: () => [] },
-  tags: { type: Array, default: () => [] },
-  trunk: { type: Object, default: () => null },
+  branches: { type: Array as PropType<Branch[]>, default: () => [] },
+  tags: { type: Array as PropType<Tag[]>, default: () => [] },
+  trunk: { type: Object as PropType<Branch | null>, default: () => null },
 })
 
 const branchFold = ref(false)

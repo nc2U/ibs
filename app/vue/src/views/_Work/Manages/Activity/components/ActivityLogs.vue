@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
-import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
-import { cutString, dateFormat, numberToHour, timeFormat } from '@/utils/baseMixins'
 import type { Prop, PropType } from 'vue'
 import { bgLight } from '@/utils/cssMixins.ts'
+import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
+import type { ActLogEntry } from '@/store/types/work.ts'
+import { cutString, dateFormat, numberToHour, timeFormat } from '@/utils/baseMixins'
 
 defineProps({
-  groupedActivities: Object as PropType<any>,
+  groupedActivities: Object as PropType<{ [key: string]: ActLogEntry[] }>,
   default: () => {},
 })
 
