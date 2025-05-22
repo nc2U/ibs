@@ -24,7 +24,7 @@ const trunkFold = ref(false)
       </h5>
     </CCol>
   </CRow>
-  
+
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
@@ -69,7 +69,7 @@ const trunkFold = ref(false)
           <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
             <CTableDataCell class="pl-5">
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-              {{ branch.name }}
+              <router-link to="">{{ branch.name }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
@@ -97,7 +97,10 @@ const trunkFold = ref(false)
             <CTableDataCell> #127 view diff update</CTableDataCell>
           </CTableRow>
           <CTableRow v-if="tagFold" v-for="(tag, i) in tags" :key="i">
-            <CTableDataCell class="pl-5">{{ tag.name }}</CTableDataCell>
+            <CTableDataCell class="pl-5">
+              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              <router-link to="">{{ tag.name }}</router-link>
+            </CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
@@ -124,7 +127,10 @@ const trunkFold = ref(false)
             <CTableDataCell> package update</CTableDataCell>
           </CTableRow>
           <CTableRow v-if="trunkFold" v-for="i in 5" :key="i">
-            <CTableDataCell class="pl-5">trunk {{ i }}</CTableDataCell>
+            <CTableDataCell class="pl-5">
+              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              <router-link to="">trunk {{ i }}</router-link>
+            </CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
