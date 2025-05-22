@@ -2,35 +2,10 @@ import api from '@/api'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
-import { useWork } from '@/store/pinia/work.ts'
-import type { Commit } from '@/store/types/work.ts'
 import type { Branch, Tag } from '@/store/types/work_github.ts'
 
 export const useGithub = defineStore('github', () => {
-  const repoApi = ref<any>(null)
-
-  const fetchRepoApi = async (url: string, token: string = '') =>
-    await api
-      .get(`${url}`, {
-        headers: { Accept: 'application/vnd.github.diff', Authorization: `token ${token}` },
-      })
-      .then(res => (repoApi.value = res.data))
-      .catch(err => errorHandle(err.response))
-
-  const diffApi = ref<any>(null)
-
-  const removeDiffApi = () => (diffApi.value = null)
-  const fetchDiffApi = (url: string, token: string) =>
-    api
-      .get(url, {
-        headers: {
-          Accept: 'application/vnd.github.diff',
-          Authorization: `token ${token}`,
-        },
-      })
-      .then(res => (diffApi.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
+  // branches api
   const branches = ref<Branch[]>([])
   const trunk = ref<Branch | null>(null)
 
@@ -45,6 +20,7 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
   }
 
+  // tags api
   const tags = ref<Tag[]>([])
 
   const fetchTags = async (url: string, token: string = '') => {
@@ -55,19 +31,45 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
   }
 
+  // repo api
+  const repoApi = ref<any>(null)
+
+  const fetchRepoApi = async (url: string, token: string = '') =>
+    await api
+      .get(`${url}`, {
+        headers: { Accept: 'application/vnd.github.diff', Authorization: `token ${token}` },
+      })
+      .then(res => (repoApi.value = res.data))
+      .catch(err => errorHandle(err.response))
+
+  // diff api
+  const diffApi = ref<any>(null)
+
+  const removeDiffApi = () => (diffApi.value = null)
+  const fetchDiffApi = (url: string, token: string) =>
+    api
+      .get(url, {
+        headers: {
+          Accept: 'application/vnd.github.diff',
+          Authorization: `token ${token}`,
+        },
+      })
+      .then(res => (diffApi.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
   return {
-    repoApi,
-    fetchRepoApi,
-
-    diffApi,
-    removeDiffApi,
-    fetchDiffApi,
-
     branches,
     trunk,
     fetchBranches,
 
     tags,
     fetchTags,
+
+    repoApi,
+    fetchRepoApi,
+
+    diffApi,
+    removeDiffApi,
+    fetchDiffApi,
   }
 })
