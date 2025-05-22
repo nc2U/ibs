@@ -9,7 +9,7 @@ import NoData from '@/views/_Work/components/NoData.vue'
 import ActivityLogs from '@/views/_Work/Manages/Activity/components/ActivityLogs.vue'
 
 const props = defineProps({
-  toDate: { type: Date, required: true },
+  toDate: { type: Date as PropType<Date>, required: true },
   activityFilter: { type: Object as PropType<any>, default: () => null },
 })
 

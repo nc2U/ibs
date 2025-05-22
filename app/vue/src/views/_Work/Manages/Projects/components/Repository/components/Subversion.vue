@@ -24,6 +24,8 @@ const trunkFold = ref(false)
     </CCol>
   </CRow>
 
+  {{ commits }}
+
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>

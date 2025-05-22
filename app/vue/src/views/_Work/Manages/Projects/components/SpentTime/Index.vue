@@ -2,14 +2,14 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
-import type { TimeEntryFilter } from '@/store/types/work'
+import type { IssueProject, TimeEntryFilter } from '@/store/types/work'
 import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryList.vue'
 import TimeEntryForm from '@/views/_Work/Manages/SpentTime/components/TimeEntryForm.vue'
 
 const emit = defineEmits(['aside-visible'])
 
 const workStore = useWork()
-const issueProject = computed(() => workStore.issueProject)
+const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 const allProjects = computed(() => workStore.AllIssueProjects)
 const timeEntryList = computed(() => workStore.timeEntryList)
 const getIssues = computed(() => workStore.getIssues)

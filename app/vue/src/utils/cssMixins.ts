@@ -33,7 +33,10 @@ export const AlertLight = computed(() => (isDark.value ? '' : 'light'))
 // export const bgWarning = computed(() => (isDark.value ? '' : 'bg-warning'))
 // export const bgDanger = computed(() => (isDark.value ? '' : 'bg-danger'))
 
-export const bgLight = computed(() => (isDark.value ? '' : 'bg-light'))
+export const bgSecondary = computed(() => (isDark.value ? '' : 'bg-secondary'))
+export const bgPrimary = computed(() => (isDark.value ? '' : 'bg-primary'))
+export const bgSuccess = computed(() => (isDark.value ? '' : 'bg-success'))
+export const bgLight = computed(() => (isDark.value ? 'bg-grey-darken-3' : 'bg-light'))
 export const colorLight = computed(() => (isDark.value ? '' : 'light'))
 
 export const btnSecondary = computed(() => (isDark.value ? 'secondary' : 'dark'))

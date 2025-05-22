@@ -12,7 +12,7 @@ import SubProjects from './components/SubProjects.vue'
 const emit = defineEmits(['aside-visible'])
 
 const workStore = useWork()
-const iProject = computed(() => workStore.issueProject)
+const iProject = computed<IssueProject | null>(() => workStore.issueProject)
 const trackerSum = computed(() => workStore.trackerSum)
 const allMembers = computed<SimpleMember[]>(() => workStore.issueProject?.all_members ?? [])
 const newsList = computed(() => workStore.newsList)

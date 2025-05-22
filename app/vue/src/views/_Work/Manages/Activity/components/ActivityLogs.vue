@@ -2,9 +2,11 @@
 import { useRoute } from 'vue-router'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import { cutString, dateFormat, numberToHour, timeFormat } from '@/utils/baseMixins'
+import type { Prop, PropType } from 'vue'
+import { bgLight } from '@/utils/cssMixins.ts'
 
 defineProps({
-  groupedActivities: Object,
+  groupedActivities: Object as PropType<any>,
   default: () => {},
 })
 
@@ -21,7 +23,7 @@ const route = useRoute()
 <template>
   <CRow v-for="(val, key) in groupedActivities" :key="key">
     <CCol>
-      <CAlert color="secondary" class="px-3 py-1">
+      <CAlert class="px-3 py-1" :class="bgLight">
         <span class="date-title">
           {{ String(key) === dateFormat(new Date()) ? '오늘' : dateFormat(key as string, '/') }}
         </span>
