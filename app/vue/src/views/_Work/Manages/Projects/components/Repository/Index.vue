@@ -46,6 +46,7 @@ const fetchCommitList = (payload: {
 // get github api
 const ghStore = useGithub()
 const branches = computed(() => ghStore.branches)
+const commits = computed(() => ghStore.commits)
 const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
 
 const getListSort = ref<'latest' | 'all'>('latest')
@@ -94,7 +95,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <Subversion :branches="branches" />
+  <Subversion :branches="branches" :commits="commits" />
 
   <Revisions
     v-if="viewPageSort === 'revisions'"

@@ -4,6 +4,7 @@ import { elapsedTime } from '@/utils/baseMixins.ts'
 
 defineProps({
   branches: { type: Array, default: () => [] },
+  commits: { type: Array, default: () => [] },
   tags: { type: Array, default: () => [] },
 })
 
@@ -13,7 +14,6 @@ const trunkFold = ref(false)
 </script>
 
 <template>
-  {{ branches[0] }}
   <CRow class="py-2">
     <CCol>
       <h5>
@@ -67,7 +67,7 @@ const trunkFold = ref(false)
           </CTableRow>
           <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
             <CTableDataCell class="pl-5">{{ branch.name }}</CTableDataCell>
-            <CTableDataCell></CTableDataCell>
+            <CTableDataCell>{{ branch.commit.url }}</CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
