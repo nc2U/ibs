@@ -13,6 +13,7 @@ const trunkFold = ref(false)
 </script>
 
 <template>
+  {{ branches[0] }}
   <CRow class="py-2">
     <CCol>
       <h5>
@@ -64,8 +65,8 @@ const trunkFold = ref(false)
             <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
             <CTableDataCell> #127 fetch_commits.py update</CTableDataCell>
           </CTableRow>
-          <CTableRow v-show="branchFold" v-for="i in 5" :key="i">
-            <CTableDataCell class="pl-5">branch {{ i }}</CTableDataCell>
+          <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
+            <CTableDataCell class="pl-5">{{ branch.name }}</CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
@@ -91,7 +92,7 @@ const trunkFold = ref(false)
             <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
             <CTableDataCell> #127 view diff update</CTableDataCell>
           </CTableRow>
-          <CTableRow v-show="tagFold" v-for="i in 5" :key="i">
+          <CTableRow v-if="tagFold" v-for="i in 5" :key="i">
             <CTableDataCell class="pl-5">tag {{ i }}</CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
@@ -118,7 +119,7 @@ const trunkFold = ref(false)
             <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
             <CTableDataCell> package update</CTableDataCell>
           </CTableRow>
-          <CTableRow v-show="trunkFold" v-for="i in 5" :key="i">
+          <CTableRow v-if="trunkFold" v-for="i in 5" :key="i">
             <CTableDataCell class="pl-5">trunk {{ i }}</CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>

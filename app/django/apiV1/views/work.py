@@ -150,7 +150,7 @@ class CommitViewSet(viewsets.ModelViewSet):
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
-    filterset_fields = ('repo__project', 'repo', 'issues')
+    filterset_fields = ('repo__project', 'repo', 'commit_hash', 'issues')
 
 
 class CodeActivityViewSet(viewsets.ModelViewSet):
