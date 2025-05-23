@@ -1,9 +1,11 @@
+from django.db.models import Q
 from django_filters.rest_framework import FilterSet, DateFilter, CharFilter
 from rest_framework import viewsets
 
 from apiV1.pagination import *
 from apiV1.permission import *
 from apiV1.serializers.work.logging import *
+from work.models import IssueProject
 
 
 class ActivityLogFilter(FilterSet):
@@ -17,18 +19,22 @@ class ActivityLogFilter(FilterSet):
         fields = ('project__slug', 'from_act_date', 'to_act_date', 'user', 'sort')
 
     def filter_queryset(self, queryset):
-        for name, value in self.form.cleaned_data.items():
-            if name == 'project__slug':
-                try:
-                    project = IssueProject.objects.get(slug=value)
-                    subs = self.get_sub_projects(project)
-                    # Include activity log entries related to the specified project and its subprojects
-                    queryset = queryset.filter(
-                        Q(project__slug=project.slug) | Q(project__slug__in=[sub.slug for sub in subs]))
-                except IssueProject.DoesNotExist:
-                    pass
-            elif value is not None:
-                # Apply other filters
+        cleaned_data = self.form.cleaned_data
+        project_slug = cleaned_data.get('project__slug')  # 먼저 project__slug 필터링 처리
+
+        if project_slug:
+            try:
+                project = IssueProject.objects.get(slug=project_slug)
+                sub_slugs = list(self.get_sub_projects(project).values_list('slug', flat=True))
+                queryset = queryset.filter(Q(project__slug=project.slug) |
+                                           Q(project__slug__in=sub_slugs))
+            except IssueProject.DoesNotExist:
+                # 존재하지 않으면 빈 쿼리셋 반환
+                return queryset.none()
+
+        # 나머지 필드에 대해 일반 필터링 수행
+        for name, value in cleaned_data.items():
+            if name != 'project__slug' and value is not None:
                 queryset = self.filters[name].filter(queryset, value)
 
         return queryset
