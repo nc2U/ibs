@@ -50,8 +50,7 @@ const trunk = computed<Branch | null>(() => ghStore.trunk)
 const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const diffApi = computed<any>(() => ghStore.diffApi)
 
-const fetchDiff = (url: string, token: string) => ghStore.fetchDiffApi(url, token)
-
+const fetchDiffApi = (url: string, token: string) => ghStore.fetchDiffApi(url, token)
 const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
 const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
 
@@ -76,7 +75,7 @@ const getDiff = (reverse = false) => {
     ? `${diffs.value.baseCommit?.commit_hash}...${diffs.value.headCommit?.commit_hash}`
     : `${diffs.value.headCommit?.commit_hash}...${diffs.value.baseCommit?.commit_hash}`
 
-  fetchDiff(`${githubApiUrl.value}/compare/${diff_hash}`, `${repo.value?.github_token}`)
+  fetchDiffApi(`${githubApiUrl.value}/compare/${diff_hash}`, `${repo.value?.github_token}`)
   viewPageSort.value = 'diff'
 }
 
@@ -91,10 +90,9 @@ const pageSelect = (page: number) => {
 }
 
 onBeforeMount(async () => {
+  cFilter.value.project = project.value?.pk as number
   await fetchRepoList(1, 'true')
   if (repoList.value.length) await fetchRepo(repoList.value[0].pk as number)
-  cFilter.value.project = project.value?.pk as number
-
   if (repo.value) {
     cFilter.value.repo = repo.value?.pk as number
     await fetchCommitList(cFilter.value)

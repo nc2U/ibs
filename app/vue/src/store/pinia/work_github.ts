@@ -1,10 +1,22 @@
 import api from '@/api'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
 import type { Branch, Tag } from '@/store/types/work_github.ts'
 
 export const useGithub = defineStore('github', () => {
+  // repo api
+  const repoApi = ref<any>(null)
+  const default_branch = computed(() => repoApi.value?.default_branch)
+
+  const fetchRepoApi = async (url: string, token: string = '') =>
+    await api
+      .get(`${url}`, {
+        headers: { Accept: 'application/vnd.github.diff', Authorization: `token ${token}` },
+      })
+      .then(res => (repoApi.value = res.data))
+      .catch(err => errorHandle(err.response))
+
   // branches api
   const branches = ref<Branch[]>([])
   const trunk = ref<Branch | null>(null)
@@ -14,8 +26,9 @@ export const useGithub = defineStore('github', () => {
     await api
       .get(`${url}/branches`, { headers })
       .then(async res => {
-        branches.value = res.data.filter((branch: Branch) => !branch.protected)
-        trunk.value = res.data.filter((branch: Branch) => branch.protected)[0]
+        await fetchRepoApi(url, token)
+        branches.value = res.data.filter((branch: Branch) => branch.name !== default_branch.value)
+        trunk.value = res.data.filter((branch: Branch) => branch.name === default_branch.value)[0]
       })
       .catch(err => errorHandle(err.response))
   }
@@ -30,17 +43,6 @@ export const useGithub = defineStore('github', () => {
       .then(res => (tags.value = res.data))
       .catch(err => errorHandle(err.response))
   }
-
-  // repo api
-  const repoApi = ref<any>(null)
-
-  const fetchRepoApi = async (url: string, token: string = '') =>
-    await api
-      .get(`${url}`, {
-        headers: { Accept: 'application/vnd.github.diff', Authorization: `token ${token}` },
-      })
-      .then(res => (repoApi.value = res.data))
-      .catch(err => errorHandle(err.response))
 
   // diff api
   const diffApi = ref<any>(null)
@@ -58,15 +60,16 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response.data))
 
   return {
+    repoApi,
+    default_branch,
+    fetchRepoApi,
+
     branches,
     trunk,
     fetchBranches,
 
     tags,
     fetchTags,
-
-    repoApi,
-    fetchRepoApi,
 
     diffApi,
     removeDiffApi,
