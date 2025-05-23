@@ -69,6 +69,7 @@ const trunkFold = ref(false)
           <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
             <CTableDataCell class="pl-5">
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               <router-link to="">{{ branch.name }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
@@ -99,6 +100,7 @@ const trunkFold = ref(false)
           <CTableRow v-if="tagFold" v-for="(tag, i) in tags" :key="i">
             <CTableDataCell class="pl-5">
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               <router-link to="">{{ tag.name }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
