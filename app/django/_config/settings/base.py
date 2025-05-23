@@ -316,6 +316,7 @@ MDEDITOR_CONFIGS = {
 }
 APP_ORDER = [
     'company',
+    'work',
     'project',
     'items',
     'payment',
@@ -325,7 +326,6 @@ APP_ORDER = [
     'notice',
     'docs',
     'board',
-    'work',
     'accounts',
     'book',
 ]
