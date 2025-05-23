@@ -260,7 +260,7 @@ export const useSite = defineStore('site', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const updateSiteCont = (pk, payload: FormData) => {
+  const updateSiteCont = (pk: number, payload: FormData) => {
     api
       .put(`/site-contract/${pk}/`, payload)
       .then(res => {

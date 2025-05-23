@@ -17,8 +17,8 @@ class Repository(models.Model):
 
     class Meta:
         ordering = ('id',)
-        verbose_name = '09. 저장소'
-        verbose_name_plural = '09. 저장소'
+        verbose_name = '15. 저장소'
+        verbose_name_plural = '15. 저장소'
 
 
 class Commit(models.Model):
@@ -31,5 +31,5 @@ class Commit(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '10. 커미트'
-        verbose_name_plural = '10. 커미트'
+        verbose_name = '16. 커미트'
+        verbose_name_plural = '16. 커미트'

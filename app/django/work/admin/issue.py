@@ -2,9 +2,46 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
-from work.models.issue import (Tracker, IssueCategory, IssueStatus, Workflow,
-                               CodeActivity, CodeIssuePriority, Issue, IssueRelation,
-                               IssueFile, IssueComment, TimeEntry)
+from work.models import (Issue, IssueRelation, IssueFile, IssueComment,
+                         TimeEntry, Tracker, IssueCategory, IssueStatus,
+                         Workflow, CodeActivity, CodeIssuePriority)
+
+
+class IssueFileInline(admin.TabularInline):
+    model = IssueFile
+    extra = 1
+
+
+class IssueCommentInline(admin.TabularInline):
+    model = IssueComment
+    extra = 1
+
+
+class TimeEntryInline(admin.TabularInline):
+    model = TimeEntry
+    extra = 1
+
+
+class IssueRelationInline(admin.TabularInline):
+    model = IssueRelation
+    fk_name = 'issue'
+    extra = 1
+
+
+@admin.register(Issue)
+class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('pk', 'tracker', 'is_private', 'subject', 'project',
+                    'parent', 'status', 'priority', 'start_date', 'due_date')
+    list_display_links = ('subject',)
+    list_filter = ('project', 'tracker', 'status', 'priority',
+                   ('start_date', DateRangeFilter), ('due_date', DateRangeFilter))
+    search_fields = ('subject',)
+    inlines = (IssueFileInline, IssueCommentInline, TimeEntryInline, IssueRelationInline)
+
+
+@admin.register(TimeEntry)
+class TimeEntryAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass
 
 
 @admin.register(Tracker)
@@ -51,35 +88,3 @@ class CodeIssuePriorityAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'active', 'default', 'order', 'user')
     list_display_links = ('name',)
     list_editable = ('active', 'default', 'order')
-
-
-class IssueFileInline(admin.TabularInline):
-    model = IssueFile
-    extra = 1
-
-
-class IssueCommentInline(admin.TabularInline):
-    model = IssueComment
-    extra = 1
-
-
-class TimeEntryInline(admin.TabularInline):
-    model = TimeEntry
-    extra = 1
-
-
-class IssueRelationInline(admin.TabularInline):
-    model = IssueRelation
-    fk_name = 'issue'
-    extra = 1
-
-
-@admin.register(Issue)
-class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'tracker', 'is_private', 'subject', 'project',
-                    'parent', 'status', 'priority', 'start_date', 'due_date')
-    list_display_links = ('subject',)
-    list_filter = ('project', 'tracker', 'status', 'priority',
-                   ('start_date', DateRangeFilter), ('due_date', DateRangeFilter))
-    search_fields = ('subject',)
-    inlines = (IssueFileInline, IssueCommentInline, TimeEntryInline, IssueRelationInline)
