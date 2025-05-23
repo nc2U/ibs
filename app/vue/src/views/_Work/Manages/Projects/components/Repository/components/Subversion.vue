@@ -30,8 +30,8 @@ const trunkFold = ref(false)
       <CTable hover striped small responsive>
         <colgroup>
           <col style="width: 25%" />
-          <col style="width: 10%" />
           <col style="width: 8%" />
+          <col style="width: 10%" />
           <col style="width: 8%" />
           <col style="width: 14%" />
           <col style="width: 35%" />

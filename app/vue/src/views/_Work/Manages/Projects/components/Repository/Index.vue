@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
-import type { Branch, Tag, Trunk } from '@/store/types/work_github.ts'
+import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
 import Subversion from './components/Subversion.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
@@ -45,7 +45,7 @@ const fetchCommitList = (payload: {
 const ghStore = useGithub()
 const branches = computed<Branch[]>(() => ghStore.branches)
 const tags = computed<Tag[]>(() => ghStore.tags)
-const tree = computed<Trunk | null>(() => ghStore.tree)
+const tree = computed<Tree[]>(() => ghStore.tree)
 
 const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const diffApi = computed<any>(() => ghStore.diffApi)
