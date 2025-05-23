@@ -119,18 +119,6 @@ class WorkflowSerializer(serializers.ModelSerializer):
         fields = ('pk', 'role', 'tracker', 'old_status', 'new_statuses')
 
 
-class RepositorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Repository
-        fields = ('pk', 'project', 'is_default', 'owner', 'slug', 'github_token', 'is_report')
-
-
-class CommitSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Commit
-        fields = ('pk', 'repo', 'commit_hash', 'message', 'author', 'date', 'issues')
-
-
 class CodeActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = CodeActivity
