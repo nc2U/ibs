@@ -732,14 +732,19 @@ class IssueCountByTrackerSerializer(serializers.ModelSerializer):
         return sub_projects
 
     def filter_project(self, request, issues):
-        project = request.query_params.get('projects', None)
-        if project is not None:
-            try:
-                project = IssueProject.objects.get(pk=project)
-                subs = self.get_sub_projects(project)
-                return issues.filter(Q(project__slug=project.slug) | Q(project__slug__in=[sub.slug for sub in subs]))
-            except IssueProject.DoesNotExist:
-                return issues
+        project_id = request.query_params.get('projects')
+        if not project_id:
+            return issues  # 프로젝트 ID가 제공되지 않은 경우, 필터링 없이 반환
+
+        try:
+            project = IssueProject.objects.get(pk=project_id)
+        except IssueProject.DoesNotExist:
+            return issues  # 유효하지 않은 프로젝트 ID인 경우, 필터링 없이 반환
+
+        sub_projects = self.get_sub_projects(project)
+        slugs = [project.slug] + [sub.slug for sub in sub_projects]
+
+        return issues.filter(project__slug__in=slugs)
 
 
 class IssueStatusSerializer(serializers.ModelSerializer):
