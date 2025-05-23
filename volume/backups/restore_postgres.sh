@@ -40,19 +40,20 @@ END \$\$;
 DO \$\$
 DECLARE
     r RECORD;
+    has_sequence BOOLEAN;
 BEGIN
     FOR r IN (SELECT c.relname AS tablename FROM pg_class c WHERE c.relkind = 'r'
               AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA')
               AND c.relname != 'django_migrations')
     LOOP
         BEGIN
-            IF EXISTS (SELECT 1 FROM pg_depend d JOIN pg_class s ON d.refobjid = s.oid
-                WHERE d.objid = (SELECT oid FROM pg_class WHERE relname = r.tablename AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA'))
-                AND s.relkind = 'S') THEN
-                EXECUTE 'TRUNCATE TABLE ' || quote_ident('$SCHEMA') || '.' || quote_ident(r.tablename) || ' CASCADE RESTART IDENTITY';
+            SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = '$SCHEMA'
+                          AND table_name = r.tablename AND column_default LIKE 'nextval%') INTO has_sequence;
+            IF has_sequence THEN
+                EXECUTE format('TRUNCATE TABLE %I.%I CASCADE RESTART IDENTITY', '$SCHEMA', r.tablename);
                 RAISE NOTICE 'Truncated table %.% with RESTART IDENTITY', '$SCHEMA', r.tablename;
             ELSE
-                EXECUTE 'TRUNCATE TABLE ' || quote_ident('$SCHEMA') || '.' || quote_ident(r.tablename) || ' CASCADE';
+                EXECUTE format('TRUNCATE TABLE %I.%I CASCADE', '$SCHEMA', r.tablename);
                 RAISE NOTICE 'Truncated table %.% without RESTART IDENTITY', '$SCHEMA', r.tablename;
             END IF;
         EXCEPTION WHEN OTHERS THEN
