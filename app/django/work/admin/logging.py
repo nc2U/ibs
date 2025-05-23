@@ -1,7 +1,7 @@
 from django.contrib import admin
 from rangefilter.filters import DateRangeFilter
 
-from work.models.logging import ActivityLogEntry, IssueLogEntry
+from work.models import ActivityLogEntry, IssueLogEntry
 
 
 @admin.register(ActivityLogEntry)

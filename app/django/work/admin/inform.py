@@ -1,7 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from work.models.inform import CodeDocsCategory, News, NewsFile
+from work.models import CodeDocsCategory, News, NewsFile
 
 
 @admin.register(CodeDocsCategory)

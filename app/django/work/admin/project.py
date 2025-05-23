@@ -1,9 +1,9 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
+from work.models import IssueProject, Module, Role, Permission, Member, Version
 from work.models.github import Repository
 from work.models.issue import IssueCategory
-from work.models.project import IssueProject, Module, Role, Permission, Member, Version
 
 
 class ModuleInline(admin.TabularInline):

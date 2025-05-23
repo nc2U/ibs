@@ -2,7 +2,7 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
-from work.models.github import Repository, Commit
+from work.models import Repository, Commit
 
 
 @admin.register(Repository)
