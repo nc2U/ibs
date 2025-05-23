@@ -6,8 +6,8 @@ from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 
-from .models import (Issue, IssueRelation, IssueComment,
-                     TimeEntry, ActivityLogEntry, IssueLogEntry)
+from work.models.issue import Issue, IssueRelation, IssueComment, TimeEntry
+from work.models.logging import ActivityLogEntry, IssueLogEntry
 
 
 @receiver(pre_save, sender=Issue)

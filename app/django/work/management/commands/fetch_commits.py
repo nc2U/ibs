@@ -6,7 +6,7 @@ import requests
 from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
 
-from work.models import Repository, Commit, Issue
+from work.models.project import Repository, Commit, Issue
 
 
 class Command(BaseCommand):

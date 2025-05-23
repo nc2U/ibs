@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff
-from work.models import IssueProject
+from work.models.project import IssueProject
 
 
 # Company --------------------------------------------------------------------------

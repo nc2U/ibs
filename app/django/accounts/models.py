@@ -1,7 +1,6 @@
 import os
 
 from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.models import Group
 from django.contrib.auth.models import UserManager, PermissionsMixin
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.mail import send_mail
@@ -13,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 
 from docs.models import Document
 from board.models import Post, Comment
-from work.models import IssueProject
+from work.models.project import IssueProject
 
 
 class User(AbstractBaseUser, PermissionsMixin):

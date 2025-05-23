@@ -6,7 +6,7 @@ from rest_framework import serializers
 from accounts.models import User, StaffAuth, Profile, Todo, DocScrape, PasswordResetToken, PostScrape
 from board.models import Post
 from docs.models import Document
-from work.models import IssueProject
+from work.models.project import IssueProject
 
 
 # Accounts --------------------------------------------------------------------------

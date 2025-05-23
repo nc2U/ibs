@@ -11,7 +11,7 @@ from cash.models import CompanyCashBookCalculation, ProjectCashBookCalculation
 from company.models import Company
 from ibs.models import ProjectAccountD3
 from project.models import Project
-from work.models import IssueProject, Module
+from work.models.project import IssueProject, Module
 from .forms import UserCreationForm
 from .models import User
 

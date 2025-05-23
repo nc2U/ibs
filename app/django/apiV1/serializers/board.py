@@ -7,10 +7,9 @@ from django.db import transaction
 from django.db.models import Q
 from rest_framework import serializers
 
-from accounts.models import User, Profile
+from accounts.models import Profile
 from apiV1.serializers.accounts import SimpleUserSerializer
 from board.models import Group, Board, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
-from work.models import IssueProject
 
 
 # Board --------------------------------------------------------------------------
