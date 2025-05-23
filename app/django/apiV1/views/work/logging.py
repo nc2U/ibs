@@ -26,11 +26,9 @@ class ActivityLogFilter(FilterSet):
             try:
                 project = IssueProject.objects.get(slug=project_slug)
                 sub_slugs = list(self.get_sub_projects(project).values_list('slug', flat=True))
-                queryset = queryset.filter(Q(project__slug=project.slug) |
-                                           Q(project__slug__in=sub_slugs))
+                queryset = queryset.filter(Q(project__slug=project.slug) | Q(project__slug__in=sub_slugs))
             except IssueProject.DoesNotExist:
-                # 존재하지 않으면 빈 쿼리셋 반환
-                return queryset.none()
+                return queryset.none()  # 존재하지 않으면 빈 쿼리셋 반환
 
         # 나머지 필드에 대해 일반 필터링 수행
         for name, value in cleaned_data.items():
