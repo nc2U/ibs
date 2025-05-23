@@ -21,6 +21,15 @@ export const useGithub = defineStore('github', () => {
   const branches = ref<Branch[]>([])
   const trunk_url = ref<string>('')
   const trunk = ref<any | null>(null)
+  const tree = computed(() =>
+    trunk.value?.tree.sort((a, b) => {
+      // 디렉터리 먼저
+      if (a.type === 'tree' && b.type !== 'tree') return -1
+      if (a.type !== 'tree' && b.type === 'tree') return 1
+      // 그 다음 이름순 정렬
+      return a.path.localeCompare(b.path)
+    }),
+  )
 
   const fetchBranches = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
@@ -30,9 +39,12 @@ export const useGithub = defineStore('github', () => {
         await fetchRepoApi(url, token)
         branches.value = res.data.filter((branch: Branch) => branch.name !== default_branch.value)
         await api
-          .get(`${url}/branches/${default_branch.value}`, { headers })
+          .get(`${url}/branches/${default_branch.value}?recursive=1`, { headers })
           .then(res => (trunk_url.value = res.data.commit.commit.tree.url))
-        await api.get(trunk_url.value, { headers }).then(res => (trunk.value = res.data))
+        await api
+          .get(trunk_url.value, { headers })
+          .then(res => (trunk.value = res.data))
+          .catch(err => errorHandle(err.response))
       })
       .catch(err => errorHandle(err.response))
   }
@@ -70,6 +82,7 @@ export const useGithub = defineStore('github', () => {
 
     branches,
     trunk,
+    tree,
     fetchBranches,
 
     tags,

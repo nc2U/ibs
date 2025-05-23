@@ -24,7 +24,7 @@ const trunkFold = ref(false)
       </h5>
     </CCol>
   </CRow>
-
+  {{ trunk }}
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
@@ -129,7 +129,7 @@ const trunkFold = ref(false)
           <CTableRow v-if="trunkFold" v-for="(t, i) in trunk" :key="i">
             <CTableDataCell class="pl-5">
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-              <router-link to="">{{ t }}</router-link>
+              <router-link to="">{{ t.path }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>

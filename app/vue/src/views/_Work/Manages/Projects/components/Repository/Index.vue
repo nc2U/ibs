@@ -45,7 +45,7 @@ const fetchCommitList = (payload: {
 const ghStore = useGithub()
 const branches = computed<Branch[]>(() => ghStore.branches)
 const tags = computed<Tag[]>(() => ghStore.tags)
-const trunk = computed<Trunk | null>(() => ghStore.trunk)
+const tree = computed<Trunk | null>(() => ghStore.tree)
 
 const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const diffApi = computed<any>(() => ghStore.diffApi)
@@ -105,7 +105,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <Subversion :branches="branches" :tags="tags" :trunk="trunk?.tree" />
+  <Subversion :branches="branches" :tags="tags" :trunk="tree" />
 
   <Revisions
     v-if="viewPageSort === 'revisions'"
