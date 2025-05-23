@@ -76,17 +76,6 @@ class CodeIssuePriorityViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class CodeDocsCategoryViewSet(viewsets.ModelViewSet):
-    queryset = CodeDocsCategory.objects.all()
-    serializer_class = CodeDocsCategorySerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationTwenty
-    search_fields = ('id',)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
 class IssueFilter(FilterSet):
     status__exclude = CharFilter(field_name='status', exclude=True, label='사용여부-제외')
     project__exclude = CharFilter(field_name='project__slug', exclude=True, label='프로젝트-제외')

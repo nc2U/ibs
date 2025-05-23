@@ -3,8 +3,14 @@ from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer
-from work.models.inform import News, Search
+from work.models.inform import CodeDocsCategory, News, Search
 from work.models.project import IssueProject
+
+
+class CodeDocsCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodeDocsCategory
+        fields = ('pk', 'name', 'active', 'default', 'order')
 
 
 class NewsSerializer(serializers.ModelSerializer):

@@ -131,12 +131,6 @@ class CodeIssuePrioritySerializer(serializers.ModelSerializer):
         fields = ('pk', 'name', 'active', 'default', 'order')
 
 
-class CodeDocsCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CodeDocsCategory
-        fields = ('pk', 'name', 'active', 'default', 'order')
-
-
 class IssueStatusInIssueSerializer(serializers.ModelSerializer):
     class Meta:
         model = IssueStatus
