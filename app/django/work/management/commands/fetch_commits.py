@@ -17,13 +17,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         limit = kwargs.get('limit')  # 명령줄에서 --limit으로 전달된 값
+        api_url = "https://api.github.com/repos"
 
         for repo in Repository.objects.all():
-            commits_data = self.fetch_commits(api_url=f"{repo.github_api_url}/commits",
+            api_url = f'{api_url}/{repo.owner}/{repo.slug}'
+            commits_data = self.fetch_commits(api_url=f"{api_url}/commits",
                                               token=repo.github_token,
                                               limit=limit)
             if not commits_data:
-                self.stdout.write(self.style.WARNING(f"No commits retrieved from {repo.github_api_url}"))
+                self.stdout.write(self.style.WARNING(f"No commits retrieved from {api_url}"))
                 continue
 
             commits_to_create = []
@@ -76,18 +78,18 @@ class Command(BaseCommand):
                                             f"Linked {len(valid_issues)} issues to commit {commit_hash}"))
                                 except AttributeError:
                                     self.stderr.write(
-                                        self.style.WARNING(f"No project linked to repository {repo.github_api_url}"))
+                                        self.style.WARNING(f"No project linked to repository {api_url}"))
                                     continue
                     except IntegrityError as e:
                         self.stderr.write(self.style.ERROR(f"Bulk create failed: {e}"))
                         raise
             else:
-                self.stdout.write(self.style.WARNING(f"No new commits to create for {repo.github_api_url}"))
+                self.stdout.write(self.style.WARNING(f"No new commits to create for {api_url}"))
 
             self.stdout.write(
                 self.style.SUCCESS(
                     f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-                    f"Fetched {len(commits_to_create)} new commits from {repo.github_api_url}"))
+                    f"Fetched {len(commits_to_create)} new commits from {api_url}"))
 
     def fetch_commits(self, api_url, token=None, limit=None):
         commits_data = []
