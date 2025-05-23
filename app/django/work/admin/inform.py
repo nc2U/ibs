@@ -9,6 +9,7 @@ class CodeDocsCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'active', 'default', 'order', 'user')
     list_display_links = ('name',)
     list_editable = ('active', 'default', 'order')
+    list_filter = ('active', 'default')
 
 
 class NewsFileInline(admin.TabularInline):

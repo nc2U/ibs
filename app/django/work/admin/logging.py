@@ -15,4 +15,4 @@ class ActivityLogEntryAdmin(admin.ModelAdmin):
 class IssueLogEntryAdmin(admin.ModelAdmin):
     list_display = ('pk', 'action', 'issue', 'comment_id', 'details', 'diff', 'timestamp')
     list_display_links = ('issue',)
-    list_filter = ('issue', 'action')
+    list_filter = ('action',)

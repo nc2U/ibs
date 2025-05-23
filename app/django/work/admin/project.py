@@ -37,6 +37,7 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('name',)
     list_editable = ('company', 'sort', 'order')
     inlines = (ModuleInline, MemberInline, VersionInline, IssueCategoryInline, RepositoryInline)
+    list_filter = ('company', 'sort', 'is_public', 'status')
 
 
 class PermissionInline(admin.StackedInline):
@@ -74,6 +75,7 @@ class MemberAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'user', 'project', 'get_roles', 'created')
     list_display_links = ('user',)
     list_editable = ('project',)
+    list_filter = ('project', 'roles')
 
     def get_roles(self, obj):
         return ", ".join([role.name for role in obj.roles.all()]) if obj.roles.all() else '-'
@@ -85,3 +87,4 @@ class MemberAdmin(ImportExportMixin, admin.ModelAdmin):
 class VersionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'project', 'status', 'get_sharing_display', 'effective_date', 'wiki_page_title')
     list_display_links = ('name',)
+    list_filter = ('project', 'status', 'sharing')

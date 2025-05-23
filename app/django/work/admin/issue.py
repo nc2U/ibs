@@ -41,7 +41,9 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(TimeEntry)
 class TimeEntryAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
+    list_display = ('pk', 'project', 'issue', 'spent_on', 'hours', 'activity')
+    list_display_links = ('project', 'issue')
+    list_filter = ('project', 'activity', ('spent_on', DateRangeFilter))
 
 
 @admin.register(Tracker)
@@ -81,6 +83,7 @@ class CodeActivityAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'active', 'default', 'order', 'user')
     list_display_links = ('name',)
     list_editable = ('active', 'default', 'order')
+    list_filter = ('active', 'default')
 
 
 @admin.register(CodeIssuePriority)
@@ -88,3 +91,4 @@ class CodeIssuePriorityAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'active', 'default', 'order', 'user')
     list_display_links = ('name',)
     list_editable = ('active', 'default', 'order')
+    list_filter = ('active', 'default')
