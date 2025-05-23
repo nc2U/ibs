@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django_filters.rest_framework import FilterSet, BooleanFilter, DateFilter, CharFilter
 from rest_framework import viewsets
 from rest_framework.views import APIView
@@ -5,75 +6,6 @@ from rest_framework.views import APIView
 from apiV1.pagination import *
 from apiV1.permission import *
 from apiV1.serializers.work.issue import *
-
-
-class TrackerViewSet(viewsets.ModelViewSet):
-    queryset = Tracker.objects.all()
-    serializer_class = TrackerSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('projects',)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class IssueCategoryViewSet(viewsets.ModelViewSet):
-    queryset = IssueCategory.objects.all()
-    serializer_class = IssueCategorySerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    filterset_fields = ('project__slug',)
-
-
-class IssueCountByTrackerViewSet(viewsets.ModelViewSet):
-    queryset = Tracker.objects.all()
-    serializer_class = IssueCountByTrackerSerializer
-    filterset_fields = ('projects',)
-
-    def get_serializer_context(self):
-        # Pass the request object as context to the serializer
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-
-class IssueStatusViewSet(viewsets.ModelViewSet):
-    queryset = IssueStatus.objects.all()
-    serializer_class = IssueStatusSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationTwenty
-    search_fields = ('id',)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class WorkflowViewSet(viewsets.ModelViewSet):
-    queryset = Workflow.objects.all()
-    serializer_class = WorkflowSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-
-class CodeActivityViewSet(viewsets.ModelViewSet):
-    queryset = CodeActivity.objects.all()
-    serializer_class = CodeActivitySerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationTwenty
-    search_fields = ('id',)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class CodeIssuePriorityViewSet(viewsets.ModelViewSet):
-    queryset = CodeIssuePriority.objects.all()
-    serializer_class = CodeIssuePrioritySerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationTwenty
-    search_fields = ('id',)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
 
 class IssueFilter(FilterSet):
@@ -270,6 +202,75 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
             if work_auth \
             else self.queryset.filter(Q(issue__project__is_public=True) |
                                       Q(issue__project__in=projects))
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class TrackerViewSet(viewsets.ModelViewSet):
+    queryset = Tracker.objects.all()
+    serializer_class = TrackerSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationTwenty
+    filterset_fields = ('projects',)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class IssueCategoryViewSet(viewsets.ModelViewSet):
+    queryset = IssueCategory.objects.all()
+    serializer_class = IssueCategorySerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    filterset_fields = ('project__slug',)
+
+
+class IssueCountByTrackerViewSet(viewsets.ModelViewSet):
+    queryset = Tracker.objects.all()
+    serializer_class = IssueCountByTrackerSerializer
+    filterset_fields = ('projects',)
+
+    def get_serializer_context(self):
+        # Pass the request object as context to the serializer
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+
+class IssueStatusViewSet(viewsets.ModelViewSet):
+    queryset = IssueStatus.objects.all()
+    serializer_class = IssueStatusSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationTwenty
+    search_fields = ('id',)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class WorkflowViewSet(viewsets.ModelViewSet):
+    queryset = Workflow.objects.all()
+    serializer_class = WorkflowSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+
+class CodeActivityViewSet(viewsets.ModelViewSet):
+    queryset = CodeActivity.objects.all()
+    serializer_class = CodeActivitySerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationTwenty
+    search_fields = ('id',)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class CodeIssuePriorityViewSet(viewsets.ModelViewSet):
+    queryset = CodeIssuePriority.objects.all()
+    serializer_class = CodeIssuePrioritySerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationTwenty
+    search_fields = ('id',)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
