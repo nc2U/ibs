@@ -41,13 +41,14 @@ watch(route, () => (visible.value = false))
               </span>
             </CCol>
           </CRow>
+
           <CRow>
             <CCol class="text-body d-none d-lg-block">
               <strong class="title pl-1"> {{ pageTitle }}</strong>
             </CCol>
 
             <CCol
-              class="text-body d-lg-none"
+              class="text-body d-xl-none"
               :class="{ pointer: !!familyTree.length }"
               @click="visible = !visible"
             >
@@ -73,7 +74,7 @@ watch(route, () => (visible.value = false))
           </CRow>
         </CCol>
 
-        <CCol class="text-body d-lg-none text-right p-3">
+        <CCol class="text-body d-xl-none text-right p-3">
           <v-app-bar-nav-icon @click="sideNavCall" />
         </CCol>
         <CCol class="d-none d-lg-block text-right">
