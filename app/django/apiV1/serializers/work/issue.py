@@ -15,3 +15,9 @@ from work.models.inform import CodeDocsCategory, News, Search
 from work.models.issue import (IssueCategory, Tracker, IssueStatus, Workflow,
                                CodeActivity, CodeIssuePriority, Issue, IssueRelation,
                                IssueFile, IssueComment, TimeEntry)
+
+
+class SearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Search
+        fields = '__all__'

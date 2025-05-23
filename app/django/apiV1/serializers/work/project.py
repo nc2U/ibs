@@ -1153,9 +1153,3 @@ class IssueLogEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = IssueLogEntry
         fields = ('pk', 'log_id', 'issue', 'action', 'comment', 'details', 'diff', 'timestamp', 'user')
-
-
-class SearchSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Search
-        fields = '__all__'
