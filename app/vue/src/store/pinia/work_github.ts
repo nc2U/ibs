@@ -19,7 +19,8 @@ export const useGithub = defineStore('github', () => {
 
   // branches api
   const branches = ref<Branch[]>([])
-  const trunk = ref<Branch | null>(null)
+  const trunk_url = ref<string>('')
+  const trunk = ref<any | null>(null)
 
   const fetchBranches = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
@@ -28,7 +29,10 @@ export const useGithub = defineStore('github', () => {
       .then(async res => {
         await fetchRepoApi(url, token)
         branches.value = res.data.filter((branch: Branch) => branch.name !== default_branch.value)
-        trunk.value = res.data.filter((branch: Branch) => branch.name === default_branch.value)[0]
+        await api
+          .get(`${url}/branches/${default_branch.value}`, { headers })
+          .then(res => (trunk_url.value = res.data.commit.commit.tree.url))
+        await api.get(trunk_url.value, { headers }).then(res => (trunk.value = res.data))
       })
       .catch(err => errorHandle(err.response))
   }

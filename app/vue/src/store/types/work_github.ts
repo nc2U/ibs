@@ -17,3 +17,18 @@ export interface Tag {
   }
   node_id: string
 }
+
+export interface Tree {
+  path: string
+  mode: string
+  type: string
+  sha: string
+  url: string
+}
+
+export interface Trunk {
+  sha: string
+  url: string
+  tree: Tree[]
+  truncated: boolean
+}

@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
-import type { Branch, Tag } from '@/store/types/work_github.ts'
+import type { Branch, Tag, Trunk } from '@/store/types/work_github.ts'
 import Subversion from './components/Subversion.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
@@ -45,7 +45,7 @@ const fetchCommitList = (payload: {
 const ghStore = useGithub()
 const branches = computed<Branch[]>(() => ghStore.branches)
 const tags = computed<Tag[]>(() => ghStore.tags)
-const trunk = computed<Branch | null>(() => ghStore.trunk)
+const trunk = computed<Trunk | null>(() => ghStore.trunk)
 
 const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const diffApi = computed<any>(() => ghStore.diffApi)
@@ -105,7 +105,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <Subversion :branches="branches" :tags="tags" :trunk="trunk" />
+  <Subversion :branches="branches" :tags="tags" :trunk="trunk?.tree" />
 
   <Revisions
     v-if="viewPageSort === 'revisions'"

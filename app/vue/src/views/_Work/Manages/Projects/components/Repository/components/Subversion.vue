@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import { elapsedTime } from '@/utils/baseMixins.ts'
-import type { Branch, Tag } from '@/store/types/work_github.ts'
+import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
 
 defineProps({
   branches: { type: Array as PropType<Branch[]>, default: () => [] },
   tags: { type: Array as PropType<Tag[]>, default: () => [] },
-  trunk: { type: Object as PropType<Branch | null>, default: () => null },
+  trunk: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
 const branchFold = ref(false)
@@ -126,10 +126,10 @@ const trunkFold = ref(false)
             <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
             <CTableDataCell> package update</CTableDataCell>
           </CTableRow>
-          <CTableRow v-if="trunkFold" v-for="i in 5" :key="i">
+          <CTableRow v-if="trunkFold" v-for="(t, i) in trunk" :key="i">
             <CTableDataCell class="pl-5">
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-              <router-link to="">trunk {{ i }}</router-link>
+              <router-link to="">{{ t }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
             <CTableDataCell></CTableDataCell>
