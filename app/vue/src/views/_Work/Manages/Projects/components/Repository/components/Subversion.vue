@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
-import { elapsedTime } from '@/utils/baseMixins.ts'
+import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
 
 defineProps({
@@ -24,15 +24,15 @@ const trunkFold = ref(false)
       </h5>
     </CCol>
   </CRow>
-  {{ trunk }}
+
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
         <colgroup>
           <col style="width: 25%" />
-          <col style="width: 6%" />
-          <col style="width: 6%" />
-          <col style="width: 14%" />
+          <col style="width: 10%" />
+          <col style="width: 8%" />
+          <col style="width: 8%" />
           <col style="width: 14%" />
           <col style="width: 35%" />
         </colgroup>
@@ -126,16 +126,31 @@ const trunkFold = ref(false)
             <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
             <CTableDataCell> package update</CTableDataCell>
           </CTableRow>
-          <CTableRow v-if="trunkFold" v-for="(t, i) in trunk" :key="i">
+          <CTableRow v-if="trunkFold" v-for="t in trunk" :key="t.sha">
             <CTableDataCell class="pl-5">
-              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+              <span v-if="t.type === 'tree'">
+                <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
+                <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
+              </span>
+              <span v-if="t.type === 'blob'" class="pl-5">
+                <v-icon
+                  :icon="`mdi-file-${t.path.endsWith('.txt') ? 'document-' : ''}outline`"
+                  color="secondary"
+                  size="16"
+                  class="pointer mr-1 mdi-thin"
+                />
+              </span>
               <router-link to="">{{ t.path }}</router-link>
             </CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ humanizeFileSize((t as any)?.size) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">
+              <router-link to="">10232</router-link>
+            </CTableDataCell>
+            <CTableDataCell class="text-right">1달 전</CTableDataCell>
+            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
+            <CTableDataCell>#127 asdfasdf adsf</CTableDataCell>
           </CTableRow>
         </CTableBody>
       </CTable>

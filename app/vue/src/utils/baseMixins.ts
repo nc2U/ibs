@@ -86,12 +86,15 @@ export const numberToHour = (digit: number | string) => {
   return String(a) + ':' + c + String(b)
 }
 
-export const humanizeFileSize = (bytes: number) => {
+export const humanizeFileSize = (bytes?: number, decimals = 2) => {
   if (bytes === 0) return '0 Bytes'
+  else if (bytes === undefined) return ''
 
   const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
+
   const i = Math.floor(Math.log(bytes) / Math.log(k))
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
