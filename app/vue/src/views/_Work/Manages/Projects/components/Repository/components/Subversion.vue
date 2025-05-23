@@ -6,7 +6,7 @@ import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
 defineProps({
   branches: { type: Array as PropType<Branch[]>, default: () => [] },
   tags: { type: Array as PropType<Tag[]>, default: () => [] },
-  trunk: { type: Array as PropType<Tree[]>, default: () => [] },
+  trunkTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
 const branchFold = ref(false)
@@ -128,24 +128,24 @@ const trunkFold = ref(false)
             <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
             <CTableDataCell> package update</CTableDataCell>
           </CTableRow>
-          <CTableRow v-if="trunkFold" v-for="t in trunk" :key="t.sha">
+          <CTableRow v-if="trunkFold" v-for="tree in trunkTree" :key="tree.sha">
             <CTableDataCell class="pl-5">
-              <span v-if="t.type === 'tree'">
+              <span v-if="tree.type === 'tree'">
                 <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
                 <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
               </span>
-              <span v-if="t.type === 'blob'" class="pl-5">
+              <span v-if="tree.type === 'blob'" class="pl-5">
                 <v-icon
-                  :icon="`mdi-file-${t.path.endsWith('.txt') ? 'document-' : ''}outline`"
+                  :icon="`mdi-file-${tree.path.endsWith('.txt') ? 'document-' : ''}outline`"
                   color="secondary"
                   size="16"
                   class="pointer mr-1 mdi-thin"
                 />
               </span>
-              <router-link to="">{{ t.path }}</router-link>
+              <router-link to="">{{ tree.path }}</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right">
-              {{ humanizeFileSize((t as any)?.size) }}
+              {{ humanizeFileSize((tree as any)?.size) }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
               <router-link to="">10232</router-link>

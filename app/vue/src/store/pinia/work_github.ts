@@ -21,7 +21,7 @@ export const useGithub = defineStore('github', () => {
   const branches = ref<Branch[]>([])
   const trunk_url = ref<string>('')
   const trunk = ref<any | null>(null)
-  const tree = computed(() =>
+  const trunk_tree = computed(() =>
     trunk.value?.tree.sort((a, b) => {
       // 디렉터리 먼저
       if (a.type === 'tree' && b.type !== 'tree') return -1
@@ -82,7 +82,7 @@ export const useGithub = defineStore('github', () => {
 
     branches,
     trunk,
-    tree,
+    trunk_tree,
     fetchBranches,
 
     tags,
