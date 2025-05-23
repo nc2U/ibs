@@ -17,6 +17,7 @@ from .views import docs
 app_name = 'api'
 
 router = DefaultRouter()
+
 # accounts
 router.register(r'user', accounts.UserViewSet)
 router.register(r'staff-auth', accounts.StaffAuthViewSet)
@@ -25,6 +26,7 @@ router.register(r'doc-scrape', accounts.DocScrapeViewSet)
 router.register(r'post-scrape', accounts.PostScrapeViewSet)
 router.register(r'todo', accounts.TodoViewSet)
 router.register(r'pass-reset-token', accounts.PasswordResetTokenViewSet)
+
 # company
 router.register(r'company', company.CompanyViewSet)
 router.register(r'logo', company.LogoViewSet)
@@ -33,6 +35,7 @@ router.register(r'grade', company.JobGradeViewSet)
 router.register(r'position', company.PositionViewSet)
 router.register(r'duty-title', company.DutyTitleViewSet)
 router.register(r'staff', company.StaffViewSet)
+
 # ibs
 # router.register(r'schedule', ibs.CalendarScheduleViewSet)
 router.register(r'account-sort', ibs.AccountSortViewSet)  # only list
@@ -42,6 +45,7 @@ router.register(r'account-depth3', ibs.AccountSubD3ViewSet)  # only list
 router.register(r'project-account-depth2', ibs.ProjectAccountD2ViewSet)  # only list
 router.register(r'project-account-depth3', ibs.ProjectAccountD3ViewSet)  # only list
 router.register(r'wise-say', ibs.WiseSayViewSet)
+
 # work
 router.register(r'issue-project', work.IssueProjectViewSet)
 router.register(r'gantt-issues', work.IssueProjectForGanttViewSet, basename='gantt-issues')
@@ -69,6 +73,7 @@ router.register(r'news', work.NewsViewSet)
 router.register(r'act-entry', work.ActivityLogEntryViewSet)
 router.register(r'log-entry', work.IssueLogEntryViewSet)
 router.register(r'issue-search', work.SearchViewSet)
+
 # project
 router.register(r'project', project.ProjectViewSet)
 router.register(r'inc-budget', project.ProjectIncBudgetViewSet)  # only list
@@ -84,6 +89,7 @@ router.register(r'owners-total', project.TotalOwnerAreaViewSet, basename='owners
 router.register(r'site-relation', project.SiteRelationViewSet)
 router.register(r'site-contract', project.SiteContractViewSet)
 router.register(r'conts-total', project.TotalContractedAreaViewSet, basename='conts-total')  # only list
+
 # items
 router.register(r'type', items.UnitTypeViewSet)
 router.register(r'floor', items.UnitFloorTypeViewSet)
@@ -95,6 +101,7 @@ router.register(r'available-house-unit', items.AvailableHouseUnitViewSet,
 router.register(r'all-house-unit', items.AllHouseUnitViewSet, basename='all-house-unit')  # only list
 router.register(r'unit-summary', items.HouseUnitSummaryViewSet, basename='unit-summary')
 router.register(r'option-item', items.OptionItemViewSet, basename='option-item')
+
 # payment
 router.register(r'pay-order', payment.InstallmentOrderViewSet)
 router.register(r'price', payment.SalesPriceViewSet)
@@ -102,6 +109,7 @@ router.register(r'down-payment', payment.DownPaymentViewSet)
 router.register(r'payment', payment.PaymentViewSet, basename='payment')  # only list
 router.register(r'all-payment', payment.AllPaymentViewSet, basename='all-payment')  # only list
 router.register(r'payment-sum', payment.PaymentSummaryViewSet, basename='payment-sum')  # only list
+
 # cash
 router.register(r'bank-code', cash.BankCodeViewSet)
 router.register(r'company-bank-account', cash.ComBankAccountViewSet)
@@ -117,6 +125,7 @@ router.register(r'pro-cash-calc', cash.ProjectCashCalcViewSet)
 router.register(r'pro-last-deal', cash.ProjectLastDealDateViewSet, basename='pro-last-deal')  # only list
 router.register(r'pr-date-cashbook', cash.ProjectDateCashBookViewSet, basename='pr-date-cashbook')  # only list
 router.register(r'project-imprest', cash.ProjectImprestViewSet, basename='pr-imprest')  # only list
+
 # contract
 router.register(r'order-group', contract.OrderGroupViewSet)
 router.register(r'contract', contract.ContractViewSet)
@@ -130,8 +139,10 @@ router.register(r'contractor-address', contract.ContAddressViewSet)
 router.register(r'contractor-contact', contract.ContContactViewSet)
 router.register(r'succession', contract.SuccessionViewSet)
 router.register(r'contractor-release', contract.ContReleaseViewSet)
+
 # notice
 router.register(r'sales-bill-issue', notice.BillIssueViewSet)
+
 # board
 router.register(r'group', board.GroupViewSet)
 router.register(r'board', board.BoardViewSet)
@@ -147,6 +158,7 @@ router.register(r'comment-like', board.CommentLikeViewSet, basename='comment-lik
 router.register(r'comment-blame', board.CommentBlameViewSet, basename='comment-blame')
 router.register(r'tag', board.TagViewSet)
 router.register(r'post-trash-can', board.PostInTrashViewSet, basename='post-trash-can')
+
 # docs
 router.register(r'doc-type', docs.DocTypeViewSet)
 router.register(r'category', docs.CategoryViewSet)
