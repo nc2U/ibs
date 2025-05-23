@@ -21,7 +21,7 @@ export interface Tag {
 export interface Tree {
   path: string
   mode: string
-  type: string
+  type: 'blob' | 'tree'
   sha: string
   url: string
 }

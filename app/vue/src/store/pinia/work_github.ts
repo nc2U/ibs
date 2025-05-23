@@ -2,7 +2,16 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
-import type { Branch, Tag } from '@/store/types/work_github.ts'
+import type { Branch, Tag, Trunk, Tree } from '@/store/types/work_github.ts'
+
+const sortTree = (trees: Tree[]) =>
+  trees.sort((a, b) => {
+    // 디렉터리 먼저
+    if (a.type === 'tree' && b.type !== 'tree') return -1
+    if (a.type !== 'tree' && b.type === 'tree') return 1
+    // 그 다음 이름순 정렬
+    return a.path.localeCompare(b.path)
+  })
 
 export const useGithub = defineStore('github', () => {
   // repo api
@@ -20,16 +29,8 @@ export const useGithub = defineStore('github', () => {
   // branches api
   const branches = ref<Branch[]>([])
   const trunk_url = ref<string>('')
-  const trunk = ref<any | null>(null)
-  const trunk_tree = computed(() =>
-    trunk.value?.tree.sort((a, b) => {
-      // 디렉터리 먼저
-      if (a.type === 'tree' && b.type !== 'tree') return -1
-      if (a.type !== 'tree' && b.type === 'tree') return 1
-      // 그 다음 이름순 정렬
-      return a.path.localeCompare(b.path)
-    }),
-  )
+  const trunk = ref<Trunk | null>(null)
+  const trunk_tree = computed(() => sortTree(trunk.value?.tree ?? []))
 
   const fetchBranches = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
