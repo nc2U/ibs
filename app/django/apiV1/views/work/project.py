@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 
 from apiV1.pagination import *
 from apiV1.permission import *
-from apiV1.serializers.work.work_project import *
+from apiV1.serializers.work.project import *
 
 
 # Work --------------------------------------------------------------------------
