@@ -13,8 +13,13 @@ import Repository from '@/views/_Work/Manages/Projects/components/Settings/compo
 import Forum from '@/views/_Work/Manages/Projects/components/Settings/components/Forum.vue'
 import TimeTracking from '@/views/_Work/Manages/Projects/components/Settings/components/TimeTracking.vue'
 import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
+import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const emit = defineEmits(['aside-visible'])
+
+const cBody = ref()
+const toggle = () => cBody.value.toggle()
+defineExpose({ toggle })
 
 const menu = ref('프로젝트')
 
@@ -136,73 +141,73 @@ onBeforeMount(async () => {
 
 <template>
   <ContentBody ref="cBody">
-    <template v-slot:default></template>
+    <template v-slot:default>
+      <template v-if="route.name === '(설정)'">
+        <CRow class="py-2">
+          <CCol>
+            <h5>설정</h5>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CCol>
+            <v-tabs v-model="menu" density="compact">
+              <v-tab
+                v-for="m in settingMenus"
+                :value="m"
+                :key="m"
+                variant="tonal"
+                :active="menu === m"
+                @click="Cookies.set('workSettingMenu', m)"
+              >
+                {{ m }}
+              </v-tab>
+            </v-tabs>
+          </CCol>
+        </CRow>
+
+        <ProjectForm v-if="menu === '프로젝트'" :project="issueProject" />
+
+        <Member v-if="menu === '구성원'" />
+
+        <IssueTracking v-if="menu === '업무추적'" />
+
+        <Version
+          v-if="menu === '버전'"
+          :versions="versionList"
+          @version-filter="versionFilter"
+          @delete-version="deleteVersion"
+        />
+
+        <IssueCategory
+          v-if="menu === '업무범주'"
+          :categories="issueProject?.categories"
+          @delete-category="deleteCategory"
+        />
+
+        <Repository
+          v-if="menu === '저장소'"
+          :proj-id="issueProject?.slug as string"
+          :repo-list="repositoryList"
+          @submit-repo="submitRepo"
+          @delete-repo="deleteRepo"
+        />
+
+        <Forum v-if="menu === '게시판'" />
+
+        <TimeTracking
+          v-if="menu === '시간추적'"
+          :activities="issueProject?.activities"
+          :activity-list="activityList"
+          @submit-acts="submitActs"
+        />
+      </template>
+
+      <template v-if="route.name === '(설정) - 범주추가' || route.name === '(설정) - 범주수정'">
+        <CategoryForm :member-list="memberList" @category-submit="categorySubmit" />
+      </template>
+    </template>
 
     <template v-slot:aside></template>
   </ContentBody>
-  
-  <template v-if="route.name === '(설정)'">
-    <CRow class="py-2">
-      <CCol>
-        <h5>설정</h5>
-      </CCol>
-    </CRow>
-
-    <CRow class="mb-3">
-      <CCol>
-        <v-tabs v-model="menu" density="compact">
-          <v-tab
-            v-for="m in settingMenus"
-            :value="m"
-            :key="m"
-            variant="tonal"
-            :active="menu === m"
-            @click="Cookies.set('workSettingMenu', m)"
-          >
-            {{ m }}
-          </v-tab>
-        </v-tabs>
-      </CCol>
-    </CRow>
-
-    <ProjectForm v-if="menu === '프로젝트'" :project="issueProject" />
-
-    <Member v-if="menu === '구성원'" />
-
-    <IssueTracking v-if="menu === '업무추적'" />
-
-    <Version
-      v-if="menu === '버전'"
-      :versions="versionList"
-      @version-filter="versionFilter"
-      @delete-version="deleteVersion"
-    />
-
-    <IssueCategory
-      v-if="menu === '업무범주'"
-      :categories="issueProject?.categories"
-      @delete-category="deleteCategory"
-    />
-
-    <Repository
-      v-if="menu === '저장소'"
-      :proj-id="issueProject?.slug as string"
-      :repo-list="repositoryList"
-      @submit-repo="submitRepo"
-      @delete-repo="deleteRepo"
-    />
-
-    <Forum v-if="menu === '게시판'" />
-
-    <TimeTracking
-      v-if="menu === '시간추적'"
-      :activities="issueProject?.activities"
-      :activity-list="activityList"
-      @submit-acts="submitActs"
-    />
-  </template>
-
-  <template v-if="route.name === '(설정) - 범주추가' || route.name === '(설정) - 범주수정'">
-    <CategoryForm :member-list="memberList" @category-submit="categorySubmit" />
-  </template>
 </template>

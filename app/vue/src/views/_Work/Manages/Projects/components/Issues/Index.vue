@@ -8,8 +8,14 @@ import IssueView from '@/views/_Work/Manages/Issues/components/IssueView.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue'
 import AsideIssue from '@/views/_Work/Manages/Issues/components/aside/AsideIssue.vue'
+import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const emit = defineEmits(['aside-visible'])
+
+const cBody = ref()
+const toggle = () => cBody.value.toggle()
+defineExpose({ toggle })
+
 const aside = ref(true)
 const [route, router] = [useRoute(), useRouter()]
 

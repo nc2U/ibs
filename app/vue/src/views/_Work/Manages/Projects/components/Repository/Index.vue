@@ -4,9 +4,14 @@ import { useWork } from '@/store/pinia/work.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
 import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
+import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import Subversion from './components/Subversion.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
+
+const cBody = ref()
+const toggle = () => cBody.value.toggle()
+defineExpose({ toggle })
 
 const cFilter = ref({
   project: undefined as number | undefined,
@@ -106,33 +111,33 @@ onBeforeMount(async () => {
 
 <template>
   <ContentBody ref="cBody">
-    <template v-slot:default></template>
+    <template v-slot:default>
+      <Subversion :branches="branches" :tags="tags" :trunk-tree="trunk_tree" />
+
+      <Revisions
+        v-if="viewPageSort === 'revisions'"
+        :page="cFilter.page"
+        :commit-list="commitList"
+        :get-list-sort="getListSort"
+        :parent-head-pk="String(headPk ?? '')"
+        :parent-base-pk="String(basePk ?? '')"
+        @head-set="headSet"
+        @base-set="baseSet"
+        @get-diff="getDiff"
+        @get-list-sort="changeListSort"
+        @page-select="pageSelect"
+      />
+
+      <ViewDiff
+        v-if="viewPageSort === 'diff'"
+        :head-commit="diffs.headCommit as Commit"
+        :base-commit="diffs.baseCommit as Commit"
+        :diff-api="diffApi"
+        @get-diff="getDiff"
+        @get-back="getBack"
+      />
+    </template>
 
     <template v-slot:aside></template>
   </ContentBody>
-  
-  <Subversion :branches="branches" :tags="tags" :trunk-tree="trunk_tree" />
-
-  <Revisions
-    v-if="viewPageSort === 'revisions'"
-    :page="cFilter.page"
-    :commit-list="commitList"
-    :get-list-sort="getListSort"
-    :parent-head-pk="String(headPk ?? '')"
-    :parent-base-pk="String(basePk ?? '')"
-    @head-set="headSet"
-    @base-set="baseSet"
-    @get-diff="getDiff"
-    @get-list-sort="changeListSort"
-    @page-select="pageSelect"
-  />
-
-  <ViewDiff
-    v-if="viewPageSort === 'diff'"
-    :head-commit="diffs.headCommit as Commit"
-    :base-commit="diffs.baseCommit as Commit"
-    :diff-api="diffApi"
-    @get-diff="getDiff"
-    @get-back="getBack"
-  />
 </template>

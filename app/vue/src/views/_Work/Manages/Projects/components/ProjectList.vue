@@ -17,11 +17,11 @@ import ProjectCard from './ProjectCard.vue'
 import NoData from '@/views/_Work/components/NoData.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
+const emit = defineEmits(['aside-visible'])
+
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
-
-const emit = defineEmits(['aside-visible'])
 
 const workManager = inject<ComputedRef<boolean>>('workManager')
 

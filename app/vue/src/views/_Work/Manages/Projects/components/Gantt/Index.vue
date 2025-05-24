@@ -1,11 +1,16 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import GanttChart from '@/views/_Work/Manages/Gantt/components/GanttChart.vue'
+import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const emit = defineEmits(['aside-visible'])
+
+const cBody = ref()
+const toggle = () => cBody.value.toggle()
+defineExpose({ toggle })
 
 const route = useRoute()
 
@@ -27,18 +32,18 @@ onBeforeMount(() => {
 
 <template>
   <ContentBody ref="cBody">
-    <template v-slot:default></template>
+    <template v-slot:default>
+      <CRow class="py-2">
+        <CCol>
+          <h5>간트차트</h5>
+        </CCol>
+      </CRow>
+
+      <SearchList />
+
+      <GanttChart :gantts="getGantts" />
+    </template>
 
     <template v-slot:aside></template>
   </ContentBody>
-  
-  <CRow class="py-2">
-    <CCol>
-      <h5>간트차트</h5>
-    </CCol>
-  </CRow>
-
-  <SearchList />
-
-  <GanttChart :gantts="getGantts" />
 </template>
