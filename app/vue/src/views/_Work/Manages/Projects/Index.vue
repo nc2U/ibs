@@ -77,11 +77,6 @@ const onSubmit = (payload: any) => {
   }, 500)
 }
 
-const filteringProject = (payload: any) => {
-  console.log(payload)
-  workStore.fetchIssueProjectList(payload)
-}
-
 const toDate = ref(new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))
 
@@ -159,16 +154,8 @@ onBeforeMount(async () => {
   />
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="aside">
     <template v-slot:default>
-      <router-view :aside-visible="asideVisible" />
-
-      <!--      <ProjectList-->
-      <!--        v-if="routeName === '프로젝트'"-->
-      <!--        :project-list="issueProjects"-->
-      <!--        :all-projects="allProjects"-->
-      <!--        @aside-visible="asideVisible"-->
-      <!--        @filter-submit="filteringProject"-->
-      <!--      />-->
-
+      <router-view @aside-visible="asideVisible" />
+      
       <!--      <ProjectForm-->
       <!--        v-if="routeName === '프로젝트 - 추가'"-->
       <!--        title="새 프로젝트"-->
@@ -192,27 +179,16 @@ onBeforeMount(async () => {
       <!--      />-->
 
       <!--      <Roadmap v-if="routeName.includes('(로드맵)')" @aside-visible="asideVisible" />-->
-
       <!--      <Issues v-if="routeName.includes('(업무)')" @aside-visible="asideVisible" />-->
-
       <!--      <SpentTime v-if="routeName.includes('(소요시간)')" @aside-visible="asideVisible" />-->
-
       <!--      <Gantt v-if="routeName.includes('(간트차트)')" @aside-visible="asideVisible" />-->
-
       <!--      <Calendar v-if="routeName.includes('(달력)')" @aside-visible="asideVisible" />-->
-
       <!--      <News v-if="routeName.includes('(공지)')" @aside-visible="asideVisible" />-->
-
       <!--      <Documents v-if="routeName.includes('(문서)')" @aside-visible="asideVisible" />-->
-
       <!--      <Wiki v-if="routeName.includes('(위키)')" @aside-visible="asideVisible" />-->
-
       <!--      <Forums v-if="routeName.includes('(게시판)')" @aside-visible="asideVisible" />-->
-
       <!--      <Files v-if="routeName.includes('(파일)')" @aside-visible="asideVisible" />-->
-
       <!--      <Repository v-if="routeName.includes('(저장소)')" @aside-visible="asideVisible" />-->
-
       <!--      <Settings v-if="routeName.includes('(설정)')" @aside-visible="asideVisible" />-->
     </template>
 

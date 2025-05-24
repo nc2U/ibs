@@ -16,7 +16,7 @@ import SearchList from './SearchList.vue'
 import ProjectCard from './ProjectCard.vue'
 import NoData from '@/views/_Work/components/NoData.vue'
 
-const emit = defineEmits(['aside-visible', 'filter-submit'])
+const emit = defineEmits(['aside-visible'])
 
 const workManager = inject<ComputedRef<boolean>>('workManager')
 
@@ -24,9 +24,9 @@ const workStore = useWork()
 const projectList = computed<IssueProject[]>(() => workStore.issueProjects)
 const allProjects = computed(() => workStore.AllIssueProjects)
 
-const route = useRoute()
+const filterSubmit = (payload: ProjectFilter) => workStore.fetchIssueProjectList(payload)
 
-const filterSubmit = (payload: ProjectFilter) => emit('filter-submit', payload)
+const route = useRoute()
 
 const breakpoint = ref('xl')
 
