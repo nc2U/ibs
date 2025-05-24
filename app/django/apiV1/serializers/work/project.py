@@ -374,90 +374,79 @@ class IssueProjectSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        project = IssueProject.objects.create(**validated_data)
-        # 프로젝트 생성시 설정된 기본 역할 및 유형 추가
+        # M2M 필드 분리
         allowed_roles = self.initial_data.get('allowed_roles', [])
-        if allowed_roles:
-            project.allowed_roles.add(*allowed_roles)
         trackers = self.initial_data.get('trackers', [])
-        if trackers:
-            project.trackers.add(*trackers)
         activities = self.initial_data.get('activities', [])
+
+        # 프로젝트 생성
+        project = IssueProject.objects.create(**validated_data)
+
+        # M2M 연결 (프로젝트 생성시 설정된 기본 역할 및 유형 추가)
+        if allowed_roles:
+            project.allowed_roles.set(allowed_roles)
+        if trackers:
+            project.trackers.set(trackers)
         if activities:
-            project.activities.add(*activities)
-        project.save()
+            project.activities.set(activities)
 
-        Module(project=project,
-               issue=self.initial_data.get('issue', True),
-               time=self.initial_data.get('time', True),
-               news=self.initial_data.get('news', True),
-               document=self.initial_data.get('document', True),
-               file=self.initial_data.get('file', True),
-               wiki=self.initial_data.get('wiki', True),
-               repository=self.initial_data.get('repository', False),
-               forum=self.initial_data.get('forum', True),
-               calendar=self.initial_data.get('calendar', True),
-               gantt=self.initial_data.get('gantt', True)).save()
-
+        Module.objects.create(project=project,
+                              issue=self.initial_data.get('issue', True),
+                              time=self.initial_data.get('time', True),
+                              news=self.initial_data.get('news', True),
+                              document=self.initial_data.get('document', True),
+                              file=self.initial_data.get('file', True),
+                              wiki=self.initial_data.get('wiki', True),
+                              repository=self.initial_data.get('repository', False),
+                              forum=self.initial_data.get('forum', True),
+                              calendar=self.initial_data.get('calendar', True),
+                              gantt=self.initial_data.get('gantt', True))
         return project
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        # 역할 및 유형이 있는 경우 업데이트 로직
+        def ids_differ(qs, incoming):
+            return set(qs.values_list('pk', flat=True)) != set(map(int, incoming))
+
+        # M2M 업데이트 (역할 및 유형이 있는 경우 업데이트 로직)
         allowed_roles = self.initial_data.get('allowed_roles', [])
-        if allowed_roles and allowed_roles != [r.pk for r in instance.allowed_roles.all()]:
+        if allowed_roles and ids_differ(instance.allowed_roles, allowed_roles):
             instance.allowed_roles.set(allowed_roles)
+
         trackers = self.initial_data.get('trackers', [])
-        if trackers and trackers != [t.pk for t in instance.trackers.all()]:
+        if trackers and ids_differ(instance.trackers, trackers):
             instance.trackers.set(trackers)
+
         activities = self.initial_data.get('activities', [])
-        if activities and activities != [a.pk for a in instance.activities.all()]:
+        if activities and ids_differ(instance.activities, activities):
             instance.activities.set(activities)
 
+        # 모듈 필드 업데이트
         module = instance.module
-
-        if self.initial_data.get('issue'):
-            module.issue = self.initial_data.get('issue')
-        if self.initial_data.get('time'):
-            module.time = self.initial_data.get('time')
-        if self.initial_data.get('news'):
-            module.news = self.initial_data.get('news')
-        if self.initial_data.get('document'):
-            module.document = self.initial_data.get('document')
-        if self.initial_data.get('file'):
-            module.file = self.initial_data.get('file')
-        if self.initial_data.get('wiki'):
-            module.wiki = self.initial_data.get('wiki')
-        if self.initial_data.get('repository'):
-            module.repository = self.initial_data.get('repository')
-        if self.initial_data.get('forum'):
-            module.forum = self.initial_data.get('forum')
-        if self.initial_data.get('calendar'):
-            module.calendar = self.initial_data.get('calendar')
-        if self.initial_data.get('gantt'):
-            module.gantt = self.initial_data.get('gantt')
+        for field in ['issue', 'time', 'news', 'document', 'file', 'wiki', 'repository', 'forum', 'calendar', 'gantt']:
+            if field in self.initial_data:
+                setattr(module, field, self.initial_data[field])
         module.save()
 
         # user에 대응하는 member 모델 생성
         users = self.initial_data.get('users', [])
         roles = self.initial_data.get('roles', [])
-        del_mem = self.initial_data.get('del_mem', None)
+        del_mem = self.initial_data.get('del_mem')
 
         members = []
 
         if users:
-            for user in users:
-                member_instance = Member.objects.create(user_id=user, project=instance)
-                member_instance.roles.add(*roles)
-                member_instance.save()
-                members.append(member_instance.pk)
-        elif del_mem is not None:
-            member = Member.objects.get(pk=del_mem)
-            member.delete()
+            for user_id in users:
+                member, _ = Member.objects.get_or_create(user_id=user_id, project=instance)
+                if roles:
+                    member.roles.set(roles)
+                member.save()
 
-        # status (close or reopen)
-        status = self.initial_data.get('status', '1')
-        instance.status = status
+        elif del_mem is not None:
+            Member.objects.filter(pk=del_mem).delete()
+
+        # 상태 업데이트
+        validated_data['status'] = self.initial_data.get('status', '1')
 
         return super().update(instance, validated_data)
 
