@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { inject, ref } from 'vue'
+import { inject, provide, ref } from 'vue'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({ aside: { type: Boolean, default: true } })
@@ -16,6 +16,7 @@ const goToMenu = (menu: string) => {
   visible.value = false
 }
 const toggle = () => (visible.value = !visible.value)
+provide('doingToggle', toggle)
 defineExpose({ toggle })
 </script>
 

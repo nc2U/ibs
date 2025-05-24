@@ -7,14 +7,9 @@ import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import type { ActLogEntryFilter, Issue, IssueProject } from '@/store/types/work'
 import Header from '@/views/_Work/components/Header/Index.vue'
-import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import AsideActivity from '@/views/_Work/Manages/Activity/components/aside/AsideActivity.vue'
-import AsideIssue from '@/views/_Work/Manages/Issues/components/aside/AsideIssue.vue'
 
 const cBody = ref()
-const aside = ref(true)
-
-const asideVisible = (visible: boolean) => (aside.value = visible)
+const sideNavCAll = () => cBody.value.toggle()
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -52,7 +47,8 @@ const navMenu = computed(() =>
   routeName.value.includes('프로젝트') ? navMenus.value : projectNavMenus.value,
 )
 
-const sideNavCAll = () => cBody.value.toggle()
+provide('navMenu', navMenu)
+provide('query', route?.query)
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject as IssueProject)
@@ -62,7 +58,7 @@ const allProjects = computed(() => workStore.AllIssueProjects)
 
 const modules = computed(() => issueProject.value?.module)
 
-const issue = computed<Issue | null>(() => workStore.issue)
+const issue = computed<Issue>(() => workStore.issue)
 
 const toDate = ref(new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))
@@ -140,11 +136,7 @@ onBeforeMount(async () => {
     @side-nav-call="sideNavCAll"
   />
 
-  <router-view
-    ref="cBody"
-    :nav-menu="navMenu"
-    :query="route?.query"
-    :aside="aside"
-    @aside-visible="asideVisible"
-  />
+  <router-view v-slot="{ Component }">
+    <component :is="Component" :nav-menu="navMenu" :query="route?.query" ref="cBody" />
+  </router-view>
 </template>

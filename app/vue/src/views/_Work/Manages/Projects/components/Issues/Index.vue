@@ -7,9 +7,10 @@ import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
 import IssueView from '@/views/_Work/Manages/Issues/components/IssueView.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue'
+import AsideIssue from '@/views/_Work/Manages/Issues/components/aside/AsideIssue.vue'
 
 const emit = defineEmits(['aside-visible'])
-
+const aside = ref(true)
 const [route, router] = [useRoute(), useRouter()]
 
 const workStore = useWork()
@@ -112,41 +113,49 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <IssueList
-    v-if="route.name === '(업무)'"
-    :proj-status="issueProject?.status"
-    :issue-list="issueList"
-    :all-projects="allProjects"
-    :status-list="statusList"
-    :tracker-list="trackerList"
-    :get-issues="getIssues"
-    :get-versions="getVersions"
-    @filter-submit="filterSubmit"
-    @page-select="pageSelect"
-  />
+  <ContentBody>
+    <template v-slot:default>
+      <IssueList
+        v-if="route.name === '(업무)'"
+        :proj-status="issueProject?.status"
+        :issue-list="issueList"
+        :all-projects="allProjects"
+        :status-list="statusList"
+        :tracker-list="trackerList"
+        :get-issues="getIssues"
+        :get-versions="getVersions"
+        @filter-submit="filterSubmit"
+        @page-select="pageSelect"
+      />
 
-  <IssueView
-    v-if="route.name === '(업무) - 보기' && issue"
-    :issue-project="issueProject as IssueProject"
-    :issue="issue"
-    :all-projects="allProjects"
-    :status-list="statusList"
-    :priority-list="priorityList"
-    :issue-comment-list="issueCommentList"
-    :time-entry-list="timeEntryList"
-    @on-submit="onSubmit"
-  />
+      <IssueView
+        v-if="route.name === '(업무) - 보기' && issue"
+        :issue-project="issueProject as IssueProject"
+        :issue="issue"
+        :all-projects="allProjects"
+        :status-list="statusList"
+        :priority-list="priorityList"
+        :issue-comment-list="issueCommentList"
+        :time-entry-list="timeEntryList"
+        @on-submit="onSubmit"
+      />
 
-  <IssueForm
-    v-if="route.name === '(업무) - 추가'"
-    :issue-project="issueProject as IssueProject"
-    :all-projects="allProjects"
-    :status-list="statusList"
-    :priority-list="priorityList"
-    :get-issues="getIssues"
-    @on-submit="onSubmit"
-    @close-form="router.push({ name: '(업무)' })"
-  />
+      <IssueForm
+        v-if="route.name === '(업무) - 추가'"
+        :issue-project="issueProject as IssueProject"
+        :all-projects="allProjects"
+        :status-list="statusList"
+        :priority-list="priorityList"
+        :get-issues="getIssues"
+        @on-submit="onSubmit"
+        @close-form="router.push({ name: '(업무)' })"
+      />
 
-  <IssueReport v-if="route.name === '(업무) - 보고서'" />
+      <IssueReport v-if="route.name === '(업무) - 보고서'" />
+    </template>
+
+    <template v-slot:aside>
+      <AsideIssue :issue-pk="issue?.pk" :watchers="[]" />
+    </template>
+  </ContentBody>
 </template>

@@ -31,6 +31,12 @@ onBeforeMount(() =>
 </script>
 
 <template>
+  <ContentBody ref="cBody">
+    <template v-slot:default></template>
+
+    <template v-slot:aside></template>
+  </ContentBody>
+  
   <RoadmapList
     v-if="route.name === '(로드맵)'"
     :version-list="versionList"

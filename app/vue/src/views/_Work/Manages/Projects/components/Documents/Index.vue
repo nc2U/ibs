@@ -111,6 +111,12 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ContentBody ref="cBody">
+    <template v-slot:default></template>
+
+    <template v-slot:aside></template>
+  </ContentBody>
+  
   <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />
 
   <DocsForm

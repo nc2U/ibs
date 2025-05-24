@@ -67,6 +67,12 @@ onBeforeMount(() => {
 </script>
 
 <template>
+  <ContentBody ref="cBody">
+    <template v-slot:default></template>
+
+    <template v-slot:aside></template>
+  </ContentBody>
+  
   <TimeEntryList
     v-if="route.name === '(소요시간)'"
     :proj-status="issueProject?.status"
