@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeMount, provide, inject, type ComputedRef, watch } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, provide, ref, watch } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { dateFormat } from '@/utils/baseMixins'
 import { useWork } from '@/store/pinia/work'
@@ -59,23 +59,10 @@ const issueProject = computed(() => workStore.issueProject as IssueProject)
 provide('iProject', issueProject)
 const issueProjects = computed(() => workStore.issueProjects)
 const allProjects = computed(() => workStore.AllIssueProjects)
-const getRoles = computed(() => workStore.getRoles)
-const getTrackers = computed(() => workStore.getTrackers)
-const getActivities = computed(() => workStore.getActivities)
 
 const modules = computed(() => issueProject.value?.module)
 
 const issue = computed<Issue | null>(() => workStore.issue)
-
-const onSubmit = (payload: any) => {
-  workStore.createIssueProject(payload)
-  setTimeout(() => {
-    router.push({
-      name: '(설정)',
-      params: { projId: issueProject.value?.slug },
-    })
-  }, 500)
-}
 
 const toDate = ref(new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))
@@ -155,17 +142,6 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="aside">
     <template v-slot:default>
       <router-view @aside-visible="asideVisible" />
-      
-      <!--      <ProjectForm-->
-      <!--        v-if="routeName === '프로젝트 - 추가'"-->
-      <!--        title="새 프로젝트"-->
-      <!--        :all-projects="allProjects"-->
-      <!--        :all-roles="getRoles"-->
-      <!--        :all-trackers="getTrackers"-->
-      <!--        :get-activities="getActivities"-->
-      <!--        @aside-visible="asideVisible"-->
-      <!--        @on-submit="onSubmit"-->
-      <!--      />-->
 
       <!--      <Overview v-if="routeName === '(개요)'" @aside-visible="asideVisible" />-->
 

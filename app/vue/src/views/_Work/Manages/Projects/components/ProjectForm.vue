@@ -11,7 +11,8 @@ import {
   reactive,
   ref,
 } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useWork } from '@/store/pinia/work.ts'
 import { useCompany } from '@/store/pinia/company'
 import { colorLight } from '@/utils/cssMixins'
 import type { IssueProject } from '@/store/types/work'
@@ -19,15 +20,10 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 
 const props = defineProps({
-  title: { type: String, default: '' },
   project: { type: Object as PropType<IssueProject | null>, default: null },
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
-  allRoles: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
-  allTrackers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
-  getActivities: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
 })
 
-const emit = defineEmits(['aside-visible', 'on-submit'])
+const emit = defineEmits(['aside-visible'])
 
 const isDark = inject('isDark')
 const workManager = inject<ComputedRef<boolean>>('workManager')
@@ -36,6 +32,12 @@ const validated = ref(false)
 
 const comStore = useCompany()
 const comSelect = computed(() => comStore.comSelect)
+
+const workStore = useWork()
+const allProjects = computed(() => workStore.AllIssueProjects)
+const allRoles = computed(() => workStore.getRoles)
+const allTrackers = computed(() => workStore.getTrackers)
+const getActivities = computed(() => workStore.getActivities)
 
 const form = reactive({
   pk: undefined as number | undefined,
@@ -129,7 +131,7 @@ const getSlug = (event: { key: string; code: string }) => {
   }
 }
 
-const route = useRoute()
+const [route, router] = [useRoute(), useRouter()]
 
 const onSubmit = (event: Event) => {
   const el = event.currentTarget as HTMLFormElement
@@ -139,7 +141,14 @@ const onSubmit = (event: Event) => {
     validated.value = true
   } else {
     Cookies.set('workSettingMenu', '프로젝트')
-    emit('on-submit', { ...form, ...module })
+
+    if (form.pk) workStore.updateIssueProject({ ...form, ...module } as any)
+    else {
+      workStore.createIssueProject({ ...form, ...module } as any)
+      setTimeout(() => {
+        router.push({ name: '(설정)', params: { projId: workStore.issueProject?.slug } })
+      }, 500)
+    }
     validated.value = false
   }
 }
@@ -192,9 +201,9 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <CRow v-if="title" class="py-2">
+  <CRow v-if="!project" class="py-2">
     <CCol>
-      <h5>{{ title }}</h5>
+      <h5>새 프로젝트</h5>
     </CCol>
   </CRow>
 
@@ -211,6 +220,7 @@ onBeforeMount(() => {
               :options="comSelect"
               mode="single"
               placeholder="회사 선택"
+              :attrs="form.company ? {} : { required: true }"
               required
             />
           </CCol>

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { ref, computed, inject, type ComputedRef, onBeforeMount } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
 import { type IssueCategory as ICategory, type IssueProject } from '@/store/types/work'
 import { useWork } from '@/store/pinia/work'
-import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
+import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
 import Member from '@/views/_Work/Manages/Projects/components/Settings/components/Member.vue'
 import IssueTracking from '@/views/_Work/Manages/Projects/components/Settings/components/IssueTracking.vue'
@@ -68,8 +68,6 @@ const memberList = computed(() =>
   ).map(m => m.user),
 )
 const activityList = computed(() => workStore.activityList)
-
-const onSubmit = (payload: any) => workStore.updateIssueProject(payload)
 
 const deleteVersion = (pk: number) => workStore.deleteVersion(pk, issueProject.value?.slug)
 
@@ -161,15 +159,7 @@ onBeforeMount(async () => {
       </CCol>
     </CRow>
 
-    <ProjectForm
-      v-if="menu === '프로젝트'"
-      :project="issueProject"
-      :all-projects="AllProjects"
-      :all-roles="getRoles"
-      :all-trackers="getTrackers"
-      :get-activities="getActivities"
-      @on-submit="onSubmit"
-    />
+    <ProjectForm v-if="menu === '프로젝트'" :project="issueProject" />
 
     <Member v-if="menu === '구성원'" />
 
