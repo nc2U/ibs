@@ -21,9 +21,10 @@ import MultiSelect from '@/components/MultiSelect/index.vue'
 
 const props = defineProps({
   project: { type: Object as PropType<IssueProject | null>, default: null },
+  redirect: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['aside-visible'])
+const emit = defineEmits(['aside-visible', 'modal-close'])
 
 const isDark = inject('isDark')
 const workManager = inject<ComputedRef<boolean>>('workManager')
@@ -51,8 +52,8 @@ const form = reactive({
   parent: null as number | null,
   is_inherit_members: false,
   allowed_roles: [6, 7, 8],
-  trackers: [4, 5, 6],
-  activities: [3, 4, 5, 6, 7, 8, 9, 10],
+  trackers: [4, 5, 6, 7],
+  activities: [3, 4, 5, 6, 7, 8],
 })
 
 const module = reactive({
@@ -145,9 +146,11 @@ const onSubmit = (event: Event) => {
     if (form.pk) workStore.updateIssueProject({ ...form, ...module } as any)
     else {
       workStore.createIssueProject({ ...form, ...module } as any)
-      setTimeout(() => {
-        router.push({ name: '(설정)', params: { projId: workStore.issueProject?.slug } })
-      }, 500)
+      if (props.redirect)
+        setTimeout(() => {
+          router.push({ name: '(설정)', params: { projId: workStore.issueProject?.slug } })
+        }, 500)
+      else emit('modal-close')
     }
     validated.value = false
   }

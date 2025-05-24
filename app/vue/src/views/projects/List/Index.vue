@@ -31,9 +31,15 @@ const toSubmit = (payload: Project) => {
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
-const createIssueProject = (payload: IssueProject) => workStore.createIssueProject(payload)
 
-onBeforeMount(() => workStore.fetchAllIssueProjectList('', '2', ''))
+const getProjects = (sort: '1' | '2' | '3') => workStore.fetchAllIssueProjectList('', sort, '')
+
+onBeforeMount(() => {
+  workStore.fetchAllIssueProjectList('', '2', '')
+  workStore.fetchRoleList()
+  workStore.fetchTrackerList()
+  workStore.fetchActivityList()
+})
 </script>
 
 <template>
@@ -53,7 +59,7 @@ onBeforeMount(() => workStore.fetchAllIssueProjectList('', '2', ''))
       :get-projects="getAllProjects"
       @to-submit="toSubmit"
       @reset-form="resetForm"
-      @issue-pr-submit="createIssueProject"
+      @get-project="getProjects"
     />
 
     <IndexForm
@@ -62,7 +68,7 @@ onBeforeMount(() => workStore.fetchAllIssueProjectList('', '2', ''))
       :get-projects="getAllProjects"
       @to-submit="toSubmit"
       @reset-form="resetForm"
-      @issue-pr-submit="createIssueProject"
+      @get-project="getProjects"
     />
 
     <template #footer>
