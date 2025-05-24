@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onBeforeMount, type ComputedRef } from 'vue'
+import { ref, computed, inject, onBeforeMount, type ComputedRef, provide } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useWork } from '@/store/pinia/work'
 import { useRoute, useRouter } from 'vue-router'
@@ -28,6 +28,9 @@ const createTimeEntry = (payload: any) => workStore.createTimeEntry(payload)
 const updateTimeEntry = (payload: any) => workStore.updateTimeEntry(payload)
 
 const [route, router] = [useRoute(), useRouter()]
+
+provide('navMenu', navMenu)
+provide('query', route?.query)
 
 const onSubmit = async (payload: any) => {
   if (payload.pk) await updateTimeEntry(payload)

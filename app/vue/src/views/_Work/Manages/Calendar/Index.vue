@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, ref } from 'vue'
+import { computed, type ComputedRef, inject, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
@@ -15,6 +15,9 @@ const company = inject<ComputedRef<Company>>('company')
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()
+
+provide('navMenu', navMenu)
+provide('query', route?.query)
 
 const calendarOptions = computed(() => ({
   timeZone: 'local',

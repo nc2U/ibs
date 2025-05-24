@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, type ComputedRef, inject, onBeforeMount } from 'vue'
+import { ref, computed, type ComputedRef, inject, onBeforeMount, provide } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
@@ -23,6 +23,9 @@ const workStore = useWork()
 const issueProjects = computed(() => workStore.issueProjects)
 
 const route = useRoute()
+
+provide('navMenu', navMenu)
+provide('query', route?.query)
 
 const toDate = ref(new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))

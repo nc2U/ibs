@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useBoard } from '@/store/pinia/board'
 import { useRoute } from 'vue-router'
@@ -11,11 +11,14 @@ import NewsList from './components/NewsList.vue'
 
 const emit = defineEmits(['aside-visible'])
 
-const route = useRoute()
-
 const cBody = ref()
 const company = inject<ComputedRef<Company>>('company')
 const comName = computed(() => company?.value?.name)
+
+const route = useRoute()
+
+provide('navMenu', navMenu)
+provide('query', route?.query)
 
 const sideNavCAll = () => cBody.value.toggle()
 
