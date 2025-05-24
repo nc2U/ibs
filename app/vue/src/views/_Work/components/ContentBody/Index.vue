@@ -12,7 +12,7 @@ const navMenu = inject('navMenu')
 const [route, router] = [useRoute(), useRouter()]
 
 const goToMenu = (menu: string) => {
-  router.push({ name: menu as RouteRecordName, query: props.query })
+  router.push({ name: menu as RouteRecordName, query: query.value })
   visible.value = false
 }
 const toggle = () => (visible.value = !visible.value)
@@ -63,7 +63,10 @@ defineExpose({ toggle })
               <CNavItem v-for="(menu, i) in navMenu" :key="i">
                 <CNavLink
                   @click="goToMenu(menu as string)"
-                  :active="route.name === menu || (route.meta as any).title === menu"
+                  :active="
+                    (route.name as string).includes(menu) ||
+                    (route.meta as any).title.includes(menu)
+                  "
                   class="pl-3"
                 >
                   {{ menu }}
