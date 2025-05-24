@@ -54,30 +54,6 @@ onBeforeMount(() => emit('aside-visible', true))
 <template>
   <ContentBody ref="cBody">
     <template v-slot:default>
-      <!--      <Overview v-if="routeName === '(개요)'" @aside-visible="asideVisible" />-->
-
-      <!--      <Activity-->
-      <!--        v-if="routeName === '(작업내역)'"-->
-      <!--        :to-date="toDate"-->
-      <!--        :activity-filter="activityFilter"-->
-      <!--        @to-back="toMove"-->
-      <!--        @to-next="toMove"-->
-      <!--        @aside-visible="asideVisible"-->
-      <!--      />-->
-
-      <!--      <Roadmap v-if="routeName.includes('(로드맵)')" @aside-visible="asideVisible" />-->
-      <!--      <Issues v-if="routeName.includes('(업무)')" @aside-visible="asideVisible" />-->
-      <!--      <SpentTime v-if="routeName.includes('(소요시간)')" @aside-visible="asideVisible" />-->
-      <!--      <Gantt v-if="routeName.includes('(간트차트)')" @aside-visible="asideVisible" />-->
-      <!--      <Calendar v-if="routeName.includes('(달력)')" @aside-visible="asideVisible" />-->
-      <!--      <News v-if="routeName.includes('(공지)')" @aside-visible="asideVisible" />-->
-      <!--      <Documents v-if="routeName.includes('(문서)')" @aside-visible="asideVisible" />-->
-      <!--      <Wiki v-if="routeName.includes('(위키)')" @aside-visible="asideVisible" />-->
-      <!--      <Forums v-if="routeName.includes('(게시판)')" @aside-visible="asideVisible" />-->
-      <!--      <Files v-if="routeName.includes('(파일)')" @aside-visible="asideVisible" />-->
-      <!--      <Repository v-if="routeName.includes('(저장소)')" @aside-visible="asideVisible" />-->
-      <!--      <Settings v-if="routeName.includes('(설정)')" @aside-visible="asideVisible" />-->
-
       <CRow class="py-2">
         <CCol>
           <h5>프로젝트</h5>

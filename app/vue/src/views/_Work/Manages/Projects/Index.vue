@@ -138,5 +138,13 @@ onBeforeMount(async () => {
 
   <router-view v-slot="{ Component }">
     <component :is="Component" :nav-menu="navMenu" :query="route?.query" ref="cBody" />
+    <!--      <Activity-->
+    <!--        v-if="routeName === '(작업내역)'"-->
+    <!--        :to-date="toDate"-->
+    <!--        :activity-filter="activityFilter"-->
+    <!--        @to-back="toMove"-->
+    <!--        @to-next="toMove"-->
+    <!--        @aside-visible="asideVisible"-->
+    <!--      />-->
   </router-view>
 </template>
