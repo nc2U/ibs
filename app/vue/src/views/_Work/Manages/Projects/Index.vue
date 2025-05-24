@@ -8,22 +8,6 @@ import type { Company } from '@/store/types/settings'
 import type { ActLogEntryFilter, Issue, IssueProject } from '@/store/types/work'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import ProjectList from '@/views/_Work/Manages/Projects/components/ProjectList.vue'
-import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
-import Overview from '@/views/_Work/Manages/Projects/components/Overview/Index.vue'
-import Activity from '@/views/_Work/Manages/Projects/components/Activity/Index.vue'
-import Roadmap from '@/views/_Work/Manages/Projects/components/Roadmap/Index.vue'
-import Issues from '@/views/_Work/Manages/Projects/components/Issues/Index.vue'
-import SpentTime from '@/views/_Work/Manages/Projects/components/SpentTime/Index.vue'
-import Gantt from '@/views/_Work/Manages/Projects/components/Gantt/Index.vue'
-import Calendar from '@/views/_Work/Manages/Projects/components/Calendar/Index.vue'
-import News from '@/views/_Work/Manages/Projects/components/News/Index.vue'
-import Documents from '@/views/_Work/Manages/Projects/components/Documents/Index.vue'
-import Wiki from '@/views/_Work/Manages/Projects/components/Wiki/Index.vue'
-import Forums from '@/views/_Work/Manages/Projects/components/Forums/Index.vue'
-import Files from '@/views/_Work/Manages/Projects/components/Files/Index.vue'
-import Repository from '@/views/_Work/Manages/Projects/components/Repository/Index.vue'
-import Settings from '@/views/_Work/Manages/Projects/components/Settings/Index.vue'
 import AsideActivity from '@/views/_Work/Manages/Activity/components/aside/AsideActivity.vue'
 import AsideIssue from '@/views/_Work/Manages/Issues/components/aside/AsideIssue.vue'
 
@@ -175,59 +159,61 @@ onBeforeMount(async () => {
   />
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="aside">
     <template v-slot:default>
-      <ProjectList
-        v-if="routeName === '프로젝트'"
-        :project-list="issueProjects"
-        :all-projects="allProjects"
-        @aside-visible="asideVisible"
-        @filter-submit="filteringProject"
-      />
+      <router-view :aside-visible="asideVisible" />
 
-      <ProjectForm
-        v-if="routeName === '프로젝트 - 추가'"
-        title="새 프로젝트"
-        :all-projects="allProjects"
-        :all-roles="getRoles"
-        :all-trackers="getTrackers"
-        :get-activities="getActivities"
-        @aside-visible="asideVisible"
-        @on-submit="onSubmit"
-      />
+      <!--      <ProjectList-->
+      <!--        v-if="routeName === '프로젝트'"-->
+      <!--        :project-list="issueProjects"-->
+      <!--        :all-projects="allProjects"-->
+      <!--        @aside-visible="asideVisible"-->
+      <!--        @filter-submit="filteringProject"-->
+      <!--      />-->
 
-      <Overview v-if="routeName === '(개요)'" @aside-visible="asideVisible" />
+      <!--      <ProjectForm-->
+      <!--        v-if="routeName === '프로젝트 - 추가'"-->
+      <!--        title="새 프로젝트"-->
+      <!--        :all-projects="allProjects"-->
+      <!--        :all-roles="getRoles"-->
+      <!--        :all-trackers="getTrackers"-->
+      <!--        :get-activities="getActivities"-->
+      <!--        @aside-visible="asideVisible"-->
+      <!--        @on-submit="onSubmit"-->
+      <!--      />-->
 
-      <Activity
-        v-if="routeName === '(작업내역)'"
-        :to-date="toDate"
-        :activity-filter="activityFilter"
-        @to-back="toMove"
-        @to-next="toMove"
-        @aside-visible="asideVisible"
-      />
+      <!--      <Overview v-if="routeName === '(개요)'" @aside-visible="asideVisible" />-->
 
-      <Roadmap v-if="routeName.includes('(로드맵)')" @aside-visible="asideVisible" />
+      <!--      <Activity-->
+      <!--        v-if="routeName === '(작업내역)'"-->
+      <!--        :to-date="toDate"-->
+      <!--        :activity-filter="activityFilter"-->
+      <!--        @to-back="toMove"-->
+      <!--        @to-next="toMove"-->
+      <!--        @aside-visible="asideVisible"-->
+      <!--      />-->
 
-      <Issues v-if="routeName.includes('(업무)')" @aside-visible="asideVisible" />
+      <!--      <Roadmap v-if="routeName.includes('(로드맵)')" @aside-visible="asideVisible" />-->
 
-      <SpentTime v-if="routeName.includes('(소요시간)')" @aside-visible="asideVisible" />
+      <!--      <Issues v-if="routeName.includes('(업무)')" @aside-visible="asideVisible" />-->
 
-      <Gantt v-if="routeName.includes('(간트차트)')" @aside-visible="asideVisible" />
+      <!--      <SpentTime v-if="routeName.includes('(소요시간)')" @aside-visible="asideVisible" />-->
 
-      <Calendar v-if="routeName.includes('(달력)')" @aside-visible="asideVisible" />
+      <!--      <Gantt v-if="routeName.includes('(간트차트)')" @aside-visible="asideVisible" />-->
 
-      <News v-if="routeName.includes('(공지)')" @aside-visible="asideVisible" />
+      <!--      <Calendar v-if="routeName.includes('(달력)')" @aside-visible="asideVisible" />-->
 
-      <Documents v-if="routeName.includes('(문서)')" @aside-visible="asideVisible" />
+      <!--      <News v-if="routeName.includes('(공지)')" @aside-visible="asideVisible" />-->
 
-      <Wiki v-if="routeName.includes('(위키)')" @aside-visible="asideVisible" />
+      <!--      <Documents v-if="routeName.includes('(문서)')" @aside-visible="asideVisible" />-->
 
-      <Forums v-if="routeName.includes('(게시판)')" @aside-visible="asideVisible" />
+      <!--      <Wiki v-if="routeName.includes('(위키)')" @aside-visible="asideVisible" />-->
 
-      <Files v-if="routeName.includes('(파일)')" @aside-visible="asideVisible" />
+      <!--      <Forums v-if="routeName.includes('(게시판)')" @aside-visible="asideVisible" />-->
 
-      <Repository v-if="routeName.includes('(저장소)')" @aside-visible="asideVisible" />
+      <!--      <Files v-if="routeName.includes('(파일)')" @aside-visible="asideVisible" />-->
 
-      <Settings v-if="routeName.includes('(설정)')" @aside-visible="asideVisible" />
+      <!--      <Repository v-if="routeName.includes('(저장소)')" @aside-visible="asideVisible" />-->
+
+      <!--      <Settings v-if="routeName.includes('(설정)')" @aside-visible="asideVisible" />-->
     </template>
 
     <template v-slot:aside>

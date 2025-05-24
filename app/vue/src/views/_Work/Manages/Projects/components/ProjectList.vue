@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import {
+  computed,
   type ComputedRef,
   inject,
   onBeforeMount,
@@ -9,19 +10,19 @@ import {
   ref,
 } from 'vue'
 import { useRoute } from 'vue-router'
+import { useWork } from '@/store/pinia/work.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work'
 import SearchList from './SearchList.vue'
 import ProjectCard from './ProjectCard.vue'
 import NoData from '@/views/_Work/components/NoData.vue'
 
-defineProps({
-  projectList: { type: Array as PropType<IssueProject[]>, default: () => [] },
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
-})
-
 const emit = defineEmits(['aside-visible', 'filter-submit'])
 
 const workManager = inject<ComputedRef<boolean>>('workManager')
+
+const workStore = useWork()
+const projectList = computed<IssueProject[]>(() => workStore.issueProjects)
+const allProjects = computed(() => workStore.AllIssueProjects)
 
 const route = useRoute()
 
