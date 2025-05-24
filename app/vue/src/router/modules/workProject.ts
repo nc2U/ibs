@@ -159,6 +159,28 @@ const workProject = {
         {
           path: ':projId/repository',
           name: '(저장소)',
+          children: [
+            {
+              path: ':type', // type: 'branches', 'tags', 'trunk'
+              name: '(저장소) - 타입', // 브랜치 | 태그 목록
+              children: [
+                {
+                  path: ':id', // branchId, tagId, trunkId(main branch)
+                  name: '(저장소) - 타입-루트', // 각 타입의 root tree 보기
+                  children: [
+                    {
+                      path: ':path*',
+                      name: '(저장소) - 타입-트리', // 각 타입의 tree 내부 경로 보기
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              path: 'revisions/:revId',
+              name: '(저장소) - 리비전',
+            },
+          ],
         },
         {
           path: ':projId/setting',
