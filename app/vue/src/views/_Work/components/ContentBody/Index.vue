@@ -1,14 +1,13 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { inject, ref } from 'vue'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
-const props = defineProps({
-  navMenu: { type: Array, default: () => [] },
-  query: { type: Object, default: null },
-  aside: { type: Boolean, default: true },
-})
+const props = defineProps({ aside: { type: Boolean, default: true } })
 
 const visible = ref(false)
+
+const query = inject('query')
+const navMenu = inject('navMenu')
 
 const [route, router] = [useRoute(), useRouter()]
 
