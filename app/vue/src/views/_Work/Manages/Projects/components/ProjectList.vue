@@ -17,8 +17,6 @@ import ProjectCard from './ProjectCard.vue'
 import NoData from '@/views/_Work/components/NoData.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -48,7 +46,6 @@ onMounted(() => {
   window.addEventListener('resize', updateBreakpoint)
 })
 onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
-onBeforeMount(() => emit('aside-visible', true))
 </script>
 
 <template>

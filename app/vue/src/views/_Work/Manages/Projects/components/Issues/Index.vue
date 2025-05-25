@@ -10,8 +10,6 @@ import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue
 import AsideIssue from '@/views/_Work/Manages/Issues/components/aside/AsideIssue.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -97,7 +95,6 @@ watch(
 )
 
 onBeforeMount(async () => {
-  emit('aside-visible', true)
   await workStore.fetchAllIssueProjectList()
 
   await workStore.fetchIssueProject(projId.value)

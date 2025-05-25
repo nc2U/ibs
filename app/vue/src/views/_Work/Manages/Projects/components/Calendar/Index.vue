@@ -6,8 +6,6 @@ import interactionPlugin from '@fullcalendar/interaction'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -25,8 +23,6 @@ const calendarOptions = computed(() => ({
 }))
 
 const handleDateClick = (arg: any) => alert('date click! ' + arg.dateStr)
-
-onBeforeMount(() => emit('aside-visible', true))
 </script>
 
 <template>

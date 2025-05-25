@@ -110,7 +110,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <ContentBody ref="cBody">
+  <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <Subversion :branches="branches" :tags="tags" :trunk-tree="trunk_tree" />
 

@@ -11,8 +11,6 @@ import DocsView from './components/DocsView.vue'
 import DocsForm from './components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -109,10 +107,7 @@ const dataSetup = async (docId?: string | string[]) => {
 
 onBeforeRouteUpdate(to => dataSetup(to.params?.docId))
 
-onBeforeMount(async () => {
-  emit('aside-visible', true)
-  await dataSetup(route.params?.docId)
-})
+onBeforeMount(async () => await dataSetup(route.params?.docId))
 </script>
 
 <template>

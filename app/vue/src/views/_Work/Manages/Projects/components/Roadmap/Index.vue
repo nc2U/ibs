@@ -8,8 +8,6 @@ import RoadmapList from './components/RoadmapList.vue'
 import VersionView from './components/VersionView.vue'
 import VersionForm from './components/VersionForm.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })

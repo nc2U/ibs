@@ -13,8 +13,6 @@ import ProjectCard from '@/views/_Work/Manages/Projects/components/ProjectCard.v
 import NoData from '@/views/_Work/components/NoData.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -76,7 +74,6 @@ const deleteProject = (slug: string) => {
 }
 
 onBeforeMount(() => {
-  emit('aside-visible', false)
   if (iProject.value) {
     workStore.fetchTrackerSummary(iProject.value?.pk)
   }
@@ -84,7 +81,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <ContentBody ref="cBody">
+  <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <OverViewHeader
         :project="iProject as IssueProject"

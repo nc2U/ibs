@@ -6,8 +6,6 @@ import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue
 import GanttChart from '@/views/_Work/Manages/Gantt/components/GanttChart.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -25,7 +23,6 @@ watch(
 )
 
 onBeforeMount(() => {
-  emit('aside-visible', true)
   if (route.params.projId) workStore.fetchGanttIssues(route.params.projId as string)
 })
 </script>

@@ -7,8 +7,6 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryList.vue'
 import TimeEntryForm from '@/views/_Work/Manages/SpentTime/components/TimeEntryForm.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -63,7 +61,6 @@ watch(route, async nVal => {
 })
 
 onBeforeMount(() => {
-  emit('aside-visible', true)
   workStore.fetchAllIssueProjectList()
   workStore.fetchAllIssueList(project.value)
   workStore.fetchTimeEntryList({ ...listFilter.value })

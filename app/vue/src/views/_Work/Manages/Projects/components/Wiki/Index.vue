@@ -5,8 +5,6 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -25,14 +23,11 @@ const wikiTitle = computed(() =>
   route.params.title ? capitalize(route.params.title as string) : 'Wiki',
 )
 
-onBeforeMount(() => {
-  emit('aside-visible', false)
-  form.value.wiki = `# ${wikiTitle.value}`
-})
+onBeforeMount(() => (form.value.wiki = `# ${wikiTitle.value}`))
 </script>
 
 <template>
-  <ContentBody ref="cBody">
+  <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>

@@ -6,8 +6,6 @@ import NoData from '@/views/_Work/components/NoData.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -23,14 +21,11 @@ const dataSetup = () => fetchPostList({ board: 1, issue_project: issueProject.va
 
 onBeforeUpdate(() => dataSetup())
 
-onBeforeMount(() => {
-  emit('aside-visible', false)
-  dataSetup()
-})
+onBeforeMount(() => dataSetup())
 </script>
 
 <template>
-  <ContentBody ref="cBody">
+  <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>

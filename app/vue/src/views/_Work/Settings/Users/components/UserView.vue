@@ -17,8 +17,6 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['aside-visible'])
-
 const route = useRoute()
 
 const workManager = inject('workManager', false)
@@ -34,7 +32,7 @@ const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
 const issueProjects = computed(() => props.issueProjects.slice())
 
 onBeforeMount(() => {
-  emit('aside-visible', false)
+  // emit('aside-visible', false)
 })
 </script>
 

@@ -3,20 +3,16 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
-
-onBeforeMount(() => emit('aside-visible', false))
 </script>
 
 <template>
-  <ContentBody ref="cBody">
+  <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>

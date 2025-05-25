@@ -15,8 +15,6 @@ import TimeTracking from '@/views/_Work/Manages/Projects/components/Settings/com
 import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
-
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
@@ -120,8 +118,6 @@ onBeforeRouteUpdate(async to => {
 })
 
 onBeforeMount(async () => {
-  emit('aside-visible', false)
-
   if (route.query.menu) menu.value = route.query.menu as string
   else menu.value = Cookies.get('workSettingMenu') ?? initMenu.value
 
@@ -140,7 +136,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <ContentBody ref="cBody">
+  <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(설정)'">
         <CRow class="py-2">
