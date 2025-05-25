@@ -116,7 +116,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <ContentBody>
+  <ContentBody ref="cBody">
     <template v-slot:default>
       <IssueList
         v-if="route.name === '(업무)'"
