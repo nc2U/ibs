@@ -1,23 +1,44 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUpdate, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
+import type { IssueProject } from '@/store/types/work.ts'
 import { type PostFilter, useBoard } from '@/store/pinia/board'
 import NoData from '@/views/_Work/components/NoData.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+
+const props = defineProps({
+  issueProject: { type: Object as PropType<IssueProject>, default: () => null },
+})
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const workStore = useWork()
-const issueProject = computed(() => workStore.issueProject)
 
 const boardStore = useBoard()
 const postList = computed(() => boardStore.postList)
-const fetchPostList = (payload: PostFilter) => boardStore.fetchPostList(payload)
+// const fetchPostList = (payload: PostFilter) => boardStore.fetchPostList(payload)
 
-const dataSetup = () => fetchPostList({ board: 1, issue_project: issueProject.value?.pk ?? '' })
+const dataSetup = async () => {
+  // await fetchPostList({ board: 1, issue_project: props.issueProject?.pk ?? '' })
+  if (route.params.projId) {
+    await workStore.fetchNewsList({ project: route.params.projId as string })
+  }
+}
+
+const route = useRoute()
+watch(
+  () => route.params,
+  nVal => {
+    if (nVal && nVal.projId) {
+      workStore.fetchNewsList({ project: nVal.projId as string })
+    }
+  },
+  { deep: true },
+)
 
 onBeforeUpdate(() => dataSetup())
 

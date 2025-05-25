@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, provide, ref, watch } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
-import { dateFormat } from '@/utils/baseMixins'
 import { useWork } from '@/store/pinia/work'
-import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
-import type { ActLogEntryFilter, Issue, IssueProject } from '@/store/types/work'
+import type { Issue, IssueProject } from '@/store/types/work'
 import Header from '@/views/_Work/components/Header/Index.vue'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
 
-const [route, router] = [useRoute(), useRouter()]
+const route = useRoute()
 
 const routeName = computed(() => route.name as string)
 const companyInject = inject<ComputedRef<Company>>('company')
 const company = computed(() => companyInject?.value.pk ?? undefined)
 const comName = computed(() => companyInject?.value?.name)
+
 const headerTitle = computed(() =>
   routeName.value.includes('프로젝트') ? comName.value : issueProject.value?.name,
 )
@@ -59,22 +59,13 @@ const allProjects = computed(() => workStore.AllIssueProjects)
 
 const modules = computed(() => issueProject.value?.module)
 
-const issue = computed<Issue | null>(() => workStore.issue)
+// 여기까지 필요성 점검 완료
 
-watch(
-  () => route.params,
-  nVal => {
-    if (nVal && nVal.projId) {
-      workStore.fetchNewsList({ project: nVal.projId as string })
-    }
-  },
-  { deep: true },
-)
+const issue = computed<Issue | null>(() => workStore.issue)
 
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
     await workStore.fetchIssueProject(to.params.projId as string)
-    await workStore.fetchNewsList({ project: route.params.projId as string })
   } else {
     await workStore.fetchIssueProjectList({ status: '1' })
     workStore.removeIssueProject()
@@ -85,13 +76,12 @@ onBeforeRouteUpdate(async to => {
 onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({ status: '1' })
   await workStore.fetchAllIssueProjectList()
+
   await workStore.fetchRoleList()
   await workStore.fetchTrackerList()
   await workStore.fetchActivityList()
-  if (route.params.projId) {
-    await workStore.fetchIssueProject(route.params.projId as string)
-    await workStore.fetchNewsList({ project: route.params.projId as string })
-  }
+
+  if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)
 })
 </script>
 
