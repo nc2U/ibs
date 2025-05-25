@@ -3,7 +3,7 @@ import { h, resolveComponent } from 'vue'
 const workProject = {
   path: 'work',
   name: '업 무 관 리',
-  redirect: '/work/project',
+  redirect: '/work/project/list',
   component: {
     render() {
       return h(resolveComponent('router-view'))
@@ -14,31 +14,33 @@ const workProject = {
     {
       path: 'project',
       name: '프로젝트',
+      redirect: '/work/project/list',
       component: () => import('@/views/_Work/Manages/Projects/Index.vue'),
       children: [
         {
+          path: 'list',
+          name: '프로젝트 - 리스트',
+          component: () => import('@/views/_Work/Manages/Projects/components/ProjectList.vue'),
+        },
+        {
           path: 'create',
           name: '프로젝트 - 추가',
+          component: () => import('@/views/_Work/Manages/Projects/components/ProjectCreate.vue'),
         },
-        // {
-        //   path: ':projId/update',
-        //   name: '프로젝트 - 수정',
-        // },
-        // {
-        //   path: ':projId/delete',
-        //   name: '프로젝트 - 삭제',
-        // },
         {
           path: ':projId',
           name: '(개요)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Overview/Index.vue'),
         },
         {
           path: ':projId/activity',
           name: '(작업내역)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Activity/Index.vue'),
         },
         {
           path: ':projId/roadmap',
           name: '(로드맵)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Roadmap/Index.vue'),
           children: [
             {
               path: ':verId',
@@ -61,6 +63,7 @@ const workProject = {
         {
           path: ':projId/issue',
           name: '(업무)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Issues/Index.vue'),
           children: [
             {
               path: ':issueId',
@@ -70,10 +73,6 @@ const workProject = {
               path: 'create',
               name: '(업무) - 추가',
             },
-            // {
-            //   path: ':issueId/delete',
-            //   name: '(업무) - 삭제',
-            // },
             {
               path: 'report',
               name: '(업무) - 보고서',
@@ -83,6 +82,7 @@ const workProject = {
         {
           path: ':projId/time_entry',
           name: '(소요시간)',
+          component: () => import('@/views/_Work/Manages/Projects/components/SpentTime/Index.vue'),
           children: [
             {
               path: 'create',
@@ -101,14 +101,17 @@ const workProject = {
         {
           path: ':projId/gantt',
           name: '(간트차트)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Gantt/Index.vue'),
         },
         {
           path: ':projId/calendar',
           name: '(달력)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Calendar/Index.vue'),
         },
         {
           path: ':projId/news',
           name: '(공지)',
+          component: () => import('@/views/_Work/Manages/Projects/components/News/Index.vue'),
           children: [
             {
               path: ':newsId',
@@ -119,6 +122,7 @@ const workProject = {
         {
           path: ':projId/document',
           name: '(문서)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Documents/Index.vue'),
           children: [
             {
               path: 'create',
@@ -132,15 +136,12 @@ const workProject = {
               path: ':docId/update',
               name: '(문서) - 편집',
             },
-            // {
-            //   path: ':docId/delete',
-            //   name: '(문서) - 삭제',
-            // },
           ],
         },
         {
           path: ':projId/wiki',
           name: '(위키)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Wiki/Index.vue'),
           children: [
             {
               path: ':title',
@@ -151,14 +152,17 @@ const workProject = {
         {
           path: ':projId/forum',
           name: '(게시판)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Forums/Index.vue'),
         },
         {
           path: ':projId/file',
           name: '(파일)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Files/Index.vue'),
         },
         {
           path: ':projId/repository',
           name: '(저장소)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Repository/Index.vue'),
           children: [
             {
               path: ':type', // type: 'branches', 'tags', 'trunk'
@@ -185,6 +189,7 @@ const workProject = {
         {
           path: ':projId/setting',
           name: '(설정)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Settings/Index.vue'),
           children: [
             {
               path: 'category/create',

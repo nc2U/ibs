@@ -10,8 +10,6 @@ import VersionTimes from '@/views/_Work/Manages/Projects/components/Roadmap/comp
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 
-const emit = defineEmits(['aside-visible'])
-
 const workStore = useWork()
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
@@ -58,7 +56,6 @@ const deleteSubmit = () => {
 }
 
 onBeforeMount(() => {
-  emit('aside-visible', false)
   workStore.fetchVersion(Number(route.params.verId))
 })
 </script>

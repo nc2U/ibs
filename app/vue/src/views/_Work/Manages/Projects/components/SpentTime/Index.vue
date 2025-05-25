@@ -3,10 +3,13 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
 import type { IssueProject, TimeEntryFilter } from '@/store/types/work'
+import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryList.vue'
 import TimeEntryForm from '@/views/_Work/Manages/SpentTime/components/TimeEntryForm.vue'
 
-const emit = defineEmits(['aside-visible'])
+const cBody = ref()
+const toggle = () => cBody.value.toggle()
+defineExpose({ toggle })
 
 const workStore = useWork()
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
@@ -58,7 +61,6 @@ watch(route, async nVal => {
 })
 
 onBeforeMount(() => {
-  emit('aside-visible', true)
   workStore.fetchAllIssueProjectList()
   workStore.fetchAllIssueList(project.value)
   workStore.fetchTimeEntryList({ ...listFilter.value })
@@ -67,31 +69,37 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <TimeEntryList
-    v-if="route.name === '(소요시간)'"
-    :proj-status="issueProject?.status"
-    :time-entry-list="timeEntryList"
-    :sub-projects="issueProject?.sub_projects"
-    :all-projects="allProjects"
-    :get-issues="getIssues"
-    :get-members="getMembers"
-    :get-versions="getVersions"
-    @filter-submit="filterSubmit"
-    @page-select="pageSelect"
-    @del-submit="delSubmit"
-  />
+  <ContentBody ref="cBody">
+    <template v-slot:default>
+      <TimeEntryList
+        v-if="route.name === '(소요시간)'"
+        :proj-status="issueProject?.status"
+        :time-entry-list="timeEntryList"
+        :sub-projects="issueProject?.sub_projects"
+        :all-projects="allProjects"
+        :get-issues="getIssues"
+        :get-members="getMembers"
+        :get-versions="getVersions"
+        @filter-submit="filterSubmit"
+        @page-select="pageSelect"
+        @del-submit="delSubmit"
+      />
 
-  <TimeEntryForm
-    v-if="route.name === '(소요시간) - 추가'"
-    :all-projects="allProjects"
-    @on-submit="onSubmit"
-    @close-form="router.push({ name: '(소요시간)' })"
-  />
+      <TimeEntryForm
+        v-if="route.name === '(소요시간) - 추가'"
+        :all-projects="allProjects"
+        @on-submit="onSubmit"
+        @close-form="router.push({ name: '(소요시간)' })"
+      />
 
-  <TimeEntryForm
-    v-if="route.name === '(소요시간) - 편집'"
-    :all-projects="allProjects"
-    @on-submit="onSubmit"
-    @close-form="router.push({ name: '(소요시간)' })"
-  />
+      <TimeEntryForm
+        v-if="route.name === '(소요시간) - 편집'"
+        :all-projects="allProjects"
+        @on-submit="onSubmit"
+        @close-form="router.push({ name: '(소요시간)' })"
+      />
+    </template>
+
+    <template v-slot:aside></template>
+  </ContentBody>
 </template>

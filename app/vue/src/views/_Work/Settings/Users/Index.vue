@@ -55,18 +55,15 @@ onBeforeMount(() => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="aside">
     <template v-slot:default>
-      <UserList
-        v-if="route.name === '사용자'"
-        :user-list="usersList"
-        @aside-visible="asideVisible"
-      />
+      <UserList v-if="route.name === '사용자'" :user-list="usersList" />
+      <!--        @aside-visible="asideVisible"-->
 
       <UserView
         v-else-if="route.name === '사용자 - 보기'"
         :issue-projects="issueProjects"
         :issue-num="issueNumByMember"
-        @aside-visible="asideVisible"
       />
+      <!--        @aside-visible="asideVisible"-->
 
       <UserForm v-else-if="route.name === '사용자 - 생성'" @aside-visible="asideVisible" />
 

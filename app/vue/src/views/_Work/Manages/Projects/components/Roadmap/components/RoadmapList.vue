@@ -6,11 +6,7 @@ import Roadmap from './Roadmap.vue'
 
 defineProps({ versionList: { type: Array as PropType<Version[]>, default: () => [] } })
 
-const emit = defineEmits(['aside-visible'])
-
 const [route, router] = [useRoute(), useRouter()]
-
-onBeforeMount(() => emit('aside-visible', true))
 </script>
 
 <template>

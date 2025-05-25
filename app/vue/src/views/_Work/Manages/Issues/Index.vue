@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import type { Company } from '@/store/types/settings'
 import { useWork } from '@/store/pinia/work'
@@ -31,6 +31,9 @@ const getIssues = computed(() => workStore.getIssues)
 const getVersions = computed(() => workStore.getVersions)
 
 const [route, router] = [useRoute(), useRouter()]
+
+provide('navMenu', navMenu)
+provide('query', route?.query)
 
 const onSubmit = (payload: any) => {
   const { pk, ...getData } = payload

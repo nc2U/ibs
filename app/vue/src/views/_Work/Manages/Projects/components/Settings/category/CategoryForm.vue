@@ -10,7 +10,7 @@ defineProps({
   memberList: { type: Array as PropType<{ pk: number; username: string }[]>, default: () => [] },
 })
 
-const emit = defineEmits(['aside-visible', 'category-submit'])
+const emit = defineEmits(['category-submit'])
 
 const userInfo = inject<ComputedRef<User>>('userInfo')
 
@@ -46,8 +46,6 @@ const workStore = useWork()
 const category = computed(() => workStore.category)
 
 onBeforeMount(async () => {
-  emit('aside-visible', false)
-
   if (route.params.cateId) await workStore.fetchCategory(Number(route.params.cateId))
   else workStore.category = null
 

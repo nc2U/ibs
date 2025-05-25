@@ -23,11 +23,11 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['to-submit', 'reset-form', 'close', 'issue-pr-submit'])
+const emit = defineEmits(['to-submit', 'reset-form', 'close', 'get-project'])
 
 const projStore = useProject()
-const issuePrSubmit = async (payload: IssueProject) => {
-  emit('issue-pr-submit', payload)
+const getAllProjects = async (sort: '1' | '2' | '3') => {
+  emit('get-project', sort)
   await projStore.fetchProject(props.project.pk as number)
   formDataSetup()
 }
@@ -590,5 +590,5 @@ onUpdated(() => formDataSetup())
 
   <AlertModal ref="refAlertModal" />
 
-  <IssueProjectForm ref="refIssueForm" @on-submit="issuePrSubmit" />
+  <IssueProjectForm ref="refIssueForm" @get-project="getAllProjects" />
 </template>

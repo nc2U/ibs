@@ -10,13 +10,9 @@ defineProps({
   userList: { type: Array as PropType<User[]>, default: () => [] },
 })
 
-const emit = defineEmits(['aside-visible'])
-
 const route = useRoute()
 
 const workManager = inject('workManager', false)
-
-onBeforeMount(() => emit('aside-visible', true))
 </script>
 
 <template>

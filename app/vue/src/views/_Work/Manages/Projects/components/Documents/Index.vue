@@ -9,8 +9,11 @@ import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
 import DocsView from './components/DocsView.vue'
 import DocsForm from './components/DocsForm.vue'
+import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const emit = defineEmits(['aside-visible'])
+const cBody = ref()
+const toggle = () => cBody.value.toggle()
+defineExpose({ toggle })
 
 const typeNumber = ref<1 | 2>(1)
 const refDocsForm = ref()
@@ -104,64 +107,67 @@ const dataSetup = async (docId?: string | string[]) => {
 
 onBeforeRouteUpdate(to => dataSetup(to.params?.docId))
 
-onBeforeMount(async () => {
-  emit('aside-visible', true)
-  await dataSetup(route.params?.docId)
-})
+onBeforeMount(async () => await dataSetup(route.params?.docId))
 </script>
 
 <template>
-  <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />
+  <ContentBody ref="cBody">
+    <template v-slot:default>
+      <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />
 
-  <DocsForm
-    v-else-if="route.name === '(문서) - 편집'"
-    :issue-project="issueProject as IssueProject"
-    :type-number="typeNumber"
-    :categories="categories"
-    :get-suit-case="getSuitCase"
-    :docs="docs as Docs"
-  />
+      <DocsForm
+        v-else-if="route.name === '(문서) - 편집'"
+        :issue-project="issueProject as IssueProject"
+        :type-number="typeNumber"
+        :categories="categories"
+        :get-suit-case="getSuitCase"
+        :docs="docs as Docs"
+      />
 
-  <template v-else>
-    <DocsForm
-      ref="refDocsForm"
-      v-if="route.name === '(문서) - 추가'"
-      :issue-project="issueProject as IssueProject"
-      :type-number="typeNumber"
-      :categories="categories"
-      :get-suit-case="getSuitCase"
-    />
+      <template v-else>
+        <DocsForm
+          ref="refDocsForm"
+          v-if="route.name === '(문서) - 추가'"
+          :issue-project="issueProject as IssueProject"
+          :type-number="typeNumber"
+          :categories="categories"
+          :get-suit-case="getSuitCase"
+        />
 
-    <CRow class="py-2">
-      <CCol>
-        <h5>문서</h5>
-      </CCol>
+        <CRow class="py-2">
+          <CCol>
+            <h5>문서</h5>
+          </CCol>
 
-      <AddNewDoc v-if="route.name !== '(문서) - 추가'" :proj-status="issueProject?.status" />
-    </CRow>
+          <AddNewDoc v-if="route.name !== '(문서) - 추가'" :proj-status="issueProject?.status" />
+        </CRow>
 
-    <CRow class="mb-3">
-      <CCol v-if="issueProject?.sort !== '3'">
-        <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
-          <v-tab
-            v-for="type in types"
-            :value="type.value"
-            :key="type.value"
-            variant="tonal"
-            :active="typeNumber === type.value"
-          >
-            {{ type.label }}
-          </v-tab>
-        </v-tabs>
-      </CCol>
-    </CRow>
+        <CRow class="mb-3">
+          <CCol v-if="issueProject?.sort !== '3'">
+            <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
+              <v-tab
+                v-for="type in types"
+                :value="type.value"
+                :key="type.value"
+                variant="tonal"
+                :active="typeNumber === type.value"
+              >
+                {{ type.label }}
+              </v-tab>
+            </v-tabs>
+          </CCol>
+        </CRow>
 
-    <DocsList
-      :category="docsFilter.category as number"
-      :category-list="categoryList"
-      :docs-list="docsList"
-      @select-cate="selectCate"
-      @page-select="pageSelect"
-    />
-  </template>
+        <DocsList
+          :category="docsFilter.category as number"
+          :category-list="categoryList"
+          :docs-list="docsList"
+          @select-cate="selectCate"
+          @page-select="pageSelect"
+        />
+      </template>
+    </template>
+
+    <template v-slot:aside></template>
+  </ContentBody>
 </template>

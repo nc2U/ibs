@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useBoard } from '@/store/pinia/board'
 import { useRoute } from 'vue-router'
@@ -9,23 +9,21 @@ import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsList from './components/NewsList.vue'
 
-const emit = defineEmits(['aside-visible'])
-
-const route = useRoute()
-
 const cBody = ref()
 const company = inject<ComputedRef<Company>>('company')
 const comName = computed(() => company?.value?.name)
+
+const route = useRoute()
+
+provide('navMenu', navMenu)
+provide('query', route?.query)
 
 const sideNavCAll = () => cBody.value.toggle()
 
 const boardStore = useBoard()
 const postList = computed(() => boardStore.postList)
 
-onBeforeMount(() => {
-  emit('aside-visible', false)
-  boardStore.fetchPostList({ board: 1 })
-})
+onBeforeMount(() => boardStore.fetchPostList({ board: 1 }))
 </script>
 
 <template>
