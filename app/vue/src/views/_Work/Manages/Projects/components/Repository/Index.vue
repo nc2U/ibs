@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
-import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
+import type { GitData, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SourceCode from './components/SourceCode.vue'
 import Revisions from './components/Revisions.vue'
@@ -48,15 +48,18 @@ const fetchCommitList = (payload: {
 
 // get github api
 const ghStore = useGithub()
-const branches = computed<Branch[]>(() => ghStore.branches)
-const tags = computed<Tag[]>(() => ghStore.tags)
-const master_tree = computed<Tree[]>(() => ghStore.master_tree)
+const branches = computed<GitData[]>(() => ghStore.branches)
+const tags = computed<GitData[]>(() => ghStore.tags)
+
+const master = computed(() => ghStore.master)
+const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
 const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const diffApi = computed<any>(() => ghStore.diffApi)
 
 const fetchDiffApi = (url: string, token: string) => ghStore.fetchDiffApi(url, token)
 const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
+const fetchDefBranch = (url: string, token: string = '') => ghStore.fetchDefBranch(url, token)
 const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
 
 const getListSort = ref<'latest' | 'all'>('latest')
@@ -104,6 +107,7 @@ onBeforeMount(async () => {
     const url = githubApiUrl.value
     const token = repo.value.github_token ?? ''
     await fetchBranches(url, token)
+    await fetchDefBranch(url, token)
     await fetchTags(url, token)
   }
 })
@@ -112,7 +116,14 @@ onBeforeMount(async () => {
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      <SourceCode :branches="branches" :tags="tags" :master-tree="master_tree" />
+      <SourceCode
+        :repo="repo as Repository"
+        :branches="branches"
+        :tags="tags"
+        :def-name="'master'"
+        :def-branch="master as GitData"
+        :def-tree="masterTree"
+      />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"

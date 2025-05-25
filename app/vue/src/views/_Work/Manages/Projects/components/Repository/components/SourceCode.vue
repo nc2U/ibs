@@ -1,17 +1,35 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
+import type { Repository } from '@/store/types/work.ts'
+import type { GitData, Tree } from '@/store/types/work_github.ts'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
-import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
 
-defineProps({
-  branches: { type: Array as PropType<Branch[]>, default: () => [] },
-  tags: { type: Array as PropType<Tag[]>, default: () => [] },
-  masterTree: { type: Array as PropType<Tree[]>, default: () => [] },
+const props = defineProps({
+  repo: { type: Object as PropType<Repository>, default: () => null },
+  branches: { type: Array as PropType<GitData[]>, default: () => [] },
+  tags: { type: Array as PropType<GitData[]>, default: () => [] },
+  defName: { type: String, default: 'master' },
+  defBranch: { type: Object as PropType<GitData>, default: () => null },
+  defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
 const branchFold = ref(false)
 const tagFold = ref(false)
-const masterFold = ref(false)
+const defFold = ref(false)
+
+const token = computed(() => props.repo?.github_token)
+
+const getLatestBranch = (branches: GitData[]) => {
+  if (branches.length === 0) return
+  return branches.reduce((last, curr) => {
+    const lastDate = new Date(last.commit.date)
+    const currDate = new Date(curr.commit.date)
+    return lastDate > currDate ? last : curr
+  })
+}
+
+const last_branch = computed(() => getLatestBranch(props.branches))
+const last_tag = computed(() => getLatestBranch(props.tags))
 </script>
 
 <template>
@@ -24,7 +42,6 @@ const masterFold = ref(false)
       </h5>
     </CCol>
   </CRow>
-
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
@@ -60,11 +77,13 @@ const masterFold = ref(false)
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">10123</router-link>
+              <router-link to="">{{ last_branch?.commit.sha }}</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">6일</CTableDataCell>
-            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
-            <CTableDataCell> #127 fetch_commits.py update</CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(last_branch?.commit.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ last_branch?.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ last_branch?.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
             <CTableDataCell class="pl-5">
@@ -73,10 +92,14 @@ const masterFold = ref(false)
               <router-link to="">{{ branch.name }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
+            <CTableDataCell class="text-center">
+              <router-link to="">{{ branch.commit.sha }}</router-link>
+            </CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(branch.commit.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ branch.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ branch.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow>
             <CTableDataCell>
@@ -91,11 +114,13 @@ const masterFold = ref(false)
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">10124</router-link>
+              <router-link to="">{{ last_tag?.commit.sha }}</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">약 한달</CTableDataCell>
-            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
-            <CTableDataCell> #127 view diff update</CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(last_tag?.commit.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ last_tag?.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ last_tag?.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow v-if="tagFold" v-for="(tag, i) in tags" :key="i">
             <CTableDataCell class="pl-5">
@@ -104,31 +129,35 @@ const masterFold = ref(false)
               <router-link to="">{{ tag.name }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
+            <CTableDataCell class="text-center">
+              <router-link to="">{{ tag.commit.sha }}</router-link>
+            </CTableDataCell>
+            <CTableDataCell class="text-right">{{ elapsedTime(tag.commit.date) }}</CTableDataCell>
+            <CTableDataCell class="text-center">{{ tag.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ tag.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow>
             <CTableDataCell>
               <v-icon
-                :icon="`mdi-chevron-${masterFold ? 'down' : 'right'}`"
+                :icon="`mdi-chevron-${defFold ? 'down' : 'right'}`"
                 size="16"
                 class="pointer mr-1"
-                @click="masterFold = !masterFold"
+                @click="defFold = !defFold"
               />
               <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">master</router-link>
+              <router-link to="">{{ defName }}</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">10125</router-link>
+              <router-link to="">{{ defBranch?.commit.sha }}</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">4일</CTableDataCell>
-            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
-            <CTableDataCell> package update</CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(defBranch?.commit.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ defBranch?.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ defBranch?.commit.message }}</CTableDataCell>
           </CTableRow>
-          <CTableRow v-if="masterFold" v-for="tree in masterTree" :key="tree.sha">
+          <CTableRow v-if="defFold" v-for="tree in defTree" :key="tree.sha">
             <CTableDataCell class="pl-5">
               <span v-if="tree.type === 'tree'">
                 <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
@@ -148,11 +177,13 @@ const masterFold = ref(false)
               {{ humanizeFileSize((tree as any)?.size) }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">10232</router-link>
+              <router-link to="">{{ tree.commit?.sha }}</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">1달 전</CTableDataCell>
-            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
-            <CTableDataCell>#127 asdfasdf adsf</CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(tree.commit?.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ tree.commit?.author }}</CTableDataCell>
+            <CTableDataCell>{{ tree.commit?.message }}</CTableDataCell>
           </CTableRow>
         </CTableBody>
       </CTable>

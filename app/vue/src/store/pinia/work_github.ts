@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
-import type { Branch, Tag, Master, Tree } from '@/store/types/work_github.ts'
+import type { GitData, Tree } from '@/store/types/work_github.ts'
 
 const sortTree = (trees: Tree[]) =>
   trees.sort((a, b) => {
@@ -27,37 +27,173 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // branches api
-  const branches = ref<Branch[]>([])
-  const master_url = ref<string>('')
-  const master = ref<Master | null>(null)
-  const master_tree = computed(() => sortTree(master.value?.tree ?? []))
+  const master = ref<GitData | null>(null)
+  const master_tree_url = ref<string>('')
+  const master_tree = ref<any[]>([])
+
+  const fetchRootTree = async (tree_url: string, url: string, headers: any): Promise<Tree[]> => {
+    try {
+      const results = await api.get(tree_url, { headers })
+      const treeList = sortTree(results.data.tree ?? [])
+
+      const rootTree: Tree[] = []
+
+      for (const tree of treeList) {
+        try {
+          const { data: commits } = await api.get(`${url}/commits?path=${tree.path}`, { headers })
+          const latest = commits[0]
+
+          if (!latest) continue
+
+          rootTree.push({
+            path: tree.path,
+            mode: tree.mode,
+            type: tree.type,
+            sha: tree.sha,
+            url: tree.url,
+            size: tree.size,
+            commit: {
+              sha: latest.sha.substring(0, 5),
+              url: latest.html_url ?? latest.url,
+              author: latest.commit.author.name,
+              date: latest.commit.author.date,
+              message: latest.commit.message,
+            },
+            open: false,
+            loaded: tree.type === 'tree' ? false : undefined,
+          })
+        } catch (err) {
+          console.error(`Error fetching commit for ${tree.path}:`, err)
+        }
+      }
+      return rootTree
+    } catch (err: any) {
+      errorHandle(err.response)
+      return []
+    }
+  }
+
+  const fetchSubTree = async (url: string, token: string) => {
+    try {
+      const { data } = await api.get(url, {
+        headers: { Authorization: `token ${token}` },
+      })
+      return data.tree.map((item: Tree) => ({
+        path: item.path,
+        mode: item.mode,
+        type: item.type,
+        sha: item.sha,
+        url: item.url,
+        size: item.size,
+        open: false,
+        loaded: item.type === 'tree' ? false : undefined,
+      }))
+    } catch (error) {
+      console.log('Error fetching tree:', error)
+      return []
+    }
+  }
+
+  const fetchDefBranch = async (url: string, token: string = '') => {
+    const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
+    if (default_branch.value === '') await fetchRepoApi(url, token) // deault_branch 데이터 추출
+    // 기본(master) 브랜치 데이터 추출
+    await api // 트리 url 구하기
+      .get(`${url}/branches/${default_branch.value}`, { headers })
+      .then(async res => {
+        master_tree_url.value = res.data.commit.commit.tree.url
+
+        master.value = {
+          name: res.data.name,
+          commit: {
+            sha: res.data.commit.sha.substring(0, 5),
+            url: res.data.commit.url,
+            author: res.data.commit.commit.author.name,
+            date: res.data.commit.commit.author.date,
+            message: res.data.commit.commit.message,
+          },
+        }
+
+        master_tree.value = []
+        try {
+          master_tree.value = await fetchRootTree(master_tree_url.value, url, headers)
+        } catch (error) {
+          console.error('fetchRootTree 실패:', error)
+        }
+
+        await api // tree 구하기
+          .get(`${master_tree_url.value}`, { headers })
+      })
+      .catch(err => errorHandle(err.response))
+  }
+
+  const branches = ref<GitData[]>([])
 
   const fetchBranches = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
     await api
       .get(`${url}/branches`, { headers })
       .then(async res => {
-        await fetchRepoApi(url, token)
-        branches.value = res.data.filter((branch: Branch) => branch.name !== default_branch.value)
-        await api
-          .get(`${url}/branches/${default_branch.value}?recursive=1`, { headers })
-          .then(res => (master_url.value = res.data.commit.commit.tree.url))
-        await api
-          .get(master_url.value, { headers })
-          .then(res => (master.value = res.data))
-          .catch(err => errorHandle(err.response))
+        if (default_branch.value === '') await fetchRepoApi(url, token) // deault_branch 데이터 추출
+
+        // 일반 브랜치 데이터 추출 // 브랜치명
+        const bList = res.data.filter((b: GitData) => b.name !== default_branch.value)
+        // 브랜치 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
+        branches.value = []
+        for (const b of bList) {
+          try {
+            const { data: branch } = await api.get(`${url}/branches/${b.name}`, { headers })
+            branches.value.push({
+              name: b.name,
+              commit: {
+                sha: b.commit.sha.substring(0, 5),
+                url: b.commit.url,
+                author: branch.commit.commit.author.name,
+                date: branch.commit.commit.author.date,
+                message: branch.commit.commit.message,
+              },
+            })
+          } catch (error) {
+            console.log('Error fetching branch:', error)
+          }
+        }
       })
       .catch(err => errorHandle(err.response))
   }
 
   // tags api
-  const tags = ref<Tag[]>([])
+  const tags = ref<GitData[]>([])
 
   const fetchTags = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
     await api
       .get(`${url}/tags`, { headers })
-      .then(res => (tags.value = res.data))
+      .then(async res => {
+        // tags.value = res.data
+
+        // tags 데이터 추출
+        // const tList = res.data.filter((t: GitData) => t.name !== default_branch.value)
+        // 브랜치 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
+        tags.value = []
+        for (const tag of res.data) {
+          try {
+            const { data: commit } = await api.get(`${tag.commit.url}`, { headers })
+            tags.value.push({
+              name: tag.name,
+              commit: {
+                sha: tag.commit.sha.substring(0, 5),
+                url: tag.commit.url,
+
+                author: commit.commit.author.name,
+                date: commit.commit.author.date,
+                message: commit.commit.message,
+              },
+            })
+          } catch (error) {
+            console.log('Error fetching tag:', error)
+          }
+        }
+      })
       .catch(err => errorHandle(err.response))
   }
 
@@ -81,10 +217,13 @@ export const useGithub = defineStore('github', () => {
     default_branch,
     fetchRepoApi,
 
-    branches,
     master,
     master_tree,
+    master_tree_url,
+    fetchDefBranch,
+    branches,
     fetchBranches,
+    fetchSubTree,
 
     tags,
     fetchTags,
