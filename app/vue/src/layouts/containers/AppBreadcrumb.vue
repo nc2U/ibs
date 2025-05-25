@@ -27,7 +27,7 @@ onBeforeMount(() => (breadcrumbs.value = getBreadcrumbs()))
       :href="item.active ? '' : item.path"
       :active="item.active"
     >
-      {{ item.name }}
+      {{ item.name.replace(/^\((.*)\)$/, '$1') }}
     </CBreadcrumbItem>
     <!--    </TransitionGroup>-->
   </CBreadcrumb>

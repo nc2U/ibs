@@ -69,7 +69,7 @@ defineExpose({ toggle })
                   "
                   class="pl-3"
                 >
-                  {{ menu }}
+                  {{ menu.replace(/^\((.*)\)$/, '$1') }}
                 </CNavLink>
               </CNavItem>
             </CNavbarNav>
