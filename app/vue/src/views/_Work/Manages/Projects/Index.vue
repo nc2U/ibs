@@ -58,7 +58,7 @@ const allProjects = computed(() => workStore.AllIssueProjects)
 
 const modules = computed(() => issueProject.value?.module)
 
-const issue = computed<Issue>(() => workStore.issue)
+const issue = computed<Issue | null>(() => workStore.issue)
 
 const toDate = ref(new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))

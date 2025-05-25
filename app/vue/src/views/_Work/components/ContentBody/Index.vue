@@ -1,18 +1,18 @@
 <script lang="ts" setup>
-import { inject, provide, ref } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({ aside: { type: Boolean, default: true } })
 
 const visible = ref(false)
 
-const query = inject('query')
+const query = inject('query') as Record<string, any>
 const navMenu = inject('navMenu')
 
 const [route, router] = [useRoute(), useRouter()]
 
 const goToMenu = (menu: string) => {
-  router.push({ name: menu as RouteRecordName, query: query.value })
+  router.push({ name: menu as RouteRecordName, query: { ...query } })
   visible.value = false
 }
 const toggle = () => (visible.value = !visible.value)

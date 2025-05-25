@@ -24,7 +24,7 @@ const props = defineProps({
   redirect: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['aside-visible', 'modal-close'])
+const emit = defineEmits(['modal-close'])
 
 const isDark = inject('isDark')
 const workManager = inject<ComputedRef<boolean>>('workManager')
@@ -195,7 +195,6 @@ onMounted(() => dataSetup())
 onUpdated(() => dataSetup())
 
 onBeforeMount(() => {
-  // emit('aside-visible', false)
   if (!!route.query.parent) {
     form.parent = Number(route.query.parent)
   }

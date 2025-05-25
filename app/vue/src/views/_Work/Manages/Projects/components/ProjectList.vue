@@ -1,14 +1,5 @@
 <script lang="ts" setup>
-import {
-  computed,
-  type ComputedRef,
-  inject,
-  onBeforeMount,
-  onBeforeUnmount,
-  onMounted,
-  type PropType,
-  ref,
-} from 'vue'
+import { computed, type ComputedRef, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work'

@@ -25,7 +25,7 @@ const workProject = {
         {
           path: 'create',
           name: '프로젝트 - 추가',
-          component: () => import('@/views/_Work/Manages/Projects/components/ProjectForm.vue'),
+          component: () => import('@/views/_Work/Manages/Projects/components/ProjectCreate.vue'),
         },
         {
           path: ':projId',
