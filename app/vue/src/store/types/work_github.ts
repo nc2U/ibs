@@ -9,13 +9,6 @@ export interface GitData {
   }
 }
 
-export interface Master {
-  sha: string
-  url: string
-  tree: Tree[]
-  truncated: boolean
-}
-
 export interface Tree {
   path: string
   mode: string

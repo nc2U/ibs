@@ -50,6 +50,7 @@ const fetchCommitList = (payload: {
 const ghStore = useGithub()
 const branches = computed<GitData[]>(() => ghStore.branches)
 const tags = computed<GitData[]>(() => ghStore.tags)
+
 const master = computed(() => ghStore.master)
 const master_tree = computed<Tree[]>(() => ghStore.master_tree)
 
@@ -113,12 +114,12 @@ onBeforeMount(async () => {
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      {{ tags }}
       <SourceCode
         :branches="branches"
         :tags="tags"
-        :default-branch="'master'"
-        :master-tree="master_tree"
+        :def-name="'master'"
+        :def-branch="master"
+        :def-tree="master_tree"
       />
 
       <Revisions

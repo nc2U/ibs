@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
-import type { GitData, Master, Tree } from '@/store/types/work_github.ts'
+import type { GitData, Tree } from '@/store/types/work_github.ts'
 
 const sortTree = (trees: Tree[]) =>
   trees.sort((a, b) => {
@@ -28,9 +28,10 @@ export const useGithub = defineStore('github', () => {
 
   // branches api
   const branches = ref<GitData[]>([])
+
+  const master = ref<GitData | null>(null)
   const master_tree_url = ref<string>('')
-  const master = ref<Master | null>(null)
-  const master_tree = computed(() => sortTree(master.value?.tree ?? []))
+  const master_tree = ref<any[]>([])
 
   const fetchBranches = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
@@ -61,13 +62,26 @@ export const useGithub = defineStore('github', () => {
           }
         }
 
-        // 기본 브랜치 데이터 추출
-        await api
+        // 기본(master) 브랜치 데이터 추출
+        await api // 트리 url 구하기
           .get(`${url}/branches/${default_branch.value}`, { headers })
-          .then(res => (master_tree_url.value = res.data.commit.commit.tree.url))
-        await api
+          .then(res => {
+            master_tree_url.value = res.data.commit.commit.tree.url
+            master.value = {
+              name: res.data.name,
+              commit: {
+                sha: res.data.commit.sha.substring(0, 5),
+                url: res.data.commit.url,
+                author: res.data.commit.commit.author.name,
+                date: res.data.commit.commit.author.date,
+                message: res.data.commit.commit.message,
+              },
+            }
+          })
+
+        await api // tree 구하기
           .get(`${master_tree_url.value}`, { headers })
-          .then(res => (master.value = res.data))
+          .then(res => (master_tree.value = sortTree(res.data.tree ?? [])))
           .catch(err => errorHandle(err.response))
       })
       .catch(err => errorHandle(err.response))

@@ -6,13 +6,14 @@ import type { GitData, Tree } from '@/store/types/work_github.ts'
 const props = defineProps({
   branches: { type: Array as PropType<GitData[]>, default: () => [] },
   tags: { type: Array as PropType<GitData[]>, default: () => [] },
-  defaultBranch: { type: String, default: 'master' },
-  masterTree: { type: Array as PropType<Tree[]>, default: () => [] },
+  defName: { type: String, default: 'master' },
+  defBranch: { type: Object as PropType<GitData>, default: () => null },
+  defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
 const branchFold = ref(false)
 const tagFold = ref(false)
-const masterFold = ref(false)
+const defFold = ref(false)
 
 const getLatestBranch = (branches: GitData[]) => {
   if (branches.length === 0) return
@@ -132,23 +133,25 @@ const last_tag = computed(() => getLatestBranch(props.tags))
           <CTableRow>
             <CTableDataCell>
               <v-icon
-                :icon="`mdi-chevron-${masterFold ? 'down' : 'right'}`"
+                :icon="`mdi-chevron-${defFold ? 'down' : 'right'}`"
                 size="16"
                 class="pointer mr-1"
-                @click="masterFold = !masterFold"
+                @click="defFold = !defFold"
               />
               <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">{{ defaultBranch }}</router-link>
+              <router-link to="">{{ defName }}</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to=""></router-link>
+              <router-link to="">{{ defBranch.commit.sha }}</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right"></CTableDataCell>
-            <CTableDataCell class="text-center"></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(defBranch.commit.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ defBranch.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ defBranch.commit.message }}</CTableDataCell>
           </CTableRow>
-          <CTableRow v-if="masterFold" v-for="tree in masterTree" :key="tree.sha">
+          <CTableRow v-if="defFold" v-for="tree in defTree" :key="tree.sha">
             <CTableDataCell class="pl-5">
               <span v-if="tree.type === 'tree'">
                 <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
