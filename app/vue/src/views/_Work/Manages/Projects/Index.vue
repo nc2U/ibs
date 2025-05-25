@@ -14,8 +14,9 @@ const sideNavCAll = () => cBody.value.toggle()
 const [route, router] = [useRoute(), useRouter()]
 
 const routeName = computed(() => route.name as string)
-const company = inject<ComputedRef<Company>>('company')
-const comName = computed(() => company?.value?.name)
+const companyInject = inject<ComputedRef<Company>>('company')
+const company = computed(() => companyInject?.value.pk ?? undefined)
+const comName = computed(() => companyInject?.value?.name)
 const headerTitle = computed(() =>
   routeName.value.includes('프로젝트') ? comName.value : issueProject.value?.name,
 )
@@ -138,12 +139,5 @@ onBeforeMount(async () => {
 
   <router-view v-slot="{ Component }">
     <component :is="Component" :nav-menu="navMenu" :query="route?.query" ref="cBody" />
-    <!--      <Activity-->
-    <!--        v-if="routeName === '(작업내역)'"-->
-    <!--        :to-date="toDate"-->
-    <!--        :activity-filter="activityFilter"-->
-    <!--        @to-back="toMove"-->
-    <!--        @to-next="toMove"-->
-    <!--      />-->
   </router-view>
 </template>
