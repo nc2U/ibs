@@ -125,10 +125,12 @@ const last_tag = computed(() => getLatestBranch(props.tags))
               <router-link to="">{{ tag.name }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
+            <CTableDataCell class="text-center">
+              <router-link to="">{{ tag.commit.sha }}</router-link>
+            </CTableDataCell>
+            <CTableDataCell class="text-right">{{ elapsedTime(tag.commit.date) }}</CTableDataCell>
+            <CTableDataCell class="text-center">{{ tag.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ tag.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow>
             <CTableDataCell>
@@ -171,11 +173,11 @@ const last_tag = computed(() => getLatestBranch(props.tags))
               {{ humanizeFileSize((tree as any)?.size) }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">10232</router-link>
+              <router-link to="">1</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">1달 전</CTableDataCell>
-            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
-            <CTableDataCell>#127 asdfasdf adsf</CTableDataCell>
+            <CTableDataCell class="text-right">2</CTableDataCell>
+            <CTableDataCell class="text-center">3</CTableDataCell>
+            <CTableDataCell>4</CTableDataCell>
           </CTableRow>
         </CTableBody>
       </CTable>
