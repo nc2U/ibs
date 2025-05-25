@@ -1,17 +1,29 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
-import type { Branch, Tag, Tree, TreeNode } from '@/store/types/work_github.ts'
+import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
 
-defineProps({
+const props = defineProps({
   branches: { type: Array as PropType<Branch[]>, default: () => [] },
   tags: { type: Array as PropType<Tag[]>, default: () => [] },
-  masterTree: { type: Array as PropType<Tree[] | TreeNode[]>, default: () => [] },
+  defaultBranch: { type: String, default: 'master' },
+  masterTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
 const branchFold = ref(false)
 const tagFold = ref(false)
 const masterFold = ref(false)
+
+const getLatestBranch = (branches: Branch[]) => {
+  if (branches.length === 0) return
+  return branches.reduce((last, curr) => {
+    const lastDate = new Date(last.commit.date)
+    const currDate = new Date(curr.commit.date)
+    return lastDate > currDate ? last : curr
+  })
+}
+
+const last_branch = computed(() => getLatestBranch(props.branches))
 </script>
 
 <template>
@@ -24,7 +36,6 @@ const masterFold = ref(false)
       </h5>
     </CCol>
   </CRow>
-  {{ masterTree.length }}
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
@@ -60,11 +71,13 @@ const masterFold = ref(false)
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">10123</router-link>
+              <router-link to="">{{ last_branch?.commit.sha }}</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">6일</CTableDataCell>
-            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
-            <CTableDataCell> #127 fetch_commits.py update</CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(last_branch?.commit.date ?? 20000) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ last_branch?.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ last_branch?.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
             <CTableDataCell class="pl-5">
@@ -73,10 +86,14 @@ const masterFold = ref(false)
               <router-link to="">{{ branch.name }}</router-link>
             </CTableDataCell>
             <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
+            <CTableDataCell class="text-center">
+              <router-link to="">{{ branch.commit.sha }}</router-link>
+            </CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(branch.commit.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ branch.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ branch.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow>
             <CTableDataCell>
@@ -118,7 +135,7 @@ const masterFold = ref(false)
                 @click="masterFold = !masterFold"
               />
               <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">master</router-link>
+              <router-link to="">{{ defaultBranch }}</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">

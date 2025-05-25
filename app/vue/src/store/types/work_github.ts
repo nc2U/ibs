@@ -3,8 +3,10 @@ export interface Branch {
   commit: {
     sha: string
     url: string
+    author: string
+    date: string
+    message: string
   }
-  protected: boolean
 }
 
 export interface Tag {
@@ -32,14 +34,6 @@ export interface Tree {
   sha: string
   url: string
   size?: number
-}
-
-export interface TreeNode {
-  name: string
-  type: 'tree' | 'blob'
-  sha: string
-  url: string
-  size?: number
-  children?: TreeNode[]
+  open?: boolean
   loaded?: boolean
 }

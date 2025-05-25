@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
-import type { Branch, Tag, Tree, TreeNode } from '@/store/types/work_github.ts'
+import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SourceCode from './components/SourceCode.vue'
 import Revisions from './components/Revisions.vue'
@@ -50,7 +50,8 @@ const fetchCommitList = (payload: {
 const ghStore = useGithub()
 const branches = computed<Branch[]>(() => ghStore.branches)
 const tags = computed<Tag[]>(() => ghStore.tags)
-const master_tree = computed<Tree[] | TreeNode[]>(() => ghStore.master_tree)
+const master = computed(() => ghStore.master)
+const master_tree = computed<Tree[]>(() => ghStore.master_tree)
 
 const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const diffApi = computed<any>(() => ghStore.diffApi)
@@ -112,7 +113,12 @@ onBeforeMount(async () => {
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      <SourceCode :branches="branches" :tags="tags" :master-tree="master_tree" />
+      <SourceCode
+        :branches="branches"
+        :tags="tags"
+        :default-branch="'master'"
+        :master-tree="master_tree"
+      />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"
