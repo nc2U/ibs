@@ -4,7 +4,7 @@ import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useWork } from '@/store/pinia/work'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
-import type { Issue, IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work'
 import Header from '@/views/_Work/components/Header/Index.vue'
 
 const cBody = ref()
@@ -59,10 +59,6 @@ const allProjects = computed(() => workStore.AllIssueProjects)
 
 const modules = computed(() => issueProject.value?.module)
 
-// 여기까지 필요성 점검 완료
-
-const issue = computed<Issue | null>(() => workStore.issue)
-
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
     await workStore.fetchIssueProject(to.params.projId as string)
@@ -76,11 +72,6 @@ onBeforeRouteUpdate(async to => {
 onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({ status: '1' })
   await workStore.fetchAllIssueProjectList()
-
-  await workStore.fetchRoleList()
-  await workStore.fetchTrackerList()
-  await workStore.fetchActivityList()
-
   if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)
 })
 </script>

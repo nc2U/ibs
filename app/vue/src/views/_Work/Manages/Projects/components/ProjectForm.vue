@@ -199,6 +199,9 @@ onBeforeMount(() => {
     form.parent = Number(route.query.parent)
   }
   comStore.fetchCompanyList()
+  workStore.fetchRoleList()
+  workStore.fetchTrackerList()
+  workStore.fetchActivityList()
 })
 </script>
 
