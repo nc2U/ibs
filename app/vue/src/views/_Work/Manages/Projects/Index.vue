@@ -144,7 +144,6 @@ onBeforeMount(async () => {
     <!--        :activity-filter="activityFilter"-->
     <!--        @to-back="toMove"-->
     <!--        @to-next="toMove"-->
-    <!--        @aside-visible="asideVisible"-->
     <!--      />-->
   </router-view>
 </template>

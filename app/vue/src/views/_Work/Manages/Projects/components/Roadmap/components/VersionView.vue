@@ -56,7 +56,6 @@ const deleteSubmit = () => {
 }
 
 onBeforeMount(() => {
-  // emit('aside-visible', false)
   workStore.fetchVersion(Number(route.params.verId))
 })
 </script>

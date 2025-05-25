@@ -39,7 +39,6 @@ watch(route, nVal => {
 })
 
 onBeforeMount(() => {
-  // emit('aside-visible', false)
   if (route.query.q) searchWord.value = route.query.q as string
 })
 

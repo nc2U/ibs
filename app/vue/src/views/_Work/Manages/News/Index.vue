@@ -23,10 +23,7 @@ const sideNavCAll = () => cBody.value.toggle()
 const boardStore = useBoard()
 const postList = computed(() => boardStore.postList)
 
-onBeforeMount(() => {
-  // emit('aside-visible', false)
-  boardStore.fetchPostList({ board: 1 })
-})
+onBeforeMount(() => boardStore.fetchPostList({ board: 1 }))
 </script>
 
 <template>
