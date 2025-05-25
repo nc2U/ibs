@@ -113,6 +113,7 @@ onBeforeMount(async () => {
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
+      {{ tags }}
       <SourceCode
         :branches="branches"
         :tags="tags"

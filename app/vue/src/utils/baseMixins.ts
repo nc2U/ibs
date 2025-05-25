@@ -53,7 +53,8 @@ export const timeFormat = (date: Date | number | string, short = false, split?: 
   return !short ? formattedTime : formattedTime.substring(0, 16)
 }
 
-export const elapsedTime = (date: Date | number | string): string => {
+export const elapsedTime = (date?: Date | number | string): string => {
+  if (!date) return ''
   const start = new Date(date)
   const end = new Date()
 

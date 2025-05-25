@@ -24,6 +24,7 @@ const getLatestBranch = (branches: GitData[]) => {
 }
 
 const last_branch = computed(() => getLatestBranch(props.branches))
+const last_tag = computed(() => getLatestBranch(props.tags))
 </script>
 
 <template>
@@ -74,7 +75,7 @@ const last_branch = computed(() => getLatestBranch(props.branches))
               <router-link to="">{{ last_branch?.commit.sha }}</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right">
-              {{ elapsedTime(last_branch?.commit.date ?? 20000) }}
+              {{ elapsedTime(last_branch?.commit.date) }}
             </CTableDataCell>
             <CTableDataCell class="text-center">{{ last_branch?.commit.author }}</CTableDataCell>
             <CTableDataCell>{{ last_branch?.commit.message }}</CTableDataCell>
@@ -108,11 +109,13 @@ const last_branch = computed(() => getLatestBranch(props.branches))
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to=""></router-link>
+              <router-link to="">{{ last_tag?.commit.sha }}</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right"></CTableDataCell>
-            <CTableDataCell class="text-center"></CTableDataCell>
-            <CTableDataCell></CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(last_tag?.commit.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ last_tag?.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ last_tag?.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow v-if="tagFold" v-for="(tag, i) in tags" :key="i">
             <CTableDataCell class="pl-5">

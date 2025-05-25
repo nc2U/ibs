@@ -27,7 +27,6 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // branches api
-  const brancheList = ref<any[]>([])
   const branches = ref<GitData[]>([])
   const master_tree_url = ref<string>('')
   const master = ref<Master | null>(null)
@@ -41,12 +40,10 @@ export const useGithub = defineStore('github', () => {
         await fetchRepoApi(url, token) // deault_branch 데이터 추출
 
         // 일반 브랜치 데이터 추출 // 브랜치명
-        brancheList.value = res.data.filter(
-          (branch: GitData) => branch.name !== default_branch.value,
-        )
+        const bList = res.data.filter((b: GitData) => b.name !== default_branch.value)
         // 브랜치 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
         branches.value = []
-        for (const b of brancheList.value) {
+        for (const b of bList) {
           try {
             const { data: branch } = await api.get(`${url}/branches/${b.name}`, { headers })
             branches.value.push({
@@ -60,7 +57,7 @@ export const useGithub = defineStore('github', () => {
               },
             })
           } catch (error) {
-            console.log('Error fetching tree:', error)
+            console.log('Error fetching branch:', error)
           }
         }
 
@@ -106,7 +103,32 @@ export const useGithub = defineStore('github', () => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
     await api
       .get(`${url}/tags`, { headers })
-      .then(res => (tags.value = res.data))
+      .then(async res => {
+        // tags.value = res.data
+
+        // tags 데이터 추출
+        // const tList = res.data.filter((t: GitData) => t.name !== default_branch.value)
+        // 브랜치 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
+        tags.value = []
+        for (const tag of res.data) {
+          try {
+            const { data: commit } = await api.get(`${tag.commit.url}`, { headers })
+            tags.value.push({
+              name: tag.name,
+              commit: {
+                sha: tag.commit.sha.substring(0, 5),
+                url: tag.commit.url,
+
+                author: commit.commit.author.name,
+                date: commit.commit.author.date,
+                message: commit.commit.message,
+              },
+            })
+          } catch (error) {
+            console.log('Error fetching tag:', error)
+          }
+        }
+      })
       .catch(err => errorHandle(err.response))
   }
 
