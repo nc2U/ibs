@@ -2,7 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work'
-import type { IssueFilter, IssueProject } from '@/store/types/work'
+import type { Issue, IssueFilter, IssueProject } from '@/store/types/work'
 import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
 import IssueView from '@/views/_Work/Manages/Issues/components/IssueView.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
@@ -20,7 +20,7 @@ const [route, router] = [useRoute(), useRouter()]
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
 const allProjects = computed(() => workStore.AllIssueProjects)
-const issue = computed(() => workStore.issue)
+const issue = computed<Issue | null>(() => workStore.issue)
 const issueList = computed(() => workStore.issueList)
 const issueCommentList = computed(() => workStore.issueCommentList)
 const timeEntryList = computed(() => workStore.timeEntryList)
@@ -158,7 +158,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <AsideIssue :issue-pk="issue?.pk" :watchers="[]" />
+      <AsideIssue :issuePk="issue?.pk as number" :watchers="issue?.watchers" />
     </template>
   </ContentBody>
 </template>
