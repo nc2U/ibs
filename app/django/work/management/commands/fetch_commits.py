@@ -4,7 +4,7 @@ from datetime import datetime
 
 import requests
 from django.core.management.base import BaseCommand
-from django.db import transaction, IntegrityError
+from django.db import transaction, connection, IntegrityError
 
 from work.models import Repository, Commit, Issue
 
@@ -28,8 +28,11 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"No commits retrieved from {api_url}"))
                 continue
 
-            commits_to_create = []
             commit_hashes = []
+            commits_to_create = []
+
+            # DB에서 기존 해시들을 가져와서 set 으로 저장
+            existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
 
             for item in commits_data:
                 try:
@@ -38,10 +41,16 @@ class Command(BaseCommand):
                     author = commit_data.get('author', {}).get('name', 'Unknown')
                     date_str = commit_data.get('author', {}).get('date')
                     message = commit_data.get('message', '')
-                    if not all([commit_hash, author, date_str]):
+
+                    if not all([commit_hash, author, date_str]):  # 필수 항목 누락 검사
                         self.stderr.write(self.style.WARNING(f"Skipping invalid commit data: {item}"))
                         continue
-                    date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+
+                    if commit_hash in existing_hashes:  # 중복 커밋 해시 검사
+                        self.stderr.write(self.style.WARNING(f"Skipping existing commit {commit_hash}"))
+                        continue
+
+                    date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))  # 커밋 객체 생성
                     commits_to_create.append(Commit(
                         repo=repo,
                         commit_hash=commit_hash,
@@ -49,6 +58,7 @@ class Command(BaseCommand):
                         date=date,
                         message=message))
                     commit_hashes.append((commit_hash, message))
+
                 except (KeyError, ValueError) as e:
                     self.stderr.write(self.style.WARNING(f"Invalid commit data: {e}"))
                     continue
