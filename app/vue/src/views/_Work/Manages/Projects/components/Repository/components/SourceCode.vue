@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import type { Repository } from '@/store/types/work.ts'
-import type { TreeNodeType, Tree } from '@/store/types/work_github.ts'
-import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
+import type { Tree, TreeNodeType } from '@/store/types/work_github.ts'
+import { elapsedTime } from '@/utils/baseMixins.ts'
+import VersionTitle from './VersionTitle.vue'
+import Versions from './Versions.vue'
 import TreeNode from './TreeNode.vue'
 
 const props = defineProps({
@@ -14,11 +16,17 @@ const props = defineProps({
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
+const token = computed(() => props.repo?.github_token)
+
 const branchFold = ref(false)
 const tagFold = ref(false)
 const defFold = ref(false)
 
-const token = computed(() => props.repo?.github_token)
+const updateFold = (which: 1 | 2 | 3) => {
+  if (which === 1) branchFold.value = !branchFold.value
+  if (which === 2) tagFold.value = !tagFold.value
+  if (which === 3) defFold.value = !defFold.value
+}
 
 const getLatestBranch = (branches: TreeNodeType[]) => {
   if (branches.length === 0) return
@@ -64,135 +72,18 @@ const last_tag = computed(() => getLatestBranch(props.tags))
             <CTableHeaderCell>설명</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
+
         <CTableBody>
-          <CTableRow>
-            <CTableDataCell>
-              <v-icon
-                :icon="`mdi-chevron-${branchFold ? 'down' : 'right'}`"
-                size="16"
-                class="pointer mr-1"
-                @click="branchFold = !branchFold"
-              />
-              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">branches</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right"></CTableDataCell>
-            <CTableDataCell class="text-center">
-              <router-link to="">{{ last_branch?.commit.sha }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right">
-              {{ elapsedTime(last_branch?.commit.date) }}
-            </CTableDataCell>
-            <CTableDataCell class="text-center">{{ last_branch?.commit.author }}</CTableDataCell>
-            <CTableDataCell>{{ last_branch?.commit.message }}</CTableDataCell>
-          </CTableRow>
+          <VersionTitle ver-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
+          <Versions v-if="branchFold" :versions="branches" />
+          <!--          <TreeNode v-if="defFold" :trees="defTree" />-->
 
-          <TreeNode v-if="branchFold" :trees="branches" />
+          <VersionTitle ver-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
+          <Versions v-if="tagFold" :versions="tags" />
+          <!--          <TreeNode v-if="defFold" :trees="defTree" />-->
 
-          <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
-            <CTableDataCell class="pl-5">
-              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">{{ branch.name }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell class="text-center">
-              <router-link to="">{{ branch.commit.sha }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right">
-              {{ elapsedTime(branch.commit.date) }}
-            </CTableDataCell>
-            <CTableDataCell class="text-center">{{ branch.commit.author }}</CTableDataCell>
-            <CTableDataCell>{{ branch.commit.message }}</CTableDataCell>
-          </CTableRow>
-
-          <CTableRow>
-            <CTableDataCell>
-              <v-icon
-                :icon="`mdi-chevron-${tagFold ? 'down' : 'right'}`"
-                size="16"
-                class="pointer mr-1"
-                @click="tagFold = !tagFold"
-              />
-              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">tags</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right"></CTableDataCell>
-            <CTableDataCell class="text-center">
-              <router-link to="">{{ last_tag?.commit.sha }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right">
-              {{ elapsedTime(last_tag?.commit.date) }}
-            </CTableDataCell>
-            <CTableDataCell class="text-center">{{ last_tag?.commit.author }}</CTableDataCell>
-            <CTableDataCell>{{ last_tag?.commit.message }}</CTableDataCell>
-          </CTableRow>
-
-          <CTableRow v-if="tagFold" v-for="(tag, i) in tags" :key="i">
-            <CTableDataCell class="pl-5">
-              <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">{{ tag.name }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell></CTableDataCell>
-            <CTableDataCell class="text-center">
-              <router-link to="">{{ tag.commit.sha }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right">{{ elapsedTime(tag.commit.date) }}</CTableDataCell>
-            <CTableDataCell class="text-center">{{ tag.commit.author }}</CTableDataCell>
-            <CTableDataCell>{{ tag.commit.message }}</CTableDataCell>
-          </CTableRow>
-
-          <CTableRow>
-            <CTableDataCell>
-              <v-icon
-                :icon="`mdi-chevron-${defFold ? 'down' : 'right'}`"
-                size="16"
-                class="pointer mr-1"
-                @click="defFold = !defFold"
-              />
-              <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">{{ defName }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right"></CTableDataCell>
-            <CTableDataCell class="text-center">
-              <router-link to="">{{ defBranch?.commit.sha }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right">
-              {{ elapsedTime(defBranch?.commit.date) }}
-            </CTableDataCell>
-            <CTableDataCell class="text-center">{{ defBranch?.commit.author }}</CTableDataCell>
-            <CTableDataCell>{{ defBranch?.commit.message }}</CTableDataCell>
-          </CTableRow>
-
-          <CTableRow v-if="defFold" v-for="tree in defTree" :key="tree.sha">
-            <CTableDataCell class="pl-5">
-              <span v-if="tree.type === 'tree'">
-                <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
-                <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              </span>
-              <span v-if="tree.type === 'blob'" class="pl-5">
-                <v-icon
-                  :icon="`mdi-file-${tree.path.endsWith('.txt') ? 'document-' : ''}outline`"
-                  color="secondary"
-                  size="16"
-                  class="pointer mr-1 mdi-thin"
-                />
-              </span>
-              <router-link to="">{{ tree.path }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right">
-              {{ humanizeFileSize((tree as any)?.size) }}
-            </CTableDataCell>
-            <CTableDataCell class="text-center">
-              <router-link to="">{{ tree.commit?.sha }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell class="text-right">
-              {{ elapsedTime(tree.commit?.date) }}
-            </CTableDataCell>
-            <CTableDataCell class="text-center">{{ tree.commit?.author }}</CTableDataCell>
-            <CTableDataCell>{{ tree.commit?.message }}</CTableDataCell>
-          </CTableRow>
+          <VersionTitle :ver-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
+          <TreeNode v-if="defFold" :trees="defTree" />
         </CTableBody>
       </CTable>
     </CCol>
