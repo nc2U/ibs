@@ -1,12 +1,14 @@
 export interface GitData {
   name: string
-  commit: {
-    sha: string
-    url: string
-    author: string
-    date: string
-    message: string
-  }
+  commit: Commit
+}
+
+export interface Commit {
+  sha: string
+  url: string
+  author: string
+  date: string
+  message: string
 }
 
 export interface Tree {
@@ -16,6 +18,7 @@ export interface Tree {
   sha: string
   url: string
   size?: number
+  commit?: Commit
   open?: boolean
   loaded?: boolean
 }

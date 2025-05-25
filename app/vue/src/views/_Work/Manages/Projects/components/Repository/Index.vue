@@ -59,6 +59,7 @@ const diffApi = computed<any>(() => ghStore.diffApi)
 
 const fetchDiffApi = (url: string, token: string) => ghStore.fetchDiffApi(url, token)
 const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
+const fetchDefBranch = (url: string, token: string = '') => ghStore.fetchDefBranch(url, token)
 const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
 
 const getListSort = ref<'latest' | 'all'>('latest')
@@ -106,6 +107,7 @@ onBeforeMount(async () => {
     const url = githubApiUrl.value
     const token = repo.value.github_token ?? ''
     await fetchBranches(url, token)
+    await fetchDefBranch(url, token)
     await fetchTags(url, token)
   }
 })

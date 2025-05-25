@@ -145,13 +145,13 @@ const last_tag = computed(() => getLatestBranch(props.tags))
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">{{ defBranch.commit.sha }}</router-link>
+              <router-link to="">{{ defBranch?.commit.sha }}</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right">
-              {{ elapsedTime(defBranch.commit.date) }}
+              {{ elapsedTime(defBranch?.commit.date) }}
             </CTableDataCell>
-            <CTableDataCell class="text-center">{{ defBranch.commit.author }}</CTableDataCell>
-            <CTableDataCell>{{ defBranch.commit.message }}</CTableDataCell>
+            <CTableDataCell class="text-center">{{ defBranch?.commit.author }}</CTableDataCell>
+            <CTableDataCell>{{ defBranch?.commit.message }}</CTableDataCell>
           </CTableRow>
           <CTableRow v-if="defFold" v-for="tree in defTree" :key="tree.sha">
             <CTableDataCell class="pl-5">
@@ -173,11 +173,13 @@ const last_tag = computed(() => getLatestBranch(props.tags))
               {{ humanizeFileSize((tree as any)?.size) }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">1</router-link>
+              <router-link to="">{{ tree.commit?.sha }}</router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">2</CTableDataCell>
-            <CTableDataCell class="text-center">3</CTableDataCell>
-            <CTableDataCell>4</CTableDataCell>
+            <CTableDataCell class="text-right">
+              {{ elapsedTime(tree.commit?.date) }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">{{ tree.commit?.author }}</CTableDataCell>
+            <CTableDataCell>{{ tree.commit?.message }}</CTableDataCell>
           </CTableRow>
         </CTableBody>
       </CTable>
