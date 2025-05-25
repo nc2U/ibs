@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
-import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
+import type { Branch, Tag, Tree, TreeNode } from '@/store/types/work_github.ts'
 
 defineProps({
   branches: { type: Array as PropType<Branch[]>, default: () => [] },
   tags: { type: Array as PropType<Tag[]>, default: () => [] },
-  masterTree: { type: Array as PropType<Tree[]>, default: () => [] },
+  masterTree: { type: Array as PropType<Tree[] | TreeNode[]>, default: () => [] },
 })
 
 const branchFold = ref(false)
@@ -24,7 +24,7 @@ const masterFold = ref(false)
       </h5>
     </CCol>
   </CRow>
-
+  {{ masterTree.length }}
   <CRow class="mb-5">
     <CCol>
       <CTable hover striped small responsive>
