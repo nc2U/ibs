@@ -31,10 +31,72 @@ export const useGithub = defineStore('github', () => {
   const master_tree_url = ref<string>('')
   const master_tree = ref<any[]>([])
 
+  const fetchRootTree = async (tree_url: string, url: string, headers: any): Promise<Tree[]> => {
+    try {
+      const results = await api.get(tree_url, { headers })
+      const treeList = sortTree(results.data.tree ?? [])
+
+      const rootTree: Tree[] = []
+
+      for (const tree of treeList) {
+        try {
+          const { data: commits } = await api.get(`${url}/commits?path=${tree.path}`, { headers })
+          const latest = commits[0]
+
+          if (!latest) continue
+
+          rootTree.push({
+            path: tree.path,
+            mode: tree.mode,
+            type: tree.type,
+            sha: tree.sha,
+            url: tree.url,
+            size: tree.size,
+            commit: {
+              sha: latest.sha.substring(0, 5),
+              url: latest.html_url ?? latest.url,
+              author: latest.commit.author.name,
+              date: latest.commit.author.date,
+              message: latest.commit.message,
+            },
+            open: false,
+            loaded: tree.type === 'tree' ? false : undefined,
+          })
+        } catch (err) {
+          console.error(`Error fetching commit for ${tree.path}:`, err)
+        }
+      }
+      return rootTree
+    } catch (err: any) {
+      errorHandle(err.response)
+      return []
+    }
+  }
+
+  const fetchSubTree = async (url: string, token: string) => {
+    try {
+      const { data } = await api.get(url, {
+        headers: { Authorization: `token ${token}` },
+      })
+      return data.tree.map((item: Tree) => ({
+        path: item.path,
+        mode: item.mode,
+        type: item.type,
+        sha: item.sha,
+        url: item.url,
+        size: item.size,
+        open: false,
+        loaded: item.type === 'tree' ? false : undefined,
+      }))
+    } catch (error) {
+      console.log('Error fetching tree:', error)
+      return []
+    }
+  }
+
   const fetchDefBranch = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
     if (default_branch.value === '') await fetchRepoApi(url, token) // deault_branch 데이터 추출
-
     // 기본(master) 브랜치 데이터 추출
     await api // 트리 url 구하기
       .get(`${url}/branches/${default_branch.value}`, { headers })
@@ -52,42 +114,15 @@ export const useGithub = defineStore('github', () => {
           },
         }
 
+        master_tree.value = []
+        try {
+          master_tree.value = await fetchRootTree(master_tree_url.value, url, headers)
+        } catch (error) {
+          console.error('fetchRootTree 실패:', error)
+        }
+
         await api // tree 구하기
           .get(`${master_tree_url.value}`, { headers })
-          .then(async res => {
-            const treeList = sortTree(res.data.tree ?? [])
-
-            master_tree.value = []
-
-            for (const tree of treeList) {
-              try {
-                const { data: commits } = await api.get(`${url}/commits?path=${tree.path}`, {
-                  headers,
-                })
-                const latest = commits[0]
-                master_tree.value.push({
-                  path: tree.path,
-                  mode: tree.mode,
-                  type: tree.type,
-                  sha: tree.sha,
-                  url: tree.url,
-                  size: tree.size,
-                  commit: {
-                    sha: latest.sha.substring(0, 5),
-                    url: latest.url,
-                    author: latest.commit.author.name,
-                    date: latest.commit.author.date,
-                    message: latest.commit.message,
-                  },
-                  open: false,
-                  loaded: tree.type === 'tree' ? false : undefined,
-                })
-              } catch (error) {
-                console.log('Error fetching tree:', error)
-              }
-            }
-          })
-          .catch(err => errorHandle(err.response))
       })
       .catch(err => errorHandle(err.response))
   }
@@ -124,29 +159,6 @@ export const useGithub = defineStore('github', () => {
         }
       })
       .catch(err => errorHandle(err.response))
-  }
-
-  // const fetchBranch = async (url: string, headers: any) => api.get(url, { headers })
-
-  const fetchSubTree = async (url: string, token: string) => {
-    try {
-      const { data } = await api.get(url, {
-        headers: { Authorization: `token ${token}` },
-      })
-      return data.tree.map((item: Tree) => ({
-        path: item.path,
-        mode: item.mode,
-        type: item.type,
-        sha: item.sha,
-        url: item.url,
-        size: item.size,
-        open: false,
-        loaded: item.type === 'tree' ? false : undefined,
-      }))
-    } catch (error) {
-      console.log('Error fetching tree:', error)
-      return []
-    }
   }
 
   // tags api

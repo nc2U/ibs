@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
-import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
+import type { Repository } from '@/store/types/work.ts'
 import type { GitData, Tree } from '@/store/types/work_github.ts'
+import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 
 const props = defineProps({
+  repo: { type: Object as PropType<Repository>, default: () => null },
   branches: { type: Array as PropType<GitData[]>, default: () => [] },
   tags: { type: Array as PropType<GitData[]>, default: () => [] },
   defName: { type: String, default: 'master' },
@@ -14,6 +16,8 @@ const props = defineProps({
 const branchFold = ref(false)
 const tagFold = ref(false)
 const defFold = ref(false)
+
+const token = computed(() => props.repo?.github_token)
 
 const getLatestBranch = (branches: GitData[]) => {
   if (branches.length === 0) return

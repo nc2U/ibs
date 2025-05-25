@@ -52,7 +52,7 @@ const branches = computed<GitData[]>(() => ghStore.branches)
 const tags = computed<GitData[]>(() => ghStore.tags)
 
 const master = computed(() => ghStore.master)
-const master_tree = computed<Tree[]>(() => ghStore.master_tree)
+const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
 const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const diffApi = computed<any>(() => ghStore.diffApi)
@@ -117,11 +117,12 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <SourceCode
+        :repo="repo as Repository"
         :branches="branches"
         :tags="tags"
         :def-name="'master'"
-        :def-branch="master"
-        :def-tree="master_tree"
+        :def-branch="master as GitData"
+        :def-tree="masterTree"
       />
 
       <Revisions

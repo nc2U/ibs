@@ -108,7 +108,10 @@ onBeforeMount(() => {
     <CTableBody>
       <CTableRow v-for="(commit, i) in commits" :key="commit.pk">
         <CTableDataCell class="text-center">
-          <span class="mr-5">{{ commit.pk }}</span>
+          <span class="mr-5">
+            <router-link to="">{{ commit.pk }}</router-link>
+            <!--            <router-link to="">{{ commit.commit_hash.substring(0, 5) }}</router-link>-->
+          </span>
         </CTableDataCell>
         <CTableDataCell>
           <CFormCheck
