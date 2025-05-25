@@ -1,4 +1,4 @@
-export interface TreeNodeType {
+export interface CommitInfo {
   name: string
   commit: Commit
 }

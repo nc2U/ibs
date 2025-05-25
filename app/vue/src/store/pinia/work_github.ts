@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
-import type { TreeNodeType, Tree } from '@/store/types/work_github.ts'
+import type { CommitInfo, Tree } from '@/store/types/work_github.ts'
 
 const sortTree = (trees: Tree[]) =>
   trees.sort((a, b) => {
@@ -27,7 +27,7 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // branches api
-  const master = ref<TreeNodeType | null>(null)
+  const master = ref<CommitInfo | null>(null)
   const master_tree_url = ref<string>('')
   const master_tree = ref<any[]>([])
 
@@ -127,7 +127,7 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
   }
 
-  const branches = ref<TreeNodeType[]>([])
+  const branches = ref<CommitInfo[]>([])
 
   const fetchBranches = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
@@ -137,7 +137,7 @@ export const useGithub = defineStore('github', () => {
         if (default_branch.value === '') await fetchRepoApi(url, token) // deault_branch 데이터 추출
 
         // 일반 브랜치 데이터 추출 // 브랜치명
-        const bList = res.data.filter((b: TreeNodeType) => b.name !== default_branch.value)
+        const bList = res.data.filter((b: CommitInfo) => b.name !== default_branch.value)
         // 브랜치 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
         branches.value = []
         for (const b of bList) {
@@ -162,7 +162,7 @@ export const useGithub = defineStore('github', () => {
   }
 
   // tags api
-  const tags = ref<TreeNodeType[]>([])
+  const tags = ref<CommitInfo[]>([])
 
   const fetchTags = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
@@ -171,7 +171,7 @@ export const useGithub = defineStore('github', () => {
       .then(async res => {
         // tags.value = res.data
 
-        // tags 데이터 -> TreeNodeType 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
+        // tags 데이터 -> CommitInfo 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
         tags.value = []
         for (const tag of res.data) {
           try {

@@ -1,7 +1,9 @@
 <script lang="ts" setup>
+import type { PropType } from 'vue'
+import type { Tree } from '@/store/types/work_github.ts'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 
-defineProps({ trees: { type: Array, default: () => [] } })
+defineProps({ trees: { type: Array as PropType<Tree[]>, default: () => [] } })
 </script>
 
 <template>

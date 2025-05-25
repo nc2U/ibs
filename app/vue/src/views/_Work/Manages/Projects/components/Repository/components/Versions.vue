@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import { elapsedTime } from '@/utils/baseMixins.ts'
-import type { TreeNodeType } from '@/store/types/work_github.ts'
+import type { CommitInfo } from '@/store/types/work_github.ts'
 
-defineProps({ versions: { type: Array as PropType<TreeNodeType[]>, default: () => [] } })
+defineProps({ versions: { type: Array as PropType<CommitInfo[]>, default: () => [] } })
 </script>
 
 <template>

@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import { elapsedTime } from '@/utils/baseMixins.ts'
-import type { TreeNodeType } from '@/store/types/work_github.ts'
+import type { CommitInfo } from '@/store/types/work_github.ts'
 
 defineProps({
   verName: { type: String, default: 'master' },
-  latest: { type: Object as PropType<TreeNodeType>, default: () => null },
+  latest: { type: Object as PropType<CommitInfo>, default: () => null },
 })
 
 const emit = defineEmits(['update-fold'])
