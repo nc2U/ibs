@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
-import type { Branch, Tag, Trunk, Tree } from '@/store/types/work_github.ts'
+import type { Branch, Tag, Master, Tree } from '@/store/types/work_github.ts'
 
 const sortTree = (trees: Tree[]) =>
   trees.sort((a, b) => {
@@ -28,9 +28,9 @@ export const useGithub = defineStore('github', () => {
 
   // branches api
   const branches = ref<Branch[]>([])
-  const trunk_url = ref<string>('')
-  const trunk = ref<Trunk | null>(null)
-  const trunk_tree = computed(() => sortTree(trunk.value?.tree ?? []))
+  const master_url = ref<string>('')
+  const master = ref<Master | null>(null)
+  const master_tree = computed(() => sortTree(master.value?.tree ?? []))
 
   const fetchBranches = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
@@ -41,10 +41,10 @@ export const useGithub = defineStore('github', () => {
         branches.value = res.data.filter((branch: Branch) => branch.name !== default_branch.value)
         await api
           .get(`${url}/branches/${default_branch.value}?recursive=1`, { headers })
-          .then(res => (trunk_url.value = res.data.commit.commit.tree.url))
+          .then(res => (master_url.value = res.data.commit.commit.tree.url))
         await api
-          .get(trunk_url.value, { headers })
-          .then(res => (trunk.value = res.data))
+          .get(master_url.value, { headers })
+          .then(res => (master.value = res.data))
           .catch(err => errorHandle(err.response))
       })
       .catch(err => errorHandle(err.response))
@@ -82,8 +82,8 @@ export const useGithub = defineStore('github', () => {
     fetchRepoApi,
 
     branches,
-    trunk,
-    trunk_tree,
+    master,
+    master_tree,
     fetchBranches,
 
     tags,

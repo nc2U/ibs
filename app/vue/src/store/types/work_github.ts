@@ -26,7 +26,7 @@ export interface Tree {
   url: string
 }
 
-export interface Trunk {
+export interface Master {
   sha: string
   url: string
   tree: Tree[]

@@ -158,7 +158,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <AsideIssue :issuePk="issue?.pk as number" :watchers="issue?.watchers" />
+      <AsideIssue :issue-pk="issue?.pk as number" :watchers="issue?.watchers" />
     </template>
   </ContentBody>
 </template>

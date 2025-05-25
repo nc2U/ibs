@@ -6,19 +6,19 @@ import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
 defineProps({
   branches: { type: Array as PropType<Branch[]>, default: () => [] },
   tags: { type: Array as PropType<Tag[]>, default: () => [] },
-  trunkTree: { type: Array as PropType<Tree[]>, default: () => [] },
+  masterTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
 const branchFold = ref(false)
 const tagFold = ref(false)
-const trunkFold = ref(false)
+const masterFold = ref(false)
 </script>
 
 <template>
   <CRow class="py-2">
     <CCol>
       <h5>
-        <span><router-link to="">SVN</router-link></span>
+        <span><router-link to="">Git 저장소</router-link></span>
         <!--        <span v-if="1 == 2">/ <router-link to="">branches</router-link></span>-->
         <!--        <span v-if="1 == 2">/ <router-link to="">aaa</router-link></span>-->
       </h5>
@@ -112,13 +112,13 @@ const trunkFold = ref(false)
           <CTableRow>
             <CTableDataCell>
               <v-icon
-                :icon="`mdi-chevron-${trunkFold ? 'down' : 'right'}`"
+                :icon="`mdi-chevron-${masterFold ? 'down' : 'right'}`"
                 size="16"
                 class="pointer mr-1"
-                @click="trunkFold = !trunkFold"
+                @click="masterFold = !masterFold"
               />
               <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-              <router-link to="">trunk</router-link>
+              <router-link to="">master</router-link>
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
@@ -128,7 +128,7 @@ const trunkFold = ref(false)
             <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
             <CTableDataCell> package update</CTableDataCell>
           </CTableRow>
-          <CTableRow v-if="trunkFold" v-for="tree in trunkTree" :key="tree.sha">
+          <CTableRow v-if="masterFold" v-for="tree in masterTree" :key="tree.sha">
             <CTableDataCell class="pl-5">
               <span v-if="tree.type === 'tree'">
                 <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
