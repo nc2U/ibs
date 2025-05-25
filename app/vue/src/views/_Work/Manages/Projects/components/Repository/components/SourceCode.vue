@@ -1,15 +1,16 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import type { Repository } from '@/store/types/work.ts'
-import type { GitData, Tree } from '@/store/types/work_github.ts'
+import type { TreeNodeType, Tree } from '@/store/types/work_github.ts'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
+import TreeNode from './TreeNode.vue'
 
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, default: () => null },
-  branches: { type: Array as PropType<GitData[]>, default: () => [] },
-  tags: { type: Array as PropType<GitData[]>, default: () => [] },
+  branches: { type: Array as PropType<TreeNodeType[]>, default: () => [] },
+  tags: { type: Array as PropType<TreeNodeType[]>, default: () => [] },
   defName: { type: String, default: 'master' },
-  defBranch: { type: Object as PropType<GitData>, default: () => null },
+  defBranch: { type: Object as PropType<TreeNodeType>, default: () => null },
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
@@ -19,7 +20,7 @@ const defFold = ref(false)
 
 const token = computed(() => props.repo?.github_token)
 
-const getLatestBranch = (branches: GitData[]) => {
+const getLatestBranch = (branches: TreeNodeType[]) => {
   if (branches.length === 0) return
   return branches.reduce((last, curr) => {
     const lastDate = new Date(last.commit.date)
@@ -85,6 +86,9 @@ const last_tag = computed(() => getLatestBranch(props.tags))
             <CTableDataCell class="text-center">{{ last_branch?.commit.author }}</CTableDataCell>
             <CTableDataCell>{{ last_branch?.commit.message }}</CTableDataCell>
           </CTableRow>
+
+          <TreeNode v-if="branchFold" :trees="branches" />
+
           <CTableRow v-if="branchFold" v-for="branch in branches as any[]" :key="branch">
             <CTableDataCell class="pl-5">
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
@@ -101,6 +105,7 @@ const last_tag = computed(() => getLatestBranch(props.tags))
             <CTableDataCell class="text-center">{{ branch.commit.author }}</CTableDataCell>
             <CTableDataCell>{{ branch.commit.message }}</CTableDataCell>
           </CTableRow>
+
           <CTableRow>
             <CTableDataCell>
               <v-icon
@@ -122,6 +127,7 @@ const last_tag = computed(() => getLatestBranch(props.tags))
             <CTableDataCell class="text-center">{{ last_tag?.commit.author }}</CTableDataCell>
             <CTableDataCell>{{ last_tag?.commit.message }}</CTableDataCell>
           </CTableRow>
+
           <CTableRow v-if="tagFold" v-for="(tag, i) in tags" :key="i">
             <CTableDataCell class="pl-5">
               <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
@@ -136,6 +142,7 @@ const last_tag = computed(() => getLatestBranch(props.tags))
             <CTableDataCell class="text-center">{{ tag.commit.author }}</CTableDataCell>
             <CTableDataCell>{{ tag.commit.message }}</CTableDataCell>
           </CTableRow>
+
           <CTableRow>
             <CTableDataCell>
               <v-icon
@@ -157,6 +164,7 @@ const last_tag = computed(() => getLatestBranch(props.tags))
             <CTableDataCell class="text-center">{{ defBranch?.commit.author }}</CTableDataCell>
             <CTableDataCell>{{ defBranch?.commit.message }}</CTableDataCell>
           </CTableRow>
+
           <CTableRow v-if="defFold" v-for="tree in defTree" :key="tree.sha">
             <CTableDataCell class="pl-5">
               <span v-if="tree.type === 'tree'">
