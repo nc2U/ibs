@@ -1,11 +1,16 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { useWork } from '@/store/pinia/work.ts'
+import { useRoute } from 'vue-router'
+import { dateFormat } from '@/utils/baseMixins.ts'
+import type { ActLogEntryFilter, IssueProject } from '@/store/types/work.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogsComponent.vue'
 import AsideActivity from '@/views/_Work/Manages/Activity/components/aside/AsideActivity.vue'
 
 defineProps({
   toDate: { type: Date, required: true },
+  issueProject: { type: Object as PropType<IssueProject>, default: () => null },
   activityFilter: { type: Object as PropType<any>, default: () => null },
 })
 
@@ -15,10 +20,56 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const toDate = ref(new Date())
+const route = useRoute()
+const workStore = useWork()
 
-const toBack = (date: Date) => emit('to-back', date)
-const toNext = (date: Date) => emit('to-next', date)
+const toDate = ref(new Date())
+const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))
+
+const activityFilter = ref<ActLogEntryFilter>({
+  project: '',
+  project__search: '',
+  to_act_date: dateFormat(toDate.value),
+  from_act_date: dateFormat(fromDate.value),
+  user: '',
+  sort: [],
+})
+
+const toMove = (date: Date) => {
+  toDate.value = date
+  activityFilter.value.to_act_date = dateFormat(date)
+  activityFilter.value.from_act_date = dateFormat(
+    new Date(date.getTime() - 9 * 24 * 60 * 60 * 1000),
+  )
+  console.log(dateFormat(new Date(date.getTime() - 9 * 24 * 60 * 60 * 1000)))
+  workStore.fetchActivityLogList(activityFilter.value)
+}
+
+watch(
+  () => route.params,
+  nVal => {
+    if (nVal && nVal.projId) {
+      activityFilter.value.project = nVal.projId as string
+    }
+  },
+  { deep: true },
+)
+
+const filterActivity = (payload: ActLogEntryFilter) => {
+  console.log(payload)
+  if (payload.to_act_date) toDate.value = new Date(payload.to_act_date)
+  activityFilter.value.project = payload.project ?? ''
+  activityFilter.value.project__search = payload.project__search ?? ''
+  activityFilter.value.user = payload.user ?? ''
+  activityFilter.value.sort = payload.sort
+  workStore.fetchActivityLogList(payload)
+}
+
+onBeforeMount(() => {
+  if (route.params.projId) {
+    activityFilter.value.project = route.params.projId as string
+  }
+})
 </script>
 
 <template>
@@ -27,15 +78,17 @@ const toNext = (date: Date) => emit('to-next', date)
       <ActivityLogList
         :to-date="toDate"
         :activity-filter="activityFilter"
-        @to-back="toBack"
-        @to-next="toNext"
+        @to-back="toMove"
+        @to-next="toMove"
       />
     </template>
 
     <template v-slot:aside>
-      <AsideActivity :to-date="toDate" />
-      <!--        :has-subs="!!issueProject?.sub_projects?.length"-->
-      <!--        @filter-activity="filterActivity"-->
+      <AsideActivity
+        :to-date="toDate"
+        :has-subs="!!issueProject?.sub_projects?.length"
+        @filter-activity="filterActivity"
+      />
     </template>
   </ContentBody>
 </template>

@@ -61,43 +61,10 @@ const modules = computed(() => issueProject.value?.module)
 
 const issue = computed<Issue | null>(() => workStore.issue)
 
-const toDate = ref(new Date())
-const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))
-
-const activityFilter = ref<ActLogEntryFilter>({
-  project: '',
-  project__search: '',
-  to_act_date: dateFormat(toDate.value),
-  from_act_date: dateFormat(fromDate.value),
-  user: '',
-  sort: [],
-})
-
-const toMove = (date: Date) => {
-  toDate.value = date
-  activityFilter.value.to_act_date = dateFormat(date)
-  activityFilter.value.from_act_date = dateFormat(
-    new Date(date.getTime() - 9 * 24 * 60 * 60 * 1000),
-  )
-  console.log(dateFormat(new Date(date.getTime() - 9 * 24 * 60 * 60 * 1000)))
-  workStore.fetchActivityLogList(activityFilter.value)
-}
-
-const filterActivity = (payload: ActLogEntryFilter) => {
-  console.log(payload)
-  if (payload.to_act_date) toDate.value = new Date(payload.to_act_date)
-  activityFilter.value.project = payload.project ?? ''
-  activityFilter.value.project__search = payload.project__search ?? ''
-  activityFilter.value.user = payload.user ?? ''
-  activityFilter.value.sort = payload.sort
-  workStore.fetchActivityLogList(payload)
-}
-
 watch(
   () => route.params,
   nVal => {
     if (nVal && nVal.projId) {
-      activityFilter.value.project = nVal.projId as string
       workStore.fetchNewsList({ project: nVal.projId as string })
     }
   },
@@ -122,7 +89,6 @@ onBeforeMount(async () => {
   await workStore.fetchTrackerList()
   await workStore.fetchActivityList()
   if (route.params.projId) {
-    activityFilter.value.project = route.params.projId as string
     await workStore.fetchIssueProject(route.params.projId as string)
     await workStore.fetchNewsList({ project: route.params.projId as string })
   }
@@ -138,6 +104,12 @@ onBeforeMount(async () => {
   />
 
   <router-view v-slot="{ Component }">
-    <component :is="Component" :nav-menu="navMenu" :query="route?.query" ref="cBody" />
+    <component
+      :is="Component"
+      :issue-project="issueProject"
+      :nav-menu="navMenu"
+      :query="route?.query"
+      ref="cBody"
+    />
   </router-view>
 </template>
