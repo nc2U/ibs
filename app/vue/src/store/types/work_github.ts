@@ -18,17 +18,28 @@ export interface Tag {
   node_id: string
 }
 
-export interface Tree {
-  path: string
-  mode: string
-  type: 'blob' | 'tree'
-  sha: string
-  url: string
-}
-
 export interface Master {
   sha: string
   url: string
   tree: Tree[]
   truncated: boolean
+}
+
+export interface Tree {
+  path: string
+  mode: string
+  type: 'tree' | 'blob'
+  sha: string
+  url: string
+  size?: number
+}
+
+export interface TreeNode {
+  name: string
+  type: 'tree' | 'blob'
+  sha: string
+  url: string
+  size?: number
+  children?: TreeNode[]
+  loaded?: boolean
 }
