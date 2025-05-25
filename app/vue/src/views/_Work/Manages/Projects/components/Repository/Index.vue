@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
-import type { TreeNodeType, Tree } from '@/store/types/work_github.ts'
+import type { CommitInfo, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SourceCode from './components/SourceCode.vue'
 import Revisions from './components/Revisions.vue'
@@ -48,8 +48,8 @@ const fetchCommitList = (payload: {
 
 // get github api
 const ghStore = useGithub()
-const branches = computed<TreeNodeType[]>(() => ghStore.branches)
-const tags = computed<TreeNodeType[]>(() => ghStore.tags)
+const branches = computed<CommitInfo[]>(() => ghStore.branches)
+const tags = computed<CommitInfo[]>(() => ghStore.tags)
 
 const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
@@ -121,7 +121,7 @@ onBeforeMount(async () => {
         :branches="branches"
         :tags="tags"
         :def-name="'master'"
-        :def-branch="master as TreeNodeType"
+        :def-branch="master as CommitInfo"
         :def-tree="masterTree"
       />
 
