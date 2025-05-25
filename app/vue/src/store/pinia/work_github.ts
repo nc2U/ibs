@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper'
-import type { Branch, Tag, Master, Tree } from '@/store/types/work_github.ts'
+import type { GitData, Master, Tree } from '@/store/types/work_github.ts'
 
 const sortTree = (trees: Tree[]) =>
   trees.sort((a, b) => {
@@ -28,7 +28,7 @@ export const useGithub = defineStore('github', () => {
 
   // branches api
   const brancheList = ref<any[]>([])
-  const branches = ref<Branch[]>([])
+  const branches = ref<GitData[]>([])
   const master_tree_url = ref<string>('')
   const master = ref<Master | null>(null)
   const master_tree = computed(() => sortTree(master.value?.tree ?? []))
@@ -42,7 +42,7 @@ export const useGithub = defineStore('github', () => {
 
         // 일반 브랜치 데이터 추출 // 브랜치명
         brancheList.value = res.data.filter(
-          (branch: Branch) => branch.name !== default_branch.value,
+          (branch: GitData) => branch.name !== default_branch.value,
         )
         // 브랜치 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
         branches.value = []
@@ -76,7 +76,7 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
   }
 
-  const fetchBranch = async (url: string, headers: any) => api.get(url, { headers })
+  // const fetchBranch = async (url: string, headers: any) => api.get(url, { headers })
 
   const fetchSubTree = async (url: string, token: string) => {
     try {
@@ -100,7 +100,7 @@ export const useGithub = defineStore('github', () => {
   }
 
   // tags api
-  const tags = ref<Tag[]>([])
+  const tags = ref<GitData[]>([])
 
   const fetchTags = async (url: string, token: string = '') => {
     const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }

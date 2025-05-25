@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
-import type { Branch, Tag, Tree } from '@/store/types/work_github.ts'
+import type { GitData, Tree } from '@/store/types/work_github.ts'
 
 const props = defineProps({
-  branches: { type: Array as PropType<Branch[]>, default: () => [] },
-  tags: { type: Array as PropType<Tag[]>, default: () => [] },
+  branches: { type: Array as PropType<GitData[]>, default: () => [] },
+  tags: { type: Array as PropType<GitData[]>, default: () => [] },
   defaultBranch: { type: String, default: 'master' },
   masterTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
@@ -14,7 +14,7 @@ const branchFold = ref(false)
 const tagFold = ref(false)
 const masterFold = ref(false)
 
-const getLatestBranch = (branches: Branch[]) => {
+const getLatestBranch = (branches: GitData[]) => {
   if (branches.length === 0) return
   return branches.reduce((last, curr) => {
     const lastDate = new Date(last.commit.date)
@@ -108,11 +108,11 @@ const last_branch = computed(() => getLatestBranch(props.branches))
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">10124</router-link>
+              <router-link to=""></router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">약 한달</CTableDataCell>
-            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
-            <CTableDataCell> #127 view diff update</CTableDataCell>
+            <CTableDataCell class="text-right"></CTableDataCell>
+            <CTableDataCell class="text-center"></CTableDataCell>
+            <CTableDataCell></CTableDataCell>
           </CTableRow>
           <CTableRow v-if="tagFold" v-for="(tag, i) in tags" :key="i">
             <CTableDataCell class="pl-5">
@@ -139,11 +139,11 @@ const last_branch = computed(() => getLatestBranch(props.branches))
             </CTableDataCell>
             <CTableDataCell class="text-right"></CTableDataCell>
             <CTableDataCell class="text-center">
-              <router-link to="">10125</router-link>
+              <router-link to=""></router-link>
             </CTableDataCell>
-            <CTableDataCell class="text-right">4일</CTableDataCell>
-            <CTableDataCell class="text-center">Austin Kho</CTableDataCell>
-            <CTableDataCell> package update</CTableDataCell>
+            <CTableDataCell class="text-right"></CTableDataCell>
+            <CTableDataCell class="text-center"></CTableDataCell>
+            <CTableDataCell></CTableDataCell>
           </CTableRow>
           <CTableRow v-if="masterFold" v-for="tree in masterTree" :key="tree.sha">
             <CTableDataCell class="pl-5">

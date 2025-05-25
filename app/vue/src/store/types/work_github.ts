@@ -1,4 +1,4 @@
-export interface Branch {
+export interface GitData {
   name: string
   commit: {
     sha: string
@@ -7,17 +7,6 @@ export interface Branch {
     date: string
     message: string
   }
-}
-
-export interface Tag {
-  name: string
-  zipball_url: string
-  tarball_url: string
-  commit: {
-    sha: string
-    url: string
-  }
-  node_id: string
 }
 
 export interface Master {
