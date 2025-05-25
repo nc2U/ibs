@@ -12,11 +12,14 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
+const aside = computed(() => route.name === '(로드맵)')
+
 const workStore = useWork()
 const version = computed(() => workStore.version)
 const versionList = computed(() => workStore.versionList)
 
 const [route, router] = [useRoute(), useRouter()]
+
 const onSubmit = (payload: any, back = false) => {
   if (!payload.pk) {
     payload.project = route.params.projId as string
@@ -26,31 +29,20 @@ const onSubmit = (payload: any, back = false) => {
   if (back) router.replace({ name: '(설정)', query: { menu: '버전' } })
 }
 
-const asideVisible = (visible: boolean) => emit('aside-visible', visible)
-
 onBeforeMount(() =>
   workStore.fetchVersionList({ project: route.params.projId as string, exclude: '3' }),
 )
 </script>
 
 <template>
-  <ContentBody ref="cBody">
+  <ContentBody ref="cBody" :aside="aside">
     <template v-slot:default>
-      <RoadmapList
-        v-if="route.name === '(로드맵)'"
-        :version-list="versionList"
-        @aside-visible="asideVisible"
-      />
+      <RoadmapList v-if="route.name === '(로드맵)'" :version-list="versionList" />
 
-      <VersionView
-        v-if="route.name === '(로드맵) - 보기'"
-        :version="version as Version"
-        @aside-visible="asideVisible"
-      />
+      <VersionView v-if="route.name === '(로드맵) - 보기'" :version="version as Version" />
 
       <VersionForm
         v-if="route.name === '(로드맵) - 추가' || route.name === '(로드맵) - 수정'"
-        @aside-visible="asideVisible"
         @on-submit="onSubmit"
       />
     </template>
