@@ -12,9 +12,6 @@ import UserView from '@/views/_Work/Settings/Users/components/UserView.vue'
 import UserForm from '@/views/_Work/Settings/Users/components/UserForm.vue'
 
 const cBody = ref()
-const aside = ref(true)
-
-const asideVisible = (visible: boolean) => (aside.value = visible)
 
 const sideNavCAll = () => cBody.value.toggle()
 
@@ -53,21 +50,19 @@ onBeforeMount(() => {
 <template>
   <Header :page-title="pageTitle" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="aside">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="true">
     <template v-slot:default>
       <UserList v-if="route.name === '사용자'" :user-list="usersList" />
-      <!--        @aside-visible="asideVisible"-->
 
       <UserView
         v-else-if="route.name === '사용자 - 보기'"
         :issue-projects="issueProjects"
         :issue-num="issueNumByMember"
       />
-      <!--        @aside-visible="asideVisible"-->
 
-      <UserForm v-else-if="route.name === '사용자 - 생성'" @aside-visible="asideVisible" />
+      <UserForm v-else-if="route.name === '사용자 - 생성'" />
 
-      <UserForm v-else-if="route.name === '사용자 - 수정'" @aside-visible="asideVisible" />
+      <UserForm v-else-if="route.name === '사용자 - 수정'" />
     </template>
 
     <template v-slot:aside></template>

@@ -30,10 +30,6 @@ const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
 )
 
 const issueProjects = computed(() => props.issueProjects.slice())
-
-onBeforeMount(() => {
-  // emit('aside-visible', false)
-})
 </script>
 
 <template>
