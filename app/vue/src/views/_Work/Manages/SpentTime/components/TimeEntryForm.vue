@@ -2,10 +2,10 @@
 import { ref, computed, onBeforeMount, type PropType, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { btnLight, colorLight } from '@/utils/cssMixins'
 import { dateFormat } from '@/utils/baseMixins'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import DatePicker from '@/components/DatePicker/index.vue'
 import Multiselect from '@vueform/multiselect'
 

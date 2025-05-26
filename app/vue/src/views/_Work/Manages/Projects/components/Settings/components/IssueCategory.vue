@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, type PropType } from 'vue'
-import type { SimpleCategory } from '@/store/types/work'
+import type { SimpleCategory } from '@/store/types/work_project.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 

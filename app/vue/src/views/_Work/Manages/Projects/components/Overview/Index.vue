@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useWork } from '@/store/pinia/work'
-import type { IssueProject, SimpleMember } from '@/store/types/work'
+import { useWork } from '@/store/pinia/work_project.ts'
+import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
 import OverViewHeader from './components/OverViewHeader.vue'
 import TimeSummary from './components/TimeSummary.vue'
 import IssueTracker from './components/IssueTracker.vue'

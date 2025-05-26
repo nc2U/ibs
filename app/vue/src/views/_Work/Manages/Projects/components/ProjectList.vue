@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work.ts'
-import type { IssueProject, ProjectFilter } from '@/store/types/work'
+import { useWork } from '@/store/pinia/work_project.ts'
+import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
 import SearchList from './SearchList.vue'
 import ProjectCard from './ProjectCard.vue'
 import NoData from '@/views/_Work/components/NoData.vue'

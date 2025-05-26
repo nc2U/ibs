@@ -1,6 +1,6 @@
 <script lang="ts" setup="">
 import { type PropType } from 'vue'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 
 defineProps({
   allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },

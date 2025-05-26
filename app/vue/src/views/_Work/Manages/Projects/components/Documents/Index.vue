@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { Docs, PatchDocs } from '@/store/types/docs'
 import AddNewDoc from './components/AddNewDoc.vue'

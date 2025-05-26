@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 
 const cBody = ref()

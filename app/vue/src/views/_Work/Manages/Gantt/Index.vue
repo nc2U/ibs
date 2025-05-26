@@ -2,7 +2,7 @@
 import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { Company } from '@/store/types/settings'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'

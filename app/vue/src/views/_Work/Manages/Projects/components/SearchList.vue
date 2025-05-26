@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, reactive, type PropType, onBeforeMount, watch } from 'vue'
-import type { IssueProject, ProjectFilter } from '@/store/types/work'
+import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/index.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'

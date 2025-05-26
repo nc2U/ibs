@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, inject, onBeforeMount, type ComputedRef, provide } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import type { Company } from '@/store/types/settings'
-import type { TimeEntryFilter } from '@/store/types/work'
+import type { TimeEntryFilter } from '@/store/types/work_project.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryList.vue'

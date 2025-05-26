@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
-import type { Issue, IssueFilter, IssueProject } from '@/store/types/work'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useLogging } from '@/store/pinia/work_logging.ts'
+import type { Issue, IssueFilter, IssueProject } from '@/store/types/work_project.ts'
 import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
 import IssueView from '@/views/_Work/Manages/Issues/components/IssueView.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
@@ -18,7 +19,7 @@ const aside = ref(true)
 const [route, router] = [useRoute(), useRouter()]
 
 const workStore = useWork()
-const issueProject = computed(() => workStore.issueProject)
+const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 const allProjects = computed(() => workStore.AllIssueProjects)
 const issue = computed<Issue | null>(() => workStore.issue)
 const issueList = computed(() => workStore.issueList)
@@ -81,13 +82,13 @@ watch(
       workStore.fetchIssueList({ status__closed: '0', project: nVal as string })
   },
 )
-
+const logStore = useLogging()
 watch(
   () => route.params.issueId,
   async nVal => {
     if (nVal) {
       await workStore.fetchIssue(Number(nVal))
-      await workStore.fetchIssueLogList({ issue: Number(nVal) })
+      await logStore.fetchIssueLogList({ issue: Number(nVal) })
       await workStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(nVal) })
     } else workStore.removeIssue()
   },
@@ -103,7 +104,7 @@ onBeforeMount(async () => {
 
   if (issueId.value) {
     await workStore.fetchIssue(Number(issueId.value))
-    await workStore.fetchIssueLogList({ issue: Number(issueId.value) })
+    await logStore.fetchIssueLogList({ issue: Number(issueId.value) })
     await workStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(issueId.value) })
   }
 
@@ -121,7 +122,7 @@ onBeforeMount(async () => {
       <IssueList
         v-if="route.name === '(업무)'"
         :proj-status="issueProject?.status"
-        :issue-list="issueList"
+        :issue-list="issueList as Issue[]"
         :all-projects="allProjects"
         :status-list="statusList"
         :tracker-list="trackerList"

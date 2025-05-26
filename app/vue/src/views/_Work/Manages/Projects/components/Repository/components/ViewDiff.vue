@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref, watch } from 'vue'
 import { btnSecondary } from '@/utils/cssMixins.ts'
-import type { Commit } from '@/store/types/work.ts'
+import type { Commit } from '@/store/types/work_github.ts'
 import { html } from 'diff2html'
 import 'diff2html/bundles/css/diff2html.min.css'
 import sanitizeHtml from 'sanitize-html'
@@ -30,8 +30,8 @@ watch(
 
 const diffHtml = ref('')
 
-const getDiffCode = (diff: string) => {
-  diffHtml.value = html(diff, {
+const getDiffCode = (diffApi: string) => {
+  diffHtml.value = html(diffApi, {
     drawFileList: false,
     matching: 'lines',
     outputFormat: outputFormat.value,
@@ -45,7 +45,9 @@ const hasContent = computed(() => {
 
 const getDiff = () => emit('get-diff', true)
 
-onMounted(async () => getDiffCode(props.diffApi))
+onMounted(async () => {
+  if (props.diffApi) getDiffCode(props.diffApi)
+})
 </script>
 
 <template>

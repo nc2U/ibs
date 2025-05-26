@@ -12,10 +12,10 @@ import {
   ref,
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useCompany } from '@/store/pinia/company'
 import { colorLight } from '@/utils/cssMixins'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 

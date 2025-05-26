@@ -1,6 +1,6 @@
 <script lang="ts" setup="">
 import { inject, type PropType } from 'vue'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 
 defineProps({
   subProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },

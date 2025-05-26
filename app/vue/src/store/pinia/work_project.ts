@@ -2,33 +2,29 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
+import { useLogging } from '@/store/pinia/work_logging.ts'
 import type {
-  ActLogEntryFilter,
   CodeValue,
-  Commit,
   GanttProject,
   Gantts,
   Issue,
   IssueCategory,
   IssueComment,
   IssueFilter,
-  IssueLogEntry,
   IssueProject,
   IssueRelation,
   IssueStatus,
   Member,
   News,
   ProjectFilter,
-  Repository,
   Role,
   TimeEntry,
   TimeEntryFilter,
   Tracker,
   Version,
-} from '@/store/types/work'
-import { useGithub } from '@/store/pinia/work_github.ts'
+} from '@/store/types/work_project.ts'
 
-const githubStore = useGithub()
+const logStore = useLogging()
 
 export const useWork = defineStore('work', () => {
   // Issue Project states & getters
@@ -461,90 +457,6 @@ export const useWork = defineStore('work', () => {
       .then(res => (statusList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  // Repository states & getters
-  const repository = ref<Repository | null>(null)
-  const repositoryList = ref<Repository[]>([])
-
-  const fetchRepo = async (pk: number) =>
-    await api
-      .get(`/repository/${pk}/`)
-      .then(async res => {
-        repository.value = res.data
-        await githubStore.fetchRepoApi(
-          `https://api.github.com/repos/${res.data.owner}/${res.data.slug}`,
-          res.data.github_token,
-        )
-      })
-      .catch(err => errorHandle(err.response.data))
-
-  const fetchRepoList = async (project: number | '' = '', is_default = '', is_report = '') =>
-    await api
-      .get(`/repository/?project=${project}&is_default=${is_default}&is_report=${is_report}`)
-      .then(res => (repositoryList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
-  const createRepo = async (payload: Repository) =>
-    await api
-      .post(`/repository/`, payload)
-      .then(async res => {
-        await fetchRepo(res.data.pk)
-        await fetchRepoList(res.data.project.pk)
-        message()
-      })
-      .catch(err => errorHandle(err.response.data))
-
-  const patchRepo = async (payload: Repository) =>
-    await api
-      .patch(`/repository/${payload.pk as number}/`, payload)
-      .then(async res => {
-        await fetchRepo(res.data.pk)
-        await fetchRepoList(res.data.project.pk)
-        message()
-      })
-      .catch(err => errorHandle(err.response.data))
-
-  const deleteRepo = async (pk: number, proj: number | null = null) =>
-    await api
-      .delete(`/repository/${pk}/`)
-      .then(async () => {
-        await fetchRepoList(proj ?? '')
-        message('warning', '알림!', '해당 저장소가 삭제되었습니다!')
-      })
-      .catch(err => errorHandle(err.response.data))
-
-  // commit states & getters
-  const commit = ref<Commit | null>(null)
-  const commitList = ref<Commit[]>([])
-  const commitCount = ref<number>(0)
-
-  const commitPages = (itemPerPage: number) => Math.ceil(commitCount.value / itemPerPage)
-
-  const fetchCommit = async (pk: number) =>
-    await api
-      .get(`/commit/${pk}/`)
-      .then(res => (commit.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-  const fetchCommitList = async (payload: {
-    project?: number
-    repo?: number
-    issues?: number[]
-    page?: number
-    limit?: number
-  }) => {
-    const { project, repo, issues, page, limit } = payload
-    const filterQuery = `repo__project=${project ?? ''}&repo=${repo ?? ''}`
-    const issueQuery = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
-    const paginationQuery = `page=${page}&limit=${limit ?? ''}`
-    return await api
-      .get(`/commit/?${filterQuery}&${issueQuery}&${paginationQuery}`)
-      .then(res => {
-        commitList.value = res.data.results
-        commitCount.value = res.data.count
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
-
   // code-activity states & getters
   const activityList = ref<CodeValue[]>([])
   const getActivities = computed(() =>
@@ -667,7 +579,7 @@ export const useWork = defineStore('work', () => {
       .then(async res => {
         await fetchIssue(res.data.pk)
         await fetchIssueList({ status__closed: '0', project: res.data.project.slug })
-        await fetchIssueLogList({ issue: res.data.pk })
+        await logStore.fetchIssueLogList({ issue: res.data.pk })
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -677,7 +589,7 @@ export const useWork = defineStore('work', () => {
       .put(`/issue/${pk}/`, payload, config_headers)
       .then(async () => {
         await fetchIssue(pk)
-        await fetchIssueLogList({ issue: pk })
+        await logStore.fetchIssueLogList({ issue: pk })
         await fetchTimeEntryList({ issue: pk, ordering: 'pk' })
         message()
       })
@@ -688,7 +600,7 @@ export const useWork = defineStore('work', () => {
       .patch(`/issue/${pk}/`, payload, config_headers)
       .then(async () => {
         await fetchIssue(pk)
-        await fetchIssueLogList({ issue: pk })
+        await logStore.fetchIssueLogList({ issue: pk })
         await fetchTimeEntryList({ issue: pk, ordering: 'pk' })
         message()
       })
@@ -724,7 +636,7 @@ export const useWork = defineStore('work', () => {
       .post(`/issue-relation/`, payload)
       .then(async res => {
         await fetchIssue(res.data.issue)
-        await fetchIssueLogList({ issue: res.data.issue })
+        await logStore.fetchIssueLogList({ issue: res.data.issue })
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -734,7 +646,7 @@ export const useWork = defineStore('work', () => {
       .put(`/issue-relation/${pk}/`, payload)
       .then(async res => {
         await fetchIssue(res.data.issue)
-        await fetchIssueLogList({ issue: res.data.issue })
+        await logStore.fetchIssueLogList({ issue: res.data.issue })
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -744,7 +656,7 @@ export const useWork = defineStore('work', () => {
       .delete(`/issue-relation/${pk}/`)
       .then(async () => {
         await fetchIssue(issue)
-        await fetchIssueLogList({ issue })
+        await logStore.fetchIssueLogList({ issue })
         message('warning', '알림!', '해당 업무와 연결 관계가 삭제되었습니다.')
       })
       .catch(err => errorHandle(err.response.data))
@@ -776,7 +688,7 @@ export const useWork = defineStore('work', () => {
       .then(async () => {
         await fetchIssueComment(payload.pk)
         await fetchIssueCommentList({ issue: payload.issue })
-        await fetchIssueLogList({ issue: payload.issue })
+        await logStore.fetchIssueLogList({ issue: payload.issue })
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -787,7 +699,7 @@ export const useWork = defineStore('work', () => {
       .then(async () => {
         if (issue) {
           await fetchIssueCommentList({ issue })
-          await fetchIssueLogList({ issue })
+          await logStore.fetchIssueLogList({ issue })
         }
         message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
       })
@@ -910,46 +822,6 @@ export const useWork = defineStore('work', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  // activity-log states & getters
-  const activityLogList = ref<any[]>([])
-  const groupedActivities = computed(() => {
-    return activityLogList.value.reduce((result, currentValue) => {
-      ;(result[currentValue['act_date']] = result[currentValue['act_date']] || []).push(
-        currentValue,
-      )
-      return result
-    }, {})
-  })
-
-  const fetchActivityLogList = async (payload: ActLogEntryFilter) => {
-    let url = `/act-entry/?1=1`
-    if (payload.project) url += `&project__slug=${payload.project}`
-    else if (payload.project__search) url += `&project__search=${payload.project__search}`
-    if (payload.from_act_date) url += `&from_act_date=${payload.from_act_date}`
-    if (payload.to_act_date) url += `&to_act_date=${payload.to_act_date}`
-    if (payload.user) url += `&user=${payload.user}`
-    if (!!payload.sort?.length) url += `&sort=${payload.sort.join(',')}`
-    if (!!payload.limit) url += `&limit=${payload.limit}`
-
-    return await api
-      .get(url)
-      .then(res => (activityLogList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  // activity-log states & getters
-  const issueLogList = ref<IssueLogEntry[]>([])
-
-  const fetchIssueLogList = async (payload: { issue?: number; user?: number }) => {
-    let url = `/log-entry/?1=1`
-    if (payload.issue) url += `&issue=${payload.issue}`
-    if (payload.user) url += `&user=${payload.user}`
-    return await api
-      .get(url)
-      .then(res => (issueLogList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
   return {
     issueProject,
     issueProjectList,
@@ -1007,21 +879,6 @@ export const useWork = defineStore('work', () => {
 
     statusList,
     fetchStatusList,
-
-    repository,
-    repositoryList,
-    fetchRepo,
-    fetchRepoList,
-    createRepo,
-    patchRepo,
-    deleteRepo,
-
-    commit,
-    commitList,
-    commitCount,
-    commitPages,
-    fetchCommit,
-    fetchCommitList,
 
     activityList,
     getActivities,
@@ -1082,12 +939,5 @@ export const useWork = defineStore('work', () => {
     createNews,
     updateNews,
     deleteNews,
-
-    activityLogList,
-    groupedActivities,
-    fetchActivityLogList,
-
-    issueLogList,
-    fetchIssueLogList,
   }
 })

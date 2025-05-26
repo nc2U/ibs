@@ -7,7 +7,7 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'

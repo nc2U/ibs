@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
-import type { Repository } from '@/store/types/work.ts'
-import type { Tree, CommitInfo } from '@/store/types/work_github.ts'
+import type { Repository, Tree, CommitInfo } from '@/store/types/work_github.ts'
 import VersionTitle from './VersionTitle.vue'
 import Versions from './Versions.vue'
 import TreeNode from './TreeNode.vue'

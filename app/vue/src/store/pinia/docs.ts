@@ -14,7 +14,7 @@ import type {
   Docs,
   TrashDocs as TP,
 } from '@/store/types/docs'
-import type { CodeValue } from '@/store/types/work'
+import type { CodeValue } from '@/store/types/work_project.ts'
 
 export type SuitCaseFilter = {
   company?: number | ''

@@ -89,7 +89,7 @@ export const numberToHour = (digit: number | string) => {
 
 export const humanizeFileSize = (bytes?: number, decimals = 2) => {
   if (bytes === 0) return '0 Bytes'
-  else if (bytes === undefined) return ''
+  else if (!bytes) return ''
 
   const k = 1024
   const dm = decimals < 0 ? 0 : decimals

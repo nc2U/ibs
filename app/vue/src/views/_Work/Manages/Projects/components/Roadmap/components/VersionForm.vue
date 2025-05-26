@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { isValidate } from '@/utils/helper'
 import { colorLight } from '@/utils/cssMixins'
 import DatePicker from '@/components/DatePicker/index.vue'

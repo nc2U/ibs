@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import { useWork } from '@/store/pinia/work.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins.ts'
-import type { ActLogEntryFilter, IssueProject } from '@/store/types/work.ts'
+import { useLogging } from '@/store/pinia/work_logging.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
+import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogsComponent.vue'
 import AsideActivity from '@/views/_Work/Manages/Activity/components/aside/AsideActivity.vue'
@@ -34,7 +36,7 @@ const activityFilter = ref<ActLogEntryFilter>({
   user: '',
   sort: [],
 })
-
+const logStore = useLogging()
 const toMove = (date: Date) => {
   toDate.value = date
   activityFilter.value.to_act_date = dateFormat(date)
@@ -42,7 +44,7 @@ const toMove = (date: Date) => {
     new Date(date.getTime() - 9 * 24 * 60 * 60 * 1000),
   )
   console.log(dateFormat(new Date(date.getTime() - 9 * 24 * 60 * 60 * 1000)))
-  workStore.fetchActivityLogList(activityFilter.value)
+  logStore.fetchActivityLogList(activityFilter.value)
 }
 
 watch(
@@ -62,7 +64,7 @@ const filterActivity = (payload: ActLogEntryFilter) => {
   activityFilter.value.project__search = payload.project__search ?? ''
   activityFilter.value.user = payload.user ?? ''
   activityFilter.value.sort = payload.sort
-  workStore.fetchActivityLogList(payload)
+  logStore.fetchActivityLogList(payload)
 }
 
 onBeforeMount(() => {

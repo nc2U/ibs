@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin1'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useProject } from '@/store/pinia/project'
 import { type Project } from '@/store/types/project'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import IndexForm from '@/views/projects/List/components/IndexForm.vue'

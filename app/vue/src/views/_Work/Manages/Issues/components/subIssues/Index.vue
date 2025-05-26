@@ -2,7 +2,7 @@
 import { ref, type PropType, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString } from '@/utils/baseMixins'
-import type { SubIssue } from '@/store/types/work'
+import type { SubIssue } from '@/store/types/work_project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({ subIssues: { type: Array as PropType<SubIssue[]>, default: () => [] } })

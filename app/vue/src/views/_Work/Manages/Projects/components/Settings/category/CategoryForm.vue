@@ -4,7 +4,7 @@ import type { User } from '@/store/types/accounts'
 import { colorLight } from '@/utils/cssMixins'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 
 defineProps({
   memberList: { type: Array as PropType<{ pk: number; username: string }[]>, default: () => [] },

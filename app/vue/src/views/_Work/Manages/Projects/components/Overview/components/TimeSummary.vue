@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { inject, type PropType } from 'vue'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import { numberToHour } from '@/utils/baseMixins'
 
 defineProps({ project: { type: Object as PropType<IssueProject>, required: true } })

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useWork } from '@/store/pinia/work.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
-import type { Commit, IssueProject, Repository } from '@/store/types/work.ts'
-import type { CommitInfo, Tree } from '@/store/types/work_github.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
+import type { Repository, Commit, CommitInfo, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SourceCode from './components/SourceCode.vue'
 import Revisions from './components/Revisions.vue'
@@ -28,29 +28,31 @@ watch(project, nVal => {
     fetchCommitList(cFilter.value)
   }
 })
-const repo = computed<Repository | null>(() => workStore.repository)
+
+// get github api
+const ghStore = useGithub()
+const repo = computed<Repository | null>(() => ghStore.repository)
+const repoList = computed(() => ghStore.repositoryList)
+const commitList = computed<Commit[]>(() => ghStore.commitList)
+
 watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
 })
-const repoList = computed(() => workStore.repositoryList)
-const commitList = computed<Commit[]>(() => workStore.commitList)
 
-const fetchRepo = (pk: number) => workStore.fetchRepo(pk)
-const fetchRepoList = (project?: number, is_default?: string) =>
-  workStore.fetchRepoList(project, is_default)
+const fetchRepo = (pk: number) => ghStore.fetchRepo(pk)
+const fetchRepoList = (project?: number, is_def?: string) => ghStore.fetchRepoList(project, is_def)
 const fetchCommitList = (payload: {
   project?: number
   repo?: number
   issues?: number[]
   page?: number
   limit?: number
-}) => workStore.fetchCommitList(payload)
+}) => ghStore.fetchCommitList(payload)
 
-// get github api
-const ghStore = useGithub()
 const branches = computed<CommitInfo[]>(() => ghStore.branches)
 const tags = computed<CommitInfo[]>(() => ghStore.tags)
 
+const default_branch = computed<string>(() => ghStore.default_branch ?? 'master')
 const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
@@ -59,7 +61,7 @@ const diffApi = computed<any>(() => ghStore.diffApi)
 
 const fetchDiffApi = (url: string, token: string) => ghStore.fetchDiffApi(url, token)
 const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
-const fetchDefBranch = (url: string, token: string = '') => ghStore.fetchDefBranch(url, token)
+const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
 const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
 
 const getListSort = ref<'latest' | 'all'>('latest')
@@ -107,7 +109,7 @@ onBeforeMount(async () => {
     const url = githubApiUrl.value
     const token = repo.value.github_token ?? ''
     await fetchBranches(url, token)
-    await fetchDefBranch(url, token)
+    await fetchDefBranch(repo.value.pk as number, default_branch.value)
     await fetchTags(url, token)
   }
 })
@@ -120,7 +122,7 @@ onBeforeMount(async () => {
         :repo="repo as Repository"
         :branches="branches"
         :tags="tags"
-        :def-name="'master'"
+        :def-name="default_branch"
         :def-branch="master as CommitInfo"
         :def-tree="masterTree"
       />

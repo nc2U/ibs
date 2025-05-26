@@ -1,19 +1,94 @@
 import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { errorHandle } from '@/utils/helper'
-import type { CommitInfo, Tree } from '@/store/types/work_github.ts'
-
-const sortTree = (trees: Tree[]) =>
-  trees.sort((a, b) => {
-    // 디렉터리 먼저
-    if (a.type === 'tree' && b.type !== 'tree') return -1
-    if (a.type !== 'tree' && b.type === 'tree') return 1
-    // 그 다음 이름순 정렬
-    return a.path.localeCompare(b.path)
-  })
+import { errorHandle, message } from '@/utils/helper'
+import type { Commit, CommitInfo, Repository } from '@/store/types/work_github.ts'
 
 export const useGithub = defineStore('github', () => {
+  // Repository states & getters
+  const repository = ref<Repository | null>(null)
+  const repositoryList = ref<Repository[]>([])
+
+  const fetchRepo = async (pk: number) =>
+    await api
+      .get(`/repository/${pk}/`)
+      .then(async res => {
+        repository.value = res.data
+        await fetchRepoApi(
+          `https://api.github.com/repos/${res.data.owner}/${res.data.slug}`,
+          res.data.github_token,
+        )
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchRepoList = async (project: number | '' = '', is_default = '', is_report = '') =>
+    await api
+      .get(`/repository/?project=${project}&is_default=${is_default}&is_report=${is_report}`)
+      .then(res => (repositoryList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createRepo = async (payload: Repository) =>
+    await api
+      .post(`/repository/`, payload)
+      .then(async res => {
+        await fetchRepo(res.data.pk)
+        await fetchRepoList(res.data.project.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchRepo = async (payload: Repository) =>
+    await api
+      .patch(`/repository/${payload.pk as number}/`, payload)
+      .then(async res => {
+        await fetchRepo(res.data.pk)
+        await fetchRepoList(res.data.project.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteRepo = async (pk: number, proj: number | null = null) =>
+    await api
+      .delete(`/repository/${pk}/`)
+      .then(async () => {
+        await fetchRepoList(proj ?? '')
+        message('warning', '알림!', '해당 저장소가 삭제되었습니다!')
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  // commit states & getters
+  const commit = ref<Commit | null>(null)
+  const commitList = ref<Commit[]>([])
+  const commitCount = ref<number>(0)
+
+  const commitPages = (itemPerPage: number) => Math.ceil(commitCount.value / itemPerPage)
+
+  const fetchCommit = async (pk: number) =>
+    await api
+      .get(`/commit/${pk}/`)
+      .then(res => (commit.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchCommitList = async (payload: {
+    project?: number
+    repo?: number
+    issues?: number[]
+    page?: number
+    limit?: number
+  }) => {
+    const { project, repo, issues, page, limit } = payload
+    const filterQuery = `repo__project=${project ?? ''}&repo=${repo ?? ''}`
+    const issueQuery = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
+    const paginationQuery = `page=${page}&limit=${limit ?? ''}`
+    return await api
+      .get(`/commit/?${filterQuery}&${issueQuery}&${paginationQuery}`)
+      .then(res => {
+        commitList.value = res.data.results
+        commitCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
   // repo api
   const repoApi = ref<any>(null)
   const default_branch = computed(() => repoApi.value?.default_branch)
@@ -28,104 +103,16 @@ export const useGithub = defineStore('github', () => {
 
   // branches api
   const master = ref<CommitInfo | null>(null)
-  const master_tree_url = ref<string>('')
   const master_tree = ref<any[]>([])
 
-  const fetchRootTree = async (tree_url: string, url: string, headers: any): Promise<Tree[]> => {
-    try {
-      const results = await api.get(tree_url, { headers })
-      const treeList = sortTree(results.data.tree ?? [])
-
-      const rootTree: Tree[] = []
-
-      for (const tree of treeList) {
-        try {
-          const { data: commits } = await api.get(`${url}/commits?path=${tree.path}`, { headers })
-          const latest = commits[0]
-
-          if (!latest) continue
-
-          rootTree.push({
-            path: tree.path,
-            mode: tree.mode,
-            type: tree.type,
-            sha: tree.sha,
-            url: tree.url,
-            size: tree.size,
-            commit: {
-              sha: latest.sha.substring(0, 5),
-              url: latest.html_url ?? latest.url,
-              author: latest.commit.author.name,
-              date: latest.commit.author.date,
-              message: latest.commit.message,
-            },
-            open: false,
-            loaded: tree.type === 'tree' ? false : undefined,
-          })
-        } catch (err) {
-          console.error(`Error fetching commit for ${tree.path}:`, err)
-        }
-      }
-      return rootTree
-    } catch (err: any) {
-      errorHandle(err.response)
-      return []
-    }
-  }
-
-  const fetchSubTree = async (url: string, token: string) => {
-    try {
-      const { data } = await api.get(url, {
-        headers: { Authorization: `token ${token}` },
-      })
-      return data.tree.map((item: Tree) => ({
-        path: item.path,
-        mode: item.mode,
-        type: item.type,
-        sha: item.sha,
-        url: item.url,
-        size: item.size,
-        open: false,
-        loaded: item.type === 'tree' ? false : undefined,
-      }))
-    } catch (error) {
-      console.log('Error fetching tree:', error)
-      return []
-    }
-  }
-
-  const fetchDefBranch = async (url: string, token: string = '') => {
-    const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
-    if (default_branch.value === '') await fetchRepoApi(url, token) // deault_branch 데이터 추출
-    // 기본(master) 브랜치 데이터 추출
-    await api // 트리 url 구하기
-      .get(`${url}/branches/${default_branch.value}`, { headers })
-      .then(async res => {
-        master_tree_url.value = res.data.commit.commit.tree.url
-
-        master.value = {
-          name: res.data.name,
-          commit: {
-            sha: res.data.commit.sha.substring(0, 5),
-            url: res.data.commit.url,
-            author: res.data.commit.commit.author.name,
-            date: res.data.commit.commit.author.date,
-            message: res.data.commit.commit.message,
-          },
-        }
-
-        master_tree.value = []
-        try {
-          master_tree.value = await fetchRootTree(master_tree_url.value, url, headers)
-        } catch (error) {
-          console.error('fetchRootTree 실패:', error)
-        }
-
-        await api // tree 구하기
-          .get(`${master_tree_url.value}`, { headers })
+  const fetchDefBranch = async (repo: number, branch: string) =>
+    await api
+      .get(`/repo/${repo}/branch/${branch}/`)
+      .then(res => {
+        master.value = res.data.branch
+        master_tree.value = res.data.trees
       })
       .catch(err => errorHandle(err.response))
-  }
 
   const branches = ref<CommitInfo[]>([])
 
@@ -211,16 +198,29 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response.data))
 
   return {
+    repository,
+    repositoryList,
+    fetchRepo,
+    fetchRepoList,
+    createRepo,
+    patchRepo,
+    deleteRepo,
+
+    commit,
+    commitList,
+    commitCount,
+    commitPages,
+    fetchCommit,
+    fetchCommitList,
+
     repoApi,
     default_branch,
     fetchRepoApi,
 
     master,
     master_tree,
-    master_tree_url,
-    fetchRootTree,
-    fetchSubTree,
     fetchDefBranch,
+
     branches,
     fetchBranches,
 

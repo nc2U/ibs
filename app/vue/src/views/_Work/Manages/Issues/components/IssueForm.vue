@@ -10,11 +10,11 @@ import type {
   SimpleCategory,
   SimpleMember,
   SimpleUser,
-} from '@/store/types/work'
+} from '@/store/types/work_project.ts'
 import type { User } from '@/store/types/accounts'
 import { isValidate } from '@/utils/helper'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { dateFormat } from '@/utils/baseMixins'
 import { btnLight, colorLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'

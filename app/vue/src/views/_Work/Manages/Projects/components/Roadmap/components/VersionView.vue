@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watchEffect } from 'vue'
-import type { Version } from '@/store/types/work'
+import type { Version } from '@/store/types/work_project.ts'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import VersionSummary from '@/views/_Work/Manages/Projects/components/Roadmap/components/VersionSummary.vue'

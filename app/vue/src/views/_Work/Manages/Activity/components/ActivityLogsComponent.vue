@@ -2,9 +2,10 @@
 import Cookies from 'js-cookie'
 import { computed, onBeforeMount, type PropType, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
 import { dateFormat } from '@/utils/baseMixins'
-import type { ActLogEntry } from '@/store/types/work'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useLogging } from '@/store/pinia/work_logging.ts'
+import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
 import ActivityLogs from '@/views/_Work/Manages/Activity/components/ActivityLogs.vue'
 
@@ -20,9 +21,9 @@ const sort = computed(() =>
   cookieSort.value?.length ? cookieSort : ['1', '2', '4', '5', '6', '9'],
 )
 
-const workStore = useWork()
+const logStore = useLogging()
 const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
-  () => workStore.groupedActivities,
+  () => logStore.groupedActivities,
 )
 
 const fromDate = computed(
@@ -41,7 +42,7 @@ watch(
   () => route,
   nVal => {
     if (nVal.params.projId)
-      workStore.fetchActivityLogList({
+      logStore.fetchActivityLogList({
         project: nVal.params.projId,
         from_act_date: dateFormat(fromDate.value),
         to_act_date: dateFormat(props.toDate),
@@ -52,10 +53,11 @@ watch(
   { deep: true },
 )
 
+const workStore = useWork()
 onBeforeMount(() => {
   if (route.params.projId) workStore.fetchIssueProject(projId.value)
   setTimeout(() => {
-    workStore.fetchActivityLogList({
+    logStore.fetchActivityLogList({
       project: projId.value,
       from_act_date: dateFormat(fromDate.value),
       to_act_date: dateFormat(props.toDate),

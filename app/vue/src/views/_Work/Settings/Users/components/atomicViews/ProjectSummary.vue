@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
 

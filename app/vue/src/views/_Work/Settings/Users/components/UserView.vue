@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, type PropType } from 'vue'
-import type { ActLogEntry, IssueProject } from '@/store/types/work'
+import { computed, inject, type PropType } from 'vue'
+import type { ActLogEntry } from '@/store/types/work_logging.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import { dateFormat, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
 import { useAccount } from '@/store/pinia/account'
+import { useLogging } from '@/store/pinia/work_logging.ts'
 import IssueSummary from './atomicViews/IssueSummary.vue'
 import ProjectSummary from './atomicViews/ProjectSummary.vue'
 import ActivityLogs from '@/views/_Work/Manages/Activity/components/ActivityLogs.vue'
@@ -24,9 +25,9 @@ const workManager = inject('workManager', false)
 const accStore = useAccount()
 const user = computed(() => accStore.user)
 
-const workStore = useWork()
+const logStore = useLogging()
 const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
-  () => workStore.groupedActivities,
+  () => logStore.groupedActivities,
 )
 
 const issueProjects = computed(() => props.issueProjects.slice())

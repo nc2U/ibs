@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { Commit } from '@/store/types/work.ts'
-import { useWork } from '@/store/pinia/work.ts'
+import type { Commit } from '@/store/types/work_github.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import Pagination from '@/components/Pagination'
+import { useGithub } from '@/store/pinia/work_github.ts'
 
 const props = defineProps({
   page: { type: Number, required: true },
@@ -52,8 +53,8 @@ const updateHead = (pk: number) => {
 
 const getDiff = () => emit('get-diff', false)
 
-const workStore = useWork()
-const commitPages = (page: number) => workStore.commitPages(page)
+const ghStore = useGithub()
+const commitPages = (page: number) => ghStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 
 onBeforeMount(() => {
