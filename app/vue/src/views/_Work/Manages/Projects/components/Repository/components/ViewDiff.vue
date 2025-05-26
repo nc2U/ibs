@@ -30,8 +30,8 @@ watch(
 
 const diffHtml = ref('')
 
-const getDiffCode = (diff: string) => {
-  diffHtml.value = html(diff, {
+const getDiffCode = (diffApi: string) => {
+  diffHtml.value = html(diffApi, {
     drawFileList: false,
     matching: 'lines',
     outputFormat: outputFormat.value,
@@ -45,7 +45,9 @@ const hasContent = computed(() => {
 
 const getDiff = () => emit('get-diff', true)
 
-onMounted(async () => getDiffCode(props.diffApi))
+onMounted(async () => {
+  if (props.diffApi) getDiffCode(props.diffApi)
+})
 </script>
 
 <template>
