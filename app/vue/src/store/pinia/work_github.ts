@@ -1,10 +1,94 @@
 import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { errorHandle } from '@/utils/helper'
-import type { CommitInfo, Tree } from '@/store/types/work_github.ts'
+import { errorHandle, message } from '@/utils/helper'
+import type { Commit, CommitInfo, Repository } from '@/store/types/work_github.ts'
 
 export const useGithub = defineStore('github', () => {
+  // Repository states & getters
+  const repository = ref<Repository | null>(null)
+  const repositoryList = ref<Repository[]>([])
+
+  const fetchRepo = async (pk: number) =>
+    await api
+      .get(`/repository/${pk}/`)
+      .then(async res => {
+        repository.value = res.data
+        await fetchRepoApi(
+          `https://api.github.com/repos/${res.data.owner}/${res.data.slug}`,
+          res.data.github_token,
+        )
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchRepoList = async (project: number | '' = '', is_default = '', is_report = '') =>
+    await api
+      .get(`/repository/?project=${project}&is_default=${is_default}&is_report=${is_report}`)
+      .then(res => (repositoryList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createRepo = async (payload: Repository) =>
+    await api
+      .post(`/repository/`, payload)
+      .then(async res => {
+        await fetchRepo(res.data.pk)
+        await fetchRepoList(res.data.project.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchRepo = async (payload: Repository) =>
+    await api
+      .patch(`/repository/${payload.pk as number}/`, payload)
+      .then(async res => {
+        await fetchRepo(res.data.pk)
+        await fetchRepoList(res.data.project.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteRepo = async (pk: number, proj: number | null = null) =>
+    await api
+      .delete(`/repository/${pk}/`)
+      .then(async () => {
+        await fetchRepoList(proj ?? '')
+        message('warning', '알림!', '해당 저장소가 삭제되었습니다!')
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  // commit states & getters
+  const commit = ref<Commit | null>(null)
+  const commitList = ref<Commit[]>([])
+  const commitCount = ref<number>(0)
+
+  const commitPages = (itemPerPage: number) => Math.ceil(commitCount.value / itemPerPage)
+
+  const fetchCommit = async (pk: number) =>
+    await api
+      .get(`/commit/${pk}/`)
+      .then(res => (commit.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchCommitList = async (payload: {
+    project?: number
+    repo?: number
+    issues?: number[]
+    page?: number
+    limit?: number
+  }) => {
+    const { project, repo, issues, page, limit } = payload
+    const filterQuery = `repo__project=${project ?? ''}&repo=${repo ?? ''}`
+    const issueQuery = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
+    const paginationQuery = `page=${page}&limit=${limit ?? ''}`
+    return await api
+      .get(`/commit/?${filterQuery}&${issueQuery}&${paginationQuery}`)
+      .then(res => {
+        commitList.value = res.data.results
+        commitCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
   // repo api
   const repoApi = ref<any>(null)
   const default_branch = computed(() => repoApi.value?.default_branch)
@@ -114,6 +198,21 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response.data))
 
   return {
+    repository,
+    repositoryList,
+    fetchRepo,
+    fetchRepoList,
+    createRepo,
+    patchRepo,
+    deleteRepo,
+
+    commit,
+    commitList,
+    commitCount,
+    commitPages,
+    fetchCommit,
+    fetchCommitList,
+
     repoApi,
     default_branch,
     fetchRepoApi,

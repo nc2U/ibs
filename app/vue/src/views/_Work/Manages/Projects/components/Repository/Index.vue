@@ -28,26 +28,27 @@ watch(project, nVal => {
     fetchCommitList(cFilter.value)
   }
 })
-const repo = computed<Repository | null>(() => workStore.repository)
+
+// get github api
+const ghStore = useGithub()
+const repo = computed<Repository | null>(() => ghStore.repository)
+const repoList = computed(() => ghStore.repositoryList)
+const commitList = computed<Commit[]>(() => ghStore.commitList)
+
 watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
 })
-const repoList = computed(() => workStore.repositoryList)
-const commitList = computed<Commit[]>(() => workStore.commitList)
 
-const fetchRepo = (pk: number) => workStore.fetchRepo(pk)
-const fetchRepoList = (project?: number, is_default?: string) =>
-  workStore.fetchRepoList(project, is_default)
+const fetchRepo = (pk: number) => ghStore.fetchRepo(pk)
+const fetchRepoList = (project?: number, is_def?: string) => ghStore.fetchRepoList(project, is_def)
 const fetchCommitList = (payload: {
   project?: number
   repo?: number
   issues?: number[]
   page?: number
   limit?: number
-}) => workStore.fetchCommitList(payload)
+}) => ghStore.fetchCommitList(payload)
 
-// get github api
-const ghStore = useGithub()
 const branches = computed<CommitInfo[]>(() => ghStore.branches)
 const tags = computed<CommitInfo[]>(() => ghStore.tags)
 

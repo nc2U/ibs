@@ -14,6 +14,7 @@ import Forum from '@/views/_Work/Manages/Projects/components/Settings/components
 import TimeTracking from '@/views/_Work/Manages/Projects/components/Settings/components/TimeTracking.vue'
 import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import { useGithub } from '@/store/pinia/work_github.ts'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -56,13 +57,7 @@ const workStore = useWork()
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
 const modules = computed(() => issueProject.value?.module)
-const AllProjects = computed(() => workStore.AllIssueProjects)
-const getRoles = computed(() => workStore.getRoles)
-const getTrackers = computed(() => workStore.getTrackers)
-const repositoryList = computed(() => workStore.repositoryList)
-const getActivities = computed(() => workStore.getActivities)
 const versionList = computed(() => workStore.versionList)
-
 const memberList = computed(() =>
   (
     (issueProject.value
@@ -100,12 +95,15 @@ const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: 
   }
 }
 
+const ghStore = useGithub()
+const repositoryList = computed(() => ghStore.repositoryList)
+
 const submitRepo = (payload: any) => {
   if (!payload.project) payload.project = issueProject.value?.pk
-  if (!payload.pk) workStore.createRepo(payload)
-  else workStore.patchRepo(payload)
+  if (!payload.pk) ghStore.createRepo(payload)
+  else ghStore.patchRepo(payload)
 }
-const deleteRepo = (pk: number, proj: number | undefined) => workStore.deleteRepo(pk, proj)
+const deleteRepo = (pk: number, proj: number | undefined) => ghStore.deleteRepo(pk, proj)
 
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
@@ -124,8 +122,8 @@ onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({})
   await workStore.fetchRoleList()
   await workStore.fetchTrackerList()
-  await workStore.fetchRepoList(issueProject.value?.pk ?? '')
   await workStore.fetchActivityList()
+  await ghStore.fetchRepoList(issueProject.value?.pk ?? '')
 
   if (route.params.projId) {
     const projId = route.params.projId as string
