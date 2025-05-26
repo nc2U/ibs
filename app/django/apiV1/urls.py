@@ -185,3 +185,7 @@ urlpatterns += [
     path('post/<int:pk>/copy/', board.PostViewSet.as_view({'post': 'copy_and_create'}), name='post-copy')]
 urlpatterns += [
     path('docs/<int:pk>/copy/', docs.DocumentViewSet.as_view({'docs': 'copy_and_create'}), name='docs-copy')]
+
+# github api
+urlpatterns += [
+    path('root-tree/<int:pk>/', work.GithubRootTreeView.as_view(), name='github-root-tree')]
