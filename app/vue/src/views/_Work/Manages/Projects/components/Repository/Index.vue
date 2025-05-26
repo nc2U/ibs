@@ -51,6 +51,7 @@ const ghStore = useGithub()
 const branches = computed<CommitInfo[]>(() => ghStore.branches)
 const tags = computed<CommitInfo[]>(() => ghStore.tags)
 
+const default_branch = computed<string>(() => ghStore.default_branch ?? 'master')
 const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
@@ -107,8 +108,7 @@ onBeforeMount(async () => {
     const url = githubApiUrl.value
     const token = repo.value.github_token ?? ''
     await fetchBranches(url, token)
-    // await fetchDefBranch(url, token)
-    await fetchDefBranch(1, 'master')
+    await fetchDefBranch(repo.value.pk as number, default_branch.value)
     await fetchTags(url, token)
   }
 })
@@ -121,7 +121,7 @@ onBeforeMount(async () => {
         :repo="repo as Repository"
         :branches="branches"
         :tags="tags"
-        :def-name="'master'"
+        :def-name="default_branch"
         :def-branch="master as CommitInfo"
         :def-tree="masterTree"
       />
