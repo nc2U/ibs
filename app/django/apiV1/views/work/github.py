@@ -1,4 +1,5 @@
 import requests
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 
@@ -28,62 +29,88 @@ GITHUB_API_HEADERS = lambda token: {
 }
 
 
-class GithubRootTreeView(APIView):
+class GetTagTree(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+
+class GithubBranchTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
-    def get(request, pk):
-        try:
-            repo = Repository.objects.get(pk=pk)
-        except Repository.DoesNotExist:
-            return Response({'error': 'Repository not found'}, status=404)
+    def get(request, pk, branch):
+        repo = get_object_or_404(Repository, pk=pk)
 
-        repo_url = f"api.github.com/repos/{repo.owner}/{repo.slug}"
-        tree_url = f"{repo_url}/git/trees/{request.query_params.get("sha")}"
         token = repo.github_token
-
-        if not all([tree_url, repo_url, token]):
-            return Response({"error": "Missing parameters"}, status=400)
-
         headers = GITHUB_API_HEADERS(token)
+
+        base_url = f"https://api.github.com/repos/{repo.owner}/{repo.slug}"
+        branch_url = f"{base_url}/branches/{branch}"
+
+        try:
+            branch_res = requests.get(branch_url, headers=headers)
+            branch_res.raise_for_status()
+            branch_commit = branch_res.json().get("commit", {})
+            commit_info = branch_commit.get("commit", {})
+            author_info = commit_info.get("author", {})
+        except Exception as e:
+            return Response({"Error": "Branch fetch failed", "details": str(e)}, status=500)
+
+        branch_api = {
+            "name": branch,
+            "commit": {
+                "sha": branch_commit.get("sha", "")[:5],
+                "url": branch_commit.get("url"),
+                "author": author_info.get("name", "Unknown"),
+                "date": author_info.get("date"),
+                "message": commit_info.get("message"),
+            }
+        }
+
+        # 트리 URL에서 파일 트리 정보 가져 오기
+        tree_url = commit_info.get("tree", {}).get("url")
+        if not tree_url:
+            return Response({"Error": "Tree URL not found in branch commit"}, status=500)
 
         try:
             tree_res = requests.get(tree_url, headers=headers)
             tree_res.raise_for_status()
             tree_data = tree_res.json().get("tree", [])
         except Exception as e:
-            return Response({"error": "Tree fetch failed", "details": str(e)}, status=500)
+            return Response({"Error": "Tree fetch failed", "details": str(e)}, status=500)
 
-        result = []
+        trees_api = []
         for item in tree_data:
             try:
-                commits_url = f"{repo_url}/commits?path={item['path']}"
+                commits_url = f"{base_url}/commits?path={item['path']}"
                 commit_res = requests.get(commits_url, headers=headers)
                 commit_res.raise_for_status()
-                commit = commit_res.json()[0] if commit_res.json() else None
-
-                if not commit:
+                commit_json = commit_res.json()
+                if not commit_json:
                     continue
 
-                result.append({
-                    "path": item["path"],
-                    "mode": item["mode"],
-                    "type": item["type"],
-                    "sha": item["sha"],
-                    "url": item["url"],
+                commit = commit_json[0]
+                commit_meta = commit.get("commit", {})
+                commit_author = commit_meta.get("author", {})
+
+                trees_api.append({
+                    "path": item.get("path"),
+                    "mode": item.get("mode"),
+                    "type": item.get("type"),
+                    "sha": item.get("sha"),
+                    "url": item.get("url"),
                     "size": item.get("size"),
                     "commit": {
-                        "sha": commit["sha"][:5],
-                        "url": commit.get("html_url") or commit.get("url"),
-                        "author": commit["commit"]["author"]["name"],
-                        "date": commit["commit"]["author"]["date"],
-                        "message": commit["commit"]["message"],
+                        "sha": commit.get("sha", "")[:5],
+                        "url": commit.get("url"),
+                        "author": commit_author.get("name", "Unknown"),
+                        "date": commit_author.get("date"),
+                        "message": commit_meta.get("message"),
                     },
                     "open": False,
-                    "loaded": item["type"] == "tree" and False or None
+                    "loaded": False if item.get("type") == "tree" else None,
                 })
             except Exception as e:
-                print(f"Error fetching commit for {item['path']}: {e}")
+                print(f"[!] Commit fetch failed for {item.get('path')}: {e}")
                 continue
 
-        return Response(result, status=status.HTTP_200_OK)
+        return Response({"branch": branch_api, "trees": trees_api}, status=status.HTTP_200_OK)

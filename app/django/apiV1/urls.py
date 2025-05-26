@@ -188,4 +188,4 @@ urlpatterns += [
 
 # github api
 urlpatterns += [
-    path('root-tree/<int:pk>/', work.GithubRootTreeView.as_view(), name='github-root-tree')]
+    path('repo/<int:pk>/branch/<str:branch>/', work.GithubBranchTreeView.as_view(), name='github-branch-tree')]
