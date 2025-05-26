@@ -113,4 +113,6 @@ class GithubBranchTreeView(APIView):
                 print(f"[!] Commit fetch failed for {item.get('path')}: {e}")
                 continue
 
+        # 트리 정렬: 디렉터리(tree) 먼저, 그 다음 파일(blob), 이름 오름차순
+        trees_api.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
         return Response({"branch": branch_api, "trees": trees_api}, status=status.HTTP_200_OK)
