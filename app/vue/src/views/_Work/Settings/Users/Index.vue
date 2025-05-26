@@ -3,8 +3,9 @@ import { ref, computed, onBeforeMount, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin3'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
 import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useLogging } from '@/store/pinia/work_logging.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import UserList from '@/views/_Work/Settings/Users/components/UserList.vue'
@@ -23,7 +24,9 @@ const issueProjects = computed(() => workStore.issueProjects)
 const issueNumByMember = computed(() => workStore.issueNumByMember)
 const fetchIssueByMember = (userId: string) => workStore.fetchIssueByMember(userId)
 const fetchIssueProjectList = (payload: any) => workStore.fetchIssueProjectList(payload)
-const fetchActivityLogList = (payload: ActLogEntryFilter) => workStore.fetchActivityLogList(payload)
+
+const logStore = useLogging()
+const fetchActivityLogList = (payload: ActLogEntryFilter) => logStore.fetchActivityLogList(payload)
 
 const route = useRoute()
 watch(route, nVal => {

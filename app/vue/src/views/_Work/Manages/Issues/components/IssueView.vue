@@ -6,12 +6,14 @@ import type {
   IssueComment,
   IssueProject,
   IssueStatus,
+  Permission,
   SubIssue,
   TimeEntry,
 } from '@/store/types/work_project.ts'
-import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
-import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute, useRouter } from 'vue-router'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useLogging } from '@/store/pinia/work_logging.ts'
+import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import IssueControl from './IssueControl.vue'
 import IssueHistory from './IssueHistory.vue'
@@ -43,9 +45,11 @@ const isClosed = computed(() => props.issue?.closed)
 
 const workStore = useWork()
 const issueNums = computed(() => workStore.issueNums)
-const issueLogList = computed(() => workStore.issueLogList)
-const my_perms = computed(() => workStore.issueProject?.my_perms)
+const my_perms = computed<Permission | undefined>(() => workStore.issueProject?.my_perms)
 const getIssues = computed(() => workStore.getIssues.filter(i => i.value !== props.issue.pk))
+
+const logStore = useLogging()
+const issueLogList = computed(() => logStore.issueLogList)
 
 const doneRatio = computed(() => {
   if (props.issue?.sub_issues.length) {
@@ -135,7 +139,7 @@ watch(route, async nVal => {
 })
 
 onBeforeMount(async () => {
-  await workStore.fetchIssueLogList({ issue: props.issue.pk })
+  await logStore.fetchIssueLogList({ issue: props.issue.pk })
   if (route.query.edit) callEditForm()
 })
 </script>
