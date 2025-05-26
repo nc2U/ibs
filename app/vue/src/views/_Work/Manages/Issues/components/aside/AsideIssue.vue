@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { inject, type PropType, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import WatcherAdd from './WatcherAdd.vue'
 
 const props = defineProps({

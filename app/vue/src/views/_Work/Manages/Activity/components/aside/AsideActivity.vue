@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { reactive, computed, inject, onBeforeMount, type ComputedRef, nextTick, watch } from 'vue'
-import type { ActLogEntryFilter, IssueProject } from '@/store/types/work'
+import type { ActLogEntryFilter, IssueProject } from '@/store/types/work_project.ts'
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { dateFormat } from '@/utils/baseMixins'

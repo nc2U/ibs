@@ -1,7 +1,13 @@
 <script lang="ts" setup>
 import { computed, inject, type PropType, ref, watchEffect } from 'vue'
-import type { Issue, IssueFilter, IssueProject, IssueStatus, Tracker } from '@/store/types/work'
-import { useWork } from '@/store/pinia/work'
+import type {
+  Issue,
+  IssueFilter,
+  IssueProject,
+  IssueStatus,
+  Tracker,
+} from '@/store/types/work_project.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { timeFormat } from '@/utils/baseMixins'
 import { useRoute, useRouter } from 'vue-router'
 import NoData from '@/views/_Work/components/NoData.vue'

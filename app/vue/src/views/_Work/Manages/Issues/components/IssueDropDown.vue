@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, type ComputedRef, inject, type PropType, onBeforeMount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { Issue, SimpleIssue } from '@/store/types/work'
+import type { Issue, SimpleIssue } from '@/store/types/work_project.ts'
 import type { User } from '@/store/types/accounts'
 
 const props = defineProps({

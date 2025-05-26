@@ -1,7 +1,7 @@
 <script lang="ts" setup="">
 import { type PropType } from 'vue'
 import { useRoute } from 'vue-router'
-import type { IssueLogEntry } from '@/store/types/work'
+import type { IssueLogEntry } from '@/store/types/work_project.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 

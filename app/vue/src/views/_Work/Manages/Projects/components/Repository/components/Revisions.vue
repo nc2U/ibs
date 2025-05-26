@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Commit } from '@/store/types/work_github.ts'
-import { useWork } from '@/store/pinia/work.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import Pagination from '@/components/Pagination'
 import { useGithub } from '@/store/pinia/work_github.ts'

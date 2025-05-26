@@ -2,7 +2,7 @@
 import { computed, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
-import type { Version } from '@/store/types/work'
+import type { Version } from '@/store/types/work_project.ts'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 

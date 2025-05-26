@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import GanttChart from '@/views/_Work/Manages/Gantt/components/GanttChart.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'

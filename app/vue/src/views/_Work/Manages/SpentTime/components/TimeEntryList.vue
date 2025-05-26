@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref, watchEffect } from 'vue'
-import type { IssueProject, TimeEntry, TimeEntryFilter } from '@/store/types/work'
+import type { IssueProject, TimeEntry, TimeEntryFilter } from '@/store/types/work_project.ts'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { cutString, dateFormat, numberToHour } from '@/utils/baseMixins'
 import SearchList from './SearchList.vue'
 import Pagination from '@/components/Pagination'

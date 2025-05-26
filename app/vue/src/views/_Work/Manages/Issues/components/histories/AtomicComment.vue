@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
-import type { IssueLogEntry } from '@/store/types/work'
+import type { IssueLogEntry } from '@/store/types/work_project.ts'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { User } from '@/store/types/accounts'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'

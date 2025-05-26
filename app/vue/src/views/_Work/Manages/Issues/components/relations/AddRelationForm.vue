@@ -3,7 +3,7 @@ import Multiselect from '@vueform/multiselect'
 import { type PropType, ref } from 'vue'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
-import type { IssueRelation } from '@/store/types/work'
+import type { IssueRelation } from '@/store/types/work_project.ts'
 
 const props = defineProps({
   issuePk: { type: Number, required: true },

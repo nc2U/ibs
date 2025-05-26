@@ -2,7 +2,7 @@
 import { type ComputedRef, inject, type PropType } from 'vue'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import type { User } from '@/store/types/accounts.ts'
-import type { IssueProject } from '@/store/types/work.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 
 defineProps({
   project: {

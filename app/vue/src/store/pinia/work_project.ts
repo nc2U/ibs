@@ -23,7 +23,7 @@ import type {
   TimeEntryFilter,
   Tracker,
   Version,
-} from '@/store/types/work'
+} from '@/store/types/work_project.ts'
 
 export const useWork = defineStore('work', () => {
   // Issue Project states & getters

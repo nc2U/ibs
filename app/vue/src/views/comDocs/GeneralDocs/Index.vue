@@ -7,7 +7,7 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
@@ -141,7 +141,9 @@ const onSubmit = async (payload: Docs & Attatches) => {
 
     if (!payload.issue_project)
       getData.issue_project =
-        ((comStore.company as Company)?.com_issue_project as number) ?? docsFilter.value.issue_project ??  null
+        ((comStore.company as Company)?.com_issue_project as number) ??
+        docsFilter.value.issue_project ??
+        null
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 

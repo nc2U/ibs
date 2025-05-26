@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router'
 import type { Prop, PropType } from 'vue'
 import { bgLight } from '@/utils/cssMixins.ts'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
-import type { ActLogEntry } from '@/store/types/work.ts'
+import type { ActLogEntry } from '@/store/types/work_project.ts'
 import { cutString, dateFormat, numberToHour, timeFormat } from '@/utils/baseMixins'
 
 defineProps({

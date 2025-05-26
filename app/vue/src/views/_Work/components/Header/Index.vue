@@ -2,7 +2,7 @@
 import { ref, computed, type PropType, watch } from 'vue'
 import { useStore } from '@/store'
 import { useRoute } from 'vue-router'
-import type { SimpleProject } from '@/store/types/work'
+import type { SimpleProject } from '@/store/types/work_project.ts'
 import HeaderSearch from './components/Search.vue'
 import HeaderNav from './components/HeaderNav.vue'
 

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useWork } from '@/store/pinia/work.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
-import type { IssueProject } from '@/store/types/work.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Repository, Commit, CommitInfo, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SourceCode from './components/SourceCode.vue'

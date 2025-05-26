@@ -8,9 +8,9 @@ import type {
   IssueStatus,
   SubIssue,
   TimeEntry,
-} from '@/store/types/work'
+} from '@/store/types/work_project.ts'
 import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import IssueControl from './IssueControl.vue'

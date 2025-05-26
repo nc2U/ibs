@@ -3,7 +3,7 @@ import { ref, reactive, computed, onBeforeMount, type PropType, onUpdated } from
 import { useAccount } from '@/store/pinia/account'
 import { useStore } from '@/store'
 import { type Project } from '@/store/types/project'
-import type { IssueProject } from '@/store/types/work'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import { callAddress, type AddressData } from '@/components/DaumPostcode/address'
 import { useProject } from '@/store/pinia/project'
 import { btnLight } from '@/utils/cssMixins.ts'

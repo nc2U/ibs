@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import { useWork } from '@/store/pinia/work.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins.ts'
-import type { ActLogEntryFilter, IssueProject } from '@/store/types/work.ts'
+import type { ActLogEntryFilter, IssueProject } from '@/store/types/work_project.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogsComponent.vue'
 import AsideActivity from '@/views/_Work/Manages/Activity/components/aside/AsideActivity.vue'

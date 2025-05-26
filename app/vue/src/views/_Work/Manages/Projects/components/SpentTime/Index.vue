@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
-import type { IssueProject, TimeEntryFilter } from '@/store/types/work'
+import { useWork } from '@/store/pinia/work_project.ts'
+import type { IssueProject, TimeEntryFilter } from '@/store/types/work_project.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryList.vue'
 import TimeEntryForm from '@/views/_Work/Manages/SpentTime/components/TimeEntryForm.vue'

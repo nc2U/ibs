@@ -2,9 +2,9 @@
 import Cookies from 'js-cookie'
 import { computed, onBeforeMount, type PropType, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { dateFormat } from '@/utils/baseMixins'
-import type { ActLogEntry } from '@/store/types/work'
+import type { ActLogEntry } from '@/store/types/work_project.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
 import ActivityLogs from '@/views/_Work/Manages/Activity/components/ActivityLogs.vue'
 

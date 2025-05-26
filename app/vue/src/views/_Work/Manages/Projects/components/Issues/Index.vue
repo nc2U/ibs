@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work'
-import type { Issue, IssueFilter, IssueProject } from '@/store/types/work'
+import { useWork } from '@/store/pinia/work_project.ts'
+import type { Issue, IssueFilter, IssueProject } from '@/store/types/work_project.ts'
 import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
 import IssueView from '@/views/_Work/Manages/Issues/components/IssueView.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { inject, type PropType } from 'vue'
-import { type News } from '@/store/types/work'
+import { type News } from '@/store/types/work_project.ts'
 import { elapsedTime } from '@/utils/baseMixins'
 
 defineProps({ newsList: { type: Array as PropType<News[]>, default: () => [] } })

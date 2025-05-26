@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
-import { type IssueCategory as ICategory, type IssueProject } from '@/store/types/work'
-import { useWork } from '@/store/pinia/work'
+import { type IssueCategory as ICategory, type IssueProject } from '@/store/types/work_project.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
 import Member from '@/views/_Work/Manages/Projects/components/Settings/components/Member.vue'
