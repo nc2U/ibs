@@ -5,7 +5,6 @@ import { errorHandle, message } from '@/utils/helper'
 import type {
   ActLogEntryFilter,
   CodeValue,
-  Commit,
   GanttProject,
   Gantts,
   Issue,
@@ -19,7 +18,6 @@ import type {
   Member,
   News,
   ProjectFilter,
-  Repository,
   Role,
   TimeEntry,
   TimeEntryFilter,
@@ -27,6 +25,7 @@ import type {
   Version,
 } from '@/store/types/work'
 import { useGithub } from '@/store/pinia/work_github.ts'
+import type { Commit, Repository } from '@/store/types/work_github.ts'
 
 const githubStore = useGithub()
 

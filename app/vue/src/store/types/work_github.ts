@@ -1,14 +1,26 @@
-export interface CommitInfo {
-  name: string
-  commit: Commit
+export interface Repository {
+  pk?: number
+  project: number
+  is_default: boolean
+  owner: string
+  slug: string
+  github_token: string
+  is_report: boolean
 }
 
 export interface Commit {
-  sha: string
-  url: string
+  pk: number
+  repo: number
+  commit_hash: string
+  message: string
   author: string
   date: string
-  message: string
+  issues: number[]
+}
+
+export interface CommitInfo {
+  name: string
+  commit: CommitApi
 }
 
 export interface Tree {
@@ -18,7 +30,15 @@ export interface Tree {
   sha: string
   url: string
   size?: number
-  commit?: Commit
+  commit?: CommitApi
   open?: boolean
   loaded?: boolean
+}
+
+export interface CommitApi {
+  sha: string
+  url: string
+  author: string
+  date: string
+  message: string
 }

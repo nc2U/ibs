@@ -2,7 +2,7 @@
 import { type PropType, ref } from 'vue'
 import { isValidate } from '@/utils/helper.ts'
 import { btnLight, TableSecondary } from '@/utils/cssMixins.ts'
-import type { Repository } from '@/store/types/work.ts'
+import type { Repository } from '@/store/types/work_github.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
