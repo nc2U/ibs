@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
 import type {
-  ActLogEntryFilter,
   CodeValue,
   GanttProject,
   Gantts,
@@ -11,7 +10,6 @@ import type {
   IssueCategory,
   IssueComment,
   IssueFilter,
-  IssueLogEntry,
   IssueProject,
   IssueRelation,
   IssueStatus,
@@ -24,6 +22,7 @@ import type {
   Tracker,
   Version,
 } from '@/store/types/work_project.ts'
+import type { ActLogEntryFilter, IssueLogEntry } from '@/store/types/work_logging.ts'
 
 export const useWork = defineStore('work', () => {
   // Issue Project states & getters

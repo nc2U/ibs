@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, inject, onBeforeMount, type PropType } from 'vue'
-import type { ActLogEntry, IssueProject } from '@/store/types/work_project.ts'
+import type { ActLogEntry } from '@/store/types/work_logging.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import { dateFormat, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
