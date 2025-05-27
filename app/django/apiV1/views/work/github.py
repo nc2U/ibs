@@ -116,3 +116,28 @@ class GithubBranchTreeView(APIView):
         # 트리 정렬: 디렉터리(tree) 먼저, 그 다음 파일(blob), 이름 오름차순
         trees_api.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
         return Response({"branch": branch_api, "trees": trees_api}, status=status.HTTP_200_OK)
+
+
+class GithubSubTreeView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, sha):
+        repo = get_object_or_404(Repository, pk=pk)
+
+        token = repo.github_token
+        headers = GITHUB_API_HEADERS(token)
+
+        base_url = f"https://api.github.com/repos/{repo.owner}/{repo.slug}"
+        tree_url = f"{base_url}/git/trees/{sha}"
+
+        try:
+            tree_res = requests.get(tree_url, headers=headers)
+            tree_res.raise_for_status()
+            sub_tree = tree_res.json().get("tree", {})
+        except Exception as e:
+            return Response({"Error": "Sub Tree fetch failed", "details": str(e)}, status=500)
+
+        # 트리 정렬: 디렉터리(tree) 먼저, 그 다음 파일(blob), 이름 오름차순
+        sub_tree.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
+        return Response(sub_tree, status=status.HTTP_200_OK)

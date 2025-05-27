@@ -114,6 +114,11 @@ export const useGithub = defineStore('github', () => {
       })
       .catch(err => errorHandle(err.response))
 
+  const fetchSubTree = async (repo: number, sha: string) => {
+    const { data: tree } = await api.get(`/repo/${repo}/tree/${sha}`)
+    return tree
+  }
+
   const branches = ref<CommitInfo[]>([])
 
   const fetchBranches = async (url: string, token: string = '') => {
@@ -220,6 +225,7 @@ export const useGithub = defineStore('github', () => {
     master,
     master_tree,
     fetchDefBranch,
+    fetchSubTree,
 
     branches,
     fetchBranches,
