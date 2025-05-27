@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
+import { useBoard } from '@/store/pinia/board'
+import { useInform } from '@/store/pinia/work_inform.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
-import { type PostFilter, useBoard } from '@/store/pinia/board'
 import NoData from '@/views/_Work/components/NoData.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
-const props = defineProps({
+defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: () => null },
 })
 
@@ -16,7 +16,7 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const workStore = useWork()
+const infStore = useInform()
 
 const boardStore = useBoard()
 const postList = computed(() => boardStore.postList)
@@ -25,7 +25,7 @@ const postList = computed(() => boardStore.postList)
 const dataSetup = async () => {
   // await fetchPostList({ board: 1, issue_project: props.issueProject?.pk ?? '' })
   if (route.params.projId) {
-    await workStore.fetchNewsList({ project: route.params.projId as string })
+    await infStore.fetchNewsList({ project: route.params.projId as string })
   }
 }
 
@@ -34,7 +34,7 @@ watch(
   () => route.params,
   nVal => {
     if (nVal && nVal.projId) {
-      workStore.fetchNewsList({ project: nVal.projId as string })
+      infStore.fetchNewsList({ project: nVal.projId as string })
     }
   },
   { deep: true },

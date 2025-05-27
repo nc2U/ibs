@@ -1,3 +1,4 @@
+// issue project
 export interface SimpleUser {
   pk: number
   username: string
@@ -233,6 +234,27 @@ export interface Member {
   created: string
 }
 
+export interface Version {
+  pk?: number
+  project?: SimpleProject
+  name: string
+  status: '1' | '2' | '3'
+  status_desc?: '진행' | '잠김' | '닫힘'
+  sharing: '0' | '1' | '2' | '3' | '4'
+  sharing_desc?:
+    | '공유 없음'
+    | '하위 프로젝트'
+    | '상위 및 하위 프로젝트'
+    | '최상위 및 모든 하위 프로젝트'
+    | '모든 프로젝트'
+  effective_date: string | null
+  description: string
+  wiki_page_title: string
+  issues?: SimpleIssue[]
+  is_default?: boolean
+}
+
+// issue
 export interface SimpleIssue {
   pk: number
   project: SimpleProject
@@ -252,26 +274,6 @@ export interface SimpleIssue {
   spent_times: number
   done_ratio: number
   closed: string | null
-}
-
-export interface Version {
-  pk?: number
-  project?: SimpleProject
-  name: string
-  status: '1' | '2' | '3'
-  status_desc?: '진행' | '잠김' | '닫힘'
-  sharing: '0' | '1' | '2' | '3' | '4'
-  sharing_desc?:
-    | '공유 없음'
-    | '하위 프로젝트'
-    | '상위 및 하위 프로젝트'
-    | '최상위 및 모든 하위 프로젝트'
-    | '모든 프로젝트'
-  effective_date: string | null
-  description: string
-  wiki_page_title: string
-  issues?: SimpleIssue[]
-  is_default?: boolean
 }
 
 export interface Tracker {
@@ -469,14 +471,4 @@ export interface TimeEntryFilter {
   subject?: string
   project_status?: number | ''
   page?: number
-}
-
-export interface News {
-  pk?: number
-  project?: SimpleProject
-  title: string
-  summary: string
-  description: string
-  author?: SimpleUser
-  created: string
 }

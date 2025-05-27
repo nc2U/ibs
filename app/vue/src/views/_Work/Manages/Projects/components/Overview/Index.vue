@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useInform } from '@/store/pinia/work_inform.ts'
 import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
 import OverViewHeader from './components/OverViewHeader.vue'
 import TimeSummary from './components/TimeSummary.vue'
@@ -8,9 +9,6 @@ import IssueTracker from './components/IssueTracker.vue'
 import NewsBox from './components/NewsBox.vue'
 import MemberBox from './components/MemberBox.vue'
 import SubProjects from './components/SubProjects.vue'
-import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
-import ProjectCard from '@/views/_Work/Manages/Projects/components/ProjectCard.vue'
-import NoData from '@/views/_Work/components/NoData.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const cBody = ref()
@@ -21,7 +19,8 @@ const workStore = useWork()
 const iProject = computed<IssueProject | null>(() => workStore.issueProject)
 const trackerSum = computed(() => workStore.trackerSum)
 const allMembers = computed<SimpleMember[]>(() => workStore.issueProject?.all_members ?? [])
-const newsList = computed(() => workStore.newsList)
+const infStore = useInform()
+const newsList = computed(() => infStore.newsList)
 
 const computedMembers = computed(() => {
   const organizedData = {} as { [key: string]: Array<{ pk: number; username: string }> }

@@ -2,6 +2,7 @@
 import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useInform } from '@/store/pinia/work_inform.ts'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -59,13 +60,14 @@ const allProjects = computed(() => workStore.AllIssueProjects)
 
 const modules = computed(() => issueProject.value?.module)
 
+const infStore = useInform()
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
     await workStore.fetchIssueProject(to.params.projId as string)
   } else {
     await workStore.fetchIssueProjectList({ status: '1' })
     workStore.removeIssueProject()
-    workStore.newsList = []
+    infStore.newsList = []
   }
 })
 
