@@ -44,8 +44,6 @@ const last_tag = computed(() => getLatestBranch(props.tags))
     <CCol>
       <h5>
         <span><router-link to="">Git 저장소</router-link></span>
-        <!--        <span v-if="1 == 2">/ <router-link to="">branches</router-link></span>-->
-        <!--        <span v-if="1 == 2">/ <router-link to="">aaa</router-link></span>-->
       </h5>
     </CCol>
   </CRow>
@@ -74,14 +72,14 @@ const last_tag = computed(() => getLatestBranch(props.tags))
         <CTableBody>
           <VersionTitle ver-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
           <Versions v-if="branchFold" :versions="branches" />
-          <!--          <TreeNode v-if="defFold" :trees="defTree" />-->
 
           <VersionTitle ver-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
           <Versions v-if="tagFold" :versions="tags" />
-          <!--          <TreeNode v-if="defFold" :trees="defTree" />-->
 
           <VersionTitle :ver-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
-          <RepoTree v-if="defFold" :trees="defTree" />
+          <template v-if="defFold">
+            <RepoTree v-for="tree in defTree" :tree="tree" :key="tree.sha" />
+          </template>
         </CTableBody>
       </CTable>
     </CCol>

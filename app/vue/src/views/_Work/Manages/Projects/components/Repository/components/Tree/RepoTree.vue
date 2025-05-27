@@ -3,11 +3,11 @@ import type { PropType } from 'vue'
 import type { Tree } from '@/store/types/work_github.ts'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 
-defineProps({ trees: { type: Array as PropType<Tree[]>, default: () => [] } })
+defineProps({ tree: { type: Array as PropType<Tree>, default: () => null } })
 </script>
 
 <template>
-  <CTableRow v-for="tree in trees" :key="tree.sha">
+  <CTableRow>
     <CTableDataCell class="pl-5">
       <span v-if="tree.type === 'tree'">
         <v-icon icon="mdi-chevron-right" size="16" class="pointer mr-1" />
