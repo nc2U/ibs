@@ -3,7 +3,7 @@ import { computed, type PropType, ref } from 'vue'
 import type { Repository, Tree, CommitInfo } from '@/store/types/work_github.ts'
 import VersionTitle from './VersionTitle.vue'
 import Versions from './Versions.vue'
-import TreeNode from './TreeNode.vue'
+import RepoTree from './RepoTree.vue'
 
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, default: () => null },
@@ -81,7 +81,7 @@ const last_tag = computed(() => getLatestBranch(props.tags))
           <!--          <TreeNode v-if="defFold" :trees="defTree" />-->
 
           <VersionTitle :ver-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
-          <TreeNode v-if="defFold" :trees="defTree" />
+          <RepoTree v-if="defFold" :trees="defTree" />
         </CTableBody>
       </CTable>
     </CCol>
