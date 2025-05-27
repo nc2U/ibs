@@ -3,7 +3,7 @@ import { computed, type PropType, ref } from 'vue'
 import type { Repository, Tree, CommitInfo } from '@/store/types/work_github.ts'
 import VersionTitle from './VersionTitle.vue'
 import Versions from './Versions.vue'
-import RepoTree from './RepoTree.vue'
+import RepoTree from './Tree/RepoTree.vue'
 
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, default: () => null },
