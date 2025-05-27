@@ -141,4 +141,7 @@ class GithubSubTreeView(APIView):
             return Response({"Error": "Sub Tree fetch failed", "details": str(e)}, status=500)
 
         # trees_api = get_trees(sub_tree_data, base_url, headers)
-        return Response(sub_tree_data, status=status.HTTP_200_OK)
+        # 트리 정렬: 디렉터리(tree) 먼저, 그 다음 파일(blob), 이름 오름차순
+        res_data = sub_tree_data
+        res_data.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
+        return Response(res_data, status=status.HTTP_200_OK)
