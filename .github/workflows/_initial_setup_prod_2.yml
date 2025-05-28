@@ -27,8 +27,6 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             web_pod=$(kubectl get pod -n ibs-prod | grep web | cut -d ' ' -f1)
-            kubectl exec -it -n ibs-prod $web_pod -- mkdir -p media
-            kubectl exec -it -n ibs-prod $web_pod -- chmod -R 755 media
             kubectl exec -it -n ibs-prod $web_pod -- cp _config/settings/local.py _config/settings/prod.py
             kubectl exec -it -n ibs-prod $web_pod -- sed -i 's/True/False/g' _config/settings/prod.py
             kubectl exec -it -n ibs-prod $web_pod -- sed -i "2,6 s/*//nginx', 'brdnc.co.kr', 'dyibs.co.kr', '${{ secrets.DOMAIN_NAME }}', '*.${{ secrets.DOMAIN_NAME }}/g" _config/settings/prod.py

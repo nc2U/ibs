@@ -29,8 +29,6 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             web_pod=$(kubectl get pod -n ibs-dev | grep web | cut -d ' ' -f1)
-            kubectl exec -it -n ibs-dev $web_pod -- mkdir -p media
-            kubectl exec -it -n ibs-dev $web_pod -- chmod -R 755 media
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py collectstatic --no-input
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py makemigrations accounts book board cash company contract docs ibs items notice payment project work
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py migrate

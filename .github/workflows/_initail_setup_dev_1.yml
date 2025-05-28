@@ -39,9 +39,6 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             cd ${{ secrets.CICD_PATH }}/dev/
-            mkdir -p ./app/django/media
-            echo '${{ secrets.CICD_PASS }}' | \
-            chmod -R 755 ./app/django/media
             rm -rf .git* README.md app/vue app/svelte deploy
       
       # Helm source to CI/CD server copy transfer
