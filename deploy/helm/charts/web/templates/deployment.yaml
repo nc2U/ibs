@@ -28,20 +28,6 @@ spec:
       serviceAccountName: {{ include "web.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-{{/*      initContainers:*/}}
-{{/*        - name: init-web*/}}
-{{/*          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"*/}}
-{{/*          command:*/}}
-{{/*            - bash*/}}
-{{/*            - "-c"*/}}
-{{/*            - |*/}}
-{{/*              # if [ ! -d "./media" ]; then mkdir media; chmod -R 755 ./media fi*/}}
-{{/*              python manage.py collectstatic --no-input*/}}
-{{/*              python manage.py makemigrations accounts book board cash company contract docs items notice payment project rebs work*/}}
-{{/*              python manage.py migrate*/}}
-{{/*          volumeMounts:*/}}
-{{/*            - name: django-source*/}}
-{{/*              mountPath: /app/django*/}}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:

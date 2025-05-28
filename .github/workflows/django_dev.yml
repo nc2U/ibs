@@ -17,23 +17,23 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    
+
     steps:
       # 레파지터리 체크 아웃
       - name: Check out source code
         uses: actions/checkout@v4
         with:
           ref: 'develop'
-      
+
       # Source Django to server copy transfer
       - name: Copy django, etc data to NFS server
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
           source: 'app/django'
-          target: ${{ secrets.NFS_PATH }}/dev/
+          target: ${{ secrets.CICD_PATH }}/dev/
       
       # web pod --> django model migrations & collectstatic
       - name: Django collectstatic & model migration & fetch_commits

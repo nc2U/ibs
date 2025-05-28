@@ -77,7 +77,7 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app/django'
+          source: 'app' # 'app/django'
           target: ${{ secrets.NFS_PATH }}/dev/
       
       # node_modules 캐싱
@@ -103,7 +103,7 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app/django'
+          source: 'app' # 'app/django'
           target: ${{ secrets.NFS_PATH }}/dev/
       
       - name: Send slack when failed

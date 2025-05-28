@@ -20,27 +20,27 @@ jobs:
         with:
           ref: 'develop'
       
-      # Source to NFS server copy transfer
-      - name: App Source to NFS server
+      # Source to CICD server copy transfer
+      - name: App Source to CICD server
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
           source: '.'
-          target: ${{ secrets.NFS_PATH }}/dev/
+          target: ${{ secrets.CICD_PATH }}/dev/
       
-      # NFS server source cleanup
-      - name: NFS server source cleanup
+      # CICD server source cleanup
+      - name: CICD server source cleanup
         uses: garygrossgarten/github-action-ssh@release
         with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
           command: |
-            cd ${{ secrets.NFS_PATH }}/dev/
+            cd ${{ secrets.CICD_PATH }}/dev/
             mkdir -p ./app/django/media
-            echo '${{ secrets.NFS_PASS }}' | \
+            echo '${{ secrets.CICD_PASS }}' | \
             chmod -R 755 ./app/django/media
             rm -rf .git* README.md app/vue app/svelte deploy
       

@@ -24,7 +24,7 @@
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
 {{- end }}
 
-2. Mariadb Access Information.
+2. {{ .Values.global.dbType | title }} Access Information.
  - Database: {{ .Release.Name }}
  - User: {{ .Release.Name }}
  - Password: echo $(kubectl get secrets -n {{ .Release.Namespace }} master-db-auth -o jsonpath="{.data.MYSQL_PASSWORD}" | base64 -d)
