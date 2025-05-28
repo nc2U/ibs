@@ -75,7 +75,7 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app' # 'app/django'
+          source: 'app'
           target: ${{ secrets.NFS_PATH }}/dev/
       
       # node_modules 캐싱

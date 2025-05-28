@@ -35,8 +35,7 @@ jobs:
           command: |
             cd ${{ secrets.NFS_PATH }}/dev
             mkdir -p ./app/media
-            echo '${{ secrets.NFS_PASS }}' | \
-            sudo -S chmod -R 755 ./app/media
+            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 755 ./app/media
       
       # Helm source to CI/CD server copy transfer
       - name: Copy helm, to CI/CD server
