@@ -211,7 +211,7 @@ AWS_S3_CUSTOM_DOMAIN = ''  # f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazona
 # AWS_DEFAULT_ACL = 'public-read'
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.getenv('STATIC_ROOT')  # BASE_DIR / 'static'
+STATIC_ROOT = BASE_DIR / 'static'
 STATICFILES_DIRS = (BASE_DIR / '_assets',)
 
 # DEFAULT_FILE_STORAGE = '_config.asset_storage.MediaStorage'

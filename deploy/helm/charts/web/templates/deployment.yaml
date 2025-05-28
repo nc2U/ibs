@@ -48,8 +48,6 @@ spec:
           volumeMounts:
             - name: django-source
               mountPath: /app/django
-            - name: static-source
-              mountPath: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/static
             - name: media-source
               mountPath: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/media
             - name: tz-seoul
@@ -60,9 +58,6 @@ spec:
         - name: django-source
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-django-pvc
-        - name: static-source
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-static-pvc
         - name: media-source
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc

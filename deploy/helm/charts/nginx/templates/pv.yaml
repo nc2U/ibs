@@ -18,8 +18,8 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/static
-    server: {{ .Values.global.nfsServerHost }}
+    path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/django/static
+    server: {{ .Values.global.cicdServerHost }}
 
 ---
 
