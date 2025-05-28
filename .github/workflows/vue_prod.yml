@@ -75,11 +75,11 @@ jobs:
       - name: Copy Vue -> django static/dist (NFS server)
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
           source: 'app/django/static'
-          target: ${{ secrets.NFS_PATH }}/prod/
+          target: ${{ secrets.CICD_PATH }}/prod/
 
       # web pod --> fetch_commits
       - name: Django fetch_commits
