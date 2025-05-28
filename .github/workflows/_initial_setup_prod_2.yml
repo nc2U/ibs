@@ -84,8 +84,8 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app/django/static/*'
-          target: ${{ secrets.NFS_PATH }}/prod/app/static/
+          source: 'app/django/static'
+          target: ${{ secrets.NFS_PATH }}/prod/
 
       # node_modules 캐싱
       - name: Cache svelte node
@@ -110,8 +110,8 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app/django/static/*'
-          target: ${{ secrets.NFS_PATH }}/prod/app/static/
+          source: 'app/django/static'
+          target: ${{ secrets.NFS_PATH }}/prod/
 
       # slack --> notification
       - name: Send slack when failed
