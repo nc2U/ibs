@@ -39,7 +39,7 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             cd ${{ secrets.CICD_PATH }}/dev/
-            rm -rf .git* README.md app/vue app/svelte deploy
+            rm -rf .git* *.md app/vue app/svelte deploy
             
       # Necessary dir Check
       - name: media & static dir check
