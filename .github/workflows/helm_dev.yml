@@ -34,8 +34,8 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           command: |
             cd ${{ secrets.NFS_PATH }}/dev
-            mkdir -p ./app/media ./app/static
-            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 755 ./app
+            mkdir -p ./app/django/media ./app/django/static
+            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 755 ./app/django
       
       # Helm source to CI/CD server copy transfer
       - name: Copy helm, to CI/CD server
