@@ -62,7 +62,7 @@ jobs:
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           source: 'app/django/static/**'
-          target: ${{ secrets.NFS_PATH }}/dev/static/
+          target: ${{ secrets.NFS_PATH }}/dev/app/static/
       
       # slack --> notification
       - name: Send slack when failed
