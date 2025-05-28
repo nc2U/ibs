@@ -49,9 +49,9 @@ spec:
             - name: django-source
               mountPath: /app/django
             - name: static-source
-              mountPath: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/static
+              mountPath: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/static
             - name: media-source
-              mountPath: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/media
+              mountPath: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/media
             - name: tz-seoul
               mountPath: /etc/localtime
           resources:

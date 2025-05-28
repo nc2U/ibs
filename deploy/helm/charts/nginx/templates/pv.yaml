@@ -18,11 +18,7 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    {{- if eq .Values.global.appMode "prod" }}
-    path: {{ .Values.global.nfsPath }}/prod/app/static #/prod/app/django/static
-    {{- else if eq .Values.global.appMode "dev" }}
-    path: {{ .Values.global.nfsPath }}/dev/app/static # /dev/app/django/static
-    {{- end }}
+    path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/static
     server: {{ .Values.global.nfsServerHost }}
 
 ---
@@ -47,9 +43,5 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    {{- if eq .Values.global.appMode "prod" }}
-    path: {{ .Values.global.nfsPath }}/prod/app/media #/prod/app/django/media
-    {{- else if eq .Values.global.appMode "dev" }}
-    path: {{ .Values.global.nfsPath }}/dev/app/media #/dev/app/django/media
-    {{- end }}
+    path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/media
     server: {{ .Values.global.nfsServerHost }}
