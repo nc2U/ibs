@@ -77,7 +77,7 @@ jobs:
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           script: |
-            rsync -avz ./app/django/static/dist ${{ secrets.NFS_PATH }}/dev/app/static/
+            rsync -avz app/django/static/dist ${{ secrets.NFS_PATH }}/dev/app/static/
 
 #      # web pod --> fetch_commits
 #      - name: Django fetch_commits
