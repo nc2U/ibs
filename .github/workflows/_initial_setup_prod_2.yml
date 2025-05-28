@@ -84,7 +84,7 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app/django/static/dist'
+          source: 'app/django/static'
           target: ${{ secrets.NFS_PATH }}/prod/app/static/
       
       # node_modules 캐싱
@@ -110,7 +110,7 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app/django/static/**'
+          source: 'app/django/static'
           target: ${{ secrets.NFS_PATH }}/prod/app/static/
       
       # slack --> notification
