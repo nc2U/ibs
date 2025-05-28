@@ -78,7 +78,7 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app'
+          source: 'app/django/static'
           target: ${{ secrets.NFS_PATH }}/prod/
 
       # web pod --> fetch_commits
