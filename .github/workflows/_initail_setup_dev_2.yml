@@ -77,8 +77,7 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           source: 'app/django/static/*'
           target: ${{ secrets.NFS_PATH }}/dev/app/static/
-          strip_components: 1
-      
+
       # node_modules 캐싱
       - name: Cache svelte node
         uses: actions/cache@v3
@@ -104,8 +103,7 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           source: 'app/django/static/*'
           target: ${{ secrets.NFS_PATH }}/dev/app/static/
-          strip_components: 1
-      
+
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
         uses: ./.github/actions/slack-notify    # 직접 '만든' Action이므로 uses 키워드를 이용해서 아래 경로를 입력해줍니다.

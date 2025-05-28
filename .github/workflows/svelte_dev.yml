@@ -63,8 +63,7 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           source: 'app/django/static/*'
           target: ${{ secrets.NFS_PATH }}/dev/app/static/
-          strip_components: 1
-      
+
       # slack --> notification
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행

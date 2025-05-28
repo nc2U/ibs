@@ -70,15 +70,14 @@ jobs:
       - name: List dist directory contents
         run: ls -al app/django/static/dist
 
-      - name: Copy Vue -> django static/dist (NFS server)
-        uses: appleboy/scp-action@master
+      - name: Rsync static files to NFS
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'app/django/static/*'
-          target: ${{ secrets.NFS_PATH }}/dev/app/static/
-          strip_components: 1
+          script: |
+            rsync -avz ./app/django/static/dist ${{ secrets.NFS_PATH }}/dev/app/static/
 
 #      # web pod --> fetch_commits
 #      - name: Django fetch_commits

@@ -80,7 +80,6 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           source: 'app/django/static/*'
           target: ${{ secrets.NFS_PATH }}/prod/app/static/
-          strip_components: 1
 
       # web pod --> fetch_commits
       - name: Django fetch_commits
