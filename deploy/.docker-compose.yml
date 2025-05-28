@@ -67,4 +67,6 @@ services:
       EMAIL_HOST_USER: # your accessId or accessEmail # 실제 데이터로 수정
       EMAIL_HOST_PASSWORD: your-email-password # 실제 데이터로 수정
       DEFAULT_FROM_EMAIL: sender name <your@djangoapp.com> # 실제 데이터로 수정
+      STATIC_ROOT: /app/static # 경로가 다를 경우 실제 데이터로 수정
+      MEDIA_ROOT: /app/media # 경로가 다를 경우 실제 데이터로 수정
       DJANGO_SETTINGS_MODULE: _config.settings.local # Django settings 모드 지정 (.local or .prod)
