@@ -10,6 +10,9 @@ data:
   DEFAULT_FROM_EMAIL: "{{ .Values.global.defaultFromEmail }}"
   DB_SERVICE_NAME: "{{ .Values.global.dbType }}"
   NAMESPACE: "{{ .Release.Namespace }}"
+  STATIC_ROOT: "{{ .Values.global.nfsPath }}/{{ .Release.Namespace }}/app/static"
+  MEDIA_ROOT: "{{ .Values.global.nfsPath }}/{{ .Release.Namespace }}/app/media"
+
 
   {{- with  .Values.imageConfigMaps }}
 {{/*  AWS_STORAGE_BUCKET_NAME: "{{ .awsStorageBucketName }}"*/}}

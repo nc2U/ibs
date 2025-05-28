@@ -211,14 +211,14 @@ AWS_S3_CUSTOM_DOMAIN = ''  # f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazona
 # AWS_DEFAULT_ACL = 'public-read'
 
 STATIC_URL = '/static/'
-STATIC_ROOT = '/volume1/mnt/ibs/dev/app/static'  # BASE_DIR / 'static'
+STATIC_ROOT = os.getenv('STATIC_ROOT')  # BASE_DIR / 'static'
 STATICFILES_DIRS = (BASE_DIR / '_assets',)
 
 # DEFAULT_FILE_STORAGE = '_config.asset_storage.MediaStorage'
 
 # 각 media 파일에 관한 URL prefix
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/' if AWS_STORAGE_BUCKET_NAME else 'media/'
-MEDIA_ROOT = '/volume1/mnt/ibs/dev/app/media'  # BASE_DIR / 'media'  # 업로드된 파일을 저장할 디렉토리 경로
+MEDIA_ROOT = os.getenv('MEDIA_ROOT')  # BASE_DIR / 'media'  # 업로드된 파일을 저장할 디렉토리 경로
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
