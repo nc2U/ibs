@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import type { Tree } from '@/store/types/work_github.ts'
+import { useGithub } from '@/store/pinia/work_github.ts'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 import TreeNode from './TreeNode.vue'
-import { useGithub } from '@/store/pinia/work_github.ts'
 
 defineOptions({ name: 'TreeNode' })
 const props = defineProps({
   repo: { type: Number, required: true },
-  node: { type: Array as PropType<Tree>, default: () => null },
+  node: { type: Object as PropType<Tree>, required: true },
   level: { type: Number, default: 0 },
 })
 
@@ -21,7 +21,7 @@ const getSubTrees = (repo: number, sha: string) => gitStore.fetchSubTree(repo, s
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
-    subTrees.value = await getSubTrees(props.repo, props.node.sha)
+    subTrees.value = await getSubTrees(props.repo as number, props.node.sha)
   nodeFold.value = !nodeFold.value
 }
 </script>
@@ -68,12 +68,6 @@ const toggleFold = async () => {
   </CTableRow>
 
   <template v-if="nodeFold && subTrees">
-    <TreeNode
-      v-for="node in subTrees"
-      :repo="repo"
-      :node="node"
-      :level="level + 1"
-      :key="node.sha"
-    />
+    <TreeNode v-for="(node, i) in subTrees" :repo="repo" :node="node" :level="level + 1" :key="i" />
   </template>
 </template>
