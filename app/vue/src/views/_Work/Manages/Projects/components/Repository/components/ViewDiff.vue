@@ -9,11 +9,11 @@ import sanitizeHtml from 'sanitize-html'
 const props = defineProps({
   headCommit: { type: Object as PropType<Commit>, required: true },
   baseCommit: { type: Object as PropType<Commit>, required: true },
-  diffApi: { type: Object as PropType<any>, required: true },
+  diffText: { type: Object as PropType<any>, required: true },
 })
 
 watch(
-  () => props.diffApi,
+  () => props.diffText,
   newVal => getDiffCode(newVal),
 )
 
@@ -25,13 +25,13 @@ const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
 
 watch(
   () => outputFormat.value,
-  newVal => getDiffCode(props.diffApi),
+  newVal => getDiffCode(props.diffText),
 )
 
 const diffHtml = ref('')
 
-const getDiffCode = (diffApi: string) => {
-  diffHtml.value = html(diffApi, {
+const getDiffCode = (diffText: string) => {
+  diffHtml.value = html(diffText, {
     drawFileList: false,
     matching: 'lines',
     outputFormat: outputFormat.value,
@@ -46,7 +46,7 @@ const hasContent = computed(() => {
 const getDiff = () => emit('get-diff', true)
 
 onMounted(async () => {
-  if (props.diffApi) getDiffCode(props.diffApi)
+  if (props.diffText) getDiffCode(props.diffText)
 })
 </script>
 
@@ -105,13 +105,13 @@ onMounted(async () => {
         >
           <path
             d="M16.5 19.25a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0Zm3.25-1.75a1.75 1.75 0 1 0 .001 3.501 1.75 1.75 0 0 0-.001-3.501Z"
-          ></path>
+          />
           <path
             d="M13.905 1.72a.75.75 0 0 1 0 1.06L12.685 4h4.065a3.75 3.75 0 0 1 3.75 3.75v8.75a.75.75 0 0 1-1.5 0V7.75a2.25 2.25 0 0 0-2.25-2.25h-4.064l1.22 1.22a.75.75 0 0 1-1.061 1.06l-2.5-2.5a.75.75 0 0 1 0-1.06l2.5-2.5a.75.75 0 0 1 1.06 0ZM7.5 4.75a3.25 3.25 0 1 1-6.5 0 3.25 3.25 0 0 1 6.5 0ZM4.25 6.5a1.75 1.75 0 1 0-.001-3.501A1.75 1.75 0 0 0 4.25 6.5Z"
-          ></path>
+          />
           <path
             d="M10.095 22.28a.75.75 0 0 1 0-1.06l1.22-1.22H7.25a3.75 3.75 0 0 1-3.75-3.75V7.5a.75.75 0 0 1 1.5 0v8.75a2.25 2.25 0 0 0 2.25 2.25h4.064l-1.22-1.22a.748.748 0 0 1 .332-1.265.75.75 0 0 1 .729.205l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0Z"
-          ></path>
+          />
         </svg>
         <h5 class="mb-4">비교할 것이 없습니다.</h5>
 

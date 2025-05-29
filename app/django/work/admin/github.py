@@ -7,9 +7,9 @@ from work.models import Repository, Commit
 
 @admin.register(Repository)
 class RepositoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'is_default', 'owner', 'slug', 'is_report')
+    list_display = ('id', 'project', 'is_default', 'slug', 'local_path', 'is_report')
     list_display_links = ('project', 'slug')
-    list_editable = ('is_default', 'is_report')
+    list_editable = ('is_default', 'local_path', 'is_report')
     list_filter = ('project', 'is_default', 'is_report')
 
 

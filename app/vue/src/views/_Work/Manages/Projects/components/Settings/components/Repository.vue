@@ -22,9 +22,8 @@ const form = ref({
   pk: undefined as undefined | number,
   project: '' as '' | number,
   is_default: false,
-  owner: '',
   slug: '',
-  github_token: '',
+  local_path: '',
   is_report: false,
 })
 
@@ -32,9 +31,8 @@ const resetForm = () => {
   form.value.pk = undefined
   form.value.project = ''
   form.value.is_default = false
-  form.value.owner = ''
   form.value.slug = ''
-  form.value.github_token = ''
+  form.value.local_path = ''
   form.value.is_report = false
 }
 
@@ -52,9 +50,8 @@ const toEditRepo = (repo: Repository) => {
   form.value.pk = repo.pk
   form.value.project = repo.project
   form.value.is_default = repo.is_default
-  form.value.owner = repo.owner
   form.value.slug = repo.slug
-  form.value.github_token = repo.github_token
+  form.value.local_path = repo.local_path
   form.value.is_report = repo.is_report
   refFormModal.value.callModal()
 }
@@ -99,7 +96,6 @@ const modalAction = () => {
       <CTable hover striped small>
         <CTableHead>
           <CTableRow :color="TableSecondary" class="text-center">
-            <CTableHeaderCell>소유자</CTableHeaderCell>
             <CTableHeaderCell>식별자</CTableHeaderCell>
             <CTableHeaderCell>주 저쟝소</CTableHeaderCell>
             <CTableHeaderCell>형상관리시스템</CTableHeaderCell>
@@ -108,11 +104,6 @@ const modalAction = () => {
         </CTableHead>
         <CTableBody>
           <CTableRow v-for="repo in repoList" :key="repo.pk" class="text-center">
-            <CTableDataCell class="pl-3">
-              <router-link :to="{ name: '(저장소)', params: { projId } }">
-                {{ repo.owner }}
-              </router-link>
-            </CTableDataCell>
             <CTableDataCell class="pl-3">
               <router-link :to="{ name: '(저장소)', params: { projId } }">
                 {{ repo.slug }}
@@ -154,18 +145,6 @@ const modalAction = () => {
             </CCol>
           </CRow>
           <CRow class="mb-3">
-            <CFormLabel for="slugForm" class="col-sm-3 col-form-label required">소유자</CFormLabel>
-            <CCol sm="9">
-              <CFormInput
-                v-model="form.owner"
-                id="ownerForm"
-                placeholder="github 아이디"
-                maxlength="50"
-                required
-              />
-            </CCol>
-          </CRow>
-          <CRow class="mb-3">
             <CFormLabel for="slugForm" class="col-sm-3 col-form-label required">식별자</CFormLabel>
             <CCol sm="9">
               <CFormInput
@@ -174,20 +153,23 @@ const modalAction = () => {
                 placeholder="github 레파지토리 이름"
                 maxlength="255"
                 required
+                :disabled="form.pk"
+                text="1 에서 255 글자 소문자(a-z),숫자,대쉬(-)와 밑줄(_)만 가능합니다. 식별자는 저장후에는 수정할 수 없습니다."
               />
             </CCol>
           </CRow>
           <CRow class="mb-3 required">
             <CFormLabel for="githubTokenForm" class="col-sm-3 col-form-label required">
-              깃허브 토큰
+              저장소 경로
             </CFormLabel>
             <CCol sm="9">
               <CFormInput
-                v-model="form.github_token"
+                v-model="form.local_path"
                 id="githubTokenForm"
                 maxlength="255"
                 required
-                placeholder="Github Token"
+                placeholder="저장소(서버) 로컬 경로"
+                text="로컬의 bare 저장소 (예: /app/repos/repo.git)"
               />
             </CCol>
           </CRow>

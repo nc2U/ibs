@@ -14,10 +14,6 @@ export const useGithub = defineStore('github', () => {
       .get(`/repository/${pk}/`)
       .then(async res => {
         repository.value = res.data
-        await fetchRepoApi(
-          `https://api.github.com/repos/${res.data.owner}/${res.data.slug}`,
-          res.data.github_token,
-        )
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -91,7 +87,7 @@ export const useGithub = defineStore('github', () => {
 
   // repo api
   const repoApi = ref<any>(null)
-  const default_branch = computed(() => repoApi.value?.default_branch)
+  const default_branch = computed<string>(() => repoApi.value?.default_branch ?? 'master')
 
   const fetchRepoApi = async (url: string, token: string = '') =>
     await api
@@ -188,18 +184,14 @@ export const useGithub = defineStore('github', () => {
   }
 
   // diff api
-  const diffApi = ref<any>(null)
+  const diffText = ref<any>(null)
 
-  const removeDiffApi = () => (diffApi.value = null)
-  const fetchDiffApi = (url: string, token: string) =>
+  const removeDiffText = () => (diffText.value = null)
+
+  const fetchDiffText = (pk: number, diff_hash: string) =>
     api
-      .get(url, {
-        headers: {
-          Accept: 'application/vnd.github.diff',
-          Authorization: `token ${token}`,
-        },
-      })
-      .then(res => (diffApi.value = res.data))
+      .get(`/repo/${pk}/compare/${diff_hash}`)
+      .then(res => (diffText.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
   return {
@@ -233,8 +225,8 @@ export const useGithub = defineStore('github', () => {
     tags,
     fetchTags,
 
-    diffApi,
-    removeDiffApi,
-    fetchDiffApi,
+    diffText,
+    removeDiffText,
+    fetchDiffText,
   }
 })

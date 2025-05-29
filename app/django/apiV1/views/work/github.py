@@ -1,5 +1,8 @@
-import requests
+import os
+
 from django.shortcuts import get_object_or_404
+from git import Repo, GitCommandError
+from git.exc import BadName
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 
@@ -23,125 +26,156 @@ class CommitViewSet(viewsets.ModelViewSet):
     filterset_fields = ('repo__project', 'repo', 'commit_hash', 'issues')
 
 
-GITHUB_API_HEADERS = lambda token: {
-    "Accept": "application/vnd.github+json",
-    "Authorization": f"token {token}"
-}
-
-
-def get_trees(trees, base_url, headers):
-    res_trees = []
-    for item in trees:
-        try:
-            commits_url = f"{base_url}/commits?path={item['path']}"
-            commit_res = requests.get(commits_url, headers=headers)
-            commit_res.raise_for_status()
-            commit_json = commit_res.json()
-            if not commit_json:
-                continue
-            commit = commit_json[0]
-            commit_meta = commit.get("commit", {})
-            commit_author = commit_meta.get("author", {})
-
-            res_trees.append({
-                "path": item.get("path"),
-                "mode": item.get("mode"),
-                "type": item.get("type"),
-                "sha": item.get("sha"),
-                "url": item.get("url"),
-                "size": item.get("size"),
-                "commit": {
-                    "sha": commit.get("sha", "")[:5],
-                    "url": commit.get("url"),
-                    "author": commit_author.get("name", "Unknown"),
-                    "date": commit_author.get("date"),
-                    "message": commit_meta.get("message"),
-                },
-            })
-        except Exception as e:
-            print(f"[!] Commit fetch failed for {item.get('path')}: {e}")
-            continue
-
-    # 트리 정렬: 디렉터리(tree) 먼저, 그 다음 파일(blob), 이름 오름차순
-    res_trees.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
-    return res_trees
-
-
 class GetTagTree(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
 
-class GithubBranchTreeView(APIView):
+def get_repo_path(repo_id):
+    repo_obj = get_object_or_404(Repository, pk=repo_id)
+    repo_path = repo_obj.local_path or f"/app/repos/{repo_obj.slug}.git"
+    return repo_path
+
+
+class GitBranchTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
     def get(request, pk, branch):
-        repo = get_object_or_404(Repository, pk=pk)
+        repo_path = get_repo_path(pk)
 
-        token = repo.github_token
-        headers = GITHUB_API_HEADERS(token)
-
-        base_url = f"https://api.github.com/repos/{repo.owner}/{repo.slug}"
-        branch_url = f"{base_url}/branches/{branch}"
+        if not os.path.exists(repo_path):
+            return Response({"Error": "Local repository path not found"}, status=404)
 
         try:
-            branch_res = requests.get(branch_url, headers=headers)
-            branch_res.raise_for_status()
-            branch_commit = branch_res.json().get("commit", {})
-            commit_info = branch_commit.get("commit", {})
-            author_info = commit_info.get("author", {})
-        except Exception as e:
-            return Response({"Error": "Branch fetch failed", "details": str(e)}, status=500)
+            repo = Repo(repo_path)
+            if branch not in repo.heads:
+                return Response({"Error": f"Branch '{branch}' not found"}, status=404)
+            commit = repo.heads[branch].commit
+        except GitCommandError as e:
+            return Response({"Error": "Failed to access branch or commit", "details": str(e)}, status=500)
 
+        # 브랜치 정보 구성
         branch_api = {
             "name": branch,
             "commit": {
-                "sha": branch_commit.get("sha", "")[:5],
-                "url": branch_commit.get("url"),
-                "author": author_info.get("name", "Unknown"),
-                "date": author_info.get("date"),
-                "message": commit_info.get("message"),
+                "sha": commit.hexsha[:5],
+                "url": None,
+                "author": commit.author.name,
+                "date": commit.authored_datetime.isoformat(),
+                "message": commit.message.strip()
             }
         }
 
-        # 트리 URL에서 파일 트리 정보 가져 오기
-        tree_url = commit_info.get("tree", {}).get("url")
-        if not tree_url:
-            return Response({"Error": "Tree URL not found in branch commit"}, status=500)
+        # 트리 정보 구성
+        tree = commit.tree
+        result = []
 
-        try:
-            tree_res = requests.get(tree_url, headers=headers)
-            tree_res.raise_for_status()
-            tree_data = tree_res.json().get("tree", [])
-        except Exception as e:
-            return Response({"Error": "Tree fetch failed", "details": str(e)}, status=500)
+        for item in tree:
+            item_path = item.path  # 상대 경로
 
-        trees_api = get_trees(tree_data, base_url, headers)
-        return Response({"branch": branch_api, "trees": trees_api}, status=status.HTTP_200_OK)
+            # 최근 커밋 찾기
+            try:
+                latest_commit = next(repo.iter_commits(branch, paths=item_path, max_count=1))
+                latest_commit_data = {
+                    "sha": latest_commit.hexsha[:5],
+                    "author": latest_commit.author.name,
+                    "date": latest_commit.authored_datetime.isoformat(),
+                    "message": latest_commit.message.strip()
+                }
+            except StopIteration:
+                latest_commit_data = {
+                    "sha": "",
+                    "author": "Unknown",
+                    "date": "",
+                    "message": ""
+                }
+
+            result.append({
+                "path": item_path,
+                "mode": item.mode,
+                "type": "tree" if item.type == "tree" else "blob",
+                "sha": item.hexsha,
+                "size": getattr(item, "size", None),
+                "commit": latest_commit_data
+            })
+
+        # 트리 정렬: 디렉터리 → 파일, 이름순
+        result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
+        return Response({"branch": branch_api, "trees": result}, status=status.HTTP_200_OK)
 
 
-class GithubSubTreeView(APIView):
+class GitSubTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
     def get(request, pk, sha):
-        repo = get_object_or_404(Repository, pk=pk)
+        repo_path = get_repo_path(pk)
 
-        token = repo.github_token
-        headers = GITHUB_API_HEADERS(token)
-
-        base_url = f"https://api.github.com/repos/{repo.owner}/{repo.slug}"
-        tree_url = f"{base_url}/git/trees/{sha}"
+        if not os.path.exists(repo_path):
+            return Response({"Error": "Local repository path not found"}, status=404)
 
         try:
-            tree_res = requests.get(tree_url, headers=headers)
-            tree_res.raise_for_status()
-            sub_tree_data = tree_res.json().get("tree", [])
-        except Exception as e:
-            return Response({"Error": "Sub Tree fetch failed", "details": str(e)}, status=500)
+            repo = Repo(repo_path)
+            tree = repo.tree(sha)
+        except (BadName, GitCommandError) as e:
+            return Response({"Error": "Invalid SHA or repo access failed", "details": str(e)}, status=400)
 
-        # trees_api = get_trees(sub_tree_data, base_url, headers)
-        # 트리 정렬: 디렉터리(tree) 먼저, 그 다음 파일(blob), 이름 오름차순
-        res_data = sub_tree_data
-        res_data.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
-        return Response(res_data, status=status.HTTP_200_OK)
+        result = []
+
+        for item in tree:
+            result.append({
+                "path": item.path,  # 상대 경로
+                "mode": item.mode,
+                "type": "tree" if item.type == "tree" else "blob",
+                "sha": item.hexsha,
+                "size": getattr(item, "size", None),
+            })
+
+        # 디렉터리 먼저, 파일 다음, 이름 오름차순 정렬
+        result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class CompareCommitsView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, *args, **kwargs):
+        base = request.query_params.get('base')
+        head = request.query_params.get('head')
+
+        if not base or not head:
+            return Response(
+                {"Error": "Missing 'base' or 'head' parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response(
+                {"Error": "Repository path not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            repo = Repo(repo_path)
+
+            # 커밋 유효성 검증
+            try:
+                repo.commit(base)
+                repo.commit(head)
+            except BadName:
+                return Response({"Error": "Invalid commit hash"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # diff 텍스트 추출
+            try:
+                diff_text = repo.git.diff(base, head, unified=3)
+            except GitCommandError as e:
+                return Response({"Error": f"Git diff error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            return Response(diff_text, content_type="text/plain")
+
+        except GitCommandError as e:
+            return Response({"Error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"Error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
