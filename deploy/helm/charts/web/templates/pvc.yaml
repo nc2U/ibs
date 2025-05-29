@@ -21,6 +21,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: git-repos-{{ .Values.global.appMode }}-pvc
 spec:
+  storageClassName: {{ include "web.fullname" . }}-app-{{ .Values.global.appMode }}
   accessModes:
     - ReadWriteMany
   resources:
