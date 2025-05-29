@@ -19,7 +19,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}-git-repos-{{ .Values.global.appMode }}-pvc
+  name: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-git-repos-pvc
 spec:
   storageClassName: {{ include "web.fullname" . }}-repo-{{ .Values.global.appMode }}
   accessModes:
