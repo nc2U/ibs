@@ -6,7 +6,7 @@ from work.models.github import Repository, Commit
 class RepositorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
-        fields = ('pk', 'project', 'is_default', 'owner', 'slug', 'github_token', 'is_report')
+        fields = ('pk', 'project', 'is_default', 'slug', 'local_path', 'is_report')
 
 
 class CommitSerializer(serializers.ModelSerializer):
