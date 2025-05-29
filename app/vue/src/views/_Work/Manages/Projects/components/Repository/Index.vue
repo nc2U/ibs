@@ -24,8 +24,7 @@ const workStore = useWork()
 const project = computed<IssueProject | null>(() => workStore.issueProject)
 watch(project, nVal => {
   if (nVal) {
-    cFilter.value.project = nVal?.pk as number
-    fetchCommitList(cFilter.value)
+    dataSetup(nVal?.pk as number)
   }
 })
 
@@ -37,6 +36,9 @@ const commitList = computed<Commit[]>(() => ghStore.commitList)
 
 watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
+})
+watch(repoList, nVal => {
+  if (nVal.length) fetchRepo(nVal[0].pk as number)
 })
 
 const fetchRepo = (pk: number) => ghStore.fetchRepo(pk)
@@ -52,18 +54,20 @@ const fetchCommitList = (payload: {
 const branches = computed<CommitInfo[]>(() => ghStore.branches)
 const tags = computed<CommitInfo[]>(() => ghStore.tags)
 
-const default_branch = computed<string>(() => ghStore.default_branch ?? 'master')
+const default_branch = computed(() => ghStore.default_branch)
 const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
-const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
+// const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const diffApi = computed<any>(() => ghStore.diffApi)
 
-const fetchDiffApi = (url: string, token: string) => ghStore.fetchDiffApi(url, token)
-const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
-const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
-const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
+const fetchDiffApi = (pk: number, diff_hash: string) => ghStore.fetchDiffApi(pk, diff_hash)
 
+// const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
+// const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
+// const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
+
+// revisons & diff view
 const getListSort = ref<'latest' | 'all'>('latest')
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
 
@@ -82,11 +86,13 @@ const baseSet = (pk: number) => (basePk.value = pk)
 
 const getDiff = (reverse = false) => {
   const diff_hash = !reverse
-    ? `${diffs.value.baseCommit?.commit_hash}...${diffs.value.headCommit?.commit_hash}`
-    : `${diffs.value.headCommit?.commit_hash}...${diffs.value.baseCommit?.commit_hash}`
+    ? `?base=${diffs.value.baseCommit?.commit_hash}&head=${diffs.value.headCommit?.commit_hash}`
+    : `?base=${diffs.value.headCommit?.commit_hash}&head=${diffs.value.baseCommit?.commit_hash}`
 
-  fetchDiffApi(`${githubApiUrl.value}/compare/${diff_hash}`, `${repo.value?.github_token}`)
-  viewPageSort.value = 'diff'
+  if (repo.value) {
+    fetchDiffApi(repo.value?.pk as number, diff_hash)
+    viewPageSort.value = 'diff'
+  }
 }
 
 const getBack = () => {
@@ -99,25 +105,29 @@ const pageSelect = (page: number) => {
   fetchCommitList(cFilter.value)
 }
 
+const dataSetup = async (proj: number) => {
+  cFilter.value.project = proj
+  await fetchRepoList(proj, 'true')
+  await fetchRepo(repoList.value[0].pk as number)
+  cFilter.value.repo = repo.value?.pk as number
+  await fetchCommitList(cFilter.value)
+
+  // const url = githubApiUrl.value
+  // const token = repo.value.github_token ?? ''
+  // await fetchBranches(url, token)
+  // await fetchDefBranch(repo.value.pk as number, default_branch.value)
+  // await fetchTags(url, token)
+}
+
 onBeforeMount(async () => {
-  cFilter.value.project = project.value?.pk as number
-  await fetchRepoList(1, 'true')
-  if (repoList.value.length) await fetchRepo(repoList.value[0].pk as number)
-  if (repo.value) {
-    cFilter.value.repo = repo.value?.pk as number
-    await fetchCommitList(cFilter.value)
-    const url = githubApiUrl.value
-    const token = repo.value.github_token ?? ''
-    await fetchBranches(url, token)
-    await fetchDefBranch(repo.value.pk as number, default_branch.value)
-    await fetchTags(url, token)
-  }
+  if (project.value) await dataSetup(project.value.pk as number)
 })
 </script>
 
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
+      {{ diffApi }}//---
       <SourceCode
         :repo="repo as Repository"
         :branches="branches"

@@ -87,7 +87,7 @@ export const useGithub = defineStore('github', () => {
 
   // repo api
   const repoApi = ref<any>(null)
-  const default_branch = computed(() => repoApi.value?.default_branch)
+  const default_branch = computed<string>(() => repoApi.value?.default_branch ?? 'master')
 
   const fetchRepoApi = async (url: string, token: string = '') =>
     await api
@@ -187,14 +187,10 @@ export const useGithub = defineStore('github', () => {
   const diffApi = ref<any>(null)
 
   const removeDiffApi = () => (diffApi.value = null)
-  const fetchDiffApi = (url: string, token: string) =>
+
+  const fetchDiffApi = (pk: number, diff_hash: string) =>
     api
-      .get(url, {
-        headers: {
-          Accept: 'application/vnd.github.diff',
-          Authorization: `token ${token}`,
-        },
-      })
+      .get(`/repo/${pk}/compare/${diff_hash}/`)
       .then(res => (diffApi.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
