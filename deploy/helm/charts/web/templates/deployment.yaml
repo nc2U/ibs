@@ -51,7 +51,7 @@ spec:
             - name: media
               mountPath: /app/django/media
             - name: repos
-              mountPath: /app/repo
+              mountPath: /app/repos
             - name: tz-seoul
               mountPath: /etc/localtime
           resources:
