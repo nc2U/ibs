@@ -57,6 +57,8 @@ venv/
 docker-compose.yml
 cluster-issuer.yml
 certificate.yml
+
+../app/repos
 values_custom.yaml
 
 /coverage
