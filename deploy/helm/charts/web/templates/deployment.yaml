@@ -48,8 +48,8 @@ spec:
           volumeMounts:
             - name: django-source
               mountPath: /app/django
-            - name: media-source
-              mountPath: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/media
+            - name: media
+              mountPath: /app/django/media
             - name: tz-seoul
               mountPath: /etc/localtime
           resources:
@@ -58,7 +58,7 @@ spec:
         - name: django-source
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-django-pvc
-        - name: media-source
+        - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc
         - name: tz-seoul

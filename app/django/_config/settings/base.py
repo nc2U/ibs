@@ -218,7 +218,7 @@ STATICFILES_DIRS = (BASE_DIR / '_assets',)
 
 # 각 media 파일에 관한 URL prefix
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/' if AWS_STORAGE_BUCKET_NAME else 'media/'
-MEDIA_ROOT = os.getenv('MEDIA_ROOT')  # BASE_DIR / 'media'  # 업로드된 파일을 저장할 디렉토리 경로
+MEDIA_ROOT = BASE_DIR / 'media'  # 업로드된 파일을 저장할 디렉토리 경로
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
