@@ -30,7 +30,7 @@ kind: PersistentVolume
 metadata:
   name: {{ .Release.Name }}-git-repos-{{ .Values.global.appMode }}-pv
 spec:
-  storageClassName: {{ include "web.fullname" . }}-app-{{ .Values.global.appMode }}
+  storageClassName: {{ include "web.fullname" . }}-repo-{{ .Values.global.appMode }}
   capacity:
     storage: {{ if eq .Values.global.appMode "prod" }}500Mi{{ else if eq .Values.global.appMode "dev" }}200Mi{{ end }}
   accessModes:
