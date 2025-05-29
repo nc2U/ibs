@@ -37,7 +37,8 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             cd ${{ secrets.CICD_PATH }}/prod/
-            rm -rf .git* *.md app/vue app/svelte deploy
+            rm -rf .git* *.md app/vue app/svelte deploy && \
+            mkdir -p ./app/repos
 
       # Necessary dir Check
       - name: media & static dir check
@@ -48,8 +49,8 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           command: |
             cd ${{ secrets.NFS_PATH }}/prod && \
-            mkdir -p ./app/django/media ./app/repos && \
-            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 755 ./app
+            mkdir -p ./app/django/media && \
+            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 755 ./app/django
       
       # Source to CI/CD server copy transfer
       - name: Helm Source to CI/CD server
