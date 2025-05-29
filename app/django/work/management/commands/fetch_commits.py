@@ -1,10 +1,12 @@
+import os
 import re
+import subprocess
 import time
 from datetime import datetime
 
 import requests
-from django.core.management.base import BaseCommand
-from django.db import transaction, connection, IntegrityError
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction, IntegrityError
 
 from work.models import Repository, Commit, Issue
 
@@ -18,6 +20,26 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         limit = kwargs.get('limit')  # 명령줄에서 --limit으로 전달된 값
         api_url = "https://api.github.com/repos"
+        api_path = "/app/repos/ibs.git"
+
+        if not os.path.isdir(api_path):
+            raise CommandError(f"The path '{api_path}' does not exist or is not a directory.")
+
+        # Git fetch 실행
+        try:
+            result = subprocess.run(
+                ["git", "fetch", "origin"],
+                cwd=api_path,  # working directory
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            self.stdout.write(self.style.SUCCESS("Successfully fetched commits"))
+            self.stdout.write(result.stdout)
+        except subprocess.CalledProcessError as e:
+            self.stderr.write(self.style.ERROR("Failed to fetch commits"))
+            self.stderr.write(e.stderr)
+            raise CommandError("Git fetch failed")
 
         for repo in Repository.objects.all():
             api_url = f'{api_url}/{repo.owner}/{repo.slug}'
