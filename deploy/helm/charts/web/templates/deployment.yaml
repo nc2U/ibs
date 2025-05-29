@@ -50,6 +50,8 @@ spec:
               mountPath: /app/django
             - name: media
               mountPath: /app/django/media
+            - name: repos
+              mountPath: /app/repo
             - name: tz-seoul
               mountPath: /etc/localtime
           resources:
@@ -61,6 +63,9 @@ spec:
         - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc
+        - name: repos
+          persistentVolumeClaim:
+            claimName: git-repos-{{ .Values.global.appMode }}-pvc
         - name: tz-seoul
           hostPath:
             path: /usr/share/zoneinfo/Asia/Seoul

@@ -52,6 +52,7 @@ services:
     image: dokube/django
     volumes:
       - ../app/django:/app/django
+      - ../app/repos:/app/repos
     environment:
       DATABASE_TYPE: mariadb  # mariadb | postgres (default: mariadb)
       DATABASE_PORT: 3306  # default: 3306

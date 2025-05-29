@@ -24,3 +24,20 @@ spec:
     path: {{ .Values.global.cicdPath }}/dev/app/django
     {{- end }}
     server: {{ .Values.global.cicdServerHost }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: git-repos-{{ .Values.global.appMode }}-pv
+spec:
+  capacity:
+    {{- if eq .Values.global.appMode "prod" }}
+    storage: 500Mi
+    {{- else if eq .Values.global.appMode "dev" }}
+    storage: 200Mi
+    {{- end }}
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/repos
+    server: {{ .Values.global.cicdServerHost }}

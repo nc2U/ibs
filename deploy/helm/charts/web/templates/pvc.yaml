@@ -15,3 +15,18 @@ spec:
     {{- else if eq .Values.global.appMode "dev" }}
       storage: {{ .Values.volumes.djangoPvcStorageDev }}
     {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: git-repos-{{ .Values.global.appMode }}-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      {{- if eq .Values.global.appMode "prod" }}
+      storage: 500Mi
+      {{- else if eq .Values.global.appMode "dev" }}
+      storage: 200Mi
+      {{- end }}
