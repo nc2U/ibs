@@ -191,7 +191,7 @@ export const useGithub = defineStore('github', () => {
   const fetchDiffText = (pk: number, diff_hash: string) =>
     api
       .get(`/repo/${pk}/compare/${diff_hash}`)
-      .then(res => (diffText.value = res.data))
+      .then(res => (diffText.value = res.data.diff))
       .catch(err => errorHandle(err.response.data))
 
   return {

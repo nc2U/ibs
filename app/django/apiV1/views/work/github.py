@@ -138,44 +138,73 @@ class GitSubTreeView(APIView):
 
 class CompareCommitsView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
+    MAX_LINES = 1000  # 최대 반환 줄 수
 
     @staticmethod
     def get(request, pk, *args, **kwargs):
-        base = request.query_params.get('base')
-        head = request.query_params.get('head')
+        base = request.query_params.get("base")
+        head = request.query_params.get("head")
 
         if not base or not head:
             return Response(
-                {"Error": "Missing 'base' or 'head' parameter"},
+                {"error": "Missing 'base' or 'head' parameter"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         repo_path = get_repo_path(pk)
         if not os.path.exists(repo_path):
             return Response(
-                {"Error": "Repository path not found"},
+                {"error": "Repository path not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
         try:
             repo = Repo(repo_path)
 
-            # 커밋 유효성 검증
             try:
                 repo.commit(base)
                 repo.commit(head)
             except BadName:
-                return Response({"Error": "Invalid commit hash"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Invalid commit hash"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # diff 텍스트 추출
+            # 커밋 목록 수집
+            try:
+                commits = list(repo.iter_commits(f"{base}..{head}"))
+            except GitCommandError:
+                commits = list(repo.iter_commits(f"{head}..{base}"))
+
+            commit_list = [
+                {
+                    "sha": c.hexsha,
+                    "author": c.author.name,
+                    "date": c.committed_datetime.isoformat(),
+                    "message": c.message.strip(),
+                }
+                for c in commits
+            ]
+
+            # Unified diff 생성 및 길이 제한 적용
             try:
                 diff_text = repo.git.diff(base, head, unified=3)
-            except GitCommandError as e:
-                return Response({"Error": f"Git diff error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                diff_lines = diff_text.splitlines()
+                truncated = False
 
-            return Response(diff_text, content_type="text/plain")
+                if len(diff_lines) > CompareCommitsView.MAX_LINES:
+                    diff_text = "\n".join(diff_lines[:CompareCommitsView.MAX_LINES]) + "\n... [truncated]"
+                    truncated = True
+            except GitCommandError:
+                diff_text = ""
+                truncated = False
+
+            return Response({
+                "base": base,
+                "head": head,
+                "commits": commit_list,
+                "diff": diff_text,
+                "truncated": truncated
+            })
 
         except GitCommandError as e:
-            return Response({"Error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
-            return Response({"Error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
