@@ -14,10 +14,6 @@ export const useGithub = defineStore('github', () => {
       .get(`/repository/${pk}/`)
       .then(async res => {
         repository.value = res.data
-        await fetchRepoApi(
-          `https://api.github.com/repos/${res.data.owner}/${res.data.slug}`,
-          res.data.github_token,
-        )
       })
       .catch(err => errorHandle(err.response.data))
 
