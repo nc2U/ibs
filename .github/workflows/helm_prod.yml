@@ -34,7 +34,8 @@ jobs:
           command: |
             cd ${{ secrets.NFS_PATH }}/prod
             mkdir -p ./app/django/media ./app/django/static
-            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 755 ./app/django
+            echo '${{ secrets.NFS_PASS }}' | \
+            sudo -S chmod -R 755 ./app/django
       
       # Helm source to CI/CD server copy transfer
       - name: Copy helm, to CI/CD server
@@ -97,7 +98,7 @@ jobs:
             --set 'nginx.ingress.tls[0].hosts[2]'=dyibs.co.kr \
             --set 'nginx.ingress.tls[0].hosts[3]'=brdnc.co.kr \
             --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
-#            --atomic --cleanup-on-fail
+      #            --atomic --cleanup-on-fail
       
       # slack --> notification
       - name: Send slack when failed
@@ -105,7 +106,7 @@ jobs:
         uses: ./.github/actions/slack-notify    # 직접 '만든' Action이므로 uses 키워드를 이용해서 아래 경로를 입력해줍니다.
         with:
           slack_incoming_url: ${{ secrets.SLACK_INCOMING_URL }}
-      
+
       - name: Send slack if completed
         if: ${{ success() }}                    # 성공할 때만 실행
         uses: ./.github/actions/slack-notify

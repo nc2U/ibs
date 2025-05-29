@@ -40,7 +40,7 @@ jobs:
           command: |
             cd ${{ secrets.CICD_PATH }}/dev/
             rm -rf .git* *.md app/vue app/svelte deploy
-            
+
       # Necessary dir Check
       - name: media & static dir check
         uses: garygrossgarten/github-action-ssh@release
@@ -50,8 +50,9 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           command: |
             cd ${{ secrets.NFS_PATH }}/dev
-            mkdir -p ./app/media ./app/static
-            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 755 ./app
+            mkdir -p ./app/django/media ./app/django/static
+            echo '${{ secrets.NFS_PASS }}' | \ 
+            sudo -S chmod -R 755 ./app/django
       
       # Helm source to CI/CD server copy transfer
       - name: Helm Source to CI/CD server
@@ -103,13 +104,13 @@ jobs:
             --set 'nginx.ingress.tls[0].hosts[0]'=dev.${{ secrets.DOMAIN_NAME }} \
             --set 'nginx.ingress.tls[0].hosts[1]'=dev.brdnc.co.kr \
             --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
-      
+
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
         uses: ./.github/actions/slack-notify    # 직접 '만든' Action이므로 uses 키워드를 이용해서 아래 경로를 입력해줍니다.
         with:
           slack_incoming_url: ${{ secrets.SLACK_INCOMING_URL }}
-      
+
       - name: Send slack if completed
         if: ${{ success() }}                    # 성공할 때만 실행
         uses: ./.github/actions/slack-notify
