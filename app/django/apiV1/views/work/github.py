@@ -29,13 +29,18 @@ class GetTagTree(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
 
+def get_repo_path(repo_id):
+    repo_obj = get_object_or_404(Repository, pk=repo_id)
+    repo_path = repo_obj.local_path or f"/app/repos/{repo_obj.slug}.git"
+    return repo_path
+
+
 class GitBranchTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
     def get(request, pk, branch):
-        repo_obj = get_object_or_404(Repository, pk=pk)
-        repo_path = repo_obj.local_path or f'/app/repos/{repo_obj.slug}.git'
+        repo_path = get_repo_path(pk)
 
         if not os.path.exists(repo_path):
             return Response({"Error": "Local repository path not found"}, status=404)
@@ -103,8 +108,7 @@ class GitSubTreeView(APIView):
 
     @staticmethod
     def get(request, pk, sha):
-        repo_obj = get_object_or_404(Repository, pk=pk)
-        repo_path = repo_obj.local_path or f"/app/repos/{repo_obj.slug}.git"
+        repo_path = get_repo_path(pk)
 
         if not os.path.exists(repo_path):
             return Response({"Error": "Local repository path not found"}, status=404)
@@ -129,3 +133,65 @@ class GitSubTreeView(APIView):
         # 디렉터리 먼저, 파일 다음, 이름 오름차순 정렬
         result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
         return Response(result, status=status.HTTP_200_OK)
+
+
+class CompareCommitsView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, *args, **kwargs):
+
+        base = request.query_params.get('base')
+        head = request.query_params.get('head')
+
+        if not base or not head:
+            return Response({"Error": "Missing 'base' or 'head' parameter"}, status=status.HTTP_400_BAD_REQUEST)
+
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response({"Error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            repo = Repo(repo_path)
+            base_commit = repo.commit(base)
+            head_commit = repo.commit(head)
+
+            # 1. 커밋 목록
+            commit_list = []
+            for commit in repo.iter_commits(f'{base}..{head}'):
+                commit_list.append({
+                    "sha": commit.hexsha,
+                    "author": commit.author.name,
+                    "date": commit.committed_datetime.isoformat(),
+                    "message": commit.message.strip(),
+                })
+
+            # 2. 파일 변경 사항
+            diffs = base_commit.diff(head_commit)
+            file_list = []
+            for diff in diffs:
+                try:
+                    file_list.append({
+                        "path": diff.a_path,
+                        "change_type": diff.change_type,  # A, M, D, R 등
+                        "diff": diff.diff.decode('utf-8', errors='ignore') if diff.diff else None,
+                    })
+                except Exception as e:
+                    file_list.append({
+                        "path": diff.a_path,
+                        "change_type": diff.change_type,
+                        "diff": None,
+                        "error": str(e)
+                    })
+
+            return Response({
+                "base": base,
+                "head": head,
+                "commits": commit_list,
+                "files": file_list,
+            })
+
+        except GitCommandError as e:
+            return Response({"Error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"Error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

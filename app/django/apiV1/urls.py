@@ -190,3 +190,4 @@ urlpatterns += [
 urlpatterns += [
     path('repo/<int:pk>/branch/<str:branch>/', work.GitBranchTreeView.as_view(), name='github-branch-tree')]
 urlpatterns += [path('repo/<int:pk>/tree/<str:sha>/', work.GitSubTreeView.as_view(), name='github-sub-tree')]
+urlpatterns += [path('repo/<int:pk>/compare/', work.CompareCommitsView.as_view(), name='compare-commits')]
