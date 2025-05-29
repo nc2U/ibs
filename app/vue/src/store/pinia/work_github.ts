@@ -184,14 +184,14 @@ export const useGithub = defineStore('github', () => {
   }
 
   // diff api
-  const diffApi = ref<any>(null)
+  const diffText = ref<any>(null)
 
-  const removeDiffApi = () => (diffApi.value = null)
+  const removeDiffText = () => (diffText.value = null)
 
-  const fetchDiffApi = (pk: number, diff_hash: string) =>
+  const fetchDiffText = (pk: number, diff_hash: string) =>
     api
-      .get(`/repo/${pk}/compare/${diff_hash}/`)
-      .then(res => (diffApi.value = res.data))
+      .get(`/repo/${pk}/compare/${diff_hash}`)
+      .then(res => (diffText.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
   return {
@@ -225,8 +225,8 @@ export const useGithub = defineStore('github', () => {
     tags,
     fetchTags,
 
-    diffApi,
-    removeDiffApi,
-    fetchDiffApi,
+    diffText,
+    removeDiffText,
+    fetchDiffText,
   }
 })

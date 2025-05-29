@@ -59,9 +59,9 @@ const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
 // const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
-const diffApi = computed<any>(() => ghStore.diffApi)
+const diffText = computed<any>(() => ghStore.diffText)
 
-const fetchDiffApi = (pk: number, diff_hash: string) => ghStore.fetchDiffApi(pk, diff_hash)
+const fetchDiffText = (pk: number, diff_hash: string) => ghStore.fetchDiffText(pk, diff_hash)
 
 // const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
 // const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
@@ -90,14 +90,14 @@ const getDiff = (reverse = false) => {
     : `?base=${diffs.value.headCommit?.commit_hash}&head=${diffs.value.baseCommit?.commit_hash}`
 
   if (repo.value) {
-    fetchDiffApi(repo.value?.pk as number, diff_hash)
+    fetchDiffText(repo.value?.pk as number, diff_hash)
     viewPageSort.value = 'diff'
   }
 }
 
 const getBack = () => {
   viewPageSort.value = 'revisions'
-  ghStore.removeDiffApi()
+  ghStore.removeDiffText()
 }
 
 const pageSelect = (page: number) => {
@@ -127,7 +127,6 @@ onBeforeMount(async () => {
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      {{ diffApi }}//---
       <SourceCode
         :repo="repo as Repository"
         :branches="branches"
@@ -155,7 +154,7 @@ onBeforeMount(async () => {
         v-if="viewPageSort === 'diff'"
         :head-commit="diffs.headCommit as Commit"
         :base-commit="diffs.baseCommit as Commit"
-        :diff-api="diffApi"
+        :diff-text="diffText"
         @get-diff="getDiff"
         @get-back="getBack"
       />

@@ -145,63 +145,36 @@ class CompareCommitsView(APIView):
         head = request.query_params.get('head')
 
         if not base or not head:
-            return Response({"Error": "Missing 'base' or 'head' parameter"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"Error": "Missing 'base' or 'head' parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         repo_path = get_repo_path(pk)
         if not os.path.exists(repo_path):
-            return Response({"Error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"Error": "Repository path not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         try:
             repo = Repo(repo_path)
-            base_commit = repo.commit(base)
-            head_commit = repo.commit(head)
 
-            commits = list(repo.iter_commits(f'{base}..{head}'))
-            if not commits:
-                commits = list(repo.iter_commits(f'{head}..{base}'))
+            # 커밋 유효성 검증
+            try:
+                repo.commit(base)
+                repo.commit(head)
+            except BadName:
+                return Response({"Error": "Invalid commit hash"}, status=status.HTTP_400_BAD_REQUEST)
 
-            commit_list = [{
-                "sha": commit.hexsha,
-                "author": commit.author.name,
-                "date": commit.committed_datetime.isoformat(),
-                "message": commit.message.strip(),
-            } for commit in commits]
+            # diff 텍스트 추출
+            try:
+                diff_text = repo.git.diff(base, head, unified=3)
+            except GitCommandError as e:
+                return Response({"Error": f"Git diff error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            diffs = base_commit.diff(head_commit)
-            file_list = []
-            for diff in diffs:
-                try:
-                    if diff.new_file:
-                        change_type = 'A'
-                    elif diff.deleted_file:
-                        change_type = 'D'
-                    elif diff.renamed:
-                        change_type = 'R'
-                    else:
-                        change_type = 'M'
+            return Response(diff_text, content_type="text/plain")
 
-                    file_list.append({
-                        "path": diff.b_path or diff.a_path,
-                        "change_type": change_type,
-                        "diff": diff.diff.decode('utf-8', errors='ignore') if diff.diff else None,
-                    })
-                except Exception as e:
-                    file_list.append({
-                        "path": diff.b_path or diff.a_path,
-                        "change_type": '?',
-                        "diff": None,
-                        "error": str(e),
-                    })
-
-            return Response({
-                "base": base,
-                "head": head,
-                "commits": commit_list,
-                "files": file_list,
-            })
-
-        except BadName:
-            return Response({"Error": "Invalid commit hash"}, status=status.HTTP_400_BAD_REQUEST)
         except GitCommandError as e:
             return Response({"Error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
