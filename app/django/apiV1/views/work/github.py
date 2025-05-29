@@ -35,7 +35,7 @@ class GitBranchTreeView(APIView):
     @staticmethod
     def get(request, pk, branch):
         repo_obj = get_object_or_404(Repository, pk=pk)
-        repo_path = f'/app/repos/{repo_obj.slug}.git'  # or repo_obj.local_path
+        repo_path = repo_obj.local_path or f'/app/repos/{repo_obj.slug}.git'
 
         if not os.path.exists(repo_path):
             return Response({"Error": "Local repository path not found"}, status=404)
@@ -104,7 +104,7 @@ class GitSubTreeView(APIView):
     @staticmethod
     def get(request, pk, sha):
         repo_obj = get_object_or_404(Repository, pk=pk)
-        repo_path = f"/app/repos/{repo_obj.slug}.git"  # or repo_obj.local_path
+        repo_path = repo_obj.local_path or f"/app/repos/{repo_obj.slug}.git"
 
         if not os.path.exists(repo_path):
             return Response({"Error": "Local repository path not found"}, status=404)
