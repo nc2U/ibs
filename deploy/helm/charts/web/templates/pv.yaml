@@ -32,11 +32,7 @@ metadata:
 spec:
   storageClassName: {{ include "web.fullname" . }}-app-{{ .Values.global.appMode }}
   capacity:
-    {{- if eq .Values.global.appMode "prod" }}
-    storage: 500Mi
-    {{- else if eq .Values.global.appMode "dev" }}
-    storage: 200Mi
-    {{- end }}
+    storage: {{ if eq .Values.global.appMode "prod" }}500Mi{{ else if eq .Values.global.appMode "dev" }}200Mi{{ end }}
   accessModes:
     - ReadWriteMany
   nfs:
