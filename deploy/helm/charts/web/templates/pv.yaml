@@ -28,7 +28,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: git-repos-{{ .Values.global.appMode }}-pv
+  name: {{ .Release.Name }}-git-repos-{{ .Values.global.appMode }}-pv
 spec:
   storageClassName: {{ include "web.fullname" . }}-app-{{ .Values.global.appMode }}
   capacity:
