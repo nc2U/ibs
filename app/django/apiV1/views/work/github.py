@@ -1,7 +1,8 @@
 import os
 
 from django.shortcuts import get_object_or_404
-from git import Repo, GitCommandError, BadName
+from git import Repo, GitCommandError
+from git.exc import BadName
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 
@@ -140,7 +141,6 @@ class CompareCommitsView(APIView):
 
     @staticmethod
     def get(request, pk, *args, **kwargs):
-
         base = request.query_params.get('base')
         head = request.query_params.get('head')
 
@@ -156,32 +156,41 @@ class CompareCommitsView(APIView):
             base_commit = repo.commit(base)
             head_commit = repo.commit(head)
 
-            # 1. 커밋 목록
-            commit_list = []
-            for commit in repo.iter_commits(f'{base}..{head}'):
-                commit_list.append({
-                    "sha": commit.hexsha,
-                    "author": commit.author.name,
-                    "date": commit.committed_datetime.isoformat(),
-                    "message": commit.message.strip(),
-                })
+            commits = list(repo.iter_commits(f'{base}..{head}'))
+            if not commits:
+                commits = list(repo.iter_commits(f'{head}..{base}'))
 
-            # 2. 파일 변경 사항
+            commit_list = [{
+                "sha": commit.hexsha,
+                "author": commit.author.name,
+                "date": commit.committed_datetime.isoformat(),
+                "message": commit.message.strip(),
+            } for commit in commits]
+
             diffs = base_commit.diff(head_commit)
             file_list = []
             for diff in diffs:
                 try:
+                    if diff.new_file:
+                        change_type = 'A'
+                    elif diff.deleted_file:
+                        change_type = 'D'
+                    elif diff.renamed:
+                        change_type = 'R'
+                    else:
+                        change_type = 'M'
+
                     file_list.append({
-                        "path": diff.a_path,
-                        "change_type": diff.change_type,  # A, M, D, R 등
+                        "path": diff.b_path or diff.a_path,
+                        "change_type": change_type,
                         "diff": diff.diff.decode('utf-8', errors='ignore') if diff.diff else None,
                     })
                 except Exception as e:
                     file_list.append({
-                        "path": diff.a_path,
-                        "change_type": diff.change_type,
+                        "path": diff.b_path or diff.a_path,
+                        "change_type": '?',
                         "diff": None,
-                        "error": str(e)
+                        "error": str(e),
                     })
 
             return Response({
@@ -191,6 +200,8 @@ class CompareCommitsView(APIView):
                 "files": file_list,
             })
 
+        except BadName:
+            return Response({"Error": "Invalid commit hash"}, status=status.HTTP_400_BAD_REQUEST)
         except GitCommandError as e:
             return Response({"Error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
