@@ -51,7 +51,7 @@ services:
     build: docker/python
     image: dokube/django
     volumes:
-      - ../app:/app
+      - ../app/django:/app/django
     environment:
       DATABASE_TYPE: mariadb  # mariadb | postgres (default: mariadb)
       DATABASE_PORT: 3306  # default: 3306
