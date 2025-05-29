@@ -188,5 +188,5 @@ urlpatterns += [
 
 # github api
 urlpatterns += [
-    path('repo/<int:pk>/branch/<str:branch>/', work.GithubBranchTreeView.as_view(), name='github-branch-tree')]
-urlpatterns += [path('repo/<int:pk>/tree/<str:sha>/', work.GithubSubTreeView.as_view(), name='github-sub-tree')]
+    path('repo/<int:pk>/branch/<str:branch>/', work.GitBranchTreeView.as_view(), name='github-branch-tree')]
+urlpatterns += [path('repo/<int:pk>/tree/<str:sha>/', work.GitSubTreeView.as_view(), name='github-sub-tree')]
