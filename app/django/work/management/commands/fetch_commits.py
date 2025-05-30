@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 from datetime import datetime
 
 from zoneinfo import ZoneInfo
@@ -34,6 +35,15 @@ class Command(BaseCommand):
                 except InvalidGitRepositoryError:
                     self.stderr.write(self.style.ERROR(f"Invalid Git repository: {repo_path}"))
                     continue
+
+                try:
+                    subprocess.run(
+                        ['git', 'config', '--global', '--add', 'safe.directory', repo_path],
+                        check=True
+                    )
+                    print("Safe directory 설정 완료")
+                except subprocess.CalledProcessError as e:
+                    print("명령 실행 실패:", e)
 
                 # ensure fetch refspec exists
                 try:
