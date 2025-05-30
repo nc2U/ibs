@@ -96,23 +96,6 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // branches api
-  const master = ref<CommitInfo | null>(null)
-  const master_tree = ref<any[]>([])
-
-  const fetchDefBranch = async (repo: number, branch: string) =>
-    await api
-      .get(`/repo/${repo}/branch/${branch}/`)
-      .then(res => {
-        master.value = res.data.branch
-        master_tree.value = res.data.trees
-      })
-      .catch(err => errorHandle(err.response))
-
-  const fetchSubTree = async (repo: number, sha: string) => {
-    const { data: tree } = await api.get(`/repo/${repo}/tree/${sha}`)
-    return tree
-  }
-
   const branches = ref<CommitInfo[]>([])
 
   const fetchBranches = async (repoPk: number) =>
@@ -129,6 +112,23 @@ export const useGithub = defineStore('github', () => {
       .get(`/repo/${repoPk}/tags/`)
       .then(async res => (tags.value = res.data))
       .catch(err => errorHandle(err.response))
+  }
+
+  const master = ref<CommitInfo | null>(null)
+  const master_tree = ref<any[]>([])
+
+  const fetchDefBranch = async (repo: number, branch: string) =>
+    await api
+      .get(`/repo/${repo}/branch/${branch}/`)
+      .then(res => {
+        master.value = res.data.branch
+        master_tree.value = res.data.trees
+      })
+      .catch(err => errorHandle(err.response))
+
+  const fetchSubTree = async (repo: number, sha: string) => {
+    const { data: tree } = await api.get(`/repo/${repo}/tree/${sha}`)
+    return tree
   }
 
   // diff api
@@ -162,16 +162,16 @@ export const useGithub = defineStore('github', () => {
     default_branch,
     fetchRepoApi,
 
-    master,
-    master_tree,
-    fetchDefBranch,
-    fetchSubTree,
-
     branches,
     fetchBranches,
 
     tags,
     fetchTags,
+
+    master,
+    master_tree,
+    fetchDefBranch,
+    fetchSubTree,
 
     gitDiff,
     removeGitDiff,

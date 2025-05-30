@@ -66,7 +66,8 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
 
 const fetchBranches = (repoPk: number) => ghStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => ghStore.fetchTags(repoPk)
-// const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
+const fetchDefBranch = (repoPk: number, branch: string = '') =>
+  ghStore.fetchDefBranch(repoPk, branch)
 
 // revisons & diff view
 const getListSort = ref<'latest' | 'all'>('latest')
@@ -110,7 +111,7 @@ const dataSetup = async (proj: number) => {
   await fetchCommitList(cFilter.value)
   await fetchBranches(cFilter.value.repo)
   await fetchTags(cFilter.value.repo)
-  // await fetchDefBranch(repo.value.pk as number, default_branch.value)
+  await fetchDefBranch(cFilter.value.repo, default_branch.value)
 }
 
 onBeforeMount(async () => {
