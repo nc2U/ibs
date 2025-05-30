@@ -22,7 +22,7 @@ class GitRepoApiSerializer(serializers.Serializer):
     default_branch = serializers.CharField()
 
 
-class CommitInfoSerializer(serializers.Serializer):
+class CommitApiSerializer(serializers.Serializer):
     sha = serializers.CharField()
     author = serializers.CharField()
     date = serializers.CharField()
@@ -31,7 +31,7 @@ class CommitInfoSerializer(serializers.Serializer):
 
 class GitBranchSerializer(serializers.Serializer):
     name = serializers.CharField()
-    commit = CommitInfoSerializer()
+    commit = CommitApiSerializer()
 
 
 class TreeItemSerializer(serializers.Serializer):
@@ -41,7 +41,7 @@ class TreeItemSerializer(serializers.Serializer):
     type = serializers.CharField()
     sha = serializers.CharField()
     size = serializers.IntegerField(allow_null=True)
-    commit = CommitInfoSerializer()
+    commit = CommitApiSerializer()
 
 
 class GitBranchAndTreeSerializer(serializers.Serializer):
@@ -52,6 +52,6 @@ class GitBranchAndTreeSerializer(serializers.Serializer):
 class GitCompareCommitsSerializer(serializers.Serializer):
     base = serializers.CharField()
     head = serializers.CharField()
-    commits = CommitInfoSerializer(many=True)
+    commits = CommitApiSerializer(many=True)
     diff = serializers.CharField()
     truncated = serializers.BooleanField()
