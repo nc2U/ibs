@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import type { Repository, Tree, CommitInfo } from '@/store/types/work_github.ts'
-import VersionTitle from './VersionTitle.vue'
-import Versions from './Versions.vue'
+import Branches from './Branches.vue'
+import BranchTitle from './BranchTitle.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
 const props = defineProps({
@@ -13,8 +13,6 @@ const props = defineProps({
   defBranch: { type: Object as PropType<CommitInfo>, default: () => null },
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
-
-const token = computed(() => props.repo?.github_token)
 
 const branchFold = ref(false)
 const tagFold = ref(false)
@@ -70,13 +68,13 @@ const last_tag = computed(() => getLatestBranch(props.tags))
         </CTableHead>
 
         <CTableBody>
-          <VersionTitle ver-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
-          <Versions v-if="branchFold" :versions="branches" />
+          <BranchTitle ver-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
+          <Branches v-if="branchFold" :versions="branches" />
 
-          <VersionTitle ver-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
-          <Versions v-if="tagFold" :versions="tags" />
+          <BranchTitle ver-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
+          <Branches v-if="tagFold" :versions="tags" />
 
-          <VersionTitle :ver-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
+          <BranchTitle :ver-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
           <template v-if="defFold">
             <TreeNode
               v-for="node in defTree"
