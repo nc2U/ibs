@@ -31,13 +31,12 @@ export interface CommitInfo {
 
 export interface Tree {
   path: string
+  name: string
   mode: string
   type: 'tree' | 'blob'
   sha: string
   size?: number
   commit?: CommitApi
-  open?: boolean
-  loaded?: boolean
 }
 
 export interface CommitApi {
