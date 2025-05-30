@@ -126,9 +126,18 @@ export const useGithub = defineStore('github', () => {
       })
       .catch(err => errorHandle(err.response))
 
-  const fetchSubTree = async (repo: number, sha: string) => {
-    const { data: tree } = await api.get(`/repo/${repo}/tree/?sha=${sha}`)
-    return tree
+  const fetchSubTree = async (repo: number, sha: string, path: string | null = null) => {
+    const encodedPath = path ? encodeURIComponent(path) : ''
+    const url = path
+      ? `/repo/${repo}/tree/${encodedPath}?sha=${sha}`
+      : `/repo/${repo}/tree/?sha=${sha}`
+    try {
+      const { data } = await api.get(url)
+      return data
+    } catch (error: any) {
+      console.error('[fetchSubTree] Failed:', error.response?.data || error.message)
+      throw error
+    }
   }
 
   // diff api
