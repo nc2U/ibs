@@ -58,16 +58,15 @@ const default_branch = computed(() => ghStore.default_branch)
 const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
-const repoApi = computed<any>(() => ghStore.repoApi)
 const gitDiff = computed<any>(() => ghStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => ghStore.fetchRepoApi(pk)
 const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
   ghStore.fetchGitDiff(pk, diff_hash, full)
 
-// const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
-// const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
+const fetchBranches = (repoPk: number) => ghStore.fetchBranches(repoPk)
 // const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
+// const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
 
 // revisons & diff view
 const getListSort = ref<'latest' | 'all'>('latest')
@@ -109,12 +108,10 @@ const dataSetup = async (proj: number) => {
   cFilter.value.repo = repo.value?.pk as number
   await fetchRepoApi(repo.value?.pk as number)
   await fetchCommitList(cFilter.value)
+  await fetchBranches(cFilter.value.repo)
 
-  // const url = githubApiUrl.value
-  // const token = repo.value.github_token ?? ''
-  // await fetchBranches(url, token)
-  // await fetchDefBranch(repo.value.pk as number, default_branch.value)
   // await fetchTags(url, token)
+  // await fetchDefBranch(repo.value.pk as number, default_branch.value)
 }
 
 onBeforeMount(async () => {

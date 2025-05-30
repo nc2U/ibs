@@ -68,6 +68,40 @@ class GitRepoApiView(APIView):
         return Response(repo_info, status=status.HTTP_200_OK)
 
 
+class GitBranchesView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk):
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            repo = Repo(repo_path)
+            # 기본 브랜치명 (HEAD가 가리키는 브랜치)
+            default_branch = repo.active_branch.name if not repo.bare else repo.head.ref.name
+
+            branches = []
+            for head in repo.branches:
+                if head.name == default_branch:
+                    continue
+                commit = head.commit
+                branches.append({
+                    "name": head.name,
+                    "commit": {
+                        "sha": commit.hexsha[:5],
+                        "author": commit.author.name,
+                        "date": commit.committed_datetime.isoformat(),
+                        "message": commit.message.strip()
+                    }
+                })
+
+            return Response(branches, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class GitBranchTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 

@@ -115,37 +115,11 @@ export const useGithub = defineStore('github', () => {
 
   const branches = ref<CommitInfo[]>([])
 
-  const fetchBranches = async (url: string, token: string = '') => {
-    const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
+  const fetchBranches = async (repoPk: number) =>
     await api
-      .get(`${url}/branches`, { headers })
-      .then(async res => {
-        if (default_branch.value === '') await fetchRepoApi(1) // deault_branch 데이터 추출
-
-        // 일반 브랜치 데이터 추출 // 브랜치명
-        const bList = res.data.filter((b: CommitInfo) => b.name !== default_branch.value)
-        // 브랜치 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
-        branches.value = []
-        for (const b of bList) {
-          try {
-            const { data: branch } = await api.get(`${url}/branches/${b.name}`, { headers })
-            branches.value.push({
-              name: b.name,
-              commit: {
-                sha: b.commit.sha.substring(0, 5),
-                url: b.commit.url,
-                author: branch.commit.commit.author.name,
-                date: branch.commit.commit.author.date,
-                message: branch.commit.commit.message,
-              },
-            })
-          } catch (error) {
-            console.log('Error fetching branch:', error)
-          }
-        }
-      })
+      .get(`/repo/${repoPk}/branches/`)
+      .then(res => (branches.value = res.data))
       .catch(err => errorHandle(err.response))
-  }
 
   // tags api
   const tags = ref<CommitInfo[]>([])
