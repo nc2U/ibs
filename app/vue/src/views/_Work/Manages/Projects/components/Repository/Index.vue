@@ -61,7 +61,8 @@ const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 // const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
 const gitDiff = computed<any>(() => ghStore.gitDiff)
 
-const fetchGitDiff = (pk: number, diff_hash: string) => ghStore.fetchGitDiff(pk, diff_hash)
+const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
+  ghStore.fetchGitDiff(pk, diff_hash, full)
 
 // const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
 // const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
@@ -88,7 +89,7 @@ const getDiff = (full = false) => {
   const diff_hash = `?base=${diffs.value.baseCommit?.commit_hash}&head=${diffs.value.headCommit?.commit_hash}`
 
   if (repo.value) {
-    fetchGitDiff(repo.value?.pk as number, diff_hash)
+    fetchGitDiff(repo.value?.pk as number, diff_hash, full)
     viewPageSort.value = 'diff'
   }
 }

@@ -144,6 +144,7 @@ class CompareCommitsView(APIView):
     def get(request, pk, *args, **kwargs):
         base = request.query_params.get("base")
         head = request.query_params.get("head")
+        full = request.query_params.get("full")
 
         if not base or not head:
             return Response(
@@ -195,7 +196,7 @@ class CompareCommitsView(APIView):
                 diff_lines = diff_text.splitlines()
                 truncated = False
 
-                if len(diff_lines) > CompareCommitsView.MAX_LINES:
+                if len(diff_lines) > CompareCommitsView.MAX_LINES and not full:
                     diff_text = "\n".join(diff_lines[:CompareCommitsView.MAX_LINES]) + "\n... [truncated]"
                     truncated = True
             except GitCommandError:
