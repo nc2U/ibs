@@ -93,7 +93,7 @@ class Command(BaseCommand):
 
                 author = commit.author.name or "Unknown"
                 seoul_tz = ZoneInfo("Asia/Seoul")
-                date = make_aware(datetime.utcfromtimestamp(commit.committed_date), timezone=seoul_tz)
+                date = datetime.fromtimestamp(commit.committed_date, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
                 message = commit.message.strip()
 
                 commits_to_create.append(Commit(
