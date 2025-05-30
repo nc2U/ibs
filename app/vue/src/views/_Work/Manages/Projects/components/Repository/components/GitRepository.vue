@@ -1,16 +1,16 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
-import type { Repository, Tree, CommitInfo } from '@/store/types/work_github.ts'
+import type { Repository, Tree, BranchInfo } from '@/store/types/work_github.ts'
 import Branch from './Branch.vue'
 import BranchTitle from './BranchTitle.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, default: () => null },
-  branches: { type: Array as PropType<CommitInfo[]>, default: () => [] },
-  tags: { type: Array as PropType<CommitInfo[]>, default: () => [] },
+  branches: { type: Array as PropType<BranchInfo[]>, default: () => [] },
+  tags: { type: Array as PropType<BranchInfo[]>, default: () => [] },
   defName: { type: String, default: 'master' },
-  defBranch: { type: Object as PropType<CommitInfo>, default: () => null },
+  defBranch: { type: Object as PropType<BranchInfo>, default: () => null },
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
@@ -24,7 +24,7 @@ const updateFold = (which: 1 | 2 | 3) => {
   if (which === 3) defFold.value = !defFold.value
 }
 
-const getLatestBranch = (branches: CommitInfo[]) => {
+const getLatestBranch = (branches: BranchInfo[]) => {
   if (branches.length === 0) return
   return branches.reduce((last, curr) => {
     const lastDate = new Date(last.commit.date)
