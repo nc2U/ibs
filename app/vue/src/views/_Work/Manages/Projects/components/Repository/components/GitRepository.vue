@@ -68,13 +68,13 @@ const last_tag = computed(() => getLatestBranch(props.tags))
         </CTableHead>
 
         <CTableBody>
-          <BranchTitle ver-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
+          <BranchTitle version-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
           <Branches v-if="branchFold" :versions="branches" />
 
-          <BranchTitle ver-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
+          <BranchTitle version-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
           <Branches v-if="tagFold" :versions="tags" />
 
-          <BranchTitle :ver-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
+          <BranchTitle :version-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
           <template v-if="defFold">
             <TreeNode
               v-for="node in defTree"
