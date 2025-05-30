@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import type { Repository, Tree, CommitInfo } from '@/store/types/work_github.ts'
-import Branches from './Branches.vue'
+import Branch from './Branch.vue'
 import BranchTitle from './BranchTitle.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
@@ -69,10 +69,14 @@ const last_tag = computed(() => getLatestBranch(props.tags))
 
         <CTableBody>
           <BranchTitle version-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
-          <Branches v-if="branchFold" :versions="branches" />
+          <template v-if="branchFold">
+            <Branch v-for="node in branches" :repo="repo.pk as number" :node="node" />
+          </template>
 
           <BranchTitle version-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
-          <Branches v-if="tagFold" :versions="tags" />
+          <template v-if="tagFold">
+            <Branch v-for="node in tags" :repo="repo.pk as number" :node="node" />
+          </template>
 
           <BranchTitle :version-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
           <template v-if="defFold">

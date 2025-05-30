@@ -4,6 +4,7 @@ import { elapsedTime } from '@/utils/baseMixins.ts'
 import type { CommitInfo } from '@/store/types/work_github.ts'
 
 defineProps({
+  indent: { type: Boolean, default: false },
   versionName: { type: String, default: 'master' },
   latest: { type: Object as PropType<CommitInfo>, default: () => null },
 })
@@ -20,7 +21,7 @@ const updateFold = () => {
 
 <template>
   <CTableRow>
-    <CTableDataCell>
+    <CTableDataCell :class="{ 'pl-5': indent }">
       <span @click="updateFold">
         <v-icon :icon="`mdi-chevron-${isFold ? 'down' : 'right'}`" size="16" class="pointer mr-1" />
         <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
