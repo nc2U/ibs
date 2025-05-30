@@ -65,7 +65,7 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
   ghStore.fetchGitDiff(pk, diff_hash, full)
 
 const fetchBranches = (repoPk: number) => ghStore.fetchBranches(repoPk)
-// const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
+const fetchTags = (repoPk: number) => ghStore.fetchTags(repoPk)
 // const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
 
 // revisons & diff view
@@ -109,8 +109,7 @@ const dataSetup = async (proj: number) => {
   await fetchRepoApi(repo.value?.pk as number)
   await fetchCommitList(cFilter.value)
   await fetchBranches(cFilter.value.repo)
-
-  // await fetchTags(url, token)
+  await fetchTags(cFilter.value.repo)
   // await fetchDefBranch(repo.value.pk as number, default_branch.value)
 }
 

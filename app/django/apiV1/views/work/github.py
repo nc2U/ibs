@@ -102,6 +102,45 @@ class GitBranchesView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class GitTagsView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, *args, **kwargs):
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            repo = Repo(repo_path)
+
+            tag_list = []
+            for tag in repo.tags:
+                try:
+                    # Annotated tag이면 tag 객체의 tag 속성에서 커밋 추출
+                    commit = tag.commit
+
+                    tag_list.append({
+                        "name": tag.name,
+                        "commit": {
+                            "sha": commit.hexsha[:5],
+                            "author": commit.author.name,
+                            "date": commit.committed_datetime.isoformat(),
+                            "message": commit.message.strip()
+                        }
+                    })
+                except (BadName, ValueError) as e:
+                    tag_list.append({
+                        "name": tag.name,
+                        "commit": None,
+                        "error": str(e)
+                    })
+            return Response(tag_list, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class GitBranchTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 

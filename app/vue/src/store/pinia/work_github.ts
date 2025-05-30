@@ -124,34 +124,10 @@ export const useGithub = defineStore('github', () => {
   // tags api
   const tags = ref<CommitInfo[]>([])
 
-  const fetchTags = async (url: string, token: string = '') => {
-    const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
+  const fetchTags = async (repoPk: number) => {
     await api
-      .get(`${url}/tags`, { headers })
-      .then(async res => {
-        // tags.value = res.data
-
-        // tags 데이터 -> CommitInfo 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
-        tags.value = []
-        for (const tag of res.data) {
-          try {
-            const { data: commit } = await api.get(`${tag.commit.url}`, { headers })
-            tags.value.push({
-              name: tag.name,
-              commit: {
-                sha: tag.commit.sha.substring(0, 5),
-                url: tag.commit.url,
-
-                author: commit.commit.author.name,
-                date: commit.commit.author.date,
-                message: commit.commit.message,
-              },
-            })
-          } catch (error) {
-            console.log('Error fetching tag:', error)
-          }
-        }
-      })
+      .get(`/repo/${repoPk}/tags/`)
+      .then(async res => (tags.value = res.data))
       .catch(err => errorHandle(err.response))
   }
 

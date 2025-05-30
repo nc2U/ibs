@@ -34,7 +34,6 @@ export interface Tree {
   mode: string
   type: 'tree' | 'blob'
   sha: string
-  url: string
   size?: number
   commit?: CommitApi
   open?: boolean
@@ -43,7 +42,6 @@ export interface Tree {
 
 export interface CommitApi {
   sha: string
-  url: string
   author: string
   date: string
   message: string
