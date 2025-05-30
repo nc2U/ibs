@@ -2,10 +2,10 @@ import os
 import re
 from datetime import datetime
 
-from django.core.management.base import BaseCommand, CommandError
+from zoneinfo import ZoneInfo
+from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
-from django.utils import timezone
-
+from django.utils.timezone import make_aware
 from git import Repo, GitCommandError, InvalidGitRepositoryError
 
 from work.models import Repository, Commit, Issue
@@ -82,7 +82,8 @@ class Command(BaseCommand):
                     continue
 
                 author = commit.author.name or "Unknown"
-                date = timezone.make_aware(datetime.utcfromtimestamp(commit.committed_date), timezone=timezone.utc)
+                seoul_tz = ZoneInfo("Asia/Seoul")
+                date = make_aware(datetime.utcfromtimestamp(commit.committed_date), timezone=seoul_tz)
                 message = commit.message.strip()
 
                 commits_to_create.append(Commit(
