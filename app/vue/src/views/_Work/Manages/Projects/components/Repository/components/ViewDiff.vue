@@ -9,12 +9,12 @@ import sanitizeHtml from 'sanitize-html'
 const props = defineProps({
   headCommit: { type: Object as PropType<Commit>, required: true },
   baseCommit: { type: Object as PropType<Commit>, required: true },
-  diffText: { type: Object as PropType<any>, required: true },
+  gitDiff: { type: Object as PropType<any>, required: true },
 })
 
 watch(
-  () => props.diffText,
-  newVal => getDiffCode(newVal),
+  () => props.gitDiff,
+  newVal => getDiffCode(newVal.diff),
 )
 
 const emit = defineEmits(['get-back', 'get-diff'])
@@ -25,7 +25,7 @@ const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
 
 watch(
   () => outputFormat.value,
-  newVal => getDiffCode(props.diffText),
+  newVal => getDiffCode(props.gitDiff.diff),
 )
 
 const diffHtml = ref('')
@@ -46,7 +46,7 @@ const hasContent = computed(() => {
 const getDiff = () => emit('get-diff', true)
 
 onMounted(async () => {
-  if (props.diffText) getDiffCode(props.diffText)
+  if (props.gitDiff) getDiffCode(props.gitDiff.diff)
 })
 </script>
 
@@ -89,6 +89,14 @@ onMounted(async () => {
   <div v-if="diffHtml" v-html="diffHtml" class="diff-container" />
   <div v-else>로딩 중...</div>
 
+  <div v-if="gitDiff?.truncated">
+    <CAlert color="warning"
+      >Diff 가져오기 정책에 의해 1000줄 이상에 해당하는 데이터가 표시되지 않았습니다.
+      <router-link to="#" @click="emit('get-diff', true)">전체 데이터 를 보려면 클릭</router-link>
+      하세요.
+    </CAlert>
+  </div>
+
   <div v-if="diffHtml && !hasContent" class="p-4">
     <CRow class="pb-5 text-center">
       <CCol>
@@ -117,11 +125,7 @@ onMounted(async () => {
 
         <span class="strong">{{ baseCommit.commit_hash }}</span> 는 최신 버전입니다.
         <span class="strong">{{ headCommit.commit_hash }}</span>
-        <span>
-          의 커밋, 비교를 위해
-          <router-link to="#" @click="getDiff"><u>베이스를 전환</u></router-link>
-          해 보세요.
-        </span>
+        <span> 변경된 파일 또는 변경 사항이 없습니다. </span>
       </CCol>
     </CRow>
 

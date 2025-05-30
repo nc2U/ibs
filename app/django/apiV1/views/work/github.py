@@ -186,6 +186,12 @@ class CompareCommitsView(APIView):
             # Unified diff 생성 및 길이 제한 적용
             try:
                 diff_text = repo.git.diff(base, head, unified=3)
+                if not diff_text.strip():
+                    reversed_diff_text = repo.git.diff(head, base, unified=3)
+                    if reversed_diff_text.strip():
+                        diff_text = reversed_diff_text
+                    else:
+                        diff_text = None  # 또는 "" 등 fallback 처리
                 diff_lines = diff_text.splitlines()
                 truncated = False
 

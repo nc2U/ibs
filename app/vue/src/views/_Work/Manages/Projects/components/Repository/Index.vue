@@ -59,9 +59,9 @@ const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
 // const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
-const diffText = computed<any>(() => ghStore.diffText)
+const gitDiff = computed<any>(() => ghStore.gitDiff)
 
-const fetchDiffText = (pk: number, diff_hash: string) => ghStore.fetchDiffText(pk, diff_hash)
+const fetchGitDiff = (pk: number, diff_hash: string) => ghStore.fetchGitDiff(pk, diff_hash)
 
 // const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
 // const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
@@ -84,20 +84,18 @@ const diffs = computed<{ headCommit: Commit | null; baseCommit: Commit | null }>
 const headSet = (pk: number) => (headPk.value = pk)
 const baseSet = (pk: number) => (basePk.value = pk)
 
-const getDiff = (reverse = false) => {
-  const diff_hash = !reverse
-    ? `?base=${diffs.value.baseCommit?.commit_hash}&head=${diffs.value.headCommit?.commit_hash}`
-    : `?base=${diffs.value.headCommit?.commit_hash}&head=${diffs.value.baseCommit?.commit_hash}`
+const getDiff = (full = false) => {
+  const diff_hash = `?base=${diffs.value.baseCommit?.commit_hash}&head=${diffs.value.headCommit?.commit_hash}`
 
   if (repo.value) {
-    fetchDiffText(repo.value?.pk as number, diff_hash)
+    fetchGitDiff(repo.value?.pk as number, diff_hash)
     viewPageSort.value = 'diff'
   }
 }
 
 const getBack = () => {
   viewPageSort.value = 'revisions'
-  ghStore.removeDiffText()
+  ghStore.removeGitDiff()
 }
 
 const pageSelect = (page: number) => {
@@ -154,7 +152,7 @@ onBeforeMount(async () => {
         v-if="viewPageSort === 'diff'"
         :head-commit="diffs.headCommit as Commit"
         :base-commit="diffs.baseCommit as Commit"
-        :diff-text="diffText"
+        :git-diff="gitDiff"
         @get-diff="getDiff"
         @get-back="getBack"
       />
