@@ -2,7 +2,7 @@
 import { type PropType, ref } from 'vue'
 import type { Tree } from '@/store/types/work_github.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
-import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
+import { cutString, elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 import TreeNode from './TreeNode.vue'
 
 defineOptions({ name: 'TreeNode' })
@@ -17,11 +17,16 @@ const nodeFold = ref(false)
 const subTrees = ref([])
 
 const gitStore = useGithub()
-const getSubTrees = (repo: number, sha: string) => gitStore.fetchSubTree(repo, sha)
+const getSubTrees = (repo: number, sha: string, path: string) =>
+  gitStore.fetchSubTree(repo, sha, path)
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
-    subTrees.value = await getSubTrees(props.repo as number, props.node.sha)
+    subTrees.value = await getSubTrees(
+      props.repo as number,
+      props.node?.commit?.sha as string,
+      props.node?.path as string,
+    )
   nodeFold.value = !nodeFold.value
 }
 </script>
@@ -40,7 +45,7 @@ const toggleFold = async () => {
           class="pointer mr-1"
         />
         <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-        <router-link to="">{{ node.path }}</router-link>
+        <router-link to="">{{ node.name }}</router-link>
       </span>
       <span class="pl-1">
         <span v-if="node.type === 'blob'" :style="`padding-left: ${level * 15}px`">
@@ -50,7 +55,7 @@ const toggleFold = async () => {
             size="16"
             class="pointer mr-1 mdi-thin"
           />
-          <router-link to="">{{ node.path }}</router-link>
+          <router-link to="">{{ node.name }}</router-link>
         </span>
       </span>
     </CTableDataCell>
@@ -64,7 +69,7 @@ const toggleFold = async () => {
       {{ elapsedTime(node.commit?.date) }}
     </CTableDataCell>
     <CTableDataCell class="text-center">{{ node.commit?.author }}</CTableDataCell>
-    <CTableDataCell>{{ node.commit?.message }}</CTableDataCell>
+    <CTableDataCell>{{ cutString(node.commit?.message, 60) }}</CTableDataCell>
   </CTableRow>
 
   <template v-if="nodeFold && subTrees">
