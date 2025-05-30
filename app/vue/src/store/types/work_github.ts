@@ -7,6 +7,13 @@ export interface Repository {
   is_report: boolean
 }
 
+export interface RepoApi {
+  name: string
+  created_at: string
+  pushed_at: string
+  default_branch: string
+}
+
 export interface Commit {
   pk: number
   repo: number

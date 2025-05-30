@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
-import type { Commit, CommitInfo, Repository } from '@/store/types/work_github.ts'
+import type { Commit, CommitInfo, RepoApi, Repository } from '@/store/types/work_github.ts'
 
 export const useGithub = defineStore('github', () => {
   // Repository states & getters
@@ -86,14 +86,12 @@ export const useGithub = defineStore('github', () => {
   }
 
   // repo api
-  const repoApi = ref<any>(null)
+  const repoApi = ref<RepoApi | null>(null)
   const default_branch = computed<string>(() => repoApi.value?.default_branch ?? 'master')
 
-  const fetchRepoApi = async (url: string, token: string = '') =>
+  const fetchRepoApi = async (pk: number) =>
     await api
-      .get(`${url}`, {
-        headers: { Accept: 'application/vnd.github.diff', Authorization: `token ${token}` },
-      })
+      .get(`/repo/${pk}/`)
       .then(res => (repoApi.value = res.data))
       .catch(err => errorHandle(err.response))
 
@@ -122,7 +120,7 @@ export const useGithub = defineStore('github', () => {
     await api
       .get(`${url}/branches`, { headers })
       .then(async res => {
-        if (default_branch.value === '') await fetchRepoApi(url, token) // deault_branch 데이터 추출
+        if (default_branch.value === '') await fetchRepoApi(1) // deault_branch 데이터 추출
 
         // 일반 브랜치 데이터 추출 // 브랜치명
         const bList = res.data.filter((b: CommitInfo) => b.name !== default_branch.value)

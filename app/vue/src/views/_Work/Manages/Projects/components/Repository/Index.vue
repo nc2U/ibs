@@ -58,9 +58,10 @@ const default_branch = computed(() => ghStore.default_branch)
 const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
-// const githubApiUrl = computed<any>(() => (ghStore.repoApi as any)?.url || '')
+const repoApi = computed<any>(() => ghStore.repoApi)
 const gitDiff = computed<any>(() => ghStore.gitDiff)
 
+const fetchRepoApi = (pk: number) => ghStore.fetchRepoApi(pk)
 const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
   ghStore.fetchGitDiff(pk, diff_hash, full)
 
@@ -106,6 +107,7 @@ const dataSetup = async (proj: number) => {
   await fetchRepoList(proj, 'true')
   await fetchRepo(repoList.value[0].pk as number)
   cFilter.value.repo = repo.value?.pk as number
+  await fetchRepoApi(repo.value?.pk as number)
   await fetchCommitList(cFilter.value)
 
   // const url = githubApiUrl.value
@@ -123,6 +125,7 @@ onBeforeMount(async () => {
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
+      {{ repoApi }}
       <GitRepository
         :repo="repo as Repository"
         :branches="branches"

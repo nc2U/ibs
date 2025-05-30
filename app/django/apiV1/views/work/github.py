@@ -1,8 +1,7 @@
 import os
-from zoneinfo import ZoneInfo
 
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
+from datetime import timezone
 from git import Repo, GitCommandError
 from git.exc import BadName
 from rest_framework import viewsets, status
@@ -45,11 +44,11 @@ class GitRepoApiView(APIView):
 
         # 가장 오래된 커밋 시간 (created_at 추정)
         oldest_commit = next(repo.iter_commits('--all', max_count=1, reverse=True))
-        created_at = oldest_commit.committed_datetime.astimezone(ZoneInfo("Asia/Seoul"))
+        created_at = oldest_commit.committed_datetime.astimezone(timezone.utc)
 
         # 가장 최근 커밋 시간 (pushed_at 추정)
         latest_commit = repo.head.commit
-        pushed_at = latest_commit.committed_datetime.astimezone(ZoneInfo("Asia/Seoul"))
+        pushed_at = latest_commit.committed_datetime.astimezone(timezone.utc)
 
         # 디폴트 브랜치 추정
         try:
