@@ -1,14 +1,13 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref, watch } from 'vue'
 import { btnSecondary } from '@/utils/cssMixins.ts'
-import type { Commit } from '@/store/types/work_github.ts'
 import { html } from 'diff2html'
 import 'diff2html/bundles/css/diff2html.min.css'
 import sanitizeHtml from 'sanitize-html'
 
 const props = defineProps({
-  headCommit: { type: Object as PropType<Commit>, required: true },
-  baseCommit: { type: Object as PropType<Commit>, required: true },
+  headPk: { type: Number, required: true },
+  basePk: { type: Number, required: true },
   gitDiff: { type: Object as PropType<any>, required: true },
 })
 
@@ -43,8 +42,6 @@ const hasContent = computed(() => {
   return text.length > 0
 })
 
-const getDiff = () => emit('get-diff', true)
-
 onMounted(async () => {
   if (props.gitDiff) getDiffCode(props.gitDiff.diff)
 })
@@ -53,7 +50,7 @@ onMounted(async () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>리비전 {{ headCommit.pk }} : {{ baseCommit.pk }}</h5>
+      <h5>리비전 {{ headPk }} : {{ basePk }}</h5>
     </CCol>
   </CRow>
   <CRow class="mb-5">
@@ -123,8 +120,8 @@ onMounted(async () => {
         </svg>
         <h5 class="mb-4">비교할 것이 없습니다.</h5>
 
-        <span class="strong">{{ baseCommit.commit_hash }}</span> 는 최신 버전입니다.
-        <span class="strong">{{ headCommit.commit_hash }}</span>
+        <span class="strong">{{ gitDiff.base }}</span> 는 최신 버전입니다.
+        <span class="strong">{{ gitDiff.head }}</span>
         <span> 변경된 파일 또는 변경 사항이 없습니다. </span>
       </CCol>
     </CRow>

@@ -77,16 +77,13 @@ const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 const headPk = ref<number | null>(null)
 const basePk = ref<number | null>(null)
 
-const diffs = computed<{ headCommit: Commit | null; baseCommit: Commit | null }>(() => ({
-  headCommit: commitList.value.filter(c => c.pk === headPk.value)[0] || null,
-  baseCommit: commitList.value.filter(c => c.pk === basePk.value)[0] || null,
-}))
-
 const headSet = (pk: number) => (headPk.value = pk)
 const baseSet = (pk: number) => (basePk.value = pk)
 
 const getDiff = (full = false) => {
-  const diff_hash = `?base=${diffs.value.baseCommit?.commit_hash}&head=${diffs.value.headCommit?.commit_hash}`
+  const base = commitList.value.find(c => c.pk === basePk.value)?.commit_hash
+  const head = commitList.value.find(c => c.pk === headPk.value)?.commit_hash
+  const diff_hash = `?base=${base}&head=${head}`
 
   if (repo.value) {
     fetchGitDiff(repo.value?.pk as number, diff_hash, full)
@@ -126,6 +123,7 @@ onBeforeMount(async () => {
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
+      {{ commitList.find(c => c.pk === 10457) }}
       <SourceCode
         :repo="repo as Repository"
         :branches="branches"
@@ -151,8 +149,8 @@ onBeforeMount(async () => {
 
       <ViewDiff
         v-if="viewPageSort === 'diff'"
-        :head-commit="diffs.headCommit as Commit"
-        :base-commit="diffs.baseCommit as Commit"
+        :head-pk="headPk as number"
+        :base-pk="basePk as number"
         :git-diff="gitDiff"
         @get-diff="getDiff"
         @get-back="getBack"
