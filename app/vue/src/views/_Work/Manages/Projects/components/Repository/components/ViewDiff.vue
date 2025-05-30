@@ -4,6 +4,7 @@ import { btnSecondary } from '@/utils/cssMixins.ts'
 import { html } from 'diff2html'
 import 'diff2html/bundles/css/diff2html.min.css'
 import sanitizeHtml from 'sanitize-html'
+import { cutString } from '@/utils/baseMixins.ts'
 
 const props = defineProps({
   headPk: { type: Number, required: true },
@@ -82,7 +83,6 @@ onMounted(async () => {
       <v-btn size="small" variant="outlined" :color="btnSecondary" @click="getBack">돌아가기</v-btn>
     </CCol>
   </CRow>
-
   <div v-if="diffHtml" v-html="diffHtml" class="diff-container" />
   <div v-else>로딩 중...</div>
 
@@ -93,7 +93,6 @@ onMounted(async () => {
       하세요.
     </CAlert>
   </div>
-
   <div v-if="diffHtml && !hasContent" class="p-4">
     <CRow class="pb-5 text-center">
       <CCol>
@@ -118,15 +117,16 @@ onMounted(async () => {
             d="M10.095 22.28a.75.75 0 0 1 0-1.06l1.22-1.22H7.25a3.75 3.75 0 0 1-3.75-3.75V7.5a.75.75 0 0 1 1.5 0v8.75a2.25 2.25 0 0 0 2.25 2.25h4.064l-1.22-1.22a.748.748 0 0 1 .332-1.265.75.75 0 0 1 .729.205l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0Z"
           />
         </svg>
-        <h5 class="mb-4">비교할 것이 없습니다.</h5>
+        <h5 class="m-4">비교할 것이 없습니다.</h5>
 
-        <span class="strong">{{ gitDiff.base }}</span> 는 최신 버전입니다.
-        <span class="strong">{{ gitDiff.head }}</span>
+        <span class="strong text-primary">{{ cutString(gitDiff.base, 10) }}</span> 는 최신
+        버전입니다.
+        <span class="strong text-primary">{{ cutString(gitDiff.head, 10) }}</span>
         <span> 변경된 파일 또는 변경 사항이 없습니다. </span>
       </CCol>
     </CRow>
 
-    <CRow class="mt-5">
+    <CRow style="padding-top: 60px">
       <CCol class="pt-5">
         <v-icon icon="mdi-invoice-text-plus-outline" size="18" color="grey" />
         Showing

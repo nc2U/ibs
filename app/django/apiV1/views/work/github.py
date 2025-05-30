@@ -332,8 +332,11 @@ class CompareCommitsView(APIView):
                     if reversed_diff_text.strip():
                         diff_text = reversed_diff_text
                     else:
-                        diff_text = None  # 또는 "" 등 fallback 처리
-                diff_lines = diff_text.splitlines()
+                        diff_text = ''
+                try:
+                    diff_lines = diff_text.splitlines()
+                except AttributeError:
+                    diff_lines = []
                 truncated = False
 
                 if len(diff_lines) > CompareCommitsView.MAX_LINES and not full:
