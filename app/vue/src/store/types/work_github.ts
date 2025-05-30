@@ -24,7 +24,7 @@ export interface Commit {
   issues: number[]
 }
 
-export interface CommitInfo {
+export interface BranchInfo {
   name: string
   commit: CommitApi
 }

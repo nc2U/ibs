@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
-import type { Commit, CommitInfo, RepoApi, Repository } from '@/store/types/work_github.ts'
+import type { Commit, BranchInfo, RepoApi, Repository } from '@/store/types/work_github.ts'
 
 export const useGithub = defineStore('github', () => {
   // Repository states & getters
@@ -96,7 +96,7 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // branches api
-  const branches = ref<CommitInfo[]>([])
+  const branches = ref<BranchInfo[]>([])
 
   const fetchBranches = async (repoPk: number) =>
     await api
@@ -105,7 +105,7 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // tags api
-  const tags = ref<CommitInfo[]>([])
+  const tags = ref<BranchInfo[]>([])
 
   const fetchTags = async (repoPk: number) => {
     await api
@@ -114,7 +114,7 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
   }
 
-  const master = ref<CommitInfo | null>(null)
+  const master = ref<BranchInfo | null>(null)
   const master_tree = ref<any[]>([])
 
   const fetchDefBranch = async (repo: number, branch: string) =>
