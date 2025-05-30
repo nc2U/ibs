@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
-import type { Repository, Commit, CommitInfo, Tree } from '@/store/types/work_github.ts'
+import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import GitRepository from './components/GitRepository.vue'
 import Revisions from './components/Revisions.vue'
@@ -51,23 +51,23 @@ const fetchCommitList = (payload: {
   limit?: number
 }) => ghStore.fetchCommitList(payload)
 
-const branches = computed<CommitInfo[]>(() => ghStore.branches)
-const tags = computed<CommitInfo[]>(() => ghStore.tags)
+const branches = computed<BranchInfo[]>(() => ghStore.branches)
+const tags = computed<BranchInfo[]>(() => ghStore.tags)
 
 const default_branch = computed(() => ghStore.default_branch)
 const master = computed(() => ghStore.master)
 const masterTree = computed<Tree[]>(() => ghStore.master_tree)
 
-const repoApi = computed<any>(() => ghStore.repoApi)
 const gitDiff = computed<any>(() => ghStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => ghStore.fetchRepoApi(pk)
 const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
   ghStore.fetchGitDiff(pk, diff_hash, full)
 
-// const fetchBranches = (url: string, token: string = '') => ghStore.fetchBranches(url, token)
-// const fetchDefBranch = (repo: number, branch: string = '') => ghStore.fetchDefBranch(repo, branch)
-// const fetchTags = (url: string, token: string = '') => ghStore.fetchTags(url, token)
+const fetchBranches = (repoPk: number) => ghStore.fetchBranches(repoPk)
+const fetchTags = (repoPk: number) => ghStore.fetchTags(repoPk)
+const fetchDefBranch = (repoPk: number, branch: string = '') =>
+  ghStore.fetchDefBranch(repoPk, branch)
 
 // revisons & diff view
 const getListSort = ref<'latest' | 'all'>('latest')
@@ -109,12 +109,9 @@ const dataSetup = async (proj: number) => {
   cFilter.value.repo = repo.value?.pk as number
   await fetchRepoApi(repo.value?.pk as number)
   await fetchCommitList(cFilter.value)
-
-  // const url = githubApiUrl.value
-  // const token = repo.value.github_token ?? ''
-  // await fetchBranches(url, token)
-  // await fetchDefBranch(repo.value.pk as number, default_branch.value)
-  // await fetchTags(url, token)
+  await fetchBranches(cFilter.value.repo)
+  await fetchTags(cFilter.value.repo)
+  await fetchDefBranch(cFilter.value.repo, default_branch.value)
 }
 
 onBeforeMount(async () => {
@@ -130,7 +127,7 @@ onBeforeMount(async () => {
         :branches="branches"
         :tags="tags"
         :def-name="default_branch"
-        :def-branch="master as CommitInfo"
+        :def-branch="master as BranchInfo"
         :def-tree="masterTree"
       />
 

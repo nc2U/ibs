@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
-import type { Commit, CommitInfo, RepoApi, Repository } from '@/store/types/work_github.ts'
+import type { Commit, BranchInfo, RepoApi, Repository } from '@/store/types/work_github.ts'
 
 export const useGithub = defineStore('github', () => {
   // Repository states & getters
@@ -96,7 +96,25 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // branches api
-  const master = ref<CommitInfo | null>(null)
+  const branches = ref<BranchInfo[]>([])
+
+  const fetchBranches = async (repoPk: number) =>
+    await api
+      .get(`/repo/${repoPk}/branches/`)
+      .then(res => (branches.value = res.data))
+      .catch(err => errorHandle(err.response))
+
+  // tags api
+  const tags = ref<BranchInfo[]>([])
+
+  const fetchTags = async (repoPk: number) => {
+    await api
+      .get(`/repo/${repoPk}/tags/`)
+      .then(async res => (tags.value = res.data))
+      .catch(err => errorHandle(err.response))
+  }
+
+  const master = ref<BranchInfo | null>(null)
   const master_tree = ref<any[]>([])
 
   const fetchDefBranch = async (repo: number, branch: string) =>
@@ -108,77 +126,18 @@ export const useGithub = defineStore('github', () => {
       })
       .catch(err => errorHandle(err.response))
 
-  const fetchSubTree = async (repo: number, sha: string) => {
-    const { data: tree } = await api.get(`/repo/${repo}/tree/${sha}`)
-    return tree
-  }
-
-  const branches = ref<CommitInfo[]>([])
-
-  const fetchBranches = async (url: string, token: string = '') => {
-    const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
-    await api
-      .get(`${url}/branches`, { headers })
-      .then(async res => {
-        if (default_branch.value === '') await fetchRepoApi(1) // deault_branch 데이터 추출
-
-        // 일반 브랜치 데이터 추출 // 브랜치명
-        const bList = res.data.filter((b: CommitInfo) => b.name !== default_branch.value)
-        // 브랜치 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
-        branches.value = []
-        for (const b of bList) {
-          try {
-            const { data: branch } = await api.get(`${url}/branches/${b.name}`, { headers })
-            branches.value.push({
-              name: b.name,
-              commit: {
-                sha: b.commit.sha.substring(0, 5),
-                url: b.commit.url,
-                author: branch.commit.commit.author.name,
-                date: branch.commit.commit.author.date,
-                message: branch.commit.commit.message,
-              },
-            })
-          } catch (error) {
-            console.log('Error fetching branch:', error)
-          }
-        }
-      })
-      .catch(err => errorHandle(err.response))
-  }
-
-  // tags api
-  const tags = ref<CommitInfo[]>([])
-
-  const fetchTags = async (url: string, token: string = '') => {
-    const headers = { Accept: 'application/vnd.github+json', Authorization: `token ${token}` }
-    await api
-      .get(`${url}/tags`, { headers })
-      .then(async res => {
-        // tags.value = res.data
-
-        // tags 데이터 -> CommitInfo 데이터 추출 -> 저자, 수정일, 메시지, 트리 주소
-        tags.value = []
-        for (const tag of res.data) {
-          try {
-            const { data: commit } = await api.get(`${tag.commit.url}`, { headers })
-            tags.value.push({
-              name: tag.name,
-              commit: {
-                sha: tag.commit.sha.substring(0, 5),
-                url: tag.commit.url,
-
-                author: commit.commit.author.name,
-                date: commit.commit.author.date,
-                message: commit.commit.message,
-              },
-            })
-          } catch (error) {
-            console.log('Error fetching tag:', error)
-          }
-        }
-      })
-      .catch(err => errorHandle(err.response))
+  const fetchSubTree = async (repo: number, sha: string, path: string | null = null) => {
+    const encodedPath = path ? encodeURIComponent(path) : ''
+    const url = path
+      ? `/repo/${repo}/tree/${encodedPath}?sha=${sha}`
+      : `/repo/${repo}/tree/?sha=${sha}`
+    try {
+      const { data } = await api.get(url)
+      return data
+    } catch (error: any) {
+      console.error('[fetchSubTree] Failed:', error.response?.data || error.message)
+      throw error
+    }
   }
 
   // diff api
@@ -212,16 +171,16 @@ export const useGithub = defineStore('github', () => {
     default_branch,
     fetchRepoApi,
 
-    master,
-    master_tree,
-    fetchDefBranch,
-    fetchSubTree,
-
     branches,
     fetchBranches,
 
     tags,
     fetchTags,
+
+    master,
+    master_tree,
+    fetchDefBranch,
+    fetchSubTree,
 
     gitDiff,
     removeGitDiff,

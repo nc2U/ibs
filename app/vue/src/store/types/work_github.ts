@@ -24,26 +24,23 @@ export interface Commit {
   issues: number[]
 }
 
-export interface CommitInfo {
+export interface BranchInfo {
   name: string
   commit: CommitApi
 }
 
 export interface Tree {
   path: string
+  name: string
   mode: string
   type: 'tree' | 'blob'
   sha: string
-  url: string
   size?: number
   commit?: CommitApi
-  open?: boolean
-  loaded?: boolean
 }
 
 export interface CommitApi {
   sha: string
-  url: string
   author: string
   date: string
   message: string

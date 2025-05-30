@@ -5,6 +5,7 @@ from datetime import timezone
 from git import Repo, GitCommandError
 from git.exc import BadName
 from rest_framework import viewsets, status
+from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 
 from apiV1.pagination import *
@@ -65,7 +66,81 @@ class GitRepoApiView(APIView):
             "pushed_at": pushed_at,
             "default_branch": default_branch,
         }
-        return Response(repo_info, status=status.HTTP_200_OK)
+        serializer = GitRepoApiSerializer(repo_info)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GitBranchesView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk):
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            repo = Repo(repo_path)
+            # 기본 브랜치명 (HEAD가 가리키는 브랜치)
+            default_branch = repo.active_branch.name if not repo.bare else repo.head.ref.name
+
+            branches = []
+            for head in repo.branches:
+                if head.name == default_branch:
+                    continue
+                commit = head.commit
+                branches.append({
+                    "name": head.name,
+                    "commit": {
+                        "sha": commit.hexsha[:5],
+                        "author": commit.author.name,
+                        "date": commit.committed_datetime.isoformat(),
+                        "message": commit.message.strip()
+                    }
+                })
+            serializer = GitBranchSerializer(branches, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GitTagsView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, *args, **kwargs):
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            repo = Repo(repo_path)
+
+            tag_list = []
+            for tag in repo.tags:
+                try:
+                    # Annotated tag이면 tag 객체의 tag 속성에서 커밋 추출
+                    commit = tag.commit
+
+                    tag_list.append({
+                        "name": tag.name,
+                        "commit": {
+                            "sha": commit.hexsha[:5],
+                            "author": commit.author.name,
+                            "date": commit.committed_datetime.isoformat(),
+                            "message": commit.message.strip()
+                        }
+                    })
+                except (BadName, ValueError) as e:
+                    tag_list.append({
+                        "name": tag.name,
+                        "commit": None,
+                        "error": str(e)
+                    })
+            serializer = GitBranchSerializer(tag_list, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class GitBranchTreeView(APIView):
@@ -91,7 +166,6 @@ class GitBranchTreeView(APIView):
             "name": branch,
             "commit": {
                 "sha": commit.hexsha[:5],
-                "url": None,
                 "author": commit.author.name,
                 "date": commit.authored_datetime.isoformat(),
                 "message": commit.message.strip()
@@ -100,7 +174,7 @@ class GitBranchTreeView(APIView):
 
         # 트리 정보 구성
         tree = commit.tree
-        result = []
+        trees_result = []
 
         for item in tree:
             item_path = item.path  # 상대 경로
@@ -122,50 +196,84 @@ class GitBranchTreeView(APIView):
                     "message": ""
                 }
 
-            result.append({
-                "path": item_path,
+            trees_result.append({
+                "path": item.path,
+                "name": item.name,
                 "mode": item.mode,
                 "type": "tree" if item.type == "tree" else "blob",
                 "sha": item.hexsha,
-                "size": getattr(item, "size", None),
+                "size": item.size if item.type == "blob" else None,
                 "commit": latest_commit_data
             })
 
         # 트리 정렬: 디렉터리 → 파일, 이름순
-        result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
-        return Response({"branch": branch_api, "trees": result}, status=status.HTTP_200_OK)
+        trees_result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
+        serializer = GitBranchAndTreeSerializer({"branch": branch_api, "trees": trees_result})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class GitSubTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
-    def get(request, pk, sha):
-        repo_path = get_repo_path(pk)
+    def get(request, pk, path=None):
+        sha = request.query_params.get("sha", "").strip()  # commit SHA
 
+        if not sha:
+            return Response({"error": "Missing commit SHA"}, status=400)
+
+        repo_path = get_repo_path(pk)
         if not os.path.exists(repo_path):
-            return Response({"Error": "Local repository path not found"}, status=404)
+            return Response({"error": "Repository path not found"}, status=404)
 
         try:
             repo = Repo(repo_path)
-            tree = repo.tree(sha)
-        except (BadName, GitCommandError) as e:
-            return Response({"Error": "Invalid SHA or repo access failed", "details": str(e)}, status=400)
+        except (BadName, KeyError) as e:
+            return Response({"error": "Invalid SHA or path", "details": str(e)}, status=400)
 
-        result = []
+        # 커밋 가져 오기
+        try:
+            commit = repo.commit(sha)  # repo.head.commit
+        except ValueError:
+            return Response({"error": "Repository HEAD is not set"}, status=400)
 
-        for item in tree:
-            result.append({
-                "path": item.path,  # 상대 경로
+        if path:  # 트리 가져오기
+            try:  # 특정 경로의 트리
+                tree = commit.tree[path]
+                if tree.type != "tree":
+                    return Response({"error": f"Path {path} is not a directory"}, status=400)
+            except KeyError:
+                raise NotFound(f"Path {path} not found")
+        else:
+            # 루트 트리
+            tree = commit.tree
+
+        # 트리 항목 처리
+        items = []
+        # 하위 트리와 블롭 나열
+        for item in tree.trees + tree.blobs:
+            item_path = item.path
+            # 최신 커밋 가져오기
+            latest_commit = next(repo.iter_commits(paths=item_path, max_count=1), commit)
+            items.append({
+                "path": item_path,
+                "name": item.name,
                 "mode": item.mode,
-                "type": "tree" if item.type == "tree" else "blob",
+                "type": item.type,
                 "sha": item.hexsha,
-                "size": getattr(item, "size", None),
+                "size": item.size if item.type == "blob" else None,
+                "commit": {
+                    "sha": latest_commit.hexsha[:5],
+                    "author": latest_commit.author.name,
+                    "date": latest_commit.authored_datetime.isoformat(),
+                    "message": latest_commit.message.strip()
+                }
             })
 
-        # 디렉터리 먼저, 파일 다음, 이름 오름차순 정렬
-        result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
-        return Response(result, status=status.HTTP_200_OK)
+        # 정렬 및 시리얼라이저로 데이터 검증 및 변환
+        items.sort(key=lambda x: (x["type"] != "tree", x["name"].lower()))
+        serializer = TreeItemSerializer(items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CompareCommitsView(APIView):
@@ -235,13 +343,14 @@ class CompareCommitsView(APIView):
                 diff_text = ""
                 truncated = False
 
-            return Response({
+            serializer = GitCompareCommitsSerializer({
                 "base": base,
                 "head": head,
                 "commits": commit_list,
                 "diff": diff_text,
                 "truncated": truncated
             })
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except GitCommandError as e:
             return Response({"error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

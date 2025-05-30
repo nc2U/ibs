@@ -1,16 +1,16 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
-import type { Repository, Tree, CommitInfo } from '@/store/types/work_github.ts'
-import Branches from './Branches.vue'
+import type { Repository, Tree, BranchInfo } from '@/store/types/work_github.ts'
+import Branch from './Branch.vue'
 import BranchTitle from './BranchTitle.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, default: () => null },
-  branches: { type: Array as PropType<CommitInfo[]>, default: () => [] },
-  tags: { type: Array as PropType<CommitInfo[]>, default: () => [] },
+  branches: { type: Array as PropType<BranchInfo[]>, default: () => [] },
+  tags: { type: Array as PropType<BranchInfo[]>, default: () => [] },
   defName: { type: String, default: 'master' },
-  defBranch: { type: Object as PropType<CommitInfo>, default: () => null },
+  defBranch: { type: Object as PropType<BranchInfo>, default: () => null },
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
@@ -24,7 +24,7 @@ const updateFold = (which: 1 | 2 | 3) => {
   if (which === 3) defFold.value = !defFold.value
 }
 
-const getLatestBranch = (branches: CommitInfo[]) => {
+const getLatestBranch = (branches: BranchInfo[]) => {
   if (branches.length === 0) return
   return branches.reduce((last, curr) => {
     const lastDate = new Date(last.commit.date)
@@ -68,13 +68,17 @@ const last_tag = computed(() => getLatestBranch(props.tags))
         </CTableHead>
 
         <CTableBody>
-          <BranchTitle ver-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
-          <Branches v-if="branchFold" :versions="branches" />
+          <BranchTitle version-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
+          <template v-if="branchFold">
+            <Branch v-for="node in branches" :repo="repo.pk as number" :node="node" />
+          </template>
 
-          <BranchTitle ver-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
-          <Branches v-if="tagFold" :versions="tags" />
+          <BranchTitle version-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
+          <template v-if="tagFold">
+            <Branch v-for="node in tags" :repo="repo.pk as number" :node="node" />
+          </template>
 
-          <BranchTitle :ver-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
+          <BranchTitle :version-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
           <template v-if="defFold">
             <TreeNode
               v-for="node in defTree"

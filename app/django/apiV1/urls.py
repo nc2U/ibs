@@ -188,7 +188,10 @@ urlpatterns += [
 
 # github api
 urlpatterns += [path('repo/<int:pk>/', work.GitRepoApiView.as_view(), name='git-repo')]
+urlpatterns += [path('repo/<int:pk>/branches/', work.GitBranchesView.as_view(), name='git-branches')]
+urlpatterns += [path('repo/<int:pk>/tags/', work.GitTagsView.as_view(), name='git-tags')]
 urlpatterns += [
     path('repo/<int:pk>/branch/<str:branch>/', work.GitBranchTreeView.as_view(), name='git-branch-tree')]
-urlpatterns += [path('repo/<int:pk>/tree/<str:sha>/', work.GitSubTreeView.as_view(), name='git-sub-tree')]
+urlpatterns += [path('repo/<int:pk>/tree/', work.GitSubTreeView.as_view(), name='git-root-tree')]
+urlpatterns += [path('repo/<int:pk>/tree/<path:path>', work.GitSubTreeView.as_view(), name='git-sub-tree')]
 urlpatterns += [path('repo/<int:pk>/compare/', work.CompareCommitsView.as_view(), name='compare-commits')]
