@@ -5,6 +5,7 @@ from datetime import timezone
 from git import Repo, GitCommandError
 from git.exc import BadName
 from rest_framework import viewsets, status
+from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 
 from apiV1.pagination import *
@@ -164,7 +165,7 @@ class GitBranchTreeView(APIView):
         branch_api = {
             "name": branch,
             "commit": {
-                "sha": commit.hexsha,
+                "sha": commit.hexsha[:5],
                 "author": commit.author.name,
                 "date": commit.authored_datetime.isoformat(),
                 "message": commit.message.strip()
@@ -182,7 +183,7 @@ class GitBranchTreeView(APIView):
             try:
                 latest_commit = next(repo.iter_commits(branch, paths=item_path, max_count=1))
                 latest_commit_data = {
-                    "sha": latest_commit.hexsha,
+                    "sha": latest_commit.hexsha[:5],
                     "author": latest_commit.author.name,
                     "date": latest_commit.authored_datetime.isoformat(),
                     "message": latest_commit.message.strip()
@@ -215,9 +216,8 @@ class GitSubTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
-    def get(request, pk):
+    def get(request, pk, path=None):
         sha = request.query_params.get("sha", "").strip()  # commit SHA
-        sub_path = request.query_params.get("path", "").strip()  # .github or nested/path
 
         if not sha:
             return Response({"error": "Missing commit SHA"}, status=400)
@@ -228,45 +228,51 @@ class GitSubTreeView(APIView):
 
         try:
             repo = Repo(repo_path)
-            commit = repo.commit(sha)
-            tree = commit.tree / sub_path if sub_path else commit.tree
         except (BadName, KeyError) as e:
             return Response({"error": "Invalid SHA or path", "details": str(e)}, status=400)
 
-        children = []
-        for item in tree:
-            # 정확한 파일 경로 조합
-            item_path = f"{sub_path}/{item.name}".lstrip("/") if sub_path else item.name
+        # HEAD 커밋 가져오기
+        try:
+            head_commit = repo.head.commit
+        except ValueError:
+            return Response({"error": "Repository HEAD is not set"}, status=400)
 
-            try:
-                latest_commit = next(repo.iter_commits(paths=item_path, max_count=1))
-                commit_data = {
+        if path:  # 트리 가져오기
+            try:  # 특정 경로의 트리
+                tree = head_commit.tree[path]
+                if tree.type != "tree":
+                    return Response({"error": f"Path {path} is not a directory"}, status=400)
+            except KeyError:
+                raise NotFound(f"Path {path} not found")
+        else:
+            # 루트 트리
+            tree = head_commit.tree
+
+        # 트리 항목 처리
+        items = []
+        # 하위 트리와 블롭 나열
+        for item in tree.trees + tree.blobs:
+            item_path = item.path
+            # 최신 커밋 가져오기
+            latest_commit = next(repo.iter_commits(paths=item_path, max_count=1), head_commit)
+            items.append({
+                "path": item_path,
+                "name": item.name,
+                "mode": item.mode,
+                "type": item.type,
+                "sha": item.hexsha,
+                "size": item.size if item.type == "blob" else None,
+                "commit": {
                     "sha": latest_commit.hexsha[:5],
                     "author": latest_commit.author.name,
                     "date": latest_commit.authored_datetime.isoformat(),
                     "message": latest_commit.message.strip()
                 }
-            except Exception:
-                commit_data = {
-                    "sha": "",
-                    "author": "Unknown",
-                    "date": "",
-                    "message": ""
-                }
-
-            children.append({
-                "name": item.name,
-                "path": item_path,
-                "type": item.type,
-                "sha": item.hexsha,
-                "mode": item.mode,
-                "size": item.size if item.type == "blob" else None,
-                "commit": commit_data
             })
 
-        # 정렬
-        children.sort(key=lambda x: (x["type"] != "tree", x["name"].lower()))
-        serializer = TreeItemSerializer(children, many=True)
+        # 정렬 및 시리얼라이저로 데이터 검증 및 변환
+        items.sort(key=lambda x: (x["type"] != "tree", x["name"].lower()))
+        serializer = TreeItemSerializer(items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
