@@ -6,7 +6,6 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
-from django.utils.timezone import make_aware
 from git import Repo, GitCommandError, InvalidGitRepositoryError
 
 from work.models import Repository, Commit, Issue
@@ -108,7 +107,7 @@ class Command(BaseCommand):
             if commits_to_create:
                 with transaction.atomic():
                     try:
-                        Commit.objects.bulk_create(commits_to_create, ignore_conflicts=True)
+                        Commit.bulk_create_with_revision_ids(commits_to_create, ignore_conflicts=True)
                         self.stdout.write(self.style.SUCCESS(f"Created {len(commits_to_create)} commits"))
 
                         saved_hashes = set(Commit.objects.filter(

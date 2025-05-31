@@ -12,7 +12,7 @@ class RepositorySerializer(serializers.ModelSerializer):
 class CommitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commit
-        fields = ('pk', 'repo', 'commit_hash', 'message', 'author', 'date', 'issues')
+        fields = ('pk', 'revision_id', 'repo', 'commit_hash', 'message', 'author', 'date', 'issues')
 
 
 class GitRepoApiSerializer(serializers.Serializer):
