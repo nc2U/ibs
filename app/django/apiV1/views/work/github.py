@@ -312,6 +312,9 @@ class GitFileContentView(APIView):
             return Response({
                 "path": path,
                 "sha": sha,
+                "size": blob.size,
+                "type": blob.type,
+                "mode": blob.mode,
                 "content": content
             }, status=status.HTTP_200_OK)
 

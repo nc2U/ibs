@@ -1,17 +1,12 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
-import hljs from 'highlight.js'
-import { btnLight } from '@/utils/cssMixins.ts'
-// import 'highlight.js/styles/github.css'
-// import { hljs } from 'diff2html/lib/ui/js/highlight.js-slim'
+import { computed, type PropType, ref, watch } from 'vue'
+import { btnSecondary } from '@/utils/cssMixins.ts'
+import type { FileInfo } from '@/store/types/work_github.ts'
+import sanitizeHtml from 'sanitize-html'
 
-defineProps({
+const props = defineProps({
   fileData: {
-    type: Object as PropType<{
-      path: string
-      sha: string
-      content: string
-    }>,
+    type: Object as PropType<FileInfo>,
     required: true,
   },
 })
@@ -29,18 +24,46 @@ const emit = defineEmits(['file-view-close'])
     </CCol>
   </CRow>
 
-  <v-btn :color="btnLight" size="small" @click="emit('file-view-close')" class="mb-5">
-    목록으로
-  </v-btn>
+  <CRow class="my-4">
+    <CCol>
+      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('file-view-close')">
+        돌아가기
+      </v-btn>
+    </CCol>
+  </CRow>
 
-  <v-card class="mb-5">
-    <v-card-title>{{ fileData.path }}</v-card-title>
-    <v-card-text>
-      <pre><code ref="codeBlock" class="language-js">{{ fileData.content }}</code></pre>
-    </v-card-text>
-  </v-card>
+  <CRow>
+    <CCol class="file-content">
+      <div class="file-viewer">
+        <table>
+          <tr class="bg-indigo-accent-3">
+            <td class="px-5 strong">{{ fileData.path }}</td>
+            <td>SHA: {{ fileData.sha }}</td>
+            <td>Size: {{ fileData.size }} bytes</td>
+          </tr>
+        </table>
+        <pre v-if="fileData.content" class="code-block"><code>{{ fileData.content }}</code></pre>
+        <p v-else>Loading file...</p>
+      </div>
+    </CCol>
+  </CRow>
 
-  <v-btn :color="btnLight" size="small" @click="emit('file-view-close')" class="mb-5">
-    목록으로
-  </v-btn>
+  <CRow class="mt-4 mb-5">
+    <CCol>
+      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('file-view-close')"
+        >돌아가기
+      </v-btn>
+    </CCol>
+  </CRow>
 </template>
+
+<style lang="scss" scoped>
+.code-block {
+  background: #f8f8f8;
+  padding: 1em;
+  white-space: pre-wrap;
+  font-family: monospace;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+</style>
