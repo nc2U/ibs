@@ -84,10 +84,10 @@ watch(isDark, highlightCode)
           <tr>
             <td class="py-2 px-5 strong">{{ fileData.path }}</td>
             <td class="px-5 text-right" style="width: 200px">
-              SHA: {{ cutString(fileData.sha, 7) }}
+              <span class="strong">SHA</span> : {{ cutString(fileData.sha, 7) }}
             </td>
             <td class="px-5 text-right" style="width: 200px">
-              Size: {{ humanizeFileSize(fileData.size) }}
+              <span class="strong">Size</span> : {{ humanizeFileSize(fileData.size) }}
             </td>
           </tr>
         </table>
