@@ -141,7 +141,7 @@ onBeforeMount(async () => {
         @file-view="toggleFileView"
       />
 
-      <GitFileView v-else :file-data="fileData" />
+      <GitFileView v-else :file-data="fileData" @file-view-close="fileView = false" />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"
