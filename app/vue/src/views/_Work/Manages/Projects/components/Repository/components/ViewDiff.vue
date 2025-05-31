@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref, watch } from 'vue'
 import { btnSecondary } from '@/utils/cssMixins.ts'
+import { cutString } from '@/utils/baseMixins.ts'
 import { html } from 'diff2html'
 import 'diff2html/bundles/css/diff2html.min.css'
 import sanitizeHtml from 'sanitize-html'
-import { cutString } from '@/utils/baseMixins.ts'
 
 const props = defineProps({
   headPk: { type: Number, required: true },
