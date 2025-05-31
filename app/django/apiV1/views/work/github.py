@@ -92,7 +92,7 @@ class GitBranchesView(APIView):
                 branches.append({
                     "name": head.name,
                     "commit": {
-                        "sha": commit.hexsha[:5],
+                        "sha": commit.hexsha,
                         "author": commit.author.name,
                         "date": commit.committed_datetime.isoformat(),
                         "message": commit.message.strip()
@@ -125,7 +125,7 @@ class GitTagsView(APIView):
                     tag_list.append({
                         "name": tag.name,
                         "commit": {
-                            "sha": commit.hexsha[:5],
+                            "sha": commit.hexsha,
                             "author": commit.author.name,
                             "date": commit.committed_datetime.isoformat(),
                             "message": commit.message.strip()
@@ -165,7 +165,7 @@ class GitBranchTreeView(APIView):
         branch_api = {
             "name": branch,
             "commit": {
-                "sha": commit.hexsha[:5],
+                "sha": commit.hexsha,
                 "author": commit.author.name,
                 "date": commit.authored_datetime.isoformat(),
                 "message": commit.message.strip()
@@ -183,7 +183,7 @@ class GitBranchTreeView(APIView):
             try:
                 latest_commit = next(repo.iter_commits(branch, paths=item_path, max_count=1))
                 latest_commit_data = {
-                    "sha": latest_commit.hexsha[:5],
+                    "sha": latest_commit.hexsha,
                     "author": latest_commit.author.name,
                     "date": latest_commit.authored_datetime.isoformat(),
                     "message": latest_commit.message.strip()
@@ -263,7 +263,7 @@ class GitSubTreeView(APIView):
                 "sha": item.hexsha,
                 "size": item.size if item.type == "blob" else None,
                 "commit": {
-                    "sha": latest_commit.hexsha[:5],
+                    "sha": latest_commit.hexsha,
                     "author": latest_commit.author.name,
                     "date": latest_commit.authored_datetime.isoformat(),
                     "message": latest_commit.message.strip()
@@ -274,6 +274,55 @@ class GitSubTreeView(APIView):
         items.sort(key=lambda x: (x["type"] != "tree", x["name"].lower()))
         serializer = TreeItemSerializer(items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GitFileContentView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, path, *args, **kwargs):
+        sha = request.query_params.get("sha", "").strip()
+        if not sha:
+            return Response({"error": "Missing 'sha' parameter"}, status=status.HTTP_400_BAD_REQUEST)
+
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response({"error": f"Repository path not found: {repo_path}"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            repo = Repo(repo_path)
+            try:
+                # sha 가 커밋인지 확인
+                commit = repo.commit(sha)
+                tree = commit.tree
+            except (BadName, ValueError) as e:
+                return Response({"error": f"Invalid SHA: {sha}", "details": str(e)}, status=400)
+
+            # tree = repo.tree(sha)
+            path_parts = path.strip("/").split("/")
+            blob = tree
+            for part in path_parts:
+                blob = blob / part
+
+            if blob.type != "blob":
+                return Response({"error": f"The path is not a file (blob): {path}"}, status=400)
+
+            content = blob.data_stream.read().decode("utf-8", errors="replace")
+
+            return Response({
+                "name": blob.name,
+                "path": path,
+                "sha": sha,
+                "size": blob.size,
+                "type": blob.type,
+                "mode": blob.mode,
+                "content": content
+            }, status=status.HTTP_200_OK)
+
+        except (BadName, KeyError) as e:
+            return Response({"error": "Invalid SHA or path", "details": str(e)}, status=400)
+        except Exception as e:
+            return Response({"error": "Unexpected server error", "details": str(e)}, status=500)
 
 
 class CompareCommitsView(APIView):

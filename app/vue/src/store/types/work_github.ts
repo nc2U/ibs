@@ -45,3 +45,13 @@ export interface CommitApi {
   date: string
   message: string
 }
+
+export interface FileInfo {
+  name: string
+  path: string
+  sha: string
+  size: number
+  type: any
+  mode: string
+  content: string
+}

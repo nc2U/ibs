@@ -6,6 +6,7 @@ import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import GitRepository from './components/GitRepository.vue'
+import GitFileView from './components/Tree/GitFileView.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
 
@@ -31,7 +32,7 @@ watch(project, nVal => {
 // get github api
 const ghStore = useGithub()
 const repo = computed<Repository | null>(() => ghStore.repository)
-const repoList = computed(() => ghStore.repositoryList)
+const repoList = computed<Repository[]>(() => ghStore.repositoryList)
 const commitList = computed<Commit[]>(() => ghStore.commitList)
 
 watch(repo, nVal => {
@@ -97,6 +98,13 @@ const getBack = () => {
   ghStore.removeGitDiff()
 }
 
+const fileView = ref(false)
+const fileData = ref<any | null>(null)
+const toggleFileView = (payload: any) => {
+  fileData.value = payload
+  fileView.value = true
+}
+
 const pageSelect = (page: number) => {
   cFilter.value.page = page
   fetchCommitList(cFilter.value)
@@ -123,13 +131,17 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <GitRepository
+        v-if="!fileView"
         :repo="repo as Repository"
         :branches="branches"
         :tags="tags"
         :def-name="default_branch"
         :def-branch="master as BranchInfo"
         :def-tree="masterTree"
+        @file-view="toggleFileView"
       />
+
+      <GitFileView v-else :file-data="fileData" @file-view-close="fileView = false" />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"

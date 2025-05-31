@@ -12,22 +12,37 @@ const props = defineProps({
   level: { type: Number, default: 0 },
 })
 
+const emit = defineEmits(['file-view'])
+
 const nodeFold = ref(false)
 
 const subTrees = ref([])
 
 const gitStore = useGithub()
-const getSubTrees = (repo: number, sha: string, path: string) =>
+
+const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
   gitStore.fetchSubTree(repo, sha, path)
+
+const fetchFileView = (repo: number, path: string, sha: string) =>
+  gitStore.fetchFileView(repo, path, sha)
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
-    subTrees.value = await getSubTrees(
+    subTrees.value = await fetchSubTree(
       props.repo as number,
       props.node?.commit?.sha as string,
       props.node?.path as string,
     )
   nodeFold.value = !nodeFold.value
+}
+
+const viewFile = async () => {
+  const fileInfo = await fetchFileView(
+    props.repo as number,
+    props.node?.path as string,
+    props.node?.commit?.sha as string,
+  )
+  emit('file-view', fileInfo)
 }
 </script>
 
@@ -47,7 +62,7 @@ const toggleFold = async () => {
         <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
         <router-link to="">{{ node.name }}</router-link>
       </span>
-      <span class="pl-1">
+      <span class="pl-1" @click="viewFile">
         <span v-if="node.type === 'blob'" :style="`padding-left: ${level * 15}px`">
           <v-icon
             :icon="`mdi-file-${node.path.endsWith('.txt') ? 'document-' : ''}outline`"
@@ -63,7 +78,7 @@ const toggleFold = async () => {
       {{ humanizeFileSize((node as any)?.size) }}
     </CTableDataCell>
     <CTableDataCell class="text-center">
-      <router-link to="">{{ node.commit?.sha }}</router-link>
+      <router-link to="">{{ cutString(node.commit?.sha, 5, '') }}</router-link>
     </CTableDataCell>
     <CTableDataCell class="text-right">
       {{ elapsedTime(node.commit?.date) }}
@@ -73,6 +88,13 @@ const toggleFold = async () => {
   </CTableRow>
 
   <template v-if="nodeFold && subTrees">
-    <TreeNode v-for="(node, i) in subTrees" :repo="repo" :node="node" :level="level + 1" :key="i" />
+    <TreeNode
+      v-for="(node, i) in subTrees"
+      :repo="repo"
+      :node="node"
+      :level="level + 1"
+      :key="i"
+      @file-view="emit('file-view', $event)"
+    />
   </template>
 </template>
