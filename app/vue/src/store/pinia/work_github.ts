@@ -140,6 +140,17 @@ export const useGithub = defineStore('github', () => {
     }
   }
 
+  const fetchFileView = async (repo: number, path: string, sha: string) => {
+    const encodedPath = encodeURIComponent(path)
+    const url = `/repo/${repo}/file/${encodedPath}?sha=${sha}`
+    try {
+      const { data } = await api.get(url)
+      return data
+    } catch (error: any) {
+      console.error('[fetchFile] Failed:', error.response?.data || error.message)
+    }
+  }
+
   // diff api
   const gitDiff = ref<any>(null)
 
@@ -181,6 +192,7 @@ export const useGithub = defineStore('github', () => {
     master_tree,
     fetchDefBranch,
     fetchSubTree,
+    fetchFileView,
 
     gitDiff,
     removeGitDiff,

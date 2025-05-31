@@ -21,8 +21,6 @@ const cFilter = ref({
   limit: 25,
 })
 
-const fileView = ref(false)
-
 const workStore = useWork()
 const project = computed<IssueProject | null>(() => workStore.issueProject)
 watch(project, nVal => {
@@ -99,6 +97,9 @@ const getBack = () => {
   viewPageSort.value = 'revisions'
   ghStore.removeGitDiff()
 }
+
+const fileView = ref(false)
+const toggleFileView = () => (fileView.value = !fileView.value)
 
 const pageSelect = (page: number) => {
   cFilter.value.page = page

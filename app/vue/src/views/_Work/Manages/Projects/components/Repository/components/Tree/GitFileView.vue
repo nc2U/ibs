@@ -1,5 +1,8 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
+// import hljs from 'highlight.js'
+// import 'highlight.js/styles/github.css'
+import { hljs } from 'diff2html/lib/ui/js/highlight.js-slim'
 
 const msg = ref('File View')
 </script>
@@ -14,7 +17,7 @@ const msg = ref('File View')
     </CCol>
   </CRow>
 
-  <CRow class="mb-5">
-    <CCol>asdf</CCol>
-  </CRow>
+  <v-card>
+    <v-card-title>{{ fileInfo.path }}</v-card-title>
+  </v-card>
 </template>

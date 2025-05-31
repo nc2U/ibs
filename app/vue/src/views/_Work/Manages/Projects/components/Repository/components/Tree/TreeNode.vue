@@ -19,15 +19,21 @@ const subTrees = ref([])
 const gitStore = useGithub()
 const getSubTrees = (repo: number, sha: string, path: string) =>
   gitStore.fetchSubTree(repo, sha, path)
+const fetchFileView = (repo: number, path: string, sha: string) =>
+  gitStore.fetchFileView(repo, path, sha)
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
     subTrees.value = await getSubTrees(
       props.repo as number,
-      props.node?.commit?.sha as string,
       props.node?.path as string,
+      props.node?.commit?.sha as string,
     )
   nodeFold.value = !nodeFold.value
+}
+
+const viewFile = async () => {
+  await fetchFileView(props.repo as number, props.node?.path as string, props.node?.sha as string)
 }
 </script>
 
@@ -47,7 +53,7 @@ const toggleFold = async () => {
         <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
         <router-link to="">{{ node.name }}</router-link>
       </span>
-      <span class="pl-1">
+      <span class="pl-1" @click="viewFile">
         <span v-if="node.type === 'blob'" :style="`padding-left: ${level * 15}px`">
           <v-icon
             :icon="`mdi-file-${node.path.endsWith('.txt') ? 'document-' : ''}outline`"
