@@ -103,7 +103,7 @@ const submitRepo = (payload: any) => {
   if (!payload.pk) ghStore.createRepo(payload)
   else ghStore.patchRepo(payload)
 }
-const deleteRepo = (pk: number, proj: number | undefined) => ghStore.deleteRepo(pk, proj)
+const deleteRepo = (pk: number) => ghStore.deleteRepo(pk, issueProject.value?.pk)
 
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {

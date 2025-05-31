@@ -28,7 +28,7 @@ export const useGithub = defineStore('github', () => {
       .post(`/repository/`, payload)
       .then(async res => {
         await fetchRepo(res.data.pk)
-        await fetchRepoList(res.data.project.pk)
+        await fetchRepoList(res.data.project)
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -38,7 +38,7 @@ export const useGithub = defineStore('github', () => {
       .patch(`/repository/${payload.pk as number}/`, payload)
       .then(async res => {
         await fetchRepo(res.data.pk)
-        await fetchRepoList(res.data.project.pk)
+        await fetchRepoList(res.data.project)
         message()
       })
       .catch(err => errorHandle(err.response.data))
