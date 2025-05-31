@@ -10,16 +10,16 @@ const props = defineProps({
   page: { type: Number, required: true },
   commitList: { type: Array as PropType<Commit[]>, default: () => [] },
   getListSort: { type: String as PropType<'latest' | 'all'>, default: 'latest' },
-  parentHeadPk: { type: String, default: '' },
-  parentBasePk: { type: String, default: '' },
+  parentHeadId: { type: String, default: '' },
+  parentBaseId: { type: String, default: '' },
 })
 
 watch(
   () => props.commitList,
   newVal => {
     if (newVal.length >= 2) {
-      headPk.value = String(newVal[0].pk)
-      basePk.value = String(newVal[1].pk)
+      headId.value = String(newVal[0].revision_id)
+      baseId.value = String(newVal[1].revision_id)
     }
   },
 )
@@ -37,18 +37,18 @@ const commits = computed(() =>
   props.getListSort === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
 
-const headPk = ref<string>('')
-watch(headPk, newVal => {
+const headId = ref<string>('')
+watch(headId, newVal => {
   if (newVal) emit('head-set', Number(newVal))
 })
-const basePk = ref<string>('')
-watch(basePk, newVal => {
+const baseId = ref<string>('')
+watch(baseId, newVal => {
   if (newVal) emit('base-set', Number(newVal))
 })
 
-const updateBase = (pk: number) => (basePk.value = String(pk - 1))
+const updateBase = (pk: number) => (baseId.value = String(pk - 1))
 const updateHead = (pk: number) => {
-  if (Number(headPk.value) <= pk) headPk.value = String(pk + 1)
+  if (Number(headId.value) <= pk) headId.value = String(pk + 1)
 }
 
 const getDiff = () => emit('get-diff', false)
@@ -58,12 +58,12 @@ const commitPages = (page: number) => ghStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 
 onBeforeMount(() => {
-  headPk.value = props.parentHeadPk
-    ? props.parentHeadPk
-    : String(props.commitList.map(c => c.pk)[0])
-  basePk.value = props.parentBasePk
-    ? props.parentBasePk
-    : String(props.commitList.map(c => c.pk)[1])
+  headId.value = props.parentHeadId
+    ? props.parentHeadId
+    : String(props.commitList.map(c => c.revision_id)[0])
+  baseId.value = props.parentBaseId
+    ? props.parentBaseId
+    : String(props.commitList.map(c => c.revision_id)[1])
 })
 </script>
 
@@ -110,7 +110,7 @@ onBeforeMount(() => {
       <CTableRow v-for="(commit, i) in commits" :key="commit.pk">
         <CTableDataCell class="text-center">
           <span class="mr-5">
-            <router-link to="">{{ commit.pk }}</router-link>
+            <router-link to="">{{ commit.revision_id }}</router-link>
             <!--            <router-link to="">{{ commit.commit_hash.substring(0, 5) }}</router-link>-->
           </span>
         </CTableDataCell>
@@ -119,10 +119,10 @@ onBeforeMount(() => {
             v-if="i !== commits.length - 1"
             type="radio"
             :id="`${commit.pk}-1`"
-            name="headPk"
-            :value="String(commit.pk)"
-            v-model="headPk"
-            @change="updateBase(commit.pk)"
+            name="headId"
+            :value="String(commit.revision_id)"
+            v-model="headId"
+            @change="updateBase(commit.revision_id)"
           />
         </CTableDataCell>
 
@@ -131,10 +131,10 @@ onBeforeMount(() => {
             v-if="i !== 0"
             type="radio"
             :id="`${commit.pk}-2`"
-            name="basePk"
-            :value="String(commit.pk)"
-            v-model="basePk"
-            @change="updateHead(commit.pk)"
+            name="baseId"
+            :value="String(commit.revision_id)"
+            v-model="baseId"
+            @change="updateHead(commit.revision_id)"
           />
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>

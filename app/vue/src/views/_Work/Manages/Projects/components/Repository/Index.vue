@@ -76,15 +76,15 @@ const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
 
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
-const headPk = ref<number | null>(null)
-const basePk = ref<number | null>(null)
+const headId = ref<number | null>(null)
+const baseId = ref<number | null>(null)
 
-const headSet = (pk: number) => (headPk.value = pk)
-const baseSet = (pk: number) => (basePk.value = pk)
+const headSet = (revision_id: number) => (headId.value = revision_id)
+const baseSet = (revision_id: number) => (baseId.value = revision_id)
 
 const getDiff = (full = false) => {
-  const base = commitList.value.find(c => c.pk === basePk.value)?.commit_hash
-  const head = commitList.value.find(c => c.pk === headPk.value)?.commit_hash
+  const base = commitList.value.find(c => c.revision_id === baseId.value)?.commit_hash
+  const head = commitList.value.find(c => c.revision_id === headId.value)?.commit_hash
   const diff_hash = `?base=${base}&head=${head}`
 
   if (repo.value) {
@@ -148,8 +148,8 @@ onBeforeMount(async () => {
         :page="cFilter.page"
         :commit-list="commitList"
         :get-list-sort="getListSort"
-        :parent-head-pk="String(headPk ?? '')"
-        :parent-base-pk="String(basePk ?? '')"
+        :parent-head-id="String(headId ?? '')"
+        :parent-base-id="String(baseId ?? '')"
         @head-set="headSet"
         @base-set="baseSet"
         @get-diff="getDiff"
@@ -159,8 +159,8 @@ onBeforeMount(async () => {
 
       <ViewDiff
         v-if="viewPageSort === 'diff'"
-        :head-pk="headPk as number"
-        :base-pk="basePk as number"
+        :head-id="headId as number"
+        :base-id="baseId as number"
         :git-diff="gitDiff"
         @get-diff="getDiff"
         @get-back="getBack"

@@ -7,8 +7,8 @@ import 'diff2html/bundles/css/diff2html.min.css'
 import sanitizeHtml from 'sanitize-html'
 
 const props = defineProps({
-  headPk: { type: Number, required: true },
-  basePk: { type: Number, required: true },
+  headId: { type: Number, required: true },
+  baseId: { type: Number, required: true },
   gitDiff: { type: Object as PropType<any>, required: true },
 })
 
@@ -51,7 +51,7 @@ onMounted(async () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>리비전 {{ headPk }} : {{ basePk }}</h5>
+      <h5>리비전 {{ headId }} : {{ baseId }}</h5>
     </CCol>
   </CRow>
   <CRow class="mb-5">
