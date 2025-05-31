@@ -83,7 +83,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
     def assigned_projects(self):
-        projects = IssueProject.objects.all()
+        projects = IssueProject.objects.filter(status='1')
         project_list = []
         for project in projects:
             all_members = [m['user']['pk'] for m in project.all_members()]
