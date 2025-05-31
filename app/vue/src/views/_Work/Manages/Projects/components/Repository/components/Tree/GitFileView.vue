@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { inject, onMounted, type PropType, ref, watch } from 'vue'
+import { type ComputedRef, inject, onMounted, type PropType, ref, watch } from 'vue'
 import { bgLight, btnSecondary } from '@/utils/cssMixins.ts'
 import type { FileInfo } from '@/store/types/work_github.ts'
 import { cutString, humanizeFileSize } from '@/utils/baseMixins.ts'
@@ -15,7 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['file-view-close'])
 
-const isDark = inject('isDark')
+const isDark = inject<ComputedRef<Boolean>>('isDark')
 
 const codeBlock = ref<HTMLElement | null>(null)
 
@@ -48,7 +48,7 @@ const highlightCode = () => {
 
 // 초기 적용
 onMounted(() => {
-  loadHighlightTheme(isDark.value)
+  loadHighlightTheme(!!isDark?.value)
   highlightCode()
 })
 
@@ -56,7 +56,7 @@ onMounted(() => {
 watch(
   () => isDark,
   val => {
-    loadHighlightTheme(val.value)
+    loadHighlightTheme(!!val?.value)
     highlightCode()
   },
 )
