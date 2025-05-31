@@ -3,7 +3,6 @@ import { type ComputedRef, inject, onMounted, type PropType, ref, watch } from '
 import { bgLight, btnSecondary } from '@/utils/cssMixins.ts'
 import type { FileInfo } from '@/store/types/work_github.ts'
 import { cutString, humanizeFileSize } from '@/utils/baseMixins.ts'
-import sanitizeHtml from 'sanitize-html'
 import hljs from 'highlight.js'
 
 const props = defineProps({
@@ -94,7 +93,7 @@ watch(
           v-if="fileData.content"
           class="code-block"
         ><code ref="codeBlock" class="language-python"
-               v-html="sanitizeHtml(fileData.content)" /></pre>
+        >{{ fileData.content }}</code></pre>
         <p v-else>Loading file...</p>
       </div>
     </CCol>
