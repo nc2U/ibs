@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
-import { elapsedTime } from '@/utils/baseMixins.ts'
+import { cutString, elapsedTime } from '@/utils/baseMixins.ts'
 import type { BranchInfo } from '@/store/types/work_github.ts'
 
 defineProps({
@@ -30,7 +30,7 @@ const updateFold = () => {
     </CTableDataCell>
     <CTableDataCell class="text-right"></CTableDataCell>
     <CTableDataCell class="text-center">
-      <router-link to="">{{ latest?.commit.sha }}</router-link>
+      <router-link to="">{{ cutString(latest?.commit.sha, 5, '') }}</router-link>
     </CTableDataCell>
     <CTableDataCell class="text-right">
       {{ elapsedTime(latest?.commit.date) }}

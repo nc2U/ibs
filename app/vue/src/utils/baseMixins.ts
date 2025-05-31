@@ -5,8 +5,8 @@ export const numFormat = (val: number | string, n = 0, zero: string | 0 = '-') =
   return !value || value === 0 ? zero : parts.join('.')
 }
 
-export const cutString = (str = '', len = 0) =>
-  str.length > len ? `${str.substring(0, len)}...` : str
+export const cutString = (str = '', len = 0, abb = '...') =>
+  str.length > len ? `${str.substring(0, len)}${abb}` : str
 
 export const diffDate = (date1: Date | string, date2?: Date) => {
   const start = typeof date1 === 'string' ? new Date(date1) : date1
