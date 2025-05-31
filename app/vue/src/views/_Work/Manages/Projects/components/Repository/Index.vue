@@ -99,7 +99,11 @@ const getBack = () => {
 }
 
 const fileView = ref(false)
-const toggleFileView = () => (fileView.value = !fileView.value)
+const fileData = ref<any | null>(null)
+const toggleFileView = (payload: any) => {
+  fileData.value = payload
+  fileView.value = true
+}
 
 const pageSelect = (page: number) => {
   cFilter.value.page = page
@@ -134,9 +138,10 @@ onBeforeMount(async () => {
         :def-name="default_branch"
         :def-branch="master as BranchInfo"
         :def-tree="masterTree"
+        @file-view="toggleFileView"
       />
 
-      <GitFileView v-else />
+      <GitFileView v-else :file-data="fileData" />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"

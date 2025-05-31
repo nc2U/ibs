@@ -14,6 +14,8 @@ const props = defineProps({
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
+const emit = defineEmits(['file-view'])
+
 const branchFold = ref(false)
 const tagFold = ref(false)
 const defFold = ref(false)
@@ -68,12 +70,22 @@ const last_tag = computed(() => getLatestBranch(props.tags))
         <CTableBody>
           <BranchTitle version-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
           <template v-if="branchFold">
-            <Branch v-for="node in branches" :repo="repo.pk as number" :node="node" />
+            <Branch
+              v-for="node in branches"
+              :repo="repo.pk as number"
+              :node="node"
+              @file-view="emit('file-view', $event)"
+            />
           </template>
 
           <BranchTitle version-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
           <template v-if="tagFold">
-            <Branch v-for="node in tags" :repo="repo.pk as number" :node="node" />
+            <Branch
+              v-for="node in tags"
+              :repo="repo.pk as number"
+              :node="node"
+              @file-view="emit('file-view', $event)"
+            />
           </template>
 
           <BranchTitle :version-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
@@ -83,6 +95,7 @@ const last_tag = computed(() => getLatestBranch(props.tags))
               :repo="repo.pk as number"
               :node="node"
               :key="node.sha"
+              @file-view="emit('file-view', $event)"
             />
           </template>
         </CTableBody>

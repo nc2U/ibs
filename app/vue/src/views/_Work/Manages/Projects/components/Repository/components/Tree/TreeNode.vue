@@ -12,6 +12,8 @@ const props = defineProps({
   level: { type: Number, default: 0 },
 })
 
+const emit = defineEmits(['file-view'])
+
 const nodeFold = ref(false)
 
 const subTrees = ref([])
@@ -33,7 +35,12 @@ const toggleFold = async () => {
 }
 
 const viewFile = async () => {
-  await fetchFileView(props.repo as number, props.node?.path as string, props.node?.sha as string)
+  const fileInfo = await fetchFileView(
+    props.repo as number,
+    props.node?.path as string,
+    props.node?.commit?.sha as string,
+  )
+  emit('file-view', fileInfo)
 }
 </script>
 
@@ -79,6 +86,13 @@ const viewFile = async () => {
   </CTableRow>
 
   <template v-if="nodeFold && subTrees">
-    <TreeNode v-for="(node, i) in subTrees" :repo="repo" :node="node" :level="level + 1" :key="i" />
+    <TreeNode
+      v-for="(node, i) in subTrees"
+      :repo="repo"
+      :node="node"
+      :level="level + 1"
+      :key="i"
+      @file-view="emit('file-view', $event)"
+    />
   </template>
 </template>

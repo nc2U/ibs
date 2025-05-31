@@ -10,6 +10,8 @@ const props = defineProps({
   node: { type: Object as PropType<BranchInfo>, default: () => null },
 })
 
+const emit = defineEmits(['file-view'])
+
 const level = ref(0)
 const nodeFold = ref(false)
 const subTrees = ref([])
@@ -33,6 +35,7 @@ const toggleFold = async () => {
       :node="node"
       :level="level + 1"
       :key="i"
+      @file-view="emit('file-view', $event)"
     />
   </template>
 </template>
