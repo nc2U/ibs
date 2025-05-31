@@ -51,7 +51,5 @@ export interface FileInfo {
   path: string
   sha: string
   size: number
-  type: any
-  mode: string
   content: string
 }
