@@ -13,7 +13,7 @@ class CommitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commit
         fields = ('pk', 'revision_id', 'repo', 'commit_hash', 'message', 'author', 'date', 'issues')
-        readonly_fields = ('revision_id',)
+        read_only_fields = ('revision_id',)
 
 
 class GitRepoApiSerializer(serializers.Serializer):
