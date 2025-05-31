@@ -92,7 +92,7 @@ class GitBranchesView(APIView):
                 branches.append({
                     "name": head.name,
                     "commit": {
-                        "sha": commit.hexsha[:5],
+                        "sha": commit.hexsha,
                         "author": commit.author.name,
                         "date": commit.committed_datetime.isoformat(),
                         "message": commit.message.strip()
@@ -125,7 +125,7 @@ class GitTagsView(APIView):
                     tag_list.append({
                         "name": tag.name,
                         "commit": {
-                            "sha": commit.hexsha[:5],
+                            "sha": commit.hexsha,
                             "author": commit.author.name,
                             "date": commit.committed_datetime.isoformat(),
                             "message": commit.message.strip()
@@ -165,7 +165,7 @@ class GitBranchTreeView(APIView):
         branch_api = {
             "name": branch,
             "commit": {
-                "sha": commit.hexsha[:5],
+                "sha": commit.hexsha,
                 "author": commit.author.name,
                 "date": commit.authored_datetime.isoformat(),
                 "message": commit.message.strip()
@@ -183,7 +183,7 @@ class GitBranchTreeView(APIView):
             try:
                 latest_commit = next(repo.iter_commits(branch, paths=item_path, max_count=1))
                 latest_commit_data = {
-                    "sha": latest_commit.hexsha[:5],
+                    "sha": latest_commit.hexsha,
                     "author": latest_commit.author.name,
                     "date": latest_commit.authored_datetime.isoformat(),
                     "message": latest_commit.message.strip()
@@ -263,7 +263,7 @@ class GitSubTreeView(APIView):
                 "sha": item.hexsha,
                 "size": item.size if item.type == "blob" else None,
                 "commit": {
-                    "sha": latest_commit.hexsha[:5],
+                    "sha": latest_commit.hexsha,
                     "author": latest_commit.author.name,
                     "date": latest_commit.authored_datetime.isoformat(),
                     "message": latest_commit.message.strip()
@@ -310,6 +310,7 @@ class GitFileContentView(APIView):
             content = blob.data_stream.read().decode("utf-8", errors="replace")
 
             return Response({
+                "name": blob.name,
                 "path": path,
                 "sha": sha,
                 "size": blob.size,
