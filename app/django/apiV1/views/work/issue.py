@@ -66,9 +66,9 @@ class IssueViewSet(viewsets.ModelViewSet):
 
         queryset = self.queryset.filter(project__in=projects)
 
-        return queryset \
-            if work_auth \
-            else self.queryset.filter(is_private=False).filter(project__is_public=True)
+        return queryset if work_auth else self.queryset \
+            .filter(is_private=False) \
+            .filter(project__is_public=True)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
