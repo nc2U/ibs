@@ -2,7 +2,8 @@
 import { inject, onMounted, type PropType, ref, watch } from 'vue'
 import { bgLight, btnSecondary } from '@/utils/cssMixins.ts'
 import type { FileInfo } from '@/store/types/work_github.ts'
-import { humanizeFileSize } from '@/utils/baseMixins.ts'
+import { cutString, humanizeFileSize } from '@/utils/baseMixins.ts'
+import sanitizeHtml from 'sanitize-html'
 import hljs from 'highlight.js'
 
 const props = defineProps({
@@ -65,7 +66,7 @@ watch(
   <CRow class="py-2">
     <CCol>
       <h5>
-        <router-link to="">Git 저장소</router-link>
+        <router-link to="" @click="emit('file-view-close')">Git 저장소</router-link>
         / {{ fileData?.name }}
       </h5>
     </CCol>
@@ -84,14 +85,16 @@ watch(
       <div class="file-viewer">
         <table :class="bgLight" style="width: 100%">
           <tr>
-            <td class="py-2 px-5 strong" style="width: 500px">{{ fileData.path }}</td>
-            <td class="px-5" style="width: 150px">SHA: {{ fileData.sha }}</td>
+            <td class="py-2 px-5 strong" style="width: 400px">{{ fileData.path }}</td>
+            <td class="px-5" style="width: 150px">SHA: {{ cutString(fileData.sha, 7) }}</td>
             <td class="px-5">Size: {{ humanizeFileSize(fileData.size) }}</td>
           </tr>
         </table>
-        <pre v-if="fileData.content" class="code-block">
-          <code ref="codeBlock" class="language-python">{{ fileData.content }}</code>
-        </pre>
+        <pre
+          v-if="fileData.content"
+          class="code-block"
+        ><code ref="codeBlock" class="language-python"
+               v-html="sanitizeHtml(fileData.content)" /></pre>
         <p v-else>Loading file...</p>
       </div>
     </CCol>
