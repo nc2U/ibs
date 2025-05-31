@@ -276,6 +276,61 @@ class GitSubTreeView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class GitFileContentView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, path, *args, **kwargs):
+        sha = request.query_params.get("sha", "").strip()  # <-- fix: "sha"
+        if not sha:
+            return Response({"error": "Missing 'sha' parameter"}, status=status.HTTP_400_BAD_REQUEST)
+
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response({"error": f"Repository path not found: {repo_path}"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            repo = Repo(repo_path)
+            print(f"[DEBUG] repo tree for sha={sha}")
+            tree = repo.tree(sha)
+
+            # split path (e.g. 'src/main.py' -> ['src', 'main.py'])
+            path_parts = path.strip("/").split("/")
+            blob = tree
+            for part in path_parts:
+                blob = blob / part
+
+            print(f"[DEBUG] blob object resolved: {blob.path}, type={blob.type}")
+            if blob.type != "blob":
+                return Response({"error": f"The path is not a file (blob): {path}"}, status=400)
+
+            content = blob.data_stream.read().decode("utf-8", errors="replace")
+
+            return Response({
+                "path": path,
+                "sha": sha,
+                "content": content
+            }, status=status.HTTP_200_OK)
+
+        except BadName:
+            return Response({"error": f"Invalid SHA: {sha}"}, status=status.HTTP_400_BAD_REQUEST)
+        except KeyError as e:
+            return Response({
+                "error": f"Invalid path in tree: {path}",
+                "details": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except GitCommandError as e:
+            return Response({
+                "error": "Git command failed",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({
+                "error": "Unexpected server error",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class CompareCommitsView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     MAX_LINES = 1000  # 최대 반환 줄 수
