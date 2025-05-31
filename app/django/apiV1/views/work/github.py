@@ -281,7 +281,7 @@ class GitFileContentView(APIView):
 
     @staticmethod
     def get(request, pk, path, *args, **kwargs):
-        sha = request.query_params.get("sha", "").strip()  # <-- fix: "sha"
+        sha = request.query_params.get("sha", "").strip()
         if not sha:
             return Response({"error": "Missing 'sha' parameter"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -291,16 +291,19 @@ class GitFileContentView(APIView):
 
         try:
             repo = Repo(repo_path)
-            print(f"[DEBUG] repo tree for sha={sha}")
-            tree = repo.tree(sha)
+            try:
+                # sha 가 커밋인지 확인
+                commit = repo.commit(sha)
+                tree = commit.tree
+            except (BadName, ValueError) as e:
+                return Response({"error": f"Invalid SHA: {sha}", "details": str(e)}, status=400)
 
-            # split path (e.g. 'src/main.py' -> ['src', 'main.py'])
+            # tree = repo.tree(sha)
             path_parts = path.strip("/").split("/")
             blob = tree
             for part in path_parts:
                 blob = blob / part
 
-            print(f"[DEBUG] blob object resolved: {blob.path}, type={blob.type}")
             if blob.type != "blob":
                 return Response({"error": f"The path is not a file (blob): {path}"}, status=400)
 
@@ -312,23 +315,10 @@ class GitFileContentView(APIView):
                 "content": content
             }, status=status.HTTP_200_OK)
 
-        except BadName:
-            return Response({"error": f"Invalid SHA: {sha}"}, status=status.HTTP_400_BAD_REQUEST)
-        except KeyError as e:
-            return Response({
-                "error": f"Invalid path in tree: {path}",
-                "details": str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-        except GitCommandError as e:
-            return Response({
-                "error": "Git command failed",
-                "details": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except (BadName, KeyError) as e:
+            return Response({"error": "Invalid SHA or path", "details": str(e)}, status=400)
         except Exception as e:
-            return Response({
-                "error": "Unexpected server error",
-                "details": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Unexpected server error", "details": str(e)}, status=500)
 
 
 class CompareCommitsView(APIView):
