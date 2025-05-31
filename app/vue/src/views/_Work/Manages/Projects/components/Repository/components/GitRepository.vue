@@ -40,9 +40,7 @@ const last_tag = computed(() => getLatestBranch(props.tags))
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>
-        <span><router-link to="">Git 저장소</router-link></span>
-      </h5>
+      <h5>Git 저장소</h5>
     </CCol>
   </CRow>
   <CRow class="mb-5">
