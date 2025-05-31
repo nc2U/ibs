@@ -47,6 +47,7 @@ export interface CommitApi {
 }
 
 export interface FileInfo {
+  name: string
   path: string
   sha: string
   size: number
