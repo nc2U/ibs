@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -70,11 +71,25 @@ const fetchTags = (repoPk: number) => ghStore.fetchTags(repoPk)
 const fetchDefBranch = (repoPk: number, branch: string = '') =>
   ghStore.fetchDefBranch(repoPk, branch)
 
+// file view
+const fileView = ref(false)
+const fileData = ref<any | null>(null)
+const toggleFileView = (payload: any) => {
+  fileData.value = payload
+  fileView.value = true
+}
+
 // revisons & diff view
+const viewPageSort = ref<'revisions' | 'diff'>('revisions')
+
+const route = useRoute()
+watch(route, nVal => {
+  fileView.value = false
+  viewPageSort.value = 'revisions'
+})
+
 const getListSort = ref<'latest' | 'all'>('latest')
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
-
-const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
 const headId = ref<number | null>(null)
 const baseId = ref<number | null>(null)
@@ -96,13 +111,6 @@ const getDiff = (full = false) => {
 const getBack = () => {
   viewPageSort.value = 'revisions'
   ghStore.removeGitDiff()
-}
-
-const fileView = ref(false)
-const fileData = ref<any | null>(null)
-const toggleFileView = (payload: any) => {
-  fileData.value = payload
-  fileView.value = true
 }
 
 const pageSelect = (page: number) => {
