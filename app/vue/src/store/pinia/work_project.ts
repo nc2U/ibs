@@ -54,6 +54,7 @@ export const useWork = defineStore('work', () => {
     allProjects.value.map(i => ({
       value: i.pk as number,
       label: i.name,
+      slug: i.slug,
     })),
   )
 
