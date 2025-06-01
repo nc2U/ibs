@@ -72,7 +72,8 @@ class IssueSerializer(serializers.ModelSerializer):
     sub_issues = serializers.SerializerMethodField()
     related_issues = serializers.SerializerMethodField()
     creator = SimpleUserSerializer(read_only=True)
-    updater = SimpleUserSerializer(read_only=True)
+
+    # updater = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = Issue
@@ -153,8 +154,9 @@ class IssueSerializer(serializers.ModelSerializer):
         # 공유자 업데이트
         watchers = self.initial_data.getlist('watchers', [])
         if watchers:
-            for watcher in watchers:
-                instance.watchers.add(int(watcher))
+            watcher_ids = [int(w) for w in watchers]
+            valid_watchers = User.objects.filter(pk__in=watcher_ids)
+            instance.watchers.add(*valid_watchers)
 
         del_watcher = self.initial_data.get('del_watcher', None)
         if del_watcher:

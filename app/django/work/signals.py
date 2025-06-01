@@ -151,15 +151,21 @@ def issue_log_changes(sender, instance, created, **kwargs):
     else:
         user = instance.updater
         watchers = set(instance.watchers.all())  # Set 변환으로 검색 성능 향상
+
         old_assigned_to = getattr(instance, "old_assigned_to", None)  # AttributeError 방지
-        if old_assigned_to and old_assigned_to not in {instance.creator, user} and old_assigned_to in watchers:
+
+        if old_assigned_to and old_assigned_to \
+                not in {instance.creator, user} \
+                and old_assigned_to in watchers:  # ✅ 1. 이전 담당자 제거 조건
             instance.watchers.remove(old_assigned_to)
 
-        if instance.creator not in watchers:  # 업무 생성자 추가
+        if instance.creator and instance.creator not in watchers:  # ✅ 2. 생성자가 watchers 에 없으면 추가
             instance.watchers.add(instance.creator)
-        if instance.assigned_to not in watchers:  # 업무 담당자 추가
+
+        if instance.assigned_to and instance.assigned_to not in watchers:  # ✅ 3. 담당자가 있고 watchers 에 없으면 추가
             instance.watchers.add(instance.assigned_to)
-        if user is not instance.assigned_to:  # 현재 사용자 !== 업무 댬당자 => 현재 사용자 추가
+
+        if user and user != instance.assigned_to and user not in watchers:  # ✅ 4. 수정자가 있고 담당자와 다르면 추가
             instance.watchers.add(user)
 
         watchers = set(instance.watchers.all())  # Set 변환으로 검색 성능 향상
