@@ -27,8 +27,9 @@ const cngProject = (event: any) => {
     })
 }
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (route?.query.q) search.value = route.query.q as string
+  await workStore.fetchAllIssueProjectList()
 })
 </script>
 

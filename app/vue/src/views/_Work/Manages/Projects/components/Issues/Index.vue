@@ -96,8 +96,6 @@ watch(
 )
 
 onBeforeMount(async () => {
-  await workStore.fetchAllIssueProjectList()
-
   await workStore.fetchIssueProject(projId.value)
   await workStore.fetchAllIssueList(projId.value)
   await workStore.fetchIssueList({ ...listFilter.value })

@@ -56,7 +56,6 @@ const delSubmit = (pk: number) => alert(pk)
 
 const accStore = useAccount()
 onBeforeMount(async () => {
-  await workStore.fetchAllIssueProjectList()
   await workStore.fetchTimeEntryList({})
   await workStore.fetchAllIssueList()
   await workStore.fetchVersionList({ project: '' })

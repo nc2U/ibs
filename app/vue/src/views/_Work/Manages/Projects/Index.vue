@@ -73,7 +73,6 @@ onBeforeRouteUpdate(async to => {
 
 onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({ status: '1' })
-  await workStore.fetchAllIssueProjectList()
   if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)
 })
 </script>

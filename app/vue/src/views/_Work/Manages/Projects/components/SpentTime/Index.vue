@@ -61,7 +61,6 @@ watch(route, async nVal => {
 })
 
 onBeforeMount(() => {
-  workStore.fetchAllIssueProjectList()
   workStore.fetchAllIssueList(project.value)
   workStore.fetchTimeEntryList({ ...listFilter.value })
   workStore.fetchVersionList({ project: project.value })
