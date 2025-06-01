@@ -56,6 +56,7 @@ export const useWork = defineStore('work', () => {
       label: i.name,
       slug: i.slug,
       status: i.status,
+      repo: i.module?.repository,
     })),
   )
 

@@ -15,16 +15,17 @@ const workStore = useWork()
 const getProjects = computed(() =>
   workStore.getAllProjects
     .filter(p => p.slug !== route.params.projId)
-    .map(p => ({ value: p.slug, label: p.label })),
+    .map(p => ({ value: p.slug, label: p.label, repo: p.repo })),
 )
-const selProject = ref(null)
-const cngProject = (event: any) => {
-  if (event)
-    router.replace({
-      name: route.name,
-      params: { projId: event },
-      query: route.query,
-    })
+
+const chkRepo = (slug: string) => getProjects.value.filter(p => p.value === slug)[0].repo
+
+const cngProject = async (event: any) => {
+  if (event) {
+    if (route.name === '(저장소)' && !(await chkRepo(event)))
+      await router.replace({ name: '(개요)', params: { projId: event } })
+    else await router.replace({ name: route.name, params: { projId: event } })
+  }
 }
 
 onBeforeMount(async () => {
@@ -43,7 +44,6 @@ onBeforeMount(async () => {
     </CCol>
     <CCol class="p-1">
       <MultiSelect
-        v-model="selProject"
         mode="single"
         :options="getProjects"
         placeholder="프로젝트 바로가기"
