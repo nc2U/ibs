@@ -11,7 +11,7 @@ import {
 } from 'vue'
 import { bgLight, btnSecondary } from '@/utils/cssMixins.ts'
 import type { FileInfo } from '@/store/types/work_github.ts'
-import { cutString, humanizeFileSize } from '@/utils/baseMixins.ts'
+import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import hljs from 'highlight.js'
 
 const props = defineProps({
@@ -80,17 +80,25 @@ watch(isDark, highlightCode)
   <CRow>
     <CCol class="file-content" :class="{ 'theme-dark': isDark, 'theme-light': !isDark }">
       <div class="file-viewer">
-        <table :class="bgLight" style="width: 100%; border-collapse: collapse">
-          <tr>
-            <td class="py-2 px-5 strong">{{ fileData.path }}</td>
-            <td class="px-5 text-right" style="width: 200px">
-              <span class="strong">SHA</span> : {{ cutString(fileData.sha, 7) }}
-            </td>
-            <td class="px-5 text-right" style="width: 200px">
-              <span class="strong">Size</span> : {{ humanizeFileSize(fileData.size) }}
-            </td>
-          </tr>
-        </table>
+        <CTable
+          responsive
+          :class="bgLight"
+          class="mb-0"
+          style="width: 100%; border-collapse: collapse"
+        >
+          <CTableRow>
+            <CTableDataCell class="py-2 px-5 strong truncate">{{ fileData.path }}</CTableDataCell>
+            <CTableDataCell class="px-5 text-right" style="width: 160px">
+              <b :class="bgLight">SHA</b> : {{ cutString(fileData.sha, 7) }}
+            </CTableDataCell>
+            <CTableDataCell class="px-5 text-right" style="width: 160px">
+              <b :class="bgLight">Size</b> : {{ humanizeFileSize(fileData.size) }}
+            </CTableDataCell>
+            <CTableDataCell class="px-5 text-right" style="width: 250px">
+              <b :class="bgLight">modified</b> : {{ timeFormat(fileData.modified) }}
+            </CTableDataCell>
+          </CTableRow>
+        </CTable>
         <pre
           v-if="fileData.content"
           class="code-block"

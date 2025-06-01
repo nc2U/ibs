@@ -1,7 +1,7 @@
 import os
+from datetime import timezone, datetime
 
 from django.shortcuts import get_object_or_404
-from datetime import timezone
 from git import Repo, GitCommandError
 from git.exc import BadName
 from rest_framework import viewsets, status
@@ -309,11 +309,19 @@ class GitFileContentView(APIView):
 
             content = blob.data_stream.read().decode("utf-8", errors="replace")
 
+            # 🟡 마지막 수정 커밋 가져오기
+            try:
+                last_commit = next(repo.iter_commits(sha, paths=path))
+                last_modified = datetime.fromtimestamp(last_commit.committed_date).isoformat()
+            except StopIteration:
+                last_modified = None  # 기록 없음
+
             return Response({
                 "name": blob.name,
                 "path": path,
                 "sha": sha,
                 "size": blob.size,
+                "modified": last_modified,
                 "content": content
             }, status=status.HTTP_200_OK)
 

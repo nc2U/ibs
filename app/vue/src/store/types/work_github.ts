@@ -52,5 +52,6 @@ export interface FileInfo {
   path: string
   sha: string
   size: number
+  modified: string
   content: string
 }
