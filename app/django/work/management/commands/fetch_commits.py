@@ -40,9 +40,9 @@ class Command(BaseCommand):
                         ['git', 'config', '--global', '--add', 'safe.directory', repo_path],
                         check=True
                     )
-                    print("Safe directory 설정 완료")
+                    self.stdout.write(self.style.SUCCESS("Safe directory 설정 완료!!!"))
                 except subprocess.CalledProcessError as e:
-                    print("명령 실행 실패:", e)
+                    self.stdout.write(self.style.ERROR(f"명령 실행 실패: {e}"))
 
                 # ensure fetch refspec exists
                 try:
@@ -54,7 +54,7 @@ class Command(BaseCommand):
                     git_repo.git.config('--add', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*')
 
                 git_repo.remote('origin').fetch()
-                self.stdout.write(self.style.SUCCESS(f"Fetched from origin for {repo.slug}"))
+                self.stdout.write(self.style.SUCCESS(f"Fetched from origin for {repo.slug}!!!"))
             except GitCommandError as e:
                 self.stderr.write(self.style.ERROR(f"Git fetch failed: {e}"))
                 continue

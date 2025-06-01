@@ -55,6 +55,7 @@ export const useWork = defineStore('work', () => {
       value: i.pk as number,
       label: i.name,
       slug: i.slug,
+      status: i.status,
     })),
   )
 
