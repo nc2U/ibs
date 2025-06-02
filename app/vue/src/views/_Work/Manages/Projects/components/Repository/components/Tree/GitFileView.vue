@@ -40,9 +40,14 @@ const language = computed(() => {
     js: 'javascript',
     ts: 'typescript',
     html: 'html',
+    htm: 'html',
+    vue: 'html',
     css: 'css',
     json: 'json',
     yaml: 'yaml',
+    yml: 'yaml',
+    md: 'markdown',
+    sql: 'sql',
   }
   return langMap[ext || ''] || 'plaintext'
 })
