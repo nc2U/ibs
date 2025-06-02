@@ -43,6 +43,8 @@ const language = computed(() => {
     htm: 'html',
     vue: 'html',
     css: 'css',
+    scss: 'css',
+    sass: 'css',
     json: 'json',
     yaml: 'yaml',
     yml: 'yaml',
