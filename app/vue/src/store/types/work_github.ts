@@ -53,5 +53,7 @@ export interface FileInfo {
   sha: string
   size: number
   modified: string
-  content: string
+  binary: boolean
+  content: string | null
+  message?: string
 }

@@ -9,7 +9,7 @@ import {
   ref,
   watch,
 } from 'vue'
-import { bgLight, btnSecondary } from '@/utils/cssMixins.ts'
+import { bgLight, btnSecondary, darkSecondary } from '@/utils/cssMixins.ts'
 import type { FileInfo } from '@/store/types/work_github.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import hljs from 'highlight.js'
@@ -107,8 +107,15 @@ watch(isDark, highlightCode)
             </CTableDataCell>
           </CTableRow>
         </CTable>
+        <v-card
+          v-if="fileData.binary && !fileData.content"
+          class="py-5 px-3"
+          :color="darkSecondary"
+        >
+          <code>{{ fileData.message }}</code>
+        </v-card>
         <pre
-          v-if="fileData.content"
+          v-else-if="fileData.content"
           class="code-block"
         ><code ref="codeBlock" :class="`language-${language}`"
         >{{ fileData.content }}</code></pre>

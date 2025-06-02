@@ -1,6 +1,8 @@
 import os
+import chardet
 from datetime import timezone, datetime
 
+from charset_normalizer import is_binary
 from django.shortcuts import get_object_or_404
 from git import Repo, GitCommandError
 from git.exc import BadName
@@ -280,6 +282,15 @@ class GitFileContentView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
+    def is_binary(data: bytes) -> bool:
+        """단순 휴리스틱 방식으로 바이너리 파일인지 확인"""
+        if b'\0' in data:
+            return True
+        # UTF-8/ASCII 등으로 해석 가능하면 텍스트로 간주
+        result = chardet.detect(data)
+        return result["encoding"] is None
+
+    @staticmethod
     def get(request, pk, path, *args, **kwargs):
         sha = request.query_params.get("sha", "").strip()
         if not sha:
@@ -307,7 +318,7 @@ class GitFileContentView(APIView):
             if blob.type != "blob":
                 return Response({"error": f"The path is not a file (blob): {path}"}, status=400)
 
-            content = blob.data_stream.read().decode("utf-8", errors="replace")
+            raw_data = blob.data_stream.read()
 
             # 🟡 마지막 수정 커밋 가져오기
             try:
@@ -316,12 +327,26 @@ class GitFileContentView(APIView):
             except StopIteration:
                 last_modified = None  # 기록 없음
 
+            if is_binary(raw_data):
+                return Response({
+                    "name": blob.name,
+                    "path": path,
+                    "sha": sha,
+                    "size": blob.size,
+                    "modified": last_modified,
+                    "binary": True,
+                    "content": None,
+                    "message": "This file is binary and cannot be displayed as text."
+                })
+
+            content = raw_data.decode("utf-8", errors="replace")
             return Response({
                 "name": blob.name,
                 "path": path,
                 "sha": sha,
                 "size": blob.size,
                 "modified": last_modified,
+                "binary": False,
                 "content": content
             }, status=status.HTTP_200_OK)
 

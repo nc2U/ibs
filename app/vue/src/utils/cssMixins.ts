@@ -25,6 +25,7 @@ export const AlertSecondary = computed(() => (isDark.value ? '' : 'secondary'))
 export const AlertLight = computed(() => (isDark.value ? '' : 'light'))
 
 // -----------------------------------------------------------------------
+export const darkSecondary = computed(() => (isDark.value ? 'secondary' : ''))
 
 // export const bgSecondary = computed(() => (isDark.value ? '' : 'bg-secondary'))
 // export const bgPrimary = computed(() => (isDark.value ? '' : 'bg-primary'))
