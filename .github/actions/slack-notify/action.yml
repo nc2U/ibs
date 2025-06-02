@@ -11,8 +11,10 @@ inputs:
     # default로 `failure`를 사용합니다.
     required: false
     default: 'failure'
+    description: 'default -> failure'
   slack_incoming_url:
     required: true
+    description: 'required -> true'
 
 # using: 'composite' 라는 값을 필수로 지정해줘야해요. 직접 Action을 만든다는 의미거든요.
 runs:

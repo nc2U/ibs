@@ -283,12 +283,20 @@ class GitFileContentView(APIView):
 
     @staticmethod
     def is_binary(data: bytes) -> bool:
-        """단순 휴리스틱 방식으로 바이너리 파일인지 확인"""
-        if b'\0' in data:
+        # NULL 바이트 포함 여부 확인
+        if b'\x00' in data:
             return True
-        # UTF-8/ASCII 등으로 해석 가능하면 텍스트로 간주
+        # chardet 로 인코딩 추정
         result = chardet.detect(data)
-        return result["encoding"] is None
+        encoding = result.get("encoding")
+        # 인코딩 판별 불가 => 바이너리 간주
+        if encoding is None:
+            return True
+        try:
+            data.decode(encoding)
+            return False
+        except UnicodeDecodeError:
+            return True
 
     @staticmethod
     def get(request, pk, path, *args, **kwargs):
