@@ -36,6 +36,7 @@ const language = computed(() => {
   const langMap: { [key: string]: string } = {
     gitignore: 'gitignore',
     py: 'python',
+    php: 'php',
     js: 'javascript',
     ts: 'typescript',
     html: 'html',
