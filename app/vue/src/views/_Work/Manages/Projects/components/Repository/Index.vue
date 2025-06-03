@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import GitRepository from './components/GitRepository.vue'
@@ -130,7 +131,7 @@ const dataSetup = async (proj: number) => {
 }
 
 onBeforeMount(async () => {
-  if (project.value) await dataSetup(project.value.pk as number)
+  if (project.value) await dataSetup((project.value as IssueProject).pk as number)
 })
 </script>
 
@@ -155,8 +156,8 @@ onBeforeMount(async () => {
         :page="cFilter.page"
         :commit-list="commitList"
         :get-list-sort="getListSort"
-        :parent-head-id="String(headId ?? '')"
-        :parent-base-id="String(baseId ?? '')"
+        :set-head-id="String(headId ?? '')"
+        :set-base-id="String(baseId ?? '')"
         @head-set="headSet"
         @base-set="baseSet"
         @get-diff="getDiff"
@@ -166,8 +167,8 @@ onBeforeMount(async () => {
 
       <ViewDiff
         v-if="viewPageSort === 'diff'"
-        :head-id="headId as number"
-        :base-id="baseId as number"
+        :head-sha="headId as string"
+        :base-sha="baseId as string"
         :git-diff="gitDiff"
         @get-diff="getDiff"
         @get-back="getBack"

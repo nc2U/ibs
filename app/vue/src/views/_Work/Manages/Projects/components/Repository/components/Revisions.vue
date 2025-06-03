@@ -10,8 +10,8 @@ const props = defineProps({
   page: { type: Number, required: true },
   commitList: { type: Array as PropType<Commit[]>, default: () => [] },
   getListSort: { type: String as PropType<'latest' | 'all'>, default: 'latest' },
-  parentHeadId: { type: String, default: '' },
-  parentBaseId: { type: String, default: '' },
+  setHeadId: { type: String, default: '' },
+  setBaseId: { type: String, default: '' },
 })
 
 watch(
@@ -37,13 +37,13 @@ const commits = computed(() =>
   props.getListSort === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
 
-const headId = ref<string>('')
-watch(headId, newVal => {
-  if (newVal) emit('head-set', Number(newVal))
-})
 const baseId = ref<string>('')
 watch(baseId, newVal => {
   if (newVal) emit('base-set', Number(newVal))
+})
+const headId = ref<string>('')
+watch(headId, newVal => {
+  if (newVal) emit('head-set', Number(newVal))
 })
 
 const updateBase = (pk: number) => (baseId.value = String(pk - 1))
@@ -58,11 +58,11 @@ const commitPages = (page: number) => ghStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 
 onBeforeMount(() => {
-  headId.value = props.parentHeadId
-    ? props.parentHeadId
+  headId.value = props.setHeadId
+    ? props.setHeadId
     : String(props.commitList.map(c => c.revision_id)[0])
-  baseId.value = props.parentBaseId
-    ? props.parentBaseId
+  baseId.value = props.setBaseId
+    ? props.setBaseId
     : String(props.commitList.map(c => c.revision_id)[1])
 })
 </script>
