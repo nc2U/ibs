@@ -107,11 +107,7 @@ watch(isDark, highlightCode)
             </CTableDataCell>
           </CTableRow>
         </CTable>
-        <v-card
-          v-if="fileData.binary && !fileData.content"
-          class="py-5 px-3"
-          :color="darkSecondary"
-        >
+        <v-card v-if="fileData.binary" class="py-5 px-3" :color="darkSecondary">
           <code>{{ fileData.message }}</code>
         </v-card>
         <pre

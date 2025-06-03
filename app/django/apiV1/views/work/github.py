@@ -1,8 +1,7 @@
 import os
-import chardet
 from datetime import timezone, datetime
 
-from charset_normalizer import is_binary
+from charset_normalizer import detect
 from django.shortcuts import get_object_or_404
 from git import Repo, GitCommandError
 from git.exc import BadName
@@ -283,23 +282,36 @@ class GitFileContentView(APIView):
 
     @staticmethod
     def is_binary(data: bytes) -> bool:
-        # NULL 바이트 포함 여부 확인
+        """
+        Check if the input bytes data is binary or text.
+        Args: data: Bytes data to analyze.
+        Returns: bool: True if binary, False if text.
+        """
+
+        if not data:
+            return False
+
+        # NULL 바이트 확인
         if b'\x00' in data:
             return True
-        # chardet 로 인코딩 추정
-        result = chardet.detect(data)
+
+        # 처음 1024바이트로 인코딩 추정
+        sample_size = min(len(data), 1024)
+        result = detect(data[:sample_size])
         encoding = result.get("encoding")
-        # 인코딩 판별 불가 => 바이너리 간주
-        if encoding is None:
+        confidence = result.get("confidence", 0)
+
+        # 인코딩 없거나 신뢰도 낮음
+        if encoding is None or confidence < 0.7:
             return True
+
         try:
             data.decode(encoding)
             return False
-        except UnicodeDecodeError:
+        except UnicodeDecodeError as e:
             return True
 
-    @staticmethod
-    def get(request, pk, path, *args, **kwargs):
+    def get(self, request, pk, path, *args, **kwargs):
         sha = request.query_params.get("sha", "").strip()
         if not sha:
             return Response({"error": "Missing 'sha' parameter"}, status=status.HTTP_400_BAD_REQUEST)
@@ -326,16 +338,15 @@ class GitFileContentView(APIView):
             if blob.type != "blob":
                 return Response({"error": f"The path is not a file (blob): {path}"}, status=400)
 
-            raw_data = blob.data_stream.read()
-
-            # 🟡 마지막 수정 커밋 가져오기
-            try:
+            try:  # 마지막 수정 커밋 가져오기
                 last_commit = next(repo.iter_commits(sha, paths=path))
                 last_modified = datetime.fromtimestamp(last_commit.committed_date).isoformat()
             except StopIteration:
                 last_modified = None  # 기록 없음
 
-            if is_binary(raw_data):
+            raw_data = blob.data_stream.read()
+
+            if self.is_binary(raw_data):
                 return Response({
                     "name": blob.name,
                     "path": path,
