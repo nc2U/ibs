@@ -89,12 +89,12 @@ onBeforeMount(() => {
   </CRow>
   <CTable hover responsive striped small>
     <colgroup>
-      <col style="width: 4%" />
+      <col style="width: 6%" />
       <col style="width: 2%" />
       <col style="width: 5%" />
-      <col style="width: 14%" />
+      <col style="width: 15%" />
       <col style="width: 16%" />
-      <col style="width: 61%" />
+      <col style="width: 56%" />
     </colgroup>
     <CTableHead>
       <CTableRow class="text-center">
@@ -110,8 +110,8 @@ onBeforeMount(() => {
       <CTableRow v-for="(commit, i) in commits" :key="commit.pk">
         <CTableDataCell class="text-center">
           <span class="mr-5">
-            <router-link to="">{{ commit.revision_id }}</router-link>
-            <!--            <router-link to="">{{ commit.commit_hash.substring(0, 5) }}</router-link>-->
+            <!--            <router-link to="">{{ commit.revision_id }}</router-link>-->
+            <router-link to="">{{ commit.commit_hash.substring(0, 8) }}</router-link>
           </span>
         </CTableDataCell>
         <CTableDataCell>

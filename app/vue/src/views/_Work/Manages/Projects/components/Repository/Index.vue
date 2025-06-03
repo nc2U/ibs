@@ -3,7 +3,6 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
-import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import GitRepository from './components/GitRepository.vue'
@@ -23,7 +22,7 @@ const cFilter = ref({
 })
 
 const workStore = useWork()
-const project = computed<IssueProject | null>(() => workStore.issueProject)
+const project = computed(() => workStore.issueProject)
 watch(project, nVal => {
   if (nVal) {
     dataSetup(nVal?.pk as number)

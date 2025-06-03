@@ -78,7 +78,7 @@ const viewFile = async () => {
       {{ humanizeFileSize((node as any)?.size) }}
     </CTableDataCell>
     <CTableDataCell class="text-center">
-      <router-link to="">{{ cutString(node.commit?.sha, 5, '') }}</router-link>
+      <router-link to="">{{ cutString(node.commit?.sha, 8, '') }}</router-link>
     </CTableDataCell>
     <CTableDataCell class="text-right">
       {{ elapsedTime(node.commit?.date) }}

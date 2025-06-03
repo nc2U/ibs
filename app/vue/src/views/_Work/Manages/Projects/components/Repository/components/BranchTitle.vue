@@ -30,7 +30,7 @@ const updateFold = () => {
     </CTableDataCell>
     <CTableDataCell class="text-right"></CTableDataCell>
     <CTableDataCell class="text-center">
-      <router-link to="">{{ cutString(latest?.commit.sha, 5, '') }}</router-link>
+      <router-link to="">{{ cutString(latest?.commit.sha, 8, '') }}</router-link>
     </CTableDataCell>
     <CTableDataCell class="text-right">
       {{ elapsedTime(latest?.commit.date) }}
