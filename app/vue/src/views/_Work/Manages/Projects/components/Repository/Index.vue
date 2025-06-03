@@ -167,8 +167,6 @@ onBeforeMount(async () => {
 
       <ViewDiff
         v-if="viewPageSort === 'diff'"
-        :head-sha="headId as string"
-        :base-sha="baseId as string"
         :git-diff="gitDiff"
         @get-diff="getDiff"
         @get-back="getBack"

@@ -6,11 +6,7 @@ import { html } from 'diff2html'
 import 'diff2html/bundles/css/diff2html.min.css'
 import sanitizeHtml from 'sanitize-html'
 
-const props = defineProps({
-  headSha: { type: String, required: true },
-  baseSha: { type: String, required: true },
-  gitDiff: { type: Object as PropType<any>, required: true },
-})
+const props = defineProps({ gitDiff: { type: Object as PropType<any>, required: true } })
 
 watch(
   () => props.gitDiff,
@@ -51,7 +47,7 @@ onMounted(async () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>리비전 {{ headSha }} : {{ baseSha }}</h5>
+      <h5>리비전 {{ gitDiff?.head.substring(0, 8) }} : {{ gitDiff?.base.substring(0, 8) }}</h5>
     </CCol>
   </CRow>
   <CRow class="mb-5">
@@ -87,8 +83,8 @@ onMounted(async () => {
   <div v-else>로딩 중...</div>
 
   <div v-if="gitDiff?.truncated">
-    <CAlert color="warning"
-      >Diff 가져오기 정책에 의해 1000줄 이상에 해당하는 데이터가 표시되지 않았습니다.
+    <CAlert color="warning">
+      Diff 가져오기 정책에 의해 1000줄 이상에 해당하는 데이터가 표시되지 않았습니다.
       <router-link to="#" @click="emit('get-diff', true)">전체 데이터 를 보려면 클릭</router-link>
       하세요.
     </CAlert>
