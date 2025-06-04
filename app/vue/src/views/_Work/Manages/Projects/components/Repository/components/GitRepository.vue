@@ -1,12 +1,12 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { onMounted, type PropType, ref } from 'vue'
 import type { BranchInfo, Repository, Tree } from '@/store/types/work_github.ts'
 import BranchMenu from './HeaderMenu/BranchMenu.vue'
 // import Branch from './Branch.vue'
 // import BranchTitle from './BranchTitle.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
-const props = defineProps({
+defineProps({
   repo: { type: Object as PropType<Repository>, default: () => null },
   // branches: { type: Array as PropType<BranchInfo[]>, default: () => [] },
   // tags: { type: Array as PropType<BranchInfo[]>, default: () => [] },
@@ -16,6 +16,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['file-view'])
+
+const branchName = ref<string | null>('')
 
 // const branchFold = ref(false)
 // const tagFold = ref(false)
@@ -38,12 +40,18 @@ const emit = defineEmits(['file-view'])
 
 // const last_branch = computed(() => getLatestBranch(props.branches))
 // const last_tag = computed(() => getLatestBranch(props.tags))
+onMounted(() => {
+  branchName.value = 'master'
+})
 </script>
 
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>Git 저장소</h5>
+      <h5>
+        <router-link to="">{{ 'ibs' }}</router-link>
+        @ {{ branchName }}
+      </h5>
     </CCol>
 
     <BranchMenu />
