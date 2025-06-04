@@ -11,12 +11,20 @@ const props = defineProps({
 const gitStore = useGithub()
 const default_branch = computed(() => gitStore.default_branch)
 
-const emit = defineEmits(['change-branch'])
+const emit = defineEmits(['change-branch', 'change-tag'])
 
 const branch = ref('')
 const tag = ref('')
 
-const changeBranch = (e: Event) => emit('change-branch', (e.target as any).value)
+const changeBranch = (e: Event) => {
+  tag.value = ''
+  emit('change-branch', (e.target as any).value)
+}
+
+const changeTag = (e: Event) => {
+  branch.value = ''
+  emit('change-tag', (e.target as any).value)
+}
 
 onBeforeMount(() => {
   if (default_branch.value) branch.value = default_branch.value
@@ -57,7 +65,7 @@ onBeforeMount(() => {
       </CFormSelect>
 
       <CFormLabel> | 태그 :</CFormLabel>
-      <CFormSelect v-model="tag" style="width: 100px" size="sm">
+      <CFormSelect v-model="tag" style="width: 100px" size="sm" @change="changeTag">
         <option value="">---------</option>
         <option v-for="(tag, i) in tags" :key="i">{{ tag }}</option>
       </CFormSelect>

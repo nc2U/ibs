@@ -12,7 +12,7 @@ defineProps({
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits(['file-view', 'change-branch'])
+const emit = defineEmits(['file-view', 'change-branch', 'change-tag'])
 </script>
 
 <template>
@@ -29,6 +29,7 @@ const emit = defineEmits(['file-view', 'change-branch'])
         :branches="branches"
         :tags="tags"
         @change-branch="emit('change-branch', $event)"
+        @change-tag="emit('change-tag', $event)"
       />
     </CCol>
   </CRow>
