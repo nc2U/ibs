@@ -1,19 +1,15 @@
 <script lang="ts" setup>
-import { onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import router from '@/router/index.js'
+import { useGithub } from '@/store/pinia/work_github.ts'
 
 const props = defineProps({
-  defBranch: { type: String, required: true },
   branches: { type: Array, default: () => [] },
   tags: { type: Array, default: () => [] },
 })
 
-watch(
-  () => props.defBranch,
-  newVal => {
-    if (newVal) branch.value = newVal
-  },
-)
+const gitStore = useGithub()
+const default_branch = computed(() => gitStore.default_branch)
 
 const emit = defineEmits(['change-branch'])
 
@@ -23,7 +19,7 @@ const tag = ref('')
 const changeBranch = (e: Event) => emit('change-branch', (e.target as any).value)
 
 onBeforeMount(() => {
-  if (props.defBranch) branch.value = props.defBranch
+  if (default_branch.value) branch.value = default_branch.value
 })
 </script>
 

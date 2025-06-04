@@ -143,7 +143,6 @@ onBeforeMount(async () => {
       <GitRepository
         v-if="!fileView"
         :repo="repo as Repository"
-        :def-name="default_branch"
         :branches="branches"
         :tags="tags"
         :curr-branch="curr_branch as BranchInfo"

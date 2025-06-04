@@ -8,7 +8,6 @@ defineProps({
   branches: { type: Array as PropType<string[]>, default: () => [] },
   tags: { type: Array as PropType<string[]>, default: () => [] },
   repo: { type: Object as PropType<Repository>, required: true },
-  defName: { type: String, default: 'master' },
   currBranch: { type: Object as PropType<BranchInfo>, required: true },
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
@@ -27,7 +26,6 @@ const emit = defineEmits(['file-view', 'change-branch'])
 
     <CCol>
       <BranchMenu
-        :def-branch="defName ?? ''"
         :branches="branches"
         :tags="tags"
         @change-branch="emit('change-branch', $event)"
