@@ -53,13 +53,13 @@ onBeforeMount(() => {
       <CFormLabel> | 브랜치 :</CFormLabel>
       <CFormSelect v-model="branch" style="width: 100px" size="sm">
         <option value="">---------</option>
-        <option v-for="branch in branches" :key="branch">{{ branch }}</option>
+        <option v-for="(branch, i) in branches" :key="i">{{ branch }}</option>
       </CFormSelect>
 
       <CFormLabel> | 태그 :</CFormLabel>
       <CFormSelect v-model="tag" style="width: 100px" size="sm">
         <option value="">---------</option>
-        <option v-for="tag in tags" :key="tag">{{ tag }}</option>
+        <option v-for="(tag, i) in tags" :key="i">{{ tag }}</option>
       </CFormSelect>
 
       <!--      <CFormLabel> | 리비전:</CFormLabel>-->

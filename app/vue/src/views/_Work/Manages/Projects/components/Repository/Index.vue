@@ -53,8 +53,8 @@ const fetchCommitList = (payload: {
   limit?: number
 }) => gitStore.fetchCommitList(payload)
 
-const branches = computed<BranchInfo[]>(() => gitStore.branches)
-const tags = computed<BranchInfo[]>(() => gitStore.tags)
+const branches = computed<string[]>(() => gitStore.branches)
+const tags = computed<string[]>(() => gitStore.tags)
 
 const default_branch = computed(() => gitStore.default_branch)
 const master = computed(() => gitStore.master)

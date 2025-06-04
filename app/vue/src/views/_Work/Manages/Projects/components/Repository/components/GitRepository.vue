@@ -5,8 +5,8 @@ import BranchMenu from './HeaderMenu/BranchMenu.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
 defineProps({
-  branches: { type: Array as PropType<BranchInfo[]>, default: () => [] },
-  tags: { type: Array as PropType<BranchInfo[]>, default: () => [] },
+  branches: { type: Array as PropType<string[]>, default: () => [] },
+  tags: { type: Array as PropType<string[]>, default: () => [] },
   repo: { type: Object as PropType<Repository>, required: true },
   defName: { type: String, default: 'master' },
   defBranch: { type: Object as PropType<BranchInfo>, required: true },
