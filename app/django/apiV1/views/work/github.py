@@ -209,6 +209,77 @@ class GitBranchTreeView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class GitTagTreeView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, tag):
+        repo_path = get_repo_path(pk)
+
+        if not os.path.exists(repo_path):
+            return Response({"Error": "Local repository path not found"}, status=404)
+
+        try:
+            repo = Repo(repo_path)
+
+            # 태그 찾기
+            if tag not in repo.tags:
+                return Response({"Error": f"Tag '{tag}' not found"}, status=404)
+
+            tag_ref = repo.tags[tag]
+            commit = tag_ref.commit
+        except (GitCommandError, BadName) as e:
+            return Response({"Error": "Failed to access tag or commit", "details": str(e)}, status=500)
+
+        # 태그 정보 구성
+        tag_api = {
+            "name": tag,
+            "commit": {
+                "sha": commit.hexsha,
+                "author": commit.author.name,
+                "date": commit.authored_datetime.isoformat(),
+                "message": commit.message.strip()
+            }
+        }
+
+        # 트리 정보 구성
+        tree = commit.tree
+        trees_result = []
+
+        for item in tree:
+            item_path = item.path
+
+            try:
+                latest_commit = next(repo.iter_commits(commit, paths=item_path, max_count=1))
+                latest_commit_data = {
+                    "sha": latest_commit.hexsha,
+                    "author": latest_commit.author.name,
+                    "date": latest_commit.authored_datetime.isoformat(),
+                    "message": latest_commit.message.strip()
+                }
+            except StopIteration:
+                latest_commit_data = {
+                    "sha": "",
+                    "author": "Unknown",
+                    "date": "",
+                    "message": ""
+                }
+
+            trees_result.append({
+                "path": item.path,
+                "name": item.name,
+                "mode": item.mode,
+                "type": "tree" if item.type == "tree" else "blob",
+                "sha": item.hexsha,
+                "size": item.size if item.type == "blob" else None,
+                "commit": latest_commit_data
+            })
+
+        trees_result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
+        serializer = GitBranchAndTreeSerializer({"branch": tag_api, "trees": trees_result})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class GitSubTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
