@@ -6,6 +6,7 @@ import TreeNode from './Tree/TreeNode.vue'
 
 defineProps({
   branches: { type: Array as PropType<BranchInfo[]>, default: () => [] },
+  tags: { type: Array as PropType<BranchInfo[]>, default: () => [] },
   repo: { type: Object as PropType<Repository>, required: true },
   defName: { type: String, default: 'master' },
   defBranch: { type: Object as PropType<BranchInfo>, required: true },
@@ -25,7 +26,7 @@ const emit = defineEmits(['file-view'])
     </CCol>
 
     <CCol>
-      <BranchMenu :branches="branches" :def-branch="defName ?? ''" />
+      <BranchMenu :def-branch="defName ?? ''" :branches="branches" :tags="tags" />
     </CCol>
   </CRow>
   <CRow class="mb-5">

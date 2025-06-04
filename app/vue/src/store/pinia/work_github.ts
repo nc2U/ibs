@@ -106,12 +106,13 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // tags api
-  const tags = ref<BranchInfo[]>([])
+  const tagList = ref<BranchInfo[]>([])
+  const tags = computed(() => tagList.value.map(b => b.name))
 
   const fetchTags = async (repoPk: number) => {
     await api
       .get(`/repo/${repoPk}/tags/`)
-      .then(async res => (tags.value = res.data))
+      .then(async res => (tagList.value = res.data))
       .catch(err => errorHandle(err.response))
   }
 

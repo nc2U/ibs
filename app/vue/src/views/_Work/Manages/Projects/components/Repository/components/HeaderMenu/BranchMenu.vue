@@ -3,8 +3,9 @@ import { onBeforeMount, ref, watch } from 'vue'
 import router from '@/router/index.js'
 
 const props = defineProps({
-  branches: { type: Array, default: () => [] },
   defBranch: { type: String, required: true },
+  branches: { type: Array, default: () => [] },
+  tags: { type: Array, default: () => [] },
 })
 
 watch(
@@ -15,6 +16,7 @@ watch(
 )
 
 const branch = ref('')
+const tag = ref('')
 
 onBeforeMount(() => {
   if (props.defBranch) branch.value = props.defBranch
@@ -48,16 +50,16 @@ onBeforeMount(() => {
           </CDropdownMenu>
         </CDropdown>
       </CCol>
-      <CFormLabel> | 브랜치(Branch):</CFormLabel>
+      <CFormLabel> | 브랜치 :</CFormLabel>
       <CFormSelect v-model="branch" style="width: 100px" size="sm">
         <option value="">---------</option>
         <option v-for="branch in branches" :key="branch">{{ branch }}</option>
       </CFormSelect>
 
-      <CFormLabel> | 태그(Tag):</CFormLabel>
-      <CFormSelect style="width: 100px" size="sm">
+      <CFormLabel> | 태그 :</CFormLabel>
+      <CFormSelect v-model="tag" style="width: 100px" size="sm">
         <option value="">---------</option>
-        <option value="1">v0.8</option>
+        <option v-for="tag in tags" :key="tag">{{ tag }}</option>
       </CFormSelect>
 
       <!--      <CFormLabel> | 리비전:</CFormLabel>-->

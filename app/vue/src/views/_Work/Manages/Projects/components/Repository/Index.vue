@@ -140,9 +140,10 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <GitRepository
         v-if="!fileView"
-        :branches="branches"
         :repo="repo as Repository"
         :def-name="default_branch"
+        :branches="branches"
+        :tags="tags"
         :def-branch="master as BranchInfo"
         :def-tree="masterTree"
         @file-view="toggleFileView"
