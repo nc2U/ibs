@@ -48,7 +48,7 @@ const viewFile = async () => {
 
 <template>
   <CTableRow>
-    <CTableDataCell class="pl-5">
+    <CTableDataCell>
       <span
         v-if="node.type === 'tree'"
         @click="toggleFold"

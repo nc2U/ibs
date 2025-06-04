@@ -1,14 +1,15 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref } from 'vue'
-import type { Repository, Tree, BranchInfo } from '@/store/types/work_github.ts'
-import Branch from './Branch.vue'
-import BranchTitle from './BranchTitle.vue'
+import { type PropType, ref } from 'vue'
+import type { BranchInfo, Repository, Tree } from '@/store/types/work_github.ts'
+import BranchMenu from './HeaderMenu/BranchMenu.vue'
+// import Branch from './Branch.vue'
+// import BranchTitle from './BranchTitle.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, default: () => null },
-  branches: { type: Array as PropType<BranchInfo[]>, default: () => [] },
-  tags: { type: Array as PropType<BranchInfo[]>, default: () => [] },
+  // branches: { type: Array as PropType<BranchInfo[]>, default: () => [] },
+  // tags: { type: Array as PropType<BranchInfo[]>, default: () => [] },
   defName: { type: String, default: 'master' },
   defBranch: { type: Object as PropType<BranchInfo>, default: () => null },
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
@@ -16,27 +17,27 @@ const props = defineProps({
 
 const emit = defineEmits(['file-view'])
 
-const branchFold = ref(false)
-const tagFold = ref(false)
-const defFold = ref(false)
+// const branchFold = ref(false)
+// const tagFold = ref(false)
+// const defFold = ref(false)
 
-const updateFold = (which: 1 | 2 | 3) => {
-  if (which === 1) branchFold.value = !branchFold.value
-  if (which === 2) tagFold.value = !tagFold.value
-  if (which === 3) defFold.value = !defFold.value
-}
+// const updateFold = (which: 1 | 2 | 3) => {
+//   if (which === 1) branchFold.value = !branchFold.value
+//   if (which === 2) tagFold.value = !tagFold.value
+//   if (which === 3) defFold.value = !defFold.value
+// }
 
-const getLatestBranch = (branches: BranchInfo[]) => {
-  if (branches.length === 0) return
-  return branches.reduce((last, curr) => {
-    const lastDate = new Date(last.commit.date)
-    const currDate = new Date(curr.commit.date)
-    return lastDate > currDate ? last : curr
-  })
-}
+// const getLatestBranch = (branches: BranchInfo[]) => {
+//   if (branches.length === 0) return
+//   return branches.reduce((last, curr) => {
+//     const lastDate = new Date(last.commit.date)
+//     const currDate = new Date(curr.commit.date)
+//     return lastDate > currDate ? last : curr
+//   })
+// }
 
-const last_branch = computed(() => getLatestBranch(props.branches))
-const last_tag = computed(() => getLatestBranch(props.tags))
+// const last_branch = computed(() => getLatestBranch(props.branches))
+// const last_tag = computed(() => getLatestBranch(props.tags))
 </script>
 
 <template>
@@ -44,6 +45,8 @@ const last_tag = computed(() => getLatestBranch(props.tags))
     <CCol>
       <h5>Git 저장소</h5>
     </CCol>
+
+    <BranchMenu />
   </CRow>
   <CRow class="mb-5">
     <CCol>
@@ -68,36 +71,35 @@ const last_tag = computed(() => getLatestBranch(props.tags))
         </CTableHead>
 
         <CTableBody>
-          <BranchTitle version-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />
-          <template v-if="branchFold">
-            <Branch
-              v-for="node in branches"
-              :repo="repo.pk as number"
-              :node="node"
-              @file-view="emit('file-view', $event)"
-            />
-          </template>
+          <!--          <BranchTitle version-name="branches" :latest="last_branch" @update-fold="updateFold(1)" />-->
+          <!--          <template v-if="branchFold">-->
+          <!--            <Branch-->
+          <!--              v-for="node in branches"-->
+          <!--              :repo="repo.pk as number"-->
+          <!--              :node="node"-->
+          <!--              @file-view="emit('file-view', $event)"-->
+          <!--            />-->
+          <!--          </template>-->
 
-          <BranchTitle version-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />
-          <template v-if="tagFold">
-            <Branch
-              v-for="node in tags"
-              :repo="repo.pk as number"
-              :node="node"
-              @file-view="emit('file-view', $event)"
-            />
-          </template>
+          <!--          <BranchTitle version-name="tags" :latest="last_tag" @update-fold="updateFold(2)" />-->
+          <!--          <template v-if="tagFold">-->
+          <!--            <Branch-->
+          <!--              v-for="node in tags"-->
+          <!--              :repo="repo.pk as number"-->
+          <!--              :node="node"-->
+          <!--              @file-view="emit('file-view', $event)"-->
+          <!--            />-->
+          <!--          </template>-->
 
-          <BranchTitle :version-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />
-          <template v-if="defFold">
-            <TreeNode
-              v-for="node in defTree"
-              :repo="repo.pk as number"
-              :node="node"
-              :key="node.sha"
-              @file-view="emit('file-view', $event)"
-            />
-          </template>
+          <!--          <BranchTitle :version-name="defName" :latest="defBranch" @update-fold="updateFold(3)" />-->
+
+          <TreeNode
+            v-for="node in defTree"
+            :repo="repo.pk as number"
+            :node="node"
+            :key="node.sha"
+            @file-view="emit('file-view', $event)"
+          />
         </CTableBody>
       </CTable>
     </CCol>
