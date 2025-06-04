@@ -116,15 +116,15 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
   }
 
-  const master = ref<BranchInfo | null>(null)
-  const master_tree = ref<any[]>([])
+  const curr_branch = ref<BranchInfo | null>(null)
+  const branch_tree = ref<any[]>([])
 
-  const fetchDefBranch = async (repo: number, branch: string) =>
+  const fetchBranchTree = async (repo: number, branch: string) =>
     await api
       .get(`/repo/${repo}/branch/${branch}/`)
       .then(res => {
-        master.value = res.data.branch
-        master_tree.value = res.data.trees
+        curr_branch.value = res.data.branch
+        branch_tree.value = res.data.trees
       })
       .catch(err => errorHandle(err.response))
 
@@ -190,9 +190,9 @@ export const useGithub = defineStore('github', () => {
     tags,
     fetchTags,
 
-    master,
-    master_tree,
-    fetchDefBranch,
+    curr_branch,
+    branch_tree,
+    fetchBranchTree,
     fetchSubTree,
     fetchFileView,
 

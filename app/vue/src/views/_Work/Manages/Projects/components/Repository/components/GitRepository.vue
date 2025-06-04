@@ -9,11 +9,11 @@ defineProps({
   tags: { type: Array as PropType<string[]>, default: () => [] },
   repo: { type: Object as PropType<Repository>, required: true },
   defName: { type: String, default: 'master' },
-  defBranch: { type: Object as PropType<BranchInfo>, required: true },
+  currBranch: { type: Object as PropType<BranchInfo>, required: true },
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits(['file-view'])
+const emit = defineEmits(['file-view', 'change-branch'])
 </script>
 
 <template>
@@ -21,12 +21,17 @@ const emit = defineEmits(['file-view'])
     <CCol col="6">
       <h5>
         <router-link to="">{{ repo?.slug }}</router-link>
-        @ {{ defName }}
+        @ {{ currBranch?.name }}
       </h5>
     </CCol>
 
     <CCol>
-      <BranchMenu :def-branch="defName ?? ''" :branches="branches" :tags="tags" />
+      <BranchMenu
+        :def-branch="defName ?? ''"
+        :branches="branches"
+        :tags="tags"
+        @change-branch="emit('change-branch', $event)"
+      />
     </CCol>
   </CRow>
   <CRow class="mb-5">

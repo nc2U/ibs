@@ -23,7 +23,7 @@ const cFilter = ref({
 })
 
 const workStore = useWork()
-const project = computed(() => workStore.issueProject)
+const project = computed<IssueProject | null>(() => workStore.issueProject)
 watch(project, nVal => {
   if (nVal) {
     dataSetup(nVal?.pk as number)
@@ -57,8 +57,8 @@ const branches = computed<string[]>(() => gitStore.branches)
 const tags = computed<string[]>(() => gitStore.tags)
 
 const default_branch = computed(() => gitStore.default_branch)
-const master = computed(() => gitStore.master)
-const masterTree = computed<Tree[]>(() => gitStore.master_tree)
+const curr_branch = computed(() => gitStore.curr_branch)
+const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
 
 const gitDiff = computed<any>(() => gitStore.gitDiff)
 
@@ -68,8 +68,8 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
 
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
-const fetchDefBranch = (repoPk: number, branch: string = '') =>
-  gitStore.fetchDefBranch(repoPk, branch)
+const fetchBranchTree = (repoPk: number, branch: string = '') =>
+  gitStore.fetchBranchTree(repoPk, branch)
 
 // file view
 const fileView = ref(false)
@@ -78,6 +78,8 @@ const toggleFileView = (payload: any) => {
   fileData.value = payload
   fileView.value = true
 }
+
+const changeBranch = (branch: string) => fetchBranchTree(repo.value?.pk as number, branch)
 
 // revisons & diff view
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
@@ -127,7 +129,7 @@ const dataSetup = async (proj: number) => {
   await fetchCommitList(cFilter.value)
   await fetchBranches(cFilter.value.repo)
   await fetchTags(cFilter.value.repo)
-  await fetchDefBranch(cFilter.value.repo, default_branch.value)
+  await fetchBranchTree(cFilter.value.repo, default_branch.value)
 }
 
 onBeforeMount(async () => {
@@ -144,9 +146,10 @@ onBeforeMount(async () => {
         :def-name="default_branch"
         :branches="branches"
         :tags="tags"
-        :def-branch="master as BranchInfo"
-        :def-tree="masterTree"
+        :curr-branch="curr_branch as BranchInfo"
+        :def-tree="branchTree"
         @file-view="toggleFileView"
+        @change-branch="changeBranch"
       />
 
       <GitFileView v-else :file-data="fileData" @file-view-close="fileView = false" />

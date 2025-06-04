@@ -15,8 +15,12 @@ watch(
   },
 )
 
+const emit = defineEmits(['change-branch'])
+
 const branch = ref('')
 const tag = ref('')
+
+const changeBranch = (e: Event) => emit('change-branch', (e.target as any).value)
 
 onBeforeMount(() => {
   if (props.defBranch) branch.value = props.defBranch
@@ -51,7 +55,7 @@ onBeforeMount(() => {
         </CDropdown>
       </CCol>
       <CFormLabel> | 브랜치 :</CFormLabel>
-      <CFormSelect v-model="branch" style="width: 100px" size="sm">
+      <CFormSelect v-model="branch" style="width: 100px" size="sm" @change="changeBranch">
         <option value="">---------</option>
         <option v-for="(branch, i) in branches" :key="i">{{ branch }}</option>
       </CFormSelect>
