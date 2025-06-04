@@ -109,6 +109,7 @@ onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
     await workStore.fetchIssueProject(to.params.projId as string)
     await workStore.fetchVersionList({ project: to.params.projId as string })
+    await ghStore.fetchRepoList(issueProject.value?.pk ?? '')
   } else {
     workStore.removeIssueProject()
     await workStore.fetchIssueProjectList({ status: '1' })
