@@ -20,7 +20,7 @@ const emit = defineEmits(['file-view'])
   <CRow class="py-2 mb-2">
     <CCol col="6">
       <h5>
-        <router-link to="">{{ 'ibs' }}</router-link>
+        <router-link to="">{{ repo.slug }}</router-link>
         @ {{ defName }}
       </h5>
     </CCol>
