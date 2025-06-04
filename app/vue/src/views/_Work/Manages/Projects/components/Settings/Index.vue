@@ -3,6 +3,7 @@ import Cookies from 'js-cookie'
 import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
 import { type IssueCategory as ICategory, type IssueProject } from '@/store/types/work_project.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useGithub } from '@/store/pinia/work_github.ts'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
 import Member from '@/views/_Work/Manages/Projects/components/Settings/components/Member.vue'
@@ -14,7 +15,6 @@ import Forum from '@/views/_Work/Manages/Projects/components/Settings/components
 import TimeTracking from '@/views/_Work/Manages/Projects/components/Settings/components/TimeTracking.vue'
 import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import { useGithub } from '@/store/pinia/work_github.ts'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
