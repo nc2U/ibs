@@ -1,5 +1,24 @@
 <script lang="ts" setup>
+import { onBeforeMount, ref, watch } from 'vue'
 import router from '@/router/index.js'
+
+const props = defineProps({
+  branches: { type: Array, default: () => [] },
+  defBranch: { type: String, required: true },
+})
+
+watch(
+  () => props.defBranch,
+  newVal => {
+    if (newVal) branch.value = newVal
+  },
+)
+
+const branch = ref('')
+
+onBeforeMount(() => {
+  if (props.defBranch) branch.value = props.defBranch
+})
 </script>
 
 <template>
@@ -30,11 +49,9 @@ import router from '@/router/index.js'
         </CDropdown>
       </CCol>
       <CFormLabel> | 브랜치(Branch):</CFormLabel>
-      <CFormSelect style="width: 100px" size="sm">
+      <CFormSelect v-model="branch" style="width: 100px" size="sm">
         <option value="">---------</option>
-        <option value="1">master</option>
-        <option value="2">develop</option>
-        <option value="3">gh-pages</option>
+        <option v-for="branch in branches" :key="branch">{{ branch }}</option>
       </CFormSelect>
 
       <CFormLabel> | 태그(Tag):</CFormLabel>
@@ -43,8 +60,8 @@ import router from '@/router/index.js'
         <option value="1">v0.8</option>
       </CFormSelect>
 
-      <CFormLabel> | 리비전:</CFormLabel>
-      <CFormInput style="width: 100px" size="sm" placeholder="sha" />
+      <!--      <CFormLabel> | 리비전:</CFormLabel>-->
+      <!--      <CFormInput style="width: 100px" size="sm" placeholder="sha" />-->
     </CCol>
   </CCol>
 </template>

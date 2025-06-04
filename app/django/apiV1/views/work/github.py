@@ -82,13 +82,9 @@ class GitBranchesView(APIView):
 
         try:
             repo = Repo(repo_path)
-            # 기본 브랜치명 (HEAD가 가리키는 브랜치)
-            default_branch = repo.active_branch.name if not repo.bare else repo.head.ref.name
 
             branches = []
             for head in repo.branches:
-                if head.name == default_branch:
-                    continue
                 commit = head.commit
                 branches.append({
                     "name": head.name,

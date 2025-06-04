@@ -31,10 +31,10 @@ watch(project, nVal => {
 })
 
 // get github api
-const ghStore = useGithub()
-const repo = computed<Repository | null>(() => ghStore.repository)
-const repoList = computed<Repository[]>(() => ghStore.repositoryList)
-const commitList = computed<Commit[]>(() => ghStore.commitList)
+const gitStore = useGithub()
+const repo = computed<Repository | null>(() => gitStore.repository)
+const repoList = computed<Repository[]>(() => gitStore.repositoryList)
+const commitList = computed<Commit[]>(() => gitStore.commitList)
 
 watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
@@ -43,33 +43,33 @@ watch(repoList, nVal => {
   if (nVal.length) fetchRepo(nVal[0].pk as number)
 })
 
-const fetchRepo = (pk: number) => ghStore.fetchRepo(pk)
-const fetchRepoList = (project?: number, is_def?: string) => ghStore.fetchRepoList(project, is_def)
+const fetchRepo = (pk: number) => gitStore.fetchRepo(pk)
+const fetchRepoList = (project?: number, is_def?: string) => gitStore.fetchRepoList(project, is_def)
 const fetchCommitList = (payload: {
   project?: number
   repo?: number
   issues?: number[]
   page?: number
   limit?: number
-}) => ghStore.fetchCommitList(payload)
+}) => gitStore.fetchCommitList(payload)
 
-const branches = computed<BranchInfo[]>(() => ghStore.branches)
-const tags = computed<BranchInfo[]>(() => ghStore.tags)
+const branches = computed<BranchInfo[]>(() => gitStore.branches)
+const tags = computed<BranchInfo[]>(() => gitStore.tags)
 
-const default_branch = computed(() => ghStore.default_branch)
-const master = computed(() => ghStore.master)
-const masterTree = computed<Tree[]>(() => ghStore.master_tree)
+const default_branch = computed(() => gitStore.default_branch)
+const master = computed(() => gitStore.master)
+const masterTree = computed<Tree[]>(() => gitStore.master_tree)
 
-const gitDiff = computed<any>(() => ghStore.gitDiff)
+const gitDiff = computed<any>(() => gitStore.gitDiff)
 
-const fetchRepoApi = (pk: number) => ghStore.fetchRepoApi(pk)
+const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
 const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
-  ghStore.fetchGitDiff(pk, diff_hash, full)
+  gitStore.fetchGitDiff(pk, diff_hash, full)
 
-const fetchBranches = (repoPk: number) => ghStore.fetchBranches(repoPk)
-const fetchTags = (repoPk: number) => ghStore.fetchTags(repoPk)
+const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
+const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchDefBranch = (repoPk: number, branch: string = '') =>
-  ghStore.fetchDefBranch(repoPk, branch)
+  gitStore.fetchDefBranch(repoPk, branch)
 
 // file view
 const fileView = ref(false)
@@ -110,7 +110,7 @@ const getDiff = (full = false) => {
 
 const getBack = () => {
   viewPageSort.value = 'revisions'
-  ghStore.removeGitDiff()
+  gitStore.removeGitDiff()
 }
 
 const pageSelect = (page: number) => {
@@ -140,9 +140,8 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <GitRepository
         v-if="!fileView"
-        :repo="repo as Repository"
         :branches="branches"
-        :tags="tags"
+        :repo="repo as Repository"
         :def-name="default_branch"
         :def-branch="master as BranchInfo"
         :def-tree="masterTree"

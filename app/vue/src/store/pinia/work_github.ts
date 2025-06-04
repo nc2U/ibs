@@ -96,12 +96,13 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response))
 
   // branches api
-  const branches = ref<BranchInfo[]>([])
+  const branchList = ref<BranchInfo[]>([])
+  const branches = computed(() => branchList.value.map(b => b.name))
 
   const fetchBranches = async (repoPk: number) =>
     await api
       .get(`/repo/${repoPk}/branches/`)
-      .then(res => (branches.value = res.data))
+      .then(res => (branchList.value = res.data))
       .catch(err => errorHandle(err.response))
 
   // tags api
