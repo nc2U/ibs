@@ -24,6 +24,7 @@ class Repository(models.Model):
 class Commit(models.Model):
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='commits')
     revision_id = models.PositiveIntegerField(null=True, blank=True)
+    parents = models.ManyToManyField('self', symmetrical=False, related_name='children', blank=True)
     commit_hash = models.CharField(max_length=40, unique=True)
     message = models.TextField(default='')
     author = models.CharField(max_length=100, default='Unknown')
