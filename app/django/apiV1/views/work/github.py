@@ -22,7 +22,7 @@ class RepositoryViewSet(viewsets.ModelViewSet):
 
 
 class CommitViewSet(viewsets.ModelViewSet):
-    queryset = Commit.objects.all()
+    queryset = Commit.objects.all().order_by('-date')
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
