@@ -146,6 +146,7 @@ class GitBranchTreeView(APIView):
     @staticmethod
     def get(request, pk, branch):
         repo_path = get_repo_path(pk)
+        is_tag = request.query_params.get("is_tag", None)
 
         if not os.path.exists(repo_path):
             return Response({"Error": "Local repository path not found"}, status=404)
@@ -155,8 +156,14 @@ class GitBranchTreeView(APIView):
             if branch not in repo.heads:
                 return Response({"Error": f"Branch '{branch}' not found"}, status=404)
             commit = repo.heads[branch].commit
+
+            if is_tag is not None:
+                if branch not in repo.tags:
+                    return Response({"Error": f"Tag '{branch}' not found"}, status=404)
+                commit = repo.tags[branch].commit
+
         except GitCommandError as e:
-            return Response({"Error": "Failed to access branch or commit", "details": str(e)}, status=500)
+            return Response({"Error": "Failed to access branch(tag) or commit", "details": str(e)}, status=500)
 
         # 브랜치 정보 구성
         branch_api = {
@@ -169,16 +176,12 @@ class GitBranchTreeView(APIView):
             }
         }
 
-        # 트리 정보 구성
-        tree = commit.tree
-        trees_result = []
-
-        for item in tree:
+        trees_result = []  # 트리 정보 구성
+        for item in commit.tree:
             item_path = item.path  # 상대 경로
 
-            # 최근 커밋 찾기
-            try:
-                latest_commit = next(repo.iter_commits(branch, paths=item_path, max_count=1))
+            try:  # 최근 커밋 찾기
+                latest_commit = next(repo.iter_commits(commit, paths=item_path, max_count=1))
                 latest_commit_data = {
                     "sha": latest_commit.hexsha,
                     "author": latest_commit.author.name,
@@ -226,8 +229,7 @@ class GitTagTreeView(APIView):
             if tag not in repo.tags:
                 return Response({"Error": f"Tag '{tag}' not found"}, status=404)
 
-            tag_ref = repo.tags[tag]
-            commit = tag_ref.commit
+            commit = repo.tags[tag].commit
         except (GitCommandError, BadName) as e:
             return Response({"Error": "Failed to access tag or commit", "details": str(e)}, status=500)
 
@@ -242,14 +244,11 @@ class GitTagTreeView(APIView):
             }
         }
 
-        # 트리 정보 구성
-        tree = commit.tree
-        trees_result = []
+        trees_result = []  # 트리 정보 구성
+        for item in commit.tree:
+            item_path = item.path  # 상대 경로
 
-        for item in tree:
-            item_path = item.path
-
-            try:
+            try:  # 최근 커밋 찾기
                 latest_commit = next(repo.iter_commits(commit, paths=item_path, max_count=1))
                 latest_commit_data = {
                     "sha": latest_commit.hexsha,
