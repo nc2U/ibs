@@ -107,11 +107,10 @@ onBeforeMount(() => {
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow v-for="(commit, i) in commits" :key="commit.pk">
+      <CTableRow v-for="(commit, i) in commits" :key="i">
         <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-center">
           <span class="mr-5">
-            <!--            <router-link to="">{{ commit.revision_id }}</router-link>-->
             <router-link to="">{{ commit.commit_hash.substring(0, 8) }}</router-link>
           </span>
         </CTableDataCell>
@@ -190,6 +189,7 @@ onBeforeMount(() => {
 
 <style lang="scss" scoped>
 svg {
-  border: 1px solid #ddd;
+  border: none;
+  overflow: visible !important;
 }
 </style>

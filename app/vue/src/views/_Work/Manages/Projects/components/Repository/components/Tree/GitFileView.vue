@@ -48,6 +48,7 @@ const language = computed(() => {
     json: 'json',
     yaml: 'yaml',
     yml: 'yaml',
+    sh: 'bash',
     md: 'markdown',
     sql: 'sql',
   }
