@@ -16,8 +16,8 @@ const emit = defineEmits(['file-view', 'change-branch', 'change-tag'])
 </script>
 
 <template>
-  <CRow class="py-2 mb-2">
-    <CCol col="6">
+  <CRow class="py-2 mb-2 flex-lg-row flex-column-reverse">
+    <CCol class="col-6">
       <h5>
         <router-link to="">{{ repo?.slug }}</router-link>
         @ {{ currBranch?.name }}
