@@ -90,15 +90,16 @@ onBeforeMount(() => {
   <CTable hover responsive striped small>
     <colgroup>
       <col style="width: 6%" />
+      <col style="width: 6%" />
       <col style="width: 2%" />
       <col style="width: 5%" />
       <col style="width: 15%" />
       <col style="width: 16%" />
-      <col style="width: 56%" />
+      <col style="width: 50%" />
     </colgroup>
     <CTableHead>
       <CTableRow class="text-center">
-        <CTableHeaderCell>#</CTableHeaderCell>
+        <CTableHeaderCell colspan="2">#</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell>일자</CTableHeaderCell>
@@ -108,6 +109,7 @@ onBeforeMount(() => {
     </CTableHead>
     <CTableBody>
       <CTableRow v-for="(commit, i) in commits" :key="commit.pk">
+        <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-center">
           <span class="mr-5">
             <!--            <router-link to="">{{ commit.revision_id }}</router-link>-->
