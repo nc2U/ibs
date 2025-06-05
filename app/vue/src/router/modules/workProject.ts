@@ -165,24 +165,22 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Repository/Index.vue'),
           children: [
             {
-              path: ':type', // type: 'branches', 'tags', 'trunk'
-              name: '(저장소) - 타입', // 브랜치 | 태그 목록
+              path: ':repo/revisions', // repo: repo.slug
+              name: '(저장소) - 리비전-모두', // 모든 리비전 목록 보기
               children: [
                 {
-                  path: ':id', // branchId, tagId, trunkId(main branch)
-                  name: '(저장소) - 타입-루트', // 각 타입의 root tree 보기
-                  children: [
-                    {
-                      path: ':path*',
-                      name: '(저장소) - 타입-트리', // 각 타입의 tree 내부 경로 보기
-                    },
-                  ],
+                  path: ':sha',
+                  name: '(저장소) - 리비전 보기', //
+                },
+                {
+                  path: ':branch/show/:path',
+                  name: '(저장소) - 트리 보기', // type이 'tree' or 'blob' 으로 트리 or 파일 보기 분기
                 },
               ],
             },
             {
-              path: 'revisions/:revId',
-              name: '(저장소) - 리비전',
+              path: ':repo/changes',
+              name: '(저장소) - 리비전-최근',
             },
           ],
         },

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
 import router from '@/router/index.js'
 import { useGithub } from '@/store/pinia/work_github.ts'
 
