@@ -85,6 +85,8 @@ class GitBranchesView(APIView):
 
             branches = []
             for head in repo.branches:
+                if head.name == "HEAD":
+                    continue
                 commit = head.commit
                 branches.append({
                     "name": head.name,
