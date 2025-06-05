@@ -99,6 +99,7 @@ class Command(BaseCommand):
             existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
             commits_to_create = []
             commit_hashes = []
+            commit_parent_map = {}  # <== 추가: 부모 해시를 저장할 딕셔너리
 
             for commit in reversed(list(commits_iter)):  # 오래된 순으로
                 if commit.hexsha in existing_hashes:
@@ -110,35 +111,55 @@ class Command(BaseCommand):
                 date = datetime.fromtimestamp(commit.committed_date, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
                 message = commit.message.strip()
 
-                commits_to_create.append(Commit(
+                # Commit 인스턴스를 준비
+                commit_instance = Commit(
                     repo=repo,
                     commit_hash=commit.hexsha,
                     author=author,
                     date=date,
                     message=message
-                ))
+                )
+                commits_to_create.append(commit_instance)
                 commit_hashes.append((commit.hexsha, message))
 
+                # 부모 해시를 저장해 둠 (추후 parents 연결용)
+                commit_parent_map[commit.hexsha] = [p.hexsha for p in commit.parents]
+
             if commits_to_create:
-                with transaction.atomic():
+                with (transaction.atomic()):
                     try:
+                        # 1차 저장
                         Commit.bulk_create_with_revision_ids(commits_to_create, ignore_conflicts=True)
                         self.stdout.write(self.style.SUCCESS(f"Created {len(commits_to_create)} commits"))
 
-                        saved_hashes = set(Commit.objects.filter(
+                        # 저장된 커밋들을 다시 조회하여 hash → 객체 매핑 생성
+                        saved_commits = Commit.objects.filter(
                             repo=repo,
-                            commit_hash__in=[c.commit_hash for c in commits_to_create]
-                        ).values_list('commit_hash', flat=True))
+                            commit_hash__in=[c.commit_hash for c in commits_to_create])
+                        commit_obj_map = {c.commit_hash: c for c in saved_commits}
 
+                        # 2차: parents 관계 연결
+                        for child_hash, parent_hashes in commit_parent_map.items():
+                            child = commit_obj_map.get(child_hash)
+                            if not child:
+                                continue
+                            parent_objs = [
+                                commit_obj_map.get(p_hash)
+                                for p_hash in parent_hashes if p_hash in commit_obj_map
+                            ]
+                            parent_objs = [p for p in parent_objs if p is not None]
+                            if parent_objs:
+                                child.parents.set(parent_objs)
+
+                        # 이슈 연결
                         for commit_hash, message in commit_hashes:
-                            if commit_hash not in saved_hashes:
+                            if commit_hash not in commit_obj_map:
                                 continue
                             issue_numbers = re.findall(r'#(\d+)', message)
                             if issue_numbers:
                                 valid_issues = Issue.objects.filter(project=repo.project, pk__in=issue_numbers)
                                 if valid_issues.exists():
-                                    commit_obj = Commit.objects.get(commit_hash=commit_hash)
-                                    commit_obj.issues.add(*valid_issues)
+                                    commit_obj_map[commit_hash].issues.add(*valid_issues)
                                     self.stdout.write(
                                         self.style.SUCCESS(
                                             f"Linked {len(valid_issues)} issues to commit {commit_hash}"
