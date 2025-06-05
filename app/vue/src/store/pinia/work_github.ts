@@ -119,23 +119,16 @@ export const useGithub = defineStore('github', () => {
   const curr_branch = ref<BranchInfo | null>(null)
   const branch_tree = ref<any[]>([])
 
-  const fetchBranchTree = async (repo: number, branch: string) =>
+  const fetchBranchTree = async (repo: number, branch: string, tag = '') => {
+    const is_tag = tag ? `?is_tag=${tag}` : ''
     await api
-      .get(`/repo/${repo}/branch/${branch}/`)
+      .get(`/repo/${repo}/branch/${branch}/${is_tag}`)
       .then(res => {
         curr_branch.value = res.data.branch
         branch_tree.value = res.data.trees
       })
       .catch(err => errorHandle(err.response))
-
-  const fetchTagTree = async (repo: number, tag: string) =>
-    api
-      .get(`/repo/${repo}/tag/${tag}/`)
-      .then(res => {
-        curr_branch.value = res.data.branch
-        branch_tree.value = res.data.trees
-      })
-      .catch(err => errorHandle(err.response))
+  }
 
   const fetchSubTree = async (repo: number, sha: string, path: string | null = null) => {
     const encodedPath = path ? encodeURIComponent(path) : ''
@@ -202,7 +195,6 @@ export const useGithub = defineStore('github', () => {
     curr_branch,
     branch_tree,
     fetchBranchTree,
-    fetchTagTree,
     fetchSubTree,
     fetchFileView,
 

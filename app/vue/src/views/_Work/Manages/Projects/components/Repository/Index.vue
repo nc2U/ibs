@@ -68,8 +68,8 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
 
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
-const fetchBranchTree = (repoPk: number, branch: string = '') =>
-  gitStore.fetchBranchTree(repoPk, branch)
+const fetchBranchTree = (repoPk: number, branch: string, tag = '') =>
+  gitStore.fetchBranchTree(repoPk, branch, tag)
 const fetchTagTree = (repoPk: number, tag: string = '') => gitStore.fetchTagTree(repoPk, tag)
 
 // file view
@@ -80,8 +80,9 @@ const toggleFileView = (payload: any) => {
   fileView.value = true
 }
 
-const changeBranch = (branch: string) => fetchBranchTree(repo.value?.pk as number, branch)
-const changeTag = (tag: string) => fetchTagTree(repo.value?.pk as number, tag)
+const changeBranch = (branch: string, tag = '') =>
+  fetchBranchTree(repo.value?.pk as number, branch, tag)
+const changeTag = (tag: string) => fetchBranchTree(repo.value?.pk as number, tag, true)
 
 // revisons & diff view
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
