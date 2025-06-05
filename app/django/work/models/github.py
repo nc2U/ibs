@@ -21,14 +21,27 @@ class Repository(models.Model):
         verbose_name_plural = '15. 저장소'
 
 
+class Branch(models.Model):
+    repo = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='branches')
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f'{self.repo}-{self.name}'
+
+    class Meta:
+        ordering = ('-repo', 'name')
+        constraints = [models.UniqueConstraint(fields=['repo', 'name'], name='unique_branch_per_repo')]
+
+
 class Commit(models.Model):
     revision_id = models.PositiveIntegerField(null=True, blank=True)
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='commits')
-    parents = models.ManyToManyField('self', symmetrical=False, related_name='children', blank=True)
     commit_hash = models.CharField(max_length=40, unique=True)
-    message = models.TextField(default='')
     author = models.CharField(max_length=100, default='Unknown')
     date = models.DateTimeField(db_index=True)
+    message = models.TextField(default='')
+    parents = models.ManyToManyField('self', symmetrical=False, related_name='children', blank=True)
+    branches = models.ManyToManyField(Branch, blank=True, related_name='commits')
     issues = models.ManyToManyField('Issue', blank=True)
 
     def __str__(self):
