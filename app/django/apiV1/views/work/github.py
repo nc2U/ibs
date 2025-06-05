@@ -153,11 +153,12 @@ class GitBranchTreeView(APIView):
 
         try:
             repo = Repo(repo_path)
-            if branch not in repo.heads:
-                return Response({"Error": f"Branch '{branch}' not found"}, status=404)
-            commit = repo.heads[branch].commit
 
-            if is_tag is not None:
+            if is_tag is None:
+                if branch not in repo.heads:
+                    return Response({"Error": f"Branch '{branch}' not found"}, status=404)
+                commit = repo.heads[branch].commit
+            else:
                 if branch not in repo.tags:
                     return Response({"Error": f"Tag '{branch}' not found"}, status=404)
                 commit = repo.tags[branch].commit
@@ -209,73 +210,6 @@ class GitBranchTreeView(APIView):
         # 트리 정렬: 디렉터리 → 파일, 이름순
         trees_result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
         serializer = GitBranchAndTreeSerializer({"branch": branch_api, "trees": trees_result})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class GitTagTreeView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
-
-    @staticmethod
-    def get(request, pk, tag):
-        repo_path = get_repo_path(pk)
-
-        if not os.path.exists(repo_path):
-            return Response({"Error": "Local repository path not found"}, status=404)
-
-        try:
-            repo = Repo(repo_path)
-
-            # 태그 찾기
-            if tag not in repo.tags:
-                return Response({"Error": f"Tag '{tag}' not found"}, status=404)
-
-            commit = repo.tags[tag].commit
-        except (GitCommandError, BadName) as e:
-            return Response({"Error": "Failed to access tag or commit", "details": str(e)}, status=500)
-
-        # 태그 정보 구성
-        tag_api = {
-            "name": tag,
-            "commit": {
-                "sha": commit.hexsha,
-                "author": commit.author.name,
-                "date": commit.authored_datetime.isoformat(),
-                "message": commit.message.strip()
-            }
-        }
-
-        trees_result = []  # 트리 정보 구성
-        for item in commit.tree:
-            item_path = item.path  # 상대 경로
-
-            try:  # 최근 커밋 찾기
-                latest_commit = next(repo.iter_commits(commit, paths=item_path, max_count=1))
-                latest_commit_data = {
-                    "sha": latest_commit.hexsha,
-                    "author": latest_commit.author.name,
-                    "date": latest_commit.authored_datetime.isoformat(),
-                    "message": latest_commit.message.strip()
-                }
-            except StopIteration:
-                latest_commit_data = {
-                    "sha": "",
-                    "author": "Unknown",
-                    "date": "",
-                    "message": ""
-                }
-
-            trees_result.append({
-                "path": item.path,
-                "name": item.name,
-                "mode": item.mode,
-                "type": "tree" if item.type == "tree" else "blob",
-                "sha": item.hexsha,
-                "size": item.size if item.type == "blob" else None,
-                "commit": latest_commit_data
-            })
-
-        trees_result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
-        serializer = GitBranchAndTreeSerializer({"branch": tag_api, "trees": trees_result})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
