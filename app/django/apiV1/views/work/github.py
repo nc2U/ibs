@@ -232,8 +232,7 @@ class GitSubTreeView(APIView):
         except (BadName, KeyError) as e:
             return Response({"error": "Invalid SHA or path", "details": str(e)}, status=400)
 
-        # 커밋 가져 오기
-        try:
+        try:  # 커밋 가져 오기
             commit = repo.commit(sha)  # repo.head.commit
         except ValueError:
             return Response({"error": "Repository HEAD is not set"}, status=400)
@@ -246,13 +245,10 @@ class GitSubTreeView(APIView):
             except KeyError:
                 raise NotFound(f"Path {path} not found")
         else:
-            # 루트 트리
-            tree = commit.tree
+            tree = commit.tree  # 루트 트리
 
-        # 트리 항목 처리
-        items = []
-        # 하위 트리와 블롭 나열
-        for item in tree.trees + tree.blobs:
+        items = []  # 트리 항목 처리
+        for item in tree.trees + tree.blobs:  # 하위 트리와 블롭 나열
             item_path = item.path
             # 최신 커밋 가져오기
             latest_commit = next(repo.iter_commits(paths=item_path, max_count=1), commit)

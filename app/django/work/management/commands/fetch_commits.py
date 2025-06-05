@@ -42,10 +42,9 @@ class Command(BaseCommand):
                     )
                     self.stdout.write(self.style.SUCCESS("Safe directory 설정 완료!!!"))
                 except subprocess.CalledProcessError as e:
-                    self.stdout.write(self.style.ERROR(f"명령 실행 실패: {e}"))
+                    self.stdout.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
 
-                # ensure fetch refspec exists
-                try:
+                try:  # ensure fetch ref spec exists
                     fetch_specs = git_repo.remote('origin').config_reader.get_value("fetch", None)
                 except Exception:
                     fetch_specs = None
@@ -58,6 +57,18 @@ class Command(BaseCommand):
             except GitCommandError as e:
                 self.stderr.write(self.style.ERROR(f"Git fetch failed: {e}"))
                 continue
+
+            for ref in git_repo.references:  # 로컬 브랜치(refs/heads/*)를 원격 브랜치(refs/remotes/origin/*)로 업데이트
+                if ref.name.startswith('origin/'):
+                    remote_branch = ref.name  # 예: origin/master
+                    branch_name = remote_branch.replace('origin/', '')  # 예: master
+                    local_ref = f"refs/heads/{branch_name}"
+                    remote_ref = f"refs/remotes/{remote_branch}"
+                    try:
+                        git_repo.git.update_ref(local_ref, remote_ref)
+                        self.stdout.write(self.style.SUCCESS(f"Updated local ref {local_ref} -> {remote_ref}"))
+                    except GitCommandError as e:
+                        self.stderr.write(self.style.ERROR(f"Failed to update {local_ref}: {e}"))
 
             try:
                 remote_refs = git_repo.remotes.origin.refs
@@ -73,8 +84,12 @@ class Command(BaseCommand):
                         break
 
                 if not default_branch:
-                    self.stderr.write(self.style.ERROR(f"No default branch found in {repo.slug}"))
-                    continue
+                    heads = git_repo.heads
+                    if heads:
+                        default_branch = heads[0].name
+                    else:
+                        self.stderr.write(self.style.ERROR(f"No default branch found in {repo.slug}"))
+                        continue
 
                 commits_iter = git_repo.iter_commits(default_branch, max_count=limit)
             except GitCommandError as e:
