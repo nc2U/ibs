@@ -6,7 +6,7 @@ import TreeNode from './Tree/TreeNode.vue'
 
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, required: true },
-  currPath: { type: String, default: null },
+  currPath: { type: String, default: '' },
   branches: { type: Array as PropType<string[]>, default: () => [] },
   tags: { type: Array as PropType<string[]>, default: () => [] },
   currBranch: { type: String, required: true },
@@ -14,6 +14,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['into-root', 'into-path', 'file-view', 'change-branch', 'change-tag'])
+
+const intoPath = (path: string) => {
+  const index = currentPath.value.indexOf(path)
+  const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
+  emit('into-path', { sha: '', path: nowPath })
+}
 
 const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.split('/') : []))
 </script>
@@ -24,7 +30,10 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
       <h5>
         <router-link to="" @click="emit('into-root')">{{ repo?.slug }}</router-link>
         <template v-if="currentPath.length">
-          <span v-for="path in currentPath" :key="path"> / {{ path }}</span>
+          <span v-for="path in currentPath" :key="path">
+            /
+            <router-link to="" @click="intoPath(path)">{{ path }}</router-link>
+          </span>
         </template>
         @ {{ currBranch }}
       </h5>

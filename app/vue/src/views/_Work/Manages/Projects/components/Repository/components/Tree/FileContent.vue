@@ -15,18 +15,29 @@ import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import hljs from 'highlight.js'
 
 const props = defineProps({
+  repoName: { type: String, required: true },
+  currPath: { type: String, default: '' },
+  currBranch: { type: String, required: true },
   fileData: {
     type: Object as PropType<FileInfo>,
     required: true,
   },
 })
 
-const emit = defineEmits(['file-view-close'])
+const emit = defineEmits(['into-root', 'into-path', 'file-view-close'])
 
 const isDark = inject<ComputedRef<Boolean>>(
   'isDark',
   computed(() => false),
 )
+
+const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.split('/') : []))
+
+const intoPath = (path: string) => {
+  const index = currentPath.value.indexOf(path)
+  const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
+  emit('into-path', { sha: '', path: nowPath })
+}
 
 const codeBlock = ref<HTMLElement | null>(null)
 
@@ -72,8 +83,14 @@ watch(isDark, highlightCode)
   <CRow class="py-2">
     <CCol>
       <h5>
-        <router-link to="" @click="emit('file-view-close')">Git 저장소</router-link>
-        / {{ fileData?.name }}
+        <router-link to="" @click="emit('into-root')">{{ repoName }}</router-link>
+        <span v-for="path in currentPath" :key="path">
+          /
+          <router-link to="" @click="intoPath(path)">{{ path }}</router-link>
+        </span>
+        /
+        {{ fileData.name }}
+        @ {{ currBranch }}
       </h5>
     </CCol>
   </CRow>

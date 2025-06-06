@@ -75,14 +75,20 @@ const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
   gitStore.fetchSubTree(repo, sha, path)
 
 // into path
+const shaMap = ref<{ sha: string; path: string }[]>([])
 const currPath = ref('')
 const subTree = ref(null)
 
 const intoRoot = () => {
+  fileView.value = false
   currPath.value = ''
   subTree.value = null
 }
 const intoPath = async (payload: any) => {
+  fileView.value = false
+  const isExists = shaMap.value.some(item => item.sha === payload.sha)
+  if (!isExists) shaMap.value.push(payload)
+  if (payload.sha === '') payload.sha = shaMap.value.find(item => item.path === payload.path)?.sha
   const { sha, path } = payload
   currPath.value = path
   subTree.value = await fetchSubTree(repo.value?.pk as number, sha, path)
@@ -173,7 +179,16 @@ onBeforeMount(async () => {
         @change-tag="changeTag"
       />
 
-      <FileContent v-else :file-data="fileData" @file-view-close="fileView = false" />
+      <FileContent
+        v-else
+        :repo-name="repo?.slug as string"
+        :curr-path="currPath"
+        :curr-branch="curr_branch"
+        :file-data="fileData"
+        @into-root="intoRoot"
+        @into-path="intoPath"
+        @file-view-close="fileView = false"
+      />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"
