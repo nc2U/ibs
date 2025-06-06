@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import type { Tree } from '@/store/types/work_github.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { cutString, elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
@@ -15,10 +15,10 @@ const props = defineProps({
 const emit = defineEmits(['file-view'])
 
 const nodeFold = ref(false)
-
 const subTrees = ref([])
-
 const gitStore = useGithub()
+
+const rfi = computed(() => (props.level === 0 ? 18 : 3))
 
 const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
   gitStore.fetchSubTree(repo, sha, path)
@@ -49,21 +49,21 @@ const viewFile = async () => {
 <template>
   <CTableRow>
     <CTableDataCell>
-      <span
-        v-if="node.type === 'tree'"
-        @click="toggleFold"
-        :style="`padding-left: ${level * 15}px`"
-      >
+      <span v-if="node.type === 'tree'" :style="`padding-left: ${level * 15}px`">
         <v-icon
           :icon="`mdi-chevron-${nodeFold ? 'down' : 'right'}`"
+          @click="toggleFold"
           size="16"
           class="pointer mr-1"
         />
-        <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
-        <router-link to="">{{ node.name }}</router-link>
+        <span>
+          <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
+          <router-link to="">{{ node.name }}</router-link>
+        </span>
       </span>
-      <span class="pl-1" @click="viewFile">
-        <span v-if="node.type === 'blob'" :style="`padding-left: ${level * 15}px`">
+
+      <span @click="viewFile">
+        <span v-if="node.type === 'blob'" :style="`padding-left: ${level * 15 + rfi}px`">
           <v-icon
             :icon="`mdi-file-${node.path.endsWith('.txt') ? 'document-' : ''}outline`"
             color="secondary"
