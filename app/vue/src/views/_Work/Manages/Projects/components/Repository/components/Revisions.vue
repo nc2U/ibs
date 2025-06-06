@@ -57,12 +57,10 @@ const commitPages = (page: number) => ghStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 
 onBeforeMount(() => {
-  headId.value = props.setHeadId
-    ? props.setHeadId
-    : String(props.commitList.map(c => c.revision_id)[0])
-  baseId.value = props.setBaseId
-    ? props.setBaseId
-    : String(props.commitList.map(c => c.revision_id)[1])
+  if (props.commitList.length > 1) {
+    headId.value = props.setHeadId || String(props.commitList.map(c => c.revision_id)[0])
+    baseId.value = props.setBaseId || String(props.commitList.map(c => c.revision_id)[1])
+  }
 })
 </script>
 
