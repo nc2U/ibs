@@ -47,6 +47,9 @@ importers:
       '@fullcalendar/vue3':
         specifier: ^6.1.17
         version: 6.1.17(@fullcalendar/core@6.1.17)(vue@3.5.16(typescript@5.8.3))
+      '@gitgraph/js':
+        specifier: ^1.4.0
+        version: 1.4.0
       '@infectoone/vue-ganttastic':
         specifier: ^2.3.2
         version: 2.3.2(dayjs@1.11.13)(vue@3.5.16(typescript@5.8.3))
@@ -859,6 +862,12 @@ packages:
     peerDependencies:
       '@fullcalendar/core': ~6.1.17
       vue: ^3.0.11
+
+  '@gitgraph/core@1.5.0':
+    resolution: {integrity: sha512-8CeeHbkKoFHM1y9vfjYiHyEpzl1mEhVrg5c/eFgDBsntOYswoDKU2yOf6DjtVINcE60wmcuynBSJqjMkQo07Ww==}
+
+  '@gitgraph/js@1.4.0':
+    resolution: {integrity: sha512-7wxTTCFnRVjsqj+Zt09+3F79WhH4MK46ZS20AwbcB/MJFshSMeMH4nYmNDPa9McVsiL+cFsvW1pmZoquAOoHMw==}
 
   '@hapi/hoek@9.3.0':
     resolution: {integrity: sha512-/c6rf4UJlmHlC9b5BaNvzAcFv7HZ2QHaV0D4/HNlBdvFnvQq8RI4kYdhyPCl7Xj+oWvTWQ8ujhqS53LIgAe6KQ==}
@@ -5044,6 +5053,12 @@ snapshots:
     dependencies:
       '@fullcalendar/core': 6.1.17
       vue: 3.5.16(typescript@5.8.3)
+
+  '@gitgraph/core@1.5.0': {}
+
+  '@gitgraph/js@1.4.0':
+    dependencies:
+      '@gitgraph/core': 1.5.0
 
   '@hapi/hoek@9.3.0': {}
 

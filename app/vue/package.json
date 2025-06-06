@@ -32,6 +32,7 @@
     "@fullcalendar/interaction": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.17",
     "@fullcalendar/vue3": "^6.1.17",
+    "@gitgraph/js": "^1.4.0",
     "@infectoone/vue-ganttastic": "^2.3.2",
     "@mdi/font": "^7.4.47",
     "@vueform/multiselect": "^2.6.11",
