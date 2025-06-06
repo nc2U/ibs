@@ -4,6 +4,7 @@ import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { Company } from '@/store/types/settings'
+import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
@@ -24,10 +25,15 @@ const getGantts = computed(() => workStore.getGantts)
 
 const sideNavCAll = () => cBody.value.toggle()
 
-onBeforeMount(() => workStore.fetchGanttIssues())
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
+  await workStore.fetchGanttIssues()
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">

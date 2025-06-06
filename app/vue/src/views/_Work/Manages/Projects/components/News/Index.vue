@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useBoard } from '@/store/pinia/board'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import NoData from '@/views/_Work/components/NoData.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -42,10 +43,15 @@ watch(
 
 onBeforeUpdate(() => dataSetup())
 
-onBeforeMount(() => dataSetup())
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
+  await dataSetup()
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <CRow class="py-2">

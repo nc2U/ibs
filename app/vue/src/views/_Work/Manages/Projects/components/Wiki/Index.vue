@@ -2,6 +2,7 @@
 import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
 import { btnLight } from '@/utils/cssMixins.ts'
+import Loading from '@/components/Loading/Index.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
@@ -23,10 +24,15 @@ const wikiTitle = computed(() =>
   route.params.title ? capitalize(route.params.title as string) : 'Wiki',
 )
 
-onBeforeMount(() => (form.value.wiki = `# ${wikiTitle.value}`))
+const loading = ref(true)
+onBeforeMount(async () => {
+  form.value.wiki = `# ${wikiTitle.value}`
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <CRow class="py-2">

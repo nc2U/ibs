@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import OverViewHeader from './components/OverViewHeader.vue'
 import TimeSummary from './components/TimeSummary.vue'
 import IssueTracker from './components/IssueTracker.vue'
@@ -72,14 +73,15 @@ const deleteProject = (slug: string) => {
   alert(`delete-project :: ${slug}`)
 }
 
-onBeforeMount(() => {
-  if (iProject.value) {
-    workStore.fetchTrackerSummary(iProject.value?.pk)
-  }
+const loading = ref(true)
+onBeforeMount(async () => {
+  if (iProject.value) await workStore.fetchTrackerSummary(iProject.value?.pk)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <OverViewHeader

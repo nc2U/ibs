@@ -5,6 +5,7 @@ import { type IssueCategory as ICategory, type IssueProject } from '@/store/type
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+import Loading from '@/components/Loading/Index.vue'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
 import Member from '@/views/_Work/Manages/Projects/components/Settings/components/Member.vue'
 import IssueTracking from '@/views/_Work/Manages/Projects/components/Settings/components/IssueTracking.vue'
@@ -116,6 +117,7 @@ onBeforeRouteUpdate(async to => {
   }
 })
 
+const loading = ref(true)
 onBeforeMount(async () => {
   if (route.query.menu) menu.value = route.query.menu as string
   else menu.value = Cookies.get('workSettingMenu') ?? initMenu.value
@@ -131,10 +133,12 @@ onBeforeMount(async () => {
     await workStore.fetchIssueProject(projId)
     await workStore.fetchVersionList({ project: projId, status: '1' })
   }
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(설정)'">

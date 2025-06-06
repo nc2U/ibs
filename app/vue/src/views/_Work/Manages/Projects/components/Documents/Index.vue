@@ -5,6 +5,7 @@ import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { Docs, PatchDocs } from '@/store/types/docs'
+import Loading from '@/components/Loading/Index.vue'
 import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
 import DocsView from './components/DocsView.vue'
@@ -55,7 +56,7 @@ const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitC
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
 
 const categories = computed(() =>
-  issueProject.value?.sort !== '3' ? getCategories.value : codeCategoryList.value,
+  (issueProject.value as IssueProject)?.sort !== '3' ? getCategories.value : codeCategoryList.value,
 )
 
 const getDocsList = (target: unknown) => {
@@ -85,7 +86,7 @@ const docsHit = async (pk: number) => {
   if (!heatedPage.value.includes(pk)) {
     heatedPage.value.push(pk)
     await fetchDocs(pk)
-    const hit = (docs.value?.hit ?? 0) + 1
+    const hit = ((docs.value as Docs)?.hit ?? 0) + 1
     await patchDocs({ pk, hit, filter: docsFilter.value })
   }
 }
@@ -96,7 +97,7 @@ const dataSetup = async (docId?: string | string[]) => {
     await workStore.fetchIssueProject(projId)
   }
 
-  docsFilter.value.issue_project = issueProject.value?.pk
+  docsFilter.value.issue_project = (issueProject.value as IssueProject)?.pk
   await fetchDocTypeList()
   await fetchCodeCategoryList()
   await fetchCategoryList(typeNumber.value)
@@ -107,10 +108,15 @@ const dataSetup = async (docId?: string | string[]) => {
 
 onBeforeRouteUpdate(to => dataSetup(to.params?.docId))
 
-onBeforeMount(async () => await dataSetup(route.params?.docId))
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
+  await dataSetup(route.params?.docId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
       <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />

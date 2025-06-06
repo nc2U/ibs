@@ -8,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { IssueFilter } from '@/store/types/work_project.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import Loading from '@/components/Loading/Index.vue'
 import IssueList from './components/IssueList.vue'
 import IssueForm from './components/IssueForm.vue'
 
@@ -74,6 +75,7 @@ const pageSelect = (page: number) => {
   workStore.fetchIssueList(listFilter.value)
 }
 
+const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await workStore.fetchAllIssueList()
   if (!route.query) await workStore.fetchIssueList({ status__closed: '0' })
@@ -86,10 +88,12 @@ onBeforeMount(async () => {
     await workStore.fetchVersionList({ project: route.params.projId as string })
 
   await accStore.fetchUsersList()
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">

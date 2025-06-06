@@ -6,6 +6,7 @@ import { useInform } from '@/store/pinia/work_inform.ts'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import type { IssueProject } from '@/store/types/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 
 const cBody = ref()
@@ -71,13 +72,16 @@ onBeforeRouteUpdate(async to => {
   }
 })
 
+const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({ status: '1' })
   if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <Header
     :page-title="headerTitle"
     :nav-menu="navMenu"

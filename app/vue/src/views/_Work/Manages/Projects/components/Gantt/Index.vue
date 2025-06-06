@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import GanttChart from '@/views/_Work/Manages/Gantt/components/GanttChart.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -22,12 +23,15 @@ watch(
   },
 )
 
-onBeforeMount(() => {
-  if (route.params.projId) workStore.fetchGanttIssues(route.params.projId as string)
+const loading = ref(true)
+onBeforeMount(async () => {
+  if (route.params.projId) await workStore.fetchGanttIssues(route.params.projId as string)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
       <CRow class="py-2">

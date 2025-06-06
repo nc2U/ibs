@@ -4,6 +4,7 @@ import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useBoard } from '@/store/pinia/board'
 import { useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
+import Loading from '@/components/Loading/Index.vue'
 import NoData from '@/views/_Work/components/NoData.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -23,10 +24,15 @@ const sideNavCAll = () => cBody.value.toggle()
 const boardStore = useBoard()
 const postList = computed(() => boardStore.postList)
 
-onBeforeMount(() => boardStore.fetchPostList({ board: 1 }))
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
+  await boardStore.fetchPostList({ board: 1 })
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">

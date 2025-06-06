@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const cBody = ref()
@@ -9,9 +10,15 @@ defineExpose({ toggle })
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
+
+const loading = ref(true)
+onBeforeMount(() => {
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <CRow class="py-2">

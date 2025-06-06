@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, provide } from 'vue'
 import { pageTitle, navMenu } from '@/views/contracts/_menu/headermixin'
+import type { Project } from '@/store/types/project.ts'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
@@ -12,7 +13,7 @@ import TableTitleRow from '@/components/TableTitleRow.vue'
 import ContractBoard from '@/views/contracts/Status/components/ContractBoard.vue'
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const pDataStore = useProjectData()
 const isLoading = computed(() => pDataStore.isLoading)

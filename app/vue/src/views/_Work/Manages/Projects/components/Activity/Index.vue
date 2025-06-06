@@ -6,6 +6,7 @@ import { dateFormat } from '@/utils/baseMixins.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogsComponent.vue'
 import AsideActivity from '@/views/_Work/Manages/Activity/components/aside/AsideActivity.vue'
@@ -67,14 +68,17 @@ const filterActivity = (payload: ActLogEntryFilter) => {
   logStore.fetchActivityLogList(payload)
 }
 
-onBeforeMount(() => {
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
   if (route.params.projId) {
     activityFilter.value.project = route.params.projId as string
   }
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
       <ActivityLogList

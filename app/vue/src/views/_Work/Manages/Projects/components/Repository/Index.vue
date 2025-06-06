@@ -5,6 +5,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_github.ts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import BranchTree from './components/BranchTree.vue'
 import FileContent from './components/Tree/FileContent.vue'
@@ -156,12 +157,15 @@ const dataSetup = async (proj: number) => {
   await fetchBranchTree(cFilter.value.repo, default_branch.value)
 }
 
+const loading = ref(true)
 onBeforeMount(async () => {
   if (project.value) await dataSetup((project.value as IssueProject).pk as number)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <BranchTree

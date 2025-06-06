@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { onBeforeMount, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const cBody = ref()
@@ -8,9 +9,15 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const route = useRoute()
+
+const loading = ref(true)
+onBeforeMount(() => {
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
       <CRow class="py-2">

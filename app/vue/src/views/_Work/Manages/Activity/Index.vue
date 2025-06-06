@@ -7,6 +7,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { Company } from '@/store/types/settings'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
+import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogsComponent.vue'
@@ -59,13 +60,16 @@ const filterActivity = (payload: ActLogEntryFilter) => {
   logStore.fetchActivityLogList(payload)
 }
 
-onBeforeMount(() => {
-  workStore.fetchIssueProjectList({})
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
+  await workStore.fetchIssueProjectList({})
   if (route.query.user) activityFilter.value.user = route.query.user as string
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">

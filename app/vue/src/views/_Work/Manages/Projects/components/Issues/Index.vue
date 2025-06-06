@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { Issue, IssueFilter, IssueProject } from '@/store/types/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
 import IssueView from '@/views/_Work/Manages/Issues/components/IssueView.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
@@ -95,6 +96,7 @@ watch(
   { deep: true },
 )
 
+const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await workStore.fetchIssueProject(projId.value)
   await workStore.fetchAllIssueList(projId.value)
@@ -111,12 +113,14 @@ onBeforeMount(async () => {
   await workStore.fetchStatusList()
   await workStore.fetchPriorityList()
   await workStore.fetchVersionList({ project: projId.value })
+  loading.value = false
 })
 </script>
 
 <template>
   <ContentBody ref="cBody">
     <template v-slot:default>
+      <Loading v-model:active="loading" />
       <IssueList
         v-if="route.name === '(업무)'"
         :proj-status="issueProject?.status"

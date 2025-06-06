@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject, TimeEntryFilter } from '@/store/types/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryList.vue'
 import TimeEntryForm from '@/views/_Work/Manages/SpentTime/components/TimeEntryForm.vue'
@@ -60,14 +61,17 @@ watch(route, async nVal => {
     await workStore.fetchTimeEntryList({ project: project.value, issue: Number(issue.value) })
 })
 
-onBeforeMount(() => {
-  workStore.fetchAllIssueList(project.value)
-  workStore.fetchTimeEntryList({ ...listFilter.value })
-  workStore.fetchVersionList({ project: project.value })
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
+  await workStore.fetchAllIssueList(project.value)
+  await workStore.fetchTimeEntryList({ ...listFilter.value })
+  await workStore.fetchVersionList({ project: project.value })
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
       <TimeEntryList

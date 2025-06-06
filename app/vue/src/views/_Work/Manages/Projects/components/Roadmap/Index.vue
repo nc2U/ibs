@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute, useRouter } from 'vue-router'
 import type { Version } from '@/store/types/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import RoadmapList from './components/RoadmapList.vue'
 import VersionView from './components/VersionView.vue'
@@ -29,12 +30,15 @@ const onSubmit = (payload: any, back = false) => {
   if (back) router.replace({ name: '(설정)', query: { menu: '버전' } })
 }
 
-onBeforeMount(() =>
-  workStore.fetchVersionList({ project: route.params.projId as string, exclude: '3' }),
-)
+const loading = ref(true)
+onBeforeMount(async () => {
+  await workStore.fetchVersionList({ project: route.params.projId as string, exclude: '3' })
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="aside">
     <template v-slot:default>
       <RoadmapList v-if="route.name === '(로드맵)'" :version-list="versionList" />

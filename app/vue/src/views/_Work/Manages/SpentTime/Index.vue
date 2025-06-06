@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import type { Company } from '@/store/types/settings'
 import type { TimeEntryFilter } from '@/store/types/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryList.vue'
@@ -55,15 +56,18 @@ const pageSelect = (page: number) => {
 const delSubmit = (pk: number) => alert(pk)
 
 const accStore = useAccount()
+const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await workStore.fetchTimeEntryList({})
   await workStore.fetchAllIssueList()
   await workStore.fetchVersionList({ project: '' })
   await accStore.fetchUsersList()
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
