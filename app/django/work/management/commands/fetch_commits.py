@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
 from git import Repo, GitCommandError, InvalidGitRepositoryError
 
-from work.models import Repository, Commit, Issue
+from work.models import Repository, Commit, Issue, Branch
 
 
 class Command(BaseCommand):
@@ -57,6 +57,20 @@ class Command(BaseCommand):
             except GitCommandError as e:
                 self.stderr.write(self.style.ERROR(f"Git fetch failed: {e}"))
                 continue
+
+            # Branch 등록
+            local_branches = [head.name for head in git_repo.heads if head.name != 'HEAD']
+            # DB에 이미 등록된 브랜치 이름 목록
+            existing_branches = set(repo.branches.values_list('name', flat=True))
+            # 등록되지 않은 브랜치 필터링
+            new_branch_names = [b for b in local_branches if b not in existing_branches]
+
+            # 새 브랜치들 저장
+            if new_branch_names:
+                Branch.objects.bulk_create([
+                    Branch(repo=repo, name=branch_name) for branch_name in new_branch_names
+                ])
+                print(f"✅ [{repo.slug}] 새 브랜치 {len(new_branch_names)}개 추가됨: {new_branch_names}")
 
             for ref in git_repo.references:  # 로컬 브랜치(refs/heads/*)를 원격 브랜치(refs/remotes/origin/*)로 업데이트
                 if ref.name.startswith('origin/'):
@@ -117,7 +131,7 @@ class Command(BaseCommand):
                     commit_hash=commit.hexsha,
                     author=author,
                     date=date,
-                    message=message
+                    message=message,
                 )
                 commits_to_create.append(commit_instance)
                 commit_hashes.append((commit.hexsha, message))
