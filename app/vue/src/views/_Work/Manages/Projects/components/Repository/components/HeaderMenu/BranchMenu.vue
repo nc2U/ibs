@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import router from '@/router/index.js'
 
@@ -26,6 +26,13 @@ const changeTag = (e: Event) => {
   branch.value = ''
   emit('change-tag', (e.target as any).value)
 }
+
+watch(
+  () => props.currBranch,
+  newVal => {
+    if (newVal) branch.value = newVal
+  },
+)
 
 onBeforeMount(() => {
   if (props.currBranch) branch.value = props.currBranch

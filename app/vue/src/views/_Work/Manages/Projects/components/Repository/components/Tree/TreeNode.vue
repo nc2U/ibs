@@ -18,8 +18,6 @@ const nodeFold = ref(false)
 const subTrees = ref([])
 const gitStore = useGithub()
 
-const rfi = computed(() => (props.level === 0 ? 18 : 3))
-
 const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
   gitStore.fetchSubTree(repo, sha, path)
 
@@ -69,7 +67,7 @@ const viewFile = async () => {
       </span>
 
       <span @click="viewFile">
-        <span v-if="node.type === 'blob'" :style="`padding-left: ${level * 15 + rfi}px`">
+        <span v-if="node.type === 'blob'" :style="`padding-left: ${level * 15 + 18}px`">
           <v-icon
             :icon="`mdi-file-${node.path.endsWith('.txt') ? 'document-' : ''}outline`"
             color="secondary"

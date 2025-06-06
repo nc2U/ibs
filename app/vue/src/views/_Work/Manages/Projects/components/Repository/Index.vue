@@ -87,7 +87,7 @@ const intoRoot = () => {
 }
 const intoPath = async (payload: any) => {
   fileView.value = false
-  const isExists = shaMap.value.some(item => item.sha === payload.sha)
+  const isExists = shaMap.value.some(item => item.sha === payload.sha && item.path === payload.path)
   if (!isExists) shaMap.value.push(payload)
   if (payload.sha === '') payload.sha = shaMap.value.find(item => item.path === payload.path)?.sha
   const { sha, path } = payload
