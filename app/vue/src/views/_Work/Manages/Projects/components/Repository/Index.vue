@@ -107,7 +107,10 @@ const changeBranch = (branch: string, tag = '') => {
   fetchBranchTree(repo.value?.pk as number, branch, tag)
 }
 
-const changeTag = (tag: string) => fetchBranchTree(repo.value?.pk as number, tag, '1')
+const changeTag = (tag: string) => {
+  subTree.value = null
+  fetchBranchTree(repo.value?.pk as number, tag, '1')
+}
 
 // revisons & diff view
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
