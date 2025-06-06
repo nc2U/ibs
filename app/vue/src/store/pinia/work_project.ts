@@ -22,7 +22,6 @@ import type {
   Tracker,
   Version,
 } from '@/store/types/work_project.ts'
-import type { News } from '@/store/types/work_inform.ts'
 
 const logStore = useLogging()
 

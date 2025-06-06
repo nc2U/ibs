@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAccount } from '@/store/pinia/account.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { Issue, IssueFilter, IssueProject } from '@/store/types/work_project.ts'
@@ -18,6 +19,9 @@ defineExpose({ toggle })
 
 const aside = ref(true)
 const [route, router] = [useRoute(), useRouter()]
+
+const accStore = useAccount()
+const getUsers = computed(() => accStore.getUsers)
 
 const workStore = useWork()
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
@@ -129,6 +133,7 @@ onBeforeMount(async () => {
         :status-list="statusList"
         :tracker-list="trackerList"
         :get-issues="getIssues"
+        :get-users="getUsers"
         :get-versions="getVersions"
         @filter-submit="filterSubmit"
         @page-select="pageSelect"
