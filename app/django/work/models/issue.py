@@ -39,7 +39,7 @@ class Issue(models.Model):
     updated = models.DateTimeField('수정일', auto_now=True)
 
     def __str__(self):
-        return self.subject
+        return f'#{self.pk}-{self.subject}'
 
     class Meta:
         ordering = ('-id',)
