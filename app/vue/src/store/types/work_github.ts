@@ -18,11 +18,12 @@ export interface Commit {
   pk: number
   revision_id: number
   repo: number
-  parents: string[]
   commit_hash: string
-  message: string
   author: string
   date: string
+  message: string
+  parents: string[]
+  branches: string[]
   issues: number[]
 }
 
