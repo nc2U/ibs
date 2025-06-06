@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Commit } from '@/store/types/work_github.ts'
+import { TableSecondary } from '@/utils/cssMixins.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import Pagination from '@/components/Pagination'
@@ -95,7 +96,7 @@ onBeforeMount(() => {
       <col style="width: 50%" />
     </colgroup>
     <CTableHead>
-      <CTableRow class="text-center">
+      <CTableRow class="text-center" :color="TableSecondary">
         <CTableHeaderCell colspan="2">#</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>

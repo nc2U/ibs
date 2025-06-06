@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import type { BranchInfo, Repository, Tree } from '@/store/types/work_github.ts'
+import type { Repository, Tree } from '@/store/types/work_github.ts'
+import { TableSecondary } from '@/utils/cssMixins.ts'
 import BranchMenu from './HeaderMenu/BranchMenu.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
@@ -60,7 +61,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
           <col style="width: 35%" />
         </colgroup>
         <CTableHead>
-          <CTableRow class="text-center">
+          <CTableRow class="text-center" :color="TableSecondary">
             <CTableHeaderCell>이름</CTableHeaderCell>
             <CTableHeaderCell>크기</CTableHeaderCell>
             <CTableHeaderCell>리비전</CTableHeaderCell>

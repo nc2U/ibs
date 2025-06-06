@@ -95,14 +95,6 @@ watch(isDark, highlightCode)
     </CCol>
   </CRow>
 
-  <CRow class="mt-4 pl-2">
-    <CCol>
-      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('file-view-close')">
-        돌아가기
-      </v-btn>
-    </CCol>
-  </CRow>
-
   <CRow>
     <CCol class="file-content" :class="{ 'theme-dark': isDark, 'theme-light': !isDark }">
       <div class="file-viewer">
