@@ -6,8 +6,8 @@ import { useGithub } from '@/store/pinia/work_github.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_github.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import GitRepository from './components/GitRepository.vue'
-import GitFileView from './components/Tree/GitFileView.vue'
+import BranchTree from './components/BranchTree.vue'
+import FileContent from './components/Tree/FileContent.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
 
@@ -142,7 +142,7 @@ onBeforeMount(async () => {
 <template>
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      <GitRepository
+      <BranchTree
         v-if="!fileView"
         :repo="repo as Repository"
         :branches="branches"
@@ -154,7 +154,7 @@ onBeforeMount(async () => {
         @change-tag="changeTag"
       />
 
-      <GitFileView v-else :file-data="fileData" @file-view-close="fileView = false" />
+      <FileContent v-else :file-data="fileData" @file-view-close="fileView = false" />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"
