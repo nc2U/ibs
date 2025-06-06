@@ -36,7 +36,11 @@ const toggleFold = async () => {
   nodeFold.value = !nodeFold.value
 }
 
-const intoPath = () => emit('into-path', props.node?.path)
+const intoPath = () =>
+  emit('into-path', {
+    path: props.node?.path as string,
+    sha: props.node?.commit?.sha as string,
+  })
 
 const viewFile = async () => {
   const fileInfo = await fetchFileView(

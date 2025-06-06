@@ -1,26 +1,32 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import type { BranchInfo, Repository, Tree } from '@/store/types/work_github.ts'
 import BranchMenu from './HeaderMenu/BranchMenu.vue'
 import TreeNode from './Tree/TreeNode.vue'
 
-defineProps({
+const props = defineProps({
+  repo: { type: Object as PropType<Repository>, required: true },
+  currPath: { type: String, default: null },
   branches: { type: Array as PropType<string[]>, default: () => [] },
   tags: { type: Array as PropType<string[]>, default: () => [] },
-  repo: { type: Object as PropType<Repository>, required: true },
-  currBranch: { type: Object as PropType<BranchInfo>, required: true },
-  defTree: { type: Array as PropType<Tree[]>, default: () => [] },
+  currBranch: { type: String, required: true },
+  branchTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits(['into-path', 'file-view', 'change-branch', 'change-tag'])
+const emit = defineEmits(['into-root', 'into-path', 'file-view', 'change-branch', 'change-tag'])
+
+const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.split('/') : []))
 </script>
 
 <template>
   <CRow class="py-2 mb-2 flex-lg-row flex-column-reverse">
     <CCol class="col-6">
       <h5>
-        <router-link to="">{{ repo?.slug }}</router-link>
-        @ {{ currBranch?.name }}
+        <router-link to="" @click="emit('into-root')">{{ repo?.slug }}</router-link>
+        <template v-if="currentPath.length">
+          <span v-for="path in currentPath" :key="path"> / {{ path }}</span>
+        </template>
+        @ {{ currBranch }}
       </h5>
     </CCol>
 
@@ -57,7 +63,7 @@ const emit = defineEmits(['into-path', 'file-view', 'change-branch', 'change-tag
 
         <CTableBody>
           <TreeNode
-            v-for="node in defTree"
+            v-for="node in branchTree"
             :repo="repo.pk as number"
             :node="node"
             :key="node.sha"

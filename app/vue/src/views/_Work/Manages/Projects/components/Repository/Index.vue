@@ -57,8 +57,9 @@ const branches = computed<string[]>(() => gitStore.branches)
 const tags = computed<string[]>(() => gitStore.tags)
 
 const default_branch = computed(() => gitStore.default_branch)
-const curr_branch = computed(() => gitStore.curr_branch)
+const curr_branch = computed(() => (gitStore.curr_branch as BranchInfo)?.name ?? '')
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
+const currentTree = computed<Tree[]>(() => (subTree.value ? subTree.value : branchTree.value))
 
 const gitDiff = computed<any>(() => gitStore.gitDiff)
 
@@ -70,10 +71,21 @@ const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchBranchTree = (repoPk: number, branch: string, tag = '') =>
   gitStore.fetchBranchTree(repoPk, branch, tag)
+const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
+  gitStore.fetchSubTree(repo, sha, path)
 
 // into path
-const intoPath = (path: string) => {
-  alert(path)
+const currPath = ref('')
+const subTree = ref(null)
+
+const intoRoot = () => {
+  currPath.value = ''
+  subTree.value = null
+}
+const intoPath = async (payload: any) => {
+  const { sha, path } = payload
+  currPath.value = path
+  subTree.value = await fetchSubTree(repo.value?.pk as number, sha, path)
 }
 // file view
 const fileView = ref(false)
@@ -149,10 +161,12 @@ onBeforeMount(async () => {
       <BranchTree
         v-if="!fileView"
         :repo="repo as Repository"
+        :curr-path="currPath"
         :branches="branches"
         :tags="tags"
-        :curr-branch="curr_branch as BranchInfo"
-        :def-tree="branchTree"
+        :curr-branch="curr_branch"
+        :branch-tree="currentTree"
+        @into-root="intoRoot"
         @into-path="intoPath"
         @file-view="toggleFileView"
         @change-branch="changeBranch"
