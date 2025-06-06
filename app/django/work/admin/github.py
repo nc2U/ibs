@@ -2,7 +2,7 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
-from work.models import Repository, Commit
+from work.models import Repository, Commit, Branch
 
 
 @admin.register(Repository)
@@ -11,6 +11,13 @@ class RepositoryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project', 'slug')
     list_editable = ('is_default', 'local_path', 'is_report')
     list_filter = ('project', 'is_default', 'is_report')
+
+
+@admin.register(Branch)
+class BranchAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'repo', 'name')
+    list_display_links = ('repo', 'name')
+    list_filter = ('repo',)
 
 
 @admin.register(Commit)

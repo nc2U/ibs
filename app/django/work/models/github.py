@@ -30,7 +30,9 @@ class Branch(models.Model):
 
     class Meta:
         ordering = ('-repo', 'name')
-        constraints = [models.UniqueConstraint(fields=['repo', 'name'], name='unique_branch_per_repo')]
+        verbose_name = '16. 브랜치'
+        verbose_name_plural = '16. 브랜치'
+        unique_together = ('repo', 'name')
 
 
 class Commit(models.Model):
@@ -49,8 +51,8 @@ class Commit(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '16. 커미트'
-        verbose_name_plural = '16. 커미트'
+        verbose_name = '17. 커미트'
+        verbose_name_plural = '17. 커미트'
         unique_together = ('repo', 'revision_id')
 
     def save(self, *args, **kwargs):

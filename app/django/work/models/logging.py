@@ -30,8 +30,8 @@ class ActivityLogEntry(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '17. 작업 내역'
-        verbose_name_plural = '17. 작업 내역'
+        verbose_name = '18. 작업 내역'
+        verbose_name_plural = '18. 작업 내역'
 
 
 class SequentialIntegerField(models.IntegerField):
@@ -66,5 +66,5 @@ class IssueLogEntry(models.Model):
         return f"{self.action} - {self.timestamp}"
 
     class Meta:
-        verbose_name = '18. 업무 로그'
-        verbose_name_plural = '18. 업무 로그'
+        verbose_name = '19. 업무 로그'
+        verbose_name_plural = '19. 업무 로그'
