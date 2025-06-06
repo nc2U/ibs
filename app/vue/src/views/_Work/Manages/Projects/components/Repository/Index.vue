@@ -102,8 +102,11 @@ const toggleFileView = (payload: any) => {
   fileView.value = true
 }
 
-const changeBranch = (branch: string, tag = '') =>
+const changeBranch = (branch: string, tag = '') => {
+  subTree.value = null
   fetchBranchTree(repo.value?.pk as number, branch, tag)
+}
+
 const changeTag = (tag: string) => fetchBranchTree(repo.value?.pk as number, tag, '1')
 
 // revisons & diff view

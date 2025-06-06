@@ -42,6 +42,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
 
     <CCol>
       <BranchMenu
+        :curr-branch="currBranch"
         :branches="branches"
         :tags="tags"
         @change-branch="emit('change-branch', $event)"

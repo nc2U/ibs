@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
-import router from '@/router/index.js'
 import { useGithub } from '@/store/pinia/work_github.ts'
+import router from '@/router/index.js'
 
-defineProps({
+const props = defineProps({
+  currBranch: { type: String, required: true },
   branches: { type: Array, default: () => [] },
   tags: { type: Array, default: () => [] },
 })
@@ -27,7 +28,8 @@ const changeTag = (e: Event) => {
 }
 
 onBeforeMount(() => {
-  if (default_branch.value) branch.value = default_branch.value
+  if (props.currBranch) branch.value = props.currBranch
+  else if (default_branch.value) branch.value = default_branch.value
 })
 </script>
 
