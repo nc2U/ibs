@@ -125,7 +125,7 @@ watch(isDark, highlightCode)
           class="code-block"
         ><code ref="codeBlock" :class="`language-${language}`"
         >{{ fileData.content }}</code></pre>
-        <p v-else>Loading file...</p>
+        <pre v-else class="code-block"><code></code></pre>
       </div>
     </CCol>
   </CRow>
