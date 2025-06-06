@@ -71,6 +71,10 @@ const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchBranchTree = (repoPk: number, branch: string, tag = '') =>
   gitStore.fetchBranchTree(repoPk, branch, tag)
 
+// into path
+const intoPath = (path: string) => {
+  alert(path)
+}
 // file view
 const fileView = ref(false)
 const fileData = ref<any | null>(null)
@@ -149,6 +153,7 @@ onBeforeMount(async () => {
         :tags="tags"
         :curr-branch="curr_branch as BranchInfo"
         :def-tree="branchTree"
+        @into-path="intoPath"
         @file-view="toggleFileView"
         @change-branch="changeBranch"
         @change-tag="changeTag"

@@ -12,7 +12,7 @@ const props = defineProps({
   level: { type: Number, default: 0 },
 })
 
-const emit = defineEmits(['file-view'])
+const emit = defineEmits(['into-path', 'file-view'])
 
 const nodeFold = ref(false)
 const subTrees = ref([])
@@ -36,6 +36,8 @@ const toggleFold = async () => {
   nodeFold.value = !nodeFold.value
 }
 
+const intoPath = () => emit('into-path', props.node?.path)
+
 const viewFile = async () => {
   const fileInfo = await fetchFileView(
     props.repo as number,
@@ -56,7 +58,7 @@ const viewFile = async () => {
           size="16"
           class="pointer mr-1"
         />
-        <span>
+        <span @click="intoPath">
           <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
           <router-link to="">{{ node.name }}</router-link>
         </span>
@@ -94,6 +96,7 @@ const viewFile = async () => {
       :node="node"
       :level="level + 1"
       :key="i"
+      @into-path="emit('into-path', $event)"
       @file-view="emit('file-view', $event)"
     />
   </template>

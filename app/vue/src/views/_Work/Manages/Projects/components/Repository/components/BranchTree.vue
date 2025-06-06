@@ -12,7 +12,7 @@ defineProps({
   defTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits(['file-view', 'change-branch', 'change-tag'])
+const emit = defineEmits(['into-path', 'file-view', 'change-branch', 'change-tag'])
 </script>
 
 <template>
@@ -61,6 +61,7 @@ const emit = defineEmits(['file-view', 'change-branch', 'change-tag'])
             :repo="repo.pk as number"
             :node="node"
             :key="node.sha"
+            @into-path="emit('into-path', $event)"
             @file-view="emit('file-view', $event)"
           />
         </CTableBody>
