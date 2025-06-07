@@ -12,6 +12,7 @@ import { useProCash } from '@/store/pinia/proCash'
 import { type ProjectCashBook, type CashBookFilter } from '@/store/types/proCash'
 import { type DownPayFilter, type PriceFilter, usePayment } from '@/store/pinia/payment'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContChoicer from '@/views/payments/Register/components/ContChoicer.vue'
@@ -161,9 +162,11 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => {
+const loading = ref(true)
+onBeforeMount(async () => {
   dataSetup(project.value || projStore.initProjId)
   if (route.query.payment) paymentId.value = route.query.payment as string
+  loading.value = false
 })
 
 onMounted(() => {
@@ -198,6 +201,7 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

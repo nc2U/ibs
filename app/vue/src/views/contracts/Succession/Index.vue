@@ -6,6 +6,7 @@ import { useContract } from '@/store/pinia/contract'
 import { useRoute, useRouter } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
 import type { BuyerForm, Contractor, Succession } from '@/store/types/contract'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContNavigation from '@/views/contracts/Register/components/ContNavigation.vue'
@@ -121,14 +122,17 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => {
-  if (route.query.contractor) fetchContractor(Number(route.query.contractor))
+const loading = ref(true)
+onBeforeMount(async () => {
+  if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
   else contStore.contractor = null
-  dataSetup(project.value || projStore.initProjId)
+  await dataSetup(project.value || projStore.initProjId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

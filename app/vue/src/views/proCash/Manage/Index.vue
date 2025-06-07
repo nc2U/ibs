@@ -14,6 +14,7 @@ import {
 } from '@/store/types/proCash'
 import { cutString } from '@/utils/baseMixins'
 import { write_project_cash } from '@/utils/pageAuth'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/views/proCash/Manage/components/ListController.vue'
@@ -256,23 +257,26 @@ const projSelect = (target: number | null) => {
 const contStore = useContract()
 const fetchAllContracts = (projId: number) => contStore.fetchAllContracts(projId)
 
-onBeforeMount(() => {
+const loading = ref(true)
+onBeforeMount(async () => {
   imprest.value = Cookies.get('get-imprest') === ''
   dataFilter.value.is_imprest = imprest.value ? '' : '0'
-  fetchBankCodeList()
-  fetchProAccSortList()
-  fetchFormAccD1List()
-  fetchProAllAccD2List()
-  fetchProAllAccD3List()
-  fetchProFormAccD2List()
-  fetchProFormAccD3List()
-  fetchPayOrderList(project.value || projStore.initProjId)
-  fetchAllContracts(project.value || projStore.initProjId)
+  await fetchBankCodeList()
+  await fetchProAccSortList()
+  await fetchFormAccD1List()
+  await fetchProAllAccD2List()
+  await fetchProAllAccD3List()
+  await fetchProFormAccD2List()
+  await fetchProFormAccD3List()
+  await fetchPayOrderList(project.value || projStore.initProjId)
+  await fetchAllContracts(project.value || projStore.initProjId)
   dataSetup(project.value || projStore.initProjId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

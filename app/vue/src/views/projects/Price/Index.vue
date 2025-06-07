@@ -8,6 +8,7 @@ import type { OrderGroup, SimpleCont, UnitType } from '@/store/types/contract'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PriceSelectForm from '@/views/projects/Price/components/PriceSelectForm.vue'
@@ -145,10 +146,15 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value || projStore.initProjId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

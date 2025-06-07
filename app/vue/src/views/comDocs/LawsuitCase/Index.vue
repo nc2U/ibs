@@ -13,6 +13,7 @@ import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
 import { type SuitCaseFilter as cFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Link, SuitCase } from '@/store/types/docs'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -184,10 +185,15 @@ const caseRenewal = (page: number) => {
 
 onBeforeRouteUpdate(() => dataSetup(company.value || comStore.initComId, route.params?.caseId))
 
-onBeforeMount(() => dataSetup(company.value || comStore.initComId, route.params?.caseId))
+const loading = ref(true)
+onBeforeMount(() => {
+  dataSetup(company.value || comStore.initComId, route.params?.caseId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

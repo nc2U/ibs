@@ -4,7 +4,7 @@ import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin1'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useProject } from '@/store/pinia/project'
 import { type Project } from '@/store/types/project'
-import type { IssueProject } from '@/store/types/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import IndexForm from '@/views/projects/List/components/IndexForm.vue'
@@ -34,15 +34,18 @@ const getAllProjects = computed(() => workStore.getAllProjects)
 
 const getProjects = (sort: '1' | '2' | '3') => workStore.fetchAllIssueProjectList('', sort, '')
 
-onBeforeMount(() => {
-  workStore.fetchAllIssueProjectList('', '2', '')
-  workStore.fetchRoleList()
-  workStore.fetchTrackerList()
-  workStore.fetchActivityList()
+const loading = ref(true)
+onBeforeMount(async () => {
+  await workStore.fetchAllIssueProjectList('', '2', '')
+  await workStore.fetchRoleList()
+  await workStore.fetchTrackerList()
+  await workStore.fetchActivityList()
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
   <ContentBody>

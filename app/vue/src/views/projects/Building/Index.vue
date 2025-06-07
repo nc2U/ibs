@@ -1,17 +1,18 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin5'
 import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
-import { type BuildingUnit } from '@/store/types/project'
+import type { BuildingUnit, Project } from '@/store/types/project'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import BuildingAddForm from '@/views/projects/Building/components/BuildingAddForm.vue'
 import BuildingFormList from '@/views/projects/Building/components/BuildingFormList.vue'
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const pDataStore = useProjectData()
 const fetchBuildingList = (projId: number) => pDataStore.fetchBuildingList(projId)
@@ -34,10 +35,15 @@ const projSelect = (target: number | null) => {
   if (!!target) fetchBuildingList(target)
 }
 
-onBeforeMount(() => fetchBuildingList(project.value || projStore.initProjId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchBuildingList(project.value || projStore.initProjId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

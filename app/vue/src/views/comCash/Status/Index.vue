@@ -7,6 +7,7 @@ import { useComCash } from '@/store/pinia/comCash'
 import { getToday } from '@/utils/baseMixins'
 import type { Company } from '@/store/types/settings.ts'
 import type { ComCalculated } from '@/store/types/comCash'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import DateChoicer from '@/views/comCash/Status/components/DateChoicer.vue'
@@ -114,17 +115,20 @@ const comSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => {
-  fetchAccSortList()
-  fetchAllAccD1List()
-  fetchAllAccD2List()
-  fetchAllAccD3List()
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchAccSortList()
+  await fetchAllAccD1List()
+  await fetchAllAccD2List()
+  await fetchAllAccD3List()
   dataSetup(company.value || comStore.initComId)
   compName.value = comp[Number(Cookies.get('comCashStatus') ?? 1)]
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

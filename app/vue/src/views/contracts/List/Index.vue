@@ -6,6 +6,7 @@ import type { Project } from '@/store/types/project'
 import { useProjectData } from '@/store/pinia/project_data'
 import { type ContFilter, useContract } from '@/store/pinia/contract'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContractSummary from './components/ContractSummary.vue'
@@ -99,16 +100,20 @@ const projSelect = (target: number | null) => {
 }
 
 const [route, router] = [useRoute(), useRouter()]
-onBeforeMount(() => {
+
+const loading = ref(true)
+onBeforeMount(async () => {
   if (route.query?.status) {
-    router.replace({ name: '계약 내역 조회' })
+    await router.replace({ name: '계약 내역 조회' })
     status.value = '1'
   }
   dataSetup(project.value?.pk || projStore.initProjId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

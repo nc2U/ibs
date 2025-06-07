@@ -3,9 +3,10 @@ import { ref, computed, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin2'
 import { useProject } from '@/store/pinia/project'
 import { useSite, type SiteFilter } from '@/store/pinia/project_site'
-import { type Site } from '@/store/types/project'
+import type { Project, Site } from '@/store/types/project'
 import { numFormat } from '@/utils/baseMixins'
 import { write_project_site } from '@/utils/pageAuth'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from './components/ListController.vue'
@@ -23,8 +24,8 @@ const dataFilter = ref<SiteFilter>({
 })
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
-const isReturned = computed(() => projStore.project?.is_returned_area)
+const project = computed(() => (projStore.project as Project)?.pk)
+const isReturned = computed(() => (projStore.project as Project)?.is_returned_area)
 
 const siteStore = useSite()
 const getSitesTotal = computed(() => siteStore.getSitesTotal)
@@ -82,10 +83,15 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value || projStore.initProjId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

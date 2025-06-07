@@ -5,7 +5,9 @@ import { useProject } from '@/store/pinia/project'
 import { useProCash } from '@/store/pinia/proCash'
 import { getToday } from '@/utils/baseMixins'
 import { pageTitle, navMenu } from '@/views/proCash/_menu/headermixin'
+import type { Project } from '@/store/types/project.ts'
 import type { ProCalculated } from '@/store/types/proCash'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import DateChoicer from '@/views/proCash/Status/components/DateChoicer.vue'
@@ -22,7 +24,7 @@ const isBalance = ref<'' | 'true'>('true')
 const compName = ref('StatusByAccount')
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const fetchStatusOutBudgetList = (proj: number) => projStore.fetchStatusOutBudgetList(proj)
 
@@ -164,15 +166,18 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => {
-  fetchProAllAccD2List()
-  fetchProAllAccD3List()
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchProAllAccD2List()
+  await fetchProAllAccD3List()
   dataSetup(project.value || projStore.initProjId)
   compName.value = comp[Number(Cookies.get('proCashStatus') ?? 1)]
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

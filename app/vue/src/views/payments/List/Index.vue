@@ -2,13 +2,14 @@
 import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payments/_menu/headermixin'
+import type { CashBookFilter, ProjectCashBook } from '@/store/types/proCash'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
-import { type CashBookFilter, type ProjectCashBook } from '@/store/types/proCash'
 import { onBeforeRouteLeave } from 'vue-router'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PaymentSummary from '@/views/payments/List/components/PaymentSummary.vue'
@@ -127,13 +128,16 @@ const projSelect = (target: number | null) => {
 
 onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
 
-onBeforeRouteLeave(() => {
+const loading = ref(true)
+onBeforeRouteLeave(async () => {
   paymentStore.paymentList = []
   paymentStore.paymentsCount = 0
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

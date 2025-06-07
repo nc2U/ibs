@@ -13,6 +13,7 @@ import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link, PatchDocs } from '@/store/types/docs'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/components/Documents/ListController.vue'
@@ -223,10 +224,15 @@ const comSelect = (target: number | null) => {
 
 onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(company.value ?? comStore.initComId, route.params?.docsId))
+const loading = ref(true)
+onBeforeMount(() => {
+  dataSetup(company.value ?? comStore.initComId, route.params?.docsId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

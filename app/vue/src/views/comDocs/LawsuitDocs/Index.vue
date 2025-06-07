@@ -20,6 +20,7 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
+import Loading from '@/components/Loading/Index.vue'
 
 const fController = ref()
 const refDocsForm = ref()
@@ -240,17 +241,20 @@ const comSelect = (target: number | null) => {
 
 onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
 
-onBeforeMount(() => {
+const loading = ref(true)
+onBeforeMount(async () => {
   const com = company.value ?? comStore.initComId
-  fetchAllSuitCaseList({
+  await fetchAllSuitCaseList({
     company: com,
     issue_project: comIProject.value,
   })
   dataSetup(com, route.params?.docsId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

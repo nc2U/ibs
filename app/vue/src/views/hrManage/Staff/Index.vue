@@ -4,7 +4,9 @@ import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import { write_human_resource } from '@/utils/pageAuth'
+import type { Company } from '@/store/types/settings.ts'
 import { type Staff, type StaffFilter } from '@/store/types/company'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from './components/ListController.vue'
@@ -27,8 +29,8 @@ const dataFilter = ref<StaffFilter>({
 })
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
-const comName = computed(() => comStore.company?.name || undefined)
+const company = computed(() => (comStore.company as Company)?.pk)
+const comName = computed(() => (comStore.company as Company)?.name || undefined)
 
 const excelUrl = computed(() => {
   const url = `/excel/staffs/?company=${company.value}`
@@ -112,13 +114,16 @@ const comSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onMounted(() => {
-  fetchUsersList()
+const loading = ref(true)
+onMounted(async () => {
+  await fetchUsersList()
   dataSetup(company.value || comStore.initComId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

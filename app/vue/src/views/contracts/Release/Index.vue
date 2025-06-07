@@ -6,6 +6,7 @@ import { useContract } from '@/store/pinia/contract'
 import { type Contractor, type ContractRelease } from '@/store/types/contract'
 import { useRoute, useRouter } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ReleasetButton from '@/views/contracts/Release/components/ReleasetButton.vue'
@@ -105,17 +106,20 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => {
-  dataSetup(project.value || projStore.initProjId)
-  if (route.query.contractor) fetchContractor(Number(route.query.contractor))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value || projStore.initProjId)
+  if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
   else {
     contStore.contract = null
     contStore.contractor = null
   }
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

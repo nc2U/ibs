@@ -11,6 +11,7 @@ import {
 } from 'vue-router'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link, PatchDocs, SuitCase } from '@/store/types/docs'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/components/Documents/ListController.vue'
@@ -202,10 +203,15 @@ const projSelect = (target: number | null) => {
 
 onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(project.value ?? projStore.initProjId, route.params?.docsId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value ?? projStore.initProjId, route.params?.docsId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

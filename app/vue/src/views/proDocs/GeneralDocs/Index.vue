@@ -9,8 +9,10 @@ import {
 } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useProject } from '@/store/pinia/project'
+import type { Project } from '@/store/types/project.ts'
 import { useDocs, type DocsFilter } from '@/store/pinia/docs'
 import type { AFile, Attatches, Link, Docs, PatchDocs } from '@/store/types/docs'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/components/Documents/ListController.vue'
@@ -18,7 +20,6 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsView from '@/components/Documents/DocsView.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
-import type { Project } from '@/store/types/project.ts'
 
 const fController = ref()
 const typeNumber = ref(1)
@@ -190,10 +191,15 @@ const projSelect = (target: number | null) => {
 
 onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.params?.docsId))
 
-onBeforeMount(() => dataSetup(project.value ?? projStore.initProjId, route.params?.docsId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  dataSetup(project.value ?? projStore.initProjId, route.params?.docsId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

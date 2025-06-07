@@ -1,17 +1,18 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, provide } from 'vue'
+import { computed, onBeforeMount, provide, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin6'
 import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
-import type { OptionItem } from '@/store/types/project'
+import type { OptionItem, Project } from '@/store/types/project'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import OptionAddForm from '@/views/projects/PaidOption/components/OptionAddForm.vue'
 import OptionFormList from '@/views/projects/PaidOption/components/OptionFormList.vue'
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const pDataStore = useProjectData()
 const getTypes = computed(() => pDataStore.getTypes)
@@ -44,13 +45,16 @@ const projSelect = (target: number | null) => {
   }
 }
 
-onBeforeMount(() => {
-  fetchTypeList(project.value ?? projStore.initProjId, '1')
-  fetchOptionItemList(project.value ?? projStore.initProjId)
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchTypeList(project.value ?? projStore.initProjId, '1')
+  await fetchOptionItemList(project.value ?? projStore.initProjId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

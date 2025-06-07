@@ -3,7 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
 import { useCompany } from '@/store/pinia/company'
 import { write_human_resource } from '@/utils/pageAuth'
+import type { Company } from '@/store/types/settings.ts'
 import { type Position, type ComFilter } from '@/store/types/company'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from './components/ListController.vue'
@@ -21,8 +23,8 @@ const dataFilter = ref<ComFilter>({
 })
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
-const comName = computed(() => comStore.company?.name || undefined)
+const company = computed(() => (comStore.company as Company)?.pk)
+const comName = computed(() => (comStore.company as Company)?.name || undefined)
 
 const excelUrl = computed(
   () => `/excel/positions/?company=${company.value}&search=${dataFilter.value.q}`,
@@ -81,10 +83,15 @@ const comSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onMounted(() => dataSetup(company.value || comStore.initComId))
+const loading = ref(true)
+onMounted(async () => {
+  dataSetup(company.value || comStore.initComId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

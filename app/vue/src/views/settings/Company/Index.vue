@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/settings/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
 import { type Company } from '@/store/types/settings'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import CompanyForm from './components/CompanyForm.vue'
@@ -27,9 +28,15 @@ const onSubmit = (payload: Company) => {
   if (payload.pk) onUpdate(payload)
   else onCreate(payload)
 }
+
+const loading = ref(true)
+onBeforeMount(() => {
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
 
   <ContentBody>

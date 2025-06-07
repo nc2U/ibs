@@ -5,7 +5,8 @@ import { numFormat } from '@/utils/baseMixins'
 import { useProject } from '@/store/pinia/project'
 import { useSite, type OwnerFilter } from '@/store/pinia/project_site'
 import { write_project_site } from '@/utils/pageAuth'
-import { type Relation, type SiteOwner } from '@/store/types/project'
+import type { Project, Relation, SiteOwner } from '@/store/types/project'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/views/projects/SiteOwner/components/ListController.vue'
@@ -25,8 +26,8 @@ const dataFilter = ref<OwnerFilter>({
 })
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
-const isReturned = computed(() => projStore.project?.is_returned_area)
+const project = computed(() => (projStore.project as Project)?.pk)
+const isReturned = computed(() => (projStore.project as Project)?.is_returned_area)
 
 const siteStore = useSite()
 const getOwnersTotal = computed(() => siteStore.getOwnersTotal?.owned_area)
@@ -97,10 +98,15 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value || projStore.initProjId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

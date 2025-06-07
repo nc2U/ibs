@@ -4,6 +4,7 @@ import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
 import { useCompany } from '@/store/pinia/company'
 import { write_human_resource } from '@/utils/pageAuth'
 import { type Duty, type ComFilter } from '@/store/types/company'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from './components/ListController.vue'
@@ -67,10 +68,15 @@ const comSelect = (target: number | null) => {
   if (!!target) fetchDutyList({ com: target })
 }
 
-onMounted(() => fetchDutyList({ com: company.value || comStore.initComId }))
+const loading = ref(true)
+onMounted(async () => {
+  await fetchDutyList({ com: company.value || comStore.initComId })
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

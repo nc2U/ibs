@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, provide, onBeforeMount } from 'vue'
+import { computed, provide, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin6'
 import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
@@ -7,13 +7,15 @@ import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
 import { usePayment } from '@/store/pinia/payment'
 import { type DownPay } from '@/store/types/payment'
+import type { Project } from '@/store/types/project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import DownPayAddForm from '@/views/projects/DownPay/components/DownPayAddForm.vue'
 import DownPayFormList from '@/views/projects/DownPay/components/DownPayFormList.vue'
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const contStore = useContract()
 const orderGroupList = computed(() => contStore.orderGroupList)
@@ -61,9 +63,14 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value || projStore.initProjId)
+  loading.value = false
+})
 </script>
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

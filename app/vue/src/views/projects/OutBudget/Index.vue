@@ -1,19 +1,20 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, provide } from 'vue'
+import { computed, onBeforeMount, provide, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin3'
 import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProCash } from '@/store/pinia/proCash'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
-import { type ProOutBudget } from '@/store/types/project'
+import type { Project, ProOutBudget } from '@/store/types/project'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import BudgetAddForm from '@/views/projects/OutBudget/components/BudgetAddForm.vue'
 import BudgetFormList from '@/views/projects/OutBudget/components/BudgetFormList.vue'
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const pCashStore = useProCash()
 const allAccD2List = computed(() =>
@@ -75,14 +76,17 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => {
-  fetchProAllAccD2List()
-  fetchProAllAccD3List()
-  dataSetup(project.value || projStore.initProjId)
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchProAllAccD2List()
+  await fetchProAllAccD3List()
+  await dataSetup(project.value || projStore.initProjId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

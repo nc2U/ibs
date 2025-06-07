@@ -7,6 +7,7 @@ import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComCash, type DataFilter as Filter, type DataFilter } from '@/store/pinia/comCash'
 import type { CashBook, CompanyBank, SepItems } from '@/store/types/comCash'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ListController from '@/views/comCash/CashManage/components/ListController.vue'
@@ -213,20 +214,23 @@ const comSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => {
-  fetchBankCodeList()
-  fetchAccSortList()
-  fetchAllAccD1List()
-  fetchAllAccD2List()
-  fetchAllAccD3List()
-  fetchFormAccD1List(null)
-  fetchFormAccD2List(null, null)
-  fetchFormAccD3List(null, null, null)
-  dataSetup(company.value || comStore.initComId)
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchBankCodeList()
+  await fetchAccSortList()
+  await fetchAllAccD1List()
+  await fetchAllAccD2List()
+  await fetchAllAccD3List()
+  await fetchFormAccD1List(null)
+  await fetchFormAccD2List(null, null)
+  await fetchFormAccD3List(null, null, null)
+  await dataSetup(company.value || comStore.initComId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

@@ -9,6 +9,7 @@ import { useProject } from '@/store/pinia/project'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
 import { useProjectData } from '@/store/pinia/project_data'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContractForm from './components/ContractForm.vue'
@@ -152,18 +153,20 @@ const projSelect = (target: number | null) => {
   }
 }
 
-onBeforeMount(() => {
+const loading = ref(true)
+onBeforeMount(async () => {
   dataSetup(project.value || projStore.initProjId)
-
-  if (route.query.contractor) getContract(route.query.contractor as string)
+  if (route.query.contractor) await getContract(route.query.contractor as string)
   else {
     contStore.removeContract()
     contStore.removeContractor()
   }
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

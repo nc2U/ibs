@@ -1,17 +1,18 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin4'
 import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
-import { type UnitFloorType } from '@/store/types/project'
+import type { Project, UnitFloorType } from '@/store/types/project'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import FloorAddForm from '@/views/projects/Floor/components/FloorAddForm.vue'
 import FloorFormList from '@/views/projects/Floor/components/FloorFormList.vue'
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const pDataStore = useProjectData()
 const fetchFloorTypeList = (projId: number) => pDataStore.fetchFloorTypeList(projId)
@@ -34,10 +35,15 @@ const projSelect = (target: number | null) => {
   if (!!target) fetchFloorTypeList(target)
 }
 
-onBeforeMount(() => fetchFloorTypeList(project.value || projStore.initProjId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchFloorTypeList(project.value || projStore.initProjId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

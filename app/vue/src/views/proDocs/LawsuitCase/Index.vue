@@ -11,6 +11,7 @@ import {
 } from 'vue-router'
 import { type SuitCaseFilter as cFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Link, SuitCase } from '@/store/types/docs'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -167,13 +168,16 @@ onBeforeRouteUpdate(() => {
   dataSetup(proj, route.params?.caseId)
 })
 
-onBeforeMount(() => {
+const loading = ref(true)
+onBeforeMount(async () => {
   const proj = project.value || projStore.initProjId
   dataSetup(proj, route.params?.caseId)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

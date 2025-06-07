@@ -1,17 +1,19 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin6'
 import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { usePayment } from '@/store/pinia/payment'
 import { type PayOrder } from '@/store/types/payment'
+import type { Project } from '@/store/types/project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PayOrderAddForm from '@/views/projects/PayOrder/components/PayOrderAddForm.vue'
 import PayOrderFormList from '@/views/projects/PayOrder/components/PayOrderFormList.vue'
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const payStore = usePayment()
 const fetchPayOrderList = (projId: number) => payStore.fetchPayOrderList(projId)
@@ -34,10 +36,15 @@ const projSelect = (target: number | null) => {
   if (!!target) fetchPayOrderList(target)
 }
 
-onBeforeMount(() => fetchPayOrderList(project.value || projStore.initProjId))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchPayOrderList(project.value || projStore.initProjId)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"

@@ -4,6 +4,7 @@ import { navMenu, pageTitle } from '@/views/settings/_menu/headermixin'
 import { type User } from '@/store/types/accounts'
 import { useCompany } from '@/store/pinia/company'
 import { useAccount, type UserByAdmin } from '@/store/pinia/account'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import UserSelect from './components/UserSelect.vue'
@@ -215,14 +216,17 @@ const dataSetup = (pk: number) => {
 
 const dataReset = () => (comInfo.value.company = null)
 
-onBeforeMount(() => {
-  accStore.fetchUsersList()
+const loading = ref(true)
+onBeforeMount(async () => {
+  await accStore.fetchUsersList()
   comInfo.value.company = comId.value || comStore.initComId
-  if (accStore?.userInfo) selectUser(accStore.userInfo.pk as number)
+  if (accStore?.userInfo) selectUser((accStore.userInfo as User).pk as number)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
   <ContentBody>
     <CCardBody>
@@ -266,8 +270,8 @@ onBeforeMount(() => {
       <template #default>사용자 권한설정 저장을 진행하시겠습니까?</template>
       <template #footer>
         <v-btn size="small" :color="isStaffAuth ? 'success' : 'primary'" @click="modalAction">
-          저장</v-btn
-        >
+          저장
+        </v-btn>
       </template>
     </ConfirmModal>
 

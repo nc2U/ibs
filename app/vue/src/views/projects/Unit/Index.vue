@@ -3,9 +3,10 @@ import { ref, computed, onBeforeMount } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin5'
 import { useProject } from '@/store/pinia/project'
-import { type HouseUnit } from '@/store/types/project'
+import { type HouseUnit, type Project } from '@/store/types/project'
 import { type CreateUnit, useProjectData } from '@/store/pinia/project_data'
 import { message } from '@/utils/helper'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import UnitController from '@/views/projects/Unit/components/UnitController.vue'
@@ -18,7 +19,7 @@ const bldgPk = ref<null | number>(null)
 const bldgName = ref('')
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const pDataStore = useProjectData()
 const numUnitByType = computed(() => pDataStore.numUnitByType)
@@ -159,10 +160,15 @@ onBeforeMount(() => {
   pDataStore.houseUnitList = []
 })
 
-onBeforeRouteLeave(() => dataReset())
+const loading = ref(true)
+onBeforeRouteLeave(async () => {
+  await dataReset()
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
     :nav-menu="navMenu"
