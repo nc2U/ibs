@@ -81,7 +81,7 @@ onBeforeMount(async () => {
             >
               {{ userInfo?.username }}
             </v-list-item>
-            <template v-if="route.path.startsWith('/work/project')">
+            <template v-if="route.path.startsWith('/work/')">
               <v-list-item variant="tonal" disabled>프로젝트</v-list-item>
               <v-list-item
                 v-for="(menu, i) in navMenu"
