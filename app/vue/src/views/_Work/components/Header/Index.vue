@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-import { ref, computed, type PropType, watch } from 'vue'
+import { ref, computed, type PropType, watch, onBeforeMount } from 'vue'
 import { useStore } from '@/store'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { SimpleProject } from '@/store/types/work_project.ts'
 import HeaderSearch from './components/Search.vue'
 import HeaderNav from './components/HeaderNav.vue'
+import { bgLight } from '@/utils/cssMixins.ts'
 
 defineProps({
   pageTitle: { type: String, default: '' },
@@ -14,14 +16,40 @@ defineProps({
 
 const visible = ref(false)
 
+const [route, router] = [useRoute(), useRouter()]
+watch(route, () => (visible.value = false))
+
 const isDark = computed(() => useStore().theme === 'dark')
 const backGround = computed(() => (isDark.value ? 'bg-blue-grey-darken-5' : 'bg-indigo-lighten-5'))
+const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
+const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
 
 const emit = defineEmits(['side-nav-call'])
 const sideNavCall = () => emit('side-nav-call')
 
-const route = useRoute()
-watch(route, () => (visible.value = false))
+// 프로젝트 선택 기능 시작
+const workStore = useWork()
+const getProjects = computed(() =>
+  workStore.getAllProjects
+    .filter(p => p.slug !== route.params.projId)
+    .map(p => ({ value: p.slug, label: p.label, repo: p.repo })),
+)
+
+const chkRepo = (slug: string) => getProjects.value.filter(p => p.value === slug)[0].repo
+const cngProject = async (event: any) => {
+  if (event) {
+    if (!route?.params.projId) await router.replace({ name: '(개요)', params: { projId: event } })
+    else {
+      if (route.name === '(저장소)' && !(await chkRepo(event)))
+        await router.replace({ name: '(개요)', params: { projId: event } })
+      else await router.replace({ name: route.name, params: { projId: event } })
+    }
+  }
+}
+
+onBeforeMount(async () => {
+  await workStore.fetchAllIssueProjectList()
+})
 </script>
 
 <template>
@@ -48,27 +76,25 @@ watch(route, () => (visible.value = false))
             </CCol>
 
             <CCol
-              class="text-body d-xl-none"
+              class="text-body d-xl-none pointer"
               :class="{ pointer: !!familyTree.length }"
               @click="visible = !visible"
             >
-              <v-icon
-                v-if="!!familyTree.length"
-                :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                color=""
-              />
+              <v-icon :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'" color="" />
               <strong class="title pl-1"> {{ pageTitle }}</strong>
-              <CCollapse v-if="!!familyTree.length" :visible="visible">
-                <CCard class="mt-3">
-                  <CCardBody>
-                    <span v-for="p in familyTree" :key="p.pk" class="mr-1 text-blue-grey">
-                      <router-link :to="{ name: '(개요)', params: { projId: p.slug } }">
-                        {{ p.name }}
-                      </router-link>
-                      »
-                    </span>
-                  </CCardBody>
-                </CCard>
+
+              <CCollapse :visible="visible">
+                <v-card class="mx-auto mt-3" :max-width="1000">
+                  <v-list density="compact" :base-color="baseColor" :bg-color="bgColor">
+                    <v-list-item
+                      v-for="proj in getProjects"
+                      :key="proj.value"
+                      @click="cngProject(proj.value)"
+                    >
+                      {{ proj.label }}
+                    </v-list-item>
+                  </v-list>
+                </v-card>
               </CCollapse>
             </CCol>
           </CRow>
@@ -78,7 +104,7 @@ watch(route, () => (visible.value = false))
           <v-app-bar-nav-icon @click="sideNavCall" />
         </CCol>
         <CCol class="d-none d-lg-block text-right">
-          <HeaderSearch />
+          <HeaderSearch :get-projects="getProjects" @change-project="cngProject" />
         </CCol>
       </CRow>
 

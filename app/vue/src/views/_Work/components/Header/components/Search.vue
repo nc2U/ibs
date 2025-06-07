@@ -1,8 +1,10 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { onBeforeMount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
 import MultiSelect from '@/components/MultiSelect/index.vue'
+
+const props = defineProps({ getProjects: { type: Array, default: () => [] } })
+const emit = defineEmits(['change-project'])
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -10,27 +12,8 @@ const [route, router] = [useRoute(), useRouter()]
 const search = ref('')
 const goSearch = () => router.push({ name: '전체검색', query: { scope: '', q: search.value } })
 
-// 프로젝트 선택 기능 시작
-const workStore = useWork()
-const getProjects = computed(() =>
-  workStore.getAllProjects
-    .filter(p => p.slug !== route.params.projId)
-    .map(p => ({ value: p.slug, label: p.label, repo: p.repo })),
-)
-
-const chkRepo = (slug: string) => getProjects.value.filter(p => p.value === slug)[0].repo
-
-const cngProject = async (event: any) => {
-  if (event) {
-    if (route.name === '(저장소)' && !(await chkRepo(event)))
-      await router.replace({ name: '(개요)', params: { projId: event } })
-    else await router.replace({ name: route.name, params: { projId: event } })
-  }
-}
-
 onBeforeMount(async () => {
   if (route?.query.q) search.value = route.query.q as string
-  await workStore.fetchAllIssueProjectList()
 })
 </script>
 
@@ -47,7 +30,7 @@ onBeforeMount(async () => {
         mode="single"
         :options="getProjects"
         placeholder="프로젝트 바로가기"
-        @change="cngProject"
+        @change="emit('change-project', $event)"
       />
     </CCol>
   </CRow>
