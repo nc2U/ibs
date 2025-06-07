@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, inject, provide, ref } from 'vue'
+import { useStore } from '@/store'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({ aside: { type: Boolean, default: true } })
@@ -10,6 +11,10 @@ const query = inject('query') as Record<string, any>
 const navMenu = inject('navMenu')
 
 const [route, router] = [useRoute(), useRouter()]
+
+const isDark = computed(() => useStore().theme === 'dark')
+const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
+const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
 
 const goToMenu = (menu: string) => {
   router.push({ name: menu as RouteRecordName, query: { ...query } })
@@ -30,51 +35,31 @@ defineExpose({ toggle })
       <slot name="aside"> Under Construction!</slot>
     </CCol>
 
-    <COffcanvas
-      placement="end"
-      class="p-2"
-      :visible="visible"
-      @hide="
-        () => {
-          visible = !visible
-        }
-      "
-    >
+    <COffcanvas placement="end" class="p-2" :visible="visible" @hide="() => (visible = !visible)">
       <COffcanvasHeader>
         <COffcanvasTitle>
           <CFormInput placeholder="검색" />
         </COffcanvasTitle>
-        <CCloseButton
-          class="text-reset"
-          @click="
-            () => {
-              visible = false
-            }
-          "
-        />
+        <CCloseButton class="text-reset" @click="() => (visible = false)" />
       </COffcanvasHeader>
 
       <v-divider />
 
       <COffcanvasBody class="p-0">
-        <CRow class="lg-3">
-          <CCol class="d-grid gap-2">
-            <CNavbarNav vertical role="group" aria-label="Vertical button group" class="m-0">
-              <CNavItem v-for="(menu, i) in navMenu" :key="i">
-                <CNavLink
-                  @click="goToMenu(menu as string)"
-                  :active="
-                    (route.name as string).includes(menu) ||
-                    (route.meta as any).title.includes(menu)
-                  "
-                  class="pl-3"
-                >
-                  {{ (menu as string).replace(/^\((.*)\)$/, '$1') }}
-                </CNavLink>
-              </CNavItem>
-            </CNavbarNav>
-          </CCol>
-        </CRow>
+        <v-card class="mx-auto mb-5 pointer" max-width="500" border flat>
+          <v-list density="compact" :base-color="baseColor" :bg-color="bgColor">
+            <v-list-item
+              v-for="(menu, i) in navMenu"
+              :key="i"
+              :active="
+                (route.name as string).includes(menu) || (route.meta as any).title.includes(menu)
+              "
+              @click="goToMenu(menu as string)"
+            >
+              {{ (menu as string).replace(/^\((.*)\)$/, '$1') }}
+            </v-list-item>
+          </v-list>
+        </v-card>
 
         <v-divider />
 
