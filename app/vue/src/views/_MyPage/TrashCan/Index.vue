@@ -4,6 +4,7 @@ import { navMenu, pageTitle } from '@/views/_MyPage/_menu/headermixin'
 import { useDocs } from '@/store/pinia/docs'
 import type { TrashDocs as TP } from '@/store/types/docs'
 import { type RouteLocationNormalizedLoaded as LoadedRoute, useRoute, useRouter } from 'vue-router'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import TrashDocsList from './components/TrashDocsList.vue'
@@ -70,13 +71,16 @@ const delModalAction = () => {
 
 const docsId = computed(() => Number(route.params.docsId))
 
-onBeforeMount(() => {
-  fetchTrashDocsList(page.value)
-  if (docsId.value) fetchTrashDocs(docsId.value)
+const loading = ref(true)
+onBeforeMount(async () => {
+  await fetchTrashDocsList(page.value)
+  if (docsId.value) await fetchTrashDocs(docsId.value)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" />
 
   <ContentBody>

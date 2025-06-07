@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/_MyPage/_menu/headermixin'
 import { useAccount } from '@/store/pinia/account'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import DocScrapeList from './components/DocScrapeList.vue'
@@ -37,13 +38,16 @@ const pageSelect = (p: number) => {
   fetchScrapeList(p)
 }
 
-onBeforeMount(() => {
-  fetchScrapeList(page.value)
-  fetchDocScrapeList(page.value)
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
+  await fetchScrapeList(page.value)
+  await fetchDocScrapeList(page.value)
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" />
 
   <ContentBody>

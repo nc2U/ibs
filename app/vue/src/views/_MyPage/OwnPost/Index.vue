@@ -3,6 +3,7 @@ import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/_MyPage/_menu/headermixin'
 import type { User } from '@/store/types/accounts'
 import { type PostFilter, useBoard } from '@/store/pinia/board'
+import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ListController from './components/ListController.vue'
@@ -48,10 +49,15 @@ const dataSetup = (pk: number) => {
   fetchCommentList({ user: userInfo?.value.pk })
 }
 
-onBeforeMount(() => dataSetup(userInfo?.value.pk as number))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(userInfo?.value.pk as number)
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" />
 
   <ContentBody>

@@ -1,8 +1,10 @@
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/_MyPage/_menu/headermixin'
+import type { User } from '@/store/types/accounts.ts'
 import { message } from '@/utils/helper'
 import { useAccount } from '@/store/pinia/account'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PasswordCheck from '@/views/_MyPage/Secession/components/PasswordCheck.vue'
@@ -12,7 +14,7 @@ const refConfirmModal = ref()
 const refPassCheck = ref()
 
 const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
+const userInfo = computed<User | null>(() => accStore.userInfo)
 const passChecked = computed(() => accStore.passChecked)
 
 const checkPassword = (payload: { email: string; password: string }) =>
@@ -43,9 +45,15 @@ const removeUser = () => {
   patchProfile({ pk, form })
   message('danger', '', '사용자 계정이 삭제(비활성화) 되었습니다.', 5000)
 }
+
+const loading = ref(true)
+onBeforeMount(() => {
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" />
 
   <ContentBody>

@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeMount } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { useRouter } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/_MyPage/_menu/headermixin'
-import { type Profile } from '@/store/types/accounts'
+import type { Profile, User } from '@/store/types/accounts'
+import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PasswordCheck from '@/views/_MyPage/Modify/components/PasswordCheck.vue'
@@ -13,7 +14,7 @@ import PasswordChange from '@/views/_MyPage/Modify/components/PasswordChange.vue
 const passChangeVue = ref(false)
 
 const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
+const userInfo = computed<User | null>(() => accStore.userInfo)
 const profile = computed(() => accStore.profile)
 const passChecked = computed(() => accStore.passChecked)
 
@@ -44,7 +45,7 @@ const onSubmit = (payload: Profile) => {
   if (!payload.image) delete payload.image
 
   const { pk, ...formData } = payload
-  if (!formData.user && accStore.userInfo) formData.user = accStore.userInfo.pk
+  if (!formData.user && userInfo.value) formData.user = userInfo.value?.pk
   if (!formData.birth_date) formData.birth_date = ''
 
   const form = new FormData()
@@ -54,9 +55,15 @@ const onSubmit = (payload: Profile) => {
   if (pk) patchProfile({ ...{ pk }, ...{ form } })
   else createProfile(form)
 }
+
+const loading = ref(true)
+onBeforeMount(() => {
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" />
 
   <ContentBody>
