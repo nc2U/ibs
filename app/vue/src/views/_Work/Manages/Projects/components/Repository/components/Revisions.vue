@@ -137,9 +137,7 @@ onBeforeMount(() => {
           />
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>
-        <CTableDataCell class="text-center">
-          <router-link to="">{{ commit.author }}</router-link>
-        </CTableDataCell>
+        <CTableDataCell class="text-center">{{ commit.author }}</CTableDataCell>
         <CTableDataCell>
           {{ commit.message }}
           <template v-if="commit.issues.length">
