@@ -44,7 +44,7 @@ const getTitle = (title: string) => title.replace(/[() ]/gim, '')
       <CNavLink
         :active="
           (route.name as string).includes(menu as string) ||
-          (route.meta.title as string).includes(menu as string)
+          (route.meta as any).title.includes(menu as string)
         "
         @click="router.push({ name: menu as RouteRecordName })"
       >

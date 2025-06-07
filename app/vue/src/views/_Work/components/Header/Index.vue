@@ -6,7 +6,6 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import type { SimpleProject } from '@/store/types/work_project.ts'
 import HeaderSearch from './components/Search.vue'
 import HeaderNav from './components/HeaderNav.vue'
-import { bgLight } from '@/utils/cssMixins.ts'
 
 defineProps({
   pageTitle: { type: String, default: '' },
