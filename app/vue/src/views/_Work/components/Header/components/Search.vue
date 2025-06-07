@@ -21,7 +21,9 @@ onBeforeMount(async () => {
   <CRow class="mb-3">
     <CCol class="p-1">
       <CInputGroup size="">
-        <CInputGroupText id="inputGroup-sizing-sm" @click="goSearch">검색</CInputGroupText>
+        <CInputGroupText id="inputGroup-sizing-sm" placeholder="검색" @click="goSearch">
+          검색
+        </CInputGroupText>
         <CFormInput v-model="search" @keydown.enter="goSearch" @focusin="search = ''" />
       </CInputGroup>
     </CCol>

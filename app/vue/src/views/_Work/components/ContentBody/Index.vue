@@ -1,7 +1,9 @@
 <script lang="ts" setup>
-import { computed, inject, provide, ref } from 'vue'
+import { computed, inject, onBeforeMount, provide, ref } from 'vue'
 import { useStore } from '@/store'
+import type { User } from '@/store/types/accounts.ts'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
+import { useAccount } from '@/store/pinia/account.ts'
 
 const props = defineProps({ aside: { type: Boolean, default: true } })
 
@@ -15,6 +17,15 @@ const [route, router] = [useRoute(), useRouter()]
 const isDark = computed(() => useStore().theme === 'dark')
 const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
 const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
+const isActive = (menu: string) =>
+  (route.name as string).includes(menu) || (route.meta as any).title.includes(menu)
+
+const accStore = useAccount()
+const userInfo = computed<User | null>(() => accStore.userInfo)
+const logout = () => {
+  accStore.logout()
+  router.push({ name: 'Login' })
+}
 
 const goToMenu = (menu: string) => {
   router.push({ name: menu as RouteRecordName, query: { ...query } })
@@ -23,6 +34,16 @@ const goToMenu = (menu: string) => {
 const toggle = () => (visible.value = !visible.value)
 provide('doingToggle', toggle)
 defineExpose({ toggle })
+
+const getGuide = () => window.open('https://www.redmine.org/guide', '_blank', 'noopener,noreferrer')
+
+// 검색 관련 기능 시작
+const search = ref('')
+const goSearch = () => router.push({ name: '전체검색', query: { scope: '', q: search.value } })
+
+onBeforeMount(async () => {
+  if (route?.query.q) search.value = route.query.q as string
+})
 </script>
 
 <template>
@@ -37,9 +58,16 @@ defineExpose({ toggle })
 
     <COffcanvas placement="end" class="p-2" :visible="visible" @hide="() => (visible = !visible)">
       <COffcanvasHeader>
-        <COffcanvasTitle>
-          <CFormInput placeholder="검색" />
-        </COffcanvasTitle>
+        <CCol class="mr-2">
+          <COffcanvasTitle>
+            <CFormInput
+              v-model="search"
+              placeholder="검색"
+              @keydown.enter="goSearch"
+              @focusin="search = ''"
+            />
+          </COffcanvasTitle>
+        </CCol>
         <CCloseButton class="text-reset" @click="() => (visible = false)" />
       </COffcanvasHeader>
 
@@ -49,15 +77,28 @@ defineExpose({ toggle })
         <v-card class="mx-auto mb-5 pointer" max-width="500" border flat>
           <v-list density="compact" :base-color="baseColor" :bg-color="bgColor">
             <v-list-item
-              v-for="(menu, i) in navMenu"
-              :key="i"
-              :active="
-                (route.name as string).includes(menu) || (route.meta as any).title.includes(menu)
-              "
-              @click="goToMenu(menu as string)"
+              @click="router.push({ name: '사용자 - 보기', params: { userId: userInfo?.pk } })"
             >
-              {{ (menu as string).replace(/^\((.*)\)$/, '$1') }}
+              {{ userInfo?.username }}
             </v-list-item>
+            <template v-if="route.path.startsWith('/work/project')">
+              <v-list-item variant="tonal" disabled>프로젝트</v-list-item>
+              <v-list-item
+                v-for="(menu, i) in navMenu"
+                :active="isActive(menu)"
+                :key="i"
+                @click="goToMenu(menu as string)"
+              >
+                {{ (menu as string).replace(/^\((.*)\)$/, '$1') }}
+              </v-list-item>
+            </template>
+            <v-list-item variant="tonal" disabled>일반</v-list-item>
+            <v-list-item @click="router.push({ name: '업 무 관 리' })">프로젝트</v-list-item>
+            <v-list-item @click="router.push({ name: '설 정 관 리' })">설정관리</v-list-item>
+            <v-list-item @click="getGuide"> 도움말</v-list-item>
+            <v-list-item variant="tonal" disabled>사용자정보</v-list-item>
+            <v-list-item @click="router.push({ name: '내 정보' })">내 계정</v-list-item>
+            <v-list-item @click="logout">로그아웃</v-list-item>
           </v-list>
         </v-card>
 
