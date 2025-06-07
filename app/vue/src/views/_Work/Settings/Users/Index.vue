@@ -6,6 +6,7 @@ import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
+import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import UserList from '@/views/_Work/Settings/Users/components/UserList.vue'
@@ -38,19 +39,22 @@ watch(route, nVal => {
   }
 })
 
-onBeforeMount(() => {
-  accStore.fetchUsersList()
+const loading = ref(true)
+onBeforeMount(async () => {
+  await accStore.fetchUsersList()
 
   if (route.params.userId) {
-    accStore.fetchUser(Number(route.params.userId))
-    fetchIssueByMember(route.params.userId as string)
-    fetchIssueProjectList({ member: Number(route.params.userId) })
-    fetchActivityLogList({ user: route.params.userId as string, limit: 10 })
+    await accStore.fetchUser(Number(route.params.userId))
+    await fetchIssueByMember(route.params.userId as string)
+    await fetchIssueProjectList({ member: Number(route.params.userId) })
+    await fetchActivityLogList({ user: route.params.userId as string, limit: 10 })
   }
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <Header :page-title="pageTitle" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="true">

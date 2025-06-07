@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue'
 import { useBoard } from '@/store/pinia/board'
+import Loading from '@/components/Loading/Index.vue'
 import MainCarousel from './components/MainCarousel.vue'
 import WiseWord from './components/WiseWord.vue'
 import MyIssue from '@/views/_Work/MyIssue/Index.vue'
@@ -12,11 +13,16 @@ const boardStore = useBoard()
 const postList = computed(() => boardStore.postList)
 const noticeList = computed(() => boardStore.noticeList)
 
-onBeforeMount(() => boardStore.fetchPostList({ board: 1 }))
+const loading = ref(true)
+onBeforeMount(() => {
+  boardStore.fetchPostList({ board: 1 })
+  loading.value = false
+})
 </script>
 
 <template>
   <CContainer fluid>
+    <Loading v-model:active="loading" />
     <CRow class="mt-3">
       <CCol>
         <MainCarousel />

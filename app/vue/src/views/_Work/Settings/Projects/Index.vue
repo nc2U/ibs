@@ -3,6 +3,7 @@ import { ref, computed, inject, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin3'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
+import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
@@ -19,10 +20,15 @@ const workManager = inject<boolean>('workManager', false)
 const workStore = useWork()
 const projectList = computed(() => workStore.AllIssueProjects)
 
-onBeforeMount(() => workStore.fetchIssueProjectList({}))
+const loading = ref(true)
+onBeforeMount(async () => {
+  await workStore.fetchIssueProjectList({})
+  loading.value = false
+})
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <Header :page-title="pageTitle" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
