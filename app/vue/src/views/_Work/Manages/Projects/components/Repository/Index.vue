@@ -8,7 +8,8 @@ import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_gi
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import BranchTree from './components/BranchTree.vue'
-import FileContent from './components/Tree/FileContent.vue'
+import ViewFile from './components/ViewFile.vue'
+import ViewRevision from './components/ViewRevision.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
 
@@ -191,7 +192,7 @@ onBeforeMount(async () => {
         @change-tag="changeTag"
       />
 
-      <FileContent
+      <ViewFile
         v-else-if="headerView === 'file'"
         :repo-name="repo?.slug as string"
         :curr-path="currPath"
@@ -201,6 +202,8 @@ onBeforeMount(async () => {
         @into-path="intoPath"
         @goto-trees="headerView = 'tree'"
       />
+
+      <ViewRevision v-else-if="headerView === 'revision'" />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"
