@@ -78,6 +78,16 @@ const fetchBranchTree = (repoPk: number, branch: string, tag = '') =>
 const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
   gitStore.fetchSubTree(repo, sha, path)
 
+const changeBranch = (branch: string, tag = '') => {
+  subTree.value = null
+  fetchBranchTree(repo.value?.pk as number, branch, tag)
+}
+
+const changeTag = (tag: string) => {
+  subTree.value = null
+  fetchBranchTree(repo.value?.pk as number, tag, '1')
+}
+
 // into path
 const shaMap = ref<{ sha: string; path: string }[]>([])
 const currPath = ref('')
@@ -105,14 +115,12 @@ const toggleFileView = (payload: any) => {
   headerView.value = 'file'
 }
 
-const changeBranch = (branch: string, tag = '') => {
-  subTree.value = null
-  fetchBranchTree(repo.value?.pk as number, branch, tag)
-}
-
-const changeTag = (tag: string) => {
-  subTree.value = null
-  fetchBranchTree(repo.value?.pk as number, tag, '1')
+// revision view
+const revision = ref<any>(null)
+const getRevision = (rev: string) => {
+  console.log(rev)
+  revision.value = rev
+  headerView.value = 'revision'
 }
 
 // revisons & diff view
@@ -188,6 +196,7 @@ onBeforeMount(async () => {
         @into-root="intoRoot"
         @into-path="intoPath"
         @file-view="toggleFileView"
+        @revision-view="getRevision"
         @change-branch="changeBranch"
         @change-tag="changeTag"
       />
@@ -203,7 +212,7 @@ onBeforeMount(async () => {
         @goto-trees="headerView = 'tree'"
       />
 
-      <ViewRevision v-else-if="headerView === 'revision'" />
+      <ViewRevision v-else-if="headerView === 'revision'" :revision="revision" />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"

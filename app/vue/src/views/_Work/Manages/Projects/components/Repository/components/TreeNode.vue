@@ -12,7 +12,7 @@ const props = defineProps({
   level: { type: Number, default: 0 },
 })
 
-const emit = defineEmits(['into-path', 'file-view'])
+const emit = defineEmits(['into-path', 'file-view', 'revision-view'])
 
 const nodeFold = ref(false)
 const subTrees = ref([])
@@ -82,7 +82,9 @@ const viewFile = async () => {
       {{ humanizeFileSize((node as any)?.size) }}
     </CTableDataCell>
     <CTableDataCell class="text-center">
-      <router-link to="">{{ cutString(node.commit?.sha, 8, '') }}</router-link>
+      <router-link to="" @click="emit('revision-view', node.commit)">
+        {{ cutString(node.commit?.sha, 8, '') }}
+      </router-link>
     </CTableDataCell>
     <CTableDataCell class="text-right">
       {{ elapsedTime(node.commit?.date) }}
@@ -100,6 +102,7 @@ const viewFile = async () => {
       :key="i"
       @into-path="emit('into-path', $event)"
       @file-view="emit('file-view', $event)"
+      @revision-view="emit('revision-view', $event)"
     />
   </template>
 </template>
