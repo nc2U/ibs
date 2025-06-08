@@ -116,10 +116,10 @@ const toggleFileView = (payload: any) => {
 }
 
 // revision view
-const revision = ref<any>(null)
-const getRevision = (rev: string) => {
-  console.log(rev)
-  revision.value = rev
+const commit_hash = ref<any>(null)
+const getRevision = (sha: string) => {
+  console.log(sha)
+  commit_hash.value = sha
   headerView.value = 'revision'
 }
 
@@ -212,7 +212,11 @@ onBeforeMount(async () => {
         @goto-trees="headerView = 'tree'"
       />
 
-      <ViewRevision v-else-if="headerView === 'revision'" :revision="revision" />
+      <ViewRevision
+        v-else-if="headerView === 'revision'"
+        :sha="commit_hash"
+        @goto-back="headerView = 'tree'"
+      />
 
       <Revisions
         v-if="viewPageSort === 'revisions'"
@@ -225,6 +229,7 @@ onBeforeMount(async () => {
         @base-set="baseSet"
         @get-diff="getDiff"
         @get-list-sort="changeListSort"
+        @revision-view="getRevision"
         @page-select="pageSelect"
       />
 

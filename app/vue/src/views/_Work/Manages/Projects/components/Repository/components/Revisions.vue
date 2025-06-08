@@ -24,7 +24,14 @@ watch(
   },
 )
 
-const emit = defineEmits(['head-set', 'base-set', 'get-list-sort', 'get-diff', 'page-select'])
+const emit = defineEmits([
+  'head-set',
+  'base-set',
+  'get-list-sort',
+  'get-diff',
+  'revision-view',
+  'page-select',
+])
 
 watch(
   () => props.getListSort,
@@ -110,7 +117,9 @@ onBeforeMount(() => {
         <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-center">
           <span class="mr-5">
-            <router-link to="">{{ commit.commit_hash.substring(0, 8) }}</router-link>
+            <router-link to="" @click="emit('revision-view', commit.commit_hash)">
+              {{ commit.commit_hash.substring(0, 8) }}
+            </router-link>
           </span>
         </CTableDataCell>
         <CTableDataCell>

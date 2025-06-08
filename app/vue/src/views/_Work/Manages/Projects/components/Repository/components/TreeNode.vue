@@ -82,7 +82,7 @@ const viewFile = async () => {
       {{ humanizeFileSize((node as any)?.size) }}
     </CTableDataCell>
     <CTableDataCell class="text-center">
-      <router-link to="" @click="emit('revision-view', node.commit)">
+      <router-link to="" @click="emit('revision-view', node.commit?.sha)">
         {{ cutString(node.commit?.sha, 8, '') }}
       </router-link>
     </CTableDataCell>
