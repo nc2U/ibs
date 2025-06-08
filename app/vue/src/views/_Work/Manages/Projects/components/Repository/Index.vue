@@ -16,6 +16,8 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
+const headerView = ref<'tree' | 'file' | 'revision'>('tree')
+
 const cFilter = ref({
   project: undefined as number | undefined,
   repo: undefined as number | undefined,
@@ -81,12 +83,12 @@ const currPath = ref('')
 const subTree = ref(null)
 
 const intoRoot = () => {
-  fileView.value = false
+  headerView.value = 'tree'
   currPath.value = ''
   subTree.value = null
 }
 const intoPath = async (payload: any) => {
-  fileView.value = false
+  headerView.value = 'tree'
   const isExists = shaMap.value.some(item => item.sha === payload.sha && item.path === payload.path)
   if (!isExists) shaMap.value.push(payload)
   if (payload.sha === '') payload.sha = shaMap.value.find(item => item.path === payload.path)?.sha
@@ -94,12 +96,12 @@ const intoPath = async (payload: any) => {
   currPath.value = path
   subTree.value = await fetchSubTree(repo.value?.pk as number, sha, path)
 }
+
 // file view
-const fileView = ref(false)
 const fileData = ref<any | null>(null)
 const toggleFileView = (payload: any) => {
   fileData.value = payload
-  fileView.value = true
+  headerView.value = 'file'
 }
 
 const changeBranch = (branch: string, tag = '') => {
@@ -117,7 +119,7 @@ const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
 const route = useRoute()
 watch(route, nVal => {
-  fileView.value = false
+  headerView.value = 'tree'
   viewPageSort.value = 'revisions'
 })
 
@@ -175,7 +177,7 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <BranchTree
-        v-if="!fileView"
+        v-if="headerView === 'tree'"
         :repo="repo as Repository"
         :curr-path="currPath"
         :branches="branches"
@@ -190,14 +192,14 @@ onBeforeMount(async () => {
       />
 
       <FileContent
-        v-else
+        v-else-if="headerView === 'file'"
         :repo-name="repo?.slug as string"
         :curr-path="currPath"
         :curr-branch="curr_branch"
         :file-data="fileData"
         @into-root="intoRoot"
         @into-path="intoPath"
-        @file-view-close="fileView = false"
+        @goto-trees="headerView = 'tree'"
       />
 
       <Revisions

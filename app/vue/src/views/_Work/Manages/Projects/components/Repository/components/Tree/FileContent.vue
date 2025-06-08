@@ -24,7 +24,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['into-root', 'into-path', 'file-view-close'])
+const emit = defineEmits(['into-root', 'into-path', 'goto-trees'])
 
 const isDark = inject<ComputedRef<Boolean>>(
   'isDark',
@@ -132,7 +132,7 @@ watch(isDark, highlightCode)
 
   <CRow class="mb-5 pl-2">
     <CCol>
-      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('file-view-close')">
+      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('goto-trees')">
         돌아가기
       </v-btn>
     </CCol>
