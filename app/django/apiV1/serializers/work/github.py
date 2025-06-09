@@ -10,13 +10,15 @@ class RepositorySerializer(serializers.ModelSerializer):
 
 
 class CommitSerializer(serializers.ModelSerializer):
-    parents = serializers.SlugRelatedField(slug_field='commit_hash', many=True, read_only=True)
     branches = serializers.SlugRelatedField(slug_field='name', many=True, read_only=True)
+    parents = serializers.SlugRelatedField(slug_field='commit_hash', many=True, read_only=True)
+    children = serializers.SlugRelatedField(slug_field='commit_hash', many=True, read_only=True)
+    issues = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Commit
         fields = ('pk', 'revision_id', 'repo', 'commit_hash', 'author',
-                  'date', 'message', 'parents', 'branches', 'issues')
+                  'date', 'message', 'branches', 'parents', 'children', 'issues')
         read_only_fields = ('revision_id',)
 
 

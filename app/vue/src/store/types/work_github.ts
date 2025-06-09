@@ -22,8 +22,9 @@ export interface Commit {
   author: string
   date: string
   message: string
-  parents: string[]
   branches: string[]
+  parents: string[]
+  children: string[]
   issues: number[]
 }
 
