@@ -376,35 +376,60 @@ class GitFileContentView(APIView):
 
 class CompareCommitsView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
-    MAX_LINES = 1000  # 최대 반환 줄 수
+    MAX_LINES = 1000
 
-    @staticmethod
-    def get(request, pk, *args, **kwargs):
+    def get(self, request, pk, *args, **kwargs):
         base = request.query_params.get("base")
         head = request.query_params.get("head")
         full = request.query_params.get("full")
 
-        if not base or not head:
+        if not head or head == 'undefined':
             return Response(
-                {"error": "Missing 'base' or 'head' parameter"},
+                {"error": "Missing or invalid 'head' parameter"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        if base == 'undefined':
+            base = None
 
         repo_path = get_repo_path(pk)
         if not os.path.exists(repo_path):
-            return Response(
-                {"error": "Repository path not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             repo = Repo(repo_path)
-
             try:
-                repo.commit(base)
                 repo.commit(head)
             except BadName:
-                return Response({"error": "Invalid commit hash"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Invalid head commit hash"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if not base:
+                # 최초 커밋 또는 head만으로 처리
+                commit = repo.commit(head)
+                if not commit.parents:
+                    # 최초 커밋
+                    diff_text = repo.git.show(head, unified=3)
+                    commit_list = [{
+                        "sha": head,
+                        "author": commit.author.name,
+                        "date": commit.committed_datetime.isoformat(),
+                        "message": commit.message.strip(),
+                    }]
+                    serializer = GitCompareCommitsSerializer({
+                        "base": None,
+                        "head": head,
+                        "commits": commit_list,
+                        "diff": diff_text,
+                        "truncated": False
+                    })
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    # head의 부모 커밋 사용
+                    base = commit.parents[0].hexsha
+            else:
+                try:
+                    repo.commit(base)
+                except BadName:
+                    return Response({"error": "Invalid base commit hash"}, status=status.HTTP_400_BAD_REQUEST)
 
             # 커밋 목록 수집
             try:
@@ -437,10 +462,10 @@ class CompareCommitsView(APIView):
                     diff_lines = []
                 truncated = False
 
-                if len(diff_lines) > CompareCommitsView.MAX_LINES and not full:
-                    diff_text = "\n".join(diff_lines[:CompareCommitsView.MAX_LINES]) + "\n... [truncated]"
+                if len(diff_lines) > self.MAX_LINES and not full:
+                    diff_text = "\n".join(diff_lines[:self.MAX_LINES]) + "\n... [truncated]"
                     truncated = True
-            except GitCommandError:
+            except GitCommandError as e:
                 diff_text = ""
                 truncated = False
 
