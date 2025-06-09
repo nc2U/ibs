@@ -496,6 +496,7 @@ class GetChangedFilesView(APIView):
                         "A" if diff.new_file else
                         "D" if diff.deleted_file else
                         "R" if diff.renamed_file else
+                        "C" if diff.copied_file else
                         "M"
                     )
                 })

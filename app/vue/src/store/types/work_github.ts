@@ -63,5 +63,5 @@ export interface FileInfo {
 
 export interface ChangedFile {
   path: string
-  type: 'A' | 'D' | 'R' | 'M'
-}
+  type: 'A' | 'C' | 'D' | 'M' | 'R'
+} // 'add', 'copied', 'deleted', 'modified', 'renamed'
