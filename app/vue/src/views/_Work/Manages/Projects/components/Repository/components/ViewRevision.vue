@@ -1,29 +1,42 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Commit } from '@/store/types/work_github.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { bgLight, btnLight } from '@/utils/cssMixins.ts'
 import RevisionMenu from './HeaderMenu/RevisionMenu.vue'
 import PathTree from './atomics/PathTree.vue'
+import Diff from '@/views/_Work/Manages/Projects/components/Repository/components/atomics/Diff.vue'
 
 const props = defineProps({
   repo: { type: Number, required: true },
   commit: { type: Object as PropType<Commit>, required: true },
 })
 
-const emit = defineEmits(['goto-back'])
+const emit = defineEmits(['goto-back', 'revision-view'])
 
 const tabKey = ref(1)
 
 const gitStore = useGithub()
 const gitDiff = computed(() => gitStore.gitDiff)
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
+const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
+
+const revisionView = async (hash: string) => emit('revision-view', await fetchCommitBySha(hash))
+
+watch(
+  () => props.commit,
+  nVal => {
+    if (nVal) {
+      const diff_hash = `?base=${nVal.parents[0]}&head=${nVal.commit_hash}`
+      fetchGitDiff(props.repo, diff_hash)
+    }
+  },
+)
 
 onBeforeMount(() => {
   if (props.commit) {
-    console.log(props.commit)
-    const diff_hash = `?base=${props.commit.parents}&head=${props.commit.commit_hash}`
+    const diff_hash = `?base=${props.commit.parents[0]}&head=${props.commit.commit_hash}`
     fetchGitDiff(props.repo, diff_hash)
   }
 })
@@ -57,14 +70,18 @@ onBeforeMount(() => {
         <li v-if="commit.parents.length">
           <b>상위 </b>
           <span v-for="(hash, i) in commit.parents" :key="hash">
-            <router-link to="">{{ hash.substring(0, 8) }}</router-link>
+            <router-link to="" @click="revisionView(hash)">
+              {{ hash.substring(0, 8) }}
+            </router-link>
             <span v-if="i < commit.parents.length - 1">, </span>
           </span>
         </li>
         <li v-if="commit.children.length">
           <b>하위 </b>
           <span v-for="(hash, i) in commit.children" :key="hash">
-            <router-link to="">{{ hash.substring(0, 8) }}</router-link>
+            <router-link to="" @click="revisionView(hash)">
+              {{ hash.substring(0, 8) }}
+            </router-link>
             <span v-if="i < commit.children.length - 1">, </span>
           </span>
         </li>
@@ -89,14 +106,15 @@ onBeforeMount(() => {
       </CNavLink>
     </CNavItem>
 
-    <CNavItem>
-      <CNavLink href="javascript:void(0);" :active="tabKey === 2" @click="tabKey = 2"
-        >차이점보기
+    <CNavItem v-if="gitDiff.diff">
+      <CNavLink href="javascript:void(0);" :active="tabKey === 2" @click="tabKey = 2">
+        차이점보기
       </CNavLink>
     </CNavItem>
   </CNav>
 
-  <PathTree :git-diff="gitDiff" />
+  <PathTree v-if="tabKey === 1" :git-diff="gitDiff" />
+  <Diff v-if="tabKey === 2" :git-diff="gitDiff" />
 
   <v-btn @click="emit('goto-back')" :color="btnLight" size="small" class="my-5">목록으로</v-btn>
 </template>

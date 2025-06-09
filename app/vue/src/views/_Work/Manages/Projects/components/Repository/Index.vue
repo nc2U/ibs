@@ -216,10 +216,11 @@ onBeforeMount(async () => {
         :repo="repo?.pk as number"
         :commit="commit"
         @goto-back="headerView = 'tree'"
+        @revision-view="getRevision"
       />
 
       <Revisions
-        v-if="viewPageSort === 'revisions'"
+        v-if="viewPageSort === 'revisions' && headerView !== 'revision'"
         :page="cFilter.page"
         :commit-list="commitList"
         :get-list-sort="getListSort"
