@@ -2,11 +2,11 @@
 import { type PropType } from 'vue'
 import type { ChangedFile } from '@/store/types/work_github.ts'
 
-defineProps({ changeTrees: { type: Array as PropType<any[]>, default: () => [] } })
+defineProps({ changeFiles: { type: Array as PropType<ChangedFile[]>, default: () => [] } })
 
 const pathList = (trees: string) => trees.split('/')
 </script>
-/
+
 <template>
   <CRow class="text-right">
     <CCol>
@@ -28,10 +28,10 @@ const pathList = (trees: string) => trees.split('/')
     </CCol>
   </CRow>
 
-  <CRow v-for="(tree, i) in changeTrees" :key="i" class="mb-2">
+  <CRow v-for="(tree, i) in changeFiles" :key="i" class="mb-3">
     <CCol>
       <CRow v-for="(el, j) in pathList(tree.path)" :key="j" class="pl-5">
-        <CCol :style="`padding-left: ${j * 30}px`">
+        <CCol :style="`padding-left: ${j * 25}px`">
           <span v-if="j !== pathList(tree.path).length - 1" class="mr-2">
             <v-icon icon="mdi-folder-open" color="#EFD2A8" size="16" />
           </span>
