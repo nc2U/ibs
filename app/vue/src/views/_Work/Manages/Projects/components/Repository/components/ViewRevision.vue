@@ -125,7 +125,7 @@ onBeforeMount(async () => {
   <PathTree v-if="tabKey === 1" :change-files="(changed as Changed).changed_files" />
   <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" />
 
-  <v-divider class="mb-2" />
+  <v-divider v-if="tabKey === 1" class="mb-2" />
 
   <v-btn @click="emit('goto-back')" :color="btnLight" size="small" class="my-5">목록으로</v-btn>
 </template>
