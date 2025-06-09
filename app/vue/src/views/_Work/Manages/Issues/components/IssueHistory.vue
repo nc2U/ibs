@@ -31,11 +31,7 @@ onBeforeMount(() => {
       <CNavLink
         href="javascript:void(0);"
         :active="tabPaneActiveKey === 1"
-        @click="
-          () => {
-            tabPaneActiveKey = 1
-          }
-        "
+        @click="tabPaneActiveKey = 1"
       >
         이력
       </CNavLink>
@@ -44,11 +40,7 @@ onBeforeMount(() => {
       <CNavLink
         href="javascript:void(0);"
         :active="tabPaneActiveKey === 2"
-        @click="
-          () => {
-            tabPaneActiveKey = 2
-          }
-        "
+        @click="tabPaneActiveKey = 2"
       >
         댓글
       </CNavLink>
@@ -57,11 +49,7 @@ onBeforeMount(() => {
       <CNavLink
         href="javascript:void(0);"
         :active="tabPaneActiveKey === 3"
-        @click="
-          () => {
-            tabPaneActiveKey = 3
-          }
-        "
+        @click="tabPaneActiveKey = 3"
       >
         항목 변경이력
       </CNavLink>
@@ -70,11 +58,7 @@ onBeforeMount(() => {
       <CNavLink
         href="javascript:void(0);"
         :active="tabPaneActiveKey === 4"
-        @click="
-          () => {
-            tabPaneActiveKey = 4
-          }
-        "
+        @click="tabPaneActiveKey = 4"
       >
         작업시간
       </CNavLink>

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType } from 'vue'
+import { computed, onBeforeMount, type PropType, ref } from 'vue'
 import type { Commit } from '@/store/types/work_github.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
@@ -13,6 +13,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['goto-back'])
+
+const tabKey = ref(1)
 
 const gitStore = useGithub()
 const gitDiff = computed(() => gitStore.gitDiff)
@@ -82,10 +84,15 @@ onBeforeMount(() => {
 
   <CNav variant="tabs" class="mb-5">
     <CNavItem>
-      <CNavLink active>변경사항들</CNavLink>
+      <CNavLink href="javascript:void(0);" :active="tabKey === 1" @click="tabKey = 1">
+        변경사항들
+      </CNavLink>
     </CNavItem>
+
     <CNavItem>
-      <CNavLink>차이점보기</CNavLink>
+      <CNavLink href="javascript:void(0);" :active="tabKey === 2" @click="tabKey = 2"
+        >차이점보기
+      </CNavLink>
     </CNavItem>
   </CNav>
 
