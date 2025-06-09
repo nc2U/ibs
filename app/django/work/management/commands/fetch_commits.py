@@ -54,10 +54,17 @@ class Command(BaseCommand):
                 continue
 
             try:
+                # 안전 디렉토리 설정
                 subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
-                self.stdout.write(self.style.SUCCESS("Safe directory 설정 완료!!!"))
+
+                # 최신 origin mirror + HEAD update
+                subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'], check=True)
+                subprocess.run(['git', '-C', repo_path, 'remote', 'set-head', 'origin', '--auto'], check=True)
+
+                self.stdout.write(self.style.SUCCESS(f"✅ Synced with origin for {repo.slug}"))
             except subprocess.CalledProcessError as e:
-                self.stderr.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
+                self.stderr.write(self.style.ERROR(f"❌ Git sync failed for {repo.slug}: {e}"))
+                continue
 
             try:
                 try:
