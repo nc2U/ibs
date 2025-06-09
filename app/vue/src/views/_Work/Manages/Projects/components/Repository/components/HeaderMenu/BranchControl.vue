@@ -27,13 +27,6 @@ const changeTag = (e: Event) => {
   emit('change-tag', (e.target as any).value)
 }
 
-watch(
-  () => props.currBranch,
-  newVal => {
-    if (newVal) branch.value = newVal
-  },
-)
-
 onBeforeMount(() => {
   if (props.currBranch) branch.value = props.currBranch
   else if (default_branch.value) branch.value = default_branch.value

@@ -2,7 +2,7 @@
 import { computed, type PropType } from 'vue'
 import type { Repository, Tree } from '@/store/types/work_github.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
-import BranchMenu from './HeaderMenu/BranchMenu.vue'
+import BranchControl from './HeaderMenu/BranchControl.vue'
 import TreeNode from './TreeNode.vue'
 
 const props = defineProps({
@@ -48,7 +48,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
     </CCol>
 
     <CCol>
-      <BranchMenu
+      <BranchControl
         :curr-branch="currBranch"
         :branches="branches"
         :tags="tags"
