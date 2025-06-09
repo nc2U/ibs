@@ -6,7 +6,7 @@ import { useGithub } from '@/store/pinia/work_github.ts'
 import { bgLight, btnLight } from '@/utils/cssMixins.ts'
 import RevisionMenu from './HeaderMenu/RevisionMenu.vue'
 import PathTree from './atomics/PathTree.vue'
-import Diff from '@/views/_Work/Manages/Projects/components/Repository/components/atomics/Diff.vue'
+import Diff from './atomics/Diff.vue'
 
 const props = defineProps({
   repo: { type: Number, required: true },
