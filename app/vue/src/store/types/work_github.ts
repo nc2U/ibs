@@ -70,6 +70,11 @@ export interface DiffApi {
 }
 
 export interface ChangedFile {
+  sha: string
+  files: Changed[]
+}
+
+interface Changed {
   path: string
   type: 'A' | 'C' | 'D' | 'M' | 'R'
 } // 'add', 'copied', 'deleted', 'modified', 'renamed'

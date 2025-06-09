@@ -179,9 +179,10 @@ export const useGithub = defineStore('github', () => {
     }
   }
 
-  const fetchChangedFils = async (repo: number, sha: string) => {
+  const fetchChangedFiles = async (repo: number, sha: string) => {
     try {
       const { data } = await api.get(`/repo/${repo}/changed/?sha=${sha}`)
+      return data
     } catch (error: any) {
       console.error('[fetchChangedFils] Failed:', error)
       throw error
@@ -225,6 +226,6 @@ export const useGithub = defineStore('github', () => {
     fetchGitDiff,
 
     fetchCommitBySha,
-    fetchChangedFils,
+    fetchChangedFiles,
   }
 })
