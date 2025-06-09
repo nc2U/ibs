@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
 import type { Commit, BranchInfo, RepoApi, Repository } from '@/store/types/work_github.ts'
+import { moveElementAwayFromCollision } from 'grid-layout-plus/es/helpers/common'
 
 export const useGithub = defineStore('github', () => {
   // Repository states & getters
@@ -71,18 +72,30 @@ export const useGithub = defineStore('github', () => {
     issues?: number[]
     page?: number
     limit?: number
+    search?: string
   }) => {
-    const { project, repo, issues, page, limit } = payload
+    const { project, repo, issues, page, limit, search } = payload
     const filterQuery = `repo__project=${project ?? ''}&repo=${repo ?? ''}`
     const issueQuery = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
     const paginationQuery = `page=${page}&limit=${limit ?? ''}`
+    const searchQuery = `search=${search ?? ''}`
     return await api
-      .get(`/commit/?${filterQuery}&${issueQuery}&${paginationQuery}`)
+      .get(`/commit/?${filterQuery}&${issueQuery}&${paginationQuery}${searchQuery}`)
       .then(res => {
         commitList.value = res.data.results
         commitCount.value = res.data.count
       })
       .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchCommitBySha = async (sha: string) => {
+    try {
+      const { data } = await api.get(`/commit/?search=${sha}`)
+      return data.results[0]
+    } catch (error: any) {
+      console.error('[fetchCommitBySha] Failed:', error)
+      throw error
+    }
   }
 
   // repo api
@@ -181,6 +194,7 @@ export const useGithub = defineStore('github', () => {
     commitPages,
     fetchCommit,
     fetchCommitList,
+    fetchCommitBySha,
 
     repoApi,
     default_branch,
