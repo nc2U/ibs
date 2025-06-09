@@ -118,7 +118,6 @@ const toggleFileView = (payload: any) => {
 // revision view
 const commit = ref<any>(null)
 const getRevision = (commitObj: Commit) => {
-  console.log(commitObj)
   commit.value = commitObj
   headerView.value = 'revision'
 }

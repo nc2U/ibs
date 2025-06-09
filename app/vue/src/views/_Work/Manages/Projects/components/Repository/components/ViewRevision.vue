@@ -1,14 +1,18 @@
 <script lang="ts" setup>
-import type { PropType } from 'vue'
+import { onBeforeMount, type PropType } from 'vue'
 import type { Commit } from '@/store/types/work_github.ts'
+import { elapsedTime } from '@/utils/baseMixins.ts'
 import { bgLight, btnLight } from '@/utils/cssMixins.ts'
 import RevisionMenu from './HeaderMenu/RevisionMenu.vue'
 import PathTree from './atomics/PathTree.vue'
-import { elapsedTime } from '@/utils/baseMixins.ts'
 
-defineProps({ commit: { type: Object as PropType<Commit>, required: true } })
+const props = defineProps({ commit: { type: Object as PropType<Commit>, required: true } })
 
 const emit = defineEmits(['goto-back'])
+
+onBeforeMount(() => {
+  if (props.commit) console.log(props.commit)
+})
 </script>
 
 <template>
