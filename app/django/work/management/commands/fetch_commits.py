@@ -66,19 +66,6 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(f"❌ Git sync failed for {repo.slug}: {e}"))
                 continue
 
-            try:
-                try:
-                    fetch_specs = git_repo.remote('origin').config_reader.get_value("fetch")
-                except Exception:
-                    fetch_specs = None
-                if not fetch_specs:
-                    git_repo.git.config('--add', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*')
-                git_repo.remote('origin').fetch()
-                self.stdout.write(self.style.SUCCESS(f"Fetched from origin for {repo.slug}!!!"))
-            except GitCommandError as e:
-                self.stderr.write(self.style.ERROR(f"Git fetch failed: {e}"))
-                continue
-
             # Branch 등록
             local_branches = [head.name for head in git_repo.heads if head.name != 'HEAD']
             existing_branches = set(repo.branches.values_list('name', flat=True))
