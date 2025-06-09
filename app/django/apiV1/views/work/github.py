@@ -526,16 +526,9 @@ class GetChangedFilesView(APIView):
                     )
                 })
 
-            return Response({"sha": sha, "files": changed_files})
+            serializer = GetChangedFilesSerializer({"changed_files": changed_files})
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
-            # serializer = GitCompareCommitsSerializer({
-            #     "base": base,
-            #     "head": head,
-            #     "commits": commit_list,
-            #     "diff": diff_text,
-            #     "truncated": truncated
-            # })
-            # return Response(serializer.data, status=status.HTTP_200_OK)
 
         except GitCommandError as e:
             return Response({"error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

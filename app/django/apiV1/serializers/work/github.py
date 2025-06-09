@@ -62,3 +62,12 @@ class GitCompareCommitsSerializer(serializers.Serializer):
     commits = CommitApiSerializer(many=True)
     diff = serializers.CharField()
     truncated = serializers.BooleanField()
+
+
+class ChangedInGetFileSerializer(serializers.Serializer):
+    path = serializers.CharField()
+    type = serializers.CharField()
+
+
+class GetChangedFilesSerializer(serializers.Serializer):
+    changed_files = ChangedInGetFileSerializer(many=True)
