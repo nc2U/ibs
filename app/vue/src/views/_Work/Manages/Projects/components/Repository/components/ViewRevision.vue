@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { Commit, DiffApi } from '@/store/types/work_github.ts'
+import type { ChangedFile, Commit, DiffApi } from '@/store/types/work_github.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
@@ -27,6 +27,7 @@ watch(
 )
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
+const fetchChangedFiles = (repo: number, sha: string) => gitStore.fetchChangedFiles(repo, sha)
 
 const revisionView = async (hash: string) => emit('revision-view', await fetchCommitBySha(hash))
 
@@ -40,10 +41,12 @@ watch(
   },
 )
 
-onBeforeMount(() => {
+const changeTrees = ref<ChangedFile | null>(null)
+onBeforeMount(async () => {
   if (props.commit) {
     const diff_hash = `?base=${props.commit.parents[0]}&head=${props.commit.commit_hash}`
-    fetchGitDiff(props.repo, diff_hash)
+    await fetchGitDiff(props.repo, diff_hash)
+    changeTrees.value = await fetchChangedFiles(props.repo as number, props.commit.commit_hash)
   }
 })
 </script>
@@ -119,7 +122,7 @@ onBeforeMount(() => {
     </CNavItem>
   </CNav>
 
-  <PathTree v-if="tabKey === 1" :git-diff="gitDiff as DiffApi" />
+  <PathTree v-if="tabKey === 1" :change-trees="changeTrees as ChangedFile" />
   <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" />
 
   <v-btn @click="emit('goto-back')" :color="btnLight" size="small" class="my-5">목록으로</v-btn>

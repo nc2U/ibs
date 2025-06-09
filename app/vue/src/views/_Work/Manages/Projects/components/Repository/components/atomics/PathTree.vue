@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
-import type { DiffApi } from '@/store/types/work_github.ts'
+import type { ChangedFile } from '@/store/types/work_github.ts'
 
-defineProps({ gitDiff: { type: Object as PropType<DiffApi>, required: true } })
+defineProps({ changeTrees: { type: Object as PropType<ChangedFile>, required: true } })
 </script>
 
 <template>
@@ -28,7 +28,7 @@ defineProps({ gitDiff: { type: Object as PropType<DiffApi>, required: true } })
 
   <CRow>
     <CCol>
-      {{ gitDiff }}
+      {{ changeTrees }}
     </CCol>
   </CRow>
 </template>
