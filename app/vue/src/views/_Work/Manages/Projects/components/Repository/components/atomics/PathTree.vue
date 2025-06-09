@@ -2,9 +2,11 @@
 import { type PropType } from 'vue'
 import type { ChangedFile } from '@/store/types/work_github.ts'
 
-defineProps({ changeTrees: { type: Object as PropType<ChangedFile>, required: true } })
-</script>
+defineProps({ changeTrees: { type: Array as PropType<any[]>, default: () => [] } })
 
+const pathList = (trees: string) => trees.split('/')
+</script>
+/
 <template>
   <CRow class="text-right">
     <CCol>
@@ -26,9 +28,28 @@ defineProps({ changeTrees: { type: Object as PropType<ChangedFile>, required: tr
     </CCol>
   </CRow>
 
-  <CRow>
+  <CRow v-for="(tree, i) in changeTrees" :key="i" class="mb-2">
     <CCol>
-      {{ changeTrees }}
+      <CRow v-for="(el, j) in pathList(tree.path)" :key="j" class="pl-5">
+        <CCol :style="`padding-left: ${j * 30}px`">
+          <span v-if="j !== pathList(tree.path).length - 1" class="mr-2">
+            <v-icon icon="mdi-folder-open" color="#EFD2A8" size="16" />
+          </span>
+          <span v-else class="mr-2" style="font-size: 0.8em">
+            <v-icon v-if="tree.type === 'A'" color="success" icon="mdi-plus-circle" size="" />
+            <v-icon v-else-if="tree.type === 'D'" color="danger" icon="mdi-minus-circle" size="" />
+            <v-icon v-else-if="tree.type === 'R'" color="purple" icon="mdi-circle" size="" />
+            <v-icon v-else-if="tree.type === 'C'" color="info" icon="mdi-circle" size="" />
+            <v-icon v-else color="warning" icon="mdi-circle" size="" />
+          </span>
+          <span>
+            <router-link to="">{{ el }}</router-link>
+          </span>
+          <span v-if="j === pathList(tree.path).length - 1">
+            (<router-link to="">비교(diff)</router-link>)
+          </span>
+        </CCol>
+      </CRow>
     </CCol>
   </CRow>
 </template>

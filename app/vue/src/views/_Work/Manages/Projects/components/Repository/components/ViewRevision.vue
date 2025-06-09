@@ -122,8 +122,10 @@ onBeforeMount(async () => {
     </CNavItem>
   </CNav>
 
-  <PathTree v-if="tabKey === 1" :change-trees="changeTrees as ChangedFile" />
+  <PathTree v-if="tabKey === 1" :change-trees="changeTrees.files as any[]" />
   <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" />
+
+  <v-divider class="mb-2" />
 
   <v-btn @click="emit('goto-back')" :color="btnLight" size="small" class="my-5">목록으로</v-btn>
 </template>
