@@ -197,3 +197,4 @@ urlpatterns += [path('repo/<int:pk>/tree/<path:path>', work.GitSubTreeView.as_vi
 urlpatterns += [
     path('repo/<int:pk>/file/<path:path>', work.GitFileContentView.as_view(), name='git-file')]  # require ?sha=
 urlpatterns += [path('repo/<int:pk>/compare/', work.CompareCommitsView.as_view(), name='compare-commits')]
+urlpatterns += [path('repo/<int:pk>/changed/', work.GetChangedFilesView.as_view(), name='get-changed-files')]

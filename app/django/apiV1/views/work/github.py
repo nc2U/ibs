@@ -3,7 +3,7 @@ from datetime import timezone, datetime
 
 from charset_normalizer import detect
 from django.shortcuts import get_object_or_404
-from git import Repo, GitCommandError
+from git import Repo, GitCommandError, NULL_TREE
 from git.exc import BadName
 from rest_framework import viewsets, status
 from rest_framework.exceptions import NotFound
@@ -240,7 +240,7 @@ class GitSubTreeView(APIView):
         except ValueError:
             return Response({"error": "Repository HEAD is not set"}, status=400)
 
-        if path:  # 트리 가져오기
+        if path:  # 트리 가져 오기
             try:  # 특정 경로의 트리
                 tree = commit.tree[path]
                 if tree.type != "tree":
@@ -253,7 +253,7 @@ class GitSubTreeView(APIView):
         items = []  # 트리 항목 처리
         for item in tree.trees + tree.blobs:  # 하위 트리와 블롭 나열
             item_path = item.path
-            # 최신 커밋 가져오기
+            # 최신 커밋 가져 오기
             latest_commit = next(repo.iter_commits(paths=item_path, max_count=1), commit)
             items.append({
                 "path": item_path,
@@ -337,7 +337,7 @@ class GitFileContentView(APIView):
             if blob.type != "blob":
                 return Response({"error": f"The path is not a file (blob): {path}"}, status=400)
 
-            try:  # 마지막 수정 커밋 가져오기
+            try:  # 마지막 수정 커밋 가져 오기
                 last_commit = next(repo.iter_commits(sha, paths=path))
                 last_modified = datetime.fromtimestamp(last_commit.committed_date).isoformat()
             except StopIteration:
@@ -452,6 +452,64 @@ class CompareCommitsView(APIView):
                 "truncated": truncated
             })
             return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except GitCommandError as e:
+            return Response({"error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GetChangedFilesView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk, *args, **kwargs):
+        sha = request.query_params.get("sha", None)
+
+        repo_path = get_repo_path(pk)
+        if not os.path.exists(repo_path):
+            return Response(
+                {"error": "Repository path not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            repo = Repo(repo_path)
+
+            try:
+                commit = repo.commit(sha)
+            except BadName:
+                return Response({"error": "Invalid commit hash"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 부모 커밋과 비교해 변경된 파일 목록을 가져 오기
+            if commit.parents:
+                diff_index = commit.diff(commit.parents[0])
+            else:
+                # 초기 커밋: 부모가 없으므로 전체 트리 대상으로 비교
+                diff_index = commit.diff(NULL_TREE)
+
+            changed_files = []
+            for diff in diff_index:
+                changed_files.append({
+                    "path": diff.a_path or diff.b_path,
+                    "change_type": (
+                        "A" if diff.new_file else
+                        "D" if diff.deleted_file else
+                        "R" if diff.renamed_file else
+                        "M"
+                    )
+                })
+
+            return Response({"sha": sha, "files": changed_files})
+
+            # serializer = GitCompareCommitsSerializer({
+            #     "base": base,
+            #     "head": head,
+            #     "commits": commit_list,
+            #     "diff": diff_text,
+            #     "truncated": truncated
+            # })
+            # return Response(serializer.data, status=status.HTTP_200_OK)
 
         except GitCommandError as e:
             return Response({"error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
