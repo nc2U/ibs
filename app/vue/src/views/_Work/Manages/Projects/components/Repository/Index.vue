@@ -213,6 +213,7 @@ onBeforeMount(async () => {
 
       <ViewRevision
         v-else-if="headerView === 'revision'"
+        :repo="repo?.pk as number"
         :commit="commit"
         @goto-back="headerView = 'tree'"
       />

@@ -1,17 +1,29 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType } from 'vue'
+import { computed, onBeforeMount, type PropType } from 'vue'
 import type { Commit } from '@/store/types/work_github.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
+import { useGithub } from '@/store/pinia/work_github.ts'
 import { bgLight, btnLight } from '@/utils/cssMixins.ts'
 import RevisionMenu from './HeaderMenu/RevisionMenu.vue'
 import PathTree from './atomics/PathTree.vue'
 
-const props = defineProps({ commit: { type: Object as PropType<Commit>, required: true } })
+const props = defineProps({
+  repo: { type: Number, required: true },
+  commit: { type: Object as PropType<Commit>, required: true },
+})
 
 const emit = defineEmits(['goto-back'])
 
+const gitStore = useGithub()
+const gitDiff = computed(() => gitStore.gitDiff)
+const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
+
 onBeforeMount(() => {
-  if (props.commit) console.log(props.commit)
+  if (props.commit) {
+    console.log(props.commit)
+    const diff_hash = `?base=${props.commit.parents}&head=${props.commit.commit_hash}`
+    fetchGitDiff(props.repo, diff_hash)
+  }
 })
 </script>
 
@@ -77,7 +89,7 @@ onBeforeMount(() => {
     </CNavItem>
   </CNav>
 
-  <PathTree />
+  <PathTree :git-diff="gitDiff" />
 
   <v-btn @click="emit('goto-back')" :color="btnLight" size="small" class="my-5">목록으로</v-btn>
 </template>

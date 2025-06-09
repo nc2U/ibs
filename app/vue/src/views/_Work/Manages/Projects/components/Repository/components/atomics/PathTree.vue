@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
-defineProps({ diff: { type: Array, default: () => [] } })
+defineProps({ gitDiff: { type: Array, default: () => [] } })
 </script>
 
 <template>
@@ -22,6 +22,12 @@ defineProps({ diff: { type: Array, default: () => [] } })
       <span class="mr-2" style="font-size: 0.8em">
         <v-icon icon="mdi-minus-circle" color="danger" size="" /> 삭제됨
       </span>
+    </CCol>
+  </CRow>
+
+  <CRow>
+    <CCol>
+      {{ gitDiff }}
     </CCol>
   </CRow>
 </template>
