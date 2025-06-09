@@ -27,6 +27,7 @@ class CommitViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
     filterset_fields = ('repo__project', 'repo', 'commit_hash', 'issues')
+    search_fields = ('commit_hash',)
 
 
 def get_repo_path(repo_id):
