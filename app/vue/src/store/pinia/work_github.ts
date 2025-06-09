@@ -88,16 +88,6 @@ export const useGithub = defineStore('github', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchCommitBySha = async (sha: string) => {
-    try {
-      const { data } = await api.get(`/commit/?search=${sha}`)
-      return data.results[0]
-    } catch (error: any) {
-      console.error('[fetchCommitBySha] Failed:', error)
-      throw error
-    }
-  }
-
   // repo api
   const repoApi = ref<RepoApi | null>(null)
   const default_branch = computed<string>(() => repoApi.value?.default_branch ?? 'master')
@@ -179,6 +169,25 @@ export const useGithub = defineStore('github', () => {
       .then(res => (gitDiff.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
+  const fetchCommitBySha = async (sha: string) => {
+    try {
+      const { data } = await api.get(`/commit/?search=${sha}`)
+      return data.results[0]
+    } catch (error: any) {
+      console.error('[fetchCommitBySha] Failed:', error)
+      throw error
+    }
+  }
+
+  const fetchChangedFils = async (repo: number, sha: string) => {
+    try {
+      const { data } = await api.get(`/repo/${repo}/changed/?sha=${sha}`)
+    } catch (error: any) {
+      console.error('[fetchChangedFils] Failed:', error)
+      throw error
+    }
+  }
+
   return {
     repository,
     repositoryList,
@@ -194,7 +203,6 @@ export const useGithub = defineStore('github', () => {
     commitPages,
     fetchCommit,
     fetchCommitList,
-    fetchCommitBySha,
 
     repoApi,
     default_branch,
@@ -215,5 +223,8 @@ export const useGithub = defineStore('github', () => {
     gitDiff,
     removeGitDiff,
     fetchGitDiff,
+
+    fetchCommitBySha,
+    fetchChangedFils,
   }
 })
