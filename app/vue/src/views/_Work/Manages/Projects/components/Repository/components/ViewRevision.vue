@@ -4,7 +4,7 @@ import type { Changed, Commit, DiffApi } from '@/store/types/work_github.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
-import RevisionMenu from './HeaderMenu/RevisionMenu.vue'
+import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
 
@@ -66,7 +66,7 @@ onBeforeMount(async () => {
     </CCol>
 
     <CCol>
-      <RevisionMenu />
+      <RevisionControl />
     </CCol>
   </CRow>
 
