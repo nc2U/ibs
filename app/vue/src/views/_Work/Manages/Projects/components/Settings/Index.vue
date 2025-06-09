@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, ref, watch } from 'vue'
 import { type IssueCategory as ICategory, type IssueProject } from '@/store/types/work_project.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
@@ -26,6 +26,9 @@ const menu = ref('프로젝트')
 const workManager = inject<ComputedRef<boolean>>('workManager')
 
 const [route, router] = [useRoute(), useRouter()]
+watch(route, newVal => {
+  if (newVal.query?.menu) menu.value = newVal.query.menu as string
+})
 
 const initMenu = computed(() => (!!workManager?.value ? '프로젝트' : '버전'))
 
