@@ -4,6 +4,7 @@ import type { Commit } from '@/store/types/work_github.ts'
 import { bgLight, btnLight } from '@/utils/cssMixins.ts'
 import RevisionMenu from './HeaderMenu/RevisionMenu.vue'
 import PathTree from './atomics/PathTree.vue'
+import { elapsedTime } from '@/utils/baseMixins.ts'
 
 defineProps({ commit: { type: Object as PropType<Commit>, required: true } })
 
@@ -20,8 +21,8 @@ const emit = defineEmits(['goto-back'])
   <CRow>
     <CCol>
       Austin Kho 이(가)
-      <router-link to="">5일</router-link>
-      전에 추가함
+      <router-link to="">{{ elapsedTime(commit.date) }}</router-link>
+      에 추가함
     </CCol>
 
     <CCol>
@@ -29,7 +30,7 @@ const emit = defineEmits(['goto-back'])
     </CCol>
   </CRow>
 
-  <v-divider />
+  <v-divider class="mt-0" />
 
   <CRow class="pl-5">
     <CCol>

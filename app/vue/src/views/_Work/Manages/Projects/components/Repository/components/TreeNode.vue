@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref } from 'vue'
-import type { Tree } from '@/store/types/work_github.ts'
+import { type PropType, ref } from 'vue'
+import type { Commit, Tree } from '@/store/types/work_github.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { cutString, elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 import TreeNode from './TreeNode.vue'
@@ -18,9 +18,9 @@ const nodeFold = ref(false)
 const subTrees = ref([])
 const gitStore = useGithub()
 
+const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
   gitStore.fetchSubTree(repo, sha, path)
-
 const fetchFileView = (repo: number, path: string, sha: string) =>
   gitStore.fetchFileView(repo, path, sha)
 
@@ -47,6 +47,10 @@ const viewFile = async () => {
     props.node?.commit?.sha as string,
   )
   emit('file-view', fileInfo)
+}
+
+const revisionView = async () => {
+  emit('revision-view', await fetchCommitBySha(props.node.commit?.sha as string))
 }
 </script>
 
@@ -82,7 +86,7 @@ const viewFile = async () => {
       {{ humanizeFileSize((node as any)?.size) }}
     </CTableDataCell>
     <CTableDataCell class="text-center">
-      <router-link to="" @click="emit('revision-view', node.commit?.sha)">
+      <router-link to="" @click="revisionView">
         {{ cutString(node.commit?.sha, 8, '') }}
       </router-link>
     </CTableDataCell>
