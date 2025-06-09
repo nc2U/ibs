@@ -61,6 +61,14 @@ export interface FileInfo {
   message?: string
 }
 
+export interface DiffApi {
+  base: string | null
+  head: string
+  commits: CommitApi[]
+  diff: string
+  truncated: boolean
+}
+
 export interface ChangedFile {
   path: string
   type: 'A' | 'C' | 'D' | 'M' | 'R'

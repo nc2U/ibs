@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { Commit } from '@/store/types/work_github.ts'
+import type { Commit, DiffApi } from '@/store/types/work_github.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
-import { bgLight, btnLight } from '@/utils/cssMixins.ts'
+import { btnLight } from '@/utils/cssMixins.ts'
 import RevisionMenu from './HeaderMenu/RevisionMenu.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
@@ -18,11 +18,11 @@ const emit = defineEmits(['goto-back', 'revision-view'])
 const tabKey = ref(1)
 
 const gitStore = useGithub()
-const gitDiff = computed(() => gitStore.gitDiff)
+const gitDiff = computed<DiffApi | null>(() => gitStore.gitDiff)
 watch(
   () => gitDiff.value,
   nVal => {
-    if (!nVal.diff) tabKey.value = 1
+    if (!nVal?.diff) tabKey.value = 1
   },
 )
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
@@ -112,15 +112,15 @@ onBeforeMount(() => {
       </CNavLink>
     </CNavItem>
 
-    <CNavItem v-if="gitDiff.diff">
+    <CNavItem v-if="gitDiff?.diff">
       <CNavLink href="javascript:void(0);" :active="tabKey === 2" @click="tabKey = 2">
         차이점보기
       </CNavLink>
     </CNavItem>
   </CNav>
 
-  <PathTree v-if="tabKey === 1" :git-diff="gitDiff" />
-  <Diff v-if="tabKey === 2" :git-diff="gitDiff" />
+  <PathTree v-if="tabKey === 1" :git-diff="gitDiff as DiffApi" />
+  <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" />
 
   <v-btn @click="emit('goto-back')" :color="btnLight" size="small" class="my-5">목록으로</v-btn>
 </template>

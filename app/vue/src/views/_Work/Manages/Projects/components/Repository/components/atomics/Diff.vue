@@ -1,14 +1,17 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref, watch } from 'vue'
+import type { DiffApi } from '@/store/types/work_github.ts'
 import { cutString } from '@/utils/baseMixins.ts'
 import { html } from 'diff2html'
 import sanitizeHtml from 'sanitize-html'
 
-const props = defineProps({ gitDiff: { type: Object as PropType<any>, required: true } })
+const props = defineProps({ gitDiff: { type: Object as PropType<DiffApi>, required: true } })
 
 watch(
   () => props.gitDiff,
-  newVal => getDiffCode(newVal.diff),
+  newVal => {
+    if (newVal) getDiffCode(newVal.diff)
+  },
 )
 
 const emit = defineEmits(['get-diff'])
@@ -19,7 +22,7 @@ const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
 
 watch(
   () => outputFormat.value,
-  newVal => getDiffCode(props.gitDiff.diff),
+  newVal => getDiffCode(props.gitDiff?.diff as string),
 )
 
 const getDiffCode = (diffText: string) => {
@@ -102,7 +105,7 @@ onMounted(async () => {
         </svg>
         <h5 class="m-4">비교할 것이 없습니다.</h5>
 
-        <span class="strong text-primary">{{ cutString(gitDiff.base, 10) }}</span> 는 최신
+        <span class="strong text-primary">{{ cutString(gitDiff.base ?? '', 10) }}</span> 는 최신
         버전입니다.
         <span class="strong text-primary">{{ cutString(gitDiff.head, 10) }}</span>
         <span> 변경된 파일 또는 변경 사항이 없습니다. </span>

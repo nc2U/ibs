@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { type PropType } from 'vue'
+import type { DiffApi } from '@/store/types/work_github.ts'
 
-defineProps({ gitDiff: { type: Array, default: () => [] } })
+defineProps({ gitDiff: { type: Object as PropType<DiffApi>, required: true } })
 </script>
 
 <template>
