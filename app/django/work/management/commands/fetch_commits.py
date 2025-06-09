@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -12,7 +13,7 @@ from work.models import Repository, Commit, Issue, Branch
 
 
 class Command(BaseCommand):
-    help = "Fetch commits from local bare Git repositories"
+    help = "Fetch commits from local bare Git repositories and sync branches"
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=None, help='Limit the number of commits to fetch')
@@ -36,6 +37,64 @@ class Command(BaseCommand):
         for parent in commit.parents:
             self.ensure_commit_exists(repo, parent, commit_obj_map, existing_hashes, commits_to_create)
 
+    def sync_branches(self, git_repo, repo, repo_path):
+        """로컬 브랜치와 원격 브랜치를 동기화"""
+        try:
+            # 원격 브랜치 목록
+            remote_refs = git_repo.remotes.origin.refs
+            self.stdout.write(f"Remote refs: {[ref.name for ref in remote_refs]}")
+            remote_branches = [ref.name.replace('origin/', '') for ref in remote_refs if ref.name != 'origin/HEAD']
+            self.stdout.write(self.style.SUCCESS(f"Remote branches: {remote_branches}"))
+
+            # 로컬 브랜치 업데이트
+            for branch in remote_branches:
+                try:
+                    subprocess.run(
+                        ['git', '-C', repo_path, 'update-ref', f'refs/heads/{branch}', f'refs/remotes/origin/{branch}'],
+                        check=True)
+                    self.stdout.write(self.style.SUCCESS(f"Updated local branch: {branch}"))
+                except subprocess.CalledProcessError as e:
+                    self.stderr.write(self.style.ERROR(f"Failed to update branch {branch}: {e}"))
+
+            # 삭제된 로컬 브랜치 정리
+            local_branches = [head.name for head in git_repo.heads if head.name != 'HEAD']
+            for branch in local_branches:
+                if branch not in remote_branches:
+                    try:
+                        subprocess.run(['git', '-C', repo_path, 'branch', '-D', branch], check=True)
+                        self.stdout.write(self.style.SUCCESS(f"Deleted local branch: {branch}"))
+                    except subprocess.CalledProcessError as e:
+                        self.stderr.write(self.style.ERROR(f"Failed to delete branch {branch}: {e}"))
+
+            # DB 동기화
+            existing_branches = set(repo.branches.values_list('name', flat=True))
+            new_branch_names = [b for b in remote_branches if b not in existing_branches]
+            if new_branch_names:
+                Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
+                self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
+            deleted_branch_names = [b for b in existing_branches if b not in remote_branches]
+            if deleted_branch_names:
+                try:
+                    Branch.objects.filter(repo=repo, name__in=deleted_branch_names).delete()
+                    self.stdout.write(
+                        self.style.SUCCESS(f"Deleted {len(deleted_branch_names)} branches: {deleted_branch_names}"))
+                except Exception as e:
+                    self.stderr.write(self.style.ERROR(f"Failed to delete DB branches: {e}"))
+
+            # Bare 저장소의 HEAD 설정
+            default_branch = next((ref for ref in remote_refs if ref.name in ['origin/main', 'origin/master']), None)
+            if default_branch:
+                default_branch_name = default_branch.name.replace('origin/', '')
+                subprocess.run(['git', '-C', repo_path, 'symbolic-ref', 'HEAD', f'refs/heads/{default_branch_name}'],
+                               check=True)
+                self.stdout.write(self.style.SUCCESS(f"Set HEAD to refs/heads/{default_branch_name}"))
+            else:
+                self.stderr.write(self.style.WARNING("No default branch (main/master) found"))
+
+        except Exception as e:
+            self.stderr.write(self.style.ERROR(f"Branch sync failed: {e}"))
+            raise
+
     def handle(self, *args, **kwargs):
         limit = kwargs.get('limit')
         base_repo_path = "/app/repos"
@@ -56,29 +115,30 @@ class Command(BaseCommand):
             try:
                 # 안전 디렉토리 설정
                 subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
-
-                # 최신 origin mirror + HEAD update
-                subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'], check=True)
-                subprocess.run(['git', '-C', repo_path, 'remote', 'set-head', 'origin', '--auto'], check=True)
-
-                self.stdout.write(self.style.SUCCESS(f"✅ Synced with origin for {repo.slug}"))
+                self.stdout.write(self.style.SUCCESS("Safe directory 설정 완료"))
             except subprocess.CalledProcessError as e:
-                self.stderr.write(self.style.ERROR(f"❌ Git sync failed for {repo.slug}: {e}"))
+                self.stderr.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
+
+            try:
+                for attempt in range(3):
+                    try:
+                        subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'], check=True)
+                        subprocess.run(['git', '-C', repo_path, 'remote', 'set-head', 'origin', '--auto'], check=True)
+                        self.stdout.write(self.style.SUCCESS(f"Synced with origin for {repo.slug}"))
+                        break
+                    except subprocess.CalledProcessError as e:
+                        if attempt == 2:
+                            self.stderr.write(self.style.ERROR(f"Git sync failed for {repo.slug}: {e}"))
+                            continue
+                        time.sleep(2)
+
+                self.sync_branches(git_repo, repo, repo_path)
+            except Exception as e:
+                self.stderr.write(self.style.ERROR(f"Git operations failed: {e}"))
                 continue
 
-            # Branch 등록
-            local_branches = [head.name for head in git_repo.heads if head.name != 'HEAD']
-            existing_branches = set(repo.branches.values_list('name', flat=True))
-            new_branch_names = [b for b in local_branches if b not in existing_branches]
-            if new_branch_names:  # 새 브린치들 저장
-                Branch.objects.bulk_create([
-                    Branch(repo=repo, name=branch_name) for branch_name in new_branch_names
-                ])
-                self.stdout.write(
-                    self.style.SUCCESS(f"✅ [{repo.slug}] 새 브랜치 {len(new_branch_names)}개 추가됨: {new_branch_names}"))
-
-            # 브랜치-커밋 매핑 (최적화)
-            commit_branch_map = {}  # commit_hash -> [branch_name]
+            # 브랜치-커밋 매핑
+            commit_branch_map = {}
             try:
                 # git for-each-ref로 브랜치별 HEAD 커밋 조회
                 cmd = ['git', '-C', repo_path, 'for-each-ref', '--format=%(refname:short) %(objectname)', 'refs/heads']
@@ -92,7 +152,7 @@ class Command(BaseCommand):
                 # 히스토리 탐색으로 추가 커밋 매핑
                 for branch in repo.branches.all():
                     branch_name = branch.name
-                    cmd = ['git', '-C', repo_path, 'log', f'heads/{branch_name}', '--format=%H']
+                    cmd = ['git', '-C', repo_path, 'log', f'refs/heads/{branch_name}', '--format=%H']
                     if limit is not None:
                         cmd.append(f'--max-count={limit}')
                     try:
@@ -113,8 +173,8 @@ class Command(BaseCommand):
             existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
             commits_to_create = []
             commit_hashes = []
-            commit_parent_map = {}  # commit_hash -> [parent_hashes]
-            commit_obj_map = {}  # commit_hash -> Commit instance
+            commit_parent_map = {}
+            commit_obj_map = {}
 
             try:
                 remote_refs = git_repo.remotes.origin.refs
