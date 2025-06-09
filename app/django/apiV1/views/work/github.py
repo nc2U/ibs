@@ -492,7 +492,7 @@ class GetChangedFilesView(APIView):
             for diff in diff_index:
                 changed_files.append({
                     "path": diff.a_path or diff.b_path,
-                    "change_type": (
+                    "type": (
                         "A" if diff.new_file else
                         "D" if diff.deleted_file else
                         "R" if diff.renamed_file else

@@ -60,3 +60,8 @@ export interface FileInfo {
   content: string | null
   message?: string
 }
+
+export interface ChangedFile {
+  path: string
+  type: 'A' | 'D' | 'R' | 'M'
+}
