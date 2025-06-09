@@ -116,10 +116,10 @@ const toggleFileView = (payload: any) => {
 }
 
 // revision view
-const commit_hash = ref<any>(null)
-const getRevision = (sha: string) => {
-  console.log(sha)
-  commit_hash.value = sha
+const commit = ref<any>(null)
+const getRevision = (commitObj: Commit) => {
+  console.log(commitObj)
+  commit.value = commitObj
   headerView.value = 'revision'
 }
 
@@ -214,7 +214,7 @@ onBeforeMount(async () => {
 
       <ViewRevision
         v-else-if="headerView === 'revision'"
-        :sha="commit_hash"
+        :commit="commit"
         @goto-back="headerView = 'tree'"
       />
 

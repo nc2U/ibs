@@ -117,7 +117,7 @@ onBeforeMount(() => {
         <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-center">
           <span class="mr-5">
-            <router-link to="" @click="emit('revision-view', commit.commit_hash)">
+            <router-link to="" @click="emit('revision-view', commit)">
               {{ commit.commit_hash.substring(0, 8) }}
             </router-link>
           </span>
