@@ -41,7 +41,10 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
 
             try:  # ensure fetch ref spec exists
-                fetch_specs = git_repo.remote('origin').config_reader.get_value("fetch", None)
+                try:
+                    fetch_specs = git_repo.remote('origin').config_reader.get_value("fetch")
+                except Exception:
+                    fetch_specs = None
                 if not fetch_specs:
                     git_repo.git.config('--add', 'remote.origin.fetch', '+refs/heads/*:refs/remotes/origin/*')
                 git_repo.remote('origin').fetch()
