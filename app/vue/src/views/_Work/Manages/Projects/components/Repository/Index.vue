@@ -101,12 +101,12 @@ const intoRoot = () => {
   subTree.value = null
 }
 
-const intoPath = async (payload: any) => {
+const intoPath = async (node: { path: string; sha: string }) => {
   headerView.value = 'tree'
-  const isExists = shaMap.value.some(item => item.sha === payload.sha && item.path === payload.path)
-  if (!isExists) shaMap.value.push(payload)
-  if (payload.sha === '') payload.sha = shaMap.value.find(item => item.path === payload.path)?.sha
-  const { sha, path } = payload
+  const isExists = shaMap.value.some(item => item.sha === node.sha && item.path === node.path)
+  if (!isExists) shaMap.value.push(node)
+  if (node.sha === '') node.sha = shaMap.value.find(item => item.path === node.path)?.sha as string
+  const { sha, path } = node
   currPath.value = path
   subTree.value = await fetchSubTree(repo.value?.pk as number, sha, path)
 }
@@ -118,11 +118,11 @@ const toggleFileView = (payload: any) => {
   headerView.value = 'file'
 }
 
-const viewFile = async (node: any) => {
+const viewFile = async (node: { path: string; sha: string }) => {
   const fileData = await fetchFileView(
     repo.value?.pk as number,
     node?.path as string,
-    node?.commit?.sha as string,
+    node?.sha as string,
   )
   toggleFileView(fileData)
 }

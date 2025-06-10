@@ -4,7 +4,21 @@ import type { ChangedFile } from '@/store/types/work_github.ts'
 
 defineProps({ changeFiles: { type: Array as PropType<ChangedFile[]>, default: () => [] } })
 
+const emit = defineEmits(['into-path', 'file-view'])
+
 const pathList = (trees: string) => trees.split('/')
+
+const intoPath = () =>
+  emit('into-path', {
+    // path: props.node?.path as string,
+    // sha: props.node?.commit?.sha as string,
+  })
+
+const viewFile = async () =>
+  emit('file-view', {
+    // path: props.node?.path as string,
+    // sha: props.node?.commit?.sha as string,
+  })
 </script>
 
 <template>

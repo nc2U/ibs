@@ -40,7 +40,11 @@ const intoPath = () =>
     sha: props.node?.commit?.sha as string,
   })
 
-const viewFile = async () => emit('file-view', props.node)
+const viewFile = async () =>
+  emit('file-view', {
+    path: props.node?.path as string,
+    sha: props.node?.commit?.sha as string,
+  })
 
 const revisionView = async () =>
   emit('revision-view', await fetchCommitBySha(props.node?.commit?.sha as string))
@@ -62,8 +66,8 @@ const revisionView = async () =>
         </span>
       </span>
 
-      <span @click="viewFile">
-        <span v-if="node.type === 'blob'" :style="`padding-left: ${level * 15 + 18}px`">
+      <span v-else @click="viewFile">
+        <span :style="`padding-left: ${level * 15 + 18}px`">
           <v-icon
             :icon="`mdi-file-${node.path.endsWith('.txt') ? 'document-' : ''}outline`"
             color="secondary"
