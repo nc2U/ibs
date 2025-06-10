@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeMount, ref } from 'vue'
+import { onBeforeMount, ref, watch } from 'vue'
 
 const props = defineProps({ commitHash: { type: String, default: null } })
 
@@ -7,6 +7,12 @@ const emit = defineEmits(['get-commit'])
 
 const sha = ref('')
 
+watch(
+  () => props.commitHash,
+  nVal => {
+    if (nVal) sha.value = nVal
+  },
+)
 onBeforeMount(() => {
   if (props.commitHash) sha.value = props.commitHash
 })
