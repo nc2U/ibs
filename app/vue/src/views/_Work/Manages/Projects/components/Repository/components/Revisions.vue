@@ -3,7 +3,7 @@ import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Commit } from '@/store/types/work_github.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
-import { timeFormat } from '@/utils/baseMixins.ts'
+import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import Pagination from '@/components/Pagination'
 
 const props = defineProps({
@@ -154,7 +154,7 @@ onBeforeMount(() => {
         <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>
         <CTableDataCell class="text-center">{{ commit.author }}</CTableDataCell>
         <CTableDataCell>
-          {{ commit.message }}
+          {{ cutString(commit.message, 80) }}
           <template v-if="commit.issues.length">
             (<span v-for="(issue, i) in commit.issues" :key="issue">
               <template v-if="i > 0">, </template>
