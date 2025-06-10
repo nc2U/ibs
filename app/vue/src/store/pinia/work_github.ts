@@ -192,7 +192,7 @@ export const useGithub = defineStore('github', () => {
 
   const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
     api
-      .get(`/repo/${pk}/compare/${diff_hash}${full ? '?full=1' : ''}`)
+      .get(`/repo/${pk}/compare/${diff_hash}${full ? '&full=1' : ''}`)
       .then(res => (gitDiff.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
