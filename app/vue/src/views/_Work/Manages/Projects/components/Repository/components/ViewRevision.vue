@@ -7,6 +7,7 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
+import { di } from '@fullcalendar/core/internal-common'
 
 const props = defineProps({
   repo: { type: Number, required: true },
@@ -44,6 +45,11 @@ const diffIndex = ref<number | null>(null)
 const partialDiffView = (n: number) => {
   diffIndex.value = n
   tabKey.value = 2
+}
+
+const tabReset = () => {
+  diffIndex.value = null
+  tabKey.value = 1
 }
 
 onBeforeMount(async () => {
@@ -112,7 +118,7 @@ onBeforeMount(async () => {
 
   <CNav variant="tabs" class="mb-5">
     <CNavItem>
-      <CNavLink href="javascript:void(0);" :active="tabKey === 1" @click="tabKey = 1">
+      <CNavLink href="javascript:void(0);" :active="tabKey === 1" @click="tabReset">
         변경사항들
       </CNavLink>
     </CNavItem>
@@ -132,7 +138,7 @@ onBeforeMount(async () => {
     @file-view="emit('file-view', $event)"
     @diff-view="partialDiffView"
   />
-  <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" />
+  <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" :diff-index="diffIndex as number" />
 
   <v-divider v-if="tabKey === 1" class="mb-2" />
 

@@ -7,8 +7,49 @@ import sanitizeHtml from 'sanitize-html'
 
 const props = defineProps({
   gitDiff: { type: Object as PropType<DiffApi>, required: true },
-  diffIndex: { type: Number, default: null },
+  diffIndex: { type: Number, default: undefined },
 })
+
+const emit = defineEmits(['get-diff'])
+
+const diffHtml = ref('')
+const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
+
+const getDiffCode = (diff: string) => {
+  const diffText = Number.isInteger(props.diffIndex) ? splitDiff(diff)[props.diffIndex] : diff
+  diffHtml.value = html(diffText, {
+    drawFileList: false,
+    matching: 'lines',
+    outputFormat: outputFormat.value,
+  })
+}
+
+const splitDiff = (diffText: string) => {
+  // diff 섹션을 배열로 분리
+  const diffSections = []
+  let currentSection = []
+  const diffStartRegex = /^diff --git/
+
+  // 줄 단위로 분리
+  const lines = diffText.split('\n')
+
+  for (const line of lines) {
+    if (diffStartRegex.test(line) && currentSection.length) {
+      // 새로운 섹션 시작 시 이전 섹션 저장
+      diffSections.push(currentSection.join('\n'))
+      currentSection = [line]
+    } else {
+      currentSection.push(line)
+    }
+  }
+
+  // 마지막 섹션 추가
+  if (currentSection.length) {
+    diffSections.push(currentSection.join('\n'))
+  }
+
+  return diffSections
+}
 
 watch(
   () => props.gitDiff,
@@ -17,24 +58,10 @@ watch(
   },
 )
 
-const emit = defineEmits(['get-diff'])
-
-const diffHtml = ref('')
-
-const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
-
 watch(
   () => outputFormat.value,
   newVal => getDiffCode(props.gitDiff?.diff as string),
 )
-
-const getDiffCode = (diffText: string) => {
-  diffHtml.value = html(diffText, {
-    drawFileList: false,
-    matching: 'lines',
-    outputFormat: outputFormat.value,
-  })
-}
 
 const hasContent = computed(() => {
   const text = sanitizeHtml(diffHtml.value, { allowedTags: [], allowedAttributes: {} }).trim()
