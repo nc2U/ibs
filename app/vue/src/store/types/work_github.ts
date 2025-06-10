@@ -69,11 +69,12 @@ export interface DiffApi {
   truncated: boolean
 }
 
-export interface Changed {
-  changed_files: ChangedFile[]
+export interface ChangedFile {
+  sha: string
+  changed: Changed[]
 }
 
-export interface ChangedFile {
+export interface Changed {
   path: string
   type: 'A' | 'C' | 'D' | 'M' | 'R'
 } // 'add', 'copied', 'deleted', 'modified', 'renamed'
