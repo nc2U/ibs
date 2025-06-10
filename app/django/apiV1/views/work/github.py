@@ -222,39 +222,67 @@ class GitSubTreeView(APIView):
     @staticmethod
     def get(request, pk, path=None):
         sha = request.query_params.get("sha", "").strip()  # commit SHA
-
-        if not sha:
-            return Response({"error": "Missing commit SHA"}, status=400)
+        branch = request.query_params.get("branch", "").strip()  # branch name
 
         repo_path = get_repo_path(pk)
         if not os.path.exists(repo_path):
-            return Response({"error": "Repository path not found"}, status=404)
+            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             repo = Repo(repo_path)
         except (BadName, KeyError) as e:
-            return Response({"error": "Invalid SHA or path", "details": str(e)}, status=400)
+            return Response({"error": "Invalid repository", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:  # 커밋 가져 오기
-            commit = repo.commit(sha)  # repo.head.commit
-        except ValueError:
-            return Response({"error": "Repository HEAD is not set"}, status=400)
+        try:
+            if sha:
+                commit = repo.commit(sha)  # 특정 SHA 커밋
+            else:
+                # branch가 제공되면 해당 브랜치 사용, 없으면 기본 브랜치 시도
+                if branch:
+                    try:
+                        commit = repo.commit(branch)
+                    except (BadName, ValueError):
+                        return Response({"error": f"Invalid branch: {branch}", "details": "Branch not found"},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    # 기본 브랜치 (main/master) 또는 HEAD
+                    branch_candidates = ['main', 'master']
+                    commit = None
+                    for branch_name in branch_candidates:
+                        try:
+                            commit = repo.commit(branch_name)
+                            break
+                        except (BadName, ValueError):
+                            continue
+                    if not commit:
+                        if repo.head.is_valid():
+                            commit = repo.head.commit
+                        else:
+                            return Response({"error": "No valid branches or HEAD found"},
+                                            status=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, BadName) as e:
+            return Response(
+                {"error": "Invalid commit reference", "details": str(e)},
+                status=status.HTTP_400_BAD_REQUEST)
 
-        if path:  # 트리 가져 오기
-            try:  # 특정 경로의 트리
+        if path:
+            try:
                 tree = commit.tree[path]
                 if tree.type != "tree":
-                    return Response({"error": f"Path {path} is not a directory"}, status=400)
+                    return Response({"error": f"Path {path} is not a directory"}, status=status.HTTP_400_BAD_REQUEST)
             except KeyError:
                 raise NotFound(f"Path {path} not found")
         else:
             tree = commit.tree  # 루트 트리
 
-        items = []  # 트리 항목 처리
-        for item in tree.trees + tree.blobs:  # 하위 트리와 블롭 나열
+        items = []
+        commit_cache = {}  # 성능 최적화를 위한 커밋 캐시
+        for item in tree.trees + tree.blobs:
             item_path = item.path
-            # 최신 커밋 가져 오기
-            latest_commit = next(repo.iter_commits(paths=item_path, max_count=1), commit)
+            # 최신 커밋 가져오기 (캐시 활용)
+            if item_path not in commit_cache:
+                commit_cache[item_path] = next(repo.iter_commits(paths=item_path, max_count=1), commit)
+            latest_commit = commit_cache[item_path]
             items.append({
                 "path": item_path,
                 "name": item.name,
@@ -267,10 +295,9 @@ class GitSubTreeView(APIView):
                     "author": latest_commit.author.name,
                     "date": latest_commit.authored_datetime.isoformat(),
                     "message": latest_commit.message.strip()
-                }
-            })
+                }})
 
-        # 정렬 및 시리얼라이저로 데이터 검증 및 변환
+        # 정렬 및 시리얼라이저
         items.sort(key=lambda x: (x["type"] != "tree", x["name"].lower()))
         serializer = TreeItemSerializer(items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
