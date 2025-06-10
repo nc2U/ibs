@@ -77,13 +77,8 @@ const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchBranchTree = (repoPk: number, branch: string, tag = '') =>
   gitStore.fetchBranchTree(repoPk, branch, tag)
-const fetchSubTree = (payload: {
-  repo: number
-  sha?: string
-  path?: string
-  branch?: string
-  tag?: boolean
-}) => gitStore.fetchSubTree(payload)
+const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
+  gitStore.fetchSubTree(payload)
 
 const changeBranch = (branch: string, tag = '') => {
   subTree.value = null

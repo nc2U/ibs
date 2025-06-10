@@ -19,13 +19,8 @@ const subTrees = ref([])
 const gitStore = useGithub()
 
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
-const fetchSubTree = (payload: {
-  repo: number
-  sha?: string
-  path?: string
-  branch?: string
-  tag?: boolean
-}) => gitStore.fetchSubTree(payload)
+const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
+  gitStore.fetchSubTree(payload)
 const fetchFileView = (repo: number, path: string, sha: string) =>
   gitStore.fetchFileView(repo, path, sha)
 
