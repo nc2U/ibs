@@ -55,6 +55,12 @@ class Commit(models.Model):
         verbose_name_plural = '17. 커미트'
         unique_together = ('repo', 'revision_id')
 
+    def get_prev(self):
+        return Commit.objects.filter(repo=self.repo, revision_id__lt=self.revision_id).order_by('-revision_id').first()
+
+    def get_next(self):
+        return Commit.objects.filter(repo=self.repo, revision_id__gt=self.revision_id).order_by('revision_id').first()
+
     def save(self, *args, **kwargs):
         if self.revision_id is None:
             with transaction.atomic():
