@@ -155,10 +155,10 @@ export const useGithub = defineStore('github', () => {
 
   const fetchSubTree = async (payload: {
     repo: number
-    sha: string
-    path: string
-    branch: string
-    tag: boolean
+    sha?: string
+    path?: string
+    branch?: string
+    tag?: boolean
   }) => {
     const { repo, sha, path = '', branch = '', tag = false } = payload
     const encodedPath = path ? encodeURIComponent(path) : ''
@@ -166,9 +166,9 @@ export const useGithub = defineStore('github', () => {
       ? `/repo/${repo}/tree/${encodedPath}?sha=${sha}`
       : `/repo/${repo}/tree/?sha=${sha}`
     const branchQry = branch ? `&branch=${branch}` : ''
-    const is_tag = tag ? `?is_tag=${tag}` : ''
+    const isTag = tag ? `?is_tag=${tag}` : ''
     try {
-      const { data } = await api.get(`${url}${branchQry}${is_tag}`)
+      const { data } = await api.get(`${url}${branchQry}${isTag}`)
       return data
     } catch (error: any) {
       console.error('[fetchSubTree] Failed:', error.response?.data || error.message)
