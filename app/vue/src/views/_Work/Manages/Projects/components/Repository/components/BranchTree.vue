@@ -38,9 +38,10 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
       <h5>
         <router-link to="" @click="emit('into-root')">{{ repo?.slug }}</router-link>
         <template v-if="currentPath.length">
-          <span v-for="path in currentPath" :key="path">
+          <span v-for="(path, i) in currentPath" :key="i">
             /
-            <router-link to="" @click="intoPath(path)">{{ path }}</router-link>
+            <span v-if="i === currentPath.length - 1">{{ path }}</span>
+            <router-link v-else to="" @click="intoPath(path)">{{ path }}</router-link>
           </span>
         </template>
         @ {{ currBranch }}
