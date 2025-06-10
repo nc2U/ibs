@@ -72,7 +72,7 @@ const gitDiff = computed<any>(() => gitStore.gitDiff)
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
 const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
   gitStore.fetchGitDiff(pk, diff_hash, full)
-
+const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchBranchTree = (repoPk: number, branch: string, tag = '') =>
@@ -145,6 +145,11 @@ const viewFile = async (node: { path: string; sha: string }) => {
 const getRevision = () => {
   viewPageSort.value = 'revisions'
   headerView.value = 'revision'
+}
+
+const revisionView = async (hash: string) => {
+  await fetchCommitBySha(hash)
+  getRevision()
 }
 
 // revisons & diff view
@@ -241,7 +246,7 @@ onBeforeMount(async () => {
         v-else-if="headerView === 'revision'"
         :repo="repo?.pk as number"
         @goto-back="headerView = 'tree'"
-        @revision-view="getRevision"
+        @get-commit="revisionView"
         @into-path="intoPath"
         @file-view="viewFile"
       />

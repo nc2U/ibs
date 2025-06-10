@@ -12,7 +12,7 @@ const props = defineProps({
   repo: { type: Number, required: true },
 })
 
-const emit = defineEmits(['goto-back', 'revision-view', 'into-path', 'file-view'])
+const emit = defineEmits(['goto-back', 'get-commit', 'into-path', 'file-view'])
 
 const tabKey = ref(1)
 
@@ -38,12 +38,7 @@ watch(
 const changedFile = computed(() => gitStore.changedFile)
 
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
-const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchChangedFiles = (repo: number, sha: string) => gitStore.fetchChangedFiles(repo, sha)
-const revisionView = async (hash: string) => {
-  await fetchCommitBySha(hash)
-  emit('revision-view')
-}
 
 onBeforeMount(async () => {
   if (commit.value) {
@@ -55,25 +50,26 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <CRow class="py-2">
+  <CRow class="pt-2 flex-lg-row flex-column-reverse">
     <CCol>
       <h5>리비전 {{ commit?.commit_hash.substring(0, 8) }}</h5>
+
+      <span>
+        Austin Kho 이(가)
+        <router-link to="">{{ elapsedTime(commit?.date) }}</router-link>
+        에 추가함
+      </span>
+    </CCol>
+
+    <CCol class="mb-2">
+      <RevisionControl
+        :commit-hash="commit?.commit_hash"
+        @get-commit="emit('get-commit', $event)"
+      />
     </CCol>
   </CRow>
 
-  <CRow>
-    <CCol>
-      Austin Kho 이(가)
-      <router-link to="">{{ elapsedTime(commit?.date) }}</router-link>
-      에 추가함
-    </CCol>
-
-    <CCol>
-      <RevisionControl />
-    </CCol>
-  </CRow>
-
-  <v-divider class="mt-0" />
+  <v-divider class="mt-1" />
 
   <CRow class="pl-5">
     <CCol>
@@ -82,7 +78,7 @@ onBeforeMount(async () => {
         <li v-if="commit?.parents.length">
           <b>상위 </b>
           <span v-for="(hash, i) in commit.parents" :key="hash">
-            <router-link to="" @click="revisionView(hash)">
+            <router-link to="" @click="emit('get-commit', hash)">
               {{ hash.substring(0, 8) }}
             </router-link>
             <span v-if="i < commit.parents.length - 1">, </span>
@@ -91,7 +87,7 @@ onBeforeMount(async () => {
         <li v-if="commit?.children.length">
           <b>하위 </b>
           <span v-for="(hash, i) in commit.children" :key="hash">
-            <router-link to="" @click="revisionView(hash)">
+            <router-link to="" @click="emit('get-commit', hash)">
               {{ hash.substring(0, 8) }}
             </router-link>
             <span v-if="i < commit.children.length - 1">, </span>
