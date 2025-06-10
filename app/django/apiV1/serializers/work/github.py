@@ -14,12 +14,24 @@ class CommitSerializer(serializers.ModelSerializer):
     parents = serializers.SlugRelatedField(slug_field='commit_hash', many=True, read_only=True)
     children = serializers.SlugRelatedField(slug_field='commit_hash', many=True, read_only=True)
     issues = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    prev = serializers.SerializerMethodField()
+    next = serializers.SerializerMethodField()
 
     class Meta:
         model = Commit
-        fields = ('pk', 'revision_id', 'repo', 'commit_hash', 'author',
-                  'date', 'message', 'branches', 'parents', 'children', 'issues')
+        fields = ('pk', 'revision_id', 'repo', 'commit_hash', 'author', 'date', 'message',
+                  'branches', 'parents', 'children', 'issues', 'prev', 'next')
         read_only_fields = ('revision_id',)
+
+    @staticmethod
+    def get_prev(obj):
+        prev_obj = obj.get_prev()
+        return prev_obj.commit_hash if prev_obj else None
+
+    @staticmethod
+    def get_next(obj):
+        next_obj = obj.get_next()
+        return next_obj.commit_hash if next_obj else None
 
 
 class GitRepoApiSerializer(serializers.Serializer):
