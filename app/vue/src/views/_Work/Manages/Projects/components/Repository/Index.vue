@@ -214,7 +214,6 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      {{ curr_branch }} //
       <BranchTree
         v-if="headerView === 'tree'"
         :repo="repo as Repository"

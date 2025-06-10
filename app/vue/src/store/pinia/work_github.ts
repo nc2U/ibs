@@ -160,7 +160,7 @@ export const useGithub = defineStore('github', () => {
     branch?: string
     tag?: boolean
   }) => {
-    const { repo, sha, path = '', branch = '', tag = false } = payload
+    const { repo, sha = '', path = '', branch = '', tag = false } = payload
     const encodedPath = path ? encodeURIComponent(path) : ''
     const url = path
       ? `/repo/${repo}/tree/${encodedPath}?sha=${sha}`
