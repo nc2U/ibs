@@ -17,7 +17,7 @@ const emit = defineEmits(['goto-back', 'revision-view', 'into-path', 'file-view'
 const tabKey = ref(1)
 
 const gitStore = useGithub()
-const commit = computed(() => gitStore.commit)
+const commit = computed<Commit | null>(() => gitStore.commit)
 watch(
   () => commit.value,
   async newVal => {
@@ -54,14 +54,14 @@ onBeforeMount(async () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>리비전 {{ commit.commit_hash.substring(0, 8) }}</h5>
+      <h5>리비전 {{ commit?.commit_hash.substring(0, 8) }}</h5>
     </CCol>
   </CRow>
 
   <CRow>
     <CCol>
       Austin Kho 이(가)
-      <router-link to="">{{ elapsedTime(commit.date) }}</router-link>
+      <router-link to="">{{ elapsedTime(commit?.date) }}</router-link>
       에 추가함
     </CCol>
 
@@ -75,8 +75,8 @@ onBeforeMount(async () => {
   <CRow class="pl-5">
     <CCol>
       <ul class="pl-5">
-        <li><b>ID</b> {{ commit.commit_hash }}</li>
-        <li v-if="commit.parents.length">
+        <li><b>ID</b> {{ commit?.commit_hash }}</li>
+        <li v-if="commit?.parents.length">
           <b>상위 </b>
           <span v-for="(hash, i) in commit.parents" :key="hash">
             <router-link to="" @click="revisionView(hash)">
@@ -85,7 +85,7 @@ onBeforeMount(async () => {
             <span v-if="i < commit.parents.length - 1">, </span>
           </span>
         </li>
-        <li v-if="commit.children.length">
+        <li v-if="commit?.children.length">
           <b>하위 </b>
           <span v-for="(hash, i) in commit.children" :key="hash">
             <router-link to="" @click="revisionView(hash)">
@@ -99,7 +99,7 @@ onBeforeMount(async () => {
   </CRow>
 
   <CRow class="mb-5">
-    <CCol>{{ commit.message }}</CCol>
+    <CCol>{{ commit?.message }}</CCol>
   </CRow>
 
   <CRow class="mb-5">
