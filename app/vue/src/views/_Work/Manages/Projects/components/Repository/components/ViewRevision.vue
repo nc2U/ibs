@@ -40,7 +40,10 @@ const changedFile = computed(() => gitStore.changedFile)
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchChangedFiles = (repo: number, sha: string) => gitStore.fetchChangedFiles(repo, sha)
-const revisionView = async (hash: string) => emit('revision-view', await fetchCommitBySha(hash))
+const revisionView = async (hash: string) => {
+  await fetchCommitBySha(hash)
+  emit('revision-view')
+}
 
 onBeforeMount(async () => {
   if (commit.value) {
