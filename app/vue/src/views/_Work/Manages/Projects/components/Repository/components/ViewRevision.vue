@@ -59,8 +59,6 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 
-  {{ changedFile }}
-
   <CRow>
     <CCol>
       Austin Kho 이(가)
