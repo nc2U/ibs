@@ -9,7 +9,6 @@ import type {
   Repository,
   ChangedFile,
 } from '@/store/types/work_github.ts'
-import { moveElementAwayFromCollision } from 'grid-layout-plus/es/helpers/common'
 
 export const useGithub = defineStore('github', () => {
   // Repository states & getters
