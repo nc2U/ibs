@@ -56,6 +56,8 @@ const fetchCommitList = (payload: {
   page?: number
   limit?: number
 }) => gitStore.fetchCommitList(payload)
+const fetchFileView = (repo: number, path: string, sha: string) =>
+  gitStore.fetchFileView(repo, path, sha)
 
 const branches = computed<string[]>(() => gitStore.branches)
 const tags = computed<string[]>(() => gitStore.tags)
@@ -98,6 +100,7 @@ const intoRoot = () => {
   currPath.value = ''
   subTree.value = null
 }
+
 const intoPath = async (payload: any) => {
   headerView.value = 'tree'
   const isExists = shaMap.value.some(item => item.sha === payload.sha && item.path === payload.path)
@@ -115,10 +118,20 @@ const toggleFileView = (payload: any) => {
   headerView.value = 'file'
 }
 
+const viewFile = async (node: any) => {
+  const fileData = await fetchFileView(
+    repo.value?.pk as number,
+    node?.path as string,
+    node?.commit?.sha as string,
+  )
+  toggleFileView(fileData)
+}
+
 // revision view
 const commit = ref<any>(null)
 const getRevision = (commitObj: Commit) => {
   commit.value = commitObj
+  viewPageSort.value = 'revisions'
   headerView.value = 'revision'
 }
 
@@ -194,7 +207,7 @@ onBeforeMount(async () => {
         :branch-tree="currentTree"
         @into-root="intoRoot"
         @into-path="intoPath"
-        @file-view="toggleFileView"
+        @file-view="viewFile"
         @revision-view="getRevision"
         @change-branch="changeBranch"
         @change-tag="changeTag"

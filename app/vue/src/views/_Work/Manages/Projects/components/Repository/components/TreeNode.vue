@@ -40,14 +40,7 @@ const intoPath = () =>
     sha: props.node?.commit?.sha as string,
   })
 
-const viewFile = async () => {
-  const fileInfo = await fetchFileView(
-    props.repo as number,
-    props.node?.path as string,
-    props.node?.commit?.sha as string,
-  )
-  emit('file-view', fileInfo)
-}
+const viewFile = async () => emit('file-view', props.node)
 
 const revisionView = async () =>
   emit('revision-view', await fetchCommitBySha(props.node?.commit?.sha as string))
