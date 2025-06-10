@@ -19,18 +19,23 @@ const subTrees = ref([])
 const gitStore = useGithub()
 
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
-const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
-  gitStore.fetchSubTree(repo, sha, path)
+const fetchSubTree = (payload: {
+  repo: number
+  sha?: string
+  path?: string
+  branch?: string
+  tag?: boolean
+}) => gitStore.fetchSubTree(payload)
 const fetchFileView = (repo: number, path: string, sha: string) =>
   gitStore.fetchFileView(repo, path, sha)
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
-    subTrees.value = await fetchSubTree(
-      props.repo as number,
-      props.node?.commit?.sha as string,
-      props.node?.path as string,
-    )
+    subTrees.value = await fetchSubTree({
+      repo: props.repo as number,
+      sha: props.node?.commit?.sha as string,
+      path: props.node?.path as string,
+    })
   nodeFold.value = !nodeFold.value
 }
 

@@ -77,8 +77,13 @@ const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchBranchTree = (repoPk: number, branch: string, tag = '') =>
   gitStore.fetchBranchTree(repoPk, branch, tag)
-const fetchSubTree = (repo: number, sha: string, path: string | null = null) =>
-  gitStore.fetchSubTree(repo, sha, path)
+const fetchSubTree = (payload: {
+  repo: number
+  sha?: string
+  path?: string
+  branch?: string
+  tag?: boolean
+}) => gitStore.fetchSubTree(payload)
 
 const changeBranch = (branch: string, tag = '') => {
   subTree.value = null
@@ -91,7 +96,7 @@ const changeTag = (tag: string) => {
 }
 
 // into path
-const shaMap = ref<{ sha: string; path: string }[]>([])
+const shaMap = ref<{ path: string; sha: string }[]>([])
 const currPath = ref('')
 const subTree = ref(null)
 
@@ -101,14 +106,28 @@ const intoRoot = () => {
   subTree.value = null
 }
 
+const prePath = async (path: string) => {
+  const item = shaMap.value.find(item => item.path === path)
+  if (item) await intoPath({ path, sha: item.sha })
+  else
+    subTree.value = await fetchSubTree({
+      repo: repo.value?.pk as number,
+      path,
+      branch: curr_branch.value,
+    })
+}
+
 const intoPath = async (node: { path: string; sha: string }) => {
   headerView.value = 'tree'
-  const isExists = shaMap.value.some(item => item.sha === node.sha && item.path === node.path)
-  if (!isExists) shaMap.value.push(node)
-  if (node.sha === '') node.sha = shaMap.value.find(item => item.path === node.path)?.sha as string
+  const exists = shaMap.value.some(item => item.path === node.path && item.sha === node.sha)
+  if (!exists) shaMap.value?.push(node)
   const { sha, path } = node
   currPath.value = path
-  subTree.value = await fetchSubTree(repo.value?.pk as number, sha, path)
+  subTree.value = await fetchSubTree({
+    repo: repo.value?.pk as number,
+    sha,
+    path,
+  })
 }
 
 // file view
@@ -195,6 +214,7 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
+      {{ curr_branch }} //
       <BranchTree
         v-if="headerView === 'tree'"
         :repo="repo as Repository"
@@ -204,6 +224,7 @@ onBeforeMount(async () => {
         :curr-branch="curr_branch"
         :branch-tree="currentTree"
         @into-root="intoRoot"
+        @pre-path="prePath"
         @into-path="intoPath"
         @file-view="viewFile"
         @revision-view="getRevision"

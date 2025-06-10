@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import type { Repository, Tree } from '@/store/types/work_github.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import BranchControl from './HeaderMenu/BranchControl.vue'
@@ -16,6 +16,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'into-root',
+  'pre-path',
   'into-path',
   'file-view',
   'revision-view',
@@ -23,10 +24,10 @@ const emit = defineEmits([
   'change-tag',
 ])
 
-const intoPath = (path: string) => {
+const prePath = (path: string) => {
   const index = currentPath.value.indexOf(path)
   const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
-  emit('into-path', { sha: '', path: nowPath })
+  emit('pre-path', nowPath)
 }
 
 const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.split('/') : []))
@@ -41,7 +42,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
           <span v-for="(path, i) in currentPath" :key="i">
             /
             <span v-if="i === currentPath.length - 1">{{ path }}</span>
-            <router-link v-else to="" @click="intoPath(path)">{{ path }}</router-link>
+            <router-link v-else to="" @click="prePath(path)">{{ path }}</router-link>
           </span>
         </template>
         @ {{ currBranch }}
