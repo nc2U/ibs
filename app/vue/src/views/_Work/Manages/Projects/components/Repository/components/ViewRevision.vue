@@ -62,7 +62,7 @@ onBeforeMount(async () => {
     </CCol>
 
     <CCol class="mb-2">
-      <RevisionControl :commit="commit" @get-commit="emit('get-commit', $event)" />
+      <RevisionControl :commit="commit as Commit" @get-commit="emit('get-commit', $event)" />
     </CCol>
   </CRow>
 
