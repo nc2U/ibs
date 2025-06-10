@@ -7,7 +7,7 @@ const props = defineProps({
   changeFiles: { type: Array as PropType<Changed[]>, default: () => [] },
 })
 
-const emit = defineEmits(['into-path', 'file-view'])
+const emit = defineEmits(['into-path', 'file-view', 'diff-view'])
 
 const pathList = (trees: string) => trees.split('/')
 
@@ -78,7 +78,7 @@ const choiceFunc = (isFile: boolean, path: string, index: number) => {
             >
           </span>
           <span v-if="j === pathList(tree.path).length - 1">
-            (<router-link to="">비교(diff)</router-link>)
+            (<router-link to="" @click="emit('diff-view', i)">비교(diff)</router-link>)
           </span>
         </CCol>
       </CRow>

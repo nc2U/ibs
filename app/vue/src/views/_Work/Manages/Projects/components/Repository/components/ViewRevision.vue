@@ -35,10 +35,16 @@ watch(
     if (!nVal?.diff) tabKey.value = 1
   },
 )
-const changedFile = computed(() => gitStore.changedFile)
+const changedFile = computed<ChangedFile | null>(() => gitStore.changedFile)
 
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
 const fetchChangedFiles = (repo: number, sha: string) => gitStore.fetchChangedFiles(repo, sha)
+
+const diffIndex = ref<number | null>(null)
+const partialDiffView = (n: number) => {
+  diffIndex.value = n
+  tabKey.value = 2
+}
 
 onBeforeMount(async () => {
   if (commit.value) {
@@ -124,6 +130,7 @@ onBeforeMount(async () => {
     :change-files="changedFile?.changed as Changed[]"
     @into-path="emit('into-path', $event)"
     @file-view="emit('file-view', $event)"
+    @diff-view="partialDiffView"
   />
   <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" />
 

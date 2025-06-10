@@ -5,7 +5,10 @@ import { cutString } from '@/utils/baseMixins.ts'
 import { html } from 'diff2html'
 import sanitizeHtml from 'sanitize-html'
 
-const props = defineProps({ gitDiff: { type: Object as PropType<DiffApi>, required: true } })
+const props = defineProps({
+  gitDiff: { type: Object as PropType<DiffApi>, required: true },
+  diffIndex: { type: Number, default: null },
+})
 
 watch(
   () => props.gitDiff,
