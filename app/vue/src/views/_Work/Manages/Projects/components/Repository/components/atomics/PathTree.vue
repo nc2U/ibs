@@ -11,21 +11,33 @@ const emit = defineEmits(['into-path', 'file-view'])
 
 const pathList = (trees: string) => trees.split('/')
 
-const intoPath = () =>
-  emit('into-path', {
-    // path: props.node?.path as string,
+const intoPath = (path: string, index: number) =>
+  // emit('into-path', {
+  console.log({
+    path: path
+      .split('/')
+      .slice(0, index + 1)
+      .join('/') as string,
     sha: props.sha as string,
   })
 
-const viewFile = async () =>
-  emit('file-view', {
-    // path: props.node?.path as string,
+const viewFile = async (path: string, index: number) =>
+  // emit('file-view', {
+  console.log({
+    path: path
+      .split('/')
+      .slice(0, index + 1)
+      .join('/') as string,
     sha: props.sha as string,
   })
+
+const choiceFunc = (isFile: boolean, path: string, index: number) => {
+  if (isFile) viewFile(path, index)
+  else intoPath(path, index)
+}
 </script>
 
 <template>
-  {{ changeFiles }}
   <CRow class="text-right">
     <CCol>
       <span class="mr-2" style="font-size: 0.8em">
@@ -61,7 +73,11 @@ const viewFile = async () =>
             <v-icon v-else color="warning" icon="mdi-circle" size="" />
           </span>
           <span>
-            <router-link to="">{{ el }}</router-link>
+            <router-link
+              to=""
+              @click="choiceFunc(pathList(tree.path).length - 1 === j, tree.path, j)"
+              >{{ el }}</router-link
+            >
           </span>
           <span v-if="j === pathList(tree.path).length - 1">
             (<router-link to="">비교(diff)</router-link>)

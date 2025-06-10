@@ -230,6 +230,8 @@ onBeforeMount(async () => {
         :commit="commit"
         @goto-back="headerView = 'tree'"
         @revision-view="getRevision"
+        @into-path="intoPath"
+        @file-view="viewFile"
       />
 
       <Revisions

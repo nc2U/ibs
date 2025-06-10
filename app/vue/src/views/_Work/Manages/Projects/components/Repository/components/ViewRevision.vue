@@ -13,7 +13,7 @@ const props = defineProps({
   commit: { type: Object as PropType<Commit>, required: true },
 })
 
-const emit = defineEmits(['goto-back', 'revision-view'])
+const emit = defineEmits(['goto-back', 'revision-view', 'into-path', 'file-view'])
 
 const tabKey = ref(1)
 
@@ -58,6 +58,8 @@ onBeforeMount(async () => {
       <h5>리비전 {{ commit.commit_hash.substring(0, 8) }}</h5>
     </CCol>
   </CRow>
+
+  {{ changedFile }}
 
   <CRow>
     <CCol>
@@ -125,8 +127,10 @@ onBeforeMount(async () => {
 
   <PathTree
     v-if="tabKey === 1"
-    :sha="changedFile?.sha"
+    :sha="changedFile?.sha as string"
     :change-files="changedFile?.changed as Changed[]"
+    @into-path="emit('into-path', $event)"
+    @file-view="emit('file-view', $event)"
   />
   <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" />
 
