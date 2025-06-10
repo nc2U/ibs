@@ -12,7 +12,7 @@ const props = defineProps({
   repo: { type: Number, required: true },
 })
 
-const emit = defineEmits(['goto-back', 'get-commit', 'into-path', 'file-view'])
+const emit = defineEmits(['goto-back', 'get-diff', 'get-commit', 'into-path', 'file-view'])
 
 const tabKey = ref(1)
 
@@ -137,7 +137,12 @@ onBeforeMount(async () => {
     @file-view="emit('file-view', $event)"
     @diff-view="partialDiffView"
   />
-  <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" :diff-index="diffIndex as number" />
+  <Diff
+    v-if="tabKey === 2"
+    :git-diff="gitDiff as DiffApi"
+    :diff-index="diffIndex as number"
+    @get-diff="emit('get-diff', $event)"
+  />
 
   <v-divider v-if="tabKey === 1" class="mb-2" />
 

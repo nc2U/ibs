@@ -45,7 +45,7 @@ const splitDiff = (diffText: string | undefined): string[] => {
   if (currentSection.length) {
     diffSections.push(currentSection.join('\n')) // 마지막 섹션 추가
   }
-  
+
   return diffSections
 }
 

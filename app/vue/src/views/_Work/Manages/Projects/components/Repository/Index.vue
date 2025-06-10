@@ -246,6 +246,7 @@ onBeforeMount(async () => {
         v-else-if="headerView === 'revision'"
         :repo="repo?.pk as number"
         @goto-back="headerView = 'tree'"
+        @get-diff="getDiff"
         @get-commit="revisionView"
         @into-path="intoPath"
         @file-view="viewFile"
