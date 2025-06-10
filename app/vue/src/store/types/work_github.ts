@@ -26,6 +26,8 @@ export interface Commit {
   parents: string[]
   children: string[]
   issues: number[]
+  prev: string | null
+  next: string | null
 }
 
 export interface BranchInfo {
