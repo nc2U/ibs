@@ -526,7 +526,7 @@ class GetChangedFilesView(APIView):
                     )
                 })
 
-            serializer = GetChangedFilesSerializer({"sha": commit.hexsha, "changed": changed_files})
+            serializer = GetChangedFilesSerializer({"sha": sha, "changed": changed_files})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 

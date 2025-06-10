@@ -70,5 +70,5 @@ class ChangedInGetFileSerializer(serializers.Serializer):
 
 
 class GetChangedFilesSerializer(serializers.Serializer):
-    sha: serializers.CharField()
+    sha = serializers.CharField()
     changed = ChangedInGetFileSerializer(many=True)
