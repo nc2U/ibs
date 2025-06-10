@@ -128,9 +128,7 @@ const viewFile = async (node: { path: string; sha: string }) => {
 }
 
 // revision view
-const commit = ref<any>(null)
-const getRevision = (commitObj: Commit) => {
-  commit.value = commitObj
+const getRevision = () => {
   viewPageSort.value = 'revisions'
   headerView.value = 'revision'
 }
@@ -227,7 +225,6 @@ onBeforeMount(async () => {
       <ViewRevision
         v-else-if="headerView === 'revision'"
         :repo="repo?.pk as number"
-        :commit="commit"
         @goto-back="headerView = 'tree'"
         @revision-view="getRevision"
         @into-path="intoPath"

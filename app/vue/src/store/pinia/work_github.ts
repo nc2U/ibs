@@ -66,11 +66,25 @@ export const useGithub = defineStore('github', () => {
 
   const commitPages = (itemPerPage: number) => Math.ceil(commitCount.value / itemPerPage)
 
+  const assignCommit = (commitObj: Commit) => (commit.value = commitObj)
+
+  const removeCommit = () => (commit.value = null)
+
   const fetchCommit = async (pk: number) =>
     await api
       .get(`/commit/${pk}/`)
       .then(res => (commit.value = res.data))
       .catch(err => errorHandle(err.response.data))
+
+  const fetchCommitBySha = async (sha: string) => {
+    try {
+      const { data } = await api.get(`/commit/?search=${sha}`)
+      commit.value = data.results[0]
+    } catch (error: any) {
+      console.error('[fetchCommitBySha] Failed:', error)
+      throw error
+    }
+  }
 
   const fetchCommitList = async (payload: {
     project?: number
@@ -175,16 +189,6 @@ export const useGithub = defineStore('github', () => {
       .then(res => (gitDiff.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchCommitBySha = async (sha: string) => {
-    try {
-      const { data } = await api.get(`/commit/?search=${sha}`)
-      return data.results[0]
-    } catch (error: any) {
-      console.error('[fetchCommitBySha] Failed:', error)
-      throw error
-    }
-  }
-
   const changedFile = ref<ChangedFile | null>(null)
 
   const fetchChangedFiles = async (repo: number, sha: string) => {
@@ -210,7 +214,10 @@ export const useGithub = defineStore('github', () => {
     commitList,
     commitCount,
     commitPages,
+    assignCommit,
+    removeCommit,
     fetchCommit,
+    fetchCommitBySha,
     fetchCommitList,
 
     repoApi,
@@ -232,8 +239,6 @@ export const useGithub = defineStore('github', () => {
     gitDiff,
     removeGitDiff,
     fetchGitDiff,
-
-    fetchCommitBySha,
 
     changedFile,
     fetchChangedFiles,

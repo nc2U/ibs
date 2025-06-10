@@ -63,6 +63,12 @@ const getDiff = () => emit('get-diff', false)
 const ghStore = useGithub()
 const commitPages = (page: number) => ghStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
+const assignCommit = (commit: Commit) => ghStore.assignCommit(commit)
+
+const viewRevision = (commit: Commit) => {
+  assignCommit(commit)
+  emit('revision-view')
+}
 
 onBeforeMount(() => {
   if (props.commitList.length > 1) {
@@ -117,7 +123,7 @@ onBeforeMount(() => {
         <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-center">
           <span class="mr-5">
-            <router-link to="" @click="emit('revision-view', commit)">
+            <router-link to="" @click="viewRevision(commit)">
               {{ commit.commit_hash.substring(0, 8) }}
             </router-link>
           </span>

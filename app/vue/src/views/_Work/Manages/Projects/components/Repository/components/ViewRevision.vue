@@ -10,7 +10,6 @@ import Diff from './atomics/Diff.vue'
 
 const props = defineProps({
   repo: { type: Number, required: true },
-  commit: { type: Object as PropType<Commit>, required: true },
 })
 
 const emit = defineEmits(['goto-back', 'revision-view', 'into-path', 'file-view'])
@@ -18,6 +17,17 @@ const emit = defineEmits(['goto-back', 'revision-view', 'into-path', 'file-view'
 const tabKey = ref(1)
 
 const gitStore = useGithub()
+const commit = computed(() => gitStore.commit)
+watch(
+  () => commit.value,
+  async newVal => {
+    if (newVal) {
+      const diff_hash = `?base=${newVal.parents[0]}&head=${newVal.commit_hash}`
+      await fetchGitDiff(props.repo, diff_hash)
+      await fetchChangedFiles(props.repo as number, newVal.commit_hash)
+    }
+  },
+)
 const gitDiff = computed<DiffApi | null>(() => gitStore.gitDiff)
 watch(
   () => gitDiff.value,
@@ -25,29 +35,18 @@ watch(
     if (!nVal?.diff) tabKey.value = 1
   },
 )
+const changedFile = computed(() => gitStore.changedFile)
+
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchChangedFiles = (repo: number, sha: string) => gitStore.fetchChangedFiles(repo, sha)
-
 const revisionView = async (hash: string) => emit('revision-view', await fetchCommitBySha(hash))
 
-watch(
-  () => props.commit,
-  nVal => {
-    if (nVal) {
-      const diff_hash = `?base=${nVal.parents[0]}&head=${nVal.commit_hash}`
-      fetchGitDiff(props.repo, diff_hash)
-    }
-  },
-)
-
-const changedFile = computed(() => gitStore.changedFile)
-
 onBeforeMount(async () => {
-  if (props.commit) {
-    const diff_hash = `?base=${props.commit.parents[0]}&head=${props.commit.commit_hash}`
+  if (commit.value) {
+    const diff_hash = `?base=${commit.value.parents[0]}&head=${commit.value.commit_hash}`
     await fetchGitDiff(props.repo, diff_hash)
-    await fetchChangedFiles(props.repo as number, props.commit.commit_hash)
+    await fetchChangedFiles(props.repo as number, commit.value.commit_hash)
   }
 })
 </script>

@@ -46,8 +46,10 @@ const viewFile = async () =>
     sha: props.node?.commit?.sha as string,
   })
 
-const revisionView = async () =>
-  emit('revision-view', await fetchCommitBySha(props.node?.commit?.sha as string))
+const revisionView = async () => {
+  await fetchCommitBySha(props.node?.commit?.sha as string)
+  emit('revision-view')
+}
 </script>
 
 <template>
