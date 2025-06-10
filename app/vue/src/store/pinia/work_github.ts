@@ -2,7 +2,13 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
-import type { Commit, BranchInfo, RepoApi, Repository } from '@/store/types/work_github.ts'
+import type {
+  Commit,
+  BranchInfo,
+  RepoApi,
+  Repository,
+  ChangedFile,
+} from '@/store/types/work_github.ts'
 import { moveElementAwayFromCollision } from 'grid-layout-plus/es/helpers/common'
 
 export const useGithub = defineStore('github', () => {
@@ -179,10 +185,12 @@ export const useGithub = defineStore('github', () => {
     }
   }
 
+  const changedFile = ref<ChangedFile | null>(null)
+
   const fetchChangedFiles = async (repo: number, sha: string) => {
     try {
       const { data } = await api.get(`/repo/${repo}/changed/?sha=${sha}`)
-      return data
+      changedFile.value = data
     } catch (error: any) {
       console.error('[fetchChangedFils] Failed:', error)
       throw error
@@ -226,6 +234,8 @@ export const useGithub = defineStore('github', () => {
     fetchGitDiff,
 
     fetchCommitBySha,
+
+    changedFile,
     fetchChangedFiles,
   }
 })
