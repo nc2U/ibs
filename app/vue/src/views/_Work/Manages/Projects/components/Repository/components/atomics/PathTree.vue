@@ -1,8 +1,11 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
-import type { ChangedFile } from '@/store/types/work_github.ts'
+import type { Changed, ChangedFile } from '@/store/types/work_github.ts'
 
-defineProps({ changeFiles: { type: Array as PropType<ChangedFile[]>, default: () => [] } })
+const props = defineProps({
+  sha: { type: String, required: true },
+  changeFiles: { type: Array as PropType<Changed[]>, default: () => [] },
+})
 
 const emit = defineEmits(['into-path', 'file-view'])
 
@@ -11,17 +14,18 @@ const pathList = (trees: string) => trees.split('/')
 const intoPath = () =>
   emit('into-path', {
     // path: props.node?.path as string,
-    // sha: props.node?.commit?.sha as string,
+    sha: props.sha as string,
   })
 
 const viewFile = async () =>
   emit('file-view', {
     // path: props.node?.path as string,
-    // sha: props.node?.commit?.sha as string,
+    sha: props.sha as string,
   })
 </script>
 
 <template>
+  {{ changeFiles }}
   <CRow class="text-right">
     <CCol>
       <span class="mr-2" style="font-size: 0.8em">

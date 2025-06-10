@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { Changed, Commit, DiffApi } from '@/store/types/work_github.ts'
+import type { Changed, ChangedFile, Commit, DiffApi } from '@/store/types/work_github.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
@@ -41,12 +41,13 @@ watch(
   },
 )
 
-const changed = ref<Changed | null>(null)
+const changedFile = computed(() => gitStore.changedFile)
+
 onBeforeMount(async () => {
   if (props.commit) {
     const diff_hash = `?base=${props.commit.parents[0]}&head=${props.commit.commit_hash}`
     await fetchGitDiff(props.repo, diff_hash)
-    changed.value = await fetchChangedFiles(props.repo as number, props.commit.commit_hash)
+    await fetchChangedFiles(props.repo as number, props.commit.commit_hash)
   }
 })
 </script>
@@ -122,7 +123,11 @@ onBeforeMount(async () => {
     </CNavItem>
   </CNav>
 
-  <PathTree v-if="tabKey === 1" :change-files="(changed as Changed).changed_files" />
+  <PathTree
+    v-if="tabKey === 1"
+    :sha="changedFile?.sha"
+    :change-files="changedFile?.changed as Changed[]"
+  />
   <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" />
 
   <v-divider v-if="tabKey === 1" class="mb-2" />
