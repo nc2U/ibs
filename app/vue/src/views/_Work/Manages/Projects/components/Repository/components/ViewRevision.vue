@@ -62,10 +62,7 @@ onBeforeMount(async () => {
     </CCol>
 
     <CCol class="mb-2">
-      <RevisionControl
-        :commit-hash="commit?.commit_hash"
-        @get-commit="emit('get-commit', $event)"
-      />
+      <RevisionControl :commit="commit" @get-commit="emit('get-commit', $event)" />
     </CCol>
   </CRow>
 
