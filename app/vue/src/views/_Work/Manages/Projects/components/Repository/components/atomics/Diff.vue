@@ -171,21 +171,21 @@ onMounted(async () => {
   }
 
   ins {
-    background-color: #3d644d;
+    background-color: #3d644d !important;
     color: #fff;
     text-decoration: none;
   }
 
   del {
-    background-color: #6a3d42;
+    background-color: #6a3d42 !important;
   }
 
   .d2h-ins.d2h-change {
-    background-color: #263834;
+    background-color: #263834 !important;
   }
 
   .d2h-del.d2h-change {
-    background-color: #352c33;
+    background-color: #352c33 !important;
   }
 }
 </style>
