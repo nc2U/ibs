@@ -16,7 +16,9 @@ const diffHtml = ref('')
 const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
 
 const getDiffCode = (diff: string) => {
-  const diffText = Number.isInteger(props.diffIndex) ? splitDiff(diff)[props.diffIndex] : diff
+  const diffText = Number.isInteger(props.diffIndex)
+    ? splitDiff(diff)[props.diffIndex as number]
+    : diff
   diffHtml.value = html(diffText, {
     drawFileList: false,
     matching: 'lines',
@@ -24,30 +26,26 @@ const getDiffCode = (diff: string) => {
   })
 }
 
-const splitDiff = (diffText: string) => {
-  // diff 섹션을 배열로 분리
-  const diffSections = []
-  let currentSection = []
-  const diffStartRegex = /^diff --git/
+const splitDiff = (diffText: string | undefined): string[] => {
+  if (!diffText) return [] // 엣지 케이스: 빈 입력
 
-  // 줄 단위로 분리
-  const lines = diffText.split('\n')
+  const diffSections: string[] = []
+  let currentSection: string[] = []
+  const diffStartRegex = /^diff --git\s+a\/.+?\s+b\/.+/ // diff --git a/... b/... 형식 매칭
+
+  const lines = diffText.split(/\r?\n/) // 줄 단위 분리, 마지막 줄의 \n 처리
 
   for (const line of lines) {
-    if (diffStartRegex.test(line) && currentSection.length) {
-      // 새로운 섹션 시작 시 이전 섹션 저장
-      diffSections.push(currentSection.join('\n'))
+    if (diffStartRegex.test(line)) {
+      if (currentSection.length) diffSections.push(currentSection.join('\n')) // 새로운 섹션 시작
       currentSection = [line]
-    } else {
-      currentSection.push(line)
-    }
+    } else currentSection.push(line)
   }
 
-  // 마지막 섹션 추가
   if (currentSection.length) {
-    diffSections.push(currentSection.join('\n'))
+    diffSections.push(currentSection.join('\n')) // 마지막 섹션 추가
   }
-
+  
   return diffSections
 }
 

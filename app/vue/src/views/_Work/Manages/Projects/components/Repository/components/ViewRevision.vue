@@ -7,7 +7,6 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
-import { di } from '@fullcalendar/core/internal-common'
 
 const props = defineProps({
   repo: { type: Number, required: true },
