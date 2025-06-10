@@ -12,8 +12,7 @@ const emit = defineEmits(['into-path', 'file-view'])
 const pathList = (trees: string) => trees.split('/')
 
 const intoPath = (path: string, index: number) =>
-  // emit('into-path', {
-  console.log({
+  emit('into-path', {
     path: path
       .split('/')
       .slice(0, index + 1)
@@ -22,8 +21,7 @@ const intoPath = (path: string, index: number) =>
   })
 
 const viewFile = async (path: string, index: number) =>
-  // emit('file-view', {
-  console.log({
+  emit('file-view', {
     path: path
       .split('/')
       .slice(0, index + 1)
