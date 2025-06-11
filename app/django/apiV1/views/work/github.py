@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from apiV1.pagination import *
 from apiV1.permission import *
 from apiV1.serializers.work.github import *
+from work.models import IssueProject
 
 
 class RepositoryViewSet(viewsets.ModelViewSet):
@@ -21,18 +22,28 @@ class RepositoryViewSet(viewsets.ModelViewSet):
     filterset_fields = ('project', 'is_default', 'is_report')
 
 
+def get_all_descendant_projects(project):
+    descendants = set()
+    children = IssueProject.objects.filter(parent=project)
+    for child in children:
+        descendants.add(child)
+        descendants.update(get_all_descendant_projects(child))
+    return descendants
+
+
 class CommitViewSet(viewsets.ModelViewSet):
     queryset = Commit.objects.all().order_by('-revision_id')
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
-    filterset_fields = ('repo__project', 'repo', 'issues')
+    filterset_fields = ('repo', 'issues')
     search_fields = ('commit_hash',)
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        before_hash = self.request.query_params.get("before")
+        request = self.request
 
+        before_hash = self.request.query_params.get("before")
         if before_hash:
             try:
                 target_commit = Commit.objects.get(commit_hash__startswith=before_hash)
@@ -42,6 +53,14 @@ class CommitViewSet(viewsets.ModelViewSet):
                 )
             except Commit.DoesNotExist:
                 return Commit.objects.none()
+
+        # repo__project 포함 필터 처리
+        project_id = request.query_params.get("repo__project")
+        if project_id:
+            root_project = get_object_or_404(IssueProject, pk=project_id)
+            descendants = get_all_descendant_projects(root_project)
+            project_ids = [p.pk for p in descendants] + [root_project.pk]
+            queryset = queryset.filter(repo__project_id__in=project_ids)
 
         return queryset
 
