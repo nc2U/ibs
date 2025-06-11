@@ -42,9 +42,7 @@ const splitDiff = (diffText: string | undefined): string[] => {
     } else currentSection.push(line)
   }
 
-  if (currentSection.length) {
-    diffSections.push(currentSection.join('\n')) // 마지막 섹션 추가
-  }
+  if (currentSection.length) diffSections.push(currentSection.join('\n')) // 마지막 섹션 추가
 
   return diffSections
 }
