@@ -13,12 +13,14 @@ const props = defineProps({
 const emit = defineEmits(['get-diff'])
 
 const diffHtml = ref('')
+const diffLines = ref(0)
 const outputFormat = ref<'line-by-line' | 'side-by-side'>('line-by-line')
 
 const getDiffCode = (diff: string) => {
   const diffText = Number.isInteger(props.diffIndex)
     ? splitDiff(diff)[props.diffIndex as number]
     : diff
+  diffLines.value = diffText.split('\n').length
   diffHtml.value = html(diffText, {
     drawFileList: false,
     matching: 'lines',
@@ -70,6 +72,7 @@ onMounted(async () => {
 </script>
 
 <template>
+  {{ diffLines }}
   <CRow class="mb-5">
     <CCol>
       차이점 보기 :
@@ -97,7 +100,7 @@ onMounted(async () => {
   <div v-if="diffHtml" v-html="diffHtml" class="diff-container" />
   <div v-else>로딩 중...</div>
 
-  <div v-if="gitDiff?.truncated">
+  <div v-if="gitDiff?.truncated && diffLines > 800">
     <CAlert color="warning">
       Diff 가져오기 정책에 의해 1000줄 이상에 해당하는 데이터가 표시되지 않았습니다.
       <router-link
