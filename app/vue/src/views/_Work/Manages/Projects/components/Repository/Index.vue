@@ -176,7 +176,7 @@ const getDiff = (payload: { base: string; head: string; full?: boolean }) => {
 
   if (repo.value) {
     fetchGitDiff(repo.value?.pk as number, diff_hash, full)
-    viewPageSort.value = 'diff'
+    if (!full) viewPageSort.value = 'diff'
   }
 }
 

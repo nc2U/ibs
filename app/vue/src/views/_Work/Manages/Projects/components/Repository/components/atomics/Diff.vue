@@ -101,7 +101,7 @@ onMounted(async () => {
     <CAlert color="warning">
       Diff 가져오기 정책에 의해 1000줄 이상에 해당하는 데이터가 표시되지 않았습니다.
       <router-link
-        to="#"
+        to=""
         @click="emit('get-diff', { base: gitDiff?.base, head: gitDiff?.head, full: true })"
       >
         전체 데이터 를 보려면 클릭
