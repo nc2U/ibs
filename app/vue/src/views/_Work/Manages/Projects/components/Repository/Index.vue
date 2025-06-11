@@ -170,9 +170,8 @@ const baseId = ref<number | null>(null)
 const headSet = (revision_id: number) => (headId.value = revision_id)
 const baseSet = (revision_id: number) => (baseId.value = revision_id)
 
-const getDiff = (full = false) => {
-  const base = commitList.value.find(c => c.revision_id === baseId.value)?.commit_hash
-  const head = commitList.value.find(c => c.revision_id === headId.value)?.commit_hash
+const getDiff = (payload: { base: string; head: string; full?: boolean }) => {
+  const { base, head, full = false } = payload
   const diff_hash = `?base=${base}&head=${head}`
 
   if (repo.value) {

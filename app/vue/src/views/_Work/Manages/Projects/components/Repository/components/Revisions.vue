@@ -58,7 +58,11 @@ const updateHead = (pk: number) => {
   if (Number(headId.value) <= pk) headId.value = String(pk + 1)
 }
 
-const getDiff = () => emit('get-diff', false)
+const getDiff = () => {
+  const base = props.commitList.find(c => c.revision_id === Number(baseId.value))?.commit_hash
+  const head = props.commitList.find(c => c.revision_id === Number(headId.value))?.commit_hash
+  emit('get-diff', { base, head })
+}
 
 const ghStore = useGithub()
 const commitPages = (page: number) => ghStore.commitPages(page)

@@ -102,7 +102,12 @@ onMounted(async () => {
   <div v-if="gitDiff?.truncated">
     <CAlert color="warning">
       Diff 가져오기 정책에 의해 1000줄 이상에 해당하는 데이터가 표시되지 않았습니다.
-      <router-link to="#" @click="emit('get-diff', true)">전체 데이터 를 보려면 클릭</router-link>
+      <router-link
+        to="#"
+        @click="emit('get-diff', { base: gitDiff?.base, head: gitDiff?.head, full: true })"
+      >
+        전체 데이터 를 보려면 클릭
+      </router-link>
       하세요.
     </CAlert>
   </div>
@@ -133,9 +138,9 @@ onMounted(async () => {
         </svg>
         <h5 class="m-4">비교할 것이 없습니다.</h5>
 
-        <span class="strong text-primary">{{ cutString(gitDiff.base ?? '', 10) }}</span> 는 최신
+        <span class="strong text-primary">{{ cutString(gitDiff?.base ?? '', 10) }}</span> 는 최신
         버전입니다.
-        <span class="strong text-primary">{{ cutString(gitDiff.head, 10) }}</span>
+        <span class="strong text-primary">{{ cutString(gitDiff?.head, 10) }}</span>
         <span> 변경된 파일 또는 변경 사항이 없습니다. </span>
       </CCol>
     </CRow>
