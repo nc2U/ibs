@@ -22,12 +22,28 @@ class RepositoryViewSet(viewsets.ModelViewSet):
 
 
 class CommitViewSet(viewsets.ModelViewSet):
-    queryset = Commit.objects.all().order_by('-date')
+    queryset = Commit.objects.all().order_by('-revision_id')
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
-    filterset_fields = ('repo__project', 'repo', 'commit_hash', 'issues')
+    filterset_fields = ('repo__project', 'repo', 'issues')
     search_fields = ('commit_hash',)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        before_hash = self.request.query_params.get("before")
+
+        if before_hash:
+            try:
+                target_commit = Commit.objects.get(commit_hash__startswith=before_hash)
+                queryset = queryset.filter(
+                    repo=target_commit.repo,
+                    revision_id__lt=target_commit.revision_id
+                )
+            except Commit.DoesNotExist:
+                return Commit.objects.none()
+
+        return queryset
 
 
 def get_repo_path(repo_id):
