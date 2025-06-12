@@ -20,7 +20,7 @@ defineExpose({ toggle })
 const headerView = ref<'tree' | 'file' | 'revision'>('tree')
 
 const cFilter = ref({
-  repo: null as number | null,
+  repo: 1 as number,
   branch: '',
   project: undefined as number | undefined,
   issues: [],
@@ -201,15 +201,19 @@ const pageSelect = (page: number) => {
 }
 
 const dataSetup = async (proj: number) => {
-  cFilter.value.project = proj
-  await fetchRepoList(proj, 'true')
-  await fetchRepo(repoList.value[0].pk as number)
-  cFilter.value.repo = repo.value?.pk as number
-  await fetchRepoApi(repo.value?.pk as number)
-  await fetchCommitList(cFilter.value)
-  await fetchBranches(cFilter.value.repo)
-  await fetchTags(cFilter.value.repo)
-  await fetchRootTree(cFilter.value.repo, { branch: default_branch.value })
+  if (proj) {
+    cFilter.value.project = proj
+    await fetchRepoList(proj, 'true')
+    await fetchRepo(repoList.value[0].pk as number)
+    if (repo.value) {
+      cFilter.value.repo = repo.value?.pk as number
+      await fetchRepoApi(repo.value?.pk as number)
+      await fetchCommitList(cFilter.value)
+      await fetchBranches(cFilter.value.repo)
+      await fetchTags(cFilter.value.repo)
+      await fetchRootTree(cFilter.value.repo, { branch: default_branch.value })
+    }
+  }
 }
 
 const loading = ref(true)
@@ -223,7 +227,6 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      {{ aa }} //--
       <BranchTree
         v-if="headerView === 'tree'"
         :repo="repo as Repository"
