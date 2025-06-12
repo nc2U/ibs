@@ -90,6 +90,10 @@ const changeTag = (tag: string) => {
   fetchRootTree(repo.value?.pk as number, tag, '1')
 }
 
+const changeCommit = (sha: string) => {
+  alert(`commit hash : ${sha}`)
+}
+
 // into path
 const shaMap = ref<{ path: string; sha: string }[]>([])
 const currPath = ref('')
@@ -228,6 +232,7 @@ onBeforeMount(async () => {
         @revision-view="getRevision"
         @change-branch="changeBranch"
         @change-tag="changeTag"
+        @change-commit="changeCommit"
       />
 
       <ViewFile

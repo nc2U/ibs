@@ -12,19 +12,28 @@ const props = defineProps({
 const gitStore = useGithub()
 const default_branch = computed(() => gitStore.default_branch)
 
-const emit = defineEmits(['change-branch', 'change-tag'])
+const emit = defineEmits(['change-branch', 'change-tag', 'change-commit'])
 
 const branch = ref('')
 const tag = ref('')
+const sha = ref('')
 
 const changeBranch = (e: Event) => {
   tag.value = ''
+  sha.value = ''
   emit('change-branch', (e.target as any).value)
 }
 
 const changeTag = (e: Event) => {
   branch.value = ''
+  sha.value = ''
   emit('change-tag', (e.target as any).value)
+}
+
+const changeCommit = (e: Event) => {
+  branch.value = ''
+  tag.value = ''
+  emit('change-commit', (e.target as any).value)
 }
 
 onBeforeMount(() => {
@@ -70,7 +79,13 @@ onBeforeMount(() => {
       </CFormSelect>
 
       <CFormLabel> | 리비전:</CFormLabel>
-      <CFormInput style="width: 100px" size="sm" placeholder="sha" />
+      <CFormInput
+        v-model="sha"
+        style="width: 100px"
+        size="sm"
+        placeholder="sha"
+        @keydown.enter="changeCommit"
+      />
     </CCol>
   </CCol>
 </template>
