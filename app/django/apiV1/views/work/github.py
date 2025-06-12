@@ -43,13 +43,13 @@ class CommitViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         request = self.request
 
-        before_hash = self.request.query_params.get("before")
-        if before_hash:
+        up_to_hash = self.request.query_params.get("up_to")
+        if up_to_hash:
             try:
-                target_commit = Commit.objects.get(commit_hash__startswith=before_hash)
+                target_commit = Commit.objects.get(commit_hash__startswith=up_to_hash)
                 queryset = queryset.filter(
                     repo=target_commit.repo,
-                    revision_id__lt=target_commit.revision_id
+                    revision_id__lte=target_commit.revision_id
                 )
             except Commit.DoesNotExist:
                 return Commit.objects.none()
