@@ -24,6 +24,8 @@ const cFilter = ref({
   repo: undefined as number | undefined,
   page: 1,
   limit: 25,
+  search: undefined as string | undefined,
+  up_to: undefined as string | undefined,
 })
 
 const workStore = useWork()
@@ -55,6 +57,8 @@ const fetchCommitList = (payload: {
   issues?: number[]
   page?: number
   limit?: number
+  search?: string
+  up_to?: string
 }) => gitStore.fetchCommitList(payload)
 const fetchFileView = (repo: number, path: string, sha: string) =>
   gitStore.fetchFileView(repo, path, sha)
