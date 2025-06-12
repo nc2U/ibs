@@ -66,7 +66,6 @@ export const useGithub = defineStore('github', () => {
   const commitPages = (itemPerPage: number) => Math.ceil(commitCount.value / itemPerPage)
 
   const assignCommit = (commitObj: Commit) => (commit.value = commitObj)
-
   const removeCommit = () => (commit.value = null)
 
   const fetchCommit = async (pk: number) =>
