@@ -147,18 +147,21 @@ export const useGithub = defineStore('github', () => {
     repo: number,
     payload: { branch?: string; tag?: string; sha?: string },
   ) => {
-    const { branch, tag, sha } = payload
-    const branchQry = branch ? `&branch=${branch}` : ''
-    const tagQry = tag ? `&tag=${tag}` : ''
-    const shaQry = sha ? `&sha=${sha}` : ''
-    await api
-      .get(`/root-tree/?repo=${repo}${branchQry}${tagQry}${shaQry}`)
-      .then(async res => {
-        curr_branch.value = res.data.branch
-        branch_tree.value = res.data.trees
-        await fetchCommitList({ repo, before: res.data.trees.commit.sha })
-      })
-      .catch(err => errorHandle(err.response))
+    const query = new URLSearchParams({
+      repo: repo.toString(),
+      ...(payload.branch && { branch: payload.branch }),
+      ...(payload.tag && { tag: payload.tag }),
+      ...(payload.sha && { sha: payload.sha }),
+    }).toString()
+
+    try {
+      const res = await api.get(`/root-tree/?${query}`)
+      curr_branch.value = res.data.branch
+      branch_tree.value = res.data.trees
+      await fetchCommitList({ repo, before: res.data.trees.commit.sha })
+    } catch (err: any) {
+      errorHandle(err.response)
+    }
   }
 
   const fetchSubTree = async (payload: {
