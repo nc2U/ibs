@@ -56,87 +56,87 @@ class Command(BaseCommand):
         except subprocess.CalledProcessError:
             return None
 
-    def fetch_repo(self, repo_path):
-        """Git 저장소 페치"""
-        for attempt in range(3):
-            try:
-                result = subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'],
-                                        check=True, capture_output=True, text=True)
-                self.stdout.write(f"Fetch output: {result.stderr}")
-                return True
-            except subprocess.CalledProcessError as e:
-                self.stderr.write(f"Fetch attempt {attempt + 1} failed: {e.stderr}")
-                if attempt == 2:
-                    return False
-                time.sleep(2)
-        return False
+    # def fetch_repo(self, repo_path):
+    #     """Git 저장소 페치"""
+    #     for attempt in range(3):
+    #         try:
+    #             result = subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'],
+    #                                     check=True, capture_output=True, text=True)
+    #             self.stdout.write(f"Fetch output: {result.stderr}")
+    #             return True
+    #         except subprocess.CalledProcessError as e:
+    #             self.stderr.write(f"Fetch attempt {attempt + 1} failed: {e.stderr}")
+    #             if attempt == 2:
+    #                 return False
+    #             time.sleep(2)
+    #     return False
 
-    def sync_branches(self, git_repo, repo, repo_path):
-        """로컬 브랜치와 원격 브랜치를 동기화"""
-        try:
-            default_branch = self.get_default_branch(git_repo, repo_path)
-            if not default_branch:
-                self.stderr.write(self.style.WARNING(f"No default branch found for {repo.slug}"))
-                return
-
-            # 원격 브랜치 목록
-            remote_refs = git_repo.remotes.origin.refs
-            remote_branches = [ref.name.replace('origin/', '') for ref in remote_refs if ref.name != 'origin/HEAD']
-            self.stdout.write(f"Remote refs: {[ref.name for ref in remote_refs]}")
-            self.stdout.write(self.style.SUCCESS(f"Remote branches: {remote_branches}"))
-
-            # 로컬 브랜치 업데이트
-            for branch in remote_branches:
-                try:
-                    subprocess.run(
-                        ['git', '-C', repo_path, 'update-ref', f'refs/heads/{branch}', f'refs/remotes/origin/{branch}'],
-                        check=True)
-                    self.stdout.write(self.style.SUCCESS(f"Updated local branch: {branch}"))
-                except subprocess.CalledProcessError as e:
-                    self.stderr.write(self.style.ERROR(f"Failed to update branch {branch}: {e}"))
-
-            # 삭제된 로컬 브랜치 정리
-            local_branches = [head.name for head in git_repo.heads if head.name != 'HEAD']
-            for branch in local_branches:
-                if branch not in remote_branches:
-                    try:
-                        subprocess.run(['git', '-C', repo_path, 'branch', '-D', branch], check=True)
-                        self.stdout.write(self.style.SUCCESS(f"Deleted local branch: {branch}"))
-                    except subprocess.CalledProcessError as e:
-                        self.stderr.write(self.style.ERROR(f"Failed to delete branch {branch}: {e}"))
-
-            # DB 동기화
-            with transaction.atomic():
-                existing_branches = set(repo.branches.values_list('name', flat=True))
-                new_branch_names = [b for b in remote_branches if b not in existing_branches]
-                if new_branch_names:
-                    Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
-                    self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
-                deleted_branch_names = [b for b in existing_branches if b not in remote_branches]
-                if deleted_branch_names:
-                    Branch.objects.filter(repo=repo, name__in=deleted_branch_names).delete()
-                    self.stdout.write(
-                        self.style.SUCCESS(f"Deleted {len(deleted_branch_names)} branches: {deleted_branch_names}"))
-
-            # Bare 저장소의 HEAD 및 origin/HEAD 설정
-            try:
-                subprocess.run(
-                    ['git', '-C', repo_path, 'symbolic-ref', 'HEAD', f'refs/heads/{default_branch}'], check=True)
-                self.stdout.write(self.style.SUCCESS(f"Set HEAD to refs/heads/{default_branch}"))
-            except subprocess.CalledProcessError as e:
-                self.stderr.write(self.style.ERROR(f"Failed to set HEAD: {e}"))
-
-            try:
-                subprocess.run(
-                    ['git', '-C', repo_path, 'symbolic-ref', 'refs/remotes/origin/HEAD',
-                     f'refs/remotes/origin/{default_branch}'], check=True)
-                self.stdout.write(self.style.SUCCESS(f"Set origin/HEAD to {default_branch}"))
-            except subprocess.CalledProcessError as e:
-                self.stderr.write(self.style.ERROR(f"Failed to set origin/HEAD: {e}"))
-
-        except (subprocess.CalledProcessError, GitCommandError, ValueError) as e:
-            self.stderr.write(self.style.ERROR(f"Branch sync failed: {e}"))
-            raise
+    # def sync_branches(self, git_repo, repo, repo_path):
+    #     """로컬 브랜치와 원격 브랜치를 동기화"""
+    #     try:
+    #         default_branch = self.get_default_branch(git_repo, repo_path)
+    #         if not default_branch:
+    #             self.stderr.write(self.style.WARNING(f"No default branch found for {repo.slug}"))
+    #             return
+    #
+    #         # 원격 브랜치 목록
+    #         remote_refs = git_repo.remotes.origin.refs
+    #         remote_branches = [ref.name.replace('origin/', '') for ref in remote_refs if ref.name != 'origin/HEAD']
+    #         self.stdout.write(f"Remote refs: {[ref.name for ref in remote_refs]}")
+    #         self.stdout.write(self.style.SUCCESS(f"Remote branches: {remote_branches}"))
+    #
+    #         # 로컬 브랜치 업데이트
+    #         for branch in remote_branches:
+    #             try:
+    #                 subprocess.run(
+    #                     ['git', '-C', repo_path, 'update-ref', f'refs/heads/{branch}', f'refs/remotes/origin/{branch}'],
+    #                     check=True)
+    #                 self.stdout.write(self.style.SUCCESS(f"Updated local branch: {branch}"))
+    #             except subprocess.CalledProcessError as e:
+    #                 self.stderr.write(self.style.ERROR(f"Failed to update branch {branch}: {e}"))
+    #
+    #         # 삭제된 로컬 브랜치 정리
+    #         local_branches = [head.name for head in git_repo.heads if head.name != 'HEAD']
+    #         for branch in local_branches:
+    #             if branch not in remote_branches:
+    #                 try:
+    #                     subprocess.run(['git', '-C', repo_path, 'branch', '-D', branch], check=True)
+    #                     self.stdout.write(self.style.SUCCESS(f"Deleted local branch: {branch}"))
+    #                 except subprocess.CalledProcessError as e:
+    #                     self.stderr.write(self.style.ERROR(f"Failed to delete branch {branch}: {e}"))
+    #
+    #         # DB 동기화
+    #         with transaction.atomic():
+    #             existing_branches = set(repo.branches.values_list('name', flat=True))
+    #             new_branch_names = [b for b in remote_branches if b not in existing_branches]
+    #             if new_branch_names:
+    #                 Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
+    #                 self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
+    #             deleted_branch_names = [b for b in existing_branches if b not in remote_branches]
+    #             if deleted_branch_names:
+    #                 Branch.objects.filter(repo=repo, name__in=deleted_branch_names).delete()
+    #                 self.stdout.write(
+    #                     self.style.SUCCESS(f"Deleted {len(deleted_branch_names)} branches: {deleted_branch_names}"))
+    #
+    #         # Bare 저장소의 HEAD 및 origin/HEAD 설정
+    #         try:
+    #             subprocess.run(
+    #                 ['git', '-C', repo_path, 'symbolic-ref', 'HEAD', f'refs/heads/{default_branch}'], check=True)
+    #             self.stdout.write(self.style.SUCCESS(f"Set HEAD to refs/heads/{default_branch}"))
+    #         except subprocess.CalledProcessError as e:
+    #             self.stderr.write(self.style.ERROR(f"Failed to set HEAD: {e}"))
+    #
+    #         try:
+    #             subprocess.run(
+    #                 ['git', '-C', repo_path, 'symbolic-ref', 'refs/remotes/origin/HEAD',
+    #                  f'refs/remotes/origin/{default_branch}'], check=True)
+    #             self.stdout.write(self.style.SUCCESS(f"Set origin/HEAD to {default_branch}"))
+    #         except subprocess.CalledProcessError as e:
+    #             self.stderr.write(self.style.ERROR(f"Failed to set origin/HEAD: {e}"))
+    #
+    #     except (subprocess.CalledProcessError, GitCommandError, ValueError) as e:
+    #         self.stderr.write(self.style.ERROR(f"Branch sync failed: {e}"))
+    #         raise
 
     def handle(self, *args, **kwargs):
         limit = kwargs.get('limit')
@@ -168,14 +168,14 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
                 continue
 
-            # Git 페치
-            if not self.fetch_repo(repo_path):
-                self.stderr.write(self.style.ERROR(f"Git fetch failed for {repo.slug}"))
-                continue
+            # # Git 페치
+            # if not self.fetch_repo(repo_path):
+            #     self.stderr.write(self.style.ERROR(f"Git fetch failed for {repo.slug}"))
+            #     continue
 
             with transaction.atomic():
                 try:
-                    self.sync_branches(git_repo, repo, repo_path)
+                    # self.sync_branches(git_repo, repo, repo_path)
 
                     # 브랜치-커밋 매핑
                     commit_branch_map = {}
@@ -198,12 +198,13 @@ class Command(BaseCommand):
                     commit_obj_map = {}
 
                     try:
-                        default_branch = self.get_default_branch(git_repo, repo_path)
-                        if not default_branch:
-                            self.stderr.write(self.style.ERROR(f"No default branch found in {repo.slug}"))
-                            continue
+                        # default_branch = self.get_default_branch(git_repo, repo_path)
+                        # if not default_branch:
+                        #     self.stderr.write(self.style.ERROR(f"No default branch found in {repo.slug}"))
+                        #     continue
 
-                        commits_iter = git_repo.iter_commits(default_branch, max_count=limit)
+                        # commits_iter = git_repo.iter_commits(default_branch, max_count=limit)
+                        commits_iter = git_repo.iter_commits('--all', max_count=limit)
                     except GitCommandError as e:
                         self.stderr.write(self.style.ERROR(f"Failed to get commits: {e}"))
                         continue
@@ -222,8 +223,7 @@ class Command(BaseCommand):
                             # 저장된 커밋 조회
                             saved_commits = Commit.objects.filter(
                                 repo=repo,
-                                commit_hash__in=[c.commit_hash for c in commits_to_create]
-                            )
+                                commit_hash__in=[c.commit_hash for c in commits_to_create])
                             commit_obj_map = {c.commit_hash: c for c in saved_commits}
 
                             # 부모 관계 연결
@@ -238,8 +238,7 @@ class Command(BaseCommand):
                                             cursor.execute(
                                                 "INSERT INTO work_commit_parents (from_commit_id, to_commit_id) "
                                                 "VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                                                [child.id, parent.id]
-                                            )
+                                                [child.id, parent.id])
                             self.stdout.write(self.style.SUCCESS("Linked parent relationships"))
 
                             # 브랜치 연결
