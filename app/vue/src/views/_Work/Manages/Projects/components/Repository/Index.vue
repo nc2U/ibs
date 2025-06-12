@@ -12,6 +12,7 @@ import ViewFile from './components/ViewFile.vue'
 import ViewRevision from './components/ViewRevision.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
+import { cF } from '@fullcalendar/core/internal-common'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -20,12 +21,14 @@ defineExpose({ toggle })
 const headerView = ref<'tree' | 'file' | 'revision'>('tree')
 
 const cFilter = ref({
+  repo: null as number | null,
+  branch: '',
   project: undefined as number | undefined,
-  repo: undefined as number | undefined,
+  issues: [],
   page: 1,
   limit: 25,
-  search: undefined as string | undefined,
-  up_to: undefined as string | undefined,
+  search: '',
+  up_to: '',
 })
 
 const workStore = useWork()
@@ -52,8 +55,9 @@ watch(repoList, nVal => {
 const fetchRepo = (pk: number) => gitStore.fetchRepo(pk)
 const fetchRepoList = (project?: number, is_def?: string) => gitStore.fetchRepoList(project, is_def)
 const fetchCommitList = (payload: {
+  repo: number
+  branch?: string
   project?: number
-  repo?: number
   issues?: number[]
   page?: number
   limit?: number
@@ -90,10 +94,11 @@ const fetchRootTree = (
 const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
   gitStore.fetchSubTree(payload)
 
-const changeRevision = (payload: { branch?: string; tag?: string; sha?: string }) => {
+const changeRevision = async (payload: { branch?: string; tag?: string; sha?: string }) => {
   subTree.value = null
   cFilter.value.page = 1
-  fetchRootTree(repo.value?.pk as number, payload)
+  const nowBranch = await fetchRootTree(repo.value?.pk as number, payload)
+  if (nowBranch) await fetchCommitList({ repo: cFilter.value.repo, up_to: nowBranch.commit.sha })
 }
 
 // into path
@@ -219,6 +224,7 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
+      {{ aa }} //--
       <BranchTree
         v-if="headerView === 'tree'"
         :repo="repo as Repository"

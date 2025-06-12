@@ -21,19 +21,19 @@ const sha = ref('')
 const changeBranch = (e: Event) => {
   tag.value = ''
   sha.value = ''
-  emit('change-revision', { branch: (e.target as any).value })
+  if ((e.target as any).value) emit('change-revision', { branch: (e.target as any).value })
 }
 
 const changeTag = (e: Event) => {
   branch.value = ''
   sha.value = ''
-  emit('change-revision', { tag: (e.target as any).value })
+  if ((e.target as any).value) emit('change-revision', { tag: (e.target as any).value })
 }
 
 const changeCommit = (e: Event) => {
   branch.value = ''
   tag.value = ''
-  emit('change-revision', { sha: (e.target as any).value })
+  if ((e.target as any).value) emit('change-revision', { sha: (e.target as any).value })
 }
 
 onBeforeMount(() => {

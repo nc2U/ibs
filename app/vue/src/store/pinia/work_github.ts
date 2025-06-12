@@ -85,23 +85,25 @@ export const useGithub = defineStore('github', () => {
   }
 
   const fetchCommitList = async (payload: {
+    repo: number
+    branch?: string
     project?: number
-    repo?: number
     issues?: number[]
     page?: number
     limit?: number
     search?: string
     up_to?: string
   }) => {
-    const { project, repo, issues, page = 1, limit, search, up_to } = payload
-    const filterQuery = `repo__project=${project ?? ''}&repo=${repo ?? ''}`
-
+    const { repo, branch, project, issues, page = 1, limit, search, up_to } = payload
+    const filter = `?repo=${repo}`
+    const branchQry = branch ? `&branches__name=${branch}` : ''
+    const projQry = project ? `&repo__project=${project}` : ''
     const issueQry = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
-    const paginationQry = `&page=${page}&limit=${limit ?? ''}`
+    const pageQry = `&page=${page}&limit=${limit ?? ''}`
     const searchQry = search ? `&search=${search}` : ''
     const upToQry = up_to ? `&up_to=${up_to}` : ''
     return await api
-      .get(`/commit/?${filterQuery}${issueQry}${paginationQry}${searchQry}${upToQry}`)
+      .get(`/commit/${filter}${branchQry}${projQry}${issueQry}${pageQry}${searchQry}${upToQry}`)
       .then(res => {
         commitList.value = res.data.results
         commitCount.value = res.data.count
@@ -158,7 +160,12 @@ export const useGithub = defineStore('github', () => {
       const res = await api.get(`/root-tree/?${query}`)
       curr_branch.value = res.data.branch
       branch_tree.value = res.data.trees
-      await fetchCommitList({ repo, up_to: res.data.branch?.commit?.sha })
+      return res.data.branch
+      // await fetchCommitList({
+      //   repo,
+      //   branch: res.data.branch.name,
+      //   up_to: res.data.branch?.commit?.sha,
+      // })
     } catch (err: any) {
       errorHandle(err.response)
     }
