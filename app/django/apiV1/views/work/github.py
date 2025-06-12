@@ -43,7 +43,7 @@ class CommitViewSet(viewsets.ModelViewSet):
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
-    filterset_fields = ('repo', 'branches', 'issues')
+    filterset_fields = ('repo', 'branches', 'branches__name', 'issues')
     search_fields = ('commit_hash',)
 
     def get_queryset(self):
@@ -54,10 +54,8 @@ class CommitViewSet(viewsets.ModelViewSet):
         if up_to_hash:
             try:
                 target_commit = Commit.objects.get(commit_hash__startswith=up_to_hash)
-                queryset = queryset.filter(
-                    repo=target_commit.repo,
-                    revision_id__lte=target_commit.revision_id
-                )
+                queryset = queryset.filter(repo=target_commit.repo,
+                                           revision_id__lte=target_commit.revision_id)
             except Commit.DoesNotExist:
                 return Commit.objects.none()
 
