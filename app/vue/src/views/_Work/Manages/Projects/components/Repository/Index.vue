@@ -75,29 +75,36 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
-const fetchRootTree = (repoPk: number, branch: string, tag = '') =>
-  gitStore.fetchRootTree(repoPk, branch, tag)
+const fetchRootTree = (
+  repo: number,
+  payload: {
+    branch?: string
+    tag?: string
+    sha?: string
+  },
+) => gitStore.fetchRootTree(repo, payload)
 const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
   gitStore.fetchSubTree(payload)
 
-const changeBranch = (branch: string, tag = '') => {
+const changeBranch = (branch: string) => {
   subTree.value = null
-  fetchRootTree(repo.value?.pk as number, branch, tag)
+  fetchRootTree(repo.value?.pk as number, { branch })
 }
 
 const changeTag = (tag: string) => {
   subTree.value = null
-  fetchRootTree(repo.value?.pk as number, tag, '1')
+  fetchRootTree(repo.value?.pk as number, { tag })
 }
 
 const changeCommit = (sha: string) => {
-  alert(`commit hash : ${sha}`)
+  subTree.value = null
+  fetchRootTree(repo.value?.pk as number, { sha })
 }
 
 // into path
 const shaMap = ref<{ path: string; sha: string }[]>([])
 const currPath = ref('')
-const subTree = ref(null)
+const subTree = ref(null) // 세부 경로 진입 시 루트 트리 대체 트리
 
 const intoRoot = () => {
   headerView.value = 'tree'
@@ -203,7 +210,7 @@ const dataSetup = async (proj: number) => {
   await fetchCommitList(cFilter.value)
   await fetchBranches(cFilter.value.repo)
   await fetchTags(cFilter.value.repo)
-  await fetchRootTree(cFilter.value.repo, default_branch.value)
+  await fetchRootTree(cFilter.value.repo, { branch: default_branch.value })
 }
 
 const loading = ref(true)

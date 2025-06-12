@@ -141,7 +141,11 @@ export const useGithub = defineStore('github', () => {
   const curr_branch = ref<BranchInfo | null>(null)
   const branch_tree = ref<any[]>([])
 
-  const fetchRootTree = async (repo: number, branch?: string, tag?: string, sha?: string) => {
+  const fetchRootTree = async (
+    repo: number,
+    payload: { branch?: string; tag?: string; sha?: string },
+  ) => {
+    const { branch, tag, sha } = payload
     const branchQry = branch ? `&branch=${branch}` : ''
     const tagQry = tag ? `&tag=${tag}` : ''
     const shaQry = sha ? `&sha=${sha}` : ''
