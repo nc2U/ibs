@@ -91,17 +91,17 @@ export const useGithub = defineStore('github', () => {
     page?: number
     limit?: number
     search?: string
-    before?: string
+    up_to?: string
   }) => {
-    const { project, repo, issues, page = 1, limit, search, before } = payload
+    const { project, repo, issues, page = 1, limit, search, up_to } = payload
     const filterQuery = `repo__project=${project ?? ''}&repo=${repo ?? ''}`
 
     const issueQry = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
     const paginationQry = `&page=${page}&limit=${limit ?? ''}`
     const searchQry = search ? `&search=${search}` : ''
-    const beforeQry = before ? `before=${before}` : ''
+    const upToQry = up_to ? `&up_to=${up_to}` : ''
     return await api
-      .get(`/commit/?${filterQuery}${issueQry}${paginationQry}${searchQry}${beforeQry}`)
+      .get(`/commit/?${filterQuery}${issueQry}${paginationQry}${searchQry}${upToQry}`)
       .then(res => {
         commitList.value = res.data.results
         commitCount.value = res.data.count
@@ -158,7 +158,7 @@ export const useGithub = defineStore('github', () => {
       const res = await api.get(`/root-tree/?${query}`)
       curr_branch.value = res.data.branch
       branch_tree.value = res.data.trees
-      await fetchCommitList({ repo, before: res.data.trees.commit.sha })
+      await fetchCommitList({ repo, up_to: res.data.branch?.commit?.sha })
     } catch (err: any) {
       errorHandle(err.response)
     }
