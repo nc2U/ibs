@@ -71,6 +71,38 @@ def get_repo_path(repo_id):
     return repo_path
 
 
+def get_default_branch(repo: Repo) -> str | None:
+    """
+    Git 저장소의 기본 브랜치를 반환합니다.
+    Args: repo: GitPython Repo 객체
+    Returns:
+        str: 기본 브랜치 이름 (예: 'main')
+        None: 기본 브랜치를 찾을 수 없는 경우
+    """
+
+    try:  # 1. origin/HEAD 확인
+        origin_head_ref = repo.refs['origin/HEAD']
+        if origin_head_ref and origin_head_ref.reference:
+            return origin_head_ref.reference.name.split('/')[-1]
+    except (GitCommandError, IndexError, AttributeError):
+        pass
+
+    try:  # 2. HEAD가 가리키는 브랜치
+        if not repo.head.is_detached:
+            return repo.head.reference.name
+    except (ValueError, TypeError, AttributeError):
+        pass
+
+    for branch_name in ['main', 'master']:  # 3. 일반적인 브랜치 후보
+        if branch_name in repo.heads:
+            return branch_name
+
+    if repo.heads:  # 4. 사용 가능한 첫 번째 브랜치
+        return repo.heads[0].name
+
+    return None
+
+
 class GitRepoApiView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -89,10 +121,7 @@ class GitRepoApiView(APIView):
         pushed_at = latest_commit.committed_datetime.astimezone(timezone.utc)
 
         # 디폴트 브랜치 추정
-        try:
-            default_branch = repo.git.symbolic_ref("refs/remotes/origin/HEAD").split("/")[-1]
-        except Exception:
-            default_branch = repo.active_branch.name
+        default_branch = get_default_branch(repo)
 
         # 저장소 이름
         repo_name = os.path.basename(repo_path).replace(".git", "")
@@ -202,18 +231,7 @@ class GitRootTreeView(APIView):
 
         try:
             # 기본 브랜치 설정
-            try:
-                default_branch = repo.active_branch.name
-            except (ValueError, TypeError):
-                branch_candidates = ['main', 'master']
-                default_branch = None
-                for branch_name in branch_candidates:
-                    if branch_name in repo.heads:
-                        default_branch = branch_name
-                        break
-                if not default_branch:
-                    return Response({"Error": "No valid default branch found"}, status=400)
-
+            default_branch = get_default_branch(repo)
             curr_branch = default_branch
             commit = None
 
