@@ -68,6 +68,10 @@ class CommitViewSet(viewsets.ModelViewSet):
 def get_repo_path(repo_id):
     repo_obj = get_object_or_404(Repository, pk=repo_id)
     repo_path = repo_obj.local_path or f"/app/repos/{repo_obj.slug}.git"
+
+    if not os.path.exists(repo_path):
+        return Response({"error": "Local Repository path not found"},
+                        status=status.HTTP_404_NOT_FOUND)
     return repo_path
 
 
@@ -118,6 +122,9 @@ class GitRepoApiView(APIView):
 
         repo = Repo(repo_path)
 
+        # 저장소 이름
+        repo_name = os.path.basename(repo_path).replace(".git", "")
+
         # 가장 오래된 커밋 시간 (created_at 추정)
         oldest_commit = next(repo.iter_commits('--all', max_count=1, reverse=True))
         created_at = oldest_commit.committed_datetime.astimezone(timezone.utc)
@@ -126,17 +133,11 @@ class GitRepoApiView(APIView):
         latest_commit = repo.head.commit
         pushed_at = latest_commit.committed_datetime.astimezone(timezone.utc)
 
-        # 디폴트 브랜치 추정
-        default_branch = get_default_branch(repo)
-
-        # 저장소 이름
-        repo_name = os.path.basename(repo_path).replace(".git", "")
-
         repo_info = {
             "name": repo_name,
             "created_at": created_at,
             "pushed_at": pushed_at,
-            "default_branch": default_branch,
+            "default_branch": get_default_branch(repo),
         }
         serializer = GitRepoApiSerializer(repo_info)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -148,8 +149,6 @@ class GitBranchesView(APIView):
     @staticmethod
     def get(request, pk):
         repo_path = get_repo_path(pk)
-        if not os.path.exists(repo_path):
-            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             repo = Repo(repo_path)
@@ -180,8 +179,6 @@ class GitTagsView(APIView):
     @staticmethod
     def get(request, pk, *args, **kwargs):
         repo_path = get_repo_path(pk)
-        if not os.path.exists(repo_path):
-            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             repo = Repo(repo_path)
@@ -223,8 +220,6 @@ class GitRootTreeView(APIView):
             return Response({"Error": "Repository ID is required"}, status=400)
 
         repo_path = get_repo_path(repo_pk)
-        if not os.path.exists(repo_path):
-            return Response({"Error": "Local repository path not found"}, status=404)
 
         try:
             repo = Repo(repo_path)
@@ -327,8 +322,6 @@ class GitSubTreeView(APIView):
         branch = request.query_params.get("branch", "").strip()  # branch name
 
         repo_path = get_repo_path(pk)
-        if not os.path.exists(repo_path):
-            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             repo = Repo(repo_path)
@@ -445,8 +438,6 @@ class GitFileContentView(APIView):
             return Response({"error": "Missing 'sha' parameter"}, status=status.HTTP_400_BAD_REQUEST)
 
         repo_path = get_repo_path(pk)
-        if not os.path.exists(repo_path):
-            return Response({"error": f"Repository path not found: {repo_path}"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             repo = Repo(repo_path)
@@ -521,8 +512,6 @@ class CompareCommitsView(APIView):
             base = None
 
         repo_path = get_repo_path(pk)
-        if not os.path.exists(repo_path):
-            return Response({"error": "Repository path not found"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             repo = Repo(repo_path)
@@ -621,11 +610,6 @@ class GetChangedFilesView(APIView):
         sha = request.query_params.get("sha", None)
 
         repo_path = get_repo_path(pk)
-        if not os.path.exists(repo_path):
-            return Response(
-                {"error": "Repository path not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
 
         try:
             repo = Repo(repo_path)
