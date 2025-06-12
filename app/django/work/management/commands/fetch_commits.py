@@ -37,7 +37,8 @@ class Command(BaseCommand):
         for parent in commit.parents:
             self.ensure_commit_exists(repo, parent, commit_obj_map, existing_hashes, commits_to_create)
 
-    def get_default_branch(self, git_repo, repo_path):
+    @staticmethod
+    def get_default_branch(git_repo, repo_path):
         """리모트 저장소의 기본 브랜치 반환"""
         try:
             head_ref = subprocess.check_output(['git', '-C', repo_path, 'ls-remote', '--symref', 'origin', 'HEAD'],

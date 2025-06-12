@@ -83,22 +83,28 @@ def get_default_branch(repo: Repo) -> str | None:
     try:  # 1. origin/HEAD 확인
         origin_head_ref = repo.refs['origin/HEAD']
         if origin_head_ref and origin_head_ref.reference:
-            return origin_head_ref.reference.name.split('/')[-1]
-    except (GitCommandError, IndexError, AttributeError):
+            ref_name = origin_head_ref.reference.name
+            if ref_name.startswith('refs/remotes/origin/'):
+                return ref_name.split('refs/remotes/origin/')[1]
+    except (KeyError, IndexError, AttributeError) as e:
         pass
 
-    try:  # 2. HEAD가 가리키는 브랜치
-        if not repo.head.is_detached:
-            return repo.head.reference.name
-    except (ValueError, TypeError, AttributeError):
+    try:  # 2. HEAD가 가리키는 브랜치 (non-bare only)
+        if not repo.bare and repo.head.is_valid() and not repo.head.is_detached:
+            branch_name = repo.head.reference.name
+            if branch_name.startswith('refs/heads/'):
+                return branch_name.split('refs/heads/')[1]
+            return branch_name
+    except (ValueError, TypeError, AttributeError) as e:
         pass
 
+    heads = [head.name for head in repo.heads]
     for branch_name in ['main', 'master']:  # 3. 일반적인 브랜치 후보
-        if branch_name in repo.heads:
+        if branch_name in heads:
             return branch_name
 
-    if repo.heads:  # 4. 사용 가능한 첫 번째 브랜치
-        return repo.heads[0].name
+    if heads:  # 4. 사용 가능한 첫 번째 브랜치
+        return heads[0]
 
     return None
 
