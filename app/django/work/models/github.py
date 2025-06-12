@@ -38,12 +38,12 @@ class Branch(models.Model):
 class Commit(models.Model):
     revision_id = models.PositiveIntegerField(null=True, blank=True)
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='commits')
+    branches = models.ManyToManyField(Branch, blank=True, related_name='commits')
     commit_hash = models.CharField(max_length=40, unique=True)
     author = models.CharField(max_length=100, default='Unknown')
     date = models.DateTimeField(db_index=True)
     message = models.TextField(default='')
     parents = models.ManyToManyField('self', symmetrical=False, related_name='children', blank=True)
-    branches = models.ManyToManyField(Branch, blank=True, related_name='commits')
     issues = models.ManyToManyField('Issue', blank=True)
 
     def __str__(self):

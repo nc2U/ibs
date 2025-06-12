@@ -22,6 +22,13 @@ class RepositoryViewSet(viewsets.ModelViewSet):
     filterset_fields = ('project', 'is_default', 'is_report')
 
 
+class BranchViewSet(viewsets.ModelViewSet):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    filterset_fields = ('repo', 'name')
+
+
 def get_all_descendant_projects(project):
     descendants = set()
     children = IssueProject.objects.filter(parent=project)
@@ -36,7 +43,7 @@ class CommitViewSet(viewsets.ModelViewSet):
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
-    filterset_fields = ('repo', 'issues')
+    filterset_fields = ('repo', 'branches', 'issues')
     search_fields = ('commit_hash',)
 
     def get_queryset(self):

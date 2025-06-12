@@ -1,12 +1,18 @@
 from rest_framework import serializers
 
-from work.models.github import Repository, Commit
+from work.models.github import Repository, Branch, Commit
 
 
 class RepositorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
         fields = ('pk', 'project', 'is_default', 'slug', 'local_path', 'is_report')
+
+
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = ('pk', 'repo', 'name')
 
 
 class CommitSerializer(serializers.ModelSerializer):
