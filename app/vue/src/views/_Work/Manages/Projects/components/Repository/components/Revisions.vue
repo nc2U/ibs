@@ -8,6 +8,7 @@ import Pagination from '@/components/Pagination'
 
 const props = defineProps({
   page: { type: Number, required: true },
+  limit: { type: Number, required: true },
   commitList: { type: Array as PropType<Commit[]>, default: () => [] },
   getListSort: { type: String as PropType<'latest' | 'all'>, default: 'latest' },
   setHeadId: { type: String, default: '' },
@@ -188,7 +189,8 @@ onBeforeMount(() => {
     <Pagination
       :active-page="page"
       :limit="8"
-      :pages="commitPages(25)"
+      :pages="commitPages(limit)"
+      class="mt-3"
       @active-page-change="pageSelect"
     />
   </CRow>

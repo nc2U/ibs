@@ -31,7 +31,7 @@ const cFilter = ref({
 })
 
 const workStore = useWork()
-const project = computed<IssueProject | null>(() => workStore.issueProject)
+const project = computed(() => workStore.issueProject)
 watch(project, nVal => {
   if (nVal) {
     dataSetup(nVal?.pk as number)
@@ -43,6 +43,7 @@ const gitStore = useGithub()
 const repo = computed<Repository | null>(() => gitStore.repository)
 const repoList = computed<Repository[]>(() => gitStore.repositoryList)
 const commitList = computed<Commit[]>(() => gitStore.commitList)
+const commitCount = computed<Commit[]>(() => gitStore.commitCount)
 
 watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
@@ -96,8 +97,14 @@ const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; bran
 const changeRevision = async (payload: { branch?: string; tag?: string; sha?: string }) => {
   subTree.value = null
   cFilter.value.page = 1
+  const { branch, tag, sha } = payload
   const nowBranch = await fetchRootTree(repo.value?.pk as number, payload)
-  if (nowBranch) await fetchCommitList({ repo: cFilter.value.repo, up_to: nowBranch.commit.sha })
+  if (nowBranch) {
+    const params = branch
+      ? { repo: cFilter.value.repo, branch, up_to: nowBranch.commit.sha }
+      : { repo: cFilter.value.repo, up_to: nowBranch.commit.sha }
+    await fetchCommitList(params)
+  }
 }
 
 // into path
@@ -263,10 +270,11 @@ onBeforeMount(async () => {
         @into-path="intoPath"
         @file-view="viewFile"
       />
-
+      {{ commitCount }}
       <Revisions
         v-if="viewPageSort === 'revisions' && headerView !== 'revision'"
         :page="cFilter.page"
+        :limit="cFilter.limit"
         :commit-list="commitList"
         :get-list-sort="getListSort"
         :set-head-id="String(headId ?? '')"
