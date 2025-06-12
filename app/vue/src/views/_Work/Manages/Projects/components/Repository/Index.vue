@@ -90,19 +90,10 @@ const fetchRootTree = (
 const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
   gitStore.fetchSubTree(payload)
 
-const changeBranch = (branch: string) => {
+const changeRevision = (payload: { branch?: string; tag?: string; sha?: string }) => {
   subTree.value = null
-  fetchRootTree(repo.value?.pk as number, { branch })
-}
-
-const changeTag = (tag: string) => {
-  subTree.value = null
-  fetchRootTree(repo.value?.pk as number, { tag })
-}
-
-const changeCommit = (sha: string) => {
-  subTree.value = null
-  fetchRootTree(repo.value?.pk as number, { sha })
+  cFilter.value.page = 1
+  fetchRootTree(repo.value?.pk as number, payload)
 }
 
 // into path
@@ -241,9 +232,7 @@ onBeforeMount(async () => {
         @into-path="intoPath"
         @file-view="viewFile"
         @revision-view="getRevision"
-        @change-branch="changeBranch"
-        @change-tag="changeTag"
-        @change-commit="changeCommit"
+        @change-revision="changeRevision"
       />
 
       <ViewFile

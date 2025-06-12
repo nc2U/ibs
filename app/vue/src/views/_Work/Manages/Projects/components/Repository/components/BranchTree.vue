@@ -20,9 +20,7 @@ const emit = defineEmits([
   'into-path',
   'file-view',
   'revision-view',
-  'change-branch',
-  'change-tag',
-  'change-commit',
+  'change-revision',
 ])
 
 const prePath = (path: string) => {
@@ -55,9 +53,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
         :curr-branch="currBranch"
         :branches="branches"
         :tags="tags"
-        @change-branch="emit('change-branch', $event)"
-        @change-tag="emit('change-tag', $event)"
-        @change-commit="emit('change-commit', $event)"
+        @change-revision="emit('change-revision', $event)"
       />
     </CCol>
   </CRow>
