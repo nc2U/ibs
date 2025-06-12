@@ -75,19 +75,19 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
-const fetchBranchTree = (repoPk: number, branch: string, tag = '') =>
-  gitStore.fetchBranchTree(repoPk, branch, tag)
+const fetchRootTree = (repoPk: number, branch: string, tag = '') =>
+  gitStore.fetchRootTree(repoPk, branch, tag)
 const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
   gitStore.fetchSubTree(payload)
 
 const changeBranch = (branch: string, tag = '') => {
   subTree.value = null
-  fetchBranchTree(repo.value?.pk as number, branch, tag)
+  fetchRootTree(repo.value?.pk as number, branch, tag)
 }
 
 const changeTag = (tag: string) => {
   subTree.value = null
-  fetchBranchTree(repo.value?.pk as number, tag, '1')
+  fetchRootTree(repo.value?.pk as number, tag, '1')
 }
 
 // into path
@@ -199,7 +199,7 @@ const dataSetup = async (proj: number) => {
   await fetchCommitList(cFilter.value)
   await fetchBranches(cFilter.value.repo)
   await fetchTags(cFilter.value.repo)
-  await fetchBranchTree(cFilter.value.repo, default_branch.value)
+  await fetchRootTree(cFilter.value.repo, default_branch.value)
 }
 
 const loading = ref(true)
