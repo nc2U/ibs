@@ -238,8 +238,9 @@ class GitRootTreeView(APIView):
 
             if sha:
                 try:
+                    sha = sha.strip()
                     commit = repo.commit(sha)
-                    curr_branch = f"commit:{sha[:7]}"  # SHA 표시
+                    curr_branch = f"{sha[:7]}"  # SHA 표시
                 except (BadName, ValueError):
                     return Response({"Error": f"Commit Hash '{sha}' not found"}, status=404)
 
