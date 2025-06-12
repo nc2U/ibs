@@ -12,7 +12,6 @@ import ViewFile from './components/ViewFile.vue'
 import ViewRevision from './components/ViewRevision.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
-import { cF } from '@fullcalendar/core/internal-common'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
