@@ -178,77 +178,120 @@ class GitTagsView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class GitBranchTreeView(APIView):
+class GitRootTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
-    def get(request, pk, branch):
-        repo_path = get_repo_path(pk)
-        is_tag = request.query_params.get("is_tag", None)
+    def get(request, *args, **kwargs):
+        repo_pk = request.query_params.get("repo")
+        if not repo_pk:
+            return Response({"Error": "Repository ID is required"}, status=400)
 
+        repo_path = get_repo_path(repo_pk)
         if not os.path.exists(repo_path):
             return Response({"Error": "Local repository path not found"}, status=404)
 
         try:
             repo = Repo(repo_path)
+        except (BadName, KeyError) as e:
+            return Response({"Error": "Invalid repository", "details": str(e)}, status=400)
 
-            if is_tag is None:
-                if branch not in repo.heads:
+        branch = request.query_params.get("branch")
+        tag = request.query_params.get("tag")
+        sha = request.query_params.get("sha")
+
+        try:
+            # 기본 브랜치 설정
+            try:
+                default_branch = repo.active_branch.name
+            except (ValueError, TypeError):
+                branch_candidates = ['main', 'master']
+                default_branch = None
+                for branch_name in branch_candidates:
+                    if branch_name in repo.heads:
+                        default_branch = branch_name
+                        break
+                if not default_branch:
+                    return Response({"Error": "No valid default branch found"}, status=400)
+
+            curr_branch = default_branch
+            commit = None
+
+            if sha:
+                try:
+                    commit = repo.commit(sha)
+                    curr_branch = f"commit:{sha[:7]}"  # SHA 표시
+                except (BadName, ValueError):
+                    return Response({"Error": f"Commit Hash '{sha}' not found"}, status=404)
+
+            elif tag:
+                tag_ref = next((t for t in repo.tags if t.name == tag), None)
+                if not tag_ref:
+                    return Response({"Error": f"Tag '{tag}' not found"}, status=404)
+                commit = tag_ref.commit
+                curr_branch = tag
+
+            elif branch:
+                branch_ref = next((b for b in repo.heads if b.name == branch), None)
+                if not branch_ref:
                     return Response({"Error": f"Branch '{branch}' not found"}, status=404)
-                commit = repo.heads[branch].commit
+                commit = branch_ref.commit
+                curr_branch = branch
+
             else:
-                if branch not in repo.tags:
-                    return Response({"Error": f"Tag '{branch}' not found"}, status=404)
-                commit = repo.tags[branch].commit
+                branch_ref = next((b for b in repo.heads if b.name == default_branch), None)
+                if not branch_ref:
+                    return Response({"Error": f"Default branch '{default_branch}' not found"}, status=404)
+                commit = branch_ref.commit
 
-        except GitCommandError as e:
-            return Response({"Error": "Failed to access branch(tag) or commit", "details": str(e)}, status=500)
-
-        # 브랜치 정보 구성
-        branch_api = {
-            "name": branch,
-            "commit": {
-                "sha": commit.hexsha,
-                "author": commit.author.name,
-                "date": commit.authored_datetime.isoformat(),
-                "message": commit.message.strip()
+            # 브랜치 정보
+            branch_api = {
+                "name": curr_branch,
+                "commit": {
+                    "sha": commit.hexsha,
+                    "author": commit.author.name or "Unknown",
+                    "date": commit.authored_datetime.isoformat() if commit.authored_datetime else "",
+                    "message": commit.message.strip() if commit.message else ""
+                }
             }
-        }
 
-        trees_result = []  # 트리 정보 구성
-        for item in commit.tree:
-            item_path = item.path  # 상대 경로
-
-            try:  # 최근 커밋 찾기
-                latest_commit = next(repo.iter_commits(commit, paths=item_path, max_count=1))
+            # 트리 정보
+            trees_result = []
+            commit_cache = {}  # 성능 최적화
+            for item in commit.tree:
+                item_path = item.path
+                if item_path not in commit_cache:
+                    commit_cache[item_path] = next(
+                        repo.iter_commits(rev=commit, paths=item_path, max_count=1), commit
+                    )
+                latest_commit = commit_cache[item_path]
                 latest_commit_data = {
                     "sha": latest_commit.hexsha,
-                    "author": latest_commit.author.name,
-                    "date": latest_commit.authored_datetime.isoformat(),
-                    "message": latest_commit.message.strip()
+                    "author": latest_commit.author.name or "Unknown",
+                    "date": latest_commit.authored_datetime.isoformat() if latest_commit.authored_datetime else "",
+                    "message": latest_commit.message.strip() if latest_commit.message else ""
                 }
-            except StopIteration:
-                latest_commit_data = {
-                    "sha": "",
-                    "author": "Unknown",
-                    "date": "",
-                    "message": ""
-                }
+                trees_result.append({
+                    "path": item_path,
+                    "name": item.name,
+                    "mode": item.mode,
+                    "type": "tree" if item.type == "tree" else "blob",
+                    "sha": item.hexsha,
+                    "size": item.size if item.type == "blob" else None,
+                    "commit": latest_commit_data
+                })
 
-            trees_result.append({
-                "path": item.path,
-                "name": item.name,
-                "mode": item.mode,
-                "type": "tree" if item.type == "tree" else "blob",
-                "sha": item.hexsha,
-                "size": item.size if item.type == "blob" else None,
-                "commit": latest_commit_data
-            })
+            # 트리 정렬
+            trees_result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
+            serializer = GitBranchAndTreeSerializer({"branch": branch_api, "trees": trees_result})
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
-        # 트리 정렬: 디렉터리 → 파일, 이름순
-        trees_result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
-        serializer = GitBranchAndTreeSerializer({"branch": branch_api, "trees": trees_result})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        except (BadName, ValueError) as e:
+            return Response({"Error": "Invalid Git reference", "details": str(e)}, status=400)
+        except GitCommandError as e:
+            return Response({"Error": "Git command failed", "details": str(e)}, status=500)
+        except Exception as e:
+            return Response({"Error": "Unexpected error", "details": str(e)}, status=500)
 
 
 class GitSubTreeView(APIView):
