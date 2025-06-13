@@ -36,7 +36,7 @@ class Branch(models.Model):
 
 
 class Commit(models.Model):
-    revision_id = models.PositiveIntegerField(null=True, blank=True)
+    revision_id = models.PositiveIntegerField(default=0)
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='commits')
     branches = models.ManyToManyField(Branch, blank=True, related_name='commits')
     commit_hash = models.CharField(max_length=40, unique=True)
@@ -53,15 +53,18 @@ class Commit(models.Model):
         ordering = ('-id',)
         verbose_name = '17. 커미트'
         verbose_name_plural = '17. 커미트'
-        unique_together = ('repo', 'revision_id')
+        constraints = [
+            models.UniqueConstraint(fields=['repo', 'revision_id'], name='unique_repo_revision_id'),
+            models.UniqueConstraint(fields=['repo', 'commit_hash'], name='unique_repo_commit_hash')]
+        indexes = [
+            models.Index(fields=['repo', 'commit_hash']),
+            models.Index(fields=['repo', 'revision_id'])]
 
     def get_prev(self):
-        return Commit.objects.filter(repo=self.repo,
-                                     revision_id__lt=self.revision_id).order_by('-revision_id').first()
+        return self.parents.first()
 
     def get_next(self):
-        return Commit.objects.filter(repo=self.repo,
-                                     revision_id__gt=self.revision_id).order_by('revision_id').first()
+        return self.children.first()
 
     def save(self, *args, **kwargs):
         if self.revision_id is None:
@@ -84,6 +87,8 @@ class Commit(models.Model):
             return []
         repo_commits = {}  # Repository별로 커밋 그룹화
         for commit in commits:
+            if not commit.repo_id:
+                raise ValueError(f"Commit {commit.commit_hash} has no repo_id")
             if commit.repo_id not in repo_commits:
                 repo_commits[commit.repo_id] = []
             repo_commits[commit.repo_id].append(commit)
@@ -92,8 +97,7 @@ class Commit(models.Model):
                 max_revision = (
                         cls.objects.filter(repo_id=repo_id)
                         .select_for_update()
-                        .aggregate(Max('revision_id'))['revision_id__max'] or 0
-                )
+                        .aggregate(Max('revision_id'))['revision_id__max'] or 0)
                 for index, commit in enumerate(repo_commits[repo_id], start=1):  # 커밋들에 순차적 revision_id 부여
                     commit.revision_id = max_revision + index
             return cls.objects.bulk_create(commits, ignore_conflicts=ignore_conflicts)  # bulk_create 실행
