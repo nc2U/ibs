@@ -33,9 +33,7 @@ const cFilter = ref({
 const workStore = useWork()
 const project = computed(() => workStore.issueProject)
 watch(project, nVal => {
-  if (nVal) {
-    dataSetup(nVal?.pk as number)
-  }
+  if (nVal) dataSetup(nVal?.pk as number)
 })
 
 // get github api
