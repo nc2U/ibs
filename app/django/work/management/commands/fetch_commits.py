@@ -18,25 +18,6 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=None, help='Limit the number of commits to fetch')
 
-    def ensure_commit_exists(self, repo, commit, commit_obj_map, existing_hashes, commits_to_create):
-        """재귀적으로 커밋과 부모 커밋을 저장 준비"""
-        if commit.hexsha in existing_hashes or commit.hexsha in commit_obj_map:
-            return
-        author = commit.author.name or "Unknown"
-        seoul_tz = ZoneInfo("Asia/Seoul")
-        date = datetime.fromtimestamp(commit.committed_date, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
-        commit_instance = Commit(
-            repo=repo,
-            commit_hash=commit.hexsha,
-            author=author,
-            date=date,
-            message=commit.message.strip()
-        )
-        commits_to_create.append(commit_instance)
-        commit_obj_map[commit.hexsha] = commit_instance
-        for parent in commit.parents:
-            self.ensure_commit_exists(repo, parent, commit_obj_map, existing_hashes, commits_to_create)
-
     @staticmethod
     def get_default_branch(git_repo, repo_path):
         """리모트 저장소의 기본 브랜치 반환"""
@@ -56,15 +37,45 @@ class Command(BaseCommand):
         except subprocess.CalledProcessError:
             return None
 
+    def check_repo(self, repo, git_repo, repo_path):
+        # 빈 저장소 확인
+        if not git_repo.heads and not git_repo.remotes.origin.refs:
+            self.stderr.write(self.style.WARNING(f"Empty repository: {repo.slug}"))
+            return False
+
+        try:
+            # 안전 디렉토리 설정
+            subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
+            self.stdout.write(self.style.SUCCESS("Safe directory 설정 완료"))
+        except subprocess.CalledProcessError as e:
+            self.stderr.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
+            return False
+
+        try:
+            # 현재 remote.origin.fetch 설정값 조회
+            result = subprocess.run(['git', '-C', repo_path, 'config', '--get-all', 'remote.origin.fetch'],
+                                    check=True, capture_output=True, text=True)
+            fetch_rules = result.stdout.strip().splitlines()
+
+            target_ref_spec = '+refs/heads/*:refs/remotes/origin/*'
+            if target_ref_spec not in fetch_rules:
+                subprocess.run(['git', '-C', repo_path, 'config', '--add', 'remote.origin.fetch', target_ref_spec],
+                               check=True)
+                self.stdout.write(self.style.SUCCESS(f"✅ remote.origin.fetch 추가됨: {target_ref_spec}"))
+            return True
+        except subprocess.CalledProcessError as e:
+            self.stderr.write(self.style.ERROR(f"❌ fetch ref_spec 검사 실패: {e}"))
+            return False
+
     def fetch_repo(self, repo_path):
         """Git 저장소 페치"""
         for attempt in range(3):
             try:
-                subprocess.run(['git', '-C', repo_path, 'config', '--add', 'remote.origin.fetch',
-                                '+refs/heads/*:refs/remotes/origin/*'], check=True)
                 result = subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'],
                                         check=True, capture_output=True, text=True)
-                self.stdout.write(f"Fetch output: {result.stderr}")
+                self.stdout.write(f"Fetch output: {result.stdout}")
+                refs = subprocess.check_output(['git', '-C', repo_path, 'show-ref'], text=True).strip()
+                self.stdout.write(f"Refs after fetch: {refs}")
                 return True
             except subprocess.CalledProcessError as e:
                 self.stderr.write(f"Fetch attempt {attempt + 1} failed: {e.stderr}")
@@ -82,7 +93,7 @@ class Command(BaseCommand):
                 return
 
             # 원격 브랜치 목록
-            remote_refs = git_repo.remotes.origin.refs
+            remote_refs = git_repo.remotes.origin.refs if git_repo.remotes.origin.refs else []
             remote_branches = [ref.name.replace('origin/', '') for ref in remote_refs if ref.name != 'origin/HEAD']
             self.stdout.write(f"Remote refs: {[ref.name for ref in remote_refs]}")
             self.stdout.write(self.style.SUCCESS(f"Remote branches: {remote_branches}"))
@@ -102,6 +113,14 @@ class Command(BaseCommand):
             for branch in local_branches:
                 if branch not in remote_branches:
                     try:
+                        cmd = ['git', '-C', repo_path, 'rev-list', branch, '--max-count=1']
+                        last_commit = subprocess.check_output(cmd, text=True).strip()
+                        if last_commit:
+                            self.stdout.write(f"Branch {branch} has commits, preserving in DB")
+                            continue
+                    except subprocess.CalledProcessError:
+                        pass
+                    try:
                         subprocess.run(['git', '-C', repo_path, 'branch', '-D', branch], check=True)
                         self.stdout.write(self.style.SUCCESS(f"Deleted local branch: {branch}"))
                     except subprocess.CalledProcessError as e:
@@ -116,15 +135,24 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
                 deleted_branch_names = [b for b in existing_branches if b not in remote_branches]
                 if deleted_branch_names:
-                    Branch.objects.filter(repo=repo, name__in=deleted_branch_names).delete()
-                    self.stdout.write(
-                        self.style.SUCCESS(f"Deleted {len(deleted_branch_names)} branches: {deleted_branch_names}"))
+                    branches_with_commits = set(
+                        Commit.objects.filter(repo=repo, branches__name__in=deleted_branch_names)
+                        .values_list('branches__name', flat=True))
+                    deleted_branch_names = [b for b in deleted_branch_names if b not in branches_with_commits]
+                    if deleted_branch_names:
+                        Branch.objects.filter(repo=repo, name__in=deleted_branch_names).delete()
+                        self.stdout.write(
+                            self.style.SUCCESS(f"Deleted {len(deleted_branch_names)} branches: {deleted_branch_names}"))
 
             # Bare 저장소의 HEAD 및 origin/HEAD 설정
             try:
-                subprocess.run(
-                    ['git', '-C', repo_path, 'symbolic-ref', 'HEAD', f'refs/heads/{default_branch}'], check=True)
-                self.stdout.write(self.style.SUCCESS(f"Set HEAD to refs/heads/{default_branch}"))
+                if subprocess.check_output(['git', '-C', repo_path, 'show-ref',
+                                            f'refs/heads/{default_branch}'], text=True).strip():
+                    subprocess.run(['git', '-C', repo_path, 'symbolic-ref', 'HEAD',
+                                    f'refs/heads/{default_branch}'], check=True)
+                    self.stdout.write(self.style.SUCCESS(f"Set HEAD to refs/heads/{default_branch}"))
+                else:
+                    self.stderr.write(self.style.WARNING(f"Branch {default_branch} does not exist, skipping HEAD set"))
             except subprocess.CalledProcessError as e:
                 self.stderr.write(self.style.ERROR(f"Failed to set HEAD: {e}"))
 
@@ -139,6 +167,25 @@ class Command(BaseCommand):
         except (subprocess.CalledProcessError, GitCommandError, ValueError) as e:
             self.stderr.write(self.style.ERROR(f"Branch sync failed: {e}"))
             raise
+
+    def ensure_commit_exists(self, repo, commit, commit_obj_map, existing_hashes, commits_to_create):
+        """재귀적으로 커밋과 부모 커밋을 저장 준비"""
+        if commit.hexsha in existing_hashes or commit.hexsha in commit_obj_map:
+            return
+        author = commit.author.name or "Unknown"
+        seoul_tz = ZoneInfo("Asia/Seoul")
+        date = datetime.fromtimestamp(commit.committed_date, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
+        commit_instance = Commit(
+            repo=repo,
+            commit_hash=commit.hexsha,
+            author=author,
+            date=date,
+            message=commit.message.strip()
+        )
+        commits_to_create.append(commit_instance)
+        commit_obj_map[commit.hexsha] = commit_instance
+        for parent in commit.parents:
+            self.ensure_commit_exists(repo, parent, commit_obj_map, existing_hashes, commits_to_create)
 
     def handle(self, *args, **kwargs):
         limit = kwargs.get('limit')
@@ -157,17 +204,9 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(f"Invalid Git repository: {repo_path}"))
                 continue
 
-            # 빈 저장소 확인
-            if not git_repo.heads and not git_repo.remotes.origin.refs:
-                self.stderr.write(self.style.WARNING(f"Empty repository: {repo.slug}"))
-                continue
-
-            try:
-                # 안전 디렉토리 설정
-                subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
-                self.stdout.write(self.style.SUCCESS("Safe directory 설정 완료"))
-            except subprocess.CalledProcessError as e:
-                self.stderr.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
+            # 레파지토리 상태 확인 및 기본 설정
+            repo_chk = self.check_repo(repo, git_repo, repo_path)
+            if not repo_chk:
                 continue
 
             # Git 페치
@@ -182,18 +221,28 @@ class Command(BaseCommand):
                     # 브랜치-커밋 매핑
                     commit_branch_map = {}
                     try:
-                        cmd = ['git', '-C', repo_path, 'for-each-ref', '--format=%(objectname) %(refname:short)',
-                               'refs/heads']
-                        output = subprocess.check_output(cmd, text=True).strip()
-                        for line in output.split('\n'):
-                            if line:
-                                commit_hash, branch_name = line.split()
-                                commit_branch_map.setdefault(commit_hash, []).append(branch_name)
+                        cmd = ['git', '-C', repo_path, 'for-each-ref', '--format=%(refname:short)', 'refs/heads']
+                        branches = subprocess.check_output(cmd, text=True).strip().split('\n')
+                        for branch in branches:
+                            if branch:
+                                try:
+                                    cmd = ['git', '-C', repo_path, 'rev-list', branch, '--']
+                                    output = subprocess.check_output(cmd, text=True).strip()
+                                    commit_hashes = output.split('\n')
+                                    self.stdout.write(f"Branch {branch} has {len(commit_hashes)} commits")
+                                    for commit_hash in commit_hashes:
+                                        if commit_hash:
+                                            commit_branch_map.setdefault(commit_hash, []).append(branch)
+                                except subprocess.CalledProcessError as e:
+                                    self.stderr.write(
+                                        self.style.ERROR(f"Failed to get commits for branch {branch}: {e}"))
+                        self.stdout.write(f"Commit-branch map: {commit_branch_map}")
                     except subprocess.CalledProcessError as e:
                         self.stderr.write(self.style.ERROR(f"Failed to map branches: {e}"))
 
                     # 커밋 및 부모 데이터 준비
-                    existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
+                    existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash',
+                                                                                       flat=True).cache())
                     commits_to_create = []
                     commit_hashes = []
                     commit_parent_map = {}
@@ -218,23 +267,21 @@ class Command(BaseCommand):
 
                             # 저장된 커밋 조회
                             saved_commits = Commit.objects.filter(
-                                repo=repo,
-                                commit_hash__in=[c.commit_hash for c in commits_to_create])
+                                repo=repo, commit_hash__in=[c.commit_hash for c in commits_to_create])
                             commit_obj_map = {c.commit_hash: c for c in saved_commits}
 
                             # 부모 관계 연결
-                            with connection.cursor() as cursor:
-                                for child_hash, parent_hashes in commit_parent_map.items():
-                                    child = commit_obj_map.get(child_hash)
-                                    if not child:
-                                        continue
-                                    for p_hash in parent_hashes:
-                                        parent = commit_obj_map.get(p_hash)
-                                        if parent and parent != child:  # 순환 방지
-                                            cursor.execute(
-                                                "INSERT INTO work_commit_parents (from_commit_id, to_commit_id) "
-                                                "VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                                                [child.id, parent.id])
+                            parent_relations = []
+                            for child_hash, parent_hashes in commit_parent_map.items():
+                                child = commit_obj_map.get(child_hash)
+                                if not child:
+                                    continue
+                                for p_hash in parent_hashes:
+                                    parent = commit_obj_map.get(p_hash)
+                                    if parent and parent != child:
+                                        parent_relations.append(
+                                            Commit.parents.through(from_commit_id=child.id, to_commit_id=parent.id))
+                            Commit.parents.through.objects.bulk_create(parent_relations, ignore_conflicts=True)
                             self.stdout.write(self.style.SUCCESS("Linked parent relationships"))
 
                             # 브랜치 연결
