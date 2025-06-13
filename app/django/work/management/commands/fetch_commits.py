@@ -56,20 +56,20 @@ class Command(BaseCommand):
         except subprocess.CalledProcessError:
             return None
 
-    # def fetch_repo(self, repo_path):
-    #     """Git 저장소 페치"""
-    #     for attempt in range(3):
-    #         try:
-    #             result = subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'],
-    #                                     check=True, capture_output=True, text=True)
-    #             self.stdout.write(f"Fetch output: {result.stderr}")
-    #             return True
-    #         except subprocess.CalledProcessError as e:
-    #             self.stderr.write(f"Fetch attempt {attempt + 1} failed: {e.stderr}")
-    #             if attempt == 2:
-    #                 return False
-    #             time.sleep(2)
-    #     return False
+    def fetch_repo(self, repo_path):
+        """Git 저장소 페치"""
+        for attempt in range(3):
+            try:
+                result = subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'],
+                                        check=True, capture_output=True, text=True)
+                self.stdout.write(f"Fetch output: {result.stderr}")
+                return True
+            except subprocess.CalledProcessError as e:
+                self.stderr.write(f"Fetch attempt {attempt + 1} failed: {e.stderr}")
+                if attempt == 2:
+                    return False
+                time.sleep(2)
+        return False
 
     # def sync_branches(self, git_repo, repo, repo_path):
     #     """로컬 브랜치와 원격 브랜치를 동기화"""
@@ -168,10 +168,10 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
                 continue
 
-            # # Git 페치
-            # if not self.fetch_repo(repo_path):
-            #     self.stderr.write(self.style.ERROR(f"Git fetch failed for {repo.slug}"))
-            #     continue
+            # Git 페치
+            if not self.fetch_repo(repo_path):
+                self.stderr.write(self.style.ERROR(f"Git fetch failed for {repo.slug}"))
+                continue
 
             with transaction.atomic():
                 try:
