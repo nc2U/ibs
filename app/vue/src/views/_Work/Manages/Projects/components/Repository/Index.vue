@@ -31,7 +31,7 @@ const cFilter = ref({
 })
 
 const workStore = useWork()
-const project = computed(() => workStore.issueProject)
+const project = computed<IssueProject | null>(() => workStore.issueProject)
 watch(project, nVal => {
   if (nVal) dataSetup(nVal?.pk as number)
 })
