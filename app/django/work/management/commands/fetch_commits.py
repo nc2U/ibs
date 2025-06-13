@@ -1,7 +1,9 @@
+import gc
 import os
 import re
 import subprocess
 import time
+from collections import deque
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -192,24 +194,67 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR(f"Branch sync failed: {e}"))
             raise
 
-    def ensure_commit_exists(self, repo, commit, commit_obj_map, existing_hashes, commits_to_create):
-        """재귀적으로 커밋과 부모 커밋을 저장 준비"""
-        if commit.hexsha in existing_hashes or commit.hexsha in commit_obj_map:
-            return
-        author = commit.author.name or "Unknown"
-        seoul_tz = ZoneInfo("Asia/Seoul")
-        date = datetime.fromtimestamp(commit.committed_date, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
-        commit_instance = Commit(
-            repo=repo,
-            commit_hash=commit.hexsha,
-            author=author,
-            date=date,
-            message=commit.message.strip()
-        )
-        commits_to_create.append(commit_instance)
-        commit_obj_map[commit.hexsha] = commit_instance
-        for parent in commit.parents:
-            self.ensure_commit_exists(repo, parent, commit_obj_map, existing_hashes, commits_to_create)
+    def collect_commits_bfs(self, repo, git_repo, root_commits, existing_hashes, repo_path):
+        """큐 기반(BFS)으로 커밋과 부모 커밋을 저장 준비"""
+        commit_obj_map = {}
+        commits_to_create = []
+        commit_parent_map = {}
+        visited = set()
+        queue = deque(root_commits)
+        max_queue_size = 100000
+        start_time = time.time()
+        max_runtime = 300  # 5분
+
+        while queue:
+            if len(queue) > max_queue_size:
+                self.stderr.write(self.style.ERROR(f"Queue size exceeded: {len(queue)}"))
+                break
+            if time.time() - start_time > max_runtime:
+                self.stderr.write(self.style.ERROR(f"Processing timeout"))
+                break
+            if len(visited) % 1000 == 0:
+                gc.collect()
+                self.stdout.write(f"Processed {len(visited)} commits, Queue size: {len(queue)}")
+
+            commit = queue.popleft()
+            if commit.hexsha in visited or commit.hexsha in existing_hashes:
+                continue
+            visited.add(commit.hexsha)
+
+            try:
+                output = subprocess.check_output(['git', '-C', repo_path, 'cat-file', '-p', commit.hexsha], text=True)
+                author = "Unknown"
+                date = None
+                message = ""
+                for line in output.splitlines():
+                    if line.startswith("author"):
+                        author = line.split(" ", 1)[1].rsplit(" ", 2)[0]
+                    elif line.startswith("committer"):
+                        timestamp = int(line.rsplit(" ", 2)[1])
+                        seoul_tz = ZoneInfo("Asia/Seoul")
+                        date = datetime.fromtimestamp(timestamp, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
+                    elif not line.startswith("parent") and not line.startswith("tree"):
+                        message += line + "\n"
+                commit_instance = Commit(
+                    repo=repo,
+                    commit_hash=commit.hexsha,
+                    author=author,
+                    date=date,
+                    message=message.strip()
+                )
+                commits_to_create.append(commit_instance)
+                commit_obj_map[commit.hexsha] = commit_instance
+                parent_hashes = [line.split()[1] for line in output.splitlines() if line.startswith("parent")]
+                commit_parent_map[commit.hexsha] = parent_hashes
+                for parent_hash in parent_hashes:
+                    if parent_hash not in visited and parent_hash not in existing_hashes:
+                        parent_commit = git_repo.commit(parent_hash)
+                        queue.append(parent_commit)
+            except subprocess.CalledProcessError as e:
+                self.stderr.write(self.style.ERROR(f"Failed to process commit {commit.hexsha}: {e}"))
+                continue
+
+        return commits_to_create, commit_obj_map, commit_parent_map
 
     def handle(self, *args, **kwargs):
         limit = kwargs.get('limit')
@@ -273,21 +318,16 @@ class Command(BaseCommand):
 
                     # 커밋 및 부모 데이터 준비
                     existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
-                    commits_to_create = []
-                    commit_hashes = []
-                    commit_parent_map = {}
-                    commit_obj_map = {}
 
                     try:
+                        root_commits = [ref.commit for ref in git_repo.remotes.origin.refs if ref.name != 'origin/HEAD']
+                        commits_to_create, commit_obj_map, commit_parent_map = \
+                            self.collect_commits_bfs(repo, git_repo, root_commits, existing_hashes, repo_path)
                         commits_iter = git_repo.iter_commits('--all', max_count=limit)
+                        commit_hashes = [(commit.hexsha, commit.message) for commit in commits_iter]
                     except GitCommandError as e:
                         self.stderr.write(self.style.ERROR(f"Failed to get commits: {e}"))
                         continue
-
-                    for commit in reversed(list(commits_iter)):  # 오래된 순으로
-                        self.ensure_commit_exists(repo, commit, commit_obj_map, existing_hashes, commits_to_create)
-                        commit_hashes.append((commit.hexsha, commit.message))
-                        commit_parent_map[commit.hexsha] = [p.hexsha for p in commit.parents]
 
                     if commits_to_create:
                         try:
@@ -321,7 +361,7 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.SUCCESS("Linked parent relationships"))
 
                         # 브랜치 연결
-                        branch_map = {b.name: b for b in repo.branches.all().select_related('repo')}
+                        branch_map = {b.name: b for b in repo.branches.all()}
                         for commit_hash, commit_obj in commit_obj_map.items():
                             branch_names = commit_branch_map.get(commit_hash, [])
                             branch_objs = [branch_map.get(name) for name in branch_names if name in branch_map]
@@ -348,14 +388,11 @@ class Command(BaseCommand):
                             cursor.execute(
                                 "SELECT setval('work_commit_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM work_commit))")
                             self.stdout.write(self.style.SUCCESS("Sequence adjusted for work_commit_id_seq"))
-
                     else:
                         self.stdout.write(self.style.WARNING(f"No new commits to create for {repo.slug}"))
 
                     self.stdout.write(self.style.SUCCESS(
-                        f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-                        f"Processed {repo.slug} ({len(commits_to_create)} new commits)"))
-
+                        f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processed {repo.slug} ({len(commits_to_create)} new commits)"))
                 except (subprocess.CalledProcessError, GitCommandError, ValueError) as e:
                     self.stderr.write(self.style.ERROR(f"Repository sync failed: {e}"))
                     continue
