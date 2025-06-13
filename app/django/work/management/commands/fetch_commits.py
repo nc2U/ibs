@@ -226,6 +226,7 @@ class Command(BaseCommand):
                 author = "Unknown"
                 date = None
                 message = ""
+                parent_hashes = []
                 for line in output.splitlines():
                     if line.startswith("author"):
                         author = line.split(" ", 1)[1].rsplit(" ", 2)[0]
@@ -233,7 +234,9 @@ class Command(BaseCommand):
                         timestamp = int(line.rsplit(" ", 2)[1])
                         seoul_tz = ZoneInfo("Asia/Seoul")
                         date = datetime.fromtimestamp(timestamp, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
-                    elif not line.startswith("parent") and not line.startswith("tree"):
+                    elif line.startswith("parent"):
+                        parent_hashes.append(line.split()[1])
+                    elif not line.startswith("tree"):
                         message += line + "\n"
                 commit_instance = Commit(
                     repo=repo,
@@ -244,7 +247,6 @@ class Command(BaseCommand):
                 )
                 commits_to_create.append(commit_instance)
                 commit_obj_map[commit.hexsha] = commit_instance
-                parent_hashes = [line.split()[1] for line in output.splitlines() if line.startswith("parent")]
                 commit_parent_map[commit.hexsha] = parent_hashes
                 for parent_hash in parent_hashes:
                     if parent_hash not in visited and parent_hash not in existing_hashes:
@@ -254,6 +256,7 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(f"Failed to process commit {commit.hexsha}: {e}"))
                 continue
 
+        commits_to_create = sorted(commits_to_create, key=lambda c: c.date)
         return commits_to_create, commit_obj_map, commit_parent_map
 
     def handle(self, *args, **kwargs):
