@@ -37,21 +37,41 @@ class Command(BaseCommand):
         except subprocess.CalledProcessError:
             return None
 
+    @staticmethod
+    def _is_safe_directory(repo_path):
+        try:
+            result = subprocess.run(['git', 'config', '--global', '--get-all', 'safe.directory'],
+                                    capture_output=True, text=True)
+            return repo_path in result.stdout.strip().splitlines()
+        except subprocess.CalledProcessError:
+            return False
+
     def check_repo(self, repo, git_repo, repo_path):
         if not git_repo.heads and not git_repo.remotes.origin.refs:  # 빈 저장소 확인
             self.stderr.write(self.style.WARNING(f"⚠️ Empty repository: {repo.slug}"))
             return False
 
-        try:  # safe.directory 확인 및 추가
-            result = subprocess.run(['git', 'config', '--global', '--get-all', 'safe.directory'],
-                                    capture_output=True, text=True)
-            safe_dirs = result.stdout.strip().splitlines()
-            if repo_path not in safe_dirs:
+        if not self._is_safe_directory(repo_path):  # safe.directory 확인 및 추가
+            try:
                 subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
                 self.stdout.write(self.style.SUCCESS(f"✅ safe.directory 등록됨: {repo_path}"))
-        except subprocess.CalledProcessError as e:
-            self.stderr.write(self.style.ERROR(f"❌ safe.directory 설정 실패: {e}"))
-            return False
+            except subprocess.CalledProcessError as e:
+                self.stderr.write(self.style.ERROR(f"❌ safe.directory 설정 실패: {e}"))
+                return False
+
+        try:
+            remote_url = subprocess.check_output(['git', '-C', repo_path, 'config', '--get', 'remote.origin.url'],
+                                                 text=True).strip()
+            if remote_url != repo.remote_url:
+                subprocess.run(['git', '-C', repo_path, 'remote', 'set-url', 'origin', repo.remote_url], check=True)
+                self.stdout.write(f"Updated remote.origin.url to {repo.remote_url}")
+        except subprocess.CalledProcessError:
+            try:
+                subprocess.run(['git', '-C', repo_path, 'remote', 'add', 'origin', repo.remote_url], check=True)
+                self.stdout.write(f"Added remote.origin.url: {repo.remote_url}")
+            except subprocess.CalledProcessError as e:
+                self.stderr.write(self.style.ERROR(f"❌ Failed to set remote.origin: {e}"))
+                return False
 
         try:  # remote.origin.fetch 확인 및 추가
             result = subprocess.run(['git', '-C', repo_path, 'config', '--get-all', 'remote.origin.fetch'],
@@ -69,6 +89,13 @@ class Command(BaseCommand):
 
     def fetch_repo(self, repo_path):
         """Git 저장소 페치"""
+        try:
+            remote_url = subprocess.check_output(['git', '-C', repo_path, 'config', '--get', 'remote.origin.url'],
+                                                 text=True).strip()
+            self.stdout.write(f"Remote URL: {remote_url}")
+        except subprocess.CalledProcessError:
+            self.stderr.write(self.style.ERROR("No remote.origin.url configured"))
+            return False
         for attempt in range(3):
             try:
                 subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'],
@@ -202,8 +229,7 @@ class Command(BaseCommand):
                 continue
 
             # 레파지토리 상태 확인 및 기본 설정
-            repo_chk = self.check_repo(repo, git_repo, repo_path)
-            if not repo_chk:
+            if not self.check_repo(repo, git_repo, repo_path):
                 continue
 
             # Git 페치
@@ -220,6 +246,7 @@ class Command(BaseCommand):
                     try:
                         cmd = ['git', '-C', repo_path, 'for-each-ref', '--format=%(refname:short)', 'refs/heads']
                         branches = subprocess.check_output(cmd, text=True).strip().split('\n')
+                        self.stdout.write(f"Found branches: {branches}")
                         for branch in branches:
                             if branch:
                                 try:
@@ -233,6 +260,14 @@ class Command(BaseCommand):
                                 except subprocess.CalledProcessError as e:
                                     self.stderr.write(
                                         self.style.ERROR(f"Failed to get commits for branch {branch}: {e}"))
+                        existing_branches = set(repo.branches.values_list('name', flat=True))
+                        for branch_name in existing_branches:
+                            if branch_name not in branches:
+                                commit_hashes = Commit.objects.filter(repo=repo,
+                                                                      branches__name=branch_name).values_list(
+                                    'commit_hash', flat=True)
+                                for commit_hash in commit_hashes:
+                                    commit_branch_map.setdefault(commit_hash, []).append(branch_name)
                     except subprocess.CalledProcessError as e:
                         self.stderr.write(self.style.ERROR(f"Failed to map branches: {e}"))
 
@@ -257,67 +292,69 @@ class Command(BaseCommand):
                     if commits_to_create:
                         try:
                             # Commit 저장
-                            Commit.bulk_create_with_revision_ids(commits_to_create, ignore_conflicts=True)
+                            Commit.bulk_create_with_revision_ids(commits_to_create, ignore_conflicts=False)
                             self.stdout.write(self.style.SUCCESS(f"Created {len(commits_to_create)} commits"))
-
-                            # 저장된 커밋 조회
-                            saved_commits = Commit.objects.filter(
-                                repo=repo, commit_hash__in=[c.commit_hash for c in commits_to_create])
-                            commit_obj_map = {c.commit_hash: c for c in saved_commits}
-
-                            # 부모 관계 연결
-                            parent_relations = []
-                            for child_hash, parent_hashes in commit_parent_map.items():
-                                child = commit_obj_map.get(child_hash)
-                                if not child:
-                                    continue
-                                for p_hash in parent_hashes:
-                                    parent = commit_obj_map.get(p_hash)
-                                    if parent and parent != child:
-                                        parent_relations.append(
-                                            Commit.parents.through(from_commit_id=child.id, to_commit_id=parent.id))
-                            Commit.parents.through.objects.bulk_create(parent_relations, ignore_conflicts=True)
-                            self.stdout.write(self.style.SUCCESS("Linked parent relationships"))
-
-                            # 브랜치 연결
-                            branch_map = {b.name: b for b in repo.branches.all()}
-                            for commit_hash, commit_obj in commit_obj_map.items():
-                                branch_names = commit_branch_map.get(commit_hash, [])
-                                branch_objs = [branch_map.get(name) for name in branch_names if name in branch_map]
-                                branch_objs = [b for b in branch_objs if b]
-                                if branch_objs:
-                                    commit_obj.branches.add(*branch_objs)
-                                    self.stdout.write(self.style.SUCCESS(
-                                        f"Linked {len(branch_objs)} branches to commit {commit_hash}: {branch_names}"))
-
-                            # 이슈 연결
-                            for commit_hash, message in commit_hashes:
-                                if commit_hash not in commit_obj_map:
-                                    continue
-                                issue_numbers = re.findall(r'#(\d+)\b', message)
-                                if issue_numbers:
-                                    valid_issues = Issue.objects.filter(pk__in=issue_numbers)
-                                    if valid_issues.exists():
-                                        commit_obj_map[commit_hash].issues.add(*valid_issues)
-                                        self.stdout.write(self.style.SUCCESS(
-                                            f"Linked {len(valid_issues)} issues to commit {commit_hash}"))
-
-                            # 시퀀스 조정
-                            with connection.cursor() as cursor:
-                                cursor.execute(
-                                    "SELECT setval('work_commit_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM work_commit))")
-                                self.stdout.write(self.style.SUCCESS("Sequence adjusted for work_commit_id_seq"))
-
                         except IntegrityError as e:
-                            self.stderr.write(self.style.ERROR(f"Bulk create failed: {e}"))
-                            raise
+                            self.stderr.write(self.style.WARNING(f"IntegrityError, retrying without duplicates: {e}"))
+                            existing_hashes = set(
+                                Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
+                            commits_to_create = [c for c in commits_to_create if c.commit_hash not in existing_hashes]
+                            Commit.bulk_create_with_revision_ids(commits_to_create, ignore_conflicts=True)
+
+                        # 저장된 커밋 조회
+                        saved_commits = Commit.objects.filter(
+                            repo=repo, commit_hash__in=[c.commit_hash for c in commits_to_create])
+                        commit_obj_map = {c.commit_hash: c for c in saved_commits}
+
+                        # 부모 관계 연결
+                        parent_relations = []
+                        for child_hash, parent_hashes in commit_parent_map.items():
+                            child = commit_obj_map.get(child_hash)
+                            if not child:
+                                continue
+                            for p_hash in parent_hashes:
+                                parent = commit_obj_map.get(p_hash)
+                                if parent and parent != child:
+                                    parent_relations.append(
+                                        Commit.parents.through(from_commit_id=child.id, to_commit_id=parent.id))
+                        Commit.parents.through.objects.bulk_create(parent_relations, ignore_conflicts=True)
+                        self.stdout.write(self.style.SUCCESS("Linked parent relationships"))
+
+                        # 브랜치 연결
+                        branch_map = {b.name: b for b in repo.branches.all().select_related('repo')}
+                        for commit_hash, commit_obj in commit_obj_map.items():
+                            branch_names = commit_branch_map.get(commit_hash, [])
+                            branch_objs = [branch_map.get(name) for name in branch_names if name in branch_map]
+                            branch_objs = [b for b in branch_objs if b]
+                            if branch_objs:
+                                commit_obj.branches.add(*branch_objs)
+                                self.stdout.write(self.style.SUCCESS(
+                                    f"Linked {len(branch_objs)} branches to commit {commit_hash}: {branch_names}"))
+
+                        # 이슈 연결
+                        for commit_hash, message in commit_hashes:
+                            if commit_hash not in commit_obj_map:
+                                continue
+                            issue_numbers = re.findall(r'#(\d+)\b', message)
+                            if issue_numbers:
+                                valid_issues = Issue.objects.filter(pk__in=issue_numbers)
+                                if valid_issues.exists():
+                                    commit_obj_map[commit_hash].issues.add(*valid_issues)
+                                    self.stdout.write(self.style.SUCCESS(
+                                        f"Linked {len(valid_issues)} issues to commit {commit_hash}"))
+
+                        # 시퀀스 조정
+                        with connection.cursor() as cursor:
+                            cursor.execute(
+                                "SELECT setval('work_commit_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM work_commit))")
+                            self.stdout.write(self.style.SUCCESS("Sequence adjusted for work_commit_id_seq"))
+
                     else:
                         self.stdout.write(self.style.WARNING(f"No new commits to create for {repo.slug}"))
 
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-                            f"Processed {repo.slug} ({len(commits_to_create)} new commits)"))
+                    self.stdout.write(self.style.SUCCESS(
+                        f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+                        f"Processed {repo.slug} ({len(commits_to_create)} new commits)"))
 
                 except (subprocess.CalledProcessError, GitCommandError, ValueError) as e:
                     self.stderr.write(self.style.ERROR(f"Repository sync failed: {e}"))
