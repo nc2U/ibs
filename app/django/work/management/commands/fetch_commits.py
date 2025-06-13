@@ -38,44 +38,42 @@ class Command(BaseCommand):
             return None
 
     def check_repo(self, repo, git_repo, repo_path):
-        # 빈 저장소 확인
-        if not git_repo.heads and not git_repo.remotes.origin.refs:
-            self.stderr.write(self.style.WARNING(f"Empty repository: {repo.slug}"))
+        if not git_repo.heads and not git_repo.remotes.origin.refs:  # 빈 저장소 확인
+            self.stderr.write(self.style.WARNING(f"⚠️ Empty repository: {repo.slug}"))
             return False
 
-        try:
-            # 안전 디렉토리 설정
-            subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
-            self.stdout.write(self.style.SUCCESS("Safe directory 설정 완료"))
+        try:  # safe.directory 확인 및 추가
+            result = subprocess.run(['git', 'config', '--global', '--get-all', 'safe.directory'],
+                                    capture_output=True, text=True)
+            safe_dirs = result.stdout.strip().splitlines()
+            if repo_path not in safe_dirs:
+                subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
+                self.stdout.write(self.style.SUCCESS(f"✅ safe.directory 등록됨: {repo_path}"))
         except subprocess.CalledProcessError as e:
-            self.stderr.write(self.style.ERROR(f"Safe directory 설정 실패: {e}"))
+            self.stderr.write(self.style.ERROR(f"❌ safe.directory 설정 실패: {e}"))
             return False
 
-        try:
-            # 현재 remote.origin.fetch 설정값 조회
+        try:  # remote.origin.fetch 확인 및 추가
             result = subprocess.run(['git', '-C', repo_path, 'config', '--get-all', 'remote.origin.fetch'],
-                                    check=True, capture_output=True, text=True)
+                                    capture_output=True, text=True)
             fetch_rules = result.stdout.strip().splitlines()
-
             target_ref_spec = '+refs/heads/*:refs/remotes/origin/*'
             if target_ref_spec not in fetch_rules:
-                subprocess.run(['git', '-C', repo_path, 'config', '--add', 'remote.origin.fetch', target_ref_spec],
-                               check=True)
+                subprocess.run(
+                    ['git', '-C', repo_path, 'config', '--add', 'remote.origin.fetch', target_ref_spec], check=True)
                 self.stdout.write(self.style.SUCCESS(f"✅ remote.origin.fetch 추가됨: {target_ref_spec}"))
             return True
         except subprocess.CalledProcessError as e:
-            self.stderr.write(self.style.ERROR(f"❌ fetch ref_spec 검사 실패: {e}"))
+            self.stderr.write(self.style.ERROR(f"❌ remote.origin.fetch 확인 실패: {e}"))
             return False
 
     def fetch_repo(self, repo_path):
         """Git 저장소 페치"""
         for attempt in range(3):
             try:
-                result = subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'],
-                                        check=True, capture_output=True, text=True)
-                self.stdout.write(f"Fetch output: {result.stdout}")
-                refs = subprocess.check_output(['git', '-C', repo_path, 'show-ref'], text=True).strip()
-                self.stdout.write(f"Refs after fetch: {refs}")
+                subprocess.run(['git', '-C', repo_path, 'fetch', '--all', '--prune', '--force'],
+                               check=True, capture_output=True, text=True)
+                subprocess.check_output(['git', '-C', repo_path, 'show-ref'], text=True).strip()
                 return True
             except subprocess.CalledProcessError as e:
                 self.stderr.write(f"Fetch attempt {attempt + 1} failed: {e.stderr}")
@@ -95,7 +93,6 @@ class Command(BaseCommand):
             # 원격 브랜치 목록
             remote_refs = git_repo.remotes.origin.refs if git_repo.remotes.origin.refs else []
             remote_branches = [ref.name.replace('origin/', '') for ref in remote_refs if ref.name != 'origin/HEAD']
-            self.stdout.write(f"Remote refs: {[ref.name for ref in remote_refs]}")
             self.stdout.write(self.style.SUCCESS(f"Remote branches: {remote_branches}"))
 
             # 로컬 브랜치 업데이트
@@ -236,13 +233,11 @@ class Command(BaseCommand):
                                 except subprocess.CalledProcessError as e:
                                     self.stderr.write(
                                         self.style.ERROR(f"Failed to get commits for branch {branch}: {e}"))
-                        self.stdout.write(f"Commit-branch map: {commit_branch_map}")
                     except subprocess.CalledProcessError as e:
                         self.stderr.write(self.style.ERROR(f"Failed to map branches: {e}"))
 
                     # 커밋 및 부모 데이터 준비
-                    existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash',
-                                                                                       flat=True).cache())
+                    existing_hashes = set(Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
                     commits_to_create = []
                     commit_hashes = []
                     commit_parent_map = {}
