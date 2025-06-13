@@ -43,7 +43,7 @@ const gitStore = useGithub()
 const repo = computed<Repository | null>(() => gitStore.repository)
 const repoList = computed<Repository[]>(() => gitStore.repositoryList)
 const commitList = computed<Commit[]>(() => gitStore.commitList)
-const commitCount = computed<Commit[]>(() => gitStore.commitCount)
+const commitCount = computed<number>(() => gitStore.commitCount)
 
 watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
