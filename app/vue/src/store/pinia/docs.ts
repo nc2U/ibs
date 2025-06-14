@@ -1,20 +1,19 @@
 import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { message, errorHandle } from '@/utils/helper'
+import { errorHandle, message } from '@/utils/helper'
 import type {
-  DocType,
   Category,
-  AFile,
-  Link,
   DFile,
-  PatchDocs,
-  SuitCase,
-  SimpleSuitCase,
   Docs,
+  DocType,
+  Link,
+  PatchDocs,
+  SimpleSuitCase,
+  SuitCase,
   TrashDocs as TP,
 } from '@/store/types/docs'
-import type { CodeValue } from '@/store/types/work_project.ts'
+import type { CodeValue } from '@/store/types/work_issue.ts'
 
 export type SuitCaseFilter = {
   company?: number | ''
