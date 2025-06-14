@@ -2,7 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
-import { useGithub } from '@/store/pinia/work_git_repo.ts'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_git_repo.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -37,7 +37,7 @@ watch(project, nVal => {
 })
 
 // get github api
-const gitStore = useGithub()
+const gitStore = useGitRepo()
 const repo = computed<Repository | null>(() => gitStore.repository)
 const repoList = computed<Repository[]>(() => gitStore.repositoryList)
 const commitList = computed<Commit[]>(() => gitStore.commitList)

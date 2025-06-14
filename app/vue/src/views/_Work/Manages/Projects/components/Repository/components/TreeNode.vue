@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
-import type { Commit, Tree } from '@/store/types/work_git_repo.ts'
-import { useGithub } from '@/store/pinia/work_git_repo.ts'
+import type { Tree } from '@/store/types/work_git_repo.ts'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString, elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 import TreeNode from './TreeNode.vue'
 
@@ -16,8 +16,8 @@ const emit = defineEmits(['into-path', 'file-view', 'revision-view'])
 
 const nodeFold = ref(false)
 const subTrees = ref([])
-const gitStore = useGithub()
 
+const gitStore = useGitRepo()
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
   gitStore.fetchSubTree(payload)

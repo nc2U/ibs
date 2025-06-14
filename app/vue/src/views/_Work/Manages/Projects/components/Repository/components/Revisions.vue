@@ -2,7 +2,7 @@
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Commit } from '@/store/types/work_git_repo.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
-import { useGithub } from '@/store/pinia/work_git_repo.ts'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import Pagination from '@/components/Pagination'
 
@@ -66,11 +66,11 @@ const getDiff = () => {
   emit('get-diff', { base, head })
 }
 
-const ghStore = useGithub()
-const commitCount = computed<number>(() => ghStore.commitCount)
-const commitPages = (page: number) => ghStore.commitPages(page)
+const gitStore = useGitRepo()
+const commitCount = computed<number>(() => gitStore.commitCount)
+const commitPages = (page: number) => gitStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
-const assignCommit = (commit: Commit) => ghStore.assignCommit(commit)
+const assignCommit = (commit: Commit) => gitStore.assignCommit(commit)
 
 const viewRevision = (commit: Commit) => {
   assignCommit(commit)

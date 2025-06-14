@@ -10,7 +10,7 @@ import type {
   ChangedFile,
 } from '@/store/types/work_git_repo.ts'
 
-export const useGithub = defineStore('github', () => {
+export const useGitRepo = defineStore('git_repo', () => {
   // Repository states & getters
   const repository = ref<Repository | null>(null)
   const repositoryList = ref<Repository[]>([])

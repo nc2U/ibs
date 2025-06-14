@@ -5,7 +5,7 @@ import { type IssueProject } from '@/store/types/work_project.ts'
 import { type IssueCategory as ICategory } from '@/store/types/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import { useGithub } from '@/store/pinia/work_git_repo.ts'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
@@ -102,21 +102,21 @@ const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: 
   }
 }
 
-const ghStore = useGithub()
-const repositoryList = computed(() => ghStore.repositoryList)
+const gitStore = useGitRepo()
+const repositoryList = computed(() => gitStore.repositoryList)
 
 const submitRepo = (payload: any) => {
   if (!payload.project) payload.project = issueProject.value?.pk
-  if (!payload.pk) ghStore.createRepo(payload)
-  else ghStore.patchRepo(payload)
+  if (!payload.pk) gitStore.createRepo(payload)
+  else gitStore.patchRepo(payload)
 }
-const deleteRepo = (pk: number) => ghStore.deleteRepo(pk, issueProject.value?.pk)
+const deleteRepo = (pk: number) => gitStore.deleteRepo(pk, issueProject.value?.pk)
 
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
     await workStore.fetchIssueProject(to.params.projId as string)
     await workStore.fetchVersionList({ project: to.params.projId as string })
-    await ghStore.fetchRepoList(issueProject.value?.pk ?? '')
+    await gitStore.fetchRepoList(issueProject.value?.pk ?? '')
   } else {
     workStore.removeIssueProject()
     await workStore.fetchIssueProjectList({ status: '1' })
@@ -132,7 +132,7 @@ onBeforeMount(async () => {
   await workStore.fetchRoleList()
   await issueStore.fetchTrackerList()
   await issueStore.fetchActivityList()
-  await ghStore.fetchRepoList(issueProject.value?.pk ?? '')
+  await gitStore.fetchRepoList(issueProject.value?.pk ?? '')
 
   if (route.params.projId) {
     const projId = route.params.projId as string

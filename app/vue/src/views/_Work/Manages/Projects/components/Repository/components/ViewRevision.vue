@@ -2,7 +2,7 @@
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Changed, ChangedFile, Commit, DiffApi } from '@/store/types/work_git_repo.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
-import { useGithub } from '@/store/pinia/work_git_repo.ts'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
 import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
@@ -16,7 +16,7 @@ const emit = defineEmits(['goto-back', 'get-diff', 'get-commit', 'into-path', 'f
 
 const tabKey = ref(1)
 
-const gitStore = useGithub()
+const gitStore = useGitRepo()
 const commit = computed<Commit | null>(() => gitStore.commit)
 watch(
   () => commit.value,

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useGithub } from '@/store/pinia/work_git_repo.ts'
+import { computed, onBeforeMount, ref } from 'vue'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import router from '@/router/index.js'
 
 const props = defineProps({
@@ -9,7 +9,7 @@ const props = defineProps({
   tags: { type: Array, default: () => [] },
 })
 
-const gitStore = useGithub()
+const gitStore = useGitRepo()
 const default_branch = computed(() => gitStore.default_branch)
 
 const emit = defineEmits(['change-revision', 'set-up-to'])
