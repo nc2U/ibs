@@ -164,7 +164,6 @@ class GitBranchesView(APIView):
                 commit = head.commit
                 branches.append({
                     "name": head.name,
-                    "branches": [],
                     "commit": {
                         "sha": commit.hexsha,
                         "author": commit.author.name,
@@ -196,7 +195,6 @@ class GitTagsView(APIView):
 
                     tag_list.append({
                         "name": tag.name,
-                        "branches": [],
                         "commit": {
                             "sha": commit.hexsha,
                             "author": commit.author.name,
@@ -239,14 +237,14 @@ class GitRootTreeView(APIView):
         try:
             # 기본 브랜치 설정
             default_branch = get_default_branch(repo)
-            curr_branch = default_branch
+            curr_refs = default_branch
             # commit = None
 
             if sha:
                 try:
                     sha = sha.strip()
                     commit = repo.commit(sha)
-                    curr_branch = f"{sha[:7]}"  # SHA 표시
+                    curr_refs = f"{sha[:7]}"  # SHA 표시
                 except (BadName, ValueError):
                     return Response({"Error": f"Commit Hash '{sha}' not found"}, status=404)
 
@@ -255,14 +253,14 @@ class GitRootTreeView(APIView):
                 if not tag_ref:
                     return Response({"Error": f"Tag '{tag}' not found"}, status=404)
                 commit = tag_ref.commit
-                curr_branch = tag
+                curr_refs = tag
 
             elif branch:
                 branch_ref = next((b for b in repo.heads if b.name == branch), None)
                 if not branch_ref:
                     return Response({"Error": f"Branch '{branch}' not found"}, status=404)
                 commit = branch_ref.commit
-                curr_branch = branch
+                curr_refs = branch
 
             else:
                 branch_ref = next((b for b in repo.heads if b.name == default_branch), None)
@@ -273,8 +271,8 @@ class GitRootTreeView(APIView):
             # 브랜치 정보
             branches = repo.git.branch('--contains', commit.hexsha).split('\n')
             branches = [b.strip().lstrip('* ') for b in branches if b.strip()]
-            branch_api = {
-                "name": curr_branch,
+            refs_api = {
+                "name": curr_refs,
                 "branches": branches,
                 "commit": {
                     "sha": commit.hexsha,
@@ -312,7 +310,7 @@ class GitRootTreeView(APIView):
 
             # 트리 정렬
             trees_result.sort(key=lambda item: (item["type"] != "tree", item["path"].lower()))
-            serializer = GitBranchAndTreeSerializer({"branch": branch_api, "trees": trees_result})
+            serializer = GitRefsAndTreeSerializer({"refs": refs_api, "trees": trees_result})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         except (BadName, ValueError) as e:

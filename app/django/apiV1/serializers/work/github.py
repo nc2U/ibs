@@ -56,6 +56,11 @@ class CommitApiSerializer(serializers.Serializer):
 
 class GitBranchSerializer(serializers.Serializer):
     name = serializers.CharField()
+    commit = CommitApiSerializer()
+
+
+class GitRefsSerializer(serializers.Serializer):
+    name = serializers.CharField()
     branches = serializers.ListField(child=serializers.CharField())
     commit = CommitApiSerializer()
 
@@ -70,8 +75,8 @@ class TreeItemSerializer(serializers.Serializer):
     commit = CommitApiSerializer()
 
 
-class GitBranchAndTreeSerializer(serializers.Serializer):
-    branch = GitBranchSerializer()
+class GitRefsAndTreeSerializer(serializers.Serializer):
+    refs = GitRefsSerializer()
     trees = TreeItemSerializer(many=True)
 
 
