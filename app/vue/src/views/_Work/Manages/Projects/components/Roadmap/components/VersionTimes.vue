@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { numberToHour } from '@/utils/baseMixins'
-import type { SimpleIssue } from '@/store/types/work_project.ts'
+import type { SimpleIssue } from '@/store/types/work_issue.ts'
 
 const props = defineProps({
   issues: { type: Array as PropType<SimpleIssue[]>, default: () => [] },

@@ -346,6 +346,7 @@ export const useIssue = defineStore('issue', () => {
   const category = ref<IssueCategory | null>()
   const categoryList = ref<IssueCategory[]>([])
 
+  const removeCategory = () => (category.value = null)
   const fetchCategory = (pk: number) =>
     api
       .get(`/issue-category/${pk}/`)
@@ -594,6 +595,7 @@ export const useIssue = defineStore('issue', () => {
 
     category,
     categoryList,
+    removeCategory,
     fetchCategory,
     fetchCategoryList,
     createCategory,

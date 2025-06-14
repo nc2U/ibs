@@ -12,8 +12,9 @@ import {
   ref,
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
 import { useCompany } from '@/store/pinia/company'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { colorLight } from '@/utils/cssMixins'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
@@ -37,8 +38,10 @@ const comSelect = computed(() => comStore.comSelect)
 const workStore = useWork()
 const allProjects = computed(() => workStore.AllIssueProjects)
 const allRoles = computed(() => workStore.getRoles)
-const allTrackers = computed(() => workStore.getTrackers)
-const getActivities = computed(() => workStore.getActivities)
+
+const issueStore = useIssue()
+const allTrackers = computed(() => issueStore.getTrackers)
+const getActivities = computed(() => issueStore.getActivities)
 
 const form = reactive({
   pk: undefined as number | undefined,
@@ -148,7 +151,10 @@ const onSubmit = (event: Event) => {
       workStore.createIssueProject({ ...form, ...module } as any)
       if (props.redirect)
         setTimeout(() => {
-          router.push({ name: '(설정)', params: { projId: workStore.issueProject?.slug } })
+          router.push({
+            name: '(설정)',
+            params: { projId: (workStore.issueProject as IssueProject)?.slug },
+          })
         }, 500)
       else emit('modal-close')
     }
@@ -200,8 +206,8 @@ onBeforeMount(() => {
   }
   comStore.fetchCompanyList()
   workStore.fetchRoleList()
-  workStore.fetchTrackerList()
-  workStore.fetchActivityList()
+  issueStore.fetchTrackerList()
+  issueStore.fetchActivityList()
 })
 </script>
 

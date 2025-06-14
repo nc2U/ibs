@@ -4,7 +4,7 @@ import type { User } from '@/store/types/accounts'
 import { colorLight } from '@/utils/cssMixins'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper'
-import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 
 defineProps({
   memberList: { type: Array as PropType<{ pk: number; username: string }[]>, default: () => [] },
@@ -42,12 +42,12 @@ const categorySubmit = (event: Event) => {
   }
 }
 
-const workStore = useWork()
-const category = computed(() => workStore.category)
+const issueStore = useIssue()
+const category = computed(() => issueStore.category)
 
 onBeforeMount(async () => {
-  if (route.params.cateId) await workStore.fetchCategory(Number(route.params.cateId))
-  else workStore.category = null
+  if (route.params.cateId) await issueStore.fetchCategory(Number(route.params.cateId))
+  else issueStore.removeCategory()
 
   if (category.value) {
     form.value.pk = category.value.pk as number

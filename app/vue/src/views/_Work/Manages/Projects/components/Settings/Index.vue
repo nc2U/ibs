@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { computed, type ComputedRef, inject, onBeforeMount, ref, watch } from 'vue'
-import { type IssueCategory as ICategory, type IssueProject } from '@/store/types/work_project.ts'
+import { type IssueProject } from '@/store/types/work_project.ts'
+import { type IssueCategory as ICategory } from '@/store/types/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useGithub } from '@/store/pinia/work_github.ts'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
@@ -69,17 +71,18 @@ const memberList = computed(() =>
       : [...new Map(workStore.memberList.map(m => [m.user.pk, m])).values()]) as any[]
   ).map(m => m.user),
 )
-const activityList = computed(() => workStore.activityList)
 
 const deleteVersion = (pk: number) => workStore.deleteVersion(pk, issueProject.value?.slug)
 
+const issueStore = useIssue()
+const activityList = computed(() => issueStore.activityList)
+
 const categorySubmit = (payload: ICategory) => {
-  if (payload.pk) workStore.updateCategory(payload)
-  else workStore.createCategory(payload)
+  if (payload.pk) issueStore.updateCategory(payload)
+  else issueStore.createCategory(payload)
   router.push({ name: '(설정)' })
 }
-
-const deleteCategory = (pk: number) => workStore.deleteCategory(pk, issueProject.value?.slug)
+const deleteCategory = (pk: number) => issueStore.deleteCategory(pk, issueProject.value?.slug)
 
 const submitActs = (payload: number[]) => {
   const activities = payload.sort((a, b) => a - b)
@@ -127,8 +130,8 @@ onBeforeMount(async () => {
 
   await workStore.fetchIssueProjectList({})
   await workStore.fetchRoleList()
-  await workStore.fetchTrackerList()
-  await workStore.fetchActivityList()
+  await issueStore.fetchTrackerList()
+  await issueStore.fetchActivityList()
   await ghStore.fetchRepoList(issueProject.value?.pk ?? '')
 
   if (route.params.projId) {

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, type PropType, onBeforeMount } from 'vue'
-import type { CodeValue } from '@/store/types/work_project.ts'
+import type { CodeValue } from '@/store/types/work_issue.ts'
 
 const props = defineProps({
   activities: { type: Array as PropType<CodeValue[]>, default: () => [] },
