@@ -196,7 +196,9 @@ onBeforeMount(() => {
         @active-page-change="pageSelect"
       />
       <CCol class="text-50 ms-3" style="padding-top: 7px">
-        ({{ page * limit - limit + 1 }}-{{ limit }}/{{ commitCount }}) 페이지당 줄수:
+        ({{ page * limit - limit + 1 }}-{{
+          limit * page < commitCount ? limit * page : commitCount
+        }}/{{ commitCount }}) 페이지당 줄수:
         <b v-if="limit === 25">25</b>
         <span v-else><router-link to="" @click="emit('get-commit', 25)">25</router-link> </span>,
         <b v-if="limit === 50">50</b>
@@ -210,8 +212,8 @@ onBeforeMount(() => {
   <CRow>
     <CCol v-if="getListSort === 'latest'">
       <router-link to="" @click="emit('get-list-sort', 'all')">전체 리비전 표시</router-link>
-      |
-      <router-link to="" @click="emit('get-list-sort', 'branch')">리비전 보기</router-link>
+      <!--      |-->
+      <!--      <router-link to="" @click="emit('get-list-sort', 'branch')">리비전 보기</router-link>-->
     </CCol>
     <CCol v-else>
       <router-link to="" @click="emit('get-list-sort', 'latest')">최근 리비전 보기</router-link>

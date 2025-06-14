@@ -94,11 +94,13 @@ const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; bran
 const changeRevision = async (payload: { branch?: string; tag?: string; sha?: string }) => {
   subTree.value = null
   cFilter.value.page = 1
+  cFilter.value.limit = 25
   const nowBranch = await fetchRootTree(repo.value?.pk as number, payload)
+  cFilter.value.branch = payload.branch ? payload.branch : nowBranch.branches[0]
   if (nowBranch) {
     const params = {
       repo: cFilter.value.repo,
-      branch: payload.branch ? payload.branch : nowBranch.branches[0],
+      branch: cFilter.value.branch,
       up_to: nowBranch.commit.sha,
     }
     await fetchCommitList(params)
