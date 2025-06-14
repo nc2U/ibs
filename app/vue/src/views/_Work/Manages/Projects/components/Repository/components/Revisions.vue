@@ -77,6 +77,10 @@ const viewRevision = (commit: Commit) => {
   emit('revision-view')
 }
 
+const goToIssue = (issue: number) => {
+  alert(issue)
+}
+
 onBeforeMount(() => {
   if (props.commitList.length > 1) {
     headId.value = props.setHeadId || String(props.commitList.map(c => c.revision_id)[0])
@@ -165,7 +169,7 @@ onBeforeMount(() => {
           <template v-if="commit.issues.length">
             (<span v-for="(issue, i) in commit.issues" :key="issue">
               <template v-if="i > 0">, </template>
-              <router-link to="">#{{ issue }} </router-link> </span
+              <router-link to="" @click="goToIssue(issue)">#{{ issue }}</router-link> </span
             >)
           </template>
         </CTableDataCell>
