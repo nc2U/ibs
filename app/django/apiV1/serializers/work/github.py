@@ -56,6 +56,7 @@ class CommitApiSerializer(serializers.Serializer):
 
 class GitBranchSerializer(serializers.Serializer):
     name = serializers.CharField()
+    branches = serializers.ListField(child=serializers.CharField())
     commit = CommitApiSerializer()
 
 

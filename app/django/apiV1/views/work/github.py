@@ -238,7 +238,7 @@ class GitRootTreeView(APIView):
             # 기본 브랜치 설정
             default_branch = get_default_branch(repo)
             curr_branch = default_branch
-            commit = None
+            # commit = None
 
             if sha:
                 try:
@@ -269,8 +269,11 @@ class GitRootTreeView(APIView):
                 commit = branch_ref.commit
 
             # 브랜치 정보
+            branches = repo.git.branch('--contains', commit.hexsha).split('\n')
+            branches = [b.strip().lstrip('* ') for b in branches if b.strip()]
             branch_api = {
                 "name": curr_branch,
+                "branches": branches,
                 "commit": {
                     "sha": commit.hexsha,
                     "author": commit.author.name or "Unknown",
