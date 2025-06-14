@@ -72,7 +72,6 @@ onMounted(async () => {
 </script>
 
 <template>
-  {{ diffLines }}
   <CRow class="mb-5">
     <CCol>
       차이점 보기 :

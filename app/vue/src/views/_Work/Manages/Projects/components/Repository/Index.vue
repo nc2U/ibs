@@ -41,7 +41,6 @@ const gitStore = useGithub()
 const repo = computed<Repository | null>(() => gitStore.repository)
 const repoList = computed<Repository[]>(() => gitStore.repositoryList)
 const commitList = computed<Commit[]>(() => gitStore.commitList)
-const commitCount = computed<number>(() => gitStore.commitCount)
 
 watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
@@ -176,7 +175,7 @@ watch(route, nVal => {
   viewPageSort.value = 'revisions'
 })
 
-const getListSort = ref<'latest' | 'all'>('latest')
+const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
 
 const headId = ref<number | null>(null)
@@ -212,6 +211,7 @@ const dataSetup = async (proj: number) => {
     await fetchRepo(repoList.value[0].pk as number)
     if (repo.value) {
       cFilter.value.repo = repo.value?.pk as number
+      cFilter.value.branch = default_branch.value
       await fetchRepoApi(repo.value?.pk as number)
       await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
@@ -268,7 +268,7 @@ onBeforeMount(async () => {
         @into-path="intoPath"
         @file-view="viewFile"
       />
-      {{ commitCount }}
+      
       <Revisions
         v-if="viewPageSort === 'revisions' && headerView !== 'revision'"
         :page="cFilter.page"

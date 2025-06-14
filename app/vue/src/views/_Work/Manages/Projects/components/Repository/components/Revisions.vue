@@ -10,7 +10,7 @@ const props = defineProps({
   page: { type: Number, required: true },
   limit: { type: Number, required: true },
   commitList: { type: Array as PropType<Commit[]>, default: () => [] },
-  getListSort: { type: String as PropType<'latest' | 'all'>, default: 'latest' },
+  getListSort: { type: String as PropType<'latest' | 'all' | 'branch'>, default: 'latest' },
   setHeadId: { type: String, default: '' },
   setBaseId: { type: String, default: '' },
 })
@@ -66,6 +66,7 @@ const getDiff = () => {
 }
 
 const ghStore = useGithub()
+const commitCount = computed<number>(() => ghStore.commitCount)
 const commitPages = (page: number) => ghStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 const assignCommit = (commit: Commit) => ghStore.assignCommit(commit)
@@ -186,18 +187,32 @@ onBeforeMount(() => {
   </CRow>
 
   <CRow v-if="getListSort === 'all'">
-    <Pagination
-      :active-page="page"
-      :limit="8"
-      :pages="commitPages(limit)"
-      class="mt-3"
-      @active-page-change="pageSelect"
-    />
+    <CCol class="d-flex mt-3">
+      <Pagination
+        :active-page="page"
+        :limit="8"
+        :pages="commitPages(limit)"
+        @active-page-change="pageSelect"
+      />
+      <CCol class="text-50 ms-3" style="padding-top: 7px">
+        ({{ page * limit - limit + 1 }}-{{ limit }}/{{ commitCount }}) 페이지당 줄수:
+        <b v-if="limit === 25">25</b>
+        <span v-else><router-link to="">25</router-link></span
+        >,
+        <b v-if="limit === 50">50</b>
+        <span v-else><router-link to="">50</router-link></span
+        >,
+        <b v-if="limit === 100">100</b>
+        <span v-else><router-link to="">100</router-link></span>
+      </CCol>
+    </CCol>
   </CRow>
 
   <CRow>
     <CCol v-if="getListSort === 'latest'">
-      <router-link to="" @click="emit('get-list-sort', 'all')">전체 리비전 보기</router-link>
+      <router-link to="" @click="emit('get-list-sort', 'all')">전체 리비전 표시</router-link>
+      |
+      <router-link to="" @click="emit('get-list-sort', 'branch')">리비전 보기</router-link>
     </CCol>
     <CCol v-else>
       <router-link to="" @click="emit('get-list-sort', 'latest')">최근 리비전 보기</router-link>
