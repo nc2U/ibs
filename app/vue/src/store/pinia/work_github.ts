@@ -158,9 +158,9 @@ export const useGithub = defineStore('github', () => {
 
     try {
       const res = await api.get(`/root-tree/?${query}`)
-      curr_branch.value = res.data.branch
+      curr_branch.value = res.data.refs
       branch_tree.value = res.data.trees
-      return res.data.branch
+      return res.data.refs
     } catch (err: any) {
       errorHandle(err.response)
     }
