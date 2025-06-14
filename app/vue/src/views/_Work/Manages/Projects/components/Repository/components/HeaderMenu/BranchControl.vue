@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useGithub } from '@/store/pinia/work_github.ts'
+import { useGithub } from '@/store/pinia/work_git_repo.ts'
 import router from '@/router/index.js'
 
 const props = defineProps({

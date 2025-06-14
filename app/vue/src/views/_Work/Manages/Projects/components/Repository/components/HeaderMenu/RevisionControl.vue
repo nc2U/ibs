@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { Commit } from '@/store/types/work_github.ts'
+import type { Commit } from '@/store/types/work_git_repo.ts'
 
 const props = defineProps({ commit: { type: Object as PropType<Commit>, required: true } })
 

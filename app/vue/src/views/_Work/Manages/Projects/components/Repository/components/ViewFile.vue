@@ -10,7 +10,7 @@ import {
   watch,
 } from 'vue'
 import { bgLight, btnSecondary, darkSecondary } from '@/utils/cssMixins.ts'
-import type { FileInfo } from '@/store/types/work_github.ts'
+import type { FileInfo } from '@/store/types/work_git_repo.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import hljs from 'highlight.js'
 

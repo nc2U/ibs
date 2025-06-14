@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref, watch } from 'vue'
-import type { DiffApi } from '@/store/types/work_github.ts'
+import type { DiffApi } from '@/store/types/work_git_repo.ts'
 import { cutString } from '@/utils/baseMixins.ts'
 import { html } from 'diff2html'
 import sanitizeHtml from 'sanitize-html'

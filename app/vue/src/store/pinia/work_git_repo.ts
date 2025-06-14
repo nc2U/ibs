@@ -8,7 +8,7 @@ import type {
   RepoApi,
   Repository,
   ChangedFile,
-} from '@/store/types/work_github.ts'
+} from '@/store/types/work_git_repo.ts'
 
 export const useGithub = defineStore('github', () => {
   // Repository states & getters

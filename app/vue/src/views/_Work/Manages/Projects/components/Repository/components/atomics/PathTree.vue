@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
-import type { Changed, ChangedFile } from '@/store/types/work_github.ts'
+import type { Changed, ChangedFile } from '@/store/types/work_git_repo.ts'
 
 const props = defineProps({
   sha: { type: String, required: true },

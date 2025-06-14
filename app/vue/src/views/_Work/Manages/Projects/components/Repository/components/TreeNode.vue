@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
-import type { Commit, Tree } from '@/store/types/work_github.ts'
-import { useGithub } from '@/store/pinia/work_github.ts'
+import type { Commit, Tree } from '@/store/types/work_git_repo.ts'
+import { useGithub } from '@/store/pinia/work_git_repo.ts'
 import { cutString, elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 import TreeNode from './TreeNode.vue'
 
