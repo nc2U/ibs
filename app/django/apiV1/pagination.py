@@ -116,11 +116,14 @@ class PageNumberPaginationTwentyFive(PageNumberPagination):
 
 class PageNumberPaginationTwenty(PageNumberPagination):
     page_size = 20
+    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
 
 class PageNumberPaginationFifteen(PageNumberPagination):
     page_size = 15
+    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
 
 class PageNumberPaginationTen(PageNumberPagination):
     page_size = 10
+    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
