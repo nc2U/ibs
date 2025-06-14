@@ -5,6 +5,7 @@ import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
@@ -22,9 +23,11 @@ const usersList = computed(() => accStore.usersList)
 
 const workStore = useWork()
 const issueProjects = computed(() => workStore.issueProjects)
-const issueNumByMember = computed(() => workStore.issueNumByMember)
-const fetchIssueByMember = (userId: string) => workStore.fetchIssueByMember(userId)
 const fetchIssueProjectList = (payload: any) => workStore.fetchIssueProjectList(payload)
+
+const issueStore = useIssue()
+const issueNumByMember = computed(() => issueStore.issueNumByMember)
+const fetchIssueByMember = (userId: string) => issueStore.fetchIssueByMember(userId)
 
 const logStore = useLogging()
 const fetchActivityLogList = (payload: ActLogEntryFilter) => logStore.fetchActivityLogList(payload)
