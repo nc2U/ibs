@@ -21,6 +21,7 @@ const emit = defineEmits([
   'file-view',
   'revision-view',
   'change-revision',
+  'set-up-to',
 ])
 
 const prePath = (path: string) => {
@@ -54,6 +55,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
         :branches="branches"
         :tags="tags"
         @change-revision="emit('change-revision', $event)"
+        @set-up-to="emit('set-up-to', $event)"
       />
     </CCol>
   </CRow>

@@ -29,8 +29,9 @@ const emit = defineEmits([
   'head-set',
   'base-set',
   'get-list-sort',
-  'get-diff',
   'revision-view',
+  'get-commit',
+  'get-diff',
   'page-select',
 ])
 
@@ -197,13 +198,11 @@ onBeforeMount(() => {
       <CCol class="text-50 ms-3" style="padding-top: 7px">
         ({{ page * limit - limit + 1 }}-{{ limit }}/{{ commitCount }}) 페이지당 줄수:
         <b v-if="limit === 25">25</b>
-        <span v-else><router-link to="">25</router-link></span
-        >,
+        <span v-else><router-link to="" @click="emit('get-commit', 25)">25</router-link> </span>,
         <b v-if="limit === 50">50</b>
-        <span v-else><router-link to="">50</router-link></span
-        >,
+        <span v-else><router-link to="" @click="emit('get-commit', 50)">50</router-link> </span>,
         <b v-if="limit === 100">100</b>
-        <span v-else><router-link to="">100</router-link></span>
+        <span v-else><router-link to="" @click="emit('get-commit', 100)">100</router-link> </span>
       </CCol>
     </CCol>
   </CRow>

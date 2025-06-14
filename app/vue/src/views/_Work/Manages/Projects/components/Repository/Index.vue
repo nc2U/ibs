@@ -185,6 +185,12 @@ const baseId = ref<number | null>(null)
 const headSet = (revision_id: number) => (headId.value = revision_id)
 const baseSet = (revision_id: number) => (baseId.value = revision_id)
 
+const getCommit = async (limit: number) => {
+  cFilter.value.page = 1
+  cFilter.value.limit = limit
+  await fetchCommitList(cFilter.value)
+}
+
 const getDiff = (payload: { base: string; head: string; full?: boolean }) => {
   const { base, head, full = false } = payload
   const diff_hash = `?base=${base}&head=${head}`
@@ -247,6 +253,7 @@ onBeforeMount(async () => {
         @file-view="viewFile"
         @revision-view="getRevision"
         @change-revision="changeRevision"
+        @set-up-to="cFilter.up_to = $event"
       />
 
       <ViewFile
@@ -269,7 +276,7 @@ onBeforeMount(async () => {
         @into-path="intoPath"
         @file-view="viewFile"
       />
-
+      {{ cFilter.up_to }}
       <Revisions
         v-if="viewPageSort === 'revisions' && headerView !== 'revision'"
         :page="cFilter.page"
@@ -280,6 +287,7 @@ onBeforeMount(async () => {
         :set-base-id="String(baseId ?? '')"
         @head-set="headSet"
         @base-set="baseSet"
+        @get-commit="getCommit"
         @get-diff="getDiff"
         @get-list-sort="changeListSort"
         @revision-view="getRevision"

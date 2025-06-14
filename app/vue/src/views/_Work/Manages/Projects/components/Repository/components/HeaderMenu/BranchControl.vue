@@ -12,7 +12,7 @@ const props = defineProps({
 const gitStore = useGithub()
 const default_branch = computed(() => gitStore.default_branch)
 
-const emit = defineEmits(['change-revision'])
+const emit = defineEmits(['change-revision', 'set-up-to'])
 
 const branch = ref('')
 const tag = ref('')
@@ -21,19 +21,28 @@ const sha = ref('')
 const changeBranch = (e: Event) => {
   tag.value = ''
   sha.value = ''
-  if ((e.target as any).value) emit('change-revision', { branch: (e.target as any).value })
+  if ((e.target as any).value) {
+    emit('set-up-to', '')
+    emit('change-revision', { branch: (e.target as any).value })
+  }
 }
 
 const changeTag = (e: Event) => {
   branch.value = ''
   sha.value = ''
-  if ((e.target as any).value) emit('change-revision', { tag: (e.target as any).value })
+  if ((e.target as any).value) {
+    emit('set-up-to', '')
+    emit('change-revision', { tag: (e.target as any).value })
+  }
 }
 
 const changeCommit = (e: Event) => {
   branch.value = ''
   tag.value = ''
-  if ((e.target as any).value) emit('change-revision', { sha: (e.target as any).value })
+  if ((e.target as any).value) {
+    emit('set-up-to', (e.target as any).value)
+    emit('change-revision', { sha: (e.target as any).value })
+  }
 }
 
 onBeforeMount(() => {
