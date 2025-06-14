@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, inject, onBeforeMount, type ComputedRef, provide } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
-import { useWork } from '@/store/pinia/work_project.ts'
-import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
+import { useRoute, useRouter } from 'vue-router'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import type { Company } from '@/store/types/settings'
-import type { TimeEntryFilter } from '@/store/types/work_project.ts'
+import type { TimeEntryFilter } from '@/store/types/work_issue.ts'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -20,13 +21,15 @@ const sideNavCAll = () => cBody.value.toggle()
 
 const workStore = useWork()
 const allProjects = computed(() => workStore.AllIssueProjects)
-const timeEntryList = computed(() => workStore.timeEntryList)
-const getIssues = computed(() => workStore.getIssues)
 const getMembers = computed(() => accStore.getUsers)
 const getVersions = computed(() => workStore.getVersions)
 
-const createTimeEntry = (payload: any) => workStore.createTimeEntry(payload)
-const updateTimeEntry = (payload: any) => workStore.updateTimeEntry(payload)
+const issueStore = useIssue()
+const timeEntryList = computed(() => issueStore.timeEntryList)
+const getIssues = computed(() => issueStore.getIssues)
+
+const createTimeEntry = (payload: any) => issueStore.createTimeEntry(payload)
+const updateTimeEntry = (payload: any) => issueStore.updateTimeEntry(payload)
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -44,13 +47,13 @@ const onSubmit = async (payload: any) => {
 const listFilter = ref<TimeEntryFilter>({})
 const filterSubmit = (payload: TimeEntryFilter) => {
   listFilter.value = payload
-  workStore.fetchTimeEntryList(payload)
+  issueStore.fetchTimeEntryList(payload)
   console.log(payload)
 }
 
 const pageSelect = (page: number) => {
   listFilter.value.page = page
-  workStore.fetchTimeEntryList(listFilter.value)
+  issueStore.fetchTimeEntryList(listFilter.value)
 }
 
 const delSubmit = (pk: number) => alert(pk)
@@ -58,8 +61,8 @@ const delSubmit = (pk: number) => alert(pk)
 const accStore = useAccount()
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await workStore.fetchTimeEntryList({})
-  await workStore.fetchAllIssueList()
+  await issueStore.fetchTimeEntryList({})
+  await issueStore.fetchAllIssueList()
   await workStore.fetchVersionList({ project: '' })
   await accStore.fetchUsersList()
   loading.value = false

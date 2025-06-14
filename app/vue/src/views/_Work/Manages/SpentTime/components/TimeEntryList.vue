@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref, watchEffect } from 'vue'
-import type { IssueProject, TimeEntry, TimeEntryFilter } from '@/store/types/work_project.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
+import type { TimeEntry, TimeEntryFilter } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { cutString, dateFormat, numberToHour } from '@/utils/baseMixins'
 import SearchList from './SearchList.vue'
 import Pagination from '@/components/Pagination'
@@ -38,9 +39,9 @@ const filterSubmit = (payload: TimeEntryFilter) => emit('filter-submit', payload
 
 const RefDelConfirm = ref()
 
-const workStore = useWork()
-const timeEntryPages = (pageNum: number) => workStore.timeEntryPages(pageNum)
+const issueStore = useIssue()
 const pageSelect = (page: number) => emit('page-select', page)
+const timeEntryPages = (pageNum: number) => issueStore.timeEntryPages(pageNum)
 
 const delPk = ref<null | number>(null)
 

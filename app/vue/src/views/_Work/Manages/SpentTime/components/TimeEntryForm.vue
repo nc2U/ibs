@@ -3,11 +3,13 @@ import { ref, computed, onBeforeMount, type PropType, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { btnLight, colorLight } from '@/utils/cssMixins'
 import { dateFormat } from '@/utils/baseMixins'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import DatePicker from '@/components/DatePicker/index.vue'
 import Multiselect from '@vueform/multiselect'
+import type { TimeEntry } from '@/store/types/work_issue.ts'
 
 defineProps({
   allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
@@ -31,7 +33,7 @@ watch(
   nVal => {
     if (nVal) {
       workStore.fetchIssueProject(nVal)
-      workStore.fetchAllIssueList(nVal)
+      issueStore.fetchAllIssueList(nVal)
     }
   },
 )
@@ -60,13 +62,16 @@ const onSubmit = (event: Event) => {
 const closeForm = () => emit('close-form')
 
 const workStore = useWork()
-const timeEntry = computed(() => workStore.timeEntry)
-const issueProject = computed(() => workStore.issueProject)
-const getIssues = computed(() => workStore.getIssues)
+const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 const memberList = computed(() =>
   issueProject.value ? issueProject.value.all_members : workStore.memberList,
 )
-const activityList = computed(() => workStore.activityList)
+
+const issueStore = useIssue()
+const getIssues = computed(() => issueStore.getIssues)
+const timeEntry = computed<TimeEntry | null>(() => issueStore.timeEntry)
+const activityList = computed(() => issueStore.activityList)
+
 const activities = computed(() =>
   issueProject.value ? issueProject.value.activities : activityList.value,
 )
@@ -75,7 +80,7 @@ const route = useRoute()
 
 const dataSetup = () => {
   if (timeEntry.value) {
-    form.value.pk = timeEntry.value.pk
+    form.value.pk = timeEntry.value?.pk as number
     form.value.issue = timeEntry.value.issue.pk
     form.value.user = timeEntry.value.user.pk
     form.value.spent_on = timeEntry.value.spent_on
@@ -83,7 +88,7 @@ const dataSetup = () => {
     form.value.activity = timeEntry.value.activity.pk
     form.value.comment = timeEntry.value.comment
   }
-  if (issueProject.value) form.value.project = issueProject.value?.slug
+  if (issueProject.value) form.value.project = issueProject.value?.slug as string
 }
 
 watch(timeEntry, nVal => {
@@ -94,16 +99,16 @@ onBeforeMount(() => {
   if (route.params.projId) {
     workStore.fetchIssueProject(route.params.projId as string)
     form.value.project = route.params.projId as string
-    workStore.fetchIssueList({ status__closed: '', project: form.value.project })
-    workStore.fetchAllIssueList(route.params.projId as string)
-  } else workStore.fetchAllIssueList()
-  if (route.params.timeId) workStore.fetchTimeEntry(Number(route.params.timeId))
-  else workStore.timeEntry = null
+    issueStore.fetchIssueList({ status__closed: '', project: form.value.project })
+    issueStore.fetchAllIssueList(route.params.projId as string)
+  } else issueStore.fetchAllIssueList()
+  if (route.params.timeId) issueStore.fetchTimeEntry(Number(route.params.timeId))
+  else issueStore.timeEntry = null
 
   if (route.query.issue_id) form.value.issue = Number(route.query.issue_id)
 
   workStore.fetchMemberList()
-  workStore.fetchActivityList()
+  issueStore.fetchActivityList()
   dataSetup()
 })
 </script>

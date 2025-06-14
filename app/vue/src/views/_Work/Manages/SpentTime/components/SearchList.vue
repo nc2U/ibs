@@ -1,11 +1,7 @@
 <script lang="ts" setup>
 import { ref, reactive, type PropType, onBeforeMount, watch, computed } from 'vue'
-import type {
-  IssueProject,
-  IssueStatus,
-  Tracker,
-  TimeEntryFilter,
-} from '@/store/types/work_project.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
+import type { IssueStatus, Tracker, TimeEntryFilter } from '@/store/types/work_issue.ts'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
 import Multiselect from '@vueform/multiselect'
