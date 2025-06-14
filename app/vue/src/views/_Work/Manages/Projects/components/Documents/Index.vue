@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
@@ -38,8 +39,6 @@ const route = useRoute()
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
-const codeCategoryList = computed(() => workStore.codeCategoryList)
-const fetchCodeCategoryList = () => workStore.fetchCodeCategoryList()
 
 const docStore = useDocs()
 const docs = computed(() => docStore.docs)
@@ -54,6 +53,10 @@ const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
+
+const issueStore = useIssue()
+const codeCategoryList = computed(() => issueStore.codeCategoryList)
+const fetchCodeCategoryList = () => issueStore.fetchCodeCategoryList()
 
 const categories = computed(() =>
   (issueProject.value as IssueProject)?.sort !== '3' ? getCategories.value : codeCategoryList.value,

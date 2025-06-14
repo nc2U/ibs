@@ -3,8 +3,10 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
-import type { Issue, IssueFilter, IssueProject } from '@/store/types/work_project.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
+import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import Loading from '@/components/Loading/Index.vue'
 import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
 import IssueView from '@/views/_Work/Manages/Issues/components/IssueView.vue'
@@ -24,18 +26,20 @@ const accStore = useAccount()
 const getUsers = computed(() => accStore.getUsers)
 
 const workStore = useWork()
-const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
-const allProjects = computed(() => workStore.AllIssueProjects)
-const issue = computed<Issue | null>(() => workStore.issue)
-const issueList = computed(() => workStore.issueList)
-const issueCommentList = computed(() => workStore.issueCommentList)
-const timeEntryList = computed(() => workStore.timeEntryList)
-
-const statusList = computed(() => workStore.statusList)
-const trackerList = computed(() => workStore.trackerList)
-const priorityList = computed(() => workStore.priorityList)
-const getIssues = computed(() => workStore.getIssues)
 const getVersions = computed(() => workStore.getVersions)
+const allProjects = computed(() => workStore.AllIssueProjects)
+const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
+
+const issueStore = useIssue()
+const issue = computed<Issue | null>(() => issueStore.issue)
+const issueList = computed(() => issueStore.issueList)
+const issueCommentList = computed(() => issueStore.issueCommentList)
+const timeEntryList = computed(() => issueStore.timeEntryList)
+
+const statusList = computed(() => issueStore.statusList)
+const trackerList = computed(() => issueStore.trackerList)
+const priorityList = computed(() => issueStore.priorityList)
+const getIssues = computed(() => issueStore.getIssues)
 
 const onSubmit = (payload: any) => {
   const { pk, ...getData } = payload
@@ -52,9 +56,9 @@ const onSubmit = (payload: any) => {
     } else form.append(key, getData[key] === null ? '' : (getData[key] as string))
   }
 
-  if (pk) workStore.updateIssue(pk, form)
+  if (pk) issueStore.updateIssue(pk, form)
   else {
-    workStore.createIssue(form)
+    issueStore.createIssue(form)
     if (route.params.projId) {
       if (route.query.parent)
         router.replace({
@@ -73,18 +77,18 @@ const listFilter = ref<IssueFilter>({ status__closed: '0', project: projId.value
 
 const filterSubmit = (payload: IssueFilter) => {
   listFilter.value = payload
-  workStore.fetchIssueList(payload)
+  issueStore.fetchIssueList(payload)
 }
 const pageSelect = (page: number) => {
   listFilter.value.page = page
-  workStore.fetchIssueList(listFilter.value)
+  issueStore.fetchIssueList(listFilter.value)
 }
 
 watch(
   () => projId.value,
   nVal => {
     if (nVal && nVal.length > 0)
-      workStore.fetchIssueList({ status__closed: '0', project: nVal as string })
+      issueStore.fetchIssueList({ status__closed: '0', project: nVal as string })
   },
 )
 const logStore = useLogging()
@@ -92,10 +96,10 @@ watch(
   () => route.params.issueId,
   async nVal => {
     if (nVal) {
-      await workStore.fetchIssue(Number(nVal))
+      await issueStore.fetchIssue(Number(nVal))
       await logStore.fetchIssueLogList({ issue: Number(nVal) })
-      await workStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(nVal) })
-    } else workStore.removeIssue()
+      await issueStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(nVal) })
+    } else issueStore.removeIssue()
   },
   { deep: true },
 )
@@ -103,19 +107,19 @@ watch(
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await workStore.fetchIssueProject(projId.value)
-  await workStore.fetchAllIssueList(projId.value)
-  await workStore.fetchIssueList({ ...listFilter.value })
+  await issueStore.fetchAllIssueList(projId.value)
+  await issueStore.fetchIssueList({ ...listFilter.value })
 
   if (issueId.value) {
-    await workStore.fetchIssue(Number(issueId.value))
+    await issueStore.fetchIssue(Number(issueId.value))
     await logStore.fetchIssueLogList({ issue: Number(issueId.value) })
-    await workStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(issueId.value) })
+    await issueStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(issueId.value) })
   }
 
   await workStore.fetchMemberList()
-  await workStore.fetchTrackerList()
-  await workStore.fetchStatusList()
-  await workStore.fetchPriorityList()
+  await issueStore.fetchTrackerList()
+  await issueStore.fetchStatusList()
+  await issueStore.fetchPriorityList()
   await workStore.fetchVersionList({ project: projId.value })
   loading.value = false
 })

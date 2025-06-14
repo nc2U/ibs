@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -18,8 +19,9 @@ defineExpose({ toggle })
 
 const workStore = useWork()
 const iProject = computed<IssueProject | null>(() => workStore.issueProject)
-const trackerSum = computed(() => workStore.trackerSum)
-const allMembers = computed<SimpleMember[]>(() => workStore.issueProject?.all_members ?? [])
+const allMembers = computed<SimpleMember[]>(
+  () => (workStore.issueProject as IssueProject)?.all_members ?? [],
+)
 const infStore = useInform()
 const newsList = computed(() => infStore.newsList)
 
@@ -58,10 +60,13 @@ const computedMembers = computed(() => {
 const patchIssueProject = (payload: { slug: string; status?: '1' | '9' }) =>
   workStore.patchIssueProject(payload)
 
+const issueStore = useIssue()
+const trackerSum = computed(() => issueStore.trackerSum)
+
 watch(
   () => iProject.value,
   nVal => {
-    if (nVal?.pk) workStore.fetchTrackerSummary(nVal.pk)
+    if (nVal?.pk) issueStore.fetchTrackerSummary(nVal.pk)
   },
 )
 
@@ -75,7 +80,7 @@ const deleteProject = (slug: string) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (iProject.value) await workStore.fetchTrackerSummary(iProject.value?.pk)
+  if (iProject.value) await issueStore.fetchTrackerSummary(iProject.value?.pk)
   loading.value = false
 })
 </script>

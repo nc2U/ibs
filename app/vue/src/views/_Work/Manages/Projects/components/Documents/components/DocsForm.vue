@@ -4,7 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
 import { btnLight, colorLight } from '@/utils/cssMixins'
-import type { CodeValue, IssueProject } from '@/store/types/work_project.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
+import type { CodeValue } from '@/store/types/work_issue.ts'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
@@ -90,7 +91,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
   const { pk, ...rest } = payload
   const getData: Record<string, any> = { ...rest }
 
-  getData.issue_project = props.issueProject.pk
+  getData.issue_project = props.issueProject?.pk
   getData.newFiles = newFiles.value
   getData.cngFiles = cngFiles.value
 
@@ -268,8 +269,8 @@ onBeforeMount(() => dataSetup())
       <CCol>
         <v-btn type="submit" color="primary" variant="outlined" size="small"> 저장</v-btn>
         <v-btn :color="btnLight" size="small" @click="router.replace({ name: '(문서)' })"
-          >취소</v-btn
-        >
+          >취소
+        </v-btn>
       </CCol>
     </CRow>
   </CForm>

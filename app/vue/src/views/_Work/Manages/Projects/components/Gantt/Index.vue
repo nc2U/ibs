@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import Loading from '@/components/Loading/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import GanttChart from '@/views/_Work/Manages/Gantt/components/GanttChart.vue'
@@ -13,19 +13,19 @@ defineExpose({ toggle })
 
 const route = useRoute()
 
-const workStore = useWork()
-const getGantts = computed(() => workStore.getGantts)
+const issueStore = useIssue()
+const getGantts = computed(() => issueStore.getGantts)
 
 watch(
   () => route.params.projId,
   nVal => {
-    if (nVal) workStore.fetchGanttIssues(nVal as string)
+    if (nVal) issueStore.fetchGanttIssues(nVal as string)
   },
 )
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (route.params.projId) await workStore.fetchGanttIssues(route.params.projId as string)
+  if (route.params.projId) await issueStore.fetchGanttIssues(route.params.projId as string)
   loading.value = false
 })
 </script>
