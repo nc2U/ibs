@@ -164,6 +164,7 @@ class GitBranchesView(APIView):
                 commit = head.commit
                 branches.append({
                     "name": head.name,
+                    "branches": [],
                     "commit": {
                         "sha": commit.hexsha,
                         "author": commit.author.name,
@@ -195,6 +196,7 @@ class GitTagsView(APIView):
 
                     tag_list.append({
                         "name": tag.name,
+                        "branches": [],
                         "commit": {
                             "sha": commit.hexsha,
                             "author": commit.author.name,
