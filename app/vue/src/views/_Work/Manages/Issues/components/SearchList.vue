@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, reactive, type PropType, onBeforeMount, watch } from 'vue'
-import type { IssueProject, IssueStatus, IssueFilter, Tracker } from '@/store/types/work_project.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
+import type { IssueStatus, IssueFilter, Tracker } from '@/store/types/work_issue.ts'
 import { useRoute } from 'vue-router'
 import Multiselect from '@vueform/multiselect'
-// import DatePicker from '@/components/DatePicker/index.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
 
 const props = defineProps({

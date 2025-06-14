@@ -2,7 +2,7 @@
 import { type PropType, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString } from '@/utils/baseMixins'
-import type { IssueRelation } from '@/store/types/work_project.ts'
+import type { IssueRelation } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({

@@ -1,15 +1,11 @@
 <script lang="ts" setup>
 import { computed, inject, type PropType, ref, watchEffect } from 'vue'
-import type {
-  Issue,
-  IssueFilter,
-  IssueProject,
-  IssueStatus,
-  Tracker,
-} from '@/store/types/work_project.ts'
-import { useWork } from '@/store/pinia/work_project.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
+import type { Issue, IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import { timeFormat } from '@/utils/baseMixins'
 import { useRoute, useRouter } from 'vue-router'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
 import SearchList from './SearchList.vue'
 import IssueDropDown from './IssueDropDown.vue'
@@ -45,8 +41,10 @@ watchEffect(() => {
 const filterSubmit = (payload: IssueFilter) => emit('filter-submit', payload)
 
 const workStore = useWork()
-const my_perms = computed(() => workStore.issueProject?.my_perms)
-const issuePages = (pageNum: number) => workStore.issuePages(pageNum)
+const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
+
+const issueStore = useIssue()
+const issuePages = (pageNum: number) => issueStore.issuePages(pageNum)
 const pageSelect = (page: number) => emit('page-select', page)
 
 // 지켜보기 / 관심끄기
@@ -55,7 +53,7 @@ const watchControl = (payload: any, issuePk: number) => {
   if (payload.watchers)
     payload.watchers.forEach(val => form.append('watchers', JSON.stringify(val)))
   else if (payload.del_watcher) form.append('del_watcher', JSON.stringify(payload.del_watcher))
-  workStore.patchIssue(issuePk, form)
+  issueStore.patchIssue(issuePk, form)
 }
 </script>
 

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, type ComputedRef, inject, type PropType, onBeforeMount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { Issue, SimpleIssue } from '@/store/types/work_project.ts'
+import type { Issue, SimpleIssue } from '@/store/types/work_issue.ts'
 import type { User } from '@/store/types/accounts'
 
 const props = defineProps({
@@ -17,18 +17,18 @@ const userInfo = inject<ComputedRef<User>>('userInfo')
 const isWatcher = ref(false)
 
 const isCumputedWatcher = computed(() =>
-  props.issue.watchers.map(w => w.pk).includes(userInfo?.value?.pk as number),
+  props.issue?.watchers.map(w => w.pk).includes(userInfo?.value?.pk as number),
 )
 
 const watchControl = () => {
   const payload = isWatcher.value
     ? { del_watcher: userInfo?.value?.pk }
     : { watchers: [userInfo?.value?.pk] }
-  emit('watch-control', payload, props.issue.pk)
+  emit('watch-control', payload, props.issue?.pk)
   isWatcher.value = !isWatcher.value
 }
 
-onBeforeMount(() => (isWatcher.value = isCumputedWatcher.value))
+onBeforeMount(() => (isWatcher.value = isCumputedWatcher.value as any))
 </script>
 
 <template>

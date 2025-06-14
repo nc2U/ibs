@@ -1,21 +1,19 @@
 <script lang="ts" setup>
-import { ref, onBeforeMount, type PropType, computed, watch, inject, type ComputedRef } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
+import type { IssueProject, Member, SimpleMember } from '@/store/types/work_project.ts'
 import type {
   CodeValue,
   Issue,
   IssueFile,
-  IssueProject,
   IssueStatus,
-  Member,
   SimpleCategory,
-  SimpleMember,
-  SimpleUser,
-} from '@/store/types/work_project.ts'
+} from '@/store/types/work_issue.ts'
 import type { User } from '@/store/types/accounts'
 import { isValidate } from '@/utils/helper'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
 import { dateFormat } from '@/utils/baseMixins'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { btnLight, colorLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import MdEditor from '@/components/MdEditor/Index.vue'
@@ -70,8 +68,7 @@ watch(
   async nVal => {
     if (nVal) {
       await workStore.fetchIssueProject(nVal)
-      watcherList.value =
-        (workStore.issueProject?.all_members as SimpleMember[]).map(m => m.user) ?? []
+      watcherList.value = (issueProject.value?.all_members as SimpleMember[]).map(m => m.user) ?? []
     } else watcherList.value = memberList.value ?? []
   },
 )
@@ -178,6 +175,7 @@ const formsCheck = computed(() => {
 
 const route = useRoute()
 const workStore = useWork()
+const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 
 watch(props, nVal => {
   if (nVal.issueProject) form.value.project = nVal?.issueProject.slug as string
@@ -198,20 +196,21 @@ watch(
   nVal => (watcherList.value = nVal ?? []),
 )
 
+const issueStore = useIssue()
 const trackers = computed(() =>
-  workStore.issueProject ? workStore.issueProject.trackers : workStore.trackerList,
+  workStore.issueProject ? issueProject.value?.trackers : issueStore.trackerList,
 )
 
-const categories = computed(() => (workStore.issueProject?.categories as SimpleCategory[]) ?? [])
+const categories = computed(() => (issueProject.value?.categories as SimpleCategory[]) ?? [])
 const default_version = ref<number | null>(null)
-const versions = computed(() => workStore.issueProject?.versions ?? [])
+const versions = computed(() => issueProject.value?.versions ?? [])
 watch(versions, nVal => {
   const def_vers = nVal.filter(v => v.is_default)
   if (!!def_vers.length) form.value.fixed_version = def_vers[0].pk ?? null
 })
 
 const activities = computed(() =>
-  props.issueProject.activities ? props.issueProject.activities : [],
+  props.issueProject?.activities ? props.issueProject.activities : [],
 )
 
 const watcherAddSubmit = (payload: { pk: number; username: string }[]) => {
@@ -258,12 +257,12 @@ const removeProperty = (e: Event) => {
 }
 
 const createCategory = (payload: any) => {
-  payload.project = workStore.issueProject?.slug ?? ''
-  workStore.createCategory(payload).then(res => (form.value.category = res))
+  payload.project = issueProject.value?.slug ?? ''
+  issueStore.createCategory(payload).then(res => (form.value.category = res))
 }
 
 const createVersion = (payload: any) => {
-  payload.project = workStore.issueProject?.slug ?? ''
+  payload.project = issueProject.value?.slug ?? ''
   workStore.createVersion(payload).then(res => (form.value.fixed_version = res))
 }
 
@@ -365,7 +364,7 @@ onBeforeMount(() => {
     form.value.fixed_version = props.issue.fixed_version?.pk ?? null
     form.value.done_ratio = props.issue.done_ratio
     form.value.files = props.issue.files
-    workStore.fetchIssueList({ status__closed: '', project: props.issue.project.slug })
+    issueStore.fetchIssueList({ status__closed: '', project: props.issue.project.slug })
   } else form.value.fixed_version = default_version.value
   if (route.params.projId) form.value.project = route.params.projId as string
   if (route.query.tracker) form.value.tracker = Number(route.query.tracker)

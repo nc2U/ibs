@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { inject, type PropType, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import WatcherAdd from './WatcherAdd.vue'
 
 const props = defineProps({
@@ -15,17 +15,17 @@ const workManager = inject('workManager')
 
 const route = useRoute()
 
-const workStore = useWork()
+const issueStore = useIssue()
 const watcherAddSubmit = (payload: number[]) => {
   const form = new FormData()
   payload.forEach(val => form.append('watchers', val.toString()))
-  workStore.patchIssue(props.issuePk as number, form)
+  issueStore.patchIssue(props.issuePk as number, form)
 }
 
 const delWatcher = (pk: number) => {
   const form = new FormData()
   form.append('del_watcher', JSON.stringify(pk))
-  workStore.patchIssue(props.issuePk as number, form)
+  issueStore.patchIssue(props.issuePk as number, form)
 }
 </script>
 

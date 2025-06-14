@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
-import type { SubIssue } from '@/store/types/work_project.ts'
+import type { SubIssue } from '@/store/types/work_issue.ts'
 
 defineProps({
   issuePk: { type: Number, required: true },

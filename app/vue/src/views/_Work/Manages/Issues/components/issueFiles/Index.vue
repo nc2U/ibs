@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onBeforeMount, type PropType, watch } from 'vue'
-import type { IssueFile } from '@/store/types/work_project.ts'
+import type { IssueFile } from '@/store/types/work_issue.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 

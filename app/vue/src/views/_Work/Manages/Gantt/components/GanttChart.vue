@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref } from 'vue'
 import { GGanttChart } from '@infectoone/vue-ganttastic'
-import type { Gantts } from '@/store/types/work_project.ts'
+import type { Gantts } from '@/store/types/work_issue.ts'
 import { getToday } from '@/utils/baseMixins'
 
 const props = defineProps({ gantts: { type: Array as PropType<Gantts[][]>, default: () => [] } })

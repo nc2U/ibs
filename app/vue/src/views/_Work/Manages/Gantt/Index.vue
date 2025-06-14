@@ -2,7 +2,7 @@
 import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import type { Company } from '@/store/types/settings'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
@@ -20,14 +20,14 @@ const route = useRoute()
 provide('navMenu', navMenu)
 provide('query', route?.query)
 
-const workStore = useWork()
-const getGantts = computed(() => workStore.getGantts)
+const issueStore = useIssue()
+const getGantts = computed(() => issueStore.getGantts)
 
 const sideNavCAll = () => cBody.value.toggle()
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await workStore.fetchGanttIssues()
+  await issueStore.fetchGanttIssues()
   loading.value = false
 })
 </script>

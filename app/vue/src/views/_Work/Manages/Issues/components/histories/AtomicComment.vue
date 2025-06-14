@@ -3,7 +3,9 @@ import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
 import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import type { User } from '@/store/types/accounts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
@@ -40,12 +42,13 @@ const toEdit = (comment: string) => {
 const content = ref('')
 
 const workStore = useWork()
-const my_perms = computed(() => workStore.issueProject?.my_perms)
+const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
 
+const issueStore = useIssue()
 const commentSubmit = () => {
   const pk = props.log?.comment?.pk
-  const issue = props.log.issue?.pk
-  workStore.patchIssueComment({ pk, issue, content: content.value })
+  const issue = props.log?.issue?.pk
+  issueStore.patchIssueComment({ pk, issue, content: content.value })
   editMode.value = false
 }
 

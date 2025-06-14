@@ -1,15 +1,14 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
+import type { IssueProject, Permission } from '@/store/types/work_project.ts'
 import type {
   CodeValue,
   Issue,
   IssueComment,
-  IssueProject,
   IssueStatus,
-  Permission,
   SubIssue,
   TimeEntry,
-} from '@/store/types/work_project.ts'
+} from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
@@ -22,6 +21,7 @@ import IssueFiles from './issueFiles/Index.vue'
 import SubIssues from './subIssues/Index.vue'
 import SubSummary from './subIssues/Summary.vue'
 import RelSummary from './relations/Summary.vue'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
@@ -44,9 +44,11 @@ const workManager = inject<ComputedRef<boolean>>('workManager')
 const isClosed = computed(() => props.issue?.closed)
 
 const workStore = useWork()
-const issueNums = computed(() => workStore.issueNums)
-const my_perms = computed<Permission | undefined>(() => workStore.issueProject?.my_perms)
-const getIssues = computed(() => workStore.getIssues.filter(i => i.value !== props.issue.pk))
+const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
+
+const issueStore = useIssue()
+const issueNums = computed(() => issueStore.issueNums)
+const getIssues = computed(() => issueStore.getIssues.filter(i => i.value !== props.issue?.pk))
 
 const logStore = useLogging()
 const issueLogList = computed(() => logStore.issueLogList)
@@ -62,7 +64,7 @@ const doneRatio = computed(() => {
 
 const estimatedHours = computed(
   () =>
-    props.issue.sub_issues.map(s => Number(s.estimated_hours ?? 0)).reduce((a, b) => a + b) +
+    props.issue?.sub_issues.map(s => Number(s.estimated_hours ?? 0)).reduce((a, b) => a + b) +
     (props.issue?.estimated_hours ?? 0),
 )
 
@@ -115,23 +117,24 @@ const watchControl = (payload: any) => {
   if (payload.watchers)
     payload.watchers.forEach(val => form.append('watchers', JSON.stringify(val)))
   else if (payload.del_watcher) form.append('del_watcher', JSON.stringify(payload.del_watcher))
-  workStore.patchIssue(props.issue?.pk, form)
+  issueStore.patchIssue(props.issue?.pk as number, form)
 }
 
 // file 관련 코드
-const fileControl = (payload: FormData) => workStore.patchIssue(props.issue?.pk, payload)
+const fileControl = (payload: FormData) => issueStore.patchIssue(props.issue?.pk as number, payload)
 
 // 하위 업무 관련 코드
-const unlinkSubIssue = (del_child: number) => workStore.patchIssue(props.issue?.pk, { del_child })
+const unlinkSubIssue = (del_child: number) =>
+  issueStore.patchIssue(props.issue?.pk as number, { del_child })
 
 // 연결된 업무 관련 코드
 const addRIssue = ref(false)
 const addFormCtl = (bool: boolean) => (addRIssue.value = bool)
-const addRelIssue = (payload: any) => workStore.createIssueRelation(payload)
-const deleteRelation = (pk: number) => workStore.deleteIssueRelation(pk, props.issue?.pk)
+const addRelIssue = (payload: any) => issueStore.createIssueRelation(payload)
+const deleteRelation = (pk: number) => issueStore.deleteIssueRelation(pk, props.issue?.pk as number)
 
 // issue comment 관련
-const delSubmit = (pk: number) => workStore.deleteIssueComment(pk, props.issue.pk)
+const delSubmit = (pk: number) => issueStore.deleteIssueComment(pk, props.issue?.pk)
 
 const [route, router] = [useRoute(), useRouter()]
 watch(route, async nVal => {
@@ -139,7 +142,7 @@ watch(route, async nVal => {
 })
 
 onBeforeMount(async () => {
-  await logStore.fetchIssueLogList({ issue: props.issue.pk })
+  await logStore.fetchIssueLogList({ issue: props.issue?.pk })
   if (route.query.edit) callEditForm()
 })
 </script>
