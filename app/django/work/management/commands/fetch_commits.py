@@ -229,7 +229,7 @@ class Command(BaseCommand):
                 parent_hashes = []
                 for line in output.splitlines():
                     if line.startswith("author"):
-                        author = line.split(" ", 1)[1].rsplit(" ", 2)[0]
+                        author = line.split(" ", 1)[1].rsplit('<')[0].strip()
                     elif line.startswith("committer"):
                         timestamp = int(line.rsplit(" ", 2)[1])
                         seoul_tz = ZoneInfo("Asia/Seoul")
