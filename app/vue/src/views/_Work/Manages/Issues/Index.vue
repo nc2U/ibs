@@ -2,10 +2,11 @@
 import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import type { Company } from '@/store/types/settings'
-import { useWork } from '@/store/pinia/work_project.ts'
-import { useAccount } from '@/store/pinia/account'
 import { useRoute, useRouter } from 'vue-router'
-import type { IssueFilter } from '@/store/types/work_project.ts'
+import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
+import type { IssueFilter } from '@/store/types/work_issue.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
@@ -22,14 +23,15 @@ const accStore = useAccount()
 const getUsers = computed(() => accStore.getUsers)
 
 const workStore = useWork()
-const issueList = computed(() => workStore.issueList)
 const allProjects = computed(() => workStore.AllIssueProjects)
-
-const statusList = computed(() => workStore.statusList)
-const trackerList = computed(() => workStore.trackerList)
-const priorityList = computed(() => workStore.priorityList)
-const getIssues = computed(() => workStore.getIssues)
 const getVersions = computed(() => workStore.getVersions)
+
+const issueStore = useIssue()
+const issueList = computed(() => issueStore.issueList)
+const statusList = computed(() => issueStore.statusList)
+const trackerList = computed(() => issueStore.trackerList)
+const priorityList = computed(() => issueStore.priorityList)
+const getIssues = computed(() => issueStore.getIssues)
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -51,9 +53,9 @@ const onSubmit = (payload: any) => {
     } else form.append(key, getData[key] === null ? '' : (getData[key] as string))
   }
 
-  if (pk) workStore.updateIssue(pk, form)
+  if (pk) issueStore.updateIssue(pk, form)
   else {
-    workStore.createIssue(form)
+    issueStore.createIssue(form)
     if (route.params.projId) {
       if (route.query.parent)
         router.replace({
@@ -68,22 +70,22 @@ const onSubmit = (payload: any) => {
 const listFilter = ref<IssueFilter>({ status__closed: '0' })
 const filterSubmit = (payload: IssueFilter) => {
   listFilter.value = payload
-  workStore.fetchIssueList(payload)
+  issueStore.fetchIssueList(payload)
 }
 const pageSelect = (page: number) => {
   listFilter.value.page = page
-  workStore.fetchIssueList(listFilter.value)
+  issueStore.fetchIssueList(listFilter.value)
 }
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await workStore.fetchAllIssueList()
-  if (!route.query) await workStore.fetchIssueList({ status__closed: '0' })
+  await issueStore.fetchAllIssueList()
+  if (!route.query) await issueStore.fetchIssueList({ status__closed: '0' })
 
   await workStore.fetchMemberList()
-  await workStore.fetchTrackerList()
-  await workStore.fetchStatusList()
-  await workStore.fetchPriorityList()
+  await issueStore.fetchTrackerList()
+  await issueStore.fetchStatusList()
+  await issueStore.fetchPriorityList()
   if (route.params.projId)
     await workStore.fetchVersionList({ project: route.params.projId as string })
 
