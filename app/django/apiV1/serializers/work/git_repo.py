@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from work.models.github import Repository, Branch, Commit
+from work.models.git_repo import Repository, Branch, Commit
 
 
 class RepositorySerializer(serializers.ModelSerializer):

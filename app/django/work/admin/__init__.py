@@ -1,5 +1,5 @@
 from .project import *
 from .issue import *
-from .github import *
+from .git_repo import *
 from .inform import *
 from .logging import *

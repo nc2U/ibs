@@ -2,7 +2,7 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
 from work.models import IssueProject, Module, Role, Permission, Member, Version
-from work.models.github import Repository
+from work.models.git_repo import Repository
 from work.models.issue import IssueCategory
 
 

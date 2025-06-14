@@ -1,4 +1,4 @@
-from .github import *
+from .git_repo import *
 from .inform import *
 from .issue import *
 from .logging import *

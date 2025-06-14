@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 from apiV1.pagination import *
 from apiV1.permission import *
-from apiV1.serializers.work.github import *
+from apiV1.serializers.work.git_repo import *
 from work.models import IssueProject
 
 
