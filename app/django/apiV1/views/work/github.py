@@ -42,6 +42,7 @@ class CommitViewSet(viewsets.ModelViewSet):
     queryset = Commit.objects.all().order_by('-revision_id')
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationTwentyFive
     filterset_fields = ('repo', 'branches', 'branches__name', 'issues')
     search_fields = ('commit_hash',)
 
