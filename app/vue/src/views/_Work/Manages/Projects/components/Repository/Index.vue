@@ -94,12 +94,13 @@ const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; bran
 const changeRevision = async (payload: { branch?: string; tag?: string; sha?: string }) => {
   subTree.value = null
   cFilter.value.page = 1
-  const { branch, tag, sha } = payload
   const nowBranch = await fetchRootTree(repo.value?.pk as number, payload)
   if (nowBranch) {
-    const params = branch
-      ? { repo: cFilter.value.repo, branch, up_to: nowBranch.commit.sha }
-      : { repo: cFilter.value.repo, up_to: nowBranch.commit.sha }
+    const params = {
+      repo: cFilter.value.repo,
+      branch: payload.branch ? payload.branch : nowBranch.branches[0],
+      up_to: nowBranch.commit.sha,
+    }
     await fetchCommitList(params)
   }
 }
@@ -268,7 +269,7 @@ onBeforeMount(async () => {
         @into-path="intoPath"
         @file-view="viewFile"
       />
-      
+
       <Revisions
         v-if="viewPageSort === 'revisions' && headerView !== 'revision'"
         :page="cFilter.page"

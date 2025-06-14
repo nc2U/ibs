@@ -161,11 +161,6 @@ export const useGithub = defineStore('github', () => {
       curr_branch.value = res.data.branch
       branch_tree.value = res.data.trees
       return res.data.branch
-      // await fetchCommitList({
-      //   repo,
-      //   branch: res.data.branch.name,
-      //   up_to: res.data.branch?.commit?.sha,
-      // })
     } catch (err: any) {
       errorHandle(err.response)
     }
