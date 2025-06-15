@@ -100,7 +100,7 @@ watch(isDark, highlightCode)
   <CRow class="mb-0 pl-2">
     <CCol>
       <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('goto-trees')">
-        돌아가기
+        목록으로
       </v-btn>
     </CCol>
   </CRow>
@@ -143,7 +143,7 @@ watch(isDark, highlightCode)
   <CRow class="mb-5 pl-2">
     <CCol>
       <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('goto-trees')">
-        돌아가기
+        목록으로
       </v-btn>
     </CCol>
   </CRow>

@@ -7,8 +7,6 @@ import Diff from './atomics/Diff.vue'
 const props = defineProps({ gitDiff: { type: Object as PropType<any>, required: true } })
 
 const emit = defineEmits(['get-back', 'get-diff'])
-
-const getBack = () => emit('get-back')
 </script>
 
 <template>
@@ -20,7 +18,9 @@ const getBack = () => emit('get-back')
 
   <CRow class="mb-3">
     <CCol>
-      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="getBack">돌아가기</v-btn>
+      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('get-back')"
+        >목록으로</v-btn
+      >
     </CCol>
   </CRow>
 
@@ -28,7 +28,9 @@ const getBack = () => emit('get-back')
 
   <CRow class="mt-3">
     <CCol>
-      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="getBack">돌아가기</v-btn>
+      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('get-back')"
+        >목록으로</v-btn
+      >
     </CCol>
   </CRow>
 </template>
