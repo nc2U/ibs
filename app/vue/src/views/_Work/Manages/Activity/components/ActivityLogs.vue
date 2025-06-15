@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
-import type { Prop, PropType } from 'vue'
+import type { PropType } from 'vue'
 import { bgLight } from '@/utils/cssMixins.ts'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'

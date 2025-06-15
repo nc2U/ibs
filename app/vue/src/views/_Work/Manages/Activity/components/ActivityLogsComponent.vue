@@ -27,13 +27,18 @@ const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
 )
 
 const fromDate = computed(
-  () => new Date(new Date(props.toDate).getTime() - 9 * 24 * 60 * 60 * 1000),
+  () => new Date(new Date(props.toDate as Date).getTime() - 9 * 24 * 60 * 60 * 1000),
 )
 
-const toBack = () =>
-  emit('to-back', new Date(new Date(props.toDate).setDate(new Date(props.toDate).getDate() - 10)))
-const toNext = () =>
-  emit('to-next', new Date(new Date(props.toDate).setDate(new Date(props.toDate).getDate() + 10)))
+const toBack = () => {
+  if (props.toDate)
+    emit('to-back', new Date(new Date(props.toDate).setDate(new Date(props.toDate).getDate() - 10)))
+}
+
+const toNext = () => {
+  if (props.toDate)
+    emit('to-next', new Date(new Date(props.toDate).setDate(new Date(props.toDate).getDate() + 10)))
+}
 
 const route = useRoute()
 const projId = computed(() => (route.params.projId as string) ?? '')
@@ -45,7 +50,7 @@ watch(
       logStore.fetchActivityLogList({
         project: nVal.params.projId,
         from_act_date: dateFormat(fromDate.value),
-        to_act_date: dateFormat(props.toDate),
+        to_act_date: dateFormat(props.toDate as Date),
         sort: sort.value,
         ...props.activityFilter,
       })
@@ -60,7 +65,7 @@ onBeforeMount(() => {
     logStore.fetchActivityLogList({
       project: projId.value,
       from_act_date: dateFormat(fromDate.value),
-      to_act_date: dateFormat(props.toDate),
+      to_act_date: dateFormat(props.toDate as Date),
       sort: sort.value,
       ...props.activityFilter,
     })
