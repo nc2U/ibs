@@ -69,7 +69,7 @@ const getDiff = () => {
 }
 
 const gitStore = useGitRepo()
-const commitCount = computed<number>(() => gitStore.commitCount)
+const commitCount = computed(() => gitStore.commitCount)
 const commitPages = (page: number) => gitStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
 const assignCommit = (commit: Commit) => gitStore.assignCommit(commit)
@@ -83,7 +83,10 @@ const router = useRouter()
 const issueStore = useIssue()
 const goToIssue = async (pk: number) => {
   const issue = await issueStore.fetchIssue(pk)
-  await router.push({ name: '(업무) - 보기', params: { projId: issue.project, issueId: issue.pk } })
+  await router.push({
+    name: '(업무) - 보기',
+    params: { projId: issue?.project as string, issueId: issue?.pk as number },
+  })
 }
 
 onBeforeMount(() => {
