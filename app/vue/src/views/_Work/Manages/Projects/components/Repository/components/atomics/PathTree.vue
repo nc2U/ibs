@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
-import type { Changed, ChangedFile } from '@/store/types/work_git_repo.ts'
+import { computed, type PropType } from 'vue'
+import type { Changed } from '@/store/types/work_git_repo.ts'
 
 const props = defineProps({
   sha: { type: String, required: true },
@@ -9,7 +9,12 @@ const props = defineProps({
 
 const emit = defineEmits(['into-path', 'file-view', 'diff-view'])
 
-const pathList = (trees: string) => trees.split('/')
+const separatedFiles = computed(() =>
+  props.changeFiles.map(item => ({
+    path: item.path.split('/'),
+    type: item.type,
+  })),
+)
 
 const intoPath = (path: string, index: number) =>
   emit('into-path', {
@@ -56,12 +61,12 @@ const choiceFunc = (isFile: boolean, path: string, index: number) => {
     </CCol>
   </CRow>
 
-  <CRow v-for="(file, i) in changeFiles" :key="i">
+  <CRow v-for="(file, i) in separatedFiles" :key="i">
     <CCol>
-      <CRow v-for="(item, j) in pathList(file.path)" :key="j" class="pl-5">
+      <CRow v-for="(item, j) in file.path" :key="j" class="pl-5">
         <CCol :style="`padding-left: ${j * 20}px`">
-          <CCol v-if="i === 0 || pathList(changeFiles[i - 1].path)[j] !== item">
-            <span v-if="j !== pathList(file.path).length - 1" class="mr-2">
+          <CCol v-if="i === 0 || separatedFiles[i - 1].path[j] !== item">
+            <span v-if="j !== file.path.length - 1" class="mr-2">
               <v-icon icon="mdi-folder-open" color="#EFD2A8" size="16" />
             </span>
             <span v-else class="mr-2" style="font-size: 0.8em">
@@ -79,12 +84,12 @@ const choiceFunc = (isFile: boolean, path: string, index: number) => {
             <span>
               <router-link
                 to=""
-                @click="choiceFunc(pathList(file.path).length - 1 === j, file.path, j)"
+                @click="choiceFunc(file.path.length - 1 === j, file.path.join('/'), j)"
               >
                 {{ item }}
               </router-link>
             </span>
-            <span v-if="j === pathList(file.path).length - 1">
+            <span v-if="j === file.path.length - 1">
               (<router-link to="" @click="emit('diff-view', i)">비교(diff)</router-link>)
             </span>
           </CCol>
