@@ -3,7 +3,7 @@ import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Changed, ChangedFile, Commit, DiffApi } from '@/store/types/work_git_repo.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
-import { btnLight } from '@/utils/cssMixins.ts'
+import { btnLight, btnSecondary } from '@/utils/cssMixins.ts'
 import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
@@ -125,7 +125,7 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 
-  <CNav variant="tabs" class="mb-5">
+  <CNav variant="tabs" class="mb-3">
     <CNavItem>
       <CNavLink href="javascript:void(0);" :active="tabKey === 1" @click="tabReset">
         변경사항들
@@ -147,6 +147,18 @@ onBeforeMount(async () => {
     @file-view="emit('file-view', $event)"
     @diff-view="partialDiffView"
   />
+
+  <v-btn
+    v-if="tabKey === 2"
+    variant="outlined"
+    :color="btnSecondary"
+    @click="emit('goto-back')"
+    size="small"
+    class="mb-3"
+  >
+    목록으로
+  </v-btn>
+
   <Diff
     v-if="tabKey === 2"
     :git-diff="gitDiff as DiffApi"
@@ -156,5 +168,13 @@ onBeforeMount(async () => {
 
   <v-divider v-if="tabKey === 1" class="mb-2" />
 
-  <v-btn @click="emit('goto-back')" :color="btnLight" size="small" class="my-5">목록으로</v-btn>
+  <v-btn
+    variant="outlined"
+    :color="btnSecondary"
+    @click="emit('goto-back')"
+    size="small"
+    class="my-3"
+  >
+    목록으로</v-btn
+  >
 </template>

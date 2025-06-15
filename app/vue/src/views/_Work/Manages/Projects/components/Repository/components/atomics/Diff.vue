@@ -72,7 +72,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <CRow class="mb-5">
+  <CRow class="mb-3">
     <CCol>
       차이점 보기 :
       <CFormCheck

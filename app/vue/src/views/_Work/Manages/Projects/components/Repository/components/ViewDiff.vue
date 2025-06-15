@@ -18,7 +18,7 @@ const getBack = () => emit('get-back')
     </CCol>
   </CRow>
 
-  <CRow class="mb-4">
+  <CRow class="mb-3">
     <CCol>
       <v-btn size="small" variant="outlined" :color="btnSecondary" @click="getBack">돌아가기</v-btn>
     </CCol>
@@ -26,7 +26,7 @@ const getBack = () => emit('get-back')
 
   <Diff :git-diff="gitDiff" @get-diff="emit('get-diff', $event)" />
 
-  <CRow class="mt-4">
+  <CRow class="mt-3">
     <CCol>
       <v-btn size="small" variant="outlined" :color="btnSecondary" @click="getBack">돌아가기</v-btn>
     </CCol>
