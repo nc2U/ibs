@@ -62,11 +62,15 @@ export const useIssue = defineStore('issue', () => {
       .then(res => (issueNumByMember.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchIssue = (pk: number) =>
-    api
-      .get(`/issue/${pk}/`)
-      .then(res => (issue.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+  const fetchIssue = async (pk: number) => {
+    try {
+      const res = await api.get(`/issue/${pk}/`)
+      issue.value = res.data
+      return { pk: res.data.pk, project: res.data.project.slug }
+    } catch (err: any) {
+      errorHandle(err.response.data)
+    }
+  }
 
   const removeIssue = () => (issue.value = null)
 

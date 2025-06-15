@@ -2,8 +2,10 @@
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Commit } from '@/store/types/work_git_repo.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
-import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
+import { useRouter } from 'vue-router'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import Pagination from '@/components/Pagination'
 
 const props = defineProps({
@@ -77,8 +79,11 @@ const viewRevision = (commit: Commit) => {
   emit('revision-view')
 }
 
-const goToIssue = (issue: number) => {
-  alert(issue)
+const router = useRouter()
+const issueStore = useIssue()
+const goToIssue = async (pk: number) => {
+  const issue = await issueStore.fetchIssue(pk)
+  await router.push({ name: '(업무) - 보기', params: { projId: issue.project, issueId: issue.pk } })
 }
 
 onBeforeMount(() => {

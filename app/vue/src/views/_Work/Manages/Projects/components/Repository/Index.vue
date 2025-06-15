@@ -71,7 +71,6 @@ const default_branch = computed(() => gitStore.default_branch)
 const curr_branch = computed(() => (gitStore.curr_branch as BranchInfo)?.name ?? '')
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
 const currentTree = computed<Tree[]>(() => (subTree.value ? subTree.value : branchTree.value))
-
 const gitDiff = computed<any>(() => gitStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
