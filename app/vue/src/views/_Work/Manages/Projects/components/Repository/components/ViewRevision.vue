@@ -113,9 +113,9 @@ onBeforeMount(async () => {
     <CCol>
       <h6>연결된 업무</h6>
       <ul class="ml-4">
-        <li v-for="issue in commit.issues" :key="issue">
+        <li v-for="issue in commit.issues" :key="issue.pk">
           <router-link
-            :to="{ name: '(업무) - 보기', params: { projId: issue?.project, issueId: issue?.pk } }"
+            :to="{ name: '(업무) - 보기', params: { projId: issue.project, issueId: issue.pk } }"
           >
             {{ issue.tracker }} #{{ issue?.pk }}
           </router-link>

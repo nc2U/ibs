@@ -175,7 +175,7 @@ onBeforeMount(() => {
         <CTableDataCell>
           {{ cutString(commit.message, 80) }}
           <template v-if="commit.issues.length">
-            (<span v-for="(issue, i) in commit.issues" :key="issue">
+            (<span v-for="(issue, i) in commit.issues" :key="i">
               <template v-if="i > 0">, </template>
               <router-link
                 to=""
