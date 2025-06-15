@@ -149,6 +149,7 @@ const toggleFileView = (payload: any) => {
 }
 
 const viewFile = async (node: { path: string; sha: string }) => {
+  currPath.value = node.path.split('/').slice(0, -1).join('/')
   const fileData = await fetchFileView(
     repo.value?.pk as number,
     node?.path as string,

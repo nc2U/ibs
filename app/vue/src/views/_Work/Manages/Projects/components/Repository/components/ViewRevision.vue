@@ -175,6 +175,6 @@ onBeforeMount(async () => {
     size="small"
     class="my-3"
   >
-    목록으로</v-btn
-  >
+    목록으로
+  </v-btn>
 </template>
