@@ -277,7 +277,7 @@ onBeforeMount(async () => {
         @into-path="intoPath"
         @file-view="viewFile"
       />
-      {{ cFilter.up_to }}
+
       <Revisions
         v-if="viewPageSort === 'revisions' && headerView !== 'revision'"
         :page="cFilter.page"

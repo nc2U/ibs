@@ -56,9 +56,9 @@ const choiceFunc = (isFile: boolean, path: string, index: number) => {
     </CCol>
   </CRow>
 
-  <CRow v-for="(tree, i) in changeFiles" :key="i" class="mb-3">
+  <CRow v-for="(tree, i) in changeFiles" :key="i">
     <CCol>
-      <CRow v-for="(el, j) in pathList(tree.path)" :key="j" class="pl-5">
+      <CRow v-for="(item, j) in pathList(tree.path)" :key="j" class="pl-5">
         <CCol :style="`padding-left: ${j * 25}px`">
           <span v-if="j !== pathList(tree.path).length - 1" class="mr-2">
             <v-icon icon="mdi-folder-open" color="#EFD2A8" size="16" />
@@ -74,8 +74,9 @@ const choiceFunc = (isFile: boolean, path: string, index: number) => {
             <router-link
               to=""
               @click="choiceFunc(pathList(tree.path).length - 1 === j, tree.path, j)"
-              >{{ el }}</router-link
             >
+              {{ item }}
+            </router-link>
           </span>
           <span v-if="j === pathList(tree.path).length - 1">
             (<router-link to="" @click="emit('diff-view', i)">비교(diff)</router-link>)
