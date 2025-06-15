@@ -97,6 +97,14 @@ watch(isDark, highlightCode)
     </CCol>
   </CRow>
 
+  <CRow class="mb-0 pl-2">
+    <CCol>
+      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('goto-trees')">
+        돌아가기
+      </v-btn>
+    </CCol>
+  </CRow>
+
   <CRow>
     <CCol class="file-content" :class="{ 'theme-dark': isDark, 'theme-light': !isDark }">
       <div class="file-viewer">
@@ -107,14 +115,14 @@ watch(isDark, highlightCode)
           style="width: 100%; border-collapse: collapse"
         >
           <CTableRow>
-            <CTableDataCell class="py-2 px-5 strong truncate">{{ fileData.path }}</CTableDataCell>
-            <CTableDataCell class="px-5 text-right" style="width: 160px">
+            <CTableDataCell class="py-2 px-3 strong truncate">{{ fileData.path }}</CTableDataCell>
+            <CTableDataCell class="px-3 text-right" style="width: 160px">
               <b :class="bgLight">SHA</b> : {{ cutString(fileData.sha, 7) }}
             </CTableDataCell>
-            <CTableDataCell class="px-5 text-right" style="width: 160px">
+            <CTableDataCell class="px-3 text-right" style="width: 160px">
               <b :class="bgLight">Size</b> : {{ humanizeFileSize(fileData.size) }}
             </CTableDataCell>
-            <CTableDataCell class="px-5 text-right" style="width: 250px">
+            <CTableDataCell class="px-3 text-right" style="width: 250px">
               <b :class="bgLight">modified</b> : {{ timeFormat(fileData.modified) }}
             </CTableDataCell>
           </CTableRow>
