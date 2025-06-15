@@ -80,14 +80,14 @@ const viewRevision = (commit: Commit) => {
 }
 
 const router = useRouter()
-const issueStore = useIssue()
-const goToIssue = async (pk: number) => {
-  const issue = await issueStore.fetchIssue(pk)
-  await router.push({
-    name: '(업무) - 보기',
-    params: { projId: issue?.project as string, issueId: issue?.pk as number },
-  })
-}
+// const issueStore = useIssue()
+// const goToIssue = async (pk: number) => {
+//   const issue = await issueStore.fetchIssue(pk)
+//   await router.push({
+//     name: '(업무) - 보기',
+//     params: { projId: issue?.project as string, issueId: issue?.pk as number },
+//   })
+// }
 
 onBeforeMount(() => {
   if (props.commitList.length > 1) {
@@ -177,7 +177,17 @@ onBeforeMount(() => {
           <template v-if="commit.issues.length">
             (<span v-for="(issue, i) in commit.issues" :key="issue">
               <template v-if="i > 0">, </template>
-              <router-link to="" @click="goToIssue(issue)">#{{ issue }}</router-link> </span
+              <router-link
+                to=""
+                @click="
+                  router.push({
+                    name: '(업무) - 보기',
+                    params: { projId: issue.project, issueId: issue.pk },
+                  })
+                "
+              >
+                #{{ issue.pk }}
+              </router-link> </span
             >)
           </template>
         </CTableDataCell>

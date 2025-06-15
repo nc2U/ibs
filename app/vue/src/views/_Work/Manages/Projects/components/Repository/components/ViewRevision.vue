@@ -79,9 +79,9 @@ onBeforeMount(async () => {
 
   <v-divider class="mt-1" />
 
-  <CRow class="pl-5">
+  <CRow class="pl-4">
     <CCol>
-      <ul class="pl-5">
+      <ul class="pl-3">
         <li><b>ID</b> {{ commit?.commit_hash }}</li>
         <li v-if="commit?.parents.length">
           <b>상위 </b>
@@ -109,9 +109,19 @@ onBeforeMount(async () => {
     <CCol>{{ commit?.message }}</CCol>
   </CRow>
 
-  <CRow class="mb-5">
+  <CRow v-if="commit?.issues.length" class="mb-5">
     <CCol>
       <h6>연결된 업무</h6>
+      <ul class="ml-4">
+        <li v-for="issue in commit.issues" :key="issue">
+          <router-link
+            :to="{ name: '(업무) - 보기', params: { projId: issue?.project, issueId: issue?.pk } }"
+          >
+            {{ issue.tracker }} #{{ issue?.pk }}
+          </router-link>
+          :<span class="ml-2">{{ issue?.subject }}</span>
+        </li>
+      </ul>
     </CCol>
   </CRow>
 

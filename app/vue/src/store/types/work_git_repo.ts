@@ -25,7 +25,12 @@ export interface Commit {
   branches: string[]
   parents: string[]
   children: string[]
-  issues: number[]
+  issues: {
+    pk: number
+    project: string
+    tracker: string
+    subject: string
+  }[]
   prev: string | null
   next: string | null
 }
