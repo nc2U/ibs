@@ -1,7 +1,6 @@
 import os
 from datetime import timezone, datetime
 
-from charset_normalizer import detect
 from django.shortcuts import get_object_or_404
 from git import Repo, GitCommandError, NULL_TREE
 from git.exc import BadName
@@ -413,33 +412,11 @@ class GitFileContentView(APIView):
     @staticmethod
     def is_binary(data: bytes) -> bool:
         """
-        Check if the input bytes data is binary or text.
-        Args: data: Bytes data to analyze.
-        Returns: bool: True if binary, False if text.
+        간단한 휴리스틱 방식으로 바이너리 판별
         """
-
-        if not data:
-            return False
-
-        # NULL 바이트 확인
-        if b'\x00' in data:
-            return True
-
-        # 처음 1024바이트로 인코딩 추정
-        sample_size = min(len(data), 1024)
-        result = detect(data[:sample_size])
-        encoding = result.get("encoding")
-        confidence = result.get("confidence", 0)
-
-        # 인코딩 없거나 신뢰도 낮음
-        if encoding is None or confidence < 0.7:
-            return True
-
-        try:
-            data.decode(encoding)
-            return False
-        except UnicodeDecodeError as e:
-            return True
+        textchars = bytearray({7, 8, 9, 10, 12, 13, 27}
+                              | set(range(0x20, 0x100)) - {0x7f})
+        return bool(data.translate(None, textchars))
 
     def get(self, request, pk, path, *args, **kwargs):
         sha = request.query_params.get("sha", "").strip()
