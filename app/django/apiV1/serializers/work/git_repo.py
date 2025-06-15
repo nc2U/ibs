@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from work.models import Issue
 from work.models.git_repo import Repository, Branch, Commit
 
 
@@ -15,11 +16,20 @@ class BranchSerializer(serializers.ModelSerializer):
         fields = ('pk', 'repo', 'name')
 
 
+class IssueInCommitSerializer(serializers.ModelSerializer):
+    project = serializers.SlugRelatedField(slug_field='slug', read_only=True)
+    tracker = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ('pk', 'project', 'tracker', 'subject')
+
+
 class CommitSerializer(serializers.ModelSerializer):
     branches = serializers.SlugRelatedField(slug_field='name', many=True, read_only=True)
     parents = serializers.SlugRelatedField(slug_field='commit_hash', many=True, read_only=True)
     children = serializers.SlugRelatedField(slug_field='commit_hash', many=True, read_only=True)
-    issues = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    issues = IssueInCommitSerializer(many=True, read_only=True)
     prev = serializers.SerializerMethodField()
     next = serializers.SerializerMethodField()
 
