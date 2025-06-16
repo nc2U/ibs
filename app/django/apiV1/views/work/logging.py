@@ -111,29 +111,31 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
     #     to_date = query_params.get('to_act_date')
     #
     #     # 기본 쿼리셋
-    #     queryset = Commit.objects.filter(repo__slug='ibs') if not sort or sort == '3' else Commit.objects.none()
+    #     if sort is not None and sort != '3':
+    #         return Commit.objects.none()
+    #     else:
+    #         queryset = Commit.objects.all()
     #
-    #     if not work_auth:
-    #         queryset = queryset.filter(
-    #             Q(issues__project__is_public=True) |
-    #             Q(issues__project__in=projects)
-    #         )
+    #         if not work_auth:
+    #             queryset = queryset.filter(
+    #                 Q(repo__project__is_public=True) |
+    #                 Q(repo__project__in=projects))
     #
-    #     # project__slug → IssueProject id 목록
-    #     if project_slug:
-    #         try:
-    #             project = IssueProject.objects.get(slug=project_slug)
-    #             project_ids = [project.pk] + [p.get('pk') for p in ActivityLogFilter.get_sub_projects(project)]
-    #             queryset = queryset.filter(issues__project__id__in=project_ids)
-    #         except IssueProject.DoesNotExist:
-    #             return Commit.objects.none()
+    #         # project__slug → IssueProject id 목록
+    #         if project_slug:
+    #             try:
+    #                 project = IssueProject.objects.get(slug=project_slug)
+    #                 project_ids = [project.pk] + [p.get('pk') for p in ActivityLogFilter.get_sub_projects(project)]
+    #                 queryset = queryset.filter(repo__project__id__in=project_ids)
+    #             except IssueProject.DoesNotExist:
+    #                 return Commit.objects.none()
     #
-    #     if from_date:
-    #         queryset = queryset.filter(date__gte=from_date)
-    #     if to_date:
-    #         queryset = queryset.filter(date__lte=to_date)
+    #         if from_date:
+    #             queryset = queryset.filter(date__gte=from_date)
+    #         if to_date:
+    #             queryset = queryset.filter(date__lte=to_date)
     #
-    #     return queryset.select_related('repo').order_by('-date')
+    #         return queryset.select_related('repo').order_by('-date')
     #
     # def list(self, request, *args, **kwargs):
     #     """ActivityLogEntry와 Commit 데이터를 병합하여 반환"""
