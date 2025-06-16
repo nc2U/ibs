@@ -24,6 +24,7 @@ const form = ref({
   is_default: false,
   slug: '',
   local_path: '',
+  remote_url: '',
   is_report: false,
 })
 
@@ -33,6 +34,7 @@ const resetForm = () => {
   form.value.is_default = false
   form.value.slug = ''
   form.value.local_path = ''
+  form.value.remote_url = ''
   form.value.is_report = false
 }
 
@@ -52,6 +54,7 @@ const toEditRepo = (repo: Repository) => {
   form.value.is_default = repo.is_default
   form.value.slug = repo.slug
   form.value.local_path = repo.local_path
+  form.value.remote_url = repo.remote_url
   form.value.is_report = repo.is_report
   refFormModal.value.callModal()
 }
@@ -170,6 +173,21 @@ const modalAction = () => {
                 required
                 placeholder="저장소(서버) 로컬 경로"
                 text="로컬의 bare 저장소 (예: /app/repos/repo.git)"
+              />
+            </CCol>
+          </CRow>
+          <CRow class="mb-3 required">
+            <CFormLabel for="githubTokenForm" class="col-sm-3 col-form-label required">
+              저장소 URL
+            </CFormLabel>
+            <CCol sm="9">
+              <CFormInput
+                v-model="form.remote_url"
+                id="githubTokenForm"
+                maxlength="255"
+                required
+                placeholder="저장소 URL"
+                text="'github 저장소 URL"
               />
             </CCol>
           </CRow>

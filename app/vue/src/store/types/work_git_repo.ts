@@ -4,6 +4,7 @@ export interface Repository {
   is_default: boolean
   slug: string
   local_path: string
+  remote_url: string
   is_report: boolean
 }
 
