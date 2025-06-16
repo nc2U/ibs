@@ -86,12 +86,11 @@ onBeforeMount(async () => {
 
   <CRow v-else class="my-3">
     <CCol>
-      <!--      <ActivityLog :grouped-activities="groupedActivities" />-->
       <ActivityLog
         v-for="(activity, date) in groupedActivities"
         :key="date"
         :activity="activity"
-        :date="date"
+        :date="date as string"
       />
     </CCol>
   </CRow>

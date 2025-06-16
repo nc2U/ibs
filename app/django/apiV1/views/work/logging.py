@@ -150,7 +150,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
     #     # 데이터 병합 (제너레이터)
     #     from heapq import merge
     #     log_iter = ({
-    #         'sort': '1',
+    #         'sort': log['sort'],
     #         'pk': log['pk'],
     #         'timestamp': log['timestamp'],
     #         'status_log': log['status_log'],

@@ -7,7 +7,7 @@ import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import { cutString, dateFormat, numberToHour, timeFormat } from '@/utils/baseMixins'
 
 defineProps({
-  activity: { type: Object as PropType<ActLogEntry>, required: true },
+  activity: { type: Array as PropType<ActLogEntry[]>, required: true },
   date: { type: String, required: true },
 })
 
@@ -17,8 +17,6 @@ const getIcon = (sort: string, progress: boolean) => {
   else if (sort === '9') return 'mdi-folder-clock-outline'
   else return 'mdi-folder-plus'
 }
-
-const route = useRoute()
 </script>
 
 <template>
@@ -39,7 +37,7 @@ const route = useRoute()
             class="mr-1"
           />
           <span class="form-text underline mr-2">{{ timeFormat(act.timestamp, true) }}</span>
-          <span v-if="!route.params.projId || act.project?.slug !== route.params.projId">
+          <span v-if="!$route.params.projId || act.project?.slug !== $route.params.projId">
             {{ act.project?.name }} -
           </span>
           <span v-if="act.sort === '1'">

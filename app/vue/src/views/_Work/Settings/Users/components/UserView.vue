@@ -103,7 +103,12 @@ const issueProjects = computed(() => props.issueProjects.slice())
           </CCol>
         </CRow>
 
-        <ActivityLog :grouped-activities="groupedActivities" />
+        <ActivityLog
+          v-for="(activity, date) in groupedActivities"
+          :key="date"
+          :activity="activity"
+          :date="date as string"
+        />
       </template>
     </CCol>
   </CRow>
