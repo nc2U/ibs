@@ -8,7 +8,7 @@ import type { IssueProject } from '@/store/types/work_project.ts'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogsComponent.vue'
+import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogList.vue'
 import AsideController from '@/views/_Work/Manages/Activity/components/aside/AsideController.vue'
 
 defineProps({

@@ -7,7 +7,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
-import ActivityLogs from '@/views/_Work/Manages/Activity/components/ActivityLogs.vue'
+import ActivityLog from '@/views/_Work/Manages/Activity/components/ActivityLog.vue'
 
 const props = defineProps({
   toDate: { type: Date as PropType<Date>, required: true },
@@ -86,7 +86,13 @@ onBeforeMount(async () => {
 
   <CRow v-else class="my-3">
     <CCol>
-      <ActivityLogs :grouped-activities="groupedActivities" />
+      <!--      <ActivityLog :grouped-activities="groupedActivities" />-->
+      <ActivityLog
+        v-for="(activity, date) in groupedActivities"
+        :key="date"
+        :activity="activity"
+        :date="date"
+      />
     </CCol>
   </CRow>
 

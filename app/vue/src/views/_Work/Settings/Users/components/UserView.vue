@@ -8,7 +8,7 @@ import { useAccount } from '@/store/pinia/account'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import IssueSummary from './atomicViews/IssueSummary.vue'
 import ProjectSummary from './atomicViews/ProjectSummary.vue'
-import ActivityLogs from '@/views/_Work/Manages/Activity/components/ActivityLogs.vue'
+import ActivityLog from '@/views/_Work/Manages/Activity/components/ActivityLog.vue'
 
 const props = defineProps({
   issueProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
@@ -103,7 +103,7 @@ const issueProjects = computed(() => props.issueProjects.slice())
           </CCol>
         </CRow>
 
-        <ActivityLogs :grouped-activities="groupedActivities" />
+        <ActivityLog :grouped-activities="groupedActivities" />
       </template>
     </CCol>
   </CRow>

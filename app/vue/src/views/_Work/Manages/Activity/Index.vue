@@ -10,7 +10,7 @@ import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import ActivityLogList from './components/ActivityLogsComponent.vue'
+import ActivityLogList from './components/ActivityLogList.vue'
 import AsideController from './components/aside/AsideController.vue'
 
 const cBody = ref()

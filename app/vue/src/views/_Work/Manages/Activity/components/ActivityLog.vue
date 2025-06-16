@@ -7,8 +7,8 @@ import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import { cutString, dateFormat, numberToHour, timeFormat } from '@/utils/baseMixins'
 
 defineProps({
-  groupedActivities: Object as PropType<{ [key: string]: ActLogEntry[] }>,
-  default: () => {},
+  activity: { type: Object as PropType<ActLogEntry>, required: true },
+  date: { type: String, required: true },
 })
 
 const getIcon = (sort: string, progress: boolean) => {
@@ -22,15 +22,15 @@ const route = useRoute()
 </script>
 
 <template>
-  <CRow v-for="(val, key) in groupedActivities" :key="key">
+  <CRow>
     <CCol>
       <CAlert class="px-3 py-1" :class="bgLight">
         <span class="date-title">
-          {{ String(key) === dateFormat(new Date()) ? '오늘' : dateFormat(key as string, '/') }}
+          {{ String(date) === dateFormat(new Date()) ? '오늘' : dateFormat(date as string, '/') }}
         </span>
       </CAlert>
 
-      <CRow v-for="(act, i) in val" :key="act.pk" class="pl-3">
+      <CRow v-for="(act, i) in activity" :key="act.pk" class="pl-3">
         <CCol :class="{ 'ml-5': i }">
           <v-icon
             :icon="getIcon(act.sort, !!act.status_log)"
