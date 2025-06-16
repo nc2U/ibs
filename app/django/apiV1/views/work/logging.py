@@ -148,27 +148,23 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         # 데이터 병합 (제너레이터)
         from heapq import merge
         log_iter = ({
-            'data': {
-                'sort': '1',
-                'pk': log['pk'],
-                'timestamp': log['timestamp'],
-                'status_log': log['status_log'],
-                'user': {'username': log['user__username']},
-                'project': {'pk': log['project__id']}
-            }
+            'sort': '1',
+            'pk': log['pk'],
+            'timestamp': log['timestamp'],
+            'status_log': log['status_log'],
+            'user': {'username': log['user__username']},
+            'project': {'pk': log['project__id']}
         } for log in logs)
         commit_iter = ({
-            'data': {
-                'sort': '3',
-                'commit_hash': c['commit_hash'],
-                'timestamp': c['date'],
-                'status_log': c['message'][:30],
-                'user': {'username': c['author']} if c['author'] else None,
-                'project': {'pk': c['issues__project__id']} if c['issues__project__id'] else None
-            }
+            'sort': '3',
+            'commit_hash': c['commit_hash'],
+            'timestamp': c['date'],
+            'status_log': c['message'][:30],
+            'user': {'username': c['author']} if c['author'] else None,
+            'project': {'pk': c['issues__project__id']} if c['issues__project__id'] else None
         } for c in commits)
 
-        combined = list(merge(log_iter, commit_iter, key=lambda x: x['data']['timestamp'], reverse=True))
+        combined = list(merge(log_iter, commit_iter, key=lambda x: x['timestamp'], reverse=True))
 
         # 페이지네이션
         paginator = self.pagination_class()
