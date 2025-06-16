@@ -59,17 +59,15 @@ watch(
 )
 
 const workStore = useWork()
-onBeforeMount(() => {
-  if (route.params.projId) workStore.fetchIssueProject(projId.value)
-  setTimeout(() => {
-    logStore.fetchActivityLogList({
-      project: projId.value,
-      from_act_date: dateFormat(fromDate.value),
-      to_act_date: dateFormat(props.toDate as Date),
-      sort: sort.value,
-      ...props.activityFilter,
-    })
-  }, 300)
+onBeforeMount(async () => {
+  if (route.params.projId) await workStore.fetchIssueProject(projId.value)
+  await logStore.fetchActivityLogList({
+    project: projId.value,
+    from_act_date: dateFormat(fromDate.value),
+    to_act_date: dateFormat(props.toDate as Date),
+    sort: sort.value,
+    ...props.activityFilter,
+  })
 })
 </script>
 
