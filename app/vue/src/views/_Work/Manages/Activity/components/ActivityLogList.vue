@@ -7,7 +7,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
-import ActivityLog from '@/views/_Work/Manages/Activity/components/ActivityLog.vue'
+import ActivityLog from './ActivityLog.vue'
 
 const props = defineProps({
   toDate: { type: Date as PropType<Date>, required: true },
