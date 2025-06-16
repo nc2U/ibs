@@ -58,8 +58,10 @@ class Commit(models.Model):
             models.UniqueConstraint(fields=['repo', 'revision_id'], name='unique_repo_revision_id'),
             models.UniqueConstraint(fields=['repo', 'commit_hash'], name='unique_repo_commit_hash')]
         indexes = [
+            models.Index(fields=['repo', 'revision_id']),
             models.Index(fields=['repo', 'commit_hash']),
-            models.Index(fields=['repo', 'revision_id'])]
+            models.Index(fields=['commit_hash']),
+            models.Index(fields=['repo', 'date']), ]
 
     def get_prev(self):
         return self.parents.first()

@@ -32,6 +32,7 @@ class ActivityLogEntry(models.Model):
         ordering = ('-id',)
         verbose_name = '18. 작업 내역'
         verbose_name_plural = '18. 작업 내역'
+        indexes = [models.Index(fields=['timestamp', 'project'])]
 
 
 class SequentialIntegerField(models.IntegerField):
