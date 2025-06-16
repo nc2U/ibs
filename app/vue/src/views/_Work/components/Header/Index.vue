@@ -75,7 +75,7 @@ onBeforeMount(async () => {
             </CCol>
 
             <CCol
-              class="text-body d-xl-none pointer"
+              class="text-body d-lg-none pointer"
               :class="{ pointer: !!familyTree.length }"
               @click="visible = !visible"
             >
@@ -99,7 +99,7 @@ onBeforeMount(async () => {
           </CRow>
         </CCol>
 
-        <CCol class="text-body d-xl-none text-right p-3">
+        <CCol class="text-body d-lg-none text-right p-3">
           <v-app-bar-nav-icon @click="sideNavCall" />
         </CCol>
         <CCol class="d-none d-lg-block text-right">
