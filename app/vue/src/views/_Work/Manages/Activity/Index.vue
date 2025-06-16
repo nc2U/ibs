@@ -10,8 +10,8 @@ import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogsComponent.vue'
-import AsideActivity from '@/views/_Work/Manages/Activity/components/aside/AsideActivity.vue'
+import ActivityLogList from './components/ActivityLogsComponent.vue'
+import AsideController from './components/aside/AsideController.vue'
 
 const cBody = ref()
 const company = inject<ComputedRef<Company>>('company')
@@ -51,7 +51,7 @@ const toMove = (date: Date) => {
   logStore.fetchActivityLogList(activityFilter.value)
 }
 
-const filterActivity = (payload: ActLogEntryFilter) => {
+const setFilter = (payload: ActLogEntryFilter) => {
   if (payload.to_act_date) toDate.value = new Date(payload.to_act_date)
   activityFilter.value.project = payload.project ?? ''
   activityFilter.value.project__search = payload.project__search ?? ''
@@ -83,7 +83,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <AsideActivity :to-date="toDate" @filter-activity="filterActivity" />
+      <AsideController :to-date="toDate" @set-filter="setFilter" />
     </template>
   </ContentBody>
 </template>

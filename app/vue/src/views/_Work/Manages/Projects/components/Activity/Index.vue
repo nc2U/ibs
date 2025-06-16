@@ -9,7 +9,7 @@ import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogsComponent.vue'
-import AsideActivity from '@/views/_Work/Manages/Activity/components/aside/AsideActivity.vue'
+import AsideController from '@/views/_Work/Manages/Activity/components/aside/AsideController.vue'
 
 defineProps({
   toDate: { type: Date, required: true },
@@ -90,7 +90,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <AsideActivity
+      <AsideController
         :to-date="toDate"
         :has-subs="!!issueProject?.sub_projects?.length"
         @filter-activity="filterActivity"

@@ -21,7 +21,7 @@ watch(
   { deep: true },
 )
 
-const emit = defineEmits(['filter-activity'])
+const emit = defineEmits(['set-filter'])
 
 const form = reactive<ActLogEntryFilter & { subProjects: boolean }>({
   project: '',
@@ -80,7 +80,7 @@ const filterActivity = () => {
   if (cookieSort) Cookies.set('cookieSort', cookieSort)
   else Cookies.remove('cookieSort')
 
-  emit('filter-activity', { ...form })
+  emit('set-filter', { ...form })
 }
 
 onBeforeMount(() => {
