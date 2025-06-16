@@ -7,7 +7,7 @@ from work.models.git_repo import Repository, Branch, Commit
 class RepositorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
-        fields = ('pk', 'project', 'is_default', 'slug', 'local_path', 'is_report')
+        fields = ('pk', 'project', 'is_default', 'slug', 'local_path', 'remote_url', 'is_report')
 
 
 class BranchSerializer(serializers.ModelSerializer):
