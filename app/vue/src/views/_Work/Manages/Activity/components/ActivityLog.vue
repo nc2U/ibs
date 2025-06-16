@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { useRoute } from 'vue-router'
 import type { PropType } from 'vue'
 import { bgLight } from '@/utils/cssMixins.ts'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
