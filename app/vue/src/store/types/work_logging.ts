@@ -15,7 +15,11 @@ export interface ActLogEntry {
   status_log: string
   comment: { pk: number; content: string } | null
   spent_time: { pk: number; hours: string; comment: '' } | null
-  change_set: string
+  change_set: {
+    repo: { pk: number; slug: string }
+    sha: string
+    message: string
+  }
   // news: string
   // document: string
   // file: string

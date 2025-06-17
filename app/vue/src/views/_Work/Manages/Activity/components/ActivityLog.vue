@@ -13,6 +13,7 @@ defineProps({
 const getIcon = (sort: string, progress: boolean) => {
   if (sort === '1') return progress ? 'mdi-forward' : 'mdi-folder-plus'
   else if (sort === '2') return 'mdi-comment-text-multiple'
+  else if (sort === '3') return 'mdi-cog-outline'
   else if (sort === '9') return 'mdi-folder-clock-outline'
   else return 'mdi-folder-plus'
 }
@@ -84,6 +85,16 @@ const getIcon = (sort: string, progress: boolean) => {
                 :source="cutString(act.comment?.content, 113)"
                 class="form-text pl-4"
               />
+            </div>
+          </span>
+
+          <span v-if="act.sort === '3'">
+            <router-link to="">
+              리비전 {{ act.change_set.sha.substring(0, 8) }} ({{ act.change_set.repo.slug }})
+              {{ cutString(act.change_set.message, 50) }}
+            </router-link>
+            <div class="ml-4 pl-3 fst-italic">
+              {{ act.user.username }}
             </div>
           </span>
 
