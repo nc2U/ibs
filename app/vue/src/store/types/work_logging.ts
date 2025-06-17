@@ -14,13 +14,13 @@ export interface ActLogEntry {
   } | null
   status_log: string
   comment: { pk: number; content: string } | null
-  // change_sets: string
+  spent_time: { pk: number; hours: string; comment: '' } | null
+  change_set: string
   // news: string
   // document: string
   // file: string
   // wiki: string
   // message: string
-  spent_time: { pk: number; hours: string; comment: '' } | null
   act_date: string
   timestamp: string
   user: {
