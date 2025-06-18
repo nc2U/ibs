@@ -144,9 +144,9 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         # ActivityLogEntry 조회
         logs = self.filter_queryset(self.get_queryset()).values(
             'pk', 'sort', 'project__id', 'project__name', 'project__slug', 'issue__id',
-            'issue__tracker', 'issue__status', 'issue__subject', 'issue__description',
-            'status_log', 'comment__id', 'comment__content', 'spent_time__id', 'spent_time__hours',
-            'act_date', 'timestamp', 'user__id', 'user__username')
+            'issue__tracker', 'issue__status__name', 'issue__status__closed', 'issue__subject',
+            'issue__description', 'status_log', 'comment__id', 'comment__content', 'spent_time__id',
+            'spent_time__hours', 'act_date', 'timestamp', 'user__id', 'user__username')
 
         # Commit 조회
         commits = self.get_commits().values(
@@ -165,7 +165,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'issue': {
                 'pk': log['issue__id'],
                 'tracker': log['issue__tracker'],
-                'status': log['issue__status'],
+                'status': {'name': log['issue__status__name'], 'closed': log['issue__status__closed']},
                 'subject': log['issue__subject'],
                 'description': log['issue__description'],
             },

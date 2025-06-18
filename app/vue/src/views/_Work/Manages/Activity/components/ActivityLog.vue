@@ -11,7 +11,7 @@ defineProps({
 })
 
 const getIcon = (sort: string, progress: boolean) => {
-  if (sort === '1') return progress ? 'mdi-forward' : 'mdi-folder-plus'
+  if (sort === '1') return progress ? 'mdi-folder-check' : 'mdi-folder-edit'
   else if (sort === '2') return 'mdi-comment-text-multiple'
   else if (sort === '3') return 'mdi-cog-outline'
   else if (sort === '9') return 'mdi-folder-clock-outline'
@@ -93,7 +93,7 @@ const getIcon = (sort: string, progress: boolean) => {
               리비전 {{ act.change_set.sha.substring(0, 8) }} ({{ act.change_set.repo.slug }})
               {{ cutString(act.change_set.message, 50) }}
             </router-link>
-            <div class="ml-4 pl-3 fst-italic">
+            <div class="ml-4 pl-3">
               {{ act.user.username }}
             </div>
           </span>
