@@ -29,9 +29,9 @@ const getIcon = (sort: string, progress: boolean) => {
       </CAlert>
 
       <CRow v-for="(act, i) in activity" :key="act.pk" class="pl-3">
-        <CCol :class="{ 'ml-5': i > 0 }">
+        <CCol :class="{ 'ml-5': i > 0 && act.sort !== '3' }">
           <v-icon
-            :icon="getIcon(act.sort, !!act.status_log)"
+            :icon="getIcon(act.sort, act.status_log === '종료')"
             size="15"
             :color="act.sort === '1' && act.status_log === '종료' ? 'success' : 'brown-lighten-3'"
             class="mr-1"
