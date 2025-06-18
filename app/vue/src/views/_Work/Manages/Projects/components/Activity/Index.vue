@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
@@ -58,8 +58,7 @@ watch(
   { deep: true },
 )
 
-const filterActivity = (payload: ActLogEntryFilter) => {
-  console.log(payload)
+const setFilter = (payload: ActLogEntryFilter) => {
   if (payload.to_act_date) toDate.value = new Date(payload.to_act_date)
   activityFilter.value.project = payload.project ?? ''
   activityFilter.value.project__search = payload.project__search ?? ''
@@ -93,7 +92,7 @@ onBeforeMount(async () => {
       <AsideController
         :to-date="toDate"
         :has-subs="!!issueProject?.sub_projects?.length"
-        @filter-activity="filterActivity"
+        @set-filter="setFilter"
       />
     </template>
   </ContentBody>
