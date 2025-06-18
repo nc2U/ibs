@@ -4,6 +4,7 @@ import { reactive, computed, inject, onBeforeMount, type ComputedRef, nextTick, 
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { dateFormat } from '@/utils/baseMixins'
+import type { User } from '@/store/types/accounts.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import DatePicker from '@/components/DatePicker/index.vue'
@@ -34,13 +35,13 @@ const form = reactive<ActLogEntryFilter & { subProjects: boolean }>({
 })
 
 watch(form, nVal => {
-  if (nVal.sort?.length === 0) form.sort = ['1', '2']
+  if ((nVal.sort as string[]).length === 0) form.sort = ['1', '2'] as typeof form.sort
 })
 
 const syncComment = () => {
   nextTick(() => {
-    if (form.sort?.includes('1')) form.sort.push('2')
-    else form.sort = form.sort?.filter(item => item !== '2')
+    if ((form.sort as any[])?.includes('1')) (form.sort as any[]).push('2')
+    else form.sort = (form.sort as any[])?.filter(item => item !== '2')
   })
 }
 
@@ -75,7 +76,7 @@ const filterActivity = () => {
   form.to_act_date = dateFormat(toDate)
   form.from_act_date = dateFormat(new Date(toDate.getTime() - 9 * 24 * 60 * 60 * 1000))
 
-  const cookieSort = form.sort ? form.sort?.sort().join('-') : ''
+  const cookieSort = form.sort ? (form.sort as any[])?.sort().join('-') : ''
 
   if (cookieSort) Cookies.set('cookieSort', cookieSort)
   else Cookies.remove('cookieSort')
@@ -85,7 +86,7 @@ const filterActivity = () => {
 
 onBeforeMount(() => {
   accStore.fetchUsersList()
-  const cookieSort = Cookies.get('cookieSort')?.split('-') as any[]
+  const cookieSort = (Cookies.get('cookieSort') as string)?.split('-') as any[]
   if (cookieSort?.length) form.sort = cookieSort
   if (props.toDate) form.to_act_date = dateFormat(props.toDate)
   if (route.query.user) {
@@ -115,7 +116,7 @@ onBeforeMount(() => {
     <CCol class="col-xxl-5">
       <CFormSelect v-model="form.user" id="log-user" size="sm">
         <option value="">---------</option>
-        <option :value="userInfo?.pk">&lt;&lt; 나 &gt;&gt;</option>
+        <option :value="(userInfo as User)?.pk">&lt;&lt; 나 &gt;&gt;</option>
         <option v-for="user in getUsers" :value="user.value" :key="user.value">
           {{ user.label }}
         </option>
@@ -130,7 +131,7 @@ onBeforeMount(() => {
         value="1"
         label="업무"
         id="issue-filter"
-        :disabled="form.sort?.length === 2 && form.sort[0] === '1'"
+        :disabled="(form.sort as any[])?.length === 2 && (form.sort as any[])[0] === '1'"
         @change="syncComment"
       />
       <CFormCheck v-model="form.sort" value="3" label="변경묶음" id="changeset-filter" />
