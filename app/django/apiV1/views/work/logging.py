@@ -193,7 +193,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                 'sha': c['commit_hash'],
                 'message': c['message'],
             },
-            'act_date': c['date'],  # datetime.fromtimestamp(c['date']).date(),
+            'act_date': c['date'].date(),  # datetime.fromtimestamp(c['date']).date(),
             'timestamp': c['date'],
             'user': {'pk': 0, 'username': c['author']},
         } for c in commits)
