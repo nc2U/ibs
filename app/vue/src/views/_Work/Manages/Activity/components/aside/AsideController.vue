@@ -94,8 +94,8 @@ onBeforeMount(() => {
     // toDate.value = new Date(from.getTime() + 9 * 24 * 60 * 60 * 1000)
     // activityFilter.value.from_act_date = route.query.from as string
     // activityFilter.value.user = route.query.user as string
-    // filterActivity(activityFilter.value)
   }
+  filterActivity()
 })
 </script>
 
@@ -114,7 +114,7 @@ onBeforeMount(() => {
     <CFormLabel for="log-user" class="col-sm-4 col-form-label">사용자</CFormLabel>
     <CCol class="col-xxl-5">
       <CFormSelect v-model="form.user" id="log-user" size="sm">
-        <option>---------</option>
+        <option value="">---------</option>
         <option :value="userInfo?.pk">&lt;&lt; 나 &gt;&gt;</option>
         <option v-for="user in getUsers" :value="user.value" :key="user.value">
           {{ user.label }}
