@@ -144,13 +144,13 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         # ActivityLogEntry 조회
         logs = self.filter_queryset(self.get_queryset()).values(
             'pk', 'sort', 'project__id', 'project__name', 'project__slug', 'issue__id',
-            'issue__tracker', 'issue__status__name', 'issue__status__closed', 'issue__subject',
+            'issue__tracker__name', 'issue__status__name', 'issue__status__closed', 'issue__subject',
             'issue__description', 'status_log', 'comment__id', 'comment__content', 'spent_time__id',
             'spent_time__hours', 'act_date', 'timestamp', 'user__id', 'user__username')
 
         # Commit 조회
         commits = self.get_commits().values(
-            'repo__id', 'repo__slug', 'commit_hash', 'message', 'date', 'author')
+            'repo__project__name', 'repo__id', 'repo__slug', 'commit_hash', 'message', 'date', 'author')
 
         # 데이터 병합 (제너레이터)
         from heapq import merge
@@ -164,7 +164,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             },
             'issue': {
                 'pk': log['issue__id'],
-                'tracker': log['issue__tracker'],
+                'tracker': log['issue__tracker__name'],
                 'status': {'name': log['issue__status__name'], 'closed': log['issue__status__closed']},
                 'subject': log['issue__subject'],
                 'description': log['issue__description'],
@@ -183,7 +183,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         commit_iter = ({
             'pk': 0,
             'sort': '3',
-            'project': None,
+            'project': {'name': c['repo__project__name']},
             'issue': None,
             'status_log': None,  # c['message'][:30],
             'comment': None,
