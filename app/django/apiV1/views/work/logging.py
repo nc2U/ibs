@@ -1,4 +1,4 @@
-from datetime import datetime
+from heapq import merge
 
 from django.core.cache import cache
 from django.db import connection
@@ -8,7 +8,6 @@ from rest_framework import viewsets
 
 from apiV1.pagination import *
 from apiV1.permission import *
-from apiV1.serializers.work import CommitSerializer
 from apiV1.serializers.work.logging import *
 from work.models import IssueProject, Commit
 
@@ -153,7 +152,6 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'repo__project__name', 'repo__id', 'repo__slug', 'commit_hash', 'message', 'date', 'author')
 
         # 데이터 병합 (제너레이터)
-        from heapq import merge
         log_iter = ({
             'pk': log['pk'],
             'sort': log['sort'],

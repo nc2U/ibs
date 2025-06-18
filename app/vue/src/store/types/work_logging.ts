@@ -6,7 +6,6 @@ export interface ActLogEntry {
   project: SimpleProject | null
   issue: {
     pk: number
-    project: SimpleProject
     tracker: string
     status: { pk: number; name: string; closed: boolean }
     subject: string
@@ -27,10 +26,7 @@ export interface ActLogEntry {
   // message: string
   act_date: string
   timestamp: string
-  user: {
-    pk: number
-    username: string
-  }
+  user: { pk: number; username: string }
 }
 
 export interface ActLogEntryFilter {
