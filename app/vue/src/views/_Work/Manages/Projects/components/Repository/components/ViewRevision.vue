@@ -15,7 +15,7 @@ const tabKey = ref(1)
 
 const route = useRoute()
 const repo = computed(() => Number(route.params.repoId) || 1)
-const sha = computed(() => route.params.sha ?? commit.value?.commit_hash)
+const sha = computed(() => route.params.sha)
 
 const gitStore = useGitRepo()
 const commit = computed<Commit | null>(() => gitStore.commit)
@@ -90,8 +90,6 @@ onBeforeMount(async () => {
   </CRow>
 
   <v-divider class="mt-1" />
-
-  repo : {{ repo }} :---: sha : {{ sha }}
 
   <CRow class="pl-4">
     <CCol>
