@@ -26,7 +26,7 @@ watch(
     if (!nVal?.diff) tabKey.value = 1
   },
 )
-const changedFile = computed<ChangedFile | null>(() => gitStore.changedFile)
+const changedFile = computed(() => gitStore.changedFile)
 
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
