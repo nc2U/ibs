@@ -303,7 +303,6 @@ onBeforeMount(async () => {
         @get-commit="revisionView"
         @into-path="intoPath"
         @file-view="viewFile"
-        @goto-trees="router.push({ name: '(저장소)' })"
       />
     </template>
 
