@@ -169,7 +169,7 @@ const workProject = {
               name: '(저장소) - 리비전 보기',
             },
             {
-              path: ':repoId/branch/:branch/show/:path',
+              path: ':repoId/sha/:sha/:pathMatch(.*)*',
               name: '(저장소) - 파일 보기',
             },
             {
