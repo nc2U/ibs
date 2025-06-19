@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { Commit } from '@/store/types/work_git_repo.ts'
+import type { Commit, Repository } from '@/store/types/work_git_repo.ts'
 import { btnSecondary, TableSecondary } from '@/utils/cssMixins.ts'
 import { useRouter } from 'vue-router'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
@@ -30,7 +30,6 @@ const emit = defineEmits([
   'head-set',
   'base-set',
   'get-list-sort',
-  'revision-view',
   'get-commit',
   'get-diff',
   'page-select',
@@ -68,6 +67,7 @@ const getDiff = () => {
 }
 
 const gitStore = useGitRepo()
+const repo = computed(() => (gitStore.repository as Repository)?.pk)
 const commitCount = computed(() => gitStore.commitCount)
 const commitPages = (page: number) => gitStore.commitPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
@@ -79,14 +79,6 @@ const viewRevision = (commit: Commit) => {
 }
 
 const router = useRouter()
-// const issueStore = useIssue()
-// const goToIssue = async (pk: number) => {
-//   const issue = await issueStore.fetchIssue(pk)
-//   await router.push({
-//     name: '(업무) - 보기',
-//     params: { projId: issue?.project as string, issueId: issue?.pk as number },
-//   })
-// }
 
 onBeforeMount(() => {
   if (props.commitList.length > 1) {
