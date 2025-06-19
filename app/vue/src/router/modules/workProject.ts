@@ -173,7 +173,7 @@ const workProject = {
                 },
                 {
                   path: 'branch/:branch/show/:path',
-                  name: '(저장소) - 파일 보기', // type이 'tree' or 'blob' 으로 트리 or 파일 보기 분기
+                  name: '(저장소) - 파일 보기',
                 },
                 {
                   path: 'diff/:base/:head',
