@@ -19,7 +19,6 @@ const emit = defineEmits([
   'pre-path',
   'into-path',
   'file-view',
-  'revision-view',
   'change-revision',
   'set-up-to',
 ])
@@ -89,7 +88,6 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
             :key="node.sha"
             @into-path="emit('into-path', $event)"
             @file-view="emit('file-view', $event)"
-            @revision-view="emit('revision-view', $event)"
           />
         </CTableBody>
       </CTable>

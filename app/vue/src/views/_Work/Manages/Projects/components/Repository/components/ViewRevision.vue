@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Changed, ChangedFile, Commit, DiffApi } from '@/store/types/work_git_repo.ts'
+import { useRoute } from 'vue-router'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { btnLight, btnSecondary } from '@/utils/cssMixins.ts'
@@ -8,26 +9,16 @@ import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
 
-const props = defineProps({
-  repo: { type: Number, required: true },
-})
-
-const emit = defineEmits(['goto-back', 'get-diff', 'get-commit', 'into-path', 'file-view'])
+const emit = defineEmits(['get-diff', 'into-path', 'file-view'])
 
 const tabKey = ref(1)
 
+const route = useRoute()
+const repo = computed(() => Number(route.params.repoId) || 1)
+const sha = computed(() => route.params.sha)
+
 const gitStore = useGitRepo()
 const commit = computed<Commit | null>(() => gitStore.commit)
-watch(
-  () => commit.value,
-  async newVal => {
-    if (newVal) {
-      const diff_hash = `?base=${newVal.parents[0]}&head=${newVal.commit_hash}`
-      await fetchGitDiff(props.repo, diff_hash)
-      await fetchChangedFiles(props.repo as number, newVal.commit_hash)
-    }
-  },
-)
 const gitDiff = computed<DiffApi | null>(() => gitStore.gitDiff)
 watch(
   () => gitDiff.value,
@@ -37,6 +28,7 @@ watch(
 )
 const changedFile = computed<ChangedFile | null>(() => gitStore.changedFile)
 
+const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
 const fetchChangedFiles = (repo: number, sha: string) => gitStore.fetchChangedFiles(repo, sha)
 
@@ -51,11 +43,30 @@ const tabReset = () => {
   tabKey.value = 1
 }
 
+watch(
+  () => sha.value,
+  async newVal => {
+    if (newVal) await fetchCommitBySha(newVal as string)
+  },
+)
+
+watch(
+  () => commit.value,
+  async newVal => {
+    if (newVal) {
+      const diff_hash = `?base=${newVal.parents[0]}&head=${newVal.commit_hash}`
+      await fetchGitDiff(repo.value, diff_hash)
+      await fetchChangedFiles(repo.value as number, newVal.commit_hash)
+    }
+  },
+)
+
 onBeforeMount(async () => {
+  await fetchCommitBySha(sha.value as string)
   if (commit.value) {
     const diff_hash = `?base=${commit.value.parents[0]}&head=${commit.value.commit_hash}`
-    await fetchGitDiff(props.repo, diff_hash)
-    await fetchChangedFiles(props.repo as number, commit.value.commit_hash)
+    await fetchGitDiff(repo.value, diff_hash)
+    await fetchChangedFiles(repo.value as number, commit.value.commit_hash)
   }
 })
 </script>
@@ -72,8 +83,9 @@ onBeforeMount(async () => {
       </span>
     </CCol>
 
-    <CCol class="mb-2">
-      <RevisionControl :commit="commit as Commit" @get-commit="emit('get-commit', $event)" />
+    <CCol v-if="commit" class="mb-2">
+      <RevisionControl :commit="commit as Commit" />
+      <!--      <RevisionControl :commit="commit as Commit" @get-commit="emit('get-commit', $event)" />-->
     </CCol>
   </CRow>
 
@@ -86,7 +98,12 @@ onBeforeMount(async () => {
         <li v-if="commit?.parents.length">
           <b>상위 </b>
           <span v-for="(hash, i) in commit.parents" :key="hash">
-            <router-link to="" @click="emit('get-commit', hash)">
+            <router-link
+              :to="{
+                name: '(저장소) - 리비전 보기',
+                params: { projId: route.params.projId, repoId: repo, sha: hash },
+              }"
+            >
               {{ hash.substring(0, 8) }}
             </router-link>
             <span v-if="i < commit.parents.length - 1">, </span>
@@ -95,7 +112,12 @@ onBeforeMount(async () => {
         <li v-if="commit?.children.length">
           <b>하위 </b>
           <span v-for="(hash, i) in commit.children" :key="hash">
-            <router-link to="" @click="emit('get-commit', hash)">
+            <router-link
+              :to="{
+                name: '(저장소) - 리비전 보기',
+                params: { projId: route.params.projId, repoId: repo, sha: hash },
+              }"
+            >
               {{ hash.substring(0, 8) }}
             </router-link>
             <span v-if="i < commit.children.length - 1">, </span>
@@ -152,9 +174,9 @@ onBeforeMount(async () => {
     v-if="tabKey === 2"
     variant="outlined"
     :color="btnSecondary"
-    @click="emit('goto-back')"
     size="small"
     class="mb-3"
+    @click="$router.push({ name: '(저장소)' })"
   >
     목록으로
   </v-btn>
@@ -171,9 +193,9 @@ onBeforeMount(async () => {
   <v-btn
     variant="outlined"
     :color="btnSecondary"
-    @click="emit('goto-back')"
     size="small"
     class="my-3"
+    @click="$router.push({ name: '(저장소)' })"
   >
     목록으로
   </v-btn>

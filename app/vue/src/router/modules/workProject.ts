@@ -165,21 +165,16 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Repository/Index.vue'),
           children: [
             {
-              path: ':repoId', // repoId: repo.pk
-              children: [
-                {
-                  path: 'sha/:sha',
-                  name: '(저장소) - 리비전 보기',
-                },
-                {
-                  path: 'branch/:branch/show/:path',
-                  name: '(저장소) - 파일 보기',
-                },
-                {
-                  path: 'diff/:base/:head',
-                  name: '(저장소) - 차이점 보기',
-                },
-              ],
+              path: ':repoId/sha/:sha',
+              name: '(저장소) - 리비전 보기',
+            },
+            {
+              path: ':repoId/branch/:branch/show/:path',
+              name: '(저장소) - 파일 보기',
+            },
+            {
+              path: ':repoId/diff/:base/:head',
+              name: '(저장소) - 차이점 보기',
             },
           ],
         },

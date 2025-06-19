@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -17,7 +17,7 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const headerView = ref<'tree' | 'file' | 'revision'>('tree')
+// const headerView = ref<'tree' | 'file' | 'revision'>('tree')
 
 const cFilter = ref({
   repo: 1 as number,
@@ -112,7 +112,7 @@ const currPath = ref('')
 const subTree = ref(null) // 세부 경로 진입 시 루트 트리 대체 트리
 
 const intoRoot = () => {
-  headerView.value = 'tree'
+  router.push({ name: '(저장소)' })
   currPath.value = ''
   subTree.value = null
 }
@@ -129,7 +129,7 @@ const prePath = async (path: string) => {
 }
 
 const intoPath = async (node: { path: string; sha: string }) => {
-  headerView.value = 'tree'
+  router.push({ name: '(저장소)' })
   const exists = shaMap.value.some(item => item.path === node.path && item.sha === node.sha)
   if (!exists) shaMap.value?.push(node)
   const { sha, path } = node
@@ -145,7 +145,8 @@ const intoPath = async (node: { path: string; sha: string }) => {
 const fileData = ref<any | null>(null)
 const toggleFileView = (payload: any) => {
   fileData.value = payload
-  headerView.value = 'file'
+  // headerView.value = 'file'
+  // router.push({ name: '(저장소) - 파일 보기', params: { branch: 'master', path: '/' } })
 }
 
 const viewFile = async (node: { path: string; sha: string }) => {
@@ -161,7 +162,8 @@ const viewFile = async (node: { path: string; sha: string }) => {
 // revision view
 const getRevision = () => {
   viewPageSort.value = 'revisions'
-  headerView.value = 'revision'
+  // headerView.value = 'revision'
+  // router.push({ name: '(저장소) - 리비전 보기', params: { sha: 'asdf' } })
 }
 
 const revisionView = async (hash: string) => {
@@ -172,11 +174,11 @@ const revisionView = async (hash: string) => {
 // revisons & diff view
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
-const route = useRoute()
-watch(route, nVal => {
-  headerView.value = 'tree'
-  viewPageSort.value = 'revisions'
-})
+const [route, router] = [useRoute(), useRouter()]
+// watch(route, nVal => {
+//   router.push({ name: '(저장소)' })
+//   viewPageSort.value = 'revisions'
+// })
 
 const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
@@ -241,7 +243,7 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      <template v-if="headerView === 'tree'">
+      <template v-if="route.name === '(저장소)'">
         <BranchTree
           :repo="repo as Repository"
           :curr-path="currPath"
@@ -253,7 +255,6 @@ onBeforeMount(async () => {
           @pre-path="prePath"
           @into-path="intoPath"
           @file-view="viewFile"
-          @revision-view="getRevision"
           @change-revision="changeRevision"
           @set-up-to="cFilter.up_to = $event"
         />
@@ -284,20 +285,19 @@ onBeforeMount(async () => {
       </template>
 
       <ViewFile
-        v-else-if="headerView === 'file'"
+        v-else-if="route.name === '(저장소) - 파일 보기'"
         :repo-name="repo?.slug as string"
         :curr-path="currPath"
         :curr-branch="curr_branch"
         :file-data="fileData"
         @into-root="intoRoot"
         @into-path="intoPath"
-        @goto-trees="headerView = 'tree'"
+        @goto-trees="router.push({ name: '(저장소)' })"
       />
 
       <ViewRevision
-        v-else-if="headerView === 'revision'"
+        v-else-if="route.name === '(저장소) - 리비전 보기'"
         :repo="repo?.pk as number"
-        @goto-back="headerView = 'tree'"
         @get-diff="getDiff"
         @get-commit="revisionView"
         @into-path="intoPath"
