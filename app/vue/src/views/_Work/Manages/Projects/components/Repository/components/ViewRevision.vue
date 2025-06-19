@@ -12,7 +12,7 @@ const props = defineProps({
   repo: { type: Number, required: true },
 })
 
-const emit = defineEmits(['goto-back', 'get-diff', 'get-commit', 'into-path', 'file-view'])
+const emit = defineEmits(['goto-trees', 'get-diff', 'get-commit', 'into-path', 'file-view'])
 
 const tabKey = ref(1)
 
@@ -152,7 +152,7 @@ onBeforeMount(async () => {
     v-if="tabKey === 2"
     variant="outlined"
     :color="btnSecondary"
-    @click="emit('goto-back')"
+    @click="emit('goto-trees')"
     size="small"
     class="mb-3"
   >
@@ -171,7 +171,7 @@ onBeforeMount(async () => {
   <v-btn
     variant="outlined"
     :color="btnSecondary"
-    @click="emit('goto-back')"
+    @click="emit('goto-trees')"
     size="small"
     class="my-3"
   >
