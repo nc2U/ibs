@@ -165,7 +165,7 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Repository/Index.vue'),
           children: [
             {
-              path: ':repo/revisions', // repo: repo.slug
+              path: ':repoId/revisions', // repoId: repo.pk
               name: '(저장소) - 리비전-모두', // 모든 리비전 목록 보기
               children: [
                 {
@@ -179,7 +179,7 @@ const workProject = {
               ],
             },
             {
-              path: ':repo/changes',
+              path: ':repoId/changes',
               name: '(저장소) - 리비전-최근',
             },
           ],

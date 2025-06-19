@@ -15,9 +15,8 @@ const sideNavCAll = () => cBody.value.toggle()
 const route = useRoute()
 
 const routeName = computed(() => route.name as string)
-const companyInject = inject<ComputedRef<Company>>('company')
-const company = computed(() => companyInject?.value.pk ?? undefined)
-const comName = computed(() => companyInject?.value?.name)
+const company = inject<ComputedRef<Company>>('company')
+const comName = computed(() => company?.value?.name)
 
 const headerTitle = computed(() =>
   routeName.value.includes('프로젝트') ? comName.value : issueProject.value?.name,
@@ -57,7 +56,6 @@ const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject as IssueProject)
 provide('iProject', issueProject)
 const issueProjects = computed(() => workStore.issueProjects)
-const allProjects = computed(() => workStore.AllIssueProjects)
 
 const modules = computed(() => issueProject.value?.module)
 

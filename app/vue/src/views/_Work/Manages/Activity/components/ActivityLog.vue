@@ -37,7 +37,7 @@ const getIcon = (sort: string, progress: boolean) => {
             class="mr-1"
           />
           <span class="form-text underline mr-2">{{ timeFormat(act.timestamp, true) }}</span>
-          
+
           <span v-if="!$route.params.projId || act.project?.slug !== $route.params.projId">
             {{ act.project?.name }} -
           </span>
@@ -91,7 +91,16 @@ const getIcon = (sort: string, progress: boolean) => {
           </span>
 
           <span v-if="act.sort === '3'">
-            <router-link to="">
+            <router-link
+              :to="{
+                name: '(저장소) - 리비전 보기',
+                params: {
+                  projId: act.project.slug,
+                  repoId: act.change_set.repo.pk,
+                  sha: act.change_set.sha,
+                },
+              }"
+            >
               리비전 {{ act.change_set.sha.substring(0, 8) }} ({{ act.change_set.repo.slug }})
               {{ cutString(act.change_set.message, 50) }}
             </router-link>
