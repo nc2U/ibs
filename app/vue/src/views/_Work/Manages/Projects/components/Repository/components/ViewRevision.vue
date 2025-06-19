@@ -1,6 +1,12 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import type { Changed, ChangedFile, Commit, DiffApi } from '@/store/types/work_git_repo.ts'
+import type {
+  Changed,
+  ChangedFile,
+  Commit,
+  DiffApi,
+  Repository,
+} from '@/store/types/work_git_repo.ts'
 import { useRoute } from 'vue-router'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
@@ -12,10 +18,6 @@ import Diff from './atomics/Diff.vue'
 const emit = defineEmits(['get-diff', 'into-path', 'file-view'])
 
 const tabKey = ref(1)
-
-const route = useRoute()
-const sha = computed(() => route.params.sha)
-const repo = computed(() => Number(route.params.repoId) || 1)
 
 const gitStore = useGitRepo()
 const commit = computed<Commit | null>(() => gitStore.commit)
@@ -31,6 +33,10 @@ const changedFile = computed(() => gitStore.changedFile)
 const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchGitDiff = (repo, diff_hash: string) => gitStore.fetchGitDiff(repo, diff_hash)
 const fetchChangedFiles = (repo: number, sha: string) => gitStore.fetchChangedFiles(repo, sha)
+
+const route = useRoute()
+const sha = computed(() => route.params.sha)
+const repo = computed(() => Number(route.params.repoId) ?? (gitStore.repository as Repository)?.pk)
 
 const diffIndex = ref<number | null>(null)
 const partialDiffView = (n: number) => {
@@ -163,8 +169,8 @@ onBeforeMount(async () => {
 
   <PathTree
     v-if="tabKey === 1"
-    :sha="changedFile?.sha as string"
-    :change-files="changedFile?.changed as Changed[]"
+    :sha="(changedFile as ChangedFile)?.sha as string"
+    :change-files="(changedFile as ChangedFile)?.changed as Changed[]"
     @into-path="emit('into-path', $event)"
     @file-view="emit('file-view', $event)"
     @diff-view="partialDiffView"
