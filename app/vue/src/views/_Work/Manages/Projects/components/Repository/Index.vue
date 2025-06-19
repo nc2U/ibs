@@ -175,10 +175,10 @@ const revisionView = async (hash: string) => {
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
 const [route, router] = [useRoute(), useRouter()]
-watch(route, nVal => {
-  router.push({ name: '(저장소)' })
-  viewPageSort.value = 'revisions'
-})
+// watch(route, nVal => {
+//   router.push({ name: '(저장소)' })
+//   viewPageSort.value = 'revisions'
+// })
 
 const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
