@@ -17,8 +17,6 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-// const headerView = ref<'tree' | 'file' | 'revision'>('tree')
-
 const cFilter = ref({
   repo: 1 as number,
   branch: '',
@@ -76,7 +74,6 @@ const gitDiff = computed<any>(() => gitStore.gitDiff)
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
 const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
   gitStore.fetchGitDiff(pk, diff_hash, full)
-const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchRootTree = (
@@ -129,7 +126,7 @@ const prePath = async (path: string) => {
 }
 
 const intoPath = async (node: { path: string; sha: string }) => {
-  router.push({ name: '(저장소)' })
+  await router.push({ name: '(저장소)' })
   const exists = shaMap.value.some(item => item.path === node.path && item.sha === node.sha)
   if (!exists) shaMap.value?.push(node)
   const { sha, path } = node
@@ -159,26 +156,10 @@ const viewFile = async (node: { path: string; sha: string }) => {
   toggleFileView(fileData)
 }
 
-// revision view
-const getRevision = () => {
-  viewPageSort.value = 'revisions'
-  // headerView.value = 'revision'
-  // router.push({ name: '(저장소) - 리비전 보기', params: { sha: 'asdf' } })
-}
-
-const revisionView = async (hash: string) => {
-  await fetchCommitBySha(hash)
-  getRevision()
-}
-
 // revisons & diff view
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
 const [route, router] = [useRoute(), useRouter()]
-// watch(route, nVal => {
-//   router.push({ name: '(저장소)' })
-//   viewPageSort.value = 'revisions'
-// })
 
 const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
@@ -272,7 +253,6 @@ onBeforeMount(async () => {
           @get-commit="getCommit"
           @get-diff="getDiff"
           @get-list-sort="changeListSort"
-          @revision-view="getRevision"
           @page-select="pageSelect"
         />
 
@@ -299,7 +279,6 @@ onBeforeMount(async () => {
         v-else-if="route.name === '(저장소) - 리비전 보기'"
         :repo="repo?.pk as number"
         @get-diff="getDiff"
-        @get-commit="revisionView"
         @into-path="intoPath"
         @file-view="viewFile"
       />

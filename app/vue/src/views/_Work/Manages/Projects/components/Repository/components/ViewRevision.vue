@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import type { Changed, ChangedFile, Commit, DiffApi } from '@/store/types/work_git_repo.ts'
 import { useRoute } from 'vue-router'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
-import { btnLight, btnSecondary } from '@/utils/cssMixins.ts'
+import { btnSecondary } from '@/utils/cssMixins.ts'
 import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
@@ -14,8 +14,8 @@ const emit = defineEmits(['get-diff', 'into-path', 'file-view'])
 const tabKey = ref(1)
 
 const route = useRoute()
-const repo = computed(() => Number(route.params.repoId) || 1)
 const sha = computed(() => route.params.sha)
+const repo = computed(() => Number(route.params.repoId) || 1)
 
 const gitStore = useGitRepo()
 const commit = computed<Commit | null>(() => gitStore.commit)
@@ -62,7 +62,8 @@ watch(
 )
 
 onBeforeMount(async () => {
-  await fetchCommitBySha(sha.value as string)
+  if (!commit.value || commit.value.commit_hash !== sha.value)
+    await fetchCommitBySha(sha.value as string)
   if (commit.value) {
     const diff_hash = `?base=${commit.value.parents[0]}&head=${commit.value.commit_hash}`
     await fetchGitDiff(repo.value, diff_hash)
@@ -84,8 +85,7 @@ onBeforeMount(async () => {
     </CCol>
 
     <CCol v-if="commit" class="mb-2">
-      <RevisionControl :commit="commit as Commit" />
-      <!--      <RevisionControl :commit="commit as Commit" @get-commit="emit('get-commit', $event)" />-->
+      <RevisionControl :commit="commit as Commit" @get-commit="fetchCommitBySha" />
     </CCol>
   </CRow>
 
