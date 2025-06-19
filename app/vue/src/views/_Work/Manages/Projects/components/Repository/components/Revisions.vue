@@ -75,7 +75,10 @@ const assignCommit = (commit: Commit) => gitStore.assignCommit(commit)
 
 const viewRevision = (commit: Commit) => {
   assignCommit(commit)
-  emit('revision-view')
+  router.push({
+    name: '(저장소) - 리비전 보기',
+    params: { repoId: repo.value, sha: commit.commit_hash },
+  })
 }
 
 const router = useRouter()
