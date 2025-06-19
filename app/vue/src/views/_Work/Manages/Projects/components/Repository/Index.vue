@@ -241,22 +241,47 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      <BranchTree
-        v-if="headerView === 'tree'"
-        :repo="repo as Repository"
-        :curr-path="currPath"
-        :branches="branches"
-        :tags="tags"
-        :curr-branch="curr_branch"
-        :branch-tree="currentTree"
-        @into-root="intoRoot"
-        @pre-path="prePath"
-        @into-path="intoPath"
-        @file-view="viewFile"
-        @revision-view="getRevision"
-        @change-revision="changeRevision"
-        @set-up-to="cFilter.up_to = $event"
-      />
+      <template v-if="headerView === 'tree'">
+        <BranchTree
+          :repo="repo as Repository"
+          :curr-path="currPath"
+          :branches="branches"
+          :tags="tags"
+          :curr-branch="curr_branch"
+          :branch-tree="currentTree"
+          @into-root="intoRoot"
+          @pre-path="prePath"
+          @into-path="intoPath"
+          @file-view="viewFile"
+          @revision-view="getRevision"
+          @change-revision="changeRevision"
+          @set-up-to="cFilter.up_to = $event"
+        />
+
+        <Revisions
+          v-if="viewPageSort === 'revisions'"
+          :page="cFilter.page"
+          :limit="cFilter.limit"
+          :commit-list="commitList"
+          :get-list-sort="getListSort"
+          :set-head-id="String(headId ?? '')"
+          :set-base-id="String(baseId ?? '')"
+          @head-set="headSet"
+          @base-set="baseSet"
+          @get-commit="getCommit"
+          @get-diff="getDiff"
+          @get-list-sort="changeListSort"
+          @revision-view="getRevision"
+          @page-select="pageSelect"
+        />
+
+        <ViewDiff
+          v-if="viewPageSort === 'diff'"
+          :git-diff="gitDiff"
+          @get-diff="getDiff"
+          @get-back="getBack"
+        />
+      </template>
 
       <ViewFile
         v-else-if="headerView === 'file'"
@@ -277,30 +302,6 @@ onBeforeMount(async () => {
         @get-commit="revisionView"
         @into-path="intoPath"
         @file-view="viewFile"
-      />
-
-      <Revisions
-        v-if="viewPageSort === 'revisions' && headerView !== 'revision'"
-        :page="cFilter.page"
-        :limit="cFilter.limit"
-        :commit-list="commitList"
-        :get-list-sort="getListSort"
-        :set-head-id="String(headId ?? '')"
-        :set-base-id="String(baseId ?? '')"
-        @head-set="headSet"
-        @base-set="baseSet"
-        @get-commit="getCommit"
-        @get-diff="getDiff"
-        @get-list-sort="changeListSort"
-        @revision-view="getRevision"
-        @page-select="pageSelect"
-      />
-
-      <ViewDiff
-        v-if="viewPageSort === 'diff'"
-        :git-diff="gitDiff"
-        @get-diff="getDiff"
-        @get-back="getBack"
       />
     </template>
 
