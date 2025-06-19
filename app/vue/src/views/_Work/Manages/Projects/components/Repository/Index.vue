@@ -255,7 +255,6 @@ onBeforeMount(async () => {
           @pre-path="prePath"
           @into-path="intoPath"
           @file-view="viewFile"
-          @revision-view="getRevision"
           @change-revision="changeRevision"
           @set-up-to="cFilter.up_to = $event"
         />

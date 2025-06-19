@@ -18,11 +18,8 @@ const nodeFold = ref(false)
 const subTrees = ref([])
 
 const gitStore = useGitRepo()
-const fetchCommitBySha = (sha: string) => gitStore.fetchCommitBySha(sha)
 const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
   gitStore.fetchSubTree(payload)
-const fetchFileView = (repo: number, path: string, sha: string) =>
-  gitStore.fetchFileView(repo, path, sha)
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
@@ -45,11 +42,6 @@ const viewFile = async () =>
     path: props.node?.path as string,
     sha: props.node?.commit?.sha as string,
   })
-
-const revisionView = async () => {
-  await fetchCommitBySha(props.node?.commit?.sha as string)
-  emit('revision-view')
-}
 </script>
 
 <template>
@@ -84,7 +76,12 @@ const revisionView = async () => {
       {{ humanizeFileSize((node as any)?.size) }}
     </CTableDataCell>
     <CTableDataCell class="text-center">
-      <router-link to="" @click="revisionView">
+      <router-link
+        :to="{
+          name: '(저장소) - 리비전 보기',
+          params: { repoId: repo, sha: node?.commit?.sha },
+        }"
+      >
         {{ cutString(node.commit?.sha, 8, '') }}
       </router-link>
     </CTableDataCell>
@@ -104,7 +101,6 @@ const revisionView = async () => {
       :key="i"
       @into-path="emit('into-path', $event)"
       @file-view="emit('file-view', $event)"
-      @revision-view="emit('revision-view', $event)"
     />
   </template>
 </template>
