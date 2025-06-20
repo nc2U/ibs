@@ -145,6 +145,7 @@ export const useGitRepo = defineStore('git_repo', () => {
   const curr_refs = ref<string>('')
   const branch_tree = ref<any[]>([])
 
+  const setCurrRefs = (refs: string) => (curr_refs.value = refs)
   const fetchRootTree = async (
     repo: number,
     payload: { branch?: string; tag?: string; sha?: string },
@@ -158,7 +159,6 @@ export const useGitRepo = defineStore('git_repo', () => {
 
     try {
       const res = await api.get(`/root-tree/?${query}`)
-      curr_refs.value = res.data.refs.name
       branch_tree.value = res.data.trees
       return res.data.refs
     } catch (err: any) {
@@ -181,7 +181,6 @@ export const useGitRepo = defineStore('git_repo', () => {
 
     try {
       const { data } = await api.get(`${url}${refsQry}`)
-      curr_refs.value = data.refs.name
       branch_tree.value = data.trees
       return data.trees
     } catch (error: any) {
@@ -255,6 +254,7 @@ export const useGitRepo = defineStore('git_repo', () => {
 
     curr_refs,
     branch_tree,
+    setCurrRefs,
     fetchRootTree,
     fetchRefTree,
     fetchFileView,
