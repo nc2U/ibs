@@ -19,14 +19,14 @@ const nodeFold = ref(false)
 const subTrees = ref([])
 
 const gitStore = useGitRepo()
-const fetchRefTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
+const fetchRefTree = (payload: { repo: number; refs: string; path?: string }) =>
   gitStore.fetchRefTree(payload)
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
     subTrees.value = await fetchRefTree({
       repo: props.repo as number,
-      sha: props.node?.commit?.sha as string,
+      refs: props.node?.commit?.sha as string,
       path: props.node?.path as string,
     })
   nodeFold.value = !nodeFold.value

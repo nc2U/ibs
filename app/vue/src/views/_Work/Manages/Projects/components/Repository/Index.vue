@@ -65,7 +65,7 @@ const tags = computed<string[]>(() => gitStore.tags)
 
 const default_branch = computed(() => gitStore.default_branch)
 const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
-const branchRefs = computed(() => gitStore.branch_refs)
+const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
 const currentTree = computed<Tree[]>(() => (subTree.value ? subTree.value : branchTree.value))
 const gitDiff = computed<any>(() => gitStore.gitDiff)
@@ -85,11 +85,11 @@ const changeRevision = async (refs: string) => {
 
   await fetchRefTree({ repo: repo.value?.pk as number, refs })
   if (branchRefs.value) {
-    cFilter.value.branch = branchRefs.value.branches[0]
+    cFilter.value.branch = branchRefs.value?.branches[0] as string
     const params = {
       repo: cFilter.value.repo,
       branch: cFilter.value.branch,
-      up_to: branchRefs.value.commit.sha,
+      up_to: branchRefs.value?.commit.sha,
     }
     await fetchCommitList(params)
   }
@@ -100,10 +100,14 @@ const shaMap = ref<{ path: string; sha: string }[]>([])
 const currPath = ref('')
 const subTree = ref(null) // 세부 경로 진입 시 루트 트리 대체 트리
 
-const intoRoot = () => {
-  router.push({ name: '(저장소)' })
+const intoRoot = async () => {
+  await router.push({ name: '(저장소)' })
   currPath.value = ''
   subTree.value = null
+  await fetchRefTree({
+    repo: cFilter.value.repo,
+    refs: curr_refs.value,
+  })
 }
 
 const prePath = async (path: string) => {
@@ -113,8 +117,8 @@ const prePath = async (path: string) => {
   else
     subTree.value = await fetchRefTree({
       repo: repo.value?.pk as number,
-      path,
       refs: curr_refs.value,
+      path,
     })
 }
 
@@ -122,11 +126,11 @@ const intoPath = async (node: { path: string; sha: string }) => {
   await router.push({ name: '(저장소)' })
   const exists = shaMap.value.some(item => item.path === node.path && item.sha === node.sha)
   if (!exists) shaMap.value?.push(node)
-  const { sha, path } = node
+  const { path } = node
   currPath.value = path
   subTree.value = await fetchRefTree({
     repo: repo.value?.pk as number,
-    sha,
+    refs: curr_refs.value,
     path,
   })
 }
