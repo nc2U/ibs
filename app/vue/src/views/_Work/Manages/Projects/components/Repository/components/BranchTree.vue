@@ -10,11 +10,11 @@ const props = defineProps({
   currPath: { type: String, default: '' },
   branches: { type: Array as PropType<string[]>, default: () => [] },
   tags: { type: Array as PropType<string[]>, default: () => [] },
-  currBranch: { type: String, required: true },
+  currRefs: { type: String, required: true },
   branchTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits(['into-root', 'pre-path', 'into-path', 'change-revision', 'set-up-to'])
+const emit = defineEmits(['into-root', 'pre-path', 'into-path', 'set-up-to', 'change-revision'])
 
 const prePath = (path: string) => {
   const index = currentPath.value.indexOf(path)
@@ -37,16 +37,16 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
             <router-link v-else to="" @click="prePath(path)">{{ path }}</router-link>
           </span>
         </template>
-        @ {{ currBranch }}
+        @ {{ currRefs }}
       </h5>
     </CCol>
     <CCol>
       <BranchControl
-        :curr-branch="currBranch"
+        :curr-refs="currRefs"
         :branches="branches"
         :tags="tags"
-        @change-revision="emit('change-revision', $event)"
         @set-up-to="emit('set-up-to', $event)"
+        @change-revision="emit('change-revision', $event)"
       />
     </CCol>
   </CRow>

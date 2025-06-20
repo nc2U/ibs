@@ -38,6 +38,7 @@ export interface Commit {
 
 export interface BranchInfo {
   name: string
+  branches: string[]
   commit: CommitApi
 }
 

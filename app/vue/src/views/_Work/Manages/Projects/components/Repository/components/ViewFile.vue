@@ -8,7 +8,7 @@ import hljs from 'highlight.js'
 
 const props = defineProps({
   repoName: { type: String, required: true },
-  currBranch: { type: String, required: true },
+  currRefs: { type: String, required: true },
 })
 
 const emit = defineEmits(['into-root', 'into-path', 'goto-trees'])
@@ -96,7 +96,7 @@ onBeforeMount(async () => {
         </span>
         /
         {{ fileData?.name }}
-        @ {{ currBranch }}
+        @ {{ currRefs }}
       </h5>
     </CCol>
   </CRow>

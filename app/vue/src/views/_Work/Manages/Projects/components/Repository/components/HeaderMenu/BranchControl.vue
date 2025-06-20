@@ -1,52 +1,63 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, ref, watch } from 'vue'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 
 const props = defineProps({
-  currBranch: { type: String, required: true },
+  currRefs: { type: String, required: true },
   branches: { type: Array, default: () => [] },
   tags: { type: Array, default: () => [] },
 })
 
 const gitStore = useGitRepo()
+const refs_sort = computed(() => gitStore.refs_sort)
+const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
 const default_branch = computed(() => gitStore.default_branch)
+const setRefsSort = (sort: 'branch' | 'tag' | 'sha') => gitStore.setRefsSort(sort)
+const setCurrRefs = (refs: string) => gitStore.setCurrRefs(refs)
 
-const emit = defineEmits(['change-revision', 'set-up-to'])
+const emit = defineEmits(['set-up-to', 'change-revision'])
 
 const branch = ref('')
+watch(branch, nVal => {
+  if (nVal) {
+    tag.value = ''
+    sha.value = ''
+    setRefsSort('branch')
+  }
+})
 const tag = ref('')
+watch(tag, nVal => {
+  if (nVal) {
+    branch.value = ''
+    sha.value = ''
+    setRefsSort('tag')
+  }
+})
 const sha = ref('')
-
-const changeBranch = (e: Event) => {
-  tag.value = ''
-  sha.value = ''
-  if ((e.target as any).value) {
-    emit('set-up-to', '')
-    emit('change-revision', { branch: (e.target as any).value })
+watch(sha, nVal => {
+  if (nVal) {
+    branch.value = ''
+    tag.value = ''
+    setRefsSort('sha')
   }
-}
+})
 
-const changeTag = (e: Event) => {
-  branch.value = ''
-  sha.value = ''
+const changeRefs = (e: Event) => {
   if ((e.target as any).value) {
-    emit('set-up-to', '')
-    emit('change-revision', { tag: (e.target as any).value })
-  }
-}
-
-const changeCommit = (e: Event) => {
-  branch.value = ''
-  tag.value = ''
-  if ((e.target as any).value) {
-    emit('set-up-to', (e.target as any).value)
-    emit('change-revision', { sha: (e.target as any).value })
+    setCurrRefs((e.target as any).value)
+    nextTick(() => {
+      emit('set-up-to', sha.value)
+      emit('change-revision', (e.target as any).value)
+    })
   }
 }
 
 onBeforeMount(() => {
-  if (props.currBranch) branch.value = props.currBranch
-  else if (default_branch.value) branch.value = default_branch.value
+  if (curr_refs.value) {
+    if (refs_sort.value === 'branch') branch.value = curr_refs.value
+    if (refs_sort.value === 'tag') tag.value = curr_refs.value
+    if (refs_sort.value === 'sha') sha.value = curr_refs.value
+  }
 })
 </script>
 
@@ -76,12 +87,12 @@ onBeforeMount(() => {
         </CDropdownMenu>
       </CDropdown>
       <CFormLabel> | 브랜치 :</CFormLabel>
-      <CFormSelect v-model="branch" style="width: 100px" size="sm" @change="changeBranch">
+      <CFormSelect v-model="branch" style="width: 100px" size="sm" @change="changeRefs">
         <option value="">---------</option>
         <option v-for="(branch, i) in branches" :key="i">{{ branch }}</option>
       </CFormSelect>
       <CFormLabel> | 태그 :</CFormLabel>
-      <CFormSelect v-model="tag" style="width: 100px" size="sm" @change="changeTag">
+      <CFormSelect v-model="tag" style="width: 100px" size="sm" @change="changeRefs">
         <option value="">---------</option>
         <option v-for="(tag, i) in tags" :key="i">{{ tag }}</option>
       </CFormSelect>
@@ -92,7 +103,7 @@ onBeforeMount(() => {
         style="width: 100px"
         size="sm"
         placeholder="sha"
-        @keydown.enter="changeCommit"
+        @keydown.enter="changeRefs"
       />
     </CCol>
   </CCol>

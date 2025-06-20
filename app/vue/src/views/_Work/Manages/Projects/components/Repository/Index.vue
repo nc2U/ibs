@@ -65,9 +65,8 @@ const tags = computed<string[]>(() => gitStore.tags)
 
 const default_branch = computed(() => gitStore.default_branch)
 const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
-const curr_branch = computed(() => (gitStore.curr_branch as BranchInfo)?.name ?? '')
+const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
-const currentTree = computed<Tree[]>(() => (subTree.value ? subTree.value : branchTree.value))
 const gitDiff = computed<any>(() => gitStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
@@ -75,28 +74,20 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
   gitStore.fetchGitDiff(pk, diff_hash, full)
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
-const fetchRootTree = (
-  repo: number,
-  payload: {
-    branch?: string
-    tag?: string
-    sha?: string
-  },
-) => gitStore.fetchRootTree(repo, payload)
-const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
-  gitStore.fetchSubTree(payload)
+const fetchRefTree = (payload: { repo: number; refs: string; path?: string }) =>
+  gitStore.fetchRefTree(payload)
 
-const changeRevision = async (payload: { branch?: string; tag?: string; sha?: string }) => {
-  subTree.value = null
+const changeRevision = async (refs: string) => {
   cFilter.value.page = 1
   cFilter.value.limit = 25
-  const nowBranch = await fetchRootTree(repo.value?.pk as number, payload)
-  cFilter.value.branch = payload.branch ? payload.branch : nowBranch.branches[0]
-  if (nowBranch) {
+
+  await fetchRefTree({ repo: repo.value?.pk as number, refs })
+  if (branchRefs.value) {
+    cFilter.value.branch = branchRefs.value?.branches[0] as string
     const params = {
       repo: cFilter.value.repo,
       branch: cFilter.value.branch,
-      up_to: nowBranch.commit.sha,
+      up_to: branchRefs.value?.commit.sha,
     }
     await fetchCommitList(params)
   }
@@ -105,12 +96,14 @@ const changeRevision = async (payload: { branch?: string; tag?: string; sha?: st
 // into path
 const shaMap = ref<{ path: string; sha: string }[]>([])
 const currPath = ref('')
-const subTree = ref(null) // 세부 경로 진입 시 루트 트리 대체 트리
 
-const intoRoot = () => {
-  router.push({ name: '(저장소)' })
+const intoRoot = async () => {
+  await router.push({ name: '(저장소)' })
   currPath.value = ''
-  subTree.value = null
+  await fetchRefTree({
+    repo: cFilter.value.repo,
+    refs: curr_refs.value,
+  })
 }
 
 const prePath = async (path: string) => {
@@ -118,10 +111,10 @@ const prePath = async (path: string) => {
   const item = shaMap.value.find(item => item.path === path)
   if (item?.sha) await intoPath({ path, sha: item.sha })
   else
-    subTree.value = await fetchSubTree({
+    await fetchRefTree({
       repo: repo.value?.pk as number,
+      refs: curr_refs.value,
       path,
-      branch: curr_branch.value,
     })
 }
 
@@ -129,11 +122,11 @@ const intoPath = async (node: { path: string; sha: string }) => {
   await router.push({ name: '(저장소)' })
   const exists = shaMap.value.some(item => item.path === node.path && item.sha === node.sha)
   if (!exists) shaMap.value?.push(node)
-  const { sha, path } = node
+  const { path } = node
   currPath.value = path
-  subTree.value = await fetchSubTree({
+  await fetchRefTree({
     repo: repo.value?.pk as number,
-    sha,
+    refs: curr_refs.value,
     path,
   })
 }
@@ -190,7 +183,10 @@ const dataSetup = async (proj: number) => {
       await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
-      await fetchRootTree(cFilter.value.repo, { branch: curr_refs.value })
+      await fetchRefTree({
+        repo: cFilter.value.repo,
+        refs: curr_refs.value,
+      })
     }
   }
 }
@@ -207,19 +203,18 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(저장소)'">
-        {{ curr_refs }}
         <BranchTree
           :repo="repo as Repository"
           :curr-path="currPath"
           :branches="branches"
           :tags="tags"
-          :curr-branch="curr_branch"
-          :branch-tree="currentTree"
+          :curr-refs="curr_refs"
+          :branch-tree="branchTree"
           @into-root="intoRoot"
           @pre-path="prePath"
           @into-path="intoPath"
-          @change-revision="changeRevision"
           @set-up-to="cFilter.up_to = $event"
+          @change-revision="changeRevision"
         />
 
         <Revisions
@@ -249,7 +244,7 @@ onBeforeMount(async () => {
       <ViewFile
         v-else-if="route.name === '(저장소) - 파일 보기'"
         :repo-name="repo?.slug as string"
-        :curr-branch="curr_branch"
+        :curr-refs="curr_refs"
         @into-root="intoRoot"
         @into-path="intoPath"
         @goto-trees="router.push({ name: '(저장소)' })"
