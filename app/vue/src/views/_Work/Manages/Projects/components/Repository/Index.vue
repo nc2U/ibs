@@ -66,6 +66,7 @@ const branches = computed<string[]>(() => gitStore.branches)
 const tags = computed<string[]>(() => gitStore.tags)
 
 const default_branch = computed(() => gitStore.default_branch)
+const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
 const curr_branch = computed(() => (gitStore.curr_branch as BranchInfo)?.name ?? '')
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
 const currentTree = computed<Tree[]>(() => (subTree.value ? subTree.value : branchTree.value))
@@ -191,7 +192,7 @@ const dataSetup = async (proj: number) => {
       await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
-      await fetchRootTree(cFilter.value.repo, { branch: default_branch.value })
+      await fetchRootTree(cFilter.value.repo, { branch: curr_refs.value })
     }
   }
 }
@@ -208,6 +209,7 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(저장소)'">
+        {{ curr_refs }}
         <BranchTree
           :repo="repo as Repository"
           :curr-path="currPath"
