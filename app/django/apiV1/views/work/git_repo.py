@@ -244,7 +244,7 @@ class GitRootTreeView(APIView):
                 try:
                     sha = sha.strip()
                     commit = repo.commit(sha)
-                    curr_refs = f"{sha[:7]}"  # SHA 표시
+                    curr_refs = f"{sha[:8]}"  # SHA 표시
                 except (BadName, ValueError):
                     return Response({"Error": f"Commit Hash '{sha}' not found"}, status=404)
 
@@ -327,7 +327,7 @@ class GitTreeView(APIView):
     @staticmethod
     def get(request, pk, path=None):
         sha = request.query_params.get("sha", "").strip()  # commit SHA
-        branch = request.query_params.get("branch", "").strip()  # branch name
+        refs = request.query_params.get("refs", "").strip()  # refs name
 
         repo_path = get_repo_path(pk)
 
@@ -336,74 +336,96 @@ class GitTreeView(APIView):
         except (BadName, KeyError) as e:
             return Response({"error": "Invalid repository", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:  # commit 객체 특정
+        try:
+            # 기본 브랜치 설정
+            default_branch = get_default_branch(repo)
+            curr_refs = default_branch
+
+            # commit 객체 특정
             if sha:
-                commit = repo.commit(sha)  # 특정 SHA 커밋
+                try:
+                    sha = sha.strip()
+                    commit = repo.commit(sha)  # 특정 SHA 커밋
+                    curr_refs = f"{sha[:8]}"  # SHA 표시
+                except (BadName, ValueError):
+                    return Response({"Error": f"Commit Hash '{sha}' not found"}, status=404)
             else:
-                # branch가 제공되면 해당 브랜치 사용, 없으면 기본 브랜치 시도
-                if branch:
+                # refs 가 제공되면 해당 refs(브랜치/태그/해시) 사용, 없으면 기본 브랜치 시도
+                if refs:
                     try:
-                        commit = repo.commit(branch)
+                        commit = repo.commit(refs)
+                        curr_refs = refs
                     except (BadName, ValueError):
-                        return Response({"error": f"Invalid branch: {branch}", "details": "Branch not found"},
+                        return Response({"error": f"Invalid refs: {refs}", "details": "Branch not found"},
                                         status=status.HTTP_400_BAD_REQUEST)
                 else:
                     # 기본 브랜치 (main/master) 또는 HEAD
-                    branch_candidates = ['main', 'master']
-                    commit = None
-                    for branch_name in branch_candidates:
-                        try:
-                            commit = repo.commit(branch_name)
-                            break
-                        except (BadName, ValueError):
-                            continue
-                    if not commit:
-                        if repo.head.is_valid():
-                            commit = repo.head.commit
-                        else:
-                            return Response({"error": "No valid branches or HEAD found"},
-                                            status=status.HTTP_400_BAD_REQUEST)
-        except (ValueError, BadName) as e:
-            return Response(
-                {"error": "Invalid commit reference", "details": str(e)},
-                status=status.HTTP_400_BAD_REQUEST)
+                    branch_ref = next((b for b in repo.heads if b.name == default_branch), None)
+                    if not branch_ref:
+                        return Response({"Error": f"Default branch '{default_branch}' not found"}, status=404)
+                    commit = branch_ref.commit
 
-        if path:  # 경로가 주어진 경우 해당 경로
-            try:
-                tree = commit.tree[path]
-                if tree.type != "tree":
-                    return Response({"error": f"Path {path} is not a directory"}, status=status.HTTP_400_BAD_REQUEST)
-            except KeyError:
-                raise NotFound(f"Path {path} not found")
-        else:  # 주어진 경로가 없으면 루트 경로
-            tree = commit.tree  # 루트 트리
-
-        items = []
-        commit_cache = {}  # 성능 최적화를 위한 커밋 캐시
-        for item in tree.trees + tree.blobs:
-            item_path = item.path
-            # 최신 커밋 가져오기 (캐시 활용)
-            if item_path not in commit_cache:
-                commit_cache[item_path] = next(repo.iter_commits(paths=item_path, max_count=1), commit)
-            latest_commit = commit_cache[item_path]
-            items.append({
-                "path": item_path,
-                "name": item.name,
-                "mode": item.mode,
-                "type": item.type,
-                "sha": item.hexsha,
-                "size": item.size if item.type == "blob" else None,
+            # refs 정보
+            branches = repo.git.branch('--contains', commit.hexsha).split('\n')
+            branches = [b.strip().lstrip('* ') for b in branches if b.strip()]
+            refs_api = {
+                "name": curr_refs,
+                "branches": branches,
                 "commit": {
-                    "sha": latest_commit.hexsha,
-                    "author": latest_commit.author.name,
-                    "date": latest_commit.authored_datetime.isoformat(),
-                    "message": latest_commit.message.strip()
-                }})
+                    "sha": commit.hexsha,
+                    "author": commit.author.name or "Unknown",
+                    "date": commit.authored_datetime.isoformat() if commit.authored_datetime else "",
+                    "message": commit.message.strip() if commit.message else ""
+                }
+            }
 
-        # 정렬 및 시리얼라이저
-        items.sort(key=lambda x: (x["type"] != "tree", x["name"].lower()))
-        serializer = TreeItemSerializer(items, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            # 트리 정보
+            if path:  # 경로가 주어진 경우 해당 경로
+                try:
+                    tree = commit.tree[path]
+                    if tree.type != "tree":
+                        return Response({"error": f"Path {path} is not a directory"},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                except KeyError:
+                    raise NotFound(f"Path {path} not found")
+            else:  # 주어진 경로가 없으면 루트 경로
+                tree = commit.tree  # 루트 트리
+
+            tree_items = []
+            commit_cache = {}  # 성능 최적화를 위한 커밋 캐시
+            for item in tree.trees + tree.blobs:
+                item_path = item.path
+                # 최신 커밋 가져오기 (캐시 활용)
+                if item_path not in commit_cache:
+                    commit_cache[item_path] = next(repo.iter_commits(paths=item_path, max_count=1), commit)
+                latest_commit = commit_cache[item_path]
+                latest_commit_data = {
+                    "sha": latest_commit.hexsha,
+                    "author": latest_commit.author.name or "Unknown",
+                    "date": latest_commit.authored_datetime.isoformat() if latest_commit.authored_datetime else "",
+                    "message": latest_commit.message.strip() if latest_commit.message else ""
+                }
+                tree_items.append({
+                    "path": item_path,
+                    "name": item.name,
+                    "mode": item.mode,
+                    "type": item.type,
+                    "sha": item.hexsha,
+                    "size": item.size if item.type == "blob" else None,
+                    "commit": latest_commit_data
+                })
+
+            # 정렬 및 시리얼라이저
+            tree_items.sort(key=lambda x: (x["type"] != "tree", x["name"].lower()))
+            serializer = GitRefsAndTreeSerializer({"refs": refs_api, "trees": tree_items})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except (BadName, ValueError) as e:
+            return Response({"Error": "Invalid Git reference", "details": str(e)}, status=400)
+        except GitCommandError as e:
+            return Response({"Error": "Git command failed", "details": str(e)}, status=500)
+        except Exception as e:
+            return Response({"Error": "Unexpected error", "details": str(e)}, status=500)
 
 
 class GitFileContentView(APIView):
