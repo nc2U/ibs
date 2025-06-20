@@ -10,6 +10,7 @@ const props = defineProps({
 
 const gitStore = useGitRepo()
 const default_branch = computed(() => gitStore.default_branch)
+const setCurrRefs = (refs: string) => gitStore.setCurrRefs(refs)
 
 const emit = defineEmits(['change-revision', 'set-up-to'])
 
@@ -21,6 +22,7 @@ const changeBranch = (e: Event) => {
   tag.value = ''
   sha.value = ''
   if ((e.target as any).value) {
+    setCurrRefs((e.target as any).value)
     emit('set-up-to', '')
     emit('change-revision', { branch: (e.target as any).value })
   }
@@ -30,6 +32,7 @@ const changeTag = (e: Event) => {
   branch.value = ''
   sha.value = ''
   if ((e.target as any).value) {
+    setCurrRefs((e.target as any).value)
     emit('set-up-to', '')
     emit('change-revision', { tag: (e.target as any).value })
   }
@@ -39,6 +42,7 @@ const changeCommit = (e: Event) => {
   branch.value = ''
   tag.value = ''
   if ((e.target as any).value) {
+    setCurrRefs((e.target as any).value)
     emit('set-up-to', (e.target as any).value)
     emit('change-revision', { sha: (e.target as any).value })
   }
