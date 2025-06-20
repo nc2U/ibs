@@ -67,7 +67,8 @@ const default_branch = computed(() => gitStore.default_branch)
 const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
 const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
-const currentTree = computed<Tree[]>(() => (subTree.value ? subTree.value : branchTree.value))
+
+const currentTree = computed<Tree[]>(() => branchTree.value)
 const gitDiff = computed<any>(() => gitStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
@@ -79,7 +80,6 @@ const fetchRefTree = (payload: { repo: number; refs: string; path?: string }) =>
   gitStore.fetchRefTree(payload)
 
 const changeRevision = async (refs: string) => {
-  subTree.value = null
   cFilter.value.page = 1
   cFilter.value.limit = 25
 
@@ -98,12 +98,10 @@ const changeRevision = async (refs: string) => {
 // into path
 const shaMap = ref<{ path: string; sha: string }[]>([])
 const currPath = ref('')
-const subTree = ref(null) // 세부 경로 진입 시 루트 트리 대체 트리
 
 const intoRoot = async () => {
   await router.push({ name: '(저장소)' })
   currPath.value = ''
-  subTree.value = null
   await fetchRefTree({
     repo: cFilter.value.repo,
     refs: curr_refs.value,
@@ -115,7 +113,7 @@ const prePath = async (path: string) => {
   const item = shaMap.value.find(item => item.path === path)
   if (item?.sha) await intoPath({ path, sha: item.sha })
   else
-    subTree.value = await fetchRefTree({
+    await fetchRefTree({
       repo: repo.value?.pk as number,
       refs: curr_refs.value,
       path,
@@ -128,7 +126,7 @@ const intoPath = async (node: { path: string; sha: string }) => {
   if (!exists) shaMap.value?.push(node)
   const { path } = node
   currPath.value = path
-  subTree.value = await fetchRefTree({
+  await fetchRefTree({
     repo: repo.value?.pk as number,
     refs: curr_refs.value,
     path,
