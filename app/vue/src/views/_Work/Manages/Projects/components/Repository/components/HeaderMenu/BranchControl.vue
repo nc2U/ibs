@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
-import router from '@/router/index.js'
 
 const props = defineProps({
   currBranch: { type: String, required: true },
@@ -70,7 +69,7 @@ onBeforeMount(() => {
           <v-tooltip activator="parent" location="top">Actions</v-tooltip>
         </CDropdownToggle>
         <CDropdownMenu>
-          <CDropdownItem @click="router.push({ name: '(설정)', query: { menu: '저장소' } })">
+          <CDropdownItem @click="$router.push({ name: '(설정)', query: { menu: '저장소' } })">
             <v-icon icon="mdi mdi-cog" size="sm" class="mr-2" />
             <router-link to="#">설정</router-link>
           </CDropdownItem>
