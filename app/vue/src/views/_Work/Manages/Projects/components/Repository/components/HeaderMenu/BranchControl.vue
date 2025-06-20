@@ -9,7 +9,10 @@ const props = defineProps({
 })
 
 const gitStore = useGitRepo()
+const refs_sort = computed(() => gitStore.refs_sort)
+const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
 const default_branch = computed(() => gitStore.default_branch)
+const setRefsSort = (sort: 'branch' | 'tag' | 'sha') => gitStore.setRefsSort(sort)
 const setCurrRefs = (refs: string) => gitStore.setCurrRefs(refs)
 
 const emit = defineEmits(['set-up-to', 'change-revision'])
@@ -19,6 +22,7 @@ watch(branch, nVal => {
   if (nVal) {
     tag.value = ''
     sha.value = ''
+    setRefsSort('branch')
   }
 })
 const tag = ref('')
@@ -26,6 +30,7 @@ watch(tag, nVal => {
   if (nVal) {
     branch.value = ''
     sha.value = ''
+    setRefsSort('tag')
   }
 })
 const sha = ref('')
@@ -33,6 +38,7 @@ watch(sha, nVal => {
   if (nVal) {
     branch.value = ''
     tag.value = ''
+    setRefsSort('sha')
   }
 })
 
@@ -47,8 +53,11 @@ const changeRefs = (e: Event) => {
 }
 
 onBeforeMount(() => {
-  if (props.currRefs) branch.value = props.currRefs
-  else if (default_branch.value) branch.value = default_branch.value
+  if (curr_refs.value) {
+    if (refs_sort.value === 'branch') branch.value = curr_refs.value
+    if (refs_sort.value === 'tag') tag.value = curr_refs.value
+    if (refs_sort.value === 'sha') sha.value = curr_refs.value
+  }
 })
 </script>
 

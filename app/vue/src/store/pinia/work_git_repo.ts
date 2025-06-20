@@ -142,11 +142,14 @@ export const useGitRepo = defineStore('git_repo', () => {
       .catch(err => errorHandle(err.response))
   }
 
+  const refs_sort = ref<'branch' | 'tag' | 'sha'>('branch')
   const curr_refs = ref<string>('')
   const branch_refs = ref<BranchInfo | null>(null)
   const branch_tree = ref<any[]>([])
 
+  const setRefsSort = (sort: 'branch' | 'tag' | 'sha') => (refs_sort.value = sort)
   const setCurrRefs = (refs: string) => (curr_refs.value = refs)
+
   const fetchRootTree = async (
     repo: number,
     payload: { branch?: string; tag?: string; sha?: string },
@@ -170,18 +173,14 @@ export const useGitRepo = defineStore('git_repo', () => {
   const fetchRefTree = async (payload: { repo: number; refs: string; path?: string }) => {
     const { repo, refs, path = '' } = payload
     const encodedPath = path ? encodeURIComponent(path) : ''
-    const url = path
-      ? `/repo/${repo}/tree/${encodedPath}?refs=${refs}`
-      : `/repo/${repo}/tree/?refs=${refs}`
 
     try {
-      const { data } = await api.get(`${url}`)
+      const { data } = await api.get(`/repo/${repo}/tree/${encodedPath}?refs=${refs}`)
       branch_refs.value = data.refs
       branch_tree.value = data.trees
       return data.trees
-    } catch (error: any) {
-      console.error('[fetchRefTree] Failed:', error.response?.data || error.message)
-      throw error
+    } catch (err: any) {
+      errorHandle(err.response)
     }
   }
 
@@ -249,10 +248,11 @@ export const useGitRepo = defineStore('git_repo', () => {
     fetchTags,
 
     curr_refs,
+    refs_sort,
     branch_refs,
     branch_tree,
+    setRefsSort,
     setCurrRefs,
-    fetchRootTree,
     fetchRefTree,
     fetchFileView,
 
