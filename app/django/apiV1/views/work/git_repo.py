@@ -321,7 +321,7 @@ class GitRootTreeView(APIView):
             return Response({"Error": "Unexpected error", "details": str(e)}, status=500)
 
 
-class GitSubTreeView(APIView):
+class GitTreeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod

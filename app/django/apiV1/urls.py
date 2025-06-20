@@ -193,8 +193,8 @@ urlpatterns += [path('repo/<int:pk>/branches/', work.GitBranchesView.as_view(), 
 urlpatterns += [path('repo/<int:pk>/tags/', work.GitTagsView.as_view(), name='git-tags')]
 urlpatterns += [
     path('root-tree/', work.GitRootTreeView.as_view(), name='git-branch-tree')]
-urlpatterns += [path('repo/<int:pk>/tree/', work.GitSubTreeView.as_view(), name='git-root-tree')]
-urlpatterns += [path('repo/<int:pk>/tree/<path:path>', work.GitSubTreeView.as_view(), name='git-sub-tree')]
+urlpatterns += [path('repo/<int:pk>/tree/', work.GitTreeView.as_view(), name='git-root-tree')]
+urlpatterns += [path('repo/<int:pk>/tree/<path:path>', work.GitTreeView.as_view(), name='git-sub-tree')]
 urlpatterns += [
     path('repo/<int:pk>/file/<path:path>', work.GitFileContentView.as_view(), name='git-file')]  # require ?sha=
 urlpatterns += [path('repo/<int:pk>/compare/', work.CompareCommitsView.as_view(), name='compare-commits')]
