@@ -40,7 +40,6 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
         @ {{ currBranch }}
       </h5>
     </CCol>
-
     <CCol>
       <BranchControl
         :curr-branch="currBranch"

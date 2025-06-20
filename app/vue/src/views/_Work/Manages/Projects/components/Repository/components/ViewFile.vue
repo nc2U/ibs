@@ -99,7 +99,6 @@ onBeforeMount(async () => {
         @ {{ currBranch }}
       </h5>
     </CCol>
-    // ViewFile
   </CRow>
 
   <CRow class="mb-0 pl-2">

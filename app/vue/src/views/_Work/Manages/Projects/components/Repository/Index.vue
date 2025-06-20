@@ -115,8 +115,9 @@ const intoRoot = () => {
 }
 
 const prePath = async (path: string) => {
+  currPath.value = path
   const item = shaMap.value.find(item => item.path === path)
-  if (item) await intoPath({ path, sha: item.sha })
+  if (item?.sha) await intoPath({ path, sha: item.sha })
   else
     subTree.value = await fetchSubTree({
       repo: repo.value?.pk as number,
