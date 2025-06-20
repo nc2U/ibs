@@ -25,10 +25,6 @@ const repoId = computed(() => Number(route.params.repoId))
 const sha = computed(() => route.params.sha as string)
 const path = computed(() => route.params.path)
 
-const gitStore = useGitRepo()
-const fetchFileView = (repo: number, path: string, sha: string) =>
-  gitStore.fetchFileView(repo, path, sha)
-
 const currentPath = computed<string[]>(() =>
   typeof path.value === 'string' && path.value ? path.value.split('/').slice(0, -1) : [],
 )
@@ -38,6 +34,10 @@ const intoPath = (path: string) => {
   const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
   emit('into-path', { sha: '', path: nowPath })
 }
+
+const gitStore = useGitRepo()
+const fetchFileView = (repo: number, path: string, sha: string) =>
+  gitStore.fetchFileView(repo, path, sha)
 
 const codeBlock = ref<HTMLElement | null>(null)
 
@@ -99,6 +99,7 @@ onBeforeMount(async () => {
         @ {{ currBranch }}
       </h5>
     </CCol>
+    // ViewFile
   </CRow>
 
   <CRow class="mb-0 pl-2">
