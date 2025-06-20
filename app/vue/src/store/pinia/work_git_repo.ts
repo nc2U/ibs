@@ -168,7 +168,7 @@ export const useGitRepo = defineStore('git_repo', () => {
     }
   }
 
-  const fetchSubTree = async (payload: {
+  const fetchRefTree = async (payload: {
     repo: number
     refs?: string
     sha?: string
@@ -259,7 +259,7 @@ export const useGitRepo = defineStore('git_repo', () => {
     curr_branch,
     branch_tree,
     fetchRootTree,
-    fetchSubTree,
+    fetchRefTree,
     fetchFileView,
 
     gitDiff,

@@ -83,8 +83,8 @@ const fetchRootTree = (
     sha?: string
   },
 ) => gitStore.fetchRootTree(repo, payload)
-const fetchSubTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
-  gitStore.fetchSubTree(payload)
+const fetchRefTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
+  gitStore.fetchRefTree(payload)
 
 const changeRevision = async (payload: { branch?: string; tag?: string; sha?: string }) => {
   subTree.value = null
@@ -118,7 +118,7 @@ const prePath = async (path: string) => {
   const item = shaMap.value.find(item => item.path === path)
   if (item?.sha) await intoPath({ path, sha: item.sha })
   else
-    subTree.value = await fetchSubTree({
+    subTree.value = await fetchRefTree({
       repo: repo.value?.pk as number,
       path,
       branch: curr_branch.value,
@@ -131,7 +131,7 @@ const intoPath = async (node: { path: string; sha: string }) => {
   if (!exists) shaMap.value?.push(node)
   const { sha, path } = node
   currPath.value = path
-  subTree.value = await fetchSubTree({
+  subTree.value = await fetchRefTree({
     repo: repo.value?.pk as number,
     sha,
     path,
@@ -190,7 +190,7 @@ const dataSetup = async (proj: number) => {
       await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
-      await fetchRootTree(cFilter.value.repo, { branch: curr_refs.value })
+      await fetchRefTree({ repo: cFilter.value.repo, branch: curr_refs.value })
     }
   }
 }
