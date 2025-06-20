@@ -65,6 +65,7 @@ const tags = computed<string[]>(() => gitStore.tags)
 
 const default_branch = computed(() => gitStore.default_branch)
 const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
+const branchRefs = computed(() => gitStore.branch_refs)
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
 const currentTree = computed<Tree[]>(() => (subTree.value ? subTree.value : branchTree.value))
 const gitDiff = computed<any>(() => gitStore.gitDiff)
@@ -74,28 +75,21 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
   gitStore.fetchGitDiff(pk, diff_hash, full)
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
-const fetchRootTree = (
-  repo: number,
-  payload: {
-    branch?: string
-    tag?: string
-    sha?: string
-  },
-) => gitStore.fetchRootTree(repo, payload)
-const fetchRefTree = (payload: { repo: number; sha?: string; path?: string; branch?: string }) =>
+const fetchRefTree = (payload: { repo: number; refs: string; path?: string }) =>
   gitStore.fetchRefTree(payload)
 
-const changeRevision = async (payload: { branch?: string; tag?: string; sha?: string }) => {
+const changeRevision = async (refs: string) => {
   subTree.value = null
   cFilter.value.page = 1
   cFilter.value.limit = 25
-  const nowBranch = await fetchRootTree(repo.value?.pk as number, payload)
-  cFilter.value.branch = payload.branch ? payload.branch : nowBranch.branches[0]
-  if (nowBranch) {
+
+  await fetchRefTree({ repo: repo.value?.pk as number, refs })
+  if (branchRefs.value) {
+    cFilter.value.branch = branchRefs.value.branches[0]
     const params = {
       repo: cFilter.value.repo,
       branch: cFilter.value.branch,
-      up_to: nowBranch.commit.sha,
+      up_to: branchRefs.value.commit.sha,
     }
     await fetchCommitList(params)
   }
@@ -120,7 +114,7 @@ const prePath = async (path: string) => {
     subTree.value = await fetchRefTree({
       repo: repo.value?.pk as number,
       path,
-      branch: curr_refs.value,
+      refs: curr_refs.value,
     })
 }
 
@@ -191,7 +185,7 @@ const dataSetup = async (proj: number) => {
       await fetchTags(cFilter.value.repo)
       await fetchRefTree({
         repo: cFilter.value.repo,
-        branch: curr_refs.value,
+        refs: curr_refs.value,
       })
     }
   }
@@ -209,7 +203,7 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(저장소)'">
-        {{ currPath }} //
+        {{ curr_refs }}
         <BranchTree
           :repo="repo as Repository"
           :curr-path="currPath"
@@ -220,8 +214,8 @@ onBeforeMount(async () => {
           @into-root="intoRoot"
           @pre-path="prePath"
           @into-path="intoPath"
-          @change-revision="changeRevision"
           @set-up-to="cFilter.up_to = $event"
+          @change-revision="changeRevision"
         />
 
         <Revisions

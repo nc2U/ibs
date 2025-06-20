@@ -14,7 +14,7 @@ const props = defineProps({
   branchTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits(['into-root', 'pre-path', 'into-path', 'change-revision', 'set-up-to'])
+const emit = defineEmits(['into-root', 'pre-path', 'into-path', 'set-up-to', 'change-revision'])
 
 const prePath = (path: string) => {
   const index = currentPath.value.indexOf(path)
@@ -45,8 +45,8 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
         :curr-refs="currRefs"
         :branches="branches"
         :tags="tags"
-        @change-revision="emit('change-revision', $event)"
         @set-up-to="emit('set-up-to', $event)"
+        @change-revision="emit('change-revision', $event)"
       />
     </CCol>
   </CRow>

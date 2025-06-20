@@ -143,6 +143,7 @@ export const useGitRepo = defineStore('git_repo', () => {
   }
 
   const curr_refs = ref<string>('')
+  const branch_refs = ref(null)
   const branch_tree = ref<any[]>([])
 
   const setCurrRefs = (refs: string) => (curr_refs.value = refs)
@@ -166,21 +167,16 @@ export const useGitRepo = defineStore('git_repo', () => {
     }
   }
 
-  const fetchRefTree = async (payload: {
-    repo: number
-    refs?: string
-    sha?: string
-    path?: string
-  }) => {
-    const { repo, sha = '', path = '', refs = '' } = payload
+  const fetchRefTree = async (payload: { repo: number; refs: string; path?: string }) => {
+    const { repo, refs, path = '' } = payload
     const encodedPath = path ? encodeURIComponent(path) : ''
     const url = path
-      ? `/repo/${repo}/tree/${encodedPath}?sha=${sha}`
-      : `/repo/${repo}/tree/?sha=${sha}`
-    const refsQry = refs ? `&refs=${refs}` : ''
+      ? `/repo/${repo}/tree/${encodedPath}?refs=${refs}`
+      : `/repo/${repo}/tree/?refs=${refs}`
 
     try {
-      const { data } = await api.get(`${url}${refsQry}`)
+      const { data } = await api.get(`${url}`)
+      branch_refs.value = data.refs
       branch_tree.value = data.trees
       return data.trees
     } catch (error: any) {
@@ -253,6 +249,7 @@ export const useGitRepo = defineStore('git_repo', () => {
     fetchTags,
 
     curr_refs,
+    branch_refs,
     branch_tree,
     setCurrRefs,
     fetchRootTree,
