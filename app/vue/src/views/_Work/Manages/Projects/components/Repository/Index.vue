@@ -67,8 +67,6 @@ const default_branch = computed(() => gitStore.default_branch)
 const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
 const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
-
-const currentTree = computed<Tree[]>(() => branchTree.value)
 const gitDiff = computed<any>(() => gitStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
@@ -211,7 +209,7 @@ onBeforeMount(async () => {
           :branches="branches"
           :tags="tags"
           :curr-refs="curr_refs"
-          :branch-tree="currentTree"
+          :branch-tree="branchTree"
           @into-root="intoRoot"
           @pre-path="prePath"
           @into-path="intoPath"
