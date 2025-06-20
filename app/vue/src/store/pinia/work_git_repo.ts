@@ -142,6 +142,9 @@ export const useGitRepo = defineStore('git_repo', () => {
       .catch(err => errorHandle(err.response))
   }
 
+  const curr_rev = ref<string>('HEAD')
+  const setCurrRev = (rev: string) => (curr_rev.value = rev)
+
   const curr_branch = ref<BranchInfo | null>(null)
   const branch_tree = ref<any[]>([])
 
@@ -249,6 +252,9 @@ export const useGitRepo = defineStore('git_repo', () => {
 
     tags,
     fetchTags,
+
+    curr_rev,
+    setCurrRev,
 
     curr_branch,
     branch_tree,
