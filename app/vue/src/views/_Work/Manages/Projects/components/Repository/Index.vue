@@ -59,8 +59,6 @@ const fetchCommitList = (payload: {
   search?: string
   up_to?: string
 }) => gitStore.fetchCommitList(payload)
-const fetchFileView = (repo: number, path: string, sha: string) =>
-  gitStore.fetchFileView(repo, path, sha)
 
 const branches = computed<string[]>(() => gitStore.branches)
 const tags = computed<string[]>(() => gitStore.tags)
