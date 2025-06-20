@@ -142,7 +142,6 @@ export const useGitRepo = defineStore('git_repo', () => {
       .catch(err => errorHandle(err.response))
   }
 
-  const curr_branch = ref<BranchInfo | null>(null)
   const curr_refs = ref<string>('')
   const branch_tree = ref<any[]>([])
 
@@ -160,7 +159,6 @@ export const useGitRepo = defineStore('git_repo', () => {
     try {
       const res = await api.get(`/root-tree/?${query}`)
       curr_refs.value = res.data.refs.name
-      curr_branch.value = res.data.refs
       branch_tree.value = res.data.trees
       return res.data.refs
     } catch (err: any) {
@@ -256,7 +254,6 @@ export const useGitRepo = defineStore('git_repo', () => {
     fetchTags,
 
     curr_refs,
-    curr_branch,
     branch_tree,
     fetchRootTree,
     fetchRefTree,

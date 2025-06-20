@@ -65,7 +65,6 @@ const tags = computed<string[]>(() => gitStore.tags)
 
 const default_branch = computed(() => gitStore.default_branch)
 const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
-const curr_branch = computed(() => (gitStore.curr_branch as BranchInfo)?.name ?? '')
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
 const currentTree = computed<Tree[]>(() => (subTree.value ? subTree.value : branchTree.value))
 const gitDiff = computed<any>(() => gitStore.gitDiff)
@@ -121,7 +120,7 @@ const prePath = async (path: string) => {
     subTree.value = await fetchRefTree({
       repo: repo.value?.pk as number,
       path,
-      branch: curr_branch.value,
+      branch: curr_refs.value,
     })
 }
 
@@ -190,7 +189,10 @@ const dataSetup = async (proj: number) => {
       await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
-      await fetchRefTree({ repo: cFilter.value.repo, branch: curr_refs.value })
+      await fetchRefTree({
+        repo: cFilter.value.repo,
+        branch: curr_refs.value,
+      })
     }
   }
 }
@@ -207,13 +209,13 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(저장소)'">
-        {{ curr_refs }}
+        {{ currPath }} //
         <BranchTree
           :repo="repo as Repository"
           :curr-path="currPath"
           :branches="branches"
           :tags="tags"
-          :curr-branch="curr_branch"
+          :curr-branch="curr_refs"
           :branch-tree="currentTree"
           @into-root="intoRoot"
           @pre-path="prePath"
@@ -249,7 +251,7 @@ onBeforeMount(async () => {
       <ViewFile
         v-else-if="route.name === '(저장소) - 파일 보기'"
         :repo-name="repo?.slug as string"
-        :curr-branch="curr_branch"
+        :curr-branch="curr_refs"
         @into-root="intoRoot"
         @into-path="intoPath"
         @goto-trees="router.push({ name: '(저장소)' })"
