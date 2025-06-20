@@ -31,18 +31,6 @@ const toggleFold = async () => {
     })
   nodeFold.value = !nodeFold.value
 }
-
-const intoPath = () =>
-  emit('into-path', {
-    path: props.node?.path as string,
-    sha: props.node?.commit?.sha as string,
-  })
-
-const viewFile = async () => alert('aa')
-//   emit('file-view', {
-//     path: props.node?.path as string,
-//     sha: props.node?.commit?.sha as string,
-//   })
 </script>
 
 <template>
@@ -55,7 +43,14 @@ const viewFile = async () => alert('aa')
           size="16"
           class="pointer mr-1"
         />
-        <span @click="intoPath">
+        <span
+          @click="
+            emit('into-path', {
+              path: node?.path as string,
+              sha: node?.commit?.sha as string,
+            })
+          "
+        >
           <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
           <router-link to="">{{ node.name }}</router-link>
         </span>
