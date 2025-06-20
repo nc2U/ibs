@@ -336,7 +336,7 @@ class GitSubTreeView(APIView):
         except (BadName, KeyError) as e:
             return Response({"error": "Invalid repository", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
+        try:  # commit 객체 특정
             if sha:
                 commit = repo.commit(sha)  # 특정 SHA 커밋
             else:
@@ -368,14 +368,14 @@ class GitSubTreeView(APIView):
                 {"error": "Invalid commit reference", "details": str(e)},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        if path:
+        if path:  # 경로가 주어진 경우 해당 경로
             try:
                 tree = commit.tree[path]
                 if tree.type != "tree":
                     return Response({"error": f"Path {path} is not a directory"}, status=status.HTTP_400_BAD_REQUEST)
             except KeyError:
                 raise NotFound(f"Path {path} not found")
-        else:
+        else:  # 주어진 경로가 없으면 루트 경로
             tree = commit.tree  # 루트 트리
 
         items = []
