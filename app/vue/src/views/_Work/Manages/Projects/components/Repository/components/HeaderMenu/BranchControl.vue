@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 
 const props = defineProps({
-  currBranch: { type: String, required: true },
+  currRefs: { type: String, required: true },
   branches: { type: Array, default: () => [] },
   tags: { type: Array, default: () => [] },
 })
@@ -45,7 +45,7 @@ const changeCommit = (e: Event) => {
 }
 
 onBeforeMount(() => {
-  if (props.currBranch) branch.value = props.currBranch
+  if (props.currRefs) branch.value = props.currRefs
   else if (default_branch.value) branch.value = default_branch.value
 })
 </script>

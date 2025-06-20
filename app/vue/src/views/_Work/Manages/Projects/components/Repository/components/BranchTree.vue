@@ -10,7 +10,7 @@ const props = defineProps({
   currPath: { type: String, default: '' },
   branches: { type: Array as PropType<string[]>, default: () => [] },
   tags: { type: Array as PropType<string[]>, default: () => [] },
-  currBranch: { type: String, required: true },
+  currRefs: { type: String, required: true },
   branchTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
@@ -37,12 +37,12 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
             <router-link v-else to="" @click="prePath(path)">{{ path }}</router-link>
           </span>
         </template>
-        @ {{ currBranch }}
+        @ {{ currRefs }}
       </h5>
     </CCol>
     <CCol>
       <BranchControl
-        :curr-branch="currBranch"
+        :curr-refs="currRefs"
         :branches="branches"
         :tags="tags"
         @change-revision="emit('change-revision', $event)"

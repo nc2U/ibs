@@ -215,7 +215,7 @@ onBeforeMount(async () => {
           :curr-path="currPath"
           :branches="branches"
           :tags="tags"
-          :curr-branch="curr_refs"
+          :curr-refs="curr_refs"
           :branch-tree="currentTree"
           @into-root="intoRoot"
           @pre-path="prePath"
@@ -251,7 +251,7 @@ onBeforeMount(async () => {
       <ViewFile
         v-else-if="route.name === '(저장소) - 파일 보기'"
         :repo-name="repo?.slug as string"
-        :curr-branch="curr_refs"
+        :curr-refs="curr_refs"
         @into-root="intoRoot"
         @into-path="intoPath"
         @goto-trees="router.push({ name: '(저장소)' })"
