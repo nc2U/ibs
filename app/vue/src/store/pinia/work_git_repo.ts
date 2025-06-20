@@ -143,7 +143,7 @@ export const useGitRepo = defineStore('git_repo', () => {
   }
 
   const curr_refs = ref<string>('')
-  const branch_refs = ref(null)
+  const branch_refs = ref<BranchInfo | null>(null)
   const branch_tree = ref<any[]>([])
 
   const setCurrRefs = (refs: string) => (curr_refs.value = refs)
