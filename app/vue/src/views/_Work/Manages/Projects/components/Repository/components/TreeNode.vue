@@ -6,13 +6,14 @@ import { cutString, elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 import TreeNode from './TreeNode.vue'
 
 defineOptions({ name: 'TreeNode' })
+
 const props = defineProps({
   repo: { type: Number, required: true },
   node: { type: Object as PropType<Tree>, required: true },
   level: { type: Number, default: 0 },
 })
 
-const emit = defineEmits(['into-path', 'file-view', 'revision-view'])
+const emit = defineEmits(['into-path', 'revision-view'])
 
 const nodeFold = ref(false)
 const subTrees = ref([])
@@ -37,11 +38,11 @@ const intoPath = () =>
     sha: props.node?.commit?.sha as string,
   })
 
-const viewFile = async () =>
-  emit('file-view', {
-    path: props.node?.path as string,
-    sha: props.node?.commit?.sha as string,
-  })
+const viewFile = async () => alert('aa')
+//   emit('file-view', {
+//     path: props.node?.path as string,
+//     sha: props.node?.commit?.sha as string,
+//   })
 </script>
 
 <template>
@@ -60,7 +61,7 @@ const viewFile = async () =>
         </span>
       </span>
 
-      <span v-else @click="viewFile">
+      <span v-else>
         <span :style="`padding-left: ${level * 15 + 18}px`">
           <v-icon
             :icon="`mdi-file-${node.path.endsWith('.txt') ? 'document-' : ''}outline`"
@@ -68,7 +69,14 @@ const viewFile = async () =>
             size="16"
             class="pointer mr-1 mdi-thin"
           />
-          <router-link to="">{{ node.name }}</router-link>
+          <router-link
+            :to="{
+              name: '(저장소) - 파일 보기',
+              params: { repoId: repo, sha: node.commit?.sha, path: node.path },
+            }"
+          >
+            {{ node.name }}
+          </router-link>
         </span>
       </span>
     </CTableDataCell>
@@ -100,7 +108,6 @@ const viewFile = async () =>
       :level="level + 1"
       :key="i"
       @into-path="emit('into-path', $event)"
-      @file-view="emit('file-view', $event)"
     />
   </template>
 </template>

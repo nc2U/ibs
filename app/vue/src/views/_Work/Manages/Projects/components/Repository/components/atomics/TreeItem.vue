@@ -14,7 +14,7 @@ const props = defineProps<{
   depth: number
 }>()
 
-const emit = defineEmits(['file-view', 'into-path', 'diff-view'])
+const emit = defineEmits(['into-path', 'diff-view'])
 </script>
 
 <template>
@@ -47,7 +47,9 @@ const emit = defineEmits(['file-view', 'into-path', 'diff-view'])
           "
           size="11"
         />
-        <a href="javascript:void(0)" @click="emit('file-view', node.path)">{{ node.name }}</a>
+        <router-link :to="{ name: '(저장소) - 파일 보기', params: { path: node.path } }">
+          {{ node.name }}
+        </router-link>
         <span>
           (<router-link to="" @click.prevent="emit('diff-view', node.fileNo)">
             비교(diff) </router-link
@@ -63,7 +65,6 @@ const emit = defineEmits(['file-view', 'into-path', 'diff-view'])
       :key="i"
       :node="child"
       :depth="depth + 1"
-      @file-view="emit('file-view', $event)"
       @into-path="emit('into-path', $event)"
       @diff-view="emit('diff-view', $event)"
     />

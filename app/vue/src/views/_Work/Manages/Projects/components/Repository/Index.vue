@@ -138,24 +138,6 @@ const intoPath = async (node: { path: string; sha: string }) => {
   })
 }
 
-// file view
-const fileData = ref<any | null>(null)
-const toggleFileView = (payload: any) => {
-  fileData.value = payload
-  // headerView.value = 'file'
-  // router.push({ name: '(저장소) - 파일 보기', params: { branch: 'master', path: '/' } })
-}
-
-const viewFile = async (node: { path: string; sha: string }) => {
-  currPath.value = node.path.split('/').slice(0, -1).join('/')
-  const fileData = await fetchFileView(
-    repo.value?.pk as number,
-    node?.path as string,
-    node?.sha as string,
-  )
-  toggleFileView(fileData)
-}
-
 // revisons & diff view
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
 
@@ -235,7 +217,6 @@ onBeforeMount(async () => {
           @into-root="intoRoot"
           @pre-path="prePath"
           @into-path="intoPath"
-          @file-view="viewFile"
           @change-revision="changeRevision"
           @set-up-to="cFilter.up_to = $event"
         />
@@ -267,9 +248,7 @@ onBeforeMount(async () => {
       <ViewFile
         v-else-if="route.name === '(저장소) - 파일 보기'"
         :repo-name="repo?.slug as string"
-        :curr-path="currPath"
         :curr-branch="curr_branch"
-        :file-data="fileData"
         @into-root="intoRoot"
         @into-path="intoPath"
         @goto-trees="router.push({ name: '(저장소)' })"
@@ -280,7 +259,6 @@ onBeforeMount(async () => {
         :repo="repo?.pk as number"
         @get-diff="getDiff"
         @into-path="intoPath"
-        @file-view="viewFile"
       />
     </template>
 

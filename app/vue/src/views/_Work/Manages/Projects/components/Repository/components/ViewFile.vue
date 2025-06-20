@@ -1,37 +1,35 @@
 <script lang="ts" setup>
-import {
-  computed,
-  type ComputedRef,
-  inject,
-  nextTick,
-  onMounted,
-  type PropType,
-  ref,
-  watch,
-} from 'vue'
-import { bgLight, btnSecondary, darkSecondary } from '@/utils/cssMixins.ts'
-import type { FileInfo } from '@/store/types/work_git_repo.ts'
+import { computed, type ComputedRef, inject, nextTick, onBeforeMount, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
+import { bgLight, btnSecondary, darkSecondary } from '@/utils/cssMixins.ts'
 import hljs from 'highlight.js'
 
 const props = defineProps({
   repoName: { type: String, required: true },
-  currPath: { type: String, default: '' },
   currBranch: { type: String, required: true },
-  fileData: {
-    type: Object as PropType<FileInfo>,
-    required: true,
-  },
 })
 
 const emit = defineEmits(['into-root', 'into-path', 'goto-trees'])
+
+const fileData = ref()
 
 const isDark = inject<ComputedRef<Boolean>>(
   'isDark',
   computed(() => false),
 )
 
-const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.split('/') : []))
+const route = useRoute()
+const repoId = computed(() => Number(route.params.repoId))
+const sha = computed(() => route.params.sha as string)
+const path = computed(() => route.params.path as string)
+
+const gitStore = useGitRepo()
+const fetchFileView = (repo: number, path: string, sha: string) =>
+  gitStore.fetchFileView(repo, path, sha)
+
+const currentPath = computed<string[]>(() => path.value.split('/').slice(0, -1))
 
 const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
@@ -43,7 +41,7 @@ const codeBlock = ref<HTMLElement | null>(null)
 
 // 언어 추론
 const language = computed(() => {
-  const ext = (props.fileData?.path ?? '').split('.').pop()?.toLowerCase()
+  const ext = (fileData.value?.path ?? '').split('.').pop()?.toLowerCase()
   const langMap: { [key: string]: string } = {
     gitignore: 'gitignore',
     py: 'python',
@@ -77,8 +75,12 @@ const highlightCode = async () => {
 }
 
 // 초기 적용
-onMounted(highlightCode)
 watch(isDark, highlightCode)
+
+onBeforeMount(async () => {
+  fileData.value = await fetchFileView(repoId.value, path.value, sha.value)
+  await highlightCode()
+})
 </script>
 
 <template>
@@ -91,7 +93,7 @@ watch(isDark, highlightCode)
           <router-link to="" @click="intoPath(path)">{{ path }}</router-link>
         </span>
         /
-        {{ fileData.name }}
+        {{ fileData?.name }}
         @ {{ currBranch }}
       </h5>
     </CCol>
@@ -114,27 +116,27 @@ watch(isDark, highlightCode)
           class="mb-0"
           style="width: 100%; border-collapse: collapse"
         >
-          <CTableRow>
-            <CTableDataCell class="py-2 px-3 strong truncate">{{ fileData.path }}</CTableDataCell>
+          <CTableRow v-if="fileData">
+            <CTableDataCell class="py-2 px-3 strong truncate">{{ fileData?.path }}</CTableDataCell>
             <CTableDataCell class="px-3 text-right" style="width: 160px">
-              <b :class="bgLight">SHA</b> : {{ cutString(fileData.sha, 7) }}
+              <b :class="bgLight">SHA</b> : {{ cutString(fileData?.sha, 7) }}
             </CTableDataCell>
             <CTableDataCell class="px-3 text-right" style="width: 160px">
-              <b :class="bgLight">Size</b> : {{ humanizeFileSize(fileData.size) }}
+              <b :class="bgLight">Size</b> : {{ humanizeFileSize(fileData?.size) }}
             </CTableDataCell>
             <CTableDataCell class="px-3 text-right" style="width: 250px">
-              <b :class="bgLight">modified</b> : {{ timeFormat(fileData.modified) }}
+              <b :class="bgLight">modified</b> : {{ timeFormat(fileData?.modified) }}
             </CTableDataCell>
           </CTableRow>
         </CTable>
-        <v-card v-if="fileData.binary" class="py-5 px-3" :color="darkSecondary">
-          <code>{{ fileData.message }}</code>
+        <v-card v-if="fileData?.binary" class="py-5 px-3" :color="darkSecondary">
+          <code>{{ fileData?.message }}</code>
         </v-card>
         <pre
-          v-else-if="fileData.content"
+          v-else-if="fileData?.content"
           class="code-block"
         ><code ref="codeBlock" :class="`language-${language}`"
-        >{{ fileData.content }}</code></pre>
+        >{{ fileData?.content }}</code></pre>
         <pre v-else class="code-block"><code></code></pre>
       </div>
     </CCol>
