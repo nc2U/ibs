@@ -191,8 +191,7 @@ urlpatterns += [
 urlpatterns += [path('repo/<int:pk>/', work.GitRepoApiView.as_view(), name='git-repo')]
 urlpatterns += [path('repo/<int:pk>/branches/', work.GitBranchesView.as_view(), name='git-branches')]
 urlpatterns += [path('repo/<int:pk>/tags/', work.GitTagsView.as_view(), name='git-tags')]
-urlpatterns += [
-    path('root-tree/', work.GitRootTreeView.as_view(), name='git-branch-tree')]
+urlpatterns += [path('root-tree/', work.GitRootTreeView.as_view(), name='git-branch-tree')]
 urlpatterns += [path('repo/<int:pk>/tree/', work.GitTreeView.as_view(), name='git-root-tree')]
 urlpatterns += [path('repo/<int:pk>/tree/<path:path>', work.GitTreeView.as_view(), name='git-sub-tree')]
 urlpatterns += [
