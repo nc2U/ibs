@@ -220,7 +220,6 @@ onBeforeMount(async () => {
           @change-revision="changeRevision"
           @set-up-to="cFilter.up_to = $event"
         />
-        <!--        @file-view="viewFile"-->
 
         <Revisions
           v-if="viewPageSort === 'revisions'"
@@ -261,7 +260,6 @@ onBeforeMount(async () => {
         @get-diff="getDiff"
         @into-path="intoPath"
       />
-      <!--      @file-view="viewFile"-->
     </template>
 
     <template v-slot:aside></template>

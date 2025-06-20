@@ -14,14 +14,7 @@ const props = defineProps({
   branchTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits([
-  'into-root',
-  'pre-path',
-  'into-path',
-  'file-view',
-  'change-revision',
-  'set-up-to',
-])
+const emit = defineEmits(['into-root', 'pre-path', 'into-path', 'change-revision', 'set-up-to'])
 
 const prePath = (path: string) => {
   const index = currentPath.value.indexOf(path)
@@ -87,7 +80,6 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
             :node="node"
             :key="node.sha"
             @into-path="emit('into-path', $event)"
-            @file-view="emit('file-view', $event)"
           />
         </CTableBody>
       </CTable>

@@ -23,13 +23,13 @@ const isDark = inject<ComputedRef<Boolean>>(
 const route = useRoute()
 const repoId = computed(() => Number(route.params.repoId))
 const sha = computed(() => route.params.sha as string)
-const pathMatch = computed(() => route.params.pathMatch as string[])
+const path = computed(() => route.params.path as string)
 
 const gitStore = useGitRepo()
 const fetchFileView = (repo: number, path: string, sha: string) =>
   gitStore.fetchFileView(repo, path, sha)
 
-const currentPath = computed<string[]>(() => pathMatch.value.slice(0, -1))
+const currentPath = computed<string[]>(() => path.value.split('/').slice(0, -1))
 
 const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
@@ -78,8 +78,7 @@ const highlightCode = async () => {
 watch(isDark, highlightCode)
 
 onBeforeMount(async () => {
-  const path = pathMatch.value.join('/')
-  fileData.value = await fetchFileView(repoId.value, path, sha.value)
+  fileData.value = await fetchFileView(repoId.value, path.value, sha.value)
   await highlightCode()
 })
 </script>

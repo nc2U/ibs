@@ -15,13 +15,14 @@ import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
 
-const emit = defineEmits(['get-diff', 'into-path', 'file-view'])
+const emit = defineEmits(['get-diff', 'into-path'])
 
 const tabKey = ref(1)
 
 const gitStore = useGitRepo()
 const commit = computed<Commit | null>(() => gitStore.commit)
 const gitDiff = computed<DiffApi | null>(() => gitStore.gitDiff)
+
 watch(
   () => gitDiff.value,
   nVal => {
@@ -172,7 +173,6 @@ onBeforeMount(async () => {
     :sha="(changedFile as ChangedFile)?.sha as string"
     :change-files="(changedFile as ChangedFile)?.changed as Changed[]"
     @into-path="emit('into-path', $event)"
-    @file-view="emit('file-view', $event)"
     @diff-view="partialDiffView"
   />
 
