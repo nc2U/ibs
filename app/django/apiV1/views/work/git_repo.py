@@ -326,7 +326,6 @@ class GitTreeView(APIView):
 
     @staticmethod
     def get(request, pk, path=None):
-        sha = request.query_params.get("sha", "").strip()  # commit SHA
         refs = request.query_params.get("refs", "").strip()  # refs name
 
         repo_path = get_repo_path(pk)
@@ -341,29 +340,20 @@ class GitTreeView(APIView):
             default_branch = get_default_branch(repo)
             curr_refs = default_branch
 
-            # commit 객체 특정
-            if sha:
+            # refs 가 제공되면 해당 refs(브랜치/태그/해시) 사용, 없으면 기본 브랜치 시도
+            if refs:  # commit 객체 특정
                 try:
-                    sha = sha.strip()
-                    commit = repo.commit(sha)  # 특정 SHA 커밋
-                    curr_refs = f"{sha[:8]}"  # SHA 표시
+                    commit = repo.commit(refs)
+                    curr_refs = refs
                 except (BadName, ValueError):
-                    return Response({"Error": f"Commit Hash '{sha}' not found"}, status=404)
+                    return Response({"error": f"Invalid refs: {refs}", "details": "Branch not found"},
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
-                # refs 가 제공되면 해당 refs(브랜치/태그/해시) 사용, 없으면 기본 브랜치 시도
-                if refs:
-                    try:
-                        commit = repo.commit(refs)
-                        curr_refs = refs
-                    except (BadName, ValueError):
-                        return Response({"error": f"Invalid refs: {refs}", "details": "Branch not found"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    # 기본 브랜치 (main/master) 또는 HEAD
-                    branch_ref = next((b for b in repo.heads if b.name == default_branch), None)
-                    if not branch_ref:
-                        return Response({"Error": f"Default branch '{default_branch}' not found"}, status=404)
-                    commit = branch_ref.commit
+                # 기본 브랜치 (main/master) 또는 HEAD
+                branch_ref = next((b for b in repo.heads if b.name == default_branch), None)
+                if not branch_ref:
+                    return Response({"Error": f"Default branch '{default_branch}' not found"}, status=404)
+                commit = branch_ref.commit
 
             # refs 정보
             branches = repo.git.branch('--contains', commit.hexsha).split('\n')
