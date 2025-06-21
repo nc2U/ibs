@@ -8,7 +8,7 @@ const props = defineProps({
   changeFiles: { type: Array as PropType<Changed[]>, default: () => [] },
 })
 
-const emit = defineEmits(['into-path', 'diff-view'])
+const emit = defineEmits(['set-up-to', 'change-refs', 'into-path', 'diff-view'])
 
 interface TreeNode {
   name: string
@@ -88,7 +88,8 @@ const treeData = computed(() => buildTree(props.changeFiles))
       :node="node"
       :sha="sha.substring(0, 8)"
       :depth="0"
-      @into-path="emit('into-path', { path: $event, sha })"
+      @change-refs="emit('change-refs', $event)"
+      @into-path="emit('into-path', $event)"
       @diff-view="emit('diff-view', $event)"
     />
   </template>

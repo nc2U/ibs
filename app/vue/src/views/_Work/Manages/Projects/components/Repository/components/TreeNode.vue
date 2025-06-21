@@ -43,14 +43,7 @@ const toggleFold = async () => {
           size="16"
           class="pointer mr-1"
         />
-        <span
-          @click="
-            emit('into-path', {
-              path: node?.path as string,
-              sha: node?.commit?.sha as string,
-            })
-          "
-        >
+        <span @click="emit('into-path', node?.path as string)">
           <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
           <router-link to="">{{ node.name }}</router-link>
         </span>

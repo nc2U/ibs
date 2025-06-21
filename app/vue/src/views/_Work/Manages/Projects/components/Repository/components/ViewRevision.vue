@@ -15,7 +15,7 @@ import RevisionControl from './HeaderMenu/RevisionControl.vue'
 import PathTree from './atomics/PathTree.vue'
 import Diff from './atomics/Diff.vue'
 
-const emit = defineEmits(['get-diff', 'into-path'])
+const emit = defineEmits(['change-refs', 'into-path', 'get-diff'])
 
 const tabKey = ref(1)
 
@@ -172,6 +172,7 @@ onBeforeMount(async () => {
     v-if="tabKey === 1"
     :sha="(changedFile as ChangedFile)?.sha as string"
     :change-files="(changedFile as ChangedFile)?.changed as Changed[]"
+    @change-refs="emit('change-refs', $event)"
     @into-path="emit('into-path', $event)"
     @diff-view="partialDiffView"
   />

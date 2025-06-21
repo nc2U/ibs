@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { defineProps, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 
@@ -16,22 +17,25 @@ const props = defineProps<{
   depth: number
 }>()
 
-const emit = defineEmits(['into-path', 'diff-view'])
+const emit = defineEmits(['change-refs', 'into-path', 'diff-view'])
 
 const gitStore = useGitRepo()
 const setShaRefs = () => {
   gitStore.setRefsSort('sha')
   gitStore.setCurrRefs(props.sha)
+  emit('change-refs', props.sha, true)
 }
 
-const infoPath = () => {
+const intoPath = () => {
   setShaRefs()
+  router.push({ name: '(저장소)' })
   emit('into-path', props.node.path)
 }
 
 const router = useRouter()
 const viewFile = () => {
   setShaRefs()
+  gitStore.setCurrPath(props.node.path ?? '')
   router.push({ name: '(저장소) - 파일 보기', params: { path: props.node.path } })
 }
 </script>
@@ -41,7 +45,7 @@ const viewFile = () => {
     <CCol :style="`padding-left: ${depth * 20}px`">
       <span v-if="!node.type">
         <v-icon icon="mdi-folder-open" color="#EFD2A8" size="16" class="mr-1" />
-        <a href="javascript:void(0)" @click="infoPath">{{ node.name }}</a>
+        <a href="javascript:void(0)" @click="intoPath">{{ node.name }}</a>
       </span>
       <span v-else>
         <v-icon
@@ -81,6 +85,7 @@ const viewFile = () => {
       v-for="(child, i) in node.children"
       :key="i"
       :node="child"
+      :sha="sha"
       :depth="depth + 1"
       @into-path="emit('into-path', $event)"
       @diff-view="emit('diff-view', $event)"

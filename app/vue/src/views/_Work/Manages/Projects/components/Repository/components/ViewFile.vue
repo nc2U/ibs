@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, nextTick, onBeforeMount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import { bgLight, btnSecondary, darkSecondary } from '@/utils/cssMixins.ts'
@@ -11,7 +11,7 @@ const props = defineProps({
   currRefs: { type: String, required: true },
 })
 
-const emit = defineEmits(['into-root', 'into-path', 'goto-trees'])
+const emit = defineEmits(['into-path', 'goto-trees'])
 
 const fileData = ref()
 
@@ -20,19 +20,22 @@ const isDark = inject<ComputedRef<Boolean>>(
   computed(() => false),
 )
 
-const route = useRoute()
+const [route, router] = [useRoute(), useRouter()]
 const repoId = computed(() => Number(route.params.repoId))
 const sha = computed(() => route.params.sha as string)
 const path = computed(() => route.params.path)
 
-const currentPath = computed<string[]>(() =>
-  typeof path.value === 'string' && path.value ? path.value.split('/').slice(0, -1) : [],
+const currentPath = computed(() =>
+  Array.isArray(path.value)
+    ? path.value[0].split('/').slice(0, -1)
+    : path.value.split('/').slice(0, -1),
 )
 
 const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
   const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
-  emit('into-path', { sha: '', path: nowPath })
+  router.push({ name: '(저장소)' })
+  emit('into-path', nowPath)
 }
 
 const gitStore = useGitRepo()
@@ -89,7 +92,7 @@ onBeforeMount(async () => {
   <CRow class="py-2">
     <CCol>
       <h5>
-        <router-link to="" @click="emit('into-root')">{{ repoName }}</router-link>
+        <router-link to="" @click="intoPath('')">{{ repoName }}</router-link>
         <span v-for="path in currentPath" :key="path">
           /
           <router-link to="" @click="intoPath(path)">{{ path }}</router-link>

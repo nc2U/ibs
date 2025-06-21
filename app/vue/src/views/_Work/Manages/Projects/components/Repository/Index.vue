@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
-import type { Repository, Commit, BranchInfo, Tree } from '@/store/types/work_git_repo.ts'
+import type { Repository, Commit, BranchInfo, Tree, DiffApi } from '@/store/types/work_git_repo.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import BranchTree from './components/BranchTree.vue'
@@ -27,6 +27,8 @@ const cFilter = ref({
   search: '',
   up_to: '',
 })
+
+const [route, router] = [useRoute(), useRouter()]
 
 const workStore = useWork()
 const project = computed<IssueProject | null>(() => workStore.issueProject)
@@ -62,68 +64,35 @@ const fetchCommitList = (payload: {
 
 const branches = computed<string[]>(() => gitStore.branches)
 const tags = computed<string[]>(() => gitStore.tags)
+const default_branch = computed<string>(() => gitStore.default_branch)
 
-const default_branch = computed(() => gitStore.default_branch)
-const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
+const curr_path = computed(() => gitStore.curr_path)
+const curr_refs = computed<string>(() => gitStore.curr_refs || (default_branch.value as string))
 const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
-const gitDiff = computed<any>(() => gitStore.gitDiff)
+const gitDiff = computed<DiffApi>(() => gitStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
-const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
-  gitStore.fetchGitDiff(pk, diff_hash, full)
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchRefTree = (payload: { repo: number; refs: string; path?: string }) =>
   gitStore.fetchRefTree(payload)
+const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
+  gitStore.fetchGitDiff(pk, diff_hash, full)
 
-const changeRevision = async (refs: string) => {
+const changeRefs = async (refs: string, isSha = false) => {
   cFilter.value.page = 1
   cFilter.value.limit = 25
+  if (isSha) cFilter.value.up_to = refs
 
   await fetchRefTree({ repo: repo.value?.pk as number, refs })
-  if (branchRefs.value) {
-    cFilter.value.branch = branchRefs.value?.branches[0] as string
-    const params = {
-      repo: cFilter.value.repo,
-      branch: cFilter.value.branch,
-      up_to: branchRefs.value?.commit.sha,
-    }
-    await fetchCommitList(params)
-  }
+  if (branchRefs.value) cFilter.value.branch = branchRefs.value?.branches[0] as string
+  await fetchCommitList(cFilter.value)
 }
 
 // into path
-const shaMap = ref<{ path: string; sha: string }[]>([])
-const currPath = ref('')
-
-const intoRoot = async () => {
-  await router.push({ name: '(저장소)' })
-  currPath.value = ''
-  await fetchRefTree({
-    repo: cFilter.value.repo,
-    refs: curr_refs.value,
-  })
-}
-
-const prePath = async (path: string) => {
-  currPath.value = path
-  const item = shaMap.value.find(item => item.path === path)
-  if (item?.sha) await intoPath({ path, sha: item.sha })
-  else
-    await fetchRefTree({
-      repo: repo.value?.pk as number,
-      refs: curr_refs.value,
-      path,
-    })
-}
-
-const intoPath = async (node: { path: string; sha: string }) => {
-  await router.push({ name: '(저장소)' })
-  const exists = shaMap.value.some(item => item.path === node.path && item.sha === node.sha)
-  if (!exists) shaMap.value?.push(node)
-  const { path } = node
-  currPath.value = path
+const intoPath = async (path: string) => {
+  gitStore.setCurrPath(path)
   await fetchRefTree({
     repo: repo.value?.pk as number,
     refs: curr_refs.value,
@@ -133,10 +102,8 @@ const intoPath = async (node: { path: string; sha: string }) => {
 
 // revisons & diff view
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
-
-const [route, router] = [useRoute(), useRouter()]
-
 const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
+
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
 
 const headId = ref<number | null>(null)
@@ -186,6 +153,7 @@ const dataSetup = async (proj: number) => {
       await fetchRefTree({
         repo: cFilter.value.repo,
         refs: curr_refs.value,
+        path: curr_path.value,
       })
     }
   }
@@ -205,16 +173,13 @@ onBeforeMount(async () => {
       <template v-if="route.name === '(저장소)'">
         <BranchTree
           :repo="repo as Repository"
-          :curr-path="currPath"
+          :curr-path="curr_path"
           :branches="branches"
           :tags="tags"
           :curr-refs="curr_refs"
           :branch-tree="branchTree"
-          @into-root="intoRoot"
-          @pre-path="prePath"
           @into-path="intoPath"
-          @set-up-to="cFilter.up_to = $event"
-          @change-revision="changeRevision"
+          @change-refs="changeRefs"
         />
 
         <Revisions
@@ -245,7 +210,6 @@ onBeforeMount(async () => {
         v-else-if="route.name === '(저장소) - 파일 보기'"
         :repo-name="repo?.slug as string"
         :curr-refs="curr_refs"
-        @into-root="intoRoot"
         @into-path="intoPath"
         @goto-trees="router.push({ name: '(저장소)' })"
       />
@@ -253,6 +217,7 @@ onBeforeMount(async () => {
       <ViewRevision
         v-else-if="route.name === '(저장소) - 리비전 보기'"
         :repo="repo?.pk as number"
+        @change-refs="changeRefs"
         @get-diff="getDiff"
         @into-path="intoPath"
       />

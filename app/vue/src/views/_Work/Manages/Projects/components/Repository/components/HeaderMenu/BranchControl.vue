@@ -15,7 +15,7 @@ const default_branch = computed(() => gitStore.default_branch)
 const setRefsSort = (sort: 'branch' | 'tag' | 'sha') => gitStore.setRefsSort(sort)
 const setCurrRefs = (refs: string) => gitStore.setCurrRefs(refs)
 
-const emit = defineEmits(['set-up-to', 'change-revision'])
+const emit = defineEmits(['change-refs'])
 
 const branch = ref('')
 watch(branch, nVal => {
@@ -46,8 +46,7 @@ const changeRefs = (e: Event) => {
   if ((e.target as any).value) {
     setCurrRefs((e.target as any).value)
     nextTick(() => {
-      emit('set-up-to', sha.value)
-      emit('change-revision', (e.target as any).value)
+      emit('change-refs', (e.target as any).value, !!sha.value)
     })
   }
 }

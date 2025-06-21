@@ -142,11 +142,13 @@ export const useGitRepo = defineStore('git_repo', () => {
       .catch(err => errorHandle(err.response))
   }
 
+  const curr_path = ref<string>('')
   const refs_sort = ref<'branch' | 'tag' | 'sha'>('branch')
   const curr_refs = ref<string>('')
   const branch_refs = ref<BranchInfo | null>(null)
   const branch_tree = ref<any[]>([])
 
+  const setCurrPath = (path: string) => (curr_path.value = path)
   const setRefsSort = (sort: 'branch' | 'tag' | 'sha') => (refs_sort.value = sort)
   const setCurrRefs = (refs: string) => (curr_refs.value = refs)
 
@@ -227,10 +229,12 @@ export const useGitRepo = defineStore('git_repo', () => {
     tags,
     fetchTags,
 
+    curr_path,
     curr_refs,
     refs_sort,
     branch_refs,
     branch_tree,
+    setCurrPath,
     setRefsSort,
     setCurrRefs,
     fetchRefTree,

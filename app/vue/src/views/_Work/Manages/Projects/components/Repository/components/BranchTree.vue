@@ -14,12 +14,12 @@ const props = defineProps({
   branchTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits(['into-root', 'pre-path', 'into-path', 'set-up-to', 'change-revision'])
+const emit = defineEmits(['into-path', 'change-refs'])
 
-const prePath = (path: string) => {
+const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
   const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
-  emit('pre-path', nowPath)
+  emit('into-path', nowPath)
 }
 
 const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.split('/') : []))
@@ -29,12 +29,12 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
   <CRow class="py-2 mb-2 flex-lg-row flex-column-reverse">
     <CCol class="col-6">
       <h5>
-        <router-link to="" @click="emit('into-root')">{{ repo?.slug }}</router-link>
+        <router-link to="" @click="emit('into-path', '')">{{ repo?.slug }}</router-link>
         <template v-if="currentPath.length">
           <span v-for="(path, i) in currentPath" :key="i">
             /
             <span v-if="i === currentPath.length - 1">{{ path }}</span>
-            <router-link v-else to="" @click="prePath(path)">{{ path }}</router-link>
+            <router-link v-else to="" @click="intoPath(path)">{{ path }}</router-link>
           </span>
         </template>
         @ {{ currRefs }}
@@ -45,8 +45,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
         :curr-refs="currRefs"
         :branches="branches"
         :tags="tags"
-        @set-up-to="emit('set-up-to', $event)"
-        @change-revision="emit('change-revision', $event)"
+        @change-refs="emit('change-refs', $event)"
       />
     </CCol>
   </CRow>
