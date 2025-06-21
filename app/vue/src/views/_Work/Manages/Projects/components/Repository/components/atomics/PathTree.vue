@@ -86,6 +86,7 @@ const treeData = computed(() => buildTree(props.changeFiles))
   <template v-for="(node, index) in treeData" :key="index">
     <TreeItem
       :node="node"
+      :sha="sha.substring(0, 8)"
       :depth="0"
       @into-path="emit('into-path', { path: $event, sha })"
       @diff-view="emit('diff-view', $event)"

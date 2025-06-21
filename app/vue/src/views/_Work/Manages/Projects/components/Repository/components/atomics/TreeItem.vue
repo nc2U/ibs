@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { defineProps, defineEmits } from 'vue'
+import { useRouter } from 'vue-router'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 
 interface TreeNode {
   name: string
@@ -11,10 +12,28 @@ interface TreeNode {
 
 const props = defineProps<{
   node: TreeNode
+  sha: string
   depth: number
 }>()
 
 const emit = defineEmits(['into-path', 'diff-view'])
+
+const gitStore = useGitRepo()
+const setShaRefs = () => {
+  gitStore.setRefsSort('sha')
+  gitStore.setCurrRefs(props.sha)
+}
+
+const infoPath = () => {
+  setShaRefs()
+  emit('into-path', props.node.path)
+}
+
+const router = useRouter()
+const viewFile = () => {
+  setShaRefs()
+  router.push({ name: '(저장소) - 파일 보기', params: { path: props.node.path } })
+}
 </script>
 
 <template>
@@ -22,7 +41,7 @@ const emit = defineEmits(['into-path', 'diff-view'])
     <CCol :style="`padding-left: ${depth * 20}px`">
       <span v-if="!node.type">
         <v-icon icon="mdi-folder-open" color="#EFD2A8" size="16" class="mr-1" />
-        <a href="javascript:void(0)" @click="emit('into-path', node.path)">{{ node.name }}</a>
+        <a href="javascript:void(0)" @click="infoPath">{{ node.name }}</a>
       </span>
       <span v-else>
         <v-icon
@@ -47,12 +66,10 @@ const emit = defineEmits(['into-path', 'diff-view'])
           "
           size="11"
         />
-        <router-link :to="{ name: '(저장소) - 파일 보기', params: { path: node.path } }">
-          {{ node.name }}
-        </router-link>
+        <router-link to="" @click="viewFile"> {{ node.name }} </router-link>
         <span>
-          (<router-link to="" @click.prevent="emit('diff-view', node.fileNo)">
-            비교(diff) </router-link
+          (<router-link to="" @click.prevent="emit('diff-view', node.fileNo)"
+            >비교(diff)</router-link
           >)
         </span>
       </span>
