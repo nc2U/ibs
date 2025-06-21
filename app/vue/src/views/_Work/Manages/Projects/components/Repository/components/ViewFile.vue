@@ -11,7 +11,7 @@ const props = defineProps({
   currRefs: { type: String, required: true },
 })
 
-const emit = defineEmits(['into-root', 'into-path', 'goto-trees'])
+const emit = defineEmits(['into-path', 'goto-trees'])
 
 const fileData = ref()
 
@@ -34,7 +34,7 @@ const currentPath = computed(() =>
 const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
   const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
-  router.push({ name: '(저장소)', state: { path: nowPath } })
+  router.push({ name: '(저장소)' })
   emit('into-path', nowPath)
 }
 
@@ -92,7 +92,7 @@ onBeforeMount(async () => {
   <CRow class="py-2">
     <CCol>
       <h5>
-        <router-link to="" @click="emit('into-root')">{{ repoName }}</router-link>
+        <router-link to="" @click="intoPath('')">{{ repoName }}</router-link>
         <span v-for="path in currentPath" :key="path">
           /
           <router-link to="" @click="intoPath(path)">{{ path }}</router-link>

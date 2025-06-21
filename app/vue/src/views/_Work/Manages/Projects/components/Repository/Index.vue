@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
@@ -62,8 +62,9 @@ const fetchCommitList = (payload: {
 
 const branches = computed<string[]>(() => gitStore.branches)
 const tags = computed<string[]>(() => gitStore.tags)
-
 const default_branch = computed<string>(() => gitStore.default_branch)
+
+const curr_path = computed(() => gitStore.curr_path)
 const curr_refs = computed<string>(() => gitStore.curr_refs || (default_branch.value as string))
 const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
@@ -88,19 +89,8 @@ const changeRefs = async (refs: string, isSha = false) => {
 }
 
 // into path
-const currPath = ref('')
-
-const intoRoot = async () => {
-  await router.push({ name: '(저장소)' })
-  currPath.value = ''
-  await fetchRefTree({
-    repo: cFilter.value.repo,
-    refs: curr_refs.value,
-  })
-}
-
 const intoPath = async (path: string) => {
-  currPath.value = path
+  gitStore.setCurrPath(path)
   await fetchRefTree({
     repo: repo.value?.pk as number,
     refs: curr_refs.value,
@@ -148,7 +138,6 @@ const pageSelect = (page: number) => {
   fetchCommitList(cFilter.value)
 }
 
-const state = window.history.state
 const dataSetup = async (proj: number) => {
   if (proj) {
     cFilter.value.project = proj
@@ -161,14 +150,10 @@ const dataSetup = async (proj: number) => {
       await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
-
-      const pathQry = state.path ? `${state.path}` : ''
-      if (state.path) currPath.value = state.path as string
-
       await fetchRefTree({
         repo: cFilter.value.repo,
         refs: curr_refs.value,
-        path: pathQry,
+        path: curr_path.value,
       })
     }
   }
@@ -186,15 +171,14 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(저장소)'">
-        {{ curr_refs }}
+        {{ curr_path }} //
         <BranchTree
           :repo="repo as Repository"
-          :curr-path="currPath"
+          :curr-path="curr_path"
           :branches="branches"
           :tags="tags"
           :curr-refs="curr_refs"
           :branch-tree="branchTree"
-          @into-root="intoRoot"
           @into-path="intoPath"
           @change-refs="changeRefs"
         />
@@ -227,7 +211,6 @@ onBeforeMount(async () => {
         v-else-if="route.name === '(저장소) - 파일 보기'"
         :repo-name="repo?.slug as string"
         :curr-refs="curr_refs"
-        @into-root="intoRoot"
         @into-path="intoPath"
         @goto-trees="router.push({ name: '(저장소)' })"
       />

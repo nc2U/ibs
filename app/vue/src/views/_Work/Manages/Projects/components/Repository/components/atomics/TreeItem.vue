@@ -28,13 +28,14 @@ const setShaRefs = () => {
 
 const intoPath = () => {
   setShaRefs()
-  router.push({ name: '(저장소)', state: { path: props.node.path } })
+  router.push({ name: '(저장소)' })
   emit('into-path', props.node.path)
 }
 
 const router = useRouter()
 const viewFile = () => {
   setShaRefs()
+  gitStore.setCurrPath(props.node.path ?? '')
   router.push({ name: '(저장소) - 파일 보기', params: { path: props.node.path } })
 }
 </script>

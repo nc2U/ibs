@@ -14,7 +14,7 @@ const props = defineProps({
   branchTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
 
-const emit = defineEmits(['into-root', 'into-path', 'change-refs'])
+const emit = defineEmits(['into-path', 'change-refs'])
 
 const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
@@ -29,7 +29,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
   <CRow class="py-2 mb-2 flex-lg-row flex-column-reverse">
     <CCol class="col-6">
       <h5>
-        <router-link to="" @click="emit('into-root')">{{ repo?.slug }}</router-link>
+        <router-link to="" @click="emit('into-path', '')">{{ repo?.slug }}</router-link>
         <template v-if="currentPath.length">
           <span v-for="(path, i) in currentPath" :key="i">
             /
