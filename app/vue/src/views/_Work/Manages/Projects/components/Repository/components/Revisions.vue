@@ -43,6 +43,8 @@ watch(
   },
 )
 
+const router = useRouter()
+
 const commits = computed(() =>
   props.getListSort === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
@@ -82,8 +84,6 @@ const viewRevision = (commit: Commit) => {
     params: { repoId: repo.value, sha: commit.commit_hash },
   })
 }
-
-const router = useRouter()
 
 onBeforeMount(() => {
   if (props.commitList.length > 1) {

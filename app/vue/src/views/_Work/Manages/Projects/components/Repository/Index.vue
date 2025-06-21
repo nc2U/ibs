@@ -109,8 +109,7 @@ const intoPath = async (path: string) => {
   })
 }
 
-// revisons & diff view
-const viewPageSort = ref<'revisions' | 'diff'>('revisions')
+// revisons
 const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
 
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
@@ -133,13 +132,8 @@ const getDiff = (payload: { base: string; head: string; full?: boolean }) => {
 
   if (repo.value) {
     fetchGitDiff(repo.value?.pk as number, diff_hash, full)
-    if (!full) viewPageSort.value = 'diff'
+    router.push({ name: '(저장소) - 차이점 보기', params: { repoId: repo.value.pk, base, head } })
   }
-}
-
-const getBack = () => {
-  viewPageSort.value = 'revisions'
-  gitStore.removeGitDiff()
 }
 
 const pageSelect = (page: number) => {
@@ -192,7 +186,6 @@ onBeforeMount(async () => {
         />
 
         <Revisions
-          v-if="viewPageSort === 'revisions'"
           :page="cFilter.page"
           :limit="cFilter.limit"
           :commit-list="commitList"
@@ -207,14 +200,13 @@ onBeforeMount(async () => {
           @page-select="pageSelect"
           @page-reset="cFilter.page = 1"
         />
-
-        <ViewDiff
-          v-if="viewPageSort === 'diff'"
-          :git-diff="gitDiff"
-          @get-diff="getDiff"
-          @get-back="getBack"
-        />
       </template>
+
+      <ViewDiff
+        v-if="route.name === '(저장소) - 차이점 보기'"
+        :git-diff="gitDiff"
+        @get-diff="getDiff"
+      />
 
       <ViewFile
         v-else-if="route.name === '(저장소) - 파일 보기'"
