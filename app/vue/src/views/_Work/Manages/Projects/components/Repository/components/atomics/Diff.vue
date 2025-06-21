@@ -112,19 +112,19 @@ onMounted(async () => {
     </CAlert>
   </div>
 
-  <div v-if="diffHtml && !hasContent" class="p-4">
+  <div v-if="diffHtml && !hasContent" class="p-0">
     <CRow class="pb-5 text-center">
       <CCol>
         <svg
           aria-hidden="true"
-          height="26"
+          height="24"
           viewBox="0 0 24 24"
           version="1.1"
-          width="26"
+          width="24"
           data-view-component="true"
           class="octicon octicon-git-compare blankslate-icon mb-4"
-          stroke="grey"
-          fill="grey"
+          stroke=""
+          fill="#888"
         >
           <path
             d="M16.5 19.25a3.25 3.25 0 1 1 6.5 0 3.25 3.25 0 0 1-6.5 0Zm3.25-1.75a1.75 1.75 0 1 0 .001 3.501 1.75 1.75 0 0 0-.001-3.501Z"
@@ -136,17 +136,31 @@ onMounted(async () => {
             d="M10.095 22.28a.75.75 0 0 1 0-1.06l1.22-1.22H7.25a3.75 3.75 0 0 1-3.75-3.75V7.5a.75.75 0 0 1 1.5 0v8.75a2.25 2.25 0 0 0 2.25 2.25h4.064l-1.22-1.22a.748.748 0 0 1 .332-1.265.75.75 0 0 1 .729.205l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0Z"
           />
         </svg>
-        <h5 class="m-4">비교할 것이 없습니다.</h5>
+        <h5 class="mt-3 mb-4">비교할 것이 없습니다.</h5>
 
-        <span class="strong text-primary">{{ cutString(gitDiff?.base ?? '', 10) }}</span> 는 최신
-        버전입니다.
-        <span class="strong text-primary">{{ cutString(gitDiff?.head, 10) }}</span>
-        <span> 변경된 파일 또는 변경 사항이 없습니다. </span>
+        <span>
+          <router-link
+            :to="{ name: '(저장소) - 리비전 보기', params: { sha: gitDiff.base } }"
+            class="strong"
+          >
+            {{ cutString(gitDiff?.base ?? '', 10, '..') }}
+          </router-link>
+          는 최신 버전입니다.
+        </span>
+        <span>
+          <router-link
+            :to="{ name: '(저장소) - 리비전 보기', params: { sha: gitDiff.head } }"
+            class="strong"
+          >
+            {{ cutString(gitDiff?.head, 10, '..') }}
+          </router-link>
+          변경된 파일 또는 변경 사항이 없습니다.
+        </span>
       </CCol>
     </CRow>
 
     <CRow style="padding-top: 60px">
-      <CCol class="pt-5">
+      <CCol class="pt-0">
         <v-icon icon="mdi-invoice-text-plus-outline" size="18" color="grey" />
         Showing
         <router-link to="#" class="strong">0 changed files</router-link>

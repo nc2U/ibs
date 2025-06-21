@@ -22,7 +22,7 @@ const getBack = () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>리비전 {{ gitDiff?.head.substring(0, 8) }} : {{ gitDiff?.base.substring(0, 8) }}</h5>
+      <h5>리비전 {{ gitDiff?.base.substring(0, 8) }} : {{ gitDiff?.head.substring(0, 8) }}</h5>
     </CCol>
   </CRow>
 
