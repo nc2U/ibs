@@ -32,7 +32,7 @@ const currentPath = computed<string[]>(() =>
 const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
   const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
-  router.push({ name: '(저장소)' })
+  router.push({ name: '(저장소)', query: { path: nowPath } })
   emit('into-path', nowPath)
 }
 

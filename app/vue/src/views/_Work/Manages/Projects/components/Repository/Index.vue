@@ -160,9 +160,11 @@ const dataSetup = async (proj: number) => {
       await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
+      const pathQry = route.query.path ? `${route.query.path}` : ''
       await fetchRefTree({
         repo: cFilter.value.repo,
         refs: curr_refs.value,
+        path: pathQry,
       })
     }
   }
