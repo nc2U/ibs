@@ -11,7 +11,7 @@ const props = defineProps({
   currRefs: { type: String, required: true },
 })
 
-const emit = defineEmits(['into-path', 'goto-trees'])
+const emit = defineEmits(['into-path'])
 
 const fileData = ref()
 
@@ -106,7 +106,12 @@ onBeforeMount(async () => {
 
   <CRow class="mb-0 pl-2">
     <CCol>
-      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('goto-trees')">
+      <v-btn
+        size="small"
+        variant="outlined"
+        :color="btnSecondary"
+        @click="router.push({ name: '(저장소)' })"
+      >
         목록으로
       </v-btn>
     </CCol>
@@ -149,7 +154,12 @@ onBeforeMount(async () => {
 
   <CRow class="mb-5 pl-2">
     <CCol>
-      <v-btn size="small" variant="outlined" :color="btnSecondary" @click="emit('goto-trees')">
+      <v-btn
+        size="small"
+        variant="outlined"
+        :color="btnSecondary"
+        @click="router.push({ name: '(저장소)' })"
+      >
         목록으로
       </v-btn>
     </CCol>

@@ -220,7 +220,6 @@ onBeforeMount(async () => {
         :repo-name="repo?.slug as string"
         :curr-refs="curr_refs"
         @into-path="intoPath"
-        @goto-trees="router.push({ name: '(저장소)' })"
       />
 
       <ViewRevision
