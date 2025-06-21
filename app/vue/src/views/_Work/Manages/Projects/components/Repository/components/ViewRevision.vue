@@ -188,12 +188,7 @@ onBeforeMount(async () => {
     목록으로
   </v-btn>
 
-  <Diff
-    v-if="tabKey === 2"
-    :git-diff="gitDiff as DiffApi"
-    :diff-index="diffIndex as number"
-    @get-diff="emit('get-diff', $event)"
-  />
+  <Diff v-if="tabKey === 2" :git-diff="gitDiff as DiffApi" :diff-index="diffIndex as number" />
 
   <v-divider v-if="tabKey === 1" class="mb-2" />
 

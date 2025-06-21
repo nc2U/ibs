@@ -31,7 +31,6 @@ const emit = defineEmits([
   'base-set',
   'set-list-sort',
   'get-commit',
-  'get-diff',
   'page-select',
   'page-reset',
 ])
@@ -66,7 +65,7 @@ const updateHead = (pk: number) => {
 const getDiff = () => {
   const base = props.commitList.find(c => c.revision_id === Number(baseId.value))?.commit_hash
   const head = props.commitList.find(c => c.revision_id === Number(headId.value))?.commit_hash
-  emit('get-diff', { base, head })
+  router.push({ name: '(저장소) - 차이점 보기', params: { repoId: 1, base, head } })
 }
 
 const gitStore = useGitRepo()

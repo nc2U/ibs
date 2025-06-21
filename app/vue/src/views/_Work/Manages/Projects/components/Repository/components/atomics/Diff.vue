@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref, watch } from 'vue'
 import type { DiffApi } from '@/store/types/work_git_repo.ts'
+import { useRoute } from 'vue-router'
+import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString } from '@/utils/baseMixins.ts'
 import { html } from 'diff2html'
 import sanitizeHtml from 'sanitize-html'
@@ -10,7 +12,14 @@ const props = defineProps({
   diffIndex: { type: Number, default: undefined },
 })
 
-const emit = defineEmits(['get-diff'])
+const route = useRoute()
+const repo = computed(() => Number(route.params.repoId))
+
+const gitStore = useGitRepo()
+const getFullDiff = () => {
+  const diff_hash = `?base=${props.gitDiff?.base}&head=${props.gitDiff?.head}`
+  gitStore.fetchGitDiff(repo.value as number, diff_hash, true)
+}
 
 const diffHtml = ref('')
 const diffLines = ref(0)
@@ -102,12 +111,7 @@ onMounted(async () => {
   <div v-if="gitDiff?.truncated && diffLines > 800">
     <CAlert color="warning">
       Diff 가져오기 정책에 의해 1000줄 이상에 해당하는 데이터가 표시되지 않았습니다.
-      <router-link
-        to=""
-        @click="emit('get-diff', { base: gitDiff?.base, head: gitDiff?.head, full: true })"
-      >
-        전체 데이터 를 보려면 클릭
-      </router-link>
+      <router-link to="" @click="getFullDiff"> 전체 데이터 를 보려면 클릭</router-link>
       하세요.
     </CAlert>
   </div>

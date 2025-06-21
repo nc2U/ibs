@@ -81,7 +81,6 @@ const up_to_sha = computed<string>(() => gitStore.up_to_sha)
 watch(up_to_sha, newVal => {
   if (newVal) cFilter.value.up_to = newVal
 })
-const gitDiff = computed<DiffApi>(() => gitStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
 const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
@@ -124,16 +123,6 @@ const getCommit = async (limit: number) => {
   cFilter.value.page = 1
   cFilter.value.limit = limit
   await fetchCommitList(cFilter.value)
-}
-
-const getDiff = (payload: { base: string; head: string; full?: boolean }) => {
-  const { base, head, full = false } = payload
-  const diff_hash = `?base=${base}&head=${head}`
-
-  if (repo.value) {
-    fetchGitDiff(repo.value?.pk as number, diff_hash, full)
-    router.push({ name: '(저장소) - 차이점 보기', params: { repoId: repo.value.pk, base, head } })
-  }
 }
 
 const pageSelect = (page: number) => {
@@ -195,18 +184,13 @@ onBeforeMount(async () => {
           @head-set="headSet"
           @base-set="baseSet"
           @get-commit="getCommit"
-          @get-diff="getDiff"
           @set-list-sort="setListSort"
           @page-select="pageSelect"
           @page-reset="cFilter.page = 1"
         />
       </template>
 
-      <ViewDiff
-        v-if="route.name === '(저장소) - 차이점 보기'"
-        :git-diff="gitDiff"
-        @get-diff="getDiff"
-      />
+      <ViewDiff v-if="route.name === '(저장소) - 차이점 보기'" />
 
       <ViewFile
         v-else-if="route.name === '(저장소) - 파일 보기'"
@@ -219,7 +203,6 @@ onBeforeMount(async () => {
         v-else-if="route.name === '(저장소) - 리비전 보기'"
         :repo="repo?.pk as number"
         @change-refs="changeRefs"
-        @get-diff="getDiff"
         @into-path="intoPath"
       />
     </template>
