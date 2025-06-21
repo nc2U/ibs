@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, type PropType } from 'vue'
 import { btnSecondary } from '@/utils/cssMixins.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
@@ -27,6 +27,7 @@ const getBack = () => {
 }
 
 onBeforeMount(getDiff)
+onBeforeUnmount(gitStore.removeGitDiff)
 </script>
 
 <template>

@@ -41,7 +41,7 @@ const cngProject = async (event: any) => {
     else {
       if (route.name === '(저장소)' && !(await chkRepo(event)))
         await router.replace({ name: '(개요)', params: { projId: event } })
-      else await router.replace({ name: route.name, params: { projId: event } })
+      else await router.replace({ name: '(저장소)', params: { projId: event } })
     }
   }
 }
