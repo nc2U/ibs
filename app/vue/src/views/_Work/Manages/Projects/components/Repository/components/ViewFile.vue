@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import { bgLight, btnSecondary, darkSecondary } from '@/utils/cssMixins.ts'
+import Loading from '@/components/Loading/Index.vue'
 import hljs from 'highlight.js'
 
 const props = defineProps({
@@ -82,13 +83,16 @@ const highlightCode = async () => {
 // 초기 적용
 watch(isDark, highlightCode)
 
+const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   fileData.value = await fetchFileView(repoId.value, path.value as string, sha.value)
   await highlightCode()
+  loading.value = false
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <CRow class="py-2">
     <CCol>
       <h5>

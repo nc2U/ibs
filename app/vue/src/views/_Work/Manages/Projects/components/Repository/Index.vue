@@ -205,6 +205,7 @@ onBeforeMount(async () => {
           @get-diff="getDiff"
           @get-list-sort="changeListSort"
           @page-select="pageSelect"
+          @page-reset="cFilter.page = 1"
         />
 
         <ViewDiff

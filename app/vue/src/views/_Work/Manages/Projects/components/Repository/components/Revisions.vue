@@ -33,6 +33,7 @@ const emit = defineEmits([
   'get-commit',
   'get-diff',
   'page-select',
+  'page-reset',
 ])
 
 watch(
@@ -75,6 +76,7 @@ const assignCommit = (commit: Commit) => gitStore.assignCommit(commit)
 
 const viewRevision = (commit: Commit) => {
   assignCommit(commit)
+  emit('page-select')
   router.push({
     name: '(저장소) - 리비전 보기',
     params: { repoId: repo.value, sha: commit.commit_hash },
@@ -212,7 +214,7 @@ onBeforeMount(() => {
         @active-page-change="pageSelect"
       />
       <CCol class="text-50 ms-3" style="padding-top: 7px">
-        ({{ page * limit - limit + 1 }}-{{
+        ({{ page || 1 * limit - limit + 1 }}-{{
           limit * page < commitCount ? limit * page : commitCount
         }}/{{ commitCount }}) 페이지당 줄수:
         <b v-if="limit === 25">25</b>
