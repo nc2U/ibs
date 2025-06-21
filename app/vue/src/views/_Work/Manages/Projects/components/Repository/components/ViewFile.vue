@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, nextTick, onBeforeMount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import { bgLight, btnSecondary, darkSecondary } from '@/utils/cssMixins.ts'
@@ -20,7 +20,7 @@ const isDark = inject<ComputedRef<Boolean>>(
   computed(() => false),
 )
 
-const route = useRoute()
+const [route, router] = [useRoute(), useRouter()]
 const repoId = computed(() => Number(route.params.repoId))
 const sha = computed(() => route.params.sha as string)
 const path = computed(() => route.params.path)
@@ -32,7 +32,8 @@ const currentPath = computed<string[]>(() =>
 const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
   const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
-  emit('into-path', { sha: '', path: nowPath })
+  router.push({ name: '(저장소)' })
+  emit('into-path', nowPath)
 }
 
 const gitStore = useGitRepo()

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { defineProps, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 
@@ -81,6 +82,7 @@ const viewFile = () => {
       v-for="(child, i) in node.children"
       :key="i"
       :node="child"
+      :sha="sha"
       :depth="depth + 1"
       @into-path="emit('into-path', $event)"
       @diff-view="emit('diff-view', $event)"
