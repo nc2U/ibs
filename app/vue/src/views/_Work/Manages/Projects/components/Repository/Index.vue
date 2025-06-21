@@ -28,6 +28,8 @@ const cFilter = ref({
   up_to: '',
 })
 
+const [route, router] = [useRoute(), useRouter()]
+
 const workStore = useWork()
 const project = computed<IssueProject | null>(() => workStore.issueProject)
 watch(project, nVal => {
@@ -100,10 +102,8 @@ const intoPath = async (path: string) => {
 
 // revisons & diff view
 const viewPageSort = ref<'revisions' | 'diff'>('revisions')
-
-const [route, router] = [useRoute(), useRouter()]
-
 const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
+
 const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
 
 const headId = ref<number | null>(null)
@@ -171,7 +171,6 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(저장소)'">
-        {{ curr_path }} //
         <BranchTree
           :repo="repo as Repository"
           :curr-path="curr_path"
