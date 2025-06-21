@@ -148,6 +148,7 @@ const pageSelect = (page: number) => {
   fetchCommitList(cFilter.value)
 }
 
+const state = window.history.state
 const dataSetup = async (proj: number) => {
   if (proj) {
     cFilter.value.project = proj
@@ -160,7 +161,10 @@ const dataSetup = async (proj: number) => {
       await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
-      const pathQry = route.query.path ? `${route.query.path}` : ''
+
+      const pathQry = state.path ? `${state.path}` : ''
+      if (state.path) currPath.value = state.path as string
+
       await fetchRefTree({
         repo: cFilter.value.repo,
         refs: curr_refs.value,

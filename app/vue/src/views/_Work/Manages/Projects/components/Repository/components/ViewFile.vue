@@ -25,14 +25,16 @@ const repoId = computed(() => Number(route.params.repoId))
 const sha = computed(() => route.params.sha as string)
 const path = computed(() => route.params.path)
 
-const currentPath = computed<string[]>(() =>
-  typeof path.value === 'string' && path.value ? path.value.split('/').slice(0, -1) : [],
+const currentPath = computed(() =>
+  Array.isArray(path.value)
+    ? path.value[0].split('/').slice(0, -1)
+    : path.value.split('/').slice(0, -1),
 )
 
 const intoPath = (path: string) => {
   const index = currentPath.value.indexOf(path)
   const nowPath = index === -1 ? null : currentPath.value.slice(0, index + 1).join('/')
-  router.push({ name: '(저장소)', query: { path: nowPath } })
+  router.push({ name: '(저장소)', state: { path: nowPath } })
   emit('into-path', nowPath)
 }
 

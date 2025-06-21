@@ -28,7 +28,7 @@ const setShaRefs = () => {
 
 const intoPath = () => {
   setShaRefs()
-  router.push({ name: '(저장소)', query: { path: props.node.path } })
+  router.push({ name: '(저장소)', state: { path: props.node.path } })
   emit('into-path', props.node.path)
 }
 
