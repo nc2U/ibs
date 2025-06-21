@@ -26,8 +26,9 @@ const setShaRefs = () => {
   emit('change-refs', props.sha, true)
 }
 
-const infoPath = () => {
+const intoPath = () => {
   setShaRefs()
+  router.push({ name: '(저장소)' })
   emit('into-path', props.node.path)
 }
 
@@ -43,7 +44,7 @@ const viewFile = () => {
     <CCol :style="`padding-left: ${depth * 20}px`">
       <span v-if="!node.type">
         <v-icon icon="mdi-folder-open" color="#EFD2A8" size="16" class="mr-1" />
-        <a href="javascript:void(0)" @click="infoPath">{{ node.name }}</a>
+        <a href="javascript:void(0)" @click="intoPath">{{ node.name }}</a>
       </span>
       <span v-else>
         <v-icon

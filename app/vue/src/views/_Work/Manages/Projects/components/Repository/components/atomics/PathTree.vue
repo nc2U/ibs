@@ -89,7 +89,7 @@ const treeData = computed(() => buildTree(props.changeFiles))
       :sha="sha.substring(0, 8)"
       :depth="0"
       @change-refs="emit('change-refs', $event)"
-      @into-path="emit('into-path', { path: $event, sha })"
+      @into-path="emit('into-path', $event)"
       @diff-view="emit('diff-view', $event)"
     />
   </template>
