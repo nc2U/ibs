@@ -67,8 +67,15 @@ const tags = computed<string[]>(() => gitStore.tags)
 const default_branch = computed<string>(() => gitStore.default_branch)
 
 const curr_path = computed(() => gitStore.curr_path)
-const curr_refs = computed<string>(() => gitStore.curr_refs || (default_branch.value as string))
+const curr_refs = computed<string>(() => gitStore.curr_refs || default_branch.value)
 const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
+watch(
+  () => branchRefs.value?.branches,
+  newVal => {
+    if (newVal && newVal.length > 0)
+      cFilter.value.branch = newVal.includes(curr_refs.value) ? curr_refs.value : newVal[0]
+  },
+)
 const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
 const gitDiff = computed<DiffApi>(() => gitStore.gitDiff)
 
@@ -86,7 +93,6 @@ const changeRefs = async (refs: string, isSha = false) => {
   if (isSha) cFilter.value.up_to = refs
 
   await fetchRefTree({ repo: repo.value?.pk as number, refs })
-  if (branchRefs.value) cFilter.value.branch = branchRefs.value?.branches[0] as string
   await fetchCommitList(cFilter.value)
 }
 
@@ -147,7 +153,6 @@ const dataSetup = async (proj: number) => {
       cFilter.value.repo = repo.value?.pk as number
       cFilter.value.branch = default_branch.value
       await fetchRepoApi(repo.value?.pk as number)
-      await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
       await fetchRefTree({
@@ -155,6 +160,7 @@ const dataSetup = async (proj: number) => {
         refs: curr_refs.value,
         path: curr_path.value,
       })
+      await fetchCommitList(cFilter.value)
     }
   }
 }
