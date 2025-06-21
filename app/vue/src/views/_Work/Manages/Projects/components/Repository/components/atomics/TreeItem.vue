@@ -17,12 +17,13 @@ const props = defineProps<{
   depth: number
 }>()
 
-const emit = defineEmits(['into-path', 'diff-view'])
+const emit = defineEmits(['change-refs', 'into-path', 'diff-view'])
 
 const gitStore = useGitRepo()
 const setShaRefs = () => {
   gitStore.setRefsSort('sha')
   gitStore.setCurrRefs(props.sha)
+  emit('change-refs', props.sha, true)
 }
 
 const infoPath = () => {
