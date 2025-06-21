@@ -68,15 +68,19 @@ const default_branch = computed<string>(() => gitStore.default_branch)
 
 const curr_path = computed(() => gitStore.curr_path)
 const curr_refs = computed<string>(() => gitStore.curr_refs || default_branch.value)
-const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
+const branch_refs = computed<BranchInfo | null>(() => gitStore.branch_refs)
 watch(
-  () => branchRefs.value?.branches,
+  () => branch_refs.value?.branches,
   newVal => {
     if (newVal && newVal.length > 0)
       cFilter.value.branch = newVal.includes(curr_refs.value) ? curr_refs.value : newVal[0]
   },
 )
-const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
+const branch_tree = computed<Tree[]>(() => gitStore.branch_tree)
+const up_to_sha = computed<string>(() => gitStore.up_to_sha)
+watch(up_to_sha, newVal => {
+  if (newVal) cFilter.value.up_to = newVal
+})
 const gitDiff = computed<DiffApi>(() => gitStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
@@ -90,8 +94,7 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
 const changeRefs = async (refs: string, isSha = false) => {
   cFilter.value.page = 1
   cFilter.value.limit = 25
-  if (isSha) cFilter.value.up_to = refs
-
+  // if (isSha) cFilter.value.up_to = refs
   await fetchRefTree({ repo: repo.value?.pk as number, refs })
   await fetchCommitList(cFilter.value)
 }
@@ -183,7 +186,7 @@ onBeforeMount(async () => {
           :branches="branches"
           :tags="tags"
           :curr-refs="curr_refs"
-          :branch-tree="branchTree"
+          :branch-tree="branch_tree"
           @into-path="intoPath"
           @change-refs="changeRefs"
         />

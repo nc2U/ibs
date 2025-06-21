@@ -147,6 +147,7 @@ export const useGitRepo = defineStore('git_repo', () => {
   const curr_refs = ref<string>('')
   const branch_refs = ref<BranchInfo | null>(null)
   const branch_tree = ref<any[]>([])
+  const up_to_sha = ref<string>('')
 
   const setCurrPath = (path: string) => (curr_path.value = path)
   const setRefsSort = (sort: 'branch' | 'tag' | 'sha') => (refs_sort.value = sort)
@@ -160,6 +161,7 @@ export const useGitRepo = defineStore('git_repo', () => {
       const { data } = await api.get(`/repo/${repo}/tree/${encodedPath}?refs=${refs}`)
       branch_refs.value = data.refs
       branch_tree.value = data.trees
+      up_to_sha.value = data.refs.commit.sha
       return data.trees
     } catch (err: any) {
       errorHandle(err.response)
@@ -234,6 +236,7 @@ export const useGitRepo = defineStore('git_repo', () => {
     refs_sort,
     branch_refs,
     branch_tree,
+    up_to_sha,
     setCurrPath,
     setRefsSort,
     setCurrRefs,
