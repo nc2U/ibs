@@ -29,7 +29,7 @@ watch(
 const emit = defineEmits([
   'head-set',
   'base-set',
-  'get-list-sort',
+  'set-list-sort',
   'get-commit',
   'get-diff',
   'page-select',
@@ -229,12 +229,12 @@ onBeforeMount(() => {
 
   <CRow>
     <CCol v-if="getListSort === 'latest'">
-      <router-link to="" @click="emit('get-list-sort', 'all')">전체 리비전 표시</router-link>
+      <router-link to="" @click="emit('set-list-sort', 'all')">전체 리비전 표시</router-link>
       <!--      |-->
-      <!--      <router-link to="" @click="emit('get-list-sort', 'branch')">리비전 보기</router-link>-->
+      <!--      <router-link to="" @click="emit('set-list-sort', 'branch')">리비전 보기</router-link>-->
     </CCol>
     <CCol v-else>
-      <router-link to="" @click="emit('get-list-sort', 'latest')">최근 리비전 보기</router-link>
+      <router-link to="" @click="emit('set-list-sort', 'latest')">최근 리비전 보기</router-link>
     </CCol>
   </CRow>
 </template>

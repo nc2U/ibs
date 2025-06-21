@@ -112,7 +112,7 @@ const intoPath = async (path: string) => {
 // revisons
 const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
 
-const changeListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
+const setListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
 
 const headId = ref<number | null>(null)
 const baseId = ref<number | null>(null)
@@ -196,7 +196,7 @@ onBeforeMount(async () => {
           @base-set="baseSet"
           @get-commit="getCommit"
           @get-diff="getDiff"
-          @get-list-sort="changeListSort"
+          @set-list-sort="setListSort"
           @page-select="pageSelect"
           @page-reset="cFilter.page = 1"
         />
