@@ -35,7 +35,8 @@ const intoPath = () => {
 const router = useRouter()
 const viewFile = () => {
   setShaRefs()
-  gitStore.setCurrPath(props.node.path ?? '')
+  const path = props.node.path.split('/').slice(0, -1).join('/')
+  gitStore.setCurrPath(path ?? '')
   router.push({ name: '(저장소) - 파일 보기', params: { path: props.node.path } })
 }
 </script>

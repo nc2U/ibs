@@ -67,9 +67,20 @@ const tags = computed<string[]>(() => gitStore.tags)
 const default_branch = computed<string>(() => gitStore.default_branch)
 
 const curr_path = computed(() => gitStore.curr_path)
-const curr_refs = computed<string>(() => gitStore.curr_refs || (default_branch.value as string))
-const branchRefs = computed<BranchInfo | null>(() => gitStore.branch_refs)
-const branchTree = computed<Tree[]>(() => gitStore.branch_tree)
+const curr_refs = computed<string>(() => gitStore.curr_refs || default_branch.value)
+const branch_refs = computed<BranchInfo | null>(() => gitStore.branch_refs)
+watch(
+  () => branch_refs.value?.branches,
+  newVal => {
+    if (newVal && newVal.length > 0)
+      cFilter.value.branch = newVal.includes(curr_refs.value) ? curr_refs.value : newVal[0]
+  },
+)
+const branch_tree = computed<Tree[]>(() => gitStore.branch_tree)
+const up_to_sha = computed<string>(() => gitStore.up_to_sha)
+watch(up_to_sha, newVal => {
+  if (newVal) cFilter.value.up_to = newVal
+})
 const gitDiff = computed<DiffApi>(() => gitStore.gitDiff)
 
 const fetchRepoApi = (pk: number) => gitStore.fetchRepoApi(pk)
@@ -83,10 +94,8 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
 const changeRefs = async (refs: string, isSha = false) => {
   cFilter.value.page = 1
   cFilter.value.limit = 25
-  if (isSha) cFilter.value.up_to = refs
-
+  // if (isSha) cFilter.value.up_to = refs
   await fetchRefTree({ repo: repo.value?.pk as number, refs })
-  if (branchRefs.value) cFilter.value.branch = branchRefs.value?.branches[0] as string
   await fetchCommitList(cFilter.value)
 }
 
@@ -147,7 +156,6 @@ const dataSetup = async (proj: number) => {
       cFilter.value.repo = repo.value?.pk as number
       cFilter.value.branch = default_branch.value
       await fetchRepoApi(repo.value?.pk as number)
-      await fetchCommitList(cFilter.value)
       await fetchBranches(cFilter.value.repo)
       await fetchTags(cFilter.value.repo)
       await fetchRefTree({
@@ -155,6 +163,7 @@ const dataSetup = async (proj: number) => {
         refs: curr_refs.value,
         path: curr_path.value,
       })
+      await fetchCommitList(cFilter.value)
     }
   }
 }
@@ -177,7 +186,7 @@ onBeforeMount(async () => {
           :branches="branches"
           :tags="tags"
           :curr-refs="curr_refs"
-          :branch-tree="branchTree"
+          :branch-tree="branch_tree"
           @into-path="intoPath"
           @change-refs="changeRefs"
         />
@@ -211,7 +220,6 @@ onBeforeMount(async () => {
         :repo-name="repo?.slug as string"
         :curr-refs="curr_refs"
         @into-path="intoPath"
-        @goto-trees="router.push({ name: '(저장소)' })"
       />
 
       <ViewRevision
