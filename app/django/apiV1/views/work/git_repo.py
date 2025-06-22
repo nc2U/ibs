@@ -411,10 +411,6 @@ class CompareCommitsView(APIView):
         if not self.validate_sha(head):
             return Response({"error": f"Invalid head SHA format: {head}"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # DB에서 커밋 확인
-        if not Commit.objects.filter(commit_hash=head).exists():
-            return Response({"error": f"Head commit {head} not found in database"}, status=status.HTTP_400_BAD_REQUEST)
-
         repo_path = get_repo_path(pk)
 
         try:
