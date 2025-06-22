@@ -25,3 +25,4 @@ class CommitAdmin(admin.ModelAdmin):
     list_display = ('id', 'repo', 'commit_hash', 'author', 'date')
     list_display_links = ('commit_hash',)
     list_filter = ('repo', ('date', DateRangeFilter))
+    search_fields = ('commit_hash',)

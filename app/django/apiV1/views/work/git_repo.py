@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import timezone, datetime
 
 from django.shortcuts import get_object_or_404
@@ -389,39 +390,53 @@ class CompareCommitsView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     MAX_LINES = 1000
 
+    @staticmethod
+    def validate_sha(sha):
+        """SHA-1 해시 형식 검증"""
+        if not sha or not re.match(r'^[0-9a-f]{7,40}$', sha, re.I):
+            return False
+        return True
+
     def get(self, request, pk, *args, **kwargs):
         base = request.query_params.get("base")
         head = request.query_params.get("head")
         full = request.query_params.get("full")
 
         if not head or head == 'undefined':
-            return Response(
-                {"error": "Missing or invalid 'head' parameter"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Missing or invalid 'head' parameter"}, status=status.HTTP_400_BAD_REQUEST)
         if base == 'undefined':
             base = None
+
+        head = head.strip()
+        if not self.validate_sha(head):
+            return Response({"error": f"Invalid head SHA format: {head}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # DB에서 커밋 확인
+        if not Commit.objects.filter(commit_hash=head).exists():
+            return Response({"error": f"Head commit {head} not found in database"}, status=status.HTTP_400_BAD_REQUEST)
 
         repo_path = get_repo_path(pk)
 
         try:
             repo = Repo(repo_path)
-            try:
-                repo.commit(head)
-            except BadName:
-                return Response({"error": "Invalid head commit hash"}, status=status.HTTP_400_BAD_REQUEST)
+            # 저장소 최신화
+            repo.git.fetch('origin')
 
-            if not base:
-                # 최초 커밋 또는 head만으로 처리
-                commit = repo.commit(head)
-                if not commit.parents:
+            try:  # Head 커밋 검증
+                head_commit = repo.commit(head)
+            except BadName as e:
+                return Response({"error": f"Head commit {head} not found in repository"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            if not base:  # Base 처리
+                if not head_commit.parents:  # 최초 커밋 또는 head 만으로 처리
                     # 최초 커밋
                     diff_text = repo.git.show(head, unified=3)
                     commit_list = [{
                         "sha": head,
-                        "author": commit.author.name,
-                        "date": commit.committed_datetime.isoformat(),
-                        "message": commit.message.strip(),
+                        "author": head_commit.author.name,
+                        "date": head_commit.committed_datetime.isoformat(),
+                        "message": head_commit.message.strip(),
                     }]
                     serializer = GitCompareCommitsSerializer({
                         "base": None,
@@ -431,17 +446,18 @@ class CompareCommitsView(APIView):
                         "truncated": False
                     })
                     return Response(serializer.data, status=status.HTTP_200_OK)
-                else:
-                    # head의 부모 커밋 사용
-                    base = commit.parents[0].hexsha
+                base = head_commit.parents[0].hexsha  # head의 부모 커밋 사용
             else:
+                base = base.strip()
+                if not self.validate_sha(base):
+                    return Response({"error": f"Invalid base SHA format: {base}"}, status=status.HTTP_400_BAD_REQUEST)
                 try:
                     repo.commit(base)
-                except BadName:
-                    return Response({"error": "Invalid base commit hash"}, status=status.HTTP_400_BAD_REQUEST)
+                except BadName as e:
+                    return Response({"error": f"Base commit {base} not found in repository"},
+                                    status=status.HTTP_400_BAD_REQUEST)
 
-            # 커밋 목록 수집
-            try:
+            try:  # 커밋 목록 수집
                 commits = list(repo.iter_commits(f"{base}..{head}"))
             except GitCommandError:
                 commits = list(repo.iter_commits(f"{head}..{base}"))
@@ -453,11 +469,9 @@ class CompareCommitsView(APIView):
                     "date": c.committed_datetime.isoformat(),
                     "message": c.message.strip(),
                 }
-                for c in commits
-            ]
+                for c in commits]
 
-            # Unified diff 생성 및 길이 제한 적용
-            try:
+            try:  # Unified diff 생성 및 길이 제한 적용
                 diff_text = repo.git.diff(base, head, unified=3)
                 if not diff_text.strip():
                     reversed_diff_text = repo.git.diff(head, base, unified=3)
@@ -488,9 +502,9 @@ class CompareCommitsView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         except GitCommandError as e:
-            return Response({"error": f"Git error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"GitCommand error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class GetChangedFilesView(APIView):
