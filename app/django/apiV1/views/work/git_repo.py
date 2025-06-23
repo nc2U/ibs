@@ -94,7 +94,7 @@ def get_default_branch(repo: Repo) -> str | None:
             ref_name = origin_head_ref.reference.name
             if ref_name.startswith('refs/remotes/origin/'):
                 return ref_name.split('refs/remotes/origin/')[1]
-    except (KeyError, IndexError, AttributeError) as e:
+    except (KeyError, IndexError, AttributeError):
         pass
 
     try:  # 2. HEAD가 가리키는 브랜치 (non-bare only)
@@ -103,7 +103,7 @@ def get_default_branch(repo: Repo) -> str | None:
             if branch_name.startswith('refs/heads/'):
                 return branch_name.split('refs/heads/')[1]
             return branch_name
-    except (ValueError, TypeError, AttributeError) as e:
+    except (ValueError, TypeError, AttributeError):
         pass
 
     heads = [head.name for head in repo.heads]
@@ -319,9 +319,9 @@ class GitFileContentView(APIView):
         """
         간단한 휴리스틱 방식으로 바이너리 판별
         """
-        textchars = bytearray({7, 8, 9, 10, 12, 13, 27}
-                              | set(range(0x20, 0x100)) - {0x7f})
-        return bool(data.translate(None, textchars))
+        text_chars = bytearray({7, 8, 9, 10, 12, 13, 27}
+                               | set(range(0x20, 0x100)) - {0x7f})
+        return bool(data.translate(None, text_chars))
 
     def get(self, request, pk, path, *args, **kwargs):
         sha = request.query_params.get("sha", "").strip()
@@ -448,7 +448,7 @@ class CompareCommitsView(APIView):
                     return Response({"error": f"Invalid base SHA format: {base}"}, status=status.HTTP_400_BAD_REQUEST)
                 try:
                     repo.commit(base)
-                except BadName as e:
+                except BadName:
                     return Response({"error": f"Base commit {base} not found in repository"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
@@ -483,7 +483,7 @@ class CompareCommitsView(APIView):
                 if len(diff_lines) > self.MAX_LINES and not full:
                     diff_text = "\n".join(diff_lines[:self.MAX_LINES]) + "\n... [truncated]"
                     truncated = True
-            except GitCommandError as e:
+            except GitCommandError:
                 diff_text = ""
                 truncated = False
 
