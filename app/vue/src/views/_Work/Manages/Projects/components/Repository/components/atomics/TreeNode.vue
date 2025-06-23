@@ -20,7 +20,7 @@ const subTrees = ref([])
 
 const gitStore = useGitRepo()
 const fetchRefTree = (payload: { repo: number; refs: string; path?: string; sub?: boolean }) =>
-  gitStore.fetchRefTree({ ...payload, ret: payload.sub ?? false })
+  gitStore.fetchRefTree({ ...payload, sub: payload.sub ?? false })
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
