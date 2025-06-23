@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref } from 'vue'
+import { computed, type PropType } from 'vue'
 import type { Repository, Tree } from '@/store/types/work_git_repo.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import BranchControl from './HeaderMenu/BranchControl.vue'

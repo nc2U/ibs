@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
-import type { Repository, Commit, BranchInfo, Tree, DiffApi } from '@/store/types/work_git_repo.ts'
+import type { BranchInfo, Repository, Tree } from '@/store/types/work_git_repo.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import BranchTree from './components/BranchTree.vue'

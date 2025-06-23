@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, watch } from 'vue'
 import { btnSecondary, TableSecondary } from '@/utils/cssMixins.ts'
 import type { Commit, Repository } from '@/store/types/work_git_repo.ts'
 import { useRouter } from 'vue-router'
