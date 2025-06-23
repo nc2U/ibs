@@ -18,8 +18,8 @@ watch(
   () => props.commitList,
   newVal => {
     if (newVal.length >= 2) {
-      headId.value = String(newVal[0].revision_id)
-      baseId.value = String(newVal[1].revision_id)
+      headSha.value = newVal[0].commit_hash
+      baseSha.value = newVal[1].commit_hash
     }
   },
 )
@@ -40,17 +40,50 @@ const commits = computed(() =>
   listSort.value === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
 
-const baseId = ref<string>('')
-const headId = ref<string>('')
+const baseSha = ref<string>('')
+const headSha = ref<string>('')
 
-const updateBase = (pk: number) => (baseId.value = String(pk - 1))
-const updateHead = (pk: number) => {
-  if (Number(headId.value) <= pk) headId.value = String(pk + 1)
+const updateBase = (pSha: string) => (baseSha.value = pSha)
+
+const commitMap = computed(() => {
+  const map = new Map<string, Commit>()
+  commits.value.forEach(commit => map.set(commit.commit_hash, commit))
+  return map
+})
+
+const isAncestor = (ancestorSha: string, descendantSha: string): boolean => {
+  const visited = new Set<string>()
+  const stack = [descendantSha]
+
+  while (stack.length) {
+    const sha = stack.pop()!
+    if (sha === ancestorSha) return false
+    if (!visited.has(sha)) {
+      visited.add(sha)
+      const node = commitMap.value.get(sha)
+      if (node) {
+        stack.push(...node.parents)
+      }
+    }
+  }
+
+  return true
+}
+const updateHead = (cSha: string) => {
+  if (!headSha.value || cSha === headSha.value) {
+    headSha.value = cSha
+    return
+  }
+
+  const currentHead = headSha.value
+  if (isAncestor(cSha, currentHead)) {
+    headSha.value = cSha
+  }
 }
 
 const getDiff = () => {
-  const base = props.commitList.find(c => c.revision_id === Number(baseId.value))?.commit_hash
-  const head = props.commitList.find(c => c.revision_id === Number(headId.value))?.commit_hash
+  const base = props.commitList.find(c => c.commit_hash === baseSha.value)?.commit_hash
+  const head = props.commitList.find(c => c.commit_hash === headSha.value)?.commit_hash
   router.push({ name: '(저장소) - 차이점 보기', params: { repoId: props.repo, base, head } })
 }
 
@@ -72,8 +105,8 @@ const viewRevision = (commit: Commit) => {
 
 onBeforeMount(() => {
   if (props.commitList.length > 1) {
-    headId.value = String(props.commitList.map(c => c.revision_id)[0])
-    baseId.value = String(props.commitList.map(c => c.revision_id)[1])
+    headSha.value = props.commitList.map(c => c.commit_hash)[0]
+    baseSha.value = props.commitList.map(c => c.commit_hash)[1]
   }
 })
 </script>
@@ -133,10 +166,10 @@ onBeforeMount(() => {
             v-if="i !== commits.length - 1"
             type="radio"
             :id="`${commit.pk}-1`"
-            name="headId"
-            :value="String(commit.revision_id)"
-            v-model="headId"
-            @change="updateBase(commit.revision_id)"
+            name="headSha"
+            :value="commit.commit_hash"
+            v-model="headSha"
+            @change="updateBase(commit.parents[0])"
           />
         </CTableDataCell>
 
@@ -145,10 +178,10 @@ onBeforeMount(() => {
             v-if="i !== 0"
             type="radio"
             :id="`${commit.pk}-2`"
-            name="baseId"
-            :value="String(commit.revision_id)"
-            v-model="baseId"
-            @change="updateHead(commit.revision_id)"
+            name="baseSha"
+            :value="commit.commit_hash"
+            v-model="baseSha"
+            @change="updateHead(commit.children[0])"
           />
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>
