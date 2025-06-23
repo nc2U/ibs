@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -28,7 +28,7 @@ const cFilter = ref({
   up_to: '',
 })
 
-const [route, router] = [useRoute(), useRouter()]
+const route = useRoute()
 
 const workStore = useWork()
 const project = computed<IssueProject | null>(() => workStore.issueProject)
