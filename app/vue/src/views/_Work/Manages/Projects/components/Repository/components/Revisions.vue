@@ -17,14 +17,6 @@ const props = defineProps({
 
 const emit = defineEmits(['get-commit', 'page-select', 'page-reset'])
 
-const listSort = ref<'latest' | 'all' | 'branch'>('latest')
-watch(
-  () => listSort.value,
-  newVal => {
-    if (newVal === 'latest') emit('page-select', 1)
-  },
-)
-
 const initSha = (head: string, base: string, cList: any[]) => {
   const searchSha = (sha: string, shaList: string[], index: 0 | 1) =>
     shaList.includes(sha) ? sha : shaList[index]
@@ -52,6 +44,13 @@ const commitList = computed<Commit[]>(() => gitStore.commitList)
 watch(commitList, newVal => {
   if (newVal.length > 1) initSha(headSha.value, baseSha.value, newVal)
 })
+const listSort = computed(() => gitStore.listSort)
+watch(
+  () => listSort.value,
+  newVal => {
+    if (newVal === 'latest') emit('page-select', 1)
+  },
+)
 const commits = computed<Commit[]>(() =>
   listSort.value === 'all' ? commitList.value : commitList.value.slice(0, 10),
 )
@@ -268,12 +267,12 @@ onBeforeMount(() => {
 
   <CRow>
     <CCol v-if="listSort === 'latest'">
-      <router-link to="" @click="listSort = 'all'">전체 리비전 표시</router-link>
+      <router-link to="" @click="gitStore.setListSort('all')">전체 리비전 표시</router-link>
       <!--      |-->
-      <!--      <router-link to="" @click="listSort = 'branch'">리비전 보기</router-link>-->
+      <!--      <router-link to="" @click="gitStore.setListSort('branch')">리비전 보기</router-link>-->
     </CCol>
     <CCol v-else>
-      <router-link to="" @click="listSort = 'latest'">최근 리비전 보기</router-link>
+      <router-link to="" @click="gitStore.setListSort('latest')">최근 리비전 보기</router-link>
     </CCol>
   </CRow>
 </template>

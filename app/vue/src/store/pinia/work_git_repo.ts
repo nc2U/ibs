@@ -62,9 +62,10 @@ export const useGitRepo = defineStore('git_repo', () => {
   const commit = ref<Commit | null>(null)
   const commitList = ref<Commit[]>([])
   const commitCount = ref<number>(0)
+  const listSort = ref<'latest' | 'all' | 'branch'>('latest')
 
+  const setListSort = (sort: 'latest' | 'all' | 'branch') => (listSort.value = sort)
   const commitPages = (itemPerPage: number) => Math.ceil(commitCount.value / itemPerPage)
-
   const assignCommit = (commitObj: Commit) => (commit.value = commitObj)
   const removeCommit = () => (commit.value = null)
 
@@ -228,6 +229,8 @@ export const useGitRepo = defineStore('git_repo', () => {
     commit,
     commitList,
     commitCount,
+    listSort,
+    setListSort,
     commitPages,
     assignCommit,
     removeCommit,
