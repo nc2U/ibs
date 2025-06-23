@@ -51,34 +51,34 @@ const commitMap = computed(() => {
   return map
 })
 
-const isAncestor = (ancestorSha: string, descendantSha: string): boolean => {
+const isDescendant = (descendantSha: string, ancestorSha: string): boolean => {
+  if (descendantSha === ancestorSha) return false
+
   const visited = new Set<string>()
-  const stack = [descendantSha]
+  const stack = [ancestorSha]
 
   while (stack.length) {
     const sha = stack.pop()!
-    if (sha === ancestorSha) return false
+    if (sha === descendantSha) return true // 자손 발견 → 변경 X
     if (!visited.has(sha)) {
       visited.add(sha)
       const node = commitMap.value.get(sha)
       if (node) {
-        stack.push(...node.parents)
+        stack.push(...node.children)
       }
     }
   }
-
-  return true
+  return false // 자손 아님 → 변경 허용
 }
+
 const updateHead = (cSha: string) => {
-  if (!headSha.value || cSha === headSha.value) {
-    headSha.value = cSha
+  const currentHead = headSha.value
+  if (!currentHead || cSha === currentHead) {
+    headSha.value = cSha // headSha가 없거나 cSha가 headSha와 동일 → 무조건 설정
     return
   }
-
-  const currentHead = headSha.value
-  if (isAncestor(cSha, currentHead)) {
-    headSha.value = cSha
-  }
+  if (isDescendant(currentHead, cSha)) return // head가 cSha의 자손이면 변경 금지
+  headSha.value = cSha // cSha가 head보다 조상이거나 아무 관련 없어도 → head 갱신
 }
 
 const getDiff = () => {
