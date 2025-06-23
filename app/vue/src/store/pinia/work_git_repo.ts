@@ -190,10 +190,14 @@ export const useGitRepo = defineStore('git_repo', () => {
   }
 
   // diff api
+  const base = ref('')
+  const head = ref('')
   const gitDiff = ref<any>(null)
 
-  const removeGitDiff = () => (gitDiff.value = null)
+  const setBase = (sha: string) => (base.value = sha)
+  const setHead = (sha: string) => (head.value = sha)
 
+  const removeGitDiff = () => (gitDiff.value = null)
   const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
     api
       .get(`/repo/${pk}/compare/${diff_hash}${full ? '&full=1' : ''}`)
@@ -253,7 +257,11 @@ export const useGitRepo = defineStore('git_repo', () => {
     fetchRefTree,
     fetchFileView,
 
+    base,
+    head,
     gitDiff,
+    setBase,
+    setHead,
     removeGitDiff,
     fetchGitDiff,
 
