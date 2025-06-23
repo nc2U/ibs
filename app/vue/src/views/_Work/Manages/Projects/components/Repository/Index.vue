@@ -177,6 +177,7 @@ onBeforeMount(async () => {
         <Revisions
           :page="cFilter.page"
           :limit="cFilter.limit"
+          :repo="repo?.pk as number"
           :commit-list="commitList"
           :get-list-sort="getListSort"
           :set-head-id="String(headId ?? '')"

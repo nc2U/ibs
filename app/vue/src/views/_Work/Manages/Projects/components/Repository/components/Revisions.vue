@@ -10,6 +10,7 @@ import Pagination from '@/components/Pagination'
 const props = defineProps({
   page: { type: Number, required: true },
   limit: { type: Number, required: true },
+  repo: { type: Number, required: true },
   commitList: { type: Array as PropType<Commit[]>, default: () => [] },
   getListSort: { type: String as PropType<'latest' | 'all' | 'branch'>, default: 'latest' },
   setHeadId: { type: String, default: '' },
@@ -65,7 +66,7 @@ const updateHead = (pk: number) => {
 const getDiff = () => {
   const base = props.commitList.find(c => c.revision_id === Number(baseId.value))?.commit_hash
   const head = props.commitList.find(c => c.revision_id === Number(headId.value))?.commit_hash
-  router.push({ name: '(저장소) - 차이점 보기', params: { repoId: 1, base, head } })
+  router.push({ name: '(저장소) - 차이점 보기', params: { repoId: props.repo, base, head } })
 }
 
 const gitStore = useGitRepo()
