@@ -7,22 +7,13 @@ import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import Pagination from '@/components/Pagination'
 
+const router = useRouter()
+
 const props = defineProps({
   repo: { type: Number, required: true },
   page: { type: Number, required: true },
   limit: { type: Number, required: true },
-  commitList: { type: Array as PropType<Commit[]>, default: () => [] },
 })
-
-watch(
-  () => props.commitList,
-  newVal => {
-    if (newVal.length >= 2) {
-      headSha.value = newVal[0].commit_hash
-      baseSha.value = newVal[1].commit_hash
-    }
-  },
-)
 
 const emit = defineEmits(['get-commit', 'page-select', 'page-reset'])
 
@@ -34,16 +25,50 @@ watch(
   },
 )
 
-const router = useRouter()
+const initSha = (head: string, base: string, cList: any[]) => {
+  const searchSha = (sha: string, shaList: string[], index: 0 | 1) =>
+    shaList.includes(sha) ? sha : shaList[index]
 
-const commits = computed(() =>
-  listSort.value === 'all' ? props.commitList : props.commitList.slice(0, 10),
+  setHeadSha(
+    searchSha(
+      head,
+      cList.map(c => c.commit_hash),
+      0,
+    ),
+  )
+  setBaseSha(
+    searchSha(
+      base,
+      cList.map(c => c.commit_hash),
+      1,
+    ),
+  )
+}
+
+const gitStore = useGitRepo()
+const repo = computed(() => (gitStore.repository as Repository)?.pk)
+const commitCount = computed(() => gitStore.commitCount)
+const commitList = computed<Commit[]>(() => gitStore.commitList)
+watch(commitList, newVal => {
+  if (newVal.length > 1) initSha(headSha.value, baseSha.value, newVal)
+})
+const commits = computed<Commit[]>(() =>
+  listSort.value === 'all' ? commitList.value : commitList.value.slice(0, 10),
 )
 
-const baseSha = ref<string>('')
-const headSha = ref<string>('')
+const baseSha = computed(() => gitStore.baseSha)
+const headSha = computed(() => gitStore.headSha)
 
-const updateBase = (pSha: string) => (baseSha.value = pSha)
+const commitPages = (page: number) => gitStore.commitPages(page)
+const pageSelect = (page: number) => emit('page-select', page)
+const assignCommit = (commit: Commit) => gitStore.assignCommit(commit)
+const setBaseSha = (sha: string) => gitStore.setBaseSha(sha)
+const setHeadSha = (sha: string) => gitStore.setHeadSha(sha)
+
+const updateBase = (base: string, head) => {
+  setBaseSha(base)
+  setHeadSha(head)
+}
 
 const commitMap = computed(() => {
   const map = new Map<string, Commit>()
@@ -71,28 +96,17 @@ const isDescendant = (descendantSha: string, ancestorSha: string): boolean => {
   return false // 자손 아님 → 변경 허용
 }
 
-const updateHead = (cSha: string) => {
+const updateHead = (base: string, head: string) => {
+  setBaseSha(base)
+
   const currentHead = headSha.value
-  if (!currentHead || cSha === currentHead) {
-    headSha.value = cSha // headSha가 없거나 cSha가 headSha와 동일 → 무조건 설정
+  if (!currentHead || head === currentHead) {
+    setHeadSha(head) // headSha가 없거나 cSha가 headSha와 동일 → 무조건 설정
     return
   }
-  if (isDescendant(currentHead, cSha)) return // head가 cSha의 자손이면 변경 금지
-  headSha.value = cSha // cSha가 head보다 조상이거나 아무 관련 없어도 → head 갱신
+  if (isDescendant(currentHead, head)) return // head가 cSha의 자손이면 변경 금지
+  setHeadSha(head) // head 가 head 보다 조상이거나 아무 관련 없어도 → head 갱신
 }
-
-const getDiff = () => {
-  const base = props.commitList.find(c => c.commit_hash === baseSha.value)?.commit_hash
-  const head = props.commitList.find(c => c.commit_hash === headSha.value)?.commit_hash
-  router.push({ name: '(저장소) - 차이점 보기', params: { repoId: props.repo, base, head } })
-}
-
-const gitStore = useGitRepo()
-const repo = computed(() => (gitStore.repository as Repository)?.pk)
-const commitCount = computed(() => gitStore.commitCount)
-const commitPages = (page: number) => gitStore.commitPages(page)
-const pageSelect = (page: number) => emit('page-select', page)
-const assignCommit = (commit: Commit) => gitStore.assignCommit(commit)
 
 const viewRevision = (commit: Commit) => {
   assignCommit(commit)
@@ -104,10 +118,7 @@ const viewRevision = (commit: Commit) => {
 }
 
 onBeforeMount(() => {
-  if (props.commitList.length > 1) {
-    headSha.value = props.commitList.map(c => c.commit_hash)[0]
-    baseSha.value = props.commitList.map(c => c.commit_hash)[1]
-  }
+  if (commits.value.length > 1) initSha(headSha.value, baseSha.value, commitList.value)
 })
 </script>
 
@@ -125,7 +136,12 @@ onBeforeMount(() => {
         :color="btnSecondary"
         size="small"
         :disabled="commitList.length < 2"
-        @click="getDiff"
+        @click="
+          router.push({
+            name: '(저장소) - 차이점 보기',
+            params: { repoId: repo, base: baseSha, head: headSha },
+          })
+        "
       >
         차이점 보기
       </v-btn>
@@ -165,11 +181,11 @@ onBeforeMount(() => {
           <CFormCheck
             v-if="i !== commits.length - 1"
             type="radio"
-            :id="`${commit.pk}-1`"
+            :id="`head-${commit.commit_hash}`"
             name="headSha"
             :value="commit.commit_hash"
-            v-model="headSha"
-            @change="updateBase(commit.parents[0])"
+            :model-value="headSha"
+            @change="updateBase(commit.parents[0], commit.commit_hash)"
           />
         </CTableDataCell>
 
@@ -177,11 +193,11 @@ onBeforeMount(() => {
           <CFormCheck
             v-if="i !== 0"
             type="radio"
-            :id="`${commit.pk}-2`"
+            :id="`base-${commit.commit_hash}`"
             name="baseSha"
             :value="commit.commit_hash"
-            v-model="baseSha"
-            @change="updateHead(commit.children[0])"
+            :model-value="baseSha"
+            @change="updateHead(commit.commit_hash, commit.children[0])"
           />
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>
@@ -216,7 +232,12 @@ onBeforeMount(() => {
         :color="btnSecondary"
         size="small"
         :disabled="commitList.length < 2"
-        @click="getDiff"
+        @click="
+          router.push({
+            name: '(저장소) - 차이점 보기',
+            params: { repoId: repo, base: baseSha, head: headSha },
+          })
+        "
       >
         차이점 보기
       </v-btn>
