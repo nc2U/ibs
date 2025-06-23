@@ -151,7 +151,7 @@ onBeforeMount(async () => {
           class="code-block"
         ><code ref="codeBlock" :class="`language-${language}`"
         >{{ fileData?.content }}</code></pre>
-        <pre v-else class="code-block"><code></code></pre>
+        <pre v-else class="code-block"><code>로딩 중...</code></pre>
       </div>
     </CCol>
   </CRow>
