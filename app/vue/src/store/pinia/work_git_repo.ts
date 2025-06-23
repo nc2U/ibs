@@ -163,7 +163,7 @@ export const useGitRepo = defineStore('git_repo', () => {
 
     const url = path
       ? `/repo/${repo}/tree/${encodeURIComponent(path)}?refs=${refs}`
-      : `/repo/${repo}/tree?refs=${refs}`
+      : `/repo/${repo}/tree/?refs=${refs}`
 
     try {
       const { data } = await api.get(url)
