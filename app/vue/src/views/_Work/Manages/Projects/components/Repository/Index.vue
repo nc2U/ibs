@@ -39,15 +39,14 @@ watch(project, nVal => {
 // get github api
 const gitStore = useGitRepo()
 const repo = computed<Repository | null>(() => gitStore.repository)
-const repoList = computed<Repository[]>(() => gitStore.repositoryList)
-const commitList = computed<Commit[]>(() => gitStore.commitList)
-
 watch(repo, nVal => {
   if (nVal) cFilter.value.repo = nVal.pk as number
 })
+const repoList = computed<Repository[]>(() => gitStore.repositoryList)
 watch(repoList, nVal => {
   if (nVal.length) fetchRepo(nVal[0].pk as number)
 })
+const commitList = computed<Commit[]>(() => gitStore.commitList)
 
 const fetchRepo = (pk: number) => gitStore.fetchRepo(pk)
 const fetchRepoList = (project?: number, is_def?: string) => gitStore.fetchRepoList(project, is_def)
@@ -93,7 +92,6 @@ const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
 const changeRefs = async (refs: string, isSha = false) => {
   cFilter.value.page = 1
   cFilter.value.limit = 25
-  // if (isSha) cFilter.value.up_to = refs
   await fetchRefTree({ repo: repo.value?.pk as number, refs })
   await fetchCommitList(cFilter.value)
 }
@@ -109,22 +107,11 @@ const intoPath = async (path: string) => {
 }
 
 // revisons
-const getListSort = ref<'latest' | 'all' | 'branch'>('latest')
-
-const setListSort = (sort: 'latest' | 'all') => (getListSort.value = sort)
-
-const headId = ref<number | null>(null)
-const baseId = ref<number | null>(null)
-
-const headSet = (revision_id: number) => (headId.value = revision_id)
-const baseSet = (revision_id: number) => (baseId.value = revision_id)
-
 const getCommit = async (limit: number) => {
   cFilter.value.page = 1
   cFilter.value.limit = limit
   await fetchCommitList(cFilter.value)
 }
-
 const pageSelect = (page: number) => {
   cFilter.value.page = page
   fetchCommitList(cFilter.value)
@@ -179,13 +166,7 @@ onBeforeMount(async () => {
           :limit="cFilter.limit"
           :repo="repo?.pk as number"
           :commit-list="commitList"
-          :get-list-sort="getListSort"
-          :set-head-id="String(headId ?? '')"
-          :set-base-id="String(baseId ?? '')"
-          @head-set="headSet"
-          @base-set="baseSet"
           @get-commit="getCommit"
-          @set-list-sort="setListSort"
           @page-select="pageSelect"
           @page-reset="cFilter.page = 1"
         />

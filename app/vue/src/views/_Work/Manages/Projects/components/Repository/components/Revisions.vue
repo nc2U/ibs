@@ -1,20 +1,17 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { Commit, Repository } from '@/store/types/work_git_repo.ts'
 import { btnSecondary, TableSecondary } from '@/utils/cssMixins.ts'
+import type { Commit, Repository } from '@/store/types/work_git_repo.ts'
 import { useRouter } from 'vue-router'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import Pagination from '@/components/Pagination'
 
 const props = defineProps({
+  repo: { type: Number, required: true },
   page: { type: Number, required: true },
   limit: { type: Number, required: true },
-  repo: { type: Number, required: true },
   commitList: { type: Array as PropType<Commit[]>, default: () => [] },
-  getListSort: { type: String as PropType<'latest' | 'all' | 'branch'>, default: 'latest' },
-  setHeadId: { type: String, default: '' },
-  setBaseId: { type: String, default: '' },
 })
 
 watch(
@@ -27,17 +24,11 @@ watch(
   },
 )
 
-const emit = defineEmits([
-  'head-set',
-  'base-set',
-  'set-list-sort',
-  'get-commit',
-  'page-select',
-  'page-reset',
-])
+const emit = defineEmits(['get-commit', 'page-select', 'page-reset'])
 
+const listSort = ref<'latest' | 'all' | 'branch'>('latest')
 watch(
-  () => props.getListSort,
+  () => listSort.value,
   newVal => {
     if (newVal === 'latest') emit('page-select', 1)
   },
@@ -46,17 +37,11 @@ watch(
 const router = useRouter()
 
 const commits = computed(() =>
-  props.getListSort === 'all' ? props.commitList : props.commitList.slice(0, 10),
+  listSort.value === 'all' ? props.commitList : props.commitList.slice(0, 10),
 )
 
 const baseId = ref<string>('')
-watch(baseId, newVal => {
-  if (newVal) emit('base-set', Number(newVal))
-})
 const headId = ref<string>('')
-watch(headId, newVal => {
-  if (newVal) emit('head-set', Number(newVal))
-})
 
 const updateBase = (pk: number) => (baseId.value = String(pk - 1))
 const updateHead = (pk: number) => {
@@ -87,8 +72,8 @@ const viewRevision = (commit: Commit) => {
 
 onBeforeMount(() => {
   if (props.commitList.length > 1) {
-    headId.value = props.setHeadId || String(props.commitList.map(c => c.revision_id)[0])
-    baseId.value = props.setBaseId || String(props.commitList.map(c => c.revision_id)[1])
+    headId.value = String(props.commitList.map(c => c.revision_id)[0])
+    baseId.value = String(props.commitList.map(c => c.revision_id)[1])
   }
 })
 </script>
@@ -96,7 +81,7 @@ onBeforeMount(() => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>{{ getListSort === 'all' ? '리비전' : '최근 리비전' }}</h5>
+      <h5>{{ listSort === 'all' ? '리비전' : '최근 리비전' }}</h5>
     </CCol>
   </CRow>
 
@@ -205,7 +190,7 @@ onBeforeMount(() => {
     </CCol>
   </CRow>
 
-  <CRow v-if="getListSort === 'all'">
+  <CRow v-if="listSort === 'all'">
     <CCol class="d-flex mt-3">
       <Pagination
         :active-page="page"
@@ -228,13 +213,13 @@ onBeforeMount(() => {
   </CRow>
 
   <CRow>
-    <CCol v-if="getListSort === 'latest'">
-      <router-link to="" @click="emit('set-list-sort', 'all')">전체 리비전 표시</router-link>
+    <CCol v-if="listSort === 'latest'">
+      <router-link to="" @click="listSort = 'all'">전체 리비전 표시</router-link>
       <!--      |-->
-      <!--      <router-link to="" @click="emit('set-list-sort', 'branch')">리비전 보기</router-link>-->
+      <!--      <router-link to="" @click="listSort = 'branch'">리비전 보기</router-link>-->
     </CCol>
     <CCol v-else>
-      <router-link to="" @click="emit('set-list-sort', 'latest')">최근 리비전 보기</router-link>
+      <router-link to="" @click="listSort = 'latest'">최근 리비전 보기</router-link>
     </CCol>
   </CRow>
 </template>
