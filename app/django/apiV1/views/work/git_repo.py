@@ -39,7 +39,7 @@ def get_all_descendant_projects(project):
 
 
 class CommitViewSet(viewsets.ModelViewSet):
-    queryset = Commit.objects.all().order_by('-revision_id')
+    queryset = Commit.objects.all().order_by('-id')
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
@@ -54,8 +54,7 @@ class CommitViewSet(viewsets.ModelViewSet):
         if up_to_hash:
             try:
                 target_commit = Commit.objects.get(commit_hash__startswith=up_to_hash)
-                queryset = queryset.filter(repo=target_commit.repo,
-                                           revision_id__lte=target_commit.revision_id)
+                queryset = queryset.filter(repo=target_commit.repo, id__lte=target_commit.id)
             except Commit.DoesNotExist:
                 return Commit.objects.none()
 

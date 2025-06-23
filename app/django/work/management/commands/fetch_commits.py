@@ -335,14 +335,14 @@ class Command(BaseCommand):
                     if commits_to_create:
                         try:
                             # Commit 저장
-                            Commit.bulk_create_with_revision_ids(commits_to_create, ignore_conflicts=False)
+                            Commit.objects.bulk_create(commits_to_create, ignore_conflicts=False)
                             self.stdout.write(self.style.SUCCESS(f"Created {len(commits_to_create)} commits"))
                         except IntegrityError as e:
                             self.stderr.write(self.style.WARNING(f"IntegrityError, retrying without duplicates: {e}"))
                             existing_hashes = set(
                                 Commit.objects.filter(repo=repo).values_list('commit_hash', flat=True))
                             commits_to_create = [c for c in commits_to_create if c.commit_hash not in existing_hashes]
-                            Commit.bulk_create_with_revision_ids(commits_to_create, ignore_conflicts=True)
+                            Commit.objects.bulk_create(commits_to_create, ignore_conflicts=True)
 
                         # 저장된 커밋 조회
                         saved_commits = Commit.objects.filter(

@@ -17,7 +17,6 @@ export interface RepoApi {
 
 export interface Commit {
   pk: number
-  revision_id: number
   repo: number
   commit_hash: string
   author: string

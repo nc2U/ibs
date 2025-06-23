@@ -35,9 +35,8 @@ class CommitSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Commit
-        fields = ('pk', 'revision_id', 'repo', 'commit_hash', 'author', 'date', 'message',
+        fields = ('pk', 'repo', 'commit_hash', 'author', 'date', 'message',
                   'branches', 'parents', 'children', 'issues', 'prev', 'next')
-        read_only_fields = ('revision_id',)
 
     @staticmethod
     def get_prev(obj):
