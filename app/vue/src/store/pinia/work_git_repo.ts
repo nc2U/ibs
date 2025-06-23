@@ -153,16 +153,26 @@ export const useGitRepo = defineStore('git_repo', () => {
   const setRefsSort = (sort: 'branch' | 'tag' | 'sha') => (refs_sort.value = sort)
   const setCurrRefs = (refs: string) => (curr_refs.value = refs)
 
-  const fetchRefTree = async (payload: { repo: number; refs: string; path?: string }) => {
-    const { repo, refs, path = '' } = payload
-    const encodedPath = path ? encodeURIComponent(path) : ''
+  const fetchRefTree = async (payload: {
+    repo: number
+    refs: string
+    path?: string
+    ret?: boolean
+  }) => {
+    const { repo, refs, path = '', ret = false } = payload
+
+    const url = path
+      ? `/repo/${repo}/tree/${encodeURIComponent(path)}?refs=${refs}`
+      : `/repo/${repo}/tree?refs=${refs}`
 
     try {
-      const { data } = await api.get(`/repo/${repo}/tree/${encodedPath}?refs=${refs}`)
-      branch_refs.value = data.refs
-      branch_tree.value = data.trees
-      up_to_sha.value = data.refs.commit.sha
-      return data.trees
+      const { data } = await api.get(url)
+      if (ret) return data.trees
+      else {
+        branch_refs.value = data.refs
+        branch_tree.value = data.trees
+        up_to_sha.value = data.refs.commit.sha
+      }
     } catch (err: any) {
       errorHandle(err.response)
     }

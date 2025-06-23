@@ -3,7 +3,7 @@ import { computed, type PropType, ref } from 'vue'
 import type { Repository, Tree } from '@/store/types/work_git_repo.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import BranchControl from './HeaderMenu/BranchControl.vue'
-import TreeNode from './TreeNode.vue'
+import TreeNode from './atomics/TreeNode.vue'
 
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, required: true },

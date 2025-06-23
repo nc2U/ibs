@@ -19,15 +19,16 @@ const nodeFold = ref(false)
 const subTrees = ref([])
 
 const gitStore = useGitRepo()
-const fetchRefTree = (payload: { repo: number; refs: string; path?: string }) =>
-  gitStore.fetchRefTree(payload)
+const fetchRefTree = (payload: { repo: number; refs: string; path?: string; ret?: boolean }) =>
+  gitStore.fetchRefTree({ ...payload, ret: payload.ret ?? false })
 
 const toggleFold = async () => {
   if (nodeFold.value === false && !subTrees.value.length)
     subTrees.value = await fetchRefTree({
       repo: props.repo as number,
-      refs: props.node?.commit?.sha as string,
+      refs: props.node?.commit?.sha || '',
       path: props.node?.path as string,
+      ret: true,
     })
   nodeFold.value = !nodeFold.value
 }
@@ -39,9 +40,9 @@ const toggleFold = async () => {
       <span v-if="node.type === 'tree'" :style="`padding-left: ${level * 15}px`">
         <v-icon
           :icon="`mdi-chevron-${nodeFold ? 'down' : 'right'}`"
-          @click="toggleFold"
           size="16"
           class="pointer mr-1"
+          @click="toggleFold"
         />
         <span @click="emit('into-path', node?.path as string)">
           <v-icon icon="mdi-folder" color="#EFD2A8" size="16" class="pointer mr-1" />
