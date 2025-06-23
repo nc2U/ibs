@@ -8,8 +8,6 @@ import TreeNode from './atomics/TreeNode.vue'
 const props = defineProps({
   repo: { type: Object as PropType<Repository>, required: true },
   currPath: { type: String, default: '' },
-  branches: { type: Array as PropType<string[]>, default: () => [] },
-  tags: { type: Array as PropType<string[]>, default: () => [] },
   currRefs: { type: String, required: true },
   branchTree: { type: Array as PropType<Tree[]>, default: () => [] },
 })
@@ -41,12 +39,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
       </h5>
     </CCol>
     <CCol>
-      <BranchControl
-        :curr-refs="currRefs"
-        :branches="branches"
-        :tags="tags"
-        @change-refs="emit('change-refs', $event)"
-      />
+      <BranchControl :curr-refs="currRefs" @change-refs="emit('change-refs', $event)" />
     </CCol>
   </CRow>
   <CRow class="mb-5">

@@ -4,14 +4,15 @@ import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 
 const props = defineProps({
   currRefs: { type: String, required: true },
-  branches: { type: Array, default: () => [] },
-  tags: { type: Array, default: () => [] },
 })
 
 const gitStore = useGitRepo()
 const refs_sort = computed(() => gitStore.refs_sort)
 const curr_refs = computed(() => gitStore.curr_refs || default_branch.value)
 const default_branch = computed(() => gitStore.default_branch)
+const branches = computed<string[]>(() => gitStore.branches)
+const tags = computed<string[]>(() => gitStore.tags)
+
 const setRefsSort = (sort: 'branch' | 'tag' | 'sha') => gitStore.setRefsSort(sort)
 const setCurrRefs = (refs: string) => gitStore.setCurrRefs(refs)
 

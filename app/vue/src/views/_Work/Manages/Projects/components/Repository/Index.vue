@@ -60,8 +60,6 @@ const fetchCommitList = (payload: {
   up_to?: string
 }) => gitStore.fetchCommitList(payload)
 
-const branches = computed<string[]>(() => gitStore.branches)
-const tags = computed<string[]>(() => gitStore.tags)
 const default_branch = computed<string>(() => gitStore.default_branch)
 
 const curr_path = computed(() => gitStore.curr_path)
@@ -152,8 +150,6 @@ onBeforeMount(async () => {
         <BranchTree
           :repo="repo as Repository"
           :curr-path="curr_path"
-          :branches="branches"
-          :tags="tags"
           :curr-refs="curr_refs"
           :branch-tree="branch_tree"
           @into-path="intoPath"
