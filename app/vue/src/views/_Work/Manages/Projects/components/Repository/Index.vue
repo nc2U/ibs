@@ -46,7 +46,6 @@ const repoList = computed<Repository[]>(() => gitStore.repositoryList)
 watch(repoList, nVal => {
   if (nVal.length) fetchRepo(nVal[0].pk as number)
 })
-const commitList = computed<Commit[]>(() => gitStore.commitList)
 
 const fetchRepo = (pk: number) => gitStore.fetchRepo(pk)
 const fetchRepoList = (project?: number, is_def?: string) => gitStore.fetchRepoList(project, is_def)
@@ -165,7 +164,6 @@ onBeforeMount(async () => {
           :page="cFilter.page"
           :limit="cFilter.limit"
           :repo="repo?.pk as number"
-          :commit-list="commitList"
           @get-commit="getCommit"
           @page-select="pageSelect"
           @page-reset="cFilter.page = 1"
