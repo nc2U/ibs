@@ -157,9 +157,9 @@ export const useGitRepo = defineStore('git_repo', () => {
     repo: number
     refs: string
     path?: string
-    ret?: boolean
+    sub?: boolean
   }) => {
-    const { repo, refs, path = '', ret = false } = payload
+    const { repo, refs, path = '', sub = false } = payload
 
     const url = path
       ? `/repo/${repo}/tree/${encodeURIComponent(path)}?refs=${refs}`
@@ -167,7 +167,7 @@ export const useGitRepo = defineStore('git_repo', () => {
 
     try {
       const { data } = await api.get(url)
-      if (ret) return data.trees
+      if (sub) return data.trees
       else {
         branch_refs.value = data.refs
         branch_tree.value = data.trees
