@@ -67,20 +67,7 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 
-  <CRow class="my-3 pl-2">
-    <CCol>
-      <v-btn
-        size="small"
-        variant="outlined"
-        :color="btnSecondary"
-        @click="router.push({ name: '(저장소)' })"
-      >
-        목록으로
-      </v-btn>
-    </CCol>
-  </CRow>
-
-  <CNav variant="tabs" class="mx-2">
+  <CNav variant="tabs" class="mx-2 mt-3">
     <CNavItem @click="viewSort = 'file'">
       <CNavLink :active="viewSort === 'file'"> 보기</CNavLink>
     </CNavItem>
@@ -96,7 +83,7 @@ onBeforeMount(async () => {
 
   <FileHistory v-else-if="viewSort === 'history'" :commits="fileCommits" />
 
-  <CRow class="my-3 pl-2">
+  <CRow v-if="viewSort === 'file'" class="pl-2">
     <CCol>
       <v-btn
         size="small"
