@@ -339,7 +339,6 @@ class GitFileContentView(APIView):
             except (BadName, ValueError) as e:
                 return Response({"error": f"Invalid SHA: {sha}", "details": str(e)}, status=400)
 
-            # tree = repo.tree(sha)
             path_parts = path.strip("/").split("/")
             blob = tree
             for part in path_parts:
@@ -354,6 +353,15 @@ class GitFileContentView(APIView):
             except StopIteration:
                 last_modified = None  # 기록 없음
 
+            commits = []  # ✅ 이력 조회 (최대 100개)
+            for c in repo.iter_commits(sha, paths=path, max_count=100):
+                commits.append({
+                    "sha": c.hexsha,
+                    "author": c.author.name,
+                    "date": datetime.fromtimestamp(c.committed_date).isoformat(),
+                    "message": c.message.strip(),
+                })
+
             raw_data = blob.data_stream.read()
 
             if self.is_binary(raw_data):
@@ -365,7 +373,8 @@ class GitFileContentView(APIView):
                     "modified": last_modified,
                     "binary": True,
                     "content": None,
-                    "message": "This file is binary and cannot be displayed as text."
+                    "message": "This file is binary and cannot be displayed as text.",
+                    "commits": commits
                 })
 
             content = raw_data.decode("utf-8", errors="replace")
@@ -376,7 +385,8 @@ class GitFileContentView(APIView):
                 "size": blob.size,
                 "modified": last_modified,
                 "binary": False,
-                "content": content
+                "content": content,
+                "commits": commits
             }, status=status.HTTP_200_OK)
 
         except (BadName, KeyError) as e:
