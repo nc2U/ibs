@@ -84,7 +84,7 @@ onBeforeMount(async () => {
 
   <FileHistory v-else-if="viewSort === 'history'" :commits="fileCommits" />
 
-  <CRow v-if="viewSort === 'file'" class="pl-2">
+  <CRow v-if="viewSort === 'file' && fileData" class="pl-2">
     <CCol>
       <v-btn
         size="small"

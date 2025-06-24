@@ -1,17 +1,10 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, nextTick, ref, watch } from 'vue'
+import { computed, type ComputedRef, inject, nextTick, onMounted, ref, watch } from 'vue'
 import { bgLight, darkSecondary } from '@/utils/cssMixins.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import hljs from 'highlight.js'
 
 const props = defineProps({ fileData: { type: Object, required: true } })
-
-watch(
-  () => props.fileData,
-  nVal => {
-    if (nVal) highlightCode()
-  },
-)
 
 const isDark = inject<ComputedRef<Boolean>>(
   'isDark',
@@ -56,6 +49,10 @@ const language = computed(() => {
     sql: 'sql',
   }
   return langMap[ext || ''] || 'plaintext'
+})
+
+onMounted(() => {
+  if (props.fileData) highlightCode()
 })
 </script>
 
