@@ -83,14 +83,16 @@ const treeData = computed(() => buildTree(props.changeFiles))
     </CCol>
   </CRow>
 
-  <template v-for="(node, index) in treeData" :key="index">
-    <TreeItem
-      :node="node"
-      :sha="sha.substring(0, 8)"
-      :depth="0"
-      @change-refs="emit('change-refs', $event)"
-      @into-path="emit('into-path', $event)"
-      @diff-view="emit('diff-view', $event)"
-    />
-  </template>
+  <CCol class="pl-3">
+    <template v-for="(node, index) in treeData" :key="index">
+      <TreeItem
+        :node="node"
+        :sha="sha.substring(0, 8)"
+        :depth="0"
+        @change-refs="emit('change-refs', $event)"
+        @into-path="emit('into-path', $event)"
+        @diff-view="emit('diff-view', $event)"
+      />
+    </template>
+  </CCol>
 </template>
