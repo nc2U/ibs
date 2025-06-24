@@ -1,13 +1,12 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, nextTick, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
-import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
-import { bgLight, btnSecondary, darkSecondary } from '@/utils/cssMixins.ts'
+import { btnSecondary } from '@/utils/cssMixins.ts'
 import Loading from '@/components/Loading/Index.vue'
-import hljs from 'highlight.js'
+import FileContent from './atomics/FileContent.vue'
 
-const props = defineProps({
+defineProps({
   repoName: { type: String, required: true },
   currRefs: { type: String, required: true },
 })
@@ -15,11 +14,6 @@ const props = defineProps({
 const emit = defineEmits(['into-path'])
 
 const fileData = ref()
-
-const isDark = inject<ComputedRef<Boolean>>(
-  'isDark',
-  computed(() => false),
-)
 
 const [route, router] = [useRoute(), useRouter()]
 const repoId = computed(() => Number(route.params.repoId))
@@ -43,50 +37,9 @@ const gitStore = useGitRepo()
 const fetchFileView = (repo: number, path: string, sha: string) =>
   gitStore.fetchFileView(repo, path, sha)
 
-const codeBlock = ref<HTMLElement | null>(null)
-
-// 언어 추론
-const language = computed(() => {
-  const ext = (fileData.value?.path ?? '').split('.').pop()?.toLowerCase()
-  const langMap: { [key: string]: string } = {
-    gitignore: 'gitignore',
-    py: 'python',
-    php: 'php',
-    js: 'javascript',
-    cjs: 'javascript',
-    ts: 'typescript',
-    mts: 'typescript',
-    html: 'html',
-    htm: 'html',
-    vue: 'html',
-    css: 'css',
-    scss: 'css',
-    sass: 'css',
-    json: 'json',
-    yaml: 'yaml',
-    yml: 'yaml',
-    sh: 'bash',
-    md: 'markdown',
-    sql: 'sql',
-  }
-  return langMap[ext || ''] || 'plaintext'
-})
-
-// 코드 블록 하이라이팅
-const highlightCode = async () => {
-  await nextTick()
-  if (codeBlock.value) {
-    hljs.highlightElement(codeBlock.value)
-  }
-}
-
-// 초기 적용
-watch(isDark, highlightCode)
-
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   fileData.value = await fetchFileView(repoId.value, path.value as string, sha.value)
-  await highlightCode()
   loading.value = false
 })
 </script>
@@ -108,7 +61,7 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 
-  <CRow class="mb-0 pl-2">
+  <CRow class="mb-3 pl-2">
     <CCol>
       <v-btn
         size="small"
@@ -121,40 +74,19 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 
-  <CRow>
-    <CCol class="file-content" :class="{ 'theme-dark': isDark, 'theme-light': !isDark }">
-      <div class="file-viewer">
-        <CTable
-          responsive
-          :class="bgLight"
-          class="mb-0"
-          style="width: 100%; border-collapse: collapse"
-        >
-          <CTableRow v-if="fileData">
-            <CTableDataCell class="py-2 px-3 strong truncate">{{ fileData?.path }}</CTableDataCell>
-            <CTableDataCell class="px-3 text-right" style="width: 160px">
-              <b :class="bgLight">SHA</b> : {{ cutString(fileData?.sha, 7) }}
-            </CTableDataCell>
-            <CTableDataCell class="px-3 text-right" style="width: 160px">
-              <b :class="bgLight">Size</b> : {{ humanizeFileSize(fileData?.size) }}
-            </CTableDataCell>
-            <CTableDataCell class="px-3 text-right" style="width: 250px">
-              <b :class="bgLight">modified</b> : {{ timeFormat(fileData?.modified) }}
-            </CTableDataCell>
-          </CTableRow>
-        </CTable>
-        <v-card v-if="fileData?.binary" class="py-5 px-3" :color="darkSecondary">
-          <code>{{ fileData?.message }}</code>
-        </v-card>
-        <pre
-          v-else-if="fileData?.content"
-          class="code-block"
-        ><code ref="codeBlock" :class="`language-${language}`"
-        >{{ fileData?.content }}</code></pre>
-        <pre v-else class="code-block"><code>로딩 중...</code></pre>
-      </div>
-    </CCol>
-  </CRow>
+  <CNav variant="tabs" class="mx-2">
+    <CNavItem>
+      <CNavLink href="#" active>보기</CNavLink>
+    </CNavItem>
+    <CNavItem>
+      <CNavLink href="#">이력</CNavLink>
+    </CNavItem>
+    <CNavItem>
+      <CNavLink href="#" disabled>이력해설</CNavLink>
+    </CNavItem>
+  </CNav>
+
+  <FileContent :file-data="fileData" />
 
   <CRow class="mb-5 pl-2">
     <CCol>
@@ -169,41 +101,3 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 </template>
-
-<style lang="scss" scoped>
-.file-content {
-  padding: 20px;
-}
-
-.file-viewer {
-  width: 100%;
-}
-
-.code-block {
-  background: #fafafa;
-  padding: 1em;
-  white-space: pre-wrap;
-  font-family: monospace;
-  border: 1px solid #ddd;
-  border-radius: 1px;
-}
-
-table {
-  border-color: #ddd;
-  border-width: 1px 1px 0 1px;
-}
-
-.theme-light .code-block {
-  background: #fafafa;
-  border-color: #ddd;
-}
-
-.theme-dark .code-block {
-  background: #282c34;
-  border-color: #444;
-
-  table {
-    border-color: #444;
-  }
-}
-</style>
