@@ -134,7 +134,7 @@ onBeforeMount(() => {
         variant="outlined"
         :color="btnSecondary"
         size="small"
-        :disabled="commitList.length < 2"
+        :disabled="commits.length < 2"
         @click="
           router.push({
             name: '(저장소) - 차이점 보기',
@@ -230,7 +230,7 @@ onBeforeMount(() => {
         variant="outlined"
         :color="btnSecondary"
         size="small"
-        :disabled="commitList.length < 2"
+        :disabled="commits.length < 2"
         @click="
           router.push({
             name: '(저장소) - 차이점 보기',

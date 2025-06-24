@@ -94,7 +94,7 @@ onBeforeMount(async () => {
 
   <FileContent v-if="viewSort === 'file'" :file-data="fileData" />
 
-  <FileHistory v-else-if="viewSort === 'history'" />
+  <FileHistory v-else-if="viewSort === 'history'" :commits="fileCommits" />
 
   <CRow class="my-3 pl-2">
     <CCol>
