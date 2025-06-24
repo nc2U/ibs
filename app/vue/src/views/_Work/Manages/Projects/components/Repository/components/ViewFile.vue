@@ -5,6 +5,7 @@ import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { btnSecondary } from '@/utils/cssMixins.ts'
 import Loading from '@/components/Loading/Index.vue'
 import FileContent from './atomics/FileContent.vue'
+import FileHistory from '@/views/_Work/Manages/Projects/components/Repository/components/atomics/FileHistory.vue'
 
 defineProps({
   repoName: { type: String, required: true },
@@ -12,6 +13,8 @@ defineProps({
 })
 
 const emit = defineEmits(['into-path'])
+
+const viewSort = ref<'file' | 'history' | 'desc'>('file')
 
 const fileData = ref()
 const fileCommits = ref([])
@@ -64,7 +67,7 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 
-  <CRow class="mb-3 pl-2">
+  <CRow class="my-3 pl-2">
     <CCol>
       <v-btn
         size="small"
@@ -78,20 +81,22 @@ onBeforeMount(async () => {
   </CRow>
 
   <CNav variant="tabs" class="mx-2">
-    <CNavItem>
-      <CNavLink href="#" active>보기</CNavLink>
+    <CNavItem @click="viewSort = 'file'">
+      <CNavLink :active="viewSort === 'file'"> 보기</CNavLink>
+    </CNavItem>
+    <CNavItem @click="viewSort = 'history'">
+      <CNavLink :active="viewSort === 'history'"> 이력</CNavLink>
     </CNavItem>
     <CNavItem>
-      <CNavLink href="#">이력</CNavLink>
-    </CNavItem>
-    <CNavItem>
-      <CNavLink href="#" disabled>이력해설</CNavLink>
+      <CNavLink :active="viewSort === 'desc'" disabled> 이력해설</CNavLink>
     </CNavItem>
   </CNav>
 
-  <FileContent :file-data="fileData" />
+  <FileContent v-if="viewSort === 'file'" :file-data="fileData" />
 
-  <CRow class="mb-5 pl-2">
+  <FileHistory v-else-if="viewSort === 'history'" />
+
+  <CRow class="my-3 pl-2">
     <CCol>
       <v-btn
         size="small"
