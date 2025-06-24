@@ -166,7 +166,7 @@ onBeforeMount(() => {
             @change="
               updateHead(
                 commit.commit_hash,
-                headSha === commit.commit_hash ? commits[i - 1].commit_hash : null,
+                headSha === commit?.commit_hash ? commits[i - 1]?.commit_hash : undefined,
               )
             "
           />

@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, watch } from 'vue'
+import { computed, onBeforeMount, type PropType, watch } from 'vue'
 import { btnSecondary, TableSecondary } from '@/utils/cssMixins.ts'
+import type { CommitApi } from '@/store/types/work_git_repo.ts'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { onBeforeRouteLeave } from 'vue-router'
 
 const props = defineProps({
-  commits: { type: Array, default: () => [] },
+  commits: { type: Array as PropType<CommitApi[]>, default: () => [] },
 })
 
 watch(
@@ -81,6 +82,7 @@ onBeforeRouteLeave(() => {
       </v-btn>
     </CCol>
   </CRow>
+
   <CTable hover responsive striped small>
     <colgroup>
       <col style="width: 6%" />
@@ -103,7 +105,7 @@ onBeforeRouteLeave(() => {
     <CTableBody>
       <CTableRow v-for="(commit, i) in commits" :key="i">
         <CTableDataCell class="text-center">
-          <router-link to="" @click="viewRevision(commit)">
+          <router-link :to="{ name: '(저장소) - 리비전 보기', params: { sha: commit.sha } }">
             {{ commit.sha.substring(0, 8) }}
           </router-link>
         </CTableDataCell>
@@ -128,7 +130,7 @@ onBeforeRouteLeave(() => {
             :value="commit.sha"
             :model-value="baseSha"
             @change="
-              updateHead(commit.commit_hash, headSha === commit.sha ? commits[i - 1].sha : null)
+              updateHead(commit?.sha, headSha === commit?.sha ? commits[i - 1]?.sha : undefined)
             "
           />
         </CTableDataCell>

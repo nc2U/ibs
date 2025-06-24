@@ -67,7 +67,6 @@ export interface FileInfo {
   binary: boolean
   content: string | null
   message?: string
-  commits: CommitApi[]
 }
 
 export interface DiffApi {

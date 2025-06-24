@@ -3,9 +3,10 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { btnSecondary } from '@/utils/cssMixins.ts'
+import type { CommitApi, FileInfo } from '@/store/types/work_git_repo.ts'
 import Loading from '@/components/Loading/Index.vue'
 import FileContent from './atomics/FileContent.vue'
-import FileHistory from '@/views/_Work/Manages/Projects/components/Repository/components/atomics/FileHistory.vue'
+import FileHistory from './atomics/FileHistory.vue'
 
 defineProps({
   repoName: { type: String, required: true },
@@ -16,8 +17,8 @@ const emit = defineEmits(['into-path'])
 
 const viewSort = ref<'file' | 'history' | 'desc'>('file')
 
-const fileData = ref()
-const fileCommits = ref([])
+const fileData = ref<FileInfo>()
+const fileCommits = ref<CommitApi[]>([])
 
 const [route, router] = [useRoute(), useRouter()]
 const repoId = computed(() => Number(route.params.repoId))
@@ -79,7 +80,7 @@ onBeforeMount(async () => {
     </CNavItem>
   </CNav>
 
-  <FileContent v-if="viewSort === 'file'" :file-data="fileData" />
+  <FileContent v-if="viewSort === 'file' && fileData" :file-data="fileData" />
 
   <FileHistory v-else-if="viewSort === 'history'" :commits="fileCommits" />
 

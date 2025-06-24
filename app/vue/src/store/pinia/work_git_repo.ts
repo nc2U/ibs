@@ -8,6 +8,8 @@ import type {
   RepoApi,
   Repository,
   ChangedFile,
+  FileInfo,
+  CommitApi,
 } from '@/store/types/work_git_repo.ts'
 
 export const useGitRepo = defineStore('git_repo', () => {
@@ -179,7 +181,11 @@ export const useGitRepo = defineStore('git_repo', () => {
     }
   }
 
-  const fetchFileView = async (repo: number, path: string, sha: string) => {
+  const fetchFileView = async (
+    repo: number,
+    path: string,
+    sha: string,
+  ): Promise<[FileInfo | undefined, CommitApi[]]> => {
     const encodedPath = encodeURIComponent(path)
     const url = `/repo/${repo}/file/${encodedPath}?sha=${sha}`
     try {
@@ -187,6 +193,7 @@ export const useGitRepo = defineStore('git_repo', () => {
       return [data.file, data.commits]
     } catch (error: any) {
       console.error('[fetchFile] Failed:', error.response?.data || error.message)
+      return [undefined, []]
     }
   }
 
