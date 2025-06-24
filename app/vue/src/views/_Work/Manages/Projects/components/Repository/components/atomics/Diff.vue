@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString } from '@/utils/baseMixins.ts'
 import { html } from 'diff2html'
+import Loading from '@/components/Loading/Index.vue'
 import sanitizeHtml from 'sanitize-html'
 
 const props = defineProps({
@@ -16,9 +17,12 @@ const route = useRoute()
 const repo = computed(() => Number(route.params.repoId))
 
 const gitStore = useGitRepo()
-const getFullDiff = () => {
+const loading = ref(false)
+const getFullDiff = async () => {
+  loading.value = true
   const diff_hash = `?base=${props.gitDiff?.base}&head=${props.gitDiff?.head}`
-  gitStore.fetchGitDiff(repo.value as number, diff_hash, true)
+  await gitStore.fetchGitDiff(repo.value as number, diff_hash, true)
+  loading.value = false
 }
 
 const diffHtml = ref('')
@@ -75,12 +79,13 @@ const hasContent = computed(() => {
   return text.length > 0
 })
 
-onMounted(async () => {
+onMounted(() => {
   if (props.gitDiff) getDiffCode(props.gitDiff.diff)
 })
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <CRow class="mb-3">
     <CCol>
       차이점 보기 :
