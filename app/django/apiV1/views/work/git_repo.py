@@ -365,7 +365,7 @@ class GitFileContentView(APIView):
             raw_data = blob.data_stream.read()
 
             if self.is_binary(raw_data):
-                return Response({
+                return Response({"file": {
                     "name": blob.name,
                     "path": path,
                     "sha": sha,
@@ -374,11 +374,10 @@ class GitFileContentView(APIView):
                     "binary": True,
                     "content": None,
                     "message": "This file is binary and cannot be displayed as text.",
-                    "commits": commits
-                })
+                }, "commits": commits})
 
             content = raw_data.decode("utf-8", errors="replace")
-            return Response({
+            return Response({"file": {
                 "name": blob.name,
                 "path": path,
                 "sha": sha,
@@ -386,8 +385,7 @@ class GitFileContentView(APIView):
                 "modified": last_modified,
                 "binary": False,
                 "content": content,
-                "commits": commits
-            }, status=status.HTTP_200_OK)
+            }, "commits": commits}, status=status.HTTP_200_OK)
 
         except (BadName, KeyError) as e:
             return Response({"error": "Invalid SHA or path", "details": str(e)}, status=400)

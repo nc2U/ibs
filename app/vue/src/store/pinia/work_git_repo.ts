@@ -184,7 +184,7 @@ export const useGitRepo = defineStore('git_repo', () => {
     const url = `/repo/${repo}/file/${encodedPath}?sha=${sha}`
     try {
       const { data } = await api.get(url)
-      return data
+      return [data.file, data.commits]
     } catch (error: any) {
       console.error('[fetchFile] Failed:', error.response?.data || error.message)
     }

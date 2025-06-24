@@ -14,6 +14,7 @@ defineProps({
 const emit = defineEmits(['into-path'])
 
 const fileData = ref()
+const fileCommits = ref([])
 
 const [route, router] = [useRoute(), useRouter()]
 const repoId = computed(() => Number(route.params.repoId))
@@ -39,7 +40,9 @@ const fetchFileView = (repo: number, path: string, sha: string) =>
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  fileData.value = await fetchFileView(repoId.value, path.value as string, sha.value)
+  const [file, commits] = await fetchFileView(repoId.value, path.value as string, sha.value)
+  fileData.value = file
+  fileCommits.value = commits
   loading.value = false
 })
 </script>
