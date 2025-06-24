@@ -69,42 +69,9 @@ const updateBase = (base: string, head) => {
   setHeadSha(head)
 }
 
-const commitMap = computed(() => {
-  const map = new Map<string, Commit>()
-  commits.value.forEach(commit => map.set(commit.commit_hash, commit))
-  return map
-})
-
-const isDescendant = (descendantSha: string, ancestorSha: string): boolean => {
-  if (descendantSha === ancestorSha) return false
-
-  const visited = new Set<string>()
-  const stack = [ancestorSha]
-
-  while (stack.length) {
-    const sha = stack.pop()!
-    if (sha === descendantSha) return true // 자손 발견 → 변경 X
-    if (!visited.has(sha)) {
-      visited.add(sha)
-      const node = commitMap.value.get(sha)
-      if (node) {
-        stack.push(...node.children)
-      }
-    }
-  }
-  return false // 자손 아님 → 변경 허용
-}
-
-const updateHead = (base: string, head: string) => {
+const updateHead = (base: string, head?: string) => {
   setBaseSha(base)
-
-  const currentHead = headSha.value
-  if (!currentHead || head === currentHead) {
-    setHeadSha(head) // headSha가 없거나 cSha가 headSha와 동일 → 무조건 설정
-    return
-  }
-  if (isDescendant(currentHead, head)) return // head가 cSha의 자손이면 변경 금지
-  setHeadSha(head) // head 가 head 보다 조상이거나 아무 관련 없어도 → head 갱신
+  if (head) setHeadSha(head)
 }
 
 const viewRevision = (commit: Commit) => {
@@ -184,7 +151,7 @@ onBeforeMount(() => {
             name="headSha"
             :value="commit.commit_hash"
             :model-value="headSha"
-            @change="updateBase(commit.parents[0], commit.commit_hash)"
+            @change="updateBase(commits[i + 1].commit_hash, commit.commit_hash)"
           />
         </CTableDataCell>
 
@@ -196,7 +163,12 @@ onBeforeMount(() => {
             name="baseSha"
             :value="commit.commit_hash"
             :model-value="baseSha"
-            @change="updateHead(commit.commit_hash, commit.children[0])"
+            @change="
+              updateHead(
+                commit.commit_hash,
+                headSha === commit.commit_hash ? commits[i - 1].commit_hash : null,
+              )
+            "
           />
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ timeFormat(commit.date) }}</CTableDataCell>
