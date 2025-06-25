@@ -19,6 +19,10 @@ class Repository(models.Model):
         ordering = ('id',)
         verbose_name = '15. 저장소'
         verbose_name_plural = '15. 저장소'
+        indexes = [
+            models.Index(fields=['project']),
+            models.Index(fields=['slug']),
+        ]
 
 
 class Branch(models.Model):
@@ -33,6 +37,9 @@ class Branch(models.Model):
         verbose_name = '16. 브랜치'
         verbose_name_plural = '16. 브랜치'
         unique_together = ('repo', 'name')
+        indexes = [
+            models.Index(fields=['name']),
+        ]
 
 
 class Commit(models.Model):
@@ -40,7 +47,7 @@ class Commit(models.Model):
     branches = models.ManyToManyField(Branch, blank=True, related_name='commits')
     commit_hash = models.CharField(max_length=40, unique=True)
     author = models.CharField(max_length=100, default='Unknown')
-    date = models.DateTimeField(db_index=True)
+    date = models.DateTimeField()
     message = models.TextField(default='')
     parents = models.ManyToManyField('self', symmetrical=False, related_name='children', blank=True)
     issues = models.ManyToManyField('Issue', blank=True)
@@ -53,11 +60,12 @@ class Commit(models.Model):
         verbose_name = '17. 커미트'
         verbose_name_plural = '17. 커미트'
         constraints = [
-            models.UniqueConstraint(fields=['repo', 'commit_hash'], name='unique_repo_commit_hash')]
+            models.UniqueConstraint(fields=['repo', 'commit_hash'], name='unique_repo_commit_hash')
+        ]
         indexes = [
             models.Index(fields=['repo', 'date']),
             models.Index(fields=['repo', 'id']),
-            models.Index(fields=['repo', 'author'])
+            models.Index(fields=['repo', 'author']),
         ]
 
     def get_prev(self):
