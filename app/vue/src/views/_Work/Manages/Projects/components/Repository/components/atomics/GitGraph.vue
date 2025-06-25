@@ -1,34 +1,73 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { buildGraphData } from './dagUtils'
+import { computed, type PropType } from 'vue'
 
-const props = defineProps<{ dag: Record<string, any> }>()
-const positions = computed(() => buildGraphData(props.dag))
-const width = computed(() => 60)
-const height = computed(() => Object.keys(props.dag).length * 20)
+const props = defineProps({ dags: { type: Object as PropType<any>, required: true } })
+
+const commits = computed(() => Object.values(props.dags))
+
+const xGap = 10
+const yGap = 30
+const xOffset = 10
+const yOffset = 20
+
+// SHA -> 위치 매핑
+const shaToCoord = computed(() => {
+  const coord = {}
+  commits.value.forEach((commit, index) => {
+    coord[commit.sha] = {
+      x: commit.space * xGap + xOffset,
+      y: index * yGap + yOffset,
+    }
+  })
+  return coord
+})
+
+const width = computed(() => {
+  const maxSpace = Math.max(...commits.value.map(c => c.space || 0))
+  return maxSpace * xGap + 100
+})
+
+const height = computed(() => commits.value.length * yGap + 100)
 </script>
 
 <template>
-  <svg v-if="dag" :width="width" :height="height">
-    <!-- edges -->
-    <template v-for="(node, sha) in dag" :key="sha">
-      <line
-        v-for="parent in node.parents"
-        :key="parent"
-        :x1="positions[sha]?.x"
-        :y1="positions[sha]?.y"
-        :x2="positions[parent]?.x"
-        :y2="positions[parent]?.y"
-        stroke="gray"
+  <svg :width="width" :height="height" class="revision-graph pl-3">
+    <g v-for="(commit, index) in commits" :key="commit.sha">
+      <!-- 커밋 노드 -->
+      <circle
+        :cx="commit.space * xGap + xOffset"
+        :cy="index * yGap + yOffset"
+        r="3"
+        fill="#BA0000"
       />
-    </template>
 
-    <!-- nodes -->
-    <template v-for="(node, sha) in dag" :key="sha">
-      <circle :cx="positions[sha]?.x" :cy="positions[sha]?.y" r="3" fill="red" />
-      <text :x="positions[sha]?.x + 10" :y="positions[sha]?.y + 4" font-size="12" fill="black">
-        {{ sha.slice(0, 6) }}
+      <!-- 부모와 연결선 -->
+      <line
+        v-for="parent in commit.parents"
+        v-if="shaToCoord[parent]"
+        :x1="commit.space * xGap + xOffset"
+        :y1="index * yGap + yOffset"
+        :x2="shaToCoord[parent].x"
+        :y2="shaToCoord[parent].y"
+        stroke="#BA0000"
+      />
+
+      <text
+        :x="commit.space * xGap + xOffset + 10"
+        :y="index * yGap + yOffset + 3"
+        font-size="10"
+        fill="black"
+      >
+        <!--        {{ commit.space }}-->
       </text>
-    </template>
+    </g>
   </svg>
 </template>
+
+<style lang="scss" scoped>
+.revision-graph {
+  padding-top: 26px;
+  position: absolute;
+  min-width: 1px;
+}
+</style>

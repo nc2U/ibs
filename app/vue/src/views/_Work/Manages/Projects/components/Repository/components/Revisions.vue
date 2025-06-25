@@ -45,6 +45,7 @@ const commitList = computed<Commit[]>(() => gitStore.commitList)
 watch(commitList, newVal => {
   if (newVal.length > 1) initSha(headSha.value, baseSha.value, newVal)
 })
+const dagList = computed(() => gitStore.dagList)
 const listSort = computed(() => gitStore.listSort)
 watch(
   () => listSort.value,
@@ -54,6 +55,11 @@ watch(
 )
 const commits = computed<Commit[]>(() =>
   listSort.value === 'all' ? commitList.value : commitList.value.slice(0, 10),
+)
+const dags = computed(() =>
+  listSort.value === 'all'
+    ? dagList.value
+    : Object.fromEntries(Object.entries(dagList.value).slice(0, 10)),
 )
 
 const baseSha = computed(() => gitStore.baseSha)
@@ -115,7 +121,7 @@ onBeforeMount(() => {
     </CCol>
   </CRow>
 
-  <GitGraph :dag="gitStore.dag" />
+  <GitGraph :dags="dags" :repo="repo as number" />
 
   <CTable hover responsive striped small>
     <colgroup>
