@@ -172,8 +172,8 @@ router.register(r'image', docs.ImageViewSet)
 router.register(r'docs-trash-can', docs.DocsInTrashViewSet, basename='docs-trash-can')
 
 urlpatterns = router.urls
-urlpatterns += [
-    path('cont-aggregate/<int:project_id>/', contract.ContractAggreateView.as_view(), name='cont-aggregate')]
+urlpatterns += [path('cont-aggregate/<int:project_id>/', contract.ContractAggreateView.as_view(),
+                     name='cont-aggregate')]
 urlpatterns += [path('cont-price-sum/<int:project_id>/', contract.ContPriceSumView.as_view(), name='cont-price-sum')]
 urlpatterns += [path('issue-by-member/', work.IssueCountByMemberView.as_view(), name='issue-by-member')]
 urlpatterns += [path('admin-create-user/', accounts.AdminCreateUserView.as_view(), name='admin-create-user')]
@@ -183,10 +183,10 @@ urlpatterns += [path('password-reset/', accounts.PasswordResetRequestView.as_vie
 urlpatterns += [path('password-reset-confirm/<str:user_id>/<str:token>/', accounts.PasswordResetConfirmView.as_view(),
                      name='password-reset-confirm')]
 urlpatterns += [path('post/<int:pk>/copy/', board.PostViewSet.as_view({'post': 'copy_and_create'}), name='post-copy')]
-urlpatterns += [
-    path('docs/<int:pk>/copy/', docs.DocumentViewSet.as_view({'docs': 'copy_and_create'}), name='docs-copy')]
+urlpatterns += [path('docs/<int:pk>/copy/', docs.DocumentViewSet.as_view({'docs': 'copy_and_create'}),
+                     name='docs-copy')]
 
-# github api
+# github custom api
 urlpatterns += [path('repo/<int:pk>/', work.GitRepoApiView.as_view(), name='git-repo')]
 urlpatterns += [path('repo/<int:pk>/branches/', work.GitBranchesView.as_view(), name='git-branches')]
 urlpatterns += [path('repo/<int:pk>/tags/', work.GitTagsView.as_view(), name='git-tags')]
