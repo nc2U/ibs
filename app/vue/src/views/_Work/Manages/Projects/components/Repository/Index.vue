@@ -12,6 +12,7 @@ import ViewFile from './components/ViewFile.vue'
 import ViewRevision from './components/ViewRevision.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
+import GitGraph from './components/atomics/GitGraph.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -181,6 +182,8 @@ onBeforeMount(async () => {
         @change-refs="changeRefs"
         @into-path="intoPath"
       />
+
+      <!--      <GitGraph :dag="{ a: '' }" />-->
     </template>
 
     <template v-slot:aside></template>
