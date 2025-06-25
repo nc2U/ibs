@@ -2,16 +2,16 @@
 import { computed } from 'vue'
 import { buildGraphData } from './dagUtils'
 
-const props = defineProps<{ dag: Record<string, any> }>()
-const positions = computed(() => buildGraphData(props.dag))
+const props = defineProps<{ dags: Record<string, any> }>()
+const positions = computed(() => buildGraphData(props.dags))
 const width = computed(() => 60)
-const height = computed(() => Object.keys(props.dag).length * 20)
+const height = computed(() => Object.keys(props.dags).length * 20)
 </script>
 
 <template>
-  <svg v-if="dag" :width="width" :height="height">
+  <svg v-if="dags" :width="width" :height="height">
     <!-- edges -->
-    <template v-for="(node, sha) in dag" :key="sha">
+    <template v-for="(node, sha) in dags" :key="sha">
       <line
         v-for="parent in node.parents"
         :key="parent"
@@ -19,12 +19,12 @@ const height = computed(() => Object.keys(props.dag).length * 20)
         :y1="positions[sha]?.y"
         :x2="positions[parent]?.x"
         :y2="positions[parent]?.y"
-        stroke="gray"
+        stroke="red"
       />
     </template>
 
     <!-- nodes -->
-    <template v-for="(node, sha) in dag" :key="sha">
+    <template v-for="(node, sha) in dags" :key="sha">
       <circle :cx="positions[sha]?.x" :cy="positions[sha]?.y" r="3" fill="red" />
       <text :x="positions[sha]?.x + 10" :y="positions[sha]?.y + 4" font-size="12" fill="black">
         {{ sha.slice(0, 6) }}

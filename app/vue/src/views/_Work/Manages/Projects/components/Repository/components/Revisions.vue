@@ -121,7 +121,7 @@ onBeforeMount(() => {
     </CCol>
   </CRow>
 
-  <GitGraph :dag="dags" />
+  <GitGraph :dags="dags" />
 
   <CTable hover responsive striped small>
     <colgroup>
