@@ -180,10 +180,9 @@ urlpatterns += [path('admin-create-user/', accounts.AdminCreateUserView.as_view(
 urlpatterns += [path('check-password/', accounts.CheckPasswordView.as_view(), name='check-password')]
 urlpatterns += [path('change-password/', accounts.ChangePasswordView.as_view(), name='change-password')]
 urlpatterns += [path('password-reset/', accounts.PasswordResetRequestView.as_view(), name='password-reset')]
-urlpatterns += [path('password-reset-confirm/<str:user_id>/<str:token>/',
-                     accounts.PasswordResetConfirmView.as_view(), name='password-reset-confirm')]
-urlpatterns += [
-    path('post/<int:pk>/copy/', board.PostViewSet.as_view({'post': 'copy_and_create'}), name='post-copy')]
+urlpatterns += [path('password-reset-confirm/<str:user_id>/<str:token>/', accounts.PasswordResetConfirmView.as_view(),
+                     name='password-reset-confirm')]
+urlpatterns += [path('post/<int:pk>/copy/', board.PostViewSet.as_view({'post': 'copy_and_create'}), name='post-copy')]
 urlpatterns += [
     path('docs/<int:pk>/copy/', docs.DocumentViewSet.as_view({'docs': 'copy_and_create'}), name='docs-copy')]
 
@@ -193,7 +192,6 @@ urlpatterns += [path('repo/<int:pk>/branches/', work.GitBranchesView.as_view(), 
 urlpatterns += [path('repo/<int:pk>/tags/', work.GitTagsView.as_view(), name='git-tags')]
 urlpatterns += [path('repo/<int:pk>/tree/', work.GitTreeView.as_view(), name='git-root-tree')]
 urlpatterns += [path('repo/<int:pk>/tree/<path:path>', work.GitTreeView.as_view(), name='git-sub-tree')]
-urlpatterns += [
-    path('repo/<int:pk>/file/<path:path>', work.GitFileContentView.as_view(), name='git-file')]  # require ?sha=
+urlpatterns += [path('repo/<int:pk>/file/<path:path>', work.GitFileContentView.as_view(), name='git-file')]
 urlpatterns += [path('repo/<int:pk>/compare/', work.CompareCommitsView.as_view(), name='compare-commits')]
 urlpatterns += [path('repo/<int:pk>/changed/', work.GetChangedFilesView.as_view(), name='get-changed-files')]

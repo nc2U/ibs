@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from git import Repo, GitCommandError, NULL_TREE
 from git.exc import BadName
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 
@@ -67,6 +68,42 @@ class CommitViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(repo__project_id__in=project_ids)
 
         return queryset
+
+    @action(detail=False, methods=['get'], url_path='graph')
+    def git_graph(self, request):
+        """
+        /commit/graph/
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        commits = []
+        dag = {}
+
+        for commit in page:
+            commit_info = {
+                'sha': commit.commit_hash,
+                'parents': list(commit.parents.values_list('commit_hash', flat=True)),
+                'children': list(commit.children.values_list('commit_hash', flat=True)),
+                'author': commit.author,
+                'date': commit.date.isoformat(),
+                'message': commit.message,
+                'branches': list(commit.branches.values_list('name', flat=True)),
+            }
+            commits.append(commit_info)
+            dag[commit_info['sha']] = {
+                'parents': commit_info['parents'],
+                'children': commit_info['children'],
+                'author': commit_info['author'],
+                'date': commit_info['date'],
+                'message': commit_info['message'],
+                'branches': commit_info['branches'],
+            }
+
+        return self.get_paginated_response({
+            'commits': commits,
+            'dag': dag,
+        })
 
 
 def get_repo_path(repo_id):
