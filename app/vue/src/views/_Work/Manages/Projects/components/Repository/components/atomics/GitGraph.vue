@@ -1,44 +1,72 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { buildGraphData } from './dagUtils'
+import { computed, type PropType } from 'vue'
 
-const props = defineProps<{ dags: Record<string, any>; repo: number }>()
-const positions = computed(() => buildGraphData(props.dags))
-const width = computed(() => 20)
-const height = computed(() => Object.keys(props.dags).length * 30)
+const props = defineProps({ dags: { type: Object as PropType<any>, required: true } })
+
+const commits = computed(() => Object.values(props.dags))
+
+const xGap = 10
+const yGap = 30
+const xOffset = 10
+const yOffset = 20
+
+// SHA -> 위치 매핑
+const shaToCoord = computed(() => {
+  const coord = {}
+  commits.value.forEach((commit, index) => {
+    coord[commit.sha] = {
+      x: commit.space * xGap + xOffset,
+      y: index * yGap + yOffset,
+    }
+  })
+  return coord
+})
+
+const width = computed(() => {
+  const maxSpace = Math.max(...commits.value.map(c => c.space || 0))
+  return maxSpace * xGap + 100
+})
+
+const height = computed(() => commits.value.length * yGap + 100)
 </script>
 
 <template>
   <svg :width="width" :height="height" class="revision-graph pl-3">
-    <!-- edges -->
-    <template v-for="([key, node], i) in Object.entries(dags)" :key="key">
+    <g v-for="(commit, index) in commits" :key="commit.sha">
+      <!-- 커밋 노드 -->
+      <circle
+        :cx="commit.space * xGap + xOffset"
+        :cy="index * yGap + yOffset"
+        r="3"
+        fill="#BA0000"
+      />
+
+      <!-- 부모와 연결선 -->
       <line
-        v-for="parent in node.parents"
-        :key="parent"
-        :x1="positions[key]?.x"
-        :y1="positions[key]?.y"
-        :x2="positions[parent]?.x"
-        :y2="i === Object.keys(dags).length - 1 ? positions[parent]?.y - 15 : positions[parent]?.y"
+        v-for="parent in commit.parents"
+        v-if="shaToCoord[parent]"
+        :x1="commit.space * xGap + xOffset"
+        :y1="index * yGap + yOffset"
+        :x2="shaToCoord[parent].x"
+        :y2="shaToCoord[parent].y"
         stroke="#BA0000"
       />
-    </template>
 
-    <!-- nodes -->
-    <template v-for="([sha, node], index) in Object.entries(dags)" :key="sha">
-      <router-link :to="{ name: '(저장소) - 리비전 보기', params: { repoId: repo, sha } }">
-        <circle :cx="positions[sha]?.x" :cy="positions[sha]?.y" r="4" fill="#BA0000" />
-      </router-link>
-      <!--      <text :x="positions[sha]?.x + 30" :y="positions[sha]?.y + 6" font-size="14" fill="#1D69D3">-->
-      <!--        <router-link to="">{{ sha.slice(0, 8) }}</router-link>-->
-      <!--        {{ positions }}-->
-      <!--      </text>-->
-    </template>
+      <text
+        :x="commit.space * xGap + xOffset + 10"
+        :y="index * yGap + yOffset + 3"
+        font-size="10"
+        fill="black"
+      >
+        <!--        {{ commit.space }}-->
+      </text>
+    </g>
   </svg>
 </template>
 
 <style lang="scss" scoped>
 .revision-graph {
-  padding-top: 45px;
+  padding-top: 26px;
   position: absolute;
   min-width: 1px;
 }
