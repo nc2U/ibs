@@ -70,7 +70,7 @@ class CommitViewSet(viewsets.ModelViewSet):
         return queryset
 
     @action(detail=False, methods=['get'], url_path='graph')
-    def git_graph(self, request):
+    def git_graph(self):
         """
         /commit/graph/
         """
@@ -100,10 +100,7 @@ class CommitViewSet(viewsets.ModelViewSet):
                 'branches': commit_info['branches'],
             }
 
-        return self.get_paginated_response({
-            'commits': commits,
-            'dag': dag,
-        })
+        return self.get_paginated_response(dag)
 
 
 def get_repo_path(repo_id):
