@@ -70,7 +70,7 @@ class CommitViewSet(viewsets.ModelViewSet):
         return queryset
 
     @action(detail=False, methods=['get'], url_path='graph')
-    def git_graph(self):
+    def git_graph(self, request):
         """
         /commit/graph/
         """

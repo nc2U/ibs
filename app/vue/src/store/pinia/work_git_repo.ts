@@ -63,6 +63,7 @@ export const useGitRepo = defineStore('git_repo', () => {
   // commit states & getters
   const commit = ref<Commit | null>(null)
   const commitList = ref<Commit[]>([])
+  const dagList = ref([])
   const commitCount = ref<number>(0)
   const listSort = ref<'latest' | 'all' | 'branch'>('latest')
 
@@ -97,50 +98,29 @@ export const useGitRepo = defineStore('git_repo', () => {
     search?: string
     up_to?: string
   }) => {
-    const { repo, branch, project, issues, page = 1, limit, search, up_to } = payload
-    const filter = `?repo=${repo}`
-    const branchQry = branch ? `&branches__name=${branch}` : ''
-    const projQry = project ? `&repo__project=${project}` : ''
-    const issueQry = issues?.length ? issues.map(n => `&issues=${n}`).join('') : ''
-    const pageQry = `&page=${page}&limit=${limit ?? ''}`
-    const searchQry = search ? `&search=${search}` : ''
-    const upToQry = up_to ? `&up_to=${up_to}` : ''
-    return await api
-      .get(`/commit/${filter}${branchQry}${projQry}${issueQry}${pageQry}${searchQry}${upToQry}`)
-      .then(res => {
-        commitList.value = res.data.results
-        commitCount.value = res.data.count
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
+    const { repo, branch, project, up_to, issues, page = 1, limit, search } = payload
+    let params = `?repo=${repo}`
+    if (branch) params += `&branches__name=${branch}`
+    if (project) params += `&repo__project=${project}`
+    if (up_to) params += `&up_to=${up_to}`
+    if (issues?.length) params += issues.map(n => `&issues=${n}`).join('')
+    if (page) params += `&page=${page}&limit=${limit ?? ''}`
+    if (search) params += `&search=${search}`
 
-  const commits = ref([])
-  const dag = ref([])
+    try {
+      const { data } = await api.get(`/commit/${params}`)
+      commitList.value = data.results
+      commitCount.value = data.count
+    } catch (err: any) {
+      errorHandle(err.response)
+    }
 
-  const fetchCommitGraph = async (payload: {
-    repo: number
-    branch?: string
-    project?: number
-    issues?: number[]
-    page?: number
-    limit?: number
-    search?: string
-    up_to?: string
-  }) => {
-    const { repo, branch, project, issues, page = 1, limit, search, up_to } = payload
-    let url = `/commit/graph/?repo=${repo}`
-    if (branch) url += `&branches__name=${branch}`
-    if (project) url += `&repo__project=${project}`
-    if (issues?.length) url += issues.map(n => `&issues=${n}`).join('')
-    if (page) url += `&page=${page}&limit=${limit ?? ''}`
-    if (search) url += `&search=${search}`
-    await api
-      .get(url)
-      .then(res => {
-        commits.value = res.data.results.commits
-        dag.value = res.data.results.dag
-      })
-      .catch(err => errorHandle(err.response.data))
+    try {
+      const { data } = await api.get(`/commit/graph/${params}`)
+      dagList.value = data.results
+    } catch (err: any) {
+      errorHandle(err.response)
+    }
   }
 
   // repo api
@@ -264,10 +244,9 @@ export const useGitRepo = defineStore('git_repo', () => {
 
     commit,
     commitList,
+    dagList,
     commitCount,
     listSort,
-    commits,
-    dag,
 
     setListSort,
     commitPages,
@@ -276,7 +255,6 @@ export const useGitRepo = defineStore('git_repo', () => {
     fetchCommit,
     fetchCommitBySha,
     fetchCommitList,
-    fetchCommitGraph,
 
     repoApi,
     default_branch,

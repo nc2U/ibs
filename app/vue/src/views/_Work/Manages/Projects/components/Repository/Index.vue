@@ -59,7 +59,6 @@ const fetchCommitList = (payload: {
   search?: string
   up_to?: string
 }) => gitStore.fetchCommitList(payload)
-const fetchCommitGraph = (payload: any) => gitStore.fetchCommitGraph(payload)
 
 const default_branch = computed<string>(() => gitStore.default_branch)
 
@@ -130,7 +129,6 @@ const dataSetup = async (proj: number) => {
         path: curr_path.value,
       })
       await fetchCommitList(cFilter.value)
-      await fetchCommitGraph(cFilter.value)
     }
   }
 }
