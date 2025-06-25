@@ -12,7 +12,6 @@ import ViewFile from './components/ViewFile.vue'
 import ViewRevision from './components/ViewRevision.vue'
 import Revisions from './components/Revisions.vue'
 import ViewDiff from './components/ViewDiff.vue'
-import GitGraph from './components/atomics/GitGraph.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -60,6 +59,7 @@ const fetchCommitList = (payload: {
   search?: string
   up_to?: string
 }) => gitStore.fetchCommitList(payload)
+const fetchCommitGraph = (payload: any) => gitStore.fetchCommitGraph(payload)
 
 const default_branch = computed<string>(() => gitStore.default_branch)
 
@@ -84,8 +84,6 @@ const fetchBranches = (repoPk: number) => gitStore.fetchBranches(repoPk)
 const fetchTags = (repoPk: number) => gitStore.fetchTags(repoPk)
 const fetchRefTree = (payload: { repo: number; refs: string; path?: string }) =>
   gitStore.fetchRefTree(payload)
-const fetchGitDiff = (pk: number, diff_hash: string, full = false) =>
-  gitStore.fetchGitDiff(pk, diff_hash, full)
 
 const changeRefs = async (refs: string, isSha = false) => {
   cFilter.value.page = 1
@@ -132,6 +130,7 @@ const dataSetup = async (proj: number) => {
         path: curr_path.value,
       })
       await fetchCommitList(cFilter.value)
+      await fetchCommitGraph(cFilter.value)
     }
   }
 }
@@ -182,8 +181,6 @@ onBeforeMount(async () => {
         @change-refs="changeRefs"
         @into-path="intoPath"
       />
-
-      <!--      <GitGraph :dag="{ a: '' }" />-->
     </template>
 
     <template v-slot:aside></template>

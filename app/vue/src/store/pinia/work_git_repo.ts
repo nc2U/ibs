@@ -114,6 +114,35 @@ export const useGitRepo = defineStore('git_repo', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const commits = ref([])
+  const dag = ref([])
+
+  const fetchCommitGraph = async (payload: {
+    repo: number
+    branch?: string
+    project?: number
+    issues?: number[]
+    page?: number
+    limit?: number
+    search?: string
+    up_to?: string
+  }) => {
+    const { repo, branch, project, issues, page = 1, limit, search, up_to } = payload
+    let url = `/commit/graph/?repo=${repo}`
+    if (branch) url += `&branches__name=${branch}`
+    if (project) url += `&repo__project=${project}`
+    if (issues?.length) url += issues.map(n => `&issues=${n}`).join('')
+    if (page) url += `&page=${page}&limit=${limit ?? ''}`
+    if (search) url += `&search=${search}`
+    await api
+      .get(url)
+      .then(res => {
+        commits.value = res.data.results.commits
+        dag.value = res.data.results.dag
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
   // repo api
   const repoApi = ref<RepoApi | null>(null)
   const default_branch = computed<string>(() => repoApi.value?.default_branch ?? 'master')
@@ -237,6 +266,9 @@ export const useGitRepo = defineStore('git_repo', () => {
     commitList,
     commitCount,
     listSort,
+    commits,
+    dag,
+
     setListSort,
     commitPages,
     assignCommit,
@@ -244,6 +276,7 @@ export const useGitRepo = defineStore('git_repo', () => {
     fetchCommit,
     fetchCommitBySha,
     fetchCommitList,
+    fetchCommitGraph,
 
     repoApi,
     default_branch,

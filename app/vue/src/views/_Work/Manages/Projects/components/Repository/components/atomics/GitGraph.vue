@@ -4,8 +4,8 @@ import { buildGraphData } from './dagUtils'
 
 const props = defineProps<{ dag: Record<string, any> }>()
 const positions = computed(() => buildGraphData(props.dag))
-const width = computed(() => 600)
-const height = computed(() => Object.keys(props.dag).length * 60)
+const width = computed(() => 60)
+const height = computed(() => Object.keys(props.dag).length * 20)
 </script>
 
 <template>
@@ -25,7 +25,7 @@ const height = computed(() => Object.keys(props.dag).length * 60)
 
     <!-- nodes -->
     <template v-for="(node, sha) in dag" :key="sha">
-      <circle :cx="positions[sha]?.x" :cy="positions[sha]?.y" r="6" fill="black" />
+      <circle :cx="positions[sha]?.x" :cy="positions[sha]?.y" r="3" fill="red" />
       <text :x="positions[sha]?.x + 10" :y="positions[sha]?.y + 4" font-size="12" fill="black">
         {{ sha.slice(0, 6) }}
       </text>

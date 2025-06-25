@@ -19,8 +19,8 @@ export function buildGraphData(dag: Record<string, any>) {
     // 좌표 지정
     columns[sha] = column++
     positions[sha] = {
-      x: columns[sha] * 100,
-      y: y++ * 60,
+      x: columns[sha] * 0,
+      y: y++ * 20,
     }
   }
 
