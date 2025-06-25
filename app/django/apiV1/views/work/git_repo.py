@@ -1,5 +1,6 @@
 import os
 import re
+from collections import defaultdict, deque
 from datetime import timezone, datetime
 
 from django.shortcuts import get_object_or_404
@@ -79,26 +80,67 @@ class CommitViewSet(viewsets.ModelViewSet):
 
         commits = []
         dag = {}
+        graph = {}  # sha -> {'parents': [...], 'children': [...]}
 
         for commit in page:
-            commit_info = {
-                'sha': commit.commit_hash,
-                'parents': list(commit.parents.values_list('commit_hash', flat=True)),
-                'children': list(commit.children.values_list('commit_hash', flat=True)),
+            sha = commit.commit_hash
+            parents = list(commit.parents.values_list('commit_hash', flat=True))
+            children = list(commit.children.values_list('commit_hash', flat=True))
+
+            graph[sha] = {'parents': parents, 'children': children}
+
+            dag[sha] = {
+                'sha': sha,
+                'parents': parents,
+                'children': children,
                 'author': commit.author,
                 'date': commit.date.isoformat(),
                 'message': commit.message,
                 'branches': list(commit.branches.values_list('name', flat=True)),
             }
-            commits.append(commit_info)
-            dag[commit_info['sha']] = {
-                'parents': commit_info['parents'],
-                'children': commit_info['children'],
-                'author': commit_info['author'],
-                'date': commit_info['date'],
-                'message': commit_info['message'],
-                'branches': commit_info['branches'],
-            }
+
+        # ===== space 계산 로직 =====
+        # Topological 정렬을 위한 진입차수 계산
+
+        indegree = defaultdict(int)
+        for node in graph:
+            for child in graph[node]['children']:
+                indegree[child] += 1
+
+        # 진입차수 0인 노드부터 시작
+        queue = deque([sha for sha in graph if indegree[sha] == 0])
+        space_map = {}  # sha -> space
+        used_spaces = set()
+
+        while queue:
+            sha = queue.popleft()
+            parents = graph[sha]['parents']
+
+            # 부모의 space 값 참고
+            parent_spaces = [
+                space_map.get(p)
+                for p in parents
+                if p in graph and p in space_map
+            ]
+
+            if parent_spaces:
+                space = min(parent_spaces)
+            else:
+                # 부모가 없거나 그래프 바깥이면 새로운 열에 배치
+                space = max(used_spaces) + 1 if used_spaces else 0
+
+            space_map[sha] = space
+            used_spaces.add(space)
+
+            # 업데이트
+            dag[sha]['space'] = space
+
+            # 큐에 자식 노드 추가
+            for child in graph[sha]['children']:
+                if child in graph:
+                    indegree[child] -= 1
+                    if indegree[child] == 0:
+                        queue.append(child)
 
         return self.get_paginated_response(dag)
 
