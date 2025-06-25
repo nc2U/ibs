@@ -1,5 +1,4 @@
-from django.db import models, transaction
-from django.db.models.aggregates import Max
+from django.db import models
 
 from work.models.project import IssueProject
 
