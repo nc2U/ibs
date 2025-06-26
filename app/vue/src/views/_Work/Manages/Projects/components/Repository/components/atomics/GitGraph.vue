@@ -1,12 +1,9 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import type { Dag } from '@/store/types/work_git_repo.ts'
 
 const props = defineProps({
-  dags: {
-    type: Object as PropType<Record<string, any>>,
-    required: true,
-  },
+  dags: { type: Object as PropType<Record<string, Dag>>, required: true },
   repo: { type: Number, required: true },
 })
 

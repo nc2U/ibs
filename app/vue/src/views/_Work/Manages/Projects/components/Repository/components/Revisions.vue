@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, watch } from 'vue'
 import { btnSecondary, TableSecondary } from '@/utils/cssMixins.ts'
-import type { Commit, Repository } from '@/store/types/work_git_repo.ts'
+import type { Repository, Commit, Dag } from '@/store/types/work_git_repo.ts'
 import { useRouter } from 'vue-router'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
@@ -121,7 +121,7 @@ onBeforeMount(() => {
     </CCol>
   </CRow>
 
-  <GitGraph :dags="dags" :repo="repo as number" />
+  <GitGraph :dags="dags as Record<string, Dag>" :repo="repo as number" />
 
   <CTable hover responsive striped small>
     <colgroup>
