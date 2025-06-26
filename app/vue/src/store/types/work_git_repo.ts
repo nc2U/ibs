@@ -86,3 +86,14 @@ export interface Changed {
   path: string
   type: 'A' | 'C' | 'D' | 'M' | 'R'
 } // 'add', 'copied', 'deleted', 'modified', 'renamed'
+
+export interface Dag {
+  sha: string
+  parents: string[]
+  children: string[]
+  author: string
+  date: string
+  message: string
+  branches: string[]
+  space: number
+}

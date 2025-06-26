@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
+import type { Dag } from '@/store/types/work_git_repo.ts'
 
-const props = defineProps({ dags: { type: Object as PropType<any>, required: true } })
+const props = defineProps({
+  dags: {
+    type: Object as PropType<Record<string, Dag>>,
+    required: true,
+  },
+})
 
-const commits = computed(() => Object.values(props.dags))
+const commits = computed<Dag[]>(() => Object.values(props.dags))
 
-const xGap = 10
+const xGap = 20
 const yGap = 30
 const xOffset = 10
 const yOffset = 20
 
 // SHA -> 위치 매핑
-const shaToCoord = computed(() => {
+const shaToCoord = computed<Record<string, any>>(() => {
   const coord = {}
   commits.value.forEach((commit, index) => {
     coord[commit.sha] = {
@@ -42,13 +48,13 @@ const height = computed(() => commits.value.length * yGap + 100)
       />
 
       <!-- 부모와 연결선 -->
+      <!--      v-if="shaToCoord[parent]"-->
       <line
         v-for="parent in commit.parents"
-        v-if="shaToCoord[parent]"
         :x1="commit.space * xGap + xOffset"
         :y1="index * yGap + yOffset"
-        :x2="shaToCoord[parent].x"
-        :y2="shaToCoord[parent].y"
+        :x2="shaToCoord[parent]?.x"
+        :y2="shaToCoord[parent]?.y"
         stroke="#BA0000"
       />
 
@@ -58,7 +64,7 @@ const height = computed(() => commits.value.length * yGap + 100)
         font-size="10"
         fill="black"
       >
-        <!--        {{ commit.space }}-->
+        {{ commit.space }}
       </text>
     </g>
   </svg>
