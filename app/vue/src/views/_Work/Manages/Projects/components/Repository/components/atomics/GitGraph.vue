@@ -4,9 +4,10 @@ import type { Dag } from '@/store/types/work_git_repo.ts'
 
 const props = defineProps({
   dags: {
-    type: Object as PropType<Record<string, Dag>>,
+    type: Object as PropType<Record<string, any>>,
     required: true,
   },
+  repo: { type: Number, required: true },
 })
 
 const commits = computed<Dag[]>(() => Object.values(props.dags))
