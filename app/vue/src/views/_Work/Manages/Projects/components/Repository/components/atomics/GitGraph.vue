@@ -53,19 +53,19 @@ const height = computed(() => commits.value.length * yGap + 100)
         v-for="parent in commit.parents"
         :x1="commit.space * xGap + xOffset"
         :y1="index * yGap + yOffset"
-        :x2="shaToCoord[parent]?.x"
-        :y2="shaToCoord[parent]?.y"
+        :x2="shaToCoord[parent]?.x ?? 10"
+        :y2="shaToCoord[parent]?.y ?? height - 100"
         stroke="#BA0000"
       />
 
-      <text
-        :x="commit.space * xGap + xOffset + 10"
-        :y="index * yGap + yOffset + 3"
-        font-size="10"
-        fill="black"
-      >
-        {{ commit.space }}
-      </text>
+      <!--      <text-->
+      <!--        :x="commit.space * xGap + xOffset + 10"-->
+      <!--        :y="index * yGap + yOffset + 3"-->
+      <!--        font-size="10"-->
+      <!--        fill="black"-->
+      <!--      >-->
+      <!--        {{ commit.space }}-->
+      <!--      </text>-->
     </g>
   </svg>
 </template>
