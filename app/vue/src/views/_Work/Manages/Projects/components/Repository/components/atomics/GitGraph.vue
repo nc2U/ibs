@@ -1,7 +1,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import type { Dag } from '@/store/types/work_git_repo.ts'
+import { useRouter } from 'vue-router'
 import * as d3 from 'd3'
+
+const router = useRouter()
 
 const props = defineProps({
   dags: { type: Object, required: true },
@@ -10,7 +13,15 @@ const props = defineProps({
 
 const graphContainer = ref<SVGSVGElement | null>(null)
 
-const commits = computed<Dag[]>(() => Object.values(props.dags as Record<string, Dag>))
+const commits = computed(() => {
+  const dags = props.dags as Record<string, Dag>
+  const spaceMap = calculateSpace(dags)
+
+  return Object.values(dags).map(dag => ({
+    ...dag,
+    space: spaceMap[dag.sha] ?? 0,
+  }))
+})
 
 const xGap = 20
 const yGap = 30
@@ -35,6 +46,40 @@ const width = computed(() => {
 })
 
 const height = computed(() => commits.value.length * yGap + 100)
+
+const calculateSpace = (dags: Record<string, Dag>): Record<string, number> => {
+  const spaceMap: Record<string, number> = {}
+  let currentSpace = 0
+
+  const commits = Object.values(dags).sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  ) // 최신순
+
+  for (const commit of commits) {
+    const sha = commit.sha
+    const parents = commit.parents
+
+    if (!parents.length) {
+      spaceMap[sha] = currentSpace++
+    } else if (parents.length === 1) {
+      const parentSha = parents[0]
+      const space = spaceMap[sha] ?? currentSpace
+      if (!(parentSha in spaceMap)) {
+        spaceMap[parentSha] = space
+      }
+    } else {
+      for (let i = 0; i < parents.length; i++) {
+        const pSha = parents[i]
+        const space = currentSpace + parents.length - i - 1
+        if (!(pSha in spaceMap)) {
+          spaceMap[pSha] = space
+        }
+      }
+    }
+  }
+
+  return spaceMap
+}
 
 const renderGraph = () => {
   if (!graphContainer.value) return
@@ -117,9 +162,9 @@ const renderGraph = () => {
     .attr('r', 10)
     .attr('fill', 'transparent')
     .attr('cursor', 'pointer')
-    .on('click', (event, d) => {
-      window.location.href = `/projects/ibs/repository/ibs/revisions/${d.sha}`
-    })
+    .on('click', (event, d) =>
+      router.push({ name: '(저장소) - 리비전 보기', params: { repoId: props.repo, sha: d.sha } }),
+    )
 }
 
 onMounted(renderGraph)

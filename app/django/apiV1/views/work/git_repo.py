@@ -69,32 +69,6 @@ class CommitViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    @staticmethod
-    def calculate_space(commits):
-        space_map = {}
-        current_space = 0
-
-        # 페이지네이션 된 커밋만 처리, 최신순 정렬
-        for commit in sorted(commits, key=lambda c: c.date, reverse=True):
-            commit_hash = commit.commit_hash
-            parents = list(commit.parents.values_list('commit_hash', flat=True))
-
-            if not parents:  # 최초 커밋
-                space_map[commit_hash] = current_space
-                current_space += 1
-            elif len(parents) == 1:  # 직선형 커밋
-                parent_hash = parents[0]
-                space = space_map.get(commit_hash, current_space)
-                if parent_hash not in space_map:
-                    space_map[parent_hash] = space
-            else:  # 머지 커밋 → 브랜치 분기
-                for i, phash in enumerate(parents):
-                    space = current_space + len(parents) - i - 1
-                    if phash not in space_map:
-                        space_map[phash] = space
-
-        return space_map
-
     @action(detail=False, methods=['get'], url_path='graph')
     def git_graph(self, request):
         """
@@ -102,17 +76,14 @@ class CommitViewSet(viewsets.ModelViewSet):
         """
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
-        space_map = self.calculate_space(page)
 
         dag = {}
-        for i, commit in enumerate(page):
+        for commit in page:
             sha = commit.commit_hash
             dag[sha] = {
                 'sha': sha,
                 'parents': list(commit.parents.values_list('commit_hash', flat=True)),
-                'rdm_id': i,
-                'branches': list(commit.branches.values_list('name', flat=True)),
-                'space': space_map.get(sha, 0),
+                # 'branches': list(commit.branches.values_list('name', flat=True)),
             }
 
         return self.get_paginated_response(dag)
