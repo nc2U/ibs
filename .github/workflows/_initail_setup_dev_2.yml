@@ -32,19 +32,19 @@ jobs:
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py collectstatic --no-input
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py makemigrations accounts book board cash company contract docs ibs items notice payment project work
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py migrate
-#            kubectl exec -it -n ibs-dev $web_pod -- python manage.py fetch_commits
+      #            kubectl exec -it -n ibs-dev $web_pod -- python manage.py fetch_commits
       
       # Node.js 사용
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: 24
       
       # pnpm use
       - uses: pnpm/action-setup@v2
         name: Install pnpm
         with:
-          version: 9
+          version: 10
           run_install: false
       
       # 패키지 빌드
@@ -90,7 +90,7 @@ jobs:
       - name: Install Dependencies
         if: steps.cache_svelte.outputs.cache-hit != 'true'
         run: cd app/svelte && pnpm i
-      
+
       - run: cd app/svelte && pnpm build
         if: ${{ always() }}
       
@@ -109,7 +109,7 @@ jobs:
         uses: ./.github/actions/slack-notify    # 직접 '만든' Action이므로 uses 키워드를 이용해서 아래 경로를 입력해줍니다.
         with:
           slack_incoming_url: ${{ secrets.SLACK_INCOMING_URL }}
-      
+
       - name: Send slack if completed
         if: ${{ success() }}                    # 성공할 때만 실행
         uses: ./.github/actions/slack-notify
