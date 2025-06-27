@@ -69,6 +69,35 @@ class CommitViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @staticmethod
+    def calculate_space(commits):
+        space_map = {}
+        current_space = 0
+        active_branches = {}
+        # 페이지네이션된 커밋만 처리, 최신순 정렬
+        for commit in sorted(commits, key=lambda c: c.date, reverse=True):
+            commit_hash = commit.commit_hash
+            parents = list(commit.parents.values_list('commit_hash', flat=True))
+            if not parents:
+                space_map[commit_hash] = current_space
+                active_branches[commit_hash] = current_space
+                current_space += 1
+            else:
+                if len(parents) > 1:  # Merge commit
+                    spaces = [space_map.get(ph) for ph in parents if ph in space_map]
+                    space = min(spaces) if spaces else current_space
+                    space_map[commit_hash] = space
+                    for ph in parents:
+                        active_branches.pop(ph, None)
+                    active_branches[commit_hash] = space
+                else:
+                    parent_hash = parents[0]
+                    space = space_map.get(parent_hash, current_space)
+                    space_map[commit_hash] = space
+                    active_branches[commit_hash] = space
+                    active_branches.pop(parent_hash, None)
+        return space_map
+
     @action(detail=False, methods=['get'], url_path='graph')
     def git_graph(self, request):
         """
@@ -76,19 +105,17 @@ class CommitViewSet(viewsets.ModelViewSet):
         """
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
+        space_map = self.calculate_space(page)
 
         dag = {}
-
         for i, commit in enumerate(page):
             sha = commit.commit_hash
-            parents = list(commit.parents.values_list('commit_hash', flat=True))
-
             dag[sha] = {
                 'sha': sha,
-                'parents': parents,
+                'parents': list(commit.parents.values_list('commit_hash', flat=True)),
                 'rdm_id': i,
                 'branches': list(commit.branches.values_list('name', flat=True)),
-                'space': commit.space,
+                'space': space_map.get(sha, 0),
             }
 
         return self.get_paginated_response(dag)
