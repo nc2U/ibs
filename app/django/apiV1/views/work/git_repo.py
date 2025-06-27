@@ -73,30 +73,26 @@ class CommitViewSet(viewsets.ModelViewSet):
     def calculate_space(commits):
         space_map = {}
         current_space = 0
-        # active_branches = {}
 
-        # 페이지네이션된 커밋만 처리, 최신순 정렬
+        # 페이지네이션 된 커밋만 처리, 최신순 정렬
         for commit in sorted(commits, key=lambda c: c.date, reverse=True):
             commit_hash = commit.commit_hash
             parents = list(commit.parents.values_list('commit_hash', flat=True))
-            if parents:
-                if len(parents) == 1:  # 단일 커밋
-                    parent_hash = parents[0]
-                    space = space_map.get(parent_hash, current_space)
-                    space_map[commit_hash] = space
-                    # active_branches[commit_hash] = space
-                    # active_branches.pop(parent_hash, None)
-                else:  # Merge commit
-                    spaces = [space_map.get(ph) for ph in parents if ph in space_map]
-                    space = min(spaces) if spaces else current_space
-                    space_map[commit_hash] = space
-                    # for ph in parents:
-                    #     active_branches.pop(ph, None)
-                    # active_branches[commit_hash] = space
-            else:
+
+            if not parents:  # 최초 커밋
                 space_map[commit_hash] = current_space
-                # active_branches[commit_hash] = current_space
                 current_space += 1
+            elif len(parents) == 1:  # 직선형 커밋
+                parent_hash = parents[0]
+                space = space_map.get(commit_hash, current_space)
+                if parent_hash not in space_map:
+                    space_map[parent_hash] = space
+            else:  # 머지 커밋 → 브랜치 분기
+                for i, phash in enumerate(parents):
+                    space = current_space + len(parents) - i - 1
+                    if phash not in space_map:
+                        space_map[phash] = space
+
         return space_map
 
     @action(detail=False, methods=['get'], url_path='graph')
