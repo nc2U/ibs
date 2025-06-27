@@ -62,9 +62,9 @@ const calculateSpace = (dags: Record<string, Dag>): Record<string, number> => {
     if (!parents.length) {
       spaceMap[sha] = currentSpace++
     } else if (parents.length === 1) {
-      const parentSha = parents[0]
+      const pSha = parents[0]
       const space = spaceMap[sha] ?? currentSpace
-      if (!(parentSha in spaceMap)) spaceMap[parentSha] = space
+      if (!(pSha in spaceMap)) spaceMap[pSha] = space
     } else {
       for (let i = 0; i < parents.length; i++) {
         const pSha = parents[i]
@@ -91,14 +91,15 @@ const renderGraph = () => {
   const links: { source: Dag; target: Dag | { x: number; y: number }; isLast?: boolean }[] = []
   commits.value.forEach((commit, index) => {
     const isLast = index === commits.value.length - 1
-    commit.parents.forEach(parentSha => {
-      const parentCoord = shaToCoord.value[parentSha]
+
+    commit.parents.forEach(pSha => {
+      const parentCoord = shaToCoord.value[pSha]
       if (parentCoord) {
         // 페이지 내 부모
         links.push({ source: commit, target: { x: parentCoord.x, y: parentCoord.y } })
       } else {
         // 페이지 밖 부모
-        const targetY = isLast ? height.value - 100 : height.value - 10
+        const targetY = isLast ? height.value - 100 : height.value
         links.push({
           source: commit,
           target: { x: xOffset, y: targetY },
