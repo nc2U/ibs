@@ -45,7 +45,7 @@ const width = computed(() => {
   return maxSpace * xGap + 100
 })
 
-const height = computed(() => commits.value.length * yGap + 102)
+const height = computed(() => commits.value.length * yGap + 5)
 
 const calculateSpace = (dags: Record<string, Dag>): Record<string, number> => {
   const spaceMap: Record<string, number> = {}
@@ -99,10 +99,9 @@ const renderGraph = () => {
         links.push({ source: commit, target: { x: parentCoord.x, y: parentCoord.y } })
       } else {
         // 페이지 밖 부모
-        const targetY = isLast ? height.value - 100 : height.value
         links.push({
           source: commit,
-          target: { x: xOffset, y: targetY },
+          target: { x: xOffset, y: height.value },
           isLast,
         })
       }
