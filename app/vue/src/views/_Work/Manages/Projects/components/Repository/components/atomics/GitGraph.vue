@@ -45,7 +45,7 @@ const width = computed(() => {
   return maxSpace * xGap + 100
 })
 
-const height = computed(() => commits.value.length * yGap + 100)
+const height = computed(() => commits.value.length * yGap + 102)
 
 const calculateSpace = (dags: Record<string, Dag>): Record<string, number> => {
   const spaceMap: Record<string, number> = {}
@@ -64,16 +64,12 @@ const calculateSpace = (dags: Record<string, Dag>): Record<string, number> => {
     } else if (parents.length === 1) {
       const parentSha = parents[0]
       const space = spaceMap[sha] ?? currentSpace
-      if (!(parentSha in spaceMap)) {
-        spaceMap[parentSha] = space
-      }
+      if (!(parentSha in spaceMap)) spaceMap[parentSha] = space
     } else {
       for (let i = 0; i < parents.length; i++) {
         const pSha = parents[i]
         const space = currentSpace + parents.length - i - 1
-        if (!(pSha in spaceMap)) {
-          spaceMap[pSha] = space
-        }
+        if (!(pSha in spaceMap)) spaceMap[pSha] = space
       }
     }
   }
@@ -180,6 +176,5 @@ watch(() => window.innerWidth, renderGraph)
 .revision-graph {
   padding-top: 26px;
   position: absolute;
-  min-width: 1px;
 }
 </style>
