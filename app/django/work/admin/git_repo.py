@@ -24,6 +24,5 @@ class BranchAdmin(ImportExportMixin, admin.ModelAdmin):
 class CommitAdmin(admin.ModelAdmin):
     list_display = ('id', 'repo', 'commit_hash', 'author', 'date')
     list_display_links = ('commit_hash',)
-    # list_editable = ('space',)
     list_filter = ('repo', 'branches', ('date', DateRangeFilter))
     search_fields = ('commit_hash',)
