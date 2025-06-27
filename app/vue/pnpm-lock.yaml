@@ -138,9 +138,9 @@ importers:
       '@rushstack/eslint-patch':
         specifier: ^1.11.0
         version: 1.11.0
-      '@tsconfig/node22':
-        specifier: ^22.0.2
-        version: 22.0.2
+      '@tsconfig/node24':
+        specifier: ^24.0.1
+        version: 24.0.1
       '@types/d3':
         specifier: ^7.4.3
         version: 7.4.3
@@ -1254,8 +1254,8 @@ packages:
   '@sideway/pinpoint@2.0.0':
     resolution: {integrity: sha512-RNiOoTPkptFtSVzQevY/yWtZwf/RxyVnPy/OcA9HBM3MlGDnBEYL5B41H0MTn0Uec8Hi+2qUtTfG2WWZBmMejQ==}
 
-  '@tsconfig/node22@22.0.2':
-    resolution: {integrity: sha512-Kmwj4u8sDRDrMYRoN9FDEcXD8UpBSaPQQ24Gz+Gamqfm7xxn+GBR7ge/Z7pK8OXNGyUzbSwJj+TH6B+DS/epyA==}
+  '@tsconfig/node24@24.0.1':
+    resolution: {integrity: sha512-3+IXshza3bIrT0tbHBr9CixQDVf4iBf0HTR0hCYowhpLqkzJjswu3UY8aZWjRXZep31kYB+o2SQeD8KwIoUHYw==}
 
   '@types/chai@5.2.2':
     resolution: {integrity: sha512-8kB30R7Hwqf40JPiKhVzodJs2Qc1ZJ5zuT3uzw5Hq/dhNCl3G3l83jfpdI1e20BP348+fV7VIL/+FxaXkqBmWg==}
@@ -5700,7 +5700,7 @@ snapshots:
 
   '@sideway/pinpoint@2.0.0': {}
 
-  '@tsconfig/node22@22.0.2': {}
+  '@tsconfig/node24@24.0.1': {}
 
   '@types/chai@5.2.2':
     dependencies:
