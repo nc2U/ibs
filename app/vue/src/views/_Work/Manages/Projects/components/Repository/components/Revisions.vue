@@ -125,10 +125,10 @@ onBeforeMount(() => {
 
   <CTable hover responsive striped small>
     <colgroup>
-      <col style="width: 9%" />
+      <col style="width: 10%" />
       <col style="width: 2%" />
-      <col style="width: 8%" />
-      <col style="width: 15%" />
+      <col style="width: 4%" />
+      <col style="width: 14%" />
       <col style="width: 16%" />
       <col style="width: 50%" />
     </colgroup>
@@ -144,14 +144,14 @@ onBeforeMount(() => {
     </CTableHead>
     <CTableBody>
       <CTableRow v-for="(commit, i) in commits" :key="i">
-        <CTableDataCell class="text-center" style="padding-left: 80px">
+        <CTableDataCell class="text-center" style="padding-left: 70px">
           <span class="mr-5">
             <router-link to="" @click="viewRevision(commit)">
               {{ commit.commit_hash.substring(0, 8) }}
             </router-link>
           </span>
         </CTableDataCell>
-        <CTableDataCell style="width: 50px">
+        <CTableDataCell>
           <CFormCheck
             v-if="i !== commits.length - 1"
             type="radio"
@@ -163,7 +163,7 @@ onBeforeMount(() => {
           />
         </CTableDataCell>
 
-        <CTableDataCell style="width: 50px">
+        <CTableDataCell>
           <CFormCheck
             v-if="i !== 0"
             type="radio"
