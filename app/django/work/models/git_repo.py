@@ -50,7 +50,7 @@ class Commit(models.Model):
     date = models.DateTimeField()
     message = models.TextField(default='')
     parents = models.ManyToManyField('self', symmetrical=False, related_name='children', blank=True)
-    space = models.PositiveSmallIntegerField(default=0)
+    # space = models.PositiveSmallIntegerField(default=0)
     issues = models.ManyToManyField('Issue', blank=True)
 
     def __str__(self):
