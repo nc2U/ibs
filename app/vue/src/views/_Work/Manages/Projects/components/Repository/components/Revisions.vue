@@ -10,7 +10,7 @@ import Pagination from '@/components/Pagination'
 
 const router = useRouter()
 
-const props = defineProps({
+defineProps({
   repo: { type: Number, required: true },
   page: { type: Number, required: true },
   limit: { type: Number, required: true },
