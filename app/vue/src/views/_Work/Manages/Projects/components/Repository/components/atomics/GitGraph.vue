@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, type ComputedRef, inject, onMounted, ref, watch } from 'vue'
 import type { Dag } from '@/store/types/work_git_repo.ts'
 import { useRouter } from 'vue-router'
 import * as d3 from 'd3'
@@ -12,6 +12,10 @@ const props = defineProps({
 })
 
 const graphContainer = ref<SVGSVGElement | null>(null)
+
+const isDark = inject<ComputedRef<boolean>>('isDark')
+const dagColor = computed(() => (isDark?.value ? '#FFECB3' : '#BA0000'))
+watch(dagColor, () => renderGraph())
 
 const commits = computed(() => {
   const dags = props.dags as Record<string, Dag>
@@ -130,7 +134,7 @@ const renderGraph = () => {
       }
       return path.toString()
     })
-    .attr('stroke', '#BA0000')
+    .attr('stroke', dagColor.value)
     .attr('fill', 'none')
     .attr('stroke-width', 1.5)
 
@@ -143,7 +147,7 @@ const renderGraph = () => {
     .attr('cx', d => d.space * xGap + xOffset)
     .attr('cy', d => shaToCoord.value[d.sha].y)
     .attr('r', 3)
-    .attr('fill', '#BA0000')
+    .attr('fill', dagColor.value)
     .append('title')
     .text(d => d.branches?.join(', ') || '')
 
