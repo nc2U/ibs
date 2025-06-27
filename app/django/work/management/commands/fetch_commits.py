@@ -333,8 +333,7 @@ class Command(BaseCommand):
                         continue
 
                     if commits_to_create:
-                        try:
-                            # Commit 저장
+                        try:  # Commit 저장
                             Commit.objects.bulk_create(commits_to_create, ignore_conflicts=False)
                             self.stdout.write(self.style.SUCCESS(f"Created {len(commits_to_create)} commits"))
                         except IntegrityError as e:
@@ -344,9 +343,9 @@ class Command(BaseCommand):
                             commits_to_create = [c for c in commits_to_create if c.commit_hash not in existing_hashes]
                             Commit.objects.bulk_create(commits_to_create, ignore_conflicts=True)
 
-                        # 저장된 커밋 조회
-                        saved_commits = Commit.objects.filter(
-                            repo=repo, commit_hash__in=[c.commit_hash for c in commits_to_create])
+                        # parent 관계에 필요한 모든 커밋을 대상으로 조회 (child + parent)
+                        hashes = set(commit_parent_map.keys()) | {h for hs in commit_parent_map.values() for h in hs}
+                        saved_commits = Commit.objects.filter(repo=repo, commit_hash__in=hashes)
                         commit_obj_map = {c.commit_hash: c for c in saved_commits}
 
                         # 부모 관계 연결
