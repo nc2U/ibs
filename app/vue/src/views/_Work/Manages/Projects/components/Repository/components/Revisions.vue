@@ -125,17 +125,16 @@ onBeforeMount(() => {
 
   <CTable hover responsive striped small>
     <colgroup>
-      <col style="width: 6%" />
-      <col style="width: 6%" />
+      <col style="width: 9%" />
       <col style="width: 2%" />
-      <col style="width: 5%" />
+      <col style="width: 8%" />
       <col style="width: 15%" />
       <col style="width: 16%" />
       <col style="width: 50%" />
     </colgroup>
     <CTableHead>
       <CTableRow class="text-center" :color="TableSecondary">
-        <CTableHeaderCell colspan="2">#</CTableHeaderCell>
+        <CTableHeaderCell>#</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell>일자</CTableHeaderCell>
@@ -145,15 +144,14 @@ onBeforeMount(() => {
     </CTableHead>
     <CTableBody>
       <CTableRow v-for="(commit, i) in commits" :key="i">
-        <CTableDataCell></CTableDataCell>
-        <CTableDataCell class="text-center">
+        <CTableDataCell class="text-center" style="padding-left: 80px">
           <span class="mr-5">
             <router-link to="" @click="viewRevision(commit)">
               {{ commit.commit_hash.substring(0, 8) }}
             </router-link>
           </span>
         </CTableDataCell>
-        <CTableDataCell>
+        <CTableDataCell style="width: 50px">
           <CFormCheck
             v-if="i !== commits.length - 1"
             type="radio"
@@ -165,7 +163,7 @@ onBeforeMount(() => {
           />
         </CTableDataCell>
 
-        <CTableDataCell>
+        <CTableDataCell style="width: 50px">
           <CFormCheck
             v-if="i !== 0"
             type="radio"
