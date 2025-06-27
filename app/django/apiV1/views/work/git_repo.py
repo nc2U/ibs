@@ -40,7 +40,7 @@ def get_all_descendant_projects(project):
 
 
 class CommitViewSet(viewsets.ModelViewSet):
-    queryset = Commit.objects.all().order_by('-id')
+    queryset = Commit.objects.all()
     serializer_class = CommitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwentyFive
@@ -83,6 +83,7 @@ class CommitViewSet(viewsets.ModelViewSet):
             dag[sha] = {
                 'sha': sha,
                 'parents': list(commit.parents.values_list('commit_hash', flat=True)),
+                'date': commit.date,
                 # 'branches': list(commit.branches.values_list('name', flat=True)),
             }
 

@@ -56,7 +56,7 @@ class Commit(models.Model):
         return f"{self.repo.slug}: {self.commit_hash[:7]}"
 
     class Meta:
-        ordering = ('-id',)
+        ordering = ('-date',)
         verbose_name = '17. 커미트'
         verbose_name_plural = '17. 커미트'
         constraints = [
