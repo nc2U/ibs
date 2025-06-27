@@ -222,44 +222,22 @@ class Command(BaseCommand):
             visited.add(commit.hexsha)
 
             try:
-                # GitPython으로 부모 정보 먼저 가져오기
-                parent_hashes = [parent.hexsha for parent in commit.parents]
-                # git cat-file -p로 추가 메타데이터 가져오기
-                try:
-                    output = subprocess.check_output(['git', '-C', repo_path, 'cat-file', '-p', commit.hexsha],
-                                                     text=True)
-                    author = "Unknown"
-                    date = None
-                    message = ""
-                    cat_file_parents = []
-                    for line in output.splitlines():
-                        if line.startswith("author"):
-                            author = line.split(" ", 1)[1].rsplit('<')[0].strip()
-                        elif line.startswith("committer"):
-                            timestamp = int(line.rsplit(" ", 2)[1])
-                            seoul_tz = ZoneInfo("Asia/Seoul")
-                            date = datetime.fromtimestamp(timestamp, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
-                        elif line.startswith("parent"):
-                            cat_file_parents.append(line.split()[1])
-                        elif not line.startswith("tree"):
-                            message += line + "\n"
-                    # 부모 해시 검증
-                    if set(cat_file_parents) != set(parent_hashes):
-                        self.stderr.write(self.style.WARNING(
-                            f"Parent mismatch for commit {commit.hexsha}: GitPython={parent_hashes}, cat-file={cat_file_parents}"))
-                        parent_hashes = list(set(parent_hashes + cat_file_parents))  # 병합
-                except subprocess.CalledProcessError as e:
-                    self.stderr.write(self.style.WARNING(
-                        f"Failed to process commit {commit.hexsha} with cat-file: {e}, using GitPython data"))
-                    # GitPython 데이터로 대체
-                    author = commit.author.name or "Unknown"
-                    date = commit.authored_datetime
-                    message = commit.message.strip()
-
-                # 루트 커밋 처리
-                if not parent_hashes:
-                    self.stdout.write(f"Root commit detected: {commit.hexsha}")
-
+                output = subprocess.check_output(['git', '-C', repo_path, 'cat-file', '-p', commit.hexsha], text=True)
+                author = "Unknown"
+                date = None
+                message = ""
+                parent_hashes = []
+                for line in output.splitlines():
+                    if line.startswith("author"):
+                        author = line.split(" ", 1)[1].rsplit('<')[0].strip()
+                    elif line.startswith("committer"):
+                        timestamp = int(line.rsplit(" ", 2)[1])
+                        seoul_tz = ZoneInfo("Asia/Seoul")
+                        date = datetime.fromtimestamp(timestamp, tz=ZoneInfo("UTC")).astimezone(seoul_tz)
+                    elif line.startswith("parent"):
+                        parent_hashes.append(line.split()[1])
+                    elif not line.startswith("tree"):
+                        message += line + "\n"
                 commit_instance = Commit(
                     repo=repo,
                     commit_hash=commit.hexsha,
@@ -270,20 +248,15 @@ class Command(BaseCommand):
                 commits_to_create.append(commit_instance)
                 commit_obj_map[commit.hexsha] = commit_instance
                 commit_parent_map[commit.hexsha] = parent_hashes
-
-                # 부모 커밋을 큐에 추가
                 for parent_hash in parent_hashes:
                     if parent_hash not in visited and parent_hash not in existing_hashes:
-                        try:
-                            parent_commit = git_repo.commit(parent_hash)
-                            queue.append(parent_commit)
-                        except ValueError as e:
-                            self.stderr.write(self.style.WARNING(f"Invalid parent commit {parent_hash}: {e}"))
-            except Exception as e:
+                        parent_commit = git_repo.commit(parent_hash)
+                        queue.append(parent_commit)
+            except subprocess.CalledProcessError as e:
                 self.stderr.write(self.style.ERROR(f"Failed to process commit {commit.hexsha}: {e}"))
                 continue
 
-        commits_to_create = sorted(commits_to_create, key=lambda c: c.date or datetime.now())
+        commits_to_create = sorted(commits_to_create, key=lambda c: c.date)
         return commits_to_create, commit_obj_map, commit_parent_map
 
     def handle(self, *args, **kwargs):
