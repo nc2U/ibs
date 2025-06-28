@@ -23,6 +23,8 @@ class Group(models.Model):
 
 class Board(models.Model):
     group = models.ForeignKey(Group, on_delete=models.PROTECT, verbose_name='그룹')
+    project = models.ForeignKey('work.IssueProject', on_delete=models.CASCADE,
+                                verbose_name='업무 프로젝트', related_name='forums')
     BOARD_TYPES = (('notice', '공지 게시판'), ('general', '일반 게시판'))
     board_type = models.CharField(max_length=10, choices=BOARD_TYPES, default='general', verbose_name='게시판 유형')
     name = models.CharField('이름', max_length=255, db_index=True)
