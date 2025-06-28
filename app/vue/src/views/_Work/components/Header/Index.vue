@@ -37,7 +37,8 @@ const getProjects = computed(() =>
 const chkModules = (slug: string) => {
   const routeName = route.name as string
   const project = workStore.AllIssueProjects.filter(p => p.slug === slug)[0]
-  if (!route?.params?.projId || !project) return false
+  if ((route.meta as any)?.title === '설 정 관 리' || routeName.includes('프로젝트')) return false
+  else if (!route?.params?.projId || !project) return true
   else {
     if (routeName.includes('로드맵') && !project.versions?.length) return false
     else if (routeName.includes('업무') && !project.module?.issue) return false
@@ -54,9 +55,10 @@ const chkModules = (slug: string) => {
 }
 
 const cngProject = async (slug: any) => {
+  const name = /^\(.*\)$/.test(route.name as string) ? route.name : `(${route.name})`
   if (slug) {
     if (!(await chkModules(slug))) await router.push({ name: '(개요)', params: { projId: slug } })
-    else await router.push({ name: route.name, params: { projId: slug } })
+    else await router.push({ name, params: { projId: slug } })
   }
 }
 
