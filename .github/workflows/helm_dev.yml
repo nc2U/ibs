@@ -49,7 +49,7 @@ jobs:
 
       - name: Debug EMAIL_HOST_PASSWORD length
         run: |
-          if [ -z "${{ secrets.EMAIL_HOST_PASSWORD }}" ]; then
+          if [ -z '${{ secrets.EMAIL_HOST_PASSWORD }}' ]; then
             echo "EMAIL_HOST_PASSWORD is empty"
           else
             echo "EMAIL_HOST_PASSWORD is set"
