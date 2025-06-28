@@ -38,7 +38,7 @@ const docsFilter = ref<DocsFilter>({
 const route = useRoute()
 
 const workStore = useWork()
-const issueProject = computed(() => workStore.issueProject)
+const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 
 const docStore = useDocs()
 const docs = computed(() => docStore.docs)

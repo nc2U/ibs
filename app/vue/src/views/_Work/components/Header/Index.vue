@@ -35,13 +35,14 @@ const getProjects = computed(() =>
 )
 
 const chkRepo = (slug: string) => getProjects.value.filter(p => p.value === slug)[0].repo
-const cngProject = async (event: any) => {
-  if (event) {
-    if (!route?.params.projId) await router.replace({ name: '(개요)', params: { projId: event } })
+
+const cngProject = async (slug: any) => {
+  if (slug) {
+    if (!route?.params.projId) await router.push({ name: '(개요)', params: { projId: slug } })
     else {
-      if (route.name === '(저장소)' && !(await chkRepo(event)))
-        await router.replace({ name: '(개요)', params: { projId: event } })
-      else await router.replace({ name: '(저장소)', params: { projId: event } })
+      if ((route.name as string).includes('(저장소)') && !(await chkRepo(slug)))
+        await router.push({ name: '(개요)', params: { projId: slug } })
+      else await router.push({ name: route.name, params: { projId: slug } })
     }
   }
 }
