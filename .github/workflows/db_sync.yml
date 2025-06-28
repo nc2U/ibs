@@ -34,6 +34,9 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
+            web_pod=$(kubectl get pod -n ibs-dev | grep web | cut -d ' ' -f1)
+            kubectl exec -n ibs-dev $web_pod -- python manage.py fetch_commits --limit 500
+            
             if kubectl get pod -n ibs-dev mariadb-0 >/dev/null 2>&1; then
               kubectl exec -it -n ibs-dev mariadb-0 -- bash /var/backups/mariadb_restore.sh
             fi
