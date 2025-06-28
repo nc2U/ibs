@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -10,6 +11,14 @@ defineExpose({ toggle })
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject)
+
+const route = useRoute()
+watch(
+  () => route.params?.projId,
+  nVal => {
+    if (nVal) console.log(nVal)
+  },
+)
 
 const loading = ref(true)
 onBeforeMount(() => {

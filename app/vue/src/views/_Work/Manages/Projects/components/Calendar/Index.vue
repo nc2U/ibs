@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
+import { useRoute } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
@@ -24,6 +25,14 @@ const calendarOptions = computed(() => ({
 }))
 
 const handleDateClick = (arg: any) => alert('date click! ' + arg.dateStr)
+
+const route = useRoute()
+watch(
+  () => route.params?.projId,
+  nVal => {
+    if (nVal) console.log(nVal)
+  },
+)
 
 const loading = ref(true)
 onMounted(() => {

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue'
+import { ref, computed, onBeforeMount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { btnLight } from '@/utils/cssMixins.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -22,6 +22,13 @@ const capitalize = (str: string) => `${str.charAt(0).toUpperCase()}${str.slice(1
 
 const wikiTitle = computed(() =>
   route.params.title ? capitalize(route.params.title as string) : 'Wiki',
+)
+
+watch(
+  () => route.params?.projId,
+  nVal => {
+    if (nVal) console.log(nVal)
+  },
 )
 
 const loading = ref(true)

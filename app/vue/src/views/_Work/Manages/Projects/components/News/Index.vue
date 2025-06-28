@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBoard } from '@/store/pinia/board'
 import { useInform } from '@/store/pinia/work_inform.ts'
@@ -21,27 +21,18 @@ const infStore = useInform()
 
 const boardStore = useBoard()
 const postList = computed(() => boardStore.postList)
-// const fetchPostList = (payload: PostFilter) => boardStore.fetchPostList(payload)
 
 const dataSetup = async () => {
-  // await fetchPostList({ board: 1, issue_project: props.issueProject?.pk ?? '' })
-  if (route.params.projId) {
-    await infStore.fetchNewsList({ project: route.params.projId as string })
-  }
+  if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
 }
 
 const route = useRoute()
 watch(
-  () => route.params,
+  () => route.params?.projId,
   nVal => {
-    if (nVal && nVal.projId) {
-      infStore.fetchNewsList({ project: nVal.projId as string })
-    }
+    if (nVal) infStore.fetchNewsList({ project: nVal as string })
   },
-  { deep: true },
 )
-
-onBeforeUpdate(() => dataSetup())
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {

@@ -11,11 +11,10 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const route = useRoute()
-
 const issueStore = useIssue()
 const getGantts = computed(() => issueStore.getGantts)
 
+const route = useRoute()
 watch(
   () => route.params.projId,
   nVal => {

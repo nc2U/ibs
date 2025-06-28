@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute, useRouter } from 'vue-router'
 import type { Version } from '@/store/types/work_project.ts'
@@ -29,6 +29,13 @@ const onSubmit = (payload: any, back = false) => {
   } else workStore.updateVersion(payload)
   if (back) router.replace({ name: '(설정)', query: { menu: '버전' } })
 }
+
+watch(
+  () => route.params?.projId,
+  nVal => {
+    if (nVal) workStore.fetchVersionList({ project: nVal as string, exclude: '3' })
+  },
+)
 
 const loading = ref(true)
 onBeforeMount(async () => {

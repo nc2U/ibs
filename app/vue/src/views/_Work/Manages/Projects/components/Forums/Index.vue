@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeMount, ref } from 'vue'
+import { onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -9,6 +9,12 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const route = useRoute()
+watch(
+  () => route.params?.projId,
+  nVal => {
+    if (nVal) console.log(nVal)
+  },
+)
 
 const loading = ref(true)
 onBeforeMount(() => {

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import { onBeforeRouteUpdate, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { Docs, PatchDocs } from '@/store/types/docs'
@@ -109,7 +109,12 @@ const dataSetup = async (docId?: string | string[]) => {
   if (docId) await fetchDocs(Number(docId))
 }
 
-onBeforeRouteUpdate(to => dataSetup(to.params?.docId))
+watch(
+  () => route.params?.docId,
+  nVal => {
+    if (nVal) dataSetup(nVal)
+  },
+)
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {

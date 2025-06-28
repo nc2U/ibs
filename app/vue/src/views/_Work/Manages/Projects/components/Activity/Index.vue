@@ -48,16 +48,6 @@ const toMove = (date: Date) => {
   logStore.fetchActivityLogList(activityFilter.value)
 }
 
-watch(
-  () => route.params,
-  nVal => {
-    if (nVal && nVal.projId) {
-      activityFilter.value.project = nVal.projId as string
-    }
-  },
-  { deep: true },
-)
-
 const setFilter = (payload: ActLogEntryFilter) => {
   if (payload.to_act_date) toDate.value = new Date(payload.to_act_date)
   activityFilter.value.project = payload.project ?? ''
@@ -66,6 +56,15 @@ const setFilter = (payload: ActLogEntryFilter) => {
   activityFilter.value.sort = payload.sort
   logStore.fetchActivityLogList(payload)
 }
+
+watch(
+  () => route.params?.projId,
+  nVal => {
+    if (nVal) {
+      activityFilter.value.project = nVal as string
+    }
+  },
+)
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {

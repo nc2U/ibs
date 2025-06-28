@@ -6,7 +6,7 @@ import { type IssueCategory as ICategory } from '@/store/types/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
-import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
 import Member from '@/views/_Work/Manages/Projects/components/Settings/components/Member.vue'
@@ -112,16 +112,19 @@ const submitRepo = (payload: any) => {
 }
 const deleteRepo = (pk: number) => gitStore.deleteRepo(pk, issueProject.value?.pk)
 
-onBeforeRouteUpdate(async to => {
-  if (to.params.projId) {
-    await workStore.fetchIssueProject(to.params.projId as string)
-    await workStore.fetchVersionList({ project: to.params.projId as string })
-    await gitStore.fetchRepoList(issueProject.value?.pk ?? '')
-  } else {
-    workStore.removeIssueProject()
-    await workStore.fetchIssueProjectList({ status: '1' })
-  }
-})
+watch(
+  () => route.params?.projId,
+  async nVal => {
+    if (nVal) {
+      await workStore.fetchIssueProject(nVal as string)
+      await workStore.fetchVersionList({ project: nVal as string })
+      await gitStore.fetchRepoList(issueProject.value?.pk ?? '')
+    } else {
+      workStore.removeIssueProject()
+      await workStore.fetchIssueProjectList({ status: '1' })
+    }
+  },
+)
 
 const loading = ref(true)
 onBeforeMount(async () => {
