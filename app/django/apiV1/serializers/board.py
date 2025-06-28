@@ -22,7 +22,7 @@ class GroupSerializer(serializers.ModelSerializer):
 class BoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Board
-        fields = ('pk', 'group', 'board_type', 'name', 'order', 'search_able', 'manager')
+        fields = ('pk', 'group', 'project', 'board_type', 'name', 'order', 'search_able', 'manager')
 
 
 class CategorySerializer(serializers.ModelSerializer):
