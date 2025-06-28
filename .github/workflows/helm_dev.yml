@@ -46,6 +46,14 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           source: 'deploy/helm,deploy/kubectl'
           target: ${{ secrets.CICD_PATH }}/dev/
+
+      - name: Debug EMAIL_HOST_PASSWORD length
+        run: |
+          if [ -z "${{ secrets.EMAIL_HOST_PASSWORD }}" ]; then
+            echo "EMAIL_HOST_PASSWORD is empty"
+          else
+            echo "EMAIL_HOST_PASSWORD is set"
+          fi
       
       # helm upgrade --> install
       - name: SSH Remote Commands from ci/cd server
