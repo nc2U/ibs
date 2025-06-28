@@ -90,7 +90,7 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             web_pod=$(kubectl get pod -n ibs-prod | grep web | cut -d ' ' -f1)
-            kubectl exec -it -n ibs-prod $web_pod -- python manage.py fetch_commits --limit 30
+            kubectl exec -it -n ibs-prod $web_pod -- python manage.py fetch_commits
       
       # slack --> notification
       - name: Send slack when failed

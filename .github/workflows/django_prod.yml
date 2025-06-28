@@ -49,7 +49,7 @@ jobs:
             kubectl exec -n ibs-prod $web_pod -- python manage.py collectstatic --no-input
             kubectl exec -n ibs-prod $web_pod -- python manage.py makemigrations accounts board book cash company contract docs ibs items notice payment project work --noinput
             kubectl exec -n ibs-prod $web_pod -- python manage.py migrate
-            kubectl exec -n ibs-prod $web_pod -- python manage.py fetch_commits --limit 50
+            kubectl exec -n ibs-prod $web_pod -- python manage.py fetch_commits
       
       # slack --> notification
       - name: Send slack when failed

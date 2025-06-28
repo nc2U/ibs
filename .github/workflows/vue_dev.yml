@@ -80,16 +80,16 @@ jobs:
           source: 'app/django/static'
           target: ${{ secrets.CICD_PATH }}/dev/
 
-      #      # web pod --> fetch_commits
-      #      - name: Django fetch_commits
-      #        uses: garygrossgarten/github-action-ssh@release
-      #        with:
-      #          host: ${{ secrets.CICD_HOST }}
-      #          username: ${{ secrets.CICD_USER }}
-      #          password: ${{ secrets.CICD_PASS }}
-      #          command: |
-      #            web_pod=$(kubectl get pod -n ibs-dev | grep web | cut -d ' ' -f1)
-      #            kubectl exec -it -n ibs-dev $web_pod -- python manage.py fetch_commits --limit 30
+      # web pod --> fetch_commits
+      - name: Django fetch_commits
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            web_pod=$(kubectl get pod -n ibs-dev | grep web | cut -d ' ' -f1)
+            kubectl exec -it -n ibs-dev $web_pod -- python manage.py fetch_commits
       
       # slack --> notification
       - name: Send slack when failed
