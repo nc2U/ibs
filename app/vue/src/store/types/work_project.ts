@@ -32,23 +32,24 @@ export interface IssueProject {
   is_public: boolean
   module?: Module | null
   is_inherit_members: boolean
-  allowed_roles?: { pk: number; name: string; inherited: boolean }[]
-  trackers?: { pk: number; name: string; description: string }[]
-  versions?: Version[]
+  allowed_roles: { pk: number; name: string; inherited: boolean }[]
+  trackers: { pk: number; name: string; description: string }[]
+  forums: number[]
+  versions: Version[]
   default_version: string | null
-  categories?: SimpleCategory[]
+  categories: SimpleCategory[]
   status: '1' | '9'
   depth: number
-  all_members?: SimpleMember[]
-  members?: SimpleMember[]
-  activities?: CodeValue[]
+  all_members: SimpleMember[]
+  members: SimpleMember[]
+  activities: CodeValue[]
   visible?: boolean
   total_estimated_hours?: number
   total_time_spent?: number
-  family_tree?: SimpleProject[]
+  family_tree: SimpleProject[]
   parent: number | null
   parent_visible: boolean
-  sub_projects?: IssueProject[]
+  sub_projects: IssueProject[]
   user?: string
   my_perms?: Permission
   created?: string
