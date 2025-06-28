@@ -59,7 +59,7 @@ const currentPath = computed<string[]>(() => (props.currPath ? props.currPath.sp
             <CTableHeaderCell>크기</CTableHeaderCell>
             <CTableHeaderCell>리비전</CTableHeaderCell>
             <CTableHeaderCell>마지막 수정일</CTableHeaderCell>
-            <CTableHeaderCell>저자</CTableHeaderCell>
+            <CTableHeaderCell>작성자</CTableHeaderCell>
             <CTableHeaderCell>설명</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
