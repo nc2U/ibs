@@ -31,19 +31,32 @@ const workStore = useWork()
 const getProjects = computed(() =>
   workStore.getAllProjects
     .filter(p => p.slug !== route.params.projId)
-    .map(p => ({ value: p.slug, label: p.label, repo: p.repo })),
+    .map(p => ({ value: p.slug, label: p.label })),
 )
 
-const chkRepo = (slug: string) => getProjects.value.filter(p => p.value === slug)[0].repo
+const chkModules = (slug: string) => {
+  const routeName = route.name as string
+  const project = workStore.AllIssueProjects.filter(p => p.slug === slug)[0]
+  if (!route?.params?.projId || !project) return false
+  else {
+    if (routeName.includes('로드맵') && !project.versions?.length) return false
+    else if (routeName.includes('업무') && !project.module?.issue) return false
+    else if (routeName.includes('소요시간') && !project.module?.time) return false
+    else if (routeName.includes('간트차트') && !project.module?.gantt) return false
+    else if (routeName.includes('달력') && !project.module?.calendar) return false
+    else if (routeName.includes('공지') && !project.module?.news) return false
+    else if (routeName.includes('문서') && !project.module?.document) return false
+    else if (routeName.includes('위키') && !project.module?.wiki) return false
+    else if (routeName.includes('파일') && !project.module?.file) return false
+    else if (routeName.includes('저장소') && !project.module?.repository) return false
+    else return true
+  }
+}
 
 const cngProject = async (slug: any) => {
   if (slug) {
-    if (!route?.params.projId) await router.push({ name: '(개요)', params: { projId: slug } })
-    else {
-      if ((route.name as string).includes('(저장소)') && !(await chkRepo(slug)))
-        await router.push({ name: '(개요)', params: { projId: slug } })
-      else await router.push({ name: route.name, params: { projId: slug } })
-    }
+    if (!(await chkModules(slug))) await router.push({ name: '(개요)', params: { projId: slug } })
+    else await router.push({ name: route.name, params: { projId: slug } })
   }
 }
 
