@@ -60,9 +60,7 @@ const cngProject = async (slug: any) => {
   }
 }
 
-onBeforeMount(async () => {
-  await workStore.fetchAllIssueProjectList()
-})
+onBeforeMount(workStore.fetchAllIssueProjectList)
 </script>
 
 <template>
