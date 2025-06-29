@@ -3,15 +3,15 @@ import { computed, type PropType } from 'vue'
 import { type Succession } from '@/store/types/contract'
 import { useRouter } from 'vue-router'
 
+const router = useRouter()
+
 const props = defineProps({
   succession: { type: Object as PropType<Succession>, required: true },
 })
 const emit = defineEmits(['call-form', 'done-alert'])
 
-const done = computed(() => props.succession.is_approval)
+const done = computed(() => props.succession?.is_approval)
 const buttonColor = computed(() => (!done.value ? 'success' : 'secondary'))
-
-const router = useRouter()
 
 const callFormModal = () => {
   if (!done.value) {

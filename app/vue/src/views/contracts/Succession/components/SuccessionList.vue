@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useContract } from '@/store/pinia/contract'
-import { TableSecondary } from '@/utils/cssMixins'
+import { bgLight, TableSecondary } from '@/utils/cssMixins'
 import Pagination from '@/components/Pagination'
 import Succession from '@/views/contracts/Succession/components/Succession.vue'
 
@@ -45,7 +45,7 @@ const doneAlert = () => emit('done-alert')
       <CTableRow
         v-for="suc in successionList"
         :key="suc.pk"
-        :class="suc.is_approval ? 'bg-light' : ''"
+        :class="suc.is_approval ? bgLight : ''"
       >
         <Succession :succession="suc" @call-form="callForm" @done-alert="doneAlert" />
       </CTableRow>
