@@ -5,7 +5,17 @@ export interface News {
   project?: SimpleProject
   title: string
   summary: string
-  description: string
+  content: string
   author?: SimpleUser
   created: string
+  updated: string
+}
+
+export interface NewsComment {
+  pk?: number
+  news: number
+  parent: number | null
+  user?: SimpleUser
+  created: string
+  updated: string
 }
