@@ -56,19 +56,9 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
       <CCol v-html="news.content" />
     </CRow>
 
-    <CRow class="mt-5">
-      <h5>댓글</h5>
-    </CRow>
-
-    <CRow class="mb-5">
+    <CRow class="my-5">
       <CCol>
         <CommentList />
-      </CCol>
-    </CRow>
-
-    <CRow>
-      <CCol>
-        <router-link to="">댓글 추가</router-link>
       </CCol>
     </CRow>
   </template>
