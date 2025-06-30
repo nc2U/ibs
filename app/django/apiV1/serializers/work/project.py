@@ -119,6 +119,7 @@ class IssueProjectSerializer(serializers.ModelSerializer):
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
                   'activities', 'visible', 'total_estimated_hours', 'total_time_spent', 'family_tree',
                   'parent', 'parent_visible', 'sub_projects', 'user', 'my_perms', 'created', 'updated')
+        read_only_fields = ('forums',)
 
     @staticmethod
     def get_versions(obj):

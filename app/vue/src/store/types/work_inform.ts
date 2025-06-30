@@ -7,15 +7,19 @@ export interface News {
   summary: string
   content: string
   author?: SimpleUser
+  comments: BaseComment[]
   created: string
   updated: string
 }
 
-export interface NewsComment {
+export interface BaseComment {
   pk?: number
-  news: number
   parent: number | null
   user?: SimpleUser
   created: string
   updated: string
+}
+
+export interface NewsComment extends BaseComment {
+  news: number
 }

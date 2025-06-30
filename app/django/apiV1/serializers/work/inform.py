@@ -13,13 +13,23 @@ class CodeDocsCategorySerializer(serializers.ModelSerializer):
         fields = ('pk', 'name', 'active', 'default', 'order')
 
 
+class NewsCommentInSerializer(serializers.ModelSerializer):
+    user = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = NewsComment
+        fields = ('pk', 'content', 'parent', 'user', 'created', 'updated')
+
+
 class NewsSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     author = SimpleUserSerializer(read_only=True)
+    comments = NewsCommentInSerializer(read_only=True, many=True)
 
     class Meta:
         model = News
-        fields = ('pk', 'project', 'title', 'summary', 'content', 'author', 'created', 'updated')
+        fields = ('pk', 'project', 'title', 'summary', 'content',
+                  'author', 'comments', 'created', 'updated')
 
     @transaction.atomic
     def create(self, validated_data):
