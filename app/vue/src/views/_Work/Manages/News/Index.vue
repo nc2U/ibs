@@ -26,7 +26,7 @@ const newsList = computed(() => infStore.newsList)
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await infStore.fetchNewsList({ project: 'ibs' })
+  await infStore.fetchNewsList({})
   loading.value = false
 })
 </script>
