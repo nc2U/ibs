@@ -27,6 +27,17 @@ class NewsViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
 
+class NewsCommentViewSet(viewsets.ModelViewSet):
+    queryset = NewsComment.objects.all()
+    serializer_class = NewsCommentSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationTen
+    filterset_fields = ('news__project__slug', 'news', 'parent', 'user')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
 class SearchViewSet(viewsets.ModelViewSet):
     queryset = Search.objects.all()
     serializer_class = SearchSerializer

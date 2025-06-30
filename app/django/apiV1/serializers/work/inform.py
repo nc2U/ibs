@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer
-from work.models.inform import CodeDocsCategory, News, Search
+from work.models.inform import CodeDocsCategory, News, NewsComment, Search
 from work.models.project import IssueProject
 
 
@@ -19,7 +19,7 @@ class NewsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = News
-        fields = ('pk', 'project', 'title', 'summary', 'description', 'author', 'created')
+        fields = ('pk', 'project', 'title', 'summary', 'content', 'author', 'created', 'updated')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -36,6 +36,12 @@ class NewsSerializer(serializers.ModelSerializer):
             instance.project = IssueProject.objects.get(slug=project)
         instance.save()
         return instance
+
+
+class NewsCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsComment
+        fields = '__all__'
 
 
 class SearchSerializer(serializers.ModelSerializer):
