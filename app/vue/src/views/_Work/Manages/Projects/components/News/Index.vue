@@ -18,9 +18,7 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const infStore = useInform()
-
-const boardStore = useBoard()
-const postList = computed(() => boardStore.postList)
+const newsList = computed(() => infStore.newsList)
 
 const dataSetup = async () => {
   if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
@@ -63,10 +61,10 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <NoData v-if="!postList.length" />
+      <NoData v-if="!newsList.length" />
 
       <CRow v-else>
-        <NewsList :post-list="postList" />
+        <NewsList :news-list="newsList" />
       </CRow>
     </template>
 
