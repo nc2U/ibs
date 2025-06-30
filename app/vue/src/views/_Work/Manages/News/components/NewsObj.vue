@@ -1,15 +1,53 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, type PropType } from 'vue'
+import { useRoute } from 'vue-router'
+import type { News } from '@/store/types/work_inform.ts'
+import CommentList from './CommentList.vue'
 
-defineProps({ news: { type: Object, required: true } })
+defineProps({ news: { type: Object as PropType<News>, required: true } })
 
-const msg = ref('')
+const route = useRoute()
+
+const isProj = computed(() => !!route.params.projId)
 </script>
 
 <template>
   <CRow>
     <CCol>
-      {{ news.title }}
+      <h6>
+        <span v-if="!isProj">
+          <router-link :to="{ name: '(개요)', params: { projId: news.project?.slug } }">
+            {{ news.project?.name }}
+          </router-link>
+          :
+        </span>
+        <router-link
+          :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
+        >
+          {{ news.title }}
+        </router-link>
+      </h6>
+    </CCol>
+  </CRow>
+
+  <CRow class="mb-2">
+    <CCol>
+      <router-link to="">Austin Kho</router-link>
+      이(가) 2일 전에 추가함
+    </CCol>
+  </CRow>
+
+  <v-divider />
+
+  <CRow class="mb-2">
+    <CCol v-html="news.content" />
+  </CRow>
+
+  <v-divider />
+
+  <CRow class="mb-5">
+    <CCol>
+      <CommentList />
     </CCol>
   </CRow>
 </template>
