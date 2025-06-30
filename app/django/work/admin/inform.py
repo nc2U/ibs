@@ -1,7 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from work.models import CodeDocsCategory, News, NewsFile
+from work.models import CodeDocsCategory, News, NewsFile, NewsComment
 
 
 @admin.register(CodeDocsCategory)
@@ -17,8 +17,13 @@ class NewsFileInline(admin.TabularInline):
     extra = 1
 
 
+class NewsCommentInline(admin.TabularInline):
+    model = NewsComment
+    extra = 1
+
+
 @admin.register(News)
 class NewsAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'project', 'title', 'summary', 'author')
     list_display_links = ('title',)
-    inlines = (NewsFileInline,)
+    inlines = (NewsFileInline, NewsCommentInline)
