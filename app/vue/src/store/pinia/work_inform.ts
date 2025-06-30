@@ -2,7 +2,7 @@ import api from '@/api'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper.ts'
-import type { News } from '@/store/types/work_inform.ts'
+import type { News, NewsComment } from '@/store/types/work_inform.ts'
 
 export const useInform = defineStore('inform', () => {
   // news states & getters
@@ -47,6 +47,42 @@ export const useInform = defineStore('inform', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // news comment states & getters
+  const newsComment = ref<NewsComment | null>(null)
+  const newsCommentList = ref<NewsComment[]>([])
+
+  const removeNewsComment = () => (newsComment.value = null)
+
+  const fetchNewsComment = (pk: number) =>
+    api
+      .get(`/news-comment/${pk}`)
+      .then(res => (newsComment.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchNewsCommentList = (payload: any) =>
+    api
+      .get(`/news-comments/?news=${payload.news}`)
+      .then(res => (newsCommentList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createNewsComment = (payload: NewsComment) =>
+    api
+      .post(`/news-comment`, payload)
+      .then(() => message())
+      .catch(err => errorHandle(err.response.data))
+
+  const patchNewsComment = (payload: any) =>
+    api
+      .patch(`/news-comment/${payload.pk}`, payload)
+      .then(() => message())
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteNewsComment = (pk: number) =>
+    api
+      .delete(`/news-comment/${pk}`)
+      .then(() => message('warning', '알림', 'deleted!!'))
+      .catch(err => errorHandle(err.response.data))
+
   return {
     news,
     newsList,
@@ -55,5 +91,15 @@ export const useInform = defineStore('inform', () => {
     createNews,
     updateNews,
     deleteNews,
+
+    newsComment,
+    newsCommentList,
+
+    removeNewsComment,
+    fetchNewsComment,
+    fetchNewsCommentList,
+    createNewsComment,
+    patchNewsComment,
+    deleteNewsComment,
   }
 })
