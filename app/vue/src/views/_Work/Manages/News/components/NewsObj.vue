@@ -2,7 +2,6 @@
 import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import type { News } from '@/store/types/work_inform.ts'
-import CommentList from './CommentList.vue'
 
 defineProps({ news: { type: Object as PropType<News>, required: true } })
 
@@ -24,7 +23,7 @@ const isProj = computed(() => !!route.params.projId)
         <router-link
           :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
         >
-          {{ news.title }}
+          {{ news.title }} <span v-if="1 == 2">{{ '' }}</span>
         </router-link>
       </h6>
     </CCol>
@@ -37,17 +36,9 @@ const isProj = computed(() => !!route.params.projId)
     </CCol>
   </CRow>
 
-  <v-divider />
-
-  <CRow class="mb-2">
+  <CRow class="mb-0">
     <CCol v-html="news.content" />
   </CRow>
 
-  <v-divider />
-
-  <CRow class="mb-5">
-    <CCol>
-      <CommentList />
-    </CCol>
-  </CRow>
+  <v-divider class="mb-4" />
 </template>

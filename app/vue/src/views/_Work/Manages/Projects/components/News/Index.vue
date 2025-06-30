@@ -18,9 +18,11 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const infStore = useInform()
+const news = computed(() => infStore.news)
 const newsList = computed<News[]>(() => infStore.newsList)
 
 const dataSetup = async () => {
+  if (route.params.newsId) await infStore.fetchNews(Number(route.params.newsId))
   if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
 }
 
@@ -29,6 +31,13 @@ watch(
   () => route.params?.projId,
   nVal => {
     if (nVal) infStore.fetchNewsList({ project: nVal as string })
+  },
+)
+
+watch(
+  () => route.params.newsId,
+  nVal => {
+    if (nVal) infStore.fetchNews(Number(nVal))
   },
 )
 
@@ -45,7 +54,7 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <NewsList v-if="route.name === '(공지)'" :news-list="newsList" />
 
-      <NewsView v-else-if="route.name === '(공지) - 보기'" />
+      <NewsView v-else-if="route.name === '(공지) - 보기'" :news="news" />
     </template>
 
     <template v-slot:aside></template>
