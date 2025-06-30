@@ -18,7 +18,7 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const infStore = useInform()
-const news = computed(() => infStore.news)
+const news = computed<News | null>(() => infStore.news)
 const newsList = computed<News[]>(() => infStore.newsList)
 
 const dataSetup = async () => {
@@ -54,7 +54,7 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <NewsList v-if="route.name === '(공지)'" :news-list="newsList" />
 
-      <NewsView v-else-if="route.name === '(공지) - 보기'" :news="news" />
+      <NewsView v-else-if="route.name === '(공지) - 보기' && !!news" :news="news as News" />
     </template>
 
     <template v-slot:aside></template>

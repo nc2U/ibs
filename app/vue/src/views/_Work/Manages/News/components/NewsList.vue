@@ -12,7 +12,7 @@ defineProps({
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>{{ $route.name.replace(/^\((.*)\)$/, '$1') }}</h5>
+      <h5>{{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}</h5>
     </CCol>
 
     <CCol class="text-right">

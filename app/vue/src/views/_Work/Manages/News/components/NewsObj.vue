@@ -23,7 +23,10 @@ const isProj = computed(() => !!route.params.projId)
         <router-link
           :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
         >
-          {{ news.title }} <span v-if="1 == 2">{{ '' }}</span>
+          {{ news.title }}
+          <span v-if="news.comments && news.comments.length" class="strong">
+            ({{ news.comments.length }} 개의 댓글)
+          </span>
         </router-link>
       </h6>
     </CCol>
