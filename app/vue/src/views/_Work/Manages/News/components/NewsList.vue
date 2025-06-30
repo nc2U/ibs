@@ -1,14 +1,15 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
-import type { Post } from '@/store/types/board'
+import type { News } from '@/store/types/work_inform.ts'
+import NewsObj from './NewsObj.vue'
 
 defineProps({
-  postList: { type: Array as PropType<Post[]>, default: () => [] },
+  newsList: { type: Array as PropType<News[]>, default: () => [] },
 })
 </script>
 
 <template>
-  <div v-for="post in postList" :key="post.pk">
-    {{ post.title }}
-  </div>
+  <template v-for="news in newsList" :key="news.pk">
+    <NewsObj :news="news" />
+  </template>
 </template>
