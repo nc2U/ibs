@@ -32,9 +32,10 @@ class News(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
     title = models.CharField('제목', max_length=255, db_index=True)
     summary = models.CharField('요약', max_length=255, blank=True, default='')
-    description = models.TextField('설명', blank=True, default='')
+    content = models.TextField('내용', blank=True, default='')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='저자')
     created = models.DateTimeField('등록일', auto_now_add=True)
+    updated = models.DateTimeField('수정일', auto_now=True)
 
     def __str__(self):
         return self.title
@@ -79,6 +80,26 @@ def delete_file_on_delete(sender, instance, **kwargs):
     if instance.file:
         if os.path.isfile(instance.file.path):
             os.remove(instance.file.path)
+
+
+class NewsComment(models.Model):
+    news = models.ForeignKey(News, on_delete=models.CASCADE, verbose_name='공지', related_name='comments')
+    content = models.TextField('내용')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    like = models.PositiveIntegerField('좋아요', default=0)
+    blame = models.PositiveSmallIntegerField('신고', default=0)
+    ip = models.GenericIPAddressField('아이피', null=True, blank=True)
+    device = models.CharField('등록기기', max_length=255, blank=True)
+    secret = models.BooleanField('비밀글', default=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='등록자')
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.news} -> {self.content}"
+
+    class Meta:
+        ordering = ['-created']
 
 
 class Search(models.Model):
