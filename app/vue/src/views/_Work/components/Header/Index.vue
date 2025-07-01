@@ -74,14 +74,20 @@ onBeforeMount(workStore.fetchAllIssueProjectList)
       <CRow class="px-3">
         <CCol class="mb-2 p-4 col-9 col-md-6 col-lg-7 col-xl-9">
           <CRow class="d-none d-lg-block">
-            <CCol> {{ company?.name }}</CCol>
-            <CCol v-if="!!familyTree.length">
-              <span v-for="p in familyTree" :key="p.pk">
-                <span v-if="p.visible" class="mr-1 text-blue-grey">
-                  <router-link :to="{ name: route.name ?? '(개요)', params: { projId: p.slug } }">
-                    {{ p.name }}
-                  </router-link>
-                  »
+            <CCol>
+              <span v-if="route.params.projId && company" class="mr-1 text-blue-grey">
+                <router-link :to="{ name: '프로젝트' }">{{ company?.name }}</router-link>
+                »
+              </span>
+
+              <span v-if="!!familyTree.length">
+                <span v-for="p in familyTree" :key="p.pk">
+                  <span v-if="p.visible" class="mr-1 text-blue-grey">
+                    <router-link :to="{ name: route.name ?? '(개요)', params: { projId: p.slug } }">
+                      {{ p.name }}
+                    </router-link>
+                    »
+                  </span>
                 </span>
               </span>
             </CCol>
