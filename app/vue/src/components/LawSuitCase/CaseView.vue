@@ -83,7 +83,7 @@ const shareKakaoTalk = () => {
     container: '#kakaotalk-sharing-btn',
     objectType: 'feed',
     content: {
-      title: company?.value.name,
+      title: company?.value?.name,
       description: `#공지사항 #${props.suitcase?.case_number}`,
       imageUrl: 'https://brdnc.co.kr/static/dist/img/icons/ms-icon-310x310.png',
       link: {
