@@ -48,7 +48,7 @@ class ActivityLogFilter(FilterSet):
 
     @staticmethod
     def sort_filter(queryset, name, value):
-        valid_sorts = {'1', '2', '3'}  # 프로젝트별 유효 정렬 값
+        valid_sorts = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}  # 프로젝트별 유효 정렬 값
         sort_values = [v for v in value.split(",") if v in valid_sorts]
         if sort_values:
             queryset = queryset.filter(sort__in=sort_values)
