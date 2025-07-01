@@ -23,6 +23,10 @@ const sideNavCAll = () => cBody.value.toggle()
 const infStore = useInform()
 const newsList = computed(() => infStore.newsList)
 
+const pageSelect = (page: number) => {
+  infStore.fetchNewsList({ page })
+}
+
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await infStore.fetchNewsList({})
@@ -36,7 +40,7 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
     <template v-slot:default>
-      <NewsList :news-list="newsList" />
+      <NewsList :news-list="newsList" @page-select="pageSelect" />
     </template>
 
     <template v-slot:aside></template>
