@@ -7,11 +7,14 @@ import type { Company } from '@/store/types/settings'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import NewsForm from './components/NewsForm.vue'
 import NewsList from './components/NewsList.vue'
 
 const cBody = ref()
 const company = inject<ComputedRef<Company | null>>('company')
 const comName = computed(() => company?.value?.name)
+
+const viewForm = ref(false)
 
 const route = useRoute()
 
@@ -23,9 +26,15 @@ const sideNavCAll = () => cBody.value.toggle()
 const infStore = useInform()
 const newsList = computed(() => infStore.newsList)
 
+const page = ref(1)
+const pageSelect = (p: number) => {
+  page.value = p
+  infStore.fetchNewsList({ page: p })
+}
+
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await infStore.fetchNewsList({})
+  await infStore.fetchNewsList({ page: page.value })
   loading.value = false
 })
 </script>
@@ -36,7 +45,15 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
     <template v-slot:default>
-      <NewsList :news-list="newsList" />
+      <NewsForm v-if="viewForm" @close-form="viewForm = false" />
+
+      <NewsList
+        :page="page"
+        :view-form="viewForm"
+        :news-list="newsList"
+        @view-form="viewForm = true"
+        @page-select="pageSelect"
+      />
     </template>
 
     <template v-slot:aside></template>

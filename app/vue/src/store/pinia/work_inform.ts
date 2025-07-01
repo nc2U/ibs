@@ -8,6 +8,9 @@ export const useInform = defineStore('inform', () => {
   // news states & getters
   const news = ref<News | null>(null)
   const newsList = ref<News[]>([])
+  const newsCount = ref<number>(0)
+
+  const newsPages = (itemPerPage: number) => Math.ceil(newsCount.value / itemPerPage)
 
   const fetchNews = (pk: number) =>
     api
@@ -15,11 +18,16 @@ export const useInform = defineStore('inform', () => {
       .then(res => (news.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchNewsList = (payload: { project?: string; author?: number }) =>
-    api
-      .get(`/news/?project__slug=${payload.project ?? ''}&author=${payload.author ?? ''}`)
-      .then(res => (newsList.value = res.data.results))
+  const fetchNewsList = async (payload: { project?: string; author?: number; page?: number }) => {
+    const { project, author, page = 1 } = payload
+    await api
+      .get(`/news/?project__slug=${project ?? ''}&author=${author ?? ''}&page=${page}`)
+      .then(res => {
+        newsList.value = res.data.results
+        newsCount.value = res.data.count
+      })
       .catch(err => errorHandle(err.response.data))
+  }
 
   const createNews = (payload: News) =>
     api
@@ -86,6 +94,9 @@ export const useInform = defineStore('inform', () => {
   return {
     news,
     newsList,
+    newsCount,
+
+    newsPages,
     fetchNews,
     fetchNewsList,
     createNews,

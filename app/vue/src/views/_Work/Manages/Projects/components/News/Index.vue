@@ -7,6 +7,7 @@ import type { IssueProject } from '@/store/types/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsView from '@/views/_Work/Manages/News/components/NewsView.vue'
 
 defineProps({
@@ -17,9 +18,19 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
+const viewForm = ref(false)
+
 const infStore = useInform()
 const news = computed<News | null>(() => infStore.news)
 const newsList = computed<News[]>(() => infStore.newsList)
+
+const page = ref(1)
+const pageSelect = (p: number) => {
+  if (route.params.projId) {
+    page.value = p
+    infStore.fetchNewsList({ project: route.params.projId as string, page: p })
+  }
+}
 
 const dataSetup = async () => {
   if (route.params.newsId) await infStore.fetchNews(Number(route.params.newsId))
@@ -52,7 +63,16 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      <NewsList v-if="route.name === '(공지)'" :news-list="newsList" />
+      <NewsForm v-if="viewForm" @close-form="viewForm = false" />
+
+      <NewsList
+        v-if="route.name === '(공지)'"
+        :page="page"
+        :view-form="viewForm"
+        :news-list="newsList"
+        @view-form="viewForm = true"
+        @page-select="pageSelect"
+      />
 
       <NewsView v-else-if="route.name === '(공지) - 보기' && !!news" :news="news as News" />
     </template>
