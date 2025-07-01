@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { type PropType, ref } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import NewsObj from './NewsObj.vue'
 import NoData from '@/views/_Work/components/NoData.vue'
@@ -7,6 +7,7 @@ import Pagination from '@/components/Pagination'
 import { useInform } from '@/store/pinia/work_inform.ts'
 
 defineProps({
+  page: { type: Number, default: 1 },
   newsList: { type: Array as PropType<News[]>, default: () => [] },
 })
 
@@ -14,7 +15,9 @@ const emit = defineEmits(['page-select'])
 
 const infStore = useInform()
 const newsPages = (pageNum: number) => infStore.newsPages(pageNum)
-const pageSelect = (page: number) => emit('page-select', page)
+const pageSelect = (page: number) => {
+  emit('page-select', page)
+}
 </script>
 
 <template>
@@ -40,7 +43,7 @@ const pageSelect = (page: number) => emit('page-select', page)
   </template>
 
   <Pagination
-    :active-page="1"
+    :active-page="page"
     :limit="8"
     :pages="newsPages(10)"
     @active-page-change="pageSelect"

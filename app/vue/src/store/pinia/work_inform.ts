@@ -18,9 +18,9 @@ export const useInform = defineStore('inform', () => {
       .then(res => (news.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchNewsList = (payload: { project?: string; author?: number; page?: number }) => {
+  const fetchNewsList = async (payload: { project?: string; author?: number; page?: number }) => {
     const { project, author, page = 1 } = payload
-    api
+    await api
       .get(`/news/?project__slug=${project ?? ''}&author=${author ?? ''}&page=${page}`)
       .then(res => {
         newsList.value = res.data.results

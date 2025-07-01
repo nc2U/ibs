@@ -21,6 +21,14 @@ const infStore = useInform()
 const news = computed<News | null>(() => infStore.news)
 const newsList = computed<News[]>(() => infStore.newsList)
 
+const page = ref(1)
+const pageSelect = (p: number) => {
+  if (route.params.projId) {
+    page.value = p
+    infStore.fetchNewsList({ project: route.params.projId as string, page: p })
+  }
+}
+
 const dataSetup = async () => {
   if (route.params.newsId) await infStore.fetchNews(Number(route.params.newsId))
   if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
@@ -52,7 +60,12 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      <NewsList v-if="route.name === '(공지)'" :news-list="newsList" />
+      <NewsList
+        v-if="route.name === '(공지)'"
+        :page="page"
+        :news-list="newsList"
+        @page-select="pageSelect"
+      />
 
       <NewsView v-else-if="route.name === '(공지) - 보기' && !!news" :news="news as News" />
     </template>
