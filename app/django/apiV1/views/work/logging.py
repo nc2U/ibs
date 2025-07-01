@@ -57,23 +57,22 @@ class ActivityLogFilter(FilterSet):
     @staticmethod
     def get_sub_projects(parent):
         """캐싱된 하위 프로젝트 목록 반환"""
-        cache_key = f"sub_projects_{parent.slug}"
+        cache_key = f"work:sub_projects_{parent.id}"
         sub_projects = cache.get(cache_key)
         if sub_projects is None:
             sub_projects = []
             # CTE로 재귀 쿼리 최적화
+            table_name = IssueProject._meta.db_table
             with connection.cursor() as cursor:
-                cursor.execute("""
-                               WITH RECURSIVE project_tree AS (SELECT id, slug
-                                                               FROM work_issueproject
-                                                               WHERE id = %s
-                                                               UNION
-                                                               SELECT p.id, p.slug
-                                                               FROM work_issueproject p
-                                                                        INNER JOIN project_tree pt ON p.parent_id = pt.id)
-                               SELECT id, slug
-                               FROM project_tree
-                               """, [parent.id])
+                cursor.execute(f"""WITH RECURSIVE project_tree AS (SELECT id, slug
+                                                                  FROM {table_name}
+                                                                  WHERE id = %s
+                                                                  UNION
+                                                                  SELECT p.id, p.slug
+                                                                  FROM {table_name} p
+                                                                           INNER JOIN project_tree pt ON p.parent_id = pt.id)
+                                  SELECT id, slug
+                                  FROM project_tree""", [parent.id])
                 sub_projects = [{'pk': row[0], 'slug': row[1]} for row in cursor.fetchall()]
             cache.set(cache_key, sub_projects, timeout=3600)
         return sub_projects
