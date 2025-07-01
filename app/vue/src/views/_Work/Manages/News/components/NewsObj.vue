@@ -2,6 +2,7 @@
 import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import type { News } from '@/store/types/work_inform.ts'
+import { elapsedTime } from '@/utils/baseMixins.ts'
 
 defineProps({ news: { type: Object as PropType<News>, required: true } })
 
@@ -34,8 +35,14 @@ const isProj = computed(() => !!route.params.projId)
 
   <CRow class="mb-4 text-grey">
     <CCol>
-      <router-link to="">Austin Kho</router-link>
-      이(가) 2일 전에 추가함
+      <router-link :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }">
+        Austin Kho
+      </router-link>
+      이(가)
+      <router-link :to="{ name: '(작업내역)', params: { projId: news.project?.slug } }">
+        {{ elapsedTime(news.created) }}
+      </router-link>
+      에 추가함
     </CCol>
   </CRow>
 
