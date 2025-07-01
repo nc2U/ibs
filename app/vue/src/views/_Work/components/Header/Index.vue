@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { ref, computed, type PropType, watch, onBeforeMount } from 'vue'
+import { ref, computed, type PropType, watch, onBeforeMount, inject, type ComputedRef } from 'vue'
 import { useStore } from '@/store'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
+import type { Company } from '@/store/types/settings.ts'
 import type { SimpleProject } from '@/store/types/work_project.ts'
 import HeaderSearch from './components/Search.vue'
 import HeaderNav from './components/HeaderNav.vue'
@@ -17,6 +18,8 @@ const visible = ref(false)
 
 const [route, router] = [useRoute(), useRouter()]
 watch(route, () => (visible.value = false))
+
+const company = inject<ComputedRef<Company | null>>('company')
 
 const isDark = computed(() => useStore().theme === 'dark')
 const backGround = computed(() => (isDark.value ? 'bg-blue-grey-darken-5' : 'bg-indigo-lighten-5'))
@@ -70,8 +73,9 @@ onBeforeMount(workStore.fetchAllIssueProjectList)
     <CCol>
       <CRow class="px-3">
         <CCol class="mb-2 p-4 col-9 col-md-6 col-lg-7 col-xl-9">
-          <CRow v-if="!!familyTree.length" class="d-none d-lg-block">
-            <CCol>
+          <CRow class="d-none d-lg-block">
+            <CCol> {{ company?.name }}</CCol>
+            <CCol v-if="!!familyTree.length">
               <span v-for="p in familyTree" :key="p.pk">
                 <span v-if="p.visible" class="mr-1 text-blue-grey">
                   <router-link :to="{ name: route.name ?? '(개요)', params: { projId: p.slug } }">

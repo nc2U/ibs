@@ -8,7 +8,7 @@ import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company>>('company')
+const company = inject<ComputedRef<Company | null>>('company')
 const comName = computed(() => company?.value?.name)
 const sideNavCAll = () => cBody.value.toggle()
 

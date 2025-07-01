@@ -30,7 +30,7 @@ const editAuth = computed(
 const prev = ref<number | null>()
 const next = ref<number | null>()
 
-const company = inject<ComputedRef<Company>>('company')
+const company = inject<ComputedRef<Company | null>>('company')
 
 const sortName = computed(() => props.suitcase?.proj_name || '본사')
 const sortDesc = computed(() => props.suitcase.sort_desc)

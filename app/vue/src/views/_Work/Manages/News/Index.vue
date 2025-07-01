@@ -10,7 +10,7 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsList from './components/NewsList.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company>>('company')
+const company = inject<ComputedRef<Company | null>>('company')
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()

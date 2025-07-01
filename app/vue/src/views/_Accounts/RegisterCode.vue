@@ -13,7 +13,7 @@ const validated = ref(false)
 const store = useStore()
 const router = useRouter()
 
-const company = inject<ComputedRef<Company>>('company')
+const company = inject<ComputedRef<Company | null>>('company')
 
 const onSubmit = (event: Event) => {
   const form = event.currentTarget as HTMLInputElement

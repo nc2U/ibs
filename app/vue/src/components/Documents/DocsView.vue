@@ -45,7 +45,7 @@ const editAuth = computed(
 const prev = ref<number | null>()
 const next = ref<number | null>()
 
-const company = inject<ComputedRef<Company>>('company')
+const company = inject<ComputedRef<Company | null>>('company')
 
 const sortName = computed(() => props.docs?.proj_name || '본사 문서')
 const docsId = computed(() => Number(route.params.docsId))

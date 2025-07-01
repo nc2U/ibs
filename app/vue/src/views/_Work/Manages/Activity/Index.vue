@@ -14,7 +14,7 @@ import ActivityLogList from './components/ActivityLogList.vue'
 import AsideController from './components/aside/AsideController.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company>>('company')
+const company = inject<ComputedRef<Company | null>>('company')
 const comName = computed(() => company?.value?.name)
 
 const sideNavCAll = () => cBody.value.toggle()

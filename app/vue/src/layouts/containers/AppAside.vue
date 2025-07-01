@@ -12,7 +12,7 @@ import avatar8 from '@/assets/images/avatars/8.jpg'
 
 const activeKey = ref(1)
 
-const company = inject<ComputedRef<Company>>('company')
+const company = inject<ComputedRef<Company | null>>('company')
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')

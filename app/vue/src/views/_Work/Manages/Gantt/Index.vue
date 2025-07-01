@@ -11,8 +11,7 @@ import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue
 import GanttChart from '@/views/_Work/Manages/Gantt/components/GanttChart.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company>>('company')
-
+const company = inject<ComputedRef<Company | null>>('company')
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()

@@ -14,7 +14,7 @@ import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryL
 import TimeEntryForm from '@/views/_Work/Manages/SpentTime/components/TimeEntryForm.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company>>('company')
+const company = inject<ComputedRef<Company | null>>('company')
 const comName = computed(() => company?.value?.name)
 
 const sideNavCAll = () => cBody.value.toggle()
