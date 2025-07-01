@@ -2,6 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
+import { useCompany } from '@/store/pinia/company.ts'
 import type {
   IssueProject,
   Member,
@@ -9,6 +10,8 @@ import type {
   Role,
   Version,
 } from '@/store/types/work_project.ts'
+
+const comStore = useCompany()
 
 export const useWork = defineStore('work', () => {
   // Issue Project states & getters
@@ -81,7 +84,10 @@ export const useWork = defineStore('work', () => {
   const fetchIssueProject = (slug: string) =>
     api
       .get(`/issue-project/${slug}/`)
-      .then(res => (issueProject.value = res.data))
+      .then(async res => {
+        issueProject.value = res.data
+        await comStore.fetchCompany(res.data.company)
+      })
       .catch(err => errorHandle(err.response.data))
 
   const removeIssueProject = () => (issueProject.value = null)
