@@ -5,7 +5,7 @@ import Loading from '@/components/Loading/Index.vue'
 import MainCarousel from './components/MainCarousel.vue'
 import WiseWord from './components/WiseWord.vue'
 import MyIssue from '@/views/_Work/MyIssue/Index.vue'
-import NoticeBoard from './components/NoticeBoard/ListComp.vue'
+import NoticeApp from './components/NoticeApp/atomics/ListComp.vue'
 
 const noticeRoute = ref('공지 게시판')
 
@@ -40,11 +40,7 @@ onBeforeMount(() => {
     </CRow>
     <CRow>
       <CCol xl="12">
-        <NoticeBoard
-          :main-view-name="noticeRoute"
-          :notice-list="noticeList"
-          :post-list="postList"
-        />
+        <NoticeApp :main-view-name="noticeRoute" :notice-list="noticeList" :post-list="postList" />
       </CCol>
     </CRow>
   </CContainer>

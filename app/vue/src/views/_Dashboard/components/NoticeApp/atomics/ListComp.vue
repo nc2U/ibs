@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { type ComputedRef, inject, type PropType } from 'vue'
-import type { Post } from '@/store/types/board'
-import type { User } from '@/store/types/accounts'
-import { cutString, timeFormat } from '@/utils/baseMixins'
+import type { Post } from '@/store/types/board.ts'
+import type { User } from '@/store/types/accounts.ts'
+import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 
 defineProps({
   mainViewName: { type: String, default: '공지 사항' },
