@@ -7,11 +7,14 @@ import type { Company } from '@/store/types/settings'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import NewsForm from './components/NewsForm.vue'
 import NewsList from './components/NewsList.vue'
 
 const cBody = ref()
 const company = inject<ComputedRef<Company | null>>('company')
 const comName = computed(() => company?.value?.name)
+
+const viewForm = ref(false)
 
 const route = useRoute()
 
@@ -42,7 +45,15 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
     <template v-slot:default>
-      <NewsList :page="page" :news-list="newsList" @page-select="pageSelect" />
+      <NewsForm v-if="viewForm" @close-form="viewForm = false" />
+
+      <NewsList
+        :page="page"
+        :view-form="viewForm"
+        :news-list="newsList"
+        @view-form="viewForm = true"
+        @page-select="pageSelect"
+      />
     </template>
 
     <template v-slot:aside></template>

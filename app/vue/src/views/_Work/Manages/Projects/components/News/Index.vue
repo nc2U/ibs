@@ -7,6 +7,7 @@ import type { IssueProject } from '@/store/types/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsView from '@/views/_Work/Manages/News/components/NewsView.vue'
 
 defineProps({
@@ -16,6 +17,8 @@ defineProps({
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
+
+const viewForm = ref(false)
 
 const infStore = useInform()
 const news = computed<News | null>(() => infStore.news)
@@ -60,10 +63,14 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
+      <NewsForm v-if="viewForm" @close-form="viewForm = false" />
+
       <NewsList
         v-if="route.name === '(공지)'"
         :page="page"
+        :view-form="viewForm"
         :news-list="newsList"
+        @view-form="viewForm = true"
         @page-select="pageSelect"
       />
 

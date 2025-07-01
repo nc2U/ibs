@@ -8,10 +8,11 @@ import { useInform } from '@/store/pinia/work_inform.ts'
 
 defineProps({
   page: { type: Number, default: 1 },
+  viewForm: { type: Boolean, default: false },
   newsList: { type: Array as PropType<News[]>, default: () => [] },
 })
 
-const emit = defineEmits(['page-select'])
+const emit = defineEmits(['view-form', 'page-select'])
 
 const infStore = useInform()
 const newsPages = (pageNum: number) => infStore.newsPages(pageNum)
@@ -26,10 +27,10 @@ const pageSelect = (page: number) => {
       <h5>{{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}</h5>
     </CCol>
 
-    <CCol class="text-right">
+    <CCol v-if="!viewForm" class="text-right">
       <span class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="sm" />
-        <router-link to="" class="ml-1">새 공지</router-link>
+        <router-link to="" class="ml-1" @click="emit('view-form')">새 공지</router-link>
       </span>
     </CCol>
   </CRow>
