@@ -29,7 +29,7 @@ class NewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = News
         fields = ('pk', 'project', 'title', 'summary', 'content',
-                  'author', 'comments', 'created', 'updated')
+                  'author', 'comments', 'is_new', 'created', 'updated')
 
     @transaction.atomic
     def create(self, validated_data):

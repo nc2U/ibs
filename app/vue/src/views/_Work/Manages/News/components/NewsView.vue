@@ -35,14 +35,14 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
       </CCol>
     </CRow>
 
-    <CRow>
+    <CRow class="mb-3">
       <CCol class="text-50 fst-italic">
         {{ news.summary || '요약 내용이 없습니다.' }}
       </CCol>
     </CRow>
 
     <CRow>
-      <CCol>
+      <CCol class="text-grey">
         <router-link to="">{{ news.author?.username }}</router-link>
         이(가)
         <router-link to="">{{ elapsedTime(news.created) }}</router-link>
@@ -52,11 +52,11 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
 
     <v-divider />
 
-    <CRow class="mt-3">
+    <CRow class="my-5">
       <CCol v-html="news.content" />
     </CRow>
 
-    <CRow class="my-5">
+    <CRow>
       <CCol>
         <CommentList />
       </CCol>

@@ -32,7 +32,7 @@ const isProj = computed(() => !!route.params.projId)
     </CCol>
   </CRow>
 
-  <CRow class="mb-2">
+  <CRow class="mb-4 text-grey">
     <CCol>
       <router-link to="">Austin Kho</router-link>
       이(가) 2일 전에 추가함
