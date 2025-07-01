@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import magic
 from django.conf import settings
@@ -39,6 +39,11 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+
+    def is_new(self):
+        today = datetime.today().strftime('%Y-%m-%d %H:%M')
+        new_period = self.created + timedelta(days=3)
+        return today < new_period.strftime('%Y-%m-%d %H:%M')
 
     class Meta:
         verbose_name = '14. 공지'
