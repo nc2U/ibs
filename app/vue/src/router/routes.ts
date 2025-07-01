@@ -36,29 +36,6 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import(/* webpackChunkName: "dashboard" */ '@/views/_Dashboard/Index.vue'),
         meta: { title: '대 시 보 드', auth: true, affix: true },
       },
-      // {
-      //   path: 'dashboard/notices',
-      //   name: '공지 게시판',
-      //   component: () => import('@/views/_Dashboard/components/NoticeApp/Index.vue'),
-      //   meta: { title: '대 시 보 드', auth: true, affix: true },
-      //   children: [
-      //     {
-      //       path: ':postId(\\d+)',
-      //       name: '공지 게시판 - 보기',
-      //       component: () => import('@/views/_Dashboard/components/NoticeApp/Index.vue'),
-      //     },
-      //     {
-      //       path: 'create',
-      //       name: '공지 게시판 - 작성',
-      //       component: () => import('@/views/_Dashboard/components/NoticeApp/Index.vue'),
-      //     },
-      //     {
-      //       path: ':postId(\\d+)/update',
-      //       name: '공지 게시판 - 수정',
-      //       component: () => import('@/views/_Dashboard/components/NoticeApp/Index.vue'),
-      //     },
-      //   ],
-      // },
       workProject as RouteRecordRaw,
       workSetting as RouteRecordRaw,
       contracts,
