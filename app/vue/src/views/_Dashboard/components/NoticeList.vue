@@ -5,26 +5,26 @@ import type { News } from '@/store/types/work_inform.ts'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 
 defineProps({
-  mainViewName: { type: String, default: '공지 사항' },
   newsList: { type: Array as PropType<News[]>, default: () => [] },
 })
-
-const userInfo = inject<ComputedRef<User>>('userInfo')
 </script>
 
 <template>
   <CRow>
     <CCol md="12">
       <v-card class="mx-auto mb-4">
-        <v-table>
+        <v-table hover>
+          <col style="width: 23%" />
+          <col style="width: 57%" />
+          <col style="width: 20%" />
           <thead>
             <tr class="bg-secondary">
-              <th class="text-left">
+              <th class="text-left" colspan="2">
                 <v-btn variant="text" icon="mdi-menu" />
-                <span class="text-capitalize">{{ mainViewName }}</span>
+                <span class="text-capitalize">공지</span>
               </th>
               <th class="text-right">
-                <router-link :to="{ name: mainViewName }">더보기</router-link>
+                <router-link :to="{ name: '공지' }">더보기</router-link>
                 <v-icon icon="mdi-chevron-right" />
               </th>
             </tr>
@@ -32,8 +32,24 @@ const userInfo = inject<ComputedRef<User>>('userInfo')
           <tbody>
             <tr v-for="item in newsList" :key="item.pk ?? 0">
               <td class="pl-5">
-                <span class="text-grey">{{ cutString(item.title, 32) }}</span>
-                <!--                <CBadge v-if="item.is_new" color="warning" size="sm" class="ml-2">new</CBadge>-->
+                <span class="mr-3 strong">
+                  <router-link :to="{ name: '(개요)', params: { projId: item.project?.slug } }">
+                    {{ item.project?.name }}
+                  </router-link>
+                </span>
+              </td>
+              <td>
+                <span class="text-grey">
+                  <router-link
+                    :to="{
+                      name: '(공지) - 보기',
+                      params: { projId: item.project?.slug, newsId: item.pk },
+                    }"
+                  >
+                    {{ cutString(item.title, 32) }}
+                  </router-link>
+                </span>
+                <CBadge v-if="item.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
                 <CBadge v-if="item.comments?.length" color="warning" size="sm" class="ml-1">
                   +{{ item.comments.length }}
                 </CBadge>

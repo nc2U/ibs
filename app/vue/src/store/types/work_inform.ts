@@ -8,6 +8,7 @@ export interface News {
   content: string
   author?: SimpleUser
   comments: BaseComment[]
+  is_new: boolean
   created: string
   updated: string
 }
