@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
+import { useInform } from '@/store/pinia/work_inform.ts'
 import NewsObj from './NewsObj.vue'
 import NoData from '@/views/_Work/components/NoData.vue'
 import Pagination from '@/components/Pagination'
-import { useInform } from '@/store/pinia/work_inform.ts'
 
 defineProps({
   page: { type: Number, default: 1 },

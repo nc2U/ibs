@@ -43,9 +43,13 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
 
     <CRow>
       <CCol class="text-grey">
-        <router-link to="">{{ news.author?.username }}</router-link>
+        <router-link :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }">
+          {{ news.author?.username }}
+        </router-link>
         이(가)
-        <router-link to="">{{ elapsedTime(news.created) }}</router-link>
+        <router-link :to="{ name: '(작업내역)', params: { projId: news.project?.slug } }">
+          {{ elapsedTime(news.created) }}
+        </router-link>
         에 추가함
       </CCol>
     </CRow>
