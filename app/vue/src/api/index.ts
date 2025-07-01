@@ -5,6 +5,12 @@ import { start, close } from '@/utils/nprogress'
 
 const api = axios.create({ baseURL: '/api/v1/' })
 
+// 초기 토큰 주입 (쿠키에서 불러옴)
+const token = Cookies.get('accessToken')
+if (token) {
+  api.defaults.headers.common.Authorization = `Bearer ${token}`
+}
+
 // 요청 인터셉터
 api.interceptors.request.use(
   config => {
