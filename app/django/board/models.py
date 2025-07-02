@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import magic
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
 
 
@@ -126,17 +126,11 @@ class PostFile(models.Model):
         if self.file:
             self.file_name = self.file.name.split('/')[-1]
             mime = magic.Magic(mime=True)
-            self.file_type = mime.from_buffer(self.file.read())
+            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
+            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
+            self.file.seek(file_pos)  # 원래 위치로 복구
             self.file_size = self.file.size
         super().save(*args, **kwargs)
-
-
-@receiver(pre_delete, sender=PostFile)
-def delete_file_on_delete(sender, instance, **kwargs):
-    # Check if the file exists before attempting to delete it
-    if instance.file:
-        if os.path.isfile(instance.file.path):
-            os.remove(instance.file.path)
 
 
 class PostImage(models.Model):
@@ -154,17 +148,54 @@ class PostImage(models.Model):
         if self.image:
             self.image_name = self.image.name.split('/')[-1]
             mime = magic.Magic(mime=True)
-            self.image_type = mime.from_buffer(self.image.read())
+            image_pos = self.image.tell()  # 현재 이미지 파일 커서 위치 백업
+            self.image_type = mime.from_buffer(self.image.read(2048))  # 2048바이트 정도면 충분
+            self.image.seek(image_pos)  # 원래 위치로 복구
             self.image_size = self.image.size
         super().save(*args, **kwargs)
 
 
+def delete_file_field(instance, field_name):
+    """Delete the file of the given field if it exists."""
+    field = getattr(instance, field_name, None)
+    try:
+        if field and hasattr(field, 'path') and os.path.isfile(field.path):
+            os.remove(field.path)
+    except (FileNotFoundError, OSError):
+        pass
+
+
+@receiver(pre_save, sender=PostFile)
+@receiver(pre_save, sender=PostImage)
+def delete_old_file_on_update(sender, instance, **kwargs):
+    """Generic file deletion handler for models with file/image fields."""
+    if not instance.pk:  # 새 객체 생성 시는 아무 작업 안 함
+        return
+
+    try:
+        # 기존 객체를 데이터베이스에서 가져옴
+        old_instance = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        return
+
+    # 모델에 따라 처리할 필드 결정
+    field_name = 'file' if sender == PostFile else 'image'
+    old_file = getattr(old_instance, field_name, None)
+    new_file = getattr(instance, field_name, None)
+
+    # 파일이 변경되었는지 확인
+    if old_file and old_file != new_file:
+        delete_file_field(old_instance, field_name)
+
+
+@receiver(pre_delete, sender=PostFile)
 @receiver(pre_delete, sender=PostImage)
 def delete_file_on_delete(sender, instance, **kwargs):
-    # Check if the file exists before attempting to delete it
-    if instance.image:
-        if os.path.isfile(instance.image.path):
-            os.remove(instance.image.path)
+    """Generic file deletion handler for models."""
+    if hasattr(instance, 'file'):
+        delete_file_field(instance, 'file')
+    if hasattr(instance, 'image'):
+        delete_file_field(instance, 'image')
 
 
 class Comment(models.Model):

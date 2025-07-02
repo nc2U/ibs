@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import magic
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
 
 from work.models.project import IssueProject, Member
@@ -74,17 +74,48 @@ class NewsFile(models.Model):
         if self.file:
             self.file_name = self.file.name.split('/')[-1]
             mime = magic.Magic(mime=True)
-            self.file_type = mime.from_buffer(self.file.read())
+            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
+            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
+            self.file.seek(file_pos)  # 원래 위치로 복구
             self.file_size = self.file.size
         super().save(*args, **kwargs)
+
+
+def delete_file_field(instance, field_name):
+    """Delete the file of the given field if it exists."""
+    field = getattr(instance, field_name, None)
+    try:
+        if field and hasattr(field, 'path') and os.path.isfile(field.path):
+            os.remove(field.path)
+    except (FileNotFoundError, OSError):
+        pass
+
+
+@receiver(pre_save, sender=NewsFile)
+def delete_old_file_on_update(sender, instance, **kwargs):
+    """Generic file deletion handler for models with file/image fields."""
+    if not instance.pk:  # 새 객체 생성 시는 아무 작업 안 함
+        return
+
+    try:
+        # 기존 객체를 데이터베이스에서 가져옴
+        old_instance = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        return
+
+    # 모델에 따라 처리할 필드 결정
+    old_file = getattr(old_instance, 'file', None)
+    new_file = getattr(instance, 'file', None)
+
+    # 파일이 변경되었는지 확인
+    if old_file and old_file != new_file:
+        delete_file_field(old_instance, 'file')
 
 
 @receiver(pre_delete, sender=NewsFile)
 def delete_file_on_delete(sender, instance, **kwargs):
     # Check if the file exists before attempting to delete it
-    if instance.file:
-        if os.path.isfile(instance.file.path):
-            os.remove(instance.file.path)
+    delete_file_field(instance, 'file')
 
 
 class NewsComment(models.Model):

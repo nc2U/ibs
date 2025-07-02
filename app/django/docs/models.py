@@ -390,7 +390,9 @@ class File(models.Model):
         if self.file:
             self.file_name = self.file.name.split('/')[-1]
             mime = magic.Magic(mime=True)
-            self.file_type = mime.from_buffer(self.file.read())
+            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
+            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
+            self.file.seek(file_pos)  # 원래 위치로 복구
             self.file_size = self.file.size
         super().save(*args, **kwargs)
 
@@ -411,7 +413,9 @@ class Image(models.Model):
         if self.image:
             self.image_name = self.image.name.split('/')[-1]
             mime = magic.Magic(mime=True)
-            self.image_type = mime.from_buffer(self.image.read())
+            image_pos = self.image.tell()  # 현재 이미지 파일 커서 위치 백업
+            self.image_type = mime.from_buffer(self.image.read(2048))  # 2048바이트 정도면 충분
+            self.image.seek(image_pos)  # 원래 위치로 복구
             self.image_size = self.image.size
         super().save(*args, **kwargs)
 
@@ -419,8 +423,11 @@ class Image(models.Model):
 def delete_file_field(instance, field_name):
     """Delete the file of the given field if it exists."""
     field = getattr(instance, field_name, None)
-    if field and hasattr(field, 'path') and os.path.isfile(field.path):
-        os.remove(field.path)
+    try:
+        if field and hasattr(field, 'path') and os.path.isfile(field.path):
+            os.remove(field.path)
+    except (FileNotFoundError, OSError):
+        pass
 
 
 @receiver(pre_save, sender=File)
@@ -446,7 +453,8 @@ def delete_old_file_on_update(sender, instance, **kwargs):
         delete_file_field(old_instance, field_name)
 
 
-@receiver(pre_delete)
+@receiver(pre_delete, sender=File)
+@receiver(pre_delete, sender=Image)
 def delete_file_on_delete(sender, instance, **kwargs):
     """Generic file deletion handler for models."""
     if hasattr(instance, 'file'):
