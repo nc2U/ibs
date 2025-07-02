@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import type { IssueFilter } from '@/store/types/work_issue.ts'
+import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
@@ -23,7 +23,8 @@ const accStore = useAccount()
 const getUsers = computed(() => accStore.getUsers)
 
 const workStore = useWork()
-const allProjects = computed(() => workStore.AllIssueProjects)
+// const allProjects = computed(() => workStore.AllIssueProjects)
+const allProjects = computed(() => workStore.getAllProjects)
 const getVersions = computed(() => workStore.getVersions)
 
 const issueStore = useIssue()
@@ -102,7 +103,7 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <IssueList
         v-if="route.name === '업무'"
-        :issue-list="issueList"
+        :issue-list="issueList as Issue[]"
         :all-projects="allProjects"
         :status-list="statusList"
         :tracker-list="trackerList"

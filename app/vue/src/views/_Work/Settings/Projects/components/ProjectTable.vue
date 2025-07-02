@@ -3,7 +3,7 @@ import type { PropType } from 'vue'
 import type { IssueProject } from '@/store/types/work_project.ts'
 
 defineProps({
-  issueProjectList: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjectList: { type: Array as PropType<IssueProject[]>, default: () => [] },
 })
 </script>
 
@@ -23,7 +23,7 @@ defineProps({
     </CTableHead>
 
     <CTableBody>
-      <CTableRow v-for="iproj in issueProjectList" :key="iproj.pk">
+      <CTableRow v-for="iproj in allProjectList" :key="iproj.pk">
         <CTableDataCell>
           <CFormCheck />
         </CTableDataCell>

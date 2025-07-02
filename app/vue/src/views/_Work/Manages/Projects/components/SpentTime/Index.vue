@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
-import type { TimeEntry, TimeEntryFilter } from '@/store/types/work_issue.ts'
+import type { TimeEntryFilter } from '@/store/types/work_issue.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import TimeEntryList from '@/views/_Work/Manages/SpentTime/components/TimeEntryList.vue'
@@ -16,7 +16,7 @@ defineExpose({ toggle })
 
 const workStore = useWork()
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
-const allProjects = computed(() => workStore.AllIssueProjects)
+const allProjects = computed(() => workStore.getAllProjects)
 const getVersions = computed(() => workStore.getVersions)
 const getMembers = computed(() =>
   issueProject.value?.all_members?.map(m => ({

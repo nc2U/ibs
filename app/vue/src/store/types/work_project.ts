@@ -21,6 +21,16 @@ export interface SimpleProject {
   visible: boolean
 }
 
+export interface getProject {
+  value: number
+  label: string
+  slug: string
+  status: '1' | '9'
+  depth: number
+  parent_visible: boolean
+  repo: boolean | undefined
+}
+
 export interface IssueProject {
   pk?: number
   company: number | null

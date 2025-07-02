@@ -27,7 +27,7 @@ const getUsers = computed(() => accStore.getUsers)
 
 const workStore = useWork()
 const getVersions = computed(() => workStore.getVersions)
-const allProjects = computed(() => workStore.AllIssueProjects)
+const allProjects = computed(() => workStore.getAllProjects)
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 
 const issueStore = useIssue()

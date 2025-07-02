@@ -20,7 +20,7 @@ const comName = computed(() => company?.value?.name)
 const sideNavCAll = () => cBody.value.toggle()
 
 const workStore = useWork()
-const allProjects = computed(() => workStore.AllIssueProjects)
+const allProjects = computed(() => workStore.getAllProjects)
 const getMembers = computed(() => accStore.getUsers)
 const getVersions = computed(() => workStore.getVersions)
 

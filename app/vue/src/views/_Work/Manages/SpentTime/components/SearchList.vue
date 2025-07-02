@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, reactive, type PropType, onBeforeMount, watch, computed } from 'vue'
-import type { IssueProject } from '@/store/types/work_project.ts'
+import type { getProject, IssueProject } from '@/store/types/work_project.ts'
 import type { IssueStatus, Tracker, TimeEntryFilter } from '@/store/types/work_issue.ts'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
@@ -10,7 +10,7 @@ import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
 
 const props = defineProps({
   subProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getMembers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },

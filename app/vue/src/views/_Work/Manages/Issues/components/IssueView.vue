@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { IssueProject, Permission } from '@/store/types/work_project.ts'
+import type { IssueProject, getProject } from '@/store/types/work_project.ts'
 import type {
   CodeValue,
   Issue,
@@ -26,7 +26,7 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
   issue: { type: Object as PropType<Issue>, required: true },
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
   timeEntryList: { type: Array as PropType<TimeEntry[]>, default: () => [] },
 

@@ -21,19 +21,17 @@ export const useWork = defineStore('work', () => {
 
   const allProjects = ref<IssueProject[]>([])
   const AllIssueProjects = computed(() => {
-    const reg_arr: number[] = [] // 등록된 프로젝트 / 중복 방지용
+    const visited = new Set<number>()
     const result: IssueProject[] = []
 
-    function flatten(proj: IssueProject) {
-      if (proj?.pk && !reg_arr.includes(proj.pk) && proj.visible) {
-        reg_arr.push(proj.pk)
+    const flatten = (proj: IssueProject) => {
+      if (proj?.pk && !visited.has(proj.pk) && proj.visible) {
+        visited.add(proj.pk)
         result.push(proj)
       }
-
-      if (!!proj.sub_projects?.length) proj.sub_projects.forEach(sub => flatten(sub))
+      if (Array.isArray(proj.sub_projects)) proj.sub_projects.forEach(flatten)
     }
-
-    allProjects.value.forEach(rootProj => flatten(rootProj))
+    allProjects.value.forEach(flatten)
     return result
   })
 

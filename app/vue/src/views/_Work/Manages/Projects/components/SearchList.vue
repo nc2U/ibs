@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { ref, reactive, type PropType, onBeforeMount, watch } from 'vue'
-import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
+import type { getProject, ProjectFilter } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/index.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
 
 const props = defineProps({
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
 })
 
 const emit = defineEmits(['filter-submit'])
@@ -152,7 +152,7 @@ onBeforeMount(() => {
               </CCol>
               <CCol class="col-4 col-lg-3">
                 <CFormSelect size="sm">
-                  <option v-for="proj in allProjects" :key="proj.pk" value="1">사용중</option>
+                  <option v-for="proj in allProjects" :key="proj.value" value="1">사용중</option>
                 </CFormSelect>
               </CCol>
             </CRow>

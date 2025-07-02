@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { ref, reactive, type PropType, onBeforeMount, watch } from 'vue'
-import type { IssueProject } from '@/store/types/work_project.ts'
+import type { getProject } from '@/store/types/work_project.ts'
 import type { IssueStatus, IssueFilter, Tracker } from '@/store/types/work_issue.ts'
 import { useRoute } from 'vue-router'
 import Multiselect from '@vueform/multiselect'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
 
 const props = defineProps({
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },

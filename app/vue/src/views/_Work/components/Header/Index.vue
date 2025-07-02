@@ -32,9 +32,7 @@ const sideNavCall = () => emit('side-nav-call')
 // 프로젝트 선택 기능 시작
 const workStore = useWork()
 const getProjects = computed(() =>
-  workStore.getAllProjects
-    .filter(p => p.slug !== route.params.projId)
-    .map(p => ({ value: p.slug, label: p.label })),
+  workStore.getAllProjects.filter(p => p.slug !== route.params.projId),
 )
 
 const chkModules = (slug: string) => {
@@ -114,6 +112,9 @@ onBeforeMount(workStore.fetchAllIssueProjectList)
                       :key="proj.value"
                       @click="cngProject(proj.value)"
                     >
+                      <span v-if="!!proj.depth && proj.parent_visible">
+                        {{ '&nbsp;'.repeat(proj.depth) }} »
+                      </span>
                       {{ proj.label }}
                     </v-list-item>
                   </v-list>

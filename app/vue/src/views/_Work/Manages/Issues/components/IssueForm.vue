@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { IssueProject, Member, SimpleMember } from '@/store/types/work_project.ts'
+import type { getProject, IssueProject, Member, SimpleMember } from '@/store/types/work_project.ts'
 import type {
   CodeValue,
   Issue,
@@ -27,7 +27,7 @@ import FormInIssueVersion from '@/views/_Work/Manages/Issues/components/FormInIs
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
   issue: { type: Object as PropType<Issue>, default: null },
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },

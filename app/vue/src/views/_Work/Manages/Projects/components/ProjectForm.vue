@@ -36,7 +36,7 @@ const comStore = useCompany()
 const comSelect = computed(() => comStore.comSelect)
 
 const workStore = useWork()
-const allProjects = computed(() => workStore.AllIssueProjects)
+const getAllProjects = computed(() => workStore.getAllProjects)
 const allRoles = computed(() => workStore.getRoles)
 
 const issueStore = useIssue()
@@ -320,15 +320,15 @@ onBeforeMount(() => {
             <CFormSelect v-model.number.lazy="form.parent">
               <option value="">---------</option>
               <option
-                v-for="proj in allProjects"
-                :value="proj.pk"
-                :key="proj.pk"
-                v-show="project?.pk !== proj.pk"
+                v-for="proj in getAllProjects"
+                :value="proj.value"
+                :key="proj.value"
+                v-show="project?.pk !== proj.value"
               >
                 <span v-if="!!proj.depth && proj.parent_visible">
                   {{ '&nbsp;'.repeat(proj.depth) }} »
                 </span>
-                {{ proj.name }}
+                {{ proj.label }}
               </option>
             </CFormSelect>
           </CCol>

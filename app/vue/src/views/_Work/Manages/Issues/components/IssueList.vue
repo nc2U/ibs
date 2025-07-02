@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, inject, type PropType, ref, watchEffect } from 'vue'
-import type { IssueProject } from '@/store/types/work_project.ts'
+import type { getProject, IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import { timeFormat } from '@/utils/baseMixins'
 import { useRoute, useRouter } from 'vue-router'
@@ -14,7 +14,7 @@ import Pagination from '@/components/Pagination'
 defineProps({
   projStatus: { type: String, default: '' },
   issueList: { type: Array as PropType<Issue[]>, default: () => [] },
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },

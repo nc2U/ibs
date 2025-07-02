@@ -1,9 +1,9 @@
 <script lang="ts" setup="">
 import { type PropType } from 'vue'
-import type { IssueProject } from '@/store/types/work_project.ts'
+import type { getProject } from '@/store/types/work_project.ts'
 
 defineProps({
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   required: { type: Boolean, default: false },
   size: { type: String, default: '' },
 })
@@ -14,7 +14,7 @@ defineProps({
     <option value="">---------</option>
     <option v-for="proj in allProjects" :value="proj.slug" :key="proj.slug">
       <span v-if="!!proj.depth && proj.parent_visible"> {{ '&nbsp;'.repeat(proj.depth) }} » </span>
-      {{ proj.name }}
+      {{ proj.label }}
     </option>
   </CFormSelect>
 </template>

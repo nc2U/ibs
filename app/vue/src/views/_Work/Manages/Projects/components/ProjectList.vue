@@ -16,7 +16,7 @@ const workManager = inject<ComputedRef<boolean>>('workManager')
 
 const workStore = useWork()
 const projectList = computed<IssueProject[]>(() => workStore.issueProjects)
-const allProjects = computed(() => workStore.AllIssueProjects)
+const allProjects = computed(() => workStore.getAllProjects)
 
 const filterSubmit = (payload: ProjectFilter) => workStore.fetchIssueProjectList(payload)
 

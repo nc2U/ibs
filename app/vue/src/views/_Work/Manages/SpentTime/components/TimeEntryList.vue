@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref, watchEffect } from 'vue'
-import type { IssueProject } from '@/store/types/work_project.ts'
+import type { getProject, IssueProject } from '@/store/types/work_project.ts'
 import type { TimeEntry, TimeEntryFilter } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { useIssue } from '@/store/pinia/work_issue.ts'
@@ -15,7 +15,7 @@ defineProps({
   projStatus: { type: String, default: '' },
   timeEntryList: { type: Array as PropType<TimeEntry[]>, default: () => [] },
   subProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
-  allProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getMembers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getVersions: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
