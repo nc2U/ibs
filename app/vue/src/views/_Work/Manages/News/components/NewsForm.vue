@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { btnLight, colorLight } from '@/utils/cssMixins.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 
 const emit = defineEmits(['close-form'])
@@ -17,6 +18,9 @@ const form = ref({
   updated: '',
 })
 
+const workStore = useWork()
+const getAllProjects = computed(() => workStore.getAllProjects)
+
 const onsubmit = () => 1
 </script>
 
@@ -28,8 +32,13 @@ const onsubmit = () => 1
 
     <CCol class="text-right">
       <span class="mr-2 form-text">
-        <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+        <v-icon icon="mdi-plus-circle" color="success" size="15" />
         <router-link to="" class="ml-1">새 공지</router-link>
+      </span>
+
+      <span class="mr-2 form-text">
+        <v-icon icon="mdi-star" color="secondary" size="15" />
+        <router-link to="" class="ml-1" @click="">지켜보기</router-link>
       </span>
     </CCol>
   </CRow>
@@ -37,7 +46,7 @@ const onsubmit = () => 1
   <CForm class="needs-validation mb-3" novalidate :validated="validated" @submit.prevent="onsubmit">
     <CCard :color="colorLight" class="mb-3">
       <CCardBody>
-        <CRow class="mb-2">
+        <CRow v-if="!$route.params.projId" class="mb-2">
           <CFormLabel for="project" class="col-sm-2 col-form-label text-right required">
             프로젝트
           </CFormLabel>
@@ -45,9 +54,11 @@ const onsubmit = () => 1
           <CCol sm="8">
             <CFormSelect v-model="form.project">
               <option value="">---------</option>
-              <option>
-                <!--                <span v-if="!!proj.depth && proj.parent_visible"> {{ '&nbsp;'.repeat(proj.depth) }} » </span>-->
-                프로젝트명
+              <option v-for="proj in getAllProjects" :key="proj.value">
+                <span v-if="!!proj.depth && proj.parent_visible">
+                  {{ '&nbsp;'.repeat(proj.depth) }} »
+                </span>
+                {{ proj.label }}
               </option>
             </CFormSelect>
           </CCol>
