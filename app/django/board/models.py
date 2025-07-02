@@ -112,7 +112,7 @@ class PostLink(models.Model):
 
 class PostFile(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='files')
-    file = models.FileField(upload_to='post/file/%Y/%m/%d/', verbose_name='파일')
+    file = models.FileField(upload_to='post/%Y/%m/%d/', verbose_name='파일')
     file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
