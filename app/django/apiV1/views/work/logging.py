@@ -12,70 +12,57 @@ from apiV1.serializers.work.logging import *
 from work.models import IssueProject, Commit
 
 
+def get_sub_project_ids(parent):
+    cache_key = f"filter:sub_projects:{parent.id}"
+    project_ids = cache.get(cache_key)
+    if project_ids is None:
+        table_name = IssueProject._meta.db_table
+        with connection.cursor() as cursor:
+            cursor.execute(f"""
+                    WITH RECURSIVE project_tree AS (
+                        SELECT id FROM {table_name} WHERE id = %s
+                        UNION
+                        SELECT p.id
+                        FROM {table_name} p
+                        JOIN project_tree pt ON p.parent_id = pt.id
+                    )
+                    SELECT id FROM project_tree
+                """, [parent.id])
+            project_ids = [row[0] for row in cursor.fetchall()]
+        cache.set(cache_key, project_ids, timeout=3600)
+    return project_ids
+
+
 class ActivityLogFilter(FilterSet):
-    project__search = CharFilter(field_name='project__slug', label='project-search')
-    from_act_date = DateFilter(field_name='act_date', lookup_expr='gte', label='From log date')
-    to_act_date = DateFilter(field_name='act_date', lookup_expr='lte', label='To log date')
-    sort = CharFilter(method='sort_filter')
+    project__slug = CharFilter(method='filter_by_project_with_sub', label='프로젝트+하위')
+    project__search = CharFilter(method='filter_by_project_only', label='프로젝트만')
+    from_act_date = DateFilter(field_name='act_date', lookup_expr='gte', label='시작 로그일자')
+    to_act_date = DateFilter(field_name='act_date', lookup_expr='lte', label='기한 로그일자')
+    sort = CharFilter(method='filter_by_sort_code')
 
     class Meta:
         model = ActivityLogEntry
-        fields = ('project__slug', 'from_act_date', 'to_act_date', 'user', 'sort')
+        fields = ('project__slug', 'project__search', 'from_act_date', 'to_act_date', 'user', 'sort')
 
-    def filter_queryset(self, queryset):
-        cleaned_data = self.form.cleaned_data
-        project_slug = cleaned_data.get('project__slug')  # 먼저 project__slug 필터링 처리
-
-        if project_slug:
-            try:
-                project = IssueProject.objects.get(slug=project_slug)
-                project_ids = [project.pk] + [p.get('pk') for p in self.get_sub_projects(project)]
-                queryset = queryset.filter(project__id__in=project_ids)
-            except IssueProject.DoesNotExist:
-                return queryset.none()
-
-        # 명시적 필터링
-        if cleaned_data.get('from_act_date'):
-            queryset = queryset.filter(act_date__gte=cleaned_data['from_act_date'])
-        if cleaned_data.get('to_act_date'):
-            queryset = queryset.filter(act_date__lte=cleaned_data['to_act_date'])
-        if cleaned_data.get('user'):
-            queryset = queryset.filter(user=cleaned_data['user'])
-        if cleaned_data.get('sort'):
-            queryset = self.sort_filter(queryset, 'sort', cleaned_data['sort'])
-
-        return queryset
+    def filter_by_project_with_sub(self, queryset, name, value):
+        try:
+            project = IssueProject.objects.get(slug=value)
+            project_ids = [project.pk] + get_sub_project_ids(project)
+            return queryset.filter(project__id__in=project_ids)
+        except IssueProject.DoesNotExist:
+            return queryset.none()
 
     @staticmethod
-    def sort_filter(queryset, name, value):
-        valid_sorts = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}  # 프로젝트별 유효 정렬 값
+    def filter_by_project_only(queryset, name, value):
+        return queryset.filter(project__slug=value)
+
+    @staticmethod
+    def filter_by_sort_code(queryset, name, value):
+        valid_sorts = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
         sort_values = [v for v in value.split(",") if v in valid_sorts]
         if sort_values:
             queryset = queryset.filter(sort__in=sort_values)
         return queryset
-
-    @staticmethod
-    def get_sub_projects(parent):
-        """캐싱된 하위 프로젝트 목록 반환"""
-        cache_key = f"work:sub_projects_{parent.id}"
-        sub_projects = cache.get(cache_key)
-        if sub_projects is None:
-            sub_projects = []
-            # CTE로 재귀 쿼리 최적화
-            table_name = IssueProject._meta.db_table
-            with connection.cursor() as cursor:
-                cursor.execute(f"""WITH RECURSIVE project_tree AS (SELECT id, slug
-                                                                  FROM {table_name}
-                                                                  WHERE id = %s
-                                                                  UNION
-                                                                  SELECT p.id, p.slug
-                                                                  FROM {table_name} p
-                                                                           INNER JOIN project_tree pt ON p.parent_id = pt.id)
-                                  SELECT id, slug
-                                  FROM project_tree""", [parent.id])
-                sub_projects = [{'pk': row[0], 'slug': row[1]} for row in cursor.fetchall()]
-            cache.set(cache_key, sub_projects, timeout=3600)
-        return sub_projects
 
 
 class ActivityLogEntryViewSet(viewsets.ModelViewSet):
@@ -123,7 +110,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             if project_slug:
                 try:
                     project = IssueProject.objects.get(slug=project_slug)
-                    project_ids = [project.pk] + [p.get('pk') for p in ActivityLogFilter.get_sub_projects(project)]
+                    project_ids = [project.pk] + [pk for pk in get_sub_project_ids(project)]
                     queryset = queryset.filter(repo__project__id__in=project_ids)
                 except IssueProject.DoesNotExist:
                     return Commit.objects.none()
@@ -195,7 +182,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             },
             'act_date': c['date'].date(),  # datetime.fromtimestamp(c['date']).date(),
             'timestamp': c['date'],
-            'user': {'pk': 0, 'username': c['author']},
+            'user': {'pk': f"commit:{c['commit_hash'][:8]}", 'username': c['author']},
         } for c in commits)
 
         combined = list(merge(log_iter, commit_iter, key=lambda x: x['timestamp'], reverse=True))
