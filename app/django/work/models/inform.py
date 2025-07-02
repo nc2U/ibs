@@ -103,11 +103,9 @@ def delete_old_file_on_update(sender, instance, **kwargs):
     except sender.DoesNotExist:
         return
 
-    # 모델에 따라 처리할 필드 결정
+    # 파일이 변경 되었는지 확인 후 처리
     old_file = getattr(old_instance, 'file', None)
     new_file = getattr(instance, 'file', None)
-
-    # 파일이 변경되었는지 확인
     if old_file and old_file != new_file:
         delete_file_field(old_instance, 'file')
 
