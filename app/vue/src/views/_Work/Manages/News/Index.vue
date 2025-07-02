@@ -32,6 +32,10 @@ const pageSelect = (p: number) => {
   infStore.fetchNewsList({ page: p })
 }
 
+const onSubmit = (payload: any) => {
+  console.log(payload)
+}
+
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await infStore.fetchNewsList({ page: page.value })
@@ -45,7 +49,7 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
     <template v-slot:default>
-      <NewsForm v-if="viewForm" @close-form="viewForm = false" />
+      <NewsForm v-if="viewForm" @on-submit="onSubmit" @close-form="viewForm = false" />
 
       <NewsList
         :page="page"
