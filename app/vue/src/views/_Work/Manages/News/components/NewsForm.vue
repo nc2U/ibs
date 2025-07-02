@@ -1,7 +1,23 @@
 <script lang="ts" setup>
-import { btnLight } from '@/utils/cssMixins.ts'
+import { ref } from 'vue'
+import { btnLight, colorLight } from '@/utils/cssMixins.ts'
+import MdEditor from '@/components/MdEditor/Index.vue'
 
 const emit = defineEmits(['close-form'])
+
+const validated = ref(false)
+
+const form = ref({
+  project: '',
+  title: '',
+  summary: '',
+  content: '',
+  author: '',
+  created: '',
+  updated: '',
+})
+
+const onsubmit = () => 1
 </script>
 
 <template>
@@ -18,14 +34,62 @@ const emit = defineEmits(['close-form'])
     </CCol>
   </CRow>
 
-  <CRow class="mb-3">
-    <CForm>
-      <CCard class="p-3">Form Call!</CCard>
+  <CForm class="needs-validation mb-3" novalidate :validated="validated" @submit.prevent="onsubmit">
+    <CCard :color="colorLight" class="mb-3">
+      <CCardBody>
+        <CRow class="mb-2">
+          <CFormLabel for="project" class="col-sm-2 col-form-label text-right required">
+            프로젝트
+          </CFormLabel>
 
-      <CCol class="mt-3">
-        <v-btn color="primary" size="small">저장</v-btn>
-        <v-btn :color="btnLight" @click="emit('close-form')" size="small">취소</v-btn>
-      </CCol>
-    </CForm>
-  </CRow>
+          <CCol sm="8">
+            <CFormSelect v-model="form.project">
+              <option value="">---------</option>
+              <option>
+                <!--                <span v-if="!!proj.depth && proj.parent_visible"> {{ '&nbsp;'.repeat(proj.depth) }} » </span>-->
+                프로젝트명
+              </option>
+            </CFormSelect>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-2">
+          <CFormLabel for="project" class="col-sm-2 col-form-label text-right required">
+            제목
+          </CFormLabel>
+
+          <CCol sm="8">
+            <CFormInput v-model="form.title" placeholder="공지 제목" />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-2">
+          <CFormLabel for="project" class="col-sm-2 col-form-label text-right"> 요약</CFormLabel>
+
+          <CCol sm="10">
+            <CFormTextarea v-model="form.summary" placeholder="공지 요약" />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-2">
+          <CFormLabel for="project" class="col-sm-2 col-form-label text-right"> 내용</CFormLabel>
+
+          <CCol sm="10">
+            <MdEditor v-model="form.content" placeholder="공지 내용" />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-2">
+          <CFormLabel for="project" class="col-sm-2 col-form-label text-right">파일</CFormLabel>
+
+          <CCol sm="10">
+            <CFormInput type="file" />
+          </CCol>
+        </CRow>
+      </CCardBody>
+    </CCard>
+
+    <v-btn color="primary" size="small">저장</v-btn>
+    <v-btn :color="btnLight" @click="emit('close-form')" size="small">취소</v-btn>
+  </CForm>
 </template>
