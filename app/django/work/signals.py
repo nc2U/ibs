@@ -6,6 +6,7 @@ from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 
+from work.models.inform import News
 from work.models.issue import Issue, IssueRelation, IssueComment, TimeEntry
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 
@@ -278,6 +279,21 @@ def comment_log_delete(sender, instance, **kwargs):
         pass
     try:
         act_logs = ActivityLogEntry.objects.filter(comment=instance)
+        act_logs.delete()
+    except ActivityLogEntry.DoesNotExist:
+        pass
+
+
+@receiver(post_save, sender=News)
+def news_log_changes(sender, instance, created, **kwargs):
+    if created:
+        ActivityLogEntry.objects.create(sort='4', project=instance.project, news=instance, user=instance.author)
+
+
+@receiver(pre_delete, sender=News)
+def news_log_delete(sender, instance, **kwargs):
+    try:
+        act_logs = ActivityLogEntry.objects.filter(news=instance)
         act_logs.delete()
     except ActivityLogEntry.DoesNotExist:
         pass

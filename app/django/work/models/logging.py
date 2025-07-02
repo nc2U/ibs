@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 
+from work.models import News
 from work.models.issue import IssueComment, TimeEntry, Issue
 from work.models.project import IssueProject
 
@@ -14,7 +15,7 @@ class ActivityLogEntry(models.Model):
     comment = models.ForeignKey(IssueComment, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='댓글')
     status_log = models.CharField('상태 기록', max_length=30, blank=True, default='')
     # change_sets = models.TextField('변경 묶음', blank=True, default='')
-    # news = models.TextField('공지', blank=True, default='')
+    news = models.ForeignKey(News, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='공지')
     # document = models.TextField('문서', blank=True, default='')
     # file = models.TextField('파일', blank=True, default='')
     # wiki = models.TextField('위키 편집', blank=True, default='')
