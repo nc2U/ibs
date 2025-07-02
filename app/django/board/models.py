@@ -198,6 +198,17 @@ def delete_file_on_delete(sender, instance, **kwargs):
         delete_file_field(instance, 'image')
 
 
+@receiver(pre_delete, sender=Post)
+def delete_attatch_on_delete(sender, instance, **kwargs):
+    if instance.files.count():
+        for f in instance.files.all():
+            delete_file_field(f, 'file')
+
+    if instance.images.count():
+        for img in instance.images.all():
+            delete_file_field(img, 'image')
+
+
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, verbose_name='게시물', related_name='comments')
     content = models.TextField('내용')

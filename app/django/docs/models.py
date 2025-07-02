@@ -400,7 +400,7 @@ class File(models.Model):
 class Image(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서',
                              related_name='images')
-    image = models.ImageField(upload_to='docs/img/%Y/%m/%d/', verbose_name='이미지')
+    image = models.ImageField(upload_to='docs/img/%Y/%m/%d/', verbose_name='이미지', related_name='images')
     image_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     image_type = models.CharField('타입', max_length=100, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
@@ -461,3 +461,14 @@ def delete_file_on_delete(sender, instance, **kwargs):
         delete_file_field(instance, 'file')
     if hasattr(instance, 'image'):
         delete_file_field(instance, 'image')
+
+
+@receiver(pre_delete, sender=Document)
+def delete_attatch_on_delete(sender, instance, **kwargs):
+    if instance.files.count():
+        for f in instance.files.all():
+            delete_file_field(f, 'file')
+
+    if instance.images.count():
+        for img in instance.images.all():
+            delete_file_field(img, 'image')

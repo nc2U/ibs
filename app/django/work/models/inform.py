@@ -116,6 +116,13 @@ def delete_file_on_delete(sender, instance, **kwargs):
     delete_file_field(instance, 'file')
 
 
+@receiver(pre_delete, sender=News)
+def delete_attatch_on_delete(sender, instance, **kwargs):
+    if instance.files.count():
+        for f in instance.files.all():
+            delete_file_field(f, 'file')
+
+
 class NewsComment(models.Model):
     news = models.ForeignKey(News, on_delete=models.CASCADE, verbose_name='공지', related_name='comments')
     content = models.TextField('내용')
