@@ -86,7 +86,7 @@ const modalAction = () => {
   <CRow class="py-2">
     <CCol>
       <span class="mr-2">
-        <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+        <v-icon icon="mdi-plus-circle" color="success" size="15" />
         <router-link to="" @click="addRepoFunc" class="ml-1">저장소 추가</router-link>
       </span>
     </CCol>

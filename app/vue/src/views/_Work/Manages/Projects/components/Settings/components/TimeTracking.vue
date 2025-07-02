@@ -22,12 +22,12 @@ onBeforeMount(() => {
   <CRow class="py-2">
     <CCol class="text-right form-text">
       <span>
-        <v-icon icon="mdi-trash-can" color="secondary" size="sm" />
+        <v-icon icon="mdi-trash-can" color="secondary" size="15" />
         <router-link to="" class="ml-1">초기화</router-link>
       </span>
 
       <span class="ml-2">
-        <v-icon icon="mdi-cog" color="secondary" size="sm" />
+        <v-icon icon="mdi-cog" color="secondary" size="15" />
         <router-link :to="{ name: '코드값' }" class="ml-1">관리</router-link>
       </span>
     </CCol>

@@ -53,12 +53,12 @@ onMounted(() => {
 
       <CCol class="text-right">
         <span class="mr-2 form-text">
-          <v-icon icon="mdi-pencil" color="warning" size="sm" />
+          <v-icon icon="mdi-pencil" color="warning" size="15" />
           <router-link :to="{ name: '(문서) - 편집' }" class="ml-1">편집</router-link>
         </span>
 
         <span class="mr-2 form-text">
-          <v-icon icon="mdi-trash-can-outline" color="secondary" size="sm" />
+          <v-icon icon="mdi-trash-can-outline" color="secondary" size="15" />
           <router-link to="#" @click.prevent="refConfirmModal.callModal()" class="ml-1">
             삭제
           </router-link>

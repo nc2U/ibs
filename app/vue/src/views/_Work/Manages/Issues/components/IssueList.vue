@@ -68,10 +68,10 @@ const watchControl = (payload: any, issuePk: number) => {
         v-if="projStatus !== '9' && (workManager || my_perms?.issue_create)"
         class="mr-2 form-text"
       >
-        <v-icon icon="mdi-plus-circle" color="success" size="sm" />
-        <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1"
-          >새 업무만들기</router-link
-        >
+        <v-icon icon="mdi-plus-circle" color="success" size="15" />
+        <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1">
+          새 업무만들기
+        </router-link>
       </span>
 
       <span>

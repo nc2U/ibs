@@ -42,7 +42,7 @@ const deleteSubmit = () => {
   <CRow class="py-2">
     <CCol>
       <span class="mr-2 form-text">
-        <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+        <v-icon icon="mdi-plus-circle" color="success" size="15" />
         <router-link :to="{ name: '(로드맵) - 추가', query: { back: 1 } }" class="ml-1">
           새 버전
         </router-link>
@@ -51,7 +51,7 @@ const deleteSubmit = () => {
 
     <CCol class="text-right">
       <span class="mr-2 form-text">
-        <v-icon icon="mdi-lock" color="warning" size="sm" />
+        <v-icon icon="mdi-lock" color="warning" size="15" />
         <router-link to="" class="ml-1">완료된 버전 닫기 </router-link>
       </span>
     </CCol>

@@ -32,7 +32,7 @@ const light = computed(() => (!isDark?.value ? 'light' : ''))
             </CCol>
             <CCol class="text-right">
               <span>
-                <v-icon icon="mdi-cog" color="secondary" size="sm" />
+                <v-icon icon="mdi-cog" color="secondary" size="15" />
                 <router-link :to="{ name: '업무 유형' }" class="ml-1">관리</router-link>
               </span>
             </CCol>

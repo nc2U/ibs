@@ -145,14 +145,14 @@ onBeforeMount(() => accStore.fetchUsersList())
   <CRow class="py-2">
     <CCol>
       <span class="mr-2 form-text">
-        <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+        <v-icon icon="mdi-plus-circle" color="success" size="15" />
         <router-link to="" class="ml-1" @click="callModal"> 새 구성원 </router-link>
       </span>
     </CCol>
 
     <CCol class="text-right">
       <span class="form-text">
-        <v-icon icon="mdi-cog" color="grey" size="sm" />
+        <v-icon icon="mdi-cog" color="grey" size="15" />
         <router-link :to="{ name: '사용자' }" class="ml-1">관리</router-link>
       </span>
     </CCol>

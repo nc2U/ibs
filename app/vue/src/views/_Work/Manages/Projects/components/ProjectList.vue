@@ -49,11 +49,11 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
 
         <CCol v-if="workManager" class="text-right form-text">
           <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2">
-            <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+            <v-icon icon="mdi-plus-circle" color="success" size="15" />
             <router-link :to="{ name: '프로젝트 - 추가' }" class="ml-1">새 프로젝트</router-link>
           </span>
           <span>
-            <v-icon icon="mdi-cog" color="secondary" size="sm" />
+            <v-icon icon="mdi-cog" color="secondary" size="15" />
             <router-link :to="{ name: '(프로젝트)' }" class="ml-1">관리</router-link>
           </span>
         </CCol>
