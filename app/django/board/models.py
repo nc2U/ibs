@@ -2,9 +2,9 @@ import os
 from datetime import datetime, timedelta
 
 import magic
-from dateutil.utils import today
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 
@@ -112,8 +112,8 @@ class PostLink(models.Model):
 
 
 def get_post_file_path(instance, filename):
-    slug = instance.post.project.issue_project.slug
-    date_path = datetime.today().strftime('%Y/%m/%d')
+    slug = instance.post.issue_project.slug
+    date_path = timezone.now().strftime('%Y/%m')
     return os.path.join('post', f'{slug}', date_path, filename)
 
 
@@ -145,8 +145,8 @@ related_file_cleanup(Post, related_name='files', file_field_name='file')  # ì—°ê
 
 
 def get_post_img_path(instance, filename):
-    slug = instance.post.project.issue_project.slug
-    date_path = datetime.today().strftime('%Y/%m/%d')
+    slug = instance.post.issue_project.slug
+    date_path = timezone.now().strftime('%Y/%m')
     return os.path.join('post', f'{slug}', 'images', date_path, filename)
 
 

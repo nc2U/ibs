@@ -1,8 +1,10 @@
+import os
 from datetime import datetime, timedelta
 
 import magic
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 
@@ -371,9 +373,15 @@ class Link(models.Model):
         return self.link
 
 
+def get_post_file_path(instance, filename):
+    slug = instance.docs.issue_project.slug
+    date_path = timezone.now().strftime('%Y/%m')
+    return os.path.join('docs', f'{slug}', date_path, filename)
+
+
 class File(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서', related_name='files')
-    file = models.FileField(upload_to='docs/%Y/%m/%d/', verbose_name='파일')
+    file = models.FileField(upload_to=get_post_file_path, verbose_name='파일')
     file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
@@ -400,10 +408,16 @@ file_cleanup_signals(File)  # 파일인스턴스 직접 삭제시
 related_file_cleanup(Document, related_name='files', file_field_name='file')  # 연관 모델 삭제 시
 
 
+def get_post_img_path(instance, filename):
+    slug = instance.docs.issue_project.slug
+    date_path = timezone.now().strftime('%Y/%m')
+    return os.path.join('docs', f'{slug}', 'images', date_path, filename)
+
+
 class Image(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서',
                              related_name='images')
-    image = models.ImageField(upload_to='docs/img/%Y/%m/%d/', verbose_name='이미지')
+    image = models.ImageField(upload_to=get_post_img_path, verbose_name='이미지')
     image_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     image_type = models.CharField('타입', max_length=100, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)

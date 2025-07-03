@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import magic
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 from work.models.project import IssueProject, Member
@@ -50,9 +51,8 @@ class News(models.Model):
 
 
 def get_news_file_path(instance, filename):
-    today = datetime.today()
-    date_path = today.strftime('%Y/%m/%d')
-    return os.path.join('work', f'{instance.issue.project.slug}/news/{date_path}/', filename)
+    date_path = timezone.now().strftime('%Y/%m')
+    return os.path.join('work', f'{instance.news.project.slug}/news/{date_path}/', filename)
 
 
 class NewsFile(models.Model):
