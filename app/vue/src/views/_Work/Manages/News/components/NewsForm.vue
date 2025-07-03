@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { computed, ref } from 'vue'
 import { btnLight, colorLight } from '@/utils/cssMixins.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
