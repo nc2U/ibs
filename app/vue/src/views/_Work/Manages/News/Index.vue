@@ -34,6 +34,15 @@ const pageSelect = (p: number) => {
 
 const onSubmit = (payload: any) => {
   console.log(payload)
+  const getData: Record<string, any> = { ...payload }
+  const form = new FormData()
+
+  for (const key in getData) {
+    const formValue = getData[key] === null ? '' : getData[key]
+    form.append(key, formValue as string)
+  }
+  console.log(form)
+  viewForm.value = false
 }
 
 const loading = ref<boolean>(true)

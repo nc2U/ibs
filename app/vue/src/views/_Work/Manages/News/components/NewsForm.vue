@@ -15,9 +15,6 @@ const form = ref({
   title: '',
   summary: '',
   content: '',
-  author: '',
-  created: '',
-  updated: '',
   files: [],
 })
 
@@ -71,7 +68,7 @@ const onSubmit = (event: Event) => {
           </CFormLabel>
 
           <CCol sm="8">
-            <CFormSelect v-model="form.project" required>
+            <CFormSelect v-model="form.project" :required="!$route.params.projId">
               <option value="">---------</option>
               <option v-for="proj in getAllProjects" :value="proj.value" :key="proj.value">
                 <span v-if="!!proj.depth && proj.parent_visible">
