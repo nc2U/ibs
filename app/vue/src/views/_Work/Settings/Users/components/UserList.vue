@@ -23,7 +23,7 @@ const workManager = inject('workManager', false)
 
     <CCol v-if="workManager" class="text-right form-text">
       <span class="mr-2">
-        <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+        <v-icon icon="mdi-plus-circle" color="success" size="15" />
         <router-link :to="{ name: '사용자 - 생성' }" class="ml-1">새 사용자</router-link>
       </span>
 
