@@ -1,11 +1,11 @@
 <script lang="ts" setup>
+import Cookies from 'js-cookie'
 import { computed, ref } from 'vue'
 import { btnLight, colorLight } from '@/utils/cssMixins.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
-// import vueDropzone from 'dropzone-vue3'
 
 const emit = defineEmits(['on-submit', 'close-form'])
 
@@ -21,13 +21,6 @@ const form = ref({
   updated: '',
   files: [],
 })
-
-// const dropzoneOptions = ref({
-//   url: 'https://httpbin.org/post',
-//   thumbnailWidth: 150,
-//   maxFilesize: 100,
-//   headers: { Authorization: `Bearer ${Cookies.get('accessToken')}` },
-// })
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
@@ -123,7 +116,6 @@ const onSubmit = (event: Event) => {
             <FileModify v-if="form.files.length" />
 
             <FileUpload />
-            <!--            <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions" />-->
           </CCol>
         </CRow>
       </CCardBody>
