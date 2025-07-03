@@ -383,7 +383,7 @@ class File(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서', related_name='files')
     file = models.FileField(upload_to=get_post_file_path, verbose_name='파일')
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
-    file_type = models.CharField('타입', max_length=100, blank=True)
+    file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
     hit = models.PositiveIntegerField('다운로드수', default=0)
@@ -419,7 +419,7 @@ class Image(models.Model):
                              related_name='images')
     image = models.ImageField(upload_to=get_post_img_path, verbose_name='이미지')
     image_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
-    image_type = models.CharField('타입', max_length=20, blank=True)
+    image_type = models.CharField('타입', max_length=30, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
