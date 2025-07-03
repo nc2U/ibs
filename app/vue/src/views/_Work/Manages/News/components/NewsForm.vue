@@ -3,7 +3,9 @@ import { computed, ref } from 'vue'
 import { btnLight, colorLight } from '@/utils/cssMixins.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
-import vueDropzone from 'dropzone-vue3'
+import FileModify from '@/components/FileControl/FileModify.vue'
+import FileUpload from '@/components/FileControl/FileUpload.vue'
+// import vueDropzone from 'dropzone-vue3'
 
 const emit = defineEmits(['on-submit', 'close-form'])
 
@@ -20,46 +22,15 @@ const form = ref({
   files: [],
 })
 
-const dropzoneOptions = ref({
-  url: 'https://httpbin.org/post',
-  thumbnailWidth: 150,
-  maxFilesize: 100,
-  headers: { 'My-Awesome-Header': 'header value' },
-})
+// const dropzoneOptions = ref({
+//   url: 'https://httpbin.org/post',
+//   thumbnailWidth: 150,
+//   maxFilesize: 100,
+//   headers: { Authorization: `Bearer ${Cookies.get('accessToken')}` },
+// })
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
-
-const range = (from: number, to: number): number[] =>
-  from < to ? [from, ...range(from + 1, to)] : []
-
-const newFileNum = ref(1)
-const newFileRange = computed(() => range(0, newFileNum.value))
-const ctlFileNum = (n: number) => {
-  if (n + 1 >= newFileNum.value) newFileNum.value = newFileNum.value + 1
-  else newFileNum.value = newFileNum.value - 1
-}
-const enableStore = (event: Event) => {
-  const el = event.target as HTMLInputElement
-  attach.value = !el.value
-}
-const fileChange = (event: Event, pk: number) => {
-  enableStore(event)
-  const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('file-change', { pk, file })
-  }
-}
-
-const fileUpload = (event: Event) => {
-  enableStore(event)
-  const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('file-upload', file)
-  }
-}
 
 const onSubmit = (event: Event) => {
   const e = event.currentTarget as HTMLSelectElement
@@ -149,69 +120,10 @@ const onSubmit = (event: Event) => {
         <CRow>
           <CFormLabel for="title" class="col-md-2 col-form-label text-right">파일</CFormLabel>
           <CCol md="10" lg="8" xl="6">
-            <!--            <CRow v-if="docs && (form.files as AFile[]).length">-->
-            <!--              <CAlert :color="AlertSecondary">-->
-            <!--                <small>{{ devideUri((form.files as AFile[])[0]?.file ?? ' ')[0] }}</small>-->
-            <!--                <CCol-->
-            <!--                  v-for="(file, i) in form.files as AFile[]"-->
-            <!--                  :key="file.pk"-->
-            <!--                  xs="12"-->
-            <!--                  color="primary"-->
-            <!--                >-->
-            <!--                  <small>-->
-            <!--                    현재 :-->
-            <!--                    <a :href="file.file" target="_blank">-->
-            <!--                      {{ devideUri(file.file ?? ' ')[1] }}-->
-            <!--                    </a>-->
-            <!--                    <span>-->
-            <!--                      <CFormCheck-->
-            <!--                        v-model="(form.files as AFile[])[i].del"-->
-            <!--                        :id="`del-file-${file.pk}`"-->
-            <!--                        @input="enableStore"-->
-            <!--                        label="삭제"-->
-            <!--                        inline-->
-            <!--                        :disabled="(form.files as AFile[])[i].edit"-->
-            <!--                        class="ml-4"-->
-            <!--                      />-->
-            <!--                      <CFormCheck-->
-            <!--                        :id="`edit-file-${file.pk}`"-->
-            <!--                        label="변경"-->
-            <!--                        inline-->
-            <!--                        @click="editFile(i)"-->
-            <!--                      />-->
-            <!--                    </span>-->
-            <!--                    <CRow v-if="(form.files as AFile[])[i].edit">-->
-            <!--                      <CCol>-->
-            <!--                        <CInputGroup>-->
-            <!--                          변경 : &nbsp;-->
-            <!--                          <CFormInput-->
-            <!--                            :id="`docs-file-${file.pk}`"-->
-            <!--                            size="sm"-->
-            <!--                            type="file"-->
-            <!--                            @input="fileChange($event, file.pk as number)"-->
-            <!--                          />-->
-            <!--                        </CInputGroup>-->
-            <!--                      </CCol>-->
-            <!--                    </CRow>-->
-            <!--                  </small>-->
-            <!--                </CCol>-->
-            <!--              </CAlert>-->
-            <!--            </CRow>-->
-            <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions" />
+            <FileModify v-if="form.files.length" />
 
-            <!--            <CRow class="mb-2">-->
-            <!--              <CCol>-->
-            <!--                <CInputGroup v-for="fNum in newFileRange" :key="`fn-${fNum}`" class="mb-2">-->
-            <!--                  <CFormInput :id="`file-${fNum}`" type="file" @input="fileUpload" />-->
-            <!--                  <CInputGroupText id="basic-addon2" @click="ctlFileNum(fNum)">-->
-            <!--                    <v-icon-->
-            <!--                      :icon="`mdi-${fNum + 1 < newFileNum ? 'minus' : 'plus'}-thick`"-->
-            <!--                      :color="fNum + 1 < newFileNum ? 'error' : 'primary'"-->
-            <!--                    />-->
-            <!--                  </CInputGroupText>-->
-            <!--                </CInputGroup>-->
-            <!--              </CCol>-->
-            <!--            </CRow>-->
+            <FileUpload />
+            <!--            <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions" />-->
           </CCol>
         </CRow>
       </CCardBody>
