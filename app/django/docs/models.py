@@ -400,7 +400,7 @@ class File(models.Model):
 class Image(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서',
                              related_name='images')
-    image = models.ImageField(upload_to='docs/img/%Y/%m/%d/', verbose_name='이미지', related_name='images')
+    image = models.ImageField(upload_to='docs/img/%Y/%m/%d/', verbose_name='이미지')
     image_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     image_type = models.CharField('타입', max_length=100, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
