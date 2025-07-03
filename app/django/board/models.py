@@ -121,7 +121,7 @@ class PostFile(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='files')
     file = models.FileField(upload_to=get_post_file_path, verbose_name='파일')
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
-    file_type = models.CharField('타입', max_length=10, blank=True)
+    file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     hit = models.PositiveIntegerField('다운로드수', default=0)
     created = models.DateTimeField(auto_now_add=True)
@@ -154,7 +154,7 @@ class PostImage(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='images')
     image = models.ImageField(upload_to=get_post_img_path, verbose_name='이미지')
     image_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
-    image_type = models.CharField('타입', max_length=10, blank=True)
+    image_type = models.CharField('타입', max_length=20, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
