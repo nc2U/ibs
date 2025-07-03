@@ -1,6 +1,8 @@
+import os
 from datetime import datetime, timedelta
 
 import magic
+from dateutil.utils import today
 from django.conf import settings
 from django.db import models
 
@@ -109,9 +111,15 @@ class PostLink(models.Model):
         return self.link
 
 
+def get_post_file_path(instance, filename):
+    slug = instance.post.project.issue_project.slug
+    date_path = datetime.today().strftime('%Y/%m/%d')
+    return os.path.join('post', f'{slug}', date_path, filename)
+
+
 class PostFile(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='files')
-    file = models.FileField(upload_to='post/%Y/%m/%d/', verbose_name='파일')
+    file = models.FileField(upload_to=get_post_file_path, verbose_name='파일')
     file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
@@ -136,9 +144,15 @@ file_cleanup_signals(PostFile)  # 파일인스턴스 직접 삭제시
 related_file_cleanup(Post, related_name='files', file_field_name='file')  # 연관 모델 삭제 시
 
 
+def get_post_img_path(instance, filename):
+    slug = instance.post.project.issue_project.slug
+    date_path = datetime.today().strftime('%Y/%m/%d')
+    return os.path.join('post', f'{slug}', 'images', date_path, filename)
+
+
 class PostImage(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='images')
-    image = models.ImageField(upload_to='post/img/%Y/%m/%d/', verbose_name='이미지')
+    image = models.ImageField(upload_to=get_post_img_path, verbose_name='이미지')
     image_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     image_type = models.CharField('타입', max_length=100, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
