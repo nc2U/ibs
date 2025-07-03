@@ -212,7 +212,7 @@ class SiteContract(models.Model):
 def get_cont_file(instance, filename):
     return '/'.join(
         ['sites_cont',
-         f'project_{instance.site_contract.project.id}',
+         f'{instance.site_contract.project.issue_project.slug}',
          filename])
 
 

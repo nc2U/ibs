@@ -47,8 +47,8 @@ class Contract(models.Model):
 
 def get_contract_file_name(instance, filename):
     return '/'.join(
-        ['contract',
-         f'project_{instance.contract.project.id}',
+        ['proj_cont',
+         f'{instance.contract.project.issue_project.slug}',
          instance.contract.unit_type.name,
          f'ord_grp_{instance.contract.order_group.order_number}',
          filename])
