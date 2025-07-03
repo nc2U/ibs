@@ -1,3 +1,5 @@
+import os
+
 import magic
 from django.conf import settings
 from django.db import models
@@ -46,12 +48,10 @@ class Contract(models.Model):
 
 
 def get_contract_file_name(instance, filename):
-    return '/'.join(
-        ['proj_cont',
-         f'{instance.contract.project.issue_project.slug}',
-         instance.contract.unit_type.name,
-         f'ord_grp_{instance.contract.order_group.order_number}',
-         filename])
+    slug = instance.contract.project.issue_project.slug
+    unit_type = instance.contract.unit_type.name
+    ord_group = f'ord_grp_{instance.contract.order_group.order_number}'
+    return os.path.join('contract', f'{slug}', unit_type, ord_group, filename)
 
 
 class ContractFile(models.Model):

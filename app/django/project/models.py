@@ -1,3 +1,5 @@
+import os
+
 import magic
 from django.conf import settings
 from django.db import models
@@ -210,10 +212,8 @@ class SiteContract(models.Model):
 
 
 def get_cont_file(instance, filename):
-    return '/'.join(
-        ['sites_cont',
-         f'{instance.site_contract.project.issue_project.slug}',
-         filename])
+    slug = instance.site_contract.project.issue_project.slug
+    return os.path.join('sites_cont', f'{slug}', filename)
 
 
 class SiteContractFile(models.Model):
