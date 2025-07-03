@@ -1,11 +1,10 @@
-import os
 from datetime import datetime, timedelta
 
 import magic
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import pre_save, pre_delete
-from django.dispatch import receiver
+
+from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 
 
 class DocType(models.Model):
@@ -397,6 +396,10 @@ class File(models.Model):
         super().save(*args, **kwargs)
 
 
+file_cleanup_signals(File)  # 파일인스턴스 직접 삭제시
+related_file_cleanup(Document, related_name='files', file_field_name='file')  # 연관 모델 삭제 시
+
+
 class Image(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서',
                              related_name='images')
@@ -420,55 +423,5 @@ class Image(models.Model):
         super().save(*args, **kwargs)
 
 
-def delete_file_field(instance, field_name):
-    """Delete the file of the given field if it exists."""
-    field = getattr(instance, field_name, None)
-    try:
-        if field and hasattr(field, 'path') and os.path.isfile(field.path):
-            os.remove(field.path)
-    except (FileNotFoundError, OSError):
-        pass
-
-
-@receiver(pre_save, sender=File)
-@receiver(pre_save, sender=Image)
-def delete_old_file_on_update(sender, instance, **kwargs):
-    """Generic file deletion handler for models with file/image fields."""
-    if not instance.pk:  # 새 객체 생성 시는 아무 작업 안 함
-        return
-
-    try:
-        # 기존 객체를 데이터베이스에서 가져옴
-        old_instance = sender.objects.get(pk=instance.pk)
-    except sender.DoesNotExist:
-        return
-
-    # 모델에 따라 처리할 필드 결정
-    field_name = 'file' if sender == File else 'image'
-    old_file = getattr(old_instance, field_name, None)
-    new_file = getattr(instance, field_name, None)
-
-    # 파일이 변경되었는지 확인
-    if old_file and old_file != new_file:
-        delete_file_field(old_instance, field_name)
-
-
-@receiver(pre_delete, sender=File)
-@receiver(pre_delete, sender=Image)
-def delete_file_on_delete(sender, instance, **kwargs):
-    """Generic file deletion handler for models."""
-    if hasattr(instance, 'file'):
-        delete_file_field(instance, 'file')
-    if hasattr(instance, 'image'):
-        delete_file_field(instance, 'image')
-
-
-@receiver(pre_delete, sender=Document)
-def delete_attatch_on_delete(sender, instance, **kwargs):
-    if instance.files.count():
-        for f in instance.files.all():
-            delete_file_field(f, 'file')
-
-    if instance.images.count():
-        for img in instance.images.all():
-            delete_file_field(img, 'image')
+file_cleanup_signals(Image)  # 파일인스턴스 직접 삭제시
+related_file_cleanup(Document, related_name='images', file_field_name='image')  # 연관 모델 삭제 시

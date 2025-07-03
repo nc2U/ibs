@@ -1,10 +1,8 @@
-import os
-
 import magic
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import pre_delete
-from django.dispatch import receiver
+
+from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 
 
 class Project(models.Model):
@@ -235,14 +233,12 @@ class SiteContractFile(models.Model):
         if self.file:
             self.file_name = self.file.name.split('/')[-1]
             mime = magic.Magic(mime=True)
-            self.file_type = mime.from_buffer(self.file.read())
+            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
+            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
+            self.file.seek(file_pos)  # 원래 위치로 복구
             self.file_size = self.file.size
         super().save(*args, **kwargs)
 
 
-@receiver(pre_delete, sender=SiteContractFile)
-def delete_file_on_delete(sender, instance, **kwargs):
-    # Check if the file exists before attempting to delete it
-    if instance.file:
-        if os.path.isfile(instance.file.path):
-            os.remove(instance.file.path)
+file_cleanup_signals(SiteContractFile)  # 파일 인스턴스 직접 삭제시
+related_file_cleanup(SiteContract, related_name='site_cont_files', file_field_name='file')  # 연관 모델 삭제 시

@@ -4,9 +4,8 @@ from datetime import datetime, timedelta
 import magic
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import pre_delete, pre_save
-from django.dispatch import receiver
 
+from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 from work.models.project import IssueProject, Member
 
 
@@ -81,46 +80,8 @@ class NewsFile(models.Model):
         super().save(*args, **kwargs)
 
 
-def delete_file_field(instance, field_name):
-    """Delete the file of the given field if it exists."""
-    field = getattr(instance, field_name, None)
-    try:
-        if field and hasattr(field, 'path') and os.path.isfile(field.path):
-            os.remove(field.path)
-    except (FileNotFoundError, OSError):
-        pass
-
-
-@receiver(pre_save, sender=NewsFile)
-def delete_old_file_on_update(sender, instance, **kwargs):
-    """Generic file deletion handler for models with file/image fields."""
-    if not instance.pk:  # 새 객체 생성 시는 아무 작업 안 함
-        return
-
-    try:
-        # 기존 객체를 데이터베이스에서 가져옴
-        old_instance = sender.objects.get(pk=instance.pk)
-    except sender.DoesNotExist:
-        return
-
-    # 파일이 변경 되었는지 확인 후 처리
-    old_file = getattr(old_instance, 'file', None)
-    new_file = getattr(instance, 'file', None)
-    if old_file and old_file != new_file:
-        delete_file_field(old_instance, 'file')
-
-
-@receiver(pre_delete, sender=NewsFile)
-def delete_file_on_delete(sender, instance, **kwargs):
-    # Check if the file exists before attempting to delete it
-    delete_file_field(instance, 'file')
-
-
-@receiver(pre_delete, sender=News)
-def delete_attatch_on_delete(sender, instance, **kwargs):
-    if instance.files.count():
-        for f in instance.files.all():
-            delete_file_field(f, 'file')
+file_cleanup_signals(NewsFile)  # 파일인스턴스 직접 삭제시
+related_file_cleanup(News, related_name='files', file_field_name='file')  # 연관 모델 삭제 시
 
 
 class NewsComment(models.Model):
