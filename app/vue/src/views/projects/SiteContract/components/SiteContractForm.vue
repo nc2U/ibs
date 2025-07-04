@@ -2,7 +2,7 @@
 import { ref, reactive, computed, watch, onBeforeMount } from 'vue'
 import { useSite } from '@/store/pinia/project_site'
 import { isValidate } from '@/utils/helper'
-import { type SiteContract } from '@/store/types/project'
+import type { SiteContract, SiteOwner } from '@/store/types/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import Multiselect from '@vueform/multiselect'
@@ -98,13 +98,18 @@ const formsCheck = computed(() => {
 
 const getAreaByOwner = computed(() =>
   !props.contract && siteStore.siteOwner
-    ? siteStore.siteOwner.sites.map(s => Number(s.owned_area)).reduce((sum, val) => sum + val, 0)
+    ? (siteStore.siteOwner as SiteOwner).sites
+        .map(s => Number(s.owned_area || 0))
+        .reduce((sum, val) => sum + val, 0)
     : null,
 )
 
-watch(form, val => {
-  if (!props.contract && val.owner) siteStore.fetchSiteOwner(val.owner)
-})
+watch(
+  () => form.owner,
+  val => {
+    if (!props.contract && val) siteStore.fetchSiteOwner(val)
+  },
+)
 
 watch(getAreaByOwner, val => (form.contract_area = val))
 
