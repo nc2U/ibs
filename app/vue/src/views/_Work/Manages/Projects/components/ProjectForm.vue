@@ -323,7 +323,7 @@ onBeforeMount(() => {
                 v-for="proj in getAllProjects"
                 :value="proj.value"
                 :key="proj.value"
-                v-show="project?.pk !== proj.value"
+                v-show="project?.pk !== proj.pk"
               >
                 <span v-if="!!proj.depth && proj.parent_visible">
                   {{ '&nbsp;'.repeat(proj.depth) }} »
