@@ -3,7 +3,7 @@ import { ref, computed, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin2'
 import { useProject } from '@/store/pinia/project'
 import { useSite, type ContFilter } from '@/store/pinia/project_site'
-import { type SiteContract } from '@/store/types/project'
+import type { Project, SiteContract } from '@/store/types/project'
 import { numFormat } from '@/utils/baseMixins'
 import { write_project_site } from '@/utils/pageAuth'
 import Loading from '@/components/Loading/Index.vue'
@@ -25,7 +25,7 @@ const dataFilter = ref<ContFilter>({
 })
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const siteStore = useSite()
 const getContsTotal = computed(() => siteStore.getContsTotal?.contracted_area)
