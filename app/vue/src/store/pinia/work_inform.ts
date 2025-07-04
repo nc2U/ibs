@@ -29,20 +29,22 @@ export const useInform = defineStore('inform', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const createNews = (payload: News) =>
+  const createNews = (payload: News, proj: null | string = null) =>
     api
       .post(`/news/`, payload)
       .then(async res => {
         await fetchNews(res.data.pk)
+        await fetchNewsList({ project: proj ?? '' })
         message()
       })
       .catch(err => errorHandle(err.response.data))
 
-  const updateNews = (payload: News) =>
+  const updateNews = (payload: News, proj: null | string = null) =>
     api
       .put(`/news/`, payload)
       .then(async res => {
         await fetchNews(res.data.pk)
+        await fetchNewsList({ project: proj ?? '' })
         message()
       })
       .catch(err => errorHandle(err.response.data))

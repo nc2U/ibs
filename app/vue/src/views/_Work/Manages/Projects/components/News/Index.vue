@@ -21,11 +21,11 @@ defineExpose({ toggle })
 const viewForm = ref(false)
 
 const infStore = useInform()
-const news = computed<News | null>(() => infStore.news)
-const newsList = computed<News[]>(() => infStore.newsList)
+const news = computed(() => infStore.news as News | null)
+const newsList = computed(() => infStore.newsList as News[])
 
-const createNews = (payload: any) => infStore.createNews(payload)
-const updateNews = (payload: any) => infStore.updateNews(payload)
+const createNews = (payload: any, proj?: string) => infStore.createNews(payload, proj)
+const updateNews = (payload: any, proj?: string) => infStore.updateNews(payload, proj)
 
 const onSubmit = (payload: any) => {
   console.log(payload)
@@ -38,7 +38,7 @@ const onSubmit = (payload: any) => {
     form.append(key, formValue as string)
   }
   console.log(form)
-  createNews(form)
+  createNews(form, payload.project)
   viewForm.value = false
 }
 
