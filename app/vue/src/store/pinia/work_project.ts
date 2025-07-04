@@ -37,15 +37,15 @@ export const useWork = defineStore('work', () => {
 
   const getAllProjPks = computed(() =>
     allProjects.value.map(i => ({
-      value: i.pk,
-      label: i.name,
+      value: i.pk as number,
+      label: i.name as string,
     })),
   )
 
   const getAllProjSlugs = computed(() =>
     allProjects.value.map(i => ({
-      value: i.slug,
-      label: i.name,
+      value: i.slug as string,
+      label: i.name as string,
     })),
   )
 
