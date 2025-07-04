@@ -1,4 +1,4 @@
-name: Svelte Update [Dev]
+name: Svelte [Dev]
 
 on:
   push:
