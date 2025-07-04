@@ -1,5 +1,6 @@
-[![Build](https://github.com/nc2U/ibs/actions/workflows/django_prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
-[![Build](https://github.com/nc2U/ibs/actions/workflows/vue_prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
+[//]: # ([![Build]&#40;https://github.com/nc2U/ibs/actions/workflows/django_prod.yml/badge.svg&#41;]&#40;https://github.com/nc2U/ibs/actions&#41;)
+
+[//]: # ([![Build]&#40;https://github.com/nc2U/ibs/actions/workflows/vue_prod.yml/badge.svg&#41;]&#40;https://github.com/nc2U/ibs/actions&#41;)
 ![License](https://img.shields.io/github/license/nc2U/ibs)
 ![Last Commit](https://img.shields.io/github/last-commit/nc2U/ibs)
 ![Issues](https://img.shields.io/github/issues/nc2U/ibs)
