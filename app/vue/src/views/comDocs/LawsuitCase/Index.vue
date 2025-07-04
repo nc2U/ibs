@@ -49,13 +49,13 @@ const listFiltering = (payload: cFilter) => {
   payload.limit = payload.limit || 10
   if (!payload.issue_project) {
     caseFilter.value.company = company.value as number
-    caseFilter.value.issue_project = comStore.company?.com_issue_project ?? ''
+    caseFilter.value.issue_project = (comStore.company as Company)?.com_issue_project ?? ''
     caseFilter.value.is_real_dev = 'false'
     formTitle.value = '[본사]'
   } else {
     caseFilter.value.issue_project = payload.issue_project
     caseFilter.value.is_real_dev = ''
-    formTitle.value = getAllProjects.value.filter(p => p.value == payload.issue_project)[0].label
+    formTitle.value = getAllProjPks.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
   caseFilter.value = payload
@@ -78,7 +78,7 @@ const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
 const workStore = useWork()
-const getAllProjects = computed(() => workStore.getAllProjects)
+const getAllProjPks = computed(() => workStore.getAllProjPks)
 
 const docStore = useDocs()
 const suitcase = computed(() => docStore.suitcase)
@@ -207,7 +207,7 @@ onBeforeMount(() => {
         <ListController
           ref="fController"
           :com-from="true"
-          :projects="getAllProjects"
+          :projects="getAllProjPks"
           :case-filter="caseFilter"
           @list-filter="listFiltering"
         />

@@ -42,13 +42,6 @@ export const useWork = defineStore('work', () => {
     })),
   )
 
-  const getAllProjSlugs = computed(() =>
-    allProjects.value.map(i => ({
-      value: i.slug as string,
-      label: i.name as string,
-    })),
-  )
-
   const getAllProjects = computed(() =>
     allProjects.value.map(i => ({
       pk: i.pk as number,
@@ -274,7 +267,6 @@ export const useWork = defineStore('work', () => {
     issueProjects,
     AllIssueProjects,
     getAllProjPks,
-    getAllProjSlugs,
     getAllProjects,
     fetchIssueProjectList,
     fetchAllIssueProjectList,
