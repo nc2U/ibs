@@ -37,7 +37,8 @@ export const useWork = defineStore('work', () => {
 
   const getAllProjects = computed(() =>
     allProjects.value.map(i => ({
-      value: i.pk as number,
+      pk: i.pk as number,
+      value: i.slug as string,
       label: i.name,
       slug: i.slug,
       status: i.status,
