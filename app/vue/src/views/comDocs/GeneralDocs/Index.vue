@@ -59,7 +59,7 @@ const listFiltering = (payload: DocsFilter) => {
     docsFilter.value.issue_project = payload.issue_project
     docsFilter.value.is_real_dev = ''
     console.log(payload.issue_project)
-    formTitle.value = getAllProjects.value.filter(p => p.value == payload.issue_project)[0].label
+    formTitle.value = getAllProjPks.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
   docsFilter.value.ordering = payload.ordering
@@ -80,10 +80,10 @@ const pageSelect = (page: number) => {
 }
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+const company = computed(() => (comStore.company as Company)?.pk)
 
 const workStore = useWork()
-const getAllProjects = computed(() => workStore.getAllProjects)
+const getAllProjPks = computed(() => workStore.getAllProjPks)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeComDocs)
@@ -246,7 +246,7 @@ onBeforeMount(() => {
         <ListController
           ref="fController"
           :com-from="true"
-          :projects="getAllProjects"
+          :projects="getAllProjPks"
           :docs-filter="docsFilter"
           @list-filter="listFiltering"
         />

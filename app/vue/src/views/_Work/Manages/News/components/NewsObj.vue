@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
-import type { News } from '@/store/types/work_inform.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
+import type { News } from '@/store/types/work_inform.ts'
 
 defineProps({ news: { type: Object as PropType<News>, required: true } })
 
@@ -25,9 +25,14 @@ const isProj = computed(() => !!route.params.projId)
           :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
         >
           {{ news.title }}
-          <span v-if="news.comments && news.comments.length" class="strong">
-            ({{ news.comments.length }} 개의 댓글)
-          </span>
+
+          <CBadge v-if="news.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
+          <CBadge v-if="news.comments?.length" color="warning" size="sm" class="ml-1">
+            +{{ news.comments.length }} 개의 댓글
+          </CBadge>
+          <!--          <span v-if="news.comments?.length" class="strong">-->
+          <!--            ({{ news.comments.length }} 개의 댓글)-->
+          <!--          </span>-->
         </router-link>
       </h6>
     </CCol>

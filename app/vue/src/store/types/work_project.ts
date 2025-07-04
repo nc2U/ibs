@@ -22,7 +22,8 @@ export interface SimpleProject {
 }
 
 export interface getProject {
-  value: number
+  pk: number
+  value: string
   label: string
   slug: string
   status: '1' | '9'
