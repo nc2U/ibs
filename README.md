@@ -1,9 +1,10 @@
-[![Build Status](https://github.com/nc2u/ibs/actions/workflows/ci.yml/badge.svg)](https://github.com/nc2u/ibs/actions)
-![License](https://img.shields.io/github/license/nc2u/ibs)
-![GitHub Repo stars](https://img.shields.io/github/stars/nc2u/ibs)
-![GitHub forks](https://img.shields.io/github/forks/nc2u/ibs)
-![GitHub issues](https://img.shields.io/github/issues/nc2u/ibs)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/nc2u/ibs)
+[![Build](https://github.com/nc2U/ibs/actions/workflows/django_prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
+[![Build](https://github.com/nc2U/ibs/actions/workflows/vue_prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
+![License](https://img.shields.io/github/license/nc2U/ibs)
+![Last Commit](https://img.shields.io/github/last-commit/nc2U/ibs)
+![Issues](https://img.shields.io/github/issues/nc2U/ibs)
+![Stars](https://img.shields.io/github/stars/nc2U/ibs)
+![Forks](https://img.shields.io/github/forks/nc2U/ibs)
 
 # Django 5.2 + Vue3 + Svelte using Nginx + MariaDB or PostgreSQL (deploy as Docker or Kubernetes)
 
