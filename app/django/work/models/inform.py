@@ -46,6 +46,7 @@ class News(models.Model):
         return today < new_period.strftime('%Y-%m-%d %H:%M')
 
     class Meta:
+        ordering = ('-created',)
         verbose_name = '14. 공지'
         verbose_name_plural = '14. 공지'
 

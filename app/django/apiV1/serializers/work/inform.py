@@ -33,7 +33,7 @@ class NewsSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        project__slug = self.initial_data.get('project__slug', None)
+        project__slug = self.initial_data.get('project', None)
         project = IssueProject.objects.get(slug=project__slug)
         news = News.objects.create(**validated_data, project=project)
         return news
@@ -41,7 +41,7 @@ class NewsSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         instance.__dict__.update(**validated_data)
-        project = self.initial_data.get('project__slug', None)
+        project = self.initial_data.get('project', None)
         if instance.project.slug != project:
             instance.project = IssueProject.objects.get(slug=project)
         instance.save()
