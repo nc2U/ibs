@@ -24,8 +24,12 @@ const infStore = useInform()
 const news = computed<News | null>(() => infStore.news)
 const newsList = computed<News[]>(() => infStore.newsList)
 
+const createNews = (payload: any) => infStore.createNews(payload)
+const updateNews = (payload: any) => infStore.updateNews(payload)
+
 const onSubmit = (payload: any) => {
   console.log(payload)
+  payload.project = route.params.projId
   const getData: Record<string, any> = { ...payload }
   const form = new FormData()
 
@@ -34,6 +38,7 @@ const onSubmit = (payload: any) => {
     form.append(key, formValue as string)
   }
   console.log(form)
+  createNews(form)
   viewForm.value = false
 }
 

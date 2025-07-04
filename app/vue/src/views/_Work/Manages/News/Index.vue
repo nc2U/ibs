@@ -26,11 +26,8 @@ const sideNavCAll = () => cBody.value.toggle()
 const infStore = useInform()
 const newsList = computed(() => infStore.newsList)
 
-const page = ref(1)
-const pageSelect = (p: number) => {
-  page.value = p
-  infStore.fetchNewsList({ page: p })
-}
+const createNews = (payload: any) => infStore.createNews(payload)
+const updateNews = (payload: any) => infStore.updateNews(payload)
 
 const onSubmit = (payload: any) => {
   console.log(payload)
@@ -42,7 +39,14 @@ const onSubmit = (payload: any) => {
     form.append(key, formValue as string)
   }
   console.log(form)
+  createNews(form)
   viewForm.value = false
+}
+
+const page = ref(1)
+const pageSelect = (p: number) => {
+  page.value = p
+  infStore.fetchNewsList({ page: p })
 }
 
 const loading = ref<boolean>(true)
