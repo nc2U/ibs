@@ -2,15 +2,18 @@
 import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
-import CommentList from './CommentList.vue'
+import { useInform } from '@/store/pinia/work_inform.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
+import CommentList from './CommentList.vue'
 
-defineProps({ news: { type: Object as PropType<News>, required: true } })
+const props = defineProps({ news: { type: Object as PropType<News>, required: true } })
+
+const infStore = useInform()
 
 const deleteFile = (pk: number) => {
   const form = new FormData()
   form.append('del_file', JSON.stringify(pk))
-  // emit('issue-file-control', form)
+  infStore.patchNews(props.news?.pk as number, form)
 }
 </script>
 

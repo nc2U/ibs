@@ -64,9 +64,9 @@ class NewsSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance = super().update(instance, validated_data)
         project_slug = self.initial_data.get('project')
-        if instance.project.slug != project_slug:
+        if project_slug and project_slug != instance.project.slug:
             instance.project = IssueProject.objects.get(slug=project_slug)
-            instance.save()
+        instance.save()
 
         try:
             request = self.context['request']
@@ -76,8 +76,6 @@ class NewsSerializer(serializers.ModelSerializer):
             cng_pks = self.initial_data.getlist('cngPks')
             cng_files = self.initial_data.getlist('cngFiles')
             cng_maps = dict(zip(cng_pks, cng_files))
-
-            new_files = self.initial_data.getlist('newFiles')
 
             for json_file in old_files:
                 file = json.loads(json_file)
@@ -96,8 +94,14 @@ class NewsSerializer(serializers.ModelSerializer):
                     file_obj.user = user
                     file_obj.save()
 
+            new_files = self.initial_data.getlist('newFiles')
             for file in new_files:
                 NewsFile.objects.create(news=instance, file=file, user=user)
+
+            del_file = self.initial_data.get('del_file', None)
+            if del_file:
+                file = NewsFile.objects.get(pk=del_file)
+                file.delete()
 
         except Exception as e:
             print(f"파일 처리 중 오류 발생: {e}")
