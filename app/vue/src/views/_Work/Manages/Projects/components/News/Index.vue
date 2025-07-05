@@ -25,7 +25,7 @@ const news = computed(() => infStore.news as News | null)
 const newsList = computed(() => infStore.newsList as News[])
 
 const createNews = (payload: any, proj?: string) => infStore.createNews(payload, proj)
-const updateNews = (payload: any, proj?: string) => infStore.updateNews(payload, proj)
+const updateNews = (pk: number, payload: any) => infStore.updateNews(pk, payload)
 
 const newFiles = ref<File[]>([])
 const fileUpload = (file: File) => newFiles.value.push(file)

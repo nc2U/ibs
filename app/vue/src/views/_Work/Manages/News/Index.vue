@@ -27,7 +27,7 @@ const infStore = useInform()
 const newsList = computed(() => infStore.newsList)
 
 const createNews = (payload: any) => infStore.createNews(payload)
-const updateNews = (payload: any) => infStore.updateNews(payload)
+const updateNews = (pk: number, payload: any) => infStore.updateNews(pk, payload)
 
 const newFiles = ref<File[]>([])
 const fileUpload = (file: File) => newFiles.value.push(file)
@@ -35,7 +35,7 @@ const fileUpload = (file: File) => newFiles.value.push(file)
 const onSubmit = (payload: any) => {
   const getData: Record<string, any> = { ...payload }
   getData.newFiles = newFiles.value
-  
+
   const form = new FormData()
 
   for (const key in getData) {
