@@ -120,9 +120,6 @@ const watchControl = (payload: any) => {
   issueStore.patchIssue(props.issue?.pk as number, form)
 }
 
-// file 관련 코드
-const fileControl = (payload: FormData) => issueStore.patchIssue(props.issue?.pk as number, payload)
-
 // 하위 업무 관련 코드
 const unlinkSubIssue = (del_child: number) =>
   issueStore.patchIssue(props.issue?.pk as number, { del_child })
@@ -368,8 +365,8 @@ onBeforeMount(async () => {
       <IssueFiles
         v-if="issue.files?.length"
         :proj-status="issueProject.status"
+        :issue-pk="issue.pk"
         :issue-files="issue.files"
-        @issue-file-control="fileControl"
       />
 
       <CRow v-if="issueProject.status !== '9'" class="mb-2">
