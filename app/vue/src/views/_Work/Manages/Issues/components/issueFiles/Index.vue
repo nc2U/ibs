@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { ref, onBeforeMount, type PropType, watch } from 'vue'
+import { onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { IssueFile } from '@/store/types/work_issue.ts'
-import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
+import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
@@ -71,35 +71,7 @@ onBeforeMount(async () => {
         <CCol class="title">파일</CCol>
       </CRow>
       <CRow v-for="(file, i) in issueFiles" :key="file.pk">
-        <CCol class="col-10">
-          <v-icon icon="mdi-paperclip" size="sm" color="grey" class="mr-2" />
-          <span>
-            <a :href="file.file" target="_blank"> {{ cutString(file.file_name, 25) }} </a>
-            <v-tooltip activator="parent" location="top">{{ file.file_name }}</v-tooltip>
-          </span>
-          <span class="file-desc1 mr-1"> ({{ humanizeFileSize(file.file_size) }}) </span>
-          <span class="mr-2">
-            <a :href="file.file" target="_blank">
-              <v-icon icon="mdi-download-box" size="16" color="secondary" />
-              <v-tooltip activator="parent" location="top">다운로드</v-tooltip>
-            </a>
-          </span>
-          <span v-if="file.description" class="mr-2">{{ file.description }}</span>
-          <span class="file-desc2 mr-1"> {{ file.user.username }}, </span>
-          <span class="file-desc2 mr-2">{{ timeFormat(file.created) }}</span>
-          <span v-if="projStatus !== '9'">
-            <router-link to="">
-              <v-icon
-                icon="mdi-trash-can-outline"
-                size="16"
-                color="secondary"
-                class="mr-2"
-                @click="delFileConfirm(file.pk)"
-              />
-              <v-tooltip activator="parent" location="top">삭제</v-tooltip>
-            </router-link>
-          </span>
-        </CCol>
+        <FileDisplay :file="file" />
 
         <CCol v-if="i === 0" class="text-right form-text col-2">
           <span v-if="projStatus !== '9'" class="mr-2">

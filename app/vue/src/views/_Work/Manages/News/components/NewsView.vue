@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
-import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
+import { elapsedTime } from '@/utils/baseMixins.ts'
 import CommentList from './CommentList.vue'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 
