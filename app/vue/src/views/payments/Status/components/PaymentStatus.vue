@@ -183,7 +183,7 @@ const totalBudget = computed(
         <CTableDataCell colspan="10">
           [
           <router-link :to="{ name: '수입 예산 등록' }"> 수입 예산 등록</router-link>
-          ] >> [ 현장 등록 관리 ] > [ 예산 등록 관리 ]에서 데이터를 등록하세요.
+          ] >> [ PR 등록 관리 ] > [ 예산 등록 관리 ]에서 데이터를 등록하세요.
         </CTableDataCell>
       </CTableRow>
     </CTableBody>

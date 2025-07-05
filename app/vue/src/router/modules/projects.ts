@@ -10,7 +10,7 @@ const pageViewAuth = computed(
 
 const projects = {
   path: 'project',
-  name: '현장 등록 관리',
+  name: 'PR 등록 관리',
   redirect: '/project/manage/index',
   component: {
     render() {

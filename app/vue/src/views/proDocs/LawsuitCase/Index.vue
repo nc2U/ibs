@@ -21,7 +21,7 @@ import CaseList from '@/components/LawSuitCase/CaseList.vue'
 import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 
 const fController = ref()
-const mainViewName = ref('현장 소송 사건')
+const mainViewName = ref('PR 소송 사건')
 const caseFilter = ref<cFilter>({
   company: '',
   project: '',
@@ -190,7 +190,7 @@ onBeforeMount(async () => {
       <div v-if="route.name === `${mainViewName}`" class="pt-3">
         <ListController ref="fController" :case-filter="caseFilter" @list-filter="listFiltering" />
 
-        <TableTitleRow title="현장 소송 사건 목록" excel :url="excelUrl" :disabled="!project" />
+        <TableTitleRow title="PR 소송 사건 목록" excel :url="excelUrl" :disabled="!project" />
 
         <CaseList
           :company="company || undefined"

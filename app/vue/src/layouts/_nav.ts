@@ -266,7 +266,7 @@ const project_docs = {
     },
     {
       component: 'CNavItem',
-      name: '현장 소송 사건',
+      name: 'PR 소송 사건',
       to: '/project-docs/lawsuit/case',
     },
   ],
@@ -274,7 +274,7 @@ const project_docs = {
 
 const project = {
   component: 'CNavItem',
-  name: '현장 등록 관리',
+  name: 'PR 등록 관리',
   to: '/project',
   icon: 'cil-building',
   items: [

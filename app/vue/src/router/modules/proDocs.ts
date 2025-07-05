@@ -66,24 +66,24 @@ const proDocs = {
     },
     {
       path: 'lawsuit/case',
-      name: '현장 소송 사건',
+      name: 'PR 소송 문서',
       component: () =>
         pageViewAuth.value
           ? import('@/views/proDocs/LawsuitCase/Index.vue')
           : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '현장 소송 사건', auth: true },
+      meta: { title: 'PR 소송 문서', auth: true },
       children: [
         {
           path: ':caseId(\\d+)',
-          name: '현장 소송 사건 - 보기',
+          name: 'PR 소송 문서 - 보기',
         },
         {
           path: ':caseId(\\d+)/update',
-          name: '현장 소송 사건 - 수정',
+          name: 'PR 소송 문서 - 수정',
         },
         {
           path: 'create',
-          name: '현장 소송 사건 - 작성',
+          name: 'PR 소송 문서 - 작성',
         },
       ],
     },

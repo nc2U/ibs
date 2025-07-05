@@ -3390,7 +3390,7 @@ def export_cashbook_xls(request):
 
 
 class ExportSuitCases(View):
-    """현장 소송 사건 목록"""
+    """PR 소송 사건 목록"""
 
     @staticmethod
     def get(request):
@@ -3574,7 +3574,7 @@ class ExportSuitCases(View):
 
 
 class ExportSuitCase(View):
-    """현장 소송 사건 디테일"""
+    """PR 소송 사건 디테일"""
 
     @staticmethod
     def get(request):
