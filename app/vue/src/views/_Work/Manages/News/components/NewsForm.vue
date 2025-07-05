@@ -6,7 +6,7 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
 
-const emit = defineEmits(['on-submit', 'close-form'])
+const emit = defineEmits(['on-submit', 'file-upload', 'close-form'])
 
 const attach = ref(true)
 const validated = ref(false)
@@ -111,7 +111,7 @@ const onSubmit = (event: Event) => {
           <CCol md="10" lg="8" xl="6">
             <FileModify v-if="form.files.length" />
 
-            <FileUpload />
+            <FileUpload @file-upload="emit('file-upload', $event)" />
           </CCol>
         </CRow>
       </CCardBody>

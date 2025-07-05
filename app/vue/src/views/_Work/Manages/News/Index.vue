@@ -29,16 +29,23 @@ const newsList = computed(() => infStore.newsList)
 const createNews = (payload: any) => infStore.createNews(payload)
 const updateNews = (payload: any) => infStore.updateNews(payload)
 
+const newFiles = ref<File[]>([])
+const fileUpload = (file: File) => newFiles.value.push(file)
+
 const onSubmit = (payload: any) => {
-  console.log(payload)
   const getData: Record<string, any> = { ...payload }
+  getData.newFiles = newFiles.value
+  
   const form = new FormData()
 
   for (const key in getData) {
-    const formValue = getData[key] === null ? '' : getData[key]
-    form.append(key, formValue as string)
+    if (key === 'newFiles')
+      (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
+    else {
+      const formValue = getData[key] === null ? '' : getData[key]
+      form.append(key, formValue as string)
+    }
   }
-  console.log(form)
   createNews(form)
   viewForm.value = false
 }
@@ -62,7 +69,12 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
     <template v-slot:default>
-      <NewsForm v-if="viewForm" @on-submit="onSubmit" @close-form="viewForm = false" />
+      <NewsForm
+        v-if="viewForm"
+        @on-submit="onSubmit"
+        @file-upload="fileUpload"
+        @close-form="viewForm = false"
+      />
 
       <NewsList
         :page="page"

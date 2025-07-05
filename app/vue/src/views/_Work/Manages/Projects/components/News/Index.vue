@@ -27,17 +27,24 @@ const newsList = computed(() => infStore.newsList as News[])
 const createNews = (payload: any, proj?: string) => infStore.createNews(payload, proj)
 const updateNews = (payload: any, proj?: string) => infStore.updateNews(payload, proj)
 
+const newFiles = ref<File[]>([])
+const fileUpload = (file: File) => newFiles.value.push(file)
+
 const onSubmit = (payload: any) => {
-  console.log(payload)
   payload.project = route.params.projId
   const getData: Record<string, any> = { ...payload }
+  getData.newFiles = newFiles.value
+
   const form = new FormData()
 
   for (const key in getData) {
-    const formValue = getData[key] === null ? '' : getData[key]
-    form.append(key, formValue as string)
+    if (key === 'newFiles')
+      (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
+    else {
+      const formValue = getData[key] === null ? '' : getData[key]
+      form.append(key, formValue as string)
+    }
   }
-  console.log(form)
   createNews(form, payload.project)
   viewForm.value = false
 }
@@ -81,7 +88,12 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
-      <NewsForm v-if="viewForm" @on-submit="onSubmit" @close-form="viewForm = false" />
+      <NewsForm
+        v-if="viewForm"
+        @on-submit="onSubmit"
+        @file-upload="fileUpload"
+        @close-form="viewForm = false"
+      />
 
       <NewsList
         v-if="route.name === '(공지)'"

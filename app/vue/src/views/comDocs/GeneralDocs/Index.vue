@@ -10,6 +10,7 @@ import {
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
+import type { User } from '@/store/types/accounts.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link, PatchDocs } from '@/store/types/docs'
@@ -58,7 +59,6 @@ const listFiltering = (payload: DocsFilter) => {
   } else {
     docsFilter.value.issue_project = payload.issue_project
     docsFilter.value.is_real_dev = ''
-    console.log(payload.issue_project)
     formTitle.value = getAllProjPks.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
@@ -131,7 +131,7 @@ const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(
 const fileUpload = (file: File) => newFiles.value.push(file)
 
 const docsScrape = (docs: number) => {
-  const user = accStore.userInfo?.pk as number
+  const user = (accStore.userInfo as User)?.pk as number
   createDocScrape({ docs, user }) // 스크랩 추가
 }
 
