@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
 import type { IssueProject } from '@/store/types/work_project.ts'
+import type { NewsFile } from '@/store/types/work_inform.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-const props = defineProps({ file: { type: Object as PropType<any>, required: true } })
+const props = defineProps({ file: { type: Object as PropType<NewsFile>, required: true } })
 
 const emit = defineEmits(['delete-file'])
 
@@ -34,7 +35,7 @@ const projStatus = computed(() => iProject?.value?.status)
       </a>
     </span>
     <span v-if="file.description" class="mr-2">{{ file.description }}</span>
-    <span class="file-desc2 mr-1 text-grey"> {{ file.user.username }}, </span>
+    <span class="file-desc2 mr-1 text-grey"> {{ file.user?.username }}, </span>
     <span class="file-desc2 mr-2 text-grey">{{ timeFormat(file.created) }}</span>
 
     <span v-if="projStatus !== '9'">
