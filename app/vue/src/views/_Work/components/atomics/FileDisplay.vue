@@ -1,18 +1,17 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
 import type { IssueProject } from '@/store/types/work_project.ts'
-import type { NewsFile } from '@/store/types/work_inform.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-const props = defineProps({ file: { type: Object as PropType<NewsFile>, required: true } })
+const props = defineProps({ file: { type: Object as PropType<any>, required: true } })
 
 const emit = defineEmits(['delete-file'])
 
 const RefDelFile = ref() // Del confirm model
 
 const deleteFile = () => {
-  emit('delete-file', props.file.pk)
+  emit('delete-file', props.file?.pk)
   RefDelFile.value.close()
 }
 
