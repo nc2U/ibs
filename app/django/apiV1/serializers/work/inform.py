@@ -1,6 +1,7 @@
 import json
 import os
 
+from django.core.files.storage import default_storage
 from django.db import transaction
 from rest_framework import serializers
 
@@ -45,27 +46,30 @@ class NewsSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        project__slug = self.initial_data.get('project', None)
-        project = IssueProject.objects.get(slug=project__slug)
-        news = News.objects.create(**validated_data, project=project)
-
-        # Files 처리
-        if self.initial_data.get('newFiles'):
-            new_files = self.initial_data.getlist('newFiles')
-            if new_files:
-                for file in new_files:
-                    NewsFile.objects.create(news=news, file=file)
+        project_slug = self.initial_data.get('project')
+        if project_slug:
+            validated_data['project'] = IssueProject.objects.get(slug=project_slug)
+        news = super().create(validated_data)
+        # 파일 처리
+        request = self.context.get('request')
+        user = request.user if request else None
+        new_files = self.initial_data.getlist('newFiles')
+        for file in new_files:
+            NewsFile.objects.create(news=news, file=file, user=user)
         return news
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        instance.__dict__.update(**validated_data)
-        project = self.initial_data.get('project', None)
-        if instance.project.slug != project:
-            instance.project = IssueProject.objects.get(slug=project)
-        instance.save()
+        instance = super().update(instance, validated_data)
+        project_slug = self.initial_data.get('project')
+        if instance.project.slug != project_slug:
+            instance.project = IssueProject.objects.get(slug=project_slug)
+            instance.save()
 
         try:
+            request = self.context['request']
+            user = request.user
+
             old_files = self.initial_data.getlist('files')
             cng_pks = self.initial_data.getlist('cngPks')
             cng_files = self.initial_data.getlist('cngFiles')
@@ -73,32 +77,28 @@ class NewsSerializer(serializers.ModelSerializer):
 
             new_files = self.initial_data.getlist('newFiles')
 
-            with transaction.atomic():
-                # 1. 기존 파일 처리
-                for json_file in old_files:
-                    file = json.loads(json_file)
-                    file_object = NewsFile.objects.get(pk=file.get('pk'))
-                    # 2. 삭제 요청 된 파일 처리
-                    if file.get('del'):
-                        file_object.delete()
-                        continue
-                    # 3. 변경 요청된 파일 처리
-                    new_file = cng_maps.get(str(file.get('pk')))
-                    if new_file:
-                        try:
-                            if os.path.isfile(file_object.file.path):
-                                os.remove(file_object.file.path)
-                        except Exception:
-                            pass
-                        file_object.file = new_file
-                        file_object.save()
+            for json_file in old_files:
+                file = json.loads(json_file)
+                pk = str(file.get('pk'))
+                file_obj = NewsFile.objects.get(pk=pk)
 
-                # 새 파일 등록
-                for file in new_files:
-                    NewsFile.objects.create(news=instance, file=file)
+                if file.get('del'):
+                    file_obj.delete()
+                    continue
 
-        except Exception:
-            pass
+                new_file = cng_maps.get(pk)
+                if new_file:
+                    if default_storage.exists(file_obj.file.name):
+                        default_storage.delete(file_obj.file.name)
+                    file_obj.file = new_file
+                    file_obj.user = user
+                    file_obj.save()
+
+            for file in new_files:
+                NewsFile.objects.create(news=instance, file=file, user=user)
+
+        except Exception as e:
+            print(f"파일 처리 중 오류 발생: {e}")
 
         return instance
 

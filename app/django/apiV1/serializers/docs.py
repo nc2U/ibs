@@ -190,83 +190,80 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
-        validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
-        docs = Document.objects.create(**validated_data)
+        request = self.context.get('request')
 
-        # Links 처리
-        if self.initial_data.get('newLinks'):
-            new_links = self.initial_data.getlist('newLinks')
-            if new_links:
-                for link in new_links:
-                    Link.objects.create(docs=docs, link=validate_link(link))
+        validated_data['ip'] = request.META.get('REMOTE_ADDR')  # ip 추가
+        validated_data['device'] = request.META.get('HTTP_USER_AGENT')  # device 추가
 
-        # Files 처리
-        if self.initial_data.get('newFiles'):
-            new_files = self.initial_data.getlist('newFiles')
-            if new_files:
-                for file in new_files:
-                    File.objects.create(docs=docs, file=file)
+        docs = super().create(validated_data)  # 기본 create 처리 (save 포함)
+
+        new_links = self.initial_data.getlist('newLinks', [])  # Links 처리
+        for link in new_links:
+            Link.objects.create(docs=docs, link=validate_link(link))
+
+        new_files = self.initial_data.getlist('newFiles', [])  # Files 처리
+        user = request.user
+        for file in new_files:
+            File.objects.create(docs=docs, file=file, user=user)
 
         return docs
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
-        validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
-        instance.__dict__.update(**validated_data)
-        instance.issue_project = validated_data.get('issue_project', instance.issue_project)
-        instance.doc_type = validated_data.get('doc_type', instance.doc_type)
-        instance.category = validated_data.get('category', instance.category)
-        instance.lawsuit = validated_data.get('lawsuit', instance.lawsuit)
-        instance.save()
+        request = self.context.get('request')
+
+        validated_data['ip'] = request.META.get('REMOTE_ADDR')
+        validated_data['device'] = request.META.get('HTTP_USER_AGENT')
+
+        instance = super().update(instance, validated_data)  # 기본 필드 업데이트 수행
 
         try:
-            # Links 처리
-            old_links = self.initial_data.getlist('links')
-            if old_links:
-                for json_link in old_links:
-                    link = json.loads(json_link)
-                    link_object = Link.objects.get(pk=link.get('pk'))
-                    if link.get('del'):
-                        link_object.delete()
-                    else:
-                        link_object.link = validate_link(link.get('link'))
-                        link_object.save()
+            # --- Links 처리 ---
+            old_links = self.initial_data.getlist('links', [])
+            for json_link in old_links:
+                link = json.loads(json_link)
+                link_object = Link.objects.get(pk=link.get('pk'))
+                if link.get('del'):
+                    link_object.delete()
+                else:
+                    link_object.link = validate_link(link.get('link'))
+                    link_object.save()
 
-            new_links = self.initial_data.getlist('newLinks')
-            if new_links:
-                for link in new_links:
-                    Link.objects.create(docs=instance, link=validate_link(link))
+            new_links = self.initial_data.getlist('newLinks', [])
+            for link in new_links:
+                Link.objects.create(docs=instance, link=validate_link(link))
 
-            # Files 처리
-            old_files = self.initial_data.getlist('files')
-            if old_files:
-                cng_pks = self.initial_data.getlist('cngPks')
-                cng_files = self.initial_data.getlist('cngFiles')
-                cng_maps = [(pk, cng_files[i]) for i, pk in enumerate(cng_pks)]
+            # --- Files 처리 ---
+            old_files = self.initial_data.getlist('files', [])
+            cng_pks = self.initial_data.getlist('cngPks', [])
+            cng_files = self.initial_data.getlist('cngFiles', [])
+            cng_maps = dict(zip(cng_pks, cng_files))
 
-                for json_file in old_files:
-                    file = json.loads(json_file)
-                    file_object = File.objects.get(pk=file.get('pk'))
+            for json_file in old_files:
+                file = json.loads(json_file)
+                file_object = File.objects.get(pk=file.get('pk'))
 
-                    if file.get('del'):
-                        file_object.delete()
+                if file.get('del'):
+                    file_object.delete()
+                    continue
 
-                    for cng_map in cng_maps:
-                        if int(file.get('pk')) == int(cng_map[0]):
-                            old_file = file_object.file
-                            if os.path.isfile(old_file.path):
-                                os.remove(old_file.path)
-                            file_object.file = cng_map[1]
-                            file_object.save()
+                new_file = cng_maps.get(str(file.get('pk')))
+                if new_file:
+                    try:
+                        if os.path.isfile(file_object.file.path):
+                            os.remove(file_object.file.path)
+                    except Exception as e:
+                        print(f"파일 처리 중 오류 발생: {e}")
+                    file_object.file = new_file
+                    file_object.save()
 
-            new_files = self.initial_data.getlist('newFiles')
-            if new_files:
-                for file in new_files:
-                    File.objects.create(docs=instance, file=file)
-        except AttributeError:
-            pass
+            new_files = self.initial_data.getlist('newFiles', [])
+            user = request.user
+            for file in new_files:
+                File.objects.create(docs=instance, file=file, user=user)
+
+        except Exception as e:
+            print(f"링크 및 파일 처리 중 오류 발생: {e}")
 
         return instance
 
