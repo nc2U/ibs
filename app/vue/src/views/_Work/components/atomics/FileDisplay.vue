@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType, ref } from 'vue'
+import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 
 defineProps({ file: { type: Object as PropType<any>, required: true } })
 
-const iProject = inject('iProject')
-const projStatus = computed(() => iProject.value.status)
+const iProject = inject<ComputedRef<IssueProject | null>>('iProject')
+const projStatus = computed(() => iProject?.value?.status)
 
 const RefDelFile = ref()
 const delFile = ref<number | null>(null)
