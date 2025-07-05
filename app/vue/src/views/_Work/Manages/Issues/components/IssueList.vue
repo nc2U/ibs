@@ -2,14 +2,13 @@
 import { computed, inject, type PropType, ref, watchEffect } from 'vue'
 import type { getProject, IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
-import { timeFormat } from '@/utils/baseMixins'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import Pagination from '@/components/Pagination'
 import NoData from '@/views/_Work/components/NoData.vue'
 import SearchList from './SearchList.vue'
-import IssueDropDown from './IssueDropDown.vue'
-import Pagination from '@/components/Pagination'
+import IssueObj from './IssueObj.vue'
 
 defineProps({
   projStatus: { type: String, default: '' },
@@ -48,12 +47,12 @@ const issuePages = (pageNum: number) => issueStore.issuePages(pageNum)
 const pageSelect = (page: number) => emit('page-select', page)
 
 // 지켜보기 / 관심끄기
-const watchControl = (payload: any, issuePk: number) => {
+const watchControl = (payload: any) => {
   const form = new FormData()
   if (payload.watchers)
     payload.watchers.forEach(val => form.append('watchers', JSON.stringify(val)))
   else if (payload.del_watcher) form.append('del_watcher', JSON.stringify(payload.del_watcher))
-  issueStore.patchIssue(issuePk, form)
+  issueStore.patchIssue(payload.issue, form)
 }
 </script>
 
@@ -148,7 +147,7 @@ const watchControl = (payload: any, issuePk: number) => {
       <CTableHead>
         <CTableRow class="text-center">
           <CTableHeaderCell scope="col">#</CTableHeaderCell>
-          <CTableHeaderCell scope="col">프로젝트</CTableHeaderCell>
+          <CTableHeaderCell v-if="!route.params.projId" scope="col">프로젝트</CTableHeaderCell>
           <CTableHeaderCell scope="col">유형</CTableHeaderCell>
           <CTableHeaderCell scope="col">상태</CTableHeaderCell>
           <CTableHeaderCell scope="col">우선순위</CTableHeaderCell>
@@ -162,68 +161,12 @@ const watchControl = (payload: any, issuePk: number) => {
       <CTableBody>
         <CTableRow
           v-for="issue in issueList"
-          :key="issue.pk"
-          class="text-center table-row cursor-menu"
-          :color="selectedRow === issue.pk ? 'primary' : ''"
           @click="selectedRow = issue.pk"
+          :color="selectedRow === issue.pk ? 'primary' : ''"
+          class="text-center table-row cursor-menu"
+          :key="issue.pk"
         >
-          <CTableDataCell>
-            <router-link
-              :to="{
-                name: '(업무) - 보기',
-                params: { projId: issue.project.slug, issueId: issue.pk },
-              }"
-            >
-              {{ issue.pk }}
-            </router-link>
-          </CTableDataCell>
-          <CTableDataCell>
-            <router-link :to="{ name: '(개요)', params: { projId: issue.project.slug } }">
-              {{ issue.project.name }}
-            </router-link>
-          </CTableDataCell>
-          <CTableDataCell>{{ issue.tracker.name }}</CTableDataCell>
-          <CTableDataCell
-            :class="{
-              'text-danger': issue.status.pk === 1,
-              'text-success': issue.status.pk === 3,
-              'text-warning': issue.status.pk === 4,
-            }"
-          >
-            {{ issue.status.name }}
-          </CTableDataCell>
-          <CTableDataCell
-            :class="{
-              'text-grey': issue.priority.pk === 1,
-              'text-warning': issue.priority.pk === 3,
-              'text-danger': [4, 5].includes(issue.priority.pk),
-              bold: issue.priority.pk === 5,
-            }"
-          >
-            {{ issue.priority.name }}
-          </CTableDataCell>
-          <CTableDataCell class="text-left">
-            <router-link
-              :to="{
-                name: '(업무) - 보기',
-                params: { projId: issue.project.slug, issueId: issue.pk },
-              }"
-            >
-              {{ issue.subject }}
-            </router-link>
-          </CTableDataCell>
-          <CTableDataCell class="text-center">
-            <router-link
-              v-if="issue.assigned_to"
-              :to="{ name: '사용자 - 보기', params: { userId: issue.assigned_to?.pk } }"
-            >
-              {{ issue.assigned_to?.username }}
-            </router-link>
-          </CTableDataCell>
-          <CTableDataCell class="text-center">{{ timeFormat(issue.updated) }}</CTableDataCell>
-          <CTableDataCell class="p-0">
-            <IssueDropDown :issue="issue" @watch-control="watchControl" />
-          </CTableDataCell>
+          <IssueObj :issue="issue" @watch-control="watchControl" />
         </CTableRow>
       </CTableBody>
     </CTable>

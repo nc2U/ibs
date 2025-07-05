@@ -22,9 +22,12 @@ const isCumputedWatcher = computed(() =>
 
 const watchControl = () => {
   const payload = isWatcher.value
-    ? { del_watcher: userInfo?.value?.pk }
-    : { watchers: [userInfo?.value?.pk] }
-  emit('watch-control', payload, props.issue?.pk)
+    ? { del_watcher: userInfo?.value?.pk, issue: undefined as undefined | number }
+    : { watchers: [userInfo?.value?.pk], issue: undefined as undefined | number }
+  payload.issue = props.issue?.pk
+
+  // emit('watch-control', payload, props.issue?.pk)
+  emit('watch-control', payload)
   isWatcher.value = !isWatcher.value
 }
 
