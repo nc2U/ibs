@@ -238,6 +238,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             cng_pks = self.initial_data.getlist('cngPks', [])
             cng_files = self.initial_data.getlist('cngFiles', [])
             cng_maps = dict(zip(cng_pks, cng_files))
+            user = request.user
 
             for json_file in old_files:
                 file = json.loads(json_file)
@@ -255,10 +256,10 @@ class DocumentSerializer(serializers.ModelSerializer):
                     except Exception as e:
                         print(f"파일 처리 중 오류 발생: {e}")
                     file_object.file = new_file
+                    file_object.user = user
                     file_object.save()
 
             new_files = self.initial_data.getlist('newFiles', [])
-            user = request.user
             for file in new_files:
                 File.objects.create(docs=instance, file=file, user=user)
 
