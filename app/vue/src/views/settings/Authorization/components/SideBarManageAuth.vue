@@ -286,7 +286,7 @@ onUpdated(() => dataSetup())
                   icon="mdi mdi-account-arrow-left"
                   :color="getColor(authData.project_docs)[0]"
                 />
-                현장 문서 관리
+                PR 문서 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect

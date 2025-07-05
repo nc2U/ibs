@@ -232,12 +232,12 @@ const project_cash = {
   items: [
     {
       component: 'CNavItem',
-      name: '현장 자금 현황',
+      name: 'PR 자금 현황',
       to: '/project-cash/status',
     },
     {
       component: 'CNavItem',
-      name: '현장 출납 내역',
+      name: 'PR 출납 내역',
       to: '/project-cash/index',
     },
     {
@@ -250,18 +250,18 @@ const project_cash = {
 
 const project_docs = {
   component: 'CNavItem',
-  name: '현장 문서 관리',
+  name: 'PR 문서 관리',
   to: '/project-docs',
   icon: 'cil-library',
   items: [
     {
       component: 'CNavItem',
-      name: '현장 일반 문서',
+      name: 'PR 일반 문서',
       to: '/project-docs/general/docs',
     },
     {
       component: 'CNavItem',
-      name: '현장 소송 문서',
+      name: 'PR 소송 문서',
       to: '/project-docs/lawsuit/docs',
     },
     {

@@ -7,13 +7,13 @@ const props = defineProps({ docs: { type: Object as PropType<Docs>, default: nul
 
 const viewRoute = computed(() => {
   if (!!props.docs?.project) {
-    if (props.docs.doc_type === 1) return '현장 일반 문서'
-    else if (props.docs.doc_type === 2) return '현장 소송 문서'
+    if (props.docs.doc_type === 1) return 'PR 일반 문서'
+    else if (props.docs.doc_type === 2) return 'PR 소송 문서'
   } else {
     if (props.docs.doc_type === 1) return '본사 일반 문서'
     else if (props.docs.doc_type === 2) return '본사 소송 문서'
   }
-  return '현장 일반 문서'
+  return 'PR 일반 문서'
 })
 </script>
 

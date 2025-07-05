@@ -109,7 +109,7 @@ class StaffAuth(models.Model):
     payment = models.CharField('분양 수납 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     notice = models.CharField('고객 고지 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     project_cash = models.CharField('PR 자금 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    project_docs = models.CharField('현장 문서 관리', max_length=1, choices=AUTH_CHOICE, default='0')
+    project_docs = models.CharField('PR 문서 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     project = models.CharField('신규 프로젝트', max_length=1, choices=AUTH_CHOICE, default='0')
     project_site = models.CharField('사업 부지 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     company_cash = models.CharField('본사 자금 관리', max_length=1, choices=AUTH_CHOICE, default='0')
