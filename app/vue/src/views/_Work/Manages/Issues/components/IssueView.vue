@@ -47,7 +47,7 @@ const workStore = useWork()
 const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
 
 const issueStore = useIssue()
-const issueNums = computed(() => issueStore.issueNums)
+const issueNums = computed(() => issueStore.issueNums as number[])
 const getIssues = computed(() => issueStore.getIssues.filter(i => i.value !== props.issue?.pk))
 
 const logStore = useLogging()
@@ -119,9 +119,6 @@ const watchControl = (payload: any) => {
   else if (payload.del_watcher) form.append('del_watcher', JSON.stringify(payload.del_watcher))
   issueStore.patchIssue(props.issue?.pk as number, form)
 }
-
-// file 관련 코드
-const fileControl = (payload: FormData) => issueStore.patchIssue(props.issue?.pk as number, payload)
 
 // 하위 업무 관련 코드
 const unlinkSubIssue = (del_child: number) =>
@@ -245,7 +242,7 @@ onBeforeMount(async () => {
                 {{ elapsedTime(issue.updated) }}
               </router-link>
               <v-tooltip activator="parent" location="top">
-                {{ timeFormat(issue?.updated) }}
+                {{ timeFormat(issue?.updated as string) }}
               </v-tooltip>
             </span>
             전에 수정됨.
@@ -286,7 +283,7 @@ onBeforeMount(async () => {
               <router-link
                 :to="{ name: '(로드맵) - 보기', params: { verId: issue.fixed_version.pk } }"
               >
-                {{ issue.fixed_version.name }}
+                {{ issue.fixed_version?.name }}
               </router-link>
             </CCol>
           </CRow>
@@ -305,8 +302,8 @@ onBeforeMount(async () => {
               }"
             >
               {{ issue?.due_date }}
-              <span v-if="!isClosed && !!issue.due_date && diffDate(issue.due_date) > 0">
-                ({{ Math.floor(diffDate(issue.due_date)) }} 일 지연)
+              <span v-if="!isClosed && !!issue?.due_date && diffDate(issue.due_date) > 0">
+                ({{ Math.floor(diffDate(issue.due_date as string)) }} 일 지연)
               </span>
             </CCol>
           </CRow>
@@ -330,14 +327,14 @@ onBeforeMount(async () => {
               (합계 : {{ numToTime(estimatedHours) }} 시간)
             </CCol>
             <CCol v-else-if="issue?.estimated_hours">
-              {{ numToTime(issue?.estimated_hours) }} 시간
+              {{ numToTime(issue?.estimated_hours as number) }} 시간
             </CCol>
           </CRow>
           <CRow v-if="issue?.spent_time">
             <CCol class="title">소요시간:</CCol>
             <CCol>
               <router-link :to="{ name: '(소요시간)', query: { issue_id: issue.pk } }">
-                {{ numToTime(issue?.spent_time) }} 시간
+                {{ numToTime(issue?.spent_time as number) }} 시간
               </router-link>
             </CCol>
           </CRow>
@@ -359,7 +356,7 @@ onBeforeMount(async () => {
 
       <CRow>
         <CCol class="pl-4">
-          <VueMarkdownIt :source="issue?.description" />
+          <VueMarkdownIt :source="issue?.description as string" />
         </CCol>
       </CRow>
 
@@ -368,8 +365,8 @@ onBeforeMount(async () => {
       <IssueFiles
         v-if="issue.files?.length"
         :proj-status="issueProject.status"
+        :issue-pk="issue.pk"
         :issue-files="issue.files"
-        @issue-file-control="fileControl"
       />
 
       <CRow v-if="issueProject.status !== '9'" class="mb-2">

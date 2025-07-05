@@ -39,12 +39,20 @@ export const useInform = defineStore('inform', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const updateNews = (payload: News, proj: null | string = null) =>
+  const updateNews = (pk: number, payload: News) =>
     api
-      .put(`/news/`, payload)
+      .put(`/news/${pk}/`, payload)
       .then(async res => {
         await fetchNews(res.data.pk)
-        await fetchNewsList({ project: proj ?? '' })
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchNews = (pk: number, payload: any) =>
+    api
+      .patch(`/news/${pk}/`, payload)
+      .then(async res => {
+        await fetchNews(res.data.pk)
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -103,6 +111,7 @@ export const useInform = defineStore('inform', () => {
     fetchNewsList,
     createNews,
     updateNews,
+    patchNews,
     deleteNews,
 
     newsComment,

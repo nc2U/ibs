@@ -1,16 +1,29 @@
 import type { SimpleProject, SimpleUser } from '@/store/types/work_project.ts'
 
 export interface News {
-  pk?: number
-  project?: SimpleProject
+  pk: number
+  project: SimpleProject
   title: string
   summary: string
   content: string
-  author?: SimpleUser
+  files: NewsFile[]
+  author: SimpleUser
   comments: BaseComment[]
   is_new: boolean
   created: string
   updated: string
+}
+
+export interface NewsFile {
+  pk: number
+  news: number
+  file_name: string
+  file: string
+  file_type: string
+  file_size: number
+  description: string
+  user: SimpleUser
+  created: string
 }
 
 export interface BaseComment {

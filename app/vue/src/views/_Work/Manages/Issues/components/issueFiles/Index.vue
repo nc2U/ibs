@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { ref, onBeforeMount, type PropType, watch } from 'vue'
+import { onBeforeMount, type PropType, ref, watch } from 'vue'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import type { IssueFile } from '@/store/types/work_issue.ts'
-import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
+  issuePk: { type: Number, required: true },
   issueFiles: { type: Array as PropType<IssueFile[]>, default: () => [] },
 })
 
@@ -16,13 +17,14 @@ watch(
   },
 )
 
-const emit = defineEmits(['file-change', 'issue-file-control'])
+const emit = defineEmits(['file-change'])
 
-const RefDelFile = ref()
+// File delte
+const issueStore = useIssue()
+const fileControl = (payload: FormData) => issueStore.patchIssue(props.issuePk as number, payload)
 
 // file 관련 코드
 const editMode = ref(false)
-
 const editFiles = ref<IssueFile[]>([])
 
 const loadFile = (event: Event, i: number) => {
@@ -42,21 +44,14 @@ const editFileSubmit = (payload: IssueFile) => {
   form.append('edit_file', JSON.stringify(payload.pk))
   if (payload.cngFile) form.append('cng_file', payload.cngFile)
   form.append('edit_file_desc', payload.description)
-  emit('issue-file-control', form)
+  fileControl(form)
   editMode.value = false
 }
 
-const delFile = ref<number | null>(null)
-const delFileConfirm = (pk: number) => {
-  delFile.value = pk
-  RefDelFile.value.callModal()
-}
-const delFileSubmit = () => {
+const deleteFile = (pk: number) => {
   const form = new FormData()
-  form.append('del_file', JSON.stringify(delFile.value))
-  emit('issue-file-control', form)
-  delFile.value = null
-  RefDelFile.value.close()
+  form.append('del_file', JSON.stringify(pk))
+  fileControl(form)
 }
 
 onBeforeMount(async () => {
@@ -71,35 +66,7 @@ onBeforeMount(async () => {
         <CCol class="title">파일</CCol>
       </CRow>
       <CRow v-for="(file, i) in issueFiles" :key="file.pk">
-        <CCol class="col-10">
-          <v-icon icon="mdi-paperclip" size="sm" color="grey" class="mr-2" />
-          <span>
-            <a :href="file.file" target="_blank"> {{ cutString(file.file_name, 25) }} </a>
-            <v-tooltip activator="parent" location="top">{{ file.file_name }}</v-tooltip>
-          </span>
-          <span class="file-desc1 mr-1"> ({{ humanizeFileSize(file.file_size) }}) </span>
-          <span class="mr-2">
-            <a :href="file.file" target="_blank">
-              <v-icon icon="mdi-download-box" size="16" color="secondary" />
-              <v-tooltip activator="parent" location="top">다운로드</v-tooltip>
-            </a>
-          </span>
-          <span v-if="file.description" class="mr-2">{{ file.description }}</span>
-          <span class="file-desc2 mr-1"> {{ file.user.username }}, </span>
-          <span class="file-desc2 mr-2">{{ timeFormat(file.created) }}</span>
-          <span v-if="projStatus !== '9'">
-            <router-link to="">
-              <v-icon
-                icon="mdi-trash-can-outline"
-                size="16"
-                color="secondary"
-                class="mr-2"
-                @click="delFileConfirm(file.pk)"
-              />
-              <v-tooltip activator="parent" location="top">삭제</v-tooltip>
-            </router-link>
-          </span>
-        </CCol>
+        <FileDisplay :file="file" @delete-file="deleteFile" />
 
         <CCol v-if="i === 0" class="text-right form-text col-2">
           <span v-if="projStatus !== '9'" class="mr-2">
@@ -169,13 +136,6 @@ onBeforeMount(async () => {
   </CRow>
 
   <v-divider v-if="projStatus !== '9'" />
-
-  <ConfirmModal ref="RefDelFile">
-    <template #default>이 파일 삭제를 계속 진행하시겠습니까?</template>
-    <template #footer>
-      <v-btn color="warning" @click="delFileSubmit">삭제</v-btn>
-    </template>
-  </ConfirmModal>
 </template>
 
 <style lang="scss" scoped>

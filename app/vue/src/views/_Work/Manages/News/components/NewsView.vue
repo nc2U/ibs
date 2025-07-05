@@ -1,10 +1,20 @@
 <script lang="ts" setup>
-import type { PropType } from 'vue'
+import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
+import { useInform } from '@/store/pinia/work_inform.ts'
+import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import CommentList from './CommentList.vue'
 
-defineProps({ news: { type: Object as PropType<News>, required: true } })
+const props = defineProps({ news: { type: Object as PropType<News>, required: true } })
+
+const infStore = useInform()
+
+const deleteFile = (pk: number) => {
+  const form = new FormData()
+  form.append('del_file', JSON.stringify(pk))
+  infStore.patchNews(props.news?.pk as number, form)
+}
 </script>
 
 <template>
@@ -59,6 +69,12 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
     <CRow class="my-5">
       <CCol v-html="news.content" />
     </CRow>
+
+    <div v-if="news.files.length" class="mb-5">
+      <CRow v-for="(file, index) in news.files" :key="index">
+        <FileDisplay :file="file" @delete-file="deleteFile" />
+      </CRow>
+    </div>
 
     <CRow>
       <CCol>
