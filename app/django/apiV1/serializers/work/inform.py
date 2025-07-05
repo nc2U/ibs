@@ -19,10 +19,12 @@ class CodeDocsCategorySerializer(serializers.ModelSerializer):
 
 
 class FilesInNewsSerializer(serializers.ModelSerializer):
+    user = SimpleUserSerializer(read_only=True)
+
     class Meta:
         model = NewsFile
         fields = ('pk', 'news', 'file_name', 'file', 'file_type',
-                  'file_size', 'description', 'created')
+                  'file_size', 'description', 'user', 'created')
 
 
 class NewsCommentInSerializer(serializers.ModelSerializer):
