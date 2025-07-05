@@ -226,7 +226,7 @@ const notice = {
 
 const project_cash = {
   component: 'CNavItem',
-  name: '현장 자금 관리',
+  name: 'PR 자금 관리',
   to: '/project-cash',
   icon: 'cil-money',
   items: [

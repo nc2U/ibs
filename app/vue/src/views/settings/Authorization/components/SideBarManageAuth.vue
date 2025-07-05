@@ -264,7 +264,7 @@ onUpdated(() => dataSetup())
                   icon="mdi mdi-account-arrow-left"
                   :color="getColor(authData.project_cash)[0]"
                 />
-                현장 자금 관리
+                PR 자금 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect

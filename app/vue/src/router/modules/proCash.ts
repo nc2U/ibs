@@ -10,7 +10,7 @@ const pageViewAuth = computed(
 
 const proCash = {
   path: 'project-cash',
-  name: '현장 자금 관리',
+  name: 'PR 자금 관리',
   redirect: '/project-cash/status',
   component: {
     render() {
