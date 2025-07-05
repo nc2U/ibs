@@ -38,7 +38,7 @@ export const useIssue = defineStore('issue', () => {
     })),
   )
 
-  const issueNums = computed(() => issueList.value.map(i => i.pk))
+  const issueNums = computed(() => issueList.value.map(i => i.pk) as number[])
 
   const issueNumByMember = ref<{
     open_charged: number

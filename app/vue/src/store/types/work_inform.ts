@@ -14,7 +14,7 @@ export interface News {
   updated: string
 }
 
-interface NewsFile {
+export interface NewsFile {
   pk: number
   news: number
   file_name: string
@@ -22,7 +22,7 @@ interface NewsFile {
   file_type: string
   file_size: number
   description: string
-  user: string | null
+  user: SimpleUser
   created: string
 }
 
