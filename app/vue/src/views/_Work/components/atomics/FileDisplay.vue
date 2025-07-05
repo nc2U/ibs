@@ -2,19 +2,21 @@
 import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-defineProps({ file: { type: Object as PropType<any>, required: true } })
+const props = defineProps({ file: { type: Object as PropType<any>, required: true } })
+
+const emit = defineEmits(['delete-file'])
+
+const RefDelFile = ref() // Del confirm model
+
+const deleteFile = () => {
+  emit('delete-file', props.file.pk)
+  RefDelFile.value.close()
+}
 
 const iProject = inject<ComputedRef<IssueProject | null>>('iProject')
 const projStatus = computed(() => iProject?.value?.status)
-
-const RefDelFile = ref()
-const delFile = ref<number | null>(null)
-
-const delFileConfirm = (pk: number) => {
-  delFile.value = pk
-  RefDelFile.value.callModal()
-}
 </script>
 
 <template>
@@ -42,10 +44,17 @@ const delFileConfirm = (pk: number) => {
           size="16"
           color="secondary"
           class="mr-2"
-          @click="delFileConfirm(file.pk)"
+          @click="RefDelFile.callModal()"
         />
         <v-tooltip activator="parent" location="top">삭제</v-tooltip>
       </router-link>
     </span>
   </CCol>
+
+  <ConfirmModal ref="RefDelFile">
+    <template #default>이 파일의 삭제를 계속 진행하시겠습니까?</template>
+    <template #footer>
+      <v-btn color="warning" size="small" @click="deleteFile">삭제</v-btn>
+    </template>
+  </ConfirmModal>
 </template>

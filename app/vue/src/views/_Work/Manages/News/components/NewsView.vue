@@ -1,11 +1,17 @@
 <script lang="ts" setup>
-import type { PropType } from 'vue'
+import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import CommentList from './CommentList.vue'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 
 defineProps({ news: { type: Object as PropType<News>, required: true } })
+
+const deleteFile = (pk: number) => {
+  const form = new FormData()
+  form.append('del_file', JSON.stringify(pk))
+  // emit('issue-file-control', form)
+}
 </script>
 
 <template>
@@ -63,7 +69,7 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
 
     <div v-if="news.files.length" class="mb-5">
       <CRow v-for="(file, index) in news.files" :key="index">
-        <FileDisplay :file="file" />
+        <FileDisplay :file="file" @delete-file="deleteFile" />
       </CRow>
     </div>
 
