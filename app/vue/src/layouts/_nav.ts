@@ -280,7 +280,7 @@ const project = {
   items: [
     {
       component: 'CNavItem',
-      name: '신규 현장 등록',
+      name: '신규 PR 등록',
       to: '/project/manage/index',
     },
     {

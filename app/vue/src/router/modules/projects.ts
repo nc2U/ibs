@@ -20,12 +20,12 @@ const projects = {
   children: [
     {
       path: 'manage/index',
-      name: '신규 현장 등록',
+      name: '신규 PR 등록',
       component: () =>
         pageViewAuth.value
           ? import('@/views/projects/List/Index.vue')
           : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '신규 현장 등록', auth: true },
+      meta: { title: '신규 PR 등록', auth: true },
     },
     {
       path: 'site/index',
