@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
-import { elapsedTime } from '@/utils/baseMixins.ts'
+import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins.ts'
 import CommentList from './CommentList.vue'
+import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 
 defineProps({ news: { type: Object as PropType<News>, required: true } })
 </script>
@@ -59,6 +60,12 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
     <CRow class="my-5">
       <CCol v-html="news.content" />
     </CRow>
+
+    <div v-if="news.files.length" class="mb-5">
+      <CRow v-for="(file, index) in news.files" :key="index">
+        <FileDisplay :file="file" />
+      </CRow>
+    </div>
 
     <CRow>
       <CCol>
