@@ -17,6 +17,13 @@ class CodeDocsCategorySerializer(serializers.ModelSerializer):
         fields = ('pk', 'name', 'active', 'default', 'order')
 
 
+class FilesInNewsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsFile
+        fields = ('pk', 'news', 'file_name', 'file', 'file_type',
+                  'file_size', 'description', 'created')
+
+
 class NewsCommentInSerializer(serializers.ModelSerializer):
     user = SimpleUserSerializer(read_only=True)
 
@@ -27,12 +34,13 @@ class NewsCommentInSerializer(serializers.ModelSerializer):
 
 class NewsSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
-    author = SimpleUserSerializer(read_only=True)
+    files = FilesInNewsSerializer(many=True, read_only=True)
     comments = NewsCommentInSerializer(read_only=True, many=True)
+    author = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = News
-        fields = ('pk', 'project', 'title', 'summary', 'content',
+        fields = ('pk', 'project', 'title', 'summary', 'content', 'files',
                   'author', 'comments', 'is_new', 'created', 'updated')
 
     @transaction.atomic
@@ -93,6 +101,12 @@ class NewsSerializer(serializers.ModelSerializer):
             pass
 
         return instance
+
+
+class NewsFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsFile
+        fields = ('pk', 'news', 'file', 'file_name', 'file_type', 'file_size', 'description', 'created')
 
 
 class NewsCommentSerializer(serializers.ModelSerializer):

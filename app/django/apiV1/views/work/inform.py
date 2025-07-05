@@ -27,6 +27,14 @@ class NewsViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
 
+class NewsFileViewSet(viewsets.ModelViewSet):
+    queryset = NewsFile.objects.all()
+    serializer_class = None
+    permission_classes = (permissions.IsAuthenticated,)
+    filterset_fields = ('news',)
+    search_fields = ('file_name', 'description')
+
+
 class NewsCommentViewSet(viewsets.ModelViewSet):
     queryset = NewsComment.objects.all()
     serializer_class = NewsCommentSerializer
