@@ -14,6 +14,7 @@ const emit = defineEmits(['on-submit', 'file-upload', 'close-form'])
 const attach = ref(true)
 const validated = ref(false)
 const form = ref({
+  pk: null as number | null,
   project: null as number | null,
   title: '',
   summary: '',
@@ -39,6 +40,7 @@ const onSubmit = (event: Event) => {
 const route = useRoute()
 onBeforeMount(() => {
   if (props.news) {
+    form.value.pk = props.news.pk
     form.value.project = props.news?.project.pk as number
     form.value.title = props.news?.title as string
     form.value.summary = props.news?.summary as string

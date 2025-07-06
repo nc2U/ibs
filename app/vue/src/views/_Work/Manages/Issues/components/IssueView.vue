@@ -10,6 +10,7 @@ import type {
   TimeEntry,
 } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
@@ -21,7 +22,6 @@ import IssueFiles from './issueFiles/Index.vue'
 import SubIssues from './subIssues/Index.vue'
 import SubSummary from './subIssues/Summary.vue'
 import RelSummary from './relations/Summary.vue'
-import { useIssue } from '@/store/pinia/work_issue.ts'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
