@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
 import { bgLight } from '@/utils/cssMixins.ts'
-import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import { cutString, dateFormat, numberToHour, timeFormat } from '@/utils/baseMixins'
+import { markdownRender } from '@/utils/helper.ts'
 
 defineProps({
   activity: { type: Array as PropType<ActLogEntry[]>, required: true },
@@ -55,9 +55,9 @@ const getIcon = (sort: string, progress: boolean) => {
               {{ act.issue?.subject }}
             </router-link>
             <div class="ml-4 pl-3 fst-italic">
-              <VueMarkdownIt
+              <div
                 v-if="act.sort === '1' && !act.status_log"
-                :source="cutString(act.issue?.description, 113)"
+                v-html="markdownRender(cutString(act.issue?.description, 113))"
                 class="form-text pl-4"
               />
             </div>
@@ -82,9 +82,9 @@ const getIcon = (sort: string, progress: boolean) => {
             </router-link>
 
             <div class="ml-4 pl-3 fst-italic">
-              <VueMarkdownIt
+              <div
                 v-if="act.sort === '2'"
-                :source="cutString(act.comment?.content, 113)"
+                v-html="markdownRender(cutString(act.comment?.content, 113))"
                 class="form-text pl-4"
               />
             </div>
