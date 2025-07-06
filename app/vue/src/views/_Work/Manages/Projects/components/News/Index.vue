@@ -59,6 +59,7 @@ const pageSelect = (p: number) => {
 
 const dataSetup = async () => {
   if (route.params.newsId) await infStore.fetchNews(Number(route.params.newsId))
+  else await infStore.removeNews()
   if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
 }
 
@@ -74,6 +75,7 @@ watch(
   () => route.params.newsId,
   nVal => {
     if (nVal) infStore.fetchNews(Number(nVal))
+    else infStore.removeNews()
   },
 )
 
