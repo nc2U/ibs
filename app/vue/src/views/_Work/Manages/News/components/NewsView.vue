@@ -6,7 +6,10 @@ import { useInform } from '@/store/pinia/work_inform.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import CommentList from './CommentList.vue'
 
-const props = defineProps({ news: { type: Object as PropType<News>, required: true } })
+const props = defineProps({
+  news: { type: Object as PropType<News>, required: true },
+  viewForm: { type: Boolean, default: false },
+})
 
 const infStore = useInform()
 
@@ -19,32 +22,6 @@ const deleteFile = (pk: number) => {
 
 <template>
   <template v-if="news">
-    <router-link :to="{ name: '(공지)' }">공지</router-link>
-    »
-
-    <CRow>
-      <CCol class="py-2">
-        <h5>{{ news.title }}</h5>
-      </CCol>
-
-      <CCol class="text-right">
-        <span class="mr-2 form-text">
-          <v-icon icon="mdi-star" color="amber" size="15" />
-          <router-link to="" class="ml-1">관심끄기</router-link>
-        </span>
-
-        <span class="mr-2 form-text">
-          <v-icon icon="mdi-pencil" color="amber" size="15" />
-          <router-link to="" class="ml-1">편집</router-link>
-        </span>
-
-        <span class="mr-2 form-text">
-          <v-icon icon="mdi-trash-can-outline" color="grey" size="15" />
-          <router-link to="" class="ml-1">삭제</router-link>
-        </span>
-      </CCol>
-    </CRow>
-
     <CRow class="mb-3">
       <CCol class="text-50 fst-italic">
         {{ news.summary || '요약 내용이 없습니다.' }}

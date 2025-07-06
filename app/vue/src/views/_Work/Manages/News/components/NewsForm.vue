@@ -1,11 +1,13 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { btnLight, colorLight } from '@/utils/cssMixins.ts'
+import type { News } from '@/store/types/work_inform.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
 
+defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
 const emit = defineEmits(['on-submit', 'file-upload', 'close-form'])
 
 const attach = ref(true)
@@ -35,23 +37,23 @@ const onSubmit = (event: Event) => {
 </script>
 
 <template>
-  <CRow class="py-2">
-    <CCol>
-      <h5>새 {{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}</h5>
-    </CCol>
+  <!--  <CRow class="py-2">-->
+  <!--    <CCol>-->
+  <!--      <h5>새 {{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}</h5>-->
+  <!--    </CCol>-->
 
-    <CCol class="text-right">
-      <span class="mr-2 form-text">
-        <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link to="" class="ml-1">새 공지</router-link>
-      </span>
+  <!--    <CCol class="text-right">-->
+  <!--      <span class="mr-2 form-text">-->
+  <!--        <v-icon icon="mdi-plus-circle" color="success" size="15" />-->
+  <!--        <router-link to="" class="ml-1">새 공지</router-link>-->
+  <!--      </span>-->
 
-      <span v-if="$route.params.projId" class="mr-2 form-text">
-        <v-icon icon="mdi-star" color="secondary" size="15" />
-        <router-link to="" class="ml-1" @click="">지켜보기</router-link>
-      </span>
-    </CCol>
-  </CRow>
+  <!--      <span v-if="$route.params.projId" class="mr-2 form-text">-->
+  <!--        <v-icon icon="mdi-star" color="secondary" size="15" />-->
+  <!--        <router-link to="" class="ml-1" @click="">지켜보기</router-link>-->
+  <!--      </span>-->
+  <!--    </CCol>-->
+  <!--  </CRow>-->
 
   <CForm
     class="needs-validation mb-4"

@@ -88,12 +88,16 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
+      <span v-if="route.name !== '(공지)'">
+        <router-link :to="{ name: '(공지)' }">공지</router-link>
+        »
+      </span>
       <CRow class="py-2">
         <CCol>
           <h5>{{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}</h5>
         </CCol>
 
-        <CCol class="text-right">
+        <CCol v-if="route.name === '(공지)'" class="text-right">
           <span class="mr-2 form-text">
             <v-icon icon="mdi-plus-circle" color="success" size="15" />
             <router-link to="" class="ml-1" @click="viewForm = true">새 공지</router-link>
@@ -104,10 +108,28 @@ onBeforeMount(async () => {
             <router-link to="" class="ml-1" @click="">지켜보기</router-link>
           </span>
         </CCol>
+
+        <CCol v-else class="text-right">
+          <span class="mr-2 form-text">
+            <v-icon icon="mdi-star" color="amber" size="15" />
+            <router-link to="" class="ml-1">관심끄기</router-link>
+          </span>
+
+          <span class="mr-2 form-text">
+            <v-icon icon="mdi-pencil" color="amber" size="15" />
+            <router-link to="" class="ml-1" @click="viewForm = true">편집</router-link>
+          </span>
+
+          <span class="mr-2 form-text">
+            <v-icon icon="mdi-trash-can-outline" color="grey" size="15" />
+            <router-link to="" class="ml-1">삭제</router-link>
+          </span>
+        </CCol>
       </CRow>
 
       <NewsForm
         v-if="viewForm"
+        :news="news"
         @on-submit="onSubmit"
         @file-upload="fileUpload"
         @close-form="viewForm = false"
@@ -121,7 +143,11 @@ onBeforeMount(async () => {
         @page-select="pageSelect"
       />
 
-      <NewsView v-else-if="route.name === '(공지) - 보기' && !!news" :news="news as News" />
+      <NewsView
+        v-else-if="route.name === '(공지) - 보기' && !!news"
+        :news="news as News"
+        :view-form="viewForm"
+      />
     </template>
 
     <template v-slot:aside></template>
