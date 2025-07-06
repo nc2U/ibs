@@ -7,6 +7,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
+import { CForm } from '@coreui/vue'
 
 const props = defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
 const emit = defineEmits(['on-submit', 'file-upload', 'close-form'])
@@ -45,6 +46,7 @@ onBeforeMount(() => {
     form.value.title = props.news?.title as string
     form.value.summary = props.news?.summary as string
     form.value.content = props.news?.content as string
+    form.value.files = props.news.files
   }
 })
 </script>
@@ -106,7 +108,7 @@ onBeforeMount(() => {
         <CRow>
           <CFormLabel for="title" class="col-md-2 col-form-label text-right">파일</CFormLabel>
           <CCol md="10" lg="8" xl="6">
-            <FileModify v-if="form.files.length" />
+            <FileModify v-if="form.files.length" :files="form.files" />
 
             <FileUpload @file-upload="emit('file-upload', $event)" />
           </CCol>
