@@ -2,7 +2,7 @@
 import { type PropType } from 'vue'
 import type { Docs } from '@/store/types/docs'
 import { cutString, timeFormat } from '@/utils/baseMixins'
-import sanitizeHtml from 'sanitize-html'
+import DOMPurify from 'dompurify'
 
 defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
 </script>
@@ -19,7 +19,7 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
   <v-divider />
   <CRow class="mb-2">
     <CCol class="text-body">
-      <div v-html="sanitizeHtml(cutString(docs.content, 80) || '-기재 사항 없음-')" />
+      <div v-html="DOMPurify.sanitize(cutString(docs.content, 80) || '-기재 사항 없음-')" />
     </CCol>
   </CRow>
 </template>

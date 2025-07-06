@@ -1,15 +1,15 @@
 <script lang="ts" setup>
 import type { ComputedRef, PropType } from 'vue'
 import { ref, computed, watch, inject, onBeforeMount, onMounted } from 'vue'
-import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { btnLight } from '@/utils/cssMixins.ts'
-import { useBoard } from '@/store/pinia/board'
+import type { User } from '@/store/types/accounts'
 import { type Post } from '@/store/types/board'
 import type { Company } from '@/store/types/settings'
+import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+import { type PostFilter, useBoard } from '@/store/pinia/board'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import { toPrint, toPostLike, toPostBlame, postManageItems, toPostManage } from '@/utils/postMixins'
-import sanitizeHtml from 'sanitize-html'
-import type { User } from '@/store/types/accounts'
+import DOMPurify from 'dompurify'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import BoardListModal from '@/components/Posts/components/BoardListModal.vue'
@@ -21,7 +21,7 @@ const props = defineProps({
   heatedPage: { type: Array as PropType<number[]>, default: () => [] },
   reOrder: { type: Boolean, default: false },
   category: { type: Number, default: undefined },
-  post: { type: Object as PropType<Post>, default: null },
+  post: { type: Object as PropType<Post | null>, default: null },
   viewRoute: { type: String, required: true },
   currPage: { type: Number, required: true },
   writeAuth: { type: Boolean, default: true },
@@ -40,7 +40,7 @@ const refTrashModal = ref()
 
 const userInfo = inject<ComputedRef<User>>('userInfo')
 const editAuth = computed(
-  () => userInfo?.value?.is_superuser || props.post.user?.pk === userInfo?.value?.pk,
+  () => userInfo?.value?.is_superuser || props.post?.user?.pk === userInfo?.value?.pk,
 )
 
 const prev = ref<number | null>()
@@ -48,7 +48,7 @@ const next = ref<number | null>()
 
 const company = inject<ComputedRef<Company | null>>('company')
 
-const sortName = computed(() => props.post?.proj_name || '본사 문서')
+const sortName = computed(() => props.post?.board_name || '본사 문서')
 const postId = computed(() => Number(route.params.postId))
 
 const boardStore = useBoard()
@@ -60,13 +60,13 @@ const getPostNav = computed(() => boardStore.getPostNav)
 const getPrev = (pk: number) => getPostNav.value.filter(p => p.pk === pk).map(p => p.prev_pk)[0]
 const getNext = (pk: number) => getPostNav.value.filter(p => p.pk === pk).map(p => p.next_pk)[0]
 
-const toLike = () => toPostLike(props.post.pk as number)
+const toLike = () => toPostLike(props.post?.pk as number)
 
 const blameConfirm = () => refBlameModal.value.callModal()
 
 const blameAction = () => {
   refBlameModal.value.close()
-  toPostBlame(props.post.pk as number)
+  toPostBlame(props.post?.pk as number)
 }
 
 const linkHitUp = async (pk: number) => emit('link-hit', pk)
@@ -94,8 +94,8 @@ const shareKakaoTalk = () => {
       },
     },
     social: {
-      likeCount: props.post.like,
-      commentCount: props.post.comments?.length ?? 0,
+      // likeCount: props.post.like,
+      commentCount: props.post?.comments?.length ?? 0,
       // sharedCount: 45,
     },
     buttons: [
@@ -118,12 +118,13 @@ const shareKakaoTalk = () => {
 }
 
 const toScrape = () => {
-  if (props.post.my_scrape) refAlertModal.value.callModal('', '이미 이 포스트를 스크랩 하였습니다.')
-  else emit('post-scrape', props.post.pk)
+  if (props.post?.my_scrape)
+    refAlertModal.value.callModal('', '이미 이 포스트를 스크랩 하였습니다.')
+  else emit('post-scrape', props.post?.pk)
 }
 
 const toManage = (fn: number, el?: { nBrd?: number; nProj?: number; nCate?: number }) => {
-  const post = props.post.pk
+  const post = props.post?.pk
   let state: boolean = false
   if (fn < 4) {
     if (fn === 1) {
@@ -137,32 +138,32 @@ const toManage = (fn: number, el?: { nBrd?: number; nProj?: number; nCate?: numb
     }
   } else {
     if (fn === 4)
-      state = props.post.is_secret // is_secret
-    else if (fn === 5) state = props.post.is_hide_comment
+      state = props.post?.is_secret ?? false // is_secret
+    else if (fn === 5) state = props.post?.is_hide_comment ?? false
     else if (fn === 6)
-      state = props.post.is_notice // is_notice
+      state = props.post?.is_notice ?? false // is_notice
     else if (fn === 7)
-      state = props.post.is_blind // is_blind
+      state = props.post?.is_blind ?? false // is_blind
     else if (fn === 8)
       refTrashModal.value.callModal() // deleted confirm
     else if (fn === 88) {
       // soft delete
-      state = !!props.post.deleted // is_deleted
+      state = !!props.post?.deleted // is_deleted
       refTrashModal.value.close()
       router.replace({ name: props.viewRoute })
     }
     const payload = {
       board: el?.nBrd,
-      board_name: props.post.board_name,
+      board_name: props.post?.board_name,
       project: el?.nProj,
       category: el?.nCate,
       content: props.post?.content,
       post: post as number,
       state,
-      filter: props.postFilter,
+      filter: props.postFilter as PostFilter,
       manager: userInfo?.value.username as string,
     }
-    toPostManage(fn, payload)
+    toPostManage(fn, payload as any)
   }
 }
 
@@ -176,7 +177,7 @@ const getFileName = (file: string) => {
 }
 
 const toEdit = () => {
-  if ((props.post.comments?.length ?? 0) >= 5)
+  if ((props.post?.comments?.length ?? 0) >= 5)
     refAlertModal.value.callModal('', '5개 이상의 댓글이 달린 게시물은 수정할 수 없습니다.')
   else
     router.push({
@@ -189,7 +190,7 @@ const deleteConfirm = () => refDelModal.value.callModal()
 
 const toDelete = () => {
   if (userInfo?.value.is_superuser) toManage(88)
-  else if ((props.post.comments?.length ?? 0) < 5) toManage(88)
+  else if ((props.post?.comments?.length ?? 0) < 5) toManage(88)
   else refAlertModal.value.callModal('', '5개 이상의 댓글이 달린 게시물은 삭제할 수 없습니다.')
   refDelModal.value.close()
 }
@@ -356,7 +357,7 @@ onMounted(() => {
 
       <CRow class="my-5 p-3" id="print-area">
         <CCol>
-          <div v-html="sanitizeHtml(post.content)" />
+          <div v-html="DOMPurify.sanitize(post.content)" />
         </CCol>
       </CRow>
     </div>
@@ -518,11 +519,11 @@ onMounted(() => {
   <ConfirmModal ref="refBlameModal">
     <template #header>알림</template>
     <template #default>
-      이 게시글을 신고 {{ post.my_blame ? '를 취소' : '' }} 하시겠습니까?<br /><br />
+      이 게시글을 신고 {{ post?.my_blame ? '를 취소' : '' }} 하시겠습니까?<br /><br />
     </template>
     <template #footer>
-      <v-btn :color="post.my_blame ? 'secondary' : 'warning'" size="small" @click="blameAction">
-        {{ post.my_blame ? '취소' : '신고' }}
+      <v-btn :color="post?.my_blame ? 'secondary' : 'warning'" size="small" @click="blameAction">
+        {{ post?.my_blame ? '취소' : '신고' }}
       </v-btn>
     </template>
   </ConfirmModal>
