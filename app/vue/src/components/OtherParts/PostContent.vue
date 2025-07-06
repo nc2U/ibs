@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import sanitizeHtml from 'sanitize-html'
+import DOMPurify from 'dompurify'
 
 defineProps({ content: { type: String, required: true } })
 </script>
@@ -7,7 +7,7 @@ defineProps({ content: { type: String, required: true } })
 <template>
   <CRow class="p-3 mb-5">
     <CCol>
-      <div v-html="sanitizeHtml(content)" />
+      <div v-html="DOMPurify().sanitize(content)" />
     </CCol>
   </CRow>
 </template>

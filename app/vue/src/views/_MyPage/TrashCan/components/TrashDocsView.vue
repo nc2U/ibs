@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { timeFormat } from '@/utils/baseMixins'
 import type { TrashDocs } from '@/store/types/docs'
-import sanitizeHtml from 'sanitize-html'
+import DOMPurify from 'dompurify'
 
 const props = defineProps({
   category: { type: Number, default: undefined },
@@ -15,8 +15,8 @@ const props = defineProps({
 
 const emit = defineEmits(['restore-docs', 'delete-docs'])
 
-const restoreDocs = () => emit('restore-docs', props.docs.pk)
-const deleteDocs = () => emit('delete-docs', props.docs.pk)
+const restoreDocs = () => emit('restore-docs', props.docs?.pk)
+const deleteDocs = () => emit('delete-docs', props.docs?.pk)
 
 const router = useRouter()
 </script>
@@ -55,7 +55,7 @@ const router = useRouter()
 
     <CRow class="my-5 p-3" id="print-area">
       <CCol>
-        <div v-html="sanitizeHtml(docs.content)" />
+        <div v-html="DOMPurify.sanitize(docs.content)" />
       </CCol>
     </CRow>
 

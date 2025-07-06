@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
+import type { User } from '@/store/types/accounts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import type { User } from '@/store/types/accounts'
-import type { IssueProject } from '@/store/types/work_project.ts'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
+import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -165,7 +165,7 @@ const delSubmit = () => {
       </CRow>
       <v-divider class="mt-0 mb-2" />
       <div class="history pl-0 text-body">
-        <VueMarkdownIt v-if="!editMode" :source="log.comment?.content + '\n' || '\n'" />
+        <div v-if="!editMode" v-html="markdownRender(log.comment?.content + '\n' || '\n')" />
         <span v-else>
           <MdEditor v-model="content" style="height: 150px" class="mb-1" placeholder="Comment.." />
           <CFormCheck id="private_comment" label="비공개 댓글" />

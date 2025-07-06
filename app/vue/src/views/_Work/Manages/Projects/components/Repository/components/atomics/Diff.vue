@@ -6,7 +6,7 @@ import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString } from '@/utils/baseMixins.ts'
 import { html } from 'diff2html'
 import Loading from '@/components/Loading/Index.vue'
-import sanitizeHtml from 'sanitize-html'
+import DOMPurify from 'dompurify'
 
 const props = defineProps({
   gitDiff: { type: Object as PropType<DiffApi>, required: true },
@@ -75,7 +75,11 @@ watch(
 )
 
 const hasContent = computed(() => {
-  const text = sanitizeHtml(diffHtml.value, { allowedTags: [], allowedAttributes: {} }).trim()
+  const text = DOMPurify.sanitize(diffHtml.value, {
+    ALLOWED_TAGS: [], // 태그 모두 제거
+    ALLOWED_ATTR: [], // 속성 모두 제거
+    RETURN_TRUSTED_TYPE: false, // 일반 문자열 반환
+  }).trim()
   return text.length > 0
 })
 

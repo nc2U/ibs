@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { type ComputedRef, inject, type PropType } from 'vue'
-import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import type { User } from '@/store/types/accounts.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
+import { markdownRender } from '@/utils/helper.ts'
 
 defineProps({
   project: {
@@ -43,7 +43,7 @@ const isOwnProject = (project: IssueProject) =>
           size="15"
           class="ml-1"
         />
-        <VueMarkdownIt :source="project.description" />
+        <span v-html="markdownRender(project.description)" />
       </span>
 
       <!-- c1 -->
@@ -63,7 +63,7 @@ const isOwnProject = (project: IssueProject) =>
               size="15"
               class="ml-1"
             />
-            <VueMarkdownIt :source="c1.description" />
+            <span v-html="markdownRender(c1.description)" />
           </span>
 
           <!-- c2 -->
@@ -83,7 +83,7 @@ const isOwnProject = (project: IssueProject) =>
                   size="15"
                   class="ml-1"
                 />
-                <VueMarkdownIt :source="c2.description" />
+                <span v-html="markdownRender(c2.description)" />
               </span>
 
               <!-- c3 -->
@@ -103,7 +103,7 @@ const isOwnProject = (project: IssueProject) =>
                       size="15"
                       class="ml-1"
                     />
-                    <VueMarkdownIt :source="c3.description" />
+                    <span v-html="markdownRender(c3.description)" />
                   </span>
 
                   <!-- c4 -->
@@ -123,7 +123,7 @@ const isOwnProject = (project: IssueProject) =>
                           size="15"
                           class="ml-1"
                         />
-                        <VueMarkdownIt :source="c4.description" />
+                        <span v-html="markdownRender(c4.description)" />
                       </span>
 
                       <!-- c5 -->
@@ -143,7 +143,7 @@ const isOwnProject = (project: IssueProject) =>
                               size="15"
                               class="ml-1"
                             />
-                            <VueMarkdownIt :source="c5.description" />
+                            <span v-html="markdownRender(c5.description)" />
                           </span>
                         </blockquote>
                       </div>

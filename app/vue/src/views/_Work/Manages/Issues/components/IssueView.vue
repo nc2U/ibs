@@ -14,7 +14,7 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
-import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
+import { markdownRender } from '@/utils/helper.ts'
 import IssueControl from './IssueControl.vue'
 import IssueHistory from './IssueHistory.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
@@ -354,10 +354,8 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <CRow>
-        <CCol class="pl-4">
-          <VueMarkdownIt :source="issue?.description as string" />
-        </CCol>
+      <CRow class="pl-4">
+        <CCol v-html="markdownRender(issue.description)" />
       </CRow>
 
       <v-divider v-if="issueProject.status !== '9' || issue.files.length" />

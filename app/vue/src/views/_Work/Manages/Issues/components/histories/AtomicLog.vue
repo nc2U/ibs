@@ -3,7 +3,7 @@ import { type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
-import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
+import { markdownRender } from '@/utils/helper.ts'
 
 defineProps({ log: { type: Object as PropType<IssueLogEntry>, required: true } })
 
@@ -45,12 +45,12 @@ const route = useRoute()
       <div class="history pl-4">
         <ul class="ml-2">
           <li v-for="(src, i) in getHistory(log.details)" :key="i">
-            <VueMarkdownIt :source="src" />
+            <div v-html="markdownRender(src)" />
             <span v-if="log.diff && src.includes('**설명**')">
               <router-link to="">
                 (변경 내용)
                 <v-tooltip activator="parent" location="start">
-                  <VueMarkdownIt :source="log.diff" />
+                  <span v-html="markdownRender(log.diff)" />
                 </v-tooltip>
               </router-link>
             </span>
