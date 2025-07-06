@@ -5,50 +5,44 @@ export interface RFile {
   pk: null | number
   file: string
   description?: string
-  // newFile?: Blob
   del?: boolean
   edit?: boolean
 }
 
-const props = defineProps({ file: { type: Object as PropType<RFile>, required: true } })
-
-const form = ref({
-  file: null as null | RFile,
+const props = defineProps({
+  file: { type: Object as PropType<RFile>, required: true },
+  fileName: { type: String, required: true },
 })
 
-const devideUri = (uri: string) => {
-  const devidedUri = decodeURI(uri).split('media/')
-  return [devidedUri[0] + 'media/', devidedUri[1]]
-}
+const emit = defineEmits(['file-change'])
 
-const editFile = () => {
-  ;(form.value.file as any).del = false
-  ;(form.value.file as any).edit = !(form.value.file as any).edit
+const form = ref<{ file: RFile | null }>({
+  file: null,
+})
+
+const handleEditToggle = () => {
+  const f = form.value.file
+  if ((f as RFile)?.edit);
+  ;(f as RFile).del = false
 }
 
 const fileChange = (event: Event, pk: number) => {
-  // enableStore(event)
   const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    // emit('file-change', { pk, file })
+  if (el.files?.length) {
+    emit('file-change', { pk, file: el.files[0] })
   }
 }
 
 onBeforeMount(() => {
-  if (props.file) form.value.file = props.file
+  if (props.file) form.value.file = { ...props.file }
 })
 </script>
 
 <template>
   <small>
     현재 :
-    <s v-if="(form.file as RFile)?.del || (form.file as RFile)?.edit">
-      {{ devideUri(file.file ?? ' ')[1] }}
-    </s>
-    <a v-else :href="file.file" target="_blank">
-      {{ devideUri(file.file ?? ' ')[1] }}
-    </a>
+    <s v-if="(form.file as RFile)?.del || (form.file as RFile)?.edit">{{ fileName }}</s>
+    <a v-else :href="file.file" target="_blank">{{ fileName }}</a>
 
     <span>
       <CFormCheck
@@ -59,7 +53,13 @@ onBeforeMount(() => {
         :disabled="(form.file as RFile).edit"
         class="ml-4"
       />
-      <CFormCheck :id="`edit-file-${file.pk}`" label="변경" inline @click="editFile" />
+      <CFormCheck
+        v-model="(form.file as RFile).edit"
+        :id="`edit-file-${file.pk}`"
+        label="변경"
+        inline
+        @click="handleEditToggle"
+      />
     </span>
     <CRow v-if="(form.file as RFile).edit">
       <CCol>

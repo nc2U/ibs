@@ -14,11 +14,15 @@ const devideUri = (uri: string) => {
 </script>
 
 <template>
-  <CRow v-if="files && files.length">
+  <CRow v-if="files && files.length" class="px-2">
     <CAlert :color="AlertSecondary">
       <small>{{ devideUri((files as RFile[])[0]?.file ?? ' ')[0] }}</small>
       <CCol v-for="(file, i) in files as RFile[]" :key="file.pk" xs="12" color="primary">
-        <RegFile :file="file" />
+        <RegFile
+          :file="file"
+          :file-name="devideUri(file.file)[1]"
+          @file-change="emit('file-change', $event)"
+        />
       </CCol>
     </CAlert>
   </CRow>
