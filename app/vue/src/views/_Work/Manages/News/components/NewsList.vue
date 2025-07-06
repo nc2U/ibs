@@ -33,7 +33,7 @@ const pageSelect = (page: number) => {
         <router-link to="" class="ml-1" @click="emit('view-form')">새 공지</router-link>
       </span>
 
-      <span class="mr-2 form-text">
+      <span v-if="$route.params.projId" class="mr-2 form-text">
         <v-icon icon="mdi-star" color="secondary" size="15" />
         <router-link to="" class="ml-1" @click="">지켜보기</router-link>
       </span>
