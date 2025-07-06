@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import type { News } from '@/store/types/work_inform.ts'
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
-import { CRow } from '@coreui/vue'
 
 defineProps({ news: { type: Object as PropType<News>, required: true } })
 
