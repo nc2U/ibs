@@ -9,6 +9,8 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
+import type { User } from '@/store/types/accounts.ts'
+import type { Project } from '@/store/types/project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link, PatchDocs, SuitCase } from '@/store/types/docs'
 import Loading from '@/components/Loading/Index.vue'
@@ -61,9 +63,10 @@ const pageSelect = (page: number) => {
 }
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
-const projName = computed(() => projStore.project?.name)
-const company = computed(() => projStore.project?.company)
+const projObj = computed(() => projStore.project as Project | null)
+const project = computed(() => projObj.value?.pk)
+const projName = computed(() => projObj.value?.name)
+const company = computed(() => projObj.value?.company)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeProDocs)
@@ -109,14 +112,14 @@ const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(
 const fileUpload = (file: File) => newFiles.value.push(file)
 
 const docsScrape = (docs: number) => {
-  const user = accStore.userInfo?.pk as number
+  const user = (accStore.userInfo as User)?.pk as number
   createDocScrape({ docs, user }) // 스크랩 추가
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
   if (project.value) {
     const { pk, ...getData } = payload
-    getData.issue_project = projStore.project?.issue_project as number
+    getData.issue_project = projObj.value?.issue_project as number
     getData.newFiles = newFiles.value
     getData.cngFiles = cngFiles.value
 
@@ -152,7 +155,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
 }
 
 const createLawSuit = (payload: SuitCase) => {
-  if (!payload.issue_project) payload.issue_project = projStore.project?.issue_project as number
+  if (!payload.issue_project) payload.issue_project = projObj.value?.issue_project as number
   createSuitCase(payload)
 }
 
@@ -160,7 +163,7 @@ const docsHit = async (pk: number) => {
   if (!heatedPage.value.includes(pk)) {
     heatedPage.value.push(pk)
     await fetchDocs(pk)
-    const hit = (docs.value?.hit ?? 0) + 1
+    const hit = ((docs.value as Docs)?.hit ?? 0) + 1
     await patchDocs({ pk, hit, filter: docsFilter.value })
   }
 }
