@@ -10,7 +10,7 @@ const pageViewAuth = computed(
 
 const proCash = {
   path: 'project-cash',
-  name: '현장 자금 관리',
+  name: 'PR 자금 관리',
   redirect: '/project-cash/status',
   component: {
     render() {
@@ -20,21 +20,21 @@ const proCash = {
   children: [
     {
       path: 'status',
-      name: '현장 자금 현황',
+      name: 'PR 자금 현황',
       component: () =>
         pageViewAuth.value
           ? import('@/views/proCash/Status/Index.vue')
           : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '현장 자금 현황', auth: true },
+      meta: { title: 'PR 자금 현황', auth: true },
     },
     {
       path: 'index',
-      name: '현장 출납 내역',
+      name: 'PR 출납 내역',
       component: () =>
         pageViewAuth.value
           ? import('@/views/proCash/Manage/Index.vue')
           : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '현장 출납 내역', auth: true },
+      meta: { title: 'PR 출납 내역', auth: true },
     },
     {
       path: 'imprest',

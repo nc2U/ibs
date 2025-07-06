@@ -21,8 +21,8 @@ const viewRoute = computed(() => {
     else if (props.scrape?.docs?.doc_type === 2) return '본사 소송 문서'
   } else if (props.scrape.docs?.proj_sort === '2') {
     // 부동산개발 프로젝트
-    if (props.scrape.docs?.doc_type === 1) return '현장 일반 문서'
-    else if (props.scrape.docs?.doc_type === 2) return '현장 소송 문서'
+    if (props.scrape.docs?.doc_type === 1) return 'PR 일반 문서'
+    else if (props.scrape.docs?.doc_type === 2) return 'PR 소송 문서'
   }
 })
 

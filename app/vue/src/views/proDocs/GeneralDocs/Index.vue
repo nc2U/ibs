@@ -23,7 +23,7 @@ import DocsForm from '@/components/Documents/DocsForm.vue'
 
 const fController = ref()
 const typeNumber = ref(1)
-const mainViewName = ref('현장 일반 문서')
+const mainViewName = ref('PR 일반 문서')
 const docsFilter = ref<DocsFilter>({
   project: '',
   doc_type: typeNumber.value,

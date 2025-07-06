@@ -147,7 +147,7 @@ const contPriceSum = computed(() => contStore.contPriceSum)
         <CTableDataCell colspan="12" style="height: 200px; text-align: center">
           [
           <router-link :to="{ name: '납부 회차 등록' }"> 납부 회차 등록</router-link>
-          ] >> [ 현장 등록 관리 ] > [ 분양 계약 조건 ]에서 데이터를 등록하세요.
+          ] >> [ PR 등록 관리 ] > [ 분양 계약 조건 ]에서 데이터를 등록하세요.
         </CTableDataCell>
       </CTableRow>
     </CTableBody>
