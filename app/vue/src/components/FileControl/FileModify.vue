@@ -2,10 +2,11 @@
 import { AlertSecondary } from '@/utils/cssMixins.ts'
 import type { RFile } from './components/RegFile.vue'
 import RegFile from './components/RegFile.vue'
+import { CRow } from '@coreui/vue'
 
 const props = defineProps({ files: { type: Array, default: () => [] } })
 
-const emit = defineEmits(['file-change'])
+const emit = defineEmits(['file-delete', 'file-change'])
 
 const devideUri = (uri: string) => {
   const devidedUri = decodeURI(uri).split('media/')
@@ -21,6 +22,7 @@ const devideUri = (uri: string) => {
         <RegFile
           :file="file"
           :file-name="devideUri(file.file)[1]"
+          @file-delete="emit('file-delete', $event)"
           @file-change="emit('file-change', $event)"
         />
       </CCol>

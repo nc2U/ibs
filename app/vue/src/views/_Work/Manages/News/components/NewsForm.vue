@@ -1,15 +1,14 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref } from 'vue'
 import { btnLight, colorLight } from '@/utils/cssMixins.ts'
-import type { News } from '@/store/types/work_inform.ts'
-import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
+import type { News } from '@/store/types/work_inform.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
 
 const props = defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
-const emit = defineEmits(['on-submit', 'file-upload', 'close-form'])
+const emit = defineEmits(['on-submit', 'close-form'])
 
 const attach = ref(true)
 const validated = ref(false)
@@ -20,10 +19,19 @@ const form = ref({
   summary: '',
   content: '',
   files: [] as any,
+  newFiles: [] as File[],
+  cngFiles: [] as { pk: number; file: File }[],
 })
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
+
+const fileUpload = (file: File) => form.value.newFiles.push(file)
+const fileChange = (payload: { pk: number; file: File }) => form.value.cngFiles.push(payload)
+const fileDelete = (payload: { pk: number; del: boolean }): void => {
+  const file = form.value.files.find((f: any) => f.pk === payload.pk)
+  if (file) file.del = payload.del
+}
 
 const onSubmit = (event: Event) => {
   const e = event.currentTarget as HTMLSelectElement
@@ -32,12 +40,9 @@ const onSubmit = (event: Event) => {
     event.stopPropagation()
 
     validated.value = true
-  } else {
-    emit('on-submit', { ...form.value })
-  }
+  } else emit('on-submit', { ...form.value })
 }
 
-const route = useRoute()
 onBeforeMount(() => {
   if (props.news) {
     form.value.pk = props.news.pk
@@ -51,6 +56,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
+  {{ form.files }}
   <CForm
     class="needs-validation mb-4"
     enctype="multipart/form-data"
@@ -107,9 +113,14 @@ onBeforeMount(() => {
         <CRow>
           <CFormLabel for="title" class="col-md-2 col-form-label text-right">파일</CFormLabel>
           <CCol md="10" lg="8" xl="6">
-            <FileModify v-if="form.files.length" :files="form.files" />
+            <FileModify
+              v-if="form.files.length"
+              :files="form.files"
+              @file-delete="fileDelete"
+              @file-change="fileChange"
+            />
 
-            <FileUpload @file-upload="emit('file-upload', $event)" />
+            <FileUpload @file-upload="fileUpload" />
           </CCol>
         </CRow>
       </CCardBody>

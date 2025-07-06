@@ -27,28 +27,29 @@ const newsList = computed(() => infStore.newsList as News[])
 const createNews = (payload: any, proj?: string) => infStore.createNews(payload, proj)
 const updateNews = (pk: number, payload: any) => infStore.updateNews(pk, payload)
 
-const newFiles = ref<File[]>([])
-const fileUpload = (file: File) => newFiles.value.push(file)
-
 const onSubmit = (payload: any) => {
   payload.project = route.params.projId
   const { pk, ...rest } = payload
   const getData: Record<string, any> = { ...rest }
-  getData.newFiles = newFiles.value
 
   const form = new FormData()
 
   for (const key in getData) {
     if (key === 'newFiles')
       (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
-    else {
+    else if (key === 'cngFiles') {
+      getData[key]?.forEach(val => {
+        form.append('cngPks', val.pk as any)
+        form.append('cngFiles', val.file as Blob)
+      })
+    } else {
       const formValue = getData[key] === null ? '' : getData[key]
       form.append(key, formValue as string)
     }
   }
   if (pk) updateNews(pk, form)
   else createNews(form, payload.project)
-  
+
   viewForm.value = false
 }
 
@@ -133,13 +134,7 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <NewsForm
-        v-if="viewForm"
-        :news="news"
-        @on-submit="onSubmit"
-        @file-upload="fileUpload"
-        @close-form="viewForm = false"
-      />
+      <NewsForm v-if="viewForm" :news="news" @on-submit="onSubmit" @close-form="viewForm = false" />
 
       <NewsList
         v-if="route.name === '(공지)'"

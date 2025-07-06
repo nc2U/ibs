@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, ref } from 'vue'
+import { nextTick, onBeforeMount, type PropType, ref } from 'vue'
 
 export interface RFile {
   pk: null | number
@@ -14,16 +14,23 @@ const props = defineProps({
   fileName: { type: String, required: true },
 })
 
-const emit = defineEmits(['file-change'])
+const emit = defineEmits(['file-delete', 'file-change'])
 
 const form = ref<{ file: RFile | null }>({
   file: null,
 })
 
-const handleEditToggle = () => {
-  const f = form.value.file
-  if ((f as RFile)?.edit);
-  ;(f as RFile).del = false
+const handleEdit = (e: Event) => {
+  const edit = (e.target as any).value
+  if (edit) {
+    ;(form.value.file as RFile).del = false
+  }
+}
+
+const handleDelete = () => {
+  if (form.value.file) (form.value.file as RFile).del = !(form.value.file as RFile).del
+  const del = (form.value.file as RFile).del
+  emit('file-delete', { pk: props.file?.pk, del })
 }
 
 const fileChange = (event: Event, pk: number) => {
@@ -50,6 +57,7 @@ onBeforeMount(() => {
         :id="`del-file-${file.pk}`"
         label="삭제"
         inline
+        @click="handleDelete"
         :disabled="(form.file as RFile).edit"
         class="ml-4"
       />
@@ -58,7 +66,7 @@ onBeforeMount(() => {
         :id="`edit-file-${file.pk}`"
         label="변경"
         inline
-        @click="handleEditToggle"
+        @click="handleEdit"
       />
     </span>
     <CRow v-if="(form.file as RFile).edit">
