@@ -1,4 +1,6 @@
 import { createToast, type ToastType, type Position, type TransitionType } from 'mosha-vue-toastify'
+import MarkdownIt from 'markdown-it'
+import DOMPurify from 'dompurify'
 
 export const message = (
   type: ToastType = 'success',
@@ -54,4 +56,11 @@ export const isValidate = (event: Event) => {
 
     return true
   } else return false
+}
+
+const md = new MarkdownIt('default', { html: true })
+
+export const markdownRender = (content: string) => {
+  const result = md.render(content)
+  return DOMPurify.sanitize(result)
 }

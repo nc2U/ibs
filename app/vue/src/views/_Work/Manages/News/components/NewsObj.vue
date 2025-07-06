@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
+import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import type { News } from '@/store/types/work_inform.ts'
-import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 
 defineProps({ news: { type: Object as PropType<News>, required: true } })
 
@@ -53,7 +53,7 @@ const isProj = computed(() => !!route.params.projId)
   </CRow>
 
   <CRow class="mb-0">
-    <VueMarkdownIt :source="news.content" />
+    <CCol v-html="markdownRender(news.content)" />
   </CRow>
 
   <v-divider class="mb-4" />
