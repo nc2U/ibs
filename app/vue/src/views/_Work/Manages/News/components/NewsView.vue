@@ -3,6 +3,7 @@ import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
+import { VueMarkdownIt } from '@f3ve/vue-markdown-it'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import CommentList from './CommentList.vue'
 
@@ -44,7 +45,7 @@ const deleteFile = (pk: number) => {
     <v-divider />
 
     <CRow class="my-5">
-      <CCol v-html="news.content" />
+      <VueMarkdownIt :source="news.content as string" />
     </CRow>
 
     <div v-if="news.files.length" class="mb-5">

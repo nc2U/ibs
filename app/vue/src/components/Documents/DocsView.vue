@@ -21,7 +21,7 @@ const props = defineProps({
   heatedPage: { type: Array as PropType<number[]>, default: () => [] },
   reOrder: { type: Boolean, default: false },
   category: { type: Number, default: undefined },
-  docs: { type: Object as PropType<Docs>, default: null },
+  docs: { type: Object as PropType<Docs | null>, default: null },
   viewRoute: { type: String, required: true },
   currPage: { type: Number, required: true },
   writeAuth: { type: Boolean, default: true },
@@ -39,7 +39,7 @@ const refTrashModal = ref()
 
 const userInfo = inject<ComputedRef<User>>('userInfo')
 const editAuth = computed(
-  () => userInfo?.value?.is_superuser || props.docs.user?.pk === userInfo?.value?.pk,
+  () => userInfo?.value?.is_superuser || props.docs?.user?.pk === userInfo?.value?.pk,
 )
 
 const prev = ref<number | null>()
@@ -83,7 +83,7 @@ const shareKakaoTalk = () => {
       },
     },
     social: {
-      likeCount: props.docs.like,
+      // likeCount: props.docs.like,
       // sharedCount: 45,
     },
     buttons: [
@@ -106,12 +106,13 @@ const shareKakaoTalk = () => {
 }
 
 const toScrape = () => {
-  if (props.docs.my_scrape) refAlertModal.value.callModal('', '이미 이 포스트를 스크랩 하였습니다.')
-  else emit('docs-scrape', props.docs.pk)
+  if (props.docs?.my_scrape)
+    refAlertModal.value.callModal('', '이미 이 포스트를 스크랩 하였습니다.')
+  else emit('docs-scrape', props.docs?.pk)
 }
 
 const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: number }) => {
-  const docs = props.docs.pk
+  const docs = props.docs?.pk
   let state: boolean = false
   if (fn < 4) {
     if (fn === 1) {
@@ -125,26 +126,26 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
     }
   } else {
     if (fn === 4)
-      state = props.docs.is_secret // is_secret
+      state = props.docs?.is_secret ?? false // is_secret
     else if (fn === 7)
-      state = props.docs.is_blind // is_blind
+      state = props.docs?.is_blind ?? false // is_blind
     else if (fn === 8)
       refTrashModal.value.callModal() // deleted confirm
     else if (fn === 88) {
       // soft delete
-      state = !!props.docs.deleted // is_deleted
+      state = !!props.docs?.deleted // is_deleted
       refTrashModal.value.close()
       router.replace({ name: props.viewRoute })
     }
     const payload = {
       doc_type: el?.nType,
-      type_name: props.docs.type_name,
+      type_name: props.docs?.type_name,
       issue_project: el?.nProj,
       category: el?.nCate,
       content: props.docs?.content ?? '',
       docs: docs as number,
       state,
-      filter: props.docsFilter,
+      filter: props.docsFilter as DocsFilter,
       manager: userInfo?.value.username as string,
     }
     toDocsManage(fn, payload)

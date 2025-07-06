@@ -32,7 +32,8 @@ const fileUpload = (file: File) => newFiles.value.push(file)
 
 const onSubmit = (payload: any) => {
   payload.project = route.params.projId
-  const getData: Record<string, any> = { ...payload }
+  const { pk, ...rest } = payload
+  const getData: Record<string, any> = { ...rest }
   getData.newFiles = newFiles.value
 
   const form = new FormData()
@@ -45,7 +46,9 @@ const onSubmit = (payload: any) => {
       form.append(key, formValue as string)
     }
   }
-  createNews(form, payload.project)
+  if (pk) updateNews(pk, form)
+  else createNews(form, payload.project)
+  
   viewForm.value = false
 }
 
@@ -59,6 +62,7 @@ const pageSelect = (p: number) => {
 
 const dataSetup = async () => {
   if (route.params.newsId) await infStore.fetchNews(Number(route.params.newsId))
+  else await infStore.removeNews()
   if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
 }
 
@@ -74,6 +78,8 @@ watch(
   () => route.params.newsId,
   nVal => {
     if (nVal) infStore.fetchNews(Number(nVal))
+    else infStore.removeNews()
+    viewForm.value = false
   },
 )
 

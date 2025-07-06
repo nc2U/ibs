@@ -12,6 +12,7 @@ export const useInform = defineStore('inform', () => {
 
   const newsPages = (itemPerPage: number) => Math.ceil(newsCount.value / itemPerPage)
 
+  const removeNews = () => (news.value = null)
   const fetchNews = (pk: number) =>
     api
       .get(`/news/${pk}/`)
@@ -107,6 +108,7 @@ export const useInform = defineStore('inform', () => {
     newsCount,
 
     newsPages,
+    removeNews,
     fetchNews,
     fetchNewsList,
     createNews,
