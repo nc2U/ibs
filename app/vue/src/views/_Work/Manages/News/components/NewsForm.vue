@@ -7,7 +7,6 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
-import { CForm } from '@coreui/vue'
 
 const props = defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
 const emit = defineEmits(['on-submit', 'file-upload', 'close-form'])
@@ -20,7 +19,7 @@ const form = ref({
   title: '',
   summary: '',
   content: '',
-  files: [],
+  files: [] as any,
 })
 
 const workStore = useWork()
