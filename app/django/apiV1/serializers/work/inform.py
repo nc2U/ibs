@@ -72,31 +72,31 @@ class NewsSerializer(serializers.ModelSerializer):
             request = self.context['request']
             user = request.user
 
-            old_files = self.initial_data.getlist('files')
-            cng_pks = self.initial_data.getlist('cngPks')
-            cng_files = self.initial_data.getlist('cngFiles')
-            cng_maps = dict(zip(cng_pks, cng_files))
-
-            for json_file in old_files:
-                file = json.loads(json_file)
-                pk = str(file.get('pk'))
-                file_obj = NewsFile.objects.get(pk=pk)
-
-                if file.get('del'):
-                    file_obj.delete()
-                    continue
-
-                new_file = cng_maps.get(pk)
-                if new_file:
-                    if default_storage.exists(file_obj.file.name):
-                        default_storage.delete(file_obj.file.name)
-                    file_obj.file = new_file
-                    file_obj.user = user
-                    file_obj.save()
-
             new_files = self.initial_data.getlist('newFiles')
             for file in new_files:
                 NewsFile.objects.create(news=instance, file=file, user=user)
+
+            # old_files = self.initial_data.getlist('files')
+            # cng_pks = self.initial_data.getlist('cngPks')
+            # cng_files = self.initial_data.getlist('cngFiles')
+            # cng_maps = dict(zip(cng_pks, cng_files))
+            #
+            # for json_file in old_files:
+            #     file = json.loads(json_file)
+            #     pk = str(file.get('pk'))
+            #     file_obj = NewsFile.objects.get(pk=pk)
+            #
+            #     if file.get('del'):
+            #         file_obj.delete()
+            #         continue
+            #
+            #     new_file = cng_maps.get(pk)
+            #     if new_file:
+            #         if default_storage.exists(file_obj.file.name):
+            #             default_storage.delete(file_obj.file.name)
+            #         file_obj.file = new_file
+            #         file_obj.user = user
+            #         file_obj.save()
 
             del_file = self.initial_data.get('del_file', None)
             if del_file:
