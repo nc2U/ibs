@@ -76,6 +76,7 @@ watch(
   nVal => {
     if (nVal) infStore.fetchNews(Number(nVal))
     else infStore.removeNews()
+    viewForm.value = false
   },
 )
 
