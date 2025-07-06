@@ -69,6 +69,24 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
     <template v-slot:default>
+      <CRow class="py-2">
+        <CCol>
+          <h5>{{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}</h5>
+        </CCol>
+
+        <CCol class="text-right">
+          <span class="mr-2 form-text">
+            <v-icon icon="mdi-plus-circle" color="success" size="15" />
+            <router-link to="" class="ml-1" @click="viewForm = true">새 공지</router-link>
+          </span>
+
+          <span v-if="$route.params.projId" class="mr-2 form-text">
+            <v-icon icon="mdi-star" color="secondary" size="15" />
+            <router-link to="" class="ml-1" @click="">지켜보기</router-link>
+          </span>
+        </CCol>
+      </CRow>
+
       <NewsForm
         v-if="viewForm"
         @on-submit="onSubmit"
@@ -80,7 +98,6 @@ onBeforeMount(async () => {
         :page="page"
         :view-form="viewForm"
         :news-list="newsList"
-        @view-form="viewForm = true"
         @page-select="pageSelect"
       />
     </template>
