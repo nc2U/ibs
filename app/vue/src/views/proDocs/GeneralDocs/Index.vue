@@ -68,7 +68,7 @@ const createDocScrape = (payload: { docs: number; user: number }) =>
   accStore.createDocScrape(payload)
 
 const docStore = useDocs()
-const docs = computed<Docs | null>(() => docStore.docs)
+const docs = computed(() => docStore.docs as Docs | null)
 const docsList = computed(() => docStore.docsList)
 const categoryList = computed(() => docStore.categoryList)
 

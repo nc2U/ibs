@@ -11,6 +11,7 @@ import FileUpload from '@/components/FileControl/FileUpload.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
+import LinkUpload from '@/components/LinkControl/LinkUpload.vue'
 
 const props = defineProps({
   sortName: { type: String, default: '[본사]' },
@@ -45,12 +46,16 @@ const form = reactive<Docs>({
   password: '',
   is_blind: false,
   links: [],
+  newLinks: [],
   files: [],
   newFiles: [],
   cngFiles: [],
 })
 
-const newLinks = ref<Link[]>([])
+const enableStore = (event: Event | any) => {
+  const el = event.target as HTMLInputElement
+  attach.value = el.value ? !el.value : false
+}
 
 const formsCheck = computed(() => {
   if (props.docs) {
@@ -67,21 +72,9 @@ const formsCheck = computed(() => {
 const [route, router] = [useRoute(), useRouter()]
 const btnClass = computed(() => (route.params.docsId ? 'success' : 'primary'))
 
-const range = (from: number, to: number): number[] =>
-  from < to ? [from, ...range(from + 1, to)] : []
-
-const newLinkNum = ref(1)
-const newLinkRange = computed(() => range(0, newLinkNum.value))
-
-const ctlLinkNum = (n: number) => {
-  if (n + 1 >= newLinkNum.value) newLinkNum.value = newLinkNum.value + 1
-  else newLinkNum.value = newLinkNum.value - 1
-}
-
 const RefNewFiles = ref()
-const fileUpload = (newFiles: any[]) => {
-  form.newFiles = newFiles
-}
+const fileUpload = (newFiles: any[]) => (form.newFiles = newFiles)
+
 const fileChange = (payload: { pk: number; file: File }) => {
   ;(form.cngFiles as any[]).push(payload)
   attach.value = !payload.pk
@@ -94,10 +87,8 @@ const fileDelete = (payload: { pk: number; del: boolean }): void => {
   }
 }
 
-const enableStore = (event: Event | any) => {
-  const el = event.target as HTMLInputElement
-  attach.value = el.value ? !el.value : false
-}
+const RefNewLinks = ref()
+const linkUpload = (newLinks: Link[]) => (form.newLinks = newLinks)
 
 const onSubmit = (event: Event) => {
   if (props.writeAuth) {
@@ -113,7 +104,8 @@ const onSubmit = (event: Event) => {
 
 const modalAction = () => {
   RefNewFiles.value.getNewFiles()
-  emit('on-submit', { ...form, newLinks: newLinks.value })
+  RefNewLinks.value.getNewLinks()
+  emit('on-submit', { ...form })
   validated.value = false
   refConfirmModal.value.close()
 }
@@ -281,24 +273,7 @@ onBeforeUpdate(() => dataSetup())
           </CAlert>
         </CRow>
 
-        <CRow class="mb-2">
-          <CCol>
-            <CInputGroup v-for="lNum in newLinkRange" :key="`ln-${lNum}`" class="mb-2">
-              <CFormInput
-                :id="`link-${lNum}`"
-                v-model="newLinks[lNum]"
-                placeholder="파일 링크"
-                @input="enableStore"
-              />
-              <CInputGroupText id="basic-addon1" @click="ctlLinkNum(lNum)">
-                <v-icon
-                  :icon="`mdi-${lNum + 1 < newLinkNum ? 'minus' : 'plus'}-thick`"
-                  :color="lNum + 1 < newLinkNum ? 'error' : 'primary'"
-                />
-              </CInputGroupText>
-            </CInputGroup>
-          </CCol>
-        </CRow>
+        <LinkUpload ref="RefNewLinks" @enable-store="enableStore" @link-upload="linkUpload" />
       </CCol>
     </CRow>
 

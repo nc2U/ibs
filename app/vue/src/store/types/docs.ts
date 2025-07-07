@@ -97,6 +97,7 @@ export type Docs = {
   is_blind: boolean
   deleted?: string | null
   links?: Link[]
+  newLinks?: Link[]
   files?: AFile[]
   newFiles?: File[]
   cngFiles?: { pk: number; file: File }[]
