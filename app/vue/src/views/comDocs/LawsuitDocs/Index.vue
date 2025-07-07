@@ -42,13 +42,6 @@ const docsFilter = ref<DocsFilter>({
 
 const heatedPage = ref<number[]>([])
 
-const cngFiles = ref<
-  {
-    pk: number
-    file: File
-  }[]
->([])
-
 const formTitle = ref<string>('[본사]')
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
@@ -132,7 +125,6 @@ const docsRenewal = (page: number) => {
   docsFilter.value.page = page
   fetchDocsList(docsFilter.value)
 }
-const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(payload)
 
 const docsScrape = (docs: number) => {
   const user = (accStore.userInfo as User)?.pk as number
@@ -147,8 +139,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
     if (!payload.issue_project)
       getData.issue_project =
         (comIProject.value as number) ?? docsFilter.value.issue_project ?? null
-
-    getData.cngFiles = cngFiles.value
 
     const form = new FormData()
 
@@ -180,7 +170,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
       await createDocs({ form })
       await router.replace({ name: `${mainViewName.value}` })
     }
-    cngFiles.value = []
   }
 }
 
@@ -339,7 +328,6 @@ onBeforeMount(async () => {
           :docs="docs as Docs"
           :view-route="mainViewName"
           :write-auth="writeAuth"
-          @file-change="fileChange"
           @on-submit="onSubmit"
           @create-lawsuit="createLawSuit"
         />

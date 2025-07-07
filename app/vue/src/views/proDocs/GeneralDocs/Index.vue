@@ -37,8 +37,6 @@ const docsFilter = ref<DocsFilter>({
 
 const heatedPage = ref<number[]>([])
 
-const cngFiles = ref<{ pk: number; file: File }[]>([])
-
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   docsFilter.value.project = payload.project
@@ -100,8 +98,6 @@ const docssRenewal = (page: number) => {
   fetchDocsList(docsFilter.value)
 }
 
-const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(payload)
-
 const docsScrape = (docs: number) => {
   const user = (accStore.userInfo as User)?.pk as number
   createDocScrape({ docs, user }) // 스크랩 추가
@@ -114,8 +110,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
 
     if (!payload.issue_project)
       getData.issue_project = (projStore.project as Project)?.issue_project as number
-
-    getData.cngFiles = cngFiles.value
 
     const form = new FormData()
 
@@ -148,7 +142,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
       await router.replace({ name: `${mainViewName.value}` })
       fController.value.resetForm(false)
     }
-    cngFiles.value = []
   }
 }
 
@@ -271,7 +264,6 @@ onBeforeMount(async () => {
           :docs="docs as Docs"
           :view-route="mainViewName"
           :write-auth="writeAuth"
-          @file-change="fileChange"
           @on-submit="onSubmit"
         />
       </div>
