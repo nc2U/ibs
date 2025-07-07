@@ -33,9 +33,9 @@ onBeforeMount(async () => {
     :id="`docs-link-${link.pk}`"
     size="sm"
     placeholder="파일 링크"
-    @input="linkChange($event, link.pk)"
+    @input="linkChange($event, link.pk as number)"
   />
-  <!--    @input="enableStore"-->
+
   <CInputGroupText id="basic-addon1" class="py-0">
     <CFormCheck
       v-model="(form.link as Link).del"

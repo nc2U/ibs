@@ -2,7 +2,6 @@
 import type { Link } from '@/store/types/docs.ts'
 import { AlertSecondary } from '@/utils/cssMixins.ts'
 import RegLink from './components/RegLink.vue'
-import { CAlert, CRow } from '@coreui/vue'
 
 defineProps({ links: { type: Array, default: () => [] } })
 

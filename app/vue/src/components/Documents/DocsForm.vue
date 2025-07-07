@@ -13,7 +13,6 @@ import LinkUpload from '@/components/LinkControl/LinkUpload.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
-import { CForm } from '@coreui/vue'
 
 const props = defineProps({
   sortName: { type: String, default: '[본사]' },
