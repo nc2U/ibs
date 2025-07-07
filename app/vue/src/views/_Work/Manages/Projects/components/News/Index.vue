@@ -35,7 +35,9 @@ const onSubmit = (payload: any) => {
   const form = new FormData()
 
   for (const key in getData) {
-    if (key === 'newFiles')
+    if (key === 'files') {
+      ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
+    } else if (key === 'newFiles')
       (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
     else if (key === 'cngFiles') {
       getData[key]?.forEach(val => {

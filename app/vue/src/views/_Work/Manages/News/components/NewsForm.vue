@@ -56,7 +56,6 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  {{ form.files }}
   <CForm
     class="needs-validation mb-4"
     enctype="multipart/form-data"
