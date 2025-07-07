@@ -10,6 +10,7 @@ import {
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
+import type { User } from '@/store/types/accounts.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Attatches, Docs, Link, PatchDocs, SuitCase } from '@/store/types/docs'
@@ -40,14 +41,6 @@ const docsFilter = ref<DocsFilter>({
 })
 
 const heatedPage = ref<number[]>([])
-
-const newFiles = ref<File[]>([])
-const cngFiles = ref<
-  {
-    pk: number
-    file: File
-  }[]
->([])
 
 const formTitle = ref<string>('[본사]')
 const listFiltering = (payload: DocsFilter) => {
@@ -96,7 +89,7 @@ const createDocScrape = (payload: { docs: number; user: number }) =>
   accStore.createDocScrape(payload)
 
 const docStore = useDocs()
-const docs = computed(() => docStore.docs)
+const docs = computed<Docs | null>(() => docStore.docs)
 const docsList = computed(() => docStore.docsList)
 const categoryList = computed(() => docStore.categoryList)
 const getSuitCase = computed(() => docStore.getSuitCase)
@@ -132,37 +125,39 @@ const docsRenewal = (page: number) => {
   docsFilter.value.page = page
   fetchDocsList(docsFilter.value)
 }
-const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(payload)
-
-const fileUpload = (file: File) => newFiles.value.push(file)
 
 const docsScrape = (docs: number) => {
-  const user = accStore.userInfo?.pk as number
+  const user = (accStore.userInfo as User)?.pk as number
   createDocScrape({ docs, user }) // 스크랩 추가
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
   if (company.value) {
-    const { pk, ...getData } = payload
+    const { pk, ...rest } = payload
+    const getData: Record<string, any> = { ...rest }
+
     if (!payload.issue_project)
       getData.issue_project =
         (comIProject.value as number) ?? docsFilter.value.issue_project ?? null
-    getData.newFiles = newFiles.value
-    getData.cngFiles = cngFiles.value
 
     const form = new FormData()
 
     for (const key in getData) {
       if (key === 'links' || key === 'files') {
         ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
-      } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
-        if (key === 'cngFiles') {
-          getData[key]?.forEach(val => {
-            form.append('cngPks', val.pk as any)
-            form.append('cngFiles', val.file as Blob)
-          })
-        } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
-      } else {
+      } else if (key === 'newFiles') {
+        getData[key]?.forEach(val => {
+          form.append('new_files', val.file as Blob)
+          form.append('new_descs', val.description as string)
+        })
+      } else if (key === 'cngFiles') {
+        getData[key]?.forEach(val => {
+          form.append('cngPks', val.pk as any)
+          form.append('cngFiles', val.file as Blob)
+        })
+      } else if (key === 'newLinks') getData[key].forEach(val => form.append(key, val as string))
+      else {
+        // 기타 단일 값 처리
         const formValue = getData[key] === null ? '' : getData[key]
         form.append(key, formValue as string)
       }
@@ -175,8 +170,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
       await createDocs({ form })
       await router.replace({ name: `${mainViewName.value}` })
     }
-    newFiles.value = []
-    cngFiles.value = []
   }
 }
 
@@ -320,7 +313,6 @@ onBeforeMount(async () => {
           :get-suit-case="getSuitCase"
           :view-route="mainViewName"
           :write-auth="writeAuth"
-          @file-upload="fileUpload"
           @on-submit="onSubmit"
           @create-lawsuit="createLawSuit"
         />
@@ -336,8 +328,6 @@ onBeforeMount(async () => {
           :docs="docs as Docs"
           :view-route="mainViewName"
           :write-auth="writeAuth"
-          @file-change="fileChange"
-          @file-upload="fileUpload"
           @on-submit="onSubmit"
           @create-lawsuit="createLawSuit"
         />

@@ -51,6 +51,8 @@ onBeforeMount(() => {
     <s v-if="(form.file as RFile)?.del || (form.file as RFile)?.edit">{{ fileName }}</s>
     <a v-else :href="file.file" target="_blank">{{ fileName }}</a>
 
+    <span v-if="file?.description" class="pl-2"> ({{ file.description }}) </span>
+
     <span>
       <CFormCheck
         v-model="(form.file as RFile).del"

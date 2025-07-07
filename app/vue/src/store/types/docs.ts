@@ -71,6 +71,8 @@ export type Docs = {
     | SimpleUser
     | Link[]
     | AFile[]
+    | File[]
+    | { pk: number; file: File }[]
   pk?: number
   issue_project: number | null
   proj_name?: string
@@ -96,6 +98,8 @@ export type Docs = {
   deleted?: string | null
   links?: Link[]
   files?: AFile[]
+  newFiles?: File[]
+  cngFiles?: { pk: number; file: File }[]
   user?: SimpleUser
   created?: string
   updated?: string

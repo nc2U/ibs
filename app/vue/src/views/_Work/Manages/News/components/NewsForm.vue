@@ -10,7 +10,6 @@ import FileUpload from '@/components/FileControl/FileUpload.vue'
 const props = defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
 const emit = defineEmits(['on-submit', 'close-form'])
 
-const attach = ref(true)
 const validated = ref(false)
 const form = ref({
   pk: null as number | null,
@@ -117,7 +116,7 @@ onBeforeMount(() => {
           <CFormLabel for="title" class="col-md-2 col-form-label text-right">파일</CFormLabel>
           <CCol md="10" lg="9" xl="8">
             <FileModify
-              v-if="form.files.length"
+              v-if="news && form.files.length"
               :files="form.files"
               @file-delete="fileDelete"
               @file-change="fileChange"

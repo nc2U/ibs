@@ -6,6 +6,8 @@ import { AlertSecondary, btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
+import FileModify from '@/components/FileControl/FileModify.vue'
+import FileUpload from '@/components/FileControl/FileUpload.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
@@ -20,7 +22,7 @@ const props = defineProps({
   writeAuth: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['on-submit', 'file-upload', 'file-change', 'create-lawsuit'])
+const emit = defineEmits(['on-submit', 'create-lawsuit'])
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -44,6 +46,8 @@ const form = reactive<Docs>({
   is_blind: false,
   links: [],
   files: [],
+  newFiles: [],
+  cngFiles: [],
 })
 
 const newLinks = ref<Link[]>([])
@@ -69,47 +73,30 @@ const range = (from: number, to: number): number[] =>
 const newLinkNum = ref(1)
 const newLinkRange = computed(() => range(0, newLinkNum.value))
 
-const newFileNum = ref(1)
-const newFileRange = computed(() => range(0, newFileNum.value))
-
 const ctlLinkNum = (n: number) => {
   if (n + 1 >= newLinkNum.value) newLinkNum.value = newLinkNum.value + 1
   else newLinkNum.value = newLinkNum.value - 1
 }
 
-const ctlFileNum = (n: number) => {
-  if (n + 1 >= newFileNum.value) newFileNum.value = newFileNum.value + 1
-  else newFileNum.value = newFileNum.value - 1
+const RefNewFiles = ref()
+const fileUpload = (newFiles: any[]) => {
+  form.newFiles = newFiles
 }
-
-const enableStore = (event: Event) => {
-  const el = event.target as HTMLInputElement
-  attach.value = !el.value
+const fileChange = (payload: { pk: number; file: File }) => {
+  ;(form.cngFiles as any[]).push(payload)
+  attach.value = !payload.pk
 }
-
-const editFile = (i: number) => {
-  if ((form.files as any[]).length) {
-    ;(form.files as any[])[i].del = false
-    ;(form.files as any[])[i].edit = !(form.files as any[])[i].edit
+const fileDelete = (payload: { pk: number; del: boolean }): void => {
+  const file = (form.files as AFile[]).find((f: any) => f.pk === payload.pk)
+  if (file) {
+    file.del = payload.del
+    attach.value = !payload.del
   }
 }
 
-const fileChange = (event: Event, pk: number) => {
-  enableStore(event)
+const enableStore = (event: Event | any) => {
   const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('file-change', { pk, file })
-  }
-}
-
-const fileUpload = (event: Event) => {
-  enableStore(event)
-  const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('file-upload', file)
-  }
+  attach.value = el.value ? !el.value : false
 }
 
 const onSubmit = (event: Event) => {
@@ -125,17 +112,13 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = () => {
+  RefNewFiles.value.getNewFiles()
   emit('on-submit', { ...form, newLinks: newLinks.value })
   validated.value = false
   refConfirmModal.value.close()
 }
 
 const caseCreate = (payload: SuitCase) => emit('create-lawsuit', payload)
-
-const devideUri = (uri: string) => {
-  const devidedUri = decodeURI(uri).split('media/')
-  return [devidedUri[0] + 'media/', devidedUri[1]]
-}
 
 const dataSetup = () => {
   if (props.docs) {
@@ -181,14 +164,18 @@ onBeforeUpdate(() => dataSetup())
     @submit.prevent="onSubmit"
   >
     <CRow class="mb-3">
-      <CFormLabel for="title" class="col-md-2 col-form-label required">제목</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label required text-right">제목</CFormLabel>
       <CCol :md="typeNum === 2 ? 9 : 8">
         <CFormInput id="title" v-model="form.title" required placeholder="게시물 제목" />
       </CCol>
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel v-if="typeNum === 2" for="inputPassword" class="col-sm-2 col-form-label required">
+      <CFormLabel
+        v-if="typeNum === 2"
+        for="inputPassword"
+        class="col-sm-2 col-form-label required text-right"
+      >
         사건[등록] 번호
       </CFormLabel>
       <CCol v-if="typeNum === 2" md="2">
@@ -217,7 +204,7 @@ onBeforeUpdate(() => dataSetup())
 
       <CFormLabel
         for="category"
-        class="col-sm-2 col-form-label required"
+        class="col-sm-2 col-form-label required text-right"
         :class="{ 'col-lg-1': typeNum === 2 }"
       >
         카테고리
@@ -233,7 +220,7 @@ onBeforeUpdate(() => dataSetup())
 
       <CFormLabel
         for="inputPassword"
-        class="col-sm-2 col-form-label"
+        class="col-sm-2 col-form-label text-right"
         :class="{ 'col-lg-1': typeNum === 2 }"
       >
         문서 발행일자
@@ -247,77 +234,28 @@ onBeforeUpdate(() => dataSetup())
     </CRow>
 
     <CRow style="margin-bottom: 52px">
-      <CFormLabel for="title" class="col-md-2 col-form-label">내용</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label text-right">내용</CFormLabel>
       <CCol md="10 mb-5">
         <QuillEditor v-model:content="form.content" placeholder="본문 내용" />
       </CCol>
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel for="title" class="col-md-2 col-form-label">파일</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label text-right">파일</CFormLabel>
       <CCol md="10" lg="8" xl="6">
-        <CRow v-if="docs && (form.files as AFile[]).length">
-          <CAlert :color="AlertSecondary">
-            <small>{{ devideUri((form.files as AFile[])[0]?.file ?? ' ')[0] }}</small>
-            <CCol v-for="(file, i) in form.files as AFile[]" :key="file.pk" xs="12" color="primary">
-              <small>
-                현재 :
-                <a :href="file.file" target="_blank">
-                  {{ devideUri(file.file ?? ' ')[1] }}
-                </a>
-                <span>
-                  <CFormCheck
-                    v-model="(form.files as AFile[])[i].del"
-                    :id="`del-file-${file.pk}`"
-                    @input="enableStore"
-                    label="삭제"
-                    inline
-                    :disabled="(form.files as AFile[])[i].edit"
-                    class="ml-4"
-                  />
-                  <CFormCheck
-                    :id="`edit-file-${file.pk}`"
-                    label="변경"
-                    inline
-                    @click="editFile(i)"
-                  />
-                </span>
-                <CRow v-if="(form.files as AFile[])[i].edit">
-                  <CCol>
-                    <CInputGroup>
-                      변경 : &nbsp;
-                      <CFormInput
-                        :id="`docs-file-${file.pk}`"
-                        size="sm"
-                        type="file"
-                        @input="fileChange($event, file.pk as number)"
-                      />
-                    </CInputGroup>
-                  </CCol>
-                </CRow>
-              </small>
-            </CCol>
-          </CAlert>
-        </CRow>
+        <FileModify
+          v-if="docs && (form.files as AFile[]).length"
+          :files="form.files"
+          @file-delete="fileDelete"
+          @file-change="fileChange"
+        />
 
-        <CRow class="mb-2">
-          <CCol>
-            <CInputGroup v-for="fNum in newFileRange" :key="`fn-${fNum}`" class="mb-2">
-              <CFormInput :id="`file-${fNum}`" type="file" @input="fileUpload" />
-              <CInputGroupText id="basic-addon2" @click="ctlFileNum(fNum)">
-                <v-icon
-                  :icon="`mdi-${fNum + 1 < newFileNum ? 'minus' : 'plus'}-thick`"
-                  :color="fNum + 1 < newFileNum ? 'error' : 'primary'"
-                />
-              </CInputGroupText>
-            </CInputGroup>
-          </CCol>
-        </CRow>
+        <FileUpload ref="RefNewFiles" @enable-store="enableStore" @file-upload="fileUpload" />
       </CCol>
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel for="title" class="col-md-2 col-form-label">링크</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label text-right">링크</CFormLabel>
       <CCol md="10" lg="8" xl="6">
         <CRow v-if="docs && (form.links as Link[]).length">
           <CAlert :color="AlertSecondary">

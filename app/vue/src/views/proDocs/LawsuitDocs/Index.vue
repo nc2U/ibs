@@ -38,9 +38,6 @@ const docsFilter = ref<DocsFilter>({
 
 const heatedPage = ref<number[]>([])
 
-const newFiles = ref<File[]>([])
-const cngFiles = ref<{ pk: number; file: File }[]>([])
-
 const listFiltering = (payload: DocsFilter) => {
   payload.limit = payload.limit || 10
   docsFilter.value.project = payload.project
@@ -107,9 +104,6 @@ const docsRenewal = (page: number) => {
   docsFilter.value.page = page
   fetchDocsList(docsFilter.value)
 }
-const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(payload)
-
-const fileUpload = (file: File) => newFiles.value.push(file)
 
 const docsScrape = (docs: number) => {
   const user = (accStore.userInfo as User)?.pk as number
@@ -118,24 +112,29 @@ const docsScrape = (docs: number) => {
 
 const onSubmit = async (payload: Docs & Attatches) => {
   if (project.value) {
-    const { pk, ...getData } = payload
+    const { pk, ...rest } = payload
+    const getData: Record<string, any> = { ...rest }
+
     getData.issue_project = projObj.value?.issue_project as number
-    getData.newFiles = newFiles.value
-    getData.cngFiles = cngFiles.value
 
     const form = new FormData()
 
     for (const key in getData) {
       if (key === 'links' || key === 'files') {
         ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
-      } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
-        if (key === 'cngFiles') {
-          getData[key]?.forEach(val => {
-            form.append('cngPks', val.pk as any)
-            form.append('cngFiles', val.file as Blob)
-          })
-        } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
-      } else {
+      } else if (key === 'newFiles') {
+        getData[key]?.forEach(val => {
+          form.append('new_files', val.file as Blob)
+          form.append('new_descs', val.description as string)
+        })
+      } else if (key === 'cngFiles') {
+        getData[key]?.forEach(val => {
+          form.append('cngPks', val.pk as any)
+          form.append('cngFiles', val.file as Blob)
+        })
+      } else if (key === 'newLinks') getData[key].forEach(val => form.append(key, val as string))
+      else {
+        // 기타 단일 값 처리
         const formValue = getData[key] === null ? '' : getData[key]
         form.append(key, formValue as string)
       }
@@ -149,8 +148,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
       await router.replace({ name: `${mainViewName.value}` })
       fController.value.resetForm(false)
     }
-    newFiles.value = []
-    cngFiles.value = []
   }
 }
 
@@ -277,7 +274,6 @@ onBeforeMount(async () => {
           :category-list="categoryList"
           :view-route="mainViewName"
           :write-auth="writeAuth"
-          @file-upload="fileUpload"
           @on-submit="onSubmit"
           @create-lawsuit="createLawSuit"
         />
@@ -292,8 +288,6 @@ onBeforeMount(async () => {
           :docs="docs as Docs"
           :view-route="mainViewName"
           :write-auth="writeAuth"
-          @file-change="fileChange"
-          @file-upload="fileUpload"
           @on-submit="onSubmit"
           @create-lawsuit="createLawSuit"
         />

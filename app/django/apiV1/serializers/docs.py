@@ -1,8 +1,8 @@
 import json
-import os.path
 from urllib.parse import urlparse
 
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db import transaction
 from rest_framework import serializers
 
@@ -196,21 +196,23 @@ class DocumentSerializer(serializers.ModelSerializer):
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')  # device 추가
 
         docs = super().create(validated_data)  # 기본 create 처리 (save 포함)
+        user = request.user
 
         new_links = self.initial_data.getlist('newLinks', [])  # Links 처리
         for link in new_links:
             Link.objects.create(docs=docs, link=validate_link(link))
 
-        new_files = self.initial_data.getlist('newFiles', [])  # Files 처리
-        user = request.user
-        for file in new_files:
-            File.objects.create(docs=docs, file=file, user=user)
-
+        # Files 처리
+        new_files = request.FILES.getlist('new_files')
+        new_descs = request.data.getlist('new_descs')
+        for file, desc in zip(new_files, new_descs):
+            File.objects.create(docs=docs, file=file, description=desc, user=user)
         return docs
 
     @transaction.atomic
     def update(self, instance, validated_data):
         request = self.context.get('request')
+        user = request.user
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')
@@ -234,11 +236,16 @@ class DocumentSerializer(serializers.ModelSerializer):
                 Link.objects.create(docs=instance, link=validate_link(link))
 
             # --- Files 처리 ---
+            new_files = request.FILES.getlist('new_files')
+            new_descs = request.data.getlist('new_descs')
+
+            for file, desc in zip(new_files, new_descs):
+                File.objects.create(docs=instance, file=file, description=desc, user=user)
+
             old_files = self.initial_data.getlist('files', [])
             cng_pks = self.initial_data.getlist('cngPks', [])
             cng_files = self.initial_data.getlist('cngFiles', [])
             cng_maps = dict(zip(cng_pks, cng_files))
-            user = request.user
 
             for json_file in old_files:
                 file = json.loads(json_file)
@@ -248,20 +255,16 @@ class DocumentSerializer(serializers.ModelSerializer):
                     file_object.delete()
                     continue
 
-                new_file = cng_maps.get(str(file.get('pk')))
-                if new_file:
+                cng_file = cng_maps.get(str(file.get('pk')))
+                if cng_file:
                     try:
-                        if os.path.isfile(file_object.file.path):
-                            os.remove(file_object.file.path)
+                        if default_storage.exists(file_object.file.name):
+                            default_storage.delete(file_object.file.name)
                     except Exception as e:
                         print(f"파일 처리 중 오류 발생: {e}")
-                    file_object.file = new_file
+                    file_object.file = cng_file
                     file_object.user = user
                     file_object.save()
-
-            new_files = self.initial_data.getlist('newFiles', [])
-            for file in new_files:
-                File.objects.create(docs=instance, file=file, user=user)
 
         except Exception as e:
             print(f"링크 및 파일 처리 중 오류 발생: {e}")
