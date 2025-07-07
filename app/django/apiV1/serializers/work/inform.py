@@ -55,9 +55,12 @@ class NewsSerializer(serializers.ModelSerializer):
         # 파일 처리
         request = self.context.get('request')
         user = request.user if request else None
-        new_files = self.initial_data.getlist('newFiles')
-        for file in new_files:
-            NewsFile.objects.create(news=news, file=file, user=user)
+        new_files = request.FILES.getlist('new_files')
+        new_descs = request.data.getlist('new_descs')
+
+        for file, desc in zip(new_files, new_descs):
+            print("Saving:", file, desc)
+            NewsFile.objects.create(news=news, file=file, description=desc, user=user)
         return news
 
     @transaction.atomic
@@ -72,9 +75,12 @@ class NewsSerializer(serializers.ModelSerializer):
             request = self.context['request']
             user = request.user
 
-            new_files = self.initial_data.getlist('newFiles')
-            for file in new_files:
-                NewsFile.objects.create(news=instance, file=file, user=user)
+            new_files = request.FILES.getlist('new_files')
+            new_descs = request.data.getlist('new_descs')
+
+            for file, desc in zip(new_files, new_descs):
+                print("Saving:", file, desc)
+                NewsFile.objects.create(news=instance, file=file, description=desc, user=user)
 
             old_files = self.initial_data.getlist('files')
             cng_pks = self.initial_data.getlist('cngPks')
