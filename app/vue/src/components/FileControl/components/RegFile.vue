@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { nextTick, onBeforeMount, type PropType, ref } from 'vue'
+import { onBeforeMount, type PropType, ref } from 'vue'
 
 export interface RFile {
   pk: null | number

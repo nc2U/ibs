@@ -2,7 +2,6 @@
 import { AlertSecondary } from '@/utils/cssMixins.ts'
 import type { RFile } from './components/RegFile.vue'
 import RegFile from './components/RegFile.vue'
-import { CRow } from '@coreui/vue'
 
 const props = defineProps({ files: { type: Array, default: () => [] } })
 
@@ -15,7 +14,7 @@ const devideUri = (uri: string) => {
 </script>
 
 <template>
-  <CRow v-if="files && files.length" class="px-2">
+  <CRow class="px-2">
     <CAlert :color="AlertSecondary">
       <small>{{ devideUri((files as RFile[])[0]?.file ?? ' ')[0] }}</small>
       <CCol v-for="(file, i) in files as RFile[]" :key="file.pk" xs="12" color="primary">

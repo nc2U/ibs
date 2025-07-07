@@ -2,16 +2,18 @@
 import { computed, onBeforeMount, onBeforeUpdate, type PropType, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
-import { AlertSecondary, btnLight } from '@/utils/cssMixins'
+import { btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
+import LinkModify from '@/components/LinkControl/LinkModify.vue'
+import LinkUpload from '@/components/LinkControl/LinkUpload.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
-import LinkUpload from '@/components/LinkControl/LinkUpload.vue'
+import { CForm } from '@coreui/vue'
 
 const props = defineProps({
   sortName: { type: String, default: '[본사]' },
@@ -45,11 +47,11 @@ const form = reactive<Docs>({
   is_secret: false,
   password: '',
   is_blind: false,
-  links: [],
-  newLinks: [],
   files: [],
   newFiles: [],
   cngFiles: [],
+  links: [],
+  newLinks: [],
 })
 
 const enableStore = (event: Event | any) => {
@@ -89,6 +91,19 @@ const fileDelete = (payload: { pk: number; del: boolean }): void => {
 
 const RefNewLinks = ref()
 const linkUpload = (newLinks: Link[]) => (form.newLinks = newLinks)
+const linkChange = (payload: { pk: number; link: string }) => {
+  console.log(payload)
+  const link = (form.links as Link[]).find(l => l.pk === payload.pk)
+  if (link) link.link = payload.link
+}
+const linkDelete = (payload: { pk: number; del: boolean }): void => {
+  console.log(payload)
+  const link = (form.links as Link[]).find(l => l.pk === payload.pk)
+  if (link) {
+    link.del = payload.del
+    attach.value = !payload.del
+  }
+}
 
 const onSubmit = (event: Event) => {
   if (props.writeAuth) {
@@ -126,8 +141,8 @@ const dataSetup = () => {
     form.is_secret = props.docs.is_secret
     form.password = props.docs.password
     form.is_blind = props.docs.is_blind
-    form.links = props.docs.links
     form.files = props.docs.files
+    form.links = props.docs.links
   }
 }
 
@@ -249,29 +264,13 @@ onBeforeUpdate(() => dataSetup())
     <CRow class="mb-3">
       <CFormLabel for="title" class="col-md-2 col-form-label text-right">링크</CFormLabel>
       <CCol md="10" lg="8" xl="6">
-        <CRow v-if="docs && (form.links as Link[]).length">
-          <CAlert :color="AlertSecondary">
-            <CCol>
-              <CInputGroup v-for="(link, i) in form.links as Link[]" :key="link.pk" class="mb-2">
-                <CFormInput
-                  :id="`docs-link-${link.pk}`"
-                  v-model="(form.links as Link[])[i].link"
-                  size="sm"
-                  placeholder="파일 링크"
-                  @input="enableStore"
-                />
-                <CInputGroupText id="basic-addon1" class="py-0">
-                  <CFormCheck
-                    :id="`del-link-${link.pk}`"
-                    v-model="(form.links as Link[])[i].del"
-                    @input="enableStore"
-                    label="삭제"
-                  />
-                </CInputGroupText>
-              </CInputGroup>
-            </CCol>
-          </CAlert>
-        </CRow>
+        <LinkModify
+          v-if="docs && (form.links as Link[]).length"
+          :links="form.links"
+          @enable-store="enableStore"
+          @link-change="linkChange"
+          @link-delete="linkDelete"
+        />
 
         <LinkUpload ref="RefNewLinks" @enable-store="enableStore" @link-upload="linkUpload" />
       </CCol>

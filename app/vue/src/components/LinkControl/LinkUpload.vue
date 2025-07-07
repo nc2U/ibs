@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import type { Link } from '@/store/types/docs.ts'
-import { CCol, CRow } from '@coreui/vue'
 
 const emit = defineEmits(['enable-store', 'link-upload'])
 
