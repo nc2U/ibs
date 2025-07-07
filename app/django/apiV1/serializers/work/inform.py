@@ -1,5 +1,4 @@
 import json
-import os
 
 from django.core.files.storage import default_storage
 from django.db import transaction
@@ -59,7 +58,6 @@ class NewsSerializer(serializers.ModelSerializer):
         new_descs = request.data.getlist('new_descs')
 
         for file, desc in zip(new_files, new_descs):
-            print("Saving:", file, desc)
             NewsFile.objects.create(news=news, file=file, description=desc, user=user)
         return news
 
@@ -79,7 +77,6 @@ class NewsSerializer(serializers.ModelSerializer):
             new_descs = request.data.getlist('new_descs')
 
             for file, desc in zip(new_files, new_descs):
-                print("Saving:", file, desc)
                 NewsFile.objects.create(news=instance, file=file, description=desc, user=user)
 
             old_files = self.initial_data.getlist('files')
@@ -98,8 +95,11 @@ class NewsSerializer(serializers.ModelSerializer):
 
                 cng_file = cng_maps.get(pk)
                 if cng_file:
-                    if default_storage.exists(file_obj.file.name):
-                        default_storage.delete(file_obj.file.name)
+                    try:
+                        if default_storage.exists(file_obj.file.name):
+                            default_storage.delete(file_obj.file.name)
+                    except Exception as e:
+                        print(f"파일 처리 중 오류 발생: {e}")
                     file_obj.file = cng_file
                     file_obj.user = user
                     file_obj.save()
