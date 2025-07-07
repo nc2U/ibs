@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 
-const emit = defineEmits(['file-upload'])
+const emit = defineEmits(['enable-store', 'file-upload'])
 
 const newFileNum = ref(1)
 const newFileRange = computed(() => range(0, newFileNum.value))
@@ -39,6 +39,7 @@ const loadFile = (event: Event, n: number) => {
   if (el.files) {
     const file = el.files[0]
     newFiles.value[n].file = file
+    emit('enable-store', event)
   }
 }
 
@@ -66,7 +67,11 @@ defineExpose({ getNewFiles })
 
     <CCol>
       <CInputGroup v-if="newFiles[fNum]">
-        <CFormInput v-model="newFiles[fNum].description" placeholder="부가적인 설명" />
+        <CFormInput
+          v-model="newFiles[fNum].description"
+          placeholder="부가적인 설명"
+          @input="emit('enable-store', $event)"
+        />
       </CInputGroup>
     </CCol>
   </CRow>
