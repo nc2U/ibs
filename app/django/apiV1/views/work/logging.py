@@ -132,7 +132,8 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'pk', 'sort', 'project__id', 'project__name', 'project__slug',
             'issue__id', 'issue__tracker__name', 'issue__status__name',
             'issue__status__closed', 'issue__subject', 'issue__description',
-            'status_log', 'comment__id', 'comment__content', 'spent_time__id',
+            'status_log', 'comment__id', 'comment__content', 'news__title',
+            'news__summary', 'news__author', 'spent_time__id',
             'spent_time__hours', 'act_date', 'timestamp', 'user__id', 'user__username')
 
         # Commit 조회
@@ -161,6 +162,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                 'pk': log['comment__id'],
                 'content': log['comment__content'],
             },
+            'news': {'title': log['news__title'], 'summary': log['news__summary']},
             'spent_time': {'pk': log['spent_time__id'], 'hours': log['spent_time__hours']},
             'change_set': None,
             'act_date': log['act_date'],
