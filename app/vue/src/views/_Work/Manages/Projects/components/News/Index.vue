@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { News } from '@/store/types/work_inform.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -9,6 +9,7 @@ import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsView from '@/views/_Work/Manages/News/components/NewsView.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: () => null },
@@ -18,6 +19,8 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
+const RefDelNews = ref()
+
 const viewForm = ref(false)
 
 const infStore = useInform()
@@ -26,6 +29,7 @@ const newsList = computed(() => infStore.newsList as News[])
 
 const createNews = (payload: any, proj?: string) => infStore.createNews(payload, proj)
 const updateNews = (pk: number, payload: any) => infStore.updateNews(pk, payload)
+const deleteNews = (pk: number, proj: null | string) => infStore.deleteNews(pk, proj)
 
 const onSubmit = (payload: any) => {
   payload.project = route.params.projId
@@ -58,6 +62,14 @@ const onSubmit = (payload: any) => {
   viewForm.value = false
 }
 
+const newsDelConfirm = async () => {
+  RefDelNews.value.close()
+  const newsId = Number(route.params.newsId)
+  const projId = route.params.projId as string
+  await deleteNews(newsId, projId)
+  await router.replace({ name: '(공지)' })
+}
+
 const page = ref(1)
 const pageSelect = (p: number) => {
   if (route.params.projId) {
@@ -72,7 +84,7 @@ const dataSetup = async () => {
   if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
 }
 
-const route = useRoute()
+const [route, router] = [useRoute(), useRouter()]
 watch(
   () => route.params?.projId,
   nVal => {
@@ -134,7 +146,7 @@ onBeforeMount(async () => {
 
           <span class="mr-2 form-text">
             <v-icon icon="mdi-trash-can-outline" color="grey" size="15" />
-            <router-link to="" class="ml-1">삭제</router-link>
+            <router-link to="" class="ml-1" @click="RefDelNews.callModal()">삭제</router-link>
           </span>
         </CCol>
       </CRow>
@@ -154,6 +166,13 @@ onBeforeMount(async () => {
         :news="news as News"
         :view-form="viewForm"
       />
+
+      <ConfirmModal ref="RefDelNews">
+        <template #default>이 공지의 삭제를 계속 진행하시겠습니까?</template>
+        <template #footer>
+          <v-btn color="danger" size="small" @click="newsDelConfirm">삭제</v-btn>
+        </template>
+      </ConfirmModal>
     </template>
 
     <template v-slot:aside></template>

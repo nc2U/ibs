@@ -58,10 +58,11 @@ export const useInform = defineStore('inform', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const deleteNews = (pk: number) =>
+  const deleteNews = (pk: number, proj: null | string = null) =>
     api
       .delete(`/news/${pk}/`)
       .then(async () => {
+        await fetchNewsList({ project: proj ?? '' })
         message('warning', '알림', 'deleted!!')
       })
       .catch(err => errorHandle(err.response.data))
