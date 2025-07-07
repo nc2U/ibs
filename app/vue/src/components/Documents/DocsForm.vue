@@ -6,6 +6,8 @@ import { AlertSecondary, btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
+import FileModify from '@/components/FileControl/FileModify.vue'
+import FileUpload from '@/components/FileControl/FileUpload.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
@@ -20,7 +22,7 @@ const props = defineProps({
   writeAuth: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['on-submit', 'file-upload', 'file-change', 'create-lawsuit'])
+const emit = defineEmits(['on-submit', 'file-change', 'create-lawsuit'])
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -44,6 +46,8 @@ const form = reactive<Docs>({
   is_blind: false,
   links: [],
   files: [],
+  newFiles: [],
+  cngFiles: [],
 })
 
 const newLinks = ref<Link[]>([])
@@ -69,17 +73,17 @@ const range = (from: number, to: number): number[] =>
 const newLinkNum = ref(1)
 const newLinkRange = computed(() => range(0, newLinkNum.value))
 
-const newFileNum = ref(1)
-const newFileRange = computed(() => range(0, newFileNum.value))
-
 const ctlLinkNum = (n: number) => {
   if (n + 1 >= newLinkNum.value) newLinkNum.value = newLinkNum.value + 1
   else newLinkNum.value = newLinkNum.value - 1
 }
 
-const ctlFileNum = (n: number) => {
-  if (n + 1 >= newFileNum.value) newFileNum.value = newFileNum.value + 1
-  else newFileNum.value = newFileNum.value - 1
+const RefNewFiles = ref()
+const fileUpload = (newFiles: any[]) => (form.newFiles = newFiles)
+const fileChange = (payload: { pk: number; file: File }) => (form.cngFiles as any[]).push(payload)
+const fileDelete = (payload: { pk: number; del: boolean }): void => {
+  const file = (form.files as AFile[]).find((f: any) => f.pk === payload.pk)
+  if (file) file.del = payload.del
 }
 
 const enableStore = (event: Event) => {
@@ -94,23 +98,14 @@ const editFile = (i: number) => {
   }
 }
 
-const fileChange = (event: Event, pk: number) => {
-  enableStore(event)
-  const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('file-change', { pk, file })
-  }
-}
-
-const fileUpload = (event: Event) => {
-  enableStore(event)
-  const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('file-upload', file)
-  }
-}
+// const fileChange = (event: Event, pk: number) => {
+//   enableStore(event)
+//   const el = event.target as HTMLInputElement
+//   if (el.files) {
+//     const file = el.files[0]
+//     emit('file-change', { pk, file })
+//   }
+// }
 
 const onSubmit = (event: Event) => {
   if (props.writeAuth) {
@@ -125,6 +120,7 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = () => {
+  RefNewFiles.value.getNewFiles()
   emit('on-submit', { ...form, newLinks: newLinks.value })
   validated.value = false
   refConfirmModal.value.close()
@@ -300,19 +296,21 @@ onBeforeUpdate(() => dataSetup())
           </CAlert>
         </CRow>
 
-        <CRow class="mb-2">
-          <CCol>
-            <CInputGroup v-for="fNum in newFileRange" :key="`fn-${fNum}`" class="mb-2">
-              <CFormInput :id="`file-${fNum}`" type="file" @input="fileUpload" />
-              <CInputGroupText id="basic-addon2" @click="ctlFileNum(fNum)">
-                <v-icon
-                  :icon="`mdi-${fNum + 1 < newFileNum ? 'minus' : 'plus'}-thick`"
-                  :color="fNum + 1 < newFileNum ? 'error' : 'primary'"
-                />
-              </CInputGroupText>
-            </CInputGroup>
-          </CCol>
-        </CRow>
+        <!--        <CRow class="mb-2">-->
+        <!--          <CCol>-->
+        <!--            <CInputGroup v-for="fNum in newFileRange" :key="`fn-${fNum}`" class="mb-2">-->
+        <!--              <CFormInput :id="`file-${fNum}`" type="file" @input="fileUpload" />-->
+        <!--              <CInputGroupText id="basic-addon2" @click="ctlFileNum(fNum)">-->
+        <!--                <v-icon-->
+        <!--                  :icon="`mdi-${fNum + 1 < newFileNum ? 'minus' : 'plus'}-thick`"-->
+        <!--                  :color="fNum + 1 < newFileNum ? 'error' : 'primary'"-->
+        <!--                />-->
+        <!--              </CInputGroupText>-->
+        <!--            </CInputGroup>-->
+        <!--          </CCol>-->
+        <!--        </CRow>-->
+
+        <FileUpload ref="RefNewFiles" @file-upload="fileUpload" />
       </CCol>
     </CRow>
 
