@@ -19,7 +19,7 @@ export interface ActLogEntry {
     sha: string
     message: string
   }
-  // news: string
+  news: { title: string; summary: string } | null
   // document: string
   // file: string
   // wiki: string

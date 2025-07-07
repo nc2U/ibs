@@ -14,6 +14,7 @@ const getIcon = (sort: string, progress: boolean) => {
   if (sort === '1') return progress ? 'mdi-folder-check' : 'mdi-folder-edit'
   else if (sort === '2') return 'mdi-comment-text-multiple'
   else if (sort === '3') return 'mdi-cog-outline'
+  else if (sort === '4') return 'mdi-message-badge'
   else if (sort === '9') return 'mdi-folder-clock-outline'
   else return 'mdi-folder-plus'
 }
@@ -54,11 +55,11 @@ const getIcon = (sort: string, progress: boolean) => {
               }})
               {{ act.issue?.subject }}
             </router-link>
-            <div class="ml-4 pl-3 fst-italic">
+            <div class="ml-5 pl-4 fst-italic form-text">
               <div
                 v-if="act.sort === '1' && !act.status_log"
                 v-html="markdownRender(cutString(act.issue?.description, 113))"
-                class="form-text pl-4"
+                class="form-text"
               />
             </div>
             <div v-if="act.user" class="form-text ml-5 pl-2">
@@ -81,11 +82,11 @@ const getIcon = (sort: string, progress: boolean) => {
               {{ act.issue?.subject }}
             </router-link>
 
-            <div class="ml-4 pl-3 fst-italic">
+            <div class="ml-5 pl-4 fst-italic">
               <div
                 v-if="act.sort === '2'"
                 v-html="markdownRender(cutString(act.comment?.content, 113))"
-                class="form-text pl-4"
+                class="form-text"
               />
             </div>
           </span>
@@ -104,8 +105,20 @@ const getIcon = (sort: string, progress: boolean) => {
               리비전 {{ act.change_set.sha.substring(0, 8) }} ({{ act.change_set.repo.slug }})
               {{ cutString(act.change_set.message, 50) }}
             </router-link>
-            <div class="ml-4 pl-3">
+            <div class="form-text ml-5 pl-3">
               {{ act.user.username }}
+            </div>
+          </span>
+
+          <span v-if="act.sort === '4'">
+            <router-link to="">{{ act.news?.title }}</router-link>
+
+            <div class="ml-5 pl-2 fst-italic">{{ act.news?.summary }}</div>
+
+            <div v-if="act.user" class="form-text ml-5 pl-2">
+              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.user.pk } }">
+                {{ act.user.username }}
+              </router-link>
             </div>
           </span>
 
@@ -123,7 +136,7 @@ const getIcon = (sort: string, progress: boolean) => {
               ({{ act.status_log || act.issue?.status.name }}) {{ act.issue?.subject }})
             </router-link>
 
-            <div class="ml-4 pl-3 fst-italic">
+            <div class="ml-4 pl-3 fst-italic form-text">
               <span v-if="act.sort === '9' && act.spent_time?.comment" class="pl-3">
                 {{ cutString(act.spent_time.comment, 100) }}
               </span>
