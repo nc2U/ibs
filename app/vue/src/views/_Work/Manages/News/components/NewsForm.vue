@@ -26,7 +26,8 @@ const form = ref({
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
 
-const fileUpload = (file: File) => form.value.newFiles.push(file)
+const RefNewFiles = ref()
+const fileUpload = (newFiles: any[]) => (form.value.newFiles = newFiles)
 const fileChange = (payload: { pk: number; file: File }) => form.value.cngFiles.push(payload)
 const fileDelete = (payload: { pk: number; del: boolean }): void => {
   const file = form.value.files.find((f: any) => f.pk === payload.pk)
@@ -40,7 +41,10 @@ const onSubmit = (event: Event) => {
     event.stopPropagation()
 
     validated.value = true
-  } else emit('on-submit', { ...form.value })
+  } else {
+    RefNewFiles.value.getNewFiles()
+    emit('on-submit', { ...form.value })
+  }
 }
 
 onBeforeMount(() => {
@@ -111,7 +115,7 @@ onBeforeMount(() => {
 
         <CRow>
           <CFormLabel for="title" class="col-md-2 col-form-label text-right">파일</CFormLabel>
-          <CCol md="10" lg="8" xl="6">
+          <CCol md="10" lg="9" xl="8">
             <FileModify
               v-if="form.files.length"
               :files="form.files"
@@ -119,7 +123,7 @@ onBeforeMount(() => {
               @file-change="fileChange"
             />
 
-            <FileUpload @file-upload="fileUpload" />
+            <FileUpload ref="RefNewFiles" @file-upload="fileUpload" />
           </CCol>
         </CRow>
       </CCardBody>

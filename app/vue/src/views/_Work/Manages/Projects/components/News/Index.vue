@@ -38,7 +38,10 @@ const onSubmit = (payload: any) => {
     if (key === 'files') {
       ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
     } else if (key === 'newFiles')
-      (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
+      getData[key]?.forEach(val => {
+        form.append('new_files', val.file as Blob)
+        form.append('new_descs', val.description as string)
+      })
     else if (key === 'cngFiles') {
       getData[key]?.forEach(val => {
         form.append('cngPks', val.pk as any)
@@ -65,7 +68,7 @@ const pageSelect = (p: number) => {
 
 const dataSetup = async () => {
   if (route.params.newsId) await infStore.fetchNews(Number(route.params.newsId))
-  else await infStore.removeNews()
+  else infStore.removeNews()
   if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
 }
 

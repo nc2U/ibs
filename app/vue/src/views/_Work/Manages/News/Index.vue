@@ -27,20 +27,18 @@ const infStore = useInform()
 const newsList = computed(() => infStore.newsList)
 
 const createNews = (payload: any) => infStore.createNews(payload)
-const updateNews = (pk: number, payload: any) => infStore.updateNews(pk, payload)
-
-const newFiles = ref<File[]>([])
-const fileUpload = (file: File) => newFiles.value.push(file)
 
 const onSubmit = (payload: any) => {
   const getData: Record<string, any> = { ...payload }
-  getData.newFiles = newFiles.value
 
   const form = new FormData()
 
   for (const key in getData) {
     if (key === 'newFiles')
-      (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
+      (getData[key] as any[]).forEach(val => {
+        form.append('new_files', val.file as Blob)
+        form.append('new_descs', val.description as string)
+      })
     else {
       const formValue = getData[key] === null ? '' : getData[key]
       form.append(key, formValue as string)
@@ -87,12 +85,7 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <NewsForm
-        v-if="viewForm"
-        @on-submit="onSubmit"
-        @file-upload="fileUpload"
-        @close-form="viewForm = false"
-      />
+      <NewsForm v-if="viewForm" @on-submit="onSubmit" @close-form="viewForm = false" />
 
       <NewsList
         :page="page"
