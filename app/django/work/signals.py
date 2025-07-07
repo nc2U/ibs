@@ -287,7 +287,8 @@ def comment_log_delete(sender, instance, **kwargs):
 @receiver(post_save, sender=News)
 def news_log_changes(sender, instance, created, **kwargs):
     if created:
-        ActivityLogEntry.objects.create(sort='4', project=instance.project, news=instance, user=instance.author)
+        ActivityLogEntry.objects.create(sort='4', project=instance.project,
+                                        news=instance, user=instance.author)
 
 
 @receiver(pre_delete, sender=News)
@@ -302,8 +303,9 @@ def news_log_delete(sender, instance, **kwargs):
 @receiver(post_save, sender=TimeEntry)
 def time_log_changes(sender, instance, created, **kwargs):
     if created:
-        ActivityLogEntry.objects.create(sort='9', project=instance.issue.project, issue=instance.issue,
-                                        spent_time=instance, user=instance.user)
+        ActivityLogEntry.objects.create(sort='9', project=instance.issue.project,
+                                        issue=instance.issue, spent_time=instance,
+                                        user=instance.user)
 
 
 @receiver(pre_delete, sender=TimeEntry)

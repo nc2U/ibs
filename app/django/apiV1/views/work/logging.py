@@ -133,8 +133,8 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'issue__id', 'issue__tracker__name', 'issue__status__name',
             'issue__status__closed', 'issue__subject', 'issue__description',
             'status_log', 'comment__id', 'comment__content', 'news__title',
-            'news__summary', 'news__author', 'spent_time__id',
-            'spent_time__hours', 'act_date', 'timestamp', 'user__id', 'user__username')
+            'news__summary', 'news__author', 'spent_time__hours', 'spent_time__comment',
+            'act_date', 'timestamp', 'user__id', 'user__username')
 
         # Commit 조회
         commits = self.get_commits().values(
@@ -163,7 +163,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                 'content': log['comment__content'],
             },
             'news': {'title': log['news__title'], 'summary': log['news__summary']},
-            'spent_time': {'pk': log['spent_time__id'], 'hours': log['spent_time__hours']},
+            'spent_time': {'hours': log['spent_time__hours'], 'comment': log['spent_time__comment']},
             'change_set': None,
             'act_date': log['act_date'],
             'timestamp': log['timestamp'],
