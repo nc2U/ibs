@@ -1,15 +1,9 @@
-export interface Group {
-  pk: number | null
-  name: string
-  manager: number[]
-}
-
 export interface Board {
   pk: number | null
-  group: number | null
   issue_project: number | null
   is_notice: boolean
   name: string
+  description: string
   order: number | null
   search_able: boolean
   manager: number[]
@@ -44,7 +38,6 @@ export type Post = {
   pk?: number
   board: number | null
   board_name?: string
-  issue_project: number | null
   category: number | null
   cate_name?: string
   title: string
@@ -93,19 +86,8 @@ export interface PostFile {
   edit?: boolean
 }
 
-export type Attatches = {
-  newLinks: PostLink[]
-  newFiles?: (string | File)[]
-  cngFiles?: {
-    pk: number
-    file: File
-  }[]
-}
-
 export interface PatchPost {
   pk: number
-  company?: number
-  project?: number
   board?: number
   category?: number | null
   // lawsuit?: number | null
@@ -128,8 +110,6 @@ export interface Comment {
   pk?: number
   post: {
     pk?: number
-    company: number | null
-    project: number | null
     board: number | null
   }
   content: string

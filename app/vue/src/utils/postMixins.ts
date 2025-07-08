@@ -13,8 +13,7 @@ const patchCommentLike = (pk: number, post: number, page?: number) =>
   boardStore.patchCommentLike(pk, post, page)
 const patchCommentBlame = (pk: number, post: number, page?: number) =>
   boardStore.patchCommentBlame(pk, post, page)
-const copyCreatePost = (payload: { post: number; board: number; project: number | null }) =>
-  boardStore.copyPost(payload)
+const copyCreatePost = (payload: { post: number; board: number }) => boardStore.copyPost(payload)
 const deletePost = (pk: number, filter: PostFilter) => boardStore.deletePost(pk, filter)
 
 export const toPrint = (title: string) => {
@@ -132,7 +131,6 @@ const toTrashCan = async (post: number, state: boolean, filter: PostFilter) => {
 interface ManagePayload {
   board: number | undefined
   board_name: string | undefined
-  project: number | undefined
   category: number | undefined
   content: string
   post: number
@@ -142,10 +140,9 @@ interface ManagePayload {
 }
 
 export const toPostManage = (fn: number, payload: ManagePayload) => {
-  const { post, board, project, category, content, board_name, manager, state, filter } = payload
-  if (fn === 11) return copyPost(post, board as number, project)
-  if (fn === 22)
-    return movePost(post, board as number, board_name, project, content, manager, filter)
+  const { post, board, category, content, board_name, manager, state, filter } = payload
+  if (fn === 11) return copyPost(post, board as number)
+  if (fn === 22) return movePost(post, board as number, board_name, content, manager, filter)
   if (fn === 33) return changeCate(post, category, filter)
   if (fn === 4) return toSecretPost(post, state, filter)
   if (fn === 5) return hideComments(post, state, filter)
@@ -154,14 +151,12 @@ export const toPostManage = (fn: number, payload: ManagePayload) => {
   if (fn === 88) return toTrashCan(post, state, filter)
 }
 
-const copyPost = (post: number, board: number, project: number | undefined) =>
-  copyCreatePost({ post, board, project: project ?? null })
+const copyPost = (post: number, board: number) => copyCreatePost({ post, board })
 
 const movePost = (
   post: number,
   board: number,
   board_name: string | undefined,
-  project: number | undefined,
   org_content: string,
   manager: string,
   filter: PostFilter,
@@ -169,7 +164,7 @@ const movePost = (
   const content = `${org_content}<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
     new Date(),
   )} ${board_name} 에서 이동됨]</p>`
-  patchPost({ pk: post, board, project, content, filter }).then(() =>
+  patchPost({ pk: post, board, content, filter }).then(() =>
     message('success', '', '게시물 이동이 완료되었습니다.'),
   )
 }

@@ -7,7 +7,6 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   nowBoard: { type: Number, default: null },
-  nowProject: { type: Number, default: null },
   boardList: { type: Array as PropType<Board[]>, default: () => [] },
   isCopy: { type: Boolean, default: false },
 })
@@ -22,14 +21,7 @@ const project = ref<number | null>(null)
 const projStore = useProject()
 const projSelectList = computed(() => projStore.projSelect)
 
-const formCheck = computed(() => {
-  const a = board.value == props.nowBoard
-  const b = project.value == props.nowProject
-  return a && b
-})
-
-const brdChk = () =>
-  nextTick(() => (board.value === 1 ? (project.value = null) : (project.value = props.nowProject)))
+const formCheck = computed(() => board.value == props.nowBoard)
 
 const onSubmit = () => {
   if (props.isCopy) emit('copy-post', board.value, project.value ?? undefined)
@@ -42,12 +34,7 @@ const callModal = () => refListModal.value.callModal()
 defineExpose({ callModal })
 
 onBeforeMount(() => {
-  if (props.nowProject) project.value = props.nowProject
-})
-
-onUpdated(() => {
   if (props.nowBoard) board.value = props.nowBoard
-  if (props.nowProject) project.value = props.nowProject
 })
 </script>
 

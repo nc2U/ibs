@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { message, errorHandle } from '@/utils/helper'
 import type {
-  Group,
   Board,
   PostCategory,
   PostLink,
@@ -29,18 +28,6 @@ export type PostFilter = {
 
 export const useBoard = defineStore('board', () => {
   // state & getters
-  const groupList = ref<Group[]>([])
-
-  const fetchGroupList = () =>
-    api
-      .get('/group/')
-      .then(res => (groupList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
-  const createGroup = () => 2
-  const updateGroup = () => 3
-  const deleteGroup = () => 4
-
   const board = ref<Board | null>(null)
   const boardList = ref<Board[]>([])
 
@@ -111,7 +98,7 @@ export const useBoard = defineStore('board', () => {
     const { board, page } = payload
     let url = `/post/?page=${page ?? 1}`
     if (payload.board) url += `&board=${board}`
-    if (payload.issue_project) url += `&issue_project=${payload.issue_project}`
+    if (payload.issue_project) url += `&board__issue_project=${payload.issue_project}`
     if (payload.category) url += `&category=${payload.category}`
     if (payload.is_notice) url += `&is_notice=${payload.is_notice}`
     if (payload.is_blind) url += `&is_blind=${payload.is_blind}`
@@ -199,7 +186,7 @@ export const useBoard = defineStore('board', () => {
       .then(() => accStore.fetchProfile().then(() => fetchPost(pk)))
       .catch(err => errorHandle(err.response.data))
 
-  const copyPost = (payload: { post: number; board: number; project: number | null }) =>
+  const copyPost = (payload: { post: number; board: number }) =>
     api
       .post(`post/${payload.post}/copy/`, payload)
       .then(() => message('success', '', '게시물 복사가 완료되었습니다.'))
@@ -347,13 +334,6 @@ export const useBoard = defineStore('board', () => {
   const deleteTag = () => 4
 
   return {
-    groupList,
-
-    fetchGroupList,
-    createGroup,
-    updateGroup,
-    deleteGroup,
-
     board,
     boardList,
 

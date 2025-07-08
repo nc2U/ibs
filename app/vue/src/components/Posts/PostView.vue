@@ -123,7 +123,7 @@ const toScrape = () => {
   else emit('post-scrape', props.post?.pk)
 }
 
-const toManage = (fn: number, el?: { nBrd?: number; nProj?: number; nCate?: number }) => {
+const toManage = (fn: number, el?: { nBrd?: number; nCate?: number }) => {
   const post = props.post?.pk
   let state: boolean = false
   if (fn < 4) {
@@ -155,7 +155,6 @@ const toManage = (fn: number, el?: { nBrd?: number; nProj?: number; nCate?: numb
     const payload = {
       board: el?.nBrd,
       board_name: props.post?.board_name,
-      project: el?.nProj,
       category: el?.nCate,
       content: props.post?.content,
       post: post as number,
@@ -167,8 +166,8 @@ const toManage = (fn: number, el?: { nBrd?: number; nProj?: number; nCate?: numb
   }
 }
 
-const copyPost = (nBrd?: number, nProj?: number) => toManage(11, { nBrd, nProj })
-const movePost = (nBrd?: number, nProj?: number) => toManage(22, { nBrd, nProj })
+const copyPost = (nBrd?: number) => toManage(11, { nBrd })
+const movePost = (nBrd?: number) => toManage(22, { nBrd })
 const changeCate = (nCate?: number) => toManage(33, { nCate })
 
 const getFileName = (file: string) => {
@@ -531,7 +530,6 @@ onMounted(() => {
   <BoardListModal
     ref="refBoardListModal"
     :now-board="post?.board ?? undefined"
-    :now-project="post?.issue_project ?? undefined"
     :board-list="boardList"
     :is-copy="isCopy"
     @copy-post="copyPost"
