@@ -4,6 +4,7 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper.ts'
 import { useBoard } from '@/store/pinia/board.ts'
+import type { Board } from '@/store/types/board.ts'
 import draggable from 'vuedraggable'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -15,7 +16,8 @@ const route = useRoute()
 const RefForumForm = ref()
 
 const validated = ref(false)
-const form = ref({
+const form = ref<Board>({
+  pk: null as number | null,
   project: null as number | null,
   name: '',
   description: '',
@@ -29,8 +31,9 @@ const fetchBoardList = (payload: any) => brdStore.fetchBoardList(payload)
 const onSubmit = (event: Event) => {
   if (isValidate(event)) validated.value = true
   else {
-    console.log({ ...form.value })
+    brdStore.createBoard({ ...form.value })
     validated.value = false
+    form.value.pk = null
     form.value.name = ''
     form.value.description = ''
     form.value.parent = null
