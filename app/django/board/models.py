@@ -23,8 +23,8 @@ class Board(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = '02. 게시판 관리'
-        verbose_name_plural = '02. 게시판 관리'
+        verbose_name = '01. 게시판 관리'
+        verbose_name_plural = '01. 게시판 관리'
 
 
 class PostCategory(models.Model):
@@ -39,8 +39,8 @@ class PostCategory(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = '03. 카테고리 관리'
-        verbose_name_plural = '03. 카테고리 관리'
+        verbose_name = '02. 카테고리 관리'
+        verbose_name_plural = '02. 카테고리 관리'
 
 
 class Post(models.Model):
@@ -73,8 +73,8 @@ class Post(models.Model):
 
     class Meta:
         ordering = ['-created']
-        verbose_name = '04. 게시물 관리'
-        verbose_name_plural = '04. 게시물 관리'
+        verbose_name = '03. 게시물 관리'
+        verbose_name_plural = '03. 게시물 관리'
 
     def delete(self, using=None, keep_parents=False):
         self.deleted = datetime.now()
@@ -189,5 +189,5 @@ class Tag(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = '05. 태그 관리'
-        verbose_name_plural = '05. 태그 관리'
+        verbose_name = '04. 태그 관리'
+        verbose_name_plural = '04. 태그 관리'
