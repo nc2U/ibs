@@ -28,17 +28,12 @@ export const addDaysToDate = (dateString: Date | string, days: number) => {
   return `${year}-${month}-${day}`
 }
 
-export const dateFormat = (date: Date | string, split?: string) => {
-  const computedDate = typeof date === 'string' ? new Date(date) : date
-  const formattedDate = computedDate
-    .toLocaleDateString('en-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      timeZone: 'Asia/Seoul', // Setting timezone to Seoul (KST)
-    })
-    .replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2')
-  return !split ? formattedDate : formattedDate.replace(/-/g, split)
+export const dateFormat = (date: Date | string, split: string = '-') => {
+  const d = new Date(date)
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return [yyyy, mm, dd].join(split)
 }
 
 export const getToday = () =>
