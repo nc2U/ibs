@@ -13,14 +13,14 @@ const props = defineProps({
 const emit = defineEmits(['list-filter'])
 
 const form = ref<PostFilter>({
-  issue_project: '',
+  project: '',
   ordering: '-created',
   search: '',
   page: 1,
 })
 
 const formsCheck = computed(() => {
-  const a = form.value.issue_project === ''
+  const a = form.value.project === ''
   const b = form.value.ordering === '-created'
   const c = form.value.search === ''
   return a && b && c
@@ -39,15 +39,15 @@ const listFiltering = (page = 1) => {
 }
 
 const firstSorting = (event: { target: { value: number | null } }) => {
-  form.value.issue_project = event.target.value ?? ''
+  form.value.project = event.target.value ?? ''
 
   listFiltering(1)
 }
 
-const projectChange = (project: number | null) => (form.value.issue_project = project ?? '')
+const projectChange = (project: number | null) => (form.value.project = project ?? '')
 
 const resetForm = () => {
-  form.value.issue_project = ''
+  form.value.project = ''
   form.value.ordering = '-created'
   form.value.search = ''
   listFiltering(1)
@@ -61,7 +61,7 @@ const fetchProjectList = () => projectStore.fetchProjectList()
 onBeforeMount(() => {
   fetchProjectList()
   if (props.postFilter) {
-    form.value.issue_project = props.postFilter.issue_project
+    form.value.project = props.postFilter.issue_project
     form.value.ordering = props.postFilter.ordering
     form.value.search = props.postFilter.search
     form.value.page = props.postFilter.page
@@ -75,7 +75,7 @@ onBeforeMount(() => {
       <CCol lg="6">
         <CRow>
           <CCol v-if="comFrom" md="6" lg="5" xl="4" class="mb-3">
-            <CFormSelect v-model="form.issue_project" @change="firstSorting">
+            <CFormSelect v-model="form.project" @change="firstSorting">
               <option value="">본사</option>
               <option v-for="proj in projSelect" :key="proj.value" :value="proj.value">
                 {{ proj.label }}

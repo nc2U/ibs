@@ -16,7 +16,7 @@ import { useAccount } from '@/store/pinia/account'
 
 export type PostFilter = {
   board?: number
-  issue_project?: number | ''
+  project?: number | ''
   category?: number | ''
   is_notice?: boolean | ''
   is_blind?: boolean | ''
@@ -37,9 +37,9 @@ export const useBoard = defineStore('board', () => {
       .then(res => (board.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchBoardList = () =>
+  const fetchBoardList = (payload: { project?: string }) =>
     api
-      .get('/board/')
+      .get(`/board/?project__slug=${payload.project ?? ''}`)
       .then(res => (boardList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -85,27 +85,17 @@ export const useBoard = defineStore('board', () => {
 
   const removePost = () => (post.value = null)
 
-  const fetchNoticeList = async (board: number | undefined) => {
-    let url = `/post/?is_notice=true`
-    url = board ? `${url}&board=${board}` : url
-    return await api
-      .get(url)
-      .then(res => (noticeList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
   const fetchPostList = async (payload: PostFilter) => {
     const { board, page } = payload
     let url = `/post/?page=${page ?? 1}`
     if (payload.board) url += `&board=${board}`
-    if (payload.issue_project) url += `&board__issue_project=${payload.issue_project}`
+    if (payload.project) url += `&board_project=${payload.project}`
     if (payload.category) url += `&category=${payload.category}`
     if (payload.is_notice) url += `&is_notice=${payload.is_notice}`
     if (payload.is_blind) url += `&is_blind=${payload.is_blind}`
     if (payload.user) url += `&user=${payload.user}`
     if (payload.ordering) url += `&ordering=${payload.ordering}`
     if (payload.search) url += `&search=${payload.search}`
-    await fetchNoticeList(board)
 
     return await api
       .get(url)
@@ -129,7 +119,6 @@ export const useBoard = defineStore('board', () => {
       .post(`/post/`, payload.form, config_headers)
       .then(async res => {
         await fetchPostList({
-          issue_project: res.data.issue_project,
           board: res.data.board,
           page: 1,
         })
@@ -149,7 +138,6 @@ export const useBoard = defineStore('board', () => {
       .put(`/post/${payload.pk}/`, payload.form, config_headers)
       .then(async res => {
         await fetchPostList({
-          issue_project: res.data.issue_project,
           board: res.data.board,
           page: 1,
         })
@@ -232,7 +220,6 @@ export const useBoard = defineStore('board', () => {
       .patch(`/post-trash-can/${pk}/`)
       .then(res =>
         fetchPostList({
-          issue_project: res.data.issue_project,
           board: res.data.board,
           page: 1,
         }).then(() =>

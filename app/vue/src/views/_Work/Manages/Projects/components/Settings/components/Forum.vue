@@ -1,8 +1,17 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, onBeforeMount } from 'vue'
+import { useRoute } from 'vue-router'
+import { useBoard } from '@/store/pinia/board.ts'
 import NoData from '@/views/_Work/components/NoData.vue'
 
-const forumList = computed(() => [])
+const route = useRoute()
+
+const brdStore = useBoard()
+const boardList = computed(() => brdStore.boardList)
+
+onBeforeMount(() => {
+  brdStore.fetchBoardList({ project: route.params.projId as string })
+})
 </script>
 
 <template>
@@ -15,9 +24,9 @@ const forumList = computed(() => [])
     </CCol>
   </CRow>
 
-  <NoData v-if="!forumList.length" />
+  <NoData v-if="!boardList.length" />
 
   <CRow v-else>
-    <CCol></CCol>
+    <CCol>{{ boardList }}</CCol>
   </CRow>
 </template>
