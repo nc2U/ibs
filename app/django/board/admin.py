@@ -1,13 +1,6 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
-from .models import Group, Board, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
-
-
-@admin.register(Group)
-class GroupAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'name')
-    list_display_links = ('name',)
-    search_fields = ('name',)
+from .models import Board, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
 
 
 class CategoryInline(admin.TabularInline):
@@ -17,11 +10,11 @@ class CategoryInline(admin.TabularInline):
 
 @admin.register(Board)
 class BoardAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'group', 'board_type', 'name', 'order', 'search_able')
-    list_display_links = ('name',)
-    list_editable = ('group', 'board_type', 'order', 'search_able')
+    list_display = ('id', 'project', 'name', 'description', 'order', 'search_able')
+    list_display_links = ('project', 'name',)
+    list_editable = ('order', 'description', 'search_able')
     search_fields = ('name',)
-    list_filter = ('group', 'board_type')
+    list_filter = ('project',)
     inlines = (CategoryInline,)
 
 
@@ -56,9 +49,9 @@ class CommentInline(admin.TabularInline):
 
 @admin.register(Post)
 class PostAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'board', 'issue_project', 'category', 'title', 'is_notice')
+    list_display = ('id', 'board', 'category', 'title', 'is_notice')
     list_display_links = ('title',)
-    list_editable = ('board', 'issue_project', 'category', 'is_notice')
+    list_editable = ('board', 'category', 'is_notice')
     search_fields = ('title', 'content')
     list_filter = ('board', 'is_notice', 'category')
     inlines = (LinkInline, FileInline, ImageInline, CommentInline)

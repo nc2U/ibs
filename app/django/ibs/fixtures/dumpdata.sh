@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python ../../manage.py dumpdata \
-    board.group board.board docs.doctype docs.category cash.bankcode \
+    docs.doctype docs.category cash.bankcode \
     ibs.accountsort ibs.accountsubd1 ibs.accountsubd2 ibs.accountsubd3 \
     ibs.projectaccountd2 ibs.projectaccountd3 ibs.wisesaying \
     work.role work.permission work.tracker work.issuestatus \

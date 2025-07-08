@@ -9,20 +9,14 @@ from rest_framework import serializers
 
 from accounts.models import Profile
 from apiV1.serializers.accounts import SimpleUserSerializer
-from board.models import Group, Board, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
+from board.models import Board, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
 
 
 # Board --------------------------------------------------------------------------
-class GroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Group
-        fields = ('pk', 'name', 'manager')
-
-
 class BoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Board
-        fields = ('pk', 'group', 'project', 'board_type', 'name', 'order', 'search_able', 'manager')
+        fields = ('pk', 'project', 'name', 'order', 'search_able', 'manager')
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -58,17 +52,16 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('pk', 'board', 'board_name', 'issue_project', 'category', 'cate_name',
-                  'title', 'content', 'hit', 'like', 'my_like', 'scrape', 'my_scrape',
-                  'blame', 'my_blame', 'ip', 'device', 'is_secret', 'password',
-                  'is_hide_comment', 'is_notice', 'is_blind', 'deleted', 'links', 'files',
-                  'comments', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
+        fields = ('pk', 'board', 'board_name', 'category', 'cate_name', 'title',
+                  'content', 'hit', 'like', 'my_like', 'scrape', 'my_scrape', 'blame',
+                  'my_blame', 'ip', 'device', 'is_secret', 'password', 'is_hide_comment',
+                  'is_notice', 'is_blind', 'deleted', 'links', 'files', 'comments', 'user',
+                  'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
 
     def get_collection(self):
         queryset = Post.objects.all()
         query = self.context['request'].query_params
-        is_com = query.get('is_com')
         board = query.get('board')
         is_notice = True if query.get('is_notice') == 'true' else False
         category = query.get('category')

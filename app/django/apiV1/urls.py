@@ -146,7 +146,6 @@ router.register(r'contractor-release', contract.ContReleaseViewSet)
 router.register(r'sales-bill-issue', notice.BillIssueViewSet)
 
 # board
-router.register(r'group', board.GroupViewSet)
 router.register(r'board', board.BoardViewSet)
 router.register(r'post-category', board.CategoryViewSet)
 router.register(r'post', board.PostViewSet, basename='post')

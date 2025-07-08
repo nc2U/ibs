@@ -9,26 +9,11 @@ from django.utils import timezone
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 
 
-class Group(models.Model):
-    name = models.CharField('이름', max_length=255)
-    manager = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='관리자')
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['id']
-        verbose_name = '01. 그룹 관리'
-        verbose_name_plural = '01. 그룹 관리'
-
-
 class Board(models.Model):
-    group = models.ForeignKey(Group, on_delete=models.PROTECT, verbose_name='그룹')
     project = models.ForeignKey('work.IssueProject', on_delete=models.CASCADE,
                                 verbose_name='업무 프로젝트', related_name='forums')
-    BOARD_TYPES = (('notice', '공지 게시판'), ('general', '일반 게시판'))
-    board_type = models.CharField(max_length=10, choices=BOARD_TYPES, default='general', verbose_name='게시판 유형')
     name = models.CharField('이름', max_length=255, db_index=True)
+    description = models.CharField('설명', max_length=255, blank=True, default='')
     order = models.PositiveSmallIntegerField('정렬 순서', default=0)
     search_able = models.BooleanField('검색 사용', default=True)
     manager = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='관리자')
@@ -60,8 +45,6 @@ class PostCategory(models.Model):
 
 class Post(models.Model):
     board = models.ForeignKey(Board, on_delete=models.PROTECT, verbose_name='게시판')
-    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.SET_NULL,
-                                      null=True, blank=True, verbose_name='업무 프로젝트')
     category = models.ForeignKey(PostCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리')
     title = models.CharField('제목', max_length=255, db_index=True)
     content = models.TextField('내용', blank=True, default='')

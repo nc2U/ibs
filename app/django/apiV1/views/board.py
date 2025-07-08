@@ -11,17 +11,11 @@ from ..serializers.board import *
 
 # Board --------------------------------------------------------------------------
 
-class GroupViewSet(viewsets.ModelViewSet):
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-
-
 class BoardViewSet(viewsets.ModelViewSet):
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    filterset_fields = ('group', 'board_type', 'search_able', 'manager')
+    filterset_fields = ('group', 'search_able', 'manager')
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -34,7 +28,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class PostFilterSet(FilterSet):
     class Meta:
         model = Post
-        fields = ('board', 'issue_project', 'category', 'is_notice', 'is_blind', 'user')
+        fields = ('board', 'category', 'is_notice', 'is_blind', 'user')
 
 
 class PostViewSet(viewsets.ModelViewSet):
