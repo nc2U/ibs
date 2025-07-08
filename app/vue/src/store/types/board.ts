@@ -1,12 +1,11 @@
 export interface Board {
-  pk: number | null
-  issue_project: number | null
-  is_notice: boolean
+  pk?: number | null
+  project: number | null
   name: string
   description: string
-  order: number | null
-  search_able: boolean
-  manager: number[]
+  order?: number | null
+  search_able?: boolean
+  manager?: number[]
 }
 
 export interface PostCategory {
