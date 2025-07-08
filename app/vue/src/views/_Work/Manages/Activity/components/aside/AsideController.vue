@@ -19,7 +19,6 @@ watch(
   nVal => {
     if (nVal) form.to_act_date = dateFormat(nVal)
   },
-  { deep: true },
 )
 
 const emit = defineEmits(['set-filter'])

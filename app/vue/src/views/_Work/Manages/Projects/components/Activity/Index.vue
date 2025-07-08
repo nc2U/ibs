@@ -11,20 +11,16 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ActivityLogList from '@/views/_Work/Manages/Activity/components/ActivityLogList.vue'
 import AsideController from '@/views/_Work/Manages/Activity/components/aside/AsideController.vue'
 
-defineProps({
-  toDate: { type: Date, required: true },
-  issueProject: { type: Object as PropType<IssueProject>, default: () => null },
-  activityFilter: { type: Object as PropType<any>, default: () => null },
-})
-
 const emit = defineEmits(['to-back', 'to-next'])
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const route = useRoute()
 const workStore = useWork()
+const hasSubs = computed(() => !!(workStore.issueProject as IssueProject)?.sub_projects.length)
+
+const route = useRoute()
 
 const toDate = ref(new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))
@@ -37,6 +33,7 @@ const activityFilter = ref<ActLogEntryFilter>({
   user: '',
   sort: [],
 })
+
 const logStore = useLogging()
 const toMove = (date: Date) => {
   toDate.value = date
@@ -68,9 +65,7 @@ watch(
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  if (route.params.projId) {
-    activityFilter.value.project = route.params.projId as string
-  }
+  if (route.params.projId) activityFilter.value.project = route.params.projId as string
   loading.value = false
 })
 </script>
@@ -88,11 +83,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <AsideController
-        :to-date="toDate"
-        :has-subs="!!issueProject?.sub_projects?.length"
-        @set-filter="setFilter"
-      />
+      <AsideController :to-date="toDate" :has-subs="hasSubs" @set-filter="setFilter" />
     </template>
   </ContentBody>
 </template>

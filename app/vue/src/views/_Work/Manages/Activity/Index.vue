@@ -40,8 +40,8 @@ const activityFilter = ref<ActLogEntryFilter>({
   user: '',
   sort: [],
 })
-const logStore = useLogging()
 
+const logStore = useLogging()
 const toMove = (date: Date) => {
   toDate.value = date
   activityFilter.value.to_act_date = dateFormat(date)
@@ -72,7 +72,7 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
+  <ContentBody ref="cBody" :nav-menu="navMenu">
     <template v-slot:default>
       <ActivityLogList
         :to-date="toDate"
