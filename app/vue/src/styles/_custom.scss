@@ -204,7 +204,8 @@ label.required::after {
   }
 }
 
-.btn, .v-btn {
+.btn:not(.btn-group .btn),
+.v-btn:not(.v-btn-group .v-btn) {
   margin-right: ($spacer * 0.3) !important;
 }
 
