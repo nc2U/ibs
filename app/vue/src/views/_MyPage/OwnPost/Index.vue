@@ -38,7 +38,7 @@ const boardList = computed(() => boardStore.boardList)
 const postList = computed(() => boardStore.postList)
 const commentList = computed(() => boardStore.commentList)
 
-const fetchBoardList = () => boardStore.fetchBoardList()
+const fetchBoardList = () => boardStore.fetchBoardList({})
 const fetchPostList = (payload: PostFilter) => boardStore.fetchPostList(payload)
 const fetchCommentList = (payload: any) => boardStore.fetchCommentList(payload)
 
@@ -50,8 +50,8 @@ const dataSetup = (pk: number) => {
 }
 
 const loading = ref(true)
-onBeforeMount(async () => {
-  await dataSetup(userInfo?.value.pk as number)
+onBeforeMount(() => {
+  dataSetup(userInfo?.value.pk as number)
   loading.value = false
 })
 </script>
