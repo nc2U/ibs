@@ -8,15 +8,18 @@ import draggable from 'vuedraggable'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 
+const props = defineProps({ project: { type: Number, required: true } })
+
 const route = useRoute()
 
 const RefForumForm = ref()
 
 const validated = ref(false)
 const form = ref({
+  project: null as number | null,
   name: '',
   description: '',
-  parent: null,
+  parent: null as number | null,
 })
 
 const brdStore = useBoard()
@@ -26,7 +29,7 @@ const fetchBoardList = (payload: any) => brdStore.fetchBoardList(payload)
 const onSubmit = (event: Event) => {
   if (isValidate(event)) validated.value = true
   else {
-    console.log('emit ---- hear!!')
+    console.log({ ...form.value })
     validated.value = false
     form.value.name = ''
     form.value.description = ''
@@ -41,7 +44,10 @@ watch(projId, nVal => {
   if (nVal) fetchBoardList({ project: nVal })
 })
 
-onBeforeMount(() => fetchBoardList({ project: projId.value }))
+onBeforeMount(() => {
+  fetchBoardList({ project: projId.value })
+  form.value.project = props.project as number
+})
 </script>
 
 <template>
@@ -132,7 +138,7 @@ onBeforeMount(() => fetchBoardList({ project: projId.value }))
             <CCol sm="9">
               <CFormSelect v-model="form.parent" id="parent">
                 <option value="">---------</option>
-                <option v-for="brd in boardList" :value="brd.pk" :key="brd.pk">
+                <option v-for="brd in boardList" :value="brd.pk" :key="brd.pk as number">
                   {{ brd.name }}
                 </option>
               </CFormSelect>

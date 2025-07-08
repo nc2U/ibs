@@ -201,7 +201,7 @@ onBeforeMount(async () => {
           @delete-repo="deleteRepo"
         />
 
-        <Forum v-if="menu === '게시판'" />
+        <Forum v-if="menu === '게시판'" :project="issueProject?.pk as number" />
 
         <TimeTracking
           v-if="menu === '시간추적'"
