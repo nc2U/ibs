@@ -29,7 +29,7 @@ export const addDaysToDate = (dateString: Date | string, days: number) => {
 }
 
 export const dateFormat = (date: Date | string, split: string = '-') => {
-  const d = new Date(date)
+  const d = new Date(date instanceof Date ? date : new Date(date))
   const yyyy = d.getFullYear()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
@@ -39,40 +39,41 @@ export const dateFormat = (date: Date | string, split: string = '-') => {
 export const getToday = () =>
   new Date(new Date().getTime() + 32400000).toISOString().replace(/T.*$/, '')
 
-export const timeFormat = (date: Date | number | string, short = false, split?: string) => {
-  let formattedTime = new Date(+new Date(date) + 32400000)
-    .toISOString()
-    .replace('T', ' ')
-    .replace(/\..*/, '')
-  formattedTime = !split ? formattedTime : formattedTime.replace(/-/g, split)
-  return !short ? formattedTime : formattedTime.substring(11, 16)
+export const timeFormat = (date: Date | string | number, short = false, split: string = '-') => {
+  const d = new Date(date instanceof Date ? date : new Date(date))
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  const ss = String(d.getSeconds()).padStart(2, '0')
+
+  if (short) return `${hh}:${min}`
+  return `${yyyy}${split}${mm}${split}${dd} ${hh}:${min}:${ss}`
 }
 
-export const elapsedTime = (date?: Date | number | string): string => {
-  if (!date) return ''
-  const start = new Date(date)
-  const end = new Date()
+export const elapsedTime = (input?: Date | number | string): string => {
+  if (!input) return ''
+  const start = new Date(input)
+  const now = new Date()
 
-  const seconds = Math.floor((end.getTime() - start.getTime()) / 1000)
-  if (seconds < 60) return '방금 전'
+  const diff = Math.floor((now.getTime() - start.getTime()) / 1000)
 
-  const minutes = seconds / 60
-  if (minutes < 60) return `${Math.floor(minutes)}분 전`
+  const units = [
+    { name: '년', seconds: 60 * 60 * 24 * 365 },
+    { name: '달', seconds: 60 * 60 * 24 * 30 },
+    { name: '주', seconds: 60 * 60 * 24 * 7 },
+    { name: '일', seconds: 60 * 60 * 24 },
+    { name: '시간', seconds: 60 * 60 },
+    { name: '분', seconds: 60 },
+  ]
 
-  const hours = minutes / 60
-  if (hours < 24) return `${Math.floor(hours)}시간 전`
+  for (const unit of units) {
+    const elapsed = Math.floor(diff / unit.seconds)
+    if (elapsed >= 1) return `${elapsed}${unit.name} 전`
+  }
 
-  const days = hours / 24
-  if (days < 7) return `${Math.floor(days)}일 전`
-
-  const weeks = days / 7
-  if (days < 30) return `${Math.floor(weeks)}주일 전`
-
-  const months = days / 30.4375
-  if (months < 12) return `${Math.floor(months)}달 전`
-
-  const years = days / 365.25
-  return `${Math.floor(years)}년 이상 전`
+  return '방금 전'
 }
 
 export const numberToHour = (digit: number | string) => {
