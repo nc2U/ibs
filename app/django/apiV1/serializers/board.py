@@ -16,7 +16,7 @@ from board.models import Board, PostCategory, Post, PostLink, PostFile, PostImag
 class BoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Board
-        fields = ('pk', 'project', 'name', 'description', 'order', 'search_able', 'manager')
+        fields = ('pk', 'project', 'name', 'description', 'parent', 'order', 'search_able', 'manager')
 
 
 class CategorySerializer(serializers.ModelSerializer):
