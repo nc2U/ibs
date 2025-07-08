@@ -15,7 +15,7 @@ class BoardViewSet(viewsets.ModelViewSet):
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    filterset_fields = ('group', 'search_able', 'manager')
+    filterset_fields = ('project__slug', 'search_able', 'manager')
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -28,7 +28,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class PostFilterSet(FilterSet):
     class Meta:
         model = Post
-        fields = ('board', 'category', 'is_notice', 'is_blind', 'user')
+        fields = ('board', 'board__project', 'category', 'is_notice', 'is_blind', 'user')
 
 
 class PostViewSet(viewsets.ModelViewSet):
