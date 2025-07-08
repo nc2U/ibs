@@ -308,7 +308,7 @@ onBeforeMount(() => accStore.fetchUsersList())
 
   <ConfirmModal ref="memberConfirmModal">
     <template #footer>
-      <v-btn color="warning" @click="deleteSubmit">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="deleteSubmit">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

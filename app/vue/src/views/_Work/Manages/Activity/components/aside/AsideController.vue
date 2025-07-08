@@ -116,10 +116,6 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  {{ fromDate }}
-  <hr />
-  {{ toDate }}
-  <hr />
   <CRow class="mb-3">
     <CCol><h6 class="asideTitle">작업내역</h6></CCol>
   </CRow>
