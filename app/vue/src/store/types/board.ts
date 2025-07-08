@@ -3,6 +3,7 @@ export interface Board {
   project: number | null
   name: string
   description: string
+  parent: number | null
   order?: number | null
   search_able?: boolean
   manager?: number[]

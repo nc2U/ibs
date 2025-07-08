@@ -48,7 +48,7 @@ export const useBoard = defineStore('board', () => {
       .post(`/board/`, { ...payload })
       .then(async res => {
         board.value = res.data
-        await fetchBoardList({ project: res.data.project })
+        await fetchBoardList({ project: res.data.project.slug })
       })
       .catch(err => errorHandle(err.response.data))
   const updateBoard = () => 3
