@@ -389,7 +389,7 @@ onBeforeMount(() => {
               <v-divider class="mt-0" />
             </div>
 
-            <CRow v-show="!issueProject || issue" class="mb-3">
+            <CRow v-show="!route.params.projId || issue" class="mb-3">
               <CFormLabel for="project" class="col-sm-2 col-form-label text-right required">
                 프로젝트
               </CFormLabel>
@@ -428,7 +428,7 @@ onBeforeMount(() => {
                 {{ trackers?.filter(t => t.pk === form.tracker).map(t => t.description)[0] ?? '' }}
               </CCol>
 
-              <CCol v-if="issueProject && !issue" style="padding-top: 8px">
+              <CCol v-if="route.params.projId && !issue" style="padding-top: 8px">
                 <CFormCheck
                   v-if="workManager"
                   v-model="form.is_private"
