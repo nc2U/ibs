@@ -4,8 +4,8 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper.ts'
 import { useBoard } from '@/store/pinia/board.ts'
-import type { Board } from '@/store/types/board.ts'
 import { getOrderedList, setLocalStorage } from '@/utils/helper.ts'
+import type { Board } from '@/store/types/board.ts'
 import Draggable from 'vuedraggable'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -41,13 +41,16 @@ const fetchBoardList = (payload: any) => brdStore.fetchBoardList(payload)
 
 // 프로젝트 변경 시 목록 다시 불러오기
 const projId = computed(() => route.params.projId as string)
-watch(projId, nVal => {
-  if (nVal) fetchBoardList({ project: nVal })
+watch(projId, async nVal => {
+  if (nVal) {
+    await fetchBoardList({ project: nVal })
+    form.value.project = props.project as number
+  }
 })
 
 // 2. 정렬본 목록
-const orderedList = ref<Board[]>([])
 const STORAGE_KEY = 'boardList'
+const orderedList = ref<Board[]>([])
 
 // 원본 목록 변경 시 정렬본 다시 불러오기
 watch(
@@ -78,8 +81,8 @@ const onSubmit = (event: Event) => {
   else {
     if (form.value.pk) {
       const { pk, ...rest } = form.value
-      brdStore.updateBoard(pk as number, rest)
-    } else brdStore.createBoard({ ...form.value })
+      brdStore.updateBoard(pk as number, rest, projId.value)
+    } else brdStore.createBoard({ ...form.value }, projId.value)
     validated.value = false
     RefForumForm.value.close()
     resetForm()
