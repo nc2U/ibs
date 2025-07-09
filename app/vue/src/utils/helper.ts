@@ -1,6 +1,6 @@
 import { createToast, type ToastType, type Position, type TransitionType } from 'mosha-vue-toastify'
-import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import MarkdownIt from 'markdown-it'
 
 export const message = (
   type: ToastType = 'success',
@@ -65,13 +65,14 @@ export const markdownRender = (content: string) => {
   return DOMPurify.sanitize(result)
 }
 
-type ObjList = {
+interface Item {
   pk: number
+
   [key: string]: any
 }
 
 // localStorage 에 저장된 순서가 있을 경우, 그 순서에 맞게 정렬
-export const getOrderedList = (objectList: ObjList[], key: string) => {
+export const getOrderedList = (objectList: Item[], key: string) => {
   const savedOrder = JSON.parse(localStorage.getItem(key) || '[]') as {
     pk: number
     order: number
@@ -89,7 +90,7 @@ export const getOrderedList = (objectList: ObjList[], key: string) => {
 }
 
 // 순서가 바뀌면 저장
-export const setLocalStorage = (orderedList: ObjList[], key: string) => {
+export const setLocalStorage = (orderedList: Item[], key: string) => {
   const order = orderedList.map((obj, idx) => ({
     pk: obj.pk,
     order: idx,
