@@ -215,7 +215,7 @@ onBeforeMount(async () => {
   <ConfirmModal ref="RefDelConfirm">
     <template #default>
       이 게시판을 삭제하면 해당 게시물 등 관련된 데이터가 전부 삭제됩니다.<br />
-      계속 진행하시겠습니까?
+      계속 진행 하시겠습니까?
     </template>
     <template #footer>
       <v-btn color="warning" size="small" @click="deleteBoard">삭제</v-btn>
