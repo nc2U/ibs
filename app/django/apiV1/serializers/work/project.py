@@ -4,7 +4,10 @@ from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
 from work.models.issue import (IssueCategory, Tracker, CodeActivity, Issue)
-from work.models.project import IssueProject, Role, Permission, Member, Module, Version
+from work.models.project import IssueProject, Role, Member, Module, Version
+
+
+# from work.models.project import IssueProject, Role, Permission, Member, Module, Version
 
 
 # Work --------------------------------------------------------------------------
@@ -175,203 +178,205 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         return total_hours
 
     def get_my_perms(self, obj):
-        mems = obj.all_members()
-        request = self.context.get('request')
-        user = request.user
-        roles = next((item['roles'] for item in mems if item['user']['pk'] == user.pk), [])
-        role_pks = [r['pk'] for r in roles]
-        perms = Permission.objects.filter(role_id__in=role_pks)
+        return []
 
-        combined = {
-            # 프로젝트
-            'project_update': False,
-            'project_close': False,
-            'project_delete': False,
-            'project_public': False,
-            'project_module': False,
-            'project_member': False,
-            'project_version': False,
-            'project_create_sub': False,
-            'project_pub_query': False,
-            'project_save_query': False,
-            # 게시판
-            'forum_read': False,
-            'forum_create': False,
-            'forum_update': False,
-            'forum_own_update': False,
-            'forum_delete': False,
-            'forum_own_delete': False,
-            'forum_watcher_read': False,
-            'forum_watcher_create': False,
-            'forum_watcher_delete': False,
-            'forum_manage': False,
-            # 달력
-            'calendar_read': False,
-            # 문서
-            'document_read': False,
-            'document_create': False,
-            'document_update': False,
-            'document_delete': False,
-            # 파일
-            'file_read': False,
-            'file_manage': False,
-            # 간트차트
-            'gantt_read': False,
-            # 업무
-            'issue_read': False,
-            'issue_create': False,
-            'issue_update': False,
-            'issue_own_update': False,
-            'issue_copy': False,
-            'issue_rel_manage': False,
-            'issue_sub_manage': False,
-            'issue_public': False,
-            'issue_own_public': False,
-            'issue_comment_create': False,
-            'issue_comment_update': False,
-            'issue_comment_own_update': False,
-            'issue_private_comment_read': False,
-            'issue_private_comment_set': False,
-            'issue_delete': False,
-            'issue_watcher_read': False,
-            'issue_watcher_create': False,
-            'issue_watcher_delete': False,
-            'issue_import': False,
-            'issue_category_manage': False,
-            # 공지(뉴스)
-            'news_read': False,
-            'news_manage': False,
-            'news_comment': False,
-            # 저장소(레파지토리)
-            'repo_changesets_read': False,
-            'repo_read': False,
-            'repo_commit_access': False,
-            'repo_rel_issue_manage': False,
-            'repo_manage': False,
-            # 시간추적
-            'time_read': False,
-            'time_create': False,
-            'time_update': False,
-            'time_own_update': False,
-            'time_pro_act_manage': False,
-            'time_other_user_log': False,
-            'time_entries_import': False,
-            # 위키
-            'wiki_read': False,
-            'wiki_history_read': False,
-            'wiki_page_export': False,
-            'wiki_page_update': False,
-            'wiki_page_rename': False,
-            'wiki_page_delete': False,
-            'wiki_attachment_delete': False,
-            'wiki_watcher_read': False,
-            'wiki_watcher_create': False,
-            'wiki_watcher_delete': False,
-            'wiki_page_project': False,
-            'wiki_manage': False
-        }
+    #     mems = obj.all_members()
+    #     request = self.context.get('request')
+    #     user = request.user
+    #     roles = next((item['roles'] for item in mems if item['user']['pk'] == user.pk), [])
+    #     role_pks = [r['pk'] for r in roles]
+    #     perms = Permission.objects.filter(role_id__in=role_pks)
+    #
+    #     combined = {
+    #         # 프로젝트
+    #         'project_update': False,
+    #         'project_close': False,
+    #         'project_delete': False,
+    #         'project_public': False,
+    #         'project_module': False,
+    #         'project_member': False,
+    #         'project_version': False,
+    #         'project_create_sub': False,
+    #         'project_pub_query': False,
+    #         'project_save_query': False,
+    #         # 게시판
+    #         'forum_read': False,
+    #         'forum_create': False,
+    #         'forum_update': False,
+    #         'forum_own_update': False,
+    #         'forum_delete': False,
+    #         'forum_own_delete': False,
+    #         'forum_watcher_read': False,
+    #         'forum_watcher_create': False,
+    #         'forum_watcher_delete': False,
+    #         'forum_manage': False,
+    #         # 달력
+    #         'calendar_read': False,
+    #         # 문서
+    #         'document_read': False,
+    #         'document_create': False,
+    #         'document_update': False,
+    #         'document_delete': False,
+    #         # 파일
+    #         'file_read': False,
+    #         'file_manage': False,
+    #         # 간트차트
+    #         'gantt_read': False,
+    #         # 업무
+    #         'issue_read': False,
+    #         'issue_create': False,
+    #         'issue_update': False,
+    #         'issue_own_update': False,
+    #         'issue_copy': False,
+    #         'issue_rel_manage': False,
+    #         'issue_sub_manage': False,
+    #         'issue_public': False,
+    #         'issue_own_public': False,
+    #         'issue_comment_create': False,
+    #         'issue_comment_update': False,
+    #         'issue_comment_own_update': False,
+    #         'issue_private_comment_read': False,
+    #         'issue_private_comment_set': False,
+    #         'issue_delete': False,
+    #         'issue_watcher_read': False,
+    #         'issue_watcher_create': False,
+    #         'issue_watcher_delete': False,
+    #         'issue_import': False,
+    #         'issue_category_manage': False,
+    #         # 공지(뉴스)
+    #         'news_read': False,
+    #         'news_manage': False,
+    #         'news_comment': False,
+    #         # 저장소(레파지토리)
+    #         'repo_changesets_read': False,
+    #         'repo_read': False,
+    #         'repo_commit_access': False,
+    #         'repo_rel_issue_manage': False,
+    #         'repo_manage': False,
+    #         # 시간추적
+    #         'time_read': False,
+    #         'time_create': False,
+    #         'time_update': False,
+    #         'time_own_update': False,
+    #         'time_pro_act_manage': False,
+    #         'time_other_user_log': False,
+    #         'time_entries_import': False,
+    #         # 위키
+    #         'wiki_read': False,
+    #         'wiki_history_read': False,
+    #         'wiki_page_export': False,
+    #         'wiki_page_update': False,
+    #         'wiki_page_rename': False,
+    #         'wiki_page_delete': False,
+    #         'wiki_attachment_delete': False,
+    #         'wiki_watcher_read': False,
+    #         'wiki_watcher_create': False,
+    #         'wiki_watcher_delete': False,
+    #         'wiki_page_project': False,
+    #         'wiki_manage': False
+    #     }
 
-        # Combine permissions
-        for perm in perms:
-            # 프로젝트
-            combined['project_update'] = combined['project_update'] or perm.project_update  # 프로젝트 편집
-            combined['project_close'] = combined['project_close'] or perm.project_close  # 프로젝트 닫기/열기
-            combined['project_delete'] = combined['project_delete'] or perm.project_delete  # 프로젝트 삭제
-            combined['project_public'] = combined['project_public'] or perm.project_public  # 프로젝트 공개/비공개 설정
-            combined['project_module'] = combined['project_module'] or perm.project_module  # 프로젝트 모듈 선택
-            combined['project_member'] = combined['project_member'] or perm.project_member  # 구성원 관리
-            combined['project_version'] = combined['project_version'] or perm.project_version  # 버전 관리
-            combined['project_create_sub'] = combined['project_create_sub'] or perm.project_create_sub  # 하위 프로젝트 생성
-            combined['project_pub_query'] = combined['project_pub_query'] or perm.project_pub_query  # 공용 검색 폼 관리
-            combined['project_save_query'] = combined['project_save_query'] or perm.project_save_query  # 검색 폼 관리
-            # 게시물
-            combined['forum_read'] = combined['forum_read'] or perm.forum_read  # 게시물 보기
-            combined['forum_create'] = combined['forum_create'] or perm.forum_create  # 게시물 생성
-            combined['forum_update'] = combined['forum_update'] or perm.forum_update  # 게시물 편집
-            combined['forum_own_update'] = combined['forum_own_update'] or perm.forum_own_update  # 내 게시물 편집
-            combined['forum_delete'] = combined['forum_delete'] or perm.forum_delete  # 게시물 삭제
-            combined['forum_own_delete'] = combined['forum_own_delete'] or perm.forum_own_delete  # 내 게시물 삭제
-            combined['forum_watcher_read'] = combined['forum_watcher_read'] or perm.forum_watcher_read  # 게시물 관람자 보기
-            combined['forum_watcher_create'] = combined['forum_watcher_create'] or perm.forum_watcher_create
-            combined['forum_watcher_delete'] = combined['forum_watcher_delete'] or perm.forum_watcher_delete
-            combined['forum_manage'] = combined['forum_manage'] or perm.forum_manage  # 게시물 관리
-            # 달력
-            combined['calendar_read'] = combined['calendar_read'] or perm.calendar_read  # 달력 보기
-            # 문서
-            combined['document_read'] = combined['document_read'] or perm.document_read  # 문서 보기
-            combined['document_create'] = combined['document_create'] or perm.document_create  # 문서 생성
-            combined['document_update'] = combined['document_update'] or perm.document_update  # 문서 편집
-            combined['document_delete'] = combined['document_delete'] or perm.document_delete  # 문서 삭제
-            # 파일
-            combined['file_read'] = combined['file_read'] or perm.file_read  # 파일 보기
-            combined['file_manage'] = combined['file_manage'] or perm.file_manage  # 파일 관리
-            # 간트 차트
-            combined['gantt_read'] = combined['gantt_read'] or perm.gantt_read  # 간트 차트 보기
-            # 업무
-            combined['issue_read'] = combined['issue_read'] or perm.issue_read  # 업무 보기
-            combined['issue_create'] = combined['issue_create'] or perm.issue_create  # 업무 생성
-            combined['issue_update'] = combined['issue_update'] or perm.issue_update  # 업무 편집
-            combined['issue_own_update'] = combined['issue_own_update'] or perm.issue_own_update  # 내 업무 편집
-            combined['issue_copy'] = combined['issue_copy'] or perm.issue_copy  # 업무 복사
-            combined['issue_rel_manage'] = combined['issue_rel_manage'] or perm.issue_rel_manage  # 업무 관계 관리
-            combined['issue_sub_manage'] = combined['issue_sub_manage'] or perm.issue_sub_manage  # 하위 업무 관리
-            combined['issue_public'] = combined['issue_public'] or perm.issue_public  # 업무 공개/비공개 설정
-            combined['issue_own_public'] = combined['issue_own_public'] or perm.issue_own_public  # 내 업무 공개/비공개 설정
-            combined['issue_comment_create'] = combined['issue_comment_create'] or perm.issue_comment_create  # 댓글 추가
-            combined['issue_comment_update'] = combined['issue_comment_update'] or perm.issue_comment_update  # 댓글 편집
-            combined['issue_comment_own_update'] = \
-                combined['issue_comment_own_update'] or perm.issue_comment_own_update  # 내 댓글 편집
-            combined['issue_private_comment_read'] = \
-                combined['issue_private_comment_read'] or perm.issue_private_comment_read  # 비공개 댓글 보기
-            combined['issue_private_comment_set'] = \
-                combined['issue_private_comment_set'] or perm.issue_private_comment_set  # 댓글 비공개 설정
-            combined['issue_delete'] = combined['issue_delete'] or perm.issue_delete  # 업무 삭제
-            combined['issue_watcher_read'] = combined['issue_watcher_read'] or perm.issue_watcher_read  # 업무 관람자 보기
-            combined['issue_watcher_create'] = \
-                combined['issue_watcher_create'] or perm.issue_watcher_create  # 업무 관람자 생성
-            combined['issue_watcher_delete'] = \
-                combined['issue_watcher_delete'] or perm.issue_watcher_delete  # 업무 관람자 삭제
-            combined['issue_import'] = combined['issue_import'] or perm.issue_import  # 업무 가져 오기
-            combined['issue_category_manage'] = \
-                combined['issue_category_manage'] or perm.issue_category_manage  # 업무 범주 관리
-            # 공지(뉴스)
-            combined['news_read'] = combined['news_read'] or perm.news_read  # 공지 보기
-            combined['news_manage'] = combined['news_manage'] or perm.news_manage  # 공지 관리
-            combined['news_comment'] = combined['news_comment'] or perm.news_comment  # 공지 댓글 달기
-            # 저장소(레파지토리)
-            combined['repo_changesets_read'] = combined['repo_changesets_read'] or perm.repo_changesets_read  # 변경 묶음 보기
-            combined['repo_read'] = combined['repo_read'] or perm.repo_read  # 저장소 보기
-            combined['repo_commit_access'] = combined['repo_commit_access'] or perm.repo_commit_access  # 변경 로그 보기
-            combined['repo_rel_issue_manage'] = \
-                combined['repo_rel_issue_manage'] or perm.repo_rel_issue_manage  # 연결된 업무 관리
-            combined['repo_manage'] = combined['repo_manage'] or perm.repo_manage  # 저장소 관리
-            # 시간추적
-            combined['time_read'] = combined['time_read'] or perm.time_read  # 소요 시간 보기
-            combined['time_create'] = combined['time_create'] or perm.time_create  # 소요 시간 기록
-            combined['time_update'] = combined['time_update'] or perm.time_update  # 소요 시간 편집
-            combined['time_own_update'] = combined['time_own_update'] or perm.time_own_update  # 소요 시간 편집
-            combined['time_pro_act_manage'] = \
-                combined['time_pro_act_manage'] or perm.time_pro_act_manage  # 프로젝트 작업 내역 관리
-            combined['time_other_user_log'] = \
-                combined['time_other_user_log'] or perm.time_other_user_log  # 다른 사용자 소요 시간 입력
-            combined['time_entries_import'] = \
-                combined['time_entries_import'] or perm.time_entries_import  # 소요 시간 가져 오기
-            # 위키
-            combined['wiki_read'] = combined['wiki_read'] or perm.wiki_read  # 위키 보기
-            combined['wiki_history_read'] = combined['wiki_history_read'] or perm.wiki_history_read  # 위키 기록 보기
-            combined['wiki_page_export'] = combined['wiki_page_export'] or perm.wiki_page_export  # 위키 페이지 내보내기
-            combined['wiki_page_update'] = combined['wiki_page_update'] or perm.wiki_page_update  # 위키 페이지 편집
-            combined['wiki_page_rename'] = combined['wiki_page_rename'] or perm.wiki_page_rename  # 위키 페이지 이름 변경
-            combined['wiki_page_delete'] = combined['wiki_page_delete'] or perm.wiki_page_delete  # 위키 페이지 삭제
-            combined['wiki_attachment_delete'] = \
-                combined['wiki_attachment_delete'] or perm.wiki_attachment_delete  # 첨부파일 삭제
-            combined['wiki_watcher_read'] = combined['wiki_watcher_read'] or perm.wiki_watcher_read  # 위키 관람자 보기
-            combined['wiki_watcher_create'] = combined['wiki_watcher_create'] or perm.wiki_watcher_create  # 위키 관람자 추가
-            combined['wiki_watcher_delete'] = combined['wiki_watcher_delete'] or perm.wiki_watcher_delete  # 위키 관람자 삭제
-            combined['wiki_page_project'] = combined['wiki_page_project'] or perm.wiki_page_project  # 프로젝트 위키 페이지
-            combined['wiki_manage'] = combined['wiki_manage'] or perm.wiki_manage  # 위키 관리
-
-        return combined
+    # # Combine permissions
+    # for perm in perms:
+    #     # 프로젝트
+    #     combined['project_update'] = combined['project_update'] or perm.project_update  # 프로젝트 편집
+    #     combined['project_close'] = combined['project_close'] or perm.project_close  # 프로젝트 닫기/열기
+    #     combined['project_delete'] = combined['project_delete'] or perm.project_delete  # 프로젝트 삭제
+    #     combined['project_public'] = combined['project_public'] or perm.project_public  # 프로젝트 공개/비공개 설정
+    #     combined['project_module'] = combined['project_module'] or perm.project_module  # 프로젝트 모듈 선택
+    #     combined['project_member'] = combined['project_member'] or perm.project_member  # 구성원 관리
+    #     combined['project_version'] = combined['project_version'] or perm.project_version  # 버전 관리
+    #     combined['project_create_sub'] = combined['project_create_sub'] or perm.project_create_sub  # 하위 프로젝트 생성
+    #     combined['project_pub_query'] = combined['project_pub_query'] or perm.project_pub_query  # 공용 검색 폼 관리
+    #     combined['project_save_query'] = combined['project_save_query'] or perm.project_save_query  # 검색 폼 관리
+    #     # 게시물
+    #     combined['forum_read'] = combined['forum_read'] or perm.forum_read  # 게시물 보기
+    #     combined['forum_create'] = combined['forum_create'] or perm.forum_create  # 게시물 생성
+    #     combined['forum_update'] = combined['forum_update'] or perm.forum_update  # 게시물 편집
+    #     combined['forum_own_update'] = combined['forum_own_update'] or perm.forum_own_update  # 내 게시물 편집
+    #     combined['forum_delete'] = combined['forum_delete'] or perm.forum_delete  # 게시물 삭제
+    #     combined['forum_own_delete'] = combined['forum_own_delete'] or perm.forum_own_delete  # 내 게시물 삭제
+    #     combined['forum_watcher_read'] = combined['forum_watcher_read'] or perm.forum_watcher_read  # 게시물 관람자 보기
+    #     combined['forum_watcher_create'] = combined['forum_watcher_create'] or perm.forum_watcher_create
+    #     combined['forum_watcher_delete'] = combined['forum_watcher_delete'] or perm.forum_watcher_delete
+    #     combined['forum_manage'] = combined['forum_manage'] or perm.forum_manage  # 게시물 관리
+    #     # 달력
+    #     combined['calendar_read'] = combined['calendar_read'] or perm.calendar_read  # 달력 보기
+    #     # 문서
+    #     combined['document_read'] = combined['document_read'] or perm.document_read  # 문서 보기
+    #     combined['document_create'] = combined['document_create'] or perm.document_create  # 문서 생성
+    #     combined['document_update'] = combined['document_update'] or perm.document_update  # 문서 편집
+    #     combined['document_delete'] = combined['document_delete'] or perm.document_delete  # 문서 삭제
+    #     # 파일
+    #     combined['file_read'] = combined['file_read'] or perm.file_read  # 파일 보기
+    #     combined['file_manage'] = combined['file_manage'] or perm.file_manage  # 파일 관리
+    #     # 간트 차트
+    #     combined['gantt_read'] = combined['gantt_read'] or perm.gantt_read  # 간트 차트 보기
+    #     # 업무
+    #     combined['issue_read'] = combined['issue_read'] or perm.issue_read  # 업무 보기
+    #     combined['issue_create'] = combined['issue_create'] or perm.issue_create  # 업무 생성
+    #     combined['issue_update'] = combined['issue_update'] or perm.issue_update  # 업무 편집
+    #     combined['issue_own_update'] = combined['issue_own_update'] or perm.issue_own_update  # 내 업무 편집
+    #     combined['issue_copy'] = combined['issue_copy'] or perm.issue_copy  # 업무 복사
+    #     combined['issue_rel_manage'] = combined['issue_rel_manage'] or perm.issue_rel_manage  # 업무 관계 관리
+    #     combined['issue_sub_manage'] = combined['issue_sub_manage'] or perm.issue_sub_manage  # 하위 업무 관리
+    #     combined['issue_public'] = combined['issue_public'] or perm.issue_public  # 업무 공개/비공개 설정
+    #     combined['issue_own_public'] = combined['issue_own_public'] or perm.issue_own_public  # 내 업무 공개/비공개 설정
+    #     combined['issue_comment_create'] = combined['issue_comment_create'] or perm.issue_comment_create  # 댓글 추가
+    #     combined['issue_comment_update'] = combined['issue_comment_update'] or perm.issue_comment_update  # 댓글 편집
+    #     combined['issue_comment_own_update'] = \
+    #         combined['issue_comment_own_update'] or perm.issue_comment_own_update  # 내 댓글 편집
+    #     combined['issue_private_comment_read'] = \
+    #         combined['issue_private_comment_read'] or perm.issue_private_comment_read  # 비공개 댓글 보기
+    #     combined['issue_private_comment_set'] = \
+    #         combined['issue_private_comment_set'] or perm.issue_private_comment_set  # 댓글 비공개 설정
+    #     combined['issue_delete'] = combined['issue_delete'] or perm.issue_delete  # 업무 삭제
+    #     combined['issue_watcher_read'] = combined['issue_watcher_read'] or perm.issue_watcher_read  # 업무 관람자 보기
+    #     combined['issue_watcher_create'] = \
+    #         combined['issue_watcher_create'] or perm.issue_watcher_create  # 업무 관람자 생성
+    #     combined['issue_watcher_delete'] = \
+    #         combined['issue_watcher_delete'] or perm.issue_watcher_delete  # 업무 관람자 삭제
+    #     combined['issue_import'] = combined['issue_import'] or perm.issue_import  # 업무 가져 오기
+    #     combined['issue_category_manage'] = \
+    #         combined['issue_category_manage'] or perm.issue_category_manage  # 업무 범주 관리
+    #     # 공지(뉴스)
+    #     combined['news_read'] = combined['news_read'] or perm.news_read  # 공지 보기
+    #     combined['news_manage'] = combined['news_manage'] or perm.news_manage  # 공지 관리
+    #     combined['news_comment'] = combined['news_comment'] or perm.news_comment  # 공지 댓글 달기
+    #     # 저장소(레파지토리)
+    #     combined['repo_changesets_read'] = combined['repo_changesets_read'] or perm.repo_changesets_read  # 변경 묶음 보기
+    #     combined['repo_read'] = combined['repo_read'] or perm.repo_read  # 저장소 보기
+    #     combined['repo_commit_access'] = combined['repo_commit_access'] or perm.repo_commit_access  # 변경 로그 보기
+    #     combined['repo_rel_issue_manage'] = \
+    #         combined['repo_rel_issue_manage'] or perm.repo_rel_issue_manage  # 연결된 업무 관리
+    #     combined['repo_manage'] = combined['repo_manage'] or perm.repo_manage  # 저장소 관리
+    #     # 시간추적
+    #     combined['time_read'] = combined['time_read'] or perm.time_read  # 소요 시간 보기
+    #     combined['time_create'] = combined['time_create'] or perm.time_create  # 소요 시간 기록
+    #     combined['time_update'] = combined['time_update'] or perm.time_update  # 소요 시간 편집
+    #     combined['time_own_update'] = combined['time_own_update'] or perm.time_own_update  # 소요 시간 편집
+    #     combined['time_pro_act_manage'] = \
+    #         combined['time_pro_act_manage'] or perm.time_pro_act_manage  # 프로젝트 작업 내역 관리
+    #     combined['time_other_user_log'] = \
+    #         combined['time_other_user_log'] or perm.time_other_user_log  # 다른 사용자 소요 시간 입력
+    #     combined['time_entries_import'] = \
+    #         combined['time_entries_import'] or perm.time_entries_import  # 소요 시간 가져 오기
+    #     # 위키
+    #     combined['wiki_read'] = combined['wiki_read'] or perm.wiki_read  # 위키 보기
+    #     combined['wiki_history_read'] = combined['wiki_history_read'] or perm.wiki_history_read  # 위키 기록 보기
+    #     combined['wiki_page_export'] = combined['wiki_page_export'] or perm.wiki_page_export  # 위키 페이지 내보내기
+    #     combined['wiki_page_update'] = combined['wiki_page_update'] or perm.wiki_page_update  # 위키 페이지 편집
+    #     combined['wiki_page_rename'] = combined['wiki_page_rename'] or perm.wiki_page_rename  # 위키 페이지 이름 변경
+    #     combined['wiki_page_delete'] = combined['wiki_page_delete'] or perm.wiki_page_delete  # 위키 페이지 삭제
+    #     combined['wiki_attachment_delete'] = \
+    #         combined['wiki_attachment_delete'] or perm.wiki_attachment_delete  # 첨부파일 삭제
+    #     combined['wiki_watcher_read'] = combined['wiki_watcher_read'] or perm.wiki_watcher_read  # 위키 관람자 보기
+    #     combined['wiki_watcher_create'] = combined['wiki_watcher_create'] or perm.wiki_watcher_create  # 위키 관람자 추가
+    #     combined['wiki_watcher_delete'] = combined['wiki_watcher_delete'] or perm.wiki_watcher_delete  # 위키 관람자 삭제
+    #     combined['wiki_page_project'] = combined['wiki_page_project'] or perm.wiki_page_project  # 프로젝트 위키 페이지
+    #     combined['wiki_manage'] = combined['wiki_manage'] or perm.wiki_manage  # 위키 관리
+    #
+    # return combined
 
     @transaction.atomic
     def create(self, validated_data):
@@ -499,41 +504,41 @@ class IssueProjectForGanttSerializer(serializers.ModelSerializer):
         return IssuesSerializer(issues, many=True, read_only=True, context=self.context).data
 
 
-class PermissionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Permission
-        fields = ('pk', 'project_update', 'project_close', 'project_delete',
-                  'project_public', 'project_module', 'project_member', 'project_version',
-                  'project_create_sub', 'project_pub_query', 'project_save_query',
-                  'forum_read', 'forum_create', 'forum_update', 'forum_own_update',
-                  'forum_delete', 'forum_own_delete', 'forum_watcher_read',
-                  'forum_watcher_create', 'forum_watcher_delete', 'forum_manage',
-                  'calendar_read',
-                  'document_read', 'document_create', 'document_update', 'document_delete',
-                  'file_read', 'file_manage',
-                  'gantt_read',
-                  'issue_read', 'issue_create', 'issue_update', 'issue_own_update', 'issue_copy',
-                  'issue_rel_manage', 'issue_sub_manage', 'issue_public', 'issue_own_public',
-                  'issue_comment_create', 'issue_comment_update', 'issue_comment_own_update',
-                  'issue_private_comment_read', 'issue_private_comment_set', 'issue_delete',
-                  'issue_watcher_read', 'issue_watcher_create', 'issue_watcher_delete', 'issue_import',
-                  'issue_category_manage',
-                  'news_read', 'news_manage', 'news_manage', 'news_comment',
-                  'repo_changesets_read', 'repo_read', 'repo_commit_access', 'repo_rel_issue_manage', 'repo_manage',
-                  'time_read', 'time_create', 'time_update', 'time_own_update',
-                  'time_pro_act_manage', 'time_other_user_log', 'time_entries_import',
-                  'wiki_read', 'wiki_history_read', 'wiki_page_export', 'wiki_page_update',
-                  'wiki_page_rename', 'wiki_page_delete', 'wiki_attachment_delete', 'wiki_watcher_read',
-                  'wiki_watcher_create', 'wiki_watcher_delete', 'wiki_page_project', 'wiki_manage')
+# class PermissionSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Permission
+#         fields = ('pk', 'project_update', 'project_close', 'project_delete',
+#                   'project_public', 'project_module', 'project_member', 'project_version',
+#                   'project_create_sub', 'project_pub_query', 'project_save_query',
+#                   'forum_read', 'forum_create', 'forum_update', 'forum_own_update',
+#                   'forum_delete', 'forum_own_delete', 'forum_watcher_read',
+#                   'forum_watcher_create', 'forum_watcher_delete', 'forum_manage',
+#                   'calendar_read',
+#                   'document_read', 'document_create', 'document_update', 'document_delete',
+#                   'file_read', 'file_manage',
+#                   'gantt_read',
+#                   'issue_read', 'issue_create', 'issue_update', 'issue_own_update', 'issue_copy',
+#                   'issue_rel_manage', 'issue_sub_manage', 'issue_public', 'issue_own_public',
+#                   'issue_comment_create', 'issue_comment_update', 'issue_comment_own_update',
+#                   'issue_private_comment_read', 'issue_private_comment_set', 'issue_delete',
+#                   'issue_watcher_read', 'issue_watcher_create', 'issue_watcher_delete', 'issue_import',
+#                   'issue_category_manage',
+#                   'news_read', 'news_manage', 'news_manage', 'news_comment',
+#                   'repo_changesets_read', 'repo_read', 'repo_commit_access', 'repo_rel_issue_manage', 'repo_manage',
+#                   'time_read', 'time_create', 'time_update', 'time_own_update',
+#                   'time_pro_act_manage', 'time_other_user_log', 'time_entries_import',
+#                   'wiki_read', 'wiki_history_read', 'wiki_page_export', 'wiki_page_update',
+#                   'wiki_page_rename', 'wiki_page_delete', 'wiki_attachment_delete', 'wiki_watcher_read',
+#                   'wiki_watcher_create', 'wiki_watcher_delete', 'wiki_page_project', 'wiki_manage')
 
 
 class RoleSerializer(serializers.ModelSerializer):
-    permission = PermissionSerializer(read_only=True)
+    # permission = PermissionSerializer(read_only=True)
 
     class Meta:
         model = Role
         fields = ('pk', 'name', 'assignable', 'issue_visible', 'time_entry_visible', 'user_visible',
-                  'default_time_activity', 'permission', 'order', 'user', 'created', 'updated')
+                  'default_time_activity', 'order', 'user', 'created', 'updated')  # , 'permission'
 
 
 class MemberSerializer(serializers.ModelSerializer):

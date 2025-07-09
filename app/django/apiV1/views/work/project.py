@@ -54,10 +54,10 @@ class RoleViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class PermissionViewSet(viewsets.ModelViewSet):
-    queryset = Permission.objects.all()
-    serializer_class = PermissionSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+# class PermissionViewSet(viewsets.ModelViewSet):
+#     queryset = Permission.objects.all()
+#     serializer_class = PermissionSerializer
+#     permission_classes = (permissions.IsAuthenticated,)
 
 
 class MemberViewSet(viewsets.ModelViewSet):

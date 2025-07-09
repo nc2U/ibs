@@ -1,7 +1,8 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from work.models import IssueProject, Module, Role, Permission, Member, Version
+from work.models import IssueProject, Module, Role, Member, Version
+# from work.models import IssueProject, Module, Role, Permission, Member, Version
 from work.models.git_repo import Repository
 from work.models.issue import IssueCategory
 
@@ -40,11 +41,11 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('company', 'sort', 'is_public', 'status')
 
 
-class PermissionInline(admin.StackedInline):
-    model = Permission
-    extra = 1
-    max_num = 1
-    can_delete = False
+# class PermissionInline(admin.StackedInline):
+#     model = Permission
+#     extra = 1
+#     max_num = 1
+#     can_delete = False
 
 
 @admin.register(Role)
@@ -52,22 +53,22 @@ class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'issue_visible', 'time_entry_visible',
                     'user_visible', 'default_time_activity')
     list_display_links = ('name',)
-    inlines = (PermissionInline,)
+    # inlines = (PermissionInline,)
 
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        # Permission이 없으면 자동 생성
-        if not hasattr(obj, 'permission'):
-            Permission.objects.create(role=obj)
-
-    def save_formset(self, request, form, formset, change):
-        if formset.model == Permission:
-            instances = formset.save(commit=False)
-            for instance in instances:
-                instance.role = form.instance
-                instance.save()
-        else:
-            formset.save()
+    # def save_model(self, request, obj, form, change):
+    #     super().save_model(request, obj, form, change)
+    #     # Permission이 없으면 자동 생성
+    #     if not hasattr(obj, 'permission'):
+    #         Permission.objects.create(role=obj)
+    #
+    # def save_formset(self, request, form, formset, change):
+    #     if formset.model == Permission:
+    #         instances = formset.save(commit=False)
+    #         for instance in instances:
+    #             instance.role = form.instance
+    #             instance.save()
+    #     else:
+    #         formset.save()
 
 
 @admin.register(Member)
