@@ -5,11 +5,10 @@ import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper.ts'
 import { useBoard } from '@/store/pinia/board.ts'
 import type { Board } from '@/store/types/board.ts'
-import { getOrderedList, saveToLocalStorage } from '@/utils/helper.ts'
+import { getOrderedList, setLocalStorage } from '@/utils/helper.ts'
 import Draggable from 'vuedraggable'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
-import { CRow } from '@coreui/vue'
 
 const props = defineProps({ project: { type: Number, required: true } })
 
@@ -97,7 +96,7 @@ onBeforeMount(async () => {
           v-model="orderedList"
           tag="tbody"
           item-key="name"
-          @end="saveToLocalStorage(orderedList, STORAGE_KEY)"
+          @end="setLocalStorage(orderedList, STORAGE_KEY)"
         >
           <template #item="{ element }">
             <CTableRow class="asdfasdf">

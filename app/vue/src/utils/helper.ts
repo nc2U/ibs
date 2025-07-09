@@ -84,7 +84,7 @@ export const getOrderedList = (objectList: { pk: number; [key: string]: any }[],
 }
 
 // 6. 순서가 바뀌면 저장
-export const saveToLocalStorage = (orderedList: any[], key: string) => {
+export const setLocalStorage = (orderedList: any[], key: string) => {
   const order = orderedList.map((obj, idx) => ({
     pk: obj.pk,
     order: idx,
