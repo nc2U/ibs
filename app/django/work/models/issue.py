@@ -43,8 +43,8 @@ class Issue(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '05. 업무(작업)'
-        verbose_name_plural = '05. 업무(작업)'
+        verbose_name = '06. 업무(작업)'
+        verbose_name_plural = '06. 업무(작업)'
 
 
 class IssueRelation(models.Model):
@@ -135,8 +135,8 @@ class TimeEntry(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '06. 소요 시간'
-        verbose_name_plural = '06. 소요 시간'
+        verbose_name = '07. 소요 시간'
+        verbose_name_plural = '07. 소요 시간'
 
 
 class Tracker(models.Model):
@@ -154,8 +154,8 @@ class Tracker(models.Model):
 
     class Meta:
         ordering = ('order', 'id')
-        verbose_name = '07. 업무 유형'
-        verbose_name_plural = '07. 업무 유형'
+        verbose_name = '08. 업무 유형'
+        verbose_name_plural = '08. 업무 유형'
 
 
 class IssueCategory(models.Model):
@@ -169,8 +169,8 @@ class IssueCategory(models.Model):
 
     class Meta:
         ordering = ('-project', 'id',)
-        verbose_name = '08. 업무 범주'
-        verbose_name_plural = '08. 업무 범주'
+        verbose_name = '09. 업무 범주'
+        verbose_name_plural = '09. 업무 범주'
 
 
 class IssueStatus(models.Model):
@@ -187,8 +187,8 @@ class IssueStatus(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '09. 업무 상태'
-        verbose_name_plural = '09. 업무 상태'
+        verbose_name = '10. 업무 상태'
+        verbose_name_plural = '10. 업무 상태'
 
 
 class Workflow(models.Model):
@@ -202,8 +202,8 @@ class Workflow(models.Model):
         return f'{self.role} - {self.tracker}'
 
     class Meta:
-        verbose_name = '10. 업무 흐름'
-        verbose_name_plural = '10. 업무 흐름'
+        verbose_name = '11. 업무 흐름'
+        verbose_name_plural = '11. 업무 흐름'
 
 
 class CodeActivity(models.Model):
@@ -220,8 +220,8 @@ class CodeActivity(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '11. 작업 분류(시간추적)'
-        verbose_name_plural = '11. 작업 분류(시간추적)'
+        verbose_name = '12. 작업 분류(시간추적)'
+        verbose_name_plural = '12. 작업 분류(시간추적)'
 
 
 class CodeIssuePriority(models.Model):
@@ -238,5 +238,5 @@ class CodeIssuePriority(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '12. 업무 우선 순위'
-        verbose_name_plural = '12. 업무 우선 순위'
+        verbose_name = '13. 업무 우선 순위'
+        verbose_name_plural = '13. 업무 우선 순위'

@@ -17,8 +17,8 @@ class Repository(models.Model):
 
     class Meta:
         ordering = ('id',)
-        verbose_name = '15. 저장소'
-        verbose_name_plural = '15. 저장소'
+        verbose_name = '16. 저장소'
+        verbose_name_plural = '16. 저장소'
         indexes = [
             models.Index(fields=['project']),
             models.Index(fields=['slug']),
@@ -34,8 +34,8 @@ class Branch(models.Model):
 
     class Meta:
         ordering = ('-repo', 'name')
-        verbose_name = '16. 브랜치'
-        verbose_name_plural = '16. 브랜치'
+        verbose_name = '17. 브랜치'
+        verbose_name_plural = '17. 브랜치'
         unique_together = ('repo', 'name')
         indexes = [
             models.Index(fields=['name']),
@@ -57,8 +57,8 @@ class Commit(models.Model):
 
     class Meta:
         ordering = ('-date',)
-        verbose_name = '17. 커미트'
-        verbose_name_plural = '17. 커미트'
+        verbose_name = '18. 커미트'
+        verbose_name_plural = '18. 커미트'
         constraints = [
             models.UniqueConstraint(fields=['repo', 'commit_hash'], name='unique_repo_commit_hash')
         ]
