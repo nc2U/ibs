@@ -5,9 +5,11 @@ import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper.ts'
 import { useBoard } from '@/store/pinia/board.ts'
 import type { Board } from '@/store/types/board.ts'
-import draggable from 'vuedraggable'
+import { getOrderedList, saveToLocalStorage } from '@/utils/helper.ts'
+import Draggable from 'vuedraggable'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import { CRow } from '@coreui/vue'
 
 const props = defineProps({ project: { type: Number, required: true } })
 
@@ -25,7 +27,8 @@ const form = ref<Board>({
 })
 
 const brdStore = useBoard()
-const boardList = computed(() => brdStore.boardList)
+// 1. 원본 목록
+const boardList = computed(() => brdStore.boardList as Board[])
 const fetchBoardList = (payload: any) => brdStore.fetchBoardList(payload)
 
 const onSubmit = (event: Event) => {
@@ -47,9 +50,22 @@ watch(projId, nVal => {
   if (nVal) fetchBoardList({ project: nVal })
 })
 
-onBeforeMount(() => {
-  fetchBoardList({ project: projId.value })
+const orderedList = ref<Board[]>([])
+const STORAGE_KEY = 'boardList'
+
+watch(
+  boardList,
+  nVal => {
+    orderedList.value = getOrderedList(nVal as any[], STORAGE_KEY)
+  },
+  { immediate: true },
+)
+
+onBeforeMount(async () => {
   form.value.project = props.project as number
+  await fetchBoardList({ project: projId.value })
+  if (boardList.value.length)
+    orderedList.value = getOrderedList(boardList.value as any[], STORAGE_KEY)
 })
 </script>
 
@@ -73,34 +89,41 @@ onBeforeMount(() => {
         <col style="width: 25%" />
         <CTableHead>
           <CTableRow color="secondary">
-            <CTableHeaderCell class="pl-2" colspan="3">게시판</CTableHeaderCell>
+            <CTableHeaderCell class="pl-3" colspan="3">게시판</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
 
-        <CTableBody>
-          <CTableRow v-for="brd in boardList" :key="brd.pk">
-            <CTableDataCell class="pl-2">
-              <router-link to="">{{ brd.name }}</router-link>
-            </CTableDataCell>
-            <CTableDataCell>{{ brd.description }}</CTableDataCell>
-            <CTableDataCell>
-              <v-icon
-                icon="mdi-arrow-up-down-bold"
-                color="success"
-                size="16"
-                class="cursor-move mr-3"
-              />
-              <span class="mr-3 cursor-pointer">
-                <v-icon icon="mdi-pencil" color="amber" size="15" class="mr-2" />
-                <router-link to="">편집</router-link>
-              </span>
-              <span>
-                <v-icon icon="mdi-trash-can-outline" color="grey" size="15" class="mr-2" />
-                <router-link to="">삭제</router-link>
-              </span>
-            </CTableDataCell>
-          </CTableRow>
-        </CTableBody>
+        <Draggable
+          v-model="orderedList"
+          tag="tbody"
+          item-key="name"
+          @end="saveToLocalStorage(orderedList, STORAGE_KEY)"
+        >
+          <template #item="{ element }">
+            <CTableRow class="asdfasdf">
+              <CTableDataCell class="pl-3">
+                <router-link to="">{{ element.name }}</router-link>
+              </CTableDataCell>
+              <CTableDataCell>{{ element.description }}</CTableDataCell>
+              <CTableDataCell>
+                <v-icon
+                  icon="mdi-arrow-up-down-bold"
+                  color="success"
+                  size="16"
+                  class="cursor-move mr-3"
+                />
+                <span class="mr-3 cursor-pointer">
+                  <v-icon icon="mdi-pencil" color="amber" size="15" class="mr-2" />
+                  <router-link to="">편집</router-link>
+                </span>
+                <span>
+                  <v-icon icon="mdi-trash-can-outline" color="grey" size="15" class="mr-2" />
+                  <router-link to="">삭제</router-link>
+                </span>
+              </CTableDataCell>
+            </CTableRow>
+          </template>
+        </Draggable>
       </CTable>
     </CCol>
   </CRow>
