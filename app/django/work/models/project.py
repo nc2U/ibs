@@ -135,6 +135,7 @@ class Role(models.Model):
     user_visible = models.CharField('사용자 보기 권한', max_length=3, choices=USER_VIEW_PERM, default='ALL')
     default_time_activity = models.ForeignKey('CodeActivity', on_delete=models.SET_NULL, null=True, blank=True,
                                               verbose_name='기본 활동')
+    permissions = models.ManyToManyField('work.Permission', related_name='roles')
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
@@ -145,105 +146,27 @@ class Role(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '02. 역할 및 권한'
-        verbose_name_plural = '02. 역할 및 권한'
+        verbose_name = '02. 역할'
+        verbose_name_plural = '02. 역할'
 
 
-# class Permission(models.Model):
-#     role = models.OneToOneField(Role, on_delete=models.CASCADE)
-#     # 프로젝트
-#     # project_create = models.BooleanField('프로젝트 생성', default=False)  # 관라지(work_manager)만 생성 가능
-#     project_update = models.BooleanField('프로젝트 편집', default=False)
-#     project_close = models.BooleanField('프로젝트 닫기/열기', default=False)
-#     project_delete = models.BooleanField('프로젝트 삭제', default=False)
-#     project_public = models.BooleanField('프로젝트 공개/비공개 설정', default=False)
-#     project_module = models.BooleanField('프로젝트 모듈 선택', default=False)
-#     project_member = models.BooleanField('구성원 관리', default=False)
-#     project_version = models.BooleanField('버전 관리', default=False)
-#     project_create_sub = models.BooleanField('하위 프로젝트 생성', default=False)
-#     project_pub_query = models.BooleanField('공용 검색 양식 관리', default=False)
-#     project_save_query = models.BooleanField('검색 양식 저장', default=True)
-#     # 게시물
-#     forum_read = models.BooleanField('게시물 보기', default=True)
-#     forum_create = models.BooleanField('게시물 추가', default=True)
-#     forum_update = models.BooleanField('게시물 편집', default=False)
-#     forum_own_update = models.BooleanField('내 게시물 편집', default=True)
-#     forum_delete = models.BooleanField('게시물 삭제', default=False)
-#     forum_own_delete = models.BooleanField('내 게시물 삭제', default=True)
-#     forum_watcher_read = models.BooleanField('게시물 관람자 보기', default=False)
-#     forum_watcher_create = models.BooleanField('게시물 관람자 추가', default=False)
-#     forum_watcher_delete = models.BooleanField('게시물 관람자 삭제', default=False)
-#     forum_manage = models.BooleanField('게시판 관리', default=False)
-#     # 달력
-#     calendar_read = models.BooleanField('달력 보기', default=True)
-#     # 문서
-#     document_read = models.BooleanField('문서 보기', default=True)
-#     document_create = models.BooleanField('문서 추가', default=False)
-#     document_update = models.BooleanField('문서 편집', default=False)
-#     document_delete = models.BooleanField('문서 삭제', default=False)
-#     # 파일
-#     file_read = models.BooleanField('파일 보기', default=True)
-#     file_manage = models.BooleanField('파일 관리', default=False)
-#     # 간트차트
-#     gantt_read = models.BooleanField('간트 차트 보기', default=True)
-#     # 업무
-#     issue_read = models.BooleanField('업무 보기', default=True)
-#     issue_create = models.BooleanField('업무 추가', default=True)
-#     issue_update = models.BooleanField('업무 편집', default=False)
-#     issue_own_update = models.BooleanField('내 업무 편집', default=True)
-#     issue_copy = models.BooleanField('업무 복사', default=True)
-#     issue_rel_manage = models.BooleanField('업무 관계 관리', default=True)
-#     issue_sub_manage = models.BooleanField('하위 업무 관리', default=True)
-#     issue_public = models.BooleanField('업무 공개/비공개 설정', default=False)
-#     issue_own_public = models.BooleanField('내 업무 공개/비공개 설정', default=True)
-#     issue_comment_create = models.BooleanField('댓글 추가', default=True)
-#     issue_comment_update = models.BooleanField('댓글 편집', default=False)
-#     issue_comment_own_update = models.BooleanField('내 댓글 편집', default=True)
-#     issue_private_comment_read = models.BooleanField('비공개 댓글 보기', default=False)
-#     issue_private_comment_set = models.BooleanField('댓글 비공개 설정', default=False)
-#     issue_delete = models.BooleanField('업무 삭제', default=False)
-#     issue_watcher_read = models.BooleanField('업무 관람자 보기', default=False)
-#     issue_watcher_create = models.BooleanField('업무 관람자 추가', default=False)
-#     issue_watcher_delete = models.BooleanField('업무 관람자 삭제', default=False)
-#     issue_import = models.BooleanField('업무 가져 오기', default=False)
-#     issue_category_manage = models.BooleanField('업무 범주 관리', default=False)
-#     # 공지(뉴스)
-#     news_read = models.BooleanField('공지 보기', default=True)
-#     news_manage = models.BooleanField('공지 관리', default=False)
-#     news_comment = models.BooleanField('공지 댓글 달기', default=True)
-#     # 저장소(레파지토리)
-#     repo_changesets_read = models.BooleanField('변경 묶음 보기', default=False)
-#     repo_read = models.BooleanField('저장소 보기', default=False)
-#     repo_commit_access = models.BooleanField('변경 로그 보기', default=False)
-#     repo_rel_issue_manage = models.BooleanField('연결된 업무 관리', default=False)
-#     repo_manage = models.BooleanField('저장소 관리', default=False)
-#     # 시간추적
-#     time_read = models.BooleanField('소요 시간 보기', default=True)
-#     time_create = models.BooleanField('소요 시간 기록', default=True)
-#     time_update = models.BooleanField('소요 시간 편집', default=False)
-#     time_own_update = models.BooleanField('내 소요 시간 편집', default=True)
-#     time_pro_act_manage = models.BooleanField('프로젝트 작업 내역 관리', default=False)
-#     time_other_user_log = models.BooleanField('다른 사용자 소요 시간 입력', default=False)
-#     time_entries_import = models.BooleanField('소요 시간 가져오기', default=False)
-#     # 위키
-#     wiki_read = models.BooleanField('위키 보기', default=True)
-#     wiki_history_read = models.BooleanField('위키 기록 보기', default=True)
-#     wiki_page_export = models.BooleanField('위키 페이지 내보내기', default=False)
-#     wiki_page_update = models.BooleanField('위키 페이지 편집', default=False)
-#     wiki_page_rename = models.BooleanField('위키 페이지 이름 변경', default=False)
-#     wiki_page_delete = models.BooleanField('위키 페이지 삭제', default=False)
-#     wiki_attachment_delete = models.BooleanField('첨부파일 삭제', default=False)
-#     wiki_watcher_read = models.BooleanField('위키 관람자 보기', default=False)
-#     wiki_watcher_create = models.BooleanField('위키 관람자 추가', default=False)
-#     wiki_watcher_delete = models.BooleanField('위키 관람자 삭제', default=False)
-#     wiki_page_project = models.BooleanField('프로젝트 위키 페이지', default=False)
-#     wiki_manage = models.BooleanField('위키 관리', default=False)
-#
-#     def __str__(self):
-#         return f'{self.role.name} - 권한'
-#
-#     class Meta:
-#         ordering = ('id',)
+class Permission(models.Model):
+    MODULE_CHOICES = (('project', '프로젝트'), ('issue', '업무관리'), ('time', '시간추적'),
+                      ('news', '공지'), ('docs', '문서'), ('file', '파일'), ('wiki', '위키'),
+                      ('repo', '저장소'), ('forum', '게시판'), ('calendar', '달력'), ('gantt', '간트차트'))
+    sort = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
+    code = models.CharField('코드', max_length=30, unique=True)
+    name = models.CharField('이름', max_length=20)
+    is_default = models.BooleanField('기본 활성여부', default=False)
+    description = models.CharField('설명', max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return f"{self.code}({self.name})"
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = '03. 권한'
+        verbose_name_plural = '03. 권한'
 
 
 class Member(models.Model):
@@ -256,8 +179,9 @@ class Member(models.Model):
         return self.user.__str__()
 
     class Meta:
-        verbose_name = '03. 구성원'
-        verbose_name_plural = '03. 구성원'
+        verbose_name = '04. 구성원'
+        verbose_name_plural = '04. 구성원'
+        unique_together = ('user', 'project')  # 한 프로젝트당 한 번만 속할 수 있음
 
 
 class Version(models.Model):
@@ -278,5 +202,5 @@ class Version(models.Model):
 
     class Meta:
         ordering = ('project', 'id')
-        verbose_name = '04. 버전'
-        verbose_name_plural = '04. 버전'
+        verbose_name = '05. 버전'
+        verbose_name_plural = '05. 버전'

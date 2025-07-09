@@ -1,8 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from work.models import IssueProject, Module, Role, Member, Version
-# from work.models import IssueProject, Module, Role, Permission, Member, Version
+from work.models import IssueProject, Module, Role, Permission, Member, Version
 from work.models.git_repo import Repository
 from work.models.issue import IssueCategory
 
@@ -41,34 +40,34 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('company', 'sort', 'is_public', 'status')
 
 
-# class PermissionInline(admin.StackedInline):
-#     model = Permission
-#     extra = 1
-#     max_num = 1
-#     can_delete = False
-
-
 @admin.register(Role)
 class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'issue_visible', 'time_entry_visible',
                     'user_visible', 'default_time_activity')
     list_display_links = ('name',)
-    # inlines = (PermissionInline,)
+    filter_horizontal = ('permissions',)  # ✅ 이렇게 하면 UI에서 다중 선택 가능
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if obj is None:  # 새 Role 생성 시
+            default_perms = Permission.objects.filter(is_default=True)
+            form.base_fields['permissions'].initial = default_perms
+        return form
 
     # def save_model(self, request, obj, form, change):
     #     super().save_model(request, obj, form, change)
-    #     # Permission이 없으면 자동 생성
-    #     if not hasattr(obj, 'permission'):
-    #         Permission.objects.create(role=obj)
-    #
-    # def save_formset(self, request, form, formset, change):
-    #     if formset.model == Permission:
-    #         instances = formset.save(commit=False)
-    #         for instance in instances:
-    #             instance.role = form.instance
-    #             instance.save()
-    #     else:
-    #         formset.save()
+    #     if not change:
+    #         default_perms = Permission.objects.filter(is_default=True)
+    #         obj.permissions.add(*default_perms)
+
+
+@admin.register(Permission)
+class PermissionAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('pk', 'sort', 'code', 'name', 'is_default')
+    list_display_links = ('pk', 'sort')
+    list_editable = ('code', 'name', 'is_default')
+    list_filter = ('sort', 'is_default',)
+    search_fields = ('code', 'name')
 
 
 @admin.register(Member)
