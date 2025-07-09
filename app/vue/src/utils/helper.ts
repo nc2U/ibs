@@ -65,8 +65,13 @@ export const markdownRender = (content: string) => {
   return DOMPurify.sanitize(result)
 }
 
-// 5. localStorage 에 저장된 순서가 있을 경우, 그 순서에 맞게 정렬
-export const getOrderedList = (objectList: { pk: number; [key: string]: any }[], key: string) => {
+type ObjList = {
+  pk: number
+  [key: string]: any
+}
+
+// localStorage 에 저장된 순서가 있을 경우, 그 순서에 맞게 정렬
+export const getOrderedList = (objectList: ObjList[], key: string) => {
   const savedOrder = JSON.parse(localStorage.getItem(key) || '[]') as {
     pk: number
     order: number
@@ -83,8 +88,8 @@ export const getOrderedList = (objectList: { pk: number; [key: string]: any }[],
   } else return [...objectList]
 }
 
-// 6. 순서가 바뀌면 저장
-export const setLocalStorage = (orderedList: any[], key: string) => {
+// 순서가 바뀌면 저장
+export const setLocalStorage = (orderedList: ObjList[], key: string) => {
   const order = orderedList.map((obj, idx) => ({
     pk: obj.pk,
     order: idx,

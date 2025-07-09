@@ -51,7 +51,14 @@ export const useBoard = defineStore('board', () => {
         await fetchBoardList({ project: res.data.project.slug })
       })
       .catch(err => errorHandle(err.response.data))
-  const updateBoard = () => 3
+  const updateBoard = (pk: number, payload: any) =>
+    api
+      .put(`/board/${pk}/`, payload)
+      .then(async res => {
+        board.value = res.data
+        await fetchBoardList({ project: res.data.project.slug })
+      })
+      .catch(err => errorHandle(err.response.data))
   const deleteBoard = () => 4
 
   const categoryList = ref<PostCategory[]>([])

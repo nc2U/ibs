@@ -14,34 +14,25 @@ const props = defineProps({ project: { type: Number, required: true } })
 
 const route = useRoute()
 
-const RefForumForm = ref()
-
 const validated = ref(false)
 const form = ref<Board>({
   pk: null as number | null,
   project: null as number | null,
   name: '',
   description: '',
-  parent: null as number | null,
+  // parent: null as number | null,
 })
+
+const resetForm = () => {
+  form.value.pk = null
+  form.value.name = ''
+  form.value.description = ''
+}
 
 const brdStore = useBoard()
 // 1. 원본 목록
 const boardList = computed(() => brdStore.boardList as Board[])
 const fetchBoardList = (payload: any) => brdStore.fetchBoardList(payload)
-
-const onSubmit = (event: Event) => {
-  if (isValidate(event)) validated.value = true
-  else {
-    brdStore.createBoard({ ...form.value })
-    validated.value = false
-    form.value.pk = null
-    form.value.name = ''
-    form.value.description = ''
-    form.value.parent = null
-    RefForumForm.value.close()
-  }
-}
 
 const projId = computed(() => route.params.projId as string)
 
@@ -49,6 +40,7 @@ watch(projId, nVal => {
   if (nVal) fetchBoardList({ project: nVal })
 })
 
+// 2. 정렬본 목록
 const orderedList = ref<Board[]>([])
 const STORAGE_KEY = 'boardList'
 
@@ -66,6 +58,34 @@ onBeforeMount(async () => {
   if (boardList.value.length)
     orderedList.value = getOrderedList(boardList.value as any[], STORAGE_KEY)
 })
+
+const RefForumForm = ref()
+
+const crateBoard = () => {
+  resetForm()
+  RefForumForm.value.callModal()
+}
+
+const modifyCall = (brd: Board) => {
+  form.value.pk = brd.pk
+  form.value.project = brd.project
+  form.value.name = brd.name
+  form.value.description = brd.description
+  RefForumForm.value.callModal()
+}
+
+const onSubmit = (event: Event) => {
+  if (isValidate(event)) validated.value = true
+  else {
+    if (form.value.pk) {
+      const { pk, ...rest } = form.value
+      brdStore.updateBoard(pk as number, rest)
+    } else brdStore.createBoard({ ...form.value })
+    validated.value = false
+    RefForumForm.value.close()
+    resetForm()
+  }
+}
 </script>
 
 <template>
@@ -73,7 +93,7 @@ onBeforeMount(async () => {
     <CCol>
       <span class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link to="" class="ml-1" @click="RefForumForm.callModal()">새 게시판</router-link>
+        <router-link to="" class="ml-1" @click="crateBoard">새 게시판</router-link>
       </span>
     </CCol>
   </CRow>
@@ -96,7 +116,7 @@ onBeforeMount(async () => {
           v-model="orderedList"
           tag="tbody"
           item-key="name"
-          @end="setLocalStorage(orderedList, STORAGE_KEY)"
+          @end="setLocalStorage(orderedList as any[], STORAGE_KEY)"
         >
           <template #item="{ element }">
             <CTableRow class="asdfasdf">
@@ -113,7 +133,7 @@ onBeforeMount(async () => {
                 />
                 <span class="mr-3 cursor-pointer">
                   <v-icon icon="mdi-pencil" color="amber" size="15" class="mr-2" />
-                  <router-link to="">편집</router-link>
+                  <router-link to="" @click="modifyCall(element)">편집</router-link>
                 </span>
                 <span>
                   <v-icon icon="mdi-trash-can-outline" color="grey" size="15" class="mr-2" />
@@ -158,17 +178,17 @@ onBeforeMount(async () => {
               />
             </CCol>
           </CRow>
-          <CRow class="mb-3">
-            <CFormLabel for="parent" class="col-sm-3 col-form-label">상위 게시판</CFormLabel>
-            <CCol sm="9">
-              <CFormSelect v-model="form.parent" id="parent">
-                <option value="">---------</option>
-                <option v-for="brd in boardList" :value="brd.pk" :key="brd.pk as number">
-                  {{ brd.name }}
-                </option>
-              </CFormSelect>
-            </CCol>
-          </CRow>
+          <!--          <CRow class="mb-3">-->
+          <!--            <CFormLabel for="parent" class="col-sm-3 col-form-label">상위 게시판</CFormLabel>-->
+          <!--            <CCol sm="9">-->
+          <!--              <CFormSelect v-model="form.parent" id="parent">-->
+          <!--                <option value="">-&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;</option>-->
+          <!--                <option v-for="brd in boardList" :value="brd.pk" :key="brd.pk as number">-->
+          <!--                  {{ brd.name }}-->
+          <!--                </option>-->
+          <!--              </CFormSelect>-->
+          <!--            </CCol>-->
+          <!--          </CRow>-->
         </CModalBody>
         <CModalFooter>
           <v-btn :color="btnLight" size="small" @click="RefForumForm.close()"> 닫기</v-btn>
