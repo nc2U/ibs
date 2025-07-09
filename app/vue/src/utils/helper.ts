@@ -64,3 +64,30 @@ export const markdownRender = (content: string) => {
   const result = md.render(content)
   return DOMPurify.sanitize(result)
 }
+
+// 5. localStorage 에 저장된 순서가 있을 경우, 그 순서에 맞게 정렬
+export const getOrderedList = (objectList: { pk: number; [key: string]: any }[], key: string) => {
+  const savedOrder = JSON.parse(localStorage.getItem(key) || '[]') as {
+    pk: number
+    order: number
+  }[]
+
+  if (savedOrder.length) {
+    // pk -> Board 매핑
+    const objectMap = new Map(objectList.map(obj => [obj.pk, obj]))
+    const ordered = savedOrder.map(item => objectMap.get(item.pk)).filter(Boolean) as any[]
+
+    // 누락된 boardList 항목을 추가로 병합
+    const missing = objectList.filter(b => !ordered.some(o => o.pk === b.pk))
+    return [...ordered, ...missing]
+  } else return [...objectList]
+}
+
+// 6. 순서가 바뀌면 저장
+export const saveToLocalStorage = (orderedList: any[], key: string) => {
+  const order = orderedList.map((obj, idx) => ({
+    pk: obj.pk,
+    order: idx,
+  }))
+  localStorage.setItem(key, JSON.stringify(order))
+}
