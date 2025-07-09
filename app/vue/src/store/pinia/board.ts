@@ -59,7 +59,11 @@ export const useBoard = defineStore('board', () => {
         await fetchBoardList({ project: res.data.project.slug })
       })
       .catch(err => errorHandle(err.response.data))
-  const deleteBoard = () => 4
+  const deleteBoard = (pk: number, projId: string) =>
+    api
+      .delete(`/board/${pk}/`)
+      .then(async res => await fetchBoardList({ project: projId }))
+      .catch(err => errorHandle(err.response.data))
 
   const categoryList = ref<PostCategory[]>([])
 

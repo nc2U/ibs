@@ -9,10 +9,14 @@ import { getOrderedList, setLocalStorage } from '@/utils/helper.ts'
 import Draggable from 'vuedraggable'
 import NoData from '@/views/_Work/components/NoData.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({ project: { type: Number, required: true } })
 
 const route = useRoute()
+
+const RefForumForm = ref()
+const RefDelConfirm = ref()
 
 const validated = ref(false)
 const form = ref<Board>({
@@ -59,8 +63,6 @@ onBeforeMount(async () => {
     orderedList.value = getOrderedList(boardList.value as any[], STORAGE_KEY)
 })
 
-const RefForumForm = ref()
-
 const crateBoard = () => {
   resetForm()
   RefForumForm.value.callModal()
@@ -85,6 +87,16 @@ const onSubmit = (event: Event) => {
     RefForumForm.value.close()
     resetForm()
   }
+}
+
+const delBoardPk = ref<number | null>(null)
+const deleteModalCall = (pk: number) => {
+  delBoardPk.value = pk
+  RefDelConfirm.value.callModal()
+}
+const deleteBoard = () => {
+  brdStore.deleteBoard(delBoardPk.value as number, route.params.projId as string)
+  RefDelConfirm.value.close()
 }
 </script>
 
@@ -137,7 +149,7 @@ const onSubmit = (event: Event) => {
                 </span>
                 <span>
                   <v-icon icon="mdi-trash-can-outline" color="grey" size="15" class="mr-2" />
-                  <router-link to="">삭제</router-link>
+                  <router-link to="" @click="deleteModalCall(element.pk)">삭제</router-link>
                 </span>
               </CTableDataCell>
             </CTableRow>
@@ -197,4 +209,14 @@ const onSubmit = (event: Event) => {
       </CForm>
     </template>
   </FormModal>
+
+  <ConfirmModal ref="RefDelConfirm">
+    <template #default>
+      이 게시판을 삭제하면 해당 게시물 등 관련된 데이터가 전부 삭제됩니다.<br />
+      계속 진행하시겠습니까?
+    </template>
+    <template #footer>
+      <v-btn color="warning" size="small" @click="deleteBoard">삭제</v-btn>
+    </template>
+  </ConfirmModal>
 </template>
