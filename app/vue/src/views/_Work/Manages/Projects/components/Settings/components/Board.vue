@@ -141,7 +141,9 @@ onBeforeMount(async () => {
           <template #item="{ element }">
             <CTableRow class="asdfasdf">
               <CTableDataCell class="pl-3">
-                <router-link to="">{{ element.name }}</router-link>
+                <router-link :to="{ name: '(게시판) - 보기', params: { brdId: element.pk } }">
+                  {{ element.name }}
+                </router-link>
               </CTableDataCell>
               <CTableDataCell>{{ element.description }}</CTableDataCell>
               <CTableDataCell>
