@@ -36,7 +36,3 @@ nginx:
   
   service:
     port: 8881
-
-web:
-  imageConfigMaps:
-    djangoSettingsModule: _config.settings
