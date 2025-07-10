@@ -39,4 +39,4 @@ nginx:
 
 web:
   imageConfigMaps:
-    djangoSettingsModule: _config.settings.local
+    djangoSettingsModule: _config.settings
