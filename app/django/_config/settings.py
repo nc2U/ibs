@@ -124,7 +124,7 @@ DATABASE_NAME = config('DATABASE_NAME')
 DATABASE_USER = config('DATABASE_USER')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD')
 DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgres')
-NAMESPACE = config('NAMESPACE', default='')
+NAMESPACE = config('NAMESPACE', default='default')
 MASTER_HOST = f'{DB_TYPE}-0.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local' \
     if config('KUBERNETES_SERVICE_HOST', default='') else DB_TYPE
 DB_PORT = config('DATABASE_PORT', default='5432')
