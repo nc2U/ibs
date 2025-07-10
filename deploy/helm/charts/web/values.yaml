@@ -16,7 +16,7 @@ fullnameOverride: "web"
 
 imageConfigMaps:
   #  awsStorageBucketName: ""
-  djangoSettingsModule: _config.settings.prod
+  djangoSettingsModule: _config.settings
   
   #imageSecrets:
   ##  awsAccessKeyId:
