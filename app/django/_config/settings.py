@@ -128,7 +128,7 @@ NAMESPACE = config('NAMESPACE', default='default')
 MASTER_HOST = f'{DB_TYPE}-0.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local' \
     if config('KUBERNETES_SERVICE_HOST', default='') else DB_TYPE
 DB_PORT = config('DATABASE_PORT', default='5432')
-DEFAULT_OPTIONS = {'connect_timeout': 10, } if DB_TYPE == 'postgres' else {
+DEFAULT_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } if DB_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
@@ -149,7 +149,8 @@ DATABASES = {
 
 # slave DB 추가
 SLAVE_DATABASES = config('SLAVE_DATABASES', default='', cast=Csv())
-SLAVE_OPTIONS = {'connect_timeout': 10, } if DB_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
+SLAVE_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } \
+    if DB_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 if SLAVE_DATABASES:
     for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
         DATABASES[slave_name] = {
