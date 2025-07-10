@@ -151,8 +151,26 @@ const workProject = {
         },
         {
           path: ':projId/boards',
-          name: '(게시판)',
+          name: '(게시판) - 목록',
           component: () => import('@/views/_Work/Manages/Projects/components/Boards/Index.vue'),
+          children: [
+            {
+              path: ':brdId',
+              name: '(게시판)', // 새 글 쓰기는 여기서
+              children: [
+                {
+                  path: ':postId',
+                  name: '(게시판) - 게시물 보기',
+                  children: [
+                    {
+                      path: 'edit',
+                      name: '(게시판) - 게시물 수정',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         },
         {
           path: ':projId/file',
