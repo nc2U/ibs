@@ -152,7 +152,7 @@ const workProject = {
         {
           path: ':projId/boards',
           name: '(게시판)',
-          component: () => import('@/views/_Work/Manages/Projects/components/Boards/Index.vue'),
+          component: () => import('@/views/_Work/Manages/Projects/components/Board/Index.vue'),
           children: [
             {
               path: ':brdId',
