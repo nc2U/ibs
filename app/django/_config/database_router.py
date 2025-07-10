@@ -1,11 +1,15 @@
 import random
+from django.conf import settings
 
 
 class MasterSlaveRouter:
     @staticmethod
     def db_for_read(model, **hints):
-        # 읽기 작업은 slave1 또는 slave2에서 처리
-        return random.choice(['slave1', 'slave2'])
+        # 슬레이브 DB 목록을 settings에서 가져옴
+        slaves = getattr(settings, 'SLAVE_DATABASES', [])
+        if slaves:
+            return random.choice(slaves)
+        return 'default'
 
     @staticmethod
     def db_for_write(model, **hints):
@@ -14,8 +18,7 @@ class MasterSlaveRouter:
 
     @staticmethod
     def allow_relation(obj1, obj2, **hints):
-        # 두 객체가 동일한 DB에 있을 때 관계 허용
-        db_list = ('default', 'slave1', 'slave2')
+        db_list = ['default'] + getattr(settings, 'SLAVE_DATABASES', [])
         if obj1._state.db in db_list and obj2._state.db in db_list:
             return True
         return None
