@@ -15,7 +15,6 @@ class Board(models.Model):
     name = models.CharField('이름', max_length=255, db_index=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
-    order = models.PositiveSmallIntegerField('정렬 순서', default=0)
     search_able = models.BooleanField('검색 사용', default=True)
     manager = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='관리자')
 
