@@ -4,9 +4,9 @@ export interface Board {
   name: string
   description: string
   parent?: number | null
-  order?: number | null
   search_able?: boolean
   manager?: number[]
+  order?: number
 }
 
 export interface PostCategory {
