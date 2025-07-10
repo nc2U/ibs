@@ -45,8 +45,7 @@ jobs:
           command: |
             web_pod=$(kubectl get pod -n ibs-dev | grep web | cut -d ' ' -f1)
             kubectl exec -n ibs-dev $web_pod -- python manage.py collectstatic --no-input
-            kubectl exec -n ibs-dev $web_pod -- python manage.py makemigrations accounts board book cash company contract docs ibs items notice payment project work --noinput
-            kubectl exec -n ibs-dev $web_pod -- python manage.py migrate
+            kubectl exec -n ibs-dev $web_pod -- sh migrate.sh
             kubectl exec -n ibs-dev $web_pod -- python manage.py fetch_commits
       
       # slack --> notification

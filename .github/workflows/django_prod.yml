@@ -42,13 +42,8 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             web_pod=$(kubectl get pod -n ibs-prod | grep web | cut -d ' ' -f1)
-            kubectl exec -n ibs-prod $web_pod -- cp _config/settings/local.py _config/settings/prod.py
-            kubectl exec -n ibs-prod $web_pod -- sed -i 's/True/False/g' _config/settings/prod.py
-            kubectl exec -n ibs-prod $web_pod -- sed -i "2,6 s/*/nginx', 'brdnc.co.kr', 'dyibs.co.kr', '${{ secrets.DOMAIN_NAME }}', '*.${{ secrets.DOMAIN_NAME }}/g" _config/settings/prod.py
-            kubectl exec -n ibs-prod $web_pod -- sed -i '/CSRF_TRUSTED_ORIGINS/d' _config/settings/prod.py | sed '/^$/d'
             kubectl exec -n ibs-prod $web_pod -- python manage.py collectstatic --no-input
-            kubectl exec -n ibs-prod $web_pod -- python manage.py makemigrations accounts board book cash company contract docs ibs items notice payment project work --noinput
-            kubectl exec -n ibs-prod $web_pod -- python manage.py migrate
+            kubectl exec -n ibs-prod $web_pod -- sh migrate.sh
             kubectl exec -n ibs-prod $web_pod -- python manage.py fetch_commits
       
       # slack --> notification
