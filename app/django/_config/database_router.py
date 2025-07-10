@@ -1,15 +1,16 @@
+import sys
 import random
+
 from django.conf import settings
 
 
 class MasterSlaveRouter:
     @staticmethod
     def db_for_read(model, **hints):
-        # 슬레이브 DB 목록을 settings에서 가져옴
+        if 'migrate' in sys.argv:  # 마이그레이션 중에는 default 사용
+            return 'default'
         slaves = getattr(settings, 'SLAVE_DATABASES', [])
-        if slaves:
-            return random.choice(slaves)
-        return 'default'
+        return random.choice(slaves) if slaves else 'default'
 
     @staticmethod
     def db_for_write(model, **hints):
