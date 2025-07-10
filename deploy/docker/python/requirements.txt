@@ -3,6 +3,7 @@ uWSGI==2.0.29
 mysqlclient==2.2.7
 psycopg2-binary==2.9.10
 psycopg2==2.9.10
+python-decouple==3.8
 python-magic==0.4.27
 requests==2.32.4
 django-widget-tweaks==1.5.0
