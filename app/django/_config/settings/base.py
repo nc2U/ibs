@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
-import os
 from pathlib import Path
 from decouple import config, Csv
 from datetime import timedelta
@@ -119,24 +118,22 @@ WSGI_APPLICATION = '_config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DB_TYPE = os.getenv('DATABASE_TYPE') or 'mariadb'
-DB_ENGINE = 'mysql' if DB_TYPE == 'mariadb' else 'postgresql'
+DB_TYPE = config('DATABASE_TYPE', default='postgres')
+DB_ENGINE = 'postgresql' if DB_TYPE == 'postgres' else 'mysql'
 DATABASE_NAME = config('DATABASE_NAME')
 DATABASE_USER = config('DATABASE_USER')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD')
 DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgres')
-NAMESPACE = config('NAMESPACE', default='ibs')
-
-DEFAULT_DB_PORT = '3306' if DB_TYPE == 'mariadb' else '5432'
-DB_PORT = DEFAULT_DB_PORT  # os.getenv('DATABASE_PORT') or DEFAULT_DB_PORT
-MASTER_HOST = DB_TYPE if 'local' in os.getenv('DJANGO_SETTINGS_MODULE') \
-    else f'{DB_TYPE}-0.{DB_SERVICE_NAME}.{os.getenv("NAMESPACE")}.svc.cluster.local'
-DEFAULT_OPTIONS = {
+NAMESPACE = config('NAMESPACE', default='')
+MASTER_HOST = f'{DB_TYPE}-0.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local' \
+    if config('KUBERNETES_SERVICE_HOST', default='') else DB_TYPE
+DB_PORT = config('DATABASE_PORT', default='5432')
+DEFAULT_OPTIONS = {'connect_timeout': 10, } if DB_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
-} if DB_TYPE == 'mariadb' else {'connect_timeout': 10, }
-SLAVE_OPTIONS = {'charset': 'utf8mb4', 'connect_timeout': 10, } if DB_TYPE == 'mariadb' else {'connect_timeout': 10, }
+}
+
 DATABASES = {
     'default': {
         'ENGINE': f'django.db.backends.{DB_ENGINE}',
@@ -152,6 +149,7 @@ DATABASES = {
 
 # slave DB 추가
 SLAVE_DATABASES = config('SLAVE_DATABASES', default='', cast=Csv())
+SLAVE_OPTIONS = {'connect_timeout': 10, } if DB_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 if SLAVE_DATABASES:
     for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
         DATABASES[slave_name] = {
@@ -199,9 +197,9 @@ USE_I18N = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-# AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-# AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = None  # os.getenv('AWS_STORAGE_BUCKET_NAME')
+# AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+# AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = None  # config('AWS_STORAGE_BUCKET_NAME')
 # AWS_REGION = 'ap-northeast-2'
 AWS_S3_CUSTOM_DOMAIN = ''  # f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com'
 # AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400', }
@@ -229,15 +227,15 @@ ACCOUNT_LOGIN_METHODS = ['email']
 ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password*']
 
 # EMAIL SETTINGS
-DOMAIN_HOST = os.getenv('DOMAIN_HOST', 'http://localhost/')  # ex: 'https://abc.com/'
+DOMAIN_HOST = config('DOMAIN_HOST', default='http://localhost/')  # ex: 'https://abc.com/'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST')  # 'your-smtp-server.com'
-EMAIL_PORT = os.getenv('EMAIL_PORT', 587)
+EMAIL_HOST = config('EMAIL_HOST')  # 'your-smtp-server.com'
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = True  # 587일 경우
 # EMAIL_USE_SSL = True  # 465일 경우 사용
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # 'your accessId or accessEmail'
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # 'your-email-password'
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')  # 'your-email@example.com'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')  # 'your accessId or accessEmail'
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')  # 'your-email-password'
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')  # 'your-email@example.com'
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
