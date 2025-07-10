@@ -26,6 +26,7 @@ data:
     \c {{ .Release.Name }}
     CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
     GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
+    ALTER DATABASE {{ .Release.Name }} SET search_path TO {{ .Release.Name }}, public;
 
   secondary.sh: |
     #!/bin/bash
