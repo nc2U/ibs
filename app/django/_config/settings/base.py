@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 import os
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
 from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('DJANGO_SECRET_KEY')
+SECRET_KEY = config('DJANGO_SECRET_KEY', default='SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -121,10 +121,16 @@ WSGI_APPLICATION = '_config.wsgi.application'
 
 DB_TYPE = os.getenv('DATABASE_TYPE') or 'mariadb'
 DB_ENGINE = 'mysql' if DB_TYPE == 'mariadb' else 'postgresql'
+DATABASE_NAME = config('DATABASE_NAME')
+DATABASE_USER = config('DATABASE_USER')
+DATABASE_PASSWORD = config('DATABASE_PASSWORD')
+DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgres')
+NAMESPACE = config('NAMESPACE', default='ibs')
+
 DEFAULT_DB_PORT = '3306' if DB_TYPE == 'mariadb' else '5432'
 DB_PORT = DEFAULT_DB_PORT  # os.getenv('DATABASE_PORT') or DEFAULT_DB_PORT
 MASTER_HOST = DB_TYPE if 'local' in os.getenv('DJANGO_SETTINGS_MODULE') \
-    else f'{DB_TYPE}-0.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local'
+    else f'{DB_TYPE}-0.{DB_SERVICE_NAME}.{os.getenv("NAMESPACE")}.svc.cluster.local'
 DEFAULT_OPTIONS = {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
     'charset': 'utf8mb4',  # 캐릭터셋 설정
@@ -134,38 +140,32 @@ SLAVE_OPTIONS = {'charset': 'utf8mb4', 'connect_timeout': 10, } if DB_TYPE == 'm
 DATABASES = {
     'default': {
         'ENGINE': f'django.db.backends.{DB_ENGINE}',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
         "DEFAULT-CHARACTER-SET": 'utf8',
         'HOST': MASTER_HOST,
         'PORT': DB_PORT,
         'OPTIONS': DEFAULT_OPTIONS,
     },
-    'slave1': {
-        'ENGINE': f'django.db.backends.{DB_ENGINE}',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': f'{DB_TYPE}-1.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local',
-        'PORT': DB_PORT,
-        'OPTIONS': SLAVE_OPTIONS,
-    },
-    'slave2': {
-        'ENGINE': f'django.db.backends.{DB_ENGINE}',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': f'{DB_TYPE}-2.{os.getenv("DB_SERVICE_NAME")}.{os.getenv("NAMESPACE")}.svc.cluster.local',
-        'PORT': DB_PORT,
-        'OPTIONS': SLAVE_OPTIONS,
-    }
 }
 
-DATABASE_ROUTERS = [] if 'local' in os.getenv('DJANGO_SETTINGS_MODULE') \
-    else [BASE_DIR / "_config.database_router.MasterSlaveRouter"]
+# slave DB 추가
+SLAVE_DATABASES = config('SLAVE_DATABASES', default='', cast=Csv())
+if SLAVE_DATABASES:
+    for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
+        DATABASES[slave_name] = {
+            'ENGINE': f'django.db.backends.{DB_ENGINE}',
+            'NAME': DATABASE_NAME,
+            'USER': DATABASE_USER,
+            'PASSWORD': DATABASE_PASSWORD,
+            'DEFAULT-CHARACTER-SET': 'utf8',
+            'HOST': f'{DB_TYPE}-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
+            'PORT': DB_PORT,
+            'OPTIONS': SLAVE_OPTIONS,
+        }
+
+DATABASE_ROUTERS = ["_config.database_router.MasterSlaveRouter"]
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
