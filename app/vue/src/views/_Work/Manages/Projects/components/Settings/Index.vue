@@ -14,7 +14,7 @@ import IssueTracking from '@/views/_Work/Manages/Projects/components/Settings/co
 import Version from '@/views/_Work/Manages/Projects/components/Settings/components/Version.vue'
 import IssueCategory from '@/views/_Work/Manages/Projects/components/Settings/components/IssueCategory.vue'
 import Repository from '@/views/_Work/Manages/Projects/components/Settings/components/Repository.vue'
-import Forum from '@/views/_Work/Manages/Projects/components/Settings/components/Forum.vue'
+import Board from '@/views/_Work/Manages/Projects/components/Settings/components/Board.vue'
 import TimeTracking from '@/views/_Work/Manages/Projects/components/Settings/components/TimeTracking.vue'
 import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -201,7 +201,7 @@ onBeforeMount(async () => {
           @delete-repo="deleteRepo"
         />
 
-        <Forum v-if="menu === '게시판'" :project="issueProject?.pk as number" />
+        <Board v-if="menu === '게시판'" :project="issueProject?.pk as number" />
 
         <TimeTracking
           v-if="menu === '시간추적'"

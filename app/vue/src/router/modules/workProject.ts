@@ -150,9 +150,9 @@ const workProject = {
           ],
         },
         {
-          path: ':projId/forum',
+          path: ':projId/boards',
           name: '(게시판)',
-          component: () => import('@/views/_Work/Manages/Projects/components/Forums/Index.vue'),
+          component: () => import('@/views/_Work/Manages/Projects/components/Boards/Index.vue'),
         },
         {
           path: ':projId/file',
