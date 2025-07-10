@@ -151,12 +151,12 @@ const workProject = {
         },
         {
           path: ':projId/boards',
-          name: '(게시판) - 목록',
+          name: '(게시판)',
           component: () => import('@/views/_Work/Manages/Projects/components/Boards/Index.vue'),
           children: [
             {
               path: ':brdId',
-              name: '(게시판)', // 새 글 쓰기는 여기서
+              name: '(게시판) - 보기', // 새 글 쓰기는 여기서
               children: [
                 {
                   path: ':postId',
