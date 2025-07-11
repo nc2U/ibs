@@ -10,6 +10,7 @@ data:
   pg_hba.conf: |
     host replication {{ .Release.Name }} 0.0.0.0/0 md5
     host all {{ .Release.Name }} 0.0.0.0/0 md5
+    local all all trust
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -26,7 +27,7 @@ data:
     \c {{ .Release.Name }}
     CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
     GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
-    ALTER ROLE "{{ .Release.Name }}" WITH REPLICATION;
+    ALTER ROLE "{{ .Release.Name }}" WITH REPLICATION LOGIN PASSWORD {{ .Values.global.dbPassword }};
     ALTER DATABASE {{ .Release.Name }} SET search_path TO {{ .Release.Name }}, public;
 
   replica.conf: |

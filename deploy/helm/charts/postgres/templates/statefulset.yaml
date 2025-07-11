@@ -89,6 +89,9 @@ spec:
               mountPath: /docker-entrypoint-initdb.d
             - name: dump-backup
               mountPath: /var/backups
+            - name: postgres-conf
+              mountPath: /etc/postgresql/pg_hba.conf
+              subPath: pg_hba.conf
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
