@@ -21,11 +21,11 @@ data:
     hba_file = '/etc/postgresql/pg_hba.conf'
 
   pg_hba.conf: |
-    # Allow replication connections from replicas (replace CIDR accordingly)
-    host replication {{ .Release.Name }} 0.0.0.0/0 trust
+    host replication {{ .Release.Name }} 0.0.0.0/0 md5
+    host replication {{ .Release.Name }} ::/0 md5
 
   primary.sql: |
-    \c {{ .Release.Name }}
+    \connect {{ .Release.Name }}
     CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
     GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
     ALTER ROLE "{{ .Release.Name }}" WITH REPLICATION LOGIN PASSWORD '{{ .Values.global.dbPassword }}';
