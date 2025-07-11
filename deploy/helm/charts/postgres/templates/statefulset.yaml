@@ -50,6 +50,13 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - "bash"
+            - "-c"
+            - |
+              if [[ `hostname` =~ -([0-9]+)$ && ${BASH_REMATCH[1]} -ne 0 ]]; then
+                bash /etc/postgresql/secondary.sh
+              fi
           env:
             # Using Secrets
             - name: POSTGRES_PASSWORD
