@@ -311,6 +311,7 @@ MDEDITOR_CONFIGS = {
         'lineNumbers': True  # lineNumbers
     }
 }
+
 APP_ORDER = [
     'company',
     'work',
