@@ -7,6 +7,9 @@ data:
   POSTGRES_USER: "{{ .Release.Name }}"
   POSTGRES_DB: "{{ .Release.Name }}"
   TZ: "Asia/Seoul"
+  pg_hba.conf: |
+    host replication {{ .Release.Name }} 0.0.0.0/0 md5
+    host all {{ .Release.Name }} 0.0.0.0/0 md5
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -19,20 +22,22 @@ data:
     wal_keep_size = 64
     hot_standby = on
 
-  replica.conf: |
-    hot_standby = on
-
   primary.sql: |
     \c {{ .Release.Name }}
     CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
     GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
+    ALTER ROLE "{{ .Release.Name }}" WITH REPLICATION;
     ALTER DATABASE {{ .Release.Name }} SET search_path TO {{ .Release.Name }}, public;
+
+  replica.conf: |
+    hot_standby = on
+    primary_conninfo = 'host={{ .Values.global.dbType }}-0.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local port={{ .Values.global.dbPort }} user={{ .Release.Name }} password={{ .Values.global.dbPassword | quote }}'
 
   secondary.sh: |
     #!/bin/bash
     set -e
     if [ ! -s "$PGDATA/PG_VERSION" ]; then
       echo "Starting base backup from primary..."
-      pg_basebackup -h {{ include "postgres.fullname" . }}-0.{{ .Values.global.dbType }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
+      pg_basebackup -h {{ .Values.global.dbType }}-0.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
     fi
 {{- end }}
