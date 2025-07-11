@@ -14,9 +14,9 @@ metadata:
   name: {{ include "postgres.fullname" . }}-hba
 data:
   pg_hba.conf: |
-    host    replication     {{ .Release.Name }}      10.42.0.0/16    md5
-    host    replication     {{ .Release.Name }}      0.0.0.0/0       md5
-    host    replication     {{ .Release.Name }}      ::/0            md5
+    hostnossl    replication     {{ .Release.Name }}      10.42.0.0/16    md5
+    hostnossl    replication     {{ .Release.Name }}      0.0.0.0/0       md5
+    hostnossl    replication     {{ .Release.Name }}      ::/0            md5
 ---
 apiVersion: v1
 kind: ConfigMap
