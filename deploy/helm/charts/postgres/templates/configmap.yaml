@@ -21,13 +21,9 @@ data:
     hba_file = '/etc/postgresql/pg_hba.conf'
 
   pg_hba.conf: |
-    host replication {{ .Release.Name }} 10.42.0.0/16 md5
-    host replication {{ .Release.Name }} {{ .Values.global.dbType }}-0.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local md5
-    host replication {{ .Release.Name }} {{ .Values.global.dbType }}-1.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local md5
-    host replication {{ .Release.Name }} {{ .Values.global.dbType }}-2.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local md5
-    host replication {{ .Release.Name }} {{ .Values.global.dbType }}-3.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local md5
-    host replication {{ .Release.Name }} {{ .Values.global.dbType }}-4.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local md5
-    host replication {{ .Release.Name }} {{ .Values.global.dbType }}-5.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local md5
+    host    replication     {{ .Release.Name }}      10.42.0.0/16    md5
+    host    replication     {{ .Release.Name }}      0.0.0.0/0       md5
+    host    replication     {{ .Release.Name }}      ::/0            md5
 
   primary.sql: |
     \connect {{ .Release.Name }}
@@ -50,7 +46,7 @@ data:
     export PGPASSWORD={{ .Values.global.dbPassword | quote }}
     if [ ! -s "$PGDATA/PG_VERSION" ]; then
       echo "Starting base backup from primary..."
-      pg_basebackup -h {{ .Values.global.dbType }}-0.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
+      pg_basebackup -h {{ .Values.global.dbType }}-0.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R  -w --no-ssl
     else
       echo "PG_VERSION exists, skipping pg_basebackup"
       cat $PGDATA/PG_VERSION
