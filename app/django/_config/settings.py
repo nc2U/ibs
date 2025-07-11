@@ -134,6 +134,8 @@ DEFAULT_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
 }
+SLAVE_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } \
+    if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 
 DATABASES = {
     'default': {
@@ -146,24 +148,43 @@ DATABASES = {
         'PORT': DB_PORT,
         'OPTIONS': DEFAULT_OPTIONS,
     },
+    'slave1': {
+        'ENGINE': f'django.db.backends.{DB_ENGINE}',
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        "DEFAULT-CHARACTER-SET": 'utf8',
+        'HOST': f'{DATABASE_TYPE}-1.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
+        'PORT': DB_PORT,
+        'OPTIONS': SLAVE_OPTIONS,
+    },
+    'slave2': {
+        'ENGINE': f'django.db.backends.{DB_ENGINE}',
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        "DEFAULT-CHARACTER-SET": 'utf8',
+        'HOST': f'{DATABASE_TYPE}-2.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
+        'PORT': DB_PORT,
+        'OPTIONS': SLAVE_OPTIONS,
+    }
 }
 
 # slave DB 추가
 SLAVE_DATABASES = config('SLAVE_DATABASES', default='', cast=Csv())
-SLAVE_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } \
-    if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
-if SLAVE_DATABASES:
-    for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
-        DATABASES[slave_name] = {
-            'ENGINE': f'django.db.backends.{DB_ENGINE}',
-            'NAME': DATABASE_NAME,
-            'USER': DATABASE_USER,
-            'PASSWORD': DATABASE_PASSWORD,
-            'DEFAULT-CHARACTER-SET': 'utf8',
-            'HOST': f'{DATABASE_TYPE}-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
-            'PORT': DB_PORT,
-            'OPTIONS': SLAVE_OPTIONS,
-        }
+
+# if SLAVE_DATABASES:
+#     for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
+#         DATABASES[slave_name] = {
+#             'ENGINE': f'django.db.backends.{DB_ENGINE}',
+#             'NAME': DATABASE_NAME,
+#             'USER': DATABASE_USER,
+#             'PASSWORD': DATABASE_PASSWORD,
+#             'DEFAULT-CHARACTER-SET': 'utf8',
+#             'HOST': f'{DATABASE_TYPE}-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
+#             'PORT': DB_PORT,
+#             'OPTIONS': SLAVE_OPTIONS,
+#         }
 
 DATABASE_ROUTERS = ["_config.database_router.MasterSlaveRouter"]
 
