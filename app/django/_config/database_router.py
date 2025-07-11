@@ -13,13 +13,16 @@ class MasterSlaveRouter:
         slaves = getattr(settings, 'SLAVE_DATABASES', [])
         if not slaves:
             return 'default'
-        try:
+        else:
             slave = random.choice(slaves)
-            if connections[slave].connection.is_usable():
-                return slave
-            return 'default'
-        except Exception:
-            return 'default'
+            return slave
+        # try:
+        #     slave = random.choice(slaves)
+        #     if connections[slave].connection.is_usable():
+        #         return slave
+        #     return 'default'
+        # except Exception:
+        #     return 'default'
 
     @staticmethod
     def db_for_write(model, **hints):
