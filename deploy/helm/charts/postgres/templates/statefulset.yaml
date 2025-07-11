@@ -35,6 +35,7 @@ spec:
                 cp /mnt/replica-config/replica.conf /mnt/config/postgresql.conf
                 cp /mnt/replica-config/secondary.sh /mnt/config/secondary.sh
                 chmod +x /mnt/config/secondary.sh
+                /mnt/config/secondary.sh
               fi
           volumeMounts:
             - name: {{ include "postgres.fullname" . }}-replica

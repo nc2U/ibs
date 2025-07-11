@@ -36,8 +36,13 @@ data:
   secondary.sh: |
     #!/bin/bash
     set -e
+    echo "Running secondary.sh on $(hostname)"
+    export PGPASSWORD=$POSTGRES_PASSWORD
     if [ ! -s "$PGDATA/PG_VERSION" ]; then
       echo "Starting base backup from primary..."
       pg_basebackup -h {{ .Values.global.dbType }}-0.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
+    else
+      echo "PG_VERSION exists, skipping pg_basebackup"
+      cat $PGDATA/PG_VERSION
     fi
 {{- end }}
