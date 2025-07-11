@@ -34,7 +34,6 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  {{ boardList }}
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
@@ -43,6 +42,7 @@ onBeforeMount(async () => {
           <h5>{{ route.name }}</h5>
         </CCol>
       </CRow>
+      {{ boardList }}
     </template>
 
     <template v-slot:aside></template>
