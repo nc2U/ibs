@@ -34,7 +34,7 @@ spec:
               else
                 cp /mnt/replica-config/replica.conf /etc/postgresql/postgresql.conf
                 cp /mnt/replica-config/secondary.sh /etc/postgresql/secondary.sh
-                chmod +x /mnt/config/secondary.sh
+                chmod +x /etc/postgresql/secondary.sh
               fi
           volumeMounts:
             - name: {{ include "postgres.fullname" . }}-replica
