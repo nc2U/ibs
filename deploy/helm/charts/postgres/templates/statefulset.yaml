@@ -100,7 +100,7 @@ spec:
             - name: postgres-conf # initContainer 가 ConfigMap 에서 복사한 파일
               mountPath: /etc/postgresql
             - name: postgres-hba
-              mountPath: /etc/postgresql/pg_hba.conf
+              mountPath: /var/lib/postgresql/data/pg_hba.conf
               subPath: pg_hba.conf
             - name: initdb-d  # initContainer 가 ConfigMap 에서 복사한 시작 파일
               mountPath: /docker-entrypoint-initdb.d
