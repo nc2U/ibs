@@ -1,7 +1,8 @@
-import sys
 import random
+import sys
 
 from django.conf import settings
+from django.db import connections
 
 
 class MasterSlaveRouter:
@@ -10,7 +11,15 @@ class MasterSlaveRouter:
         if 'migrate' in sys.argv:  # 마이그레이션 중에는 default 사용
             return 'default'
         slaves = getattr(settings, 'SLAVE_DATABASES', [])
-        return random.choice(slaves) if slaves else 'default'
+        if not slaves:
+            return 'default'
+        try:
+            slave = random.choice(slaves)
+            if connections[slave].connection.is_usable():
+                return slave
+            return 'default'
+        except Exception:
+            return 'default'
 
     @staticmethod
     def db_for_write(model, **hints):

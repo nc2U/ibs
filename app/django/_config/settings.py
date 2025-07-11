@@ -118,17 +118,18 @@ WSGI_APPLICATION = '_config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DB_TYPE = config('DATABASE_TYPE', default='postgres')
-DB_ENGINE = 'postgresql' if DB_TYPE == 'postgres' else 'mysql'
+DATABASE_TYPE = config('DATABASE_TYPE', default='postgres')
+DB_ENGINE = 'postgresql' if DATABASE_TYPE == 'postgres' else 'mysql'
 DATABASE_NAME = config('DATABASE_NAME')
 DATABASE_USER = config('DATABASE_USER')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD')
 DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgres')
 NAMESPACE = config('NAMESPACE', default='default')
-MASTER_HOST = f'{DB_TYPE}-0.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local' \
-    if config('KUBERNETES_SERVICE_HOST', default='') else DB_TYPE
+MASTER_HOST = f'{DATABASE_TYPE}-0.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local' \
+    if config('KUBERNETES_SERVICE_HOST', default='') else DATABASE_TYPE
 DB_PORT = config('DATABASE_PORT', default='5432')
-DEFAULT_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } if DB_TYPE == 'postgres' else {
+DEFAULT_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } \
+    if DATABASE_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
@@ -150,7 +151,7 @@ DATABASES = {
 # slave DB 추가
 SLAVE_DATABASES = config('SLAVE_DATABASES', default='', cast=Csv())
 SLAVE_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } \
-    if DB_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
+    if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 if SLAVE_DATABASES:
     for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
         DATABASES[slave_name] = {
@@ -159,7 +160,7 @@ if SLAVE_DATABASES:
             'USER': DATABASE_USER,
             'PASSWORD': DATABASE_PASSWORD,
             'DEFAULT-CHARACTER-SET': 'utf8',
-            'HOST': f'{DB_TYPE}-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
+            'HOST': f'{DATABASE_TYPE}-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
             'PORT': DB_PORT,
             'OPTIONS': SLAVE_OPTIONS,
         }
