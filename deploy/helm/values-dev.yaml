@@ -19,7 +19,7 @@ mariadb:
 
 postgres:
   enabled: true
-  replicaCount: 1
+  replicaCount: 3 # 테스트 용
   volumes:
     dataPvStorage: 500Mi
     dataPvcStorage: 500Mi
