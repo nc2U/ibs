@@ -48,4 +48,7 @@ data:
       echo "PG_VERSION exists, skipping pg_basebackup"
       cat $PGDATA/PG_VERSION
     fi
+
+    # 🔥 PostgreSQL 직접 실행
+    exec docker-entrypoint.sh postgres
 {{- end }}

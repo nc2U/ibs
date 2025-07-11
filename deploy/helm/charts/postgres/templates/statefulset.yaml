@@ -51,11 +51,13 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
-            - "bash"
-            - "-c"
+            - bash
+            - -c
             - |
               if [[ `hostname` =~ -([0-9]+)$ && ${BASH_REMATCH[1]} -ne 0 ]]; then
                 bash /etc/postgresql/secondary.sh
+              else
+                exec docker-entrypoint.sh postgres
               fi
           env:
             # Using Secrets
