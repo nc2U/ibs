@@ -82,8 +82,7 @@ spec:
             - name: data
               mountPath: /var/lib/postgresql/data
             - name: postgres-conf # initContainer 가 ConfigMap 에서 복사한 파일
-              mountPath: /etc/postgresql/postgresql.conf
-{{/*              subPath: postgresql.conf*/}}
+              mountPath: /etc/postgresql
             - name: initdb-d  # initContainer 가 ConfigMap 에서 복사한 시작 파일
               mountPath: /docker-entrypoint-initdb.d
             - name: dump-backup
