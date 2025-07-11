@@ -61,7 +61,7 @@ spec:
             - configMapRef:
                 name: {{ include "postgres.fullname" . }}-config
           ports:
-            - containerPort: 5432
+            - containerPort: {{ .Values.global.dbPort }}
               name: postgres-port
               protocol: TCP
           startupProbe:
@@ -81,10 +81,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
-            - name: postgres-conf
+            - name: postgres-conf # initContainer 가 ConfigMap 에서 복사한 파일
               mountPath: /etc/postgresql/postgresql.conf
               subPath: postgresql.conf
-            - name: initdb-d
+            - name: initdb-d  # initContainer 가 ConfigMap 에서 복사한 시작 파일
               mountPath: /docker-entrypoint-initdb.d
             - name: dump-backup
               mountPath: /var/backups
