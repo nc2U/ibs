@@ -36,8 +36,24 @@ data:
   secondary.sh: |
     #!/bin/bash
     set -e
-    if [[ "$ordinal" -ne 0 ]]; then
-      echo "Starting base backup from primary..."
-      pg_basebackup -h {{ .Values.global.dbType }}-0.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
+    # hostname에서 ordinal 추출
+    if [[ $(hostname) =~ -([0-9]+)$ ]]; then
+    ordinal=${BASH_REMATCH[1]}
+    else
+    echo "❌ Failed to parse ordinal from hostname"
+    exit 1
+    fi
+
+    if [[ "$ordinal" -eq 0 ]]; then
+    echo "🟢 Primary pod (ordinal=0): skipping pg_basebackup, allowing initdb"
+    else
+    echo "🔁 Replica pod (ordinal=$ordinal): clearing PGDATA and running pg_basebackup"
+    rm -rf "$PGDATA"/*
+
+    until pg_basebackup -h postgres-0.postgres.ibs-dev.svc.cluster.local -U repl_user -D "$PGDATA" -Fp -Xs -P -R; do
+    echo "Waiting for master to accept replication..."
+    sleep 2
+    done
+    chown -R postgres:postgres "$PGDATA"
     fi
 {{- end }}
