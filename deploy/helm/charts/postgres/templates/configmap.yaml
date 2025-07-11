@@ -36,16 +36,8 @@ data:
   secondary.sh: |
     #!/bin/bash
     set -e
-    ordinal=$(hostname | awk -F'-' '{print $NF}')
-
-    if [[ "$ordinal" -ne 0 ]]; then
-      echo "🔁 Replica detected (ordinal=$ordinal), preparing base backup"
-      rm -rf "$PGDATA"/* # 기존 PGDATA 강제 삭제
-
-      until pg_basebackup -h postgres-0.postgres.ibs-dev.svc.cluster.local -U repl_user -D "$PGDATA" -Fp -Xs -P -R; do
-        echo "Waiting for master to accept replication..."
-        sleep 2
-      done
-      chown -R postgres:postgres "$PGDATA"
+    if [ ! -s "$PGDATA/PG_VERSION" ]; then
+      echo "Starting base backup from primary..."
+      pg_basebackup -h {{ .Values.global.dbType }}-0.{{ include "postgres.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local -D "$PGDATA" -U {{ .Release.Name }} -Fp -Xs -P -R
     fi
 {{- end }}
