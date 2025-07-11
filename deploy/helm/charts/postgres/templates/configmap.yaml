@@ -19,6 +19,10 @@ data:
     wal_keep_size = 64
     hot_standby = on
 
+  pg_hba.conf: |
+    # Allow replication connections from replicas (replace CIDR accordingly)
+    host replication {{ .Release.Name }} 0.0.0.0/0 trust
+
   primary.sql: |
     \c {{ .Release.Name }}
     CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
