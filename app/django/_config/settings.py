@@ -148,43 +148,23 @@ DATABASES = {
         'PORT': DB_PORT,
         'OPTIONS': DEFAULT_OPTIONS,
     },
-    'slave1': {
-        'ENGINE': f'django.db.backends.{DB_ENGINE}',
-        'NAME': DATABASE_NAME,
-        'USER': DATABASE_USER,
-        'PASSWORD': DATABASE_PASSWORD,
-        "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': f'{DATABASE_TYPE}-1.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
-        'PORT': DB_PORT,
-        'OPTIONS': SLAVE_OPTIONS,
-    },
-    'slave2': {
-        'ENGINE': f'django.db.backends.{DB_ENGINE}',
-        'NAME': DATABASE_NAME,
-        'USER': DATABASE_USER,
-        'PASSWORD': DATABASE_PASSWORD,
-        "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': f'{DATABASE_TYPE}-2.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
-        'PORT': DB_PORT,
-        'OPTIONS': SLAVE_OPTIONS,
-    }
 }
 
 # slave DB 추가
 SLAVE_DATABASES = config('SLAVE_DATABASES', default='', cast=Csv())
 
-# if SLAVE_DATABASES:
-#     for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
-#         DATABASES[slave_name] = {
-#             'ENGINE': f'django.db.backends.{DB_ENGINE}',
-#             'NAME': DATABASE_NAME,
-#             'USER': DATABASE_USER,
-#             'PASSWORD': DATABASE_PASSWORD,
-#             'DEFAULT-CHARACTER-SET': 'utf8',
-#             'HOST': f'{DATABASE_TYPE}-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
-#             'PORT': DB_PORT,
-#             'OPTIONS': SLAVE_OPTIONS,
-#         }
+if SLAVE_DATABASES:
+    for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
+        DATABASES[slave_name] = {
+            'ENGINE': f'django.db.backends.{DB_ENGINE}',
+            'NAME': DATABASE_NAME,
+            'USER': DATABASE_USER,
+            'PASSWORD': DATABASE_PASSWORD,
+            'DEFAULT-CHARACTER-SET': 'utf8',
+            'HOST': f'{DATABASE_TYPE}-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
+            'PORT': DB_PORT,
+            'OPTIONS': SLAVE_OPTIONS,
+        }
 
 DATABASE_ROUTERS = ["_config.database_router.MasterSlaveRouter"]
 
