@@ -18,6 +18,7 @@ data:
     max_wal_senders = 10
     wal_keep_size = 64
     hot_standby = on
+    hba_file = '/etc/postgresql/pg_hba.conf'
 
   pg_hba.conf: |
     # Allow replication connections from replicas (replace CIDR accordingly)
