@@ -29,18 +29,18 @@ spec:
               [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
               ordinal=${BASH_REMATCH[1]}
               if [[ $ordinal -eq 0 ]]; then
-                cp /mnt/replica-config/primary.conf /mnt/config/postgresql.conf
+                cp /mnt/replica-config/primary.conf /etc/postgresql/postgresql.conf
                 cp /mnt/replica-config/primary.sql /docker-entrypoint-initdb.d/init.sql
               else
-                cp /mnt/replica-config/replica.conf /mnt/config/postgresql.conf
-                cp /mnt/replica-config/secondary.sh /mnt/config/secondary.sh
+                cp /mnt/replica-config/replica.conf /etc/postgresql/postgresql.conf
+                cp /mnt/replica-config/secondary.sh /etc/postgresql/secondary.sh
                 chmod +x /mnt/config/secondary.sh
               fi
           volumeMounts:
             - name: {{ include "postgres.fullname" . }}-replica
               mountPath: /mnt/replica-config
             - name: postgres-conf
-              mountPath: /mnt/config
+              mountPath: /etc/postgresql   # 주 컨테이너와 동일 경로로 마운트
             - name: initdb-d
               mountPath: /docker-entrypoint-initdb.d
       restartPolicy: Always
