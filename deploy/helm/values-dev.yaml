@@ -18,7 +18,7 @@ mariadb:
     backupPvcStorage: 200Mi
 
 postgres:
-  enabled: false
+  enabled: true
   replicaCount: 3 # 테스트 용
   volumes:
     dataPvStorage: 500Mi
