@@ -125,8 +125,6 @@ DATABASE_USER = config('DATABASE_USER')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD')
 DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgres')
 NAMESPACE = config('NAMESPACE', default='default')
-MASTER_HOST = f'{DB_ENGINE}-primary.{NAMESPACE}.svc.cluster.local' \
-    if config('KUBERNETES_SERVICE_HOST', default='') else DATABASE_TYPE
 DB_PORT = config('DATABASE_PORT', default='5432')
 DEFAULT_OPTIONS = {'connect_timeout': 10, } \
     if DATABASE_TYPE == 'postgres' else {
@@ -134,7 +132,7 @@ DEFAULT_OPTIONS = {'connect_timeout': 10, } \
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
 }
-SLAVE_OPTIONS = {'connect_timeout': 10, } \
+REPLICA_OPTIONS = {'connect_timeout': 10, } \
     if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 
 DATABASES = {
@@ -144,27 +142,21 @@ DATABASES = {
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
         "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': MASTER_HOST,
+        'HOST': f'{DB_ENGINE}-primary.{NAMESPACE}.svc.cluster.local',
         'PORT': DB_PORT,
         'OPTIONS': DEFAULT_OPTIONS,
     },
+    'replica': {
+        'ENGINE': f'django.db.backends.{DB_ENGINE}',
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        "DEFAULT-CHARACTER-SET": 'utf8',
+        'HOST': f'{DB_ENGINE}-read.{NAMESPACE}.svc.cluster.local',
+        'PORT': DB_PORT,
+        'OPTIONS': REPLICA_OPTIONS,
+    }
 }
-
-# slave DB 추가
-SLAVE_DATABASES = config('SLAVE_DATABASES', default='', cast=Csv())
-
-if SLAVE_DATABASES:
-    for idx, slave_name in enumerate(SLAVE_DATABASES):
-        DATABASES[slave_name] = {
-            'ENGINE': f'django.db.backends.{DB_ENGINE}',
-            'NAME': DATABASE_NAME,
-            'USER': DATABASE_USER,
-            'PASSWORD': DATABASE_PASSWORD,
-            'DEFAULT-CHARACTER-SET': 'utf8',
-            'HOST': f'{DB_ENGINE}-read.{NAMESPACE}.svc.cluster.local',
-            'PORT': DB_PORT,
-            'OPTIONS': SLAVE_OPTIONS,
-        }
 
 DATABASE_ROUTERS = ["_config.database_router.MasterSlaveRouter"]
 

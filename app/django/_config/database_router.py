@@ -1,40 +1,26 @@
-import random
-import sys
-
-from django.conf import settings
-from django.db import connections
+import os
 
 
 class MasterSlaveRouter:
-    @staticmethod
-    def db_for_read(model, **hints):
-        if 'migrate' in sys.argv:  # 마이그레이션 중에는 default 사용
-            return 'default'
-        slaves = getattr(settings, 'SLAVE_DATABASES', [])
-        if not slaves:
-            return 'default'
-        else:
-            slave = random.choice(slaves)
-            return slave
-        # try:
-        #     slave = random.choice(slaves)
-        #     if connections[slave].connection.is_usable():
-        #         return slave
-        #     return 'default'
-        # except Exception:
-        #     return 'default'
+    def __init__(self):
+        self.replica_enabled = os.getenv('REPLICA_ENABLED', 'false').lower() == 'true'
+
+    def db_for_read(self, model, **hints):
+        if self.replica_enabled:
+            return 'replica'
+        return 'default'
 
     @staticmethod
     def db_for_write(model, **hints):
         # 쓰기 작업은 default 데이터베이스에서만 처리
         return 'default'
 
-    @staticmethod
-    def allow_relation(obj1, obj2, **hints):
-        db_list = ['default'] + getattr(settings, 'SLAVE_DATABASES', [])
-        if obj1._state.db in db_list and obj2._state.db in db_list:
+    def allow_relation(self, obj1, obj2, **hints):
+        if obj1._state.db == obj2._state.db:  # 두 객체가 모두 같은 DB에 있다면 관계 허용
             return True
-        return None
+        if not self.replica_enabled:  # 레플리카가 없을 때 관계 허용
+            return True
+        return False
 
     @staticmethod
     def allow_migrate(db, app_label, model_name=None, **hints):
