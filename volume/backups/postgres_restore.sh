@@ -25,7 +25,7 @@ echo "=== Restore Log: ${DATE} ===" > "$LOG_FILE"
 
 # 테이블 데이터 삭제(TRUNCATE) 및 복원을 트랜잭션 내에서 실행
 echo "=== 테이블 데이터 삭제 및 복원 시작 ===" | tee -a "$LOG_FILE"
-psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
+PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
 BEGIN;
 SET CONSTRAINTS ALL DEFERRED;
 
@@ -77,7 +77,7 @@ fi
 
 # TRUNCATE 후 테이블 비어 있는지 확인
 echo "=== TRUNCATE 후 테이블 행 수 확인 ===" | tee -a "$LOG_FILE"
-psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
+PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
 DO \$\$
 DECLARE
     r RECORD;
@@ -94,7 +94,7 @@ END \$\$;
 
 # 백업 파일 복원
 echo "=== 백업 파일 복원 중: $DUMP_FILE ===" | tee -a "$LOG_FILE"
-pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
+PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
 
 # 복원 결과 확인
 if [ $? -eq 0 ]; then
