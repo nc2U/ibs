@@ -40,8 +40,10 @@ jobs:
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           script: |
-            chown -R 1001:1001 ${{ secrets.NFS_PATH }}/dev/volume/backups
-            chmod -R 777 ${{ secrets.NFS_PATH }}/dev/volume/backups
+            export NFS_PASS="${{ secrets.NFS_PASS }}"
+            export NFS_PATH="${{ secrets.NFS_PATH }}"
+            echo "$NFS_PASS" | sudo -S chown -R 1001:1001 "$NFS_PATH/dev/volume/backups"
+            echo "$NFS_PASS" | sudo -S chmod -R 777 "$NFS_PATH/dev/volume/backups"
       
       # slack --> notification
       - name: Send slack when failed
