@@ -125,16 +125,16 @@ DATABASE_USER = config('DATABASE_USER')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD')
 DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgres')
 NAMESPACE = config('NAMESPACE', default='default')
-MASTER_HOST = f'{DATABASE_TYPE}-0.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local' \
+MASTER_HOST = f'{DB_ENGINE}-primary-0.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local' \
     if config('KUBERNETES_SERVICE_HOST', default='') else DATABASE_TYPE
 DB_PORT = config('DATABASE_PORT', default='5432')
-DEFAULT_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } \
+DEFAULT_OPTIONS = {'connect_timeout': 10, } \
     if DATABASE_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
 }
-SLAVE_OPTIONS = {'options': '-c search_path=ibs,public', 'connect_timeout': 10, } \
+SLAVE_OPTIONS = {'connect_timeout': 10, } \
     if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 
 DATABASES = {
@@ -154,14 +154,14 @@ DATABASES = {
 SLAVE_DATABASES = config('SLAVE_DATABASES', default='', cast=Csv())
 
 if SLAVE_DATABASES:
-    for idx, slave_name in enumerate(SLAVE_DATABASES, start=1):
+    for idx, slave_name in enumerate(SLAVE_DATABASES):
         DATABASES[slave_name] = {
             'ENGINE': f'django.db.backends.{DB_ENGINE}',
             'NAME': DATABASE_NAME,
             'USER': DATABASE_USER,
             'PASSWORD': DATABASE_PASSWORD,
             'DEFAULT-CHARACTER-SET': 'utf8',
-            'HOST': f'{DATABASE_TYPE}-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
+            'HOST': f'{DB_ENGINE}-read-{idx}.{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local',
             'PORT': DB_PORT,
             'OPTIONS': SLAVE_OPTIONS,
         }
