@@ -30,6 +30,10 @@ postgres:
 postgresql:
   enabled: true
 
+  volumes:
+    backupPvStorage: 200Mi
+    backupPvcStorage: 200Mi
+
 nginx:
   image:
     repository: dokube/nginx

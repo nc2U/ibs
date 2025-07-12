@@ -29,6 +29,10 @@ postgres:
 postgresql:
   enabled: true
 
+  volumes:
+    backupPvStorage: 200Mi
+    backupPvcStorage: 200Mi
+
 nginx:
   service:
     type: LoadBalancer

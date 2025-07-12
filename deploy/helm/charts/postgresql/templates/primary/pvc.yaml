@@ -6,9 +6,7 @@ metadata:
 spec:
   storageClassName: dump-backup-{{ .Values.global.appMode }}
   accessModes:
-  {{- range .Values.volumes.backupAccessModes }}
-    - {{ . }}
-  {{- end }}
+    - ReadWriteMany
   resources:
     requests:
       storage: {{ .Values.volumes.backupPvcStorage }}

@@ -8,9 +8,7 @@ spec:
   capacity:
     storage: {{ .Values.volumes.backupPvStorage }}
   accessModes:
-    {{- range .Values.volumes.backupAccessModes }}
-    - {{ . }}
-    {{- end }}
+    - ReadWriteMany
   mountOptions:
     - hard
     - nfsvers=4.1
