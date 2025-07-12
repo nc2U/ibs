@@ -27,6 +27,9 @@ postgres:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
+postgresql:
+  enabled: true
+
 nginx:
   image:
     repository: dokube/nginx

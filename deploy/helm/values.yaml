@@ -26,6 +26,9 @@ mariadb:
 postgres:
   enabled: false
 
+postgresql:
+  enabled: true
+
 nginx:
   service:
     type: LoadBalancer

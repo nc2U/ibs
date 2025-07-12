@@ -807,7 +807,7 @@ primary:
     ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
     ##   GKE, AWS & OpenStack)
     ##
-    storageClass: ""
+    storageClass: "nfs-client"
     ## @param primary.persistence.accessModes PVC Access Mode for PostgreSQL volume
     ##
     accessModes:
@@ -1261,7 +1261,7 @@ readReplicas:
     ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
     ##   GKE, AWS & OpenStack)
     ##
-    storageClass: ""
+    storageClass: "nfs-client"
     ## @param readReplicas.persistence.accessModes PVC Access Mode for PostgreSQL volume
     ##
     accessModes:
