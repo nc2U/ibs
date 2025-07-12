@@ -53,9 +53,15 @@ spec:
             successThreshold: 1
           readinessProbe:
             httpGet: # HttpGet 메소드로 점검
+              {{ if and (gt (len .Values.ingress.hosts) 0) (.Values.livenessProbe.host) }}
+              host: {{ .Values.livenessProbe.host }}
+              scheme: {{ if gt (len .Values.ingress.tls) 0 }}HTTPS{{ else }}HTTP{{ end }}
+              port: {{ if gt (len .Values.ingress.tls) 0 }}443{{ else }}80{{ end }}
+              {{ else }}
               host: "localhost"
               port: {{ .Values.service.port }}
-              path: /                # 체크할 경로
+              {{ end }}
+              path: /
             initialDelaySeconds: 20    # 컨테이너 시작 후 30초 후에 Probe 시작
             periodSeconds: 30          # 30초마다 상태 확인
             timeoutSeconds: 1          # 5초 후에 실패로 간주
