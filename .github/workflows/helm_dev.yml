@@ -39,7 +39,7 @@ jobs:
       
       # Helm source to CI/CD server copy transfer
       - name: Copy helm, to CI/CD server
-        uses: appleboy/scp-action@develop
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.CICD_HOST }}
           username: ${{ secrets.CICD_USER }}
