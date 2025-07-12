@@ -125,7 +125,7 @@ DATABASE_USER = config('DATABASE_USER')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD')
 DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgres')
 NAMESPACE = config('NAMESPACE', default='default')
-MASTER_HOST = f'{DB_ENGINE}-primary-0.postgresql-primary.{NAMESPACE}.svc.cluster.local' \
+MASTER_HOST = f'{DB_ENGINE}-primary.{NAMESPACE}.svc.cluster.local' \
     if config('KUBERNETES_SERVICE_HOST', default='') else DATABASE_TYPE
 DB_PORT = config('DATABASE_PORT', default='5432')
 DEFAULT_OPTIONS = {'connect_timeout': 10, } \
@@ -161,7 +161,7 @@ if SLAVE_DATABASES:
             'USER': DATABASE_USER,
             'PASSWORD': DATABASE_PASSWORD,
             'DEFAULT-CHARACTER-SET': 'utf8',
-            'HOST': f'{DB_ENGINE}-read-{idx}.postgresql-read.{NAMESPACE}.svc.cluster.local',
+            'HOST': f'{DB_ENGINE}-read.{NAMESPACE}.svc.cluster.local',
             'PORT': DB_PORT,
             'OPTIONS': SLAVE_OPTIONS,
         }
