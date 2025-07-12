@@ -24,7 +24,7 @@ mariadb:
   enabled: false
 
 postgres:
-  enabled: true
+  enabled: false
 
 nginx:
   service:
