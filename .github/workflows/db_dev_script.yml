@@ -32,6 +32,16 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           source: 'volume/backups'
           target: ${{ secrets.NFS_PATH }}/dev/
+
+      - name: Change ownership via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NFS_HOST }}
+          username: ${{ secrets.NFS_USER }}
+          password: ${{ secrets.NFS_PASS }}
+          script: |
+            chown -R 1001:1001 ${{ secrets.NFS_PATH }}/dev/volume/backups
+            chmod -R 777 ${{ secrets.NFS_PATH }}/dev/volume/backups
       
       # slack --> notification
       - name: Send slack when failed
