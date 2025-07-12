@@ -38,10 +38,10 @@ global:
     fullnameOverride: ""
     
     auth:
-      postgresPassword: ""
-      username: ""
-      password: ""
-      database: ""
+      postgresPassword: "secret"
+      username: "ibs"
+      password: "secret"
+      database: "ibs"
       existingSecret: ""
       secretKeys:
         adminPasswordKey: ""
@@ -69,10 +69,10 @@ global:
 kubeVersion: ""
 ## @param nameOverride String to partially override common.names.fullname template (will maintain the release name)
 ##
-nameOverride: ""
+nameOverride: "postgres"
 ## @param fullnameOverride String to fully override common.names.fullname template
 ##
-fullnameOverride: ""
+fullnameOverride: "postgresql"
 ## @param namespaceOverride String to fully override common.names.namespace
 ##
 namespaceOverride: ""
@@ -181,7 +181,7 @@ auth:
   usePasswordFiles: true
 ## @param architecture PostgreSQL architecture (`standalone` or `replication`)
 ##
-architecture: standalone
+architecture: replication
 ## Replication configuration
 ## Ignored if `architecture` is `standalone`
 ##
@@ -814,7 +814,7 @@ primary:
       - ReadWriteOnce
     ## @param primary.persistence.size PVC Storage Request for PostgreSQL volume
     ##
-    size: 8Gi
+    size: 1Gi
     ## @param primary.persistence.annotations Annotations for the PVC
     ##
     annotations: {}
@@ -1268,7 +1268,7 @@ readReplicas:
       - ReadWriteOnce
     ## @param readReplicas.persistence.size PVC Storage Request for PostgreSQL volume
     ##
-    size: 8Gi
+    size: 1Gi
     ## @param readReplicas.persistence.annotations Annotations for the PVC
     ##
     annotations: {}
@@ -1419,7 +1419,7 @@ backup:
         - ReadWriteOnce
       ## @param backup.cronjob.storage.size PVC Storage Request for the backup data volume
       ##
-      size: 8Gi
+      size: 1Gi
       ## @param backup.cronjob.storage.annotations PVC annotations
       ##
       annotations: {}
