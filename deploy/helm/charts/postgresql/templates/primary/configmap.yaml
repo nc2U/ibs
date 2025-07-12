@@ -13,9 +13,16 @@ metadata:
 data:
   # init.sql 파일을 ConfigMap에 넣음
   init.sql: |
-    CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }} AUTHORIZATION {{ .Values.primary.initdb.owner | default "postgres" }};
-    GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Values.auth.username }};
-    ALTER DATABASE {{ .Release.Name }} SET search_path TO {{ .Release.Name }}, public;
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .Release.Name }} ') THEN
+        CREATE DATABASE ibs;
+    END IF;
+    END $$;
+    \c {{ .Release.Name }}
+    CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }}  AUTHORIZATION {{ .Values.primary.initdb.owner | default "postgres" }};
+    GRANT ALL ON SCHEMA {{ .Release.Name }}  TO {{ .Values.auth.username }};
+    ALTER DATABASE {{ .Release.Name }}  SET search_path TO {{ .Release.Name }} , public;
 ---
 {{- if (include "postgresql.v1.primary.createConfigmap" .) }}
 apiVersion: v1

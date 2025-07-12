@@ -126,13 +126,13 @@ DATABASE_PASSWORD = config('DATABASE_PASSWORD')
 DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgres')
 NAMESPACE = config('NAMESPACE', default='default')
 DB_PORT = config('DATABASE_PORT', default='5432')
-DEFAULT_OPTIONS = {'connect_timeout': 10, } \
+DEFAULT_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
     if DATABASE_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
 }
-REPLICA_OPTIONS = {'connect_timeout': 10, } \
+REPLICA_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
     if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 
 DATABASES = {
