@@ -11,6 +11,16 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: {{ include "postgres.fullname" . }}-hba
+data:
+  pg_hba.conf: |
+    hostnossl    replication     {{ .Release.Name }}      10.42.0.0/16    md5
+    hostnossl    replication     {{ .Release.Name }}      0.0.0.0/0       md5
+    hostnossl    replication     {{ .Release.Name }}      ::/0            md5
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: {{ include "postgres.fullname" . }}-replica-cm
 data:
   primary.conf: |
@@ -20,17 +30,16 @@ data:
     hot_standby = on
     hba_file = '/etc/postgresql/pg_hba.conf'
 
-  pg_hba.conf: |
-    hostnossl    replication     {{ .Release.Name }}      10.42.0.0/16    md5
-    hostnossl    replication     {{ .Release.Name }}      0.0.0.0/0       md5
-    hostnossl    replication     {{ .Release.Name }}      ::/0            md5
-
   primary.sql: |
     \connect {{ .Release.Name }}
     CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
-    GRANT ALL ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
-    ALTER ROLE "{{ .Release.Name }}" WITH REPLICATION LOGIN PASSWORD '{{ .Values.global.dbPassword }}';
-    ALTER DATABASE {{ .Release.Name }} SET search_path TO {{ .Release.Name }}, public;
+    GRANT
+    ALL
+    ON SCHEMA {{ .Release.Name }} TO {{ .Release.Name }};
+    ALTER
+    ROLE "{{ .Release.Name }}" WITH REPLICATION LOGIN PASSWORD '{{ .Values.global.dbPassword }}';
+    ALTER
+    DATABASE {{ .Release.Name }} SET search_path TO {{ .Release.Name }}, public;
 
   replica.conf: |
     hot_standby = on
@@ -52,6 +61,6 @@ data:
       cat $PGDATA/PG_VERSION
     fi
 
-    # 🔥 PostgreSQL 직접 실행
+    # PostgreSQL 직접 실행
     exec docker-entrypoint.sh postgres
 {{- end }}
