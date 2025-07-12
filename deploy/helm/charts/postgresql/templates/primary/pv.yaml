@@ -1,0 +1,24 @@
+{{- if .Values.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-{{ include "postgresql.v1.primary.fullname" . }}-{{ .Values.global.appMode }}-backup-pv
+spec:
+  storageClassName: dump-backup-{{ .Values.global.appMode }}
+  capacity:
+    storage: {{ .Values.volumes.backupPvStorage }}
+  accessModes:
+    {{- range .Values.volumes.backupAccessModes }}
+    - {{ . }}
+    {{- end }}
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    {{- if eq .Values.global.appMode "prod" }}
+    path: {{ .Values.global.nfsPath }}/prod/volume/backups
+    {{- else if eq .Values.global.appMode "dev" }}
+    path: {{ .Values.global.nfsPath }}/dev/volume/backups
+    {{- end}}
+    server: {{ .Values.global.nfsServerHost }}
+{{- end }}
