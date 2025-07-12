@@ -72,7 +72,7 @@ jobs:
 
       # Vue Source to server copy transfer
       - name: Copy Vue -> django static/dist (NFS server)
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@develop
         with:
           host: ${{ secrets.CICD_HOST }}
           username: ${{ secrets.CICD_USER }}
