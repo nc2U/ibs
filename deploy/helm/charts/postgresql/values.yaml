@@ -405,7 +405,9 @@ primary:
   ##   - name: FOO
   ##     value: "bar"
   ##
-  extraEnvVars: []
+  extraEnvVars:
+    - name: TZ
+      value: Asia/Seoul
   ## @param primary.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for PostgreSQL Primary nodes
   ##
   extraEnvVarsCM: ""

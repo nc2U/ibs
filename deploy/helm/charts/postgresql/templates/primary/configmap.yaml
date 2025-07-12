@@ -3,20 +3,6 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "postgresql.v1.primary.fullname" . }}-init-scripts
-  labels:
-    app.kubernetes.io/component: primary
-    app.kubernetes.io/instance: {{ .Release.Name }}
-data:
-  # init.sql 파일을 ConfigMap에 넣음
-  init.sql: |
-    CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
-    GRANT ALL ON SCHEMA {{ .Release.Name }}  TO {{ .Values.auth.username }};
-    ALTER DATABASE {{ .Release.Name }}  SET search_path TO {{ .Release.Name }} , public;
----
 {{- if (include "postgresql.v1.primary.createConfigmap" .) }}
 apiVersion: v1
 kind: ConfigMap
@@ -38,3 +24,20 @@ data:
     {{- include "common.tplvalues.render" ( dict "value" .Values.primary.pgHbaConfiguration "context" $ ) | nindent 4 }}
   {{- end }}
 {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgresql.v1.primary.fullname" . }}-init-scripts
+  labels:
+    app.kubernetes.io/component: primary
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  # init.sql 파일을 ConfigMap에 넣음
+  init.sql: |
+    CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
+    GRANT
+    ALL
+    ON SCHEMA {{ .Release.Name }}  TO {{ .Values.auth.username }};
+    ALTER
+    DATABASE {{ .Release.Name }}  SET search_path TO {{ .Release.Name }} , public;
