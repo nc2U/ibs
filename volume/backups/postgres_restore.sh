@@ -2,14 +2,15 @@
 set -eu
 
 # 변수 설정
-SCHEMA="${POSTGRES_USER}"
+#SCHEMA="${POSTGRES_USER}"
+SCHEMA="public"
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/backup-postgres-${DATE}.dump"
 LOG_FILE="/var/backups/backup-${DATE}.log"
 
 # 환경 변수 확인
-if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DB" ] || [ -z "$DUMP_FILE" ]; then
-    echo "Error: POSTGRES_USER, POSTGRES_DB, or DUMP_FILE is not set" >&2
+if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
+    echo "Error: POSTGRES_USER, POSTGRES_DATABASE, or DUMP_FILE is not set" >&2
     exit 1
 fi
 
@@ -24,7 +25,7 @@ echo "=== Restore Log: ${DATE} ===" > "$LOG_FILE"
 
 # 테이블 데이터 삭제(TRUNCATE) 및 복원을 트랜잭션 내에서 실행
 echo "=== 테이블 데이터 삭제 및 복원 시작 ===" | tee -a "$LOG_FILE"
-psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
 BEGIN;
 SET CONSTRAINTS ALL DEFERRED;
 
@@ -76,7 +77,7 @@ fi
 
 # TRUNCATE 후 테이블 비어 있는지 확인
 echo "=== TRUNCATE 후 테이블 행 수 확인 ===" | tee -a "$LOG_FILE"
-psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
 DO \$\$
 DECLARE
     r RECORD;
@@ -93,13 +94,13 @@ END \$\$;
 
 # 백업 파일 복원
 echo "=== 백업 파일 복원 중: $DUMP_FILE ===" | tee -a "$LOG_FILE"
-pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
+pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
 
 # 복원 결과 확인
 if [ $? -eq 0 ]; then
     # 시퀀스 조정
     echo "=== 시퀀스 조정 (id 컬럼 기준) 시작 ===" | tee -a "$LOG_FILE"
-    psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+    psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
     DO \$\$
     DECLARE
         r RECORD;
