@@ -27,8 +27,10 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'volume/backups'
+          source: 'volume/backups/*'
           target: ${{ secrets.NFS_PATH }}/prod/
+          strip_components: 0          # 디렉토리 구조 그대로 유지
+          overwrite: true              # 덮어쓰기 허용
       
       # mysql pod --> database bakcup
       - name: database backup
