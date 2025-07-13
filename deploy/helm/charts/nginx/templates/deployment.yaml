@@ -51,15 +51,15 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
             successThreshold: 1
-{{/*          readinessProbe:*/}}
-{{/*            httpGet: # HttpGet 메소드로 점검*/}}
-{{/*              port: {{ .Values.service.port }}*/}}
-{{/*              path: /*/}}
-{{/*            initialDelaySeconds: 20    # 컨테이너 시작 후 30초 후에 Probe 시작*/}}
-{{/*            periodSeconds: 30          # 30초마다 상태 확인*/}}
-{{/*            timeoutSeconds: 1          # 5초 후에 실패로 간주*/}}
-{{/*            failureThreshold: 5        # 몇 번 실패해야 Pod를 Ready 상태가 아니라고 판단할 것인지*/}}
-{{/*            successThreshold: 1        # 몇 번 성공해야 Ready 상태로 간주할 것인지*/}}
+          readinessProbe:
+            httpGet: # HttpGet 메소드로 점검
+              port: {{ .Values.service.port }}
+              path: /
+            initialDelaySeconds: 20    # 컨테이너 시작 후 30초 후에 Probe 시작
+            periodSeconds: 30          # 30초마다 상태 확인
+            timeoutSeconds: 1          # 5초 후에 실패로 간주
+            failureThreshold: 5        # 몇 번 실패해야 Pod를 Ready 상태가 아니라고 판단할 것인지
+            successThreshold: 1        # 몇 번 성공해야 Ready 상태로 간주할 것인지
           livenessProbe:
             httpGet: # HttpGet 메소드로 점검
               {{ if and (gt (len .Values.ingress.hosts) 0) (.Values.livenessProbe.host) }}
