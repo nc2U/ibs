@@ -16,6 +16,8 @@ Including another URLconf
 import os
 from django.contrib import admin
 from django.contrib.auth import logout
+from django.db import connections, OperationalError
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import path, include
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -36,6 +38,18 @@ admin.site.site_header = '관리자 페이지'  # default: "Django Administratio
 admin.site.site_title = 'IBS 사이트 관리'  # default: "Django site admin"
 
 
+def health_check(request):
+    return JsonResponse({"status": "ok"})
+
+
+def health_check_db(request):
+    try:
+        connections['default'].cursor()
+    except OperationalError:
+        return JsonResponse({"status": "db_error"}, status=500)
+    return JsonResponse({"status": "ok"})
+
+
 def custom_logout(request):
     next_url = request.GET.get('next', 'accounts/login/')  # 기본값은 홈 페이지 ('/')
     if not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
@@ -45,6 +59,8 @@ def custom_logout(request):
 
 
 urlpatterns = [
+    path("healthz/", health_check),
+    path("healthz-db/", health_check_db),
     path('install/', include('accounts.urls'), name='install'),
 
     path('book/', include('book.urls')),
