@@ -2,13 +2,18 @@
 set -eu
 
 # 변수 설정
-#SCHEMA="${POSTGRES_USER}"
-SCHEMA="$POSTGRES_USER"
+SCHEMA="${POSTGRES_USER}"
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/backup-postgres-${DATE}.dump"
 LOG_FILE="/var/backups/backup-${DATE}.log"
-PGPASSWORD=$POSTGRES_PASSWORD # (cat $POSTGRES_PASSWORD_FILE)
-SUPER_USER=$SCHEMA # 'postgres'
+POSTGRES_DATABASE="${POSTGRES_DATABASE:-${POSTGRES_DB:-}}"
+PGPASSWORD="${POSTGRES_PASSWORD:-$( [ -f "$POSTGRES_PASSWORD_FILE" ] && cat "$POSTGRES_PASSWORD_FILE" || echo '')}"
+if [ -n "$POSTGRES_DATABASE" ]; then
+  SUPER_USER="postgres"
+else
+  SUPER_USER=$SCHEMA
+fi
+
 
 # 환경 변수 확인
 if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
