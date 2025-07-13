@@ -7,8 +7,8 @@ SCHEMA="$POSTGRES_USER"
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/backup-postgres-${DATE}.dump"
 LOG_FILE="/var/backups/backup-${DATE}.log"
-PGPASSWORD=$(cat $POSTGRES_PASSWORD_FILE)
-SUPER_USER='postgres'
+PGPASSWORD=$POSTGRES_PASSWORD # (cat $POSTGRES_PASSWORD_FILE)
+SUPER_USER=$SCHEMA # 'postgres'
 
 # 환경 변수 확인
 if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
