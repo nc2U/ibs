@@ -39,10 +39,6 @@ admin.site.site_title = 'IBS 사이트 관리'  # default: "Django site admin"
 
 
 def health_check(request):
-    return JsonResponse({"status": "ok"})
-
-
-def health_check_db(request):
     try:
         connections['default'].cursor()
     except OperationalError:
@@ -60,7 +56,6 @@ def custom_logout(request):
 
 urlpatterns = [
     path("healthz/", health_check),
-    path("healthz-db/", health_check_db),
     path('install/', include('accounts.urls'), name='install'),
 
     path('book/', include('book.urls')),

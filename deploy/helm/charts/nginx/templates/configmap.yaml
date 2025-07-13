@@ -73,6 +73,12 @@ data:
             add_header 'Access-Control-Allow-Origin' '*';
         }
 
+        location /healthz/ {
+          proxy_pass http://django:8000/healthz/;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+        }
+
         location /static/ {
             alias /django/static/;
         }

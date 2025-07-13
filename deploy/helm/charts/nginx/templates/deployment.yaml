@@ -45,16 +45,17 @@ spec:
               containerPort: 443
               protocol: TCP
           startupProbe:
-            exec:
-              command: [ "nginx", "-t" ]
+            httpGet:
+              path: /healthz/
+              port: 80
             initialDelaySeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
             successThreshold: 1
           readinessProbe:
             httpGet: # HttpGet 메소드로 점검
-              port: {{ .Values.service.port }}
-              path: /
+              path: /healthz/
+              port: 80
             initialDelaySeconds: 20    # 컨테이너 시작 후 30초 후에 Probe 시작
             periodSeconds: 30          # 30초마다 상태 확인
             timeoutSeconds: 1          # 5초 후에 실패로 간주
@@ -62,15 +63,8 @@ spec:
             successThreshold: 1        # 몇 번 성공해야 Ready 상태로 간주할 것인지
           livenessProbe:
             httpGet: # HttpGet 메소드로 점검
-              {{ if and (gt (len .Values.ingress.hosts) 0) (.Values.livenessProbe.host) }}
-              host: {{ .Values.livenessProbe.host }}
-              scheme: {{ if gt (len .Values.ingress.tls) 0 }}HTTPS{{ else }}HTTP{{ end }}
-              port: {{ if gt (len .Values.ingress.tls) 0 }}443{{ else }}80{{ end }}
-              {{ else }}
-              host: "localhost"
-              port: {{ .Values.service.port }}
-              {{ end }}
-              path: /
+              path: /healthz/
+              port: 80
             initialDelaySeconds: 300    # 최초 300초 후에 LivenessProbe 체크를 시작함
             periodSeconds: 30           # 30초마다 LivenessProbe 체크
             timeoutSeconds: 5           # 5초 후에 실패로 간주
