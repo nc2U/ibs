@@ -18,7 +18,7 @@ mariadb:
     backupPvcStorage: 200Mi
 
 postgres:
-  enabled: true
+  enabled: false
   replicaCount: 1
   volumes:
     dataPvStorage: 500Mi
