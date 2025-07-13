@@ -23,7 +23,6 @@ const accStore = useAccount()
 const getUsers = computed(() => accStore.getUsers)
 
 const workStore = useWork()
-// const allProjects = computed(() => workStore.AllIssueProjects)
 const allProjects = computed(() => workStore.getAllProjects)
 const getVersions = computed(() => workStore.getVersions)
 

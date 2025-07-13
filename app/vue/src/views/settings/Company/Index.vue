@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue'
-import { pageTitle, navMenu } from '@/views/settings/_menu/headermixin'
+import { computed, onBeforeMount, ref } from 'vue'
+import { navMenu, pageTitle } from '@/views/settings/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
 import { type Company } from '@/store/types/settings'
 import Loading from '@/components/Loading/Index.vue'
@@ -29,6 +29,9 @@ const onSubmit = (payload: Company) => {
   else onCreate(payload)
 }
 
+const RefCompanyForm = ref()
+const dataSet = () => RefCompanyForm.value.formDataSetup()
+
 const loading = ref(true)
 onBeforeMount(() => {
   loading.value = false
@@ -37,7 +40,12 @@ onBeforeMount(() => {
 
 <template>
   <Loading v-model:active="loading" />
-  <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
+  <ContentHeader
+    :page-title="pageTitle"
+    :nav-menu="navMenu"
+    selector="CompanySelect"
+    @com-select="dataSet"
+  />
 
   <ContentBody>
     <CompanyDetail
@@ -50,6 +58,7 @@ onBeforeMount(() => {
     <CompanyForm v-if="compName === 'CreateForm'" @on-submit="onSubmit" @reset-form="resetForm" />
 
     <CompanyForm
+      ref="RefCompanyForm"
       v-if="compName === 'UpdateForm'"
       :company="company as Company"
       @on-submit="onSubmit"

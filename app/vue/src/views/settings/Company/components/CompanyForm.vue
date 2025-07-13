@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive, ref } from 'vue'
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_company_settings } from '@/utils/pageAuth'
 import { type Company } from '@/store/types/settings'
+import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { callAddress, type AddressData } from '@/components/DaumPostcode/address'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
@@ -10,7 +11,7 @@ import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const emit = defineEmits(['on-submit', 'reset-form'])
+const emit = defineEmits(['fetch-company', 'on-submit', 'reset-form'])
 
 const account = useAccount()
 
@@ -119,7 +120,7 @@ const formDataSetup = () => {
     form.address3 = props.company.address3
   }
 }
-
+defineExpose({ formDataSetup })
 onBeforeMount(() => formDataSetup())
 </script>
 
