@@ -29,18 +29,18 @@ spec:
               [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
               ordinal=${BASH_REMATCH[1]}
               if [[ $ordinal -eq 0 ]]; then
-                cp /mnt/replica-config/primary.conf /etc/postgresql/postgresql.conf
+                cp /mnt/replica-config/primary.conf /mnt/config/postgresql.conf
                 cp /mnt/replica-config/primary.sql /docker-entrypoint-initdb.d/init.sql
               else
-                cp /mnt/replica-config/replica.conf /etc/postgresql/postgresql.conf
-                cp /mnt/replica-config/secondary.sh /etc/postgresql/secondary.sh
-                chmod +x /etc/postgresql/secondary.sh
+                cp /mnt/replica-config/replica.conf /mnt/config/postgresql.conf
+                cp /mnt/replica-config/secondary.sh /mnt/config/secondary.sh
+                chmod +x /mnt/config/secondary.sh
               fi
           volumeMounts:
             - name: {{ include "postgres.fullname" . }}-replica
               mountPath: /mnt/replica-config
             - name: postgres-conf
-              mountPath: /etc/postgresql   # 주 컨테이너와 동일 경로로 마운트
+              mountPath: /mnt/config
             - name: initdb-d
               mountPath: /docker-entrypoint-initdb.d
       restartPolicy: Always
@@ -50,22 +50,6 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command:
-            - bash
-            - -c
-            - |
-              hostname=$(hostname)
-              if [[ "$hostname" =~ -([0-9]+)$ ]]; then
-                ordinal="${BASH_REMATCH[1]}"
-                if [[ "$ordinal" -ne 0 ]]; then
-                  bash /etc/postgresql/secondary.sh
-                else
-                  exec docker-entrypoint.sh postgres
-                fi
-              else
-                echo "Failed to extract ordinal from hostname"
-                exit 1
-              fi
           env:
             # Using Secrets
             - name: POSTGRES_PASSWORD
@@ -97,12 +81,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
-            - name: postgres-hba
-              mountPath: /var/lib/postgresql/data/pg_hba.conf
-              subPath: pg_hba.conf
-            - name: postgres-conf # initContainer 가 ConfigMap 에서 복사한 파일
-              mountPath: /etc/postgresql
-            - name: initdb-d  # initContainer 가 ConfigMap 에서 복사한 시작 파일
+            - name: postgres-conf
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
+            - name: initdb-d
               mountPath: /docker-entrypoint-initdb.d
             - name: dump-backup
               mountPath: /var/backups
@@ -115,9 +97,6 @@ spec:
             #defaultMode: 0544
         - name: postgres-conf # for init to main
           emptyDir: { }
-        - name: postgres-hba
-          configMap:
-            name: {{ include "postgres.fullname" . }}-hba
         - name: initdb-d # for init to main
           emptyDir: { }
         - name: dump-backup
