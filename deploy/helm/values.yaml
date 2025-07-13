@@ -22,6 +22,7 @@ fullnameOverride: ""
 
 mariadb:
   enabled: false
+  replicaCount: 1
 
 postgres:
   enabled: true
