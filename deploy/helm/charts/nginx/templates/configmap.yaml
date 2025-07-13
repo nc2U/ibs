@@ -74,7 +74,7 @@ data:
         }
 
         location /healthz/ {
-          proxy_pass http:/web/:8000/healthz/;
+          proxy_pass http://web:8000/healthz/;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
         }
