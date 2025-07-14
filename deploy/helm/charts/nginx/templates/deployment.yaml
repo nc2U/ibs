@@ -52,11 +52,12 @@ spec:
           readinessProbe:
             httpGet: # HttpGet 메소드로 점검
               path: /healthz/
-              port: {{ .Values.service.port | default "80" }}
               {{ if  (gt (len .Values.ingress.hosts) 0) }}
               host: {{ (index .Values.ingress.hosts 0).host }}
               scheme: {{ if gt (len .Values.ingress.tls) 0 }}HTTPS{{ else }}HTTP{{ end }}
               port: {{ if gt (len .Values.ingress.tls) 0 }}443{{ else }}80{{ end }}
+              {{ else }}
+              port: {{ .Values.service.port | default "80" }}
               {{ end }}
             initialDelaySeconds: 20    # 컨테이너 시작 후 20초 후에 Probe 시작
             periodSeconds: 30          # 30초마다 상태 확인
@@ -66,11 +67,13 @@ spec:
           livenessProbe:
             httpGet: # HttpGet 메소드로 점검
               path: /healthz/
-              port: {{ .Values.service.port | default "80" }}
               {{ if  (gt (len .Values.ingress.hosts) 0) }}
               host: {{ (index .Values.ingress.hosts 0).host }}
               scheme: {{ if gt (len .Values.ingress.tls) 0 }}HTTPS{{ else }}HTTP{{ end }}
               port: {{ if gt (len .Values.ingress.tls) 0 }}443{{ else }}80{{ end }}
+              {{ else }}
+              port: {{ .Values.service.port | default "80" }}
+              {{ end }}
               {{ end }}
             initialDelaySeconds: 300    # 최초 300초 후에 LivenessProbe 체크를 시작함
             periodSeconds: 30           # 30초마다 LivenessProbe 체크
