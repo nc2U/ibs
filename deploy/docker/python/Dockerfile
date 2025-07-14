@@ -20,4 +20,5 @@ RUN apt update && apt upgrade -y && apt autoremove -y \
 EXPOSE 8000
 
 # startup commands
-ENTRYPOINT ["uwsgi", "--socket", ":8000", "--module", "_config.wsgi", "--py-autoreload", "1", "--logto", "/tmp/mylog.log"]
+ENTRYPOINT ["uwsgi"]
+CMD ["--http-socket", ":8000", "--module", "_config.wsgi", "--py-autoreload", "1", "--logto", "/tmp/mylog.log"]
