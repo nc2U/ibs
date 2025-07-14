@@ -67,8 +67,10 @@ data:
         charset         utf-8;
 
         location / {
-            uwsgi_pass  django_uwsgi;
             include     /etc/nginx/uwsgi_params;
+            uwsgi_pass  django_uwsgi;
+            uwsgi_read_timeout 60s;
+    
             proxy_hide_header Access-Control-Allow-Origin;
             add_header 'Access-Control-Allow-Origin' '*';
         }
