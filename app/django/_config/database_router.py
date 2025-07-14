@@ -14,11 +14,10 @@ class MasterSlaveRouter:
         return 'default'
 
     def allow_relation(self, obj1, obj2, **hints):
-        if obj1._state.db == obj2._state.db:  # 두 객체가 모두 같은 DB에 있다면 관계 허용
+        db_list = ['default', 'replica']
+        if obj1._state.db in db_list and obj2._state.db in db_list:
             return True
-        if not self.replica_enabled:  # 레플리카가 없을 때 관계 허용
-            return True
-        return False
+        return None
 
     @staticmethod
     def allow_migrate(db, app_label, model_name=None, **hints):
