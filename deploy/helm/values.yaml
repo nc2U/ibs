@@ -39,7 +39,7 @@ postgresql:
 nginx:
   service:
     type: LoadBalancer
-    port: 8880
+    # port: 8880
   
   ingress:
     enabled: true

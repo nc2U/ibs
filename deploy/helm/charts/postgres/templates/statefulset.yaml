@@ -78,6 +78,14 @@ spec:
             timeoutSeconds: 1          # 1초 후에 실패로 간주
             failureThreshold: 5        # 몇 번 실패해야 Pod를 실패로 판단할 것인지
             successThreshold: 1        # 몇 번 성공해야 Ready 상태로 간주할 것인지
+{{/*          livenessProbe:*/}}
+{{/*            exec:*/}}
+{{/*              command:*/}}
+{{/*                - sh*/}}
+{{/*                - -c*/}}
+{{/*                - pg_isready -U postgres*/}}
+{{/*            periodSeconds: 20*/}}
+{{/*            failureThreshold: 5*/}}
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
