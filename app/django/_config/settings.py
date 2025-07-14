@@ -25,8 +25,12 @@ SECRET_KEY = config('SECRET_KEY', default='SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
-
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
+raw_hosts = config('ALLOWED_HOSTS', default='', cast=Csv())
+if raw_hosts == ['*']:
+    ALLOWED_HOSTS = ['*']
+else:
+    required_hosts = {'localhost', '127.0.0.1', 'web'}
+    ALLOWED_HOSTS = list(set(raw_hosts).union(required_hosts))
 
 SITE_ID = 1
 
