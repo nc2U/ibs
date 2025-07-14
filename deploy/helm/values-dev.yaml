@@ -8,7 +8,7 @@ global:
   dbPort: "5432"
 
 web:
-  replicaCount: 3
+  replicaCount: 1
 
 mariadb:
   enabled: false
@@ -33,7 +33,7 @@ postgres:
 postgresql:
   enabled: true
   readReplicas:
-    replicaCount: 3
+    replicaCount: 1
 
   volumes:
     backupPvStorage: 200Mi
