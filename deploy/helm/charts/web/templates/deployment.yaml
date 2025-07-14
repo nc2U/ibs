@@ -34,16 +34,6 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: [ "/bin/bash" ]
-          args:
-            - "-c"
-            - |
-              git config --global --add safe.directory '*' && \
-              uwsgi --socket 0.0.0.0:8000 --protocol uwsgi \
-              --http 0.0.0.0:8001 \
-              --module _config.wsgi \
-              --py-autoreload 1 \
-              --logto /tmp/mylog.log
           envFrom:
             - configMapRef:
                 name: {{ include "web.fullname" . }}-config
