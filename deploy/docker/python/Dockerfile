@@ -17,6 +17,9 @@ RUN apt update && apt upgrade -y && apt autoremove -y \
     && pip install --upgrade pip && pip install --upgrade setuptools \
     && pip install --trusted-host pypi.python.org -r requirements.txt
 
+# git safe.directory 설정 추가
+RUN git config --global --add safe.directory '*'
+
 EXPOSE 8000
 
 # startup commands
