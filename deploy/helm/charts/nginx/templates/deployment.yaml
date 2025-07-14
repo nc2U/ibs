@@ -52,6 +52,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz/
+              host: localhost
               port: {{ .Values.service.port | default "80" }}
             initialDelaySeconds: 20    # 컨테이너 시작 후 20초 후에 Probe 시작
             periodSeconds: 30          # 30초마다 상태 확인
@@ -61,6 +62,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz/
+              host: localhost
               port: {{ .Values.service.port | default "80" }}
             initialDelaySeconds: 300    # 최초 300초 후에 LivenessProbe 체크를 시작함
             periodSeconds: 30           # 30초마다 LivenessProbe 체크
