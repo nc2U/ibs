@@ -44,29 +44,29 @@ spec:
             - name: https
               containerPort: 443
               protocol: TCP
-{{/*          startupProbe:*/}}
-{{/*            tcpSocket:*/}}
-{{/*              port: {{ .Values.service.port | default "80" }}*/}}
-{{/*            periodSeconds: 5*/}}
-{{/*            failureThreshold: 30*/}}
-{{/*          readinessProbe:*/}}
-{{/*            httpGet: # HttpGet 메소드로 점검*/}}
-{{/*              path: /*/}}
-{{/*              port: {{ .Values.service.port | default "80" }}*/}}
-{{/*            initialDelaySeconds: 20    # 컨테이너 시작 후 30초 후에 Probe 시작*/}}
-{{/*            periodSeconds: 30          # 30초마다 상태 확인*/}}
-{{/*            timeoutSeconds: 5          # 5초 후에 실패로 간주*/}}
-{{/*            failureThreshold: 5        # 몇 번 실패해야 Pod를 Ready 상태가 아니라고 판단할 것인지*/}}
-{{/*            successThreshold: 1        # 몇 번 성공해야 Ready 상태로 간주할 것인지*/}}
-{{/*          livenessProbe:*/}}
-{{/*            httpGet: # HttpGet 메소드로 점검*/}}
-{{/*              path: /*/}}
-{{/*              port: {{ .Values.service.port | default "80" }}*/}}
-{{/*            initialDelaySeconds: 300    # 최초 300초 후에 LivenessProbe 체크를 시작함*/}}
-{{/*            periodSeconds: 30           # 30초마다 LivenessProbe 체크*/}}
-{{/*            timeoutSeconds: 5           # 5초 후에 실패로 간주*/}}
-{{/*            failureThreshold: 5         # 5번 실패시 Pod Restart*/}}
-{{/*            successThreshold: 1         # 몇 번 성공해야 Ready 상태로 간주할 것인지*/}}
+          startupProbe:
+            tcpSocket:
+              port: {{ .Values.service.port | default "80" }}
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: # HttpGet 메소드로 점검
+              path: /healthz/
+              port: {{ .Values.service.port | default "80" }}
+            initialDelaySeconds: 20    # 컨테이너 시작 후 20초 후에 Probe 시작
+            periodSeconds: 30          # 30초마다 상태 확인
+            timeoutSeconds: 5          # 5초 후에 실패로 간주
+            failureThreshold: 5        # 몇 번 실패해야 Pod를 Ready 상태가 아니라고 판단할 것인지
+            successThreshold: 1        # 몇 번 성공해야 Ready 상태로 간주할 것인지
+          livenessProbe:
+            httpGet: # HttpGet 메소드로 점검
+              path: /healthz/
+              port: {{ .Values.service.port | default "80" }}
+            initialDelaySeconds: 300    # 최초 300초 후에 LivenessProbe 체크를 시작함
+            periodSeconds: 30           # 30초마다 LivenessProbe 체크
+            timeoutSeconds: 5           # 5초 후에 실패로 간주
+            failureThreshold: 5         # 5번 실패시 Pod Restart
+            successThreshold: 1         # 몇 번 성공해야 Ready 상태로 간주할 것인지
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
