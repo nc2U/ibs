@@ -20,6 +20,9 @@ global:
 nameOverride: ""
 fullnameOverride: ""
 
+web:
+  replicaCount: 1
+
 mariadb:
   enabled: false
   replicaCount: 1

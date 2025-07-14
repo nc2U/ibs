@@ -7,6 +7,9 @@ global:
   dbType: "postgres"
   dbPort: "5432"
 
+web:
+  replicaCount: 3
+
 mariadb:
   enabled: false
   replicaCount: 1
