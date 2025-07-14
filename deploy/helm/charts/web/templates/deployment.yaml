@@ -51,7 +51,7 @@ spec:
               protocol: TCP
           startupProbe:
             httpGet:
-              path: /healthz/
+              path: /healthz
               port: 8000
             periodSeconds: 5
             failureThreshold: 30
@@ -59,7 +59,7 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /healthz/
+              path: /healthz
               port: 8000
             periodSeconds: 10
             timeoutSeconds: 2
@@ -67,7 +67,7 @@ spec:
 
           livenessProbe:
             httpGet:
-              path: /healthz/
+              path: /healthz
               port: 8000
             periodSeconds: 20
             timeoutSeconds: 2
