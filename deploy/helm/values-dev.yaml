@@ -42,6 +42,3 @@ nginx:
     pullPolicy: IfNotPresent
     tag: "latest"
   replicaCount: 1
-
-    # service:
-  # port: 8881
