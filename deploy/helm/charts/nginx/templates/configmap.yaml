@@ -67,9 +67,6 @@ data:
         charset         utf-8;
 
         location / {
-{{/*            include     /etc/nginx/uwsgi_params;*/}}
-{{/*            uwsgi_pass  django_uwsgi;*/}}
-{{/*            uwsgi_read_timeout 30s;*/}}
             proxy_pass http://django_uwsgi;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -82,9 +79,6 @@ data:
         }
 
         location /healthz/ {
-{{/*          include     /etc/nginx/uwsgi_params;*/}}
-{{/*          uwsgi_pass  django_uwsgi;*/}}
-{{/*          uwsgi_read_timeout 10s;*/}}
             proxy_pass http://django_uwsgi;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
