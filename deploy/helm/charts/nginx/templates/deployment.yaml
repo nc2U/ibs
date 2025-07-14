@@ -50,7 +50,8 @@ spec:
             periodSeconds: 5
             failureThreshold: 30
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /nginx-healthz
               port: {{ .Values.service.port | default "80" }}
             initialDelaySeconds: 60    # 컨테이너 시작 후 20초 후에 Probe 시작
             periodSeconds: 30          # 30초마다 상태 확인

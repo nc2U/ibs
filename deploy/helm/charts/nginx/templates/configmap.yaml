@@ -78,12 +78,10 @@ data:
             add_header 'Access-Control-Allow-Origin' '*';
         }
 
-        location /healthz/ {
-            proxy_pass http://django_uwsgi;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+        location /nginx-healthz/ {
+            access_log off;
+            return 200 'ok';
+            add_header Content-Type text/plain;
         }
 
         location /static/ {
