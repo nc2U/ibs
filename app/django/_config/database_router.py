@@ -5,9 +5,8 @@ class MasterSlaveRouter:
     def __init__(self):
         self.replica_enabled = os.getenv('REPLICA_ENABLED', 'false').lower() == 'true'
 
-    def db_for_read(self, model, **hints):
-        if self.replica_enabled:
-            return 'replica'
+    @staticmethod
+    def db_for_read(model, **hints):
         return 'default'
 
     @staticmethod
