@@ -13,7 +13,8 @@ class MasterSlaveRouter:
         # 쓰기 작업은 default 데이터베이스에서만 처리
         return 'default'
 
-    def allow_relation(self, obj1, obj2, **hints):
+    @staticmethod
+    def allow_relation(obj1, obj2, **hints):
         db_list = ['default', 'replica']
         if obj1._state.db in db_list and obj2._state.db in db_list:
             return True
