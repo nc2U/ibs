@@ -30,7 +30,7 @@ postgres:
 postgresql:
   enabled: true
   readReplicas:
-    replicaCount: 1
+    replicaCount: 3
 
   volumes:
     backupPvStorage: 200Mi
