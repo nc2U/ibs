@@ -3,11 +3,10 @@ import os
 
 class MasterSlaveRouter:
     def __init__(self):
-        self.replica_enabled = os.getenv('REPLICA_ENABLED', 'false').lower() == 'true'
+        self.replica_enabled = 'KUBERNETES_SERVICE_HOST' in os.environ
 
-    @staticmethod
-    def db_for_read(model, **hints):
-        return 'default'
+    def db_for_read(self, model, **hints):
+        return 'replica' if self.replica_enabled else 'default'
 
     @staticmethod
     def db_for_write(model, **hints):
