@@ -40,7 +40,7 @@ spec:
             - |
               git config --global --add safe.directory '*' && \
               uwsgi --socket 0.0.0.0:8000 --protocol uwsgi \
-              --http 0.0.0.0:8080 \
+              --http 0.0.0.0:8001 \
               --module _config.wsgi \
               --py-autoreload 1 \
               --logto /tmp/mylog.log
@@ -56,7 +56,7 @@ spec:
           startupProbe:
             httpGet:
               path: /healthz/
-              port: 8080
+              port: 8001
             failureThreshold: 30
             periodSeconds: 5
             timeoutSeconds: 2
@@ -64,7 +64,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz/
-              port: 8080
+              port: 8001
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 3
@@ -72,7 +72,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz/
-              port: 8080
+              port: 8001
             periodSeconds: 20
             timeoutSeconds: 2
             failureThreshold: 5
