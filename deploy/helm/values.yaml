@@ -21,7 +21,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 web:
-  replicaCount: 3
+  replicaCount: 2
 
 mariadb:
   enabled: false
@@ -33,13 +33,15 @@ postgres:
 postgresql:
   enabled: true
   readReplicas:
-    replicaCount: 3
+    replicaCount: 1
 
   volumes:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
 nginx:
+  replicaCount: 2
+
   service:
     type: LoadBalancer
     port: 8880

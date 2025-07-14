@@ -2,8 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 3
-
 image:
   repository: dokube/nginx
   pullPolicy: IfNotPresent
@@ -84,7 +82,7 @@ resources: { }
 #   memory: 128Mi
 
 autoscaling:
-  enabled: false
+  enabled: true
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
