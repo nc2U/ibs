@@ -101,8 +101,8 @@ jobs:
             --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
             --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
             --set 'nginx.ingress.tls[0].hosts[0]'=dev.${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.tls[0].hosts[1]'=dev.brdnc.co.kr \
-            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
+            --set 'nginx.ingress.tls[0].hosts[1]'=dev.brdnc.co.kr
+      #            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
 
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
