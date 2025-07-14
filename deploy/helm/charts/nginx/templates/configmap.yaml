@@ -69,10 +69,16 @@ data:
         location / {
             include     /etc/nginx/uwsgi_params;
             uwsgi_pass  django_uwsgi;
-            uwsgi_read_timeout 60s;
-    
+            uwsgi_read_timeout 30s;
+
             proxy_hide_header Access-Control-Allow-Origin;
             add_header 'Access-Control-Allow-Origin' '*';
+        }
+
+        location /healthz/ {
+          include     /etc/nginx/uwsgi_params;
+          uwsgi_pass  django_uwsgi;
+          uwsgi_read_timeout 10s;
         }
 
         location /static/ {
