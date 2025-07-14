@@ -59,7 +59,7 @@ spec:
               {{ else }}
               port: {{ .Values.service.port | default "80" }}
               {{ end }}
-            initialDelaySeconds: 20    # 컨테이너 시작 후 20초 후에 Probe 시작
+            initialDelaySeconds: 60    # 컨테이너 시작 후 20초 후에 Probe 시작
             periodSeconds: 30          # 30초마다 상태 확인
             timeoutSeconds: 5          # 5초 후에 실패로 간주
             failureThreshold: 5        # 몇 번 실패해야 Pod를 Ready 상태가 아니라고 판단할 것인지
