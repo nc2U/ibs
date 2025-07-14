@@ -79,7 +79,6 @@ jobs:
             --set global.emailHostUser=${{ secrets.EMAIL_HOST_USER }} \
             --set-string global.emailHostPassword='${{ secrets.EMAIL_HOST_PASSWORD }}' \
             --set global.defaultFromEmail=${{ secrets.EMAIL_DEFAULT_FROM }} \
-            --set nginx.livenessProbe.host=${{ secrets.DOMAIN_NAME }} \
             --set 'nginx.ingress.hosts[0].host'=${{ secrets.DOMAIN_NAME }} \
             --set 'nginx.ingress.hosts[1].host'=www.${{ secrets.DOMAIN_NAME }} \
             --set 'nginx.ingress.hosts[2].host'=dyibs.co.kr \
