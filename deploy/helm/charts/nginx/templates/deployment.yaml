@@ -74,7 +74,6 @@ spec:
               {{ else }}
               port: {{ .Values.service.port | default "80" }}
               {{ end }}
-              {{ end }}
             initialDelaySeconds: 300    # 최초 300초 후에 LivenessProbe 체크를 시작함
             periodSeconds: 30           # 30초마다 LivenessProbe 체크
             timeoutSeconds: 5           # 5초 후에 실패로 간주
