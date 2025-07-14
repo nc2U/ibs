@@ -53,7 +53,7 @@ spec:
             httpGet:
               path: /healthz/
               {{ if and (gt (len .Values.ingress.hosts) 0) }}
-              host: {{ index .Values.ingress.hosts 0 }}
+              host: {{ (index (index .Values.ingress.hosts 0) "host") }}
               scheme: {{ if gt (len .Values.ingress.tls) 0 }}HTTPS{{ else }}HTTP{{ end }}
               port: {{ if gt (len .Values.ingress.tls) 0 }}443{{ else }}80{{ end }}
               {{ else }}
@@ -68,7 +68,7 @@ spec:
             httpGet:
               path: /healthz/
               {{ if and (gt (len .Values.ingress.hosts) 0) }}
-              host: {{ index .Values.ingress.hosts 0 }}
+              host: {{ (index (index .Values.ingress.hosts 0) "host") }}
               scheme: {{ if gt (len .Values.ingress.tls) 0 }}HTTPS{{ else }}HTTP{{ end }}
               port: {{ if gt (len .Values.ingress.tls) 0 }}443{{ else }}80{{ end }}
               {{ else }}
