@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
 import { useStore } from '@/store'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { type User, type Profile } from '@/store/types/accounts'
 import { useAccount } from '@/store/pinia/account'
 import TodoModal from '@/components/Modals/TodoModal.vue'
@@ -26,10 +26,10 @@ const locationBlank = (url: string) => window.open(url, '_blank')
 const account = useAccount()
 const itemsCount = computed(() => account.myTodos.length)
 
-const router = useRouter()
-const logout = () => {
-  account.logout()
-  router.push({ name: 'Login' })
+const [route, router] = [useRoute(), useRouter()]
+const logout = async () => {
+  await account.logout()
+  await router.push({ name: 'Login', query: { redirect: route.fullPath } })
 }
 </script>
 
