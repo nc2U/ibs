@@ -25,16 +25,27 @@ jobs:
         with:
           ref: 'develop'
 
+      - name: Sync files with rsync over SSH
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -avz --delete
+          path: "volume/backups/"
+          remote_path: ${{ secrets.NFS_PATH }}/dev/
+          remote_host: ${{ secrets.NFS_HOST }}
+          remote_user: ${{ secrets.NFS_USER }}
+          remote_key: ${{ secrets.NFS_PRIVATE_KEY }}
 
-      - name: Deploy with SFTP
-        uses: easingthemes/ssh-deploy@v2.1.5
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.NFS_PRIVATE_KEY }}
-          ARGS: "-avz"
-          SOURCE: "volume/backups/"
-          REMOTE_HOST: ${{ secrets.NFS_HOST }}
-          REMOTE_USER: ${{ secrets.NFS_USER }}
-          TARGET: ${{ secrets.NFS_PATH }}/dev/
+
+
+      #      - name: Deploy with SFTP
+#        uses: easingthemes/ssh-deploy@v2.1.5
+#        env:
+#          SSH_PRIVATE_KEY: ${{ secrets.NFS_PRIVATE_KEY }}
+#          ARGS: "-avz"
+#          SOURCE: "volume/backups/"
+#          REMOTE_HOST: ${{ secrets.NFS_HOST }}
+#          REMOTE_USER: ${{ secrets.NFS_USER }}
+#          TARGET: ${{ secrets.NFS_PATH }}/dev/
 
 
       #      # backups script to NFS server copy transfer
