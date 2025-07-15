@@ -69,12 +69,7 @@ class ContractFile(models.Model):
         return self.file_name
 
     def save(self, *args, **kwargs):
-        if self.file:
-            # 파일 저장 경로 생성
-            file_path = self.file.field.generate_filename(self, self.file.name)
-            full_path = os.path.join(settings.MEDIA_ROOT, file_path)
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)  # 디렉토리 생성
-            # 파일 정보 추출
+        if self.file and not self.file_name:
             self.file_name = self.file.name.split('/')[-1]
             mime = magic.Magic(mime=True)
             file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
