@@ -30,7 +30,7 @@ jobs:
         with:
           switches: -avz --delete
           path: "volume/backups/"
-          remote_path: ${{ secrets.NFS_PATH }}/dev/
+          remote_path: ${{ secrets.NFS_PATH }}/dev/volume/backups/
           remote_host: ${{ secrets.NFS_HOST }}
           remote_user: ${{ secrets.NFS_USER }}
           remote_key: ${{ secrets.NFS_PRIVATE_KEY }}
