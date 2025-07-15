@@ -22,17 +22,27 @@ jobs:
       # 레파지터리 체크 아웃
       - name: Check out source code
         uses: actions/checkout@v4
-      
-      # backups script to NFS server copy transfer
-      - name: Copy backups, to NFS server
-        uses: appleboy/scp-action@master
+
+      - name: Upload using rsync
+        uses: appleboy/rsync-action@v0.1.5
         with:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
-          source: 'volume/backups'
+          key: ${{ secrets.NFS_PRIVATE_KEY }}
+          source: 'volume/backups/'
           target: ${{ secrets.NFS_PATH }}/dev/
-          overwrite: true  # 기존 파일 삭제 후 덮어쓰기
+          args: -avz --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r --chown=${{ secrets.NFS_USER }}:${{ secrets.NFS_USER }}
+      
+#      # backups script to NFS server copy transfer
+#      - name: Copy backups, to NFS server
+#        uses: appleboy/scp-action@master
+#        with:
+#          host: ${{ secrets.NFS_HOST }}
+#          username: ${{ secrets.NFS_USER }}
+#          password: ${{ secrets.NFS_PASS }}
+#          source: 'volume/backups'
+#          target: ${{ secrets.NFS_PATH }}/dev/
+#          overwrite: true  # 기존 파일 삭제 후 덮어쓰기
       
       # slack --> notification
       - name: Send slack when failed
