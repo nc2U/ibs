@@ -35,30 +35,6 @@ jobs:
           remote_user: ${{ secrets.NFS_USER }}
           remote_key: ${{ secrets.NFS_PRIVATE_KEY }}
 
-
-
-      #      - name: Deploy with SFTP
-#        uses: easingthemes/ssh-deploy@v2.1.5
-#        env:
-#          SSH_PRIVATE_KEY: ${{ secrets.NFS_PRIVATE_KEY }}
-#          ARGS: "-avz"
-#          SOURCE: "volume/backups/"
-#          REMOTE_HOST: ${{ secrets.NFS_HOST }}
-#          REMOTE_USER: ${{ secrets.NFS_USER }}
-#          TARGET: ${{ secrets.NFS_PATH }}/dev/
-
-
-      #      # backups script to NFS server copy transfer
-#      - name: Copy backups, to NFS server
-#        uses: appleboy/scp-action@master
-#        with:
-#          host: ${{ secrets.NFS_HOST }}
-#          username: ${{ secrets.NFS_USER }}
-#          password: ${{ secrets.NFS_PASS }}
-#          source: 'volume/backups'
-#          target: ${{ secrets.NFS_PATH }}/dev/
-#          overwrite: true  # 기존 파일 삭제 후 덮어쓰기
-      
       # slack --> notification
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
