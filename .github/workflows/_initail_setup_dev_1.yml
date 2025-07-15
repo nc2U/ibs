@@ -52,7 +52,7 @@ jobs:
           command: |
             cd ${{ secrets.NFS_PATH }}/dev && \
             mkdir -p ./app/django/media && \
-            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 755 ./app/django
+            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 775 ./app/django
       
       # Helm source to CI/CD server copy transfer
       - name: Helm Source to CI/CD server
