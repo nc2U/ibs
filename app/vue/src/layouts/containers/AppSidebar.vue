@@ -5,9 +5,9 @@ import { AppSidebarNav } from './AppSidebarNav'
 import { logoNegative, sygnet } from '@/assets/brand/current-logo'
 
 const store = useStore()
-
 const sidebarUnfoldable = computed(() => store.sidebarUnfoldable)
 const sidebarVisible = computed(() => store.sidebarVisible)
+const toggleUnfoldable = () => store.toggleUnfoldable()
 </script>
 
 <template>
@@ -16,7 +16,6 @@ const sidebarVisible = computed(() => store.sidebarVisible)
     self-hiding="md"
     :unfoldable="!!sidebarUnfoldable"
     :visible="!!sidebarVisible"
-    @visible-change="(event: any) => store.updateSidebarVisible(event)"
   >
     <CSidebarBrand>
       <CIcon custom-class-name="sidebar-brand-full" :icon="logoNegative" :height="30" />
@@ -25,6 +24,6 @@ const sidebarVisible = computed(() => store.sidebarVisible)
 
     <AppSidebarNav />
 
-    <CSidebarToggler class="d-none d-lg-flex" @click="store.toggleUnfoldable" />
+    <CSidebarToggler class="d-none d-lg-flex"  @click="toggleUnfoldable" />
   </CSidebar>
 </template>
