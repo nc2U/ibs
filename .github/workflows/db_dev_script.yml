@@ -25,15 +25,15 @@ jobs:
         with:
           ref: 'develop'
 
-      - name: Sync files with rsync over SSH
-        uses: burnett01/rsync-deployments@5.2
+      # backups script to NFS server copy transfer
+      - name: Copy backups, to NFS server
+        uses: appleboy/scp-action@master
         with:
-          switches: -avz --delete
-          path: "volume/backups/"
-          remote_path: ${{ secrets.NFS_PATH }}/dev/volume/backups/
-          remote_host: ${{ secrets.NFS_HOST }}
-          remote_user: ${{ secrets.NFS_USER }}
-          remote_key: ${{ secrets.NFS_PRIVATE_KEY }}
+          host: ${{ secrets.NFS_HOST }}
+          username: ${{ secrets.NFS_USER }}
+          password: ${{ secrets.NFS_PASS }}
+          source: 'volume/backups'
+          target: ${{ secrets.NFS_PATH }}/dev/
 
       # slack --> notification
       - name: Send slack when failed
