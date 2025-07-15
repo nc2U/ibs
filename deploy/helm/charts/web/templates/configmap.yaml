@@ -4,11 +4,11 @@ data:
   DATABASE_PORT: "{{ .Values.global.dbPort }}"
   DATABASE_NAME: "{{ .Release.Name }}"
   DATABASE_USER: "{{ .Release.Name }}"
+  DB_SERVICE_NAME: "{{ .Values.global.dbServiceName }}"
   DOMAIN_HOST: "{{ .Values.global.domainHost }}"
   EMAIL_HOST: "{{ .Values.global.emailHost }}"
   EMAIL_HOST_USER: "{{ .Values.global.emailHostUser }}"
   DEFAULT_FROM_EMAIL: "{{ .Values.global.defaultFromEmail }}"
-  DB_SERVICE_NAME: "{{ .Values.global.dbType }}"
   NAMESPACE: "{{ .Release.Namespace }}"
 
 

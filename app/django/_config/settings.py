@@ -118,15 +118,15 @@ WSGI_APPLICATION = '_config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASE_TYPE = config('DATABASE_TYPE', default='postgres')
+DATABASE_TYPE = config('DATABASE_TYPE', default='postgres') # postgres | maraidb - selected docker db app
 DB_ENGINE = 'postgresql' if DATABASE_TYPE == 'postgres' else 'mysql'
-DATABASE_NAME = config('DATABASE_NAME')
-DATABASE_USER = config('DATABASE_USER')
-DATABASE_PASSWORD = config('DATABASE_PASSWORD')
+DATABASE_NAME = config('DATABASE_NAME', default='')
+DATABASE_USER = config('DATABASE_USER', default='')
+DATABASE_PASSWORD = config('DATABASE_PASSWORD', default='')
+DB_SERVICE_NAME = config('DB_SERVICE_NAME', default='postgresql-primary')
 NAMESPACE = config('NAMESPACE', default='default')
-MASTER_HOST = f'{DB_ENGINE}-primary.{NAMESPACE}.svc.cluster.local' \
-    if config('KUBERNETES_SERVICE_HOST', default=None) else DATABASE_TYPE
-MASTER_HOST = config('SELECTED_DB_HOST', default=None) if config('SELECTED_DB_HOST', default=None) else MASTER_HOST
+MASTER_HOST = f'{DB_SERVICE_NAME}.{NAMESPACE}.svc.cluster.local' \
+    if config('KUBERNETES_SERVICE_HOST', default=None) else DB_SERVICE_NAME or DATABASE_TYPE
 DB_PORT = config('DATABASE_PORT', default='5432')
 DEFAULT_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
     if DATABASE_TYPE == 'postgres' else {
