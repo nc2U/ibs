@@ -32,18 +32,7 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           source: 'volume/backups'
           target: ${{ secrets.NFS_PATH }}/dev/
-
-      - name: Change ownership via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
-          script: |
-            export NFS_PASS="${{ secrets.NFS_PASS }}"
-            export NFS_PATH="${{ secrets.NFS_PATH }}"
-            echo "$NFS_PASS" | sudo -S chown -R 1001:1001 "$NFS_PATH/dev/volume/backups"
-            echo "$NFS_PASS" | sudo -S chmod -R 755 "$NFS_PATH/dev/volume/backups"
+          overwrite: true  # 기존 파일 삭제 후 덮어쓰기
       
       # slack --> notification
       - name: Send slack when failed

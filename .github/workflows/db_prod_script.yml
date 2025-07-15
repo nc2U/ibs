@@ -32,6 +32,7 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           source: 'volume/backups'
           target: ${{ secrets.NFS_PATH }}/prod/
+          overwrite: true  # 기존 파일 삭제 후 덮어쓰기
       
       # slack --> notification
       - name: Send slack when failed
