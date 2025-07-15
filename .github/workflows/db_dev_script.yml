@@ -26,17 +26,18 @@ jobs:
           ref: 'develop'
 
 
-      - name: Upload using rsync
-        uses: appleboy/rsync-action@v0.1.5
-        with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          key: ${{ secrets.NFS_PRIVATE_KEY }}
-          source: 'volume/backups/'
-          target: ${{ secrets.NFS_PATH }}/dev/
-          args: -avz --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r --chown=${{ secrets.NFS_USER }}:${{ secrets.NFS_USER }}
-      
-#      # backups script to NFS server copy transfer
+      - name: Deploy with SFTP
+        uses: easingthemes/ssh-deploy@v2.1.5
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.NFS_PRIVATE_KEY }}
+          ARGS: "-avz"
+          SOURCE: "volume/backups/"
+          REMOTE_HOST: ${{ secrets.NFS_HOST }}
+          REMOTE_USER: ${{ secrets.NFS_USER }}
+          TARGET: ${{ secrets.NFS_PATH }}/dev/
+
+
+      #      # backups script to NFS server copy transfer
 #      - name: Copy backups, to NFS server
 #        uses: appleboy/scp-action@master
 #        with:
