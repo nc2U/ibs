@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "volume/backups/**"
-      - "db_dev_script.yml"
+      - ".github/workflows/db_dev_script.yml"
     branches: [ "develop" ]
   
   # Allows you to run this workflow manually from the Actions tab
