@@ -7,6 +7,7 @@ Did you know there are enterprise versions of the Bitnami catalog? For enhanced 
 
 ** Please be patient while the chart is being deployed **
 
+{{- if .Values.enabled }}
 {{- if .Values.diagnosticMode.enabled }}
 The chart has been deployed in diagnostic mode. All probes have been disabled and the command has been overwritten with:
 
@@ -119,3 +120,4 @@ WARNING: The configured password will be ignored on new installation in case whe
 {{- include "common.warnings.resources" (dict "sections" (list "metrics" "primary" "readReplicas" "volumePermissions") "context" $) }}
 {{- include "common.warnings.modifiedImages" (dict "images" (list .Values.image .Values.volumePermissions.image .Values.metrics.image) "context" $) }}
 {{- include "common.errors.insecureImages" (dict "images" (list .Values.image .Values.volumePermissions.image .Values.metrics.image) "context" $) }}
+{{- end }}
