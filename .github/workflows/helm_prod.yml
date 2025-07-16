@@ -23,6 +23,8 @@ jobs:
       # 레파지터리 체크 아웃
       - name: Check out source code
         uses: actions/checkout@v4
+        with:
+          clean: 'true'
       
       # Necessary dir Check
       - name: media & static dir check
