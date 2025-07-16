@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if eq .Values.architecture "replication" }}
 apiVersion: {{ include "common.capabilities.statefulset.apiVersion" . }}
 kind: StatefulSet
@@ -425,16 +426,16 @@ spec:
             driver: 'secrets-store.csi.k8s.io'
             readOnly: true
             volumeAttributes:
-              secretProviderClass: {{ include "mariadb.tde.secretProviderClassName" . }}     
+              secretProviderClass: {{ include "mariadb.tde.secretProviderClassName" . }}
         {{- end }}
         - name: empty-dir
-          emptyDir: {}
+          emptyDir: { }
         {{- if .Values.secondary.extraVolumes }}
         {{- include "common.tplvalues.render" (dict "value" .Values.secondary.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
   {{- if not .Values.secondary.persistence.enabled }}
         - name: data
-          emptyDir: {}
+          emptyDir: { }
   {{- else }}
   volumeClaimTemplates:
     - metadata:
@@ -458,4 +459,5 @@ spec:
         selector: {{- include "common.tplvalues.render" (dict "value" .Values.secondary.persistence.selector "context" $) | nindent 10 }}
         {{- end -}}
   {{- end }}
+{{- end }}
 {{- end }}

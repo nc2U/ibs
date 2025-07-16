@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 apiVersion: {{ include "common.capabilities.statefulset.apiVersion" . }}
 kind: StatefulSet
 metadata:
@@ -406,7 +407,7 @@ spec:
         {{- end }}
       volumes:
         - name: empty-dir
-          emptyDir: {}
+          emptyDir: { }
         {{- if or .Values.primary.configuration .Values.primary.existingConfigmap }}
         - name: config
           configMap:
@@ -466,7 +467,7 @@ spec:
             claimName: {{ tpl .Values.primary.persistence.existingClaim . }}
   {{- else if not .Values.primary.persistence.enabled }}
         - name: data
-          emptyDir: {}
+          emptyDir: { }
   {{- else if and .Values.primary.persistence.enabled (not .Values.primary.persistence.existingClaim) }}
   volumeClaimTemplates:
     - metadata:
@@ -490,3 +491,4 @@ spec:
         selector: {{- include "common.tplvalues.render" (dict "value" .Values.primary.persistence.selector "context" $) | nindent 10 }}
         {{- end -}}
   {{- end }}
+{{- end }}

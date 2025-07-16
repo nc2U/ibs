@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if and .Values.serviceAccount.create  .Values.rbac.create }}
 apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
 kind: Role
@@ -21,4 +22,5 @@ rules:
       - endpoints
     verbs:
       - get
+{{- end }}
 {{- end }}

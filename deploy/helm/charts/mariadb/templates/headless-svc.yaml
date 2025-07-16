@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -34,3 +35,4 @@ spec:
     {{- end }}
   selector: {{- include "common.labels.matchLabels" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
     app.kubernetes.io/part-of: mariadb
+{{- end }}
