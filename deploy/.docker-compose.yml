@@ -33,8 +33,7 @@ services:
   
   nginx:
     container_name: ibs-nginx
-    build: docker/nginx
-    image: dokube/nginx
+    image: nginx:latest
     ports:
       - "80:80"
       - "443:443"
