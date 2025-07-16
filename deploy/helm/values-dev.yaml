@@ -33,6 +33,10 @@ postgresql:
     backupPvcStorage: 200Mi
 
 nginx:
+  image:
+    repository: nginx
+    tag: "latest"
+
   service:
     port: 8881
 
