@@ -72,7 +72,7 @@ kubeVersion: ""
 nameOverride: "postgres"
 ## @param fullnameOverride String to fully override common.names.fullname template
 ##
-fullnameOverride: "postgres"
+fullnameOverride: "postgresql"
 ## @param namespaceOverride String to fully override common.names.namespace
 ##
 namespaceOverride: ""
