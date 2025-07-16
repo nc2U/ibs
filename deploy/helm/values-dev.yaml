@@ -28,13 +28,15 @@ postgres:
 postgresql:
   enabled: true
 
+  image:
+    tag: latest
+
   volumes:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
 nginx:
   image:
-    repository: nginx
     tag: "latest"
 
   service:
