@@ -21,7 +21,7 @@ global:
 mariadb:
   enabled: false
 
-postgres:
+postgresql:
   enabled: true
 
   volumes:
