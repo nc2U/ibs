@@ -4,22 +4,10 @@
 
 global:
   appMode: dev
-  dbType: "postgres"
-  dbPort: "5432"
-
-web:
-  replicaCount: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 250m
-      memory: 256Mi
 
 mariadb:
   enabled: false
-  replicaCount: 1
+
   volumes:
     dataPvStorage: 500Mi
     dataPvcStorage: 500Mi
@@ -29,7 +17,7 @@ mariadb:
 
 postgres:
   enabled: false
-  replicaCount: 1
+
   volumes:
     dataPvStorage: 500Mi
     dataPvcStorage: 500Mi
@@ -39,20 +27,12 @@ postgres:
 
 postgresql:
   enabled: true
-  readReplicas:
-    replicaCount: 1
 
   volumes:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
 nginx:
-  image:
-    repository: dokube/nginx
-    pullPolicy: IfNotPresent
-    tag: "latest"
-  replicaCount: 1
-
   service:
     port: 8881
 
@@ -63,3 +43,12 @@ nginx:
     limits:
       cpu: 150m
       memory: 128Mi
+
+web:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

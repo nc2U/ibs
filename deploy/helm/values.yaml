@@ -18,51 +18,19 @@ global:
   emailHostPassword: "{{ randAlphaNum 5 }}" # your-email-password
   defaultFromEmail: "email@example.com"
 
-nameOverride: ""
-fullnameOverride: ""
-
-web:
-  replicaCount: 2
-
 mariadb:
   enabled: false
-  replicaCount: 1
 
 postgres:
   enabled: false
 
 postgresql:
   enabled: true
-  readReplicas:
-    replicaCount: 1
 
   volumes:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
 nginx:
-  replicaCount: 2
-
   service:
-    type: LoadBalancer
     port: 8880
-  
-  ingress:
-    enabled: true
-    className: nginx
-    annotations:
-      kubernetes.io/tls-acme: "true"
-      nginx.ingress.kubernetes.io/rewrite-target: /
-      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/proxy-body-size: "100M"
-      cert-manager.io/cluster-issuer: letsencrypt-prod
-    hosts:
-      - host: "host-path" # Host address
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - secretName: web-devbox-kr-cert
-        hosts:
-          - "host-path" # Host address
