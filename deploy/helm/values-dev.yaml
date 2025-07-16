@@ -15,7 +15,7 @@ mariadb:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
-postgres:
+postgresql:
   enabled: true
 
   image:
