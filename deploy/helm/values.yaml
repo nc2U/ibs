@@ -21,9 +21,6 @@ global:
 mariadb:
   enabled: false
 
-postgres:
-  enabled: false
-
 postgresql:
   enabled: true
 
