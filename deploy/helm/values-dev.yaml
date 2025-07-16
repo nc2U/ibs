@@ -6,7 +6,7 @@ global:
   appMode: dev
 
 mariadb:
-  enabled: false
+  enabled: true
 
   volumes:
     dataPvStorage: 500Mi

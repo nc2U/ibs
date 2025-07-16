@@ -333,6 +333,8 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/mariadb/logs
               subPath: app-logs-dir
+            - name: dump-backup
+              mountPath: /var/backups
             {{- if .Values.primary.extraVolumeMounts }}
             {{- include "common.tplvalues.render" (dict "value" .Values.primary.extraVolumeMounts "context" $) | nindent 12 }}
             {{- end }}
@@ -408,6 +410,9 @@ spec:
       volumes:
         - name: empty-dir
           emptyDir: { }
+        - name: dump-backup
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-{{ include "mariadb.primary.fullname" . }}-{{ .Values.global.appMode }}-backup-pvc
         {{- if or .Values.primary.configuration .Values.primary.existingConfigmap }}
         - name: config
           configMap:
