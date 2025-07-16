@@ -41,10 +41,10 @@ global:
 kubeVersion: ""
 ## @param nameOverride String to partially override mariadb.fullname
 ##
-nameOverride: ""
+nameOverride: "mariadb"
 ## @param fullnameOverride String to fully override mariadb.fullname
 ##
-fullnameOverride: ""
+fullnameOverride: "mariadb"
 ## @param clusterDomain Default Kubernetes cluster domain
 ##
 clusterDomain: cluster.local
@@ -119,25 +119,25 @@ image:
   debug: false
 ## @param architecture MariaDB architecture (`standalone` or `replication`)
 ##
-architecture: standalone
+architecture: replication
 ## MariaDB Authentication parameters
 ##
 auth:
   ## @param auth.rootPassword Password for the `root` user. Ignored if existing secret is provided.
   ## ref: https://github.com/bitnami/containers/tree/main/bitnami/mariadb#setting-the-root-password-on-first-run
   ##
-  rootPassword: ""
+  rootPassword: "secret"
   ## @param auth.database Name for a custom database to create
   ## ref: https://github.com/bitnami/containers/blob/main/bitnami/mariadb/README.md#creating-a-database-on-first-run
   ##
-  database: my_database
+  database: ibs
   ## @param auth.username Name for a custom user to create
   ## ref: https://github.com/bitnami/containers/blob/main/bitnami/mariadb/README.md#creating-a-database-user-on-first-run
   ##
-  username: ""
+  username: "ibs"
   ## @param auth.password Password for the new user. Ignored if existing secret is provided
   ##
-  password: ""
+  password: "secret"
   ## @param auth.replicationUser MariaDB replication user
   ## ref: https://github.com/bitnami/containers/tree/main/bitnami/mariadb#setting-up-a-replication-cluster
   ##
@@ -623,7 +623,7 @@ primary:
       - ReadWriteOnce
     ## @param primary.persistence.size MariaDB primary persistent volume size
     ##
-    size: 8Gi
+    size: 1Gi
     ## @param primary.persistence.selector Selector to match an existing Persistent Volume
     ## selector:
     ##   matchLabels:
