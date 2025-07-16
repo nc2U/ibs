@@ -44,7 +44,7 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-            rm -rf ${{ secrets.CICD_PATH }}/dev/deploy/helm
+            rm -rf ${{ secrets.CICD_PATH }}/prod/deploy/helm
       
       # Helm source to CI/CD server copy transfer
       - name: Copy helm, to CI/CD server
