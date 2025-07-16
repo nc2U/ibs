@@ -35,7 +35,7 @@ global:
     ## @param global.postgresql.auth.secretKeys.userPasswordKey Name of key in existing secret to use for PostgreSQL credentials (overrides `auth.secretKeys.userPasswordKey`). Only used when `global.postgresql.auth.existingSecret` is set.
     ## @param global.postgresql.auth.secretKeys.replicationPasswordKey Name of key in existing secret to use for PostgreSQL credentials (overrides `auth.secretKeys.replicationPasswordKey`). Only used when `global.postgresql.auth.existingSecret` is set.
     ##
-    fullnameOverride: "postgresql"
+    fullnameOverride: ""
     
     auth:
       postgresPassword: ""
@@ -72,7 +72,7 @@ kubeVersion: ""
 nameOverride: "postgres"
 ## @param fullnameOverride String to fully override common.names.fullname template
 ##
-fullnameOverride: "postgresql"
+fullnameOverride: "postgres"
 ## @param namespaceOverride String to fully override common.names.namespace
 ##
 namespaceOverride: ""
@@ -360,7 +360,7 @@ primary:
     ## @param primary.initdb.scriptsConfigMap ConfigMap with scripts to be run at first boot
     ## NOTE: This will override `primary.initdb.scripts`
     ##
-    scriptsConfigMap: "postgresql-primary-init-scripts"
+    scriptsConfigMap: "postgres-primary-init-scripts"
     ## @param primary.initdb.scriptsSecret Secret with scripts to be run at first boot (in case it contains sensitive information)
     ## NOTE: This can work along `primary.initdb.scripts` or `primary.initdb.scriptsConfigMap`
     ##
