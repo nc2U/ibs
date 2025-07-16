@@ -24,4 +24,4 @@ EXPOSE 8000
 
 # startup commands
 ENTRYPOINT ["uwsgi"]
-CMD ["--http-socket", ":8000", "--module", "_config.wsgi", "--py-autoreload", "1", "--logto", "/tmp/mylog.log"]
+CMD ["--socket", ":8000", "--module", "_config.wsgi", "--py-autoreload", "1", "--logto", "/tmp/mylog.log"]
