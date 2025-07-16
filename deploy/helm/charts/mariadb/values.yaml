@@ -723,7 +723,7 @@ primary:
 secondary:
   ## @param secondary.name Name of the secondary database (eg secondary, slave, ...)
   ##
-  name: secondary
+  name: read
   ## @param secondary.replicaCount Number of MariaDB secondary replicas
   ##
   replicaCount: 1
@@ -1054,7 +1054,7 @@ secondary:
       - ReadWriteOnce
     ## @param secondary.persistence.size MariaDB secondary persistent volume size
     ##
-    size: 8Gi
+    size: 1Gi
     ## @param secondary.persistence.selector Selector to match an existing Persistent Volume
     ## selector:
     ##   matchLabels:
