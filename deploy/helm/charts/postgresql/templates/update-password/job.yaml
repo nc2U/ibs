@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if .Values.passwordUpdateJob.enabled }}
 apiVersion: batch/v1
 kind: Job
@@ -202,7 +203,7 @@ spec:
           {{- end }}
       volumes:
         - name: empty-dir
-          emptyDir: {}
+          emptyDir: { }
         {{- if .Values.auth.usePasswordFiles }}
         - name: postgresql-previous-credentials
           secret:
@@ -232,4 +233,5 @@ spec:
       {{- if .Values.passwordUpdateJob.extraVolumes }}
       {{- include "common.tplvalues.render" (dict "value" .Values.passwordUpdateJob.extraVolumes "context" $) | nindent 8 }}
       {{- end }}
+{{- end }}
 {{- end }}

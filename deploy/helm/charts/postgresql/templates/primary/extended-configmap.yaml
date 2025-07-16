@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if (include "postgresql.v1.primary.createExtendedConfigmap" .) }}
 apiVersion: v1
 kind: ConfigMap
@@ -17,4 +18,5 @@ metadata:
 data:
   override.conf: |-
     {{- include "common.tplvalues.render" ( dict "value" .Values.primary.extendedConfiguration "context" $ ) | nindent 4 }}
+{{- end }}
 {{- end }}

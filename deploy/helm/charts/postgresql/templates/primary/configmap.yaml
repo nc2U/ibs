@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if (include "postgresql.v1.primary.createConfigmap" .) }}
 apiVersion: v1
 kind: ConfigMap
@@ -38,3 +39,4 @@ data:
     CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
     GRANT ALL ON SCHEMA {{ .Release.Name }}  TO {{ .Values.auth.username }};
     ALTER DATABASE {{ .Release.Name }}  SET search_path TO {{ .Release.Name }} , public;
+{{- end }}

@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if and .Values.primary.initdb.scripts (not .Values.primary.initdb.scriptsConfigMap) }}
 apiVersion: v1
 kind: ConfigMap
@@ -14,4 +15,5 @@ metadata:
   annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 data: {{- include "common.tplvalues.render" (dict "value" .Values.primary.initdb.scripts "context" .) | nindent 2 }}
+{{- end }}
 {{- end }}

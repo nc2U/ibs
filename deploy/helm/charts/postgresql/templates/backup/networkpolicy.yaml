@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if and .Values.backup.enabled .Values.backup.cronjob.networkPolicy.enabled }}
 kind: NetworkPolicy
 apiVersion: {{ include "common.capabilities.networkPolicy.apiVersion" . }}
@@ -29,4 +30,5 @@ spec:
           protocol: TCP
         - port: 53
           protocol: UDP
+{{- end }}
 {{- end }}

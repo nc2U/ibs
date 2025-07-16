@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if and .Values.backup.enabled .Values.backup.cronjob.storage.enabled (not .Values.backup.cronjob.storage.existingClaim) -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -31,4 +32,5 @@ spec:
     requests:
       storage: {{ .Values.backup.cronjob.storage.size | quote }}
   {{ include "common.storage.class" (dict "persistence" .Values.backup.cronjob.storage "global" .Values.global) }}
+{{- end }}
 {{- end }}

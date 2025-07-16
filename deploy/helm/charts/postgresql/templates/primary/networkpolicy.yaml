@@ -3,6 +3,7 @@ Copyright Broadcom, Inc. All Rights Reserved.
 SPDX-License-Identifier: APACHE-2.0
 */}}
 
+{{- if .Values.enabled }}
 {{- if .Values.primary.networkPolicy.enabled }}
 kind: NetworkPolicy
 apiVersion: {{ include "common.capabilities.networkPolicy.apiVersion" . }}
@@ -24,7 +25,7 @@ spec:
     - Egress
   {{- if .Values.primary.networkPolicy.allowExternalEgress }}
   egress:
-    - {}
+    - { }
   {{- else }}
   egress:
     # Allow dns resolution
@@ -75,4 +76,5 @@ spec:
     {{- if .Values.primary.networkPolicy.extraIngress }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.primary.networkPolicy.extraIngress "context" $ ) | nindent 4 }}
     {{- end }}
+{{- end }}
 {{- end }}
