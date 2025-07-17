@@ -50,7 +50,7 @@ const width = computed(() => {
   return maxSpace * xGap + 100
 })
 
-const height = computed(() => commits.value.length * yGap + 5)
+const height = computed(() => (commits.value?.length ?? 0) * yGap + 5)
 
 const calculateSpace = (dags: Record<string, Dag>): Record<string, number> => {
   const spaceMap: Record<string, number> = {}
