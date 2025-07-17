@@ -32,20 +32,3 @@ nginx:
 
   service:
     port: 8881
-
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 150m
-      memory: 128Mi
-
-web:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 250m
-      memory: 256Mi
