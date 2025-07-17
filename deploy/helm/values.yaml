@@ -5,9 +5,7 @@
 global:
   appMode: prod
   dbType: "postgres"
-  dbPort: "5432"
   dbPassword: "{{ randAlphaNum 5 }}"
-  dbServiceName: "postgresql-primary"
   nfsServerHost: "nfs-server-host"
   nfsPath: "nfs-path" # nfs volume path
   cicdServerHost: "cicd-server-host"

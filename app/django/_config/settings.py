@@ -124,7 +124,9 @@ DATABASE_NAME = config('DATABASE_NAME', default='')
 DATABASE_USER = config('DATABASE_USER', default='')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD', default='')
 NAMESPACE = config('NAMESPACE', default='default')
-DB_PORT = config('DATABASE_PORT', default='5432')
+DB_PORT = config('POSTGRES_PRIMARY_SERVICE_PORT', default='5432') \
+    if DATABASE_TYPE == 'postgres' \
+    else config('MARIADB_PRIMARY_SERVICE_PORT_MYSQL', default='3306')
 
 MASTER_HOST = f'{DATABASE_TYPE}-primary.{NAMESPACE}.svc.cluster.local' \
     if config('KUBERNETES_SERVICE_HOST', default=None) else DATABASE_TYPE

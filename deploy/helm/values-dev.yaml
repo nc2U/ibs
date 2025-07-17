@@ -4,6 +4,7 @@
 
 global:
   appMode: dev
+  dbType: "mariadb"
 
 mariadb:
   enabled: true
