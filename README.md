@@ -45,7 +45,6 @@ Check what must be defined in docker-compose.yml file.
     - MYSQL_PASSWORD
     - MYSQL_ROOT_PASSWORD
     - DATABASE_TYPE
-    - DATABASE_PORT
     - DATABASE_NAME
     - DATABASE_USER
     - DATABASE_PASSWORD
@@ -58,6 +57,7 @@ Check what must be defined in docker-compose.yml file.
     - DJANGO_SETTINGS_MODULE
 
 Enter the actual data for your environment as described in the following items.
+If you use a database image such as postgresql or mariadb with Docker, be sure to use the default port.
 
 - postgres:
     - POSTGRES_DB: my-db-name # **postgresql database information**
@@ -73,7 +73,6 @@ Enter the actual data for your environment as described in the following items.
 
 - web:
     - DATABASE_TYPE: mariadb # **mariadb | postgres, default = mariadb, db to use**
-    - DATABASE_PORT: 3306 # **3306 | 5432, default = 3306, db port to use**
     - DATABASE_NAME: my-db-name # **mysql database information**
     - DATABASE_USER: my-db-user # **mysql database information**
     - DATABASE_PASSWORD: my-db-password # **mysql database information**
@@ -83,21 +82,9 @@ Enter the actual data for your environment as described in the following items.
     - EMAIL_HOST_USER: **your-access-id-or-email**
     - EMAIL_HOST_PASSWORD: **your-access-password**
     - DEFAULT_FROM_EMAIL: **your-email@example.com**
-    - DJANGO_SETTINGS_MODULE: app.settings.prod # **settings mode -> app.settings.prod** or **app.settings.local**
+    - DJANGO_SETTINGS_MODULE: app.settings # **django settings mode**
 
-#### 4. Django setting
-
-To develop in local mode set docker-compose.yml -> web -> DJANGO_SETTINGS_MODULE: app.settings.local
-
-To develop in production mode, create a prod.py file with the following command:
-
-```bash
-cd app/django/app/settings
-cp local.py prod.py
-```
-
-In production mode, configure the **prod.py** file according to your needs. If not modified, it is the same as local
-mode.
+#### 4. Build & Run Docker Compose
 
 #### Build and run
 
@@ -105,16 +92,19 @@ mode.
 docker-compose up -d --build
 ```
 
+#### 5. Migrate & Basic Settings
+
 #### Migrations & Migrate settings (After build to db & web)
 
+The commands below sequentially run the `python manage.py makemigrations` and `python manage.py migrate` commands.
+
 ```bash
-docker-compose exec web python manage.py makemigrations
-docker-compose exec web python manage.py migrate
+docker-compose exec web sh migrate.sh
 ```
 
 #### Static file Setting
 
-```
+```bash
 docker-compose exec web python manage.py collectstatic
 ```
 
@@ -243,16 +233,122 @@ Kubernetes `watch` command on the cicd server to check whether the relevant PODs
 When all database pods operate normally,
 Click `_initial [Prod Step2]` at the bottom of all workflows in the action tab.
 
+
+#### 3. Or Manually Deploy
+
+```bash
+cd deploy/helm
+
+if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
+  helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+fi
+if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
+  helm upgrade --install nfs-subdir-external-provisioner \
+    nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+      -n kube-system \
+      --set nfs.server={ CICD_HOST} \
+      --set nfs.path=/mnt/nfs-subdir-external-provisioner
+fi
+
+kubectl apply -f deploy/kubectl/class-roles; cd deploy/helm
+
+helm upgrade {DATABASE_USER} . -f ./values.yaml \
+  --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
+  --set global.dbPassword={DATABASE_PASS} \
+  --set global.cicdPath={CICD_PATH} \
+  --set global.cicdServerHost={CICD_HOST} \
+  --set global.nfsPath={NFS_PATH} \
+  --set global.nfsServerHost={NFS_HOST} \
+  --set global.domainHost={DOMAIN_HOST} \
+  --set global.emailHost={EMAIL_HOST} \
+  --set global.emailHostUser={EMAIL_HOST_USER} \
+  --set-string global.emailHostPassword='{EMAIL_HOST_PASSWORD}' \
+  --set global.defaultFromEmail={EMAIL_DEFAULT_FROM} \
+  --set postgres.auth.postgresPassword={DATABASE_PASS} \
+  --set postgres.auth.password={DATABASE_PASS} \
+  --set postgres.auth.replicationPassword={DATABASE_PASS} \
+  --set 'nginx.ingress.hosts[0].host'={DOMAIN_NAME} \
+  --set 'nginx.ingress.hosts[0].paths[0].path'=/ \
+  --set 'nginx.ingress.hosts[0].paths[0].pathType'=Prefix \
+  --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
+  --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
+  --set 'nginx.ingress.hosts[2].paths[0].path'=/ \
+  --set 'nginx.ingress.hosts[2].paths[0].pathType'=Prefix \
+  --set 'nginx.ingress.hosts[3].paths[0].path'=/ \
+  --set 'nginx.ingress.hosts[3].paths[0].pathType'=Prefix \
+  --set 'nginx.ingress.tls[0].hosts[0]'={DOMAIN_NAME} \
+  --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert # Replace {TEXT} part with the corresponding setting value
+```
+
+#### 4. if you deploy the release manually: Migrate & Basic Settings
+
+If all pods are running normally, run the following procedure.
+The commands below sequentially run the `python manage.py makemigrations` and `python manage.py migrate` commands.
+
+```bash
+kubectl exec -it {web-pod} sh migrate.sh  # Replace {web-pod} with the actual pod name.
+```
+
+#### Static file Setting
+
+```bash
+kubectl exec -it {web-pod} python manage.py collectstatic  # Replace {web-pod} with the actual pod name.
+```
+
+※ Place your Django project in the **django** directory and develop it.
+
+#### Vue (Single Page Application) Development
+
+```bash
+cd ..
+cd app/vue3
+pnpm i    # npm i (or) yarn
+```
+
+Vue application development -> node dev server on.
+
+```bash
+pnpm dev    # npm run dev (or) yarn dev
+```
+
+or Vue application deploy -> node build
+
+```bash
+pnpm build    # npm run build (or) yarn build
+```
+
+#### Svelte (Single Page Application) Development
+
+```bash
+cd ..
+cd app/svelte
+pnpm i      # npm i (or) yarn
+```
+
+Svelte application development -> node dev server on.
+
+```bash
+pnpm dev    # npm run dev (or) yarn dev
+```
+
+or Svelte application deploy -> node build
+
+```bash
+pnpm build # npm run build (or) yarn build
+```
+
+
 #### Reference
 
 - [Python](https://www.python.org)
 - [Docker](https://www.docker.com)
 - [Docker compose](https://docs.docker.com/compose)
-- [kubernetes](https://kubernetes.io/docs/home/)
-- [helm](https://helm.sh/docs/)
+- [Kubernetes](https://kubernetes.io/docs/home/)
+- [Helm](https://helm.sh/docs/)
 - [Nginx](https://www.nginx.com/)
 - [MariaDB](https://mariadb.org)
+- [PostgreSQL](https://www.postgresql.org/)
 - [Django](https://www.djangoproject.com)
 - [Django Rest Framework](https://www.django-rest-framework.org/)
 - [Node](https://nodejs.org/ko/)
-- [pnpm](https://pnpm.io/)
+- [Pnpm](https://pnpm.io/)
