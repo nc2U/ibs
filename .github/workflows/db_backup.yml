@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-#      # 레파지터리 체크 아웃
+      # 레파지터리 체크 아웃
       - name: Check out source code
         uses: actions/checkout@v4
-#
+
       # data to server copy transfer
       - name: Copy backup script to NFS server
         uses: appleboy/scp-action@master
