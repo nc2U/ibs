@@ -8,6 +8,8 @@ global:
 
 mariadb:
   enabled: false
+  secondary:
+    replicaCount: 1
 
   volumes:
     dataPvStorage: 500Mi
@@ -18,6 +20,8 @@ mariadb:
 
 postgres:
   enabled: true
+  readReplicas:
+    replicaCount: 1
 
   image:
     tag: latest

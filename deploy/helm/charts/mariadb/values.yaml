@@ -726,7 +726,7 @@ secondary:
   name: read
   ## @param secondary.replicaCount Number of MariaDB secondary replicas
   ##
-  replicaCount: 1
+  replicaCount: 2
   ## @param secondary.command Override default container command on MariaDB Secondary container(s) (useful when using custom images)
   ##
   command: []
