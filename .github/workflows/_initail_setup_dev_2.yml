@@ -28,7 +28,7 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-            web_pod=$(kubectl get pod -n ibs-dev | grep web | cut -d ' ' -f1)
+            web_pod=$(kubectl get pod -n ibs-dev | grep web | head -n 1 | cut -d '/' -f2)
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py collectstatic --no-input
             kubectl exec -it -n ibs-dev $web_pod -- sh migrate.sh
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py fetch_commits
