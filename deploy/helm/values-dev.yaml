@@ -7,7 +7,7 @@ global:
   dbType: "mariadb"
 
 mariadb:
-  enabled: true
+  enabled: false
 
   volumes:
     dataPvStorage: 500Mi
@@ -17,7 +17,7 @@ mariadb:
     backupPvcStorage: 200Mi
 
 postgres:
-  enabled: false
+  enabled: true
 
   image:
     tag: latest
