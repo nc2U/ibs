@@ -123,12 +123,11 @@ DB_ENGINE = 'postgresql' if DATABASE_TYPE == 'postgres' else 'mysql'
 DATABASE_NAME = config('DATABASE_NAME', default='')
 DATABASE_USER = config('DATABASE_USER', default='')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD', default='')
-PRIMARY_SERVICE = config('PRIMARY_SERVICE', default='postgresql-primary')
 NAMESPACE = config('NAMESPACE', default='default')
 DB_PORT = config('DATABASE_PORT', default='5432')
 
-MASTER_HOST = f'{PRIMARY_SERVICE}.{NAMESPACE}.svc.cluster.local' \
-    if config('KUBERNETES_SERVICE_HOST', default=None) else PRIMARY_SERVICE
+MASTER_HOST = f'{DATABASE_TYPE}-primary.{NAMESPACE}.svc.cluster.local' \
+    if config('KUBERNETES_SERVICE_HOST', default=None) else DATABASE_TYPE
 DEFAULT_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
     if DATABASE_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
@@ -136,7 +135,6 @@ DEFAULT_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_
     'connect_timeout': 10,  # 연결 타임아웃 설정
 }
 
-REPLICA_SERVICE = config('REPLICA_SERVICE', default='postgresql-read')
 REPLICA_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
     if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 
@@ -157,7 +155,7 @@ DATABASES = {
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
         "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': f'{REPLICA_SERVICE}.{NAMESPACE}.svc.cluster.local',
+        'HOST': f'{DATABASE_TYPE}-read.{NAMESPACE}.svc.cluster.local',
         'PORT': DB_PORT,
         'OPTIONS': REPLICA_OPTIONS,
     }
