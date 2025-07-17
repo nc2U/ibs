@@ -39,27 +39,27 @@ class Command(BaseCommand):
         except subprocess.CalledProcessError:
             return None
 
-    @staticmethod
-    def _is_safe_directory(repo_path):
-        try:
-            result = subprocess.run(['git', 'config', '--global', '--get-all', 'safe.directory'],
-                                    capture_output=True, text=True)
-            return repo_path in result.stdout.strip().splitlines()
-        except subprocess.CalledProcessError:
-            return False
+    # @staticmethod
+    # def _is_safe_directory(repo_path):
+    #     try:
+    #         result = subprocess.run(['git', 'config', '--global', '--get-all', 'safe.directory'],
+    #                                 capture_output=True, text=True)
+    #         return repo_path in result.stdout.strip().splitlines()
+    #     except subprocess.CalledProcessError:
+    #         return False
 
     def check_repo(self, repo, git_repo, repo_path):
         if not git_repo.heads and not git_repo.remotes.origin.refs:  # 빈 저장소 확인
             self.stderr.write(self.style.WARNING(f"⚠️ Empty repository: {repo.slug}"))
             return False
 
-        if not self._is_safe_directory(repo_path):  # safe.directory 확인 및 추가
-            try:
-                subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
-                self.stdout.write(self.style.SUCCESS(f"✅ safe.directory 등록됨: {repo_path}"))
-            except subprocess.CalledProcessError as e:
-                self.stderr.write(self.style.ERROR(f"❌ safe.directory 설정 실패: {e}"))
-                return False
+        # if not self._is_safe_directory(repo_path):  # safe.directory 확인 및 추가
+        #     try:
+        #         subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
+        #         self.stdout.write(self.style.SUCCESS(f"✅ safe.directory 등록됨: {repo_path}"))
+        #     except subprocess.CalledProcessError as e:
+        #         self.stderr.write(self.style.ERROR(f"❌ safe.directory 설정 실패: {e}"))
+        #         return False
 
         try:
             remote_url = subprocess.check_output(['git', '-C', repo_path, 'config', '--get', 'remote.origin.url'],
