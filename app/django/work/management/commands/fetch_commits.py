@@ -203,7 +203,7 @@ class Command(BaseCommand):
         queue = deque(root_commits)
         max_queue_size = 100000
         start_time = time.time()
-        max_runtime = 300  # 5분
+        max_runtime = 900  # 15분
 
         while queue:
             if len(queue) > max_queue_size:
