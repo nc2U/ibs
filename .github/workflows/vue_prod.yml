@@ -89,7 +89,7 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-            web_pod=$(kubectl get pod -n ibs-prod | grep web | cut -d ' ' -f1)
+            web_pod=$(kubectl get pod -n ibs-prod | grep web | head -n 1 | cut -d ' ' -f1)
             kubectl exec -it -n ibs-prod $web_pod -- python manage.py fetch_commits
       
       # slack --> notification
