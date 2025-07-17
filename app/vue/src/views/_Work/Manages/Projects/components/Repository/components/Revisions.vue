@@ -121,7 +121,7 @@ onBeforeMount(() => {
     </CCol>
   </CRow>
 
-  <!--  <GitGraph :dags="dags as Record<string, Dag>" :repo="repo as number" />-->
+  <GitGraph :dags="dags as Record<string, Dag>" :repo="repo as number" />
 
   <CTable hover responsive striped small>
     <colgroup>

@@ -1,10 +1,20 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, nextTick, onMounted, ref, watch } from 'vue'
-import { bgLight, darkSecondary } from '@/utils/cssMixins.ts'
+import {
+  computed,
+  type ComputedRef,
+  inject,
+  nextTick,
+  onMounted,
+  type PropType,
+  ref,
+  watch,
+} from 'vue'
+import type { FileInfo } from '@/store/types/work_git_repo.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
+import { bgLight, darkSecondary } from '@/utils/cssMixins.ts'
 import hljs from 'highlight.js'
 
-const props = defineProps({ fileData: { type: Object, required: true } })
+const props = defineProps({ fileData: { type: Object as PropType<FileInfo>, required: true } })
 
 const isDark = inject<ComputedRef<Boolean>>(
   'isDark',
@@ -75,7 +85,7 @@ onMounted(() => {
               <b :class="bgLight">Size</b> : {{ humanizeFileSize(fileData?.size) }}
             </CTableDataCell>
             <CTableDataCell class="px-3 text-right" style="width: 250px">
-              <b :class="bgLight">modified</b> : {{ timeFormat(fileData?.modified) }}
+              <b :class="bgLight">modified</b> : {{ timeFormat(fileData?.modified as string) }}
             </CTableDataCell>
           </CTableRow>
         </CTable>
