@@ -45,7 +45,8 @@ const shaToCoord = computed<Record<string, any>>(() => {
 })
 
 const width = computed(() => {
-  const maxSpace = Math.max(...commits.value.map(c => c.space || 0))
+  const spaces = commits.value.map(c => c.space || 0)
+  const maxSpace = spaces.length ? Math.max(...spaces) : 0
   return maxSpace * xGap + 100
 })
 
