@@ -4,7 +4,7 @@
 
 global:
   appMode: prod
-  dbType: "postgres"
+  dbType: "postgres" # postgres | mariadb
   dbPassword: "{{ randAlphaNum 5 }}"
   nfsServerHost: "nfs-server-host"
   nfsPath: "nfs-path" # nfs volume path
