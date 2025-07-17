@@ -4,7 +4,7 @@
 
 global:
   appMode: dev
-  dbType: "mariadb"
+  dbType: "postgres" # postgres | mariadb
 
 mariadb:
   enabled: false
