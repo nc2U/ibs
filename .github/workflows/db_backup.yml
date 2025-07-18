@@ -14,21 +14,31 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    
+
     steps:
       # 레파지터리 체크 아웃
       - name: Check out source code
         uses: actions/checkout@v4
 
-      # data to server copy transfer
-      - name: Copy backup script to NFS server
-        uses: appleboy/scp-action@master
+#      # data to server copy transfer
+#      - name: Copy backup script to NFS server
+#        uses: appleboy/scp-action@master
+#        with:
+#          host: ${{ secrets.NFS_HOST }}
+#          username: ${{ secrets.NFS_USER }}
+#          password: ${{ secrets.NFS_PASS }}
+#          source: 'volume/backups/*'
+#          target: ${{ secrets.NFS_PATH }}/prod/
+
+      - name: Copy backup script to NFS server (with rsync)
+        uses: easingthemes/rsync-deploy@v1
         with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
-          source: 'volume/backups/*'
-          target: ${{ secrets.NFS_PATH }}/prod/
+          switches: -avz --chmod=ugo=rwX
+          remote_path: ${{ secrets.NFS_PATH }}/prod/
+          remote_host: ${{ secrets.NFS_HOST }}
+          remote_user: ${{ secrets.NFS_USER }}
+          remote_key: ${{ secrets.NFS_PRIVATE_KEY }} # ssh key 방식
+          path: volume/backups/
 
       # mysql pod --> database bakcup
       - name: database backup
