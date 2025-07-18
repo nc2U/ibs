@@ -36,7 +36,8 @@ metadata:
 data:
   # init.sql 파일을 ConfigMap에 넣음
   init.sql: |
-    CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }};
+    CREATE SCHEMA IF NOT EXISTS {{ .Release.Name }} AUTHORIZATION {{ .Values.auth.username }};
+    GRANT ALL PRIVILEGES ON DATABASE {{ .Values.auth.database }} TO {{ .Values.auth.username }};
     GRANT ALL ON SCHEMA {{ .Release.Name }}  TO {{ .Values.auth.username }};
-    ALTER DATABASE {{ .Release.Name }}  SET search_path TO {{ .Release.Name }} , public;
+    ALTER DATABASE {{ .Values.auth.database }} SET search_path TO {{ .Release.Name }}, public;
 {{- end }}
