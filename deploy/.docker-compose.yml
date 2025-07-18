@@ -23,7 +23,7 @@ services:
     command: [ "postgres", "-c", "timezone=Asia/Seoul" ]
     environment:
       POSTGRES_DB: my-db-name # 실제 데이터로 수정
-      POSTGRES_USER: my-db-user # 실제 데이터로 수정
+      POSTGRES_USER: my-db-super-user # 실제 데이터로 수정
       POSTGRES_SCHEMA: my-db-schema # 실제 데이터로 수정
       POSTGRES_PASSWORD: my-db-password # 실제 데이터로 수정
       TZ: Asia/Seoul
