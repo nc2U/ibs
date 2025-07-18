@@ -118,15 +118,12 @@ WSGI_APPLICATION = '_config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASE_TYPE = config('DATABASE_TYPE', default='postgres') # postgres | maraidb - selected docker db app
+DATABASE_TYPE = config('DATABASE_TYPE', default='postgres')  # postgres | maraidb - selected docker db app
 DB_ENGINE = 'postgresql' if DATABASE_TYPE == 'postgres' else 'mysql'
 DATABASE_NAME = config('DATABASE_NAME', default='')
 DATABASE_USER = config('DATABASE_USER', default='')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD', default='')
 NAMESPACE = config('NAMESPACE', default='default')
-DB_PORT = config('POSTGRES_PRIMARY_SERVICE_PORT', default='5432') \
-    if DATABASE_TYPE == 'postgres' \
-    else config('MARIADB_PRIMARY_SERVICE_PORT_MYSQL', default='3306')
 
 MASTER_HOST = f'{DATABASE_TYPE}-primary.{NAMESPACE}.svc.cluster.local' \
     if config('KUBERNETES_SERVICE_HOST', default=None) else DATABASE_TYPE
@@ -148,7 +145,9 @@ DATABASES = {
         'PASSWORD': DATABASE_PASSWORD,
         "DEFAULT-CHARACTER-SET": 'utf8',
         'HOST': MASTER_HOST,
-        'PORT': DB_PORT,
+        'PORT': config('POSTGRES_PRIMARY_SERVICE_PORT', default='5432') \
+            if DATABASE_TYPE == 'postgres' \
+            else config('MARIADB_PRIMARY_SERVICE_PORT_MYSQL', default='3306'),
         'OPTIONS': DEFAULT_OPTIONS,
     },
     'replica': {
@@ -158,7 +157,9 @@ DATABASES = {
         'PASSWORD': DATABASE_PASSWORD,
         "DEFAULT-CHARACTER-SET": 'utf8',
         'HOST': f'{DATABASE_TYPE}-read.{NAMESPACE}.svc.cluster.local',
-        'PORT': DB_PORT,
+        'PORT': config('POSTGRES_READ_SERVICE_PORT', default='5432') \
+            if DATABASE_TYPE == 'postgres' \
+            else config('MARIADB_READ_SERVICE_PORT_MYSQL', default='3306'),
         'OPTIONS': REPLICA_OPTIONS,
     }
 }
