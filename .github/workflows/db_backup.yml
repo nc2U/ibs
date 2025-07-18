@@ -20,25 +20,24 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v4
 
-#      # data to server copy transfer
-#      - name: Copy backup script to NFS server
-#        uses: appleboy/scp-action@master
-#        with:
-#          host: ${{ secrets.NFS_HOST }}
-#          username: ${{ secrets.NFS_USER }}
-#          password: ${{ secrets.NFS_PASS }}
-#          source: 'volume/backups/*'
-#          target: ${{ secrets.NFS_PATH }}/prod/
-
-      - name: Copy backup script to NFS server (with rsync)
-        uses: easingthemes/rsync-deploy@v1
+      # data to server copy transfer
+      - name: Copy backup script to NFS server
+        uses: appleboy/scp-action@master
         with:
-          switches: -avz --chmod=ugo=rwX
-          remote_path: ${{ secrets.NFS_PATH }}/prod/
-          remote_host: ${{ secrets.NFS_HOST }}
-          remote_user: ${{ secrets.NFS_USER }}
-          remote_key: ${{ secrets.NFS_PRIVATE_KEY }} # ssh key 방식
-          path: volume/backups/
+          host: ${{ secrets.NFS_HOST }}
+          username: ${{ secrets.NFS_USER }}
+          password: ${{ secrets.NFS_PASS }}
+          source: 'volume/backups/*'
+          target: ${{ secrets.NFS_PATH }}/prod/
+
+      - name: Fix permissions after copy
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.NFS_HOST }}
+          username: ${{ secrets.NFS_USER }}
+          password: ${{ secrets.NFS_PASS }}
+          command: |
+            chmod +x ${{ secrets.NFS_PATH }}/prod/*.sh
 
       # mysql pod --> database bakcup
       - name: database backup
