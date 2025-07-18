@@ -216,8 +216,7 @@ class Command(BaseCommand):
         start_time = time.time()
         max_runtime = 900  # 15분
 
-        batch_size = 1000  # 배치 크기 제한
-        while queue and len(commits_to_create) < batch_size:
+        while queue:
             if len(queue) > max_queue_size:
                 self.stderr.write(self.style.ERROR(f"Queue size exceeded: {len(queue)}"))
                 break
@@ -269,30 +268,7 @@ class Command(BaseCommand):
                 continue
 
         commits_to_create = sorted(commits_to_create, key=lambda c: c.date)
-        # 부모 커밋 포함 확인
-        required_parents = set()
-        for commit in commits_to_create[:batch_size]:
-            required_parents.update(commit_parent_map.get(commit.commit_hash, []))
-        # 누락된 부모 커밋 추가
-        for parent_hash in required_parents:
-            if parent_hash not in commit_obj_map and parent_hash not in existing_hashes:
-                try:
-                    parent_commit = git_repo.commit(parent_hash)
-                    output = subprocess.check_output(
-                        ['git', '-C', repo_path, 'cat-file', '-p', parent_hash], text=True)
-                    # ... 부모 커밋 처리 (author, date, message 등) ...
-                    commit_instance = Commit(
-                        repo=repo,
-                        commit_hash=parent_hash,
-                        author=author,
-                        date=date,
-                        message=message.strip()
-                    )
-                    commits_to_create.append(commit_instance)
-                    commit_obj_map[parent_hash] = commit_instance
-                except (subprocess.CalledProcessError, GitCommandError):
-                    self.stderr.write(self.style.ERROR(f"Failed to process parent {parent_hash}"))
-        return commits_to_create[:batch_size], commit_obj_map, commit_parent_map
+        return commits_to_create, commit_obj_map, commit_parent_map
 
     def handle(self, *args, **kwargs):
         with connection.cursor() as cursor:
