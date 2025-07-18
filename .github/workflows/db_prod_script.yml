@@ -40,7 +40,7 @@ jobs:
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           command: |
-            chmod 755 ${{ secrets.NFS_PATH }}/prod/volume/backups/*.sh
+            chmod 775 ${{ secrets.NFS_PATH }}/prod/volume/backups/*.sh
       
       # slack --> notification
       - name: Send slack when failed
