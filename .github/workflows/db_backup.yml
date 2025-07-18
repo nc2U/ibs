@@ -37,7 +37,7 @@ jobs:
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           command: |
-            chmod +x ${{ secrets.NFS_PATH }}/prod/*.sh
+            chmod 755 ${{ secrets.NFS_PATH }}/prod/*.sh
 
       # mysql pod --> database bakcup
       - name: database backup
