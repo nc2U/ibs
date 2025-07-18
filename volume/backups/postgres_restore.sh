@@ -2,12 +2,13 @@
 set -eu
 
 # 변수 설정
-SCHEMA="${POSTGRES_USER}"
+SCHEMA="ibs"
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/backup-postgres-${DATE}.dump"
 LOG_FILE="/var/backups/backup-${DATE}.log"
 PGPASSWORD="${POSTGRES_PASSWORD:-$( [ -f "$POSTGRES_PASSWORD_FILE" ] && cat "$POSTGRES_PASSWORD_FILE" || echo '')}"
-SUPER_USER='postgres'
+POSTGRES_DATABASE="${POSTGRES_DATABASE:-${POSTGRES_DB}}"
+SUPER_USER="${POSTGRES_USER}"
 
 # 이전 백업 삭제 (예: 2일 이상된 파일)
 find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -ctime +2 -delete
