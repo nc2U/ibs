@@ -49,6 +49,7 @@ dist
 # mysql & postgres data
 volume/mysql
 volume/pgdata
+init.sql
 
 # virtualize
 venv/
