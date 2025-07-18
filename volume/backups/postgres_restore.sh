@@ -9,6 +9,8 @@ LOG_FILE="/var/backups/backup-${DATE}.log"
 PGPASSWORD="${POSTGRES_PASSWORD:-$( [ -f "$POSTGRES_PASSWORD_FILE" ] && cat "$POSTGRES_PASSWORD_FILE" || echo '')}"
 SUPER_USER='postgres'
 
+# 이전 백업 삭제 (예: 2일 이상된 파일)
+find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -ctime +2 -delete
 
 # 환경 변수 확인
 if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
