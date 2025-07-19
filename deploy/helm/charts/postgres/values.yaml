@@ -645,7 +645,16 @@ primary:
   ##     image: busybox
   ##     command: ['do', 'something']
   ##
-  initContainers: [ ]
+  initContainers:
+    - name: fix-perms
+      image: busybox
+      command:
+        - sh
+        - -c
+        - |
+          umask 002
+          mkdir -p /var/backups
+          chmod -R 2775 /var/backups
   ## Pod Disruption Budget configuration
   ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
   ## @param primary.pdb.create Enable/disable a Pod Disruption Budget creation
