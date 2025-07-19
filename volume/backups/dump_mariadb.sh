@@ -11,7 +11,7 @@ find /var/backups \( -name "*.sql" -o -name "*.log" \) -type f -ctime +2 -delete
 mariadb-dump -u"${USER}" -p"${PASSWORD}" "${DATABASE}" --ignore-table="${DATABASE}".django_migrations > "${SQL_FILE}"
 
 # 퍼미션 변경
-chmod 775 ${SQL_FILE}
+chmod 777 ${SQL_FILE}
 
 # 백업이 성공했는지 확인
 if [ $? -eq 0 ]; then
