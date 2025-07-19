@@ -19,7 +19,7 @@ PGPASSWORD="$PGPASSWORD" pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DATABASE}"
   --column-inserts -Fc -f "${DUMP_FILE}"
 
 # 퍼미션 변경
-chmod -R 775 .
+chmod 775 ${DUMP_FILE}
 
 # 백업이 성공했는지 확인
 if [ $? -eq 0 ]; then
