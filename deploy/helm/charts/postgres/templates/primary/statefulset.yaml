@@ -130,6 +130,9 @@ spec:
             - /bin/sh
             - -ec
             - |
+              umask 002
+              mkdir -p /var/backups
+              chmod -R 2775 /var/backups
               {{- if .Values.primary.persistence.enabled }}
               {{- if eq ( toString ( .Values.volumePermissions.containerSecurityContext.runAsUser )) "auto" }}
               chown `id -u`:`id -G | cut -d " " -f2` {{ .Values.primary.persistence.mountPath }}
