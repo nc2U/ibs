@@ -49,19 +49,12 @@ jobs:
           command: |
             if kubectl get pod -n ibs-prod mariadb-primary-0 >/dev/null 2>&1; then
               kubectl exec -it -n ibs-prod mariadb-primary-0 -- sh /var/backups/dump_mariadb.sh
+              kubectl exec -it -n ibs-prod mariadb-primary-0 -- sh chmod 775 /var/backups/dump_mariadb.sh
             fi
             if kubectl get pod -n ibs-prod postgres-primary-0 >/dev/null 2>&1; then
               kubectl exec -it -n ibs-prod postgres-primary-0 -- sh /var/backups/dump_postgres.sh
+              kubectl exec -it -n ibs-prod postgres-primary-0 -- sh chmod 775 /var/backups/dump_postgres.sh
             fi
-            
-      - name: Fix permissions after copy
-        uses: garygrossgarten/github-action-ssh@release
-        with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
-          command: |
-            chmod 775 ${{ secrets.NFS_PATH }}/prod/volume/backups/*
 
       # slack --> notification
       - name: Send slack when failed
