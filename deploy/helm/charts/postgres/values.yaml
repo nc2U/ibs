@@ -523,10 +523,8 @@ primary:
   containerSecurityContext:
     enabled: true
     seLinuxOptions: { }
-    runAsUser: 1001
+    runAsUser: 1026
     runAsGroup: 1001
-    fsGroup: 1001
-    fsGroupChangePolicy: "Always"  # 중요: 이미 존재하는 파일에도 fsGroup 적용
     runAsNonRoot: true
     privileged: false
     readOnlyRootFilesystem: true
@@ -647,16 +645,7 @@ primary:
   ##     image: busybox
   ##     command: ['do', 'something']
   ##
-  initContainers:
-    - name: fix-perms
-      image: busybox
-      command:
-        - sh
-        - -c
-        - |
-          umask 002
-          mkdir -p /var/backups
-          chmod -R 2775 /var/backups
+  initContainers: [ ]
   ## Pod Disruption Budget configuration
   ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
   ## @param primary.pdb.create Enable/disable a Pod Disruption Budget creation
