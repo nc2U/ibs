@@ -112,11 +112,11 @@ class Command(BaseCommand):
                         raise subprocess.CalledProcessError(process.returncode, process.args, stderr=stderr)
 
                     subprocess.check_output(['git', '-C', repo_path, 'show-ref'], text=True).strip()
+                    # 추가: 저장소 새로고침 확인
+                    subprocess.run(['git', '-C', repo_path, 'fetch', '--all'], check=True, text=True)
                     return True
-                except subprocess.TimeoutExpired:
-                    self.stderr.write(f"Fetch attempt {attempt + 1} timed out")
-                except subprocess.CalledProcessError as e:
-                    self.stderr.write(f"Fetch attempt {attempt + 1} failed: {e.stderr}")
+                except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+                    self.stderr.write(self.style.ERROR(f"Fetch attempt {attempt + 1} failed: {str(e)}"))
                     if attempt == 2:
                         return False
                     time.sleep(2)
@@ -164,7 +164,6 @@ class Command(BaseCommand):
                         self.stderr.write(self.style.ERROR(f"Failed to delete branch {branch}: {e}"))
 
             # DB 동기화
-            # with transaction.atomic():
             existing_branches = set(repo.branches.values_list('name', flat=True))
             new_branch_names = [b for b in remote_branches if b not in existing_branches]
             if new_branch_names:
@@ -214,7 +213,7 @@ class Command(BaseCommand):
         queue = deque(root_commits)
         max_queue_size = 100000
         start_time = time.time()
-        max_runtime = 900  # 15분
+        max_runtime = 600  # 10분
 
         while queue:
             if len(queue) > max_queue_size:
@@ -273,6 +272,9 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         with connection.cursor() as cursor:
             cursor.execute('''SELECT pg_advisory_lock(12345)''')  # 고유 락 ID
+            if not cursor.fetchone()[0]:
+                self.stderr.write(self.style.ERROR("Failed to acquire lock, skipping"))
+                return
             try:
                 limit = kwargs.get('limit')
                 base_repo_path = "/app/repos"
@@ -300,7 +302,6 @@ class Command(BaseCommand):
                             self.stderr.write(self.style.ERROR(f"Git fetch failed for {repo.slug}"))
                             continue
 
-                        # with transaction.atomic():
                         try:
                             self.sync_branches(git_repo, repo, repo_path)
 
@@ -309,21 +310,27 @@ class Command(BaseCommand):
                             try:
                                 cmd = ['git', '-C', repo_path, 'for-each-ref', '--format=%(refname:short)',
                                        'refs/heads']
-                                branches = subprocess.check_output(cmd, text=True).strip().split('\n')
+                                branches = subprocess.check_output(cmd, text=True, timeout=300).strip().split('\n')
                                 self.stdout.write(f"Found branches: {branches}")
+                                if not branches or branches == ['']:
+                                    self.stderr.write(self.style.WARNING(f"No branches found for {repo.slug}"))
+                                    continue
+
                                 for branch in branches:
                                     if branch:
                                         try:
-                                            cmd = ['git', '-C', repo_path, 'rev-list', branch, '--']
-                                            output = subprocess.check_output(cmd, text=True).strip()
+                                            cmd = ['git', '-C', repo_path, 'rev-list', branch, '--', '--max-count=1000']
+                                            output = subprocess.check_output(cmd, text=True, timeout=300).strip()
                                             commit_hashes = output.split('\n')
                                             self.stdout.write(f"Branch {branch} has {len(commit_hashes)} commits")
+
                                             for commit_hash in commit_hashes:
                                                 if commit_hash:
                                                     commit_branch_map.setdefault(commit_hash, []).append(branch)
                                         except subprocess.CalledProcessError as e:
                                             self.stderr.write(
                                                 self.style.ERROR(f"Failed to get commits for branch {branch}: {e}"))
+
                                 existing_branches = set(repo.branches.values_list('name', flat=True))
                                 for branch_name in existing_branches:
                                     if branch_name not in branches:
@@ -332,6 +339,7 @@ class Command(BaseCommand):
                                             'commit_hash', flat=True)
                                         for commit_hash in commit_hashes:
                                             commit_branch_map.setdefault(commit_hash, []).append(branch_name)
+                                            
                             except subprocess.CalledProcessError as e:
                                 self.stderr.write(self.style.ERROR(f"Failed to map branches: {e}"))
 
