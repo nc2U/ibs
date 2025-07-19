@@ -523,7 +523,7 @@ primary:
   containerSecurityContext:
     enabled: true
     seLinuxOptions: { }
-    runAsUser: 1001
+    runAsUser: 1026
     runAsGroup: 1001
     runAsNonRoot: true
     privileged: false
