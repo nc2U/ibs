@@ -368,12 +368,12 @@ class Command(BaseCommand):
                                                          c.commit_hash not in existing_hashes]
                                     Commit.objects.bulk_create(commits_to_create, ignore_conflicts=True)
 
-                                # # parent 관계에 필요한 모든 커밋을 대상으로 조회 (child + parent)
-                                # hashes = set(commit_parent_map.keys()) | \
-                                #          {h for hs in commit_parent_map.values() for h in hs}
-                                # saved_commits = Commit.objects.using('default').filter(
-                                #     repo=repo, commit_hash__in=hashes)
-                                # commit_obj_map = {c.commit_hash: c for c in saved_commits}
+                                # parent 관계에 필요한 모든 커밋을 대상으로 조회 (child + parent)
+                                hashes = set(commit_parent_map.keys()) | \
+                                         {h for hs in commit_parent_map.values() for h in hs}
+                                saved_commits = Commit.objects.using('default').filter(
+                                    repo=repo, commit_hash__in=hashes)
+                                commit_obj_map = {c.commit_hash: c for c in saved_commits}
 
                                 # 부모 관계 연결
                                 parent_relations = []
