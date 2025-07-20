@@ -339,7 +339,7 @@ class Command(BaseCommand):
                                             'commit_hash', flat=True)
                                         for commit_hash in commit_hashes:
                                             commit_branch_map.setdefault(commit_hash, []).append(branch_name)
-                                            
+
                             except subprocess.CalledProcessError as e:
                                 self.stderr.write(self.style.ERROR(f"Failed to map branches: {e}"))
 
@@ -393,6 +393,11 @@ class Command(BaseCommand):
 
                                 # 브랜치 연결
                                 branch_map = {b.name: b for b in repo.branches.all()}
+
+                                self.stdout.write(self.style.SUCCESS(f"커밋 수 : {len(commit_obj_map)} -> 브랜치 연결 시작!!"))
+                                self.stdout.write(self.style.SUCCESS(f"커밋 브랜치 맵 수 : {len(commit_branch_map)}"))
+                                self.stdout.write(self.style.SUCCESS(f"브랜치 맵 수 : {len(branch_map)}"))
+
                                 for commit_hash, commit_obj in commit_obj_map.items():
                                     branch_names = commit_branch_map.get(commit_hash, [])
                                     branch_objs = [branch_map.get(name) for name in branch_names if name in branch_map]
