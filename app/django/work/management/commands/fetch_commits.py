@@ -118,7 +118,7 @@ class Command(BaseCommand):
             remote_branches = [ref.name.replace('origin/', '') for ref in remote_refs if ref.name != 'origin/HEAD']
             self.stdout.write(self.style.SUCCESS(f"Remote branches: {remote_branches}"))
 
-            # 로컬 브랜치 업데이트
+            # 원격 브랜치 목록 기준 로컬 브랜치 UPDATE
             for branch in remote_branches:
                 try:
                     subprocess.run(
@@ -131,31 +131,34 @@ class Command(BaseCommand):
             # 삭제된 로컬 브랜치 정리
             local_branches = [head.name for head in git_repo.heads if head.name != 'HEAD']
             for branch in local_branches:
-                if branch not in remote_branches:
+                if branch not in remote_branches:  # 로컬 특정 브랜치가 원격 저정소에 없으면
                     try:
                         cmd = ['git', '-C', repo_path, 'rev-list', branch, '--max-count=1']
                         last_commit = subprocess.check_output(cmd, text=True).strip()
-                        if last_commit:
-                            self.stdout.write(f"Branch {branch} has commits, preserving in DB")
-                            continue
                     except subprocess.CalledProcessError:
-                        pass
-                    try:
+                        last_commit = None  # 커밋 정보 조회 실패 시 무시하고 진행
+                    if last_commit:
+                        self.stdout.write(f"Branch {branch} has commits, preserving in DB")
+                        continue
+                    try:  # 커밋이 없으면 삭제 시도
                         subprocess.run(['git', '-C', repo_path, 'branch', '-D', branch], check=True)
                         self.stdout.write(self.style.SUCCESS(f"Deleted local branch: {branch}"))
                     except subprocess.CalledProcessError as e:
                         self.stderr.write(self.style.ERROR(f"Failed to delete branch {branch}: {e}"))
 
             # DB 동기화
-            existing_branches = set(repo.branches.values_list('name', flat=True))
-            new_branch_names = [b for b in remote_branches if b not in existing_branches]
+            existing_branches = set(repo.branches.values_list('name', flat=True))  # DB에 저장된 브랜치 목록
+            new_branch_names = [b for b in remote_branches if b not in existing_branches]  # 원격 저장소와 비교
             if new_branch_names:
                 with transaction.atomic():
                     Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
                     self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
-            branch_map = {b.name: b for b in repo.branches.all()}
+            # 트랜잭션 블록 종료 후, fresh하게 쿼리
+            # branch_map = {b.name: b for b in repo.branches.all()}
+            branch_map = {b.name: b for b in Branch.objects.filter(repo=repo)}
             self.stdout.write(
                 self.style.SUCCESS(f"branch_map: {list(branch_map.keys())}, length: {len(branch_map)}"))
+
             deleted_branch_names = [b for b in existing_branches if b not in remote_branches]
             if deleted_branch_names:
                 branches_with_commits = set(
