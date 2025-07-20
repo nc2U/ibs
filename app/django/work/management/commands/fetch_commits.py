@@ -153,16 +153,9 @@ class Command(BaseCommand):
                 with transaction.atomic():
                     Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
                     self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
-                # 트랜잭션 커밋 후 브랜치 조회
-                existing_branches = repo.branches.all()
-                self.stdout.write(f"Existing branches in DB: {[b.name for b in existing_branches]}")
-                branch_map = {b.name: b for b in existing_branches}
-                self.stdout.write(
-                    self.style.SUCCESS(f"Refreshed branch_map: {list(branch_map.keys())}, length: {len(branch_map)}"))
-            else:
-                branch_map = {b.name: b for b in repo.branches.all()}
-                self.stdout.write(
-                    self.style.SUCCESS(f"branch_map: {list(branch_map.keys())}, length: {len(branch_map)}"))
+            branch_map = {b.name: b for b in repo.branches.all()}
+            self.stdout.write(
+                self.style.SUCCESS(f"branch_map: {list(branch_map.keys())}, length: {len(branch_map)}"))
             deleted_branch_names = [b for b in existing_branches if b not in remote_branches]
             if deleted_branch_names:
                 branches_with_commits = set(
