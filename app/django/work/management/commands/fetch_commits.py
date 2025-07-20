@@ -346,6 +346,8 @@ class Command(BaseCommand):
                                 self.style.SUCCESS(f"커밋(obj) 수 : {len(commit_obj_map)} -> commit_obj_map!!"))
                             self.stdout.write(self.style.SUCCESS(f"커밋 부모 맵 수 : {len(commit_parent_map)}"))
                             self.stdout.write(self.style.SUCCESS(f"커밋 브랜치 맵 수 : {len(commit_branch_map)}"))
+                            branch_map = {b.name: b for b in repo.branches.all()}
+                            self.stdout.write(self.style.SUCCESS(f"브랜치 맵 수 : {len(branch_map)}"))
 
                             if commits_to_create:
                                 try:  # Commit 저장
@@ -378,20 +380,22 @@ class Command(BaseCommand):
                                             parent_relations.append(
                                                 Commit.parents.through(from_commit_id=child.id, to_commit_id=parent.id))
                                 Commit.parents.through.objects.bulk_create(parent_relations, ignore_conflicts=True)
-                                self.stdout.write(self.style.SUCCESS("Linked parent relationships"))
+                                self.stdout.write(
+                                    self.style.SUCCESS(f"Linked {len(commit_parent_map)} parent relationships"))
 
                                 # 브랜치 연결
-                                branch_map = {b.name: b for b in repo.branches.all()}
-                                self.stdout.write(self.style.SUCCESS(f"브랜치 맵 수 : {len(branch_map)}"))
-
                                 for commit_hash, commit_obj in commit_obj_map.items():
                                     branch_names = commit_branch_map.get(commit_hash, [])
                                     branch_objs = [branch_map.get(name) for name in branch_names if name in branch_map]
                                     branch_objs = [b for b in branch_objs if b]
                                     if branch_objs:
                                         commit_obj.branches.add(*branch_objs)
-                                        self.stdout.write(self.style.SUCCESS(
-                                            f"Linked {len(branch_objs)} branches to commit {commit_hash}: {branch_names}"))
+                                        if len(commit_obj_map) < 100:
+                                            self.stdout.write(self.style.SUCCESS(
+                                                f"Linked {len(branch_objs)} branches to commit {commit_hash}: {branch_names}"))
+
+                                self.stdout.write(
+                                    self.style.SUCCESS(f"Linked branches to {len(commit_obj_map)} commits Complete!"))
 
                                 # 이슈 연결
                                 for commit_hash, message in commit_hashes:
@@ -402,8 +406,12 @@ class Command(BaseCommand):
                                         valid_issues = Issue.objects.filter(pk__in=issue_numbers)
                                         if valid_issues.exists():
                                             commit_obj_map[commit_hash].issues.add(*valid_issues)
-                                            self.stdout.write(self.style.SUCCESS(
-                                                f"Linked {len(valid_issues)} issues to commit {commit_hash}"))
+                                            if len(commit_hashes) < 100:
+                                                self.stdout.write(self.style.SUCCESS(
+                                                    f"Linked {len(valid_issues)} issues to commit {commit_hash}"))
+
+                                self.stdout.write(self.style.SUCCESS(
+                                    f"Linked issues to {len(commit_hashes)} commits Complete!"))
                             else:
                                 self.stdout.write(self.style.WARNING(f"No new commits to create for {repo.slug}"))
 
