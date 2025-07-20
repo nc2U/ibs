@@ -111,7 +111,7 @@ class Command(BaseCommand):
             default_branch = self.get_default_branch(repo_path)
             if not default_branch:
                 self.stderr.write(self.style.WARNING(f"No default branch found for {repo.slug}"))
-                return
+                return None
 
             # 원격 브랜치 목록
             remote_refs = git_repo.remotes.origin.refs if git_repo.remotes.origin.refs else []
@@ -150,8 +150,19 @@ class Command(BaseCommand):
             existing_branches = set(repo.branches.values_list('name', flat=True))
             new_branch_names = [b for b in remote_branches if b not in existing_branches]
             if new_branch_names:
-                Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
-                self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
+                with transaction.atomic():
+                    Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
+                    self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
+                # 트랜잭션 커밋 후 브랜치 조회
+                existing_branches = repo.branches.all()
+                self.stdout.write(f"Existing branches in DB: {[b.name for b in existing_branches]}")
+                branch_map = {b.name: b for b in existing_branches}
+                self.stdout.write(
+                    self.style.SUCCESS(f"Refreshed branch_map: {list(branch_map.keys())}, length: {len(branch_map)}"))
+            else:
+                branch_map = {b.name: b for b in repo.branches.all()}
+                self.stdout.write(
+                    self.style.SUCCESS(f"branch_map: {list(branch_map.keys())}, length: {len(branch_map)}"))
             deleted_branch_names = [b for b in existing_branches if b not in remote_branches]
             if deleted_branch_names:
                 branches_with_commits = set(
@@ -186,6 +197,7 @@ class Command(BaseCommand):
         except (subprocess.CalledProcessError, GitCommandError, ValueError) as e:
             self.stderr.write(self.style.ERROR(f"Branch sync failed: {e}"))
             raise
+        return branch_map
 
     def collect_commits_bfs(self, repo, git_repo, root_commits, existing_hashes, repo_path):
         """큐 기반(BFS)으로 커밋과 부모 커밋을 저장 준비"""
@@ -286,7 +298,7 @@ class Command(BaseCommand):
 
                         try:
                             # default branch & origin branches -> local branches sync!
-                            self.sync_branches(git_repo, repo, repo_path)
+                            branch_map = self.sync_branches(git_repo, repo, repo_path)
 
                             # 브랜치-커밋 매핑
                             commit_branch_map = {}
@@ -346,7 +358,6 @@ class Command(BaseCommand):
                                 self.style.SUCCESS(f"커밋(obj) 수 : {len(commit_obj_map)} -> commit_obj_map!!"))
                             self.stdout.write(self.style.SUCCESS(f"커밋 부모 맵 수 : {len(commit_parent_map)}"))
                             self.stdout.write(self.style.SUCCESS(f"커밋 브랜치 맵 수 : {len(commit_branch_map)}"))
-                            branch_map = {b.name: b for b in repo.branches.all()}
                             self.stdout.write(self.style.SUCCESS(f"브랜치 맵 수 : {len(branch_map)}"))
 
                             if commits_to_create:
