@@ -272,7 +272,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         with connection.cursor() as cursor:
             cursor.execute('''SELECT pg_advisory_lock(12345)''')  # 고유 락 ID
-            
+
             try:
                 limit = kwargs.get('limit')
                 base_repo_path = "/app/repos"
@@ -309,32 +309,31 @@ class Command(BaseCommand):
                                 cmd = ['git', '-C', repo_path, 'for-each-ref', '--format=%(refname:short)',
                                        'refs/heads']
                                 branches = subprocess.check_output(cmd, text=True, timeout=300).strip().split('\n')
+                                branches = [b for b in branches if b]
                                 self.stdout.write(f"Found branches: {branches}")
-                                if not branches or branches == ['']:
+
+                                if not branches:
                                     self.stderr.write(self.style.WARNING(f"No branches found for {repo.slug}"))
                                     continue
 
                                 for branch in branches:
-                                    if branch:
-                                        try:
-                                            cmd = ['git', '-C', repo_path, 'rev-list', branch, '--', '--max-count=1000']
-                                            output = subprocess.check_output(cmd, text=True, timeout=300).strip()
-                                            commit_hashes = output.split('\n')
-                                            self.stdout.write(f"Branch {branch} has {len(commit_hashes)} commits")
+                                    try:
+                                        cmd = ['git', '-C', repo_path, 'rev-list', branch]
+                                        output = subprocess.check_output(cmd, text=True, timeout=300).strip()
+                                        commit_hashes = output.split('\n')
+                                        self.stdout.write(f"Branch {branch} has {len(commit_hashes)} commits")
 
-                                            for commit_hash in commit_hashes:
-                                                if commit_hash:
-                                                    commit_branch_map.setdefault(commit_hash, []).append(branch)
-                                        except subprocess.CalledProcessError as e:
-                                            self.stderr.write(
-                                                self.style.ERROR(f"Failed to get commits for branch {branch}: {e}"))
+                                        for commit_hash in commit_hashes:
+                                            commit_branch_map.setdefault(commit_hash, []).append(branch)
+                                    except subprocess.CalledProcessError as e:
+                                        self.stderr.write(
+                                            self.style.ERROR(f"Failed to get commits for branch {branch}: {e}"))
 
                                 existing_branches = set(repo.branches.values_list('name', flat=True))
                                 for branch_name in existing_branches:
                                     if branch_name not in branches:
-                                        commit_hashes = Commit.objects.filter(repo=repo,
-                                                                              branches__name=branch_name).values_list(
-                                            'commit_hash', flat=True)
+                                        commit_hashes = Commit.objects.filter(
+                                            repo=repo, branches__name=branch_name).values_list('commit_hash', flat=True)
                                         for commit_hash in commit_hashes:
                                             commit_branch_map.setdefault(commit_hash, []).append(branch_name)
 
