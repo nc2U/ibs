@@ -272,9 +272,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         with connection.cursor() as cursor:
             cursor.execute('''SELECT pg_advisory_lock(12345)''')  # 고유 락 ID
-            if not cursor.fetchone()[0]:
-                self.stderr.write(self.style.ERROR("Failed to acquire lock, skipping"))
-                return
+            
             try:
                 limit = kwargs.get('limit')
                 base_repo_path = "/app/repos"
