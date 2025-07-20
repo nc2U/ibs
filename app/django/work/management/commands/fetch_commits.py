@@ -151,12 +151,10 @@ class Command(BaseCommand):
             new_branch_names = [b for b in remote_branches if b not in existing_branches]  # 원격 저장소와 비교
             if new_branch_names:
                 with transaction.atomic():
-                    created = Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
-                    for b in created:
-                        print(f"Created: {b.name}")
+                    Branch.objects.bulk_create([Branch(repo=repo, name=name) for name in new_branch_names])
                     self.stdout.write(self.style.SUCCESS(f"Added {len(new_branch_names)} branches: {new_branch_names}"))
             # 트랜잭션 블록 종료 후, fresh하게 쿼리
-            branch_map = {b.name: b for b in repo.branches.all()}
+            branch_map = {b.name: b for b in Branch.objects.using('default').filter(repo=repo)}
             self.stdout.write(
                 self.style.SUCCESS(f"branch_map: {list(branch_map.keys())}, length: {len(branch_map)}"))
 
