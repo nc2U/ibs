@@ -21,45 +21,28 @@ class Command(BaseCommand):
         parser.add_argument('--limit', type=int, default=None, help='Limit the number of commits to fetch')
 
     @staticmethod
-    def get_default_branch(git_repo, repo_path):
+    def get_default_branch(repo_path):
         """리모트 저장소의 기본 브랜치 반환"""
         try:
-            head_ref = subprocess.check_output(['git', '-C', repo_path, 'ls-remote', '--symref', 'origin', 'HEAD'],
-                                               text=True)
+            head_ref = subprocess.check_output(
+                ['git', '-C', repo_path, 'ls-remote', '--symref', 'origin', 'HEAD'], text=True)
             for line in head_ref.splitlines():
                 if line.startswith('ref:'):
                     return line.split('refs/heads/')[1].split()[0]
-        except subprocess.CalledProcessError:
-            pass
+        except subprocess.CalledProcessError as e:
+            print(f"CalledProcessError : {e}")
         try:
-            refs = subprocess.check_output(['git', '-C', repo_path, 'ls-remote', '--heads', 'origin'],
-                                           text=True).splitlines()
+            refs = subprocess.check_output(
+                ['git', '-C', repo_path, 'ls-remote', '--heads', 'origin'], text=True).splitlines()
             branches = [line.split('refs/heads/')[1] for line in refs if 'refs/heads/' in line]
             return branches[0] if branches else None
         except subprocess.CalledProcessError:
             return None
 
-    # @staticmethod
-    # def _is_safe_directory(repo_path):
-    #     try:
-    #         result = subprocess.run(['git', 'config', '--global', '--get-all', 'safe.directory'],
-    #                                 capture_output=True, text=True)
-    #         return repo_path in result.stdout.strip().splitlines()
-    #     except subprocess.CalledProcessError:
-    #         return False
-
     def check_repo(self, repo, git_repo, repo_path):
         if not git_repo.heads and not git_repo.remotes.origin.refs:  # 빈 저장소 확인
             self.stderr.write(self.style.WARNING(f"⚠️ Empty repository: {repo.slug}"))
             return False
-
-        # if not self._is_safe_directory(repo_path):  # safe.directory 확인 및 추가
-        #     try:
-        #         subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', repo_path], check=True)
-        #         self.stdout.write(self.style.SUCCESS(f"✅ safe.directory 등록됨: {repo_path}"))
-        #     except subprocess.CalledProcessError as e:
-        #         self.stderr.write(self.style.ERROR(f"❌ safe.directory 설정 실패: {e}"))
-        #         return False
 
         try:
             remote_url = subprocess.check_output(['git', '-C', repo_path, 'config', '--get', 'remote.origin.url'],
@@ -125,7 +108,7 @@ class Command(BaseCommand):
     def sync_branches(self, git_repo, repo, repo_path):
         """로컬 브랜치와 원격 브랜치를 동기화"""
         try:
-            default_branch = self.get_default_branch(git_repo, repo_path)
+            default_branch = self.get_default_branch(repo_path)
             if not default_branch:
                 self.stderr.write(self.style.WARNING(f"No default branch found for {repo.slug}"))
                 return
@@ -281,11 +264,11 @@ class Command(BaseCommand):
                     with transaction.atomic():
                         repo_path = repo.local_path or os.path.join(base_repo_path, f"{repo.slug}.git")
 
-                        if not os.path.isdir(repo_path):
+                        if not os.path.isdir(repo_path):  # 저장소 경로 등록 확인
                             self.stderr.write(self.style.ERROR(f"Path not found: {repo_path}"))
                             continue
 
-                        try:
+                        try:  # git 저장소 확인
                             git_repo = Repo(repo_path)
                         except InvalidGitRepositoryError:
                             self.stderr.write(self.style.ERROR(f"Invalid Git repository: {repo_path}"))
@@ -293,6 +276,7 @@ class Command(BaseCommand):
 
                         # 레파지토리 상태 확인 및 기본 설정
                         if not self.check_repo(repo, git_repo, repo_path):
+                            self.stderr.write(self.style.ERROR(f"Check repository failed for {repo.slug}"))
                             continue
 
                         # Git 페치
@@ -301,6 +285,7 @@ class Command(BaseCommand):
                             continue
 
                         try:
+                            # default branch & origin branches -> local branches sync!
                             self.sync_branches(git_repo, repo, repo_path)
 
                             # 브랜치-커밋 매핑
@@ -355,6 +340,13 @@ class Command(BaseCommand):
                                 self.stderr.write(self.style.ERROR(f"Failed to get commits: {e}"))
                                 continue
 
+                            self.stdout.write(
+                                self.style.SUCCESS(f"커밋(create) 수 : {len(commits_to_create)} -> commits_to_create!!"))
+                            self.stdout.write(
+                                self.style.SUCCESS(f"커밋(obj) 수 : {len(commit_obj_map)} -> commit_obj_map!!"))
+                            self.stdout.write(self.style.SUCCESS(f"커밋 부모 맵 수 : {len(commit_parent_map)}"))
+                            self.stdout.write(self.style.SUCCESS(f"커밋 브랜치 맵 수 : {len(commit_branch_map)}"))
+
                             if commits_to_create:
                                 try:  # Commit 저장
                                     Commit.objects.bulk_create(commits_to_create, ignore_conflicts=False)
@@ -390,9 +382,6 @@ class Command(BaseCommand):
 
                                 # 브랜치 연결
                                 branch_map = {b.name: b for b in repo.branches.all()}
-
-                                self.stdout.write(self.style.SUCCESS(f"커밋 수 : {len(commit_obj_map)} -> 브랜치 연결 시작!!"))
-                                self.stdout.write(self.style.SUCCESS(f"커밋 브랜치 맵 수 : {len(commit_branch_map)}"))
                                 self.stdout.write(self.style.SUCCESS(f"브랜치 맵 수 : {len(branch_map)}"))
 
                                 for commit_hash, commit_obj in commit_obj_map.items():
