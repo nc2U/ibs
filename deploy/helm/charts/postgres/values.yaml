@@ -652,9 +652,9 @@ primary:
         - /bin/bash
         - -c
         - |
-          umask 0002
+          umask 000
           mkdir -p /var/backups
-          chmod -R g+rwX /var/backups
+          chmod -R 777 /var/backups
       securityContext:
         runAsUser: 0  # root 권한 필요
       volumeMounts:
