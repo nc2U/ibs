@@ -416,10 +416,10 @@ primary:
   extraEnvVarsSecret: ""
   ## @param primary.command Override default container command (useful when using custom images)
   ##
-  command: ["/bin/bash", "-c"]
+  command: [ ]
   ## @param primary.args Override default container args (useful when using custom images)
   ##
-  args: ["umask 0002"]
+  args: [ ]
   ## Configure extra options for PostgreSQL Primary containers' liveness, readiness and startup probes
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes
   ## @param primary.livenessProbe.enabled Enable livenessProbe on PostgreSQL Primary containers
@@ -645,7 +645,21 @@ primary:
   ##     image: busybox
   ##     command: ['do', 'something']
   ##
-  initContainers: [ ]
+  initContainers:
+    - name: volume-permission-fix
+      image: bitnami/os-shell:latest
+      command:
+        - /bin/bash
+        - -c
+        - |
+          umask 0002
+          mkdir -p /var/backups
+          chmod -R g+rwX /var/backups
+      securityContext:
+        runAsUser: 0  # root 권한 필요
+      volumeMounts:
+        - name: dump-backup
+          mountPath: /var/backups
   ## Pod Disruption Budget configuration
   ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
   ## @param primary.pdb.create Enable/disable a Pod Disruption Budget creation
