@@ -37,7 +37,7 @@ onBeforeMount(() => {
 
         <CCol class="text-right">
           <span v-if="issueProject?.status !== '9'" class="mr-2 form-text">
-            <v-icon icon="mdi-plus-circle" color="success" size="15" />
+            <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
             <router-link to="" class="ml-1">파일추가</router-link>
           </span>
         </CCol>

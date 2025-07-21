@@ -38,7 +38,7 @@ const projectDelete = () => {
 
     <CCol class="text-right">
       <span class="mr-2 form-text">
-        <v-icon icon="mdi-bookmark-multiple" color="primary" size="15" />
+        <v-icon icon="mdi-bookmark-multiple" color="primary" size="15" class="mr-1" />
         <router-link to="" class="ml-1">북마크 추가</router-link>
       </span>
 
@@ -57,7 +57,8 @@ const projectDelete = () => {
           <CDropdownMenu>
             <CDropdownItem v-if="project?.status === '1'" class="form-text">
               <router-link :to="{ name: '프로젝트 - 추가', query: { parent: project?.pk } }">
-                <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-1" />새 하위 프로젝트
+                <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-2" />새 하위
+                프로젝트
               </router-link>
             </CDropdownItem>
             <CDropdownItem class="form-text" @click="RefProjectCloseConfirm.callModal()">
