@@ -652,7 +652,7 @@ primary:
         - /bin/bash
         - -c
         - |
-          umask 000
+          umask 0000
           mkdir -p /var/backups
           chmod -R g+rwX /var/backups
       securityContext:
