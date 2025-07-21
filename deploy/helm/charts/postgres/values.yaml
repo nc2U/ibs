@@ -645,21 +645,7 @@ primary:
   ##     image: busybox
   ##     command: ['do', 'something']
   ##
-  initContainers:
-    - name: volume-permission-fix
-      image: bitnami/os-shell:latest
-      command:
-        - /bin/bash
-        - -c
-        - |
-          umask 0000
-          mkdir -p /var/backups
-          chmod -R g+rwX /var/backups
-      securityContext:
-        runAsUser: 0  # root 권한 필요
-      volumeMounts:
-        - name: dump-backup
-          mountPath: /var/backups
+  initContainers: [ ]
   ## Pod Disruption Budget configuration
   ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
   ## @param primary.pdb.create Enable/disable a Pod Disruption Budget creation
