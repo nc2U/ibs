@@ -71,13 +71,11 @@ onBeforeMount(() => {
 
     <CCol v-if="projStatus !== '9'" class="text-right">
       <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2 form-text">
-        <v-icon icon="mdi-plus-circle" color="success" size="15" />
+        <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
         <router-link
           :to="{ name: route.params.projId ? '(소요시간) - 추가' : '소요시간 - 추가' }"
           class="ml-1"
-        >
-          작업시간 기록
-        </router-link>
+        >작업시간 기록</router-link>
       </span>
     </CCol>
   </CRow>

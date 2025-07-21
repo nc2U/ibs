@@ -57,8 +57,7 @@ const projectDelete = () => {
           <CDropdownMenu>
             <CDropdownItem v-if="project?.status === '1'" class="form-text">
               <router-link :to="{ name: '프로젝트 - 추가', query: { parent: project?.pk } }">
-                <v-icon icon="mdi-plus-circle" color="success" size="sm" />
-                새 하위 프로젝트
+                <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-1" />새 하위 프로젝트
               </router-link>
             </CDropdownItem>
             <CDropdownItem class="form-text" @click="RefProjectCloseConfirm.callModal()">
@@ -67,14 +66,13 @@ const projectDelete = () => {
                   :icon="project?.status === '1' ? 'mdi-lock' : 'mdi-lock-open'"
                   :color="project?.status === '1' ? 'warning' : 'secondary'"
                   size="sm"
-                />
-                {{ project?.status === '1' ? '닫기' : '다시 열기' }}
+                  class="mr-1"
+                />{{ project?.status === '1' ? '닫기' : '다시 열기' }}
               </router-link>
             </CDropdownItem>
             <CDropdownItem class="form-text" @click="RefProjectDeleteConfirm.callModal()">
               <router-link to="">
-                <v-icon icon="mdi-trash-can-outline" color="danger" size="sm" />
-                삭제
+                <v-icon icon="mdi-trash-can-outline" color="danger" size="sm" class="mr-1" />삭제
               </router-link>
             </CDropdownItem>
             <CDropdownItem
@@ -83,8 +81,7 @@ const projectDelete = () => {
               @click="router.push({ name: '(설정)' })"
             >
               <router-link to="">
-                <v-icon icon="mdi-cog" color="secondary" size="sm" />
-                설정
+                <v-icon icon="mdi-cog" color="secondary" size="sm" class="mr-1" />설정
               </router-link>
             </CDropdownItem>
           </CDropdownMenu>

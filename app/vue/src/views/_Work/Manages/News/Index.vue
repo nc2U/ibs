@@ -74,14 +74,13 @@ onBeforeMount(async () => {
 
         <CCol class="text-right">
           <span class="mr-2 form-text">
-            <v-icon icon="mdi-plus-circle" color="success" size="15" />
+            <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
             <router-link to="" class="ml-1" @click="viewForm = true">새 공지</router-link>
           </span>
 
           <span v-if="$route.params.projId" class="mr-2 form-text">
-            <v-icon icon="mdi-star" color="secondary" size="15" />
-            <!--  <router-link to="" class="ml-1" @click="">-->
-            지켜보기
+            <v-icon icon="mdi-star" color="secondary" size="15" class="mr-1" />
+            <!--  <router-link to="" class="ml-1" @click="">-->지켜보기
             <!--  </router-link>-->
           </span>
         </CCol>

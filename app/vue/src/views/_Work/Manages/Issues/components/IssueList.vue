@@ -67,10 +67,8 @@ const watchControl = (payload: any) => {
         v-if="projStatus !== '9' && (workManager || my_perms?.issue_create)"
         class="mr-2 form-text"
       >
-        <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1">
-          새 업무만들기
-        </router-link>
+        <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
+        <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1">새 업무만들기</router-link>
       </span>
 
       <span>
@@ -92,14 +90,12 @@ const watchControl = (payload: any) => {
               @click="router.push({ name: '(업무) - 보고서' })"
             >
               <router-link to="">
-                <v-icon icon="mdi-chart-bar" color="amber" size="sm" />
-                요약
+                <v-icon icon="mdi-chart-bar" color="amber" size="sm" class="mr-1" />요약
               </router-link>
             </CDropdownItem>
             <CDropdownItem v-if="projStatus !== '9'" class="form-text" disabled>
               <!--              <router-link to="">-->
-              <v-icon icon="mdi-file-document-arrow-right" color="blue-lighten" size="sm" />
-              가져오기
+              <v-icon icon="mdi-file-document-arrow-right" color="blue-lighten" size="sm" class="mr-1" />가져오기
               <!--              </router-link>-->
             </CDropdownItem>
             <CDropdownItem
@@ -108,8 +104,7 @@ const watchControl = (payload: any) => {
               @click="router.push({ name: '(설정)', query: { menu: '업무추적' } })"
             >
               <router-link to="">
-                <v-icon icon="mdi-cog" color="secondary" size="sm" />
-                설정
+                <v-icon icon="mdi-cog" color="secondary" size="sm" class="mr-1" />설정
               </router-link>
             </CDropdownItem>
           </CDropdownMenu>
