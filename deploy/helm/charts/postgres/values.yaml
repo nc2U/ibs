@@ -416,10 +416,10 @@ primary:
   extraEnvVarsSecret: ""
   ## @param primary.command Override default container command (useful when using custom images)
   ##
-  command: [ ]
+  command: ["/bin/bash", "-c"]
   ## @param primary.args Override default container args (useful when using custom images)
   ##
-  args: [ ]
+  args: ["umask 0002"]
   ## Configure extra options for PostgreSQL Primary containers' liveness, readiness and startup probes
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes
   ## @param primary.livenessProbe.enabled Enable livenessProbe on PostgreSQL Primary containers
