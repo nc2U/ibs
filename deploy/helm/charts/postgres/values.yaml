@@ -654,7 +654,7 @@ primary:
         - |
           umask 000
           mkdir -p /var/backups
-          chmod -R 777 /var/backups
+          chmod -R g+rwX /var/backups
       securityContext:
         runAsUser: 0  # root 권한 필요
       volumeMounts:
