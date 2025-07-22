@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, onBeforeMount } from 'vue'
+import { ref, reactive, computed, watch, onBeforeMount, type PropType } from 'vue'
 import { useSite } from '@/store/pinia/project_site'
 import { isValidate } from '@/utils/helper'
 import type { SiteContract, SiteOwner } from '@/store/types/project'
@@ -13,7 +13,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
-  contract: { type: Object, default: null },
+  contract: { type: Object as PropType<SiteContract>, default: null },
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close'])
@@ -58,7 +58,7 @@ const getOwners = computed(() => siteStore.getOwners)
 
 const formsCheck = computed(() => {
   if (props.contract) {
-    const a = form.owner === props.contract.owner
+    const a = form.owner === props.contract?.owner
     const b = form.contract_date === props.contract.contract_date
     const c = form.total_price === props.contract.total_price
     const d = form.contract_area === props.contract.contract_area
@@ -113,6 +113,28 @@ watch(
 
 watch(getAreaByOwner, val => (form.contract_area = val))
 
+const RefSiteContFile = ref()
+const newFile = ref<File | ''>('')
+const editFile = ref<number | ''>('')
+const cngFile = ref<File | ''>('')
+const delFile = ref<number | ''>('')
+
+const fileControl = (payload: any) => {
+  if (payload.newFile) newFile.value = payload.newFile
+  else newFile.value = ''
+
+  if (payload.editFile) {
+    editFile.value = payload.editFile
+    cngFile.value = payload.cngFile
+  } else {
+    editFile.value = ''
+    cngFile.value = ''
+  }
+
+  if (payload.delFile) delFile.value = payload.delFile
+  else delFile.value = ''
+}
+
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
@@ -135,7 +157,7 @@ const multiSubmit = (payload: SiteContract) => {
 }
 
 const deleteObject = () => {
-  emit('on-delete', { pk: props.contract.pk, project: props.contract.project })
+  emit('on-delete', { pk: props.contract?.pk, project: props.contract?.project })
   refDelModal.value.close()
   emit('close')
 }
@@ -175,28 +197,6 @@ const dataSetup = () => {
     form.note = props.contract.note
     form.site_cont_files = props.contract.site_cont_files
   } else form.project = props.project as number
-}
-
-const RefSiteContFile = ref()
-const newFile = ref<File | ''>('')
-const editFile = ref<number | ''>('')
-const cngFile = ref<File | ''>('')
-const delFile = ref<number | ''>('')
-
-const fileControl = (payload: any) => {
-  if (payload.newFile) newFile.value = payload.newFile
-  else newFile.value = ''
-
-  if (payload.editFile) {
-    editFile.value = payload.editFile
-    cngFile.value = payload.cngFile
-  } else {
-    editFile.value = ''
-    cngFile.value = ''
-  }
-
-  if (payload.delFile) delFile.value = payload.delFile
-  else delFile.value = ''
 }
 
 onBeforeMount(() => dataSetup())

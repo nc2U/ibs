@@ -67,31 +67,6 @@ const formsCheck = computed(() => {
   } else return false
 })
 
-const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
-    validated.value = true
-  } else {
-    if (write_project.value) multiSubmit({ ...form })
-    else refAlertModal.value.callModal()
-  }
-}
-
-const multiSubmit = (payload: Site) => {
-  emit('multi-submit', payload)
-  emit('close')
-}
-
-const deleteObject = () => {
-  emit('on-delete', { pk: props.site?.pk, project: props.site?.project })
-  refDelModal.value.close()
-  emit('close')
-}
-
-const deleteConfirm = () => {
-  if (write_project.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
-}
-
 const RefSiteInfoFile = ref()
 const newFile = ref<File | ''>('')
 const editFile = ref<number | ''>('')
@@ -112,6 +87,37 @@ const fileControl = (payload: any) => {
 
   if (payload.delFile) delFile.value = payload.delFile
   else delFile.value = ''
+}
+
+const onSubmit = (event: Event) => {
+  if (isValidate(event)) {
+    validated.value = true
+  } else {
+    if (write_project.value) multiSubmit({ ...form })
+    else refAlertModal.value.callModal()
+  }
+}
+
+const multiSubmit = (payload: Site) => {
+  emit('multi-submit', {
+    ...payload,
+    newFile: newFile.value,
+    editFile: editFile.value,
+    cngFile: cngFile.value,
+    delFile: delFile.value,
+  })
+  emit('close')
+}
+
+const deleteObject = () => {
+  emit('on-delete', { pk: props.site?.pk, project: props.site?.project })
+  refDelModal.value.close()
+  emit('close')
+}
+
+const deleteConfirm = () => {
+  if (write_project.value) refDelModal.value.callModal()
+  else refAlertModal.value.callModal()
 }
 
 const dataSetup = () => {
