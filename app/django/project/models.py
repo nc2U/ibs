@@ -127,6 +127,40 @@ class Site(models.Model):
         verbose_name_plural = '04. 사업부지 목록'
 
 
+def get_info_file(instance, filename):
+    slug = instance.site_contract.project.issue_project.slug
+    return os.path.join('sites', f'{slug}', 'reg_info', filename)
+
+
+class SiteInfoFile(models.Model):
+    site_contract = models.ForeignKey(Site, on_delete=models.CASCADE, default=None, verbose_name='등기사항전부증명서',
+                                      related_name='site_info_files')
+    file = models.FileField(upload_to=get_info_file, verbose_name='파일경로')
+    file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
+    file_type = models.CharField('타입', max_length=80, blank=True)
+    file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                             null=True, blank=True, verbose_name='사용자')
+
+    def __str__(self):
+        return self.file_name
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.file_name:
+            self.file_name = self.file.name.split('/')[-1]
+            mime = magic.Magic(mime=True)
+            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
+            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
+            self.file.seek(file_pos)  # 원래 위치로 복구
+            self.file_size = self.file.size
+        super().save(*args, **kwargs)
+
+
+file_cleanup_signals(SiteInfoFile)  # 파일 인스턴스 직접 삭제시
+related_file_cleanup(Site, related_name='site_info_files', file_field_name='file')  # 연관 모델 삭제 시
+
+
 class SiteOwner(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트')
     owner = models.CharField('소유자', max_length=20, db_index=True)
@@ -213,13 +247,13 @@ class SiteContract(models.Model):
 
 def get_cont_file(instance, filename):
     slug = instance.site_contract.project.issue_project.slug
-    return os.path.join('sites_cont', f'{slug}', filename)
+    return os.path.join('sites', f'{slug}', 'contract', filename)
 
 
 class SiteContractFile(models.Model):
     site_contract = models.ForeignKey(SiteContract, on_delete=models.CASCADE, default=None, verbose_name='계약서',
                                       related_name='site_cont_files')
-    file = models.FileField(upload_to=get_cont_file, verbose_name='파일경로')
+    file = models.FileField(upload_to=get_cont_file, verbose_name='파일경로', max_length=150)
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
