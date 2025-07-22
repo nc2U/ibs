@@ -128,7 +128,7 @@ class Site(models.Model):
 
 
 def get_info_file(instance, filename):
-    slug = instance.site_contract.project.issue_project.slug
+    slug = instance.site.project.issue_project.slug
     return os.path.join('sites', f'{slug}', 'reg_info', filename)
 
 
