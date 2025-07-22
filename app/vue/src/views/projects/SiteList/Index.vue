@@ -58,13 +58,16 @@ const onUpdate = (pk: number, payload: { form: FormData; page?: number; search?:
   siteStore.updateSite(pk, payload)
 
 const multiSubmit = (payload: Site) => {
+  const { page, search } = dataFilter.value
   const { pk, ...rest } = payload as { [key: string]: any }
 
   const form = new FormData()
+  for (const key in rest) {
+    const value = rest[key]
 
-  for (const key in rest) form.set(key, rest[key])
-
-  const { page, search } = dataFilter.value
+    // null, undefined, 빈 문자열은 제외 (숫자 필드 오류 방지 목적)
+    if (value !== null && value !== undefined && value !== '') form.set(key, value)
+  }
 
   const submitData = { form, page, search }
 
