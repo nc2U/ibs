@@ -133,8 +133,8 @@ def get_info_file(instance, filename):
 
 
 class SiteInfoFile(models.Model):
-    site_contract = models.ForeignKey(Site, on_delete=models.CASCADE, default=None, verbose_name='등기사항전부증명서',
-                                      related_name='site_info_files')
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, default=None, verbose_name='등기사항전부증명서',
+                             related_name='site_info_files')
     file = models.FileField(upload_to=get_info_file, verbose_name='파일경로')
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=80, blank=True)
