@@ -3,7 +3,7 @@ from django.contrib.humanize.templatetags.humanize import intcomma
 from import_export.admin import ImportExportMixin
 
 from .models import (Project, ProjectIncBudget, ProjectOutBudget,
-                     Site, SiteOwner, SiteOwnshipRelationship, SiteContract)
+                     Site, SiteOwner, SiteOwnshipRelationship, SiteContract, SiteInfoFile, SiteContractFile)
 
 
 class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -30,6 +30,11 @@ class ProjectOutBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'account_d2', 'account_d3')
 
 
+class InfoFileAdmin(admin.TabularInline):
+    model = SiteInfoFile
+    extra = 0
+
+
 class SiteAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = (
         'order', 'project', '__str__', 'site_purpose', 'official_area',
@@ -38,6 +43,7 @@ class SiteAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('order', 'official_area', 'returned_area', 'notice_price', 'dup_issue_date')
     search_fields = ('district', 'lot_number',)
     list_filter = ('project', 'site_purpose')
+    inlines = (InfoFileAdmin,)
 
 
 class SiteOwnerAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -55,12 +61,18 @@ class SiteOwnshipRelationshipAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('site__project',)
 
 
+class ContFileAdmin(admin.TabularInline):
+    model = SiteContractFile
+    extra = 0
+
+
 class SiteContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = (
         'id', 'owner', 'formatted_price', 'contract_date', 'acc_bank', 'acc_number', 'acc_owner', 'remain_pay_is_paid',
         'ownership_completion')
     list_display_links = ('owner',)
     list_filter = ('owner__project',)
+    inlines = (ContFileAdmin,)
 
     def formatted_price(self, obj):
         price = intcomma(obj.total_price)
