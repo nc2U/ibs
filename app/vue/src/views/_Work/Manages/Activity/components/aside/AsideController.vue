@@ -54,6 +54,11 @@ watch(
   { deep: true },
 )
 
+const pickSort = (sort: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9') => {
+  actFilter.sort = [sort]
+  filterActivity()
+}
+
 const route = useRoute()
 const logStore = useLogging()
 const filterActivity = () => {
@@ -144,18 +149,25 @@ onBeforeMount(async () => {
       <CFormCheck
         v-model="actFilter.sort"
         value="1"
-        label="업무"
         id="issue-filter"
         :disabled="(actFilter.sort as any[])?.length === 2 && (actFilter.sort as any[])[0] === '1'"
         @change="syncComment"
       />
-      <CFormCheck v-model="actFilter.sort" value="3" label="변경묶음" id="changeset-filter" />
-      <CFormCheck v-model="actFilter.sort" value="4" label="공지" id="news-filter" />
-      <CFormCheck v-model="actFilter.sort" value="5" label="문서" id="docs-filter" />
-      <CFormCheck v-model="actFilter.sort" value="6" label="파일" id="file-filter" />
-      <CFormCheck v-model="actFilter.sort" value="7" label="위키 편집" id="wiki-filter" />
-      <CFormCheck v-model="actFilter.sort" value="8" label="글" id="message-filter" />
-      <CFormCheck v-model="actFilter.sort" value="9" label="작업시간" id="spent-time-filter" />
+      <a href="javascript:void(0)" @click="pickSort('1')" class="ml-2">업무</a> <br />
+      <CFormCheck v-model="actFilter.sort" value="3" id="changeset-filter" />
+      <a href="javascript:void(0)" @click="pickSort('3')" class="ml-2">변경묶음</a> <br />
+      <CFormCheck v-model="actFilter.sort" value="4" id="news-filter" />
+      <a href="javascript:void(0)" @click="pickSort('4')" class="ml-2">공지</a> <br />
+      <CFormCheck v-model="actFilter.sort" value="5" id="docs-filter" />
+      <a href="javascript:void(0)" @click="pickSort('5')" class="ml-2">문서</a> <br />
+      <CFormCheck v-model="actFilter.sort" value="6" id="file-filter" />
+      <a href="javascript:void(0)" @click="pickSort('6')" class="ml-2">파일</a> <br />
+      <CFormCheck v-model="actFilter.sort" value="7" id="wiki-filter" />
+      <a href="javascript:void(0)" @click="pickSort('7')" class="ml-2">위키 편집</a> <br />
+      <CFormCheck v-model="actFilter.sort" value="8" id="message-filter" />
+      <a href="javascript:void(0)" @click="pickSort('8')" class="ml-2">글</a> <br />
+      <CFormCheck v-model="actFilter.sort" value="9" id="spent-time-filter" />
+      <a href="javascript:void(0)" @click="pickSort('9')" class="ml-2">작업시간</a>
     </CCol>
   </CRow>
 
