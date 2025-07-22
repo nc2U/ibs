@@ -307,6 +307,8 @@ onBeforeMount(() => dataSetup())
           </CCol>
         </CRow>
 
+        {{ newFile }}
+
         <SiteInfoFiles
           ref="RefSiteInfoFile"
           :info-files="form.site_info_files"

@@ -94,10 +94,10 @@ export const useSite = defineStore('site', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const createSite = (payload: Site & { page?: number; search?: string }) => {
-    const { page, search, ...formData } = payload
+  const createSite = (payload: { form: FormData; page?: number; search?: string }) => {
+    const { page, search, form } = payload
     api
-      .post(`/site/`, formData)
+      .post(`/site/`, form)
       .then(res => {
         fetchSiteList({ project: res.data.project, page, search })
         message()
@@ -105,10 +105,10 @@ export const useSite = defineStore('site', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const updateSite = (payload: { page?: number; search?: string } & Site) => {
-    const { pk, page, search, ...formData } = payload
+  const updateSite = (pk: number, payload: { form: FormData; page?: number; search?: string }) => {
+    const { page, search, form } = payload
     api
-      .put(`/site/${pk}/`, formData)
+      .put(`/site/${pk}/`, form)
       .then(res => {
         fetchSiteList({ project: res.data.project, page, search })
         message()

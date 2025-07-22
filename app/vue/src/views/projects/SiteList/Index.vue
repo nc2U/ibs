@@ -51,18 +51,24 @@ const pageSelect = (page: number) => {
   listControl.value.listFiltering(page)
 }
 
-const onCreate = (payload: Site & { page?: number; search?: string }) =>
+const onCreate = (payload: { form: FormData; page?: number; search?: string }) =>
   siteStore.createSite(payload)
 
-const onUpdate = (payload: Site & { page?: number; search?: string }) =>
-  siteStore.updateSite(payload)
+const onUpdate = (pk: number, payload: { form: FormData; page?: number; search?: string }) =>
+  siteStore.updateSite(pk, payload)
 
 const multiSubmit = (payload: Site) => {
+  const { pk, ...rest } = payload as { [key: string]: any }
+
+  const form = new FormData()
+
+  for (const key in rest) form.set(key, rest[key])
+
   const { page, search } = dataFilter.value
 
-  const submitData = { ...payload, page, search }
+  const submitData = { form, page, search }
 
-  if (payload.pk) onUpdate(submitData)
+  if (pk) onUpdate(pk, submitData)
   else onCreate(submitData)
 }
 
