@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.humanize.templatetags.humanize import intcomma
 from import_export.admin import ImportExportMixin
 
-from .models import (Project, ProjectIncBudget, ProjectOutBudget,
-                     Site, SiteOwner, SiteOwnshipRelationship, SiteContract, SiteInfoFile, SiteContractFile)
+from .models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
+                     SiteOwner, SiteOwnshipRelationship, SiteContract, SiteContractFile)
 
 
 class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
