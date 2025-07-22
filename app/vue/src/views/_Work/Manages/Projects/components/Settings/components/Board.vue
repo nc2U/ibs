@@ -170,7 +170,7 @@ onBeforeMount(async () => {
   </CRow>
 
   <FormModal ref="RefForumForm">
-    <template #header>새 게시판</template>
+    <template #header><span v-if="!form.pk">새</span> 게시판</template>
     <template #default>
       <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
         <CModalBody class="text-body">
@@ -187,12 +187,15 @@ onBeforeMount(async () => {
             </CCol>
           </CRow>
           <CRow class="mb-3 required">
-            <CFormLabel for="description" class="col-sm-3 col-form-label"> 설명</CFormLabel>
+            <CFormLabel for="description" class="col-sm-3 col-form-label required">
+              설명
+            </CFormLabel>
             <CCol sm="9">
               <CFormInput
                 v-model="form.description"
                 id="description"
                 maxlength="255"
+                required
                 placeholder="게시판에 대한 설명"
               />
             </CCol>
@@ -211,7 +214,7 @@ onBeforeMount(async () => {
         </CModalBody>
         <CModalFooter>
           <v-btn :color="btnLight" size="small" @click="RefForumForm.close()"> 닫기</v-btn>
-          <v-btn type="submit" color="primary" size="small">확인</v-btn>
+          <v-btn type="submit" :color="form.pk ? 'success' : 'primary'" size="small">확인</v-btn>
         </CModalFooter>
       </CForm>
     </template>
