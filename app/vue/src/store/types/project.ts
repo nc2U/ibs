@@ -195,6 +195,17 @@ export interface Site {
   note: string
   dup_issue_date: string | null
   owners?: SimpleOwner[]
+  site_info_files: {
+    pk: number
+    file: string
+    file_name: string
+    file_size: number
+    created: string
+    user: {
+      pk: number
+      username: string
+    }
+  }[]
 }
 
 type OwnSort = '개인' | '법인' | '국공유지'

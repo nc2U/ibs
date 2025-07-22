@@ -1,16 +1,17 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, onBeforeMount } from 'vue'
+import { ref, reactive, computed, onBeforeMount, type PropType } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { useSite } from '@/store/pinia/project_site'
 import { isValidate } from '@/utils/helper'
-import { type Site } from '@/store/types/project'
+import { type Project, type Site } from '@/store/types/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
+import SiteInfoFiles from './SiteInfoFiles.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const props = defineProps({ site: { type: Object, default: null } })
+const props = defineProps({ site: { type: Object as PropType<Site>, default: null } })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close'])
 
@@ -28,17 +29,18 @@ const form = reactive({
   site_purpose: '',
   official_area: '',
   returned_area: null as number | null,
-  notice_price: null,
+  notice_price: null as number | null,
   rights_a: '',
   rights_b: '',
   dup_issue_date: null as null | string,
   note: '',
+  site_info_files: [] as any[],
 })
 
 const projectStore = useProject()
 const initProjId = computed(() => projectStore.initProjId)
-const project = computed(() => projectStore.project?.pk || initProjId.value)
-const isReturned = computed(() => projectStore.project?.is_returned_area)
+const project = computed(() => (projectStore.project as Project)?.pk || initProjId.value)
+const isReturned = computed(() => (projectStore.project as Project)?.is_returned_area)
 const siteStore = useSite()
 
 const formsCheck = computed(() => {
@@ -56,7 +58,12 @@ const formsCheck = computed(() => {
     const k = form.dup_issue_date === props.site.dup_issue_date
     const l = form.note === props.site.note
 
-    return a && b && c && d && e && f && g && h && i && j && k && l
+    const m = !newFile.value
+    const n = !editFile.value
+    const o = !cngFile.value
+    const p = !delFile.value
+
+    return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p
   } else return false
 })
 
@@ -75,7 +82,7 @@ const multiSubmit = (payload: Site) => {
 }
 
 const deleteObject = () => {
-  emit('on-delete', { pk: props.site.pk, project: props.site.project })
+  emit('on-delete', { pk: props.site?.pk, project: props.site?.project })
   refDelModal.value.close()
   emit('close')
 }
@@ -83,6 +90,28 @@ const deleteObject = () => {
 const deleteConfirm = () => {
   if (write_project.value) refDelModal.value.callModal()
   else refAlertModal.value.callModal()
+}
+
+const RefSiteInfoFile = ref()
+const newFile = ref<File | ''>('')
+const editFile = ref<number | ''>('')
+const cngFile = ref<File | ''>('')
+const delFile = ref<number | ''>('')
+
+const fileControl = (payload: any) => {
+  if (payload.newFile) newFile.value = payload.newFile
+  else newFile.value = ''
+
+  if (payload.editFile) {
+    editFile.value = payload.editFile
+    cngFile.value = payload.cngFile
+  } else {
+    editFile.value = ''
+    cngFile.value = ''
+  }
+
+  if (payload.delFile) delFile.value = payload.delFile
+  else delFile.value = ''
 }
 
 const dataSetup = () => {
@@ -100,6 +129,7 @@ const dataSetup = () => {
     form.rights_b = props.site.rights_b
     form.dup_issue_date = props.site.dup_issue_date
     form.note = props.site.note
+    form.site_info_files = props.site.site_info_files
   } else {
     form.project = project.value
     form.order = siteStore.siteCount + 1
@@ -270,6 +300,13 @@ onBeforeMount(() => dataSetup())
             </CRow>
           </CCol>
         </CRow>
+
+        <SiteInfoFiles
+          ref="RefSiteInfoFile"
+          :info-files="form.site_info_files"
+          :deleted="delFile || undefined"
+          @file-control="fileControl"
+        />
       </div>
     </CModalBody>
 
