@@ -160,40 +160,36 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        sites = self.initial_data.get('sites', [])
         site_owner = SiteOwner.objects.create(**validated_data)
-        if 'sites' in self.initial_data:
-            sites = self.initial_data.get('sites')
-            # for site in sites:
-            #     pk = site.get('pk')
-            #     ownership_ratio = site.get('ownership_ratio')
-            #     owned_area = site.get('owned_area')
-            #     acquisition_date = site.get('acquisition_date')
-            #     site_instance = Site.objects.get(pk=pk)
-            #     SiteOwnshipRelationship(site=site_instance, site_owner=site_owner, ownership_ratio=ownership_ratio,
-            #                             owned_area=owned_area, acquisition_date=acquisition_date).save()
-            for site in sites:
-                site_instance = Site.objects.get(pk=site)
-                SiteOwnshipRelationship(site=site_instance, site_owner=site_owner).save()
 
-        site_owner.save()
+        for site in sites:
+            site_instance = Site.objects.get(pk=site)
+            SiteOwnshipRelationship.objects.create(site=site_instance, site_owner=site_owner)
+
         return site_owner
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        sites = self.initial_data.get('sites')
-        relations = SiteOwnshipRelationship.objects.filter(site_owner=instance)  # .delete()
-        stored_sites = []
-        for r in relations:
-            if r.site.pk in sites:
-                stored_sites.append(r.site.pk)
-            else:
-                r.delete()
-        for site in sites:
-            if site not in stored_sites:
-                new_site = Site.objects.get(pk=site)
-                SiteOwnshipRelationship(site=new_site, site_owner=instance).save()
+        sites = self.initial_data.get('sites', [])
+        existing_relations = SiteOwnshipRelationship.objects.filter(site_owner=instance)
 
-        instance.__dict__.update(**validated_data)
+        existing_site_pks = set(r.site.pk for r in existing_relations)
+        incoming_site_pks = set(sites)
+
+        # 삭제할 관계
+        for relation in existing_relations:
+            if relation.site.pk not in incoming_site_pks:
+                relation.delete()
+
+        # 새로 추가할 관계
+        for site_pk in incoming_site_pks - existing_site_pks:
+            site = Site.objects.get(pk=site_pk)
+            SiteOwnshipRelationship.objects.create(site=site, site_owner=instance)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
         instance.save()
         return instance
 
