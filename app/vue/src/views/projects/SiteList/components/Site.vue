@@ -53,6 +53,20 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
       </v-tooltip>
     </CTableDataCell>
     <CTableDataCell>
+      <span v-if="!!site.site_info_files.length" class="pointer">
+        <a :href="site.site_info_files[0].file" target="_blank">
+          <v-icon icon="mdi-download-box" color="primary" />
+        </a>
+        <v-tooltip activator="parent" location="top">
+          {{ site.site_info_files[0]?.file_name }} 다운로드
+        </v-tooltip>
+      </span>
+      <span v-else>
+        <v-icon icon="mdi-download-box-outline" color="secondary" />
+        <v-tooltip activator="parent" location="top">미등록</v-tooltip>
+      </span>
+    </CTableDataCell>
+    <CTableDataCell>
       {{ site.dup_issue_date }}
     </CTableDataCell>
     <CTableDataCell v-if="write_project_site">
