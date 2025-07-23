@@ -149,7 +149,7 @@ class SiteSerializer(serializers.ModelSerializer):
         if new_file:
             SiteInfoFile.objects.create(site=instance, file=new_file, user=user)
 
-        edit_file = data.get('editFile', None)  # pk of file to edit
+        edit_file = data.get('editFile', None)  # pk of a file to edit
         cng_file = data.get('cngFile', None)  # new file to replace
 
         if edit_file and cng_file:

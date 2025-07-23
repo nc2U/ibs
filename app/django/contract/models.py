@@ -69,7 +69,7 @@ class ContractFile(models.Model):
         return self.file_name
 
     def save(self, *args, **kwargs):
-        if self.file and not self.file_name:
+        if self.file:
             self.file_name = self.file.name.split('/')[-1]
             mime = magic.Magic(mime=True)
             file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
