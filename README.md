@@ -155,6 +155,7 @@ pnpm build # npm run build (or) yarn build
 #### Requirement
 
 - Kubernetes cluster
+- Helm
 - CI/CD server with helm installed
 - NFS Storage server(ip)
 - domain(to deploy)
@@ -196,6 +197,46 @@ Also, enable connection via ssh and check the accessible IP or domain.
 
 Secure the domain to be used for this project and connect each cluster node to the domain.
 
+##### installing the cert-manager Chart
+
+Full installation instructions, including details on how to configure extra functionality in cert-manager can be found
+in the [installation docs](https://cert-manager.io/docs/releases/).
+
+Before installing the chart, you must first install the cert-manager CustomResourceDefinition resources. This is
+performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed
+custom resources.
+
+```bash
+$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.crds.yaml
+```
+
+To install the chart with the release name `cert-manager`:
+
+```bash
+## Add the Jetstack Helm repository
+
+$ helm repo add jetstack https://charts.jetstack.io --force-update
+
+## Install the cert-manager helm chart
+
+$ helm install cert-manager --namespace cert-manager --version v1.18.2 jetstack/cert-manager --create-namespace
+```
+
+##### installing the ingress-nginx Chart
+
+Get repo info
+
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+```
+
+install Chart
+
+```bash
+helm install [RELEASE_NAME] -n ingress-nginx ingress-nginx/ingress-nginx --create-namespace
+```
+
 ##### GitHub & DockerHub account, Slack incoming url
 
 Use an existing GitHub account or create a new one and fork this project.
@@ -232,7 +273,6 @@ Kubernetes `watch` command on the cicd server to check whether the relevant PODs
 
 When all database pods operate normally,
 Click `_initial [Prod Step2]` at the bottom of all workflows in the action tab.
-
 
 #### 3. Or Manually Deploy
 
@@ -336,7 +376,6 @@ or Svelte application deploy -> node build
 ```bash
 pnpm build # npm run build (or) yarn build
 ```
-
 
 #### Reference
 
