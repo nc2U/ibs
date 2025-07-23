@@ -129,10 +129,10 @@ class SiteSerializer(serializers.ModelSerializer):
         site = Site.objects.create(**validated_data)
         site.save()
 
-        new_file = self.initial_data.get('newFile', None)
+        request = self.context['request']
+        new_file = request.data.get('newFile', None)
         if new_file:
-            user = self.context['request'].user
-            info_file = SiteInfoFile(site=site, file=new_file, user=user)
+            info_file = SiteInfoFile(site=site, file=new_file, user=request.user)
             info_file.save()
         return site
 

@@ -35,6 +35,7 @@ import ContNavigation from './ContNavigation.vue'
 import ContController from './ContController.vue'
 import ContractorAlert from './ContractorAlert.vue'
 import ContFiles from './ContFiles.vue'
+import AttatchFile from '@/components/AttatchFile/Index.vue'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -429,7 +430,7 @@ const RefContFile = ref()
 const newFile = ref<File | ''>('')
 const editFile = ref<number | ''>('')
 const cngFile = ref<File | ''>('')
-const delFile = ref<number | ''>('')
+const delFile = ref<number | undefined>(undefined)
 
 const modalAction = () => {
   emit('on-submit', {
@@ -444,7 +445,7 @@ const modalAction = () => {
   newFile.value = ''
   editFile.value = ''
   cngFile.value = ''
-  delFile.value = ''
+  delFile.value = undefined
   RefContFile.value.doneEdit()
 }
 
@@ -461,7 +462,7 @@ const fileControl = (payload: any) => {
   }
 
   if (payload.delFile) delFile.value = payload.delFile
-  else delFile.value = ''
+  else delFile.value = undefined
 }
 
 defineExpose({ formDataReset })
@@ -1053,8 +1054,17 @@ onBeforeRouteLeave(() => formDataReset())
         :is-dark="isDark as boolean"
         :status="form.status as string"
         :contract-files="form.contract_files"
-        :deleted="delFile || undefined"
+        :deleted="delFile"
         @cont-file-control="fileControl"
+      />
+
+      <AttatchFile
+        v-show="isContract"
+        label-name="계약서 파일"
+        :disabled="!form.status"
+        :attatch-files="form.contract_files"
+        :deleted="delFile"
+        @file-control="fileControl"
       />
     </CCardBody>
 

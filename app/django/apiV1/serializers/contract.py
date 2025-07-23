@@ -405,10 +405,10 @@ class ContractSetSerializer(serializers.ModelSerializer):
         # 1. 계약정보 테이블 입력
         contract = Contract.objects.create(**validated_data)
         contract.save()
-        new_file = self.initial_data.get('newFile', None)
+        request = self.context['request']
+        new_file = request.data.get('newFile', None)
         if new_file:
-            user = self.context['request'].user
-            ContractFile.objects.create(contract=contract, file=new_file, user=user)
+            ContractFile.objects.create(contract=contract, file=new_file, user=request.user)
 
         # 2. 계약 유닛 연결
         unit_pk = self.initial_data.get('key_unit')
@@ -538,13 +538,15 @@ class ContractSetSerializer(serializers.ModelSerializer):
         instance.order_group = validated_data.get('order_group', instance.order_group)
         instance.unit_type = validated_data.get('unit_type', instance.unit_type)
 
-        new_file = self.initial_data.get('newFile', None)
+        data = self.context['request'].data
+        user = self.context['request'].user
+
+        new_file = data.get('newFile', None)
         if new_file:
-            user = self.context['request'].user
             ContractFile.objects.create(contract=instance, file=new_file, user=user)
 
-        edit_file = self.initial_data.get('editFile', None)  # pk of file to edit
-        cng_file = self.initial_data.get('cngFile', None)  # change file
+        edit_file = data.get('editFile', None)  # pk of file to edit
+        cng_file = data.get('cngFile', None)  # change file
 
         if edit_file and cng_file:
             try:
@@ -566,7 +568,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
                 # Raise a generic error message
                 raise serializers.ValidationError('An error occurred while replacing the file.')
 
-        del_file = self.initial_data.get('delFile', None)
+        del_file = data.get('delFile', None)
         if del_file:
             try:
                 file_to_delete = ContractFile.objects.get(pk=del_file)
@@ -575,8 +577,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"File with ID {del_file} does not exist.")
 
         # 1-2. 동호수 변경 여부 확인 및 변경 사항 적용
-        unit_pk = self.initial_data.get('key_unit')  # key_unit => pk
-        houseunit_pk = self.initial_data.get('houseunit')  # house_unit => pk
+        unit_pk = data.get('key_unit')  # key_unit => pk
+        houseunit_pk = data.get('houseunit')  # house_unit => pk
 
         key_unit = KeyUnit.objects.get(pk=unit_pk)
         house_unit = HouseUnit.objects.get(pk=houseunit_pk) if houseunit_pk else None
@@ -655,14 +657,14 @@ class ContractSetSerializer(serializers.ModelSerializer):
             cont_price.save()
 
         # 5. 계약자 정보 테이블 입력
-        contractor_name = self.initial_data.get('name')
-        birth_date = self.initial_data.get('birth_date', None)
-        contractor_gender = self.initial_data.get('gender')
-        qualification = self.initial_data.get('qualification', None)
-        contractor_status = self.initial_data.get('status')
-        reservation_date = self.initial_data.get('reservation_date', None)
-        contract_date = self.initial_data.get('contract_date', None)
-        contractor_note = self.initial_data.get('note')
+        contractor_name = data.get('name')
+        birth_date = data.get('birth_date', None)
+        contractor_gender = data.get('gender')
+        qualification = data.get('qualification', None)
+        contractor_status = data.get('status')
+        reservation_date = data.get('reservation_date', None)
+        contract_date = data.get('contract_date', None)
+        contractor_note = data.get('note')
 
         contractor = Contractor.objects.get(contract=instance)
         contractor.name = contractor_name
@@ -676,14 +678,14 @@ class ContractSetSerializer(serializers.ModelSerializer):
         contractor.save()
 
         # 6. 계약자 주소 테이블 입력
-        address_id_zipcode = self.initial_data.get('id_zipcode')
-        address_id_address1 = self.initial_data.get('id_address1')
-        address_id_address2 = self.initial_data.get('id_address2')
-        address_id_address3 = self.initial_data.get('id_address3')
-        address_dm_zipcode = self.initial_data.get('dm_zipcode')
-        address_dm_address1 = self.initial_data.get('dm_address1')
-        address_dm_address2 = self.initial_data.get('dm_address2')
-        address_dm_address3 = self.initial_data.get('dm_address3')
+        address_id_zipcode = data.get('id_zipcode')
+        address_id_address1 = data.get('id_address1')
+        address_id_address2 = data.get('id_address2')
+        address_id_address3 = data.get('id_address3')
+        address_dm_zipcode = data.get('dm_zipcode')
+        address_dm_address1 = data.get('dm_address1')
+        address_dm_address2 = data.get('dm_address2')
+        address_dm_address3 = data.get('dm_address3')
 
         contractor_address = ContractorAddress.objects.get(contractor=contractor)
         contractor_address.id_zipcode = address_id_zipcode
@@ -697,10 +699,10 @@ class ContractSetSerializer(serializers.ModelSerializer):
         contractor_address.save()
 
         # 7. 계약자 연락처 테이블 입력
-        contact_cell_phone = self.initial_data.get('cell_phone')
-        contact_home_phone = self.initial_data.get('home_phone')
-        contact_other_phone = self.initial_data.get('other_phone')
-        contact_email = self.initial_data.get('email')
+        contact_cell_phone = data.get('cell_phone')
+        contact_home_phone = data.get('home_phone')
+        contact_other_phone = data.get('other_phone')
+        contact_email = data.get('email')
 
         contractor_contact = ContractorContact.objects.get(contractor=contractor)
         contractor_contact.cell_phone = contact_cell_phone
@@ -710,22 +712,22 @@ class ContractSetSerializer(serializers.ModelSerializer):
         contractor_contact.save()
 
         # 8. 계약금 -- 수납 정보 테이블 입력
-        if self.initial_data.get('deal_date'):
-            payment_id = self.initial_data.get('payment')
-            project = self.initial_data.get('project')
+        if data.get('deal_date'):
+            payment_id = data.get('payment')
+            project = data.get('project')
             payment_project = Project.objects.get(pk=project)
-            order_group_sort = int(self.initial_data.get('order_group_sort'))
+            order_group_sort = int(data.get('order_group_sort'))
             payment_account_d2 = ProjectAccountD2.objects.get(pk=order_group_sort)
             acc_d3 = 1 if order_group_sort == 1 else 4  # 분담금일 경우 1, 분양대금일 경우 4
             payment_account_d3 = ProjectAccountD3.objects.get(pk=acc_d3)
-            ins_order = self.initial_data.get('installment_order')
+            ins_order = data.get('installment_order')
             payment_installment_order = InstallmentPaymentOrder.objects.get(pk=ins_order)
-            payment_serial_number = self.initial_data.get('serial_number')
-            payment_trader = self.initial_data.get('trader')
-            bank_account = self.initial_data.get('bank_account')
+            payment_serial_number = data.get('serial_number')
+            payment_trader = data.get('trader')
+            bank_account = data.get('bank_account')
             payment_bank_account = ProjectBankAccount.objects.get(pk=bank_account)
-            payment_income = self.initial_data.get('income')
-            payment_deal_date = self.initial_data.get('deal_date')
+            payment_income = data.get('income')
+            payment_deal_date = data.get('deal_date')
 
             if payment_id:
                 update_payment = ProjectCashBook.objects.get(pk=payment_id)
