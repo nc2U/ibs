@@ -6,7 +6,7 @@ import { isValidate } from '@/utils/helper'
 import { type Project, type Site } from '@/store/types/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
-import SiteInfoFiles from './SiteInfoFiles.vue'
+import AttatchFile from '@/components/AttatchFile/Index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -71,7 +71,7 @@ const RefSiteInfoFile = ref()
 const newFile = ref<File | ''>('')
 const editFile = ref<number | ''>('')
 const cngFile = ref<File | ''>('')
-const delFile = ref<number | ''>('')
+const delFile = ref<number | undefined>(undefined)
 
 const fileControl = (payload: any) => {
   if (payload.newFile) newFile.value = payload.newFile
@@ -86,7 +86,7 @@ const fileControl = (payload: any) => {
   }
 
   if (payload.delFile) delFile.value = payload.delFile
-  else delFile.value = ''
+  else delFile.value = undefined
 }
 
 const onSubmit = (event: Event) => {
@@ -307,10 +307,11 @@ onBeforeMount(() => dataSetup())
           </CCol>
         </CRow>
 
-        <SiteInfoFiles
+        <AttatchFile
           ref="RefSiteInfoFile"
-          :info-files="form.site_info_files"
-          :deleted="delFile || undefined"
+          label-name="등기부 등본"
+          :attatch-files="form.site_info_files"
+          :deleted="delFile"
           @file-control="fileControl"
         />
       </div>

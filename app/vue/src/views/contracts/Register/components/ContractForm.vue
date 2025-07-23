@@ -1050,6 +1050,7 @@ onBeforeRouteLeave(() => formDataReset())
       <AttatchFile
         ref="RefContFile"
         v-show="isContract"
+        label-class="col-sm-2 col-lg-1"
         label-name="계약서 파일"
         :disabled="!form.status"
         :attatch-files="form.contract_files"

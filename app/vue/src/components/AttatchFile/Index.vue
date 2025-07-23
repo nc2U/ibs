@@ -13,6 +13,7 @@ interface AttatchFile {
 }
 
 const props = defineProps({
+  labelClass: { type: String, default: 'col-sm-2' },
   labelName: { type: String, default: '첨부파일' },
   disabled: { type: Boolean, default: false },
   attatchFiles: { type: Array as PropType<AttatchFile[]>, default: () => [] },
@@ -82,7 +83,7 @@ const delFileSubmit = () => {
 
 <template>
   <CRow class="my-3 py-2" :class="{ 'bg-light': !isDark }">
-    <CFormLabel class="col-sm-2 col-lg-1 col-form-label">{{ labelName }}</CFormLabel>
+    <CFormLabel :class="labelClass" class="col-form-label">{{ labelName }}</CFormLabel>
     <CCol sm="10">
       <template v-if="!!attatchFiles.length">
         <CRow v-for="file in attatchFiles" :key="file.pk" class="mb-2" style="padding-top: 6px">
