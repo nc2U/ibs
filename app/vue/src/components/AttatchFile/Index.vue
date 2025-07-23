@@ -10,9 +10,6 @@ interface AttatchFile {
   file_size: number
   created: string
   user: { pk: number; username: string }
-  cngFile?: File | null
-  del?: boolean
-  edit?: boolean
 }
 
 const props = defineProps({
