@@ -34,7 +34,6 @@ import Multiselect from '@vueform/multiselect'
 import ContNavigation from './ContNavigation.vue'
 import ContController from './ContController.vue'
 import ContractorAlert from './ContractorAlert.vue'
-import ContFiles from './ContFiles.vue'
 import AttatchFile from '@/components/AttatchFile/Index.vue'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -1048,18 +1047,10 @@ onBeforeRouteLeave(() => formDataReset())
         </CCol>
       </CRow>
 
-      <ContFiles
+      <AttatchFile
         ref="RefContFile"
         v-show="isContract"
-        :is-dark="isDark as boolean"
-        :status="form.status as string"
-        :contract-files="form.contract_files"
-        :deleted="delFile"
-        @cont-file-control="fileControl"
-      />
-
-      <AttatchFile
-        v-show="isContract"
+        label-class="col-sm-2 col-lg-1"
         label-name="계약서 파일"
         :disabled="!form.status"
         :attatch-files="form.contract_files"
