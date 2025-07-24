@@ -57,10 +57,6 @@ ingress:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      if ($request_uri ~ "^/.well-known/acme-challenge/") {
-        return 200;
-      }
   hosts:
     - host: chart-example.local
       paths:
