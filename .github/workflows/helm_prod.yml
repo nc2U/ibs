@@ -35,7 +35,7 @@ jobs:
             cd ${{ secrets.NFS_PATH }}/prod && \
             mkdir -p ./app/django/media && \
             echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 775 ./app/django
-            
+
       # 👇 복사 전에 삭제!
       - name: Clean existing helm dir on CI/CD server
         uses: garygrossgarten/github-action-ssh@release
@@ -74,7 +74,7 @@ jobs:
                   --set nfs.server=${{ secrets.CICD_HOST }} \
                   --set nfs.path=/mnt/nfs-subdir-external-provisioner
             fi
-            cd ${{ secrets.CICD_PATH }}/dev
+            cd ${{ secrets.CICD_PATH }}/prod
             kubectl apply -f deploy/kubectl/class-roles; cd deploy/helm
             
             helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values.yaml \
