@@ -61,7 +61,7 @@ cluster-issuer.yml
 certificate.yml
 
 app/repos
-values_custom.yaml
+*custom.yaml
 
 /coverage
 
