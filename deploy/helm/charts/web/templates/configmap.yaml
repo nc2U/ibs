@@ -9,9 +9,8 @@ data:
   DEFAULT_FROM_EMAIL: "{{ .Values.global.defaultFromEmail }}"
   NAMESPACE: "{{ .Release.Namespace }}"
 
-
   {{- with  .Values.imageConfigMaps }}
-{{/*  AWS_STORAGE_BUCKET_NAME: "{{ .awsStorageBucketName }}"*/}}
+  {{/*  AWS_STORAGE_BUCKET_NAME: "{{ .awsStorageBucketName }}"*/}}
   DJANGO_SETTINGS_MODULE: "{{ .djangoSettingsModule }}"
   {{- end }}
 kind: ConfigMap
