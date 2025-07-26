@@ -23,7 +23,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
 
     kubectl apply -f ../kubectl/class-roles;
 
-    helm upgrade ${DATABASE_USER} . -f ./prod-values-custom.yaml \
+    helm upgrade ${DATABASE_USER} . -f ./values-prod-custom.yaml \
       --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m
   else
     echo 'prod-values-custom.yaml 파일이 없습니다.'
