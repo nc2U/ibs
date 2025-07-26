@@ -9,21 +9,25 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
   source "$SCRIPT_DIR/.env"
   set +o allexport
 
-  if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
-    helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
-  fi
-  if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
-    helm upgrade --install nfs-subdir-external-provisioner \
-      nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
-        -n kube-system \
-        --set nfs.server=${CICD_HOST} \
-        --set nfs.path=/mnt/nfs-subdir-external-provisioner
-  fi
+  if [ -e "./dev-values-custom.yaml" ] then
+    if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
+        helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+    fi
+    if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
+      helm upgrade --install nfs-subdir-external-provisioner \
+        nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+          -n kube-system \
+          --set nfs.server=${CICD_HOST} \
+          --set nfs.path=/mnt/nfs-subdir-external-provisioner
+    fi
 
-  kubectl apply -f ../kubectl/class-roles;
+    kubectl apply -f ../kubectl/class-roles;
 
-  helm upgrade ${DATABASE_USER} . -f ./values-dev-custom.yaml \
-  --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m
+    helm upgrade ${DATABASE_USER} . -f ./dev-values-custom.yaml \
+      --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m
+  else
+    echo "dev-values-custom.yaml 파일이 없습니다."
+  fi
 else
   echo ".env 파일이 없습니다"
   exit 1

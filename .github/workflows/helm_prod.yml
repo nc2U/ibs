@@ -77,7 +77,7 @@ jobs:
             cd ${{ secrets.CICD_PATH }}/prod
             kubectl apply -f deploy/kubectl/class-roles; cd deploy/helm
             
-            helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values.yaml \
+            helm upgrade ${{ secrets.DATABASE_USER }} . -f ./prod-values.yaml \
             --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
             --set global.dbPassword=${{ secrets.DATABASE_PASS }} \
             --set global.cicdServerHost=${{ secrets.CICD_HOST }} \
