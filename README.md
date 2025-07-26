@@ -405,9 +405,9 @@ ENV_PATH="../../app/django/.env"
 
 while IFS='=' read -r key value || [ -n "$key" ]; do
   case "$key" in
-    ''|\#*) ;; # 빈 줄 또는 주석 무시
+    ''|\#*) ;; # Ignore blank lines or comments
     *)
-      # 따옴표 제거 및 export
+      # Remove quotes and export
       clean_key="$(echo "$key" | sed -e 's/^\s*//' -e 's/\s*$//')"
       clean_value="$(echo "$value" | sed -e 's/^\s*//' -e 's/\s*$//' -e 's/^\"//' -e 's/\"$//')"
       export "$clean_key=$clean_value"
