@@ -61,7 +61,6 @@ venv/
 docker-compose.yml
 
 # deploy/helm
-*.sh
 *custom.yaml
 
 # deploy/kubectl
