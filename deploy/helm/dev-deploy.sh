@@ -9,6 +9,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
   set -o allexport
   source "$SCRIPT_DIR/.env"
   set +o allexport
+  echo "Loaded .env from $SCRIPT_DIR/.env"
 
   if [ -e "./values-dev-custom.yaml" ]; then
     if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
@@ -27,9 +28,9 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     helm upgrade ${DATABASE_USER} . -f ./values-dev-custom.yaml \
       --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m
   else
-    echo "values-dev-custom.yaml 파일이 없습니다."
+    echo "values-dev-custom.yaml file not found in $CURR_DIR."
   fi
 else
-  echo ".env 파일이 없습니다"
+  echo ".env file not found in $SCRIPT_DIR"
   exit 1
 fi
