@@ -204,10 +204,11 @@ in the [installation docs](https://cert-manager.io/docs/releases/).
 
 Before installing the chart, you must first install the cert-manager CustomResourceDefinition resources. This is
 performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed
-custom resources.
+custom resources. (Please use version 17.*, as version 18.* has compatibility issues with the current version of
+ingress-nginx Release.)
 
 ```bash
-$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.crds.yaml
+$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.4/cert-manager.crds.yaml
 ```
 
 To install the chart with the release name `cert-manager`:
@@ -219,7 +220,7 @@ $ helm repo add jetstack https://charts.jetstack.io --force-update
 
 ## Install the cert-manager helm chart
 
-$ helm install cert-manager --namespace cert-manager --version v1.18.2 jetstack/cert-manager --create-namespace
+$ helm install cert-manager --namespace cert-manager --version v1.17.4 jetstack/cert-manager --create-namespace
 ```
 
 ##### installing the ingress-nginx Chart
