@@ -6,7 +6,6 @@ SCRIPT_DIR="$(cd "$CURR_DIR/../../app/django" && pwd)"
 
 # .env 수동 로딩 (POSIX 호환)
 if [ -f "$SCRIPT_DIR/.env" ]; then
-  echo "Loading .env from $SCRIPT_DIR/.env"
   while IFS='=' read -r key value || [ -n "$key" ]; do
     # 빈 줄이나 주석(#) 무시
     case "$key" in
@@ -37,7 +36,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     helm upgrade ${DATABASE_USER} . -f ./values-dev-custom.yaml \
       --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m
   else
-    echo "values-dev-custom.yaml file not found in $CURR_DIR."
+    echo "values-dev-custom.yaml file not found in Current directory."
     exit 1
   fi
 else
