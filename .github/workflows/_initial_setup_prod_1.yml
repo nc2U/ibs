@@ -17,6 +17,18 @@ jobs:
       # 레파지터리 체크 아웃
       - name: Check out source code
         uses: actions/checkout@v4
+
+      # Necessary dir Check
+      - name: media & static dir check
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.NFS_HOST }}
+          username: ${{ secrets.NFS_USER }}
+          password: ${{ secrets.NFS_PASS }}
+          command: |
+            cd ${{ secrets.NFS_PATH }}/prod && \
+            mkdir -p ./app/django/media && \
+            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 775 ./app/django
       
       # Source to CICD server copy transfer
       - name: App Source to CICD server
@@ -37,30 +49,8 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             cd ${{ secrets.CICD_PATH }}/prod/
-            rm -rf .git* *.md app/vue app/svelte deploy && \
+            rm -rf .git* *.md app/vue app/svelte deploy/docker .docker-compose.yml && \
             mkdir -p ./app/repos
-
-      # Necessary dir Check
-      - name: media & static dir check
-        uses: garygrossgarten/github-action-ssh@release
-        with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
-          command: |
-            cd ${{ secrets.NFS_PATH }}/prod && \
-            mkdir -p ./app/django/media && \
-            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 775 ./app/django
-      
-      # Source to CI/CD server copy transfer
-      - name: Helm Source to CI/CD server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.CICD_HOST }}
-          username: ${{ secrets.CICD_USER }}
-          password: ${{ secrets.CICD_PASS }}
-          source: 'deploy/helm,deploy/kubectl'
-          target: ${{ secrets.CICD_PATH }}/prod/
       
       # Helm source to CI/CD server copy transfer
       - name: SSH Remote Commands from ci/cd server
