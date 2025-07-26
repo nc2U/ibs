@@ -1,6 +1,4 @@
-### FOR APPLICATION
-
-### DJANGO
+### FOR DJANGO APP ----------------------------------------------------------------------------------
 SECRET_KEY=                 # required
 DEBUG=                      # default=False
 ALLOWED_HOSTS=              # default=*, set the like this -> host1,host2,host3...
@@ -16,23 +14,19 @@ EMAIL_HOST_USER=            # required, set the helm chart values.global.emailHo
 EMAIL_HOST_PASSWORD=        # required, set the helm chart values.global.emailHostPassword
 DEFAULT_FROM_EMAIL=         # required, set the helm chart values.global.defaultFromEmail
 
-### FOR DEPLOYMENT
-
-# CICD HOST
+### FOR DEPLOYMENT ------------------------------------------------------------------------------------
 CICD_HOST=                  # required, nfs server for database data & django app source
 CICD_USER=
 CICD_PASS=
 CICD_PATH=
 
-# NFS HOST
 NFS_HOST=                   # required, nfs server for database backup files & django media files
 NFS_USER=
 NFS_PASS=
 NFS_PATH=
 
-### FOR DEVELOPMENT - OPTIONAL
+### FOR DEVELOPMENT - OPTIONAL  ------------------------------------------------------------------------
 DOCKERHUB_USER=
 DOCKERHUB_TOKEN=
 
-# SLACK
 SLACK_INCOMING_URL=
