@@ -22,7 +22,7 @@
 
 ```bash
 git clone https://github.com/nc2U/ibs
-cd ibs
+cd ibs/deploy
 ```
 
 #### 2. Copy docker-compose.yml
@@ -32,7 +32,7 @@ cd deploy
 cp docker-compose.yml.tmpl docker-compose.yml
 ```
 
-#### 3. Write environments in docker-compose.yml
+#### 4. Write environments in docker-compose.yml
 
 Check what must be defined in docker-compose.yml file.
 
@@ -84,7 +84,7 @@ If you use a database image such as postgresql or mariadb with Docker, be sure t
     - DEFAULT_FROM_EMAIL: **your-email@example.com**
     - DJANGO_SETTINGS_MODULE: app.settings # **django settings mode**
 
-#### 4. Build & Run Docker Compose
+#### 5. Build & Run Docker Compose
 
 #### Build and run
 
@@ -92,13 +92,52 @@ If you use a database image such as postgresql or mariadb with Docker, be sure t
 docker-compose up -d --build
 ```
 
-#### 5. Migrate & Basic Settings
+#### 2. Set environment
+
+```bash
+cd ../app/django
+
+cp env .env
+vi .env # ... & Set each setting value as below. You should replace the value of each item with your own value.
+```
+
+```dotenv
+### FOR DJANGO APP ----------------------------------------------------------------------------------
+SECRET_KEY='Du_qJwGzWqVo2...'      # required, Set random characters of at least 50 characters.
+DEBUG=                             # default=False
+ALLOWED_HOSTS=                     # default=*, set the like this -> host1,host2,host3...
+
+DATABASE_TYPE=                     # default=postgres, set the helm chart values.global.dbType
+DATABASE_USER=ibs_user             # required, This name is referenced when releasing helm.
+DATABASE_PASSWORD=my_secret        # default='', set the helm chart values.global.dbPassword
+
+DOMAIN_HOST=https://abc.com        # default=http://localhost/, set the helm chart values.global.domainHost
+
+EMAIL_HOST=my.email.com            # required, set the helm chart values.global.emailHost
+EMAIL_HOST_USER=mail_user          # required, set the helm chart values.global.emailHostUser
+EMAIL_HOST_PASSWORD=my_secret      # required, set the helm chart values.global.emailHostPassword
+DEFAULT_FROM_EMAIL=admin@host.com  # required, set the helm chart values.global.defaultFromEmail
+
+### FOR DEPLOYMENT ------------------------------------------------------------------------------------
+CICD_HOST=12.345.67.890            # required, nfs server for django app source & database data
+CICD_USER=cicd_user
+CICD_PASS=my_password
+CICD_PATH=/mnt/nfs/ibs             # path where set the django source
+
+NFS_HOST=22.333.44.555             # required, nfs server for database backup files & django media files
+NFS_USER=nfs_user
+NFS_PASS=nfs_password
+NFS_PATH=/mnt/nfs/ibs              # path where set the django media files & backup files
+```
+
+#### 6. Migrate & Basic Settings
 
 #### Migrations & Migrate settings (After build to db & web)
 
 The commands below sequentially run the `python manage.py makemigrations` and `python manage.py migrate` commands.
 
 ```bash
+cd ../../deploy
 docker-compose exec web sh migrate.sh
 ```
 
@@ -113,8 +152,7 @@ docker-compose exec web python manage.py collectstatic
 #### Vue (Single Page Application) Development
 
 ```bash
-cd ..
-cd app/vue3
+cd ../app/vue
 pnpm i    # npm i (or) yarn
 ```
 
@@ -133,8 +171,7 @@ pnpm build    # npm run build (or) yarn build
 #### Svelte (Single Page Application) Development
 
 ```bash
-cd ..
-cd app/svelte
+cd ../app/svelte
 pnpm i      # npm i (or) yarn
 ```
 
@@ -171,19 +208,20 @@ pnpm build # npm run build (or) yarn build
 
 Configure a Kubernetes cluster by setting up the required number of nodes.
 
-##### CI/CD server
+###### CI/CD server
 
 The ci/cd server uses the master node of the Kubernetes cluster or a separate server or PC.
 
 If you use the master node in the cluster as a ci/cd server, set up external access through ssh and install helm on the
 master node.
 
-If you are using a server or PC outside the cluster, configure it to connect via ssh from outside, install helm, and
-then copy and configure the kubeconfig file to the user's home directory to access and control the master node.
+If you are using a server or PC outside the cluster, configure it to connect via ssh from outside, install, kubectl &
+helm, and then copy and configure the kubeconfig file to the user's home directory to access and control the master
+node.
 
 Check the IP or domain that can access the ci/cd server.
 
-##### NFS storage server
+###### NFS storage server
 
 For the nfs storage server, it is recommended to prepare a separate server if a large amount of data will be used in the
 future, but you can also use the cluster's master node or ci/cd server.
@@ -193,11 +231,11 @@ an NFS server, and connect it to the Kubernetes cluster nodes.
 
 Also, enable connection via ssh and check the accessible IP or domain.
 
-##### Domain & DNS setting
+###### Domain & DNS setting
 
 Secure the domain to be used for this project and connect each cluster node to the domain.
 
-##### installing the cert-manager Chart
+###### installing the cert-manager Chart
 
 Full installation instructions, including details on how to configure extra functionality in cert-manager can be found
 in the [installation docs](https://cert-manager.io/docs/releases/).
@@ -223,7 +261,7 @@ $ helm repo add jetstack https://charts.jetstack.io --force-update
 $ helm install cert-manager --namespace cert-manager --version v1.17.4 jetstack/cert-manager --create-namespace
 ```
 
-##### installing the ingress-nginx Chart
+###### installing the ingress-nginx Chart
 
 Get repo info
 
@@ -235,7 +273,7 @@ helm repo update
 install Chart
 
 ```bash
-helm install [RELEASE_NAME] -n ingress-nginx ingress-nginx/ingress-nginx --create-namespace
+helm install ingress-nginx -n ingress-nginx ingress-nginx/ingress-nginx --create-namespace
 ```
 
 ##### GitHub & DockerHub account, Slack incoming url
@@ -277,8 +315,99 @@ Click `_initial [Prod Step2]` at the bottom of all workflows in the action tab.
 
 #### 3. Or Manually Deploy
 
+###### NFS server setting
+
 ```bash
-cd deploy/helm
+ssh nfs_user@nfs_server
+mkdir -p /mnt/nfs/ibs  # your NFS_PATH
+
+cd /mnt/nfs/ibs  # your NFS_PATH
+mkdir -p ./prod/app/django/media && chmod -R 775 ./app/django
+```
+
+###### CICD server setting
+
+```bash
+ssh cicd_user@cicd_server
+mkdir -p /mnt/nfs/ibs  # your CICD_HOST
+cd /mnt/nfs/ibs  # your CICD_HOST
+
+mkdir ./prod && cd prod
+git clone https://github.com/nc2u/ibs .   # or forked your project
+
+rm -rf .git* *.md app/vue app/svelte deploy/docker .docker-compose.yml && \
+mkdir -p ./app/repos
+
+cd app/django
+cp env .env
+vi .env # ... & Set each setting value as below. You should replace the value of each item with your own value.
+````
+
+```dotenv
+### FOR DJANGO APP ----------------------------------------------------------------------------------
+SECRET_KEY='Du_qJwGzWqVo2...'      # required, Set random characters of at least 50 characters.
+DEBUG=                             # default=False
+ALLOWED_HOSTS=                     # default=*, set the like this -> host1,host2,host3...
+
+DATABASE_TYPE=                     # default=postgres, set the helm chart values.global.dbType
+DATABASE_USER=ibs_user             # required, This name is referenced when releasing helm.
+DATABASE_PASSWORD=my_secret        # default='', set the helm chart values.global.dbPassword
+
+DOMAIN_HOST=https://abc.com        # default=http://localhost/, set the helm chart values.global.domainHost
+
+EMAIL_HOST=my.email.com            # required, set the helm chart values.global.emailHost
+EMAIL_HOST_USER=mail_user          # required, set the helm chart values.global.emailHostUser
+EMAIL_HOST_PASSWORD=my_secret      # required, set the helm chart values.global.emailHostPassword
+DEFAULT_FROM_EMAIL=admin@host.com  # required, set the helm chart values.global.defaultFromEmail
+
+### FOR DEPLOYMENT ------------------------------------------------------------------------------------
+CICD_HOST=12.345.67.890            # required, nfs server for django app source & database data
+CICD_USER=cicd_user
+CICD_PASS=my_password
+CICD_PATH=/mnt/nfs/ibs             # path where set the django source
+
+NFS_HOST=22.333.44.555             # required, nfs server for database backup files & django media files
+NFS_USER=nfs_user
+NFS_PASS=nfs_password
+NFS_PATH=/mnt/nfs/ibs              # path where set the django media files & backup files
+```
+
+```bash
+:wq
+cd ../../deploy/helm
+```
+
+###### Deploy way 1
+
+If you know the rules of helm chart and how to set values in values.yaml , choose this method.
+
+```bash
+cp values-prod.yaml values-prod-custom.yaml
+vi values-prod-custom.yaml    # set the your value
+:wq
+
+sh prod-deploy.sh
+```
+
+###### Or Deploy way 2
+
+If you don't know how to set up a helm chart, that's okay.
+Since you've already set up the .env file, you can use those values to deploy your helm chart.
+
+```bash
+ENV_PATH="../../app/django/.env"
+
+while IFS='=' read -r key value || [ -n "$key" ]; do
+  case "$key" in
+    ''|\#*) ;; # 빈 줄 또는 주석 무시
+    *)
+      # 따옴표 제거 및 export
+      clean_key="$(echo "$key" | sed -e 's/^\s*//' -e 's/\s*$//')"
+      clean_value="$(echo "$value" | sed -e 's/^\s*//' -e 's/\s*$//' -e 's/^\"//' -e 's/\"$//')"
+      export "$clean_key=$clean_value"
+      ;;
+  esac
+done < "$ENV_PATH"
 
 if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
   helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
@@ -287,38 +416,32 @@ if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1;
   helm upgrade --install nfs-subdir-external-provisioner \
     nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
       -n kube-system \
-      --set nfs.server={ CICD_HOST} \
+      --set nfs.server=${CICD_HOST} \
       --set nfs.path=/mnt/nfs-subdir-external-provisioner
 fi
 
-kubectl apply -f deploy/kubectl/class-roles; cd deploy/helm
+kubectl apply -f ../deploy/kubectl/class-roles;
 
-helm upgrade {DATABASE_USER} . -f ./values.yaml \
+helm upgrade ${DATABASE_USER} . -f ./values-prod.yaml \
   --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
-  --set global.dbPassword={DATABASE_PASS} \
-  --set global.cicdPath={CICD_PATH} \
-  --set global.cicdServerHost={CICD_HOST} \
-  --set global.nfsPath={NFS_PATH} \
-  --set global.nfsServerHost={NFS_HOST} \
-  --set global.domainHost={DOMAIN_HOST} \
-  --set global.emailHost={EMAIL_HOST} \
-  --set global.emailHostUser={EMAIL_HOST_USER} \
-  --set-string global.emailHostPassword='{EMAIL_HOST_PASSWORD}' \
-  --set global.defaultFromEmail={EMAIL_DEFAULT_FROM} \
-  --set postgres.auth.postgresPassword={DATABASE_PASS} \
-  --set postgres.auth.password={DATABASE_PASS} \
-  --set postgres.auth.replicationPassword={DATABASE_PASS} \
-  --set 'nginx.ingress.hosts[0].host'={DOMAIN_NAME} \
+  --set global.dbPassword=${DATABASE_PASSWORD} \
+  --set global.cicdServerHost=${CICD_HOST} \
+  --set global.cicdPath=${$CICD_PATH} \
+  --set global.nfsServerHost=${NFS_HOST} \
+  --set global.nfsPath=${NFS_PATH} \
+  --set global.domainHost=${DOMAIN_HOST} \
+  --set global.emailHost=${EMAIL_HOST} \
+  --set global.emailHostUser=${EMAIL_HOST_USER} \
+  --set-string global.emailHostPassword="${EMAIL_HOST_PASSWORD}" \
+  --set global.defaultFromEmail="${DEFAULT_FROM_EMAIL}" \
+  --set postgres.auth.postgresPassword=${DATABASE_PASSWORD} \
+  --set postgres.auth.password=${DATABASE_PASSWORD} \
+  --set postgres.auth.replicationPassword=${DATABASE_PASSWORD} \
+  --set 'nginx.ingress.hosts[0].host'=${DOMAIN_NAME} \
   --set 'nginx.ingress.hosts[0].paths[0].path'=/ \
   --set 'nginx.ingress.hosts[0].paths[0].pathType'=Prefix \
-  --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
-  --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
-  --set 'nginx.ingress.hosts[2].paths[0].path'=/ \
-  --set 'nginx.ingress.hosts[2].paths[0].pathType'=Prefix \
-  --set 'nginx.ingress.hosts[3].paths[0].path'=/ \
-  --set 'nginx.ingress.hosts[3].paths[0].pathType'=Prefix \
-  --set 'nginx.ingress.tls[0].hosts[0]'={DOMAIN_NAME} \
-  --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert # Replace {TEXT} part with the corresponding setting value
+  --set 'nginx.ingress.tls[0].hosts[0]'=${DOMAIN_NAME} \
+  --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
 ```
 
 #### 4. if you deploy the release manually: Migrate & Basic Settings
