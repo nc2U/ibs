@@ -1,21 +1,21 @@
-#!/bin/bash
-
-set -euo pipefail
+#!/usr/bin/env bash
 
 # .env 스크립트가 있는 디렉터리 경로 계산
-CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURR_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPT_DIR="$(cd "$CURR_DIR/../../app/django" && pwd)"
 
-# .env 파일 로드
+# .env 수동 로딩 (POSIX 호환)
 if [ -f "$SCRIPT_DIR/.env" ]; then
-  set -o allexport
-  source "$SCRIPT_DIR/.env"
-  set +o allexport
-  echo "Loaded .env from $SCRIPT_DIR/.env"
-
-  # 필수 환경변수 체크
-  : "${CICD_HOST:?CICD_HOST is not set in .env}"
-  : "${DATABASE_USER:?DATABASE_USER is not set in .env}"
+  echo "Loading .env from $SCRIPT_DIR/.env"
+  while IFS='=' read -r key value || [ -n "$key" ]; do
+    # 빈 줄이나 주석(#) 무시
+    case "$key" in
+      ''|\#*) continue ;;
+    esac
+    # value 앞뒤 "나 ' 제거 (아래 함수 참고)
+    clean_value=$(echo "$value" | sed -e 's/^["'\'']//; s/["'\'']$//')
+    export "$key=$clean_value"
+  done < "$SCRIPT_DIR/.env"
 
   # values-dev-custom.yaml 존재 여부 확인
   if [ -e "$CURR_DIR/values-dev-custom.yaml" ]; then
