@@ -15,12 +15,12 @@ nameOverride:
 fullnameOverride: "web"
 
 imageConfigMaps:
-  #  awsStorageBucketName: ""
   djangoSettingsModule: _config.settings
-  
-  #imageSecrets:
-  ##  awsAccessKeyId:
-  ##  awsSecretAccessKey:
+
+  awsStorageBucketName: ""
+  imageSecrets:
+    awsAccessKeyId: ''
+    awsSecretAccessKey: ''
 
 serviceAccount:
   # Specifies whether a service account should be created
