@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # .env 스크립트가 있는 디렉터리 경로 계산
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../app/django"
+CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(realpath "$CURR_DIR/../../app/django")"
 
 # .env 파일 로드
 if [ -f "$SCRIPT_DIR/.env" ]; then
@@ -9,7 +10,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
   source "$SCRIPT_DIR/.env"
   set +o allexport
 
-  if [ -e "./prod-values-custom.yaml" ] then
+  if [ -e "./values-prod-custom.yaml" ]; then
     if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
       helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
     fi
@@ -26,7 +27,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     helm upgrade ${DATABASE_USER} . -f ./values-prod-custom.yaml \
       --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m
   else
-    echo 'prod-values-custom.yaml 파일이 없습니다.'
+    echo 'values-prod-custom.yaml 파일이 없습니다.'
   fi
 else
   echo ".env 파일이 없습니다"
