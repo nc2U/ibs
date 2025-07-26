@@ -66,46 +66,50 @@ jobs:
             if [ -e "./values-prod-custom.yaml" ]; then
               sh prod-deploy.sh
             else
+              if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
+                helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+              fi
+              if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
+                 helm upgrade --install nfs-subdir-external-provisioner \
+                   nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+                     -n kube-system \
+                     --set nfs.server=${{ secrets.CICD_HOST }} \
+                     --set nfs.path=/mnt/nfs-subdir-external-provisioner
+              fi
             
-            if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
-              helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+              helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values-prod.yaml \
+                --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
+                --set global.dbPassword=${{ secrets.DATABASE_PASS }} \
+                --set global.cicdServerHost=${{ secrets.CICD_HOST }} \
+                --set global.cicdPath=${{ secrets.CICD_PATH }} \
+                --set global.nfsServerHost=${{ secrets.NFS_HOST }} \
+                --set global.nfsPath=${{ secrets.NFS_PATH }} \
+                --set global.domainHost=${{ secrets.DOMAIN_HOST }} \
+                --set global.emailHost=${{ secrets.EMAIL_HOST }} \
+                --set global.emailHostUser=${{ secrets.EMAIL_HOST_USER }} \
+                --set-string global.emailHostPassword='${{ secrets.EMAIL_HOST_PASSWORD }}' \
+                --set global.defaultFromEmail=${{ secrets.EMAIL_DEFAULT_FROM }} \
+                --set postgres.auth.postgresPassword=${{ secrets.DATABASE_PASS }} \
+                --set postgres.auth.password=${{ secrets.DATABASE_PASS }} \
+                --set postgres.auth.replicationPassword=${{ secrets.DATABASE_PASS }} \
+                --set 'nginx.ingress.hosts[0].host'=${{ secrets.DOMAIN_NAME }} \
+                --set 'nginx.ingress.hosts[1].host'=www.${{ secrets.DOMAIN_NAME }} \
+                --set 'nginx.ingress.hosts[2].host'=dyibs.co.kr \
+                --set 'nginx.ingress.hosts[3].host'=brdnc.co.kr \
+                --set 'nginx.ingress.hosts[0].paths[0].path'=/ \
+                --set 'nginx.ingress.hosts[0].paths[0].pathType'=Prefix \
+                --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
+                --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
+                --set 'nginx.ingress.hosts[2].paths[0].path'=/ \
+                --set 'nginx.ingress.hosts[2].paths[0].pathType'=Prefix \
+                --set 'nginx.ingress.hosts[3].paths[0].path'=/ \
+                --set 'nginx.ingress.hosts[3].paths[0].pathType'=Prefix \
+                --set 'nginx.ingress.tls[0].hosts[0]'=${{ secrets.DOMAIN_NAME }} \
+                --set 'nginx.ingress.tls[0].hosts[1]'=www.${{ secrets.DOMAIN_NAME }} \
+                --set 'nginx.ingress.tls[0].hosts[2]'=dyibs.co.kr \
+                --set 'nginx.ingress.tls[0].hosts[3]'=brdnc.co.kr \
+                --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
             fi
-            if ! kubectl get po -n kube-system | grep nfs-subdir-external-provisioner; then
-              helm upgrade --install -n kube-system nfs-subdir-external-provisioner \
-                nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
-                  --set nfs.server=${{ secrets.CICD_HOST }} \
-                  --set nfs.path=/mnt/nfs-subdir-external-provisioner
-            fi
-            
-            
-            helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values-prod.yaml \
-            --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
-            --set global.dbPassword=${{ secrets.DATABASE_PASS }} \
-            --set global.cicdServerHost=${{ secrets.CICD_HOST }} \
-            --set global.cicdPath=${{ secrets.CICD_PATH }} \
-            --set global.nfsServerHost=${{ secrets.NFS_HOST }} \
-            --set global.nfsPath=${{ secrets.NFS_PATH }} \
-            --set global.domainHost=${{ secrets.DOMAIN_HOST }} \
-            --set global.emailHost=${{ secrets.EMAIL_HOST }} \
-            --set global.emailHostUser=${{ secrets.EMAIL_HOST_USER }} \
-            --set-string global.emailHostPassword='${{ secrets.EMAIL_HOST_PASSWORD }}' \
-            --set global.defaultFromEmail=${{ secrets.EMAIL_DEFAULT_FROM }} \
-            --set postgres.auth.postgresPassword=${{ secrets.DATABASE_PASS }} \
-            --set postgres.auth.password=${{ secrets.DATABASE_PASS }} \
-            --set postgres.auth.replicationPassword=${{ secrets.DATABASE_PASS }} \
-            --set 'nginx.ingress.hosts[0].host'=${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.hosts[1].host'=www.${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.hosts[2].host'=brdnc.co.kr \
-            --set 'nginx.ingress.hosts[0].paths[0].path'=/ \
-            --set 'nginx.ingress.hosts[0].paths[0].pathType'=Prefix \
-            --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
-            --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
-            --set 'nginx.ingress.hosts[2].paths[0].path'=/ \
-            --set 'nginx.ingress.hosts[2].paths[0].pathType'=Prefix \
-            --set 'nginx.ingress.tls[0].hosts[0]'=${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.tls[0].hosts[1]'=www.${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.tls[0].hosts[2]'=brdnc.co.kr \
-            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
       
       # slack --> notification
       - name: Send slack when failed
