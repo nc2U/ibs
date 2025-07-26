@@ -409,7 +409,7 @@ while IFS='=' read -r key value || [ -n "$key" ]; do
     *)
       # Remove quotes and export
       clean_key="$(echo "$key" | sed -e 's/^\s*//' -e 's/\s*$//')"
-      clean_value="$(echo "$value" | sed -e 's/^\s*//' -e 's/\s*$//' -e 's/^\"//' -e 's/\"$//')"
+      clean_value=$(echo "$value" | sed -e 's/^\\s*[\"\\'\\']//' -e 's/[\"\\'\\']\\s*$//')
       export "$clean_key=$clean_value"
       ;;
   esac
