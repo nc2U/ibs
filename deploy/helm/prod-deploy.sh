@@ -7,13 +7,15 @@ SCRIPT_DIR="$(cd "$CURR_DIR/../../app/django" && pwd)"
 # .env 수동 로딩 (POSIX 호환)
 if [ -f "$SCRIPT_DIR/.env" ]; then
   while IFS='=' read -r key value || [ -n "$key" ]; do
-    # 빈 줄이나 주석(#) 무시
     case "$key" in
-      ''|\#*) continue ;;
+      ''|\#*) ;; # Ignore blank lines or comments
+      *)
+        # Remove quotes and export
+        clean_key="$(echo "$key" | sed -e 's/^\s*//' -e 's/\s*$//')"
+        clean_value=$(echo "$value" | sed -e 's/^\\s*[\"\\'\\']//' -e 's/[\"\\'\\']\\s*$//')
+        export "$clean_key=$clean_value"
+        ;;
     esac
-    # value 앞뒤 "나 ' 제거 (아래 함수 참고)
-    clean_value=$(echo "$value" | sed -e 's/^["'\'']//; s/["'\'']$//')
-    export "$key=$clean_value"
   done < "$SCRIPT_DIR/.env"
 
   # values-prod-custom.yaml 존재 여부 확인
