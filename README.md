@@ -426,7 +426,7 @@ if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1;
       --set nfs.path=/mnt/nfs-subdir-external-provisioner
 fi
 
-kubectl apply -f ../deploy/kubectl/class-roles;
+kubectl apply -f ../kubectl/class-roles;
 
 helm upgrade ${DATABASE_USER} . -f ./values-prod.yaml \
   --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
