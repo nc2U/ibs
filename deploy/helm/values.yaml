@@ -5,7 +5,7 @@
 global:
   appMode: prod
   dbType: "postgres" # postgres | mariadb
-  dbPassword: "{{ randAlphaNum 5 }}"
+  dbPassword: "my-secret"
   nfsServerHost: "nfs-server-host"
   nfsPath: "nfs-path" # nfs volume path
   cicdServerHost: "cicd-server-host"
@@ -13,7 +13,7 @@ global:
   domainHost: "http://abc.com/"
   emailHost: "smtp-server.com" # your-smtp-server.com
   emailHostUser: "email@example.com" # 'your-email@example.com
-  emailHostPassword: "{{ randAlphaNum 5 }}" # your-email-password
+  emailHostPassword: "my-email-host-secret" # your-email-password
   defaultFromEmail: "email@example.com"
 
 mariadb:
@@ -22,6 +22,11 @@ mariadb:
 postgres:
   enabled: true
 
+  auth:
+    postgresPassword: "my-secret"
+    password: "my-secret"
+    replicationPassword: "my-secret"
+
   volumes:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
@@ -29,3 +34,14 @@ postgres:
 nginx:
   service:
     port: 8880
+
+  ingress:
+    hosts:
+      - host: my-host.com # Host address
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: web-devbox-kr-cert
+        hosts:
+          - my-host.com

@@ -5,6 +5,16 @@
 global:
   appMode: dev
   dbType: "postgres" # postgres | mariadb
+  dbPassword: "my-secret"
+  nfsServerHost: "nfs-server-host"
+  nfsPath: "nfs-path" # nfs volume path
+  cicdServerHost: "cicd-server-host"
+  cicdPath: "cicd-path" # cicd server path
+  domainHost: "http://abc.com/"
+  emailHost: "smtp-server.com" # your-smtp-server.com
+  emailHostUser: "email@example.com" # 'your-email@example.com
+  emailHostPassword: "my-email-host-secret" # your-email-password
+  defaultFromEmail: "email@example.com"
 
 mariadb:
   enabled: false
@@ -23,6 +33,11 @@ postgres:
   readReplicas:
     replicaCount: 1
 
+  auth:
+    postgresPassword: "my-secret"
+    password: "my-secret"
+    replicationPassword: "my-secret"
+
   image:
     tag: latest
 
@@ -36,3 +51,14 @@ nginx:
 
   service:
     port: 8881
+
+  ingress:
+    hosts:
+      - host: my-dev-host.com # Host address
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: web-devbox-kr-cert
+        hosts:
+          - my-dev-host.com
