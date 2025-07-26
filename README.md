@@ -112,6 +112,7 @@ DATABASE_USER=ibs_user             # required, This name is referenced when rele
 DATABASE_PASSWORD=my_secret        # default='', set the helm chart values.global.dbPassword
 
 DOMAIN_HOST=https://abc.com        # default=http://localhost/, set the helm chart values.global.domainHost
+DOMAIN_NAME=abc.com                # default=localhost, Representative domain when using multiple hosts via Ingress
 
 EMAIL_HOST=my.email.com            # required, set the helm chart values.global.emailHost
 EMAIL_HOST_USER=mail_user          # required, set the helm chart values.global.emailHostUser
@@ -354,6 +355,7 @@ DATABASE_USER=ibs_user             # required, This name is referenced when rele
 DATABASE_PASSWORD=my_secret        # default='', set the helm chart values.global.dbPassword
 
 DOMAIN_HOST=https://abc.com        # default=http://localhost/, set the helm chart values.global.domainHost
+DOMAIN_NAME=abc.com                # default=localhost, Representative domain when using multiple hosts via Ingress
 
 EMAIL_HOST=my.email.com            # required, set the helm chart values.global.emailHost
 EMAIL_HOST_USER=mail_user          # required, set the helm chart values.global.emailHostUser
