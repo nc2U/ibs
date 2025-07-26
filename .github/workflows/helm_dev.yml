@@ -53,8 +53,8 @@ jobs:
                   --set nfs.server=${{ secrets.CICD_HOST }} \
                   --set nfs.path=/mnt/nfs-subdir-external-provisioner
             fi
-            cd ${{ secrets.CICD_PATH }}/dev
-            kubectl apply -f deploy/kubectl/class-roles; cd deploy/helm
+            cd ${{ secrets.CICD_PATH }}/dev/deploy/helm
+            kubectl apply -f ../deploy/kubectl/class-roles
             
             helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values-dev.yaml \
             --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m \
