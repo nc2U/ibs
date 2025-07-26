@@ -32,7 +32,7 @@ cd deploy
 cp docker-compose.yml.tmpl docker-compose.yml
 ```
 
-#### 4. Write environments in docker-compose.yml
+#### 3. Write environments in docker-compose.yml
 
 Check what must be defined in docker-compose.yml file.
 
@@ -84,7 +84,7 @@ If you use a database image such as postgresql or mariadb with Docker, be sure t
     - DEFAULT_FROM_EMAIL: **your-email@example.com**
     - DJANGO_SETTINGS_MODULE: app.settings # **django settings mode**
 
-#### 5. Build & Run Docker Compose
+#### 4. Build & Run Docker Compose
 
 #### Build and run
 
@@ -92,7 +92,7 @@ If you use a database image such as postgresql or mariadb with Docker, be sure t
 docker-compose up -d --build
 ```
 
-#### 2. Set environment
+#### 5. Set environment
 
 ```bash
 cd ../app/django
@@ -277,7 +277,11 @@ install Chart
 helm install ingress-nginx -n ingress-nginx ingress-nginx/ingress-nginx --create-namespace
 ```
 
-##### GitHub & DockerHub account, Slack incoming url
+#### 2. Deploy
+
+##### Deploy using Github action (Full auto)
+
+###### GitHub & DockerHub account, Slack incoming url
 
 Use an existing GitHub account or create a new one and fork this project.
 
@@ -304,17 +308,17 @@ create Repository secrets with the keys and values below.
 - NFS_USER:  # nfs storage server user
 - SLACK_INCOMING_URL: # slack incoming url
 
-#### 2. Deploy
+###### How to Deploy
 
-Go to the action tab in the GitHub repository.
+And then, Go to the Actions tab in the GitHub repository.
 
 Click 'Show more workflows...' at the bottom of all workflows, click `_initial [Prod Step1]`, and then use the
 Kubernetes `watch` command on the cicd server to check whether the relevant PODs are created and operating normally.
 
 When all database pods operate normally,
-Click `_initial [Prod Step2]` at the bottom of all workflows in the action tab.
+Click `_initial [Prod Step2]` at the bottom of all workflows in the Actions tab.
 
-#### 3. Or Manually Deploy
+##### Or Manually Deploy
 
 ###### NFS server setting
 
@@ -446,7 +450,7 @@ helm upgrade ${DATABASE_USER} . -f ./values-prod.yaml \
   --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
 ```
 
-#### 4. if you deploy the release manually: Migrate & Basic Settings
+#### 3. if you deploy the release manually: Migrate & Basic Settings
 
 If all pods are running normally, run the following procedure.
 The commands below sequentially run the `python manage.py makemigrations` and `python manage.py migrate` commands.
