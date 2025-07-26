@@ -34,7 +34,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     fi
 
     # Role 적용 및 Helm 배포
-    kubectl apply -f ../kubectl/class-roles;
+    kubectl apply -f ../kubectl/class-roles
     helm upgrade ${DATABASE_USER} . -f ./values-dev-custom.yaml \
       --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m \
       --atomic --cleanup-on-fail

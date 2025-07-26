@@ -43,7 +43,6 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             cd ${{ secrets.CICD_PATH }}/prod/deploy/helm
-            kubectl apply -f ../kubectl/class-roles
             
             if [ -e "./values-prod-custom.yaml" ]; then
               echo "Custom values-prod-custom.yaml found. Running prod-deploy.sh..."
@@ -61,6 +60,8 @@ jobs:
             fi
             
             if [ "$run_inline_helm_deploy" = true ]; then
+              kubectl apply -f ../kubectl/class-roles
+            
               if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
                 helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
               fi
