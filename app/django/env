@@ -1,5 +1,5 @@
 ### FOR DJANGO APP ----------------------------------------------------------------------------------
-SECRET_KEY=                 # required
+SECRET_KEY=                 # required, Set random characters of at least 50 characters.
 DEBUG=                      # default=False
 ALLOWED_HOSTS=              # default=*, set the like this -> host1,host2,host3...
 
