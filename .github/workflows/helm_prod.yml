@@ -23,29 +23,7 @@ jobs:
       # 레파지터리 체크 아웃
       - name: Check out source code
         uses: actions/checkout@v4
-      
-      # Necessary dir Check
-      - name: media & static dir check
-        uses: garygrossgarten/github-action-ssh@release
-        with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
-          command: |
-            cd ${{ secrets.NFS_PATH }}/prod && \
-            mkdir -p ./app/django/media && \
-            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 775 ./app/django
 
-      # 👇 복사 전에 삭제!
-      - name: Clean existing helm dir on CI/CD server
-        uses: garygrossgarten/github-action-ssh@release
-        with:
-          host: ${{ secrets.CICD_HOST }}
-          username: ${{ secrets.CICD_USER }}
-          password: ${{ secrets.CICD_PASS }}
-          command: |
-            rm -rf ${{ secrets.CICD_PATH }}/prod/deploy/helm
-      
       # Helm source to CI/CD server copy transfer
       - name: Copy helm, to CI/CD server
         uses: appleboy/scp-action@master
