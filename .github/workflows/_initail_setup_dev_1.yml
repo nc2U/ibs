@@ -86,10 +86,10 @@ jobs:
             helm upgrade ${{ secrets.DATABASE_USER }} . --install -f ./values-dev.yaml \
             --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m \
             --set global.dbPassword=${{ secrets.DATABASE_PASS }} \
-            --set global.cicdPath=${{ secrets.CICD_PATH }} \
             --set global.cicdServerHost=${{ secrets.CICD_HOST }} \
-            --set global.nfsPath=${{ secrets.NFS_PATH }} \
+            --set global.cicdPath=${{ secrets.CICD_PATH }} \
             --set global.nfsServerHost=${{ secrets.NFS_HOST }} \
+            --set global.nfsPath=${{ secrets.NFS_PATH }} \
             --set global.emailHost=${{ secrets.EMAIL_HOST }} \
             --set global.emailHostUser=${{ secrets.EMAIL_HOST_USER }} \
             --set-string global.emailHostPassword='${{ secrets.EMAIL_HOST_PASSWORD }}' \
