@@ -124,9 +124,10 @@ DATABASE_NAME = config('DATABASE_NAME', default='')
 DATABASE_USER = config('DATABASE_USER', default='')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD', default='')
 NAMESPACE = config('NAMESPACE', default='default')
+KUBERNETES_SERVICE_HOST = config('KUBERNETES_SERVICE_HOST', default=None)
 
 MASTER_HOST = f'{DATABASE_TYPE}-primary.{NAMESPACE}.svc.cluster.local' \
-    if config('KUBERNETES_SERVICE_HOST', default=None) else DATABASE_TYPE
+    if KUBERNETES_SERVICE_HOST else DATABASE_TYPE
 DEFAULT_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
     if DATABASE_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
@@ -198,22 +199,25 @@ USE_I18N = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-# AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-# AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = None  # config('AWS_STORAGE_BUCKET_NAME')
-# AWS_REGION = 'ap-northeast-2'
-AWS_S3_CUSTOM_DOMAIN = ''  # f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com'
-# AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400', }
-# AWS_DEFAULT_ACL = 'public-read'
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+AWS_REGION = 'ap-northeast-2'
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com'
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400', }
+AWS_DEFAULT_ACL = 'public-read'
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'static'
-STATICFILES_DIRS = (BASE_DIR / '_assets',)
+STATICFILES_DIRS = [BASE_DIR / '_assets']
 
-# DEFAULT_FILE_STORAGE = '_config.asset_storage.MediaStorage'
+DEFAULT_FILE_STORAGE = ('_config.asset_storage.MediaStorage'
+                        if AWS_STORAGE_BUCKET_NAME else
+                        'django.core.files.storage.FileSystemStorage')
 
 # 각 media 파일에 관한 URL prefix
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/' if AWS_STORAGE_BUCKET_NAME else 'media/'
+MEDIA_URL = (f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+             if AWS_STORAGE_BUCKET_NAME else '/media/')
 MEDIA_ROOT = BASE_DIR / 'media'  # 업로드된 파일을 저장할 디렉토리 경로
 
 # Default primary key field type

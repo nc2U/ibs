@@ -10,8 +10,10 @@ data:
   NAMESPACE: "{{ .Release.Namespace }}"
 
   {{- with  .Values.imageConfigMaps }}
-  {{/*  AWS_STORAGE_BUCKET_NAME: "{{ .awsStorageBucketName }}"*/}}
   DJANGO_SETTINGS_MODULE: "{{ .djangoSettingsModule }}"
+  AWS_STORAGE_BUCKET_NAME: "{{ .awsStorageBucketName }}"
+  AWS_ACCESS_KEY_ID: "{{ .imageSecrets.awsAccessKeyId }}"
+  AWS_SECRET_ACCESS_KEY: "{{ .imageSecrets.awsSecretAccessKey }}"
   {{- end }}
 kind: ConfigMap
 metadata:
