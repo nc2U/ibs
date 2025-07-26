@@ -1,4 +1,4 @@
-name: _Initial [Prod Step2]
+name: _Init_Setup [Prod Step2]
 
 on:
   # Allows you to run this workflow manually from the Actions tab

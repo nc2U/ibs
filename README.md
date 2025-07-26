@@ -312,11 +312,11 @@ create Repository secrets with the keys and values below.
 
 And then, Go to the Actions tab in the GitHub repository.
 
-Click 'Show more workflows...' at the bottom of all workflows, click `_initial [Prod Step1]`, and then use the
+Click 'Show more workflows...' at the bottom of all workflows, click `_init_Setup [Prod Step1]`, and then use the
 Kubernetes `watch` command on the cicd server to check whether the relevant PODs are created and operating normally.
 
 When all database pods operate normally,
-Click `_initial [Prod Step2]` at the bottom of all workflows in the Actions tab.
+Click `_init_Setup [Prod Step2]` at the bottom of all workflows in the Actions tab.
 
 ##### Or Manually Deploy
 
