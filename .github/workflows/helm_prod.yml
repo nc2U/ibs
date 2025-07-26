@@ -53,7 +53,7 @@ jobs:
                   --set nfs.path=/mnt/nfs-subdir-external-provisioner
             fi
             cd ${{ secrets.CICD_PATH }}/prod/deploy/helm
-            kubectl apply -f ../deploy/kubectl/class-roles
+            kubectl apply -f ../kubectl/class-roles
             
             helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values-prod.yaml \
             --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
