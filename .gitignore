@@ -38,6 +38,7 @@ __pycache__
 *.pyo
 
 # django etc
+app/repos
 migrations
 media
 static
@@ -54,14 +55,18 @@ init.sql
 # virtualize
 venv/
 
+# deploy/docker
 **/nginx/dev/
 **/python/dev/
 docker-compose.yml
+
+# deploy/helm
+*.sh
+*custom.yaml
+
+# deploy/kubectl
 cluster-issuer.yml
 certificate.yml
-
-app/repos
-*custom.yaml
 
 /coverage
 
