@@ -64,8 +64,21 @@ jobs:
             kubectl apply -f ../kubectl/class-roles
             
             if [ -e "./values-prod-custom.yaml" ]; then
+              echo "Custom values-prod-custom.yaml found. Running prod-deploy.sh..."
               sh prod-deploy.sh
+            
+              if [ $? -ne 0 ]; then
+                echo "prod-deploy.sh failed. Falling back to inline Helm deployment."
+                run_inline_helm_deploy=true
+              else
+                run_inline_helm_deploy=false
+              fi
             else
+              echo "values-prod-custom.yaml not found. Proceeding with inline Helm deployment."
+              run_inline_helm_deploy=true
+            fi
+            
+            if [ "$run_inline_helm_deploy" = true ]; then
               if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
                 helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
               fi
