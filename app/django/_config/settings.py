@@ -235,9 +235,8 @@ ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password1*']
 DOMAIN_HOST = config('DOMAIN_HOST', default='http://localhost/')  # ex: 'https://abc.com/'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST')  # 'your-smtp-server.com'
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = True  # 587일 경우
-# EMAIL_USE_SSL = True  # 465일 경우 사용
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True  # 587일 경우, EMAIL_USE_SSL = True  # 465일 경우 사용
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')  # 'your accessId or accessEmail'
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')  # 'your-email-password'
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')  # 'your-email@example.com'
