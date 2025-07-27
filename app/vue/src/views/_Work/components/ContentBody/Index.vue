@@ -65,7 +65,6 @@ onBeforeMount(async () => {
   <CRow class="d-flex flex-row flex-grow-1 main-layout">
     <!--    Main Content-->
     <CCol class="text-body main flex-grow-1 p-4 px-lg-5 mx-3">
-      {{ $route.path }} / {{ routeSlug }}
       <slot> Under Construction!</slot>
     </CCol>
 
