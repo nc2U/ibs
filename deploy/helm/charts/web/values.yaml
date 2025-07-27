@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: nc2u/django
+  repository: dokube/django
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
