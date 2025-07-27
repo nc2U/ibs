@@ -88,6 +88,7 @@ onBeforeMount(async () => {
       </CRow>
     </CCol>
 
+    <!--    Off canvas-->
     <COffcanvas placement="end" class="p-2" :visible="visible" @hide="() => (visible = !visible)">
       <COffcanvasHeader>
         <CCol class="mr-2">
