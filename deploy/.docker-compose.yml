@@ -49,7 +49,7 @@ services:
   web:
     container_name: ibs-web
     build: docker/python
-    image: dokube/django
+    image: nc2u/django
     volumes:
       - ../app/django:/app/django
       - ../app/repos:/app/repos
