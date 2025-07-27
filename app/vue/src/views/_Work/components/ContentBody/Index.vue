@@ -166,6 +166,10 @@ onBeforeMount(async () => {
   background: #32333d;
 }
 
+#sidebar {
+  transition: width 0.3s ease; /* 너비 변경에 트랜지션 적용 */
+}
+
 .sidebar-switch:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
