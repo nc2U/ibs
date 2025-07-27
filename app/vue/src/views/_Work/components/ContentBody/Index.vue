@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, provide, ref } from 'vue'
+import { computed, inject, onBeforeMount, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { User } from '@/store/types/accounts.ts'
@@ -41,25 +41,48 @@ const getGuide = () => window.open('https://www.redmine.org/guide', '_blank', 'n
 const search = ref('')
 const goSearch = () => router.push({ name: '전체검색', query: { scope: '', q: search.value } })
 
+// 우측 사이드바 컨트롤
+const routeSlug = computed(() => route.path.split('/').pop())
+const sidebarVisible = ref(true)
+const sidebarWidth = computed(() => (sidebarVisible.value ? 420 : 30))
+const sidebarToggle = () => {
+  sidebarVisible.value = !sidebarVisible.value
+  localStorage.setItem(
+    `redmine-sidebar-visible-${routeSlug.value}`,
+    JSON.stringify(sidebarVisible.value),
+  )
+}
+
 onBeforeMount(async () => {
   if (route?.query.q) search.value = route.query.q as string
+  sidebarVisible.value = JSON.parse(
+    localStorage.getItem(`redmine-sidebar-visible-${routeSlug.value}`) ?? 'true',
+  )
 })
 </script>
 
 <template>
-  <CRow class="flex-grow-1">
-    <CCol class="text-body main p-4 px-lg-5 mx-3">
+  <CRow class="d-flex flex-row flex-grow-1 main-layout">
+    <!--    Main Content-->
+    <CCol class="text-body main flex-grow-1 p-4 px-lg-5 mx-3">
+      {{ $route.path }} / {{ routeSlug }}
       <slot> Under Construction!</slot>
     </CCol>
 
-    <CCol v-if="aside" id="sidebar" class="text-body d-none d-xl-block p-0 col-lg-2">
-      <CRow class="mb-4 py-1 pointer sidebar-switch">
+    <!--    Sidebar-->
+    <CCol
+      v-if="aside"
+      id="sidebar"
+      class="text-body d-none d-xl-block p-0 col-lg-2"
+      :style="{ width: sidebarWidth + 'px' }"
+    >
+      <CRow class="mb-4 py-1 pointer sidebar-switch" @mousedown="sidebarToggle">
         <CCol class="pl-0">
-          <v-icon icon="mdi-chevron-double-right" color="grey" />
+          <v-icon :icon="`mdi-chevron-double-${sidebarVisible ? 'right' : 'left'}`" color="grey" />
         </CCol>
       </CRow>
 
-      <CRow>
+      <CRow v-show="sidebarVisible">
         <CCol class="px-3" style="position: relative">
           <slot name="aside"> Under Construction!</slot>
         </CCol>
@@ -144,10 +167,10 @@ onBeforeMount(async () => {
 }
 
 .sidebar-switch:hover {
-  background: #e1e2e3 !important;
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .dark-theme .sidebar-switch:hover {
-  background: #2a2b36 !important;
+  background: #2a2b36;
 }
 </style>
