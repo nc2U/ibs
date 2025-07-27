@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { PropType } from 'vue'
-import { bgLight } from '@/utils/cssMixins.ts'
+import { inject, type PropType } from 'vue'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import { cutString, dateFormat, numberToHour, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper.ts'
@@ -9,6 +8,8 @@ defineProps({
   activity: { type: Array as PropType<ActLogEntry[]>, required: true },
   date: { type: String, required: true },
 })
+
+const isDark = inject('isDark')
 
 const getIcon = (sort: string, progress: boolean) => {
   if (sort === '1') return progress ? 'mdi-folder-check' : 'mdi-folder-edit'
@@ -23,7 +24,7 @@ const getIcon = (sort: string, progress: boolean) => {
 <template>
   <CRow>
     <CCol>
-      <CAlert class="px-3 py-1" :class="bgLight">
+      <CAlert class="px-3 py-1" :style="{ background: isDark ? '#2A2B36' : '#EBEDEF' }">
         <span class="date-title">
           {{ String(date) === dateFormat(new Date()) ? '오늘' : dateFormat(date as string, '/') }}
         </span>

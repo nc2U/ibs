@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, inject, onBeforeMount, provide, ref } from 'vue'
 import { useStore } from '@/store'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { User } from '@/store/types/accounts.ts'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
-import { useAccount } from '@/store/pinia/account.ts'
 
 const props = defineProps({ aside: { type: Boolean, default: true } })
 
@@ -21,7 +21,7 @@ const isActive = (menu: string) =>
   (route.name as string).includes(menu) || (route.meta as any).title.includes(menu)
 
 const accStore = useAccount()
-const userInfo = computed<User | null>(() => accStore.userInfo)
+const userInfo = computed(() => accStore.userInfo as User)
 const logout = () => {
   accStore.logout()
   router.push({ name: 'Login' })
@@ -52,8 +52,18 @@ onBeforeMount(async () => {
       <slot> Under Construction!</slot>
     </CCol>
 
-    <CCol v-if="aside" class="text-body p-4 d-none d-xl-block col-lg-2">
-      <slot name="aside"> Under Construction!</slot>
+    <CCol v-if="aside" id="sidebar" class="text-body d-none d-xl-block p-0 col-lg-2">
+      <CRow class="mb-4 py-1 pointer sidebar-switch">
+        <CCol class="pl-0">
+          <v-icon icon="mdi-chevron-double-right" color="grey" />
+        </CCol>
+      </CRow>
+
+      <CRow>
+        <CCol class="px-3" style="position: relative">
+          <slot name="aside"> Under Construction!</slot>
+        </CCol>
+      </CRow>
     </CCol>
 
     <COffcanvas placement="end" class="p-2" :visible="visible" @hide="() => (visible = !visible)">
@@ -131,5 +141,13 @@ onBeforeMount(async () => {
 
 .dark-theme .active {
   background: #32333d;
+}
+
+.sidebar-switch:hover {
+  background: #e1e2e3 !important;
+}
+
+.dark-theme .sidebar-switch:hover {
+  background: #2a2b36 !important;
 }
 </style>
