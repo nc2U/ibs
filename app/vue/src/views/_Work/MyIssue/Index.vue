@@ -2,6 +2,7 @@
 import { ref, reactive, onBeforeMount } from 'vue'
 import { GridLayout, type LayoutItem } from 'grid-layout-plus'
 import MultiSelect from '@/components/MultiSelect/index.vue'
+import NoData from '@/components/NoData/index.vue'
 
 const showItems = ref<number[]>([1, 2])
 
@@ -114,7 +115,7 @@ onBeforeMount(() => {
                 </span>
               </CCol>
             </CRow>
-            <CAlert color="warning"> 표시할 데이터가 없습니다.</CAlert>
+            <NoData align="text-left" />
           </div>
         </template>
       </GridLayout>
