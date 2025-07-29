@@ -3,7 +3,7 @@ import Cookies from 'js-cookie'
 import { computed, onBeforeMount, type PropType } from 'vue'
 import { dateFormat } from '@/utils/baseMixins'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
-import NoData from '@/views/_Work/components/NoData.vue'
+import NoData from '@/components/NoData/Index.vue'
 import ActivityLog from './ActivityLog.vue'
 import { CRow } from '@coreui/vue'
 

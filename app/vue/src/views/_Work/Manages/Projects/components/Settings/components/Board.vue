@@ -7,7 +7,7 @@ import { useBoard } from '@/store/pinia/board.ts'
 import { getOrderedList, setLocalStorage } from '@/utils/helper.ts'
 import type { Board } from '@/store/types/board.ts'
 import Draggable from 'vuedraggable'
-import NoData from '@/views/_Work/components/NoData.vue'
+import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 

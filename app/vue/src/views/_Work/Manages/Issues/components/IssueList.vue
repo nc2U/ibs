@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import Pagination from '@/components/Pagination'
-import NoData from '@/views/_Work/components/NoData.vue'
+import NoData from '@/components/NoData/Index.vue'
 import SearchList from './SearchList.vue'
 import IssueObj from './IssueObj.vue'
 
@@ -68,7 +68,9 @@ const watchControl = (payload: any) => {
         class="mr-2 form-text"
       >
         <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
-        <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1">새 업무만들기</router-link>
+        <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1"
+          >새 업무만들기</router-link
+        >
       </span>
 
       <span>
@@ -95,7 +97,12 @@ const watchControl = (payload: any) => {
             </CDropdownItem>
             <CDropdownItem v-if="projStatus !== '9'" class="form-text" disabled>
               <!--              <router-link to="">-->
-              <v-icon icon="mdi-file-document-arrow-right" color="blue-lighten" size="sm" class="mr-1" />가져오기
+              <v-icon
+                icon="mdi-file-document-arrow-right"
+                color="blue-lighten"
+                size="sm"
+                class="mr-1"
+              />가져오기
               <!--              </router-link>-->
             </CDropdownItem>
             <CDropdownItem

@@ -7,7 +7,7 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 import { cutString, dateFormat, numberToHour } from '@/utils/baseMixins'
 import SearchList from './SearchList.vue'
 import Pagination from '@/components/Pagination'
-import NoData from '@/views/_Work/components/NoData.vue'
+import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TimeEntryReport from './TimeEntryReport.vue'
 
@@ -75,7 +75,8 @@ onBeforeMount(() => {
         <router-link
           :to="{ name: route.params.projId ? '(소요시간) - 추가' : '소요시간 - 추가' }"
           class="ml-1"
-        >작업시간 기록</router-link>
+          >작업시간 기록</router-link
+        >
       </span>
     </CCol>
   </CRow>

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, type PropType } from 'vue'
 import type { SimpleCategory } from '@/store/types/work_issue.ts'
-import NoData from '@/views/_Work/components/NoData.vue'
+import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({ categories: { type: Array as PropType<SimpleCategory[]>, default: () => [] } })

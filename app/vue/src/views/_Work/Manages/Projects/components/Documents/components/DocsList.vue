@@ -2,10 +2,10 @@
 import { type PropType } from 'vue'
 import { useDocs } from '@/store/pinia/docs'
 import type { Docs as Document } from '@/store/types/docs'
-import NoData from '@/views/_Work/components/NoData.vue'
+import Pagination from '@/components/Pagination'
+import NoData from '@/components/NoData/Index.vue'
 import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import Docs from './Docs.vue'
-import Pagination from '@/components/Pagination'
 
 defineProps({
   limit: { type: Number, default: 10 },

@@ -2,7 +2,7 @@
 import { ref, type PropType, nextTick } from 'vue'
 import type { Version } from '@/store/types/work_project.ts'
 import { colorLight } from '@/utils/cssMixins'
-import NoData from '@/views/_Work/components/NoData.vue'
+import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({ versions: { type: Array as PropType<Version[]>, default: () => [] } })

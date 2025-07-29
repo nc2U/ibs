@@ -5,7 +5,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
 import SearchList from './SearchList.vue'
 import ProjectCard from './ProjectCard.vue'
-import NoData from '@/views/_Work/components/NoData.vue'
+import NoData from '@/components/NoData/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const cBody = ref()

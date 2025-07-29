@@ -4,7 +4,7 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
-import NoData from '@/views/_Work/components/NoData.vue'
+import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -14,8 +14,12 @@ const memberFormModal = ref()
 const iProject = inject<ComputedRef<IssueProject>>('iProject')
 
 const workStore = useWork()
-const memberList = computed<SimpleMember[]>(() => workStore.issueProject?.members ?? [])
-const allMembers = computed<SimpleMember[]>(() => workStore.issueProject?.all_members ?? [])
+const memberList = computed<SimpleMember[]>(
+  () => (workStore.issueProject as IssueProject)?.members ?? [],
+)
+const allMembers = computed<SimpleMember[]>(
+  () => (workStore.issueProject as IssueProject)?.all_members ?? [],
+)
 
 const patchIssueProject = (payload: {
   slug: string
