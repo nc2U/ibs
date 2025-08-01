@@ -36,8 +36,7 @@ services:
     container_name: ibs-nginx
     image: nginx:latest
     ports:
-      - "80:80"
-      - "443:443"
+      - "8000:80"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
