@@ -1,6 +1,6 @@
 #!/bin/bash
 DATE=$(date +"%Y-%m-%d")
-SQL_FILE="/var/backups/backup-mariadb-${DATE}.sql"
+SQL_FILE="/var/backups/ibs-backup-mariadb-${DATE}.sql"
 
 # shellcheck disable=SC2046
 find /var/backups \( -name "*.sql" -o -name "*.log" \) -type f -ctime +2 -delete

@@ -4,7 +4,7 @@ set -eu
 # 변수 설정
 SCHEMA="${POSTGRES_SCHEMA}"
 DATE=$(date +"%Y-%m-%d")
-DUMP_FILE="/var/backups/backup-postgres-${DATE}.dump"
+DUMP_FILE="/var/backups/ibs-backup-postgres-${DATE}.dump"
 LOG_FILE="/var/backups/backup-${DATE}.log"
 PGPASSWORD="${POSTGRES_PASSWORD:-$( [ -f "$POSTGRES_PASSWORD_FILE" ] && cat "$POSTGRES_PASSWORD_FILE" || echo '')}"
 POSTGRES_DATABASE="${POSTGRES_DATABASE:-${POSTGRES_DB}}"

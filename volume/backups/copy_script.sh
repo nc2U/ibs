@@ -8,7 +8,7 @@ if [ ! -d "${DEST_DIR}" ]; then
     mkdir -p "${DEST_DIR}"
 fi
 
-MARIADB_BACKUP_FILE="${SCRIPT_DIR}/backup-mariadb-${DATE}.sql"  # 스크립트 디렉터리를 기준으로 파일 경로 설정
+MARIADB_BACKUP_FILE="${SCRIPT_DIR}/ibs-backup-mariadb-${DATE}.sql"  # 스크립트 디렉터리를 기준으로 파일 경로 설정
 # 파일 존재 여부 확인
 if [ -f "${MARIADB_BACKUP_FILE}" ]; then
     # 파일 복사
@@ -18,7 +18,7 @@ else
     echo "File ${MARIADB_BACKUP_FILE} does not exist."
 fi
 
-POSTGRES_BACKUP_FILE="${SCRIPT_DIR}/backup-postgres-${DATE}.dump"  # 스크립트 디렉터리를 기준으로 파일 경로 설정
+POSTGRES_BACKUP_FILE="${SCRIPT_DIR}/ibs-backup-postgres-${DATE}.dump"  # 스크립트 디렉터리를 기준으로 파일 경로 설정
 # 파일 존재 여부 확인
 if [ -f "${POSTGRES_BACKUP_FILE}" ]; then
     # 파일 복사
