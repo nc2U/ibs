@@ -472,8 +472,6 @@ spec:
             - name: empty-dir
               mountPath: /opt/bitnami/postgresql/tmp
               subPath: app-tmp-dir
-            - name: dump-backup
-              mountPath: /var/backups
             {{- if or .Values.primary.preInitDb.scriptsConfigMap .Values.primary.preInitDb.scripts }}
             - name: custom-preinit-scripts
               mountPath: /docker-entrypoint-preinitdb.d/
