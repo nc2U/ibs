@@ -2,7 +2,7 @@
 import { ref, reactive, onBeforeMount } from 'vue'
 import { GridLayout, type LayoutItem } from 'grid-layout-plus'
 import MultiSelect from '@/components/MultiSelect/index.vue'
-import NoData from '@/components/NoData/index.vue'
+import NoData from '@/components/NoData/Index.vue'
 
 const showItems = ref<number[]>([1, 2])
 
