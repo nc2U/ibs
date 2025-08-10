@@ -8,14 +8,14 @@ DUMP_FILE="/var/backups/ibs-backup-postgres-${DATE}.dump"
 LOG_FILE="/var/backups/backup-${DATE}.log"
 PGPASSWORD="${POSTGRES_PASSWORD:-$( [ -f "$POSTGRES_PASSWORD_FILE" ] && cat "$POSTGRES_PASSWORD_FILE" || echo '')}"
 POSTGRES_DATABASE="${POSTGRES_DATABASE:-${POSTGRES_DB}}"
-SUPER_USER="postgres"
+SUPER_USER="${POSTGRES_DB:-postgres}"
 
 # 이전 백업 삭제 (예: 2일 이상된 파일)
 find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -ctime +2 -delete
 
 # 환경 변수 확인
-if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
-    echo "Error: POSTGRES_USER, POSTGRES_DATABASE, or DUMP_FILE is not set" >&2
+if [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
+    echo "Error: POSTGRES_DATABASE, or DUMP_FILE is not set" >&2
     exit 1
 fi
 
