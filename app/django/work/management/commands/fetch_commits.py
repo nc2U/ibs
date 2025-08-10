@@ -273,11 +273,11 @@ class Command(BaseCommand):
 
                         if not os.path.isdir(repo_path):  # 저장소 경로 등록 확인
                             try:
-                                subprocess.run(["git", "clone", "--bare", repo.url, repo_path], check=True)
+                                subprocess.run(["git", "clone", "--bare", repo.remote_url, repo_path], check=True)
                                 self.stdout.write(
-                                    self.style.SUCCESS(f"Cloned bare repo from {repo.url} to {repo_path}"))
+                                    self.style.SUCCESS(f"Cloned bare repo from {repo.remote_url} to {repo_path}"))
                             except subprocess.CalledProcessError as e:
-                                self.stderr.write(self.style.ERROR(f"Failed to clone repo: {repo.url}"))
+                                self.stderr.write(self.style.ERROR(f"Failed to clone repo: {repo.remote_url}"))
                             continue
 
                         try:  # git 저장소 확인
