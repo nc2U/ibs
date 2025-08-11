@@ -14,8 +14,8 @@ SUPER_USER="postgres"
 find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -ctime +2 -delete
 
 # 환경 변수 확인
-if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
-    echo "Error: POSTGRES_USER, POSTGRES_DATABASE, or DUMP_FILE is not set" >&2
+if [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
+    echo "Error: POSTGRES_DATABASE, or DUMP_FILE is not set" >&2
     exit 1
 fi
 
