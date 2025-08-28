@@ -65,9 +65,18 @@ data:
         server_name     $host www.$host;
         charset         utf-8;
 
+        client_max_body_size 100M;
+
         location / {
             uwsgi_pass  django_uwsgi;
             include     /etc/nginx/uwsgi_params;
+
+            client_max_body_size 100M;   # location 단위에도 추가
+
+            # uwsgi buffer 설정
+            uwsgi_buffer_size 64k;
+            uwsgi_buffers 8 64k;
+            uwsgi_busy_buffers_size 64k;
 
             proxy_hide_header Access-Control-Allow-Origin;
             add_header 'Access-Control-Allow-Origin' '*';
