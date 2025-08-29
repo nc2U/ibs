@@ -90,9 +90,9 @@ jobs:
                 --set postgres.auth.replicationPassword=${{ secrets.DATABASE_PASS }} \
                 --set 'nginx.ingress.hosts[0].host'=${{ secrets.DOMAIN_NAME }} \
                 --set 'nginx.ingress.hosts[1].host'=www.${{ secrets.DOMAIN_NAME }} \
-                --set 'nginx.ingress.hosts[2].host'=intra.${{ secrets.DOMAIN_NAME }} \
-                --set 'nginx.ingress.hosts[3].host'=intra.dyibs.co.kr \
-                --set 'nginx.ingress.hosts[4].host'=intra.brdnc.co.kr \
+                --set 'nginx.ingress.hosts[2].host'=work.${{ secrets.DOMAIN_NAME }} \
+                --set 'nginx.ingress.hosts[3].host'=work.dyibs.co.kr \
+                --set 'nginx.ingress.hosts[4].host'=work.brdnc.co.kr \
                 --set 'nginx.ingress.hosts[0].paths[0].path'=/ \
                 --set 'nginx.ingress.hosts[0].paths[0].pathType'=Prefix \
                 --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
@@ -105,9 +105,9 @@ jobs:
                 --set 'nginx.ingress.hosts[4].paths[0].pathType'=Prefix \
                 --set 'nginx.ingress.tls[0].hosts[0]'=${{ secrets.DOMAIN_NAME }} \
                 --set 'nginx.ingress.tls[0].hosts[1]'=www.${{ secrets.DOMAIN_NAME }} \
-                --set 'nginx.ingress.tls[0].hosts[2]'=intra.${{ secrets.DOMAIN_NAME }} \
-                --set 'nginx.ingress.tls[0].hosts[3]'=intra.dyibs.co.kr \
-                --set 'nginx.ingress.tls[0].hosts[4]'=intra.brdnc.co.kr \
+                --set 'nginx.ingress.tls[0].hosts[2]'=work.${{ secrets.DOMAIN_NAME }} \
+                --set 'nginx.ingress.tls[0].hosts[3]'=work.dyibs.co.kr \
+                --set 'nginx.ingress.tls[0].hosts[4]'=work.brdnc.co.kr \
                 --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
             fi
       
