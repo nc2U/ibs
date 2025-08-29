@@ -62,7 +62,7 @@ data:
   PUBLIC.CONF: |
     server {
         listen          {{ .Values.service.port | default "80" }} default_server;
-        server_name     $host www.$host;
+        server_name     $host;
         charset         utf-8;
 
         client_max_body_size 100M;
