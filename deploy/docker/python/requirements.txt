@@ -25,4 +25,4 @@ djangorestframework-simplejwt==5.5.1
 django-allauth==65.11.1
 django-filter==25.1
 django-crispy-forms==2.4
-crispy-bootstrap4==2024.6
+crispy-bootstrap4==2025.6
