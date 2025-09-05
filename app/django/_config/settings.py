@@ -330,3 +330,6 @@ APP_ORDER = [
     'accounts',
     'book',
 ]
+
+# Slack Notifications Settings
+SLACK_NOTIFICATIONS_ENABLED = config('SLACK_NOTIFICATIONS_ENABLED', default=True, cast=bool)

@@ -1,19 +1,20 @@
 ### FOR DJANGO APP ----------------------------------------------------------------------------------
-SECRET_KEY=                 # required, Set random characters of at least 50 characters.
-DEBUG=                      # default=False
-ALLOWED_HOSTS=              # default=*, set the like this -> host1,host2,host3...
+SECRET_KEY=                   # required, Set random characters of at least 50 characters.
+DEBUG=                        # default=False
+ALLOWED_HOSTS=                # default=*, set the like this -> host1,host2,host3...
 
-DATABASE_TYPE=              # default=postgres, set the helm chart values.global.dbType
-DATABASE_USER=              # required, This name is referenced when releasing helm.
-DATABASE_PASSWORD=          # default='', set the helm chart values.global.dbPassword
+DATABASE_TYPE=                # default=postgres, set the helm chart values.global.dbType
+DATABASE_USER=                # required, This name is referenced when releasing helm.
+DATABASE_PASSWORD=            # default='', set the helm chart values.global.dbPassword
 
-DOMAIN_HOST=                # default=http://localhost/, set the helm chart values.global.domainHost
-DOMAIN_NAME=                # default=localhost, Representative domain when using multiple hosts via Ingress
+DOMAIN_HOST=                  # default=http://localhost/, set the helm chart values.global.domainHost
+DOMAIN_NAME=                  # default=localhost, Representative domain when using multiple hosts via Ingress
 
-EMAIL_HOST=                 # required, set the helm chart values.global.emailHost
-EMAIL_HOST_USER=            # required, set the helm chart values.global.emailHostUser
-EMAIL_HOST_PASSWORD=        # required, set the helm chart values.global.emailHostPassword
-DEFAULT_FROM_EMAIL=         # required, set the helm chart values.global.defaultFromEmail
+EMAIL_HOST=                   # required, set the helm chart values.global.emailHost
+EMAIL_HOST_USER=              # required, set the helm chart values.global.emailHostUser
+EMAIL_HOST_PASSWORD=          # required, set the helm chart values.global.emailHostPassword
+DEFAULT_FROM_EMAIL=           # required, set the helm chart values.global.defaultFromEmail
+SLACK_NOTIFICATIONS_ENABLED=  # default=True, IBS work notifications
 
 ### FOR DEPLOYMENT ------------------------------------------------------------------------------------
 CICD_HOST=                  # required, nfs server for django app source & database data

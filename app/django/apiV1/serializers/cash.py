@@ -89,7 +89,6 @@ class CashBookSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # 1. 거래정보 입력
         cashbook = CashBook.objects.create(**validated_data)
-        cashbook.save()
 
         # 2. sep 정보 확인
         sep_data = self.initial_data.get('sepData')
@@ -275,7 +274,6 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         pr_cashbook = ProjectCashBook.objects.create(**validated_data)
-        pr_cashbook.save()
 
         # 2. sep 정보 확인
         sep_data = self.initial_data.get('sepData')

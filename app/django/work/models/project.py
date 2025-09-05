@@ -21,6 +21,17 @@ class IssueProject(models.Model):
     activities = models.ManyToManyField('CodeActivity', blank=True, verbose_name='작업분류(시간추적)')
     status = models.CharField('사용여부', max_length=1, default='1', choices=(('1', '사용'), ('9', '잠금보관(모든 접근이 차단됨)')))
     order = models.PositiveSmallIntegerField('정렬순서', default=0)
+    slack_webhook_url = models.URLField(
+        'Slack 웹훅 URL', 
+        blank=True, 
+        null=True,
+        help_text='이 프로젝트의 알림을 받을 Slack 채널 웹훅 URL'
+    )
+    slack_notifications_enabled = models.BooleanField(
+        'Slack 알림 활성화', 
+        default=False,
+        help_text='이 프로젝트의 Slack 알림 사용 여부'
+    )
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
