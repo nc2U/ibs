@@ -35,8 +35,8 @@ class Contract(models.Model):
                                     verbose_name='계약유닛', related_name='contract')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                             verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name='등록자')
 
     def __str__(self):
         return f'[{self.project.id}] {self.serial_number}'
@@ -201,8 +201,8 @@ class Succession(models.Model):
     note = models.TextField('비고', blank=True)
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                             verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name='등록자')
 
     def __str__(self):
         return f'{self.seller}'
@@ -227,8 +227,8 @@ class ContractorRelease(models.Model):
     note = models.TextField('비고', blank=True)
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                             verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name='등록자')
 
     def __str__(self):
         return f'{self.contractor}'

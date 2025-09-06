@@ -404,7 +404,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # 1. 계약정보 테이블 입력
         contract = Contract.objects.create(**validated_data)
-        contract.save()
         request = self.context['request']
         new_file = request.data.get('newFile', None)
         if new_file:

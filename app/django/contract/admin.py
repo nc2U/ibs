@@ -31,7 +31,7 @@ class ContractFileAdmin(admin.StackedInline):
 class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'serial_number', 'key_unit', 'order_group', 'unit_type',
                     'activation', 'contractor', 'contractprice', 'is_sup_cont',
-                    'sup_cont_date', 'created_at', 'user')
+                    'sup_cont_date', 'created_at', 'creator')
     list_display_links = ('project', 'serial_number',)
     list_filter = ('project', 'order_group', 'unit_type', 'activation', 'contractor__status')
     search_fields = ('serial_number', 'contractor__name')
@@ -98,7 +98,7 @@ class CContactAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(Succession)
 class SuccessionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'contract', 'seller', 'buyer', 'apply_date', 'trading_date',
-                    'is_approval', 'approval_date', 'user')
+                    'is_approval', 'approval_date', 'creator')
     search_fields = ('seller', 'buyer')
     list_display_links = ('contract', 'seller', 'buyer')
     list_editable = ('is_approval', 'approval_date')

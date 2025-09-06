@@ -262,13 +262,13 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
                                         order_group=OrderGroup.objects.get(pk=self.request.POST.get('order_group')),
                                         unit_type=UnitType.objects.get(pk=self.request.POST.get('type')),
                                         serial_number=f"{KeyUnit.objects.get(pk=self.request.POST.get('key_unit')).unit_code}-{self.request.POST.get('order_group')}",
-                                        user=self.request.user)
+                                        creator=self.request.user)
                 else:
                     contract = Contract.objects.get(pk=cont_id)
                     contract.order_group = OrderGroup.objects.get(pk=self.request.POST.get('order_group'))
                     contract.unit_type = UnitType.objects.get(pk=self.request.POST.get('type'))
                     contract.serial_number = f"{KeyUnit.objects.get(pk=self.request.POST.get('key_unit')).unit_code}-{self.request.POST.get('order_group')}"
-                    contract.user = self.request.user
+                    contract.creator = self.request.user
                 contract.save()
 
                 # 2. 계약 유닛 연결
@@ -330,7 +330,7 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
                                             reservation_date=form.cleaned_data.get('reservation_date'),
                                             contract_date=form.cleaned_data.get('contract_date'),
                                             note=form.cleaned_data.get('note'),
-                                            user=self.request.user)
+                                            creator=self.request.user)
                 else:
                     contractor = Contractor.objects.get(contract=contract)
                     contractor.name = form.cleaned_data.get('name')
@@ -355,7 +355,7 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
                                                           dm_address1=form.cleaned_data.get('dm_address1'),
                                                           dm_address2=form.cleaned_data.get('dm_address2'),
                                                           dm_address3=form.cleaned_data.get('dm_address3'),
-                                                          user=self.request.user)
+                                                          creator=self.request.user)
                 else:
                     contractorAddress = ContractorAddress.objects.get(contractor=contractor)
                     contractorAddress.id_zipcode = form.cleaned_data.get('id_zipcode')
@@ -366,7 +366,7 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
                     contractorAddress.dm_address1 = form.cleaned_data.get('dm_address1')
                     contractorAddress.dm_address2 = form.cleaned_data.get('dm_address2')
                     contractorAddress.dm_address3 = form.cleaned_data.get('dm_address3')
-                    contractorAddress.user = self.request.user
+                    contractorAddress.creator = self.request.user
                 contractorAddress.save()
 
                 # 6. 계약자 연락처 테이블 입력
@@ -376,14 +376,14 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
                                                           home_phone=form.cleaned_data.get('home_phone'),
                                                           other_phone=form.cleaned_data.get('other_phone'),
                                                           email=form.cleaned_data.get('email'),
-                                                          user=self.request.user)
+                                                          creator=self.request.user)
                 else:
                     contractorContact = ContractorContact.objects.get(contractor=contractor)
                     contractorContact.cell_phone = form.cleaned_data.get('cell_phone')
                     contractorContact.home_phone = form.cleaned_data.get('home_phone')
                     contractorContact.other_phone = form.cleaned_data.get('other_phone')
                     contractorContact.email = form.cleaned_data.get('email')
-                    contractorContact.user = self.request.user
+                    contractorContact.creator = self.request.user
                 contractorContact.save()
 
                 # 7. 계약금 -- 수납 정보 테이블 입력 -- PaymentInlineFormSet 처리
@@ -458,7 +458,7 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
             'project': self.get_project(),
             'contractor': self.request.GET.get('contractor'),
             'status': self.request.GET.get('task'),
-            'user': self.request.user
+            'creator': self.request.user
         }
         release_id = self.request.GET.get('release_id')
         if release_id:
@@ -546,7 +546,7 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
                     if contractor.qualification == '3':
                         contractor.qualification = '2'  # 인가 등록 취소
                     contractor.status = '4'  # 해지 상태로 변경
-                    contractor.user = request.user  # 해지 등록 작업자
+                    contractor.creator = request.user  # 해지 등록 작업자
                     contractor.save()
 
                 # 7. 계약 해지 정보 테이블 입력
