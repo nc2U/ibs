@@ -10,6 +10,22 @@ from docs.models import LawsuitCase, Document
 logger = logging.getLogger(__name__)
 
 
+def get_service_url(model_instance):
+    """모델 인스턴스에 대한 서비스 URL 생성"""
+    base_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
+    
+    if isinstance(model_instance, CashBook):
+        return f"{base_url}/cash/cashbook/{model_instance.id}/"
+    elif isinstance(model_instance, ProjectCashBook):
+        return f"{base_url}/cash/project-cashbook/{model_instance.id}/"
+    elif isinstance(model_instance, LawsuitCase):
+        return f"{base_url}/docs/lawsuit/{model_instance.id}/"
+    elif isinstance(model_instance, Document):
+        return f"{base_url}/docs/document/{model_instance.id}/"
+    
+    return base_url
+
+
 def get_target_issue_project(model_instance):
     """모델 인스턴스에서 대상 IssueProject 추출"""
     
@@ -62,133 +78,91 @@ class SlackMessageBuilder:
     
     @staticmethod
     def build_cashbook_message(instance, action, user):
-        """CashBook 또는 ProjectCashBook 메시지 생성"""
+        """CashBook 또는 ProjectCashBook 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
         
         if isinstance(instance, CashBook):
-            # 본사 업무 메시지
-            color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
-            
-            fields = [
-                {'title': '회사', 'value': instance.company.name, 'short': True},
-                {'title': '구분', 'value': str(instance.sort), 'short': True},
-                {'title': '거래처', 'value': instance.trader or '-', 'short': True},
-                {'title': '적요', 'value': instance.content or '-', 'short': True},
-            ]
-            
-            if instance.income:
-                fields.append({'title': '입금액', 'value': f'{instance.income:,}원', 'short': True})
-            if instance.outlay:
-                fields.append({'title': '출금액', 'value': f'{instance.outlay:,}원', 'short': True})
-                
-            fields.extend([
-                {'title': '거래일', 'value': str(instance.deal_date), 'short': True},
-                {'title': '등록자', 'value': user.username if user else '시스템', 'short': True}
-            ])
-            
-            return {
-                'text': f"💰 *본사 입출금 {action}*",
-                'attachments': [{
-                    'color': color,
-                    'fields': fields,
-                    'footer': f'CashBook ID: {instance.id}',
-                    'ts': int(instance.updated_at.timestamp())
-                }]
-            }
-        
+            # 본사 입출금
+            title = f"💰 {instance.company.name} - {instance.content or '본사 입출금'}"
         elif isinstance(instance, ProjectCashBook):
-            # 프로젝트 업무 메시지  
-            color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+            # 프로젝트 입출금
+            title = f"🏗️ {instance.project.name} - {instance.content or '프로젝트 입출금'}"
+        else:
+            return None
             
-            fields = [
-                {'title': '프로젝트', 'value': instance.project.name, 'short': True},
-                {'title': '구분', 'value': str(instance.sort), 'short': True},
-                {'title': '거래처', 'value': instance.trader or '-', 'short': True},
-                {'title': '적요', 'value': instance.content or '-', 'short': True},
-            ]
-            
-            if instance.income:
-                fields.append({'title': '입금액', 'value': f'{instance.income:,}원', 'short': True})
-            if instance.outlay:
-                fields.append({'title': '출금액', 'value': f'{instance.outlay:,}원', 'short': True})
-                
-            fields.extend([
-                {'title': '거래일', 'value': str(instance.deal_date), 'short': True},
-                {'title': '등록자', 'value': user.username if user else '시스템', 'short': True}
-            ])
-            
-            return {
-                'text': f"🏗️ *프로젝트 입출금 {action}*",
-                'attachments': [{
-                    'color': color,
-                    'fields': fields,
-                    'footer': f'ProjectCashBook ID: {instance.id}',
-                    'ts': int(instance.updated_at.timestamp())
-                }]
-            }
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
         
-        return None
+        return {
+            'attachments': [{
+                'color': color,
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': f"등록자: {user.username if user else '시스템'}",
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'IBS 건설관리시스템',
+                'ts': int((instance.updated_at if hasattr(instance, 'updated_at') else instance.updated).timestamp())
+            }]
+        }
     
     @staticmethod
     def build_lawsuitcase_message(instance, action, user):
-        """LawsuitCase 메시지 생성"""
+        """LawsuitCase 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
         color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
         
-        # 법원명 또는 기타 처리기관
+        # 간소화된 제목: 법원 + 사건번호 + 사건명
         agency = instance.get_court_display() if instance.get_court_display() else instance.other_agency
-        
-        fields = [
-            {'title': '사건유형', 'value': instance.get_sort_display(), 'short': True},
-            {'title': '심급', 'value': instance.get_level_display() if instance.level else '-', 'short': True},
-            {'title': '법원/기관', 'value': agency, 'short': True},
-            {'title': '사건번호', 'value': instance.case_number, 'short': True},
-            {'title': '사건명', 'value': instance.case_name, 'short': False},
-            {'title': '원고(신청인)', 'value': instance.plaintiff or '-', 'short': True},
-            {'title': '피고(피신청인)', 'value': instance.defendant, 'short': True},
-            {'title': '사건개시일', 'value': str(instance.case_start_date), 'short': True},
-            {'title': '등록자', 'value': user.username if user else '시스템', 'short': True}
-        ]
-        
-        if instance.case_end_date:
-            fields.append({'title': '사건종결일', 'value': str(instance.case_end_date), 'short': True})
+        title = f"⚖️ {agency} {instance.case_number} - {instance.case_name}"
         
         return {
-            'text': f"⚖️ *소송사건 {action}*",
             'attachments': [{
                 'color': color,
-                'fields': fields,
-                'footer': f'LawsuitCase ID: {instance.id}',
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': f"등록자: {user.username if user else '시스템'}",
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'IBS 건설관리시스템',
                 'ts': int(instance.updated.timestamp())
             }]
         }
     
     @staticmethod
     def build_document_message(instance, action, user):
-        """Document 메시지 생성"""
+        """Document 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
         color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
         
-        fields = [
-            {'title': '문서유형', 'value': instance.doc_type.get_type_display(), 'short': True},
-            {'title': '카테고리', 'value': instance.category.name if instance.category else '-', 'short': True},
-            {'title': '제목', 'value': instance.title, 'short': False},
-            {'title': '등록자', 'value': user.username if user else '시스템', 'short': True}
-        ]
-        
-        if instance.lawsuit:
-            fields.append({'title': '관련사건', 'value': str(instance.lawsuit), 'short': False})
-        
-        if instance.execution_date:
-            fields.append({'title': '시행일자', 'value': str(instance.execution_date), 'short': True})
+        # 간소화된 제목: 문서유형 + 제목 + 보안표시
+        doc_type = instance.doc_type.get_type_display()
+        title = f"📄 [{doc_type}] {instance.title}"
         
         # 보안 문서 표시
         if instance.is_secret:
-            fields.append({'title': '보안', 'value': '🔒 비밀문서', 'short': True})
+            title = f"🔒 {title}"
         
         return {
-            'text': f"📄 *문서 {action}*",
             'attachments': [{
                 'color': color,
-                'fields': fields,
-                'footer': f'Document ID: {instance.id}',
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': f"등록자: {user.username if user else '시스템'}",
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'IBS 건설관리시스템',
                 'ts': int(instance.updated.timestamp())
             }]
         }
