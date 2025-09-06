@@ -6,15 +6,26 @@ from django.conf import settings
 from work.models.project import IssueProject, Member
 from cash.models import CashBook, ProjectCashBook
 from docs.models import LawsuitCase, Document
+from contract.models import Contract, Succession, ContractorRelease
 
 logger = logging.getLogger(__name__)
+SYSTEM_NAME = 'IBS 건설관리시스템'
 
 
 def get_service_url(model_instance):
     """모델 인스턴스에 대한 서비스 URL 생성"""
     base_url = getattr(settings, 'DOMAIN_HOST', 'http://localhost:5173')
     base_url = base_url.rstrip('/')  # DOMAIN_HOST가 '/'로 끝나면 제거
-    prefix = '' if model_instance.issue_project.sort == '1' else 'project-'
+
+    # issue_project 접근 방식 결정
+    if hasattr(model_instance, 'issue_project'):
+        issue_project = model_instance.issue_project
+    elif hasattr(model_instance, 'project') and hasattr(model_instance.project, 'issue_project'):
+        issue_project = model_instance.project.issue_project
+    else:
+        issue_project = None
+
+    prefix = '' if (issue_project and issue_project.sort == '1') else 'project-'
 
     if isinstance(model_instance, CashBook):
         return f"{base_url}/#/cash/cashbook/{model_instance.id}"
@@ -25,6 +36,12 @@ def get_service_url(model_instance):
     elif isinstance(model_instance, Document):
         sort_docs = 'lawsuit' if model_instance.lawsuit else 'general'
         return f"{base_url}/#/{prefix}docs/{sort_docs}/docs/{model_instance.id}"
+    elif isinstance(model_instance, Contract):
+        return f"{base_url}/#/contracts/index/{model_instance.id}"
+    elif isinstance(model_instance, Succession):
+        return f"{base_url}/#/contracts/succession/{model_instance.id}"
+    elif isinstance(model_instance, ContractorRelease):
+        return f"{base_url}/#/contracts/release/{model_instance.id}"
 
     return base_url
 
@@ -107,7 +124,7 @@ class SlackMessageBuilder:
                     'url': service_url,
                     'style': 'primary'
                 }],
-                'footer': f'IBS 건설관리시스템',
+                'footer': f'{SYSTEM_NAME}',
                 'ts': int((instance.updated_at if hasattr(instance, 'updated_at') else instance.updated).timestamp())
             }]
         }
@@ -134,7 +151,7 @@ class SlackMessageBuilder:
                     'url': service_url,
                     'style': 'primary'
                 }],
-                'footer': f'IBS 건설관리시스템',
+                'footer': f'{SYSTEM_NAME}',
                 'ts': int(instance.updated.timestamp())
             }]
         }
@@ -165,8 +182,87 @@ class SlackMessageBuilder:
                     'url': service_url,
                     'style': 'primary'
                 }],
-                'footer': f'IBS 건설관리시스템',
+                'footer': f'{SYSTEM_NAME}',
                 'ts': int(instance.updated.timestamp())
+            }]
+        }
+
+    @staticmethod
+    def build_contract_message(instance, action, user):
+        """Contract 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+
+        # 간소화된 제목: 프로젝트명 + 계약번호
+        title = f"📋 [계약]-[{instance.project.name}] {instance.serial_number}"
+
+        return {
+            'attachments': [{
+                'color': color,
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': f"등록자: {user.username if user else '시스템'}",
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'{SYSTEM_NAME}',
+                'ts': int(instance.updated_at.timestamp())
+            }]
+        }
+
+    @staticmethod
+    def build_succession_message(instance, action, user):
+        """Succession 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+
+        # 간소화된 제목: 프로젝트명 + 양도승계 + 양도자→양수자
+        title = f"🔄 [계약승계]-[{instance.contract.project.name}] :: {instance.seller.name} → {instance.buyer.name}"
+
+        return {
+            'attachments': [{
+                'color': color,
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': f"등록자: {user.username if user else '시스템'}",
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'{SYSTEM_NAME}',
+                'ts': int(instance.updated_at.timestamp())
+            }]
+        }
+
+    @staticmethod
+    def build_contractor_release_message(instance, action, user):
+        """ContractorRelease 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+
+        # 간소화된 제목: 프로젝트명 + 해지 + 계약자명
+        status_display = instance.get_status_display()
+        title = f"❌ [계약해지]-[{instance.project.name}] {status_display} - {instance.contractor.name}"
+
+        return {
+            'attachments': [{
+                'color': color,
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': f"등록자: {user.username if user else '시스템'}",
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'{SYSTEM_NAME}',
+                'ts': int(instance.updated_at.timestamp())
             }]
         }
 
@@ -215,6 +311,12 @@ def send_slack_notification(instance, action, user=None):
         message_data = SlackMessageBuilder.build_lawsuitcase_message(instance, action, user)
     elif isinstance(instance, Document):
         message_data = SlackMessageBuilder.build_document_message(instance, action, user)
+    elif isinstance(instance, Contract):
+        message_data = SlackMessageBuilder.build_contract_message(instance, action, user)
+    elif isinstance(instance, Succession):
+        message_data = SlackMessageBuilder.build_succession_message(instance, action, user)
+    elif isinstance(instance, ContractorRelease):
+        message_data = SlackMessageBuilder.build_contractor_release_message(instance, action, user)
 
     if not message_data:
         logger.warning(f"지원하지 않는 모델 타입: {type(instance)}")
