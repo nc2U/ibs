@@ -1,6 +1,6 @@
 @import url(https://fonts.googleapis.com/css?family=Raleway:100,200,300,400,600);
 @import url(//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css);
-@import url(//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css);
+@import url(//cdn.jsdelivr.net/xeicon/2/xeicon.min.css);
 
 /*!
  * Bootstrap v4.3.1 (https://getbootstrap.com/)
@@ -42,6 +42,7 @@
 *, :after, :before {
     box-sizing: border-box
 }
+
 html {
     font-family: 'Spoqa Han Sans Neo', 'Nunito', 'sans-serif';
     line-height: 1.15;
