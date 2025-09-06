@@ -5,6 +5,7 @@ from django.conf import settings
 
 from work.models.project import IssueProject, Member
 from cash.models import CashBook, ProjectCashBook
+from docs.models import LawsuitCase, Document
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,13 @@ def get_target_issue_project(model_instance):
             if (issue_project.slack_notifications_enabled and 
                 issue_project.slack_webhook_url):
                 return issue_project
+                
+    elif hasattr(model_instance, 'issue_project'):  # LawsuitCase, Document 등
+        # 직접 IssueProject와 연결된 모델
+        issue_project = model_instance.issue_project
+        if (issue_project.slack_notifications_enabled and 
+            issue_project.slack_webhook_url):
+            return issue_project
     
     return None
 
@@ -119,6 +127,71 @@ class SlackMessageBuilder:
             }
         
         return None
+    
+    @staticmethod
+    def build_lawsuitcase_message(instance, action, user):
+        """LawsuitCase 메시지 생성"""
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        
+        # 법원명 또는 기타 처리기관
+        agency = instance.get_court_display() if instance.get_court_display() else instance.other_agency
+        
+        fields = [
+            {'title': '사건유형', 'value': instance.get_sort_display(), 'short': True},
+            {'title': '심급', 'value': instance.get_level_display() if instance.level else '-', 'short': True},
+            {'title': '법원/기관', 'value': agency, 'short': True},
+            {'title': '사건번호', 'value': instance.case_number, 'short': True},
+            {'title': '사건명', 'value': instance.case_name, 'short': False},
+            {'title': '원고(신청인)', 'value': instance.plaintiff or '-', 'short': True},
+            {'title': '피고(피신청인)', 'value': instance.defendant, 'short': True},
+            {'title': '사건개시일', 'value': str(instance.case_start_date), 'short': True},
+            {'title': '등록자', 'value': user.username if user else '시스템', 'short': True}
+        ]
+        
+        if instance.case_end_date:
+            fields.append({'title': '사건종결일', 'value': str(instance.case_end_date), 'short': True})
+        
+        return {
+            'text': f"⚖️ *소송사건 {action}*",
+            'attachments': [{
+                'color': color,
+                'fields': fields,
+                'footer': f'LawsuitCase ID: {instance.id}',
+                'ts': int(instance.updated.timestamp())
+            }]
+        }
+    
+    @staticmethod
+    def build_document_message(instance, action, user):
+        """Document 메시지 생성"""
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        
+        fields = [
+            {'title': '문서유형', 'value': instance.doc_type.get_type_display(), 'short': True},
+            {'title': '카테고리', 'value': instance.category.name if instance.category else '-', 'short': True},
+            {'title': '제목', 'value': instance.title, 'short': False},
+            {'title': '등록자', 'value': user.username if user else '시스템', 'short': True}
+        ]
+        
+        if instance.lawsuit:
+            fields.append({'title': '관련사건', 'value': str(instance.lawsuit), 'short': False})
+        
+        if instance.execution_date:
+            fields.append({'title': '시행일자', 'value': str(instance.execution_date), 'short': True})
+        
+        # 보안 문서 표시
+        if instance.is_secret:
+            fields.append({'title': '보안', 'value': '🔒 비밀문서', 'short': True})
+        
+        return {
+            'text': f"📄 *문서 {action}*",
+            'attachments': [{
+                'color': color,
+                'fields': fields,
+                'footer': f'Document ID: {instance.id}',
+                'ts': int(instance.updated.timestamp())
+            }]
+        }
 
 
 def send_slack_message(webhook_url, message_data):
@@ -161,6 +234,10 @@ def send_slack_notification(instance, action, user=None):
     message_data = None
     if isinstance(instance, (CashBook, ProjectCashBook)):
         message_data = SlackMessageBuilder.build_cashbook_message(instance, action, user)
+    elif isinstance(instance, LawsuitCase):
+        message_data = SlackMessageBuilder.build_lawsuitcase_message(instance, action, user)
+    elif isinstance(instance, Document):
+        message_data = SlackMessageBuilder.build_document_message(instance, action, user)
     
     if not message_data:
         logger.warning(f"지원하지 않는 모델 타입: {type(instance)}")
