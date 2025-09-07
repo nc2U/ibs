@@ -13,6 +13,8 @@ import BankAcc from './BankAcc.vue'
 const props = defineProps({
   company: { type: Number, default: null },
   projects: { type: Array as PropType<Project[]>, default: () => [] },
+  highlightId: { type: Number, default: null },
+  currentPage: { type: Number, default: 1 },
 })
 const emit = defineEmits([
   'page-select',
@@ -98,6 +100,7 @@ const accCallModal = () => {
         :cash="cash"
         :projects="projects"
         :calculated="comCalculated?.calculated"
+        :is-highlighted="props.highlightId === cash.pk"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @patch-d3-hide="patchD3Hide"
@@ -108,7 +111,7 @@ const accCallModal = () => {
   </CTable>
 
   <Pagination
-    :active-page="1"
+    :active-page="props.currentPage"
     :limit="8"
     :pages="cashesPages(15)"
     class="mt-3"

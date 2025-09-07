@@ -227,6 +227,29 @@ export const useComCash = defineStore('comCash', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const findCashBookPage = async (highlightId: number, filters: DataFilter) => {
+    const { company } = filters
+    let url = `/cashbook/find_page/?highlight_id=${highlightId}&company=${company}`
+    if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
+    if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
+    if (filters.sort) url += `&sort=${filters.sort}`
+    if (filters.account_d1) url += `&account_d1=${filters.account_d1}`
+    if (filters.account_d2) url += `&account_d2=${filters.account_d2}`
+    if (filters.account_d3) url += `&account_d3=${filters.account_d3}`
+    if (filters.project) url += `&project=${filters.project}`
+    if (filters.is_return) url += `&is_return=${filters.is_return}`
+    if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
+    if (filters.search) url += `&search=${filters.search}`
+    
+    try {
+      const response = await api.get(url)
+      return response.data.page
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return 1
+    }
+  }
+
   const createCashBook = async (payload: CashBook & { sepData: SepItems | null }) =>
     await api
       .post(`/cashbook/`, payload)
@@ -334,6 +357,7 @@ export const useComCash = defineStore('comCash', () => {
     cashBookCount,
     cashesPages,
     fetchCashBookList,
+    findCashBookPage,
     createCashBook,
     updateCashBook,
     deleteCashBook,

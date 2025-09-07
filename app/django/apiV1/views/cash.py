@@ -2,6 +2,8 @@ from datetime import datetime
 from django.db.models import Sum, F, Q, Case, When
 from django.template.defaultfilters import default
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django_filters.rest_framework import FilterSet
 from django_filters import DateFilter, BooleanFilter
 
@@ -105,6 +107,39 @@ class CashBookViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(updator=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def find_page(self, request):
+        """특정 ID의 항목이 몇 번째 페이지에 있는지 찾기"""
+        highlight_id = request.query_params.get('highlight_id')
+        if not highlight_id:
+            return Response({'error': 'highlight_id parameter required'}, status=400)
+        
+        try:
+            highlight_id = int(highlight_id)
+        except ValueError:
+            return Response({'error': 'highlight_id must be integer'}, status=400)
+            
+        # 현재 필터 조건을 적용한 queryset 가져오기
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # 해당 ID가 존재하는지 확인
+        try:
+            target_item = queryset.get(pk=highlight_id)
+        except CashBook.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
+            
+        # 해당 항목보다 앞에 있는 항목 개수 계산 (동일한 정렬 조건 적용)
+        items_before = queryset.filter(
+            Q(deal_date__gt=target_item.deal_date) |
+            (Q(deal_date=target_item.deal_date) & Q(id__gt=target_item.id))
+        ).count()
+        
+        # 페이지 크기는 15개
+        page_size = 15
+        page_number = (items_before // page_size) + 1
+        
+        return Response({'page': page_number})
 
 
 class CompanyCashCalcViewSet(viewsets.ModelViewSet):
@@ -224,6 +259,39 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(updator=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def find_page(self, request):
+        """특정 ID의 항목이 몇 번째 페이지에 있는지 찾기"""
+        highlight_id = request.query_params.get('highlight_id')
+        if not highlight_id:
+            return Response({'error': 'highlight_id parameter required'}, status=400)
+        
+        try:
+            highlight_id = int(highlight_id)
+        except ValueError:
+            return Response({'error': 'highlight_id must be integer'}, status=400)
+            
+        # 현재 필터 조건을 적용한 queryset 가져오기
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # 해당 ID가 존재하는지 확인
+        try:
+            target_item = queryset.get(pk=highlight_id)
+        except ProjectCashBook.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
+            
+        # 해당 항목보다 앞에 있는 항목 개수 계산 (동일한 정렬 조건 적용)
+        items_before = queryset.filter(
+            Q(deal_date__gt=target_item.deal_date) |
+            (Q(deal_date=target_item.deal_date) & Q(id__gt=target_item.id))
+        ).count()
+        
+        # 페이지 크기는 15개
+        page_size = 15
+        page_number = (items_before // page_size) + 1
+        
+        return Response({'page': page_number})
 
 
 class ProjectCashCalcViewSet(viewsets.ModelViewSet):

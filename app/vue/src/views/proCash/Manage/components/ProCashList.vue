@@ -9,7 +9,11 @@ import Pagination from '@/components/Pagination'
 import AccDepth from './AccDepth.vue'
 import BankAcc from './BankAcc.vue'
 
-const props = defineProps({ project: Number, default: () => null })
+const props = defineProps({ 
+  project: { type: Number, default: null },
+  highlightId: { type: Number, default: null },
+  currentPage: { type: Number, default: 1 },
+})
 const emit = defineEmits([
   'page-select',
   'on-delete',
@@ -88,6 +92,7 @@ const accCallModal = () => {
         :key="proCash.pk as number"
         :pro-cash="proCash"
         :calculated="proCalculated?.calculated"
+        :is-highlighted="props.highlightId === proCash.pk"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @on-bank-create="onBankCreate"
@@ -97,7 +102,7 @@ const accCallModal = () => {
   </CTable>
 
   <Pagination
-    :active-page="1"
+    :active-page="props.currentPage"
     :limit="8"
     :pages="proCashPages(15)"
     class="mt-3"

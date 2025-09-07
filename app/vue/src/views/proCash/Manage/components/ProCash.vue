@@ -11,6 +11,7 @@ import ProCashForm from '@/views/proCash/Manage/components/ProCashForm.vue'
 const props = defineProps({
   proCash: { type: Object as PropType<ProjectCashBook>, required: true },
   calculated: { type: String, default: '2000-01-01' },
+  isHighlighted: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'on-bank-create', 'on-bank-update'])
@@ -25,14 +26,19 @@ const store = useStore()
 const dark = computed(() => store.theme === 'dark')
 const rowColor = computed(() => {
   let color = ''
-  color =
-    props.proCash?.contract &&
-    (props.proCash.project_account_d3 === 1 || props.proCash.project_account_d3 === 4)
-      ? 'info'
-      : color
-  color = dark.value ? '' : color
-  color = props.proCash?.is_separate ? 'primary' : color
-  color = props.proCash?.separated ? 'secondary' : color
+  // 하이라이트가 우선순위가 가장 높음
+  if (props.isHighlighted) {
+    color = 'warning'
+  } else {
+    color =
+      props.proCash?.contract &&
+      (props.proCash.project_account_d3 === 1 || props.proCash.project_account_d3 === 4)
+        ? 'info'
+        : color
+    color = dark.value ? '' : color
+    color = props.proCash?.is_separate ? 'primary' : color
+    color = props.proCash?.separated ? 'secondary' : color
+  }
   return color
 })
 
@@ -61,6 +67,7 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
     class="text-center"
     :color="rowColor"
     :style="proCash.is_separate ? 'font-weight: bold;' : ''"
+    :data-procash-id="proCash.pk"
   >
     <CTableDataCell>{{ proCash.deal_date }}</CTableDataCell>
     <CTableDataCell :class="sortClass">

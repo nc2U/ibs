@@ -15,6 +15,7 @@ const props = defineProps({
   projects: { type: Array as PropType<Project[]>, default: () => [] },
   cash: { type: Object as PropType<CashBook>, required: true },
   calculated: { type: String, default: '2000-01-01' },
+  isHighlighted: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
@@ -38,8 +39,13 @@ const dark = computed(() => store.theme === 'dark')
 const rowColor = computed(() => {
   let color = ''
   color = dark.value ? '' : color
-  color = props.cash?.is_separate ? 'primary' : color
-  color = props.cash?.separated ? 'secondary' : color
+  // 하이라이트가 우선순위가 가장 높음
+  if (props.isHighlighted) {
+    color = 'warning'
+  } else {
+    color = props.cash?.is_separate ? 'primary' : color
+    color = props.cash?.separated ? 'secondary' : color
+  }
   return color
 })
 
@@ -83,6 +89,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
     class="text-center"
     :color="rowColor"
     :style="cash.is_separate ? 'font-weight: bold;' : ''"
+    :data-cash-id="cash.pk"
   >
     <CTableDataCell>{{ cash.deal_date }}</CTableDataCell>
     <CTableDataCell :class="sortClass">

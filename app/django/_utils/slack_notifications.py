@@ -29,9 +29,9 @@ def get_service_url(model_instance):
     prefix = '' if (issue_project and issue_project.sort == '1') else 'project-'
 
     if isinstance(model_instance, CashBook):
-        return f"{base_url}/#/cashes/index"  # /{model_instance.id}"
+        return f"{base_url}/#/cashes/index?highlight_id={model_instance.id}"
     elif isinstance(model_instance, ProjectCashBook):
-        return f"{base_url}/#/project-cash/index"  # /{model_instance.id}"
+        return f"{base_url}/#/project-cash/index?highlight_id={model_instance.id}"
     elif isinstance(model_instance, LawsuitCase):
         return f"{base_url}/#/{prefix}docs/lawsuit/case/{model_instance.id}"
     elif isinstance(model_instance, Document):

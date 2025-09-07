@@ -183,6 +183,20 @@ export const useProCash = defineStore('proCash', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const findProjectCashBookPage = async (highlightId: number, filters: CashBookFilter) => {
+    const { project, is_imprest } = filters
+    let url = `/project-cashbook/find_page/?highlight_id=${highlightId}&project=${project}&is_imprest=${is_imprest}`
+    url += getUrl(filters)
+    
+    try {
+      const response = await api.get(url)
+      return response.data.page
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return 1
+    }
+  }
+
   const proCashPages = (itemsPerPage: number) => Math.ceil(proCashesCount.value / itemsPerPage)
 
   const paymentStore = usePayment()
@@ -488,6 +502,7 @@ export const useProCash = defineStore('proCash', () => {
     proCashBookList,
     proCashesCount,
     fetchProjectCashList,
+    findProjectCashBookPage,
     proCashPages,
     createPrCashBook,
     updatePrCashBook,

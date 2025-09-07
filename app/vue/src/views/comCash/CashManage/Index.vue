@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue'
+import { ref, computed, onBeforeMount, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/comCash/_menu/headermixin'
 import { cutString } from '@/utils/baseMixins'
 import { useCompany } from '@/store/pinia/company'
@@ -16,6 +17,12 @@ import TableTitleRow from '@/components/TableTitleRow.vue'
 import CashList from '@/views/comCash/CashManage/components/CashList.vue'
 
 const listControl = ref()
+const route = useRoute()
+
+const highlightId = computed(() => {
+  const id = route.query.highlight_id
+  return id ? parseInt(id as string, 10) : null
+})
 
 const dataFilter = ref<Filter>({
   page: 1,
@@ -75,6 +82,7 @@ const createComBankAcc = (payload: CompanyBank) => cashStore.createComBankAcc(pa
 const patchComBankAcc = (payload: CompanyBank) => cashStore.patchComBankAcc(payload)
 
 const fetchCashBookList = (payload: Filter) => cashStore.fetchCashBookList(payload)
+const findCashBookPage = (highlightId: number, filters: Filter) => cashStore.findCashBookPage(highlightId, filters)
 const createCashBook = (payload: CashBook & { sepData: SepItems | null }) =>
   cashStore.createCashBook(payload)
 const updateCashBook = (
@@ -214,8 +222,42 @@ const comSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
+const scrollToHighlight = async () => {
+  if (highlightId.value) {
+    await nextTick()
+    const element = document.querySelector(`[data-cash-id="${highlightId.value}"]`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // highlightId는 computed이므로 URL 파라미터가 있는 동안 자동으로 유지됩니다
+    }
+  }
+}
+
+const loadHighlightPage = async () => {
+  if (highlightId.value && company.value) {
+    try {
+      // 현재 필터 조건으로 해당 항목이 몇 번째 페이지에 있는지 찾기
+      const targetPage = await findCashBookPage(highlightId.value, {
+        ...dataFilter.value,
+        company: company.value,
+      })
+      
+      // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
+      dataFilter.value.page = targetPage
+      await fetchCashBookList({
+        ...dataFilter.value,
+        company: company.value,
+      })
+    } catch (error) {
+      console.error('Error finding highlight page:', error)
+    }
+  }
+}
+
 const loading = ref(true)
 onBeforeMount(async () => {
+  // highlightId는 computed로 자동 처리됨
+
   await fetchBankCodeList()
   await fetchAccSortList()
   await fetchAllAccD1List()
@@ -225,6 +267,13 @@ onBeforeMount(async () => {
   await fetchFormAccD2List(null, null)
   await fetchFormAccD3List(null, null, null)
   await dataSetup(company.value || comStore.initComId)
+  
+  // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
+  if (highlightId.value) {
+    await loadHighlightPage()
+  }
+  await scrollToHighlight()
+  
   loading.value = false
 })
 </script>
@@ -259,6 +308,8 @@ onBeforeMount(async () => {
       <CashList
         :company="company as number"
         :projects="projectList"
+        :highlight-id="highlightId"
+        :current-page="dataFilter.page || 1"
         @page-select="pageSelect"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
