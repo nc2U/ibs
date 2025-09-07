@@ -101,8 +101,8 @@ class OverDueRule(models.Model):
     rate_year = models.DecimalField('연체(할인)이율', max_digits=4, decimal_places=2, help_text='연체일이 0 또는 음수 구간인 경우 할인 적용')
 
     def __str__(self):
-        ts = str(self.term_start) + '일' if self.term_start != None else 'Min'
-        te = str(self.term_end) + '일' if self.term_end != None else 'Max'
+        ts = str(self.term_start) + '일' if self.term_start is not None else 'Min'
+        te = str(self.term_end) + '일' if self.term_end is not None else 'Max'
         return f'{ts} - {te}'
 
     class Meta:
@@ -161,8 +161,8 @@ class SpecialOverDueRule(models.Model):  # 가산금 / 할인액 계산을 위�
     rate_year = models.DecimalField('연체(할인)이율', max_digits=4, decimal_places=2, help_text='연체일이 0 또는 음수 구간인 경우 할인 적용')
 
     def __str__(self):
-        ts = str(self.term_start) + '일' if self.term_start != None else 'Min'
-        te = str(self.term_end) + '일' if self.term_end != None else 'Max'
+        ts = str(self.term_start) + '일' if self.term_start is not None else 'Min'
+        te = str(self.term_end) + '일' if self.term_end is not None else 'Max'
         return f'{ts} - {te}'
 
     class Meta:
