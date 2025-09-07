@@ -337,11 +337,11 @@ class ProjectCashBookIncsInContractSerializer(serializers.ModelSerializer):
 
 
 class ContractFileInContractSetSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = ContractFile
-        fields = ('pk', 'file', 'file_name', 'file_size', 'created', 'user')
+        fields = ('pk', 'file', 'file_name', 'file_size', 'created', 'creator')
 
 
 class ContractSetSerializer(serializers.ModelSerializer):
@@ -407,7 +407,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
         request = self.context['request']
         new_file = request.data.get('newFile', None)
         if new_file:
-            ContractFile.objects.create(contract=contract, file=new_file, user=request.user)
+            ContractFile.objects.create(contract=contract, file=new_file, creator=request.user)
 
         # 2. 계약 유닛 연결
         unit_pk = self.initial_data.get('key_unit')
@@ -542,7 +542,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         new_file = data.get('newFile', None)
         if new_file:
-            ContractFile.objects.create(contract=instance, file=new_file, user=user)
+            ContractFile.objects.create(contract=instance, file=new_file, creator=user)
 
         edit_file = data.get('editFile', None)  # pk of file to edit
         cng_file = data.get('cngFile', None)  # change file

@@ -60,7 +60,7 @@ class ContractViewSet(viewsets.ModelViewSet):
                        'serial_number', 'contractor__name')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class ContractSetViewSet(ContractViewSet):
@@ -176,10 +176,10 @@ class ContractorViewSet(viewsets.ModelViewSet):
                      'contractorcontact__other_phone', 'contractorcontact__email')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class ContAddressViewSet(viewsets.ModelViewSet):
@@ -188,10 +188,10 @@ class ContAddressViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class ContContactViewSet(viewsets.ModelViewSet):
@@ -200,10 +200,10 @@ class ContContactViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class SuccessionViewSet(viewsets.ModelViewSet):
@@ -213,7 +213,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
     filterset_fields = ('contract__project',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class ContReleaseViewSet(viewsets.ModelViewSet):
@@ -223,4 +223,4 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
     filterset_fields = ('project', 'status')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
