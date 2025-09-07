@@ -103,10 +103,12 @@ class SlackMessageBuilder:
 
         if isinstance(instance, CashBook):
             # 본사 입출금
-            title = f"💰 [본사 입출금]-{instance.company.name} - {instance.content or '------'}"
+            sort_name = instance.company.name
+            title = f"💵 [{sort_name}]-[입출금] - {instance.content or '------'}"
         elif isinstance(instance, ProjectCashBook):
             # 프로젝트 입출금
-            title = f"🏗️ [프로젝트 입출금]-{instance.project.name} - {instance.content or '------'}"
+            sort_name = instance.project.issue_project.name
+            title = f"🏗️ [{sort_name}]-[입출금] - {instance.content or '------'}"
         else:
             return None
 
@@ -146,7 +148,7 @@ class SlackMessageBuilder:
 
         # 간소화된 제목: 법원 + 사건번호 + 사건명
         agency = instance.get_court_display() if instance.get_court_display() else instance.other_agency
-        title = f"⚖️ {agency} {instance.case_number} - {instance.case_name}"
+        title = f"⚖️ {instance.issue_project.name}-[소송사건]-|{agency}| {instance.case_number} - {instance.case_name}"
 
         # 수정 시 updator와 creator 정보 표시
         if action == '수정' and hasattr(instance, 'updator') and instance.updator:
@@ -182,7 +184,7 @@ class SlackMessageBuilder:
 
         # 간소화된 제목: 문서유형 + 제목 + 보안표시
         doc_type = instance.doc_type.get_type_display()
-        title = f"📄 [{doc_type}] {instance.title}"
+        title = f"📄 {instance.issue_project.name}-[{doc_type}]-{instance.title}"
 
         # 보안 문서 표시
         if instance.is_secret:
@@ -221,7 +223,7 @@ class SlackMessageBuilder:
         color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 계약번호
-        title = f"📋 [계약]-[{instance.project.name}] {instance.serial_number}"
+        title = f"📋 [PR-계약]-[{instance.project.name}] {instance.serial_number}"
 
         return {
             'attachments': [{
@@ -247,7 +249,7 @@ class SlackMessageBuilder:
         color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 양도승계 + 양도자→양수자
-        title = f"🔄 [계약승계]-[{instance.contract.project.name}] :: {instance.seller.name} → {instance.buyer.name}"
+        title = f"🔄 [PR-계약승계]-[{instance.contract.project.name}] :: {instance.seller.name} → {instance.buyer.name}"
 
         return {
             'attachments': [{
@@ -274,7 +276,7 @@ class SlackMessageBuilder:
 
         # 간소화된 제목: 프로젝트명 + 해지 + 계약자명
         status_display = instance.get_status_display()
-        title = f"❌ [계약해지]-[{instance.project.name}] {status_display} - {instance.contractor.name}"
+        title = f"❌ [PR-계약해지]-[{instance.project.name}] {status_display} - {instance.contractor.name}"
 
         return {
             'attachments': [{
