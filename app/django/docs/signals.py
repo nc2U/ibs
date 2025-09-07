@@ -7,11 +7,11 @@ from _utils.slack_notifications import send_slack_notification
 
 @receiver(post_save, sender=LawsuitCase, dispatch_uid="lawsuitcase_slack_notification")
 def notify_lawsuitcase_change(sender, instance, created, raw=False, **kwargs):
-    """LawsuitCase 생성/수정 시 Slack 알림"""
+    """LawsuitCase 등록/편집 시 Slack 알림"""
     if raw:
         return
 
-    action = "생성" if created else "수정"
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 
@@ -43,12 +43,12 @@ def store_document_pre_save_state(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Document, dispatch_uid="document_slack_notification")
 def notify_document_change(sender, instance, created, raw=False, update_fields=None, **kwargs):
-    """Document 생성/수정 시 Slack 알림"""
+    """Document 등록/편집 시 Slack 알림"""
     if raw:
         return
 
     try:
-        # 생성이 아닌 경우 hit만 변경되었는지 확인
+        # 등록이 아닌 경우 hit만 변경되었는지 확인
         if not created and instance.pk in _document_pre_save_state:
             old_state = _document_pre_save_state[instance.pk]
 
@@ -66,7 +66,7 @@ def notify_document_change(sender, instance, created, raw=False, update_fields=N
             if not has_meaningful_change:
                 return
 
-        action = "생성" if created else "수정"
+        action = "등록" if created else "편집"
         send_slack_notification(instance, action, instance.creator)
 
     finally:

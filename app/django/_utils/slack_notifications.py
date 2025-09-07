@@ -14,7 +14,7 @@ SYSTEM_NAME = 'IBS 업무관리시스템'
 
 
 def get_service_url(model_instance):
-    """모델 인스턴스에 대한 서비스 URL 생성"""
+    """모델 인스턴스에 대한 서비스 URL 등록"""
     base_url = getattr(settings, 'DOMAIN_HOST', 'http://localhost:5173')
     base_url = base_url.rstrip('/')  # DOMAIN_HOST가 '/'로 끝나면 제거
 
@@ -105,7 +105,7 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_cashbook_message(instance, action, user):
-        """CashBook 또는 ProjectCashBook 간소화된 메시지 생성"""
+        """CashBook 또는 ProjectCashBook 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
 
         if isinstance(instance, CashBook):
@@ -119,15 +119,15 @@ class SlackMessageBuilder:
         else:
             return None
 
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
-        # 수정 시 updator와 creator 정보 표시
-        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
-            user_text = f"수정자: {instance.updator.username}"
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
             if hasattr(instance, 'creator') and instance.creator:
                 user_text += f" (등록자: {instance.creator.username})"
         else:
-            # 생성 시나 updator가 없는 경우 기존 방식
+            # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
 
         return {
@@ -149,21 +149,21 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_lawsuitcase_message(instance, action, user):
-        """LawsuitCase 간소화된 메시지 생성"""
+        """LawsuitCase 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 법원 + 사건번호 + 사건명
         agency = instance.get_court_display() if instance.get_court_display() else instance.other_agency
         title = f"⚖️ {instance.issue_project.name}-[소송사건]-|{agency}| {instance.case_number} - {instance.case_name}"
 
-        # 수정 시 updator와 creator 정보 표시
-        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
-            user_text = f"수정자: {instance.updator.username}"
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
             if hasattr(instance, 'creator') and instance.creator:
                 user_text += f" (등록자: {instance.creator.username})"
         else:
-            # 생성 시나 updator가 없는 경우 기존 방식
+            # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
 
         return {
@@ -185,9 +185,9 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_document_message(instance, action, user):
-        """Document 간소화된 메시지 생성"""
+        """Document 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 문서유형 + 제목 + 보안표시
         doc_type = instance.doc_type.get_type_display()
@@ -197,13 +197,13 @@ class SlackMessageBuilder:
         if instance.is_secret:
             title = f"🔒 {title}"
 
-        # 수정 시 updator와 creator 정보 표시
-        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
-            user_text = f"수정자: {instance.updator.username}"
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
             if hasattr(instance, 'creator') and instance.creator:
                 user_text += f" (등록자: {instance.creator.username})"
         else:
-            # 생성 시나 updator가 없는 경우 기존 방식
+            # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
 
         return {
@@ -225,9 +225,9 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_contract_message(instance, action, user):
-        """Contract 간소화된 메시지 생성"""
+        """Contract 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 계약번호
         title = f"📋 [PR-계약]-[{instance.project.name}] {instance.serial_number}"
@@ -251,9 +251,9 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_succession_message(instance, action, user):
-        """Succession 간소화된 메시지 생성"""
+        """Succession 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 양도승계 + 양도자→양수자
         title = f"🔄 [PR-계약승계]-[{instance.contract.project.name}] :: {instance.seller.name} → {instance.buyer.name}"
@@ -277,9 +277,9 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_contractor_release_message(instance, action, user):
-        """ContractorRelease 간소화된 메시지 생성"""
+        """ContractorRelease 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 해지 + 계약자명
         status_display = instance.get_status_display()
@@ -304,20 +304,20 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_site_message(instance, action, user):
-        """Site 간소화된 메시지 생성"""
+        """Site 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 사업부지 + 지번주소
         title = f"🏗️ [{instance.project.issue_project.name}]-[사업부지] - {instance.district} {instance.lot_number}"
 
-        # 수정 시 updator와 creator 정보 표시
-        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
-            user_text = f"수정자: {instance.updator.username}"
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
             if hasattr(instance, 'creator') and instance.creator:
                 user_text += f" (등록자: {instance.creator.username})"
         else:
-            # 생성 시나 updator가 없는 경우 기존 방식
+            # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
 
         return {
@@ -339,20 +339,20 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_site_owner_message(instance, action, user):
-        """SiteOwner 간소화된 메시지 생성"""
+        """SiteOwner 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 토지소유자 + 소유자명
         title = f"👤 [{instance.project.issue_project.name}]-[토지-소유자] - {instance.owner}"
 
-        # 수정 시 updator와 creator 정보 표시
-        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
-            user_text = f"수정자: {instance.updator.username}"
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
             if hasattr(instance, 'creator') and instance.creator:
                 user_text += f" (등록자: {instance.creator.username})"
         else:
-            # 생성 시나 updator가 없는 경우 기존 방식
+            # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
 
         return {
@@ -374,22 +374,22 @@ class SlackMessageBuilder:
 
     @staticmethod
     def build_site_contract_message(instance, action, user):
-        """SiteContract 간소화된 메시지 생성"""
+        """SiteContract 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
-        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 토지계약 + 소유자명 + 매매대금
         from django.contrib.humanize.templatetags.humanize import intcomma
         price_display = intcomma(instance.total_price) if instance.total_price else '미정'
         title = f"📋 [{instance.project.issue_project.name}]-[토지-계약] - {instance.owner.owner} - [{price_display}원]"
 
-        # 수정 시 updator와 creator 정보 표시
-        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
-            user_text = f"수정자: {instance.updator.username}"
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
             if hasattr(instance, 'creator') and instance.creator:
                 user_text += f" (등록자: {instance.creator.username})"
         else:
-            # 생성 시나 updator가 없는 경우 기존 방식
+            # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
 
         return {
@@ -446,7 +446,7 @@ def send_slack_notification(instance, action, user=None):
         logger.info(f"Slack 알림 대상 프로젝트를 찾을 수 없음: {instance}")
         return
 
-    # 메시지 생성
+    # 메시지 등록
     message_data = None
     if isinstance(instance, (CashBook, ProjectCashBook)):
         message_data = SlackMessageBuilder.build_cashbook_message(instance, action, user)

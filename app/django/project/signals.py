@@ -7,31 +7,31 @@ from _utils.slack_notifications import send_slack_notification
 
 @receiver(post_save, sender=Site, dispatch_uid="site_slack_notification")
 def notify_site_change(sender, instance, created, raw=False, **kwargs):
-    """Site 생성/수정 시 Slack 알림"""
+    """Site 등록/편집 시 Slack 알림"""
     if raw:
         return
 
-    action = "생성" if created else "수정"
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 
 @receiver(post_save, sender=SiteOwner, dispatch_uid="site_owner_slack_notification")
 def notify_site_owner_change(sender, instance, created, raw=False, **kwargs):
-    """SiteOwner 생성/수정 시 Slack 알림"""
+    """SiteOwner 등록/편집 시 Slack 알림"""
     if raw:
         return
 
-    action = "생성" if created else "수정"
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 
 @receiver(post_save, sender=SiteContract, dispatch_uid="site_contract_slack_notification")
 def notify_site_contract_change(sender, instance, created, raw=False, **kwargs):
-    """SiteContract 생성/수정 시 Slack 알림"""
+    """SiteContract 등록/편집 시 Slack 알림"""
     if raw:
         return
 
-    action = "생성" if created else "수정"
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 

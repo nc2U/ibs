@@ -8,8 +8,8 @@ from .models import Contract, Succession, ContractorRelease
 def notify_contract_change(sender, instance, created, raw=False, **kwargs):
     if raw:
         return
-    
-    action = "생성" if created else "수정"
+
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 
@@ -22,8 +22,8 @@ def notify_contract_delete(sender, instance, **kwargs):
 def notify_succession_change(sender, instance, created, raw=False, **kwargs):
     if raw:
         return
-    
-    action = "생성" if created else "수정"
+
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 
@@ -36,8 +36,8 @@ def notify_succession_delete(sender, instance, **kwargs):
 def notify_contractor_release_change(sender, instance, created, raw=False, **kwargs):
     if raw:
         return
-    
-    action = "생성" if created else "수정"
+
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 

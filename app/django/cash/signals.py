@@ -7,21 +7,21 @@ from _utils.slack_notifications import send_slack_notification
 
 @receiver(post_save, sender=CashBook, dispatch_uid="cashbook_slack_notification")
 def notify_cashbook_change(sender, instance, created, raw=False, **kwargs):
-    """CashBook 생성/수정 시 Slack 알림"""
+    """CashBook 등록/편집 시 Slack 알림"""
     if raw:
         return
 
-    action = "생성" if created else "수정"
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 
 @receiver(post_save, sender=ProjectCashBook, dispatch_uid="project_cashbook_slack_notification")
 def notify_project_cashbook_change(sender, instance, created, raw=False, **kwargs):
-    """ProjectCashBook 생성/수정 시 Slack 알림"""
+    """ProjectCashBook 등록/편집 시 Slack 알림"""
     if raw:
         return
 
-    action = "생성" if created else "수정"
+    action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
 
 
