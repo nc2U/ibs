@@ -67,9 +67,9 @@ class ContFileAdmin(admin.TabularInline):
 
 
 class SiteContractAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = (
-        'id', 'owner', 'formatted_price', 'contract_date', 'acc_bank', 'acc_number', 'acc_owner', 'remain_pay_is_paid',
-        'ownership_completion')
+    list_display = ('id', 'owner', 'formatted_price', 'contract_date', 'acc_bank',
+                    'acc_number', 'acc_owner', 'remain_pay_is_paid',
+                    'ownership_completion')
     list_display_links = ('owner',)
     list_filter = ('owner__project',)
     inlines = (ContFileAdmin,)

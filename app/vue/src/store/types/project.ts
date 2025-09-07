@@ -286,7 +286,7 @@ export interface SiteContract {
     file_name: string
     file_size: number
     created: string
-    user: {
+    creator: {
       pk: number
       username: string
     }

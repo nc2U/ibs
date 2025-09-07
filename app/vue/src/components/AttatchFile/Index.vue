@@ -9,7 +9,7 @@ interface AttatchFile {
   file_name: string
   file_size: number
   created: string
-  user: { pk: number; username: string }
+  creator: { pk: number; username: string }
 }
 
 const props = defineProps({

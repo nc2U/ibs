@@ -306,7 +306,7 @@ class SiteContractSerializer(serializers.ModelSerializer):
         new_file = self.initial_data.get('newFile', None)
         if new_file:
             user = self.context['request'].user
-            cont_file = SiteContractFile(site_contract=site_contract, file=new_file, user=user)
+            cont_file = SiteContractFile(site_contract=site_contract, file=new_file, creator=user)
             cont_file.save()
         return site_contract
 
@@ -321,7 +321,7 @@ class SiteContractSerializer(serializers.ModelSerializer):
 
         new_file = data.get('newFile')
         if new_file:
-            SiteContractFile.objects.create(site_contract=instance, file=new_file, user=user)
+            SiteContractFile.objects.create(site_contract=instance, file=new_file, creator=user)
 
         edit_file = data.get('editFile', None)  # pk of file to edit
         cng_file = data.get('cngFile', None)  # new file to replace

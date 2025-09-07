@@ -157,4 +157,4 @@ class SiteContractViewSet(viewsets.ModelViewSet):
     search_fields = ('owner__owner', 'owner__phone1', 'acc_bank', 'acc_owner', 'note')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
