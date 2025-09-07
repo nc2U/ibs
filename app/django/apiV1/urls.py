@@ -37,7 +37,7 @@ router.register(r'duty-title', company.DutyTitleViewSet)
 router.register(r'staff', company.StaffViewSet)
 
 # ibs
-# router.register(r'schedule', ibs.CalendarScheduleViewSet)
+router.register(r'schedule', ibs.CalendarScheduleViewSet)
 router.register(r'account-sort', ibs.AccountSortViewSet)  # only list
 router.register(r'account-depth1', ibs.AccountSubD1ViewSet)  # only list
 router.register(r'account-depth2', ibs.AccountSubD2ViewSet)  # only list

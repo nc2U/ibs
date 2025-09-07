@@ -110,6 +110,8 @@ class Staff(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='staffs', verbose_name='회사')
     SORT_CHOICES = (('1', '임원'), ('2', '직원'))
     sort = models.CharField('구분', max_length=1, choices=SORT_CHOICES, default='1')
+    user = models.OneToOneField('accounts.User', on_delete=models.DO_NOTHING, null=True,
+                                blank=True, verbose_name='유저 정보')
     name = models.CharField('직원 성명', max_length=10, db_index=True)
     id_number = models.CharField('주민등록번호', max_length=14)
     personal_phone = models.CharField('휴대전화', max_length=13)
@@ -123,8 +125,6 @@ class Staff(models.Model):
     STATUS_CHOICES = (('1', '근무 중'), ('2', '휴직 중'), ('3', '퇴직신청'), ('4', '퇴사처리'))
     status = models.CharField('상태', max_length=1, choices=STATUS_CHOICES, default='1')
     date_leave = models.DateField('퇴사일', null=True, blank=True)
-    user = models.OneToOneField('accounts.User', on_delete=models.DO_NOTHING, null=True, blank=True,
-                                verbose_name='유저 정보')
 
     def __str__(self):
         return self.name

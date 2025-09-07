@@ -5,22 +5,19 @@ from ..pagination import *
 from ..serializers.ibs import *
 
 from ibs.models import (AccountSort, AccountSubD1, AccountSubD2, AccountSubD3,
-                        ProjectAccountD2, ProjectAccountD3, WiseSaying)
-
-
-# CalendarSchedule, WiseSaying)
+                        ProjectAccountD2, ProjectAccountD3, CalendarSchedule, WiseSaying)
 
 
 # Ibs --------------------------------------------------------------------------
-# class CalendarScheduleViewSet(viewsets.ModelViewSet):
-#     queryset = CalendarSchedule.objects.all()
-#     serializer_class = CalendarScheduleSerializer
-#     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-#     pagination_class = PageNumberPaginationOneHundred
-#     search_fields = ('start_date', 'start_time', 'end_date', 'end_time')
-#
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
+class CalendarScheduleViewSet(viewsets.ModelViewSet):
+    queryset = CalendarSchedule.objects.all()
+    serializer_class = CalendarScheduleSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    pagination_class = PageNumberPaginationOneHundred
+    search_fields = ('start_date', 'start_time', 'end_date', 'end_time')
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
 
 
 class AccountSortViewSet(viewsets.ModelViewSet):

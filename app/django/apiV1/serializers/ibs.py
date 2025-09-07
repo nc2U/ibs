@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from ibs.models import (AccountSort, AccountSubD1, AccountSubD2, AccountSubD3,
-                        ProjectAccountD2, ProjectAccountD3, WiseSaying)  # CalendarSchedule, WiseSaying)
+                        ProjectAccountD2, ProjectAccountD3, CalendarSchedule, WiseSaying)
 
 
 # Ibs --------------------------------------------------------------------------
@@ -43,10 +43,14 @@ class ProjectAccountD3Serializer(serializers.ModelSerializer):
         fields = ('pk', 'd2', 'code', 'is_related_contract', 'name', 'description')
 
 
-# class CalendarScheduleSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = CalendarSchedule
-#         fields = ('pk', 'title', 'all_day', 'start_date', 'end_date', 'start_time', 'end_time')
+class CalendarScheduleSerializer(serializers.ModelSerializer):
+    from apiV1.serializers.accounts import SimpleUserSerializer
+    creator = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = CalendarSchedule
+        fields = ('pk', 'title', 'all_day', 'start_date', 'end_date', 'start_time',
+                  'end_time', 'creator', 'created_at', 'updated_at')
 
 
 class WiseSaySerializer(serializers.ModelSerializer):
