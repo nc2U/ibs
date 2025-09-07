@@ -25,6 +25,7 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           command: |
             sh "${{ secrets.NFS_PATH }}"/prod/volume/backups/copy_script.sh
+            chmod -R 775 ${{ secrets.NFS_PATH }}/dev/volume/backups/
       
       # mysql pod --> database restore
       - name: database restore
