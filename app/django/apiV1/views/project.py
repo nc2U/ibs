@@ -98,7 +98,7 @@ class SiteViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(creator=self.request.user)
+        serializer.save()
 
 
 class AllSiteViewSet(SiteViewSet):
@@ -128,7 +128,7 @@ class SiteOwnerViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(creator=self.request.user)
+        serializer.save()
 
 
 class AllOwnerViewSet(SiteOwnerViewSet):
@@ -166,4 +166,4 @@ class SiteContractViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(creator=self.request.user)
+        serializer.save()

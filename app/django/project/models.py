@@ -115,6 +115,7 @@ class Site(models.Model):
     rights_b = models.TextField('을구 권리 제한사항', blank=True, default='')
     note = models.TextField('비고', blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_sites', verbose_name='수정자')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
 
@@ -178,6 +179,7 @@ class SiteOwner(models.Model):
                                    related_name='owners', verbose_name='소유부지')
     counsel_record = models.TextField('상담기록', blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_site_owners', verbose_name='수정자')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
 
@@ -233,6 +235,7 @@ class SiteContract(models.Model):
     acc_owner = models.CharField('예금주', max_length=20)
     note = models.TextField('특이사항', blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_site_contracts', verbose_name='수정자')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
 

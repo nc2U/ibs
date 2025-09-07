@@ -117,12 +117,15 @@ class FileInSiteDataSerializer(serializers.ModelSerializer):
 class SiteSerializer(serializers.ModelSerializer):
     owners = SiteOwnerInSiteSerializer(many=True, read_only=True)
     site_info_files = FileInSiteDataSerializer(many=True, read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = Site
         fields = ('pk', 'project', 'order', 'district', 'lot_number', 'site_purpose',
                   'official_area', 'returned_area', 'notice_price', 'rights_a',
-                  'rights_b', 'dup_issue_date', 'owners', 'note', 'site_info_files')
+                  'rights_b', 'dup_issue_date', 'owners', 'note', 'site_info_files',
+                  'creator', 'updator', 'created_at', 'updated_at')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -140,6 +143,9 @@ class SiteSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        
+        # Set updator from request context
+        instance.updator = self.context['request'].user
         instance.save()
 
         data = self.context['request'].data
@@ -217,12 +223,15 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
     )
     own_sort_desc = serializers.CharField(source='get_own_sort_display', read_only=True)
     sites = RelationsInSiteOwnerSerializer(source='relations', many=True, read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = SiteOwner
         fields = ('pk', 'project', 'owner', 'use_consent', 'date_of_birth', 'phone1',
                   'phone2', 'zipcode', 'address1', 'address2', 'address3',
-                  'own_sort', 'own_sort_desc', 'sites', 'counsel_record')
+                  'own_sort', 'own_sort_desc', 'sites', 'counsel_record',
+                  'creator', 'updator', 'created_at', 'updated_at')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -256,6 +265,8 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
+        # Set updator from request context
+        instance.updator = self.context['request'].user
         instance.save()
         return instance
 
@@ -284,6 +295,8 @@ class TotalContractedAreaSerializer(serializers.ModelSerializer):
 class SiteContractSerializer(serializers.ModelSerializer):
     owner_desc = SiteOwnerInSiteSerializer(source='owner', read_only=True)
     site_cont_files = FileInSiteDataSerializer(many=True, read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = SiteContract
@@ -292,7 +305,8 @@ class SiteContractSerializer(serializers.ModelSerializer):
                   'down_pay2_date', 'down_pay2_is_paid', 'inter_pay1', 'inter_pay1_date',
                   'inter_pay1_is_paid', 'inter_pay2', 'inter_pay2_date', 'inter_pay2_is_paid',
                   'remain_pay', 'remain_pay_date', 'remain_pay_is_paid', 'ownership_completion',
-                  'acc_bank', 'acc_number', 'acc_owner', 'site_cont_files', 'note')
+                  'acc_bank', 'acc_number', 'acc_owner', 'site_cont_files', 'note',
+                  'creator', 'updator', 'created_at', 'updated_at')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -314,6 +328,9 @@ class SiteContractSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        
+        # Set updator from request context
+        instance.updator = self.context['request'].user
         instance.save()
 
         data = self.context['request'].data

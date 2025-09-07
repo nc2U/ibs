@@ -206,6 +206,16 @@ export interface Site {
       username: string
     }
   }[]
+  creator?: {
+    pk: number
+    username: string
+  }
+  updator?: {
+    pk: number
+    username: string
+  }
+  created_at?: string
+  updated_at?: string
 }
 
 type OwnSort = '개인' | '법인' | '국공유지'
@@ -232,6 +242,16 @@ export interface SiteOwner {
   own_sort_desc: string
   sites: SimpleSite[]
   counsel_record: string
+  creator?: {
+    pk: number
+    username: string
+  }
+  updator?: {
+    pk: number
+    username: string
+  }
+  created_at?: string
+  updated_at?: string
 }
 
 export interface SimpleSite {
@@ -291,6 +311,16 @@ export interface SiteContract {
       username: string
     }
   }[]
+  creator?: {
+    pk: number
+    username: string
+  }
+  updator?: {
+    pk: number
+    username: string
+  }
+  created_at?: string
+  updated_at?: string
   newFile?: File | string
   editFile?: string
   cngFile?: File
