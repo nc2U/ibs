@@ -103,6 +103,9 @@ class CashBookViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+
 
 class CompanyCashCalcViewSet(viewsets.ModelViewSet):
     queryset = CompanyCashBookCalculation.objects.all()
@@ -218,6 +221,9 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
 
 
 class ProjectCashCalcViewSet(viewsets.ModelViewSet):

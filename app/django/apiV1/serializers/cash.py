@@ -52,6 +52,7 @@ class CashBookSerializer(serializers.ModelSerializer):
     sepItems = SepItemsInCashBookSerializer(many=True, read_only=True)
     bank_account_desc = serializers.SerializerMethodField(read_only=True)
     evidence_desc = serializers.CharField(source='get_evidence_display', read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = CashBook
@@ -59,7 +60,7 @@ class CashBookSerializer(serializers.ModelSerializer):
             'pk', 'company', 'sort', 'sort_desc', 'account_d1', 'account_d1_desc', 'account_d2',
             'account_d2_desc', 'account_d3', 'account_d3_desc', 'project', 'project_desc'
             , 'is_return', 'is_separate', 'separated', 'sepItems', 'content', 'trader', 'bank_account',
-            'bank_account_desc', 'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date')
+            'bank_account_desc', 'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date', 'updator')
 
     @staticmethod
     def get_sort_desc(obj):
@@ -154,6 +155,13 @@ class CashBookSerializer(serializers.ModelSerializer):
         instance.account_d3 = validated_data.get('account_d3', instance.account_d3)
         instance.project = validated_data.get('project', instance.project)
         instance.bank_account = validated_data.get('bank_account', instance.bank_account)
+        
+        # updator 설정
+        if 'updator' in self.context.get('request', {}).__dict__.get('_data', {}):
+            instance.updator = self.context['request'].user
+        elif hasattr(self.context.get('request'), 'user'):
+            instance.updator = self.context['request'].user
+            
         instance.save()
 
         # 2. sep 정보 확인 후 저장
@@ -189,7 +197,8 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         outlay=sep_cashbook_outlay,
                                         evidence=sep_cashbook_evidence,
                                         note=sep_cashbook_note,
-                                        deal_date=instance.deal_date)
+                                        deal_date=instance.deal_date,
+                                        creator=self.context['request'].user if hasattr(self.context.get('request'), 'user') else None)
                 sep_cashbook.save()
             else:
                 sep_cashbook = CashBook.objects.get(pk=sep_data.get('pk'))
@@ -209,6 +218,9 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.evidence = sep_cashbook_evidence
                 sep_cashbook.note = sep_cashbook_note
                 sep_cashbook.deal_date = instance.deal_date
+                # 분리 기록 수정시에도 updator 설정
+                if hasattr(self.context.get('request'), 'user'):
+                    sep_cashbook.updator = self.context['request'].user
                 sep_cashbook.save()
         return instance
 
@@ -262,6 +274,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
     bank_account_desc = serializers.SlugField(source='bank_account', read_only=True)
     evidence_desc = serializers.CharField(source='get_evidence_display', read_only=True)
     sepItems = SepItemsInPrCashBookSerializer(many=True, read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = ProjectCashBook
@@ -269,7 +282,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                   'project_account_d2_desc', 'project_account_d3', 'project_account_d3_desc',
                   'is_separate', 'separated', 'is_imprest', 'sepItems', 'contract', 'installment_order',
                   'refund_contractor', 'content', 'trader', 'bank_account', 'bank_account_desc',
-                  'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date')
+                  'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date', 'updator')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -337,6 +350,11 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
         instance.installment_order = validated_data.get('installment_order', instance.installment_order)
         instance.refund_contractor = validated_data.get('refund_contractor', instance.refund_contractor)
         instance.bank_account = validated_data.get('bank_account', instance.bank_account)
+        
+        # updator 설정
+        if hasattr(self.context.get('request'), 'user'):
+            instance.updator = self.context['request'].user
+            
         instance.save()
 
         # 2. sep 정보 확인
@@ -369,7 +387,8 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                                                   outlay=sep_pr_cashbook_outlay,
                                                   evidence=sep_pr_cashbook_evidence,
                                                   note=sep_pr_cashbook_note,
-                                                  deal_date=instance.deal_date)
+                                                  deal_date=instance.deal_date,
+                                                  creator=self.context['request'].user if hasattr(self.context.get('request'), 'user') else None)
                 sep_pr_cashbook.save()
             else:
                 sep_pr_cashbook = ProjectCashBook.objects.get(pk=sep_data.get('pk'))
@@ -389,6 +408,9 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                 sep_pr_cashbook.evidence = sep_pr_cashbook_evidence
                 sep_pr_cashbook.note = sep_pr_cashbook_note
                 sep_pr_cashbook.deal_date = instance.deal_date
+                # 분리 기록 수정시에도 updator 설정
+                if hasattr(self.context.get('request'), 'user'):
+                    sep_pr_cashbook.updator = self.context['request'].user
                 sep_pr_cashbook.save()
         return instance
 

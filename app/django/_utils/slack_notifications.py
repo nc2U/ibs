@@ -112,12 +112,21 @@ class SlackMessageBuilder:
 
         color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
 
+        # 수정 시 updator와 creator 정보 표시
+        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"수정자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 생성 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+
         return {
             'attachments': [{
                 'color': color,
                 'title': f"{title} ({action})",
                 'title_link': service_url,
-                'text': f"등록자: {user.username if user else '시스템'}",
+                'text': user_text,
                 'actions': [{
                     'type': 'button',
                     'text': '상세보기',
