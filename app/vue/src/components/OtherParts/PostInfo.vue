@@ -10,7 +10,7 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
 <template>
   <CRow class="text-blue-grey mb-5">
     <CCol>
-      <small class="mr-3">작성자 : {{ docs.user?.username }}</small>
+      <small class="mr-3">작성자 : {{ docs.creator?.username }}</small>
       <small class="mr-2">
         <v-icon icon="mdi-eye" size="sm" />
         <span class="ml-1">{{ docs.hit }}</span>

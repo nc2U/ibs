@@ -24,7 +24,7 @@ const refAlertModal = ref()
 
 const userInfo = inject<ComputedRef<User>>('userInfo')
 const editAuth = computed(
-  () => userInfo?.value?.is_superuser || props.suitcase.user?.pk === userInfo?.value?.pk,
+  () => userInfo?.value?.is_superuser || props.suitcase?.creator?.pk === userInfo?.value?.pk,
 )
 
 const prev = ref<number | null>()
@@ -192,7 +192,7 @@ onBeforeMount(() => {
 
     <CRow class="text-blue-grey">
       <CCol>
-        <small class="mr-3">작성자 : {{ suitcase.user?.username }}</small>
+        <small class="mr-3">작성자 : {{ suitcase.creator?.username }}</small>
         <small class="mr-3 text-btn" @click="toPrint">
           <v-icon icon="mdi-printer" size="small" />
           <span class="ml-2">프린트</span>

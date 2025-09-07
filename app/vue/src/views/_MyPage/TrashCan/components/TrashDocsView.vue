@@ -38,7 +38,7 @@ const router = useRouter()
 
     <CRow class="text-blue-grey mb-5">
       <CCol>
-        <small class="mr-3">작성자 : {{ docs.user }}</small>
+        <small class="mr-3">작성자 : {{ docs.creator }}</small>
       </CCol>
 
       <CCol class="text-right" md="6">

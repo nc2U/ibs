@@ -39,7 +39,7 @@ export type DocsFilter = {
   is_notice?: boolean | ''
   category?: number | ''
   lawsuit?: number | ''
-  user?: number | ''
+  creator?: number | ''
   ordering?: string
   search?: string
   page?: number
@@ -227,7 +227,7 @@ export const useDocs = defineStore('docs', () => {
     if (issue_project) url += `&issue_project=${issue_project}`
     if (payload.category) url += `&category=${payload.category}`
     if (payload.lawsuit) url += `&lawsuit=${payload.lawsuit}`
-    if (payload.user) url += `&user=${payload.user}`
+    if (payload.creator) url += `&user=${payload.creator}`
     if (payload.ordering) url += `&ordering=${payload.ordering}`
     if (payload.search) url += `&search=${payload.search}`
 

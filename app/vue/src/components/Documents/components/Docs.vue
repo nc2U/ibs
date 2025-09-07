@@ -31,7 +31,7 @@ const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'i
     </CTableDataCell>
     <CTableDataCell class="text-left">
       <router-link
-        v-if="!docs.is_secret || userInfo?.is_superuser || userInfo?.pk === docs.user?.pk"
+        v-if="!docs.is_secret || userInfo?.is_superuser || userInfo?.pk === docs.creator?.pk"
         :to="{ name: `${viewRoute} - 보기`, params: { docsId: docs.pk } }"
       >
         {{ cutString(docs.title, 32) }}
@@ -40,7 +40,7 @@ const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'i
       <v-icon v-if="docs.is_secret" icon="mdi-lock" size="sm" class="ml-2 text-grey" />
       <CBadge v-if="docs.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
     </CTableDataCell>
-    <CTableDataCell>{{ docs.user?.username }}</CTableDataCell>
+    <CTableDataCell>{{ docs.creator?.username }}</CTableDataCell>
     <CTableDataCell>{{ timeFormat(docs.created ?? '') }}</CTableDataCell>
     <CTableDataCell>{{ docs.hit }}</CTableDataCell>
   </CTableRow>

@@ -43,7 +43,7 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
     level_desc = serializers.CharField(source='get_level_display', read_only=True)
     related_case_name = serializers.SlugField(source='related_case', read_only=True)
     court_desc = serializers.CharField(source='get_court_display', read_only=True)
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
     links = serializers.SerializerMethodField(read_only=True)
     files = serializers.SerializerMethodField(read_only=True)
     prev_pk = serializers.SerializerMethodField(read_only=True)
@@ -55,7 +55,7 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
                   'related_case', 'related_case_name', 'court', 'court_desc', 'other_agency', 'case_number',
                   'case_name', '__str__', 'plaintiff', 'plaintiff_attorney', 'plaintiff_case_price',
                   'defendant', 'defendant_attorney', 'defendant_case_price', 'related_debtor', 'case_start_date',
-                  'case_end_date', 'summary', 'user', 'links', 'files', 'created', 'prev_pk', 'next_pk')
+                  'case_end_date', 'summary', 'creator', 'links', 'files', 'created', 'prev_pk', 'next_pk')
         read_only_fields = ('__str__',)
 
     @staticmethod
@@ -110,20 +110,20 @@ class SimpleLawSuitCaseSerializer(serializers.ModelSerializer):
 
 
 class LinksInDocumentSerializer(serializers.ModelSerializer):
-    user = serializers.SlugField(read_only=True)
+    creator = serializers.SlugField(read_only=True)
 
     class Meta:
         model = Link
-        fields = ('pk', 'docs', 'link', 'description', 'user', 'hit', 'created')
+        fields = ('pk', 'docs', 'link', 'description', 'creator', 'hit', 'created')
 
 
 class FilesInDocumentSerializer(serializers.ModelSerializer):
-    user = serializers.SlugField(read_only=True)
+    creator = serializers.SlugField(read_only=True)
 
     class Meta:
         model = File
         fields = ('pk', 'docs', 'file_name', 'file', 'file_type',
-                  'file_size', 'description', 'user', 'hit', 'created')
+                  'file_size', 'description', 'creator', 'hit', 'created')
 
 
 def validate_link(value):
@@ -143,7 +143,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     lawsuit_name = serializers.SlugField(source='lawsuit', read_only=True)
     links = LinksInDocumentSerializer(many=True, read_only=True)
     files = FilesInDocumentSerializer(many=True, read_only=True)
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
     scrape = serializers.SerializerMethodField(read_only=True)
     my_scrape = serializers.SerializerMethodField(read_only=True)
     prev_pk = serializers.SerializerMethodField(read_only=True)
@@ -154,7 +154,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name', 'category',
                   'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content',
                   'hit', 'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
-                  'links', 'files', 'user', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
+                  'links', 'files', 'creator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
 
     @staticmethod
@@ -209,7 +209,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         new_descs = request.data.getlist('new_descs')
         if new_files:
             for file, desc in zip(new_files, new_descs):
-                File.objects.create(docs=docs, file=file, description=desc, user=user)
+                File.objects.create(docs=docs, file=file, description=desc, creator=user)
         return docs
 
     @transaction.atomic
@@ -246,7 +246,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
             if new_files:
                 for file, desc in zip(new_files, new_descs):
-                    File.objects.create(docs=instance, file=file, description=desc, user=user)
+                    File.objects.create(docs=instance, file=file, description=desc, creator=user)
 
             old_files = self.initial_data.getlist('files', [])
             cng_pks = self.initial_data.getlist('cngPks', [])
@@ -270,7 +270,7 @@ class DocumentSerializer(serializers.ModelSerializer):
                         except Exception as e:
                             print(f"파일 처리 중 오류 발생: {e}")
                         file_object.file = cng_file
-                        file_object.user = user
+                        file_object.creator = user
                         file_object.save()
 
         except Exception as e:
@@ -280,22 +280,22 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 
 class LinkSerializer(serializers.ModelSerializer):
-    user = serializers.SlugField(read_only=True)
+    creator = serializers.SlugField(read_only=True)
 
     class Meta:
         model = Link
-        fields = ('pk', 'docs', 'link', 'description', 'hit', 'user', 'created')
+        fields = ('pk', 'docs', 'link', 'description', 'hit', 'creator', 'created')
 
     readonly_fields = ('hit', 'created')
 
 
 class FileSerializer(serializers.ModelSerializer):
-    user = serializers.SlugField(read_only=True)
+    creator = serializers.SlugField(read_only=True)
 
     class Meta:
         model = File
         fields = ('pk', 'docs', 'file', 'file_name', 'file_type',
-                  'file_size', 'description', 'hit', 'user', 'created')
+                  'file_size', 'description', 'hit', 'creator', 'created')
 
     readonly_fields = ('file_name', 'file_type', 'file_size', 'hit', 'created')
 
@@ -311,11 +311,11 @@ class ImageSerializer(serializers.ModelSerializer):
 class DocumentInTrashSerializer(serializers.ModelSerializer):
     type_name = serializers.SerializerMethodField()
     cate_name = serializers.SlugField(source='category', read_only=True)
-    user = serializers.SlugField(read_only=True)
+    creator = serializers.SlugField(read_only=True)
 
     class Meta:
         model = Document
-        fields = ('pk', 'type_name', 'cate_name', 'title', 'content', 'user', 'created', 'deleted')
+        fields = ('pk', 'type_name', 'cate_name', 'title', 'content', 'creator', 'created', 'deleted')
 
     @staticmethod
     def get_type_name(obj):

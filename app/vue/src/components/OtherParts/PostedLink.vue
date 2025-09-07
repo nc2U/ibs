@@ -105,7 +105,7 @@ const linkDelete = () => {
           </td>
           <td class="px-2">{{ link.description }}</td>
           <td class="text-secondary">
-            <span>{{ link.user }}, {{ timeFormat(link.created as string, false, '/') }}</span>
+            <span>{{ link.creator }}, {{ timeFormat(link.created as string, false, '/') }}</span>
             <span class="ml-2">
               <router-link to="#" @click.prevent="editFormSet(link.pk as number)">
                 <v-icon icon="mdi-pencil" size="16" color="secondary" />

@@ -13,7 +13,7 @@ const mainViewName = ref('내 등록 문서')
 const userInfo = inject<ComputedRef<User>>('userInfo')
 
 const docsFilter = ref<DocsFilter>({
-  user: '',
+  creator: '',
   search: '',
   ordering: '-created',
   page: 1,
@@ -37,7 +37,7 @@ const docsList = computed(() => docStore.docsList)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 
 const dataSetup = (pk: number) => {
-  docsFilter.value.user = pk
+  docsFilter.value.creator = pk
   fetchDocsList(docsFilter.value)
 }
 

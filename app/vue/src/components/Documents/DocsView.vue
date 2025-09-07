@@ -39,7 +39,7 @@ const refTrashModal = ref()
 
 const userInfo = inject<ComputedRef<User>>('userInfo')
 const editAuth = computed(
-  () => userInfo?.value?.is_superuser || props.docs?.user?.pk === userInfo?.value?.pk,
+  () => userInfo?.value?.is_superuser || props.docs?.creator?.pk === userInfo?.value?.pk,
 )
 
 const prev = ref<number | null>()
@@ -258,7 +258,7 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <div v-show="!docs.is_blind || userInfo?.pk === docs.user?.pk || userInfo?.is_superuser">
+    <div v-show="!docs.is_blind || userInfo?.pk === docs.creator?.pk || userInfo?.is_superuser">
       <CRow class="py-2 justify-content-between">
         <CCol md="7" lg="6" xl="5">
           <table v-if="typeNum !== 1 && docs.execution_date" class="table table-bordered mt-2 mb-3">

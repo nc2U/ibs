@@ -47,7 +47,7 @@ export interface SuitCase {
   case_start_date: string | null
   case_end_date: string | null
   summary: string
-  user?: SimpleUser
+  creator?: SimpleUser
   links?: Array<{ pk: number; category: { name: string; color?: string }; link: string }>
   files?: Array<{ pk: number; category: { name: string; color?: string }; file: string }>
   created?: string
@@ -101,7 +101,7 @@ export type Docs = {
   files?: AFile[]
   newFiles?: File[]
   cngFiles?: { pk: number; file: File }[]
-  user?: SimpleUser
+  creator?: SimpleUser
   created?: string
   updated?: string
   is_new?: boolean
@@ -115,7 +115,7 @@ export interface Link {
   link: string
   description: string
   hit?: number
-  user?: string
+  creator?: string
   created?: string
   del?: boolean
 }
@@ -129,7 +129,7 @@ export interface AFile {
   file_size?: number
   description?: string
   created?: string
-  user?: string
+  creator?: string
   hit?: number
   newFile?: Blob
   del?: boolean
@@ -154,7 +154,7 @@ export type DFile = {
   file_size?: number
   description: string
   hit?: number
-  user?: string
+  creator?: string
   created?: string
 }
 
@@ -181,7 +181,7 @@ export interface TrashDocs {
   cate_name: string
   title: string
   content: string
-  user: string
+  creator: string
   created: string
   deleted: string
 }

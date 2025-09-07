@@ -62,7 +62,7 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
                      'case_start_date', 'case_end_date', 'summary')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
@@ -78,7 +78,7 @@ class DocumentFilterSet(FilterSet):
     class Meta:
         model = Document
         fields = ('company', 'is_real_dev', 'issue_project__project',
-                  'issue_project', 'doc_type', 'category', 'lawsuit', 'user')
+                  'issue_project', 'doc_type', 'category', 'lawsuit', 'creator')
 
     @staticmethod
     def is_real_dev_proj(queryset, name, value):
@@ -95,7 +95,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     filterset_class = DocumentFilterSet
     search_fields = (
         'lawsuit__case_number', 'lawsuit__case_name', 'title',
-        'content', 'links__link', 'files__file', 'user__username')
+        'content', 'links__link', 'files__file', 'creator__username')
 
     def copy_and_create(self, request, *args, **kwargs):
         # 복사할 행의 ID를 저장한다.
@@ -131,7 +131,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Original Document object does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -146,7 +146,7 @@ class LinkViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class FileViewSet(viewsets.ModelViewSet):
@@ -157,7 +157,7 @@ class FileViewSet(viewsets.ModelViewSet):
     search_fields = ('file_name', 'description')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class ImageViewSet(viewsets.ModelViewSet):

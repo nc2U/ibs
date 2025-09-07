@@ -289,7 +289,7 @@ class LawsuitCase(models.Model):
     case_start_date = models.DateField('사건개시일')
     case_end_date = models.DateField('사건종결일', null=True, blank=True)
     summary = models.TextField('개요 및 경과', blank=True, default='')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자',
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자',
                              related_name='lawsuitcases')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('수정일시', auto_now=True)
@@ -340,7 +340,7 @@ class Document(BaseModel):
     is_secret = models.BooleanField('비밀글', default=False)
     password = models.CharField('패스워드', max_length=255, blank=True, default='')
     is_blind = models.BooleanField('숨김', default=False)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -366,7 +366,7 @@ class Link(models.Model):
     link = models.URLField(max_length=500, verbose_name='링크')
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
     hit = models.PositiveIntegerField('클릭수', default=0)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_DEFAULT, default=1, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_DEFAULT, default=1, verbose_name='등록자')
     created = models.DateTimeField('등록일', auto_now_add=True)
 
     def __str__(self):
@@ -388,7 +388,7 @@ class File(models.Model):
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
     hit = models.PositiveIntegerField('다운로드수', default=0)
     created = models.DateTimeField('등록일', auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                              null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
