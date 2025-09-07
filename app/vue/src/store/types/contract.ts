@@ -13,7 +13,7 @@ export interface ContractFile {
   file_name: string
   file_size: number
   created: string
-  user: { pk: number; username: string }
+  creator: { pk: number; username: string }
   cngFile?: File | null
   del?: boolean
   edit?: boolean

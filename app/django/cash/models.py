@@ -63,7 +63,7 @@ class CashBook(models.Model):
     evidence = models.CharField('지출증빙', max_length=1, choices=EVIDENCE_CHOICES, null=True, blank=True)
     note = models.CharField('비고', max_length=255, blank=True, default='')
     deal_date = models.DateField('거래일자')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created_at = models.DateTimeField('등록일시', auto_now_add=True)
     updated_at = models.DateTimeField('수정일시', auto_now=True)
 
@@ -133,7 +133,7 @@ class ProjectCashBook(models.Model):
     evidence = models.CharField('지출증빙', max_length=1, choices=EVIDENCE_CHOICES, null=True, blank=True)
     note = models.TextField('비고', blank=True, default='')
     deal_date = models.DateField('거래일자')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created_at = models.DateTimeField('등록일시', auto_now_add=True)
     updated_at = models.DateTimeField('수정일시', auto_now=True)
 
@@ -149,7 +149,7 @@ class ProjectCashBook(models.Model):
 class CompanyCashBookCalculation(models.Model):
     company = models.OneToOneField(Company, on_delete=models.CASCADE, unique=True, verbose_name='회사')
     calculated = models.DateField('정산일', null=True, blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
 
     def __str__(self):
         return f'{self.company} 결산일 : {self.calculated}'
@@ -158,7 +158,7 @@ class CompanyCashBookCalculation(models.Model):
 class ProjectCashBookCalculation(models.Model):
     project = models.OneToOneField(Project, on_delete=models.CASCADE, unique=True, verbose_name='프로젝트')
     calculated = models.DateField('정산일', null=True, blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
 
     def __str__(self):
         return f'{self.project} 결산일 : {self.calculated}'

@@ -1,8 +1,8 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from cash.models import BankCode, CompanyBankAccount, ProjectBankAccount, CashBook, ProjectCashBook, \
-    CompanyCashBookCalculation, ProjectCashBookCalculation
+from cash.models import BankCode, CompanyBankAccount, ProjectBankAccount, CashBook, \
+    ProjectCashBook, CompanyCashBookCalculation, ProjectCashBookCalculation
 from ibs.models import AccountSubD1, AccountSubD2, AccountSubD3
 from project.models import Project
 from .contract import SimpleUserSerializer
@@ -214,11 +214,11 @@ class CashBookSerializer(serializers.ModelSerializer):
 
 
 class CompanyCashCalcSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = CompanyCashBookCalculation
-        fields = ('pk', 'company', 'calculated', 'user')
+        fields = ('pk', 'company', 'calculated', 'creator')
 
 
 class CompanyLastDealDateSerializer(serializers.ModelSerializer):
@@ -394,11 +394,11 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
 
 
 class ProjectCashCalcSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = ProjectCashBookCalculation
-        fields = ('pk', 'project', 'calculated', 'user')
+        fields = ('pk', 'project', 'calculated', 'creator')
 
 
 class ProjectLastDealDateSerializer(serializers.ModelSerializer):

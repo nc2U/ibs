@@ -101,7 +101,7 @@ class CashBookViewSet(viewsets.ModelViewSet):
     search_fields = ('content', 'trader', 'note')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class CompanyCashCalcViewSet(viewsets.ModelViewSet):
@@ -111,7 +111,7 @@ class CompanyCashCalcViewSet(viewsets.ModelViewSet):
     filterset_fields = ('company',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class CompanyLastDealDateViewSet(viewsets.ModelViewSet):
@@ -217,7 +217,7 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
     search_fields = ('contract__contractor__name', 'content', 'trader', 'note')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class ProjectCashCalcViewSet(viewsets.ModelViewSet):
@@ -227,7 +227,7 @@ class ProjectCashCalcViewSet(viewsets.ModelViewSet):
     filterset_fields = ('project',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class ProjectLastDealDateViewSet(viewsets.ModelViewSet):

@@ -109,5 +109,5 @@ export interface ComCalculated {
   pk?: number
   company: number
   calculated: string
-  user?: { pk: number; username: string }
+  creator?: { pk: number; username: string }
 }
