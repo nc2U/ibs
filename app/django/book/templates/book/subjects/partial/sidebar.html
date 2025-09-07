@@ -49,7 +49,7 @@
                     <i class="fa fa-plus-circle"></i> 등록
                 </a>
                 {% if object %}
-                    {% if user == book.user or user.is_staff %}
+                    {% if user == book.creator or user.is_staff %}
                         <a href="{% url 'book:subject_edit' book.id object.id %}"
                            class="btn btn-sm btn-outline-success">
                             <i class="fa fa-edit"></i> 수정

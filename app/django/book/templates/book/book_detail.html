@@ -52,7 +52,7 @@
             </article>
 
             <div class="text-center action__doc mt-5">
-                {% if user == book.user or user.is_staff %}
+                {% if user == book.creator or user.is_staff %}
                     <a href="{% url 'book:edit' book.id %}" class="btn btn-outline-info">
                         <i class="fa fa-pencil"></i> 수정
                     </a>

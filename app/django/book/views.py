@@ -43,7 +43,7 @@ class BooksCreateView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
         return reverse_lazy('book:detail', args=[self.object.id])
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
+        form.instance.creator = self.request.user
         return super().form_valid(form)
 
 
@@ -142,7 +142,7 @@ class SubjectsCreateView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         formset = ImageFormSet(self.request.POST, self.request.FILES)
-        form.instance.user = self.request.user
+        form.instance.creator = self.request.user
         form.instance.book = Book.objects.get(id=self.kwargs['book'])
         seq_num = Subject.objects.filter(book=self.kwargs['book']).count()
         form.instance.seq = seq_num + 1
@@ -171,7 +171,7 @@ class SubjectsUpdateView(SuccessMessageMixin, LoginRequiredMixin, UpdateView):
             formset = ImageFormSet(self.request.POST, self.request.FILES, instance=self.object)
             # for img in formset:
             #     img.save()
-            form.instance.user = self.request.user
+            form.instance.creator = self.request.user
             form.instance.book = Book.objects.get(id=self.kwargs['book'])
             return super(SubjectsUpdateView, self).form_valid(form)
 

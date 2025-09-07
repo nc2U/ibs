@@ -8,7 +8,6 @@ from django.conf import settings
 
 
 class Book(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     title = models.CharField('제목', max_length=100, db_index=True)
     disclosure = models.BooleanField('공개 허용 여부', default=False)
     author = models.CharField('저자', max_length=50)
@@ -17,6 +16,7 @@ class Book(models.Model):
     pub_date = models.DateField('출간일 (최종)', null=True, blank=True)
     # description = models.TextField(blank=True, null=True)
     description = MDTextField('책설명', blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -30,7 +30,6 @@ class Book(models.Model):
 
 
 class Subject(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='subjects')
     seq = models.PositiveSmallIntegerField('순서')
     title = models.CharField('단원 명칭', max_length=100, db_index=True)
@@ -44,6 +43,7 @@ class Subject(models.Model):
 
     level = models.IntegerField('단원 레벨', choices=SubLevel.choices)
     content = MDTextField('단원 내용', blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
