@@ -40,7 +40,7 @@ const refTrashModal = ref()
 
 const userInfo = inject<ComputedRef<User>>('userInfo')
 const editAuth = computed(
-  () => userInfo?.value?.is_superuser || props.post?.user?.pk === userInfo?.value?.pk,
+  () => userInfo?.value?.is_superuser || props.post?.creator?.pk === userInfo?.value?.pk,
 )
 
 const prev = ref<number | null>()
@@ -260,7 +260,7 @@ onMounted(() => {
 
     <CRow class="text-blue-grey mb-5">
       <CCol>
-        <small class="mr-3">작성자 : {{ post.user?.username }}</small>
+        <small class="mr-3">작성자 : {{ post.creator?.username }}</small>
         <small class="mr-2">
           <v-icon icon="mdi-comment-text-multiple" size="sm" />
           <span class="ml-1">{{ post.comments?.length || 0 }}</span>
@@ -303,7 +303,7 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <div v-show="!post.is_blind || userInfo?.pk === post.user?.pk || userInfo?.is_superuser">
+    <div v-show="!post.is_blind || userInfo?.pk === post.creator?.pk || userInfo?.is_superuser">
       <CRow class="py-2 justify-content-between">
         <CCol md="7" lg="6" xl="5">
           <CRow v-if="!!post.links && post.links.length" class="mb-3">

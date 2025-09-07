@@ -57,7 +57,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
 
 <template>
   <li class="text-50" :id="`comment_${comment.pk}`">
-    <strong>{{ comment?.user?.username }}</strong>
+    <strong>{{ comment?.creator?.username }}</strong>
     <small class="ml-2">
       <v-icon icon="mdi-clock-time-four-outline" size="sm" />
       {{ elapsedTime(comment?.created ?? '') }}
@@ -90,7 +90,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
     <small v-if="!lastDepth" class="ml-3 text-btn" @click="toReply">
       {{ !isReplying ? '답변' : '취소' }}
     </small>
-    <template v-if="!comment.replies?.length && userInfo?.pk === props.comment?.user?.pk">
+    <template v-if="!comment.replies?.length && userInfo?.pk === props.comment?.creator?.pk">
       <!--    해당 본인 작성글이고 댓글에 대댓글이 없을 경우 수정/삭제 활성-->
       <small class="ml-1 text-btn" @click="toModify">
         {{ !isEditing ? '수정' : '취소' }}
@@ -100,7 +100,9 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
 
     <p v-if="!(formShow && isEditing)">
       <CBadge v-if="comment.secret" color="warning" class="mr-1">비밀글입니다</CBadge>
-      <span v-show="!comment.secret || userInfo?.is_superuser || userInfo?.pk === comment.user?.pk">
+      <span
+        v-show="!comment.secret || userInfo?.is_superuser || userInfo?.pk === comment.creator?.pk"
+      >
         {{ comment?.content }}
       </span>
     </p>

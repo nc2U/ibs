@@ -20,7 +20,7 @@ const userInfo = inject<ComputedRef<User>>('userInfo')
     </CTableDataCell>
     <CTableDataCell class="text-left">
       <router-link
-        v-if="!post.is_secret || userInfo?.is_superuser || userInfo?.pk === post.user?.pk"
+        v-if="!post.is_secret || userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
         :to="{ name: `${viewRoute} - 보기`, params: { postId: post.pk } }"
       >
         {{ cutString(post.title, 32) }}
@@ -32,7 +32,7 @@ const userInfo = inject<ComputedRef<User>>('userInfo')
         +{{ post.comments.length }}
       </CBadge>
     </CTableDataCell>
-    <CTableDataCell>{{ post.user?.username }}</CTableDataCell>
+    <CTableDataCell>{{ post.creator?.username }}</CTableDataCell>
     <CTableDataCell>{{ timeFormat(post.created ?? '') }}</CTableDataCell>
     <CTableDataCell>{{ post.hit }}</CTableDataCell>
   </CTableRow>

@@ -28,7 +28,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class PostFilterSet(FilterSet):
     class Meta:
         model = Post
-        fields = ('board', 'board__project', 'category', 'is_notice', 'is_blind', 'user')
+        fields = ('board', 'board__project', 'category', 'is_notice', 'is_blind', 'creator')
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -36,7 +36,7 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_class = PostFilterSet
-    search_fields = ('title', 'content', 'links__link', 'files__file', 'user__username')
+    search_fields = ('title', 'content', 'links__link', 'files__file', 'creator__username')
 
     def copy_and_create(self, request, *args, **kwargs):
         # 복사할 행의 ID를 저장한다.
@@ -71,7 +71,7 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Original Post object does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class PostLikeViewSet(viewsets.ModelViewSet):
@@ -109,7 +109,7 @@ class CommentFilterSet(FilterSet):
 
     class Meta:
         model = Comment
-        fields = ('user', 'post', 'is_comment', 'user')
+        fields = ('creator', 'post', 'is_comment', 'creator')
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -119,7 +119,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     filterset_class = CommentFilterSet
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class CommentLikeViewSet(viewsets.ModelViewSet):

@@ -60,7 +60,7 @@ export type Post = {
   links?: PostLink[]
   files?: PostFile[]
   comments?: number[]
-  user?: SimpleUser
+  creator?: SimpleUser
   created?: string
   updated?: string
   is_new?: boolean
@@ -122,7 +122,7 @@ export interface Comment {
   ip?: string
   device?: string
   secret: boolean
-  user?: SimpleUser
+  creator?: SimpleUser
   created?: string
 }
 
@@ -132,7 +132,7 @@ export interface TrashPost {
   cate_name: string
   title: string
   content: string
-  user: string
+  creator: string
   created: string
   deleted: string
 }

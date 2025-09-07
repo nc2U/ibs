@@ -42,7 +42,7 @@ class PostSerializer(serializers.ModelSerializer):
     cate_name = serializers.SlugField(source='category', read_only=True)
     links = LinksInPostSerializer(many=True, read_only=True)
     files = FilesInPostSerializer(many=True, read_only=True)
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
     my_like = serializers.SerializerMethodField(read_only=True)
     scrape = serializers.SerializerMethodField(read_only=True)
     my_scrape = serializers.SerializerMethodField(read_only=True)
@@ -55,7 +55,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ('pk', 'board', 'board_name', 'category', 'cate_name', 'title',
                   'content', 'hit', 'like', 'my_like', 'scrape', 'my_scrape', 'blame',
                   'my_blame', 'ip', 'device', 'is_secret', 'password', 'is_hide_comment',
-                  'is_notice', 'is_blind', 'deleted', 'links', 'files', 'comments', 'user',
+                  'is_notice', 'is_blind', 'deleted', 'links', 'files', 'comments', 'creator',
                   'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
 
@@ -76,7 +76,7 @@ class PostSerializer(serializers.ModelSerializer):
             Q(content__icontains=search) |
             Q(links__link__icontains=search) |
             Q(files__file__icontains=search) |
-            Q(user__username__icontains=search)
+            Q(creator__username__icontains=search)
         ) if search else queryset
 
         return queryset
@@ -293,12 +293,12 @@ class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField(read_only=True)
     my_like = serializers.SerializerMethodField(read_only=True)
     my_blame = serializers.SerializerMethodField(read_only=True)
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = Comment
         fields = ('pk', 'post', 'content', 'parent', 'replies', 'like', 'my_like',
-                  'blame', 'my_blame', 'ip', 'device', 'secret', 'user', 'created')
+                  'blame', 'my_blame', 'ip', 'device', 'secret', 'creator', 'created')
         read_only_fields = ('ip',)
 
     def get_replies(self, instance):
@@ -387,11 +387,11 @@ class TagSerializer(serializers.ModelSerializer):
 class PostInTrashSerializer(serializers.ModelSerializer):
     board_name = serializers.SlugField(source='board', read_only=True)
     cate_name = serializers.SlugField(source='category', read_only=True)
-    user = serializers.SlugField(read_only=True)
+    creator = serializers.SlugField(read_only=True)
 
     class Meta:
         model = Post
-        fields = ('pk', 'board_name', 'cate_name', 'title', 'content', 'user', 'created', 'deleted')
+        fields = ('pk', 'board_name', 'cate_name', 'title', 'content', 'creator', 'created', 'deleted')
 
     def update(self, instance, validated_data):
         instance.restore()
