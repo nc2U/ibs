@@ -6,7 +6,7 @@ from work.models import CodeDocsCategory, News, NewsFile, NewsComment
 
 @admin.register(CodeDocsCategory)
 class CodeDocsCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'active', 'default', 'order', 'user')
+    list_display = ('pk', 'name', 'active', 'default', 'order', 'creator')
     list_display_links = ('name',)
     list_editable = ('active', 'default', 'order')
     list_filter = ('active', 'default')

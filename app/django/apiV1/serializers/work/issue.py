@@ -34,11 +34,11 @@ class VersionInIssueSerializer(serializers.ModelSerializer):
 
 
 class IssueFileInIssueSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = IssueFile
-        fields = ('pk', 'file', 'file_name', 'file_type', 'file_size', 'description', 'created', 'user')
+        fields = ('pk', 'file', 'file_name', 'file_type', 'file_size', 'description', 'created', 'creator')
 
 
 class IssueInIssueSerializer(serializers.ModelSerializer):
@@ -115,8 +115,8 @@ class IssueSerializer(serializers.ModelSerializer):
                                      assigned_to=assigned_to,
                                      **validated_data)
         # Set the watchers of the instance to the list of watchers
-        user = self.context['request'].user
-        issue.watchers.add(user.pk)
+        creator = self.context['request'].user
+        issue.watchers.add(creator.pk)
         watchers = self.initial_data.getlist('watchers', [])
         if watchers:
             for watcher in watchers:
@@ -127,7 +127,7 @@ class IssueSerializer(serializers.ModelSerializer):
         if new_files:
             for i, file in enumerate(new_files):
                 issue_file = IssueFile(issue=issue, file=file,
-                                       description=descriptions[i], user=user)
+                                       description=descriptions[i], creator=creator)
                 issue_file.save()
         return issue
 
@@ -173,15 +173,15 @@ class IssueSerializer(serializers.ModelSerializer):
         hours = self.initial_data.get('hours', None)
         activity = self.initial_data.get('activity', None)
         comment = self.initial_data.get('comment', None)
-        user = self.context['request'].user
+        creator = self.context['request'].user
         if hours and activity:
             activity = CodeActivity.objects.get(pk=activity)
             TimeEntry.objects.create(project=instance.project, issue=instance, hours=hours,
-                                     activity=activity, comment=comment, user=user)
+                                     activity=activity, comment=comment, creator=creator)
         # issue_comment logic
         comment_content = self.initial_data.get('comment_content', None)
         if comment_content:
-            IssueComment.objects.create(issue=instance, content=comment_content, user=user)
+            IssueComment.objects.create(issue=instance, content=comment_content, creator=creator)
 
         # File 처리
         new_files = self.initial_data.getlist('new_files', [])
@@ -190,7 +190,7 @@ class IssueSerializer(serializers.ModelSerializer):
         if new_files:
             for i, file in enumerate(new_files):
                 issue_file = IssueFile(issue=instance, file=file,
-                                       description=descriptions[i], user=user)
+                                       description=descriptions[i], creator=creator)
                 issue_file.save()
 
         old_files = self.initial_data.getlist('files', [])
@@ -270,11 +270,11 @@ class IssueFileSerializer(serializers.ModelSerializer):
 
 class IssueCommentSerializer(serializers.ModelSerializer):
     issue = IssueInRelatedSerializer(read_only=True)
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = IssueComment
-        fields = ('pk', 'issue', 'content', 'is_private', 'created', 'updated', 'user')
+        fields = ('pk', 'issue', 'content', 'is_private', 'created', 'updated', 'creator')
 
 
 class SimpleCodeActivitySerializer(serializers.ModelSerializer):
@@ -286,13 +286,13 @@ class SimpleCodeActivitySerializer(serializers.ModelSerializer):
 class TimeEntrySerializer(serializers.ModelSerializer):
     issue = IssueInRelatedSerializer(read_only=True)
     activity = SimpleCodeActivitySerializer(read_only=True)
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
     total_hours = serializers.SerializerMethodField()
 
     class Meta:
         model = TimeEntry
         fields = ('pk', 'issue', 'spent_on', 'hours', 'activity', 'comment',
-                  'created', 'updated', 'user', 'total_hours')
+                  'created', 'updated', 'creator', 'total_hours')
 
     def get_total_hours(self, obj):
         # Access the filtered queryset from the view context

@@ -268,8 +268,8 @@ export const useIssue = defineStore('issue', () => {
     if (payload.to_spent_on) url += `&to_spent_on=${payload.to_spent_on}`
     if (payload.issue) url += `&issue=${payload.issue}`
     if (payload.issue__keyword) url += `&search=${payload.issue__keyword}`
-    if (payload.user) url += `&user=${payload.user}`
-    if (payload.user__exclude) url += `&user__exclude=${payload.user__exclude}`
+    if (payload.creator) url += `&user=${payload.creator}`
+    if (payload.creator__exclude) url += `&creator__exclude=${payload.creator__exclude}`
     // if (payload.activity) url += `&activity=${payload.activity}`
     // if (payload.hours) url += `&hours=${payload.hours}`
     // if (payload.from_spent_on) url += `&from_spent_on=${payload.from_spent_on}`

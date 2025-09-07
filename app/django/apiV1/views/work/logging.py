@@ -42,7 +42,7 @@ class ActivityLogFilter(FilterSet):
 
     class Meta:
         model = ActivityLogEntry
-        fields = ('project__slug', 'project__search', 'from_act_date', 'to_act_date', 'user', 'sort')
+        fields = ('project__slug', 'project__search', 'from_act_date', 'to_act_date', 'creator', 'sort')
 
     def filter_by_project_with_sub(self, queryset, name, value):
         try:
@@ -81,7 +81,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             return self.queryset
         return self.queryset.filter(
             Q(project__is_public=True) |
-            Q(project__in=projects)).select_related('project', 'user')
+            Q(project__in=projects)).select_related('project', 'creator')
 
     def get_commits(self):
         user = self.request.user
@@ -134,7 +134,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'issue__status__closed', 'issue__subject', 'issue__description',
             'status_log', 'comment__id', 'comment__content', 'news__title',
             'news__summary', 'news__author', 'spent_time__hours', 'spent_time__comment',
-            'act_date', 'timestamp', 'user__id', 'user__username')
+            'act_date', 'timestamp', 'creator__id', 'creator__username')
 
         # Commit 조회
         commits = self.get_commits().values(
@@ -167,7 +167,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'change_set': None,
             'act_date': log['act_date'],
             'timestamp': log['timestamp'],
-            'user': {'pk': log['user__id'], 'username': log['user__username']},
+            'creator': {'pk': log['creator__id'], 'username': log['creator__username']},
         } for log in logs)
         commit_iter = ({
             'pk': 0,
@@ -200,7 +200,7 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
     serializer_class = IssueLogEntrySerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationFifty
-    filterset_fields = ('issue', 'user')
+    filterset_fields = ('issue', 'creator')
 
     # def get_queryset(self):
     #     user = self.request.user

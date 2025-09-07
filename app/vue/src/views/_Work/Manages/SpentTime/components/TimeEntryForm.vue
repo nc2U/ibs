@@ -21,7 +21,7 @@ const form = ref({
   pk: null as number | null,
   project: '',
   issue: null as number | null,
-  user: null as number | null,
+  creator: null as number | null,
   spent_on: dateFormat(new Date()),
   hours: '',
   comment: '',
@@ -44,7 +44,7 @@ const formCheck = computed(() => {
   if (timeEntry.value) {
     const a = form.value.project === issueProject.value?.slug
     const b = form.value.issue === timeEntry.value.issue.pk
-    const c = form.value.user === timeEntry.value?.user.pk
+    const c = form.value.creator === timeEntry.value?.creator.pk
     const d = form.value.spent_on === timeEntry.value.spent_on
     const e = form.value.hours === timeEntry.value.hours
     const f = form.value.activity === timeEntry.value.activity.pk
@@ -82,7 +82,7 @@ const dataSetup = () => {
   if (timeEntry.value) {
     form.value.pk = timeEntry.value?.pk as number
     form.value.issue = timeEntry.value.issue.pk
-    form.value.user = timeEntry.value.user.pk
+    form.value.creator = timeEntry.value.creator.pk
     form.value.spent_on = timeEntry.value.spent_on
     form.value.hours = timeEntry.value.hours
     form.value.activity = timeEntry.value.activity.pk
@@ -170,7 +170,7 @@ onBeforeMount(() => {
               사용자
             </CFormLabel>
             <CCol sm="4">
-              <CFormSelect v-model.number="form.user" id="user" required>
+              <CFormSelect v-model.number="form.creator" id="user" required>
                 <option value="">---------</option>
                 <option v-for="mem in memberList" :value="mem.user.pk" :key="mem.user.pk">
                   {{ mem.user.username }}

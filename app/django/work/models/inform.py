@@ -17,7 +17,7 @@ class CodeDocsCategory(models.Model):
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='등록자')
 
     def __str__(self):
         return self.name
@@ -64,7 +64,7 @@ class NewsFile(models.Model):
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
     created = models.DateTimeField('등록일', auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                              null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
@@ -89,7 +89,7 @@ class NewsComment(models.Model):
     news = models.ForeignKey(News, on_delete=models.CASCADE, verbose_name='공지', related_name='comments')
     content = models.TextField('내용')
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='등록자')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 

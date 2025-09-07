@@ -26,7 +26,7 @@ export interface ActLogEntry {
   // message: string
   act_date: string
   timestamp: string
-  user: { pk: number; username: string }
+  creator: { pk: number; username: string }
 }
 
 export interface ActLogEntryFilter {
@@ -34,7 +34,7 @@ export interface ActLogEntryFilter {
   project__search?: string
   to_act_date?: string
   from_act_date?: string
-  user?: string
+  creator?: string
   sort?: Array<'1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'>
   limit?: number
 }
@@ -54,12 +54,12 @@ export interface IssueLogEntry {
   comment: {
     pk: number
     content: string
-    user: { pk: number; username: string }
+    creator: { pk: number; username: string }
   } | null
   details: string
   diff: string
   timestamp: string
-  user: {
+  creator: {
     pk: number
     username: string
   }

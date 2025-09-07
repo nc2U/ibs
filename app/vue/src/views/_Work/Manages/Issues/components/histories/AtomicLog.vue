@@ -19,9 +19,9 @@ const route = useRoute()
         :id="`note-${log.pk}`"
         :class="{ 'bg-blue-lighten-5': route.hash == `#note-${log.log_id}` }"
       >
-        <CCol v-if="log.user">
-          <router-link :to="{ name: '사용자 - 보기', params: { userId: log.user.pk } }">
-            {{ log.user.username }}
+        <CCol v-if="log.creator">
+          <router-link :to="{ name: '사용자 - 보기', params: { userId: log.creator.pk } }">
+            {{ log.creator.username }}
           </router-link>
           이(가)
           <span>

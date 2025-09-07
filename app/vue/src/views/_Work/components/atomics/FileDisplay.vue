@@ -10,7 +10,7 @@ interface File {
   file_name: string
   file_size: number
   description: string
-  user: SimpleUser
+  creator: SimpleUser
   created: string
 }
 
@@ -44,7 +44,7 @@ const projStatus = computed(() => iProject?.value?.status)
       </a>
     </span>
     <span v-if="file.description" class="mr-2">{{ file.description }}</span>
-    <span class="file-desc2 mr-1 text-grey"> {{ file.user?.username }}, </span>
+    <span class="file-desc2 mr-1 text-grey"> {{ file.creator?.username }}, </span>
     <span class="file-desc2 mr-2 text-grey">{{ timeFormat(file.created) }}</span>
 
     <span v-if="projStatus !== '9'">

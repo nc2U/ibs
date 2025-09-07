@@ -80,7 +80,7 @@ const cond = ref({
     | 'any',
   project: 'is' as 'is' | 'exclude',
   issue: 'is' as 'is' | 'keyword' | 'any',
-  user: 'is' as 'is' | 'exclude' | 'any',
+  creator: 'is' as 'is' | 'exclude' | 'any',
   author: 'is' as 'is' | 'exclude' | 'none' | 'any',
   activity: 'is' as 'is' | 'exclude',
   hours: 'is' as 'is' | '>=' | '<=' | 'between' | 'none' | 'any',
@@ -104,7 +104,7 @@ const form = ref<TimeEntryFilter & { before_days: number | null }>({
   before_days: null,
   issue: '',
   issue__keyword: '',
-  user: '',
+  creator: '',
   author: '',
   activity: '',
   comment: '',
@@ -157,13 +157,13 @@ const filterSubmit = () => {
     else if (cond.value.issue === 'any') filterData.issue = ''
 
   if (searchCond.value.includes('user'))
-    if (cond.value.user === 'is') filterData.user = form.value.user
-    else if (cond.value.user === 'exclude') filterData.user__exclude = form.value.user
-    else if (cond.value.user === 'any') filterData.user = ''
+    if (cond.value.creator === 'is') filterData.creator = form.value.creator
+    else if (cond.value.creator === 'exclude') filterData.creator__exclude = form.value.creator
+    else if (cond.value.creator === 'any') filterData.creator = ''
 
   if (searchCond.value.includes('target_version'))
     if (cond.value.issue_target_version === 'is') filterData.version = form.value.version
-    else if (cond.value.user === 'exclude') filterData.version__exclude = form.value.version
+    else if (cond.value.creator === 'exclude') filterData.version__exclude = form.value.version
 
   // if (form.value.name) filterData.name = form.value.name
   // if (form.value.description) filterData.description = form.value.description
@@ -317,7 +317,7 @@ onBeforeMount(() => {
                 <CFormCheck checked="true" label="사용자" id="user" readonly />
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.user" size="sm">
+                <CFormSelect v-model="cond.creator" size="sm">
                   <option value="is">이다</option>
                   <option value="exclude">아니다</option>
                   <option value="any">모두</option>
@@ -325,8 +325,8 @@ onBeforeMount(() => {
               </CCol>
               <CCol class="col-4 col-lg-3">
                 <Multiselect
-                  v-if="cond.user === 'is' || cond.user === 'exclude'"
-                  v-model="form.user"
+                  v-if="cond.creator === 'is' || cond.creator === 'exclude'"
+                  v-model="form.creator"
                   :options="getMembers"
                   placeholder="사용자 선택"
                   searchable

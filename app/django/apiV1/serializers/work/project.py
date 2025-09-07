@@ -112,7 +112,7 @@ class IssueProjectSerializer(serializers.ModelSerializer):
     total_time_spent = serializers.SerializerMethodField(read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
     sub_projects = serializers.SerializerMethodField()
-    user = serializers.SlugRelatedField('username', read_only=True)
+    creator = serializers.SlugRelatedField('username', read_only=True)
     my_perms = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -121,7 +121,7 @@ class IssueProjectSerializer(serializers.ModelSerializer):
                   'module', 'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions',
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
                   'activities', 'visible', 'total_estimated_hours', 'total_time_spent', 'family_tree',
-                  'parent', 'parent_visible', 'sub_projects', 'user', 'my_perms', 'created', 'updated')
+                  'parent', 'parent_visible', 'sub_projects', 'creator', 'my_perms', 'created', 'updated')
         read_only_fields = ('forums',)
 
     @staticmethod
@@ -538,7 +538,7 @@ class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = ('pk', 'name', 'assignable', 'issue_visible', 'time_entry_visible', 'user_visible',
-                  'default_time_activity', 'order', 'user', 'created', 'updated')  # , 'permission'
+                  'default_time_activity', 'order', 'creator', 'created', 'updated')  # , 'permission'
 
 
 class MemberSerializer(serializers.ModelSerializer):

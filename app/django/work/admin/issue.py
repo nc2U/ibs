@@ -63,7 +63,7 @@ class IssueCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(IssueStatus)
 class IssueStatusAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'closed', 'order', 'user')
+    list_display = ('pk', 'name', 'closed', 'order', 'creator')
     list_display_links = ('name',)
 
 
@@ -80,7 +80,7 @@ class WorkflowAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(CodeActivity)
 class CodeActivityAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'active', 'default', 'order', 'user')
+    list_display = ('pk', 'name', 'active', 'default', 'order', 'creator')
     list_display_links = ('name',)
     list_editable = ('active', 'default', 'order')
     list_filter = ('active', 'default')
@@ -88,7 +88,7 @@ class CodeActivityAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(CodeIssuePriority)
 class CodeIssuePriorityAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'active', 'default', 'order', 'user')
+    list_display = ('pk', 'name', 'active', 'default', 'order', 'creator')
     list_display_links = ('name',)
     list_editable = ('active', 'default', 'order')
     list_filter = ('active', 'default')

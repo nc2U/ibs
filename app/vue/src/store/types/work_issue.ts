@@ -111,7 +111,7 @@ export interface IssueFile {
   file_size: number
   description: string
   created: string
-  user: {
+  creator: {
     pk: number
     username: string
   }
@@ -215,7 +215,7 @@ export interface IssueComment {
   is_private: boolean
   created: string
   updated: string
-  user: {
+  creator: {
     pk: number
     username: string
   }
@@ -237,7 +237,7 @@ export interface TimeEntry {
   comment: string
   created: string
   updated: string
-  user: SimpleUser
+  creator: SimpleUser
   total_hours: number
 }
 
@@ -251,8 +251,8 @@ export interface TimeEntryFilter {
   to_spent_on?: string
   issue?: number | ''
   issue__keyword?: string
-  user?: number | ''
-  user__exclude?: number | ''
+  creator?: number | ''
+  creator__exclude?: number | ''
   author?: number | ''
   activity?: number | ''
   hours?: number

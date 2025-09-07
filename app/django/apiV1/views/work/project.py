@@ -31,7 +31,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     filterset_class = IssueProjectFilter
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class IssueProjectForGanttViewSet(IssueProjectViewSet):
@@ -51,7 +51,7 @@ class RoleViewSet(viewsets.ModelViewSet):
     search_fields = ('id',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 # class PermissionViewSet(viewsets.ModelViewSet):

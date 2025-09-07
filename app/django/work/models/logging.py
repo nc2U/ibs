@@ -23,11 +23,11 @@ class ActivityLogEntry(models.Model):
     spent_time = models.ForeignKey(TimeEntry, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='소요시간')
     act_date = models.DateField('로그 일자', auto_now_add=True)
     timestamp = models.DateTimeField('로그 시간', auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                              verbose_name='작성자')
 
     def __str__(self):
-        return f"{self.user.__str__()} - {self.timestamp}"
+        return f"{self.creator.__str__()} - {self.timestamp}"
 
     class Meta:
         ordering = ('-id',)
@@ -61,7 +61,7 @@ class IssueLogEntry(models.Model):
     details = models.TextField('설명', blank=True, default='')
     diff = models.TextField('차이점', blank=True, default='')
     timestamp = models.DateTimeField('로그 시간', auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                              verbose_name='작성자')
 
     def __str__(self):

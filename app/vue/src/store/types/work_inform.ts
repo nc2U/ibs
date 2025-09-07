@@ -22,14 +22,14 @@ export interface NewsFile {
   file_type: string
   file_size: number
   description: string
-  user: SimpleUser
+  creator: SimpleUser
   created: string
 }
 
 export interface BaseComment {
   pk?: number
   parent: number | null
-  user?: SimpleUser
+  creator?: SimpleUser
   created: string
   updated: string
 }

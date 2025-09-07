@@ -34,7 +34,7 @@ class IssueProject(models.Model):
     )
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
 
     def __str__(self):
         return self.name
@@ -150,7 +150,7 @@ class Role(models.Model):
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='작성자')
 
     def __str__(self):
         return self.name

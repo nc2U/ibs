@@ -63,7 +63,7 @@ class IssueRelation(models.Model):
         ('copied_from', '다음 업무로부터 복사됨'))
     relation_type = models.CharField('관계 유형', max_length=20, choices=RELATION_CHOICES, default='relates')
     delay = models.PositiveSmallIntegerField('지연일수', null=True, blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, models.SET_NULL, null=True, blank=True, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, models.SET_NULL, null=True, blank=True, verbose_name='작성자')
 
     def __str__(self):
         return f'{self.issue.subject}-{self.relation_type}-{self.issue_to.subject}'
@@ -83,7 +83,7 @@ class IssueFile(models.Model):
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
     created = models.DateTimeField('등록일', auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                              verbose_name='작성자')
 
     def __str__(self):
@@ -113,7 +113,7 @@ class IssueComment(models.Model):
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='작성자')
 
     def __str__(self):
         return self.content
@@ -128,7 +128,7 @@ class TimeEntry(models.Model):
     comment = models.CharField('설명', max_length=255, blank=True, default='')
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
 
     def __str__(self):
         return f'{self.issue} - {self.hours}'
@@ -147,7 +147,7 @@ class Tracker(models.Model):
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
 
     def __str__(self):
         return self.name
@@ -180,7 +180,7 @@ class IssueStatus(models.Model):
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
 
     def __str__(self):
         return self.name
@@ -213,7 +213,7 @@ class CodeActivity(models.Model):
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
 
     def __str__(self):
         return self.name
@@ -231,7 +231,7 @@ class CodeIssuePriority(models.Model):
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
 
     def __str__(self):
         return self.name

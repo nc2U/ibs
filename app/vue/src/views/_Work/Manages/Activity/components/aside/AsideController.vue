@@ -38,7 +38,7 @@ const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
   project__search: '',
   to_act_date: '',
   from_act_date: '',
-  user: '',
+  creator: '',
   sort: ['1', '2', '4', '5', '6', '9'],
   subProjects: true,
 })
@@ -114,7 +114,7 @@ onBeforeMount(async () => {
   if (props.toDate) actFilter.to_act_date = dateFormat(props.toDate)
   if (props.fromDate) actFilter.from_act_date = dateFormat(props.fromDate)
 
-  if (route.query.user) actFilter.user = route.query.user as string
+  if (route.query.user) actFilter.creator = route.query.user as string
 
   filterActivity()
 })
@@ -134,7 +134,7 @@ onBeforeMount(async () => {
   <CRow class="mb-3">
     <CFormLabel for="log-user" class="col-sm-4 col-form-label">사용자</CFormLabel>
     <CCol class="col-xxl-6">
-      <CFormSelect v-model="actFilter.user" id="log-user" size="sm">
+      <CFormSelect v-model="actFilter.creator" id="log-user" size="sm">
         <option value="">---------</option>
         <option :value="(userInfo as User)?.pk">&lt;&lt; 나 &gt;&gt;</option>
         <option v-for="user in getUsers" :value="user.value" :key="user.value">

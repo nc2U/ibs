@@ -38,7 +38,7 @@ watch(route, nVal => {
     accStore.fetchUser(Number(nVal.params.userId))
     fetchIssueByMember(nVal.params.userId as string)
     fetchIssueProjectList({ member: Number(nVal.params.userId) })
-    fetchActivityLogList({ user: nVal.params.userId as string, limit: 10 })
+    fetchActivityLogList({ creator: nVal.params.userId as string, limit: 10 })
   }
 })
 
@@ -50,7 +50,7 @@ onBeforeMount(async () => {
     await accStore.fetchUser(Number(route.params.userId))
     await fetchIssueByMember(route.params.userId as string)
     await fetchIssueProjectList({ member: Number(route.params.userId) })
-    await fetchActivityLogList({ user: route.params.userId as string, limit: 10 })
+    await fetchActivityLogList({ creator: route.params.userId as string, limit: 10 })
   }
   loading.value = false
 })

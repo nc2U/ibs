@@ -52,7 +52,7 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
             'description': '이 프로젝트의 데이터 변동을 실시간으로 Slack에 알림받을 수 있습니다.'
         }),
         ('생성 정보', {
-            'fields': ('user', 'created', 'updated'),
+            'fields': ('creator', 'created', 'updated'),
             'classes': ('collapse',)
         })
     )

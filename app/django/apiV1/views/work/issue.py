@@ -119,10 +119,10 @@ class IssueRelationViewSet(viewsets.ModelViewSet):
     filterset_fields = ('issue',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class IssueFileViewSet(viewsets.ModelViewSet):
@@ -133,7 +133,7 @@ class IssueFileViewSet(viewsets.ModelViewSet):
     search_fields = ('id',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class IssueCommentViewSet(viewsets.ModelViewSet):
@@ -144,7 +144,7 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
     search_fields = ('id',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class TimeEntryFilter(FilterSet):
@@ -152,12 +152,12 @@ class TimeEntryFilter(FilterSet):
     project__exclude = CharFilter(field_name='project__slug', exclude=True, label='프로젝트-제외')
     from_spent_on = DateFilter(field_name='spent_on', lookup_expr='gte', label='작업일자부터')
     to_spent_on = DateFilter(field_name='spent_on', lookup_expr='lte', label='작업일자부터')
-    user__exclude = CharFilter(field_name='user', exclude=True, label='사용자-제외')
+    creator__exclude = CharFilter(field_name='creator', exclude=True, label='사용자-제외')
     issue__fixed_version__exclude = CharFilter(field_name='issue__fixed_version', exclude=True, label='목표버전-제외')
 
     class Meta:
         model = TimeEntry
-        fields = ('project__slug', 'spent_on', 'issue', 'user', 'activity', 'hours',
+        fields = ('project__slug', 'spent_on', 'issue', 'creator', 'activity', 'hours',
                   'issue__tracker', 'issue__parent', 'issue__fixed_version', 'issue__category')
 
     def filter_queryset(self, queryset):
@@ -204,7 +204,7 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
                                       Q(issue__project__in=projects))
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class TrackerViewSet(viewsets.ModelViewSet):
@@ -215,7 +215,7 @@ class TrackerViewSet(viewsets.ModelViewSet):
     filterset_fields = ('projects',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class IssueCategoryViewSet(viewsets.ModelViewSet):
@@ -245,7 +245,7 @@ class IssueStatusViewSet(viewsets.ModelViewSet):
     search_fields = ('id',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class WorkflowViewSet(viewsets.ModelViewSet):
@@ -262,7 +262,7 @@ class CodeActivityViewSet(viewsets.ModelViewSet):
     search_fields = ('id',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class CodeIssuePriorityViewSet(viewsets.ModelViewSet):
@@ -273,4 +273,4 @@ class CodeIssuePriorityViewSet(viewsets.ModelViewSet):
     search_fields = ('id',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)

@@ -18,20 +18,20 @@ class CodeDocsCategorySerializer(serializers.ModelSerializer):
 
 
 class FilesInNewsSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = NewsFile
         fields = ('pk', 'news', 'file_name', 'file', 'file_type',
-                  'file_size', 'description', 'user', 'created')
+                  'file_size', 'description', 'creator', 'created')
 
 
 class NewsCommentInSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = NewsComment
-        fields = ('pk', 'content', 'parent', 'user', 'created', 'updated')
+        fields = ('pk', 'content', 'parent', 'creator', 'created', 'updated')
 
 
 class NewsSerializer(serializers.ModelSerializer):
@@ -53,12 +53,12 @@ class NewsSerializer(serializers.ModelSerializer):
         news = super().create(validated_data)
         # 파일 처리
         request = self.context.get('request')
-        user = request.user if request else None
+        creator = request.user if request else None
         new_files = request.FILES.getlist('new_files')
         new_descs = request.data.getlist('new_descs')
 
         for file, desc in zip(new_files, new_descs):
-            NewsFile.objects.create(news=news, file=file, description=desc, user=user)
+            NewsFile.objects.create(news=news, file=file, description=desc, creator=creator)
         return news
 
     @transaction.atomic
@@ -71,13 +71,13 @@ class NewsSerializer(serializers.ModelSerializer):
 
         try:
             request = self.context['request']
-            user = request.user
+            creator = request.user
 
             new_files = request.FILES.getlist('new_files')
             new_descs = request.data.getlist('new_descs')
 
             for file, desc in zip(new_files, new_descs):
-                NewsFile.objects.create(news=instance, file=file, description=desc, user=user)
+                NewsFile.objects.create(news=instance, file=file, description=desc, creator=creator)
 
             old_files = self.initial_data.getlist('files')
             cng_pks = self.initial_data.getlist('cngPks')
@@ -101,7 +101,7 @@ class NewsSerializer(serializers.ModelSerializer):
                     except Exception as e:
                         print(f"파일 처리 중 오류 발생: {e}")
                     file_obj.file = cng_file
-                    file_obj.user = user
+                    file_obj.creator = creator
                     file_obj.save()
 
             del_file = self.initial_data.get('del_file', None)

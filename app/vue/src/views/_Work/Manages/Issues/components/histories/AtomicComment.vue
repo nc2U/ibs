@@ -81,9 +81,9 @@ const delSubmit = () => {
         :id="`note-${log.pk}`"
         :class="{ 'bg-blue-lighten-5': route.hash == `#note-${log.log_id}` }"
       >
-        <CCol v-if="log.user" class="pt-1">
-          <router-link :to="{ name: '사용자 - 보기', params: { userId: log.user.pk } }">
-            {{ log.user.username }}
+        <CCol v-if="log.creator" class="pt-1">
+          <router-link :to="{ name: '사용자 - 보기', params: { userId: log.creator.pk } }">
+            {{ log.creator.username }}
           </router-link>
           이(가)
           <span>
@@ -108,7 +108,11 @@ const delSubmit = () => {
               size="16"
               class="mr-2 pointer"
               @click="
-                callReply(log.log_id, log.comment?.user.username ?? '', log.comment?.content ?? '')
+                callReply(
+                  log.log_id,
+                  log.comment?.creator.username ?? '',
+                  log.comment?.content ?? '',
+                )
               "
             />
             <v-tooltip activator="parent" location="top">댓글달기</v-tooltip>
@@ -116,7 +120,7 @@ const delSubmit = () => {
           <span
             v-if="
               workManager ||
-              (my_perms?.issue_comment_own_update && userInfo?.pk === log.comment?.user.pk)
+              (my_perms?.issue_comment_own_update && userInfo?.pk === log.comment?.creator.pk)
             "
           >
             <v-icon

@@ -13,7 +13,7 @@ class CodeDocsCategoryViewSet(viewsets.ModelViewSet):
     search_fields = ('id',)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class NewsViewSet(viewsets.ModelViewSet):
@@ -40,10 +40,10 @@ class NewsCommentViewSet(viewsets.ModelViewSet):
     serializer_class = NewsCommentSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTen
-    filterset_fields = ('news__project__slug', 'news', 'parent', 'user')
+    filterset_fields = ('news__project__slug', 'news', 'parent', 'creator')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
 
 
 class SearchViewSet(viewsets.ModelViewSet):

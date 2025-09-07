@@ -61,7 +61,7 @@ export interface IssueProject {
   parent: number | null
   parent_visible: boolean
   sub_projects: IssueProject[]
-  user?: string
+  creator?: string
   my_perms?: Permission
   created?: string
   updated?: string

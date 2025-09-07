@@ -26,28 +26,28 @@ class ActivityLogEntrySerializer(serializers.ModelSerializer):
     comment = IssueCommentSerializer(read_only=True)
     news = NewsInActLogSerializer(read_only=True)
     spent_time = TimeEntryInActivityLogSerializer(read_only=True)
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = ActivityLogEntry
         fields = ('pk', 'sort', 'project', 'issue', 'status_log', 'comment',
-                  'news', 'spent_time', 'act_date', 'timestamp', 'user')
+                  'news', 'spent_time', 'act_date', 'timestamp', 'creator')
         # 'change_sets', 'news', 'document', 'file', 'wiki', 'message',
 
 
 class SimpleCommentInIssueLogEntrySerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = IssueComment
-        fields = ('pk', 'content', 'user')
+        fields = ('pk', 'content', 'creator')
 
 
 class IssueLogEntrySerializer(serializers.ModelSerializer):
     issue = IssueInRelatedSerializer(read_only=True)
     comment = SimpleCommentInIssueLogEntrySerializer(read_only=True)
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = IssueLogEntry
-        fields = ('pk', 'log_id', 'issue', 'action', 'comment', 'details', 'diff', 'timestamp', 'user')
+        fields = ('pk', 'log_id', 'issue', 'action', 'comment', 'details', 'diff', 'timestamp', 'creator')

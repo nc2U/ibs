@@ -63,9 +63,9 @@ const getIcon = (sort: string, progress: boolean) => {
                 class="form-text"
               />
             </div>
-            <div v-if="act.user" class="form-text ml-5 pl-2">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.user.pk } }">
-                {{ act.user.username }}
+            <div v-if="act.creator" class="form-text ml-5 pl-2">
+              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+                {{ act.creator.username }}
               </router-link>
             </div>
           </span>
@@ -107,7 +107,7 @@ const getIcon = (sort: string, progress: boolean) => {
               {{ cutString(act.change_set.message, 50) }}
             </router-link>
             <div class="form-text ml-5 pl-3">
-              {{ act.user.username }}
+              {{ act.creator.username }}
             </div>
           </span>
 
@@ -116,9 +116,9 @@ const getIcon = (sort: string, progress: boolean) => {
 
             <div class="ml-5 pl-2 fst-italic">{{ act.news?.summary }}</div>
 
-            <div v-if="act.user" class="form-text ml-5 pl-2">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.user.pk } }">
-                {{ act.user.username }}
+            <div v-if="act.creator" class="form-text ml-5 pl-2">
+              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+                {{ act.creator.username }}
               </router-link>
             </div>
           </span>
@@ -142,9 +142,9 @@ const getIcon = (sort: string, progress: boolean) => {
                 {{ cutString(act.spent_time.comment, 100) }}
               </span>
             </div>
-            <div v-if="act.user" class="form-text ml-5 pl-2">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.user.pk } }">
-                {{ act.user.username }}
+            <div v-if="act.creator" class="form-text ml-5 pl-2">
+              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+                {{ act.creator.username }}
               </router-link>
             </div>
           </span>

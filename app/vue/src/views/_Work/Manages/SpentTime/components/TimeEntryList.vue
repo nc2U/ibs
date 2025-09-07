@@ -154,8 +154,8 @@ onBeforeMount(() => {
                 {{ dateFormat(time.spent_on, '/') }}
               </CTableDataCell>
               <CTableDataCell>
-                <router-link :to="{ name: '사용자 - 보기', params: { userId: time.user.pk } }">
-                  {{ time.user.username }}
+                <router-link :to="{ name: '사용자 - 보기', params: { userId: time.creator.pk } }">
+                  {{ time.creator.username }}
                 </router-link>
               </CTableDataCell>
               <CTableDataCell>{{ time.activity.name }}</CTableDataCell>
