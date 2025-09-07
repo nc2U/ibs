@@ -9,7 +9,7 @@ from docs.models import LawsuitCase, Document
 from contract.models import Contract, Succession, ContractorRelease
 
 logger = logging.getLogger(__name__)
-SYSTEM_NAME = 'IBS 건설관리시스템'
+SYSTEM_NAME = 'IBS 업무관리시스템'
 
 
 def get_service_url(model_instance):
