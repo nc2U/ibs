@@ -28,9 +28,9 @@ def get_service_url(model_instance):
     prefix = '' if (issue_project and issue_project.sort == '1') else 'project-'
 
     if isinstance(model_instance, CashBook):
-        return f"{base_url}/#/cash/cashbook/{model_instance.id}"
+        return f"{base_url}/#/cashes/index"  # /{model_instance.id}"
     elif isinstance(model_instance, ProjectCashBook):
-        return f"{base_url}/#/cash/project-cashbook/{model_instance.id}"
+        return f"{base_url}/#/project-cash/index"  # /{model_instance.id}"
     elif isinstance(model_instance, LawsuitCase):
         return f"{base_url}/#/{prefix}docs/lawsuit/case/{model_instance.id}"
     elif isinstance(model_instance, Document):
@@ -103,10 +103,10 @@ class SlackMessageBuilder:
 
         if isinstance(instance, CashBook):
             # 본사 입출금
-            title = f"💰 {instance.company.name} - {instance.content or '본사 입출금'}"
+            title = f"💰 [본사 입출금]-{instance.company.name} - {instance.content or '------'}"
         elif isinstance(instance, ProjectCashBook):
             # 프로젝트 입출금
-            title = f"🏗️ {instance.project.name} - {instance.content or '프로젝트 입출금'}"
+            title = f"🏗️ [프로젝트 입출금]-{instance.project.name} - {instance.content or '------'}"
         else:
             return None
 
@@ -148,12 +148,21 @@ class SlackMessageBuilder:
         agency = instance.get_court_display() if instance.get_court_display() else instance.other_agency
         title = f"⚖️ {agency} {instance.case_number} - {instance.case_name}"
 
+        # 수정 시 updator와 creator 정보 표시
+        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"수정자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 생성 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+
         return {
             'attachments': [{
                 'color': color,
                 'title': f"{title} ({action})",
                 'title_link': service_url,
-                'text': f"등록자: {user.username if user else '시스템'}",
+                'text': user_text,
                 'actions': [{
                     'type': 'button',
                     'text': '상세보기',
@@ -179,12 +188,21 @@ class SlackMessageBuilder:
         if instance.is_secret:
             title = f"🔒 {title}"
 
+        # 수정 시 updator와 creator 정보 표시
+        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"수정자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 생성 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+
         return {
             'attachments': [{
                 'color': color,
                 'title': f"{title} ({action})",
                 'title_link': service_url,
-                'text': f"등록자: {user.username if user else '시스템'}",
+                'text': user_text,
                 'actions': [{
                     'type': 'button',
                     'text': '상세보기',

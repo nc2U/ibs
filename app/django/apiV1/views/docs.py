@@ -64,6 +64,9 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+
 
 class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
     serializer_class = SimpleLawSuitCaseSerializer
@@ -133,6 +136,9 @@ class DocumentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -147,6 +153,9 @@ class LinkViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
 
 
 class FileViewSet(viewsets.ModelViewSet):

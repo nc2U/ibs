@@ -44,6 +44,7 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
     related_case_name = serializers.SlugField(source='related_case', read_only=True)
     court_desc = serializers.CharField(source='get_court_display', read_only=True)
     creator = SimpleUserSerializer(read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
     links = serializers.SerializerMethodField(read_only=True)
     files = serializers.SerializerMethodField(read_only=True)
     prev_pk = serializers.SerializerMethodField(read_only=True)
@@ -55,7 +56,7 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
                   'related_case', 'related_case_name', 'court', 'court_desc', 'other_agency', 'case_number',
                   'case_name', '__str__', 'plaintiff', 'plaintiff_attorney', 'plaintiff_case_price',
                   'defendant', 'defendant_attorney', 'defendant_case_price', 'related_debtor', 'case_start_date',
-                  'case_end_date', 'summary', 'creator', 'links', 'files', 'created', 'prev_pk', 'next_pk')
+                  'case_end_date', 'summary', 'creator', 'updator', 'links', 'files', 'created', 'prev_pk', 'next_pk')
         read_only_fields = ('__str__',)
 
     @staticmethod
@@ -144,6 +145,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     links = LinksInDocumentSerializer(many=True, read_only=True)
     files = FilesInDocumentSerializer(many=True, read_only=True)
     creator = SimpleUserSerializer(read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
     scrape = serializers.SerializerMethodField(read_only=True)
     my_scrape = serializers.SerializerMethodField(read_only=True)
     prev_pk = serializers.SerializerMethodField(read_only=True)
@@ -154,7 +156,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name', 'category',
                   'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content',
                   'hit', 'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
-                  'links', 'files', 'creator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
+                  'links', 'files', 'creator', 'updator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
 
     @staticmethod
@@ -219,6 +221,10 @@ class DocumentSerializer(serializers.ModelSerializer):
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')
+        
+        # updator 설정
+        if hasattr(request, 'user') and request.user:
+            instance.updator = request.user
 
         instance = super().update(instance, validated_data)  # 기본 필드 업데이트 수행
 

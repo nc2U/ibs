@@ -12,7 +12,7 @@ def notify_lawsuitcase_change(sender, instance, created, raw=False, **kwargs):
         return
 
     action = "생성" if created else "수정"
-    send_slack_notification(instance, action, instance.user)
+    send_slack_notification(instance, action, instance.creator)
 
 
 # Document의 이전 상태를 저장하는 딕셔너리
@@ -51,24 +51,24 @@ def notify_document_change(sender, instance, created, raw=False, update_fields=N
         # 생성이 아닌 경우 hit만 변경되었는지 확인
         if not created and instance.pk in _document_pre_save_state:
             old_state = _document_pre_save_state[instance.pk]
-            
+
             # hit를 제외한 필드들이 변경되었는지 확인
-            meaningful_fields = ['title', 'content', 'doc_type_id', 'category_id', 
-                               'lawsuit_id', 'execution_date', 'is_secret', 'password', 'is_blind']
-            
+            meaningful_fields = ['title', 'content', 'doc_type_id', 'category_id',
+                                 'lawsuit_id', 'execution_date', 'is_secret', 'password', 'is_blind']
+
             has_meaningful_change = False
             for field in meaningful_fields:
                 if old_state.get(field) != getattr(instance, field):
                     has_meaningful_change = True
                     break
-            
+
             # hit만 변경되고 다른 중요한 필드는 변경되지 않았으면 알림 제외
             if not has_meaningful_change:
                 return
 
         action = "생성" if created else "수정"
-        send_slack_notification(instance, action, instance.user)
-        
+        send_slack_notification(instance, action, instance.creator)
+
     finally:
         # 저장된 상태 정리
         if instance.pk in _document_pre_save_state:
@@ -78,10 +78,10 @@ def notify_document_change(sender, instance, created, raw=False, update_fields=N
 @receiver(post_delete, sender=LawsuitCase, dispatch_uid="lawsuitcase_slack_delete_notification")
 def notify_lawsuitcase_delete(sender, instance, **kwargs):
     """LawsuitCase 삭제 시 Slack 알림"""
-    send_slack_notification(instance, "삭제", getattr(instance, 'user', None))
+    send_slack_notification(instance, "삭제", getattr(instance, 'creator', None))
 
 
 @receiver(post_delete, sender=Document, dispatch_uid="document_slack_delete_notification")
 def notify_document_delete(sender, instance, **kwargs):
     """Document 삭제 시 Slack 알림"""
-    send_slack_notification(instance, "삭제", getattr(instance, 'user', None))
+    send_slack_notification(instance, "삭제", getattr(instance, 'creator', None))
