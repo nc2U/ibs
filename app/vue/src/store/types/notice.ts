@@ -18,4 +18,9 @@ export declare interface SalesBillIssue {
   address3: string
   title: string
   content: string
+  creator?: {
+    pk: number
+    username: string
+  }
+  updated_at?: string
 }
