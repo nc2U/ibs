@@ -290,11 +290,11 @@ class LawsuitCase(models.Model):
     case_end_date = models.DateField('사건종결일', null=True, blank=True)
     summary = models.TextField('개요 및 경과', blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자',
-                             related_name='lawsuitcases')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, 
-                             related_name='updated_lawsuitcases', verbose_name='수정자')
+                                related_name='lawsuitcases')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_lawsuitcases', verbose_name='편집자')
     created = models.DateTimeField('등록일시', auto_now_add=True)
-    updated = models.DateTimeField('수정일시', auto_now=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         agency = self.get_court_display() if self.get_court_display() else self.other_agency
@@ -343,8 +343,8 @@ class Document(BaseModel):
     password = models.CharField('패스워드', max_length=255, blank=True, default='')
     is_blind = models.BooleanField('숨김', default=False)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, 
-                             related_name='updated_documents', verbose_name='수정자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_documents', verbose_name='편집자')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -393,7 +393,7 @@ class File(models.Model):
     hit = models.PositiveIntegerField('다운로드수', default=0)
     created = models.DateTimeField('등록일', auto_now_add=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                             null=True, blank=True, verbose_name='등록자')
+                                null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
         return settings.MEDIA_URL

@@ -64,9 +64,10 @@ class CashBook(models.Model):
     note = models.CharField('비고', max_length=255, blank=True, default='')
     deal_date = models.DateField('거래일자')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_cashbooks', verbose_name='수정자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_cashbooks', verbose_name='편집자')
     created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('수정일시', auto_now=True)
+    updated_at = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return f'{self.pk}. {self.sort}'
@@ -135,9 +136,10 @@ class ProjectCashBook(models.Model):
     note = models.TextField('비고', blank=True, default='')
     deal_date = models.DateField('거래일자')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_project_cashbooks', verbose_name='수정자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_project_cashbooks', verbose_name='편집자')
     created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('수정일시', auto_now=True)
+    updated_at = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return f'{self.pk}. {self.sort}'

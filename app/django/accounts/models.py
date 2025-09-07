@@ -201,8 +201,8 @@ class Todo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='todos')
     title = models.CharField('할일내용', max_length=50)
     completed = models.BooleanField('완료여부', default=False)
-    created_at = models.DateTimeField('등록일', auto_now_add=True)
-    updated_at = models.DateTimeField('수정일', auto_now=True)
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    updated_at = models.DateTimeField('편집일시', auto_now=True)
     soft_deleted = models.BooleanField('삭제여부', default=False)
 
     def __str__(self):
@@ -217,7 +217,7 @@ class PasswordResetToken(models.Model):
     token = models.CharField('토큰', max_length=255)
     expired = models.PositiveIntegerField('만료시간(초)', blank=True, null=True, default=600)
     created = models.DateTimeField('등록일시', auto_now_add=True)
-    updated = models.DateTimeField('수정일시', auto_now=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
 
     def is_expired(self):
         # Check if 10 minutes have passed since the last update

@@ -15,9 +15,9 @@ class CodeDocsCategory(models.Model):
     active = models.BooleanField('사용중', default=True)
     default = models.BooleanField('기본값', default=False)
     order = models.PositiveSmallIntegerField('정렬', default=1)
-    created = models.DateTimeField('등록일', auto_now_add=True)
-    updated = models.DateTimeField('수정일', auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='등록자')
 
     def __str__(self):
         return self.name
@@ -34,8 +34,8 @@ class News(models.Model):
     summary = models.CharField('요약', max_length=255, blank=True, default='')
     content = models.TextField('내용', blank=True, default='')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='저자')
-    created = models.DateTimeField('등록일', auto_now_add=True)
-    updated = models.DateTimeField('수정일', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return self.title

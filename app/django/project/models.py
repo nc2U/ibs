@@ -115,9 +115,10 @@ class Site(models.Model):
     rights_b = models.TextField('을구 권리 제한사항', blank=True, default='')
     note = models.TextField('비고', blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_sites', verbose_name='수정자')
-    created_at = models.DateTimeField('등록일', auto_now_add=True)
-    updated_at = models.DateTimeField('수정일', auto_now=True)
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_sites', verbose_name='편집자')
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    updated_at = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return f'{self.district} {self.lot_number}'
@@ -142,7 +143,7 @@ class SiteInfoFile(models.Model):
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                             null=True, blank=True, verbose_name='사용자')
+                                null=True, blank=True, verbose_name='사용자')
 
     def __str__(self):
         return self.file_name
@@ -179,9 +180,10 @@ class SiteOwner(models.Model):
                                    related_name='owners', verbose_name='소유부지')
     counsel_record = models.TextField('상담기록', blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_site_owners', verbose_name='수정자')
-    created_at = models.DateTimeField('등록일', auto_now_add=True)
-    updated_at = models.DateTimeField('수정일', auto_now=True)
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_site_owners', verbose_name='편집자')
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    updated_at = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return self.owner
@@ -235,9 +237,10 @@ class SiteContract(models.Model):
     acc_owner = models.CharField('예금주', max_length=20)
     note = models.TextField('특이사항', blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_site_contracts', verbose_name='수정자')
-    created_at = models.DateTimeField('등록일', auto_now_add=True)
-    updated_at = models.DateTimeField('수정일', auto_now=True)
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_site_contracts', verbose_name='편집자')
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    updated_at = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return f'{self.owner.owner} - [{self.total_price}]'
@@ -262,7 +265,7 @@ class SiteContractFile(models.Model):
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                null=True, blank=True, verbose_name='사용자')
+                                null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
         return self.file_name
