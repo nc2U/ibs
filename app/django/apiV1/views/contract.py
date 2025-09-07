@@ -1,7 +1,8 @@
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Q
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -9,7 +10,7 @@ from contract.models import (OrderGroup, Contract, ContractPrice, Contractor,
                              ContractorAddress, ContractorContact,
                              Succession, ContractorRelease)
 from items.models import BuildingUnit
-from ..pagination import PageNumberPaginationThreeThousand
+from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen
 from ..permission import *
 from ..serializers.contract import *
 
@@ -43,6 +44,7 @@ class ContractViewSet(viewsets.ModelViewSet):
     queryset = Contract.objects.all()
     serializer_class = ContractSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    pagination_class = PageNumberPaginationFifteen
     filterset_class = ContractFilter
     search_fields = ('serial_number', 'contractor__name',
                      'contractor__note', 'succession__seller__name',
@@ -62,10 +64,96 @@ class ContractViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    def perform_update(self, serializer):
+        # from_page 정보를 임시로 저장
+        from_page = self.request.data.get('from_page')
+        instance = serializer.save(creator=self.request.user)
+        
+        # 인스턴스에 from_page 정보 임시 저장 (슬랙 알림에서 사용)
+        if from_page:
+            setattr(instance, '_from_page', from_page)
+        
+        return instance
+
+    @action(detail=False, methods=['get'])
+    def find_page(self, request):
+        """특정 ID의 항목이 몇 번째 페이지에 있는지 찾기"""
+        highlight_id = request.query_params.get('highlight_id')
+        if not highlight_id:
+            return Response({'error': 'highlight_id parameter required'}, status=400)
+        
+        try:
+            highlight_id = int(highlight_id)
+        except ValueError:
+            return Response({'error': 'highlight_id must be integer'}, status=400)
+            
+        # 현재 필터 조건을 적용한 queryset 가져오기
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # 해당 ID가 존재하는지 확인
+        try:
+            target_item = queryset.get(pk=highlight_id)
+        except Contract.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
+            
+        # Contract 모델의 기본 정렬이 없으므로 ID 역순으로 정렬
+        # 해당 항목보다 앞에 있는 항목 개수 계산
+        items_before = queryset.filter(id__gt=target_item.id).count()
+        
+        # 페이지 크기는 15개
+        page_size = 15
+        page_number = (items_before // page_size) + 1
+        
+        return Response({'page': page_number})
+
 
 class ContractSetViewSet(ContractViewSet):
     serializer_class = ContractSetSerializer
     pagination_class = PageNumberPaginationThreeThousand
+
+    @action(detail=False, methods=['get'])
+    def find_page(self, request):
+        """특정 ID의 항목이 몇 번째 페이지에 있는지 찾기"""
+        highlight_id = request.query_params.get('highlight_id')
+        if not highlight_id:
+            return Response({'error': 'highlight_id parameter required'}, status=400)
+        
+        try:
+            highlight_id = int(highlight_id)
+        except ValueError:
+            return Response({'error': 'highlight_id must be integer'}, status=400)
+            
+        # 현재 필터 조건을 적용한 queryset 가져오기
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # 해당 ID가 존재하는지 확인
+        try:
+            target_item = queryset.get(pk=highlight_id)
+        except Contract.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
+        
+        # limit 파라미터 가져오기 (기본값은 10)
+        limit = int(request.query_params.get('limit', 10))
+        
+        # Contract 모델의 기본 정렬이 없으므로 ordering 파라미터 확인
+        ordering = request.query_params.get('ordering', '-created_at')
+        
+        if ordering.startswith('-'):
+            # 내림차순 정렬
+            field = ordering[1:]
+            if field == 'created_at':
+                items_before = queryset.filter(created_at__gt=target_item.created_at).count()
+            else:
+                items_before = queryset.filter(id__gt=target_item.id).count()
+        else:
+            # 오름차순 정렬
+            if ordering == 'created_at':
+                items_before = queryset.filter(created_at__lt=target_item.created_at).count()
+            else:
+                items_before = queryset.filter(id__lt=target_item.id).count()
+        
+        page_number = (items_before // limit) + 1
+        return Response({'page': page_number})
 
 
 class SimpleContractViewSet(ContractViewSet):

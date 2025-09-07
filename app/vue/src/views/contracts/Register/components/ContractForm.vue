@@ -46,6 +46,7 @@ const props = defineProps({
   contractor: { type: Object as PropType<Contractor>, default: null },
   unitSet: { type: Boolean, default: false },
   isUnion: { type: Boolean, default: false },
+  fromPage: { type: [Number, null] as PropType<number | null>, default: null },
 })
 
 const emit = defineEmits(['type-select', 'on-submit', 'search-contractor', 'resume-form'])

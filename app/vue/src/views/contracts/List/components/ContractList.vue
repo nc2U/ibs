@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useContract } from '@/store/pinia/contract'
 import { write_contract } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
@@ -8,7 +8,11 @@ import Contract from '@/views/contracts/List/components/Contract.vue'
 
 const emit = defineEmits(['page-select'])
 
-defineProps({ limit: { type: Number, default: 10 } })
+const props = defineProps({ 
+  limit: { type: Number, default: 10 },
+  highlightId: { type: [Number, null] as PropType<number | null>, default: null },
+  currentPage: { type: Number, default: 1 },
+})
 
 const contractStore = useContract()
 const contractList = computed(() => contractStore.contractList)
@@ -56,12 +60,18 @@ const pageSelect = (page: number) => emit('page-select', page)
     </CTableHead>
 
     <CTableBody>
-      <Contract v-for="contract in contractList" :key="contract.pk" :contract="contract" />
+      <Contract 
+        v-for="contract in contractList" 
+        :key="contract.pk" 
+        :contract="contract"
+        :is-highlighted="props.highlightId === contract.pk"
+        :current-page="props.currentPage"
+      />
     </CTableBody>
   </CTable>
 
   <Pagination
-    :active-page="1"
+    :active-page="props.currentPage"
     :limit="8"
     :pages="contractPages(limit)"
     class="mt-3"

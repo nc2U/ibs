@@ -15,6 +15,7 @@ import ListController from '@/views/comCash/CashManage/components/ListController
 import AddCash from '@/views/comCash/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import CashList from '@/views/comCash/CashManage/components/CashList.vue'
+import { CCardBody } from '@coreui/vue'
 
 const listControl = ref()
 const route = useRoute()
@@ -82,7 +83,8 @@ const createComBankAcc = (payload: CompanyBank) => cashStore.createComBankAcc(pa
 const patchComBankAcc = (payload: CompanyBank) => cashStore.patchComBankAcc(payload)
 
 const fetchCashBookList = (payload: Filter) => cashStore.fetchCashBookList(payload)
-const findCashBookPage = (highlightId: number, filters: Filter) => cashStore.findCashBookPage(highlightId, filters)
+const findCashBookPage = (highlightId: number, filters: Filter) =>
+  cashStore.findCashBookPage(highlightId, filters)
 const createCashBook = (payload: CashBook & { sepData: SepItems | null }) =>
   cashStore.createCashBook(payload)
 const updateCashBook = (
@@ -241,7 +243,7 @@ const loadHighlightPage = async () => {
         ...dataFilter.value,
         company: company.value,
       })
-      
+
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
       dataFilter.value.page = targetPage
       await fetchCashBookList({
@@ -267,13 +269,13 @@ onBeforeMount(async () => {
   await fetchFormAccD2List(null, null)
   await fetchFormAccD3List(null, null, null)
   await dataSetup(company.value || comStore.initComId)
-  
+
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage()
   }
   await scrollToHighlight()
-  
+
   loading.value = false
 })
 </script>
@@ -308,7 +310,7 @@ onBeforeMount(async () => {
       <CashList
         :company="company as number"
         :projects="projectList"
-        :highlight-id="highlightId"
+        :highlight-id="highlightId ?? undefined"
         :current-page="dataFilter.page || 1"
         @page-select="pageSelect"
         @multi-submit="multiSubmit"

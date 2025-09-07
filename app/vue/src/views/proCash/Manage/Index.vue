@@ -124,7 +124,8 @@ const fetchProFormAccD3List = (d2?: number | null, sort?: number | null) =>
 const fetchProBankAccList = (projId: number) => proCashStore.fetchProBankAccList(projId)
 const fetchAllProBankAccList = (projId: number) => proCashStore.fetchAllProBankAccList(projId)
 const fetchProjectCashList = (payload: CashBookFilter) => proCashStore.fetchProjectCashList(payload)
-const findProjectCashBookPage = (highlightId: number, filters: CashBookFilter) => proCashStore.findProjectCashBookPage(highlightId, filters)
+const findProjectCashBookPage = (highlightId: number, filters: CashBookFilter) =>
+  proCashStore.findProjectCashBookPage(highlightId, filters)
 
 const createProBankAcc = (payload: ProBankAcc) => proCashStore.createProBankAcc(payload)
 const patchProBankAcc = (payload: ProBankAcc) => proCashStore.patchProBankAcc(payload)
@@ -284,7 +285,7 @@ const loadHighlightPage = async () => {
         ...dataFilter.value,
         project: project.value,
       })
-      
+
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
       dataFilter.value.page = targetPage
       await fetchProjectCashList({
@@ -313,13 +314,13 @@ onBeforeMount(async () => {
   await fetchPayOrderList(project.value || projStore.initProjId)
   await fetchAllContracts(project.value || projStore.initProjId)
   dataSetup(project.value || projStore.initProjId)
-  
+
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage()
   }
   await scrollToHighlight()
-  
+
   loading.value = false
 })
 </script>
@@ -365,7 +366,7 @@ onBeforeMount(async () => {
       </TableTitleRow>
       <ProCashList
         :project="project as number"
-        :highlight-id="highlightId"
+        :highlight-id="highlightId ?? undefined"
         :current-page="dataFilter.page || 1"
         @page-select="pageSelect"
         @multi-submit="multiSubmit"

@@ -38,7 +38,14 @@ def get_service_url(model_instance):
         sort_docs = 'lawsuit' if model_instance.lawsuit else 'general'
         return f"{base_url}/#/{prefix}docs/{sort_docs}/docs/{model_instance.id}"
     elif isinstance(model_instance, Contract):
-        return f"{base_url}/#/contracts/index/{model_instance.id}"
+        # from_page 정보가 있으면 페이지 정보도 포함
+        from_page = getattr(model_instance, '_from_page', None)
+        url = f"{base_url}/#/contracts/index?highlight_id={model_instance.id}"
+        if from_page:
+            # 현재 구현된 방식으로는 페이지 정보가 있어도 자동으로 올바른 페이지를 찾아가므로
+            # highlight_id만으로 충분하지만, 향후 성능 최적화를 위해 페이지 정보를 포함할 수 있음
+            pass
+        return url
     elif isinstance(model_instance, Succession):
         return f"{base_url}/#/contracts/succession/{model_instance.id}"
     elif isinstance(model_instance, ContractorRelease):

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import type { Project } from '@/store/types/project'
@@ -14,10 +14,19 @@ import ListController from '@/views/contracts/List/components/ListController.vue
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SelectItems from '@/views/contracts/List/components/SelectItems.vue'
 import ContractList from '@/views/contracts/List/components/ContractList.vue'
+import { CCardBody } from '@coreui/vue'
 
+const route = useRoute()
 const listControl = ref()
 const status = ref('2')
 const limit = ref(10)
+
+const highlightId = computed(() => {
+  const id = route.query.highlight_id
+  return id ? parseInt(id as string, 10) : null
+})
+
+const currentFilters = ref<ContFilter>({ project: null })
 
 const visible = ref(false)
 const unitSet = ref(false)
@@ -44,6 +53,8 @@ const contStore = useContract()
 const fetchOrderGroupList = (pk: number) => contStore.fetchOrderGroupList(pk)
 
 const fetchContractList = (payload: ContFilter) => contStore.fetchContractList(payload)
+const findContractPage = (highlightId: number, filters: ContFilter) =>
+  contStore.findContractPage(highlightId, filters)
 const fetchSubsSummaryList = (pk: number) => contStore.fetchSubsSummaryList(pk)
 const fetchContSummaryList = (pk: number) => contStore.fetchContSummaryList(pk)
 
@@ -72,15 +83,73 @@ const onContFiltering = (payload: ContFilter) => {
   payload.limit = payload.limit || 10
   limit.value = payload.limit
   filteredStr.value = `&limit=${limit.value}&status=${status}&group=${order_group}&type=${unit_type}&dong=${building}&is_null=${is_unit}&quali=${qualification}&sup=${is_sup_cont}&sdate=${from_date}&edate=${to_date}&q=${search}`
+
+  // 현재 필터 상태 저장
+  currentFilters.value = { ...payload }
+
   if (payload.project) fetchContractList(payload)
 }
 const setItems = (arr: string[]) => (printItems.value = arr)
 
-const dataSetup = (proj: number) => {
+const scrollToHighlight = async () => {
+  if (highlightId.value) {
+    await nextTick()
+    const element = document.querySelector(`[data-contract-id="${highlightId.value}"]`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // highlightId는 computed이므로 URL 파라미터가 있는 동안 자동으로 유지됩니다
+    }
+  }
+}
+
+const loadHighlightPage = async () => {
+  if (highlightId.value && project.value?.pk) {
+    try {
+      // 기본 필터 조건으로 해당 항목이 몇 번째 페이지에 있는지 찾기
+      const filters = {
+        ...currentFilters.value,
+        project: project.value.pk,
+        limit: limit.value,
+        status: status.value,
+      }
+
+      const targetPage = await findContractPage(highlightId.value, filters)
+
+      // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
+      filters.page = targetPage
+      currentFilters.value = { ...filters }
+      await fetchContractList(filters)
+    } catch (error) {
+      console.error('Error finding highlight page:', error)
+      // 오류 발생시 기본 첫 페이지 로드
+      await fetchContractList({ project: project.value.pk })
+    }
+  } else if (highlightId.value && !project.value?.pk) {
+    console.warn('Highlight ID present but no project selected')
+  }
+}
+
+const dataSetup = async (proj: number) => {
   fetchOrderGroupList(proj)
   fetchTypeList(proj)
   fetchBuildingList(proj)
-  fetchContractList({ project: proj })
+
+  // 초기 필터 설정
+  currentFilters.value = { project: proj, limit: limit.value, status: status.value }
+
+  // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
+  if (highlightId.value) {
+    await loadHighlightPage()
+  } else {
+    fetchContractList({ project: proj })
+  }
+  
+  // 하이라이트 처리 후에도 목록이 비어있다면 기본 목록 로드
+  if (highlightId.value && contStore.contractList.length === 0) {
+    await fetchContractList({ project: proj })
+  }
+  await scrollToHighlight()
+
   fetchSubsSummaryList(proj)
   fetchContSummaryList(proj)
 }
@@ -99,7 +168,7 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-const [route, router] = [useRoute(), useRouter()]
+const router = useRouter()
 
 const loading = ref(true)
 onBeforeMount(async () => {
@@ -139,7 +208,12 @@ onBeforeMount(async () => {
         </v-btn>
       </TableTitleRow>
       <SelectItems :visible="visible" :unit-set="unitSet" @print-items="setItems" />
-      <ContractList :limit="limit" @page-select="pageSelect" />
+      <ContractList
+        :limit="limit"
+        :highlight-id="highlightId ?? undefined"
+        :current-page="currentFilters.page || 1"
+        @page-select="pageSelect"
+      />
     </CCardBody>
   </ContentBody>
 </template>

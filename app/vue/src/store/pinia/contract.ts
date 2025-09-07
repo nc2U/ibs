@@ -96,6 +96,32 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const findContractPage = async (highlightId: number, filters: ContFilter) => {
+    const status = filters.status ?? '2'
+    const limit = filters.limit ?? 10
+    let url = `/contract-set/find_page/?highlight_id=${highlightId}`
+    url += `&project=${filters.project}&activation=true&contractor__status=${status}&limit=${limit}`
+    if (filters.order_group) url += `&order_group=${filters.order_group}`
+    if (filters.unit_type) url += `&unit_type=${filters.unit_type}`
+    if (filters.building) url += `&keyunit__houseunit__building_unit=${filters.building}`
+    if (filters.null_unit) url += '&houseunit__isnull=true'
+    if (filters.qualification) url += `&contractor__qualification=${filters.qualification}`
+    if (filters.is_sup_cont) url += `&is_sup_cont=${filters.is_sup_cont}`
+    if (filters.from_date) url += `&from_contract_date=${filters.from_date}`
+    if (filters.to_date) url += `&to_contract_date=${filters.to_date}`
+    if (filters.search) url += `&search=${filters.search}`
+    const ordering = filters.ordering ? filters.ordering : '-created_at'
+    url += `&ordering=${ordering}`
+    
+    try {
+      const response = await api.get(url)
+      return response.data.page
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return 1
+    }
+  }
+
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
   const createContractSet = (payload: FormData) =>
@@ -405,6 +431,7 @@ export const useContract = defineStore('contract', () => {
     fetchContract,
     removeContract,
     fetchContractList,
+    findContractPage,
     createContractSet,
     updateContractSet,
 

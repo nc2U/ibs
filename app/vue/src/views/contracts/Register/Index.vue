@@ -18,6 +18,9 @@ const contForm = ref()
 
 const [route, router] = [useRoute(), useRouter()]
 
+// URL에서 from_page 파라미터 읽기
+const fromPage = computed(() => route.query.from_page ? parseInt(route.query.from_page as string, 10) : null)
+
 const contStore = useContract()
 const contract = computed<Contract | null>(() => contStore.contract)
 const contractor = computed<Contractor | null>(() => contStore.contractor)
@@ -110,6 +113,11 @@ const onSubmit = (payload: Contract & { status: '1' | '2' }) => {
   const form = new FormData()
 
   for (const key in getData) form.set(key, getData[key] ?? '')
+  
+  // from_page 정보 추가 (수정인 경우에만)
+  if (pk && fromPage.value) {
+    form.set('from_page', fromPage.value.toString())
+  }
 
   if (!pk) {
     contStore.createContractSet(form)
@@ -182,6 +190,7 @@ onBeforeMount(async () => {
       :contractor="contractor ?? undefined"
       :unit-set="unitSet"
       :is-union="isUnion"
+      :from-page="fromPage"
       @type-select="typeSelect"
       @on-submit="onSubmit"
       @resume-form="resumeForm"
