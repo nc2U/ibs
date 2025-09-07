@@ -95,7 +95,10 @@ class SiteViewSet(viewsets.ModelViewSet):
     search_fields = ('district', 'lot_number', 'site_purpose', 'owners__owner')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(creator=self.request.user)
 
 
 class AllSiteViewSet(SiteViewSet):
@@ -122,7 +125,10 @@ class SiteOwnerViewSet(viewsets.ModelViewSet):
     search_fields = ('owner', 'phone1', 'phone2', 'sites__lot_number', 'counsel_record')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(creator=self.request.user)
 
 
 class AllOwnerViewSet(SiteOwnerViewSet):
@@ -157,4 +163,7 @@ class SiteContractViewSet(viewsets.ModelViewSet):
     search_fields = ('owner__owner', 'owner__phone1', 'acc_bank', 'acc_owner', 'note')
 
     def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
         serializer.save(creator=self.request.user)

@@ -107,11 +107,11 @@ class SiteOwnerInSiteSerializer(serializers.ModelSerializer):
 
 
 class FileInSiteDataSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = SiteContractFile
-        fields = ('pk', 'file', 'file_name', 'file_size', 'created', 'user')
+        fields = ('pk', 'file', 'file_name', 'file_size', 'created', 'creator')
 
 
 class SiteSerializer(serializers.ModelSerializer):
@@ -132,7 +132,7 @@ class SiteSerializer(serializers.ModelSerializer):
         request = self.context['request']
         new_file = request.data.get('newFile', None)
         if new_file:
-            info_file = SiteInfoFile(site=site, file=new_file, user=request.user)
+            info_file = SiteInfoFile(site=site, file=new_file, creator=request.user)
             info_file.save()
         return site
 
@@ -147,7 +147,7 @@ class SiteSerializer(serializers.ModelSerializer):
 
         new_file = data.get('newFile')
         if new_file:
-            SiteInfoFile.objects.create(site=instance, file=new_file, user=user)
+            SiteInfoFile.objects.create(site=instance, file=new_file, creator=user)
 
         edit_file = data.get('editFile', None)  # pk of a file to edit
         cng_file = data.get('cngFile', None)  # new file to replace

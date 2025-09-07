@@ -114,7 +114,7 @@ class Site(models.Model):
     rights_a = models.TextField('갑구 권리 제한사항', blank=True, default='')
     rights_b = models.TextField('을구 권리 제한사항', blank=True, default='')
     note = models.TextField('비고', blank=True, default='')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
 
@@ -140,7 +140,7 @@ class SiteInfoFile(models.Model):
     file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                              null=True, blank=True, verbose_name='사용자')
 
     def __str__(self):
@@ -177,7 +177,7 @@ class SiteOwner(models.Model):
     sites = models.ManyToManyField(Site, through='SiteOwnshipRelationship', through_fields=('site_owner', 'site'),
                                    related_name='owners', verbose_name='소유부지')
     counsel_record = models.TextField('상담기록', blank=True, default='')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
 
@@ -232,7 +232,7 @@ class SiteContract(models.Model):
     acc_number = models.CharField('계좌번호', max_length=25)
     acc_owner = models.CharField('예금주', max_length=20)
     note = models.TextField('특이사항', blank=True, default='')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
 
