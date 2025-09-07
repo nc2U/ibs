@@ -130,7 +130,6 @@ class SiteSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         site = Site.objects.create(**validated_data)
-        site.save()
 
         request = self.context['request']
         new_file = request.data.get('newFile', None)
@@ -143,7 +142,7 @@ class SiteSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        
+
         # Set updator from request context
         instance.updator = self.context['request'].user
         instance.save()
@@ -311,7 +310,6 @@ class SiteContractSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         site_contract = SiteContract.objects.create(**validated_data)
-        site_contract.save()
 
         owner = SiteOwner.objects.get(pk=site_contract.owner.id)
         owner.use_consent = True
@@ -328,7 +326,7 @@ class SiteContractSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        
+
         # Set updator from request context
         instance.updator = self.context['request'].user
         instance.save()

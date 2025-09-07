@@ -7,6 +7,7 @@ from work.models.project import IssueProject, Member
 from cash.models import CashBook, ProjectCashBook
 from docs.models import LawsuitCase, Document
 from contract.models import Contract, Succession, ContractorRelease
+from project.models import Site, SiteOwner, SiteContract
 
 logger = logging.getLogger(__name__)
 SYSTEM_NAME = 'IBS 업무관리시스템'
@@ -42,6 +43,12 @@ def get_service_url(model_instance):
         return f"{base_url}/#/contracts/succession/{model_instance.id}"
     elif isinstance(model_instance, ContractorRelease):
         return f"{base_url}/#/contracts/release/{model_instance.id}"
+    elif isinstance(model_instance, Site):
+        return f"{base_url}/#/project/site/index"  # /{model_instance.id}"
+    elif isinstance(model_instance, SiteOwner):
+        return f"{base_url}/#/project/site/owner"  # /{model_instance.id}"
+    elif isinstance(model_instance, SiteContract):
+        return f"{base_url}/#/project/site/contract"  # /{model_instance.id}"
 
     return base_url
 
@@ -295,6 +302,113 @@ class SlackMessageBuilder:
             }]
         }
 
+    @staticmethod
+    def build_site_message(instance, action, user):
+        """Site 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+
+        # 간소화된 제목: 프로젝트명 + 사업부지 + 지번주소
+        title = f"🏗️ [{instance.project.issue_project.name}]-[사업부지] - {instance.district} {instance.lot_number}"
+
+        # 수정 시 updator와 creator 정보 표시
+        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"수정자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 생성 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+
+        return {
+            'attachments': [{
+                'color': color,
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': user_text,
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'{SYSTEM_NAME}',
+                'ts': int(instance.updated_at.timestamp())
+            }]
+        }
+
+    @staticmethod
+    def build_site_owner_message(instance, action, user):
+        """SiteOwner 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+
+        # 간소화된 제목: 프로젝트명 + 토지소유자 + 소유자명
+        title = f"👤 [{instance.project.issue_project.name}]-[토지-소유자] - {instance.owner}"
+
+        # 수정 시 updator와 creator 정보 표시
+        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"수정자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 생성 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+
+        return {
+            'attachments': [{
+                'color': color,
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': user_text,
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'{SYSTEM_NAME}',
+                'ts': int(instance.updated_at.timestamp())
+            }]
+        }
+
+    @staticmethod
+    def build_site_contract_message(instance, action, user):
+        """SiteContract 간소화된 메시지 생성"""
+        service_url = get_service_url(instance)
+        color = 'good' if action == '생성' else '#ff9500' if action == '수정' else 'danger'
+
+        # 간소화된 제목: 프로젝트명 + 토지계약 + 소유자명 + 매매대금
+        from django.contrib.humanize.templatetags.humanize import intcomma
+        price_display = intcomma(instance.total_price) if instance.total_price else '미정'
+        title = f"📋 [{instance.project.issue_project.name}]-[토지-계약] - {instance.owner.owner} - [{price_display}원]"
+
+        # 수정 시 updator와 creator 정보 표시
+        if action == '수정' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"수정자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 생성 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+
+        return {
+            'attachments': [{
+                'color': color,
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': user_text,
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'{SYSTEM_NAME}',
+                'ts': int(instance.updated_at.timestamp())
+            }]
+        }
+
 
 def send_slack_message(webhook_url, message_data):
     """Slack 웹훅으로 메시지 전송"""
@@ -346,6 +460,12 @@ def send_slack_notification(instance, action, user=None):
         message_data = SlackMessageBuilder.build_succession_message(instance, action, user)
     elif isinstance(instance, ContractorRelease):
         message_data = SlackMessageBuilder.build_contractor_release_message(instance, action, user)
+    elif isinstance(instance, Site):
+        message_data = SlackMessageBuilder.build_site_message(instance, action, user)
+    elif isinstance(instance, SiteOwner):
+        message_data = SlackMessageBuilder.build_site_owner_message(instance, action, user)
+    elif isinstance(instance, SiteContract):
+        message_data = SlackMessageBuilder.build_site_contract_message(instance, action, user)
 
     if not message_data:
         logger.warning(f"지원하지 않는 모델 타입: {type(instance)}")
