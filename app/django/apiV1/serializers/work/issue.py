@@ -322,11 +322,12 @@ class TimeEntrySerializer(serializers.ModelSerializer):
 
 class TrackerSerializer(serializers.ModelSerializer):
     projects = SimpleIssueProjectSerializer(many=True, read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = Tracker
         fields = ('pk', 'name', 'description', 'is_in_roadmap', 'default_status',
-                  'projects', 'order', 'user', 'created', 'updated')
+                  'projects', 'order', 'creator', 'created', 'updated')
 
 
 class IssueCategorySerializer(serializers.ModelSerializer):
@@ -410,9 +411,11 @@ class IssueCountByTrackerSerializer(serializers.ModelSerializer):
 
 
 class IssueStatusSerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+    
     class Meta:
         model = IssueStatus
-        fields = ('pk', 'name', 'description', 'closed', 'order')
+        fields = ('pk', 'name', 'description', 'closed', 'order', 'creator', 'created', 'updated')
 
 
 class WorkflowSerializer(serializers.ModelSerializer):
@@ -422,12 +425,16 @@ class WorkflowSerializer(serializers.ModelSerializer):
 
 
 class CodeActivitySerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+    
     class Meta:
         model = CodeActivity
-        fields = ('pk', 'name', 'active', 'default', 'order')
+        fields = ('pk', 'name', 'active', 'default', 'order', 'creator', 'created', 'updated')
 
 
 class CodeIssuePrioritySerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+    
     class Meta:
         model = CodeIssuePriority
-        fields = ('pk', 'name', 'active', 'default', 'order')
+        fields = ('pk', 'name', 'active', 'default', 'order', 'creator', 'created', 'updated')
