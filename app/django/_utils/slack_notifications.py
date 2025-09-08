@@ -274,12 +274,21 @@ class SlackMessageBuilder:
         # 간소화된 제목: 프로젝트명 + 양도승계 + 양도자→양수자
         title = f"🔄 [PR-계약승계]-[{instance.contract.project.name}] :: {instance.seller.name} → {instance.buyer.name}"
 
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 등록 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+
         return {
             'attachments': [{
                 'color': color,
                 'title': f"{title} ({action})",
                 'title_link': service_url,
-                'text': f"등록자: {user.username if user else '시스템'}",
+                'text': user_text,
                 'actions': [{
                     'type': 'button',
                     'text': '상세보기',
@@ -301,12 +310,21 @@ class SlackMessageBuilder:
         status_display = instance.get_status_display()
         title = f"❌ [PR-계약해지]-[{instance.project.name}] {status_display} - {instance.contractor.name}"
 
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 등록 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+
         return {
             'attachments': [{
                 'color': color,
                 'title': f"{title} ({action})",
                 'title_link': service_url,
-                'text': f"등록자: {user.username if user else '시스템'}",
+                'text': user_text,
                 'actions': [{
                     'type': 'button',
                     'text': '상세보기',

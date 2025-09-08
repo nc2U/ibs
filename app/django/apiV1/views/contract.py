@@ -67,7 +67,7 @@ class ContractViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         # from_page 정보를 임시로 저장
         from_page = self.request.data.get('from_page')
-        instance = serializer.save(updator=self.request.user)
+        instance = serializer.save(creator=self.request.user)
         
         # 인스턴스에 from_page 정보 임시 저장 (슬랙 알림에서 사용)
         if from_page:
@@ -110,6 +110,17 @@ class ContractViewSet(viewsets.ModelViewSet):
 class ContractSetViewSet(ContractViewSet):
     serializer_class = ContractSetSerializer
     pagination_class = PageNumberPaginationThreeThousand
+
+    def perform_update(self, serializer):
+        # from_page 정보를 임시로 저장
+        from_page = self.request.data.get('from_page')
+        instance = serializer.save(updator=self.request.user)
+        
+        # 인스턴스에 from_page 정보 임시 저장 (슬랙 알림에서 사용)
+        if from_page:
+            setattr(instance, '_from_page', from_page)
+        
+        return instance
 
     @action(detail=False, methods=['get'])
     def find_page(self, request):

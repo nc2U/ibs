@@ -537,6 +537,9 @@ class ContractSetSerializer(serializers.ModelSerializer):
         instance.__dict__.update(**validated_data)
         instance.order_group = validated_data.get('order_group', instance.order_group)
         instance.unit_type = validated_data.get('unit_type', instance.unit_type)
+        
+        # updator 설정
+        instance.updator = self.context['request'].user
 
         data = self.context['request'].data
         user = self.context['request'].user
