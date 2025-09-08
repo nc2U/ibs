@@ -205,6 +205,8 @@ class Succession(models.Model):
     updated_at = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_successions', verbose_name='편집자')
 
     def __str__(self):
         return f'{self.seller}'
@@ -231,6 +233,8 @@ class ContractorRelease(models.Model):
     updated_at = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_contractor_releases', verbose_name='편집자')
 
     def __str__(self):
         return f'{self.contractor}'

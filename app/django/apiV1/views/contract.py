@@ -303,6 +303,9 @@ class SuccessionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+
 
 class ContReleaseViewSet(viewsets.ModelViewSet):
     queryset = ContractorRelease.objects.all().order_by('-request_date', '-created_at')
@@ -312,3 +315,6 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)

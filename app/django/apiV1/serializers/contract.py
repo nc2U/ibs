@@ -890,7 +890,7 @@ class SuccessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Succession
         fields = ('pk', 'contract', 'seller', 'buyer', 'apply_date',
-                  'trading_date', 'is_approval', 'approval_date', 'note')
+                  'trading_date', 'is_approval', 'approval_date', 'note', 'updator')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -1013,7 +1013,7 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
         model = ContractorRelease
         fields = ('pk', 'project', 'contractor', '__str__', 'status', 'refund_amount',
                   'refund_account_bank', 'refund_account_number', 'refund_account_depositor',
-                  'request_date', 'completion_date', 'note')
+                  'request_date', 'completion_date', 'note', 'updator')
 
     @transaction.atomic
     def update(self, instance, validated_data):
