@@ -138,16 +138,13 @@ const dataSetup = async (proj: number) => {
   currentFilters.value = { project: proj, limit: limit.value, status: status.value }
 
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-  if (highlightId.value) {
-    await loadHighlightPage()
-  } else {
-    await fetchContractList({ project: proj })
-  }
+  if (highlightId.value) await loadHighlightPage()
+  else await fetchContractList({ project: proj })
 
   // 하이라이트 처리 후에도 목록이 비어있다면 기본 목록 로드
-  if (highlightId.value && contStore.contractList.length === 0) {
+  if (highlightId.value && contStore.contractList.length === 0)
     await fetchContractList({ project: proj })
-  }
+
   await scrollToHighlight()
 
   await fetchSubsSummaryList(proj)
