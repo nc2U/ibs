@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
+  onBeforeRouteLeave,
   type RouteLocationNormalizedLoaded as Loaded,
   useRoute,
   useRouter,
@@ -26,6 +27,12 @@ import DocsForm from '@/components/Documents/DocsForm.vue'
 const fController = ref()
 const typeNumber = ref(1)
 const mainViewName = ref('본사 일반 문서')
+
+// URL에서 company 파라미터 읽기
+const urlCompanyId = computed(() => {
+  const id = route.query.company
+  return id ? parseInt(id as string, 10) : null
+})
 const docsFilter = ref<DocsFilter>({
   company: '',
   issue_project: '',
@@ -109,7 +116,7 @@ const [route, router] = [
 ]
 
 watch(route, val => {
-  if (val.params.DocsId) fetchDocs(Number(val.params.docsId))
+  if (val.params.docsId) fetchDocs(Number(val.params.docsId))
   else docStore.removeDocs()
 })
 
@@ -186,37 +193,73 @@ const fileHit = async (pk: number) => {
   await patchFile(pk, { hit })
 }
 
-const dataSetup = (pk: number, docsId?: string | string[]) => {
+const dataSetup = async (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
-  workStore.fetchAllIssueProjectList(pk, '2', '')
-  fetchDocTypeList()
-  fetchCategoryList(typeNumber.value)
-  fetchDocsList(docsFilter.value)
-  if (docsId) fetchDocs(Number(docsId))
+  await workStore.fetchAllIssueProjectList(pk, '2', '')
+  await fetchDocTypeList()
+  await fetchCategoryList(typeNumber.value)
+  await fetchDocsList(docsFilter.value)
+  if (docsId) await fetchDocs(Number(docsId))
 }
 
 const dataReset = () => {
   docsFilter.value.issue_project = ''
   docsFilter.value.is_real_dev = 'false'
-  docStore.removeDocs()
+  // 문서 리스트만 리셋하고 현재 문서는 유지
   docStore.removeDocsList()
   docStore.docsCount = 0
-  router.replace({ name: `${mainViewName.value}` })
 }
 
-const comSelect = (target: number | null) => {
+// Query string 정리 함수
+const clearQueryString = () => {
+  if (Object.keys(route.query).length > 0) {
+    router.replace({
+      name: route.name,
+      params: route.params,
+      // query를 빈 객체로 설정하여 모든 query string 제거
+      query: {}
+    }).catch(() => {
+      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+    })
+  }
+}
+
+const comSelect = async (target: number | null, skipClearQuery = false) => {
+  // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
+  if (!skipClearQuery) {
+    clearQueryString()
+  }
   if (fController.value) fController.value.resetForm(false)
   dataReset()
-  if (!!target) dataSetup(target)
-  else docStore.removeDocsList()
+  if (!!target) {
+    // 회사를 먼저 변경하고 데이터를 설정
+    await comStore.fetchCompany(target)
+    await dataSetup(target, route.params?.docsId)
+  } else {
+    docStore.removeDocsList()
+  }
 }
 
-onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
+onBeforeRouteUpdate(async to => await dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
 
 const loading = ref(true)
-onBeforeMount(() => {
-  dataSetup(company.value ?? comStore.initComId, route.params?.docsId)
+onBeforeMount(async () => {
+  // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
+  let companyId = company.value ?? comStore.initComId
+  if (urlCompanyId.value) {
+    console.log(`Switching to company ${urlCompanyId.value} from URL parameter`)
+    // 회사 전환 (query string 정리 건너뛰기) 및 문서 로드
+    await comSelect(urlCompanyId.value, true)
+    companyId = urlCompanyId.value
+  } else {
+    await dataSetup(companyId, route.params?.docsId)
+  }
   loading.value = false
+})
+
+// 다른 라우트로 이동 시 query string 정리
+onBeforeRouteLeave(() => {
+  clearQueryString()
 })
 </script>
 

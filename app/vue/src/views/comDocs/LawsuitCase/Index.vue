@@ -3,6 +3,7 @@ import { ref, computed, onBeforeMount, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
+  onBeforeRouteLeave,
   type RouteLocationNormalizedLoaded as LoadedRoute,
   useRoute,
   useRouter,
@@ -24,6 +25,12 @@ import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 
 const fController = ref()
 const mainViewName = ref('본사 소송 사건')
+
+// URL에서 company 파라미터 읽기
+const urlCompanyId = computed(() => {
+  const id = route.query.company
+  return id ? parseInt(id as string, 10) : null
+})
 const caseFilter = ref<cFilter>({
   company: '',
   issue_project: '',
@@ -165,17 +172,39 @@ const dataSetup = (pk: number, caseId?: string | string[]) => {
 const dataReset = () => {
   caseFilter.value.issue_project = ''
   caseFilter.value.is_real_dev = 'false'
-  docStore.removeSuitcase()
+  // 사건 리스트만 리셋하고 현재 사건은 유지
   docStore.removeSuitcaseList()
   docStore.suitcaseCount = 0
-  router.replace({ name: `${mainViewName.value}` })
 }
 
-const comSelect = (target: number | null) => {
+// Query string 정리 함수
+const clearQueryString = () => {
+  if (Object.keys(route.query).length > 0) {
+    router.replace({
+      name: route.name,
+      params: route.params,
+      // query를 빈 객체로 설정하여 모든 query string 제거
+      query: {}
+    }).catch(() => {
+      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+    })
+  }
+}
+
+const comSelect = async (target: number | null, skipClearQuery = false) => {
+  // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
+  if (!skipClearQuery) {
+    clearQueryString()
+  }
   if (fController.value) fController.value.resetForm(false)
   dataReset()
-  if (!!target) dataSetup(target)
-  else docStore.removeSuitcaseList()
+  if (!!target) {
+    // 회사를 먼저 변경하고 데이터를 설정
+    await comStore.fetchCompany(target)
+    await dataSetup(target, route.params?.caseId)
+  } else {
+    docStore.removeSuitcaseList()
+  }
 }
 
 const caseRenewal = (page: number) => {
@@ -186,9 +215,23 @@ const caseRenewal = (page: number) => {
 onBeforeRouteUpdate(() => dataSetup(company.value || comStore.initComId, route.params?.caseId))
 
 const loading = ref(true)
-onBeforeMount(() => {
-  dataSetup(company.value || comStore.initComId, route.params?.caseId)
+onBeforeMount(async () => {
+  // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
+  let companyId = company.value || comStore.initComId
+  if (urlCompanyId.value) {
+    console.log(`Switching to company ${urlCompanyId.value} from URL parameter`)
+    // 회사 전환 (query string 정리 건너뛰기) 및 사건 로드
+    await comSelect(urlCompanyId.value, true)
+    companyId = urlCompanyId.value
+  } else {
+    dataSetup(companyId, route.params?.caseId)
+  }
   loading.value = false
+})
+
+// 다른 라우트로 이동 시 query string 정리
+onBeforeRouteLeave(() => {
+  clearQueryString()
 })
 </script>
 

@@ -116,10 +116,10 @@ def get_service_url(model_instance):
     elif isinstance(model_instance, ProjectCashBook):
         return f"{base_url}/#/project-cash/index?highlight_id={model_instance.id}&project={model_instance.project_id}"
     elif isinstance(model_instance, LawsuitCase):
-        return f"{base_url}/#/{prefix}docs/lawsuit/case/{model_instance.id}"
+        return f"{base_url}/#/{prefix}docs/lawsuit/case/{model_instance.id}?company={model_instance.issue_project.company_id}"
     elif isinstance(model_instance, Document):
         sort_docs = 'lawsuit' if model_instance.lawsuit else 'general'
-        return f"{base_url}/#/{prefix}docs/{sort_docs}/docs/{model_instance.id}"
+        return f"{base_url}/#/{prefix}docs/{sort_docs}/docs/{model_instance.id}?company={model_instance.issue_project.company_id}"
     elif isinstance(model_instance, Contract):
         # Contract 인스턴스가 위치한 페이지 번호 계산
         page_number = get_contract_page_number(model_instance)
