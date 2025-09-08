@@ -360,7 +360,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
         model = Contract
         fields = ('pk', 'project', 'order_group_sort', 'order_group', 'unit_type', 'unit_type_desc',
                   'serial_number', 'activation', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice',
-                  'contractor', 'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'contract_files')
+                  'contractor', 'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'contract_files',
+                  'updator')
 
     @staticmethod
     def get_order_group_sort(obj):  # '1': 조합모집 or '2': 일반분양
