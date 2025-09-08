@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, onBeforeMount, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import type { Project } from '@/store/types/project'
 import { useProjectData } from '@/store/pinia/project_data'
@@ -14,7 +14,6 @@ import ListController from '@/views/contracts/List/components/ListController.vue
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SelectItems from '@/views/contracts/List/components/SelectItems.vue'
 import ContractList from '@/views/contracts/List/components/ContractList.vue'
-import { CCardBody } from '@coreui/vue'
 
 const route = useRoute()
 const listControl = ref()
@@ -63,9 +62,16 @@ const proDataStore = useProjectData()
 const fetchTypeList = (projId: number) => proDataStore.fetchTypeList(projId)
 const fetchBuildingList = (projId: number) => proDataStore.fetchBuildingList(projId)
 
-const pageSelect = (page: number) => listControl.value.listFiltering(page)
+const pageSelect = (page: number) => {
+  // 페이지 변경 시 query string 정리
+  clearQueryString()
+  listControl.value.listFiltering(page)
+}
 
 const onContFiltering = (payload: ContFilter) => {
+  // 필터링 시 query string 정리
+  clearQueryString()
+
   const {
     status,
     order_group,
@@ -161,11 +167,34 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
+  // 프로젝트 변경 시 query string 정리
+  clearQueryString()
   dataReset()
   if (!!target) dataSetup(target)
 }
 
 const router = useRouter()
+
+// Query string 정리 함수
+const clearQueryString = () => {
+  if (route.query.page || route.query.highlight_id) {
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
+  }
+}
+
+// 다른 라우트로 이동 시 query string 정리
+onBeforeRouteLeave(() => {
+  clearQueryString()
+})
 
 const loading = ref(true)
 onBeforeMount(async () => {
