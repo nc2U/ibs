@@ -1,14 +1,13 @@
-import json
-import requests
 import logging
+
+import requests
 from django.conf import settings
 
-from work.models.project import IssueProject, Member
 from cash.models import CashBook, ProjectCashBook
-from docs.models import LawsuitCase, Document
 from contract.models import Contract, Succession, ContractorRelease
+from docs.models import LawsuitCase, Document
 from project.models import Site, SiteOwner, SiteContract
-from django.db.models import Q
+from work.models.project import IssueProject
 
 logger = logging.getLogger(__name__)
 SYSTEM_NAME = 'IBS 업무관리시스템'
