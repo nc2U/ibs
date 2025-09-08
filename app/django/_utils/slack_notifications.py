@@ -8,9 +8,29 @@ from cash.models import CashBook, ProjectCashBook
 from docs.models import LawsuitCase, Document
 from contract.models import Contract, Succession, ContractorRelease
 from project.models import Site, SiteOwner, SiteContract
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 SYSTEM_NAME = 'IBS 업무관리시스템'
+
+
+def get_contract_page_number(contract_instance):
+    """Contract 인스턴스가 위치한 페이지 번호 계산 (프로젝트별 필터링 기준)"""
+    try:
+        # 프론트엔드에서 항상 프로젝트별로 필터링하므로 같은 프로젝트 내에서만 계산
+        queryset = Contract.objects.filter(project=contract_instance.project).order_by('-created_at')
+        
+        # 해당 인스턴스보다 앞에 있는 항목 개수 계산 (같은 프로젝트 내에서)
+        items_before = queryset.filter(created_at__gt=contract_instance.created_at).count()
+        
+        # 프론트엔드에서 사용하는 페이지 크기 (기본값 10)
+        page_size = 10
+        page_number = (items_before // page_size) + 1
+        
+        return page_number
+    except Exception as e:
+        logger.error(f"Contract 페이지 계산 오류: {e}")
+        return 1  # 오류 시 첫 페이지로
 
 
 def get_service_url(model_instance):
@@ -38,13 +58,11 @@ def get_service_url(model_instance):
         sort_docs = 'lawsuit' if model_instance.lawsuit else 'general'
         return f"{base_url}/#/{prefix}docs/{sort_docs}/docs/{model_instance.id}"
     elif isinstance(model_instance, Contract):
-        # from_page 정보가 있으면 페이지 정보도 포함
-        from_page = getattr(model_instance, '_from_page', None)
-        url = f"{base_url}/#/contracts/index?highlight_id={model_instance.id}"
-        if from_page:
-            # 현재 구현된 방식으로는 페이지 정보가 있어도 자동으로 올바른 페이지를 찾아가므로
-            # highlight_id만으로 충분하지만, 향후 성능 최적화를 위해 페이지 정보를 포함할 수 있음
-            pass
+        # Contract 인스턴스가 위치한 페이지 번호 계산
+        page_number = get_contract_page_number(model_instance)
+        
+        # 페이지 정보를 포함한 URL 생성
+        url = f"{base_url}/#/contracts/index?page={page_number}&highlight_id={model_instance.id}"
         return url
     elif isinstance(model_instance, Succession):
         return f"{base_url}/#/contracts/succession/{model_instance.id}"

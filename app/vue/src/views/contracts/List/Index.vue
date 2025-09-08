@@ -130,9 +130,9 @@ const loadHighlightPage = async () => {
 }
 
 const dataSetup = async (proj: number) => {
-  fetchOrderGroupList(proj)
-  fetchTypeList(proj)
-  fetchBuildingList(proj)
+  await fetchOrderGroupList(proj)
+  await fetchTypeList(proj)
+  await fetchBuildingList(proj)
 
   // 초기 필터 설정
   currentFilters.value = { project: proj, limit: limit.value, status: status.value }
@@ -141,17 +141,17 @@ const dataSetup = async (proj: number) => {
   if (highlightId.value) {
     await loadHighlightPage()
   } else {
-    fetchContractList({ project: proj })
+    await fetchContractList({ project: proj })
   }
-  
+
   // 하이라이트 처리 후에도 목록이 비어있다면 기본 목록 로드
   if (highlightId.value && contStore.contractList.length === 0) {
     await fetchContractList({ project: proj })
   }
   await scrollToHighlight()
 
-  fetchSubsSummaryList(proj)
-  fetchContSummaryList(proj)
+  await fetchSubsSummaryList(proj)
+  await fetchContSummaryList(proj)
 }
 
 const dataReset = () => {
@@ -176,7 +176,7 @@ onBeforeMount(async () => {
     await router.replace({ name: '계약 내역 조회' })
     status.value = '1'
   }
-  dataSetup(project.value?.pk || projStore.initProjId)
+  await dataSetup(project.value?.pk || projStore.initProjId)
   loading.value = false
 })
 </script>
