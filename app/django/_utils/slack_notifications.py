@@ -19,17 +19,43 @@ def get_contract_page_number(contract_instance):
     try:
         # 프론트엔드에서 항상 프로젝트별로 필터링하므로 같은 프로젝트 내에서만 계산
         queryset = Contract.objects.filter(project=contract_instance.project).order_by('-created_at')
-        
+
         # 해당 인스턴스보다 앞에 있는 항목 개수 계산 (같은 프로젝트 내에서)
         items_before = queryset.filter(created_at__gt=contract_instance.created_at).count()
-        
+
         # 프론트엔드에서 사용하는 페이지 크기 (기본값 10)
         page_size = 10
         page_number = (items_before // page_size) + 1
-        
+
         return page_number
     except Exception as e:
         logger.error(f"Contract 페이지 계산 오류: {e}")
+        return 1  # 오류 시 첫 페이지로
+
+
+def get_site_page_number(site_instance):
+    """Site 인스턴스가 위치한 페이지 번호 계산 (프로젝트별 필터링 기준)"""
+    try:
+        # 프론트엔드에서 항상 프로젝트별로 필터링하므로 같은 프로젝트 내에서만 계산
+        # Site 모델의 기본 정렬 순서: ('-project', 'order', 'lot_number')
+        # 프로젝트별 필터링 후에는 ('order', 'lot_number') 순으로 정렬됨
+        queryset = Site.objects.filter(project=site_instance.project).order_by('order', 'lot_number')
+
+        # 해당 인스턴스의 위치를 찾기 위해 전체 목록에서 인덱스 확인
+        site_list = list(queryset.values_list('pk', flat=True))
+        try:
+            site_index = site_list.index(site_instance.pk)
+        except ValueError:
+            # 해당 Site가 목록에 없으면 첫 페이지
+            return 1
+
+        # 프론트엔드에서 사용하는 페이지 크기 (기본값 10)
+        page_size = 10
+        page_number = (site_index // page_size) + 1
+
+        return page_number
+    except Exception as e:
+        logger.error(f"Site 페이지 계산 오류: {e}")
         return 1  # 오류 시 첫 페이지로
 
 
@@ -60,7 +86,7 @@ def get_service_url(model_instance):
     elif isinstance(model_instance, Contract):
         # Contract 인스턴스가 위치한 페이지 번호 계산
         page_number = get_contract_page_number(model_instance)
-        
+
         # 페이지 정보를 포함한 URL 생성
         url = f"{base_url}/#/contracts/index?page={page_number}&highlight_id={model_instance.id}"
         return url
@@ -69,7 +95,11 @@ def get_service_url(model_instance):
     elif isinstance(model_instance, ContractorRelease):
         return f"{base_url}/#/contracts/release/{model_instance.id}"
     elif isinstance(model_instance, Site):
-        return f"{base_url}/#/project/site/index"  # /{model_instance.id}"
+        # Site 인스턴스가 위치한 페이지 번호 계산
+        page_number = get_site_page_number(model_instance)
+        # 페이지 정보를 포함한 URL 생성
+        url = f"{base_url}/#/project/site/index?page={page_number}&highlight_id={model_instance.id}"
+        return url
     elif isinstance(model_instance, SiteOwner):
         return f"{base_url}/#/project/site/owner"  # /{model_instance.id}"
     elif isinstance(model_instance, SiteContract):

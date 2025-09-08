@@ -7,7 +7,12 @@ import { type Site as S } from '@/store/types/project'
 import Site from '@/views/projects/SiteList/components/Site.vue'
 import Pagination from '@/components/Pagination'
 
-defineProps({ isReturned: { type: Boolean }, limit: { type: Number, default: 10 } })
+const props = defineProps({ 
+  isReturned: { type: Boolean }, 
+  limit: { type: Number, default: 10 },
+  highlightId: { type: Number, default: null },
+  currentPage: { type: Number, default: 1 }
+})
 const emit = defineEmits(['page-select', 'on-delete', 'multi-submit'])
 
 const siteStore = useSite()
@@ -64,7 +69,8 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         v-for="site in siteList"
         :key="site.pk as number"
         :site="site"
-        :is-returned="isReturned"
+        :is-returned="props.isReturned"
+        :is-highlight="props.highlightId === site.pk"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
       />
@@ -78,7 +84,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="siteCount > 10"
-    :active-page="1"
+    :active-page="props.currentPage"
     :limit="8"
     :pages="sitePages(limit)"
     class="mt-3"

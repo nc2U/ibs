@@ -9,6 +9,7 @@ import SiteForm from './SiteForm.vue'
 const props = defineProps({
   site: { type: Object as PropType<Site>, required: true },
   isReturned: { type: Boolean },
+  isHighlight: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete'])
@@ -23,7 +24,11 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
 </script>
 
 <template>
-  <CTableRow class="text-center">
+  <CTableRow 
+    class="text-center"
+    :class="{ 'table-warning': props.isHighlight }"
+    :data-site-id="site.pk"
+  >
     <CTableDataCell>{{ site.order }}</CTableDataCell>
     <CTableDataCell>
       {{ site.district }}
