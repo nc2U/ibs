@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/comCash/_menu/headermixin'
 import { cutString } from '@/utils/baseMixins'
 import { useCompany } from '@/store/pinia/company'
@@ -19,9 +19,16 @@ import { CCardBody } from '@coreui/vue'
 
 const listControl = ref()
 const route = useRoute()
+const router = useRouter()
 
 const highlightId = computed(() => {
   const id = route.query.highlight_id
+  return id ? parseInt(id as string, 10) : null
+})
+
+// URL에서 company 파라미터 읽기
+const urlCompanyId = computed(() => {
+  const id = route.query.company
   return id ? parseInt(id as string, 10) : null
 })
 
@@ -98,6 +105,8 @@ const fetchComCashCalc = (com: number) => cashStore.fetchComCashCalc(com)
 const pageSelect = (page: number) => listControl.value.listFiltering(page)
 
 const listFiltering = (payload: Filter) => {
+  // 필터링 시 query string 정리
+  clearQueryString()
   if (company.value) payload.company = company.value
   dataFilter.value = payload
   const sort = payload.sort || null
@@ -219,9 +228,30 @@ const dataReset = () => {
   dataFilter.value.company = null
 }
 
-const comSelect = (target: number | null) => {
+const comSelect = async (target: number | null, skipClearQuery = false) => {
+  // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
+  if (!skipClearQuery) {
+    clearQueryString()
+  }
   dataReset()
-  if (!!target) dataSetup(target)
+  if (!!target) {
+    await fetchCompany(target)
+    dataSetup(target)
+  }
+}
+
+// Query string 정리 함수
+const clearQueryString = () => {
+  if (route.query.highlight_id) {
+    router.replace({
+      name: route.name,
+      params: route.params,
+      // query를 빈 객체로 설정하여 모든 query string 제거
+      query: {}
+    }).catch(() => {
+      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+    })
+  }
 }
 
 const scrollToHighlight = async () => {
@@ -242,6 +272,7 @@ const loadHighlightPage = async () => {
       const targetPage = await findCashBookPage(highlightId.value, {
         ...dataFilter.value,
         company: company.value,
+        limit: 15, // Django에서 사용하는 페이지 크기와 동일하게 설정
       })
 
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
@@ -258,7 +289,14 @@ const loadHighlightPage = async () => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  // highlightId는 computed로 자동 처리됨
+  // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
+  let companyId = company.value || comStore.initComId
+  if (urlCompanyId.value && urlCompanyId.value !== companyId) {
+    console.log(`Switching to company ${urlCompanyId.value} from URL parameter`)
+    // 회사 전환 (query string 정리 건너뛰기)
+    await comSelect(urlCompanyId.value, true)
+    companyId = urlCompanyId.value
+  }
 
   await fetchBankCodeList()
   await fetchAccSortList()
@@ -268,15 +306,21 @@ onBeforeMount(async () => {
   await fetchFormAccD1List(null)
   await fetchFormAccD2List(null, null)
   await fetchFormAccD3List(null, null, null)
-  await dataSetup(company.value || comStore.initComId)
-
+  
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage()
+  } else {
+    await dataSetup(companyId)
   }
   await scrollToHighlight()
 
   loading.value = false
+})
+
+// 다른 라우트로 이동 시 query string 정리
+onBeforeRouteLeave(() => {
+  clearQueryString()
 })
 </script>
 

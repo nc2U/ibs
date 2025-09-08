@@ -135,8 +135,8 @@ class CashBookViewSet(viewsets.ModelViewSet):
             (Q(deal_date=target_item.deal_date) & Q(id__gt=target_item.id))
         ).count()
         
-        # 페이지 크기는 15개
-        page_size = 15
+        # 프론트엔드에서 사용하는 페이지 크기 (동적으로 가져오기)
+        page_size = int(request.query_params.get('limit', '15'))
         page_number = (items_before // page_size) + 1
         
         return Response({'page': page_number})
@@ -287,8 +287,8 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
             (Q(deal_date=target_item.deal_date) & Q(id__gt=target_item.id))
         ).count()
         
-        # 페이지 크기는 15개
-        page_size = 15
+        # 프론트엔드에서 사용하는 페이지 크기 (동적으로 가져오기)
+        page_size = int(request.query_params.get('limit', '15'))
         page_number = (items_before // page_size) + 1
         
         return Response({'page': page_number})

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount, provide, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/proCash/_menu/headermixin'
 import { useComCash } from '@/store/pinia/comCash'
 import { useProCash } from '@/store/pinia/proCash'
@@ -25,9 +25,16 @@ import ProCashList from '@/views/proCash/Manage/components/ProCashList.vue'
 
 const listControl = ref()
 const route = useRoute()
+const router = useRouter()
 
 const highlightId = computed(() => {
   const id = route.query.highlight_id
+  return id ? parseInt(id as string, 10) : null
+})
+
+// URL에서 project 파라미터 읽기
+const urlProjectId = computed(() => {
+  const id = route.query.project
   return id ? parseInt(id as string, 10) : null
 })
 
@@ -66,6 +73,7 @@ const setImprest = () => {
 
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
+const fetchProject = (pk: number) => projStore.fetchProject(pk)
 
 const pageSelect = (page: number) => {
   dataFilter.value.page = page
@@ -76,6 +84,8 @@ const pageSelect = (page: number) => {
 }
 
 const listFiltering = (payload: CashBookFilter) => {
+  // 필터링 시 query string 정리
+  clearQueryString()
   dataFilter.value = payload
   const sort = payload.sort ? payload.sort : null
   const d1 = payload.account_d1 ? payload.account_d1 : null
@@ -259,8 +269,24 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
+  // 프로젝트 변경 시 query string 정리
+  clearQueryString()
   dataReset()
   if (!!target) dataSetup(target)
+}
+
+// Query string 정리 함수
+const clearQueryString = () => {
+  if (route.query.highlight_id) {
+    router.replace({
+      name: route.name,
+      params: route.params,
+      // query를 빈 객체로 설정하여 모든 query string 제거
+      query: {}
+    }).catch(() => {
+      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+    })
+  }
 }
 
 const contStore = useContract()
@@ -300,7 +326,14 @@ const loadHighlightPage = async () => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  // highlightId는 computed로 자동 처리됨
+  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
+  let projectId = project.value || projStore.initProjId
+  if (urlProjectId.value && urlProjectId.value !== projectId) {
+    console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
+    // 프로젝트 전환
+    await fetchProject(urlProjectId.value)
+    projectId = urlProjectId.value
+  }
 
   imprest.value = Cookies.get('get-imprest') === ''
   dataFilter.value.is_imprest = imprest.value ? '' : '0'
@@ -311,17 +344,23 @@ onBeforeMount(async () => {
   await fetchProAllAccD3List()
   await fetchProFormAccD2List()
   await fetchProFormAccD3List()
-  await fetchPayOrderList(project.value || projStore.initProjId)
-  await fetchAllContracts(project.value || projStore.initProjId)
-  dataSetup(project.value || projStore.initProjId)
-
+  await fetchPayOrderList(projectId)
+  await fetchAllContracts(projectId)
+  
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage()
+  } else {
+    dataSetup(projectId)
   }
   await scrollToHighlight()
 
   loading.value = false
+})
+
+// 다른 라우트로 이동 시 query string 정리
+onBeforeRouteLeave(() => {
+  clearQueryString()
 })
 </script>
 
