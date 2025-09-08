@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue'
+import { ref, computed, onBeforeMount, nextTick } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin2'
 import { useProject } from '@/store/pinia/project'
 import { useSite, type ContFilter } from '@/store/pinia/project_site'
@@ -14,7 +15,21 @@ import AddSiteContract from './components/AddSiteContract.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SiteContractList from './components/SiteContractList.vue'
 
+const route = useRoute()
+const router = useRouter()
 const listControl = ref()
+
+// URL에서 highlight_id 파라미터 읽기
+const highlightId = computed(() => {
+  const id = route.query.highlight_id
+  return id ? parseInt(id as string, 10) : null
+})
+
+// URL에서 project 파라미터 읽기
+const urlProjectId = computed(() => {
+  const id = route.query.project
+  return id ? parseInt(id as string, 10) : null
+})
 
 const dataFilter = ref<ContFilter>({
   project: null,
@@ -30,6 +45,11 @@ const project = computed(() => (projStore.project as Project)?.pk)
 const siteStore = useSite()
 const getContsTotal = computed(() => siteStore.getContsTotal?.contracted_area)
 
+// Store 함수들
+const findSiteContractPage = (highlightId: number, filters: ContFilter) => 
+  siteStore.findSiteContractPage(highlightId, filters)
+const fetchSiteContList = (payload: ContFilter) => siteStore.fetchSiteContList(payload)
+
 const excelUrl = computed(() => {
   const url = `/excel/sites-contracts/?project=${project.value}`
   const filter = dataFilter.value
@@ -39,6 +59,8 @@ const excelUrl = computed(() => {
 })
 
 const listFiltering = (payload: ContFilter) => {
+  // 필터링 시 query string 정리
+  clearQueryString()
   if (project.value) {
     payload.project = project.value
     dataFilter.value = payload
@@ -47,9 +69,50 @@ const listFiltering = (payload: ContFilter) => {
 }
 
 const pageSelect = (page: number) => {
+  // 페이지 변경 시 query string 정리
+  clearQueryString()
   dataFilter.value.project = project.value as number
   dataFilter.value.page = page
   if (project.value) siteStore.fetchSiteContList(dataFilter.value)
+}
+
+// 하이라이트 기능
+const scrollToHighlight = async () => {
+  if (highlightId.value) {
+    await nextTick()
+    const element = document.querySelector(`[data-site-contract-id="${highlightId.value}"]`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+}
+
+// 하이라이트 페이지 로드 함수
+const loadHighlightPage = async (projectId: number) => {
+  if (highlightId.value && projectId) {
+    try {
+      // URL의 page 파라미터가 있으면 해당 페이지로 이동
+      const pageParam = route.query.page
+      if (pageParam) {
+        const targetPage = parseInt(pageParam as string, 10)
+        dataFilter.value = {
+          project: projectId,
+          limit: dataFilter.value.limit || '',
+          page: targetPage,
+          own_sort: dataFilter.value.own_sort || '',
+          search: dataFilter.value.search || '',
+        }
+        await siteStore.fetchSiteContList({ project: projectId, page: targetPage })
+      } else {
+        // page 파라미터가 없으면 기본 첫 페이지
+        await dataSetup(projectId)
+      }
+    } catch (error) {
+      console.error('Error loading highlight page:', error)
+      // 오류 발생시 기본 첫 페이지 로드
+      await dataSetup(projectId)
+    }
+  }
 }
 
 const onCreate = (payload: FormData) => siteStore.createSiteCont(payload)
@@ -72,10 +135,7 @@ const onDelete = (payload: { pk: number; project: number }) => {
   siteStore.deleteSiteCont(pk, project)
 }
 
-const dataSetup = (pk: number) => {
-  siteStore.fetchAllOwners(pk)
-  siteStore.fetchSiteContList({ project: pk })
-}
+const dataSetup = (pk: number) => siteStore.fetchSiteContList({ project: pk })
 
 const dataReset = () => {
   siteStore.siteContList = []
@@ -83,13 +143,51 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
+  // 프로젝트 변경 시 query string 정리
+  clearQueryString()
   dataReset()
   if (!!target) dataSetup(target)
 }
 
+// Query string 정리 함수
+const clearQueryString = () => {
+  if (route.query.page || route.query.highlight_id) {
+    router.replace({
+      name: route.name,
+      params: route.params,
+      // query를 빈 객체로 설정하여 모든 query string 제거
+      query: {}
+    }).catch(() => {
+      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+    })
+  }
+}
+
+// 다른 라우트로 이동 시 query string 정리
+onBeforeRouteLeave(() => {
+  clearQueryString()
+})
+
 const loading = ref(true)
 onBeforeMount(async () => {
-  await dataSetup(project.value || projStore.initProjId)
+  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
+  let projectId = project.value || projStore.initProjId
+  if (urlProjectId.value && urlProjectId.value !== projectId) {
+    console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
+    // 프로젝트 전환
+    await projStore.setCurrentProject(urlProjectId.value)
+    projectId = urlProjectId.value
+  }
+  
+  siteStore.fetchAllOwners(projectId)
+  
+  // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
+  if (highlightId.value) {
+    await loadHighlightPage(projectId)
+    await scrollToHighlight()
+  } else {
+    await dataSetup(projectId)
+  }
   loading.value = false
 })
 </script>
@@ -125,6 +223,8 @@ onBeforeMount(async () => {
       </TableTitleRow>
       <SiteContractList
         :limit="dataFilter.limit || 10"
+        :highlight-id="highlightId"
+        :current-page="dataFilter.page"
         @page-select="pageSelect"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"

@@ -6,7 +6,10 @@ import { write_project_site } from '@/utils/pageAuth'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteContractForm from './SiteContractForm.vue'
 
-defineProps({ contract: { type: Object as PropType<SiteContract>, required: true } })
+const props = defineProps({ 
+  contract: { type: Object as PropType<SiteContract>, required: true },
+  isHighlight: { type: Boolean, default: false }
+})
 
 const emit = defineEmits(['multi-submit', 'on-delete'])
 
@@ -18,7 +21,12 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
 </script>
 
 <template>
-  <CTableRow v-if="contract" class="text-center">
+  <CTableRow 
+    v-if="contract" 
+    class="text-center"
+    :class="{ 'table-warning': props.isHighlight }"
+    :data-site-contract-id="contract.pk"
+  >
     <CTableDataCell>{{ contract.owner_desc?.own_sort_desc }}</CTableDataCell>
     <CTableDataCell>
       <a href="javascript:void(0);" @click="showDetail">

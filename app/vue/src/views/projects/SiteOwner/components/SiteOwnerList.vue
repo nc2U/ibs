@@ -7,7 +7,14 @@ import { TableInfo, TableSuccess, TableSecondary } from '@/utils/cssMixins'
 import SiteOwner from '@/views/projects/SiteOwner/components/SiteOwner.vue'
 import Pagination from '@/components/Pagination'
 
-defineProps({ isReturned: { type: Boolean }, limit: { type: Number, default: 10 } })
+import { type PropType } from 'vue'
+
+const props = defineProps({ 
+  isReturned: { type: Boolean }, 
+  limit: { type: Number, default: 10 },
+  highlightId: { type: Number, default: null },
+  currentPage: { type: Number, default: 1 }
+})
 const emit = defineEmits(['relation-patch', 'page-select', 'on-delete', 'multi-submit'])
 
 const siteStore = useSite()
@@ -73,6 +80,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         :key="sOwner.pk as number"
         :owner="sOwner"
         :is-returned="isReturned"
+        :is-highlight="props.highlightId === sOwner.pk"
         @relation-patch="relationPatch"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
@@ -87,7 +95,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="siteOwnerCount > 10"
-    :active-page="1"
+    :active-page="props.currentPage"
     :limit="8"
     :pages="ownerPages(limit)"
     class="mt-3"

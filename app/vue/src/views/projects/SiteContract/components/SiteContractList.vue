@@ -7,7 +7,13 @@ import { type SiteContract as siteCont } from '@/store/types/project'
 import SiteContract from './SiteContract.vue'
 import Pagination from '@/components/Pagination'
 
-defineProps({ limit: { type: Number, default: 10 } })
+import { type PropType } from 'vue'
+
+const props = defineProps({ 
+  limit: { type: Number, default: 10 },
+  highlightId: { type: Number, default: null },
+  currentPage: { type: Number, default: 1 }
+})
 const emit = defineEmits(['page-select', 'on-delete', 'multi-submit'])
 
 const siteStore = useSite()
@@ -62,6 +68,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         v-for="cont in siteContList"
         :key="cont.pk as number"
         :contract="cont"
+        :is-highlight="props.highlightId === cont.pk"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
       />
@@ -75,7 +82,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="siteContCount > 10"
-    :active-page="1"
+    :active-page="props.currentPage"
     :limit="8"
     :pages="siteContPages(limit)"
     class="mt-3"

@@ -177,6 +177,22 @@ export const useSite = defineStore('site', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const findSiteOwnerPage = async (highlightId: number, filters: OwnerFilter) => {
+    let url = `/site-owner/find_page/?highlight_id=${highlightId}`
+    url += `&project=${filters.project}`
+    if (filters.sort) url += `&own_sort=${filters.sort}`
+    if (filters.is_use_consent) url += `&use_consent=${filters.is_use_consent}`
+    if (filters.search) url += `&search=${filters.search}`
+    
+    try {
+      const response = await api.get(url)
+      return response.data.page
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return 1
+    }
+  }
+
   const createSiteOwner = (payload: SiteOwner & OwnerFilter) => {
     const { limit, page, sort, is_use_consent, search, ...formData } = payload
     api
@@ -250,6 +266,21 @@ export const useSite = defineStore('site', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const findSiteContractPage = async (highlightId: number, filters: ContFilter) => {
+    let url = `/site-contract/find_page/?highlight_id=${highlightId}`
+    url += `&project=${filters.project}`
+    if (filters.own_sort) url += `&owner__own_sort=${filters.own_sort}`
+    if (filters.search) url += `&search=${filters.search}`
+    
+    try {
+      const response = await api.get(url)
+      return response.data.page
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return 1
+    }
+  }
+
   const createSiteCont = (payload: FormData) => {
     api
       .post(`/site-contract/`, payload)
@@ -305,6 +336,7 @@ export const useSite = defineStore('site', () => {
     fetchOwnersTotal,
     fetchSiteOwner,
     fetchSiteOwnerList,
+    findSiteOwnerPage,
     createSiteOwner,
     updateSiteOwner,
     deleteSiteOwner,
@@ -318,6 +350,7 @@ export const useSite = defineStore('site', () => {
     getContsTotal,
 
     fetchSiteContList,
+    findSiteContractPage,
     createSiteCont,
     updateSiteCont,
     deleteSiteCont,

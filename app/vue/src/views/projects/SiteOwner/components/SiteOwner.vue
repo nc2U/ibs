@@ -7,6 +7,8 @@ import SiteOwnerForm from '@/views/projects/SiteOwner/components/SiteOwnerForm.v
 
 const props = defineProps({
   owner: { type: Object as PropType<SiteOwner>, required: true },
+  isReturned: { type: Boolean },
+  isHighlight: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['relation-patch', 'multi-submit', 'on-delete'])
@@ -55,11 +57,19 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <CTableRow v-for="(site, index) in owner.sites" :key="site.pk" class="text-center">
+  <CTableRow 
+    v-for="(site, index) in owner.sites" 
+    :key="site.pk" 
+    class="text-center"
+    :class="{ 'table-warning': props.isHighlight && index === 0 }"
+    :data-site-owner-id="index === 0 ? owner.pk : null"
+  >
     <Site
       :owner="owner"
       :site="site as SimpleSite"
       :index="index"
+      :is-returned="isReturned"
+      :is-highlight="isHighlight && index === 0"
       @show-detail="showDetail"
       @relation-patch="relationPatch"
       @multi-submit="multiSubmit"

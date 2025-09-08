@@ -58,6 +58,44 @@ def get_site_page_number(site_instance):
         return 1  # 오류 시 첫 페이지로
 
 
+def get_site_owner_page_number(site_owner_instance):
+    """SiteOwner 인스턴스가 위치한 페이지 번호 계산 (프로젝트별 필터링 기준)"""
+    try:
+        # SiteOwner 모델의 기본 정렬이 -id 순(최신순)이므로 해당 순서로 정렬
+        queryset = SiteOwner.objects.filter(project=site_owner_instance.project).order_by('-id')
+
+        # 해당 인스턴스보다 앞에 있는 항목 개수 계산 (-id 순이므로 id가 더 큰 항목들)
+        items_before = queryset.filter(id__gt=site_owner_instance.id).count()
+
+        # 프론트엔드에서 사용하는 페이지 크기 (기본값 10개)
+        page_size = 10
+        page_number = (items_before // page_size) + 1
+
+        return page_number
+    except Exception as e:
+        logger.error(f"SiteOwner 페이지 계산 오류: {e}")
+        return 1  # 오류 시 첫 페이지로
+
+
+def get_site_contract_page_number(site_contract_instance):
+    """SiteContract 인스턴스가 위치한 페이지 번호 계산 (프로젝트별 필터링 기준)"""
+    try:
+        # SiteContract 모델의 기본 정렬이 -id 순(최신순)이므로 해당 순서로 정렬
+        queryset = SiteContract.objects.filter(project=site_contract_instance.project).order_by('-id')
+
+        # 해당 인스턴스보다 앞에 있는 항목 개수 계산 (-id 순이므로 id가 더 큰 항목들)
+        items_before = queryset.filter(id__gt=site_contract_instance.id).count()
+
+        # 프론트엔드에서 사용하는 페이지 크기 (기본값 10개)
+        page_size = 10
+        page_number = (items_before // page_size) + 1
+
+        return page_number
+    except Exception as e:
+        logger.error(f"SiteContract 페이지 계산 오류: {e}")
+        return 1  # 오류 시 첫 페이지로
+
+
 def get_service_url(model_instance):
     """모델 인스턴스에 대한 서비스 URL 등록"""
     base_url = getattr(settings, 'DOMAIN_HOST', 'http://localhost:5173')
@@ -100,9 +138,15 @@ def get_service_url(model_instance):
         url = f"{base_url}/#/project/site/index?page={page_number}&highlight_id={model_instance.id}"
         return url
     elif isinstance(model_instance, SiteOwner):
-        return f"{base_url}/#/project/site/owner"  # /{model_instance.id}"
+        # SiteOwner 인스턴스가 위치한 페이지 번호 계산
+        page_number = get_site_owner_page_number(model_instance)
+        # 페이지 정보와 프로젝트 정보를 포함한 URL 생성
+        return f"{base_url}/#/project/site/owner?page={page_number}&highlight_id={model_instance.id}&project={model_instance.project_id}"
     elif isinstance(model_instance, SiteContract):
-        return f"{base_url}/#/project/site/contract"  # /{model_instance.id}"
+        # SiteContract 인스턴스가 위치한 페이지 번호 계산
+        page_number = get_site_contract_page_number(model_instance)
+        # 페이지 정보와 프로젝트 정보를 포함한 URL 생성
+        return f"{base_url}/#/project/site/contract?page={page_number}&highlight_id={model_instance.id}&project={model_instance.project_id}"
 
     return base_url
 
