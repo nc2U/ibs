@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeMount, ref, watch } from 'vue'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import type { Project } from '@/store/types/project'
 import { useProjectData } from '@/store/pinia/project_data'
@@ -22,6 +22,12 @@ const limit = ref(10)
 
 const highlightId = computed(() => {
   const id = route.query.highlight_id
+  return id ? parseInt(id as string, 10) : null
+})
+
+// URL에서 project 파라미터 읽기
+const urlProjectId = computed(() => {
+  const id = route.query.project
   return id ? parseInt(id as string, 10) : null
 })
 
@@ -108,16 +114,18 @@ const scrollToHighlight = async () => {
   }
 }
 
-const loadHighlightPage = async () => {
-  if (highlightId.value && project.value?.pk) {
+const loadHighlightPage = async (projectId: number) => {
+  if (highlightId.value && projectId) {
     try {
+      console.log('loadHighlightPage called with project:', projectId, 'highlightId:', highlightId.value)
       // 기본 필터 조건으로 해당 항목이 몇 번째 페이지에 있는지 찾기
       const filters = {
         ...currentFilters.value,
-        project: project.value.pk,
+        project: projectId,
         limit: limit.value,
         status: status.value,
       }
+      console.log('API call filters:', filters)
 
       const targetPage = await findContractPage(highlightId.value, filters)
 
@@ -128,10 +136,10 @@ const loadHighlightPage = async () => {
     } catch (error) {
       console.error('Error finding highlight page:', error)
       // 오류 발생시 기본 첫 페이지 로드
-      await fetchContractList({ project: project.value.pk })
+      await fetchContractList({ project: projectId })
     }
-  } else if (highlightId.value && !project.value?.pk) {
-    console.warn('Highlight ID present but no project selected')
+  } else if (highlightId.value && !projectId) {
+    console.warn('Highlight ID present but no project ID provided')
   }
 }
 
@@ -144,7 +152,7 @@ const dataSetup = async (proj: number) => {
   currentFilters.value = { project: proj, limit: limit.value, status: status.value }
 
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-  if (highlightId.value) await loadHighlightPage()
+  if (highlightId.value) await loadHighlightPage(proj)
   else await fetchContractList({ project: proj })
 
   // 하이라이트 처리 후에도 목록이 비어있다면 기본 목록 로드
@@ -166,14 +174,41 @@ const dataReset = () => {
   proDataStore.buildingList = []
 }
 
-const projSelect = (target: number | null) => {
-  // 프로젝트 변경 시 query string 정리
-  clearQueryString()
+const projSelect = async (target: number | null, skipClearQuery = false) => {
+  console.log('projSelect called with target:', target, 'skipClearQuery:', skipClearQuery)
+
+  // 프로젝트 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
+  if (!skipClearQuery) clearQueryString()
+
   dataReset()
-  if (!!target) dataSetup(target)
+  if (!!target) {
+    await projStore.fetchProject(target)
+    
+    // 수동 프로젝트 선택 시에는 하이라이트 없이 일반 목록만 로드
+    if (!skipClearQuery) {
+      // 수동 선택 시에는 하이라이트 기능 비활성화
+      await fetchOrderGroupList(target)
+      await fetchTypeList(target)
+      await fetchBuildingList(target)
+      currentFilters.value = { project: target, limit: limit.value, status: status.value }
+      await fetchContractList({ project: target })
+      await fetchSubsSummaryList(target)
+      await fetchContSummaryList(target)
+    } else {
+      // 슬랙 링크 등 자동 전환 시에만 하이라이트 기능 사용
+      await dataSetup(target)
+    }
+    
+    // ContentHeader 강제 리렌더링으로 ProjectSelect 업데이트
+    headerKey.value++
+    console.log('Project switched to:', target, 'headerKey:', headerKey.value)
+  }
 }
 
 const router = useRouter()
+
+// ContentHeader 강제 리렌더링용
+const headerKey = ref(0)
 
 // Query string 정리 함수
 const clearQueryString = () => {
@@ -191,6 +226,28 @@ const clearQueryString = () => {
   }
 }
 
+onBeforeRouteUpdate(async to => {
+  console.log('onBeforeRouteUpdate called with to.query.project:', to.query.project)
+  console.log('Current project.value:', project.value?.pk)
+
+  // URL에서 프로젝트 ID 파라미터 확인
+  const toProjectId = to.query.project ? parseInt(to.query.project as string, 10) : null
+
+  if (toProjectId && toProjectId !== project.value?.pk) {
+    console.log(
+      `Route update - switching to project ${toProjectId} from URL parameter (current: ${project.value?.pk})`,
+    )
+    await projSelect(toProjectId, true)
+  } else {
+    console.log('No project change needed, using current project')
+    // URL에 highlight_id가 있으면 하이라이트 기능이 필요한 경우이므로 dataSetup 실행
+    if (to.query.highlight_id) {
+      await dataSetup(project.value?.pk || projStore.initProjId)
+    }
+    // 단순히 project 파라미터만 있는 경우는 이미 올바른 프로젝트가 선택되어 있으므로 추가 작업 불필요
+  }
+})
+
 // 다른 라우트로 이동 시 query string 정리
 onBeforeRouteLeave(() => {
   clearQueryString()
@@ -202,7 +259,21 @@ onBeforeMount(async () => {
     await router.replace({ name: '계약 내역 조회' })
     status.value = '1'
   }
-  await dataSetup(project.value?.pk || projStore.initProjId)
+
+  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
+  let projectId = project.value?.pk || projStore.initProjId
+  console.log('onBeforeMount - Current project:', projectId, 'URL project:', urlProjectId.value)
+
+  if (urlProjectId.value && urlProjectId.value !== projectId) {
+    console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
+    // 프로젝트 전환 (query string 정리 건너뛰기)
+    await projSelect(urlProjectId.value, true)
+    console.log('After projSelect - project change completed')
+  } else {
+    // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
+    await dataSetup(projectId)
+  }
+
   loading.value = false
 })
 </script>
@@ -210,6 +281,7 @@ onBeforeMount(async () => {
 <template>
   <Loading v-model:active="loading" />
   <ContentHeader
+    :key="headerKey"
     :page-title="pageTitle"
     :nav-menu="navMenu"
     selector="ProjectSelect"
