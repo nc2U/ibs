@@ -122,9 +122,20 @@ watch(route, val => {
   else docStore.removeSuitcase()
 })
 
+// ContentHeader 강제 리렌더링용
+const headerKey = ref(0)
+
 // company 변경을 감지하여 자동으로 데이터 다시 로드
+const isInitializing = ref(true)
 watch(company, async (newCompany, oldCompany) => {
-  console.log('LawsuitCase Company watch triggered - old:', oldCompany, 'new:', newCompany)
+  console.log('LawsuitCase Company watch triggered - old:', oldCompany, 'new:', newCompany, 'initializing:', isInitializing.value)
+  
+  // 초기화 중이거나 URL에서 회사 변경 중인 경우 무시
+  if (isInitializing.value) {
+    console.log('Skipping watch during initialization')
+    return
+  }
+  
   if (newCompany && newCompany !== oldCompany && oldCompany !== undefined) {
     console.log('Company changed, reloading data for company:', newCompany)
     await dataSetup(newCompany, route.params?.caseId)
@@ -171,12 +182,29 @@ const relatedFilter = (related: number) => {
   listFiltering(caseFilter.value)
 }
 
-const dataSetup = (pk: number, caseId?: string | string[]) => {
+const dataSetup = async (pk: number, caseId?: string | string[]) => {
+  console.log('LawsuitCase dataSetup called with pk:', pk, 'current company.value:', company.value)
   caseFilter.value.company = pk
-  workStore.fetchAllIssueProjectList(pk, '2', '')
-  fetchAllSuitCaseList({ company: pk, is_real_dev: 'false' })
-  fetchSuitCaseList(caseFilter.value)
-  if (caseId) fetchSuitCase(Number(caseId))
+  
+  // workStore.fetchAllIssueProjectList가 회사를 변경하므로 현재 회사 저장
+  const targetCompany = pk
+  
+  console.log('Before workStore.fetchAllIssueProjectList, company.value:', company.value)
+  await workStore.fetchAllIssueProjectList(pk, '2', '')
+  console.log('After workStore.fetchAllIssueProjectList, company.value:', company.value)
+  
+  // workStore 함수가 회사를 변경했다면 다시 원래 회사로 복원
+  if (company.value !== targetCompany) {
+    console.log(`Company was changed to ${company.value}, restoring to ${targetCompany}`)
+    Cookies.set('curr-company', `${targetCompany}`)
+    await comStore.fetchCompany(targetCompany)
+    console.log('Company restored to:', company.value)
+  }
+  
+  await fetchAllSuitCaseList({ company: pk, is_real_dev: 'false' })
+  await fetchSuitCaseList(caseFilter.value)
+  if (caseId) await fetchSuitCase(Number(caseId))
+  console.log('LawsuitCase dataSetup completed, final company.value:', company.value)
 }
 
 const dataReset = () => {
@@ -229,8 +257,16 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
       await router.replace({ name: '본사 소송 사건' })
     }
     
-    // watch가 회사 변경을 감지하여 자동으로 데이터를 로드하므로 여기서는 하지 않음
-    console.log('comSelect completed, watch will handle data loading')
+    // 초기화 중이거나 watch가 비활성화된 경우 직접 데이터 로딩
+    if (isInitializing.value) {
+      console.log('Loading data directly during initialization')
+      await dataSetup(target, route.params?.caseId)
+      // ContentHeader 강제 리렌더링으로 CompanySelect 업데이트
+      headerKey.value++
+      console.log('ContentHeader re-rendered with key:', headerKey.value)
+    } else {
+      console.log('comSelect completed, watch will handle data loading')
+    }
   } else {
     dataReset()
     docStore.removeSuitcaseList()
@@ -260,14 +296,21 @@ const loading = ref(true)
 onBeforeMount(async () => {
   // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
   let companyId = company.value || comStore.initComId
+  console.log('LawsuitCase onBeforeMount - Current company:', companyId, 'URL company:', urlCompanyId.value)
+  
   if (urlCompanyId.value) {
     console.log(`Switching to company ${urlCompanyId.value} from URL parameter`)
     // 회사 전환 (query string 정리 건너뛰기) 및 사건 로드
     await comSelect(urlCompanyId.value, true)
-    companyId = urlCompanyId.value
+    // comSelect에서 데이터까지 로딩하므로 추가 작업 불필요
+    console.log('After comSelect - company change completed')
   } else {
-    dataSetup(companyId, route.params?.caseId)
+    // URL에 회사 파라미터가 없는 경우에만 일반 데이터 설정
+    await dataSetup(companyId, route.params?.caseId)
   }
+
+  // 초기화 완료 후 watch 활성화
+  isInitializing.value = false
   loading.value = false
 })
 
@@ -280,6 +323,7 @@ onBeforeRouteLeave(() => {
 <template>
   <Loading v-model:active="loading" />
   <ContentHeader
+    :key="headerKey"
     :page-title="pageTitle"
     :nav-menu="navMenu"
     selector="CompanySelect"
