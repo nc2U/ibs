@@ -76,6 +76,26 @@ def get_site_page_number(site_instance):
         return 1  # 오류 시 첫 페이지로
 
 
+def get_succession_page_number(succession_instance):
+    """Succession 인스턴스가 위치한 페이지 번호 계산 (contractor별 필터링 기준)"""
+    try:
+        # Succession은 contractor별로 필터링되므로 같은 contractor 내에서만 계산
+        contractor_id = succession_instance.contract.contractor.id
+        queryset = Succession.objects.filter(contract__contractor__id=contractor_id).order_by('-created_at')
+
+        # 해당 인스턴스보다 앞에 있는 항목 개수 계산 (같은 contractor 내에서)
+        items_before = queryset.filter(created_at__gt=succession_instance.created_at).count()
+
+        # 프론트엔드에서 사용하는 페이지 크기 (기본값 10)
+        page_size = 10
+        page_number = (items_before // page_size) + 1
+
+        return page_number
+    except Exception as e:
+        logger.error(f"Succession 페이지 계산 오류: {e}")
+        return 1  # 오류 시 첫 페이지로
+
+
 def get_site_owner_page_number(site_owner_instance):
     """SiteOwner 인스턴스가 위치한 페이지 번호 계산 (프로젝트별 필터링 기준)"""
     try:
@@ -146,7 +166,12 @@ def get_service_url(model_instance):
         url = f"{base_url}/#/contracts/index?page={page_number}&highlight_id={model_instance.id}&project={model_instance.project_id}"
         return url
     elif isinstance(model_instance, Succession):
-        return f"{base_url}/#/contracts/succession/{model_instance.id}"
+        # Succession 인스턴스가 위치한 페이지 번호 계산
+        page_number = get_succession_page_number(model_instance)
+        
+        # 페이지 정보와 contractor, 하이라이트 정보를 포함한 URL 생성
+        url = f"{base_url}/#/contracts/succession?page={page_number}&highlight_id={model_instance.id}&contractor={model_instance.contract.contractor.id}"
+        return url
     elif isinstance(model_instance, ContractorRelease):
         return f"{base_url}/#/contracts/release/{model_instance.id}"
     elif isinstance(model_instance, Site):
@@ -183,6 +208,15 @@ def get_target_issue_project(model_instance):
     elif hasattr(model_instance, 'project'):  # ProjectCashBook, Contract 등
         # Project의 연결된 IssueProject
         project = model_instance.project
+        if hasattr(project, 'issue_project'):
+            issue_project = project.issue_project
+            if issue_project.slack_notifications_enabled:
+                return issue_project
+
+    elif hasattr(model_instance, 'contract') and hasattr(model_instance.contract,
+                                                         'project'):  # Succession, ContractorRelease 등
+        # Contract를 통한 Project 접근
+        project = model_instance.contract.project
         if hasattr(project, 'issue_project'):
             issue_project = project.issue_project
             if issue_project.slack_notifications_enabled:
