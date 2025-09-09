@@ -1,6 +1,7 @@
 import logging
 
 import requests
+from decouple import config
 from django.conf import settings
 
 from cash.models import CashBook, ProjectCashBook
@@ -11,6 +12,23 @@ from work.models.project import IssueProject
 
 logger = logging.getLogger(__name__)
 SYSTEM_NAME = 'IBS 업무관리시스템'
+
+
+def get_slack_webhook_url(issue_project):
+    """IssueProject의 sort와 slug를 기반으로 환경변수에서 웹훅 URL 조회"""
+    if issue_project.sort == '1':  # 본사관리
+        key = 'SLACK_COMPANY_URL'
+    else:  # 개별 프로젝트
+        # slug에 하이픈(-)이 있으면 언더스코어로 변환 (환경변수 키 규칙)
+        key = f"SLACK_PROJECT_{issue_project.slug.replace('-', '_').upper()}"
+
+    webhook_url = config(key, default=None)
+    if webhook_url:
+        logger.info(f"Slack 웹훅 URL 조회 성공: {key}")
+    else:
+        logger.warning(f"Slack 웹훅 URL 조회 실패 - 환경변수 '{key}'가 설정되지 않음")
+
+    return webhook_url
 
 
 def get_contract_page_number(contract_instance):
@@ -159,8 +177,7 @@ def get_target_issue_project(model_instance):
         return IssueProject.objects.filter(
             company=model_instance.company,
             sort='1',  # 본사관리
-            slack_notifications_enabled=True,
-            slack_webhook_url__isnull=False
+            slack_notifications_enabled=True
         ).first()
 
     elif hasattr(model_instance, 'project'):  # ProjectCashBook, Contract 등
@@ -168,15 +185,13 @@ def get_target_issue_project(model_instance):
         project = model_instance.project
         if hasattr(project, 'issue_project'):
             issue_project = project.issue_project
-            if (issue_project.slack_notifications_enabled and
-                    issue_project.slack_webhook_url):
+            if issue_project.slack_notifications_enabled:
                 return issue_project
 
     elif hasattr(model_instance, 'issue_project'):  # LawsuitCase, Document 등
         # 직접 IssueProject와 연결된 모델
         issue_project = model_instance.issue_project
-        if (issue_project.slack_notifications_enabled and
-                issue_project.slack_webhook_url):
+        if issue_project.slack_notifications_enabled:
             return issue_project
 
     return None
@@ -596,8 +611,14 @@ def send_slack_notification(instance, action, user=None):
         logger.warning(f"지원하지 않는 모델 타입: {type(instance)}")
         return
 
+    # 환경변수에서 Slack 웹훅 URL 조회
+    slack_webhook_url = get_slack_webhook_url(issue_project)
+    if not slack_webhook_url:
+        logger.warning(f"Slack 웹훅 URL을 찾을 수 없음: {issue_project.name} (slug: {issue_project.slug})")
+        return
+
     # Slack 메시지 전송
-    success = send_slack_message(issue_project.slack_webhook_url, message_data)
+    success = send_slack_message(slack_webhook_url, message_data)
 
     if success:
         # 권한 있는 멤버들 로그 (선택적)

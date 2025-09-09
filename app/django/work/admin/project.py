@@ -33,32 +33,38 @@ class RepositoryInline(admin.TabularInline):
 
 @admin.register(IssueProject)
 class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'company', 'sort', 'name', 'homepage', 'is_public', 'parent', 'slug', 'status', 'slack_notifications_enabled', 'order')
+    list_display = ('pk', 'company', 'sort', 'name', 'homepage', 'is_public', 'parent', 'slug', 'status',
+                    'slack_notifications_enabled', 'order')
     list_display_links = ('name',)
     list_editable = ('company', 'sort', 'slack_notifications_enabled', 'order')
     inlines = (ModuleInline, MemberInline, VersionInline, IssueCategoryInline, RepositoryInline)
     list_filter = ('company', 'sort', 'is_public', 'status', 'slack_notifications_enabled')
-    
+
     fieldsets = (
         ('기본 정보', {
-            'fields': ('company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public', 'parent', 'is_inherit_members')
+            'fields': ('company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public', 'parent',
+                       'is_inherit_members')
         }),
         ('프로젝트 설정', {
             'fields': ('default_version', 'allowed_roles', 'trackers', 'activities', 'status', 'order')
         }),
         ('Slack 알림 설정', {
-            'fields': ('slack_webhook_url', 'slack_notifications_enabled'),
+            'fields': ('slack_notifications_enabled',),
             'classes': ('collapse',),
-            'description': '이 프로젝트의 데이터 변동을 실시간으로 Slack에 알림받을 수 있습니다.'
+            'description': '''
+            이 프로젝트의 데이터 변동을 실시간으로 Slack에 알림받을 수 있습니다.
+            웹훅 URL은 환경변수에서 관리됩니다: 본사관리(sort=1)는 "SLACK_COMPANY_URL",
+            개별 프로젝트는 "SLACK_PROJECT_{slug..replace("-", "_").upper()}"
+            '''
         }),
         ('생성 정보', {
             'fields': ('creator', 'created', 'updated'),
             'classes': ('collapse',)
         })
     )
-    
+
     readonly_fields = ('created', 'updated')
-    
+
     def get_readonly_fields(self, request, obj=None):
         readonly = list(self.readonly_fields)
         if obj:  # 기존 객체 수정 시
