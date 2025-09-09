@@ -220,15 +220,18 @@ class SlackMessageBuilder:
     def build_cashbook_message(instance, action, user):
         """CashBook 또는 ProjectCashBook 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
+        income = instance.income
+        outlay = instance.outlay
+        main_content = f'[입금][{income:,}]' if income else f'[출금][{outlay:,}]'
 
         if isinstance(instance, CashBook):
             # 본사 입출금
             sort_name = instance.company.name
-            title = f"💵 [{sort_name}]-[입출금] - {instance.content or '------'}"
+            title = f"💵 [{sort_name}]-{main_content} - {instance.content or '------'}"
         elif isinstance(instance, ProjectCashBook):
             # 프로젝트 입출금
             sort_name = instance.project.issue_project.name
-            title = f"🏗️ [{sort_name}]-[입출금] - {instance.content or '------'}"
+            title = f"🏗️ [{sort_name}]-{main_content} - {instance.content or '------'}"
         else:
             return None
 
