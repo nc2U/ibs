@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref, watch } from 'vue'
+import Cookies from 'js-cookie'
 import { navMenu, pageTitle } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
@@ -220,6 +221,19 @@ watch(comIProject, val => {
     })
 })
 
+// company 변경을 감지하여 자동으로 데이터 다시 로드
+watch(company, async (newCompany, oldCompany) => {
+  console.log('LawsuitDocs Company watch triggered - old:', oldCompany, 'new:', newCompany)
+  if (newCompany && newCompany !== oldCompany && oldCompany !== undefined) {
+    console.log('Company changed, reloading data for company:', newCompany)
+    await fetchAllSuitCaseList({
+      company: newCompany,
+      issue_project: comIProject.value,
+    })
+    dataSetup(newCompany, route.params?.docsId)
+  }
+}, { immediate: false })
+
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
   workStore.fetchAllIssueProjectList(pk, '2', '')
@@ -239,45 +253,84 @@ const dataReset = () => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (Object.keys(route.query).length > 0) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      // query를 빈 객체로 설정하여 모든 query string 제거
-      query: {}
-    }).catch(() => {
-      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
-    })
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
   }
 }
 
 const comSelect = async (target: number | null, skipClearQuery = false) => {
+  console.log('LawsuitDocs comSelect called with target:', target, 'skipClearQuery:', skipClearQuery, 'current route:', route.name)
+  
   // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
-  if (!skipClearQuery) {
-    clearQueryString()
-  }
+  if (!skipClearQuery) clearQueryString()
+
   if (fController.value) fController.value.resetForm(false)
-  dataReset()
+
   if (target) {
-    // 회사를 먼저 변경하고 데이터를 설정
+    console.log('Before fetchCompany - target:', target)
+    
+    // 쿠키 설정 (ContentHeader와 동일한 방식)
+    Cookies.set('curr-company', `${target}`)
+    console.log('Cookie set to:', target)
+    
+    // 회사 변경
     await comStore.fetchCompany(target)
-    await dataSetup(target, route.params?.docsId)
+    console.log('fetchCompany completed')
+
+    // 슬랙 링크 진입 시 보기 화면에서 목록으로 이동하지 않음
+    const isSlackEntry = skipClearQuery && route.name?.includes('보기')
+    if (!isSlackEntry && route.name?.includes('보기')) {
+      console.log('Normal selection - navigating to list')
+      await router.replace({ name: '본사 소송 문서' })
+    }
+    
+    // watch가 회사 변경을 감지하여 자동으로 데이터를 로드하므로 여기서는 하지 않음
+    console.log('comSelect completed, watch will handle data loading')
   } else {
+    dataReset()
     docStore.removeDocsList()
   }
 }
 
-onBeforeRouteUpdate(to => dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
+onBeforeRouteUpdate(async to => {
+  console.log('LawsuitDocs onBeforeRouteUpdate called with to.query.company:', to.query.company)
+  console.log('Current company.value:', company.value)
+  
+  // URL에서 회사 ID 파라미터 확인
+  const toCompanyId = to.query.company ? parseInt(to.query.company as string, 10) : null
+  console.log('Parsed toCompanyId:', toCompanyId)
+  
+  if (toCompanyId && toCompanyId !== company.value) {
+    console.log(`Route update - switching to company ${toCompanyId} from URL parameter (current: ${company.value})`)
+    await comSelect(toCompanyId, true)
+  } else {
+    console.log('No company change needed, calling dataSetup')
+    await dataSetup(company.value ?? comStore.initComId, to.params?.docsId)
+  }
+})
 
 const loading = ref(true)
 onBeforeMount(async () => {
   // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
   let companyId = company.value ?? comStore.initComId
+  console.log('LawsuitDocs onBeforeMount - Current company:', companyId, 'URL company:', urlCompanyId.value)
+  
   if (urlCompanyId.value) {
     console.log(`Switching to company ${urlCompanyId.value} from URL parameter`)
     // 회사 전환 (query string 정리 건너뛰기) 및 문서 로드
     await comSelect(urlCompanyId.value, true)
     companyId = urlCompanyId.value
+    console.log('After comSelect - Current company should be:', companyId)
   } else {
+    // URL에 회사 파라미터가 없는 경우에만 일반 데이터 설정
     await fetchAllSuitCaseList({
       company: companyId,
       issue_project: comIProject.value,

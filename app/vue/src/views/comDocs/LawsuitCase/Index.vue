@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount, watch } from 'vue'
+import Cookies from 'js-cookie'
 import { pageTitle, navMenu } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
@@ -121,6 +122,15 @@ watch(route, val => {
   else docStore.removeSuitcase()
 })
 
+// company 변경을 감지하여 자동으로 데이터 다시 로드
+watch(company, async (newCompany, oldCompany) => {
+  console.log('LawsuitCase Company watch triggered - old:', oldCompany, 'new:', newCompany)
+  if (newCompany && newCompany !== oldCompany && oldCompany !== undefined) {
+    console.log('Company changed, reloading data for company:', newCompany)
+    await dataSetup(newCompany, route.params?.caseId)
+  }
+}, { immediate: false })
+
 const onSubmit = (payload: SuitCase) => {
   if (!!company.value) {
     console.log(payload)
@@ -180,29 +190,49 @@ const dataReset = () => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (Object.keys(route.query).length > 0) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      // query를 빈 객체로 설정하여 모든 query string 제거
-      query: {}
-    }).catch(() => {
-      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
-    })
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
   }
 }
 
 const comSelect = async (target: number | null, skipClearQuery = false) => {
+  console.log('LawsuitCase comSelect called with target:', target, 'skipClearQuery:', skipClearQuery, 'current route:', route.name)
+  
   // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
-  if (!skipClearQuery) {
-    clearQueryString()
-  }
+  if (!skipClearQuery) clearQueryString()
+
   if (fController.value) fController.value.resetForm(false)
-  dataReset()
+
   if (!!target) {
-    // 회사를 먼저 변경하고 데이터를 설정
+    console.log('Before fetchCompany - target:', target)
+    
+    // 쿠키 설정 (ContentHeader와 동일한 방식)
+    Cookies.set('curr-company', `${target}`)
+    console.log('Cookie set to:', target)
+    
+    // 회사 변경
     await comStore.fetchCompany(target)
-    await dataSetup(target, route.params?.caseId)
+    console.log('fetchCompany completed')
+
+    // 슬랙 링크 진입 시 보기 화면에서 목록으로 이동하지 않음
+    const isSlackEntry = skipClearQuery && route.name?.includes('보기')
+    if (!isSlackEntry && route.name?.includes('보기')) {
+      console.log('Normal selection - navigating to list')
+      await router.replace({ name: '본사 소송 사건' })
+    }
+    
+    // watch가 회사 변경을 감지하여 자동으로 데이터를 로드하므로 여기서는 하지 않음
+    console.log('comSelect completed, watch will handle data loading')
   } else {
+    dataReset()
     docStore.removeSuitcaseList()
   }
 }
@@ -212,7 +242,19 @@ const caseRenewal = (page: number) => {
   fetchSuitCaseList(caseFilter.value)
 }
 
-onBeforeRouteUpdate(() => dataSetup(company.value || comStore.initComId, route.params?.caseId))
+onBeforeRouteUpdate(async to => {
+  console.log('LawsuitCase onBeforeRouteUpdate called with to.query.company:', to.query.company)
+  
+  // URL에서 회사 ID 파라미터 확인
+  const toCompanyId = to.query.company ? parseInt(to.query.company as string, 10) : null
+  
+  if (toCompanyId && toCompanyId !== company.value) {
+    console.log(`Route update - switching to company ${toCompanyId} from URL parameter`)
+    await comSelect(toCompanyId, true)
+  } else {
+    await dataSetup(company.value || comStore.initComId, to.params?.caseId)
+  }
+})
 
 const loading = ref(true)
 onBeforeMount(async () => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch, nextTick } from 'vue'
+import Cookies from 'js-cookie'
 import { navMenu, pageTitle } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
@@ -120,6 +121,26 @@ watch(route, val => {
   else docStore.removeDocs()
 })
 
+// ContentHeader 강제 리렌더링용
+const headerKey = ref(0)
+
+// company 변경을 감지하여 자동으로 데이터 다시 로드
+const isInitializing = ref(true)
+watch(company, async (newCompany, oldCompany) => {
+  console.log('Company watch triggered - old:', oldCompany, 'new:', newCompany, 'initializing:', isInitializing.value)
+  
+  // 초기화 중이거나 URL에서 회사 변경 중인 경우 무시
+  if (isInitializing.value) {
+    console.log('Skipping watch during initialization')
+    return
+  }
+  
+  if (newCompany && newCompany !== oldCompany && oldCompany !== undefined) {
+    console.log('Company changed, reloading data for company:', newCompany)
+    await dataSetup(newCompany, route.params?.docsId)
+  }
+}, { immediate: false })
+
 const docsRenewal = (page: number) => {
   docsFilter.value.page = page
   fetchDocsList(docsFilter.value)
@@ -194,12 +215,42 @@ const fileHit = async (pk: number) => {
 }
 
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
+  console.log('dataSetup called with pk:', pk, 'current company.value:', company.value)
   docsFilter.value.company = pk
+  
+  // workStore.fetchAllIssueProjectList가 회사를 변경하므로 현재 회사 저장
+  const targetCompany = pk
+  
+  console.log('Before workStore.fetchAllIssueProjectList, company.value:', company.value)
   await workStore.fetchAllIssueProjectList(pk, '2', '')
+  console.log('After workStore.fetchAllIssueProjectList, company.value:', company.value)
+  
+  // workStore 함수가 회사를 변경했다면 다시 원래 회사로 복원
+  if (company.value !== targetCompany) {
+    console.log(`Company was changed to ${company.value}, restoring to ${targetCompany}`)
+    Cookies.set('curr-company', `${targetCompany}`)
+    await comStore.fetchCompany(targetCompany)
+    console.log('Company restored to:', company.value)
+  }
+  
+  console.log('Before fetchDocTypeList, company.value:', company.value)
   await fetchDocTypeList()
+  console.log('After fetchDocTypeList, company.value:', company.value)
+  
+  console.log('Before fetchCategoryList, company.value:', company.value)
   await fetchCategoryList(typeNumber.value)
+  console.log('After fetchCategoryList, company.value:', company.value)
+  
+  console.log('Before fetchDocsList, company.value:', company.value)
   await fetchDocsList(docsFilter.value)
-  if (docsId) await fetchDocs(Number(docsId))
+  console.log('After fetchDocsList, company.value:', company.value)
+  
+  if (docsId) {
+    console.log('Before fetchDocs, company.value:', company.value)
+    await fetchDocs(Number(docsId))
+    console.log('After fetchDocs, company.value:', company.value)
+  }
+  console.log('dataSetup completed, final company.value:', company.value)
 }
 
 const dataReset = () => {
@@ -213,47 +264,104 @@ const dataReset = () => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (Object.keys(route.query).length > 0) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      // query를 빈 객체로 설정하여 모든 query string 제거
-      query: {}
-    }).catch(() => {
-      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
-    })
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
   }
 }
 
 const comSelect = async (target: number | null, skipClearQuery = false) => {
+  console.log(
+    'comSelect called with target:',
+    target,
+    'skipClearQuery:',
+    skipClearQuery,
+    'current route:',
+    route.name,
+  )
+
   // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
-  if (!skipClearQuery) {
-    clearQueryString()
-  }
+  if (!skipClearQuery) clearQueryString()
+
   if (fController.value) fController.value.resetForm(false)
-  dataReset()
+
   if (!!target) {
-    // 회사를 먼저 변경하고 데이터를 설정
+    console.log('Before fetchCompany - target:', target)
+    
+    // 쿠키 설정 (ContentHeader와 동일한 방식)
+    Cookies.set('curr-company', `${target}`)
+    console.log('Cookie set to:', target)
+    
+    // 회사 변경
     await comStore.fetchCompany(target)
-    await dataSetup(target, route.params?.docsId)
+    console.log('fetchCompany completed')
+
+    // 슬랙 링크 진입 시 보기 화면에서 목록으로 이동하지 않음
+    const isSlackEntry = skipClearQuery && route.name?.includes('보기')
+    if (!isSlackEntry && route.name?.includes('보기')) {
+      console.log('Normal selection - navigating to list')
+      await router.replace({ name: '본사 일반 문서' })
+    }
+    
+    // 초기화 중이거나 watch가 비활성화된 경우 직접 데이터 로딩
+    if (isInitializing.value) {
+      console.log('Loading data directly during initialization')
+      await dataSetup(target, route.params?.docsId)
+      // ContentHeader 강제 리렌더링으로 CompanySelect 업데이트
+      headerKey.value++
+      console.log('ContentHeader re-rendered with key:', headerKey.value)
+    } else {
+      console.log('comSelect completed, watch will handle data loading')
+    }
   } else {
+    dataReset()
     docStore.removeDocsList()
   }
 }
 
-onBeforeRouteUpdate(async to => await dataSetup(company.value ?? comStore.initComId, to.params?.docsId))
+onBeforeRouteUpdate(async to => {
+  console.log('onBeforeRouteUpdate called with to.query.company:', to.query.company)
+  console.log('Current company.value:', company.value)
+
+  // URL에서 회사 ID 파라미터 확인
+  const toCompanyId = to.query.company ? parseInt(to.query.company as string, 10) : null
+  console.log('Parsed toCompanyId:', toCompanyId)
+
+  if (toCompanyId && toCompanyId !== company.value) {
+    console.log(`Route update - switching to company ${toCompanyId} from URL parameter (current: ${company.value})`)
+    await comSelect(toCompanyId, true)
+  } else {
+    console.log('No company change needed, calling dataSetup')
+    await dataSetup(company.value ?? comStore.initComId, to.params?.docsId)
+  }
+})
 
 const loading = ref(true)
 onBeforeMount(async () => {
   // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
   let companyId = company.value ?? comStore.initComId
+  console.log('onBeforeMount - Current company:', companyId, 'URL company:', urlCompanyId.value)
+  
   if (urlCompanyId.value) {
     console.log(`Switching to company ${urlCompanyId.value} from URL parameter`)
     // 회사 전환 (query string 정리 건너뛰기) 및 문서 로드
     await comSelect(urlCompanyId.value, true)
-    companyId = urlCompanyId.value
+    // comSelect에서 데이터까지 로딩하므로 추가 작업 불필요
+    console.log('After comSelect - company change completed')
   } else {
+    // URL에 회사 파라미터가 없는 경우에만 일반 데이터 설정
     await dataSetup(companyId, route.params?.docsId)
   }
+
+  // 초기화 완료 후 watch 활성화
+  isInitializing.value = false
   loading.value = false
 })
 
@@ -266,6 +374,7 @@ onBeforeRouteLeave(() => {
 <template>
   <Loading v-model:active="loading" />
   <ContentHeader
+    :key="headerKey"
     :page-title="pageTitle"
     :nav-menu="navMenu"
     selector="CompanySelect"
