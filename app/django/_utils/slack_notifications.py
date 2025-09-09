@@ -142,8 +142,8 @@ def get_service_url(model_instance):
         # Contract 인스턴스가 위치한 페이지 번호 계산
         page_number = get_contract_page_number(model_instance)
 
-        # 페이지 정보를 포함한 URL 생성
-        url = f"{base_url}/#/contracts/index?page={page_number}&highlight_id={model_instance.id}"
+        # 페이지 정보와 프로젝트 정보를 포함한 URL 생성
+        url = f"{base_url}/#/contracts/index?page={page_number}&highlight_id={model_instance.id}&project={model_instance.project_id}"
         return url
     elif isinstance(model_instance, Succession):
         return f"{base_url}/#/contracts/succession/{model_instance.id}"
