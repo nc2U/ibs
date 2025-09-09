@@ -210,7 +210,7 @@ onBeforeMount(async () => {
       <SiteList
         :is-returned="isReturned"
         :limit="dataFilter.limit || 10"
-        :highlight-id="highlightId"
+        :highlight-id="highlightId || undefined"
         :current-page="dataFilter.page"
         @page-select="pageSelect"
         @multi-submit="multiSubmit"

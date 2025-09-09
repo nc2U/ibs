@@ -46,7 +46,7 @@ const siteStore = useSite()
 const getContsTotal = computed(() => siteStore.getContsTotal?.contracted_area)
 
 // Store 함수들
-const findSiteContractPage = (highlightId: number, filters: ContFilter) => 
+const findSiteContractPage = (highlightId: number, filters: ContFilter) =>
   siteStore.findSiteContractPage(highlightId, filters)
 const fetchSiteContList = (payload: ContFilter) => siteStore.fetchSiteContList(payload)
 
@@ -152,14 +152,16 @@ const projSelect = (target: number | null) => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (route.query.page || route.query.highlight_id) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      // query를 빈 객체로 설정하여 모든 query string 제거
-      query: {}
-    }).catch(() => {
-      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
-    })
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
   }
 }
 
@@ -170,17 +172,15 @@ onBeforeRouteLeave(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
-  let projectId = project.value || projStore.initProjId
-  if (urlProjectId.value && urlProjectId.value !== projectId) {
-    console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
-    // 프로젝트 전환
-    await projStore.setCurrentProject(urlProjectId.value)
+  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트 사용
+  let projectId = urlProjectId.value || project.value || projStore.initProjId
+  if (urlProjectId.value && urlProjectId.value !== project.value) {
+    console.log(`Using project ${urlProjectId.value} from URL parameter`)
     projectId = urlProjectId.value
   }
-  
+
   siteStore.fetchAllOwners(projectId)
-  
+
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage(projectId)
@@ -223,7 +223,7 @@ onBeforeMount(async () => {
       </TableTitleRow>
       <SiteContractList
         :limit="dataFilter.limit || 10"
-        :highlight-id="highlightId"
+        :highlight-id="highlightId ?? undefined"
         :current-page="dataFilter.page"
         @page-select="pageSelect"
         @multi-submit="multiSubmit"

@@ -183,12 +183,10 @@ onBeforeRouteLeave(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
-  let projectId = project.value || projStore.initProjId
-  if (urlProjectId.value && urlProjectId.value !== projectId) {
-    console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
-    // 프로젝트 전환
-    await projStore.setCurrentProject(urlProjectId.value)
+  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트 사용
+  let projectId = urlProjectId.value || project.value || projStore.initProjId
+  if (urlProjectId.value && urlProjectId.value !== project.value) {
+    console.log(`Using project ${urlProjectId.value} from URL parameter`)
     projectId = urlProjectId.value
   }
   
@@ -237,7 +235,7 @@ onBeforeMount(async () => {
       <SiteOwnerList
         :is-returned="isReturned"
         :limit="dataFilter.limit || 10"
-        :highlight-id="highlightId"
+        :highlight-id="highlightId || undefined"
         :current-page="dataFilter.page"
         @page-select="pageSelect"
         @relation-patch="relationPatch"

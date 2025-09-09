@@ -243,14 +243,16 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (route.query.highlight_id) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      // query를 빈 객체로 설정하여 모든 query string 제거
-      query: {}
-    }).catch(() => {
-      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
-    })
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
   }
 }
 
@@ -306,7 +308,7 @@ onBeforeMount(async () => {
   await fetchFormAccD1List(null)
   await fetchFormAccD2List(null, null)
   await fetchFormAccD3List(null, null, null)
-  
+
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage()

@@ -28,6 +28,7 @@ export type DataFilter = {
   is_return?: boolean
   bank_account?: number | null
   search?: string
+  limit?: number
 }
 
 export const useComCash = defineStore('comCash', () => {
