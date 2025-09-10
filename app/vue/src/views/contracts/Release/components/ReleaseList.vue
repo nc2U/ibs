@@ -47,15 +47,11 @@ const callForm = (contractor: number) => emit('call-form', contractor)
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow 
-        v-for="release in contReleaseList" 
-        :key="release.pk"
-        :data-release-id="release.pk"
-      >
-        <Release 
-          :release="release" 
-          :highlight-id="highlightId"
-          @call-form="callForm" 
+      <CTableRow v-for="release in contReleaseList" :key="release.pk" :data-release-id="release.pk">
+        <Release
+          :release="release"
+          :highlight-id="highlightId || undefined"
+          @call-form="callForm"
         />
       </CTableRow>
     </CTableBody>
