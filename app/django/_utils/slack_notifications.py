@@ -3,6 +3,7 @@ import logging
 import requests
 from decouple import config
 from django.conf import settings
+from django.db.models import Q
 
 from cash.models import CashBook, ProjectCashBook
 from contract.models import Contract, Succession, ContractorRelease
@@ -79,8 +80,6 @@ def get_site_page_number(site_instance):
 def get_succession_page_number(succession_instance):
     """Succession 인스턴스가 위치한 페이지 번호 계산 (프로젝트별 전체 목록 기준)"""
     try:
-        from django.db.models import Q
-        
         # 프로젝트별 전체 Succession 목록에서 계산
         project_id = succession_instance.contract.project.id
         queryset = Succession.objects.filter(contract__project_id=project_id)
@@ -90,7 +89,8 @@ def get_succession_page_number(succession_instance):
         items_before = queryset.filter(
             Q(apply_date__gt=succession_instance.apply_date) |
             Q(apply_date=succession_instance.apply_date, trading_date__gt=succession_instance.trading_date) |
-            Q(apply_date=succession_instance.apply_date, trading_date=succession_instance.trading_date, id__gt=succession_instance.id)
+            Q(apply_date=succession_instance.apply_date, trading_date=succession_instance.trading_date,
+              id__gt=succession_instance.id)
         ).count()
 
         # 프론트엔드에서 사용하는 페이지 크기 (기본값 10)
@@ -100,6 +100,31 @@ def get_succession_page_number(succession_instance):
         return page_number
     except Exception as e:
         logger.error(f"Succession 페이지 계산 오류: {e}")
+        return 1  # 오류 시 첫 페이지로
+
+
+def get_contractor_release_page_number(contractor_release_instance):
+    """ContractorRelease 인스턴스가 위치한 페이지 번호 계산 (프로젝트별 전체 목록 기준)"""
+    try:
+        # 프로젝트별 전체 ContractorRelease 목록에서 계산
+        project_id = contractor_release_instance.project.id
+        queryset = ContractorRelease.objects.filter(project_id=project_id)
+
+        # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created_at']
+        # 해당 인스턴스보다 앞에 있는 항목 개수 계산
+        items_before = queryset.filter(
+            Q(request_date__gt=contractor_release_instance.request_date) |
+            Q(request_date=contractor_release_instance.request_date,
+              created_at__gt=contractor_release_instance.created_at)
+        ).count()
+
+        # 프론트엔드에서 사용하는 페이지 크기 (기본값 10)
+        page_size = 10
+        page_number = (items_before // page_size) + 1
+
+        return page_number
+    except Exception as e:
+        logger.error(f"ContractorRelease 페이지 계산 오류: {e}")
         return 1  # 오류 시 첫 페이지로
 
 
@@ -175,12 +200,17 @@ def get_service_url(model_instance):
     elif isinstance(model_instance, Succession):
         # Succession 인스턴스가 위치한 페이지 번호 계산
         page_number = get_succession_page_number(model_instance)
-        
+
         # 페이지 정보와 project, contractor, 하이라이트 정보를 포함한 URL 생성
         url = f"{base_url}/#/contracts/succession?page={page_number}&highlight_id={model_instance.id}&contractor={model_instance.contract.contractor.id}&project={model_instance.contract.project.id}"
         return url
     elif isinstance(model_instance, ContractorRelease):
-        return f"{base_url}/#/contracts/release/{model_instance.id}"
+        # ContractorRelease 인스턴스가 위치한 페이지 번호 계산
+        page_number = get_contractor_release_page_number(model_instance)
+
+        # 페이지 정보와 project, 하이라이트 정보를 포함한 URL 생성
+        url = f"{base_url}/#/contracts/release?page={page_number}&highlight_id={model_instance.id}&project={model_instance.project.id}"
+        return url
     elif isinstance(model_instance, Site):
         # Site 인스턴스가 위치한 페이지 번호 계산
         page_number = get_site_page_number(model_instance)

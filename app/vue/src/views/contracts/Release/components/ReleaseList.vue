@@ -5,6 +5,10 @@ import { useContract } from '@/store/pinia/contract'
 import Pagination from '@/components/Pagination'
 import Release from '@/views/contracts/Release/components/Release.vue'
 
+const props = defineProps<{
+  highlightId?: number | null
+}>()
+
 const emit = defineEmits(['page-select', 'call-form'])
 
 const contractStore = useContract()
@@ -43,8 +47,16 @@ const callForm = (contractor: number) => emit('call-form', contractor)
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow v-for="release in contReleaseList" :key="release.pk">
-        <Release :release="release" @call-form="callForm" />
+      <CTableRow 
+        v-for="release in contReleaseList" 
+        :key="release.pk"
+        :data-release-id="release.pk"
+      >
+        <Release 
+          :release="release" 
+          :highlight-id="highlightId"
+          @call-form="callForm" 
+        />
       </CTableRow>
     </CTableBody>
   </CTable>

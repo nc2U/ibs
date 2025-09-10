@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount, watch } from 'vue'
+import { ref, computed, onBeforeMount, watch, nextTick } from 'vue'
 import { pageTitle, navMenu } from '@/views/contracts/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { type Contractor, type ContractRelease } from '@/store/types/contract'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteUpdate, onBeforeRouteLeave } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -27,6 +27,11 @@ const releaseAlertModal = ref()
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
 
+const highlightId = computed(() => {
+  const id = route.query.highlight_id
+  return id ? parseInt(id as string, 10) : null
+})
+
 const downloadUrl = computed(() => `/excel/releases/?project=${project.value}`)
 
 const contStore = useContract()
@@ -41,6 +46,8 @@ const fetchContractorList = (projId: number, search?: string) =>
 const fetchContRelease = (pk: number) => contStore.fetchContRelease(pk)
 const fetchContReleaseList = (projId: number, page?: number) =>
   contStore.fetchContReleaseList(projId, page)
+const findContractorReleasePage = (id: number, projId: number) =>
+  contStore.findContractorReleasePage(id, projId)
 
 const createRelease = (payload: ContractRelease) => contStore.createRelease(payload)
 const updateRelease = (payload: ContractRelease & { page: number }) =>
@@ -81,7 +88,10 @@ const onSubmit = (payload: ContractRelease) => {
 const callForm = (contractor: number) => {
   router.replace({
     name: '계약 해지 관리',
-    query: { contractor },
+    query: {
+      ...route.query,
+      contractor,
+    },
   })
 
   setTimeout(() => {
@@ -101,9 +111,36 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
-  router.replace({ name: '계약 해지 관리' })
+  // 하이라이팅 기능에서 프로젝트 변경 시 highlight_id 보존
+  const queryToPreserve = highlightId.value ? { highlight_id: route.query.highlight_id } : {}
+  router.replace({
+    name: '계약 해지 관리',
+    query: queryToPreserve,
+  })
   dataReset()
   if (!!target) dataSetup(target)
+}
+
+const loadHighlightPage = async (highlightId: number, targetProjectId: number) => {
+  try {
+    const response = await findContractorReleasePage(highlightId, targetProjectId)
+    if (response && response.page) {
+      pageSelect(response.page)
+      await nextTick()
+      scrollToHighlight(highlightId)
+    }
+  } catch (error) {
+    console.error('Failed to load highlight page:', error)
+  }
+}
+
+const scrollToHighlight = (id: number) => {
+  setTimeout(() => {
+    const element = document.querySelector(`[data-release-id="${id}"]`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, 100)
 }
 
 const loading = ref(true)
@@ -114,7 +151,28 @@ onBeforeMount(async () => {
     contStore.contract = null
     contStore.contractor = null
   }
+
+  // 하이라이트 ID가 있는 경우 해당 페이지로 이동
+  if (highlightId.value && project.value) {
+    await loadHighlightPage(highlightId.value, project.value)
+  }
+
   loading.value = false
+})
+
+// URL이 변경될 때 하이라이트 처리
+watch(route, async newRoute => {
+  if (newRoute.query.contractor) {
+    fetchContractor(Number(newRoute.query.contractor))
+  } else {
+    contStore.contractor = null
+  }
+
+  // 하이라이트 ID 처리
+  if (newRoute.query.highlight_id && project.value) {
+    const newHighlightId = parseInt(newRoute.query.highlight_id as string, 10)
+    await loadHighlightPage(newHighlightId, project.value)
+  }
 })
 </script>
 
@@ -149,7 +207,12 @@ onBeforeMount(async () => {
         :url="downloadUrl"
         :disabled="!project"
       />
-      <ReleaseList @page-select="pageSelect" @call-form="callForm" @on-submit="onSubmit" />
+      <ReleaseList
+        :highlight-id="highlightId"
+        @page-select="pageSelect"
+        @call-form="callForm"
+        @on-submit="onSubmit"
+      />
     </CCardBody>
   </ContentBody>
 

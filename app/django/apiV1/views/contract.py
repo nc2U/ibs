@@ -372,3 +372,45 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(updator=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def find_page(self, request):
+        """특정 ID의 ContractorRelease 항목이 몇 번째 페이지에 있는지 찾기"""
+        highlight_id = request.query_params.get('highlight_id')
+        project_id = request.query_params.get('project')
+        
+        if not highlight_id:
+            return Response({'error': 'highlight_id parameter required'}, status=400)
+        if not project_id:
+            return Response({'error': 'project parameter required'}, status=400)
+
+        try:
+            highlight_id = int(highlight_id)
+            project_id = int(project_id)
+        except ValueError:
+            return Response({'error': 'highlight_id and project must be integers'}, status=400)
+
+        # 프로젝트별 전체 ContractorRelease 목록 가져오기
+        queryset = ContractorRelease.objects.filter(project_id=project_id)
+
+        # 해당 ID가 존재하는지 확인
+        try:
+            target_item = queryset.get(pk=highlight_id)
+        except ContractorRelease.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
+
+        # limit 파라미터 가져오기 (기본값은 10)
+        limit = int(request.query_params.get('limit', 10))
+
+        # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created_at']
+        # 프로젝트별 전체 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
+        from django.db.models import Q
+        
+        items_before = queryset.filter(
+            Q(request_date__gt=target_item.request_date) |
+            Q(request_date=target_item.request_date, created_at__gt=target_item.created_at)
+        ).count()
+
+        page_number = (items_before // limit) + 1
+
+        return Response({'page': page_number})

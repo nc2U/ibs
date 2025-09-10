@@ -394,6 +394,19 @@ export const useContract = defineStore('contract', () => {
     }
   }
 
+  const findContractorReleasePage = async (highlightId: number, projectId: number) => {
+    let url = `/contractor-release/find_page/?highlight_id=${highlightId}`
+    url += `&project=${projectId}&limit=10`
+    
+    try {
+      const response = await api.get(url)
+      return response.data.page
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return 1
+    }
+  }
+
   // state & getters
   const contRelease = ref<ContractRelease | null>(null)
   const contReleaseList = ref<ContractRelease[]>([])
@@ -511,5 +524,6 @@ export const useContract = defineStore('contract', () => {
     fetchContReleaseList,
     createRelease,
     updateRelease,
+    findContractorReleasePage,
   }
 })

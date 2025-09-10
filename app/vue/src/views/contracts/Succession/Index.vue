@@ -90,8 +90,18 @@ const searchContractor = (search: string) => {
 }
 
 const pageSelect = (p: number) => {
-  // 페이지 변경 시 query string 정리
-  clearQueryString()
+  // 하이라이팅 기능이 활성화된 경우 highlight_id 보존
+  if (highlightId.value) {
+    router.replace({
+      name: route.name,
+      params: route.params,
+      query: { highlight_id: route.query.highlight_id },
+    }).catch(() => {})
+  } else {
+    // 일반적인 경우는 query string 정리
+    clearQueryString()
+  }
+  
   page.value = p
   if (project.value) fetchSuccessionList(project.value, p)
 }
@@ -173,7 +183,10 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
   console.log('projSelect called with target:', target, 'skipClearQuery:', skipClearQuery)
 
   // 프로젝트 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
-  if (!skipClearQuery) clearQueryString()
+  if (!skipClearQuery) {
+    // 하이라이팅 기능이 활성화된 경우 highlight_id 보존
+    clearQueryString(!!highlightId.value)
+  }
 
   dataReset()
   if (!!target) {
@@ -189,14 +202,18 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
   }
 }
 
-// Query string 정리 함수
-const clearQueryString = () => {
+// Query string 정리 함수 (하이라이팅 기능 중에는 highlight_id 보존)
+const clearQueryString = (preserveHighlight = false) => {
   if (route.query.page || route.query.highlight_id || route.query.contractor || route.query.project) {
+    const queryToKeep = preserveHighlight && route.query.highlight_id 
+      ? { highlight_id: route.query.highlight_id }
+      : {}
+    
     router
       .replace({
         name: route.name,
         params: route.params,
-        query: {},
+        query: queryToKeep,
       })
       .catch(() => {
         // NavigationDuplicated 에러 무시
