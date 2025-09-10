@@ -9,8 +9,6 @@ const props = defineProps({
 })
 const emit = defineEmits(['call-form'])
 
-const isHighlighted = computed(() => props.highlightId === props.release?.pk)
-
 const getStatus = (num: string) => {
   const status = [
     { code: '0', text: '신청 취소' },
@@ -37,60 +35,33 @@ const callFormModal = () => emit('call-form', props.release?.contractor)
 </script>
 
 <template>
-  <CTableDataCell 
-    class="text-center"
-    :class="{ 'bg-warning': isHighlighted }"
-  >
+  <CTableDataCell class="text-center">
     <router-link to="" @click="callFormModal">
       {{ cutString(release.__str__, 25) }}
     </router-link>
   </CTableDataCell>
-  <CTableDataCell 
-    :class="[textColor, { 'bg-warning': isHighlighted }]" 
-    class="text-center"
-  >
+  <CTableDataCell :class="textColor" class="text-center">
     {{ getStatus(release.status) }}
   </CTableDataCell>
-  <CTableDataCell 
-    class="text-right"
-    :class="{ 'bg-warning': isHighlighted }"
-  >
+  <CTableDataCell class="text-right">
     {{ numFormat(release.refund_amount) }}
   </CTableDataCell>
-  <CTableDataCell 
-    class="text-left"
-    :class="{ 'bg-warning': isHighlighted }"
-  >
+  <CTableDataCell class="text-left">
     {{ release.refund_account_bank }}
   </CTableDataCell>
-  <CTableDataCell 
-    class="text-left"
-    :class="{ 'bg-warning': isHighlighted }"
-  >
+  <CTableDataCell class="text-left">
     {{ release.refund_account_number }}
   </CTableDataCell>
-  <CTableDataCell 
-    class="text-center"
-    :class="{ 'bg-warning': isHighlighted }"
-  >
+  <CTableDataCell class="text-center">
     {{ release.refund_account_depositor }}
   </CTableDataCell>
-  <CTableDataCell 
-    class="text-center"
-    :class="{ 'bg-warning': isHighlighted }"
-  >
+  <CTableDataCell class="text-center">
     {{ release.request_date }}
   </CTableDataCell>
-  <CTableDataCell 
-    class="fw-bold text-primary text-center"
-    :class="{ 'bg-warning': isHighlighted }"
-  >
+  <CTableDataCell class="fw-bold text-primary text-center">
     {{ release.completion_date }}
   </CTableDataCell>
-  <CTableDataCell 
-    class="text-center"
-    :class="{ 'bg-warning': isHighlighted }"
-  >
+  <CTableDataCell class="text-center">
     <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal"> 확인</v-btn>
   </CTableDataCell>
 </template>

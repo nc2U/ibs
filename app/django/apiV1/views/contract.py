@@ -317,7 +317,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(updator=self.request.user)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='find-page')
     def find_page(self, request):
         """특정 ID의 Succession 항목이 몇 번째 페이지에 있는지 찾기"""
         highlight_id = request.query_params.get('highlight_id')
@@ -373,7 +373,7 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(updator=self.request.user)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='find-page')
     def find_page(self, request):
         """특정 ID의 ContractorRelease 항목이 몇 번째 페이지에 있는지 찾기"""
         highlight_id = request.query_params.get('highlight_id')

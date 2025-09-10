@@ -382,7 +382,7 @@ export const useContract = defineStore('contract', () => {
   }
 
   const findSuccessionPage = async (highlightId: number, projectId: number) => {
-    let url = `/succession/find_page/?highlight_id=${highlightId}`
+    let url = `/succession/find-page/?highlight_id=${highlightId}`
     url += `&project=${projectId}&limit=10`
     
     try {
@@ -395,7 +395,7 @@ export const useContract = defineStore('contract', () => {
   }
 
   const findContractorReleasePage = async (highlightId: number, projectId: number) => {
-    let url = `/contractor-release/find_page/?highlight_id=${highlightId}`
+    let url = `/contractor-release/find-page/?highlight_id=${highlightId}`
     url += `&project=${projectId}&limit=10`
     
     try {

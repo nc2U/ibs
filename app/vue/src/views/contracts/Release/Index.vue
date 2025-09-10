@@ -33,6 +33,12 @@ const highlightId = computed(() => {
   return id ? parseInt(id as string, 10) : null
 })
 
+// URL에서 project 파라미터 읽기
+const urlProjectId = computed(() => {
+  const id = route.query.project
+  return id ? parseInt(id as string, 10) : null
+})
+
 const downloadUrl = computed(() => `/excel/releases/?project=${project.value}`)
 
 const contStore = useContract()
@@ -126,7 +132,8 @@ const loadHighlightPage = async (highlightId: number, targetProjectId: number) =
   try {
     const response = await findContractorReleasePage(highlightId, targetProjectId)
     if (response && response.page) {
-      pageSelect(response.page)
+      page.value = response.page
+      await fetchContReleaseList(targetProjectId, response.page)
       await nextTick()
       scrollToHighlight(highlightId)
     }
@@ -146,16 +153,19 @@ const scrollToHighlight = (id: number) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await dataSetup(project.value || projStore.initProjId)
+  const projectId = project.value || projStore.initProjId
+  
+  // 하이라이트 ID가 있는 경우 해당 페이지로 이동, 없으면 일반 데이터 로딩
+  if (highlightId.value && projectId) {
+    await loadHighlightPage(highlightId.value, projectId)
+  } else {
+    await dataSetup(projectId)
+  }
+  
   if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
   else {
     contStore.contract = null
     contStore.contractor = null
-  }
-
-  // 하이라이트 ID가 있는 경우 해당 페이지로 이동
-  if (highlightId.value && project.value) {
-    await loadHighlightPage(highlightId.value, project.value)
   }
 
   loading.value = false
@@ -164,7 +174,7 @@ onBeforeMount(async () => {
 // URL이 변경될 때 하이라이트 처리
 watch(route, async newRoute => {
   if (newRoute.query.contractor) {
-    fetchContractor(Number(newRoute.query.contractor))
+    await fetchContractor(Number(newRoute.query.contractor))
   } else {
     contStore.contractor = null
   }
@@ -210,6 +220,7 @@ watch(route, async newRoute => {
       />
       <ReleaseList
         :highlight-id="highlightId"
+        :current-page="page"
         @page-select="pageSelect"
         @call-form="callForm"
         @on-submit="onSubmit"

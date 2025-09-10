@@ -7,6 +7,7 @@ import Release from '@/views/contracts/Release/components/Release.vue'
 
 const props = defineProps<{
   highlightId?: number | null
+  currentPage?: number
 }>()
 
 const emit = defineEmits(['page-select', 'call-form'])
@@ -47,7 +48,12 @@ const callForm = (contractor: number) => emit('call-form', contractor)
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow v-for="release in contReleaseList" :key="release.pk" :data-release-id="release.pk">
+      <CTableRow 
+        v-for="release in contReleaseList" 
+        :key="release.pk" 
+        :color="highlightId === release.pk ? 'warning' : ''"
+        :data-release-id="release.pk"
+      >
         <Release
           :release="release"
           :highlight-id="highlightId || undefined"
@@ -58,7 +64,7 @@ const callForm = (contractor: number) => emit('call-form', contractor)
   </CTable>
 
   <Pagination
-    :active-page="1"
+    :active-page="props.currentPage || 1"
     :limit="8"
     :pages="releasePages(10)"
     class="mt-3"
