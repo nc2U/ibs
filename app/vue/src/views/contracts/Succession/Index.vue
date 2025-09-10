@@ -119,8 +119,6 @@ const scrollToHighlight = async () => {
 const loadHighlightPage = async (projectId: number) => {
   if (highlightId.value && projectId) {
     try {
-      console.log('loadHighlightPage called with project:', projectId, 'highlightId:', highlightId.value)
-      
       const targetPage = await findSuccessionPage(highlightId.value, projectId)
       
       // 해당 페이지로 이동
@@ -180,8 +178,6 @@ const dataReset = () => {
 }
 
 const projSelect = async (target: number | null, skipClearQuery = false) => {
-  console.log('projSelect called with target:', target, 'skipClearQuery:', skipClearQuery)
-
   // 프로젝트 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
   if (!skipClearQuery) {
     // 수동 프로젝트 변경 시에는 하이라이트 관련 쿼리 파라미터 모두 제거
@@ -223,19 +219,12 @@ const clearQueryString = (preserveHighlight = false) => {
 
 // Route 처리
 onBeforeRouteUpdate(async to => {
-  console.log('onBeforeRouteUpdate called with to.query.project:', to.query.project)
-  console.log('Current project.value:', project.value?.pk)
-
   // URL에서 프로젝트 ID 파라미터 확인
   const toProjectId = to.query.project ? parseInt(to.query.project as string, 10) : null
 
   if (toProjectId && toProjectId !== project.value?.pk) {
-    console.log(
-      `Route update - switching to project ${toProjectId} from URL parameter (current: ${project.value?.pk})`,
-    )
     await projSelect(toProjectId, true)
   } else {
-    console.log('No project change needed, using current project')
     // URL에 highlight_id가 있으면 하이라이트 기능이 필요한 경우이므로 dataSetup 실행
     if (to.query.highlight_id) {
       await dataSetup(project.value?.pk || projStore.initProjId)
@@ -252,13 +241,10 @@ const loading = ref(true)
 onBeforeMount(async () => {
   // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
   let projectId = project.value?.pk || projStore.initProjId
-  console.log('onBeforeMount - Current project:', projectId, 'URL project:', urlProjectId.value)
 
   if (urlProjectId.value && urlProjectId.value !== projectId) {
-    console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
     // 프로젝트 전환 (query string 정리 건너뛰기)
     await projSelect(urlProjectId.value, true)
-    console.log('After projSelect - project change completed')
   } else {
     // contractor 파라미터가 있으면 contractor 설정
     if (route.query.contractor) await fetchContractor(Number(route.query.contractor))

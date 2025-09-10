@@ -129,18 +129,14 @@ const projSelect = (target: number | null) => {
 
 const loadHighlightPage = async (highlightId: number, targetProjectId: number) => {
   try {
-    console.log('loadHighlightPage called:', { highlightId, targetProjectId })
     const pageNumber = await findContractorReleasePage(highlightId, targetProjectId)
-    console.log('API response page number:', pageNumber)
     
     if (pageNumber) {
-      console.log('Setting page to:', pageNumber)
       page.value = pageNumber
       await fetchContReleaseList(targetProjectId, pageNumber)
       await nextTick()
       scrollToHighlight(highlightId)
     } else {
-      console.log('No valid page number, loading default data')
       await dataSetup(targetProjectId)
     }
   } catch (error) {
