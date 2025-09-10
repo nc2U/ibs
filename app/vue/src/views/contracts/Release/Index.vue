@@ -130,15 +130,24 @@ const projSelect = (target: number | null) => {
 
 const loadHighlightPage = async (highlightId: number, targetProjectId: number) => {
   try {
-    const response = await findContractorReleasePage(highlightId, targetProjectId)
-    if (response && response.page) {
-      page.value = response.page
-      await fetchContReleaseList(targetProjectId, response.page)
+    console.log('loadHighlightPage called:', { highlightId, targetProjectId })
+    const pageNumber = await findContractorReleasePage(highlightId, targetProjectId)
+    console.log('API response page number:', pageNumber)
+    
+    if (pageNumber) {
+      console.log('Setting page to:', pageNumber)
+      page.value = pageNumber
+      await fetchContReleaseList(targetProjectId, pageNumber)
       await nextTick()
       scrollToHighlight(highlightId)
+    } else {
+      console.log('No valid page number, loading default data')
+      await dataSetup(targetProjectId)
     }
   } catch (error) {
     console.error('Failed to load highlight page:', error)
+    // 오류 발생 시 기본 데이터 로드
+    await dataSetup(targetProjectId)
   }
 }
 
