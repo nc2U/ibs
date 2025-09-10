@@ -2,6 +2,7 @@
 import { computed, onBeforeMount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCompany } from '@/store/pinia/company'
+import type { Company } from '@/store/types/settings.ts'
 import Multiselect from '@vueform/multiselect'
 
 const emit = defineEmits(['com-select'])
@@ -10,7 +11,7 @@ const router = useRouter()
 const route = useRoute()
 
 const comStore = useCompany()
-const company = computed(() => comStore?.company?.pk)
+const company = computed(() => (comStore?.company as Company)?.pk)
 const comSelectList = computed(() => comStore?.comSelect)
 
 // URL에서 company 파라미터 읽기
@@ -24,7 +25,7 @@ const comClear = () => emit('com-select', null)
 
 onBeforeMount(() => {
   comStore?.fetchCompanyList()
-  
+
   // URL에 company 파라미터가 있으면 해당 회사로, 없으면 기본 회사로
   const targetCompanyId = urlCompanyId.value || company.value || comStore.initComId
   comStore.fetchCompany(targetCompanyId)
@@ -37,7 +38,7 @@ onBeforeMount(() => {
     <CCol md="6" lg="3">
       <Multiselect
         :value="company"
-        :options="comSelectList"
+        :options="comSelectList as any[]"
         placeholder="회사선택"
         autocomplete="label"
         :classes="{ search: 'form-control multiselect-search' }"
