@@ -98,52 +98,72 @@
             <td colspan="7">&nbsp;</td>
         </tr>
     </table>
-    <div style="clear: both; display: block;">
-        <div style="width: 26%; float: left;">
-            <table style="font-size: 10px;">
-                <tr>
-                    <td class="title center bt2 br">차수</td>
-                    <td class="title center bt2 br">약정일자</td>
-                    <td class="title center bt2 br2">약정금액</td>
-                </tr>
-                {% for order in simple_orders %}
+
+    <div style="position: relative; width: 100%; height: auto; min-height: 200px;">
+        <div style="position: absolute; left: 0; top: 0; width: 25%;">
+            <table style="font-size: 10px; width: 100%;">
+                <thead>
                     <tr>
-                        <td class="bt br center {% if forloop.last %}bb2{% endif %}">{{ order.name }}</td>
-                        <td class="bt br center {% if forloop.last %}bb2{% endif %}">{{ order.due_date|default:""|date:"Y/m/d" }}</td>
-                        <td class="bt br2 right {% if forloop.last %}bb2{% endif %}">{{ order.amount|default:"-"|intcomma }}</td>
+                        <td class="title center bt2 br">차수</td>
+                        <td class="title center bt2 br">약정일자</td>
+                        <td class="title center bt2 br2">약정금액</td>
                     </tr>
-                {% endfor %}
+                </thead>
+                <tbody>
+                    {% for order in simple_orders %}
+                        <tr>
+                            <td class="bt br center {% if forloop.last %}bb2{% endif %}">{{ order.name }}</td>
+                            <td class="bt br center {% if forloop.last %}bb2{% endif %}">{{ order.due_date|default:""|date:"Y/m/d" }}</td>
+                            <td class="bt br2 right {% if forloop.last %}bb2{% endif %}">{{ order.amount|default:"-"|intcomma }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
-
-        <div style="float: left; padding-left: 6px; width: 73%;">
-            <table style="font-size: 10px;">
-                <tr>
-                    <td class="title center bl2 bt2 br">납부(약정)일자</td>
-                    <td class="title center bt2 br">실 납부액</td>
-                    <td class="title center bt2 br">완납차수</td>
-                    <td class="title center bt2 br">미(과)납액</td>
-                    <td class="title center bt2 br">일수</td>
-                    <td class="title center bt2 br">연체료</td>
-                    <td class="title center bt2">할인료</td>
-                </tr>
-                {% for p in paid_dicts %}
-                    <tr style="background: {% if p.paid.due_date %}#eee{% endif %};">
-                        <td class="center bl2 br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">
-                          {% if p.paid.due_date %}{{ p.paid.due_date|date:"Y-m-d" }}{% else %}
-                            {{ p.paid.deal_date|date:"Y-m-d" }}{% endif %}
-                        </td>
-                        <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.paid.income|default:"-"|intcomma }}</td>
-                        <td class="center br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.order|default:"" }}</td>
-                        <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.diff|default:"-"|intcomma }}</td>
-                        <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.delay_days|default:"" }}</td>
-                        <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.penalty|default:""|intcomma }}</td>
-                        <td class="right bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.discount|default:""|intcomma }}</td>
+        
+        <div style="position: absolute; left: 27%; top: 0; width: 73%;">
+            <table style="font-size: 10px; width: 100%; table-layout: fixed;">
+                <colgroup>
+                    <col style="width: 16%;">
+                    <col style="width: 14%;">
+                    <col style="width: 12%;">
+                    <col style="width: 14%;">
+                    <col style="width: 10%;">
+                    <col style="width: 14%;">
+                    <col style="width: 20%;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <td class="title center bt2 br">납부(약정)일자</td>
+                        <td class="title center bt2 br">실 납부액</td>
+                        <td class="title center bt2 br">완납차수</td>
+                        <td class="title center bt2 br">미(과)납액</td>
+                        <td class="title center bt2 br">일수</td>
+                        <td class="title center bt2 br">연체료</td>
+                        <td class="title center bt2">할인료</td>
                     </tr>
-                {% endfor %}
+                </thead>
+                <tbody>
+                    {% for p in paid_dicts %}
+                        <tr class="payment-row" style="background: {% if p.paid.due_date %}#eee{% endif %};">
+                            <td class="center bt br {% if forloop.last %}bb2{% else %}bb{% endif %}">
+                              {% if p.paid.due_date %}{{ p.paid.due_date|date:"Y-m-d" }}{% else %}
+                                {{ p.paid.deal_date|date:"Y-m-d" }}{% endif %}
+                            </td>
+                            <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.paid.income|default:"-"|intcomma }}</td>
+                            <td class="center br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.order|default:"" }}</td>
+                            <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.diff|default:"-"|intcomma }}</td>
+                            <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.delay_days|default:"" }}</td>
+                            <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.penalty|default:""|intcomma }}</td>
+                            <td class="right bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.discount|default:""|intcomma }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
     </div>
+    
+    <div style="clear: both; height: 10px;">&nbsp;</div>
 
     <table>
         <tr>
