@@ -161,7 +161,14 @@ const scrollToHighlight = (id: number) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  const projectId = project.value || projStore.initProjId
+  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
+  let projectId = project.value || projStore.initProjId
+  
+  if (urlProjectId.value && urlProjectId.value !== projectId) {
+    // 프로젝트 전환 먼저 수행
+    await projStore.fetchProject(urlProjectId.value)
+    projectId = urlProjectId.value
+  }
   
   // 하이라이트 ID가 있는 경우 해당 페이지로 이동, 없으면 일반 데이터 로딩
   if (highlightId.value && projectId) {
