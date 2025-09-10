@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount, watch, nextTick } from 'vue'
-import { pageTitle, navMenu } from '@/views/contracts/_menu/headermixin'
+import { computed, nextTick, onBeforeMount, ref, watch } from 'vue'
+import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
+import type { Project } from '@/store/types/project.ts'
 import { type Contractor, type ContractRelease } from '@/store/types/contract'
-import { useRoute, useRouter, onBeforeRouteUpdate, onBeforeRouteLeave } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -25,7 +26,7 @@ const releaseFormModal = ref()
 const releaseAlertModal = ref()
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const highlightId = computed(() => {
   const id = route.query.highlight_id
@@ -35,7 +36,7 @@ const highlightId = computed(() => {
 const downloadUrl = computed(() => `/excel/releases/?project=${project.value}`)
 
 const contStore = useContract()
-const contractor = computed(() => contStore.contractor)
+const contractor = computed<Contractor | null>(() => contStore.contractor)
 const contRelease = computed(() => contStore.contRelease)
 const contOn = computed(() => contractor.value && contractor.value.status < '3')
 
