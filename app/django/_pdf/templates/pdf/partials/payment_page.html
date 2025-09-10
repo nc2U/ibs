@@ -66,6 +66,7 @@
             <td colspan="22">&nbsp;</td>
         </tr>
     </table>
+
     <table>
         <tr>
             <td class="title center bt2 br bb">구 분</td>
@@ -99,8 +100,8 @@
         </tr>
     </table>
 
-    <div style="position: relative; width: 100%; height: auto; min-height: 200px;">
-        <div style="position: absolute; left: 0; top: 0; width: 25%;">
+    <div style="overflow: hidden;">
+        <div style="float: left; width: 25%;">
             <table style="font-size: 10px; width: 100%;">
                 <thead>
                     <tr>
@@ -120,8 +121,8 @@
                 </tbody>
             </table>
         </div>
-        
-        <div style="position: absolute; left: 27%; top: 0; width: 73%;">
+
+        <div style="float: right; width: 73%;">
             <table style="font-size: 10px; width: 100%; table-layout: fixed;">
                 <colgroup>
                     <col style="width: 16%;">
@@ -134,52 +135,52 @@
                 </colgroup>
                 <thead>
                     <tr>
-                        <td class="title center bt2 br">납부(약정)일자</td>
-                        <td class="title center bt2 br">실 납부액</td>
-                        <td class="title center bt2 br">완납차수</td>
-                        <td class="title center bt2 br">미(과)납액</td>
-                        <td class="title center bt2 br">일수</td>
-                        <td class="title center bt2 br">연체료</td>
-                        <td class="title center bt2">할인료</td>
+                        <td class="title center bt2 bl2 br">납부(약정)일자</td>
+                        <td class="title center bt2 bl br">실 납부액</td>
+                        <td class="title center bt2 bl br">완납차수</td>
+                        <td class="title center bt2 bl br">미(과)납액</td>
+                        <td class="title center bt2 bl br">일수</td>
+                        <td class="title center bt2 bl br">연체료</td>
+                        <td class="title center bt2 bl">할인료</td>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in paid_dicts %}
                         <tr class="payment-row" style="background: {% if p.paid.due_date %}#eee{% endif %};">
-                            <td class="center bt br {% if forloop.last %}bb2{% else %}bb{% endif %}">
+                            <td class="center bt bl2 br {% if forloop.last %}bb2{% else %}bb{% endif %}">
                               {% if p.paid.due_date %}{{ p.paid.due_date|date:"Y-m-d" }}{% else %}
                                 {{ p.paid.deal_date|date:"Y-m-d" }}{% endif %}
                             </td>
-                            <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.paid.income|default:"-"|intcomma }}</td>
-                            <td class="center br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.order|default:"" }}</td>
-                            <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.diff|default:"-"|intcomma }}</td>
-                            <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.delay_days|default:"" }}</td>
-                            <td class="right br bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.penalty|default:""|intcomma }}</td>
-                            <td class="right bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.discount|default:""|intcomma }}</td>
+                            <td class="right br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.paid.income|default:"-"|intcomma }}</td>
+                            <td class="center br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.order|default:"" }}</td>
+                            <td class="right br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.diff|default:"-"|intcomma }}</td>
+                            <td class="right br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.delay_days|default:"" }}</td>
+                            <td class="right br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.penalty|default:""|intcomma }}</td>
+                            <td class="right bt bl {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.discount|default:""|intcomma }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-    
-    <div style="clear: both; height: 10px;">&nbsp;</div>
 
-    <table>
-        <tr>
+        <div style="clear: both; height: 20px; width: 100%; display: block;">&nbsp;</div>
+
+        <table style="width: 100%; clear: both;">
+          <tr>
             <td colspan="22">&nbsp;</td>
-        </tr>
-        <tr>
-          <td style="padding-left: 20px; font-size: 11px;" colspan="22">※ 요약 납입내역의 분양금에 추가납부가 포함됩니다.
-          </td>
-        </tr>
-        <tr>
-            <td style="padding-left: 20px; font-size: 11px;" colspan="22">※ 상기 납입 내역은 결산시점 차이 및 부득이한 전산 장애 등으로 인하여 정확하지
-                않을 수 있습니다.
+          </tr>
+          <tr>
+            <td style="padding-left: 20px; font-size: 11px;" colspan="22">※ 요약 납입내역의 분양금에 추가납부가 포함됩니다.
             </td>
-        </tr>
-        <tr>
+          </tr>
+          <tr>
+            <td style="padding-left: 20px; font-size: 11px;" colspan="22">※ 상기 납입 내역은 결산시점 차이 및 부득이한 전산 장애 등으로 인하여 정확하지
+              않을 수 있습니다.
+            </td>
+          </tr>
+          <tr>
             <td colspan="22">&nbsp;</td>
-        </tr>
-    </table>
+          </tr>
+      </table>
+    </div>
 </div>
