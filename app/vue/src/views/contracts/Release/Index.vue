@@ -118,11 +118,10 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
-  // 하이라이팅 기능에서 프로젝트 변경 시 highlight_id 보존
-  const queryToPreserve = highlightId.value ? { highlight_id: route.query.highlight_id } : {}
+  // 프로젝트 변경 시에는 하이라이트 관련 쿼리 파라미터 모두 제거
   router.replace({
     name: '계약 해지 관리',
-    query: queryToPreserve,
+    query: {},
   })
   dataReset()
   if (!!target) dataSetup(target)

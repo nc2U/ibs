@@ -184,8 +184,8 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
 
   // 프로젝트 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
   if (!skipClearQuery) {
-    // 하이라이팅 기능이 활성화된 경우 highlight_id 보존
-    clearQueryString(!!highlightId.value)
+    // 수동 프로젝트 변경 시에는 하이라이트 관련 쿼리 파라미터 모두 제거
+    clearQueryString(false)
   }
 
   dataReset()
