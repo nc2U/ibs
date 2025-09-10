@@ -102,15 +102,15 @@ const loadHighlightPage = async (projectId: number) => {
           own_sort: dataFilter.value.own_sort || '',
           search: dataFilter.value.search || '',
         }
-        await siteStore.fetchSiteContList({ project: projectId, page: targetPage })
+        siteStore.fetchSiteContList({ project: projectId, page: targetPage })
       } else {
         // page 파라미터가 없으면 기본 첫 페이지
-        await dataSetup(projectId)
+        dataSetup(projectId)
       }
     } catch (error) {
       console.error('Error loading highlight page:', error)
       // 오류 발생시 기본 첫 페이지 로드
-      await dataSetup(projectId)
+      dataSetup(projectId)
     }
   }
 }
