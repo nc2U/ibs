@@ -7,6 +7,7 @@ const router = useRouter()
 
 const props = defineProps({
   succession: { type: Object as PropType<Succession>, required: true },
+  isHighlighted: { type: Boolean, default: false },
 })
 const emit = defineEmits(['call-form', 'done-alert'])
 

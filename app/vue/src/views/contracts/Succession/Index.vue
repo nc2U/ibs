@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount, watch } from 'vue'
+import { ref, computed, onBeforeMount, watch, nextTick } from 'vue'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteUpdate, onBeforeRouteLeave } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
 import type { BuyerForm, Contractor, Succession } from '@/store/types/contract'
 import Loading from '@/components/Loading/Index.vue'
@@ -27,6 +27,17 @@ const successionAlertModal = ref()
 const projStore = useProject()
 const project = computed(() => (projStore.project as any)?.pk)
 
+const highlightId = computed(() => {
+  const id = route.query.highlight_id
+  return id ? parseInt(id as string, 10) : null
+})
+
+// URL에서 project 파라미터 읽기
+const urlProjectId = computed(() => {
+  const id = route.query.project
+  return id ? parseInt(id as string, 10) : null
+})
+
 const downloadUrl = computed(() => `/excel/successions/?project=${project.value}`)
 
 const contStore = useContract()
@@ -42,6 +53,9 @@ const fetchContractorList = (projId: number, search?: string) =>
 const fetchSuccession = (pk: number) => contStore.fetchSuccession(pk)
 const fetchSuccessionList = (projId: number, page?: number) =>
   contStore.fetchSuccessionList(projId, page)
+
+const findSuccessionPage = (highlightId: number, projectId: number) =>
+  contStore.findSuccessionPage(highlightId, projectId)
 
 const createSuccession = (payload: Succession & BuyerForm & { project: number; page: number }) =>
   contStore.createSuccession(payload)
@@ -76,8 +90,38 @@ const searchContractor = (search: string) => {
 }
 
 const pageSelect = (p: number) => {
+  // 페이지 변경 시 query string 정리
+  clearQueryString()
   page.value = p
   if (project.value) fetchSuccessionList(project.value, p)
+}
+
+const scrollToHighlight = async () => {
+  if (highlightId.value) {
+    await nextTick()
+    const element = document.querySelector(`[data-succession-id="${highlightId.value}"]`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+}
+
+const loadHighlightPage = async (projectId: number) => {
+  if (highlightId.value && projectId) {
+    try {
+      console.log('loadHighlightPage called with project:', projectId, 'highlightId:', highlightId.value)
+      
+      const targetPage = await findSuccessionPage(highlightId.value, projectId)
+      
+      // 해당 페이지로 이동
+      page.value = targetPage
+      await fetchSuccessionList(projectId, targetPage)
+    } catch (error) {
+      console.error('Error finding succession highlight page:', error)
+      // 오류 발생시 기본 첫 페이지 로드
+      await fetchSuccessionList(projectId, 1)
+    }
+  }
 }
 
 const callFormModal = () => {
@@ -107,7 +151,16 @@ const onSubmit = (payload: { s_data: Succession; b_data: BuyerForm }) => {
   successionFormModal.value.close()
 }
 
-const dataSetup = (pk: number) => fetchSuccessionList(pk)
+const dataSetup = async (pk: number) => {
+  // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
+  if (highlightId.value) {
+    await loadHighlightPage(pk)
+  } else {
+    await fetchSuccessionList(pk)
+  }
+  
+  await scrollToHighlight()
+}
 
 const dataReset = () => {
   contStore.contract = null
@@ -116,17 +169,88 @@ const dataReset = () => {
   contStore.successionList = []
 }
 
-const projSelect = (target: number | null) => {
-  router.replace({ name: '권리 의무 승계' })
+const projSelect = async (target: number | null, skipClearQuery = false) => {
+  console.log('projSelect called with target:', target, 'skipClearQuery:', skipClearQuery)
+
+  // 프로젝트 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
+  if (!skipClearQuery) clearQueryString()
+
   dataReset()
-  if (!!target) dataSetup(target)
+  if (!!target) {
+    await projStore.fetchProject(target)
+    
+    if (!skipClearQuery) {
+      // 수동 선택 시에는 하이라이트 없이 일반 목록만 로드
+      await fetchSuccessionList(target)
+    } else {
+      // 슬랙 링크 등 자동 전환 시에만 하이라이트 기능 사용
+      await dataSetup(target)
+    }
+  }
 }
+
+// Query string 정리 함수
+const clearQueryString = () => {
+  if (route.query.page || route.query.highlight_id || route.query.contractor || route.query.project) {
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        query: {},
+      })
+      .catch(() => {
+        // NavigationDuplicated 에러 무시
+      })
+  }
+}
+
+// Route 처리
+onBeforeRouteUpdate(async to => {
+  console.log('onBeforeRouteUpdate called with to.query.project:', to.query.project)
+  console.log('Current project.value:', project.value?.pk)
+
+  // URL에서 프로젝트 ID 파라미터 확인
+  const toProjectId = to.query.project ? parseInt(to.query.project as string, 10) : null
+
+  if (toProjectId && toProjectId !== project.value?.pk) {
+    console.log(
+      `Route update - switching to project ${toProjectId} from URL parameter (current: ${project.value?.pk})`,
+    )
+    await projSelect(toProjectId, true)
+  } else {
+    console.log('No project change needed, using current project')
+    // URL에 highlight_id가 있으면 하이라이트 기능이 필요한 경우이므로 dataSetup 실행
+    if (to.query.highlight_id) {
+      await dataSetup(project.value?.pk || projStore.initProjId)
+    }
+  }
+})
+
+// 다른 라우트로 이동 시 query string 정리
+onBeforeRouteLeave(() => {
+  clearQueryString()
+})
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
-  else contStore.contractor = null
-  await dataSetup(project.value || projStore.initProjId)
+  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
+  let projectId = project.value?.pk || projStore.initProjId
+  console.log('onBeforeMount - Current project:', projectId, 'URL project:', urlProjectId.value)
+
+  if (urlProjectId.value && urlProjectId.value !== projectId) {
+    console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
+    // 프로젝트 전환 (query string 정리 건너뛰기)
+    await projSelect(urlProjectId.value, true)
+    console.log('After projSelect - project change completed')
+  } else {
+    // contractor 파라미터가 있으면 contractor 설정
+    if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
+    else contStore.contractor = null
+    
+    // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
+    await dataSetup(projectId)
+  }
+
   loading.value = false
 })
 </script>
@@ -154,6 +278,8 @@ onBeforeMount(async () => {
       />
       <TableTitleRow title="승계 진행 건 목록" excel :url="downloadUrl" :disabled="!project" />
       <SuccessionList
+        :highlight-id="highlightId ?? undefined"
+        :current-page="page"
         @page-select="pageSelect"
         @call-form="callFormModal"
         @done-alert="doneAlert"

@@ -1,11 +1,16 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight, TableSecondary } from '@/utils/cssMixins'
 import Pagination from '@/components/Pagination'
 import Succession from '@/views/contracts/Succession/components/Succession.vue'
 
 const emit = defineEmits(['page-select', 'call-form', 'done-alert'])
+
+const props = defineProps({
+  highlightId: { type: [Number, null] as PropType<number | null>, default: null },
+  currentPage: { type: Number, default: 1 },
+})
 
 const contractStore = useContract()
 const successionList = computed(() => contractStore.successionList)
@@ -46,14 +51,21 @@ const doneAlert = () => emit('done-alert')
         v-for="suc in successionList"
         :key="suc.pk"
         :class="suc.is_approval ? bgLight : ''"
+        :color="props.highlightId === suc.pk ? 'warning' : ''"
+        :data-succession-id="suc.pk"
       >
-        <Succession :succession="suc" @call-form="callForm" @done-alert="doneAlert" />
+        <Succession 
+          :succession="suc" 
+          :is-highlighted="props.highlightId === suc.pk"
+          @call-form="callForm" 
+          @done-alert="doneAlert" 
+        />
       </CTableRow>
     </CTableBody>
   </CTable>
 
   <Pagination
-    :active-page="1"
+    :active-page="props.currentPage"
     :limit="8"
     :pages="successionPages(10)"
     class="mt-3"
