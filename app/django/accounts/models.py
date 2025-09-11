@@ -201,8 +201,8 @@ class Todo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='todos')
     title = models.CharField('할일내용', max_length=50)
     completed = models.BooleanField('완료여부', default=False)
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
     soft_deleted = models.BooleanField('삭제여부', default=False)
 
     def __str__(self):
