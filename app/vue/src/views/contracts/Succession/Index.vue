@@ -92,16 +92,18 @@ const searchContractor = (search: string) => {
 const pageSelect = (p: number) => {
   // 하이라이팅 기능이 활성화된 경우 highlight_id 보존
   if (highlightId.value) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      query: { highlight_id: route.query.highlight_id },
-    }).catch(() => {})
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        query: { highlight_id: route.query.highlight_id },
+      })
+      .catch(() => {})
   } else {
     // 일반적인 경우는 query string 정리
     clearQueryString()
   }
-  
+
   page.value = p
   if (project.value) fetchSuccessionList(project.value, p)
 }
@@ -120,7 +122,7 @@ const loadHighlightPage = async (projectId: number) => {
   if (highlightId.value && projectId) {
     try {
       const targetPage = await findSuccessionPage(highlightId.value, projectId)
-      
+
       // 해당 페이지로 이동
       page.value = targetPage
       await fetchSuccessionList(projectId, targetPage)
@@ -166,7 +168,7 @@ const dataSetup = async (pk: number) => {
   } else {
     await fetchSuccessionList(pk)
   }
-  
+
   await scrollToHighlight()
 }
 
@@ -187,7 +189,7 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
   dataReset()
   if (!!target) {
     await projStore.fetchProject(target)
-    
+
     if (!skipClearQuery) {
       // 수동 선택 시에는 하이라이트 없이 일반 목록만 로드
       await fetchSuccessionList(target)
@@ -200,11 +202,17 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
 
 // Query string 정리 함수 (하이라이팅 기능 중에는 highlight_id 보존)
 const clearQueryString = (preserveHighlight = false) => {
-  if (route.query.page || route.query.highlight_id || route.query.contractor || route.query.project) {
-    const queryToKeep = preserveHighlight && route.query.highlight_id 
-      ? { highlight_id: route.query.highlight_id }
-      : {}
-    
+  if (
+    route.query.page ||
+    route.query.highlight_id ||
+    route.query.contractor ||
+    route.query.project
+  ) {
+    const queryToKeep =
+      preserveHighlight && route.query.highlight_id
+        ? { highlight_id: route.query.highlight_id }
+        : {}
+
     router
       .replace({
         name: route.name,
@@ -249,7 +257,7 @@ onBeforeMount(async () => {
     // contractor 파라미터가 있으면 contractor 설정
     if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
     else contStore.contractor = null
-    
+
     // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
     await dataSetup(projectId)
   }
