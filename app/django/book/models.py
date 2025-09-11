@@ -17,8 +17,8 @@ class Book(models.Model):
     # description = models.TextField(blank=True, null=True)
     description = MDTextField('책설명', blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ('-id',)
@@ -44,8 +44,8 @@ class Subject(models.Model):
     level = models.IntegerField('단원 레벨', choices=SubLevel.choices)
     content = MDTextField('단원 내용', blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ('book', 'seq')
@@ -58,11 +58,11 @@ class Subject(models.Model):
     def get_absolute_url(self):
         return reverse_lazy('book:subject_detail', args=(self.book_id, self.pk))
 
-    # created_at 기준으로 이전 포스트 반환
+    # seq 기준으로 이전 포스트 반환
     def get_previous_post(self):
         return Subject.objects.filter(book=self.book_id, seq__lt=self.seq).order_by('-seq').first()
 
-    # created_at 기준으로 다음 포스트 반환
+    # seq 기준으로 다음 포스트 반환
     def get_next_post(self):
         return Subject.objects.filter(book=self.book_id, seq__gt=self.seq).order_by('seq').first()
 

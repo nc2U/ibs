@@ -19,7 +19,7 @@ class ImagesInline(admin.StackedInline):
     extra = 1
 
 class SubjectAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'book', 'seq', 'title', 'level', 'created_at', 'updated_at')
+    list_display = ('id', 'book', 'seq', 'title', 'level', 'created', 'updated')
     list_display_links = ('title',)
     search_fields = ('title', 'content')
     list_filter = ('book',)
