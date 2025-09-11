@@ -1,7 +1,9 @@
 import datetime
+import os
 import subprocess
 
 from django import forms
+from django.core.management import call_command
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView
@@ -11,6 +13,7 @@ from cash.models import CompanyCashBookCalculation, ProjectCashBookCalculation
 from company.models import Company
 from ibs.models import ProjectAccountD3
 from project.models import Project
+from work.models import Role, Tracker, CodeActivity
 from work.models.project import IssueProject, Module
 from .forms import UserCreationForm
 from .models import User
@@ -81,7 +84,7 @@ def create_company(request):
                                          ceo=ceo,
                                          org_number=org_number)
         company.save()
-        CompanyCashBookCalculation.objects.create(company=company, calculated=datetime.date.today(), user_id=1)
+        CompanyCashBookCalculation.objects.create(company=company, calculated=datetime.date.today(), creator_id=1)
         return redirect('/install/create/project/')
     else:
         is_d3 = ProjectAccountD3.objects.exists()
@@ -98,8 +101,13 @@ def create_company(request):
 
 
 def load_seed_data():
-    cmd = 'python manage.py loaddata ibs/fixtures/seeds-data.json'
-    subprocess.call(cmd, shell=True)
+    try:
+        # Use Django's call_command instead of subprocess for better reliability
+        call_command('loaddata', 'ibs/fixtures/seeds-data.json')
+    except Exception as e:
+        # Fallback to subprocess if needed
+        cmd = 'python manage.py loaddata ibs/fixtures/seeds-data.json'
+        subprocess.call(cmd, shell=True, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def create_project(request):
@@ -133,10 +141,20 @@ def create_project(request):
                                                     name=name,
                                                     slug='proj1',
                                                     description=f'{name} {kind_name} 신축사업',
-                                                    user_id=1)
-        issue_project.allowed_roles.add(*[6, 7, 8])
-        issue_project.trackers.add(*[4, 5, 6, 7])
-        issue_project.activities.add(3, 4, 5, 6, 7, 8)
+                                                    creator_id=1)
+        # Add roles if they exist
+
+        existing_roles = list(Role.objects.filter(pk__in=[6, 7, 8]).values_list('pk', flat=True))
+        if existing_roles:
+            issue_project.allowed_roles.add(*existing_roles)
+
+        existing_trackers = list(Tracker.objects.filter(pk__in=[4, 5, 6, 7]).values_list('pk', flat=True))
+        if existing_trackers:
+            issue_project.trackers.add(*existing_trackers)
+
+        existing_activities = list(CodeActivity.objects.filter(pk__in=[3, 4, 5, 6, 7, 8]).values_list('pk', flat=True))
+        if existing_activities:
+            issue_project.activities.add(*existing_activities)
         issue_project.save()
 
         Module(project=issue_project, issue=True, time=True, news=True,
@@ -154,7 +172,7 @@ def create_project(request):
                                          area_usage=area_usage,
                                          build_size=build_size)
         project.save()
-        ProjectCashBookCalculation.objects.create(project=project, calculated=datetime.date.today(), user_id=1)
+        ProjectCashBookCalculation.objects.create(project=project, calculated=datetime.date.today(), creator_id=1)
         return redirect('/')
     else:
         if d3:

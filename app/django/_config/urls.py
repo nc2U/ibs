@@ -13,7 +13,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-import os
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import logout
 from django.db import connections, OperationalError
@@ -21,14 +22,13 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import path, include
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.generic import TemplateView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenVerifyView,
     TokenRefreshView,
 )
-from django.views.generic import TemplateView, RedirectView
-from django.conf import settings
-from django.conf.urls.static import static
+
 from ibs.views import CustomHandler404, install_check
 
 handler404 = CustomHandler404.as_view()
