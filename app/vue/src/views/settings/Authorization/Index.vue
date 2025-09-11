@@ -120,7 +120,7 @@ const formsCheck = computed(() => {
 
 const comStore = useCompany()
 const comId = computed(() => comStore.company?.pk)
-const fetchCompany = (pk: number) => comStore.fetchCompany(pk)
+const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 
 const accStore = useAccount()
 const user = computed<User | null>(() => accStore.user)
@@ -207,10 +207,10 @@ watch(
   },
 )
 
-watch(comId, val => (!!val ? dataSetup(val) : dataReset()))
+watch(comId, async val => (!!val ? await dataSetup(val) : dataReset()))
 
-const dataSetup = (pk: number) => {
-  fetchCompany(pk)
+const dataSetup = async (pk: number) => {
+  await fetchCompany(pk)
   comInfo.value.company = pk
 }
 

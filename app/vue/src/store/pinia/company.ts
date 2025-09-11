@@ -43,11 +43,32 @@ export const useCompany = defineStore('company', () => {
       .then(res => (companyList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchCompany = (pk: number) =>
-    api
-      .get(`/company/${pk}/`)
-      .then(res => (company.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+  const fetchCompany = async (pk: number) => {
+    try {
+      const res = await api.get(`/company/${pk}/`)
+      company.value = res.data
+    } catch (err: any) {
+      console.warn(`Company with ID ${pk} not found, trying to fetch first available company`)
+      
+      // If company fetch fails, try to get the first available company
+      try {
+        const companyListRes = await api.get('/company/')
+        if (companyListRes.data.results && companyListRes.data.results.length > 0) {
+          const firstCompany = companyListRes.data.results[0]
+          company.value = firstCompany
+          
+          // Update the cookie to prevent future errors
+          Cookies.set('curr-company', firstCompany.pk.toString(), { expires: 365 })
+          
+          console.log(`Switched to company: ${firstCompany.name} (ID: ${firstCompany.pk})`)
+        } else {
+          errorHandle(err.response?.data || { detail: 'No companies available' })
+        }
+      } catch (fallbackErr: any) {
+        errorHandle(fallbackErr.response?.data || { detail: 'Failed to fetch companies' })
+      }
+    }
+  }
 
   const removeCompany = () => (company.value = null)
 

@@ -26,11 +26,11 @@ watch(isDark, () => {
     : document.body.classList.remove('dark-theme')
 })
 
-onMounted(() => {
+onMounted(async () => {
   isDark.value
     ? document.body.classList.add('dark-theme')
     : document.body.classList.remove('dark-theme')
-  if (accStore.isAuthorized) comStore.fetchCompany(company.value?.pk ?? comStore.initComId)
+  if (accStore.isAuthorized) await comStore.fetchCompany(company.value?.pk ?? comStore.initComId)
 })
 </script>
 

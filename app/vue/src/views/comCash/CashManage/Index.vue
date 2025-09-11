@@ -69,7 +69,7 @@ const proStore = useProject()
 const projectList = computed(() => proStore.projectList)
 const fetchProjectList = async () => proStore.fetchProjectList()
 
-const fetchCompany = (pk: number) => comStore.fetchCompany(pk)
+const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
 const cashStore = useComCash()
@@ -207,8 +207,8 @@ const onBankCreate = (payload: CompanyBank) => {
 }
 const onBankUpdate = (payload: CompanyBank) => patchComBankAcc(payload)
 
-const dataSetup = (pk: number) => {
-  fetchCompany(pk)
+const dataSetup = async (pk: number) => {
+  await fetchCompany(pk)
   fetchProjectList()
   fetchAllDepartList(pk)
   fetchComBankAccList(pk)
@@ -236,7 +236,7 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
   dataReset()
   if (!!target) {
     await fetchCompany(target)
-    dataSetup(target)
+    await dataSetup(target)
   }
 }
 

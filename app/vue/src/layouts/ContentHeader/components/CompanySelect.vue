@@ -23,12 +23,12 @@ const urlCompanyId = computed(() => {
 const comSelect = (e: { originalEvent: Event; value: any; option: any }) => emit('com-select', e)
 const comClear = () => emit('com-select', null)
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
   comStore?.fetchCompanyList()
 
   // URL에 company 파라미터가 있으면 해당 회사로, 없으면 기본 회사로
   const targetCompanyId = urlCompanyId.value || company.value || comStore.initComId
-  comStore.fetchCompany(targetCompanyId)
+  await comStore.fetchCompany(targetCompanyId)
 })
 </script>
 
