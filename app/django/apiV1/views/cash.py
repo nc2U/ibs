@@ -169,7 +169,7 @@ class DateCashBookViewSet(CashBookViewSet):
         date = self.request.query_params.get('date')
         date = date if date else TODAY
         return CashBook.objects.filter(is_separate=False,
-                                       deal_date__exact=date).order_by('deal_date', 'created_at', 'id')
+                                       deal_date__exact=date).order_by('deal_date', 'created', 'id')
 
 
 class ProjectBankAccountViewSet(viewsets.ModelViewSet):
@@ -321,7 +321,7 @@ class ProjectDateCashBookViewSet(ProjectCashBookViewSet):
         date = self.request.query_params.get('date')
         date = date if date else TODAY
         return ProjectCashBook.objects.filter(is_separate=False,
-                                              deal_date__exact=date).order_by('deal_date', 'created_at', 'id')
+                                              deal_date__exact=date).order_by('deal_date', 'created', 'id')
 
 
 class ProjectImprestViewSet(ProjectCashBookViewSet):

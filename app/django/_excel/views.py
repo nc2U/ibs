@@ -857,7 +857,7 @@ def export_payments_xls(request):
     obj_list = ProjectCashBook.objects.filter(project=project,
                                               income__isnull=False,
                                               project_account_d3__in=(1, 4),
-                                              deal_date__range=(sd, ed)).order_by('deal_date', 'created_at')
+                                              deal_date__range=(sd, ed)).order_by('deal_date', 'created')
 
     obj_list = obj_list.filter(contract__order_group=og) if og else obj_list
     obj_list = obj_list.filter(contract__unit_type=ut) if ut else obj_list
@@ -1082,7 +1082,7 @@ class ExportPayments(View):
         obj_list = ProjectCashBook.objects.filter(project=project,
                                                   income__isnull=False,
                                                   project_account_d3__in=(1, 4),
-                                                  deal_date__range=(sd, ed)).order_by('deal_date', 'created_at')
+                                                  deal_date__range=(sd, ed)).order_by('deal_date', 'created')
 
         obj_list = obj_list.filter(contract__order_group=og) if og else obj_list
         obj_list = obj_list.filter(contract__unit_type=ut) if ut else obj_list
@@ -2148,7 +2148,7 @@ def export_project_cash_xls(request):
     cash_list = ProjectCashBook.objects.filter(project=project,
                                                is_separate=False,
                                                deal_date__range=(sdate, edate)) \
-        .order_by('deal_date', 'created_at')
+        .order_by('deal_date', 'created')
 
     imp_list = ProjectCashBook.objects.filter(project=project, is_imprest=True, is_separate=False,
                                               deal_date__range=(sdate, edate)).exclude(project_account_d3=63,
@@ -3158,7 +3158,7 @@ class ExportDateCashbook(View):
         b_format.set_num_format(41)
 
         date_cashes = CashBook.objects.filter(company=company, is_separate=False,
-                                              deal_date__exact=date).order_by('deal_date', 'created_at', 'id')
+                                              deal_date__exact=date).order_by('deal_date', 'created', 'id')
 
         inc_sum = 0
         out_sum = 0

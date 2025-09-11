@@ -93,7 +93,7 @@ class DaylyCashReport(LoginRequiredMixin, TemplateView):
         context['ba_totay_balance_sum'] = ba_totay_balance_sum if ba_totay_balance_sum != 0 else "-"
 
         # 당일 입출금 데이터
-        cashbook_data = CashBook.objects.all().order_by('deal_date', 'created_at', 'id')
+        cashbook_data = CashBook.objects.all().order_by('deal_date', 'created', 'id')
         context['day_inc_list'] = CashBook.objects.filter(income__isnull=False,
                                                           deal_date__exact=context['confirm_date'])
         context['day_out_list'] = cashbook_data.filter(outlay__isnull=False,
@@ -298,7 +298,7 @@ class ProjectCashReport(LoginRequiredMixin, TemplateView):
         context['ba_totay_balance_sum'] = ba_totay_balance_sum if ba_totay_balance_sum != 0 else "-"
 
         # 당일 입출금 데이터
-        project_cashbook = ProjectCashBook.objects.all().order_by('deal_date', 'created_at', 'id')
+        project_cashbook = ProjectCashBook.objects.all().order_by('deal_date', 'created', 'id')
         context['day_inc_list'] = project_cashbook.filter(project=self.get_project(), is_separate=False,
                                                           income__isnull=False,
                                                           deal_date__exact=context['confirm_date'])
