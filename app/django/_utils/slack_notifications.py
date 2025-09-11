@@ -208,8 +208,16 @@ def get_service_url(model_instance):
         # ContractorRelease 인스턴스가 위치한 페이지 번호 계산
         page_number = get_contractor_release_page_number(model_instance)
 
+        # 시그널에서 캐시된 데이터가 잘못될 수 있으므로 fresh lookup 수행
+        try:
+            fresh_instance = ContractorRelease.objects.select_related('project').get(id=model_instance.id)
+            project_id = fresh_instance.project.id
+        except ContractorRelease.DoesNotExist:
+            # 인스턴스가 삭제된 경우 등 fallback
+            project_id = model_instance.project.id
+
         # 페이지 정보와 project, 하이라이트 정보를 포함한 URL 생성
-        url = f"{base_url}/#/contracts/release?page={page_number}&highlight_id={model_instance.id}&project={model_instance.project.id}"
+        url = f"{base_url}/#/contracts/release?page={page_number}&highlight_id={model_instance.id}&project={project_id}"
         return url
     elif isinstance(model_instance, Site):
         # Site 인스턴스가 위치한 페이지 번호 계산

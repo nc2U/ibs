@@ -33,12 +33,6 @@ const highlightId = computed(() => {
   return id ? parseInt(id as string, 10) : null
 })
 
-// URL에서 project 파라미터 읽기
-const urlProjectId = computed(() => {
-  const id = route.query.project
-  return id ? parseInt(id as string, 10) : null
-})
-
 const downloadUrl = computed(() => `/excel/releases/?project=${project.value}`)
 
 const contStore = useContract()
@@ -129,20 +123,23 @@ const projSelect = (target: number | null) => {
 
 const loadHighlightPage = async (highlightId: number, targetProjectId: number) => {
   try {
-    const pageNumber = await findContractorReleasePage(highlightId, targetProjectId)
-    
+    // URL에서 전달된 targetProjectId를 우선적으로 사용 (슬랙 링크 등에서 온 정확한 프로젝트 ID)
+    const projectIdToUse = targetProjectId || project.value || 1
+    const pageNumber = await findContractorReleasePage(highlightId, projectIdToUse)
+
     if (pageNumber) {
       page.value = pageNumber
-      await fetchContReleaseList(targetProjectId, pageNumber)
+      await fetchContReleaseList(projectIdToUse, pageNumber)
       await nextTick()
       scrollToHighlight(highlightId)
     } else {
-      await dataSetup(targetProjectId)
+      await dataSetup(projectIdToUse)
     }
   } catch (error) {
     console.error('Failed to load highlight page:', error)
     // 오류 발생 시 기본 데이터 로드
-    await dataSetup(targetProjectId)
+    const fallbackProjectId = targetProjectId || project.value || 1
+    await dataSetup(fallbackProjectId)
   }
 }
 
@@ -157,22 +154,17 @@ const scrollToHighlight = (id: number) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
-  let projectId = project.value || projStore.initProjId
-  
-  if (urlProjectId.value && urlProjectId.value !== projectId) {
-    // 프로젝트 전환 먼저 수행
-    await projStore.fetchProject(urlProjectId.value)
-    projectId = urlProjectId.value
-  }
-  
+  // URL에서 project 파라미터 읽기 (슬랙 링크 등에서 전달된 정확한 프로젝트)
+  const urlProjectId = route.query.project ? parseInt(route.query.project as string, 10) : null
+  const projectId = urlProjectId || project.value || projStore.initProjId || 1
+
   // 하이라이트 ID가 있는 경우 해당 페이지로 이동, 없으면 일반 데이터 로딩
   if (highlightId.value && projectId) {
     await loadHighlightPage(highlightId.value, projectId)
   } else {
     await dataSetup(projectId)
   }
-  
+
   if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
   else {
     contStore.contract = null
@@ -184,13 +176,10 @@ onBeforeMount(async () => {
 
 // URL이 변경될 때 하이라이트 처리
 watch(route, async newRoute => {
-  if (newRoute.query.contractor) {
-    await fetchContractor(Number(newRoute.query.contractor))
-  } else {
-    contStore.contractor = null
-  }
+  if (newRoute.query.contractor) await fetchContractor(Number(newRoute.query.contractor))
+  else contStore.contractor = null
 
-  // 하이라이트 ID 처리
+  // 하이라이트 ID 처리 (프로젝트 변경은 ProjectSelect에서 처리)
   if (newRoute.query.highlight_id && project.value) {
     const newHighlightId = parseInt(newRoute.query.highlight_id as string, 10)
     await loadHighlightPage(newHighlightId, project.value)
