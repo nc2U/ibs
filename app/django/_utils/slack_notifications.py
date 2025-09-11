@@ -338,7 +338,7 @@ class SlackMessageBuilder:
                     'style': 'primary'
                 }],
                 'footer': f'{SYSTEM_NAME}',
-                'ts': int((instance.updated_at if hasattr(instance, 'updated_at') else instance.updated).timestamp())
+                'ts': int(instance.updated.timestamp())
             }]
         }
 
