@@ -464,7 +464,7 @@ class SlackMessageBuilder:
         color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 양도승계 + 양도자→양수자
-        title = f"🔄 [PR-계약승계]-[{instance.contract.project.name}] :: {instance.seller.name} → {instance.buyer.name}"
+        title = f"🖇️ [PR-계약승계]-[{instance.contract.project.name}] :: {instance.seller.name} → {instance.buyer.name}"
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:
@@ -500,7 +500,7 @@ class SlackMessageBuilder:
 
         # 간소화된 제목: 프로젝트명 + 해지 + 계약자명
         status_display = instance.get_status_display()
-        title = f"❌ [PR-계약해지]-[{instance.project.name}] {status_display} - {instance.contractor.name}"
+        title = f"✖️ [PR-계약해지]-[{instance.project.name}] {status_display} - {instance.contractor.name}"
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:

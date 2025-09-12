@@ -24,7 +24,9 @@ def notify_succession_change(sender, instance, created, raw=False, **kwargs):
         return
 
     action = "등록" if created else "편집"
-    send_slack_notification(instance, action, instance.creator)
+    # 편집 시에는 updator, 등록 시에는 creator 사용
+    user = instance.creator if created else (instance.updator or instance.creator)
+    send_slack_notification(instance, action, user)
 
 
 @receiver(post_delete, sender=Succession, dispatch_uid="succession_delete_slack_notification")
@@ -38,7 +40,9 @@ def notify_contractor_release_change(sender, instance, created, raw=False, **kwa
         return
 
     action = "등록" if created else "편집"
-    send_slack_notification(instance, action, instance.creator)
+    # 편집 시에는 updator, 등록 시에는 creator 사용
+    user = instance.creator if created else (instance.updator or instance.creator)
+    send_slack_notification(instance, action, user)
 
 
 @receiver(post_delete, sender=ContractorRelease, dispatch_uid="contractor_release_delete_slack_notification")

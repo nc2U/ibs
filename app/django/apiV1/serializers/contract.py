@@ -962,6 +962,8 @@ class SuccessionSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         instance.__dict__.update(**validated_data)
+        # updator 설정
+        instance.updator = self.context['request'].user
         instance.save()
 
         # 2. 양수계약자 데이터 저장
@@ -1070,6 +1072,8 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
 
         # 1. 해지정보 테이블 입력
         instance.__dict__.update(**validated_data)
+        # updator 설정
+        instance.updator = self.context['request'].user
         instance.save()
 
         return instance
