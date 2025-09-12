@@ -15,7 +15,6 @@ import ListController from '@/views/comCash/CashManage/components/ListController
 import AddCash from '@/views/comCash/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import CashList from '@/views/comCash/CashManage/components/CashList.vue'
-import { CCardBody } from '@coreui/vue'
 
 const listControl = ref()
 const route = useRoute()
