@@ -315,6 +315,8 @@ class SlackMessageBuilder:
             return None
 
         color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
+        # 거래일 정보 포맷팅 (YYYY-MM-DD -> MM/DD 형식으로 변환)
+        deal_date_str = instance.deal_date.strftime('%Y-%m-%d') if instance.deal_date else '미정'
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:
@@ -324,6 +326,8 @@ class SlackMessageBuilder:
         else:
             # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
+        user_text = f"""거래일: {deal_date_str}
+{user_text}"""
 
         return {
             'attachments': [{
