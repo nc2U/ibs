@@ -100,7 +100,7 @@ class SiteViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save()
+        serializer.save(updator=self.request.user)
 
 
 class AllSiteViewSet(SiteViewSet):
@@ -130,7 +130,7 @@ class SiteOwnerViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save()
+        serializer.save(updator=self.request.user)
 
     @action(detail=False, methods=['get'])
     def find_page(self, request):
@@ -204,7 +204,7 @@ class SiteContractViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save()
+        serializer.save(updator=self.request.user)
 
     @action(detail=False, methods=['get'])
     def find_page(self, request):
