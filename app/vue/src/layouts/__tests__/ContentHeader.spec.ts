@@ -3,6 +3,22 @@ import { describe, expect, it, vi } from 'vitest'
 import { createVuetify } from 'vuetify'
 import { createTestingPinia } from '@pinia/testing'
 
+// Mock Vue Router composables
+vi.mock('vue-router', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useRoute: () => ({
+      name: 'some-title',
+      meta: { title: 'some-title' },
+      query: {},
+    }),
+    useRouter: () => ({
+      push: vi.fn(),
+    }),
+  }
+})
+
 import CoreuiVue from '@coreui/vue'
 import ContentHeader from '../ContentHeader/Index.vue'
 import HeaderNav from '../ContentHeader/components/HeaderNav.vue'
@@ -16,6 +32,7 @@ const mockRoute = {
   meta: {
     title: 'some-title',
   },
+  query: {},
 }
 
 const mockRouter = {
@@ -32,9 +49,6 @@ describe('ContentHeader Test', () => {
       },
       global: {
         plugins: [createTestingPinia(), vuetify, CoreuiVue],
-        mocks: {
-          route: mockRoute,
-        },
         stubs: ['Multiselect'],
       },
     })
@@ -56,10 +70,6 @@ describe('ContentHeader Test', () => {
       },
       global: {
         plugins: [CoreuiVue],
-        mocks: {
-          $route: mockRoute,
-          $router: mockRouter,
-        },
       },
     })
 
