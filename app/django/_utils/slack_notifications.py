@@ -430,6 +430,7 @@ class SlackMessageBuilder:
 
         # 간소화된 제목: 프로젝트명 + 계약번호
         title = f"📋 [PR-계약]-[{instance.project.name}] {instance.serial_number}"
+        cont_date_str = instance.sup_cont_date.strftime('%Y-%m-%d') if instance.sup_cont_date else '미정'
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:
@@ -439,6 +440,8 @@ class SlackMessageBuilder:
         else:
             # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
+        user_text = f"""계약일: {cont_date_str}
+{user_text}"""
 
         return {
             'attachments': [{
@@ -465,6 +468,7 @@ class SlackMessageBuilder:
 
         # 간소화된 제목: 프로젝트명 + 양도승계 + 양도자→양수자
         title = f"🖇️ [PR-계약승계]-[{instance.contract.project.name}] :: {instance.seller.name} → {instance.buyer.name}"
+        apply_date_str = instance.apply_date.strftime('%Y-%m-%d') if instance.apply_date else '미정'
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:
@@ -474,6 +478,8 @@ class SlackMessageBuilder:
         else:
             # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
+        user_text = f"""신청일: {apply_date_str}
+{user_text}"""
 
         return {
             'attachments': [{
@@ -501,6 +507,7 @@ class SlackMessageBuilder:
         # 간소화된 제목: 프로젝트명 + 해지 + 계약자명
         status_display = instance.get_status_display()
         title = f"✖️ [PR-계약해지]-[{instance.project.name}] {status_display} - {instance.contractor.name}"
+        request_date_str = instance.request_date.strftime('%Y-%m-%d') if instance.request_date else '미정'
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:
@@ -510,6 +517,8 @@ class SlackMessageBuilder:
         else:
             # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
+        user_text = f"""신청일: {request_date_str}
+{user_text}"""
 
         return {
             'attachments': [{
@@ -608,6 +617,7 @@ class SlackMessageBuilder:
         from django.contrib.humanize.templatetags.humanize import intcomma
         price_display = intcomma(instance.total_price) if instance.total_price else '미정'
         title = f"📋 [{instance.project.issue_project.name}]-[토지-계약] - {instance.owner.owner} - [{price_display}원]"
+        contract_date_str = instance.contract_date.strftime('%Y-%m-%d') if instance.contract_date else '미정'
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:
@@ -617,6 +627,8 @@ class SlackMessageBuilder:
         else:
             # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
+        user_text = f"""계약일: {contract_date_str}
+{user_text}"""
 
         return {
             'attachments': [{
