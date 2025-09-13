@@ -74,7 +74,7 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
 
     def get_queryset(self):
         queryset = self.model.objects.filter(contract__project=self.get_project(), status='2') \
-            .order_by('-contract_date', '-created_at')
+            .order_by('-contract_date', '-created')
         group = self.request.GET.get('group')
         type = self.request.GET.get('type')
         dong = self.request.GET.get('dong')

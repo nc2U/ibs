@@ -184,7 +184,7 @@ class ExportContracts(View):
             Q(contractor__contractorcontact__cell_phone__icontains=q)) if q else queryset
 
         order_qry = request.GET.get('order')
-        order_list = ['-created_at', 'created_at', '-contractor__contract_date',
+        order_list = ['-created', 'created', '-contractor__contract_date',
                       'contractor__contract_date', '-serial_number',
                       'serial_number', '-contractor__name', 'contractor__name']
         queryset = queryset.order_by(order_list[int(order_qry)]) if order_qry else queryset
@@ -1309,7 +1309,7 @@ class ExportPaymentsByCont(View):
                                            activation=True,
                                            contractor__status='2',
                                            contractor__contract_date__lte=date) \
-            .order_by('contractor__contract_date', 'created_at')
+            .order_by('contractor__contract_date', 'created')
 
         # ----------------- get_queryset finish ----------------- #
 
@@ -1901,9 +1901,8 @@ class ExportProjectDateCashbook(View):
         b_format.set_num_format(41)
         b_format.set_align('center')
 
-        date_cashes = ProjectCashBook.objects.filter(is_separate=False, deal_date__exact=date).order_by('deal_date',
-                                                                                                        'created_at',
-                                                                                                        'id')
+        date_cashes = ProjectCashBook.objects.filter(is_separate=False, deal_date__exact=date).order_by(
+            'deal_date', 'created', 'id')
 
         inc_sum = 0
         out_sum = 0

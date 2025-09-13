@@ -10,8 +10,8 @@ export interface Schedule {
     pk: number
     username: string
   }
-  created_at?: string
-  updated_at?: string
+  created?: string
+  updated?: string
 }
 
 export interface Event {

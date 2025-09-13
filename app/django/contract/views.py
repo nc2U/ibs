@@ -37,7 +37,7 @@ class ContractLV(LoginRequiredMixin, ListView):
         project = self.get_project()
         contract = Contract.objects.filter(project=project,
                                            contract__key_unit__isnull=False,
-                                           contractor__status='2').order_by('-created_at')
+                                           contractor__status='2').order_by('-created')
         if self.request.GET.get('group'):
             contract = contract.filter(order_group=self.request.GET.get('group'))
         if self.request.GET.get('type'):
@@ -51,7 +51,7 @@ class ContractLV(LoginRequiredMixin, ListView):
         # if self.request.GET.get('register'):
         #     result = True if self.request.GET.get('register') == '1' else False
         #     contract = contract.filter(contractor__qualification=result)
-        order_list = ['-created_at', 'created_at', '-contractor__contract_date',
+        order_list = ['-created', 'created', '-contractor__contract_date',
                       'contractor__contract_date', '-serial_number',
                       'serial_number', '-contractor__name', 'contractor__name']
         if self.request.GET.get('order'):

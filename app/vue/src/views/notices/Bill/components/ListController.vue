@@ -107,8 +107,8 @@ defineExpose({ listFiltering })
               <option value="-contractor__name">계약자명 내림차순</option>
               <option value="contractor__contract_date">계약일자 올림차순</option>
               <option value="-contractor__contract_date">계약일자 내림차순</option>
-              <option value="created_at">등록일시 올림차순</option>
-              <option value="-created_at">등록일시 내림차순</option>
+              <option value="created">등록일시 올림차순</option>
+              <option value="-created">등록일시 내림차순</option>
               <option value="serial_number">일련번호 올림차순</option>
               <option value="-serial_number">일련번호 내림차순</option>
             </CFormSelect>

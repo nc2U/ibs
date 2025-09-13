@@ -22,5 +22,5 @@ export declare interface SalesBillIssue {
     pk: number
     username: string
   }
-  updated_at?: string
+  updated?: string
 }
