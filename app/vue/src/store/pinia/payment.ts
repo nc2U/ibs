@@ -10,6 +10,7 @@ import {
   type PaySumByType,
   type ContractNum,
   type AllPayment,
+  type OverallSummary,
 } from '@/store/types/payment'
 
 export type DownPayFilter = {
@@ -226,6 +227,19 @@ export const usePayment = defineStore('payment', () => {
       .then(res => (contNumList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  // state & getters
+  const overallSummary = ref<OverallSummary | null>(null)
+
+  // actions
+  const fetchOverallSummary = async (project: number, date?: string) => {
+    let url = `/overall-summary/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (overallSummary.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
   return {
     priceList,
 
@@ -267,5 +281,9 @@ export const usePayment = defineStore('payment', () => {
     contNumList,
 
     fetchContNumList,
+
+    overallSummary,
+
+    fetchOverallSummary,
   }
 })

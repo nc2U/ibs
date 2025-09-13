@@ -92,3 +92,45 @@ class PaymentSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectCashBook
         fields = ('order_group', 'unit_type', 'paid_sum')
+
+
+class PayOrderCollectionSerializer(serializers.Serializer):
+    collected_amount = serializers.IntegerField()
+    discount_amount = serializers.IntegerField()
+    overdue_fee = serializers.IntegerField()
+    actual_collected = serializers.IntegerField()
+    collection_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+
+
+class PayOrderDuePeriodSerializer(serializers.Serializer):
+    contract_amount = serializers.IntegerField()
+    unpaid_amount = serializers.IntegerField()
+    unpaid_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+    overdue_fee = serializers.IntegerField()
+    subtotal = serializers.IntegerField()
+
+
+class OverallSummaryPayOrderSerializer(serializers.ModelSerializer):
+    contract_amount = serializers.IntegerField()
+    collection = PayOrderCollectionSerializer()
+    due_period = PayOrderDuePeriodSerializer()
+    not_due_unpaid = serializers.IntegerField()
+    total_unpaid = serializers.IntegerField()
+    total_unpaid_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+
+    class Meta:
+        model = InstallmentPaymentOrder
+        fields = ('pk', 'pay_name', 'pay_due_date', 'pay_sort', 'contract_amount',
+                  'collection', 'due_period', 'not_due_unpaid', 'total_unpaid', 'total_unpaid_rate')
+
+
+class OverallSummaryAggregateSerializer(serializers.Serializer):
+    conts_num = serializers.IntegerField()
+    non_conts_num = serializers.IntegerField()
+    total_units = serializers.IntegerField()
+    contract_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+
+
+class OverallSummarySerializer(serializers.Serializer):
+    pay_orders = OverallSummaryPayOrderSerializer(many=True)
+    aggregate = OverallSummaryAggregateSerializer()

@@ -36,6 +36,8 @@ const fetchContSummaryList = (proj: number, date?: string) =>
 const payStore = usePayment()
 const fetchPaySumList = (proj: number, date?: string) => payStore.fetchPaySumList(proj, date)
 const fetchPayOrderList = (proj: number) => payStore.fetchPayOrderList(proj)
+const fetchOverallSummary = (proj: number, date?: string) =>
+  payStore.fetchOverallSummary(proj, date)
 
 const setDate = (d: string) => {
   date.value = d
@@ -52,6 +54,7 @@ const dataSetup = (pk: number) => {
   fetchIncBudgetList(pk)
   fetchPaySumList(pk)
   fetchPayOrderList(pk)
+  fetchOverallSummary(pk, date.value)
   contStore.fetchContAggregate(pk)
   contStore.fetchContPriceSum(pk)
 }
@@ -62,6 +65,7 @@ const dataReset = () => {
   contStore.contSummaryList = []
   projStore.proIncBudgetList = []
   payStore.paySumList = []
+  payStore.overallSummary = null
   contStore.removeContAggregate()
   contStore.removeContPriceSum()
 }

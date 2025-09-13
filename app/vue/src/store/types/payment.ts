@@ -58,6 +58,43 @@ export interface ContractNum {
   num_cont: number
 }
 
+export interface PayOrderCollection {
+  collected_amount: number
+  discount_amount: number
+  overdue_fee: number
+  actual_collected: number
+  collection_rate: number
+}
+
+export interface PayOrderDuePeriod {
+  contract_amount: number
+  unpaid_amount: number
+  unpaid_rate: number
+  overdue_fee: number
+  subtotal: number
+}
+
+export interface OverallSummaryPayOrder extends PayOrder {
+  contract_amount: number
+  collection: PayOrderCollection
+  due_period: PayOrderDuePeriod
+  not_due_unpaid: number
+  total_unpaid: number
+  total_unpaid_rate: number
+}
+
+export interface OverallSummaryAggregate {
+  conts_num: number
+  non_conts_num: number
+  total_units: number
+  contract_rate: number
+}
+
+export interface OverallSummary {
+  pay_orders: OverallSummaryPayOrder[]
+  aggregate: OverallSummaryAggregate
+}
+
 export interface AllPayment {
   pk: number
   deal_date: string

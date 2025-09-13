@@ -1,9 +1,11 @@
 from datetime import datetime
 
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Count, Case, When, Value, DecimalField, Q
 from django_filters import DateFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from cash.models import ProjectCashBook
 from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment, OverDueRule
@@ -113,3 +115,172 @@ class PaymentSummaryViewSet(viewsets.ModelViewSet):
 #         return Contract.objects.filter(activation=True, contractor__status=2) \
 #             .values('order_group', 'unit_type') \
 #             .annotate(num_cont=Count('unit_type'))
+
+
+class OverallSummaryViewSet(viewsets.ViewSet):
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+    def list(self, request):
+        project_id = request.query_params.get('project')
+        date = request.query_params.get('date', datetime.today().strftime('%Y-%m-%d'))
+        
+        if not project_id:
+            return Response({'error': 'project parameter is required'}, status=400)
+
+        # 납부 회차 데이터 조회
+        pay_orders = InstallmentPaymentOrder.objects.filter(project_id=project_id).order_by('pay_code', 'pay_time')
+
+        result_pay_orders = []
+        
+        for order in pay_orders:
+            # 해당 회차의 계약 금액 합계
+            contract_amount = self._get_contract_amount(order, project_id)
+            
+            # 수납 관련 집계
+            collection_data = self._get_collection_data(order, project_id, date)
+            
+            # 기간도래 관련 집계
+            due_period_data = self._get_due_period_data(order, project_id, date)
+            
+            # 기간미도래 미수금
+            not_due_unpaid = self._get_not_due_unpaid(order, project_id, date)
+            
+            # 총 미수금 및 비율
+            total_unpaid = due_period_data['unpaid_amount'] + not_due_unpaid
+            total_unpaid_rate = (total_unpaid / contract_amount * 100) if contract_amount > 0 else 0
+
+            result_pay_orders.append({
+                'pk': order.pk,
+                'pay_name': order.pay_name,
+                'pay_due_date': order.pay_due_date,
+                'pay_sort': order.pay_sort,
+                'contract_amount': contract_amount,
+                'collection': collection_data,
+                'due_period': due_period_data,
+                'not_due_unpaid': not_due_unpaid,
+                'total_unpaid': total_unpaid,
+                'total_unpaid_rate': round(total_unpaid_rate, 2)
+            })
+
+        # 집계 데이터 조회
+        aggregate_data = self._get_aggregate_data(project_id)
+
+        result = {
+            'pay_orders': result_pay_orders,
+            'aggregate': aggregate_data
+        }
+
+        serializer = OverallSummarySerializer(result)
+        return Response(serializer.data)
+
+    def _get_contract_amount(self, order, project_id):
+        """해당 회차의 계약 금액 합계 계산"""
+        from contract.models import Contract
+        from payment.models import SalesPriceByGT
+        
+        # pay_sort에 따라 계약 금액 계산
+        if order.pay_sort == '1':  # 계약금
+            amount = SalesPriceByGT.objects.filter(
+                project_id=project_id
+            ).aggregate(total=Sum('down_pay'))['total'] or 0
+        elif order.pay_sort == '2':  # 중도금
+            amount = SalesPriceByGT.objects.filter(
+                project_id=project_id
+            ).aggregate(total=Sum('middle_pay'))['total'] or 0
+        elif order.pay_sort == '3':  # 잔금
+            amount = SalesPriceByGT.objects.filter(
+                project_id=project_id
+            ).aggregate(total=Sum('remain_pay'))['total'] or 0
+        else:  # 기타
+            amount = 0
+            
+        return amount
+
+    def _get_collection_data(self, order, project_id, date):
+        """수납 관련 데이터 집계"""
+        payments = ProjectCashBook.objects.filter(
+            project_id=project_id,
+            installment_order=order,
+            income__isnull=False,
+            deal_date__lte=date
+        )
+
+        collected_amount = payments.aggregate(total=Sum('income'))['total'] or 0
+        # TODO: 실제 할인료, 연체료 계산 로직 구현 필요
+        discount_amount = 0
+        overdue_fee = 0
+        actual_collected = collected_amount + overdue_fee - discount_amount
+        
+        contract_amount = self._get_contract_amount(order, project_id)
+        collection_rate = (actual_collected / contract_amount * 100) if contract_amount > 0 else 0
+
+        return {
+            'collected_amount': collected_amount,
+            'discount_amount': discount_amount,
+            'overdue_fee': overdue_fee,
+            'actual_collected': actual_collected,
+            'collection_rate': round(collection_rate, 2)
+        }
+
+    def _get_due_period_data(self, order, project_id, date):
+        """기간도래 관련 데이터 집계"""
+        # 기준일 기준으로 기간이 도래한 계약 금액
+        contract_amount = self._get_contract_amount(order, project_id)
+        
+        # 기간도래분 중 실제 수납된 금액
+        collected_amount = ProjectCashBook.objects.filter(
+            project_id=project_id,
+            installment_order=order,
+            income__isnull=False,
+            deal_date__lte=date
+        ).aggregate(total=Sum('income'))['total'] or 0
+
+        # 기간도래 미수금 = 계약금액 - 수납액
+        unpaid_amount = max(0, contract_amount - collected_amount)
+        unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
+        
+        # TODO: 기간도래분 연체료 계산 로직 구현 필요
+        overdue_fee = 0
+        subtotal = unpaid_amount + overdue_fee
+
+        return {
+            'contract_amount': contract_amount,
+            'unpaid_amount': unpaid_amount,
+            'unpaid_rate': round(unpaid_rate, 2),
+            'overdue_fee': overdue_fee,
+            'subtotal': subtotal
+        }
+
+    def _get_not_due_unpaid(self, order, project_id, date):
+        """기간미도래 미수금 계산"""
+        # TODO: 실제 기간미도래 로직 구현 필요
+        # 현재는 0으로 반환
+        return 0
+
+    def _get_aggregate_data(self, project_id):
+        """집계 데이터 조회"""
+        from contract.models import Contract
+        from items.models import KeyUnit
+        
+        # 계약 세대수
+        conts_num = Contract.objects.filter(
+            project_id=project_id,
+            activation=True,
+            contractor__status=2
+        ).count()
+        
+        # 전체 세대수 (KeyUnit 기준)
+        total_units = KeyUnit.objects.filter(project_id=project_id).count()
+        
+        # 미계약 세대수
+        non_conts_num = total_units - conts_num
+        
+        # 계약률
+        contract_rate = (conts_num / total_units * 100) if total_units > 0 else 0
+
+        return {
+            'conts_num': conts_num,
+            'non_conts_num': non_conts_num,
+            'total_units': total_units,
+            'contract_rate': round(contract_rate, 2)
+        }
