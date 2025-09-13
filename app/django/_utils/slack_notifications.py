@@ -36,10 +36,10 @@ def get_contract_page_number(contract_instance):
     """Contract 인스턴스가 위치한 페이지 번호 계산 (프로젝트별 필터링 기준)"""
     try:
         # 프론트엔드에서 항상 프로젝트별로 필터링하므로 같은 프로젝트 내에서만 계산
-        queryset = Contract.objects.filter(project=contract_instance.project).order_by('-created_at')
+        queryset = Contract.objects.filter(project=contract_instance.project).order_by('-created')
 
         # 해당 인스턴스보다 앞에 있는 항목 개수 계산 (같은 프로젝트 내에서)
-        items_before = queryset.filter(created_at__gt=contract_instance.created_at).count()
+        items_before = queryset.filter(created__gt=contract_instance.created).count()
 
         # 프론트엔드에서 사용하는 페이지 크기 (기본값 10)
         page_size = 10
@@ -110,12 +110,12 @@ def get_contractor_release_page_number(contractor_release_instance):
         project_id = contractor_release_instance.project.id
         queryset = ContractorRelease.objects.filter(project_id=project_id)
 
-        # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created_at']
+        # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created']
         # 해당 인스턴스보다 앞에 있는 항목 개수 계산
         items_before = queryset.filter(
             Q(request_date__gt=contractor_release_instance.request_date) |
             Q(request_date=contractor_release_instance.request_date,
-              created_at__gt=contractor_release_instance.created_at)
+              created__gt=contractor_release_instance.created)
         ).count()
 
         # 프론트엔드에서 사용하는 페이지 크기 (기본값 10)
@@ -456,7 +456,7 @@ class SlackMessageBuilder:
                     'style': 'primary'
                 }],
                 'footer': f'{SYSTEM_NAME}',
-                'ts': int(instance.updated_at.timestamp())
+                'ts': int(instance.updated.timestamp())
             }]
         }
 
@@ -494,7 +494,7 @@ class SlackMessageBuilder:
                     'style': 'primary'
                 }],
                 'footer': f'{SYSTEM_NAME}',
-                'ts': int(instance.updated_at.timestamp())
+                'ts': int(instance.updated.timestamp())
             }]
         }
 
@@ -533,7 +533,7 @@ class SlackMessageBuilder:
                     'style': 'primary'
                 }],
                 'footer': f'{SYSTEM_NAME}',
-                'ts': int(instance.updated_at.timestamp())
+                'ts': int(instance.updated.timestamp())
             }]
         }
 
@@ -568,7 +568,7 @@ class SlackMessageBuilder:
                     'style': 'primary'
                 }],
                 'footer': f'{SYSTEM_NAME}',
-                'ts': int(instance.updated_at.timestamp())
+                'ts': int(instance.updated.timestamp())
             }]
         }
 
@@ -603,7 +603,7 @@ class SlackMessageBuilder:
                     'style': 'primary'
                 }],
                 'footer': f'{SYSTEM_NAME}',
-                'ts': int(instance.updated_at.timestamp())
+                'ts': int(instance.updated.timestamp())
             }]
         }
 
@@ -643,7 +643,7 @@ class SlackMessageBuilder:
                     'style': 'primary'
                 }],
                 'footer': f'{SYSTEM_NAME}',
-                'ts': int(instance.updated_at.timestamp())
+                'ts': int(instance.updated.timestamp())
             }]
         }
 

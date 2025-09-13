@@ -127,7 +127,7 @@ class SiteSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'order', 'district', 'lot_number', 'site_purpose',
                   'official_area', 'returned_area', 'notice_price', 'rights_a',
                   'rights_b', 'dup_issue_date', 'owners', 'note', 'site_info_files',
-                  'creator', 'updator', 'created_at', 'updated_at')
+                  'creator', 'updator', 'created', 'updated')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -232,7 +232,7 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'owner', 'use_consent', 'date_of_birth', 'phone1',
                   'phone2', 'zipcode', 'address1', 'address2', 'address3',
                   'own_sort', 'own_sort_desc', 'sites', 'counsel_record',
-                  'creator', 'updator', 'created_at', 'updated_at')
+                  'creator', 'updator', 'created', 'updated')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -307,7 +307,7 @@ class SiteContractSerializer(serializers.ModelSerializer):
                   'inter_pay1_is_paid', 'inter_pay2', 'inter_pay2_date', 'inter_pay2_is_paid',
                   'remain_pay', 'remain_pay_date', 'remain_pay_is_paid', 'ownership_completion',
                   'acc_bank', 'acc_number', 'acc_owner', 'site_cont_files', 'note',
-                  'creator', 'updator', 'created_at', 'updated_at')
+                  'creator', 'updator', 'created', 'updated')
 
     @transaction.atomic
     def create(self, validated_data):

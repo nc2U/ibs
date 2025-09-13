@@ -117,8 +117,8 @@ class Site(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name='updated_sites', verbose_name='편집자')
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return f'{self.district} {self.lot_number}'
@@ -182,8 +182,8 @@ class SiteOwner(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name='updated_site_owners', verbose_name='편집자')
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return self.owner
@@ -239,8 +239,8 @@ class SiteContract(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name='updated_site_contracts', verbose_name='편집자')
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
 
     def __str__(self):
         return f'{self.owner.owner} - [{self.total_price}]'
