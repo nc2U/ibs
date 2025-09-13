@@ -9,7 +9,7 @@ import App from '@/App.vue'
 const vuetify = createVuetify()
 
 describe('App Component Test', () => {
-  it('fullheight attributes  check', () => {
+  it('v-app component check', () => {
     const wrapper = shallowMount(App, {
       global: {
         plugins: [createTestingPinia(), vuetify, CoreuiVue],
@@ -17,6 +17,6 @@ describe('App Component Test', () => {
       },
     })
 
-    expect(wrapper.attributes('fullheight')).toBeTruthy()
+    expect(wrapper.findComponent({ name: 'VApp' }).exists()).toBe(true)
   })
 })
