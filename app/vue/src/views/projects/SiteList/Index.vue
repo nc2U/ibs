@@ -24,6 +24,12 @@ const highlightId = computed(() => {
   return id ? parseInt(id as string, 10) : null
 })
 
+// URL에서 project 파라미터 읽기
+const urlProjectId = computed(() => {
+  const id = route.query.project
+  return id ? parseInt(id as string, 10) : null
+})
+
 const dataFilter = ref<SiteFilter>({
   project: null,
   limit: '',
@@ -109,14 +115,16 @@ const projSelect = (target: number | null) => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (route.query.page || route.query.highlight_id) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      // query를 빈 객체로 설정하여 모든 query string 제거
-      query: {}
-    }).catch(() => {
-      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
-    })
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
   }
 }
 
@@ -165,8 +173,10 @@ onBeforeRouteLeave(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  const projectId = project.value || projStore.initProjId
-  
+  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트 사용
+  let projectId = urlProjectId.value || project.value || projStore.initProjId
+  if (urlProjectId.value && urlProjectId.value !== project.value) projectId = urlProjectId.value
+
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage(projectId)

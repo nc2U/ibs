@@ -222,8 +222,8 @@ def get_service_url(model_instance):
     elif isinstance(model_instance, Site):
         # Site 인스턴스가 위치한 페이지 번호 계산
         page_number = get_site_page_number(model_instance)
-        # 페이지 정보를 포함한 URL 생성
-        url = f"{base_url}/#/project/site/index?page={page_number}&highlight_id={model_instance.id}"
+        # 페이지 정보와 프로젝트 정보를 포함한 URL 생성
+        url = f"{base_url}/#/project/site/index?page={page_number}&highlight_id={model_instance.id}&project={model_instance.project_id}"
         return url
     elif isinstance(model_instance, SiteOwner):
         # SiteOwner 인스턴스가 위치한 페이지 번호 계산
@@ -290,6 +290,24 @@ def get_authorized_members(issue_project, action_type='view'):
     # ).distinct()
 
     return members
+
+
+def get_site_owners_info(site_instance):
+    """Site의 소유자 정보를 포맷팅하여 반환"""
+    try:
+        owners = site_instance.owners.all()
+        owner_count = owners.count()
+        
+        if owner_count == 0:
+            return ""
+        elif owner_count == 1:
+            return f" ({owners.first().owner})"
+        else:
+            first_owner = owners.first().owner
+            return f" ({first_owner} 외{owner_count-1})"
+    except Exception as e:
+        logger.error(f"Site 소유자 정보 조회 오류: {e}")
+        return ""
 
 
 class SlackMessageBuilder:
@@ -543,8 +561,11 @@ class SlackMessageBuilder:
         service_url = get_service_url(instance)
         color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
-        # 간소화된 제목: 프로젝트명 + 사업부지 + 지번주소
-        title = f"🏗️ [{instance.project.issue_project.name}]-[사업부지] - {instance.district} {instance.lot_number}"
+        # 소유자 정보 조회
+        owners_info = get_site_owners_info(instance)
+        
+        # 간소화된 제목: 프로젝트명 + 사업부지 + 지번주소 + 소유자 정보
+        title = f"🏗️ [{instance.project.issue_project.name}]-[사업부지] - {instance.district} {instance.lot_number}{owners_info}"
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:
