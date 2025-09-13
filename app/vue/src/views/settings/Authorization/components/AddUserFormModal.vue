@@ -57,7 +57,10 @@ const generatePassword = () => {
   let password = ''
 
   for (let i = 0; i < 8; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length)
+    // Use cryptographically secure random number generation
+    const array = new Uint32Array(1)
+    window.crypto.getRandomValues(array)
+    const randomIndex = array[0] % chars.length
     password += chars[randomIndex]
   }
 
