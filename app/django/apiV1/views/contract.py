@@ -58,7 +58,7 @@ class ContractViewSet(viewsets.ModelViewSet):
                      'contractor__contractorcontact__home_phone',
                      'contractor__contractorcontact__other_phone',
                      'contractor__contractorcontact__email')
-    ordering_fields = ('created_at', 'contractor__contract_date',
+    ordering_fields = ('created', 'contractor__contract_date',
                        'serial_number', 'contractor__name')
 
     def perform_create(self, serializer):
@@ -147,19 +147,19 @@ class ContractSetViewSet(ContractViewSet):
         limit = int(request.query_params.get('limit', 10))
 
         # Contract 모델의 기본 정렬이 없으므로 ordering 파라미터 확인
-        ordering = request.query_params.get('ordering', '-created_at')
+        ordering = request.query_params.get('ordering', '-created')
 
         if ordering.startswith('-'):
             # 내림차순 정렬
             field = ordering[1:]
-            if field == 'created_at':
-                items_before = queryset.filter(created_at__gt=target_item.created_at).count()
+            if field == 'created':
+                items_before = queryset.filter(created__gt=target_item.created).count()
             else:
                 items_before = queryset.filter(id__gt=target_item.id).count()
         else:
             # 오름차순 정렬
-            if ordering == 'created_at':
-                items_before = queryset.filter(created_at__lt=target_item.created_at).count()
+            if ordering == 'created':
+                items_before = queryset.filter(created__lt=target_item.created).count()
             else:
                 items_before = queryset.filter(id__lt=target_item.id).count()
 
@@ -362,7 +362,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
 
 
 class ContReleaseViewSet(viewsets.ModelViewSet):
-    queryset = ContractorRelease.objects.all().order_by('-request_date', '-created_at')
+    queryset = ContractorRelease.objects.all().order_by('-request_date', '-created')
     serializer_class = ContractorReleaseSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project', 'status')
@@ -402,13 +402,13 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         # limit 파라미터 가져오기 (기본값은 10)
         limit = int(request.query_params.get('limit', 10))
 
-        # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created_at']
+        # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created']
         # 프로젝트별 전체 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
         from django.db.models import Q
         
         items_before = queryset.filter(
             Q(request_date__gt=target_item.request_date) |
-            Q(request_date=target_item.request_date, created_at__gt=target_item.created_at)
+            Q(request_date=target_item.request_date, created__gt=target_item.created)
         ).count()
 
         page_number = (items_before // limit) + 1

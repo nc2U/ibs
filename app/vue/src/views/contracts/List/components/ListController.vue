@@ -21,7 +21,7 @@ const form = reactive<ContFilter>({
   building: '',
   qualification: '',
   is_sup_cont: '',
-  ordering: '-created_at',
+  ordering: '-created',
   search: '',
 })
 
@@ -35,7 +35,7 @@ const formsCheck = computed(() => {
   const g = form.qualification === ''
   const h = !from_date.value
   const i = !to_date.value
-  const j = form.ordering === '-created_at'
+  const j = form.ordering === '-created'
   const k = form.search?.trim() === ''
   const groupA = a && b && c && d && e
   const groupB = f && g && h && i && j && k
@@ -78,7 +78,7 @@ const resetForm = () => {
   form.qualification = ''
   from_date.value = ''
   to_date.value = ''
-  form.ordering = '-created_at'
+  form.ordering = '-created'
   form.search = ''
   listFiltering(1)
 }
@@ -104,8 +104,8 @@ onMounted(() => {
           </CCol>
           <CCol md="4" xl="2" class="mb-3">
             <CFormSelect v-model="form.ordering" @change="listFiltering(1)">
-              <option value="-created_at">등록일시 내림차순</option>
-              <option value="created_at">등록일시 올림차순</option>
+              <option value="-created">등록일시 내림차순</option>
+              <option value="created">등록일시 올림차순</option>
               <option value="-contractor__contract_date">계약일자 내림차순</option>
               <option value="contractor__contract_date">계약일자 올림차순</option>
               <option value="-serial_number">일련번호 내림차순</option>

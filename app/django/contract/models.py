@@ -33,8 +33,8 @@ class Contract(models.Model):
     sup_cont_date = models.DateField('공급계약 체결일', null=True, blank=True)
     key_unit = models.OneToOneField('items.KeyUnit', on_delete=models.SET_NULL, null=True, blank=True,
                                     verbose_name='계약유닛', related_name='contract')
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -44,7 +44,7 @@ class Contract(models.Model):
         return f'[{self.project.id}] {self.serial_number}'
 
     class Meta:
-        ordering = ('-project', '-created_at')
+        ordering = ('-project', '-created')
         verbose_name = '02. 계약 정보'
         verbose_name_plural = '02. 계약 정보'
 
@@ -135,8 +135,8 @@ class Contractor(models.Model):
     contract_date = models.DateField('계약일자', null=True, blank=True)
     is_active = models.BooleanField('유효계약자여부', default=True)
     note = models.TextField('비고', blank=True)
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                 null=True, blank=True, verbose_name='등록자')
 
@@ -158,8 +158,8 @@ class ContractorAddress(models.Model):
     dm_address1 = models.CharField('우편송부 주소', max_length=50)
     dm_address2 = models.CharField('상세주소', max_length=50, blank=True)
     dm_address3 = models.CharField('참고항목', max_length=30, blank=True)
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name='등록자')
 
@@ -177,8 +177,8 @@ class ContractorContact(models.Model):
     home_phone = models.CharField('집 전화', max_length=13, blank=True)
     other_phone = models.CharField('기타 전화', max_length=13, blank=True)
     email = models.EmailField('이메일', max_length=30, blank=True)
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name='등록자')
 
@@ -201,8 +201,8 @@ class Succession(models.Model):
     approval_date = models.DateField('변경인가일', null=True, blank=True)
     is_approval = models.BooleanField('변경인가여부', default=False)
     note = models.TextField('비고', blank=True)
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -229,8 +229,8 @@ class ContractorRelease(models.Model):
     request_date = models.DateField('해지신청일')
     completion_date = models.DateField('해지(환불)처리일', null=True, blank=True)
     note = models.TextField('비고', blank=True)
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,

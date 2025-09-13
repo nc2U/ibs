@@ -31,7 +31,7 @@ class ContractFileAdmin(admin.StackedInline):
 class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'serial_number', 'key_unit', 'order_group', 'unit_type',
                     'activation', 'contractor', 'contractprice', 'is_sup_cont',
-                    'sup_cont_date', 'created_at', 'creator')
+                    'sup_cont_date', 'created', 'creator')
     list_display_links = ('project', 'serial_number',)
     list_filter = ('project', 'order_group', 'unit_type', 'activation', 'contractor__status')
     search_fields = ('serial_number', 'contractor__name')
@@ -75,7 +75,7 @@ class CContactInline(ImportExportMixin, admin.TabularInline):
 @admin.register(Contractor)
 class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'name', 'contract', 'birth_date', 'gender', 'qualification', 'status',
-                    'is_active', 'reservation_date', 'contract_date', 'created_at')
+                    'is_active', 'reservation_date', 'contract_date', 'created')
     search_fields = ('name',)
     list_display_links = ('name',)
     list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',

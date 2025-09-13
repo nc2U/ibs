@@ -82,7 +82,7 @@ export const useContract = defineStore('contract', () => {
     if (payload.from_date) url += `&from_contract_date=${payload.from_date}`
     if (payload.to_date) url += `&to_contract_date=${payload.to_date}`
     if (payload.search) url += `&search=${payload.search}`
-    const ordering = payload.ordering ? payload.ordering : '-created_at'
+    const ordering = payload.ordering ? payload.ordering : '-created'
     const page = payload.page ? payload.page : 1
     url += `&ordering=${ordering}&page=${page}`
 
@@ -110,7 +110,7 @@ export const useContract = defineStore('contract', () => {
     if (filters.from_date) url += `&from_contract_date=${filters.from_date}`
     if (filters.to_date) url += `&to_contract_date=${filters.to_date}`
     if (filters.search) url += `&search=${filters.search}`
-    const ordering = filters.ordering ? filters.ordering : '-created_at'
+    const ordering = filters.ordering ? filters.ordering : '-created'
     url += `&ordering=${ordering}`
     
     try {
