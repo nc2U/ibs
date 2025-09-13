@@ -102,8 +102,8 @@ class CalendarSchedule(models.Model):
     start_time = models.DateTimeField('시작 시간', null=True, blank=True)
     end_time = models.DateTimeField('종료 시간', null=True, blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
-    created_at = models.DateTimeField('등록일시', auto_now_add=True)
-    updated_at = models.DateTimeField('편집일시', auto_now=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
 
 
 class WiseSaying(models.Model):

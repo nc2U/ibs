@@ -50,7 +50,7 @@ class CalendarScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = CalendarSchedule
         fields = ('pk', 'title', 'all_day', 'start_date', 'end_date', 'start_time',
-                  'end_time', 'creator', 'created_at', 'updated_at')
+                  'end_time', 'creator', 'created', 'updated')
 
 
 class WiseSaySerializer(serializers.ModelSerializer):
