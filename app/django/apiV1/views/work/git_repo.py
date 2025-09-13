@@ -150,18 +150,18 @@ class GitRepoApiView(APIView):
         # 저장소 이름
         repo_name = os.path.basename(repo_path).replace(".git", "")
 
-        # 가장 오래된 커밋 시간 (created_at 추정)
+        # 가장 오래된 커밋 시간 (created 추정)
         oldest_commit = next(repo.iter_commits('--all', max_count=1, reverse=True))
-        created_at = oldest_commit.committed_datetime.astimezone(timezone.utc)
+        created = oldest_commit.committed_datetime.astimezone(timezone.utc)
 
-        # 가장 최근 커밋 시간 (pushed_at 추정)
+        # 가장 최근 커밋 시간 (pushed 추정)
         latest_commit = repo.head.commit
-        pushed_at = latest_commit.committed_datetime.astimezone(timezone.utc)
+        pushed = latest_commit.committed_datetime.astimezone(timezone.utc)
 
         repo_info = {
             "name": repo_name,
-            "created_at": created_at,
-            "pushed_at": pushed_at,
+            "created": created,
+            "pushed": pushed,
             "default_branch": get_default_branch(repo),
         }
         serializer = GitRepoApiSerializer(repo_info)

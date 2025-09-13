@@ -10,8 +10,8 @@ export interface Repository {
 
 export interface RepoApi {
   name: string
-  created_at: string
-  pushed_at: string
+  created: string
+  pushed: string
   default_branch: string
 }
 

@@ -214,8 +214,8 @@ export interface Site {
     pk: number
     username: string
   }
-  created_at?: string
-  updated_at?: string
+  created?: string
+  updated?: string
 }
 
 type OwnSort = '개인' | '법인' | '국공유지'
@@ -250,8 +250,8 @@ export interface SiteOwner {
     pk: number
     username: string
   }
-  created_at?: string
-  updated_at?: string
+  created?: string
+  updated?: string
 }
 
 export interface SimpleSite {
@@ -319,8 +319,8 @@ export interface SiteContract {
     pk: number
     username: string
   }
-  created_at?: string
-  updated_at?: string
+  created?: string
+  updated?: string
   newFile?: File | string
   editFile?: string
   cngFile?: File

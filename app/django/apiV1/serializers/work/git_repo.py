@@ -51,8 +51,8 @@ class CommitSerializer(serializers.ModelSerializer):
 
 class GitRepoApiSerializer(serializers.Serializer):
     name = serializers.CharField()
-    created_at = serializers.CharField()
-    pushed_at = serializers.CharField()
+    created = serializers.CharField()
+    pushed = serializers.CharField()
     default_branch = serializers.CharField()
 
 
