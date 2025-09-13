@@ -13,4 +13,4 @@ class SallesBillIssueSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'now_payment_order', 'host_name', 'host_tel',
                   'agency', 'agency_tel', 'bank_account1', 'bank_number1', 'bank_host1',
                   'bank_account2', 'bank_number2', 'bank_host2', 'zipcode', 'address1',
-                  'address2', 'address3', 'title', 'content', 'creator', 'updated_at')
+                  'address2', 'address3', 'title', 'content', 'creator', 'updated')
