@@ -149,7 +149,7 @@ export interface AllHouseUnit {
   unit_type: {
     pk: number
     sort: '1' | '2' | '3' | '4' | '5' | '6'
-  }
+  } | null
   floor_type: number
   building_unit: number
   name: string

@@ -157,7 +157,7 @@ export const useProjectData = defineStore('projectData', () => {
       ? houseUnitList.value.map(u => ({
           bldg: u.building_unit,
           color: simpleTypes.value
-            .filter(t => t.pk === u.unit_type.pk)
+            .filter(t => t.pk === u.unit_type?.pk)
             .map((t: { color: string }) => t.color)[0],
           name: u.name,
           key_unit: u.key_unit,
@@ -168,7 +168,7 @@ export const useProjectData = defineStore('projectData', () => {
         }))
       : [],
   )
-  const mallExcludedUnits = computed(() => houseUnitList.value.filter(u => u.unit_type.sort < '5'))
+  const mallExcludedUnits = computed(() => houseUnitList.value.filter(u => u.unit_type?.sort && u.unit_type.sort < '5'))
   const unitSummary = computed(() =>
     mallExcludedUnits.value
       ? {

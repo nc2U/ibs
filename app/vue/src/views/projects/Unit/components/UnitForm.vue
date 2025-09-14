@@ -1,37 +1,38 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, type PropType, ref } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { useProjectData } from '@/store/pinia/project_data'
 import { write_project } from '@/utils/pageAuth'
+import type { AllHouseUnit } from '@/store/types/project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const props = defineProps({ unit: { type: Object, required: true } })
+const props = defineProps({ unit: { type: Object as PropType<AllHouseUnit>, required: true } })
 const emit = defineEmits(['on-update', 'on-delete'])
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const form = ref({
-  unit_type: null,
-  floor_type: null,
-  building_unit: null,
+  unit_type: null as number | null,
+  floor_type: null as number | null,
+  building_unit: null as number | null,
   name: '',
-  bldg_line: null,
-  floor_no: null,
+  bldg_line: null as number | null,
+  floor_no: null as number | null,
   is_hold: false,
   hold_reason: '',
 })
 
 const formCheck = computed(() => {
-  const a = form.value.unit_type === props.unit.unit_type.pk
-  const b = form.value.floor_type === props.unit.floor_type
-  const c = form.value.building_unit === props.unit.building_unit
-  const d = form.value.name === props.unit.name
-  const e = form.value.bldg_line === props.unit.bldg_line
-  const f = form.value.floor_no === props.unit.floor_no
-  const g = form.value.is_hold === props.unit.is_hold
-  const h = form.value.hold_reason === props.unit.hold_reason
+  const a = form.value.unit_type === props.unit?.unit_type?.pk
+  const b = form.value.floor_type === props.unit?.floor_type
+  const c = form.value.building_unit === props.unit?.building_unit
+  const d = form.value.name === props.unit?.name
+  const e = form.value.bldg_line === props.unit?.bldg_line
+  const f = form.value.floor_no === props.unit?.floor_no
+  const g = form.value.is_hold === props.unit?.is_hold
+  const h = form.value.hold_reason === props.unit?.hold_reason
   return a && b && c && d && e && f && g && h
 })
 
@@ -42,7 +43,7 @@ const buildingList = computed(() => proDataStore.buildingList)
 
 const onUpdateUnit = () => {
   if (write_project) {
-    const pk = props.unit.pk
+    const pk = props.unit?.pk
     emit('on-update', { ...{ pk }, ...form.value })
   } else refAlertModal.value.callModal()
 }
@@ -53,19 +54,19 @@ const onDeleteUnit = () => {
 }
 
 const delConfirm = () => {
-  emit('on-delete', { pk: props.unit.pk, type: props.unit.unit_type.pk })
+  emit('on-delete', { pk: props.unit?.pk, type: props.unit?.unit_type?.pk })
   refConfirmModal.value.close()
 }
 
 const dataSetup = () => {
-  form.value.unit_type = props.unit.unit_type.pk
-  form.value.floor_type = props.unit.floor_type
-  form.value.building_unit = props.unit.building_unit
-  form.value.name = props.unit.name
-  form.value.bldg_line = props.unit.bldg_line
-  form.value.floor_no = props.unit.floor_no
-  form.value.is_hold = props.unit.is_hold
-  form.value.hold_reason = props.unit.hold_reason
+  form.value.unit_type = props.unit?.unit_type?.pk ?? null
+  form.value.floor_type = props.unit?.floor_type ?? null
+  form.value.building_unit = props.unit?.building_unit ?? null
+  form.value.name = props.unit?.name ?? ''
+  form.value.bldg_line = props.unit?.bldg_line ?? null
+  form.value.floor_no = props.unit?.floor_no ?? null
+  form.value.is_hold = props.unit?.is_hold ?? false
+  form.value.hold_reason = props.unit?.hold_reason ?? ''
 }
 
 onMounted(() => dataSetup())
