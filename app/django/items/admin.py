@@ -48,7 +48,7 @@ class HasContractFilter(SimpleListFilter):
 
 
 class KeyUnitAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'unit_code', 'unit_type', 'contract')
+    list_display = ('id', 'project', 'unit_code', 'sort', 'unit_type', 'contract')
     search_fields = ('unit_code',)
     list_display_links = ('project', 'unit_code',)
     list_filter = ('project', 'unit_type', HasContractFilter, 'contract')
