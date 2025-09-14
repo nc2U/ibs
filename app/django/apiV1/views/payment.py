@@ -89,6 +89,7 @@ class PaymentSummaryViewSet(viewsets.ModelViewSet):
             .values('order_group', 'unit_type') \
             .annotate(paid_sum=Sum('income'))
 
+
 # class ContNumByTypeViewSet(viewsets.ModelViewSet):
 #     """
 #     타입별 계약 건수
@@ -123,7 +124,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
     def list(self, request):
         project_id = request.query_params.get('project')
         date = request.query_params.get('date', datetime.today().strftime('%Y-%m-%d'))
-        
+
         if not project_id:
             return Response({'error': 'project parameter is required'}, status=400)
 
@@ -131,20 +132,20 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         pay_orders = InstallmentPaymentOrder.objects.filter(project_id=project_id).order_by('pay_code', 'pay_time')
 
         result_pay_orders = []
-        
+
         for order in pay_orders:
             # 해당 회차의 계약 금액 합계
             contract_amount = self._get_contract_amount(order, project_id)
-            
+
             # 수납 관련 집계
             collection_data = self._get_collection_data(order, project_id, date)
-            
+
             # 기간도래 관련 집계
             due_period_data = self._get_due_period_data(order, project_id, date)
-            
+
             # 기간미도래 미수금
             not_due_unpaid = self._get_not_due_unpaid(order, project_id, date)
-            
+
             # 총 미수금 및 비율
             total_unpaid = due_period_data['unpaid_amount'] + not_due_unpaid
             total_unpaid_rate = (total_unpaid / contract_amount * 100) if contract_amount > 0 else 0
@@ -177,7 +178,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         """해당 회차의 계약 금액 합계 계산"""
         from contract.models import Contract
         from payment.models import SalesPriceByGT
-        
+
         # pay_sort에 따라 계약 금액 계산
         if order.pay_sort == '1':  # 계약금
             amount = SalesPriceByGT.objects.filter(
@@ -193,7 +194,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             ).aggregate(total=Sum('remain_pay'))['total'] or 0
         else:  # 기타
             amount = 0
-            
+
         return amount
 
     def _get_collection_data(self, order, project_id, date):
@@ -210,7 +211,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         discount_amount = 0
         overdue_fee = 0
         actual_collected = collected_amount + overdue_fee - discount_amount
-        
+
         contract_amount = self._get_contract_amount(order, project_id)
         collection_rate = (actual_collected / contract_amount * 100) if contract_amount > 0 else 0
 
@@ -226,7 +227,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         """기간도래 관련 데이터 집계"""
         # 기준일 기준으로 기간이 도래한 계약 금액
         contract_amount = self._get_contract_amount(order, project_id)
-        
+
         # 기간도래분 중 실제 수납된 금액
         collected_amount = ProjectCashBook.objects.filter(
             project_id=project_id,
@@ -238,7 +239,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 기간도래 미수금 = 계약금액 - 수납액
         unpaid_amount = max(0, contract_amount - collected_amount)
         unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
-        
+
         # TODO: 기간도래분 연체료 계산 로직 구현 필요
         overdue_fee = 0
         subtotal = unpaid_amount + overdue_fee
@@ -261,20 +262,20 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         """집계 데이터 조회"""
         from contract.models import Contract
         from items.models import KeyUnit
-        
+
         # 계약 세대수
         conts_num = Contract.objects.filter(
             project_id=project_id,
             activation=True,
             contractor__status=2
         ).count()
-        
+
         # 전체 세대수 (KeyUnit 기준)
-        total_units = KeyUnit.objects.filter(project_id=project_id).count()
-        
+        total_units = KeyUnit.objects.filter(project_id=project_id, sort='1').count()
+
         # 미계약 세대수
         non_conts_num = total_units - conts_num
-        
+
         # 계약률
         contract_rate = (conts_num / total_units * 100) if total_units > 0 else 0
 

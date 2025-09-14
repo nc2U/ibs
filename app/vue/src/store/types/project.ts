@@ -112,11 +112,13 @@ export interface BuildingUnit {
 
 export interface KeyUnit {
   pk: number
+  sort: '1' | '2'
   contract: Contract | null
 }
 
 interface KUnit {
   pk: number
+  sort: '1' | '2'
   contract: Contract
 }
 
