@@ -51,6 +51,7 @@ class KeyUnitAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'unit_code', 'sort', 'unit_type', 'contract')
     search_fields = ('unit_code',)
     list_display_links = ('project', 'unit_code',)
+    list_editable = ('sort',)
     list_filter = ('project', 'unit_type', HasContractFilter, 'contract')
 
 
