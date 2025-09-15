@@ -35,7 +35,7 @@ jobs:
         with:
           context: "deploy/docker/python"
           push: true
-          tags: dokube/django:latest
+          tags: ${{ secrets.DOCKERHUB_USER }}/django:latest
       
       # slack --> notification
       - name: Send slack when failed
