@@ -26,8 +26,11 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["celery"]
+          workingDir: /app/django
+          command: ["python"]
           args:
+            - "-m"
+            - "celery"
             - "-A"
             - "_config"
             - "worker"
@@ -47,15 +50,30 @@ spec:
           resources:
             {{- toYaml (.Values.celery.resources | default .Values.resources) | nindent 12 }}
           volumeMounts:
-            - name: app-data
+            - name: django-source
+              mountPath: /app/django
+            - name: media
               mountPath: /app/django/media
-              subPath: media
+            - name: repos
+              mountPath: /app/repos
+            - name: tz-seoul
+              mountPath: /etc/localtime
             - name: logs
               mountPath: /var/log/celery
       volumes:
-        - name: app-data
+        - name: django-source
           persistentVolumeClaim:
-            claimName: {{ include "web.fullname" . }}-data
+            claimName: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-django-pvc
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc
+        - name: repos
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-git-repos-pvc
+        - name: tz-seoul
+          hostPath:
+            path: /etc/localtime
+            type: File
         - name: logs
           emptyDir: {}
       {{- with .Values.nodeSelector }}
