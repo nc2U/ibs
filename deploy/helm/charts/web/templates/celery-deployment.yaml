@@ -44,9 +44,9 @@ spec:
                 name: {{ include "web.fullname" . }}-db-auth
           env:
             - name: CELERY_BROKER_URL
-              value: "redis://{{ .Release.Name }}-redis:6379/0"
+              value: "redis://redis:6379/0"
             - name: CELERY_RESULT_BACKEND
-              value: "redis://{{ .Release.Name }}-redis:6379/0"
+              value: "redis://redis:6379/0"
           resources:
             {{- toYaml (.Values.celery.resources | default .Values.resources) | nindent 12 }}
           volumeMounts:

@@ -1,5 +1,7 @@
 replicaCount: 1
 
+fullnameOverride: "redis"
+
 image:
   repository: redis
   tag: "7-alpine"
