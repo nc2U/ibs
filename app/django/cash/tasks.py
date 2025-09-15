@@ -82,7 +82,7 @@ def async_import_cashbook(self, file_path: str, user_id: int, resource_type: str
             'user_email': user.email,
         }
 
-        # Slack 요약 알림 발송
+        # Slack 요약 알림 발송 (Celery task를 통한 import의 경우)
         from _utils.slack_notifications import send_bulk_import_summary
         summary_data = {
             'model_name': model_name,

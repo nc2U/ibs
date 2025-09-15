@@ -2,6 +2,21 @@ from django.db import transaction
 from import_export import resources
 from import_export.instance_loaders import CachedInstanceLoader
 from .models import CashBook, ProjectCashBook
+import threading
+
+
+# Thread-local storage for bulk import flags
+_thread_locals = threading.local()
+
+
+def is_bulk_import_active():
+    """Check if bulk import is currently active in this thread"""
+    return getattr(_thread_locals, 'bulk_import_active', False)
+
+
+def set_bulk_import_active(active=True):
+    """Set bulk import flag for current thread"""
+    _thread_locals.bulk_import_active = active
 
 
 class CashBookResource(resources.ModelResource):
@@ -33,17 +48,48 @@ class CashBookResource(resources.ModelResource):
 
     def before_import(self, dataset, **kwargs):
         """Set bulk import flag before starting import"""
-        dry_run = kwargs.get('dry_run', False)
-        if not dry_run:
-            self._bulk_import_active = True
+        # Set thread-local flag for both dry_run and actual import to prevent notifications
+        set_bulk_import_active(True)
         return super().before_import(dataset, **kwargs)
 
     def after_import(self, dataset, result, **kwargs):
         """Clear bulk import flag after import"""
         dry_run = kwargs.get('dry_run', False)
-        if not dry_run and hasattr(self, '_bulk_import_active'):
-            self._bulk_import_active = False
+
+        # Send summary notification only after actual import (not dry_run)
+        if not dry_run and len(dataset) > 0:
+            self._send_bulk_import_summary(result)
+
+        # Clear thread-local flag after both dry_run and actual import
+        set_bulk_import_active(False)
         return super().after_import(dataset, result, **kwargs)
+
+    def _send_bulk_import_summary(self, result):
+        """Send Slack summary notification for bulk import"""
+        from _utils.slack_notifications import send_bulk_import_summary
+
+        summary_data = {
+            'model_name': 'CashBook',
+            'total_records': result.totals.get('new', 0) + result.totals.get('update', 0),
+            'new_records': result.totals.get('new', 0),
+            'updated_records': result.totals.get('update', 0),
+            'skipped_records': result.totals.get('skip', 0),
+            'error_count': result.totals.get('error', 0)
+        }
+
+        # Try to get user from request context if available
+        user = None
+        try:
+            from django.contrib.auth import get_user
+            from django.http import HttpRequest
+            import threading
+            request = getattr(threading.current_thread(), 'request', None)
+            if request and hasattr(request, 'user'):
+                user = request.user if request.user.is_authenticated else None
+        except:
+            pass
+
+        send_bulk_import_summary(summary_data, user)
         
     def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, collect_failed_rows=False, **kwargs):
         """
@@ -157,17 +203,48 @@ class ProjectCashBookResource(resources.ModelResource):
 
     def before_import(self, dataset, **kwargs):
         """Set bulk import flag before starting import"""
-        dry_run = kwargs.get('dry_run', False)
-        if not dry_run:
-            self._bulk_import_active = True
+        # Set thread-local flag for both dry_run and actual import to prevent notifications
+        set_bulk_import_active(True)
         return super().before_import(dataset, **kwargs)
 
     def after_import(self, dataset, result, **kwargs):
         """Clear bulk import flag after import"""
         dry_run = kwargs.get('dry_run', False)
-        if not dry_run and hasattr(self, '_bulk_import_active'):
-            self._bulk_import_active = False
+
+        # Send summary notification only after actual import (not dry_run)
+        if not dry_run and len(dataset) > 0:
+            self._send_bulk_import_summary(result)
+
+        # Clear thread-local flag after both dry_run and actual import
+        set_bulk_import_active(False)
         return super().after_import(dataset, result, **kwargs)
+
+    def _send_bulk_import_summary(self, result):
+        """Send Slack summary notification for bulk import"""
+        from _utils.slack_notifications import send_bulk_import_summary
+
+        summary_data = {
+            'model_name': 'ProjectCashBook',
+            'total_records': result.totals.get('new', 0) + result.totals.get('update', 0),
+            'new_records': result.totals.get('new', 0),
+            'updated_records': result.totals.get('update', 0),
+            'skipped_records': result.totals.get('skip', 0),
+            'error_count': result.totals.get('error', 0)
+        }
+
+        # Try to get user from request context if available
+        user = None
+        try:
+            from django.contrib.auth import get_user
+            from django.http import HttpRequest
+            import threading
+            request = getattr(threading.current_thread(), 'request', None)
+            if request and hasattr(request, 'user'):
+                user = request.user if request.user.is_authenticated else None
+        except:
+            pass
+
+        send_bulk_import_summary(summary_data, user)
         
     def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, collect_failed_rows=False, **kwargs):
         """

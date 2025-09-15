@@ -12,13 +12,9 @@ def notify_cashbook_change(sender, instance, created, raw=False, **kwargs):
         return
 
     # Skip individual notifications during bulk import
-    from .resources import CashBookResource
-    import threading
-
-    # Check if any resource instance in current thread is doing bulk import
-    for obj in threading.current_thread().__dict__.values():
-        if isinstance(obj, CashBookResource) and getattr(obj, '_bulk_import_active', False):
-            return
+    from .resources import is_bulk_import_active
+    if is_bulk_import_active():
+        return
 
     action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
@@ -31,13 +27,9 @@ def notify_project_cashbook_change(sender, instance, created, raw=False, **kwarg
         return
 
     # Skip individual notifications during bulk import
-    from .resources import ProjectCashBookResource
-    import threading
-
-    # Check if any resource instance in current thread is doing bulk import
-    for obj in threading.current_thread().__dict__.values():
-        if isinstance(obj, ProjectCashBookResource) and getattr(obj, '_bulk_import_active', False):
-            return
+    from .resources import is_bulk_import_active
+    if is_bulk_import_active():
+        return
 
     action = "등록" if created else "편집"
     send_slack_notification(instance, action, instance.creator)
@@ -47,13 +39,9 @@ def notify_project_cashbook_change(sender, instance, created, raw=False, **kwarg
 def notify_cashbook_delete(sender, instance, **kwargs):
     """CashBook 삭제 시 Slack 알림"""
     # Skip individual notifications during bulk import
-    from .resources import CashBookResource
-    import threading
-
-    # Check if any resource instance in current thread is doing bulk import
-    for obj in threading.current_thread().__dict__.values():
-        if isinstance(obj, CashBookResource) and getattr(obj, '_bulk_import_active', False):
-            return
+    from .resources import is_bulk_import_active
+    if is_bulk_import_active():
+        return
 
     send_slack_notification(instance, "삭제", getattr(instance, 'creator', None))
 
@@ -62,12 +50,8 @@ def notify_cashbook_delete(sender, instance, **kwargs):
 def notify_project_cashbook_delete(sender, instance, **kwargs):
     """ProjectCashBook 삭제 시 Slack 알림"""
     # Skip individual notifications during bulk import
-    from .resources import ProjectCashBookResource
-    import threading
-
-    # Check if any resource instance in current thread is doing bulk import
-    for obj in threading.current_thread().__dict__.values():
-        if isinstance(obj, ProjectCashBookResource) and getattr(obj, '_bulk_import_active', False):
-            return
+    from .resources import is_bulk_import_active
+    if is_bulk_import_active():
+        return
 
     send_slack_notification(instance, "삭제", getattr(instance, 'creator', None))
