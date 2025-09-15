@@ -15,6 +15,59 @@ logger = logging.getLogger(__name__)
 SYSTEM_NAME = 'IBS 업무관리시스템'
 
 
+def send_bulk_import_summary(summary_data, user=None):
+    """Excel 대량 가져오기 완료 후 Slack 요약 알림 전송"""
+    if not getattr(settings, 'SLACK_NOTIFICATIONS_ENABLED', True):
+        return
+
+    # 본사관리용 웹훅 URL 가져오기 (대량 가져오기는 주로 본사에서 수행)
+    webhook_url = config('SLACK_COMPANY_URL', default=None)
+    if not webhook_url:
+        logger.warning("대량 가져오기 Slack 알림 - SLACK_COMPANY_URL 환경변수 설정되지 않음")
+        return
+
+    # 메시지 구성
+    model_name = summary_data.get('model_name', 'Unknown')
+    total_records = summary_data.get('total_records', 0)
+    new_records = summary_data.get('new_records', 0)
+    updated_records = summary_data.get('updated_records', 0)
+    skipped_records = summary_data.get('skipped_records', 0)
+    error_count = summary_data.get('error_count', 0)
+
+    user_name = user.username if user else "시스템"
+
+    # 성공/실패 이모지 설정
+    status_emoji = "✅" if error_count == 0 else "⚠️"
+
+    message = {
+        "text": f"{status_emoji} {model_name} Excel 대량 가져오기 완료",
+        "attachments": [
+            {
+                "color": "good" if error_count == 0 else "warning",
+                "fields": [
+                    {"title": "담당자", "value": user_name, "short": True},
+                    {"title": "모델", "value": model_name, "short": True},
+                    {"title": "전체 처리", "value": f"{total_records}건", "short": True},
+                    {"title": "신규 생성", "value": f"{new_records}건", "short": True},
+                    {"title": "업데이트", "value": f"{updated_records}건", "short": True},
+                    {"title": "건너뜀", "value": f"{skipped_records}건", "short": True},
+                    {"title": "오류", "value": f"{error_count}건", "short": True}
+                ],
+                "footer": SYSTEM_NAME,
+                "ts": int(__import__('time').time())
+            }
+        ]
+    }
+
+    # Slack으로 메시지 전송
+    try:
+        response = requests.post(webhook_url, json=message, timeout=10)
+        response.raise_for_status()
+        logger.info(f"대량 가져오기 Slack 알림 전송 성공: {model_name} {total_records}건 처리 완료")
+    except requests.RequestException as e:
+        logger.error(f"대량 가져오기 Slack 알림 전송 실패: {e}")
+
+
 def get_slack_webhook_url(issue_project):
     """IssueProject의 sort와 slug를 기반으로 환경변수에서 웹훅 URL 조회"""
     if issue_project.sort == '1':  # 본사관리

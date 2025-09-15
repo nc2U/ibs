@@ -81,11 +81,23 @@ def async_import_cashbook(self, file_path: str, user_id: int, resource_type: str
             'errors': [str(error.error) for error in result.base_errors + result.row_errors],
             'user_email': user.email,
         }
-        
+
+        # Slack 요약 알림 발송
+        from _utils.slack_notifications import send_bulk_import_summary
+        summary_data = {
+            'model_name': model_name,
+            'total_records': result.totals.get('new', 0) + result.totals.get('update', 0),
+            'new_records': result.totals.get('new', 0),
+            'updated_records': result.totals.get('update', 0),
+            'skipped_records': result.totals.get('skip', 0),
+            'error_count': len(result.base_errors) + len(result.row_errors)
+        }
+        send_bulk_import_summary(summary_data, user)
+
         # 성공 이메일 발송
         if hasattr(settings, 'EMAIL_HOST') and settings.EMAIL_HOST:
             send_import_success_email(user.email, import_result)
-        
+
         logger.info(f"Import completed successfully for user {user.username}: {import_result}")
         return import_result
         

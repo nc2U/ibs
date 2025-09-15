@@ -8,7 +8,7 @@ class CashBookResource(resources.ModelResource):
     """
     Optimized resource for CashBook with bulk operations and performance improvements
     """
-    
+
     class Meta:
         model = CashBook
         batch_size = 1000
@@ -16,19 +16,34 @@ class CashBookResource(resources.ModelResource):
         chunk_size = 1000
         import_id_fields = ('id',)
         fields = (
-            'id', 'company', 'sort', 'account_d1', 'account_d2', 'account_d3', 
-            'project', 'content', 'trader', 'bank_account', 'income', 'outlay', 
+            'id', 'company', 'sort', 'account_d1', 'account_d2', 'account_d3',
+            'project', 'content', 'trader', 'bank_account', 'income', 'outlay',
             'evidence', 'deal_date', 'note'
         )
         export_order = (
             'id', 'deal_date', 'sort', 'account_d1', 'account_d2', 'account_d3',
             'content', 'trader', 'bank_account', 'income', 'outlay', 'evidence', 'note'
         )
-        
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Use cached instance loader for better performance
         self._cached_instances = {}
+        self._bulk_import_active = False
+
+    def before_import(self, dataset, **kwargs):
+        """Set bulk import flag before starting import"""
+        dry_run = kwargs.get('dry_run', False)
+        if not dry_run:
+            self._bulk_import_active = True
+        return super().before_import(dataset, **kwargs)
+
+    def after_import(self, dataset, result, **kwargs):
+        """Clear bulk import flag after import"""
+        dry_run = kwargs.get('dry_run', False)
+        if not dry_run and hasattr(self, '_bulk_import_active'):
+            self._bulk_import_active = False
+        return super().after_import(dataset, result, **kwargs)
         
     def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, collect_failed_rows=False, **kwargs):
         """
@@ -117,7 +132,7 @@ class ProjectCashBookResource(resources.ModelResource):
     """
     Optimized resource for ProjectCashBook with bulk operations and performance improvements
     """
-    
+
     class Meta:
         model = ProjectCashBook
         batch_size = 1000
@@ -133,11 +148,26 @@ class ProjectCashBookResource(resources.ModelResource):
             'id', 'project', 'deal_date', 'sort', 'project_account_d2', 'project_account_d3',
             'content', 'trader', 'bank_account', 'income', 'outlay', 'evidence', 'note'
         )
-        
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Use cached instance loader for better performance
         self._cached_instances = {}
+        self._bulk_import_active = False
+
+    def before_import(self, dataset, **kwargs):
+        """Set bulk import flag before starting import"""
+        dry_run = kwargs.get('dry_run', False)
+        if not dry_run:
+            self._bulk_import_active = True
+        return super().before_import(dataset, **kwargs)
+
+    def after_import(self, dataset, result, **kwargs):
+        """Clear bulk import flag after import"""
+        dry_run = kwargs.get('dry_run', False)
+        if not dry_run and hasattr(self, '_bulk_import_active'):
+            self._bulk_import_active = False
+        return super().after_import(dataset, result, **kwargs)
         
     def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, collect_failed_rows=False, **kwargs):
         """
