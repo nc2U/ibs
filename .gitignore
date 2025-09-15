@@ -52,6 +52,9 @@ volume/mysql
 volume/pgdata
 init.sql
 
+# redis data
+volume/redis
+
 # virtualize
 venv/
 

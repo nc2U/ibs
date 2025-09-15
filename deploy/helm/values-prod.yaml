@@ -16,6 +16,13 @@ global:
   emailHostPassword: "my-email-host-secret" # your-email-password
   defaultFromEmail: "email@example.com"
 
+redis:
+  enabled: true
+  replicaCount: 1
+  persistence:
+    enabled: true
+    size: 2Gi
+
 mariadb:
   enabled: false
 

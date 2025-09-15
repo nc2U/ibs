@@ -1,0 +1,31 @@
+replicaCount: 1
+
+image:
+  repository: redis
+  tag: "7-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 6379
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+persistence:
+  enabled: true
+  size: 2Gi
+  storageClass: "nfs-subdir-external-provisioner"
+
+redis:
+  password: ""
+  appendOnly: true
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

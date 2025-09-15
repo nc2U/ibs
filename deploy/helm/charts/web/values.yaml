@@ -4,6 +4,19 @@
 
 replicaCount: 1
 
+# Celery worker configuration
+celery:
+  replicaCount: 2
+  concurrency: 4
+  maxTasksPerChild: 1000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
 image:
   repository: nc2u/django
   pullPolicy: Always

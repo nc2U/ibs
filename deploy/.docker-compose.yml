@@ -45,9 +45,19 @@ services:
     depends_on:
       - web
 
+  redis:
+    container_name: ibs-redis
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - ../volume/redis:/data
+    environment:
+      TZ: Asia/Seoul
+
   web:
     container_name: ibs-django
-    build: docker/python
+    build: docker/python  # 또는 docker/python/dev (개발 환경에 따라)
     image: nc2u/django
     volumes:
       - ../app/django:/app/django
@@ -63,7 +73,40 @@ services:
       DOMAIN_NAME: https://abc.com/ # 실제 데이터로 수정
       EMAIL_HOST: your-smtp-server.com # 실제 데이터로 수정
       EMAIL_PORT: 587   # 기본값은 587, 기본값과 다를 경우 실제 데이터로 수정
-      EMAIL_HOST_USER: # your accessId or accessEmail # 실제 데이터로 수정
+      EMAIL_HOST_USER: your-access-id-or-email # 실제 데이터로 수정
       EMAIL_HOST_PASSWORD: your-email-password # 실제 데이터로 수정
       DEFAULT_FROM_EMAIL: sender name <your@djangoapp.com> # 실제 데이터로 수정
       DJANGO_SETTINGS_MODULE: _config.settings # Django settings 모드 지정
+      CELERY_BROKER_URL: redis://redis:6379/0 # Celery 브로커 URL 추가
+      CELERY_RESULT_BACKEND: redis://redis:6379/0 # Celery 결과 백엔드 추가
+    depends_on:
+      - redis
+      - mariadb  # 또는 postgres (사용하는 DB에 따라)
+
+  celery:
+    container_name: ibs-celery
+    build: docker/python/dev  # 또는 docker/python (프로덕션 환경에 따라)
+    image: nc2u/django
+    entrypoint: []
+    command: ["celery", "-A", "_config", "worker", "--loglevel=info", "--concurrency=4"]
+    working_dir: /app/django
+    volumes:
+      - ../app/django:/app/django
+      - ../app/repos:/app/repos
+    environment:
+      DATABASE_TYPE: mariadb  # mariadb | postgres (default: mariadb)
+      DATABASE_NAME: my-db-name # 실제 데이터로 수정
+      DATABASE_USER: my-db-user # 실제 데이터로 수정
+      DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
+      EMAIL_HOST: your-smtp-server.com # 실제 데이터로 수정
+      EMAIL_PORT: 587   # 기본값은 587, 기본값과 다를 경우 실제 데이터로 수정
+      EMAIL_HOST_USER: your-access-id-or-email # 실제 데이터로 수정
+      EMAIL_HOST_PASSWORD: your-email-password # 실제 데이터로 수정
+      DEFAULT_FROM_EMAIL: sender name <your@djangoapp.com> # 실제 데이터로 수정
+      DJANGO_SETTINGS_MODULE: _config.settings
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - redis
+      - mariadb  # 또는 postgres (사용하는 DB에 따라)
+    restart: always

@@ -4,6 +4,7 @@ from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
 from .models import CompanyBankAccount, ProjectBankAccount, CashBook, ProjectCashBook
+from .resources import CashBookResource, ProjectCashBookResource
 
 
 class CompanyBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -23,6 +24,7 @@ class ProjectBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class CashBookAdmin(ImportExportMixin, admin.ModelAdmin):
+    resource_classes = [CashBookResource]
     list_display = ('id', 'deal_date', 'sort', 'account_d1', 'account_d2', 'account_d3', 'content',
                     'trader', 'bank_account', 'formatted_income', 'formatted_outlay', 'evidence', 'creator')
     list_editable = ('account_d1', 'account_d2', 'account_d3', 'content', 'trader', 'evidence')
@@ -42,6 +44,7 @@ class CashBookAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class ProjectCashBookAdmin(ImportExportMixin, admin.ModelAdmin):
+    resource_classes = [ProjectCashBookResource]
     list_display = (
         'id', 'project', 'deal_date', 'sort', 'project_account_d2', 'project_account_d3',
         'content', 'trader', 'bank_account', 'formatted_income', 'formatted_outlay', 'evidence')

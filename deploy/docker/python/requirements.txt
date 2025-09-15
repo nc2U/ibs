@@ -26,3 +26,6 @@ django-allauth==65.11.1
 django-filter==25.1
 django-crispy-forms==2.4
 crispy-bootstrap4==2025.6
+celery[redis]==5.5.3
+redis>=4.0.0
+tablib[xlsx]==3.7.0

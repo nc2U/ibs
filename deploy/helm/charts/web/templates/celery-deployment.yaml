@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "web.fullname" . }}-celery
+  labels:
+    {{- include "web.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery
+spec:
+  replicas: {{ .Values.celery.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "web.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: celery
+  template:
+    metadata:
+      labels:
+        {{- include "web.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: celery
+    spec:
+      serviceAccountName: {{ include "web.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: celery-worker
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["celery"]
+          args:
+            - "-A"
+            - "_config"
+            - "worker"
+            - "--loglevel=info"
+            - "--concurrency={{ .Values.celery.concurrency | default 4 }}"
+            - "--max-tasks-per-child={{ .Values.celery.maxTasksPerChild | default 1000 }}"
+          envFrom:
+            - configMapRef:
+                name: {{ include "web.fullname" . }}-config
+            - secretRef:
+                name: {{ include "web.fullname" . }}-db-auth
+          env:
+            - name: CELERY_BROKER_URL
+              value: "redis://{{ .Release.Name }}-redis:6379/0"
+            - name: CELERY_RESULT_BACKEND
+              value: "redis://{{ .Release.Name }}-redis:6379/0"
+          resources:
+            {{- toYaml (.Values.celery.resources | default .Values.resources) | nindent 12 }}
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/django/media
+              subPath: media
+            - name: logs
+              mountPath: /var/log/celery
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: {{ include "web.fullname" . }}-data
+        - name: logs
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
