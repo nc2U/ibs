@@ -33,6 +33,66 @@ class CashBookAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('company', ('deal_date', DateRangeFilter), 'sort',
                    'account_d1', 'account_d2', 'account_d3', 'evidence')
 
+    def process_dataset(self, dataset, form, request, **kwargs):
+        """Override process_dataset which is called by both dry run and actual import"""
+        # Call parent process_dataset
+        result = super().process_dataset(dataset, form, request, **kwargs)
+
+        # Check if this is the final import (not dry run)
+        if hasattr(form, 'cleaned_data') and not result.has_errors() and not result.has_validation_errors():
+            # Check if this is the actual import (has import_file_name from confirm form)
+            is_actual_import = 'import_file_name' in form.cleaned_data
+
+            if is_actual_import:
+                try:
+                    self._send_admin_import_summary_from_result(request, result)
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"CashBook 요약 알림 전송 실패: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+        return result
+
+    def _send_admin_import_summary_from_result(self, request, result):
+        """Send Slack summary notification using import result data directly"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        from _utils.slack_notifications import send_bulk_import_summary
+
+        # result.totals에서 직접 데이터 가져오기
+        new_records = result.totals.get('new', 0)
+        updated_records = result.totals.get('update', 0)
+        skipped_records = result.totals.get('skip', 0)
+        error_count = result.totals.get('error', 0) + result.totals.get('invalid', 0)
+        total_records = new_records + updated_records
+
+        if total_records > 0:
+            summary_data = {
+                'model_name': 'CashBook',
+                'total_records': total_records,
+                'new_records': new_records,
+                'updated_records': updated_records,
+                'skipped_records': skipped_records,
+                'error_count': error_count
+            }
+
+            logger.info(f"[ADMIN_IMPORT] CashBook import 결과 기반 요약: {summary_data}")
+
+            user = request.user if request.user.is_authenticated else None
+
+            try:
+                send_bulk_import_summary(summary_data, user)
+                logger.info(f"[ADMIN_IMPORT] CashBook 요약 알림 전송 완료")
+            except Exception as e:
+                logger.error(f"[ADMIN_IMPORT] CashBook Slack 요약 알림 전송 예외: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            logger.info(f"[ADMIN_IMPORT] CashBook 처리된 레코드 없음")
+
     def formatted_income(self, obj):
         return f'{intcomma(obj.income)} 원' if obj.income else '-'
 
@@ -54,6 +114,77 @@ class ProjectCashBookAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = (
         'project', 'sort', ('deal_date', DateRangeFilter), 'project_account_d2',
         'project_account_d3', 'is_imprest', 'installment_order', 'bank_account')
+
+    def process_dataset(self, dataset, form, request, **kwargs):
+        """Override process_dataset which is called by both dry run and actual import"""
+        # Call parent process_dataset
+        result = super().process_dataset(dataset, form, request, **kwargs)
+
+        # Check if this is the final import (not dry run)
+        if hasattr(form, 'cleaned_data') and not result.has_errors() and not result.has_validation_errors():
+            # Check if this is the actual import (has import_file_name from confirm form)
+            is_actual_import = 'import_file_name' in form.cleaned_data
+
+            if is_actual_import:
+                try:
+                    self._send_admin_import_summary_from_result(request, result)
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"ProjectCashBook 요약 알림 전송 실패: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+        return result
+
+    def _send_admin_import_summary_from_result(self, request, result):
+        """Send Slack summary notification using import result data directly"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        from _utils.slack_notifications import send_bulk_import_summary
+
+        # result.totals에서 직접 데이터 가져오기
+        new_records = result.totals.get('new', 0)
+        updated_records = result.totals.get('update', 0)
+        skipped_records = result.totals.get('skip', 0)
+        error_count = result.totals.get('error', 0) + result.totals.get('invalid', 0)
+        total_records = new_records + updated_records
+
+        if total_records > 0:
+            summary_data = {
+                'model_name': 'ProjectCashBook',
+                'total_records': total_records,
+                'new_records': new_records,
+                'updated_records': updated_records,
+                'skipped_records': skipped_records,
+                'error_count': error_count
+            }
+
+            logger.info(f"[ADMIN_IMPORT] ProjectCashBook import 결과 기반 요약: {summary_data}")
+
+            user = request.user if request.user.is_authenticated else None
+
+            # ProjectCashBook은 프로젝트별 모델이므로 최근 레코드를 target_instance로 전달
+            from django.utils import timezone
+            from datetime import timedelta
+            recent_time = timezone.now() - timedelta(minutes=5)
+
+            recent_records = ProjectCashBook.objects.filter(
+                updated__gte=recent_time
+            ).order_by('-updated')
+
+            target_instance = recent_records.first() if recent_records.exists() else None
+
+            try:
+                send_bulk_import_summary(summary_data, user, target_instance)
+                logger.info(f"[ADMIN_IMPORT] ProjectCashBook 요약 알림 전송 완료")
+            except Exception as e:
+                logger.error(f"[ADMIN_IMPORT] ProjectCashBook Slack 요약 알림 전송 예외: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            logger.info(f"[ADMIN_IMPORT] ProjectCashBook 처리된 레코드 없음")
 
     def formatted_income(self, obj):
         return f'{intcomma(obj.income)} 원' if obj.income else '-'

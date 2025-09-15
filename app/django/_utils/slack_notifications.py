@@ -15,16 +15,24 @@ logger = logging.getLogger(__name__)
 SYSTEM_NAME = 'IBS 업무관리시스템'
 
 
-def send_bulk_import_summary(summary_data, user=None):
+def send_bulk_import_summary(summary_data, user=None, target_instance=None):
     """Excel 대량 가져오기 완료 후 Slack 요약 알림 전송"""
     if not getattr(settings, 'SLACK_NOTIFICATIONS_ENABLED', True):
-        return
+        return False
 
-    # 본사관리용 웹훅 URL 가져오기 (대량 가져오기는 주로 본사에서 수행)
-    webhook_url = config('SLACK_COMPANY_URL', default=None)
+    # target_instance가 제공된 경우 해당 프로젝트의 웹훅 URL 찾기
+    webhook_url = None
+    if target_instance:
+        issue_project = get_target_issue_project(target_instance)
+        if issue_project:
+            webhook_url = get_slack_webhook_url(issue_project)
+
+    # target_instance가 없거나 웹훅 URL을 찾지 못한 경우 본사 URL 사용 (fallback)
     if not webhook_url:
-        logger.warning("대량 가져오기 Slack 알림 - SLACK_COMPANY_URL 환경변수 설정되지 않음")
-        return
+        webhook_url = config('SLACK_COMPANY_URL', default=None)
+        if not webhook_url:
+            logger.warning("대량 가져오기 Slack 알림 - 웹훅 URL을 찾을 수 없음")
+            return False
 
     # 메시지 구성
     model_name = summary_data.get('model_name', 'Unknown')
@@ -61,11 +69,15 @@ def send_bulk_import_summary(summary_data, user=None):
 
     # Slack으로 메시지 전송
     try:
+        logger.info(f"[BULK_IMPORT] Slack 메시지 전송 시도: {model_name} {total_records}건")
+
         response = requests.post(webhook_url, json=message, timeout=10)
         response.raise_for_status()
         logger.info(f"대량 가져오기 Slack 알림 전송 성공: {model_name} {total_records}건 처리 완료")
+        return True
     except requests.RequestException as e:
         logger.error(f"대량 가져오기 Slack 알림 전송 실패: {e}")
+        return False
 
 
 def get_slack_webhook_url(issue_project):
@@ -350,14 +362,14 @@ def get_site_owners_info(site_instance):
     try:
         owners = site_instance.owners.all()
         owner_count = owners.count()
-        
+
         if owner_count == 0:
             return ""
         elif owner_count == 1:
             return f" ({owners.first().owner})"
         else:
             first_owner = owners.first().owner
-            return f" ({first_owner} 외{owner_count-1})"
+            return f" ({first_owner} 외{owner_count - 1})"
     except Exception as e:
         logger.error(f"Site 소유자 정보 조회 오류: {e}")
         return ""
@@ -616,7 +628,7 @@ class SlackMessageBuilder:
 
         # 소유자 정보 조회
         owners_info = get_site_owners_info(instance)
-        
+
         # 간소화된 제목: 프로젝트명 + 사업부지 + 지번주소 + 소유자 정보
         title = f"🏗️ [{instance.project.issue_project.name}]-[사업부지] - {instance.district} {instance.lot_number}{owners_info}"
 
