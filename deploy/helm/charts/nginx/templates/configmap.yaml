@@ -78,6 +78,10 @@ data:
             uwsgi_buffers 8 64k;
             uwsgi_busy_buffers_size 64k;
 
+            uwsgi_connect_timeout 60s;
+            uwsgi_read_timeout 300s;
+            uwsgi_send_timeout 300s;
+
             proxy_hide_header Access-Control-Allow-Origin;
             add_header 'Access-Control-Allow-Origin' '*';
         }
