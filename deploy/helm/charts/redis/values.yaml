@@ -19,8 +19,8 @@ resources:
 
 persistence:
   enabled: true
-  size: 2Gi
-  storageClass: "nfs-subdir-external-provisioner"
+  size: 1Gi
+  storageClass: "nfs-client"
 
 redis:
   password: ""
