@@ -122,6 +122,17 @@ class CashBookResource(resources.ModelResource):
         """
         Pre-process row data before import
         """
+        # Robust ID handling - clean up various empty/invalid ID values
+        if 'id' in row:
+            id_value = str(row['id']).strip() if row['id'] is not None else ''
+            # Check for various empty states
+            if (not id_value or
+                id_value == '0' or
+                id_value.lower() in ['none', 'null', 'nan'] or
+                id_value == '-' or
+                all(c in ' \t\n\r\xa0' for c in id_value)):  # various whitespace chars
+                row['id'] = None
+
         # Convert empty strings to None for numeric fields
         for field in ['income', 'outlay']:
             if field in row and (row[field] == '' or row[field] is None):
@@ -249,6 +260,17 @@ class ProjectCashBookResource(resources.ModelResource):
         """
         Pre-process row data before import
         """
+        # Robust ID handling - clean up various empty/invalid ID values
+        if 'id' in row:
+            id_value = str(row['id']).strip() if row['id'] is not None else ''
+            # Check for various empty states
+            if (not id_value or
+                id_value == '0' or
+                id_value.lower() in ['none', 'null', 'nan'] or
+                id_value == '-' or
+                all(c in ' \t\n\r\xa0' for c in id_value)):  # various whitespace chars
+                row['id'] = None
+
         # Convert empty strings to None for numeric fields
         for field in ['income', 'outlay']:
             if field in row and (row[field] == '' or row[field] is None):
