@@ -4,15 +4,13 @@ import { TableSecondary } from '@/utils/cssMixins'
 import { usePayment } from '@/store/pinia/payment'
 import { useContract } from '@/store/pinia/contract'
 import { numFormat } from '@/utils/baseMixins'
-import type { OverallSummary, OverallSummaryPayOrder } from '@/store/types/payment'
+import type { OverallSummary as QS, OverallSummaryPayOrder as QSPO } from '@/store/types/payment'
 
 defineProps({ date: { type: String, default: '' } })
 
 const payStore = usePayment()
-const payOrderList = computed<OverallSummaryPayOrder[]>(
-  () => (payStore.overallSummary as OverallSummary)?.pay_orders || [],
-)
-const contAggregate = computed(() => (payStore.overallSummary as OverallSummary)?.aggregate)
+const payOrderList = computed<QSPO[]>(() => (payStore.overallSummary as QS)?.pay_orders || [])
+const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
 
 const contStore = useContract()
 const contPriceSum = computed(() => contStore.contPriceSum)
@@ -54,15 +52,18 @@ const contPriceSum = computed(() => contStore.contPriceSum)
           {{ order.pay_due_date }}
         </CTableDataCell>
       </CTableRow>
+
       <CTableRow>
         <CTableDataCell rowspan="4" class="text-center">계약</CTableDataCell>
         <CTableDataCell class="text-center">
           계약({{ numFormat(contAggregate?.conts_num ?? 0) }})
         </CTableDataCell>
+
         <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
           {{ numFormat(order.contract_amount ?? 0) }}
         </CTableDataCell>
       </CTableRow>
+
       <CTableRow>
         <CTableDataCell class="text-center">
           미계약({{ numFormat(contAggregate?.non_conts_num ?? 0) }})
