@@ -32,12 +32,13 @@ class CashBookResource(resources.ModelResource):
         import_id_fields = ('id',)
         fields = (
             'id', 'company', 'sort', 'account_d1', 'account_d2', 'account_d3',
-            'project', 'content', 'trader', 'bank_account', 'income', 'outlay',
-            'evidence', 'deal_date', 'note'
+            'project', 'is_return', 'is_separate', 'separated', 'content', 'trader',
+            'bank_account', 'income', 'outlay', 'evidence', 'deal_date', 'note'
         )
         export_order = (
             'id', 'deal_date', 'sort', 'account_d1', 'account_d2', 'account_d3',
-            'content', 'trader', 'bank_account', 'income', 'outlay', 'evidence', 'note'
+            'project', 'is_return', 'is_separate', 'separated', 'content', 'trader',
+            'bank_account', 'income', 'outlay', 'evidence', 'deal_date', 'note'
         )
 
     def __init__(self, *args, **kwargs):
@@ -156,12 +157,15 @@ class ProjectCashBookResource(resources.ModelResource):
         import_id_fields = ('id',)
         fields = (
             'id', 'project', 'sort', 'project_account_d2', 'project_account_d3',
-            'contract', 'installment_order', 'content', 'trader', 'bank_account',
-            'income', 'outlay', 'evidence', 'deal_date', 'note'
+            'is_separate', 'separated', 'is_imprest', 'contract', 'installment_order',
+            'refund_contractor', 'content', 'trader', 'bank_account', 'income', 'outlay',
+            'evidence', 'deal_date', 'note'
         )
         export_order = (
             'id', 'project', 'deal_date', 'sort', 'project_account_d2', 'project_account_d3',
-            'content', 'trader', 'bank_account', 'income', 'outlay', 'evidence', 'note'
+            'is_separate', 'separated', 'is_imprest', 'contract', 'installment_order',
+            'refund_contractor', 'content', 'trader', 'bank_account', 'income', 'outlay',
+            'evidence', 'deal_date', 'note'
         )
 
     def __init__(self, *args, **kwargs):
