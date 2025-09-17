@@ -27,7 +27,7 @@ const dark = computed(() => store.theme === 'dark')
 const rowColor = computed(() => {
   if (props.isHighlighted) return 'warning'
   const { proCash } = props
-  if (proCash?.separated) return 'secondary'
+  if (proCash?.separated) return 'light'
   if (proCash?.is_separate) return 'primary'
   if (proCash?.contract && [1, 4].includes(proCash?.project_account_d3 ?? 0)) return 'info'
 

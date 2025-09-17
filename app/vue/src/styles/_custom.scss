@@ -471,7 +471,15 @@ label.required::after {
     --cui-table-hover-bg: rgba(38, 57, 71, 0.95);
     --cui-table-hover-color: #ffffff;
     --cui-table-color: #ffffff;
-    --cui-table-border-color: rgba(115, 115, 115, 0.3) !important;
+    --cui-table-border-color: rgba(173, 173, 178, 0.3) !important;
+  }
+
+  // Light 색상 - 기본 회색을 어둡게 조정
+  .table-light,
+  .table-light > th,
+  .table-light > td {
+    --cui-table-hover-bg: rgba(47, 47, 57, 0.95);
+    --cui-table-hover-color: #ffffff;
   }
 
   // Secondary 색상 - 기본 회색을 어둡게 조정
@@ -482,7 +490,7 @@ label.required::after {
     --cui-table-hover-bg: rgba(43, 44, 45, 0.95);
     --cui-table-hover-color: #ffffff;
     --cui-table-color: #ffffff;
-    --cui-table-border-color: rgba(149, 151, 153, 0.3) !important;
+    --cui-table-border-color: rgba(173, 173, 178, 0.3) !important;
   }
 
   // Warning 색상도 추가로 조정 (필요시)
