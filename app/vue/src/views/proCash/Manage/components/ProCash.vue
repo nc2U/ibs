@@ -25,21 +25,13 @@ const sortClass = computed(
 const store = useStore()
 const dark = computed(() => store.theme === 'dark')
 const rowColor = computed(() => {
-  let color = ''
-  // 하이라이트가 우선순위가 가장 높음
-  if (props.isHighlighted) {
-    color = 'warning'
-  } else {
-    color =
-      props.proCash?.contract &&
-      (props.proCash.project_account_d3 === 1 || props.proCash.project_account_d3 === 4)
-        ? 'info'
-        : color
-    color = dark.value ? '' : color
-    color = props.proCash?.is_separate ? 'primary' : color
-    color = props.proCash?.separated ? 'secondary' : color
-  }
-  return color
+  if (props.isHighlighted) return 'warning'
+  const { proCash } = props
+  if (proCash?.separated) return 'secondary'
+  if (proCash?.is_separate) return 'primary'
+  if (proCash?.contract && [1, 4].includes(proCash?.project_account_d3 ?? 0)) return 'info'
+
+  return ''
 })
 
 const accountStore = useAccount()
