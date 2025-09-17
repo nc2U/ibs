@@ -449,6 +449,39 @@ label.required::after {
     background-color: #24252f;
     color: #e3e3e4;
   }
+
+  // Table row 색상 오버라이드 - 더 밝고 가시성 좋은 색상
+  .table-secondary {
+    --cui-table-bg: rgba(mix(rgba(255, 255, 255, 0.25), #181924), 1) !important;
+    background-color: rgba(mix(rgba(255, 255, 255, 0.25), #181924), 1) !important;
+    color: #ffffff !important;
+  }
+
+  // 더 구체적인 선택자들
+  table .table-secondary,
+  .table .table-secondary,
+  .c-table .table-secondary,
+  .c-table tbody tr.table-secondary,
+  .c-table tbody tr.table-secondary td,
+  tr.table-secondary,
+  tr.table-secondary td {
+    background-color: rgba(mix(rgba(255, 255, 255, 0.25), #181924), 1) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+  }
+
+  // 호버 상태 스타일링
+  .table-secondary:hover,
+  table .table-secondary:hover,
+  .table .table-secondary:hover,
+  .c-table .table-secondary:hover,
+  .c-table tbody tr.table-secondary:hover,
+  .c-table tbody tr.table-secondary:hover td,
+  tr.table-secondary:hover,
+  tr.table-secondary:hover td {
+    background-color: rgba(mix(rgba(255, 255, 255, 0.15), #181924), 1) !important;
+    color: #ffffff !important;
+  }
 }
 
 .bold,
