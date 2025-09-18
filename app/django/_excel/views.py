@@ -408,7 +408,7 @@ class ExportApplicants(View):
 
 
 class ExportSuccessions(View):
-    """해지자 리스트"""
+    """권리의무승계 리스트"""
 
     @staticmethod
     def get(request):
