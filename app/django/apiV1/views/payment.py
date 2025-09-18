@@ -1,14 +1,10 @@
 from datetime import datetime
 
-from django.db.models import Sum, F, Count, Case, When, Value, DecimalField, Q
+from django.db.models import Sum, F
 from django_filters import DateFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
 
-from cash.models import ProjectCashBook
-from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment, OverDueRule
 from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
@@ -174,10 +170,9 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         serializer = OverallSummarySerializer(result)
         return Response(serializer.data)
 
-    def _get_contract_amount(self, order, project_id):
+    @staticmethod
+    def _get_contract_amount(order, project_id):
         """해당 회차의 계약 금액 합계 계산"""
-        from contract.models import Contract
-        from payment.models import SalesPriceByGT
 
         # pay_sort에 따라 계약 금액 계산
         if order.pay_sort == '1':  # 계약금
@@ -252,13 +247,15 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             'subtotal': subtotal
         }
 
-    def _get_not_due_unpaid(self, order, project_id, date):
+    @staticmethod
+    def _get_not_due_unpaid(order, project_id, date):
         """기간미도래 미수금 계산"""
         # TODO: 실제 기간미도래 로직 구현 필요
         # 현재는 0으로 반환
         return 0
 
-    def _get_aggregate_data(self, project_id):
+    @staticmethod
+    def _get_aggregate_data(project_id):
         """집계 데이터 조회"""
         from contract.models import Contract
         from items.models import KeyUnit
