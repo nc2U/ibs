@@ -9,8 +9,6 @@ const props = defineProps({
   order: { type: Object as PropType<PayOrder>, default: null },
   commit: { type: Number, default: 0 },
   price: { type: Number, default: 0 },
-  numDown: { type: Number, default: 0 },
-  numMid: { type: Number, default: 0 },
   paymentList: { type: Array as PropType<AllPayment[]>, default: () => [] },
 })
 

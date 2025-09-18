@@ -7,6 +7,7 @@ import { write_payment } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
 import { type Contract } from '@/store/types/contract'
+import type { Project } from '@/store/types/project.ts'
 import { type ContFilter, useContract } from '@/store/pinia/contract'
 import { useProCash } from '@/store/pinia/proCash'
 import { type ProjectCashBook, type CashBookFilter } from '@/store/types/proCash'
@@ -43,10 +44,10 @@ const calcUrl = computed(() => {
 })
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const contractStore = useContract()
-const contract = computed(() => contractStore.contract)
+const contract = computed(() => contractStore.contract as Contract | null)
 
 const paymentStore = usePayment()
 const AllPaymentList = computed(() => paymentStore.AllPaymentList)
@@ -84,7 +85,7 @@ const fetchContract = (pk: number) => contractStore.fetchContract(pk)
 
 const [route, router] = [useRoute(), useRouter()]
 
-watch(contract, newVal => {
+watch(contract, (newVal: Contract | null) => {
   if (newVal && project.value) {
     const order_group = newVal.order_group
     const unit_type = newVal.unit_type

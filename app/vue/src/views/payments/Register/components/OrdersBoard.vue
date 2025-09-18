@@ -76,15 +76,15 @@ const getCommits = (el: number | undefined) => {
     ? (thisPrice.value * Number(order.pay_ratio)) / 100
     : thisPrice.value * 0.1 // 1. payByOrder === '중도금' (지정된 비율이 없으면 회당 10%)
   const downPay = down ? down : payByOrder
-  const balace = thisPrice.value - downPay * numDown.value - payByOrder * numMid.value // 분양가 - (계약금 + 중도금), 2. payByOrder
-  const balacePay = balace ? balace : (payByOrder * Number(order?.pay_ratio)) / 100
+  const balance = thisPrice.value - downPay * numDown.value - payByOrder * numMid.value // 분양가 - (계약금 + 중도금), 2. payByOrder
+  const balancePay = balance ? balance : (payByOrder * Number(order?.pay_ratio)) / 100
 
   if (order?.pay_sort === '1') {
     return downPay // 계약금
   } else if (order?.pay_sort === '2') {
     return payByOrder // 중도금
   } else if (order?.pay_sort === '3') {
-    return balacePay // 잔금
+    return balancePay // 잔금
   } else return 0
 }
 </script>
@@ -116,8 +116,6 @@ const getCommits = (el: number | undefined) => {
           :price="thisPrice"
           :order="po"
           :commit="getCommits(po.pay_time as number)"
-          :num-down="numDown"
-          :num-mid="numMid"
           :payment-list="paymentList"
         />
       </CTableRow>
