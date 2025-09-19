@@ -9,10 +9,11 @@ from .models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, O
 class UnitTypeAdmin(ImportExportMixin, admin.ModelAdmin):
     # form = UnitTypeForm
     list_display = (
-        'id', 'project', 'name', 'sort', 'styled_color', 'actual_area', 'supply_area', 'contract_area', 'average_price',
-        'num_unit')
+        'id', 'project', 'main_or_sub', 'name', 'sort', 'styled_color',
+        'actual_area', 'supply_area', 'contract_area', 'average_price', 'num_unit')
     list_display_links = ('project', 'name',)
-    list_editable = ('sort', 'actual_area', 'supply_area', 'contract_area', 'average_price', 'num_unit')
+    list_editable = ('main_or_sub', 'sort', 'actual_area', 'supply_area',
+                     'contract_area', 'average_price', 'num_unit')
     list_filter = ('project',)
 
     def styled_color(self, obj):
@@ -48,11 +49,10 @@ class HasContractFilter(SimpleListFilter):
 
 
 class KeyUnitAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'unit_code', 'sort', 'unit_type', 'contract')
+    list_display = ('id', 'project', 'unit_code', 'unit_type', 'contract')
     search_fields = ('unit_code',)
     list_display_links = ('project', 'unit_code',)
-    list_editable = ('sort',)
-    list_filter = ('project', 'sort', 'unit_type', HasContractFilter)
+    list_filter = ('project', 'unit_type', HasContractFilter)
 
 
 class BuindingUnitAdmin(ImportExportMixin, admin.ModelAdmin):

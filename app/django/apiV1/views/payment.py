@@ -268,7 +268,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         ).count()
 
         # 전체 세대수 (KeyUnit 기준)
-        total_units = KeyUnit.objects.filter(project_id=project_id, sort='1').count()
+        total_units = KeyUnit.objects.filter(project_id=project_id,
+                                             houseunit__unit_type__main_or_sub='1').count()
 
         # 미계약 세대수
         non_conts_num = total_units - conts_num

@@ -3,6 +3,7 @@ from django.db import models
 
 class UnitType(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트', related_name='types')
+    main_or_sub = models.CharField('종류', max_length=1, choices=(('1', '메인유닛'), ('2', '부대시설')), default='1')
     SORT_CHOICES = (('1', '공동주택'), ('2', '오피스텔'), ('3', '숙박시설'),
                     ('4', '지식산업센터'), ('5', '근린생활시설'), ('6', '기타'))
     sort = models.CharField('타입종류', max_length=1, choices=SORT_CHOICES)
@@ -46,7 +47,6 @@ class UnitFloorType(models.Model):  # 층별 타입
 class KeyUnit(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트', related_name='units')
     unit_code = models.CharField('코드번호', max_length=8, db_index=True)
-    sort = models.CharField('종류', max_length=1, choices=(('1', '메인유닛'), ('2', '부대시설')), default='1')
     unit_type = models.ForeignKey(UnitType, on_delete=models.PROTECT, verbose_name='타입')
 
     def __str__(self):
