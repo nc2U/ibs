@@ -57,7 +57,7 @@ const onDeleteType = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-else>
       <CTableRow>
-        <CTableDataCell :colspan="write_project ? 9 : 8" class="text-center p-5 text-danger">
+        <CTableDataCell :colspan="write_project ? 11 : 10" class="text-center p-5 text-danger">
           등록된 데이터가 없습니다.
         </CTableDataCell>
       </CTableRow>
