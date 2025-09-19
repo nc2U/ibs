@@ -33,6 +33,7 @@ export interface Project {
 export interface UnitType {
   pk?: number
   project?: number
+  main_or_sub: '1' | '2' | ''
   sort: '1' | '2' | '3' | '4' | '5' | '6' | ''
   name: string
   color: string
@@ -112,13 +113,11 @@ export interface BuildingUnit {
 
 export interface KeyUnit {
   pk: number
-  sort: '1' | '2'
   contract: Contract | null
 }
 
 interface KUnit {
   pk: number
-  sort: '1' | '2'
   contract: Contract
 }
 

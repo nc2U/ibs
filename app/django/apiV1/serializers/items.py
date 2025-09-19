@@ -8,7 +8,7 @@ from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUn
 class UnitTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = UnitType
-        fields = ('pk', 'project', 'sort', 'name', 'color',
+        fields = ('pk', 'project', 'main_or_sub', 'sort', 'name', 'color',
                   'actual_area', 'supply_area', 'contract_area',
                   'average_price', 'price_setting', 'num_unit')
 
@@ -36,7 +36,7 @@ class KeyUnitSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = KeyUnit
-        fields = ('pk', 'project', 'sort', 'unit_type', 'unit_code', 'houseunit', 'contract')
+        fields = ('pk', 'project', 'unit_type', 'unit_code', 'houseunit', 'contract')
         read_only_fields = ('contract',)
 
 
@@ -72,7 +72,7 @@ class KeyUnitInHouseUnitSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = KeyUnit
-        fields = ('pk', 'sort', 'contract')
+        fields = ('pk', 'contract')
 
 
 class AllHouseUnitSerializer(serializers.ModelSerializer):
