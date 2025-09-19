@@ -58,7 +58,7 @@ class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
     readonly_fields = ('created', 'updated')
     fieldsets = (
         ('기본 정보', {
-            'fields': ('cont_price', 'contract', 'pay_order', 'amount')
+            'fields': ('cont_price', 'pay_order', 'amount')
         }),
         ('설정 정보', {
             'fields': ('is_manual_override', 'override_reason', 'disable')
@@ -70,9 +70,7 @@ class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
     )
 
     def get_contract_info(self, obj):
-        if obj.contract:
-            return obj.contract
-        elif obj.cont_price and obj.cont_price.contract:
+        if obj.cont_price.contract:
             return obj.cont_price.contract
         return "No Contract"
 
