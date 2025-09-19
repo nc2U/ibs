@@ -110,10 +110,16 @@ class PaymentPerInstallment(models.Model):
     cont_price = models.ForeignKey(ContractPrice, on_delete=models.CASCADE, verbose_name='공급 가격')
     pay_order = models.ForeignKey('payment.InstallmentPaymentOrder', on_delete=models.CASCADE, verbose_name='납부 회차')
     amount = models.PositiveIntegerField('납부 약정금액')
+    is_manual_override = models.BooleanField('수동 설정 여부', default=True,
+                                             help_text='True: 수동 설정된 예외 금액, False: 자동 계산된 금액')
+    override_reason = models.CharField('수정 사유', max_length=100, blank=True,
+                                       help_text='수동 설정 시 사유 기록')
     disable = models.BooleanField('비활성', default=False)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('수정일시', auto_now=True)
 
     class Meta:
-        ordering = ('cont_price__contract__project', 'pay_order', 'cont_price')
+        ordering = ('cont_price__contract__project', 'pay_order', 'cont_price__contract')
         verbose_name = '04. 회차별 납부대금'
         verbose_name_plural = '04. 회차별 납부대금'
 

@@ -38,10 +38,6 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin]
 
 
-class PaymentPerInstallmentInline(admin.TabularInline):
-    model = PaymentPerInstallment
-    extra = 0
-
 @admin.register(ContractPrice)
 class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'contract', 'price', 'price_build', 'price_land', 'price_tax',
@@ -50,16 +46,37 @@ class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('price', 'price_build', 'price_land', 'price_tax')
     list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',
                    'contract__activation', 'contract__contractor__status')
-    inlines = [PaymentPerInstallmentInline]
 
 
 @admin.register(PaymentPerInstallment)
 class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'cont_price', 'pay_order', 'amount')
-    list_display_links = ('cont_price',)
-    list_editable = ('amount',)
-    list_filter = ('cont_price__contract__project', 'cont_price__contract__order_group',
-                   'cont_price__contract__unit_type', 'cont_price__contract__activation')
+    list_display = ('id', 'get_contract_info', 'pay_order', 'amount', 'is_manual_override', 'disable', 'created')
+    list_display_links = ('get_contract_info',)
+    list_editable = ('amount', 'is_manual_override', 'disable')
+    list_filter = ('is_manual_override', 'disable')
+    search_fields = ('pay_order__pay_name', 'override_reason')
+    readonly_fields = ('created', 'updated')
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('cont_price', 'contract', 'pay_order', 'amount')
+        }),
+        ('설정 정보', {
+            'fields': ('is_manual_override', 'override_reason', 'disable')
+        }),
+        ('시스템 정보', {
+            'fields': ('created', 'updated'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_contract_info(self, obj):
+        if obj.contract:
+            return obj.contract
+        elif obj.cont_price and obj.cont_price.contract:
+            return obj.cont_price.contract
+        return "No Contract"
+
+    get_contract_info.short_description = '계약 정보'
 
 
 class CAdressInline(ImportExportMixin, admin.StackedInline):
