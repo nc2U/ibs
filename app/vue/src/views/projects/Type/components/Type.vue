@@ -13,6 +13,7 @@ const emit = defineEmits(['on-update', 'on-delete'])
 
 const form = ref({
   sort: '',
+  main_or_sub: '',
   name: '',
   color: '',
   actual_area: null,
@@ -28,15 +29,16 @@ const refConfirmModal = ref()
 
 const formsCheck = computed(() => {
   const a = form.value.sort === props.type?.sort
-  const b = form.value.name === props.type?.name
-  const c = form.value.color === props.type?.color
-  const d = form.value.actual_area === props.type?.actual_area
-  const e = form.value.supply_area === props.type?.supply_area
-  const f = form.value.contract_area === props.type?.contract_area
-  const g = form.value.average_price === props.type?.average_price
-  const h = form.value.price_setting === props.type?.price_setting
-  const i = form.value.num_unit === props.type?.num_unit
-  return a && b && c && d && e && f && g && h && i
+  const b = form.value.main_or_sub === props.type?.main_or_sub
+  const c = form.value.name === props.type?.name
+  const d = form.value.color === props.type?.color
+  const e = form.value.actual_area === props.type?.actual_area
+  const f = form.value.supply_area === props.type?.supply_area
+  const g = form.value.contract_area === props.type?.contract_area
+  const h = form.value.average_price === props.type?.average_price
+  const i = form.value.price_setting === props.type?.price_setting
+  const j = form.value.num_unit === props.type?.num_unit
+  return a && b && c && d && e && f && g && h && i && j
 })
 
 const formCheck = (bool: boolean) => {
@@ -46,7 +48,7 @@ const formCheck = (bool: boolean) => {
 const onUpdateType = () => {
   if (write_project.value) {
     const pk = props.type?.pk
-    emit('on-update', { ...{ pk }, ...form })
+    emit('on-update', { ...{ pk }, ...form.value })
   } else {
     refAlertModal.value.callModal()
     dataSetup()
@@ -66,6 +68,7 @@ const modalAction = () => {
 const dataSetup = () => {
   if (props.type) {
     form.value.sort = props.type.sort as '1' | '2' | '3' | '4' | '5' | '6'
+    form.value.main_or_sub = props.type.main_or_sub as '1' | '2'
     form.value.name = props.type.name as string
     form.value.color = props.type.color as string
     form.value.actual_area = props.type.actual_area as any
@@ -87,6 +90,16 @@ onBeforeMount(() => dataSetup())
         <option v-for="tp in typeSort" :key="tp.value" :value="tp.value">
           {{ tp.label }}
         </option>
+      </CFormSelect>
+    </CTableDataCell>
+    <CTableDataCell>
+      <CFormSelect
+        v-model="form.main_or_sub"
+        required
+        @change="formCheck(form.main_or_sub !== type.main_or_sub)"
+      >
+        <option value="1">메인유닛</option>
+        <option value="2">보조시설</option>
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>

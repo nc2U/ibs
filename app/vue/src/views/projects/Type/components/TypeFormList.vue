@@ -18,20 +18,22 @@ const onDeleteType = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive>
     <colgroup>
-      <col style="width: 11%" />
-      <col style="width: 11%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
       <col style="width: 5%" />
       <col style="width: 10%" />
       <col style="width: 10%" />
-      <col style="width: 11%" />
-      <col style="width: 11%" />
-      <col style="width: 11%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
       <col style="width: 10%" />
       <col v-if="write_project" style="width: 10%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
         <CTableHeaderCell>타입종류</CTableHeaderCell>
+        <CTableHeaderCell>타입구분</CTableHeaderCell>
         <CTableHeaderCell>타입명칭</CTableHeaderCell>
         <CTableHeaderCell>타입색상</CTableHeaderCell>
         <CTableHeaderCell>전용면적(m<sup>2</sup>)</CTableHeaderCell>

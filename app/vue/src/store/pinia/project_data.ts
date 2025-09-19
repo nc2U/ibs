@@ -168,7 +168,9 @@ export const useProjectData = defineStore('projectData', () => {
         }))
       : [],
   )
-  const mallExcludedUnits = computed(() => houseUnitList.value.filter(u => u.unit_type?.sort && u.unit_type.sort < '5'))
+  const mallExcludedUnits = computed(() =>
+    houseUnitList.value.filter(u => u.unit_type?.sort && u.unit_type.sort < '5'),
+  )
   const unitSummary = computed(() =>
     mallExcludedUnits.value
       ? {

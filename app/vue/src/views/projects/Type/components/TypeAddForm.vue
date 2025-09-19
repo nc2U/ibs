@@ -20,8 +20,9 @@ const refConfirmModal = ref()
 const validated = ref(false)
 const form = reactive({
   sort: '',
+  main_or_sub: '1',
   name: '',
-  color: '',
+  color: '#000000',
   actual_area: null,
   supply_area: null,
   contract_area: null,
@@ -48,7 +49,7 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = () => {
-  emit('on-submit', form)
+  emit('on-submit', { ...form })
   validated.value = false
   refConfirmModal.value.close()
   resetForm()
@@ -56,6 +57,7 @@ const modalAction = () => {
 
 const resetForm = () => {
   form.sort = ''
+  form.main_or_sub = ''
   form.name = ''
   form.color = ''
   form.actual_area = null
@@ -72,7 +74,7 @@ const resetForm = () => {
     <CRow class="p-2">
       <CCol lg="3">
         <CRow>
-          <CCol lg="6" class="mb-2">
+          <CCol lg="4" class="mb-2">
             <CFormSelect v-model="form.sort" required :disabled="disabled">
               <option value="">타입종류</option>
               <option v-for="tp in typeSort" :key="tp.value" :value="tp.value">
@@ -81,7 +83,14 @@ const resetForm = () => {
             </CFormSelect>
           </CCol>
 
-          <CCol lg="6" class="mb-2">
+          <CCol lg="4" class="mb-2">
+            <CFormSelect v-model="form.main_or_sub" required :disabled="disabled">
+              <option value="1">메인유닛</option>
+              <option value="2">보조시설</option>
+            </CFormSelect>
+          </CCol>
+
+          <CCol lg="4" class="mb-2">
             <CFormInput
               v-model="form.name"
               maxlength="10"

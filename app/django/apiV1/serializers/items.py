@@ -8,7 +8,7 @@ from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUn
 class UnitTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = UnitType
-        fields = ('pk', 'project', 'main_or_sub', 'sort', 'name', 'color',
+        fields = ('pk', 'project', 'sort', 'main_or_sub', 'name', 'color',
                   'actual_area', 'supply_area', 'contract_area',
                   'average_price', 'price_setting', 'num_unit')
 

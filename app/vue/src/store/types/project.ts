@@ -33,8 +33,8 @@ export interface Project {
 export interface UnitType {
   pk?: number
   project?: number
-  main_or_sub: '1' | '2' | ''
   sort: '1' | '2' | '3' | '4' | '5' | '6' | ''
+  main_or_sub: '1' | '2' | ''
   name: string
   color: string
   actual_area: number | null
