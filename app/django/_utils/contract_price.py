@@ -28,10 +28,9 @@ def get_floor_type(contract):
         return None
 
 
-def get_sale_price_by_contract_type(contract, houseunit=None):
+def get_sales_price_by_gt(contract, houseunit=None):
     """
     Get SalesPriceByGT instance for specific contract and houseunit.
-    Equivalent to get_sale_price_by_gt function in serializers.
 
     Args:
         contract: Contract instance
@@ -76,7 +75,6 @@ def get_sale_price_by_contract_type(contract, houseunit=None):
 def get_contract_price(contract, houseunit=None, is_set=False):
     """
     Get contract price details with flexible fallback logic.
-    Replacement for get_cont_price function with enhanced functionality.
 
     Args:
         contract: Contract instance
@@ -126,7 +124,7 @@ def get_contract_price(contract, houseunit=None, is_set=False):
         # Use provided houseunit or get from contract
         if houseunit is not None:
             # Use explicit houseunit parameter
-            sales_price = get_sale_price_by_contract_type(contract, houseunit)
+            sales_price = get_sales_price_by_gt(contract, houseunit)
             if sales_price:
                 return (
                     sales_price.price or 0,
