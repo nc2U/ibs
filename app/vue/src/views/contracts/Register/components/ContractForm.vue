@@ -595,6 +595,10 @@ onBeforeRouteLeave(() => formDataReset())
                 :disabled="!isContract"
                 @click="remove_sup_cDate"
               />
+              <div class="form-text">
+                공급계약이란 조합원 가입 시 체결하는 가입계약이 아닌 사업계획승인 후 시공사와
+                체결하는 주택공급계약을 말하는 것으로 주택공급계약 체결 시 이 항목을 체크.
+              </div>
             </CCol>
             <CFormLabel class="col-sm-2 col-lg-1 col-form-label">체결일자</CFormLabel>
             <CCol sm="10" lg="2">
@@ -716,6 +720,17 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>휴대전화번호를 입력하세요.</CFormFeedback>
         </CCol>
 
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 이메일</CFormLabel>
+        <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
+          <CFormInput
+            v-model="form.email"
+            type="email"
+            maxlength="30"
+            placeholder="이메일 주소를 입력하세요."
+            :disabled="noStatus"
+          />
+        </CCol>
+
         <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 집전화</CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <input
@@ -738,17 +753,6 @@ onBeforeRouteLeave(() => formDataReset())
             class="form-control"
             maxlength="13"
             placeholder="기타 연락처를 입력하세요."
-            :disabled="noStatus"
-          />
-        </CCol>
-
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 이메일</CFormLabel>
-        <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
-          <CFormInput
-            v-model="form.email"
-            type="email"
-            maxlength="30"
-            placeholder="이메일 주소를 입력하세요."
             :disabled="noStatus"
           />
         </CCol>
