@@ -290,7 +290,7 @@ def get_down_payment(contract, installment_order):
     return None
 
 
-def get_installment_payment_amount(contract, installment_order):
+def get_payment_amount(contract, installment_order):
     """
     Get payment amount for specific contract and installment order with 5-step priority logic.
 
@@ -415,7 +415,7 @@ def calculate_remain_payment(contract, remain_installment_order):
 
         for installment in other_installments:
             # Get payment amount for each installment
-            amount = get_installment_payment_amount(contract, installment)
+            amount = get_payment_amount(contract, installment)
             total_other_payments += amount
 
         # Calculate remain payment
@@ -501,7 +501,7 @@ def get_contract_payment_plan(contract):
                 pass
 
             # Calculate amount using priority logic
-            amount = get_installment_payment_amount(contract, installment)
+            amount = get_payment_amount(contract, installment)
 
             payment_plan.append({
                 'installment_order': installment,

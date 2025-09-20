@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers
 
-from _utils.contract_price import get_sales_price_by_gt, get_contract_price
+from _utils.contract_price import get_sales_price_by_gt, get_contract_price, get_payment_amount
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
                              ContractorContact, Succession, ContractorRelease, ContractFile)
@@ -147,22 +147,6 @@ def get_pay_amount(instance, price, is_set=False):
     return down, middle, remain, biz_agency_fee, is_included_baf
 
 
-def get_amount(order, pay_amount):
-    amount = 0
-    if order.pay_sort == '1':
-        amount = pay_amount.down_pay
-    elif order.pay_sort == '2':
-        amount = pay_amount.middle_pay
-    elif order.pay_sort == '3':
-        amount = pay_amount.remain_pay
-    else:
-        amount = amount
-
-    # 공급가 테이블 -> 특별 회차 및 약정금 등록 시 해당 데이터 적용
-    amount = order.pay_amt if order.pay_amt else amount
-    return amount
-
-
 class ContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
@@ -226,7 +210,7 @@ class ContractSerializer(serializers.ModelSerializer):
             #
             # if payments_install:
             #     for i, order in enumerate(installments):
-            #         amount = get_amount(order, pay_amount)
+            #         amount = get_payment_amount(contract, order)
             #         if payments_install[i]:
             #             payment = payments_install[i]
             #             payment.cont_price = cont_price
@@ -247,7 +231,7 @@ class ContractSerializer(serializers.ModelSerializer):
             #
             # else:
             #     for order in installments:
-            #         amount = get_amount(order, pay_amount)
+            #         amount = get_payment_amount(contract, order)
             #         payment = PaymentPerInstallment(cont_price=cont_price,
             #                                         pay_order=order,
             #                                         amount=amount)
