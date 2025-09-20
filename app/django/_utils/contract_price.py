@@ -520,3 +520,227 @@ def get_contract_payment_plan(contract):
         # AttributeError: contract.project/unit_type is None
         # TypeError: Invalid filter operations
         return []
+
+
+def get_project_payment_summary(project, order_group=None, unit_type=None):
+    """
+    Get payment summary for all contracts in a project with installment-wise totals.
+
+    Args:
+        project: Project instance
+        order_group: OrderGroup instance (optional filter)
+        unit_type: UnitType instance (optional filter)
+
+    Returns:
+        dict: Summary data with installment-wise totals
+
+    Example return:
+        {
+            'installment_summaries': [
+                {
+                    'installment_order': InstallmentPaymentOrder instance,
+                    'total_amount': 5000000000,
+                    'contract_count': 100,
+                    'average_amount': 50000000,
+                    'source_breakdown': {
+                        'calculated': 4500000000,
+                        'payment_per_installment': 500000000
+                    }
+                }
+            ],
+            'grand_total': 50000000000,
+            'total_contracts': 100
+        }
+    """
+    if not project:
+        return {
+            'installment_summaries': [],
+            'grand_total': 0,
+            'total_contracts': 0
+        }
+
+    try:
+        # Get contracts with optimized queries
+        contracts_query = project.contract_set.filter(
+            activation=True
+        ).select_related(
+            'contractprice', 'order_group', 'unit_type',
+            'key_unit__houseunit__floor_type'
+        ).prefetch_related('project__projectincbudget_set')
+
+        # Apply filters if provided
+        if order_group:
+            contracts_query = contracts_query.filter(order_group=order_group)
+        if unit_type:
+            contracts_query = contracts_query.filter(unit_type=unit_type)
+
+        contracts = list(contracts_query)
+
+        if not contracts:
+            return {
+                'installment_summaries': [],
+                'grand_total': 0,
+                'total_contracts': 0
+            }
+
+        # Get all installment orders for this project
+        installments_query = InstallmentPaymentOrder.objects.filter(project=project)
+        if unit_type:
+            installments_query = installments_query.filter(type_sort=unit_type.sort)
+
+        installments = list(installments_query.order_by('pay_code', 'pay_time'))
+
+        # Initialize summary structure
+        installment_summaries = {}
+        for installment in installments:
+            installment_summaries[installment.id] = {
+                'installment_order': installment,
+                'total_amount': 0,
+                'contract_count': 0,
+                'source_breakdown': {
+                    'calculated': 0,
+                    'payment_per_installment': 0
+                }
+            }
+
+        # Process each contract's payment plan
+        grand_total = 0
+        processed_contracts = 0
+
+        for contract in contracts:
+            try:
+                payment_plan = get_contract_payment_plan(contract)
+
+                contract_has_payments = False
+                for plan_item in payment_plan:
+                    installment_id = plan_item['installment_order'].id
+                    amount = plan_item['amount']
+                    source = plan_item['source']
+
+                    if installment_id in installment_summaries:
+                        installment_summaries[installment_id]['total_amount'] += amount
+                        installment_summaries[installment_id]['source_breakdown'][source] += amount
+                        grand_total += amount
+                        contract_has_payments = True
+
+                # Only count contracts that have payment data
+                if contract_has_payments:
+                    for plan_item in payment_plan:
+                        installment_id = plan_item['installment_order'].id
+                        if installment_id in installment_summaries:
+                            installment_summaries[installment_id]['contract_count'] += 1
+                            break  # Count each contract only once
+                    processed_contracts += 1
+
+            except (AttributeError, TypeError, ValueError) as e:
+                # Log error but continue processing other contracts
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f'Error processing contract {contract.id}: {str(e)}')
+                continue
+
+        # Convert to list and add average calculations
+        result_summaries = []
+        for summary_data in installment_summaries.values():
+            if summary_data['contract_count'] > 0:
+                summary_data['average_amount'] = summary_data['total_amount'] // summary_data['contract_count']
+            else:
+                summary_data['average_amount'] = 0
+
+            # Only include installments that have data
+            if summary_data['total_amount'] > 0:
+                result_summaries.append(summary_data)
+
+        # Sort by installment order
+        result_summaries.sort(key=lambda x: (x['installment_order'].pay_code, x['installment_order'].pay_time))
+
+        return {
+            'installment_summaries': result_summaries,
+            'grand_total': grand_total,
+            'total_contracts': processed_contracts
+        }
+
+    except (AttributeError, TypeError) as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f'Error in get_project_payment_summary: {str(e)}')
+        return {
+            'installment_summaries': [],
+            'grand_total': 0,
+            'total_contracts': 0
+        }
+
+
+def get_multiple_projects_payment_summary(projects, order_group=None, unit_type=None):
+    """
+    Get payment summary for multiple projects.
+
+    Args:
+        projects: List of Project instances
+        order_group: OrderGroup instance (optional filter)
+        unit_type: UnitType instance (optional filter)
+
+    Returns:
+        dict: Combined summary data for all projects
+    """
+    if not projects:
+        return {
+            'installment_summaries': [],
+            'grand_total': 0,
+            'total_contracts': 0
+        }
+
+    combined_summaries = {}
+    combined_grand_total = 0
+    combined_total_contracts = 0
+
+    for project in projects:
+        try:
+            project_summary = get_project_payment_summary(project, order_group, unit_type)
+
+            combined_total_contracts += project_summary['total_contracts']
+            combined_grand_total += project_summary['grand_total']
+
+            # Merge installment summaries
+            for summary in project_summary['installment_summaries']:
+                installment_id = summary['installment_order'].id
+
+                if installment_id not in combined_summaries:
+                    combined_summaries[installment_id] = {
+                        'installment_order': summary['installment_order'],
+                        'total_amount': 0,
+                        'contract_count': 0,
+                        'source_breakdown': {
+                            'calculated': 0,
+                            'payment_per_installment': 0
+                        }
+                    }
+
+                combined_summaries[installment_id]['total_amount'] += summary['total_amount']
+                combined_summaries[installment_id]['contract_count'] += summary['contract_count']
+                combined_summaries[installment_id]['source_breakdown']['calculated'] += summary['source_breakdown']['calculated']
+                combined_summaries[installment_id]['source_breakdown']['payment_per_installment'] += summary['source_breakdown']['payment_per_installment']
+
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f'Error processing project {project.id}: {str(e)}')
+            continue
+
+    # Convert to list and add averages
+    result_summaries = []
+    for summary_data in combined_summaries.values():
+        if summary_data['contract_count'] > 0:
+            summary_data['average_amount'] = summary_data['total_amount'] // summary_data['contract_count']
+        else:
+            summary_data['average_amount'] = 0
+        result_summaries.append(summary_data)
+
+    # Sort by installment order
+    result_summaries.sort(key=lambda x: (x['installment_order'].pay_code, x['installment_order'].pay_time))
+
+    return {
+        'installment_summaries': result_summaries,
+        'grand_total': combined_grand_total,
+        'total_contracts': combined_total_contracts
+    }

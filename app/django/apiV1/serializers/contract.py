@@ -17,6 +17,33 @@ from .items import SimpleUnitTypeSerializer
 from .payment import SimpleInstallmentOrderSerializer, SimpleOrderGroupSerializer
 
 
+# Payment Summary Serializers -------------------------------------------------------
+class PaymentSummaryInstallmentSerializer(serializers.Serializer):
+    installment_order = SimpleInstallmentOrderSerializer(read_only=True)
+    total_amount = serializers.IntegerField(read_only=True)
+    contract_count = serializers.IntegerField(read_only=True)
+    average_amount = serializers.IntegerField(read_only=True)
+    source_breakdown = serializers.DictField(read_only=True)
+
+
+class PaymentSummarySerializer(serializers.Serializer):
+    installment_summaries = PaymentSummaryInstallmentSerializer(many=True, read_only=True)
+    grand_total = serializers.IntegerField(read_only=True)
+    total_contracts = serializers.IntegerField(read_only=True)
+    project = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=True)
+    order_group = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=True)
+    unit_type = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=True)
+
+
+class MultiProjectPaymentSummarySerializer(serializers.Serializer):
+    installment_summaries = PaymentSummaryInstallmentSerializer(many=True, read_only=True)
+    grand_total = serializers.IntegerField(read_only=True)
+    total_contracts = serializers.IntegerField(read_only=True)
+    projects = serializers.ListField(child=serializers.IntegerField(), read_only=True)
+    order_group = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=True)
+    unit_type = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=True)
+
+
 # Contract --------------------------------------------------------------------------
 class OrderGroupSerializer(serializers.ModelSerializer):
     sort_desc = serializers.CharField(source='get_sort_display', read_only=True)

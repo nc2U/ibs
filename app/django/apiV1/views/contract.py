@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db.models import Count, Sum, Q
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
@@ -6,10 +7,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from contract.models import (OrderGroup, Contract, ContractPrice, Contractor,
-                             ContractorAddress, ContractorContact,
-                             Succession, ContractorRelease)
-from items.models import BuildingUnit
+from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary
+from items.models import BuildingUnit, UnitType
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen
 from ..permission import *
 from ..serializers.contract import *
@@ -105,6 +104,116 @@ class ContractViewSet(viewsets.ModelViewSet):
         page_number = (items_before // page_size) + 1
 
         return Response({'page': page_number})
+
+    @action(detail=False, methods=['get'], url_path='payment-summary')
+    def payment_summary(self, request):
+        """
+        Get payment summary for contracts with installment-wise totals.
+
+        Query Parameters:
+            - project: Project ID (required)
+            - order_group: OrderGroup ID (optional)
+            - unit_type: UnitType ID (optional)
+            - use_cache: Boolean (default: true)
+        """
+        project_id = request.query_params.get('project')
+        order_group_id = request.query_params.get('order_group')
+        unit_type_id = request.query_params.get('unit_type')
+        use_cache = request.query_params.get('use_cache', 'true').lower() == 'true'
+
+        if not project_id:
+            return Response(
+                {'error': 'project parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            project = Project.objects.get(id=project_id)
+            order_group = OrderGroup.objects.get(id=order_group_id) if order_group_id else None
+            unit_type = UnitType.objects.get(id=unit_type_id) if unit_type_id else None
+
+        except (Project.DoesNotExist, OrderGroup.DoesNotExist, UnitType.DoesNotExist) as e:
+            return Response(
+                {'error': f'Invalid ID provided: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Generate cache key
+        cache_key = f'payment_summary_{project_id}_{order_group_id}_{unit_type_id}'
+
+        if use_cache:
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                return Response(cached_result)
+
+        # Get payment summary
+        summary_data = get_project_payment_summary(project, order_group, unit_type)
+        summary_data['project'] = project
+        summary_data['order_group'] = order_group
+        summary_data['unit_type'] = unit_type
+
+        # Serialize result
+        serializer = PaymentSummarySerializer(summary_data)
+        result = serializer.data
+
+        if use_cache:
+            cache.set(cache_key, result, timeout=3600)  # Cache for 1 hour
+
+        return Response(result)
+
+    @action(detail=False, methods=['get'], url_path='multi-project-payment-summary')
+    def multi_project_payment_summary(self, request):
+        """
+        Get payment summary for multiple projects.
+
+        Query Parameters:
+            - projects: Comma-separated project IDs (required)
+            - order_group: OrderGroup ID (optional)
+            - unit_type: UnitType ID (optional)
+        """
+        project_ids_str = request.query_params.get('projects', '')
+        order_group_id = request.query_params.get('order_group')
+        unit_type_id = request.query_params.get('unit_type')
+
+        if not project_ids_str:
+            return Response(
+                {'error': 'projects parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            project_ids = [int(pid.strip()) for pid in project_ids_str.split(',') if pid.strip()]
+            if not project_ids:
+                return Response(
+                    {'error': 'projects parameter must contain valid project IDs'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            projects = list(Project.objects.filter(id__in=project_ids))
+            order_group = OrderGroup.objects.get(id=order_group_id) if order_group_id else None
+            unit_type = UnitType.objects.get(id=unit_type_id) if unit_type_id else None
+
+            if len(projects) != len(project_ids):
+                return Response(
+                    {'error': 'Some project IDs are invalid'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except (ValueError, OrderGroup.DoesNotExist, UnitType.DoesNotExist) as e:
+            return Response(
+                {'error': f'Invalid parameter provided: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get combined payment summary
+        summary_data = get_multiple_projects_payment_summary(projects, order_group, unit_type)
+        summary_data['projects'] = [p.id for p in projects]
+        summary_data['order_group'] = order_group
+        summary_data['unit_type'] = unit_type
+
+        # Serialize result
+        serializer = MultiProjectPaymentSummarySerializer(summary_data)
+        return Response(serializer.data)
 
 
 class ContractSetViewSet(ContractViewSet):
@@ -404,8 +513,6 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
 
         # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created']
         # 프로젝트별 전체 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
-        from django.db.models import Q
-
         items_before = queryset.filter(
             Q(request_date__gt=target_item.request_date) |
             Q(request_date=target_item.request_date, created__gt=target_item.created)
