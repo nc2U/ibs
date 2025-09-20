@@ -120,8 +120,8 @@ class PaymentPerInstallment(models.Model):
 
     class Meta:
         ordering = ('cont_price__contract__project', 'pay_order', 'cont_price__contract')
-        verbose_name = '04. 회차별 납부대금'
-        verbose_name_plural = '04. 회차별 납부대금'
+        verbose_name = '04. 회차 지정 납부대금'
+        verbose_name_plural = '04. 회차 지정 납부대금'
 
 
 class Contractor(models.Model):
