@@ -290,6 +290,57 @@ def get_down_payment(contract, installment_order):
     return None
 
 
+def calculate_remain_payment(contract, remain_installment_order):
+    """
+    Calculate remain payment by subtracting all other installment amounts from total price.
+
+    Args:
+        contract: Contract instance
+        remain_installment_order: InstallmentPaymentOrder instance with pay_sort='3' (잔금)
+
+    Returns:
+        int: Remain payment amount
+    """
+    if not contract or not remain_installment_order:
+        return 0
+
+    # Get total contract price
+    contract_price_data = get_contract_price(contract)
+    contract_price = contract_price_data[0]  # Get price from tuple
+    if not contract_price:
+        return 0
+
+    # Get all installment orders for this contract's project excluding remain payment
+    try:
+        other_installments = InstallmentPaymentOrder.objects.filter(
+            project=contract.project,
+            type_sort=contract.unit_type.sort
+        ).exclude(
+            pay_sort='3'  # Exclude 잔금
+        ).exclude(
+            id=remain_installment_order.id  # Exclude current remain installment
+        )
+
+        total_other_payments = 0
+
+        for installment in other_installments:
+            # Get payment amount for each installment
+            amount = get_payment_amount(contract, installment)
+            total_other_payments += amount
+
+        # Calculate remain payment
+        remain_payment = contract_price - total_other_payments
+
+        # Ensure non-negative
+        return max(0, remain_payment)
+
+    except (AttributeError, TypeError, ValueError):
+        # AttributeError: contract.project/unit_type is None
+        # TypeError: Invalid filter operations
+        # ValueError: Invalid arithmetic operations
+        return 0
+
+
 def get_payment_amount(contract, installment_order):
     """
     Get payment amount for specific contract and installment order with 5-step priority logic.
@@ -377,57 +428,6 @@ def get_payment_amount(contract, installment_order):
             pass
 
         # Default to 0
-        return 0
-
-
-def calculate_remain_payment(contract, remain_installment_order):
-    """
-    Calculate remain payment by subtracting all other installment amounts from total price.
-
-    Args:
-        contract: Contract instance
-        remain_installment_order: InstallmentPaymentOrder instance with pay_sort='3' (잔금)
-
-    Returns:
-        int: Remain payment amount
-    """
-    if not contract or not remain_installment_order:
-        return 0
-
-    # Get total contract price
-    contract_price_data = get_contract_price(contract)
-    contract_price = contract_price_data[0]  # Get price from tuple
-    if not contract_price:
-        return 0
-
-    # Get all installment orders for this contract's project excluding remain payment
-    try:
-        other_installments = InstallmentPaymentOrder.objects.filter(
-            project=contract.project,
-            type_sort=contract.unit_type.sort
-        ).exclude(
-            pay_sort='3'  # Exclude 잔금
-        ).exclude(
-            id=remain_installment_order.id  # Exclude current remain installment
-        )
-
-        total_other_payments = 0
-
-        for installment in other_installments:
-            # Get payment amount for each installment
-            amount = get_payment_amount(contract, installment)
-            total_other_payments += amount
-
-        # Calculate remain payment
-        remain_payment = contract_price - total_other_payments
-
-        # Ensure non-negative
-        return max(0, remain_payment)
-
-    except (AttributeError, TypeError, ValueError):
-        # AttributeError: contract.project/unit_type is None
-        # TypeError: Invalid filter operations
-        # ValueError: Invalid arithmetic operations
         return 0
 
 
