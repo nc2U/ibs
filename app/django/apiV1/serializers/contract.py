@@ -11,6 +11,7 @@ from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import UnitType, HouseUnit, KeyUnit
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment
 from project.models import Project, ProjectIncBudget
+from _utils.contract_price import get_sales_price_by_gt, get_contract_price
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
 from .payment import SimpleInstallmentOrderSerializer, SimpleOrderGroupSerializer
@@ -75,63 +76,10 @@ def get_installments(project):
     return InstallmentPaymentOrder.objects.filter(project=project)
 
 
-def get_sale_price_by_gt(contract, houseunit):
-    try:
-        # 공급가격 테이블 객체를 불러와 가격 데이터 반환
-        sales_price = SalesPriceByGT.objects.get(order_group=contract.order_group,
-                                                 unit_type=contract.unit_type,
-                                                 unit_floor_type=houseunit.floor_type)
-    except SalesPriceByGT.DoesNotExist:
-        sales_price = None
-    return sales_price
+# Removed: get_sale_price_by_gt function moved to _utils.contract_price.get_sales_price_by_gt
 
 
-def get_cont_price(instance, houseunit=None, is_set=False):
-    """
-    :: 계약 객체의 가격 쓰기 또는 읽기 함수,
-    :: 읽기 가격 참조 순서 -> 1. 계약 공급가, 2. 기준 공급가, 3. 수입 예산 평균가, 4. 타입 평균가
-    :: 쓰기 가격 참조 순서 -> 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가
-    :param instance: 계약 객체 (읽기일 때 이 객체의 가격 객체가 있으면 이 파라미터만 사용)
-    :param houseunit: 쓰기일 때 해당 계약 객체의 타입을 특정하기 위한 파라미터
-    :param is_set: 쓰기 여부 -> 계약건 가격 설정을 위한 값을 불러올 때 True
-    """
-    price = 0
-    price_build = 0
-    price_land = 0
-    price_tax = 0
-
-    try:
-        if instance.contractprice and not is_set:  # 불러 오기 - 계약 건 가격 등록 되어 있고, 쓰기가 아닌 읽기 요청일 때
-            price = instance.contractprice.price
-            price_build = instance.contractprice.price_build
-            price_land = instance.contractprice.price_land
-            price_tax = instance.contractprice.price_tax
-        else:  # 등록 하기 - 계약 건 가격 등록 되어 있지 않거나 가격 등록(쓰기) 요청일 때
-            if houseunit:  # 동호수 지정된 경우 (floor_type 지정 시)
-                try:
-                    # 공급가격 테이블 객체를 불러와 가격 데이터 반환
-                    sales_price = get_sale_price_by_gt(instance, houseunit)
-                    price = sales_price.price
-                    price_build = sales_price.price_build
-                    price_land = sales_price.price_land
-                    price_tax = sales_price.price_tax
-                except SalesPriceByGT.DoesNotExist:
-                    pass
-            else:  # 동호수 미지정 시 (floor_type 미지정 시)
-                try:
-                    # 기본값 설정 -> 1. 프로젝트 예산에서 설정한 타입별 평균값을 불러와 기본값으로 설정
-                    price = ProjectIncBudget.objects.get(project=instance.project,
-                                                         order_group=instance.order_group,
-                                                         unit_type=instance.unit_type).average_price
-                except ProjectIncBudget.DoesNotExist:  # 수입 예산 미등록 시
-                    # 기본값 설정 -> 2. 예산 설정 값이 없으면 프로젝트 타입별 평균값을 불러와 기본값으로 설정
-                    price = UnitType.objects.get(pk=instance.unit_type).average_price
-                except UnitType.DoesNotExist:
-                    pass
-    except ObjectDoesNotExist:
-        pass
-
-    return price, price_build, price_land, price_tax
+# Removed: get_cont_price function replaced with _utils.contract_price.get_contract_price
 
 
 def get_pay_amount(instance, price, is_set=False):
@@ -157,12 +105,13 @@ def get_pay_amount(instance, price, is_set=False):
 
             try:
                 house_unit = instance.key_unit.houseunit
-                sales_price = get_sale_price_by_gt(instance, house_unit)
-                down_pay = sales_price.down_pay
-                middle_pay = sales_price.middle_pay
-                remain_pay = sales_price.remain_pay
-                biz_agency_fee = sales_price.biz_agency_fee
-                is_included_baf = sales_price.is_included_baf
+                sales_price = get_sales_price_by_gt(instance, house_unit)
+                if sales_price:
+                    down_pay = sales_price.down_pay
+                    middle_pay = sales_price.middle_pay
+                    remain_pay = sales_price.remain_pay
+                    biz_agency_fee = sales_price.biz_agency_fee
+                    is_included_baf = sales_price.is_included_baf
             except ObjectDoesNotExist:
                 pass
 
@@ -238,7 +187,7 @@ class ContractSerializer(serializers.ModelSerializer):
                 house_unit = None
 
             # 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가 순 참조 공급가 가져 오기
-            price = get_cont_price(contract, house_unit, True)
+            price = get_contract_price(contract, house_unit, True)
             # 회당 납부 금액 가져 오기 -> (계약금, 중도금, 잔금, 업대비, 업대비 포함 여부)
             pay_amount = get_pay_amount(contract, price[0], True)
 
@@ -381,7 +330,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
         return sum([inc.get('income') for inc in inc_data])
 
     def get_last_paid_order(self, instance):  # 완납 회차 구하기
-        price = get_cont_price(instance)  # 분양가 [price, price_build, price_land, price_tax]
+        price = get_contract_price(instance)  # 분양가 [price, price_build, price_land, price_tax]
         payment_amounts = get_pay_amount(instance, price[0])  # 계약금, 중도금, 잔금, 중개수수료, 중개수수료포함여부
         amount = payment_amounts[:3]  # 계약금, 중도금, 잔금 (첫 3개 요소만 사용)
         total_paid = self.get_total_paid(instance)  # 총 납부액
@@ -419,7 +368,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
         contract.save()
 
         # 분양가격 설정 데이터 불러오기
-        price = get_cont_price(contract)
+        price = get_contract_price(contract)
         pay_amount = get_pay_amount(contract, price[0])
 
         # 3. 동호수 연결
@@ -430,7 +379,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
             house_unit.save()
 
             # 분양가격 설정 데이터 불러오기
-            price = get_cont_price(contract, house_unit)
+            price = get_contract_price(contract, house_unit)
             pay_amount = get_pay_amount(contract, price[0])
 
         # 4. 계약 가격 정보 등록
@@ -626,7 +575,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
                     house_unit.save()
 
         # 4. 계약가격 정보 등록
-        price = get_cont_price(instance, house_unit)
+        price = get_contract_price(instance, house_unit)
         pay_amount = get_pay_amount(instance, price[0])
 
         try:  # 계약가격 정보 존재 여부 확인
