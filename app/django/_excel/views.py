@@ -80,7 +80,7 @@ class ExportContracts(View):
         header_src = [[],
                       ['일련번호', 'serial_number', 10],
                       ['등록상태', 'contractor__qualification', 8],
-                      ['차수', 'order_group__order_group_name', 10],
+                      ['차수', 'order_group__name', 10],
                       ['타입', 'key_unit__unit_type__name', 7],
                       [f'{t_name}자', 'contractor__name', 10],
                       ['동', 'key_unit__houseunit__building_unit__name', 7],
@@ -287,7 +287,7 @@ class ExportApplicants(View):
         # title_list
         header_src = [[],
                       ['일련번호', 'serial_number', 10],
-                      ['차수', 'order_group__order_group_name', 10],
+                      ['차수', 'order_group__name', 10],
                       ['타입', 'key_unit__unit_type__name', 7],
                       ['청약자', 'contractor__name', 10],
                       ['청약일자', 'contractor__reservation_date', 12],
@@ -887,7 +887,7 @@ def export_payments_xls(request):
 
     resources = [
         ['거래일자', 'deal_date'],
-        ['차수', 'contract__order_group__order_group_name'],
+        ['차수', 'contract__order_group__name'],
         ['타입', 'contract__key_unit__unit_type__name'],
         ['일련번호', 'contract__serial_number'],
         ['계약자', 'contract__contractor__name'],
@@ -996,7 +996,7 @@ class ExportPayments(View):
         # title_list
         header_src = [
             ['거래일자', 'deal_date', 12],
-            ['차수', 'contract__order_group__order_group_name', 12],
+            ['차수', 'contract__order_group__name', 12],
             ['타입', 'contract__key_unit__unit_type__name', 10],
             ['일련번호', 'contract__serial_number', 12],
             ['계약자', 'contract__contractor__name', 11],
@@ -1225,7 +1225,7 @@ class ExportPaymentsByCont(View):
         header_src = [
             ['계약번호', 'serial_number', 10],
             ['성명', 'contractor__name', 10],
-            ['차수', 'order_group__order_group_name', 10],
+            ['차수', 'order_group__name', 10],
             ['타입', 'key_unit__unit_type__name', 7],
             ['계약일', 'contractor__contract_date', 12],
             ['기납부 총액', '', 14],
@@ -1344,13 +1344,13 @@ class ExportPaymentsByCont(View):
 
             contract = Contract.objects.get(serial_number=row[1], contractor__name=row[2])
             prices = SalesPriceByGT.objects.filter(project_id=project,
-                                                   order_group__order_group_name=row[3],
+                                                   order_group__name=row[3],
                                                    unit_type__name=row[4])
             try:
                 floor = contract.key_unit.houseunit.floor_type
                 cont_price = prices.get(unit_floor_type=floor).price  # 분양가
             except ObjectDoesNotExist:
-                cont_price = ProjectIncBudget.objects.get(order_group__order_group_name=row[3],
+                cont_price = ProjectIncBudget.objects.get(order_group__name=row[3],
                                                           unit_type__name=row[4]).average_price
             except ProjectIncBudget.DoesNotExsist:
                 price = contract.key_unit.unit_type.average_price
@@ -1542,7 +1542,7 @@ class ExportPaymentStatus(View):
         obj_list = ProjectIncBudget.objects.filter(project=project).order_by('order_group', 'unit_type')
 
         og_list = OrderGroup.objects.filter(project=project)
-        og_params = ['pk', 'order_group_name']
+        og_params = ['pk', 'name']
         order_group = og_list.values_list(*og_params)
 
         ut_list = UnitType.objects.filter(project=project)

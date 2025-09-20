@@ -11,7 +11,7 @@ const emit = defineEmits(['on-update', 'on-delete'])
 const form = reactive({
   order_number: null,
   sort: '',
-  order_group_name: '',
+  name: '',
 })
 
 const refAlertModal = ref()
@@ -20,7 +20,7 @@ const refConfirmModal = ref()
 const formsCheck = computed(() => {
   const a = form.order_number === props.order.order_number
   const b = form.sort === props.order.sort
-  const c = form.order_group_name === props.order.order_group_name
+  const c = form.name === props.order.name
   return a && b && c
 })
 
@@ -56,7 +56,7 @@ const modalAction = () => {
 const dataSetup = () => {
   form.order_number = props.order.order_number
   form.sort = props.order.sort
-  form.order_group_name = props.order.order_group_name
+  form.name = props.order.name
 }
 
 onBeforeMount(() => dataSetup())
@@ -83,10 +83,10 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput
-        v-model="form.order_group_name"
+        v-model="form.name"
         maxlength="20"
         placeholder="차수그룹명"
-        @keypress.enter="formCheck(form.order_group_name !== order.order_group_name)"
+        @keypress.enter="formCheck(form.name !== order.name)"
       />
     </CTableDataCell>
     <CTableDataCell v-if="write_project" class="text-center pt-3">

@@ -112,7 +112,7 @@ export const useContract = defineStore('contract', () => {
     if (filters.search) url += `&search=${filters.search}`
     const ordering = filters.ordering ? filters.ordering : '-created'
     url += `&ordering=${ordering}`
-    
+
     try {
       const response = await api.get(url)
       return response.data.page
@@ -221,7 +221,7 @@ export const useContract = defineStore('contract', () => {
   const getOrderGroups = computed(() =>
     orderGroupList.value.map(o => ({
       value: o.pk,
-      label: o.order_group_name,
+      label: o.name,
       sort: o.sort,
     })),
   )
@@ -384,7 +384,7 @@ export const useContract = defineStore('contract', () => {
   const findSuccessionPage = async (highlightId: number, projectId: number) => {
     let url = `/succession/find-page/?highlight_id=${highlightId}`
     url += `&project=${projectId}&limit=10`
-    
+
     try {
       const response = await api.get(url)
       return response.data.page
@@ -397,7 +397,7 @@ export const useContract = defineStore('contract', () => {
   const findContractorReleasePage = async (highlightId: number, projectId: number) => {
     let url = `/contractor-release/find-page/?highlight_id=${highlightId}`
     url += `&project=${projectId}&limit=10`
-    
+
     try {
       const response = await api.get(url)
       return response.data.page

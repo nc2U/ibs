@@ -7,8 +7,10 @@ from .models import (OrderGroup, Contract, ContractPrice, ContractFile,
 
 @admin.register(OrderGroup)
 class OrderGroupAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'order_group_name', 'order_number', 'sort')
-    list_display_links = ('project', 'order_group_name',)
+    list_display = ('id', 'project', 'name', 'order_number', 'sort')
+    list_display_links = ('project', 'name',)
+    list_filter = ('project', 'sort')
+    search_fields = ('name',)
 
 
 class ContractPriceInline(admin.StackedInline):

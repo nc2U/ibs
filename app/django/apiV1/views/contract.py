@@ -21,7 +21,7 @@ class OrderGroupViewSet(viewsets.ModelViewSet):
     serializer_class = OrderGroupSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project', 'sort')
-    search_fields = ('order_group_name',)
+    search_fields = ('name',)
 
 
 class ContractFilter(FilterSet):
@@ -322,7 +322,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         """특정 ID의 Succession 항목이 몇 번째 페이지에 있는지 찾기"""
         highlight_id = request.query_params.get('highlight_id')
         project_id = request.query_params.get('project')
-        
+
         if not highlight_id:
             return Response({'error': 'highlight_id parameter required'}, status=400)
         if not project_id:
@@ -349,7 +349,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         # Succession 모델의 정확한 ordering: ['-apply_date', '-trading_date', '-id']
         # 프로젝트별 전체 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
         from django.db.models import Q
-        
+
         items_before = queryset.filter(
             Q(apply_date__gt=target_item.apply_date) |
             Q(apply_date=target_item.apply_date, trading_date__gt=target_item.trading_date) |
@@ -378,7 +378,7 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         """특정 ID의 ContractorRelease 항목이 몇 번째 페이지에 있는지 찾기"""
         highlight_id = request.query_params.get('highlight_id')
         project_id = request.query_params.get('project')
-        
+
         if not highlight_id:
             return Response({'error': 'highlight_id parameter required'}, status=400)
         if not project_id:
@@ -405,7 +405,7 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created']
         # 프로젝트별 전체 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
         from django.db.models import Q
-        
+
         items_before = queryset.filter(
             Q(request_date__gt=target_item.request_date) |
             Q(request_date=target_item.request_date, created__gt=target_item.created)

@@ -42,7 +42,7 @@ const condTexts = computed(() => {
   // 차수명과 타입명 구하기
   const orderText = orderGroupList.value
     .filter((o: OrderGroup) => o.pk == order_group.value)
-    .map((o: OrderGroup) => o.order_group_name)[0]
+    .map((o: OrderGroup) => o.name)[0]
   const typeText = unitTypeList.value.filter(t => t.pk == unit_type.value).map(t => t.name)[0]
   return { orderText, typeText }
 })

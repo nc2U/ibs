@@ -54,7 +54,7 @@ const contChk = (ctorPk: number) => {
     </CTableDataCell>
 
     <CTableDataCell>
-      {{ contract.order_group_desc.order_group_name }}
+      {{ contract.order_group_desc.name }}
     </CTableDataCell>
 
     <CTableDataCell class="text-left">

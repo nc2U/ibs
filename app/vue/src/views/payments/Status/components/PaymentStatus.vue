@@ -26,7 +26,7 @@ const paySumList = computed(() => paymentStore.paySumList)
 
 // 차수명
 const getOGName = (og: number) =>
-  orderGroup.value.length ? orderGroup.value.filter(o => o.pk === og)[0] : { order_group_name: '' }
+  orderGroup.value.length ? orderGroup.value.filter(o => o.pk === og)[0] : { name: '' }
 // 타입명
 const getUTName = (ut: number) =>
   unitType.value.length ? unitType.value.filter(u => u.pk === ut)[0] : { name: '', color: '' }
@@ -117,7 +117,7 @@ const totalBudget = computed(
           :color="TableSecondary"
         >
           <!-- 차수명 -->
-          {{ getOGName(bg.order_group || 0).order_group_name }}
+          {{ getOGName(bg.order_group || 0).name }}
         </CTableDataCell>
         <CTableDataCell class="text-left pl-4">
           <v-icon icon="mdi mdi-square" :color="getUTName(bg.unit_type || 0).color" size="sm" />

@@ -90,7 +90,7 @@ onMounted(() => {
             >
               <option value="">---------</option>
               <option v-for="o in orders" :key="o.pk" :value="o.pk">
-                {{ o.order_group_name }}
+                {{ o.name }}
               </option>
             </CFormSelect>
           </CCol>

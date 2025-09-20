@@ -23,7 +23,7 @@ class OrderGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderGroup
-        fields = ('pk', 'project', 'order_number', 'sort', 'sort_desc', 'order_group_name')
+        fields = ('pk', 'project', 'order_number', 'sort', 'sort_desc', 'name')
 
 
 class HouseUnitInKeyUnitSerializer(serializers.ModelSerializer):
@@ -537,7 +537,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
         instance.__dict__.update(**validated_data)
         instance.order_group = validated_data.get('order_group', instance.order_group)
         instance.unit_type = validated_data.get('unit_type', instance.unit_type)
-        
+
         # updator 설정
         instance.updator = self.context['request'].user
 

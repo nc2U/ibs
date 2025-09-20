@@ -57,7 +57,7 @@ const resetForm = () => {
         <CFormSelect v-model="form.order_group" :disabled="disabled" required>
           <option value="">차수선택</option>
           <option v-for="order in orders" :key="order.pk as number" :value="order.pk as number">
-            {{ order.order_group_name }}
+            {{ order.name }}
           </option>
         </CFormSelect>
       </CCol>

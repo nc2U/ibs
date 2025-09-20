@@ -55,7 +55,7 @@ export interface Contract {
   order_group_desc: {
     pk: number
     sort: string
-    order_group_name: string
+    name: string
   }
   contract_files: ContractFile[]
 }
@@ -151,7 +151,7 @@ export interface OrderGroup {
   order_number: number
   sort: '1' | '2' // '조합모집' | '일반분양'
   sort_desc: string
-  order_group_name: string
+  name: string
 }
 
 export interface SalesPrice {

@@ -115,7 +115,7 @@ interface ContractInPayment {
   order_group: {
     pk: number
     sort: '1' | '2'
-    order_group_name: string
+    name: string
   }
   unit_type: {
     pk: number

@@ -78,7 +78,7 @@ defineExpose({ listFiltering })
             <CFormSelect v-model="form.order_group" @change="listFiltering(1)">
               <option value="">차수선택</option>
               <option v-for="order in orderGroupList" :key="order.pk" :value="order.pk">
-                {{ order.order_group_name }}
+                {{ order.name }}
               </option>
             </CFormSelect>
           </CCol>

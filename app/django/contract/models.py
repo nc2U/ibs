@@ -12,10 +12,10 @@ class OrderGroup(models.Model):
     order_number = models.PositiveSmallIntegerField('차수')
     SORT_CHOICES = (('1', '조합모집'), ('2', '일반분양'))
     sort = models.CharField('구분', max_length=1, choices=SORT_CHOICES, default='1')
-    order_group_name = models.CharField('차수명', max_length=20, db_index=True)
+    name = models.CharField('차수명', max_length=20, db_index=True)
 
     def __str__(self):
-        return self.order_group_name
+        return self.name
 
     class Meta:
         ordering = ['-project', 'id']

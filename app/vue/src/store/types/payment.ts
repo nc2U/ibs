@@ -103,7 +103,7 @@ export interface AllPayment {
     order_group: {
       pk: number
       sort: string
-      order_group_name: string
+      name: string
     }
     unit_type: {
       pk: number

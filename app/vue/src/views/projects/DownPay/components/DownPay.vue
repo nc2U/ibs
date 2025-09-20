@@ -70,7 +70,7 @@ onBeforeMount(() => dataSetup())
       <CFormSelect v-model="form.order_group" required>
         <option value="">차수선택</option>
         <option v-for="order in orders" :key="order.pk" :value="order.pk">
-          {{ order.order_group_name }}
+          {{ order.name }}
         </option>
       </CFormSelect>
     </CTableDataCell>

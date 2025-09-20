@@ -14,7 +14,7 @@ const validated = ref(false)
 const form = reactive({
   order_number: null,
   sort: '',
-  order_group_name: '',
+  name: '',
 })
 
 const onSubmit = (event: Event) => {
@@ -42,7 +42,7 @@ const modalAction = () => {
 const resetForm = () => {
   form.order_number = null
   form.sort = ''
-  form.order_group_name = ''
+  form.name = ''
 }
 </script>
 
@@ -70,7 +70,7 @@ const resetForm = () => {
 
       <CCol md="3" class="mb-2">
         <CFormInput
-          v-model="form.order_group_name"
+          v-model="form.name"
           placeholder="차수그룹명"
           maxlength="20"
           required

@@ -48,7 +48,7 @@ class OverDueRuleSerializer(serializers.ModelSerializer):
 class SimpleOrderGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderGroup
-        fields = ('pk', 'sort', 'order_group_name')
+        fields = ('pk', 'sort', 'name')
 
 
 class SimpleContractSerializer(serializers.ModelSerializer):

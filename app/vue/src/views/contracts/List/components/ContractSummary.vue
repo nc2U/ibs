@@ -56,7 +56,7 @@ const contNum = (order: number | null, type?: number) => {
 
       <CTableRow v-if="orderGroupList.length > 1">
         <CTableHeaderCell v-for="order in orderGroupList" :key="order.pk">
-          {{ order.order_group_name }}
+          {{ order.name }}
         </CTableHeaderCell>
 
         <CTableHeaderCell v-if="orderGroupList.length > 1"> 합계</CTableHeaderCell>

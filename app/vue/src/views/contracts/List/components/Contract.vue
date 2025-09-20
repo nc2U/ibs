@@ -19,14 +19,16 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
 </script>
 
 <template>
-  <CTableRow 
-    v-if="contract" 
-    class="text-center" 
+  <CTableRow
+    v-if="contract"
+    class="text-center"
     :color="props.isHighlighted ? 'warning' : contract.is_sup_cont ? 'success' : ''"
     :data-contract-id="contract.pk"
   >
     <CTableDataCell>
-      <router-link :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }">
+      <router-link
+        :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }"
+      >
         {{ contract.serial_number }}
       </router-link>
     </CTableDataCell>
@@ -36,7 +38,7 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       </CBadge>
     </CTableDataCell>
     <CTableDataCell>
-      {{ contract.order_group_desc.order_group_name }}
+      {{ contract.order_group_desc.name }}
     </CTableDataCell>
     <CTableDataCell class="text-left">
       <CIcon
@@ -48,7 +50,9 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       {{ contract.unit_type_desc.name }}
     </CTableDataCell>
     <CTableDataCell>
-      <router-link :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }">
+      <router-link
+        :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }"
+      >
         {{ contract.contractor?.name }}
       </router-link>
     </CTableDataCell>
@@ -56,7 +60,9 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       class="text-left"
       :class="contract.key_unit?.houseunit !== null ? '' : 'text-danger'"
     >
-      <router-link :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }">
+      <router-link
+        :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }"
+      >
         {{ contract.key_unit?.houseunit ? contract.key_unit?.houseunit.__str__ : '미정' }}
       </router-link>
     </CTableDataCell>
