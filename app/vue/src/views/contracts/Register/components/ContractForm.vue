@@ -39,6 +39,7 @@ import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
+import { CCol } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -595,10 +596,6 @@ onBeforeRouteLeave(() => formDataReset())
                 :disabled="!isContract"
                 @click="remove_sup_cDate"
               />
-              <div class="form-text">
-                공급계약이란 조합원 가입 시 체결하는 가입계약이 아닌 사업계획승인 후 시공사와
-                체결하는 주택공급계약을 말하는 것으로 주택공급계약 체결 시 이 항목을 체크.
-              </div>
             </CCol>
             <CFormLabel class="col-sm-2 col-lg-1 col-form-label">체결일자</CFormLabel>
             <CCol sm="10" lg="2">
@@ -610,6 +607,10 @@ onBeforeRouteLeave(() => formDataReset())
                 :disabled="!form.is_sup_cont"
               />
               <CFormFeedback invalid>공급계약 체결일을 입력하세요.</CFormFeedback>
+            </CCol>
+            <CCol class="form-text">
+              공급계약이란 조합원 가입 시 체결하는 가입계약이 아닌 사업계획승인 후 시공사와 체결하는
+              주택공급계약을 말하는 것으로 주택공급계약 체결 시 이 항목을 체크.
             </CCol>
           </CRow>
         </CAlert>

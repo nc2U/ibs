@@ -382,7 +382,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
     def get_last_paid_order(self, instance):  # 완납 회차 구하기
         price = get_cont_price(instance)  # 분양가 [price, price_build, price_land, price_tax]
-        amount = get_pay_amount(instance, price[0])  # 계약금, 중도금, 잔금
+        payment_amounts = get_pay_amount(instance, price[0])  # 계약금, 중도금, 잔금, 중개수수료, 중개수수료포함여부
+        amount = payment_amounts[:3]  # 계약금, 중도금, 잔금 (첫 3개 요소만 사용)
         total_paid = self.get_total_paid(instance)  # 총 납부액
 
         due_amt = 0  # 총 약정액
@@ -391,12 +392,14 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         for order in payment_orders:
             sort = int(order.pay_sort) - 1
-            due_amt += amount[sort]  # 0: 계약금, 1: 중도금, 2: 잔금
-            if total_paid >= due_amt:
-                project_cash = ProjectCashBook.objects.filter(installment_order=order).first()
-                order_data = ProjectCashBookOrderInContractSerializer(project_cash, read_only=True).data
-            else:
-                break
+            # pay_sort가 1, 2, 3 범위를 벗어나는 경우 해당 회차는 건너뛰기
+            if 0 <= sort < len(amount):
+                due_amt += amount[sort]  # 0: 계약금, 1: 중도금, 2: 잔금
+                if total_paid >= due_amt:
+                    project_cash = ProjectCashBook.objects.filter(installment_order=order).first()
+                    order_data = ProjectCashBookOrderInContractSerializer(project_cash, read_only=True).data
+                else:
+                    break
 
         return order_data.get('installment_order') if order_data else None
 
