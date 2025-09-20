@@ -64,7 +64,8 @@ const fetchPriceList = (pFilters: PriceFilter) => payStore.fetchPriceList(pFilte
 const createPrice = (payload: Price) => payStore.createPrice(payload)
 const updatePrice = (payload: Price) => payStore.updatePrice(payload)
 const deletePrice = (payload: PriceFilter & { pk: number }) => payStore.deletePrice(payload)
-const fetchPayOrderList = (proj: number) => payStore.fetchPayOrderList(proj)
+const fetchPayOrderList = (proj: number, pay_sort__in?: string) =>
+  payStore.fetchPayOrderList(proj, pay_sort__in)
 
 // 구분 선택 시 실행 함수
 const sortSelect = (proj_sort: any) => {
@@ -127,7 +128,7 @@ const dataSetup = (pk: number) => {
   fetchOrderGroupList(pk)
   fetchTypeList(pk, sort.value)
   fetchFloorTypeList(pk, sort.value)
-  fetchPayOrderList(pk)
+  fetchPayOrderList(pk, '1,4,5,6,7')
   priceMessage.value = '공급가격을 입력하기 위해 [차수 정보]를 선택하여 주십시요.'
 }
 

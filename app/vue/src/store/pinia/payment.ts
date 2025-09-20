@@ -74,9 +74,9 @@ export const usePayment = defineStore('payment', () => {
       .then(res => (payOrder.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchPayOrderList = (project: number) =>
+  const fetchPayOrderList = (project: number, pay_sort__in?: string) =>
     api
-      .get(`/pay-order/?project=${project}`)
+      .get(`/pay-order/?project=${project}&pay_sort__in=${pay_sort__in ?? ''}`)
       .then(res => (payOrderList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
