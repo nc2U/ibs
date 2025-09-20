@@ -28,22 +28,76 @@ def get_floor_type(contract):
         return None
 
 
-def get_contract_price(contract):
+def get_sale_price_by_contract_type(contract, houseunit=None):
     """
-    Get contract price details with 5-step fallback logic.
+    Get SalesPriceByGT instance for specific contract and houseunit.
+    Equivalent to get_sale_price_by_gt function in serializers.
 
     Args:
         contract: Contract instance
+        houseunit: HouseUnit instance (if None, uses contract.key_unit.houseunit)
+
+    Returns:
+        SalesPriceByGT instance or None
+
+    Notes:
+        For optimization, use prefetch when calling:
+        Contract.objects.select_related('order_group', 'unit_type', 'key_unit__houseunit__floor_type')
+    """
+    if not contract:
+        return None
+
+    # Use provided houseunit or extract from contract
+    if houseunit is None:
+        if not contract.key_unit:
+            return None
+        try:
+            houseunit = contract.key_unit.houseunit
+        except AttributeError:
+            return None
+
+    if not houseunit or not hasattr(houseunit, 'floor_type'):
+        return None
+
+    try:
+        # Query SalesPriceByGT with order_group, unit_type, unit_floor_type
+        sales_price = SalesPriceByGT.objects.get(
+            order_group=contract.order_group,
+            unit_type=contract.unit_type,
+            unit_floor_type=houseunit.floor_type
+        )
+        return sales_price
+    except (SalesPriceByGT.DoesNotExist, AttributeError):
+        # SalesPriceByGT.DoesNotExist: No matching record
+        # AttributeError: contract.order_group/unit_type is None or houseunit.floor_type is None
+        return None
+
+
+def get_contract_price(contract, houseunit=None, is_set=False):
+    """
+    Get contract price details with flexible fallback logic.
+    Replacement for get_cont_price function with enhanced functionality.
+
+    Args:
+        contract: Contract instance
+        houseunit: HouseUnit instance (if None, uses contract.key_unit.houseunit)
+        is_set: Write mode flag - if True, skips ContractPrice and uses reference pricing only
 
     Returns:
         tuple: (price, price_build, price_land, price_tax) or (0, 0, 0, 0) if no price found
 
-    Priority order:
+    Read mode priority (is_set=False):
         1. ContractPrice (all fields if exists)
         2. SalesPriceByGT (all fields matched by order_group, unit_type, unit_floor_type)
         3. ProjectIncBudget.average_price (only price, others 0)
         4. UnitType.average_price (only price, others 0)
         5. (0, 0, 0, 0)
+
+    Write mode priority (is_set=True):
+        1. SalesPriceByGT (all fields matched by order_group, unit_type, unit_floor_type)
+        2. ProjectIncBudget.average_price (only price, others 0)
+        3. UnitType.average_price (only price, others 0)
+        4. (0, 0, 0, 0)
 
     For optimization, use prefetch when calling:
     Contract.objects.select_related(
@@ -54,33 +108,25 @@ def get_contract_price(contract):
     if not contract:
         return 0, 0, 0, 0
 
-    # Step 1: Check ContractPrice (all fields)
-    try:
-        cp = contract.contractprice
-        return (
-            cp.price or 0,
-            cp.price_build or 0,
-            cp.price_land or 0,
-            cp.price_tax or 0
-        )
-    except AttributeError:
-        pass
+    # Step 1: Check ContractPrice (only in read mode)
+    if not is_set:
+        try:
+            cp = contract.contractprice
+            return (
+                cp.price or 0,
+                cp.price_build or 0,
+                cp.price_land or 0,
+                cp.price_tax or 0
+            )
+        except AttributeError:
+            pass
 
     # Step 2: Check SalesPriceByGT (all fields)
     try:
-        # Get unit_floor_type
-        unit_floor_type = get_floor_type(contract)
-
-        # Query SalesPriceByGT with different conditions
-        sales_price_query = SalesPriceByGT.objects.filter(
-            project=contract.project,
-            order_group=contract.order_group,
-            unit_type=contract.unit_type
-        )
-
-        if unit_floor_type:
-            # Try with unit_floor_type first
-            sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
+        # Use provided houseunit or get from contract
+        if houseunit is not None:
+            # Use explicit houseunit parameter
+            sales_price = get_sale_price_by_contract_type(contract, houseunit)
             if sales_price:
                 return (
                     sales_price.price or 0,
@@ -88,16 +134,37 @@ def get_contract_price(contract):
                     sales_price.price_land or 0,
                     sales_price.price_tax or 0
                 )
+        else:
+            # Use contract's houseunit (existing logic)
+            unit_floor_type = get_floor_type(contract)
 
-        # Try without unit_floor_type
-        sales_price = sales_price_query.first()
-        if sales_price:
-            return (
-                sales_price.price or 0,
-                sales_price.price_build or 0,
-                sales_price.price_land or 0,
-                sales_price.price_tax or 0
+            # Query SalesPriceByGT with different conditions
+            sales_price_query = SalesPriceByGT.objects.filter(
+                project=contract.project,
+                order_group=contract.order_group,
+                unit_type=contract.unit_type
             )
+
+            if unit_floor_type:
+                # Try with unit_floor_type first
+                sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
+                if sales_price:
+                    return (
+                        sales_price.price or 0,
+                        sales_price.price_build or 0,
+                        sales_price.price_land or 0,
+                        sales_price.price_tax or 0
+                    )
+
+            # Try without unit_floor_type
+            sales_price = sales_price_query.first()
+            if sales_price:
+                return (
+                    sales_price.price or 0,
+                    sales_price.price_build or 0,
+                    sales_price.price_land or 0,
+                    sales_price.price_tax or 0
+                )
 
     except AttributeError:
         # contract.project, contract.order_group, or contract.unit_type is None
