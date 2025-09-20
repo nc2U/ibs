@@ -446,7 +446,7 @@ def get_contract_payment_plan(contract):
             {
                 'installment_order': InstallmentPaymentOrder instance,
                 'amount': 50000000,
-                'source': 'calculated'  # or 'manual_override'
+                'source': 'calculated'  # or 'payment_per_installment'
             },
             ...
         ]
@@ -455,6 +455,40 @@ def get_contract_payment_plan(contract):
         return []
 
     try:
+        # Get unit_floor_type once outside the loop
+        unit_floor_type = get_floor_type(contract)
+
+        # Find matching SalesPriceByGT once outside the loop
+        sales_price_query = SalesPriceByGT.objects.filter(
+            project=contract.project,
+            order_group=contract.order_group,
+            unit_type=contract.unit_type
+        )
+
+        if unit_floor_type:
+            sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
+        else:
+            sales_price = sales_price_query.first()
+
+        # Cache all manual payments in a dictionary for O(1) lookup
+        manual_payments = {}
+        if sales_price:
+            try:
+                manual_payment_qs = PaymentPerInstallment.objects.filter(
+                    sales_price=sales_price
+                ).select_related('pay_order')
+
+                # Convert to dictionary for O(1) lookup
+                manual_payments = {
+                    payment.pay_order_id: payment.amount
+                    for payment in manual_payment_qs
+                }
+            except (AttributeError, TypeError, ValueError):
+                # AttributeError: sales_price is None or invalid
+                # TypeError: Invalid filter parameter types
+                # ValueError: Invalid data conversion
+                manual_payments = {}
+
         # Get all installment orders for this contract
         installments = InstallmentPaymentOrder.objects.filter(
             project=contract.project,
@@ -464,50 +498,21 @@ def get_contract_payment_plan(contract):
         payment_plan = []
 
         for installment in installments:
-            # Check if there's a manual override (new structure using SalesPriceByGT)
-            try:
-                # Get unit_floor_type for SalesPriceByGT lookup
-                unit_floor_type = get_floor_type(contract)
-
-                # Find matching SalesPriceByGT
-                sales_price_query = SalesPriceByGT.objects.filter(
-                    project=contract.project,
-                    order_group=contract.order_group,
-                    unit_type=contract.unit_type
-                )
-
-                if unit_floor_type:
-                    sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
-                else:
-                    sales_price = sales_price_query.first()
-
-                if sales_price:
-                    manual_payment = PaymentPerInstallment.objects.filter(
-                        sales_price=sales_price,
-                        pay_order=installment
-                    ).first()
-
-                    if manual_payment:
-                        payment_plan.append({
-                            'installment_order': installment,
-                            'amount': manual_payment.amount,
-                            'source': 'payment_per_installment'
-                        })
-                        continue
-            except (AttributeError, TypeError, ValueError):
-                # AttributeError: contract.project/order_group/unit_type is None
-                # TypeError: Invalid filter parameter types
-                # ValueError: Invalid data conversion
-                pass
-
-            # Calculate amount using priority logic
-            amount = get_payment_amount(contract, installment)
-
-            payment_plan.append({
-                'installment_order': installment,
-                'amount': amount,
-                'source': 'calculated'
-            })
+            # Check if there's a manual override using O(1) dictionary lookup
+            if installment.id in manual_payments:
+                payment_plan.append({
+                    'installment_order': installment,
+                    'amount': manual_payments[installment.id],
+                    'source': 'payment_per_installment'
+                })
+            else:
+                # Calculate amount using priority logic
+                amount = get_payment_amount(contract, installment)
+                payment_plan.append({
+                    'installment_order': installment,
+                    'amount': amount,
+                    'source': 'calculated'
+                })
 
         return payment_plan
 
