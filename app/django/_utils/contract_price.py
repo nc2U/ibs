@@ -30,20 +30,20 @@ def get_floor_type(contract):
 
 def get_contract_price(contract):
     """
-    Get contract price with 5-step fallback logic.
+    Get contract price details with 5-step fallback logic.
 
     Args:
         contract: Contract instance
 
     Returns:
-        int: Price value or None if no price found
+        tuple: (price, price_build, price_land, price_tax) or (0, 0, 0, 0) if no price found
 
     Priority order:
-        1. ContractPrice.price (if exists)
-        2. SalesPriceByGT.price (matched by order_group, unit_type, unit_floor_type)
-        3. ProjectIncBudget.average_price
-        4. UnitType.average_price
-        5. None
+        1. ContractPrice (all fields if exists)
+        2. SalesPriceByGT (all fields matched by order_group, unit_type, unit_floor_type)
+        3. ProjectIncBudget.average_price (only price, others 0)
+        4. UnitType.average_price (only price, others 0)
+        5. (0, 0, 0, 0)
 
     For optimization, use prefetch when calling:
     Contract.objects.select_related(
@@ -52,15 +52,21 @@ def get_contract_price(contract):
     ).prefetch_related('project__projectincbudget_set')
     """
     if not contract:
-        return None
+        return 0, 0, 0, 0
 
-    # Step 1: Check ContractPrice.price
+    # Step 1: Check ContractPrice (all fields)
     try:
-        return contract.contractprice.price
+        cp = contract.contractprice
+        return (
+            cp.price or 0,
+            cp.price_build or 0,
+            cp.price_land or 0,
+            cp.price_tax or 0
+        )
     except AttributeError:
         pass
 
-    # Step 2: Check SalesPriceByGT
+    # Step 2: Check SalesPriceByGT (all fields)
     try:
         # Get unit_floor_type
         unit_floor_type = get_floor_type(contract)
@@ -76,18 +82,28 @@ def get_contract_price(contract):
             # Try with unit_floor_type first
             sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
             if sales_price:
-                return sales_price.price
+                return (
+                    sales_price.price or 0,
+                    sales_price.price_build or 0,
+                    sales_price.price_land or 0,
+                    sales_price.price_tax or 0
+                )
 
         # Try without unit_floor_type
         sales_price = sales_price_query.first()
         if sales_price:
-            return sales_price.price
+            return (
+                sales_price.price or 0,
+                sales_price.price_build or 0,
+                sales_price.price_land or 0,
+                sales_price.price_tax or 0
+            )
 
     except AttributeError:
         # contract.project, contract.order_group, or contract.unit_type is None
         pass
 
-    # Step 3: Check ProjectIncBudget.average_price
+    # Step 3: Check ProjectIncBudget.average_price (only price, others 0)
     try:
         project_budget = ProjectIncBudget.objects.filter(
             project=contract.project,
@@ -95,21 +111,21 @@ def get_contract_price(contract):
         ).first()
 
         if project_budget and project_budget.average_price:
-            return project_budget.average_price
+            return project_budget.average_price, 0, 0, 0
 
     except AttributeError:
         # contract.project or contract.unit_type is None
         pass
 
-    # Step 4: Check UnitType.average_price
+    # Step 4: Check UnitType.average_price (only price, others 0)
     try:
         if contract.unit_type and contract.unit_type.average_price:
-            return contract.unit_type.average_price
+            return contract.unit_type.average_price, 0, 0, 0
     except AttributeError:
         pass
 
-    # Step 5: Return None
-    return None
+    # Step 5: Return default values
+    return 0, 0, 0, 0
 
 
 def get_down_payment(contract, installment_order):
@@ -162,7 +178,10 @@ def get_down_payment(contract, installment_order):
 
             if payment_per_installment:
                 return payment_per_installment.amount
-    except Exception:
+    except (AttributeError, TypeError, ValueError):
+        # AttributeError: contract.project/order_group/unit_type is None
+        # TypeError: Invalid filter parameter types
+        # ValueError: Invalid data conversion
         pass
 
     # Step 2: Check DownPayment
@@ -175,13 +194,16 @@ def get_down_payment(contract, installment_order):
 
         if down_payment and down_payment.payment_amount:
             return down_payment.payment_amount
-    except Exception:
+    except (AttributeError, TypeError):
+        # AttributeError: contract.project/order_group/unit_type is None
+        # TypeError: Invalid filter parameter types
         pass
 
     # Step 3: Use InstallmentPaymentOrder.pay_ratio (default 10%)
     try:
         # Get contract price first
-        contract_price = get_contract_price(contract)
+        contract_price_data = get_contract_price(contract)
+        contract_price = contract_price_data[0]  # Get price from tuple
         if not contract_price:
             return None
 
@@ -194,7 +216,10 @@ def get_down_payment(contract, installment_order):
         down_payment_amount = int(contract_price * (pay_ratio / 100))
         return down_payment_amount
 
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
+        # TypeError: Invalid arithmetic operations (None * number)
+        # ValueError: Invalid conversion to int
+        # OverflowError: Result too large for int
         pass
 
     return None
@@ -226,7 +251,8 @@ def get_installment_payment_amount(contract, installment_order):
         return installment_order.pay_amt
 
     # Get contract price
-    contract_price = get_contract_price(contract)
+    contract_price_data = get_contract_price(contract)
+    contract_price = contract_price_data[0]  # Get price from tuple
     if not contract_price:
         return 0
 
@@ -279,7 +305,10 @@ def get_installment_payment_amount(contract, installment_order):
 
                 if payment_per_installment:
                     return payment_per_installment.amount
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
+            # AttributeError: contract.project/order_group/unit_type is None
+            # TypeError: Invalid filter parameter types
+            # ValueError: Invalid data conversion
             pass
 
         # Default to 0
@@ -301,7 +330,8 @@ def calculate_remain_payment(contract, remain_installment_order):
         return 0
 
     # Get total contract price
-    contract_price = get_contract_price(contract)
+    contract_price_data = get_contract_price(contract)
+    contract_price = contract_price_data[0]  # Get price from tuple
     if not contract_price:
         return 0
 
@@ -329,7 +359,10 @@ def calculate_remain_payment(contract, remain_installment_order):
         # Ensure non-negative
         return max(0, remain_payment)
 
-    except Exception:
+    except (AttributeError, TypeError, ValueError):
+        # AttributeError: contract.project/unit_type is None
+        # TypeError: Invalid filter operations
+        # ValueError: Invalid arithmetic operations
         return 0
 
 
@@ -396,7 +429,10 @@ def get_contract_payment_plan(contract):
                             'source': 'payment_per_installment'
                         })
                         continue
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
+                # AttributeError: contract.project/order_group/unit_type is None
+                # TypeError: Invalid filter parameter types
+                # ValueError: Invalid data conversion
                 pass
 
             # Calculate amount using priority logic
@@ -410,5 +446,7 @@ def get_contract_payment_plan(contract):
 
         return payment_plan
 
-    except Exception:
+    except (AttributeError, TypeError):
+        # AttributeError: contract.project/unit_type is None
+        # TypeError: Invalid filter operations
         return []
