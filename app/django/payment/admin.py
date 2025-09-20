@@ -1,9 +1,8 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from .models import (InstallmentPaymentOrder, SalesPriceByGT,
-                     SpecialAmount, DownPayment, OverDueRule,
-                     SpecialPaymentOrder, SpecialDownPay, SpecialOverDueRule)
+from .models import (InstallmentPaymentOrder, SalesPriceByGT, PaymentPerInstallment, SpecialAmount,
+                     DownPayment, OverDueRule, SpecialPaymentOrder, SpecialDownPay, SpecialOverDueRule)
 
 
 @admin.register(InstallmentPaymentOrder)
@@ -25,6 +24,32 @@ class SpecialAmountInline(admin.TabularInline):
     extra = 1
 
 
+class PaymentPerInstallmentInline(admin.TabularInline):
+    model = PaymentPerInstallment
+    extra = 0
+    fields = ('pay_order', 'amount', 'is_manual_override', 'override_reason', 'disable')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "pay_order":
+            # 중도금(2)과 잔금(3)을 제외한 항목만 선택 가능
+            # 계약금(1), 기타 부담금(4), 제세 공과금(5), 금융 비용(6), 업무 대행비(7)만 허용
+            queryset = db_field.related_model.objects.filter(
+                pay_sort__in=['1', '4', '5', '6', '7']
+            )
+
+            # 현재 SalesPriceByGT의 프로젝트에 해당하는 항목만 필터링
+            if hasattr(self, 'parent_obj') and self.parent_obj and hasattr(self.parent_obj, 'project'):
+                queryset = queryset.filter(project=self.parent_obj.project)
+
+            kwargs["queryset"] = queryset
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        # parent_obj를 설정하여 프로젝트 필터링에 사용
+        self.parent_obj = obj
+        return super().get_formset(request, obj, **kwargs)
+
+
 @admin.register(SalesPriceByGT)
 class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'order_group', 'unit_type', 'unit_floor_type',
@@ -32,7 +57,7 @@ class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project', 'unit_type', 'unit_floor_type')
     list_editable = ('price_build', 'price_land', 'price_tax', 'price')
     list_filter = ('project', 'order_group', 'unit_type')
-    inlines = (SpecialAmountInline,)
+    inlines = (SpecialAmountInline, PaymentPerInstallmentInline)
 
 
 @admin.register(SpecialAmount)
@@ -84,3 +109,48 @@ class SpecialOverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('__str__',)
     list_editable = ('term_start', 'term_end', 'rate_year')
     list_filter = ('project',)
+
+
+@admin.register(PaymentPerInstallment)
+class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'get_sales_price_info', 'pay_order',
+                    'amount', 'is_manual_override', 'disable')
+    list_display_links = ('get_sales_price_info',)
+    list_editable = ('amount', 'is_manual_override', 'disable')
+    list_filter = ('is_manual_override', 'disable', 'sales_price__project',
+                   'sales_price__order_group', 'sales_price__unit_type')
+    search_fields = ('pay_order__pay_name', 'override_reason')
+    readonly_fields = ('created', 'updated')
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('sales_price', 'pay_order', 'amount')
+        }),
+        ('설정 정보', {
+            'fields': ('is_manual_override', 'override_reason', 'disable')
+        }),
+        ('시스템 정보', {
+            'fields': ('created', 'updated'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_sales_price_info(self, obj):
+        if obj.sales_price:
+            return f"{obj.sales_price.project} - {obj.sales_price.order_group} - {obj.sales_price.unit_type}"
+        return "No Sales Price"
+
+    get_sales_price_info.short_description = '기준 공급가격 정보'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "pay_order":
+            # 중도금(2)과 잔금(3)을 제외한 항목만 선택 가능
+            # 계약금(1), 기타 부담금(4), 제세 공과금(5), 금융 비용(6), 업무 대행비(7)만 허용
+            kwargs["queryset"] = db_field.related_model.objects.filter(
+                pay_sort__in=['1', '4', '5', '6', '7']
+            )
+        elif db_field.name == "sales_price":
+            # SalesPriceByGT를 선택할 때 프로젝트별로 구분해서 표시
+            kwargs["queryset"] = db_field.related_model.objects.select_related(
+                'project', 'order_group', 'unit_type'
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)

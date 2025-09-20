@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import OrderGroup, Contract, Contractor
-from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment, OverDueRule
+from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment, OverDueRule, PaymentPerInstallment
 from .items import SimpleUnitTypeSerializer
 
 
@@ -43,6 +43,40 @@ class OverDueRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = OverDueRule
         fields = ('pk', 'project', 'term_start', 'term_end', 'rate_year')
+
+
+class PaymentPerInstallmentSerializer(serializers.ModelSerializer):
+    sales_price_info = serializers.SerializerMethodField(read_only=True)
+    pay_order_info = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = PaymentPerInstallment
+        fields = ('pk', 'sales_price', 'sales_price_info', 'pay_order', 'pay_order_info',
+                  'amount', 'is_manual_override', 'override_reason', 'disable',
+                  'created', 'updated')
+
+    @staticmethod
+    def get_sales_price_info(obj):
+        if obj.sales_price:
+            return {
+                'project': obj.sales_price.project.name if obj.sales_price.project else None,
+                'order_group': obj.sales_price.order_group.name if obj.sales_price.order_group else None,
+                'unit_type': obj.sales_price.unit_type.name if obj.sales_price.unit_type else None,
+                'unit_floor_type': obj.sales_price.unit_floor_type.name if obj.sales_price.unit_floor_type else None,
+                'price': obj.sales_price.price
+            }
+        return None
+
+    @staticmethod
+    def get_pay_order_info(obj):
+        if obj.pay_order:
+            return {
+                'pay_sort': obj.pay_order.get_pay_sort_display(),
+                'pay_name': obj.pay_order.pay_name,
+                'pay_code': obj.pay_order.pay_code,
+                'pay_time': obj.pay_order.pay_time
+            }
+        return None
 
 
 class SimpleOrderGroupSerializer(serializers.ModelSerializer):

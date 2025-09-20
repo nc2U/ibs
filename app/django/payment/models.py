@@ -66,6 +66,27 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
         verbose_name_plural = '02. 기준 공급가격'
 
 
+class PaymentPerInstallment(models.Model):
+    sales_price = models.ForeignKey(SalesPriceByGT, on_delete=models.CASCADE, verbose_name='기준 공급가격')
+    pay_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.CASCADE, verbose_name='납부 회차',
+                                  related_name='payment_installments')
+    amount = models.PositiveIntegerField('납부 약정금액', help_text='''일반 납부회차의 경우 기준 공급가 * 회당 납부비율을 적용 하나,
+                                         이 데이터 등록 시 예외적으로 이 데이터를 우선 적용함''')
+    is_manual_override = models.BooleanField('수동 설정 여부', default=True,
+                                             help_text='True: 수동 설정된 예외 금액, False: 자동 계산된 금액')
+    override_reason = models.CharField('수정 사유', max_length=100, blank=True,
+                                       help_text='수동 설정 시 사유 기록')
+    disable = models.BooleanField('비활성', default=False)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('수정일시', auto_now=True)
+
+    class Meta:
+        ordering = ('sales_price__order_group', 'pay_order', 'sales_price__unit_type')
+        verbose_name = '09. 특별약정 납부대금'
+        verbose_name_plural = '09. 특별약정 납부대금'
+        unique_together = (('sales_price', 'pay_order'),)
+
+
 class SpecialAmount(models.Model):
     sales_price = models.ForeignKey(SalesPriceByGT, on_delete=models.CASCADE, verbose_name='기준 공급가격')
     pay_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.CASCADE, verbose_name='납부 회차')
@@ -111,6 +132,7 @@ class OverDueRule(models.Model):
         verbose_name_plural = '05. 선납할인/연체이율 관리'
 
 
+# 동춘프로젝트 공급계약 체결전 가산금 등 처리 로직 ---------------------------------------------------------------------------------
 class SpecialPaymentOrder(models.Model):  # 가산금 / 할인액 계산을 위한 별도 테이블
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     pay_sort = models.CharField('종류', max_length=1, choices=InstallmentPaymentOrder.PAY_SORT_CHOICES, default='1')

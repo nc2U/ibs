@@ -10,6 +10,7 @@ from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
 from ..serializers.payment import *
+from payment.models import PaymentPerInstallment
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
@@ -66,6 +67,15 @@ class OverDueRuleViewSet(viewsets.ModelViewSet):
     queryset = OverDueRule.objects.all()
     serializer_class = OverDueRuleSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+
+class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
+    queryset = PaymentPerInstallment.objects.all()
+    serializer_class = PaymentPerInstallmentSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    pagination_class = PageNumberPaginationTwenty
+    filterset_fields = ('sales_price__project', 'sales_price__order_group',
+                       'sales_price__unit_type', 'pay_order', 'is_manual_override', 'disable')
 
 
 class PaymentViewSet(ProjectCashBookViewSet):

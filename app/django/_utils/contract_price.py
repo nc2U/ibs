@@ -1,5 +1,5 @@
 from decimal import Decimal
-from payment.models import SalesPriceByGT, DownPayment, InstallmentPaymentOrder
+from payment.models import SalesPriceByGT, DownPayment, InstallmentPaymentOrder, PaymentPerInstallment
 from project.models import ProjectIncBudget
 
 
@@ -124,7 +124,7 @@ def get_down_payment(contract, installment_order):
         int: Down payment amount or None if calculation failed
 
     Priority order:
-        1. PaymentPerInstallment (if exists for this contract and installment_order)
+        1. PaymentPerInstallment (if exists for this sales_price and installment_order)
         2. DownPayment (matched by order_group and unit_type)
         3. InstallmentPaymentOrder.pay_ratio (default 10%)
 
@@ -137,17 +137,32 @@ def get_down_payment(contract, installment_order):
     if installment_order.pay_sort != '1':  # Only for 계약금
         return None
 
-    # Step 1: Check PaymentPerInstallment
+    # Step 1: Check PaymentPerInstallment (new structure using SalesPriceByGT)
     try:
-        from contract.models import PaymentPerInstallment
-        payment_per_installment = PaymentPerInstallment.objects.filter(
-            contract=contract,
-            pay_order=installment_order,
-            disable=False
-        ).first()
+        # Get unit_floor_type for SalesPriceByGT lookup
+        unit_floor_type = get_floor_type(contract)
 
-        if payment_per_installment:
-            return payment_per_installment.amount
+        # Find matching SalesPriceByGT
+        sales_price_query = SalesPriceByGT.objects.filter(
+            project=contract.project,
+            order_group=contract.order_group,
+            unit_type=contract.unit_type
+        )
+
+        if unit_floor_type:
+            sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
+        else:
+            sales_price = sales_price_query.first()
+
+        if sales_price:
+            payment_per_installment = PaymentPerInstallment.objects.filter(
+                sales_price=sales_price,
+                pay_order=installment_order,
+                disable=False
+            ).first()
+
+            if payment_per_installment:
+                return payment_per_installment.amount
     except Exception:
         pass
 
@@ -240,17 +255,32 @@ def get_installment_payment_amount(contract, installment_order):
         if installment_order.pay_ratio:
             return int(contract_price * (installment_order.pay_ratio / 100))
 
-        # Try PaymentPerInstallment
+        # Try PaymentPerInstallment (new structure using SalesPriceByGT)
         try:
-            from contract.models import PaymentPerInstallment
-            payment_per_installment = PaymentPerInstallment.objects.filter(
-                contract=contract,
-                pay_order=installment_order,
-                disable=False
-            ).first()
+            # Get unit_floor_type for SalesPriceByGT lookup
+            unit_floor_type = get_floor_type(contract)
 
-            if payment_per_installment:
-                return payment_per_installment.amount
+            # Find matching SalesPriceByGT
+            sales_price_query = SalesPriceByGT.objects.filter(
+                project=contract.project,
+                order_group=contract.order_group,
+                unit_type=contract.unit_type
+            )
+
+            if unit_floor_type:
+                sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
+            else:
+                sales_price = sales_price_query.first()
+
+            if sales_price:
+                payment_per_installment = PaymentPerInstallment.objects.filter(
+                    sales_price=sales_price,
+                    pay_order=installment_order,
+                    disable=False
+                ).first()
+
+                if payment_per_installment:
+                    return payment_per_installment.amount
         except Exception:
             pass
 
@@ -338,24 +368,39 @@ def get_contract_payment_plan(contract):
         payment_plan = []
 
         for installment in installments:
-            # Check if there's a manual override
+            # Check if there's a manual override (new structure using SalesPriceByGT)
             try:
-                from contract.models import PaymentPerInstallment
-                manual_payment = PaymentPerInstallment.objects.filter(
-                    contract=contract,
-                    pay_order=installment,
-                    disable=False,
-                    is_manual_override=True
-                ).first()
+                # Get unit_floor_type for SalesPriceByGT lookup
+                unit_floor_type = get_floor_type(contract)
 
-                if manual_payment:
-                    payment_plan.append({
-                        'installment_order': installment,
-                        'amount': manual_payment.amount,
-                        'source': 'manual_override',
-                        'override_reason': manual_payment.override_reason
-                    })
-                    continue
+                # Find matching SalesPriceByGT
+                sales_price_query = SalesPriceByGT.objects.filter(
+                    project=contract.project,
+                    order_group=contract.order_group,
+                    unit_type=contract.unit_type
+                )
+
+                if unit_floor_type:
+                    sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
+                else:
+                    sales_price = sales_price_query.first()
+
+                if sales_price:
+                    manual_payment = PaymentPerInstallment.objects.filter(
+                        sales_price=sales_price,
+                        pay_order=installment,
+                        disable=False,
+                        is_manual_override=True
+                    ).first()
+
+                    if manual_payment:
+                        payment_plan.append({
+                            'installment_order': installment,
+                            'amount': manual_payment.amount,
+                            'source': 'manual_override',
+                            'override_reason': manual_payment.override_reason
+                        })
+                        continue
             except Exception:
                 pass
 

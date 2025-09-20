@@ -5,9 +5,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from cash.models import ProjectBankAccount, ProjectCashBook
-from contract.models import (OrderGroup, Contract, ContractPrice, PaymentPerInstallment,
-                             Contractor, ContractorAddress, ContractorContact,
-                             Succession, ContractorRelease, ContractFile)
+from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
+                             ContractorContact, Succession, ContractorRelease, ContractFile)
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import UnitType, HouseUnit, KeyUnit
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment
@@ -276,40 +275,40 @@ class ContractSerializer(serializers.ModelSerializer):
                 # remain_pay=pay_amount[2])
                 cont_price.save()
 
-            # 계약 건별 공급 가격 -> PaymentPerInstallment(회차별 납부 금액) 설정
-            try:
-                payments_install = PaymentPerInstallment.objects.filter(cont_price=cont_price)
-            except ObjectDoesNotExist:
-                payments_install = None
-
-            if payments_install:
-                for i, order in enumerate(installments):
-                    amount = get_amount(order, pay_amount)
-                    if payments_install[i]:
-                        payment = payments_install[i]
-                        payment.cont_price = cont_price
-                        payment.pay_order = order
-                        payment.amount = amount
-                        payment.disable = False
-                    else:
-                        payment = PaymentPerInstallment(cont_price=cont_price,
-                                                        pay_order=order,
-                                                        amount=amount)
-                    payment.save()
-                # 기존 등록된 회차 수가 납부 회차 보다 많을 경우 초과 등록된 객체 비 활성화
-                if len(payments_install) > len(installments):
-                    for i, payment in enumerate(payments_install):
-                        if i >= len(installments):
-                            payment.disable = True
-                            payment.save()
-
-            else:
-                for order in installments:
-                    amount = get_amount(order, pay_amount)
-                    payment = PaymentPerInstallment(cont_price=cont_price,
-                                                    pay_order=order,
-                                                    amount=amount)
-                    payment.save()
+            # # 계약 건별 공급 가격 -> PaymentPerInstallment(회차별 납부 금액) 설정
+            # try:
+            #     payments_install = PaymentPerInstallment.objects.filter(cont_price=cont_price)
+            # except ObjectDoesNotExist:
+            #     payments_install = None
+            #
+            # if payments_install:
+            #     for i, order in enumerate(installments):
+            #         amount = get_amount(order, pay_amount)
+            #         if payments_install[i]:
+            #             payment = payments_install[i]
+            #             payment.cont_price = cont_price
+            #             payment.pay_order = order
+            #             payment.amount = amount
+            #             payment.disable = False
+            #         else:
+            #             payment = PaymentPerInstallment(cont_price=cont_price,
+            #                                             pay_order=order,
+            #                                             amount=amount)
+            #         payment.save()
+            #     # 기존 등록된 회차 수가 납부 회차 보다 많을 경우 초과 등록된 객체 비 활성화
+            #     if len(payments_install) > len(installments):
+            #         for i, payment in enumerate(payments_install):
+            #             if i >= len(installments):
+            #                 payment.disable = True
+            #                 payment.save()
+            #
+            # else:
+            #     for order in installments:
+            #         amount = get_amount(order, pay_amount)
+            #         payment = PaymentPerInstallment(cont_price=cont_price,
+            #                                         pay_order=order,
+            #                                         amount=amount)
+            #         payment.save()
 
         return instance
 
