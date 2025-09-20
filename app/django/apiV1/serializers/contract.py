@@ -4,14 +4,14 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers
 
+from _utils.contract_price import get_sales_price_by_gt, get_contract_price
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
                              ContractorContact, Succession, ContractorRelease, ContractFile)
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
-from items.models import UnitType, HouseUnit, KeyUnit
-from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment
-from project.models import Project, ProjectIncBudget
-from _utils.contract_price import get_sales_price_by_gt, get_contract_price
+from items.models import HouseUnit, KeyUnit
+from payment.models import InstallmentPaymentOrder, DownPayment
+from project.models import Project
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
 from .payment import SimpleInstallmentOrderSerializer, SimpleOrderGroupSerializer
