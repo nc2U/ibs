@@ -193,29 +193,29 @@ def get_contract_price(contract, houseunit=None, is_set=False):
     return 0, 0, 0, 0
 
 
-def get_down_payment(contract, install_order):
+def get_down_payment(contract, installment_order):
     """
     Get down payment amount for specific contract and installment order.
 
     Args:
         contract: Contract instance
-        install_order: InstallmentPaymentOrder instance with pay_sort='1' (계약금)
+        installment_order: InstallmentPaymentOrder instance with pay_sort='1' (계약금)
 
     Returns:
         int: Down payment amount or None if calculation failed
 
     Priority order:
-        1. PaymentPerInstallment (if exists for this sales_price and install_order)
+        1. PaymentPerInstallment (if exists for this sales_price and installment_order)
         2. DownPayment (matched by order_group and unit_type)
         3. InstallmentPaymentOrder.pay_ratio (default 10%)
 
     For optimization, use prefetch when calling:
     Contract.objects.select_related('order_group', 'unit_type')
     """
-    if not contract or not install_order:
+    if not contract or not installment_order:
         return None
 
-    if install_order.pay_sort != '1':  # Only for 계약금
+    if installment_order.pay_sort != '1':  # Only for 계약금
         return None
 
     # Step 1: Check PaymentPerInstallment (new structure using SalesPriceByGT)
@@ -238,7 +238,7 @@ def get_down_payment(contract, install_order):
         if sales_price:
             payment_per_installment = PaymentPerInstallment.objects.filter(
                 sales_price=sales_price,
-                pay_order=install_order
+                pay_order=installment_order
             ).first()
 
             if payment_per_installment:
@@ -273,7 +273,7 @@ def get_down_payment(contract, install_order):
             return None
 
         # Get pay_ratio from InstallmentPaymentOrder
-        pay_ratio = install_order.pay_ratio
+        pay_ratio = installment_order.pay_ratio
         if pay_ratio is None:
             pay_ratio = Decimal('10.0')  # Default 10%
 
@@ -290,13 +290,13 @@ def get_down_payment(contract, install_order):
     return None
 
 
-def get_installment_payment_amount(contract, install_order):
+def get_installment_payment_amount(contract, installment_order):
     """
     Get payment amount for specific contract and installment order with 5-step priority logic.
 
     Args:
         contract: Contract instance
-        install_order: InstallmentPaymentOrder instance
+        installment_order: InstallmentPaymentOrder instance
 
     Returns:
         int: Payment amount or 0 if no amount found
@@ -308,12 +308,12 @@ def get_installment_payment_amount(contract, install_order):
         4. For 계약금 (pay_sort='1'): Use get_down_payment function
         5. For other types: pay_amt/pay_ratio -> PaymentPerInstallment -> 0
     """
-    if not contract or not install_order:
+    if not contract or not installment_order:
         return 0
 
     # Step 1: Check InstallmentPaymentOrder.pay_amt (highest priority for all types)
-    if install_order.pay_amt:
-        return install_order.pay_amt
+    if installment_order.pay_amt:
+        return installment_order.pay_amt
 
     # Get contract price
     contract_price_data = get_contract_price(contract)
@@ -321,29 +321,29 @@ def get_installment_payment_amount(contract, install_order):
     if not contract_price:
         return 0
 
-    pay_sort = install_order.pay_sort
+    pay_sort = installment_order.pay_sort
 
     # Step 2: Handle 중도금 (always use pay_ratio)
     if pay_sort == '2':  # 중도금
-        pay_ratio = install_order.pay_ratio
+        pay_ratio = installment_order.pay_ratio
         if pay_ratio is None:
             pay_ratio = Decimal('10.0')  # Default 10%
         return int(contract_price * (pay_ratio / 100))
 
     # Step 3: Handle 잔금 (total minus other installments)
     elif pay_sort == '3':  # 잔금
-        return calculate_remain_payment(contract, install_order)
+        return calculate_remain_payment(contract, installment_order)
 
     # Step 4: Handle 계약금 (use get_down_payment function)
     elif pay_sort == '1':  # 계약금
-        down_payment = get_down_payment(contract, install_order)
+        down_payment = get_down_payment(contract, installment_order)
         return down_payment if down_payment is not None else 0
 
     # Step 5: Handle other types (기타 부담금, 제세 공과금, 금융 비용, 업무 대행비)
     else:
         # Try pay_ratio first
-        if install_order.pay_ratio:
-            return int(contract_price * (install_order.pay_ratio / 100))
+        if installment_order.pay_ratio:
+            return int(contract_price * (installment_order.pay_ratio / 100))
 
         # Try PaymentPerInstallment (new structure using SalesPriceByGT)
         try:
@@ -365,7 +365,7 @@ def get_installment_payment_amount(contract, install_order):
             if sales_price:
                 payment_per_installment = PaymentPerInstallment.objects.filter(
                     sales_price=sales_price,
-                    pay_order=install_order
+                    pay_order=installment_order
                 ).first()
 
                 if payment_per_installment:
@@ -380,18 +380,18 @@ def get_installment_payment_amount(contract, install_order):
         return 0
 
 
-def calculate_remain_payment(contract, remain_install_order):
+def calculate_remain_payment(contract, remain_installment_order):
     """
     Calculate remain payment by subtracting all other installment amounts from total price.
 
     Args:
         contract: Contract instance
-        remain_install_order: InstallmentPaymentOrder instance with pay_sort='3' (잔금)
+        remain_installment_order: InstallmentPaymentOrder instance with pay_sort='3' (잔금)
 
     Returns:
         int: Remain payment amount
     """
-    if not contract or not remain_install_order:
+    if not contract or not remain_installment_order:
         return 0
 
     # Get total contract price
@@ -408,7 +408,7 @@ def calculate_remain_payment(contract, remain_install_order):
         ).exclude(
             pay_sort='3'  # Exclude 잔금
         ).exclude(
-            id=remain_install_order.id  # Exclude current remain installment
+            id=remain_installment_order.id  # Exclude current remain installment
         )
 
         total_other_payments = 0
@@ -444,7 +444,7 @@ def get_contract_payment_plan(contract):
     Example return:
         [
             {
-                'install_order': InstallmentPaymentOrder instance,
+                'installment_order': InstallmentPaymentOrder instance,
                 'amount': 50000000,
                 'source': 'calculated'  # or 'manual_override'
             },
@@ -489,7 +489,7 @@ def get_contract_payment_plan(contract):
 
                     if manual_payment:
                         payment_plan.append({
-                            'install_order': installment,
+                            'installment_order': installment,
                             'amount': manual_payment.amount,
                             'source': 'payment_per_installment'
                         })
@@ -504,7 +504,7 @@ def get_contract_payment_plan(contract):
             amount = get_installment_payment_amount(contract, installment)
 
             payment_plan.append({
-                'install_order': installment,
+                'installment_order': installment,
                 'amount': amount,
                 'source': 'calculated'
             })
