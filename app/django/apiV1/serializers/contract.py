@@ -76,12 +76,6 @@ def get_installments(project):
     return InstallmentPaymentOrder.objects.filter(project=project)
 
 
-# Removed: get_sale_price_by_gt function moved to _utils.contract_price.get_sales_price_by_gt
-
-
-# Removed: get_cont_price function replaced with _utils.contract_price.get_contract_price
-
-
 def get_pay_amount(instance, price, is_set=False):
     """
     :: 납입 회차 종류별 약정금 읽기 / 쓰기 함수
