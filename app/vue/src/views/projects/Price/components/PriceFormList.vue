@@ -38,11 +38,6 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 7%" />
       <col style="width: 7%" />
       <col style="width: 8%" />
-      <!--      <col style="width: 7%" />-->
-      <!--      <col style="width: 7%" />-->
-      <!--      <col style="width: 7%" />-->
-      <!--      <col style="width: 7%" />-->
-      <!--      <col style="width: 7%" />-->
       <col v-if="write_project" style="width: 7%" />
       <col v-if="write_project" style="width: 5%" />
     </colgroup>
@@ -55,11 +50,6 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>대지가(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>부가세(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>기준공급가(단위:원)</CTableHeaderCell>
-        <!--        <CTableHeaderCell>계약금(단위:원)</CTableHeaderCell>-->
-        <!--        <CTableHeaderCell>업무대행비(단위:원)</CTableHeaderCell>-->
-        <!--        <CTableHeaderCell>업대비 포함 여부</CTableHeaderCell>-->
-        <!--        <CTableHeaderCell>중도금(단위:원)</CTableHeaderCell>-->
-        <!--        <CTableHeaderCell>잔금(단위:원)</CTableHeaderCell>-->
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">특별약정 추가</CTableHeaderCell>
       </CTableRow>

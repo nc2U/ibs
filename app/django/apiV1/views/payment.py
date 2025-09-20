@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.db.models import Sum, F
-from django_filters import DateFilter
+from django_filters import DateFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
@@ -17,12 +17,32 @@ TODAY = datetime.today().strftime('%Y-%m-%d')
 # Payment --------------------------------------------------------------------------
 
 
+class InstallmentOrderFilterSet(FilterSet):
+    pay_sort__in = CharFilter(method='filter_pay_sort_in', label='납부 종류 다중 선택')
+
+    class Meta:
+        model = InstallmentPaymentOrder
+        fields = ['project', 'pay_sort']
+
+    def filter_pay_sort_in(self, queryset, name, value):
+        """
+        pay_sort__in 파라미터로 다중 선택 필터링
+        예: ?pay_sort__in=1,4,5,6,7
+        """
+        if value:
+            # 쉼표로 구분된 값들을 리스트로 변환
+            pay_sorts = [sort.strip() for sort in value.split(',') if sort.strip()]
+            if pay_sorts:
+                return queryset.filter(pay_sort__in=pay_sorts)
+        return queryset
+
+
 class InstallmentOrderViewSet(viewsets.ModelViewSet):
     queryset = InstallmentPaymentOrder.objects.all()
     serializer_class = InstallmentOrderSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('project', 'pay_sort')
+    filterset_class = InstallmentOrderFilterSet
     search_fields = ('pay_name', 'alias_name')
 
 
