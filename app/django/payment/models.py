@@ -82,21 +82,21 @@ class PaymentPerInstallment(models.Model):
 
     class Meta:
         ordering = ('sales_price__order_group', 'pay_order', 'sales_price__unit_type')
-        verbose_name = '09. 특별약정 납부대금'
-        verbose_name_plural = '09. 특별약정 납부대금'
+        verbose_name = '03. 특별 약정금액'
+        verbose_name_plural = '03. 특별 약정금액'
         unique_together = (('sales_price', 'pay_order'),)
 
 
-class SpecialAmount(models.Model):
-    sales_price = models.ForeignKey(SalesPriceByGT, on_delete=models.CASCADE, verbose_name='기준 공급가격')
-    pay_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.CASCADE, verbose_name='납부 회차')
-    amount = models.PositiveIntegerField('납부 약정금액',
-                                         help_text='일반 납부회차의 경우 기준 공급가 * 회당 납부비율을 적용 하나, 이 데이터 등록 시 예외적으로 이 데이터를 우선 적용함')
-
-    class Meta:
-        ordering = ('id',)
-        verbose_name = '03. 특별 약정금액'
-        verbose_name_plural = '03. 특별 약정금액'
+# class SpecialAmount(models.Model):
+#     sales_price = models.ForeignKey(SalesPriceByGT, on_delete=models.CASCADE, verbose_name='기준 공급가격')
+#     pay_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.CASCADE, verbose_name='납부 회차')
+#     amount = models.PositiveIntegerField('납부 약정금액',
+#                                          help_text='일반 납부회차의 경우 기준 공급가 * 회당 납부비율을 적용 하나, 이 데이터 등록 시 예외적으로 이 데이터를 우선 적용함')
+#
+#     class Meta:
+#         ordering = ('id',)
+#         verbose_name = '03. 특별 약정금액'
+#         verbose_name_plural = '03. 특별 약정금액'
 
 
 class DownPayment(models.Model):

@@ -33,18 +33,6 @@ class SalesPriceSerializer(serializers.ModelSerializer):
         return obj.unit_type.price_setting if obj.unit_type else None
 
 
-class DownPaymentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DownPayment
-        fields = ('pk', 'project', 'order_group', 'unit_type', 'payment_amount')
-
-
-class OverDueRuleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OverDueRule
-        fields = ('pk', 'project', 'term_start', 'term_end', 'rate_year')
-
-
 class PaymentPerInstallmentSerializer(serializers.ModelSerializer):
     sales_price_info = serializers.SerializerMethodField(read_only=True)
     pay_order_info = serializers.SerializerMethodField(read_only=True)
@@ -77,6 +65,18 @@ class PaymentPerInstallmentSerializer(serializers.ModelSerializer):
                 'pay_time': obj.pay_order.pay_time
             }
         return None
+
+
+class DownPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DownPayment
+        fields = ('pk', 'project', 'order_group', 'unit_type', 'payment_amount')
+
+
+class OverDueRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OverDueRule
+        fields = ('pk', 'project', 'term_start', 'term_end', 'rate_year')
 
 
 class SimpleOrderGroupSerializer(serializers.ModelSerializer):
