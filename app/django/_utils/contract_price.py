@@ -157,8 +157,7 @@ def get_down_payment(contract, installment_order):
         if sales_price:
             payment_per_installment = PaymentPerInstallment.objects.filter(
                 sales_price=sales_price,
-                pay_order=installment_order,
-                disable=False
+                pay_order=installment_order
             ).first()
 
             if payment_per_installment:
@@ -275,8 +274,7 @@ def get_installment_payment_amount(contract, installment_order):
             if sales_price:
                 payment_per_installment = PaymentPerInstallment.objects.filter(
                     sales_price=sales_price,
-                    pay_order=installment_order,
-                    disable=False
+                    pay_order=installment_order
                 ).first()
 
                 if payment_per_installment:
@@ -388,17 +386,14 @@ def get_contract_payment_plan(contract):
                 if sales_price:
                     manual_payment = PaymentPerInstallment.objects.filter(
                         sales_price=sales_price,
-                        pay_order=installment,
-                        disable=False,
-                        is_manual_override=True
+                        pay_order=installment
                     ).first()
 
                     if manual_payment:
                         payment_plan.append({
                             'installment_order': installment,
                             'amount': manual_payment.amount,
-                            'source': 'manual_override',
-                            'override_reason': manual_payment.override_reason
+                            'source': 'payment_per_installment'
                         })
                         continue
             except Exception:

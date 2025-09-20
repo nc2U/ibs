@@ -19,15 +19,10 @@ class InstallmentPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'pay_sort')
 
 
-# class SpecialAmountInline(admin.TabularInline):
-#     model = SpecialAmount
-#     extra = 1
-
-
 class PaymentPerInstallmentInline(admin.TabularInline):
     model = PaymentPerInstallment
     extra = 0
-    fields = ('pay_order', 'amount', 'is_manual_override', 'override_reason', 'disable')
+    fields = ('pay_order', 'amount')
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "pay_order":
@@ -62,30 +57,15 @@ class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(PaymentPerInstallment)
 class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'get_sales_price_info', 'pay_order',
-                    'amount', 'is_manual_override', 'disable')
+    list_display = ('id', 'get_sales_price_info', 'pay_order', 'amount')
     list_display_links = ('get_sales_price_info',)
-    list_editable = ('amount', 'is_manual_override', 'disable')
-    list_filter = ('is_manual_override', 'disable', 'sales_price__project',
-                   'sales_price__order_group', 'sales_price__unit_type')
-    search_fields = ('pay_order__pay_name', 'override_reason')
-    readonly_fields = ('created', 'updated')
-    fieldsets = (
-        ('기본 정보', {
-            'fields': ('sales_price', 'pay_order', 'amount')
-        }),
-        ('설정 정보', {
-            'fields': ('is_manual_override', 'override_reason', 'disable')
-        }),
-        ('시스템 정보', {
-            'fields': ('created', 'updated'),
-            'classes': ('collapse',)
-        }),
-    )
+    list_editable = ('amount',)
+    list_filter = ('sales_price__project', 'sales_price__order_group', 'sales_price__unit_type')
+    search_fields = ('pay_order__pay_name',)
 
     def get_sales_price_info(self, obj):
         if obj.sales_price:
-            return f"{obj.sales_price.project} - {obj.sales_price.order_group} - {obj.sales_price.unit_type}"
+            return f"{obj.sales_price.project}-{obj.sales_price.order_group}-{obj.sales_price.unit_type}-[{obj.sales_price.unit_floor_type}]"
         return "No Sales Price"
 
     get_sales_price_info.short_description = '기준 공급가격 정보'
@@ -103,15 +83,6 @@ class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
                 'project', 'order_group', 'unit_type'
             )
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-
-# @admin.register(SpecialAmount)
-# class SpecialAmountAdmin(ImportExportMixin, admin.ModelAdmin):
-#     list_display = ('id', 'sales_price', 'pay_order', 'amount')
-#     list_display_links = ('sales_price',)
-#     list_editable = ('amount',)
-#     list_filter = ('sales_price__project', 'sales_price__order_group',
-#                    'sales_price__unit_type', 'pay_order')
 
 
 @admin.register(DownPayment)

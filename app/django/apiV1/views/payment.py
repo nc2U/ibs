@@ -61,7 +61,7 @@ class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('sales_price__project', 'sales_price__order_group',
-                        'sales_price__unit_type', 'pay_order', 'is_manual_override', 'disable')
+                        'sales_price__unit_type', 'pay_order')
 
 
 class DownPaymentViewSet(viewsets.ModelViewSet):

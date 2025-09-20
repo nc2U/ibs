@@ -39,9 +39,7 @@ class PaymentPerInstallmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PaymentPerInstallment
-        fields = ('pk', 'sales_price', 'sales_price_info', 'pay_order', 'pay_order_info',
-                  'amount', 'is_manual_override', 'override_reason', 'disable',
-                  'created', 'updated')
+        fields = ('pk', 'sales_price', 'sales_price_info', 'pay_order', 'pay_order_info', 'amount')
 
     @staticmethod
     def get_sales_price_info(obj):

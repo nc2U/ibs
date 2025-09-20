@@ -72,31 +72,15 @@ class PaymentPerInstallment(models.Model):
                                   related_name='payment_installments')
     amount = models.PositiveIntegerField('납부 약정금액', help_text='''일반 납부회차의 경우 기준 공급가 * 회당 납부비율을 적용 하나,
                                          이 데이터 등록 시 예외적으로 이 데이터를 우선 적용함''')
-    is_manual_override = models.BooleanField('수동 설정 여부', default=True,
-                                             help_text='True: 수동 설정된 예외 금액, False: 자동 계산된 금액')
-    override_reason = models.CharField('수정 사유', max_length=100, blank=True,
-                                       help_text='수동 설정 시 사유 기록')
-    disable = models.BooleanField('비활성', default=False)
-    created = models.DateTimeField('등록일시', auto_now_add=True)
-    updated = models.DateTimeField('수정일시', auto_now=True)
+
+    def __str__(self):
+        return f'{self.sales_price.project}-{self.sales_price.order_group}-{self.sales_price.unit_type}-[{self.sales_price.unit_floor_type}]'
 
     class Meta:
         ordering = ('sales_price__order_group', 'pay_order', 'sales_price__unit_type')
         verbose_name = '03. 특별 약정금액'
         verbose_name_plural = '03. 특별 약정금액'
         unique_together = (('sales_price', 'pay_order'),)
-
-
-# class SpecialAmount(models.Model):
-#     sales_price = models.ForeignKey(SalesPriceByGT, on_delete=models.CASCADE, verbose_name='기준 공급가격')
-#     pay_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.CASCADE, verbose_name='납부 회차')
-#     amount = models.PositiveIntegerField('납부 약정금액',
-#                                          help_text='일반 납부회차의 경우 기준 공급가 * 회당 납부비율을 적용 하나, 이 데이터 등록 시 예외적으로 이 데이터를 우선 적용함')
-#
-#     class Meta:
-#         ordering = ('id',)
-#         verbose_name = '03. 특별 약정금액'
-#         verbose_name_plural = '03. 특별 약정금액'
 
 
 class DownPayment(models.Model):
