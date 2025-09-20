@@ -41,6 +41,27 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
 class PaymentPerInstallmentInline(admin.TabularInline):
     model = PaymentPerInstallment
     extra = 0
+    fields = ('pay_order', 'amount', 'is_manual_override', 'override_reason', 'disable')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "pay_order":
+            # 중도금(2)과 잔금(3)을 제외한 항목만 선택 가능
+            # 계약금(1), 기타 부담금(4), 제세 공과금(5), 금융 비용(6), 업무 대행비(7)만 허용
+            queryset = db_field.related_model.objects.filter(
+                pay_sort__in=['1', '4', '5', '6', '7']
+            )
+
+            # 현재 ContractPrice의 프로젝트에 해당하는 항목만 필터링
+            if hasattr(self, 'parent_obj') and self.parent_obj and hasattr(self.parent_obj, 'contract'):
+                queryset = queryset.filter(project=self.parent_obj.contract.project)
+
+            kwargs["queryset"] = queryset
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        # parent_obj를 설정하여 프로젝트 필터링에 사용
+        self.parent_obj = obj
+        return super().get_formset(request, obj, **kwargs)
 
 
 @admin.register(ContractPrice)
@@ -82,6 +103,20 @@ class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
         return "No Contract"
 
     get_contract_info.short_description = '계약 정보'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "pay_order":
+            # 중도금(2)과 잔금(3)을 제외한 항목만 선택 가능
+            # 계약금(1), 기타 부담금(4), 제세 공과금(5), 금융 비용(6), 업무 대행비(7)만 허용
+            kwargs["queryset"] = db_field.related_model.objects.filter(
+                pay_sort__in=['1', '4', '5', '6', '7']
+            )
+        elif db_field.name == "cont_price":
+            # ContractPrice를 선택할 때 계약이 있는 항목만 표시
+            kwargs["queryset"] = db_field.related_model.objects.filter(
+                contract__isnull=False
+            ).select_related('contract__project')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class CAdressInline(ImportExportMixin, admin.StackedInline):
