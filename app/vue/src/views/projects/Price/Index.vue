@@ -13,6 +13,7 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PriceSelectForm from '@/views/projects/Price/components/PriceSelectForm.vue'
 import PriceFormList from '@/views/projects/Price/components/PriceFormList.vue'
+import { message } from '@/utils/helper.ts'
 
 const selectForm = ref()
 const sort = ref<'1' | '2' | '3' | '4' | '5' | '6'>('1')
@@ -125,7 +126,22 @@ const contPriceView = async () => {
   if (!project.value) return
 
   try {
-    await previewContractPriceUpdate(project.value)
+    const result = await previewContractPriceUpdate(project.value)
+    console.log('📋 계약 가격 업데이트 미리보기 결과:', result)
+
+    if (result.success) {
+      const { data } = result
+      console.log(`✅ 프로젝트: ${data.project_info.project_name}`)
+      console.log(`📊 총 업데이트 대상: 계약 ${data.total_contracts} 건`)
+      console.log('📝 업데이트 계약 목록:', data.sample_contracts)
+
+      message(
+        'info',
+        '미리보기 완료',
+        `${data.total_contracts}개 계약 업데이트! 세부사항은 콘솔을 확인하세요!`,
+        10000,
+      )
+    }
   } catch (error) {
     console.error('계약 가격 일괄 업데이트 미리보기 실패:', error)
   }

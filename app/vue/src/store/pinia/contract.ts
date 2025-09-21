@@ -151,7 +151,7 @@ export const useContract = defineStore('contract', () => {
   // 일괄 가격 업데이트 미리보기
   const previewContractPriceUpdate = async (project: number) => {
     try {
-      const response = await api.post('/contract-price-update-preview/', { project })
+      const response = await api.get(`/contract-price-update-preview/?project=${project}`)
       return response.data
     } catch (err: any) {
       errorHandle(err.response.data)
