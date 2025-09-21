@@ -4,13 +4,13 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers
 
-from _utils.contract_price import get_sales_price_by_gt, get_contract_price, get_payment_amount
+from _utils.contract_price import get_contract_price
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
                              ContractorContact, Succession, ContractorRelease, ContractFile)
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import HouseUnit, KeyUnit
-from payment.models import InstallmentPaymentOrder, DownPayment
+from payment.models import InstallmentPaymentOrder
 from project.models import Project
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
@@ -103,77 +103,6 @@ def get_installments(project):
     return InstallmentPaymentOrder.objects.filter(project=project)
 
 
-def get_pay_amount(instance, price, is_set=False):
-    """
-    :: 납입 회차 종류별 약정금 읽기 / 쓰기 함수
-    :param instance: 계약 객체 (읽기일 때 이 객체의 가격 객체가 있으면 이 파라미터만 사용)
-    :param price: 쓰기일 때 회차별 비율에 의한 값 설정 시 기준 값(가격)
-    :param is_set: 쓰기 여부
-    """
-    try:
-        if instance.contractprice and not is_set:  # 읽기 요청일 때
-            down = instance.contractprice.down_pay
-            middle = instance.contractprice.middle_pay
-            remain = instance.contractprice.remain_pay
-            biz_agency_fee = instance.contractprice.biz_agency_fee
-            is_included_baf = instance.contractprice.is_included_baf
-        else:  # 쓰기 요청일 때
-            down_pay = 0
-            middle_pay = 0
-            remain_pay = 0
-            biz_agency_fee = 0
-            is_included_baf = False
-
-            try:
-                house_unit = instance.key_unit.houseunit
-                sales_price = get_sales_price_by_gt(instance, house_unit)
-                if sales_price:
-                    down_pay = sales_price.down_pay
-                    middle_pay = sales_price.middle_pay
-                    remain_pay = sales_price.remain_pay
-                    biz_agency_fee = sales_price.biz_agency_fee
-                    is_included_baf = sales_price.is_included_baf
-            except ObjectDoesNotExist:
-                pass
-
-            install_orders = get_installments(instance.project)
-
-            downs = install_orders.filter(pay_sort='1')  # 계약금 분류 회차 목록
-            middles = install_orders.filter(pay_sort='2')  # 중도금 분류 회차 목록
-            remains = install_orders.filter(pay_sort='3')  # 잔금 분류 회차 목록
-
-            down_num = len(downs.distinct().values_list('pay_code'))  # 계약금 분납 회차수
-            middle_num = len(middles.distinct().values_list('pay_code'))  # 중도금 분납 회차수
-            remain_num = len(remains.distinct().values_list('pay_code'))  # 잔금 분납 회차수
-
-            down_ratio = downs.first().pay_ratio / 100 if downs.first().pay_ratio else 0.1  # 회차별 계약금 비율(기본값 10%)
-            middle_ratio = middles.first().pay_ratio / 100 if middles.first().pay_ratio else 0.1  # 회차별 중도금 비율(기본값 10%)
-
-            try:
-                down_data = DownPayment.objects.get(order_group=instance.order_group,
-                                                    unit_type=instance.unit_type)  # 현재 차수 및 타입의 계약금 데이터
-                down = down_data.payment_amount  # 계약금 데이터가 있으면 해당 데이터가 회차별 계약금 금액
-            except DownPayment.DoesNotExist:
-                down = price * down_ratio  # 계약금 데이터 없을 경우 회차별 계약금 금액
-            remain = (price - (price * middle_ratio * middle_num) - (down * down_num)) / remain_num  # 계약금/중도금 공제 잔금액
-
-            middle = price * middle_ratio
-
-            down = down_pay if down_pay else down
-            middle = middle_pay if middle_pay else middle
-            remain = remain_pay if remain_pay else remain
-            biz_agency_fee = biz_agency_fee if biz_agency_fee else 0
-            is_included_baf = is_included_baf if is_included_baf else False
-    except ObjectDoesNotExist:
-        down = 0
-        middle = 0
-        remain = 0
-        biz_agency_fee = 0
-        is_included_baf = False
-
-    return down, middle, remain, biz_agency_fee, is_included_baf
-
-
 class ContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
@@ -193,8 +122,6 @@ class ContractSerializer(serializers.ModelSerializer):
 
             # 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가 순 참조 공급가 가져 오기
             price = get_contract_price(contract, house_unit, True)
-            # 회당 납부 금액 가져 오기 -> (계약금, 중도금, 잔금, 업대비, 업대비 포함 여부)
-            pay_amount = get_pay_amount(contract, price[0], True)
 
             # 계약 건별 공급 가격 정보 설정
             try:  # 계약가격 정보 존재 여부 확인
@@ -336,8 +263,20 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
     def get_last_paid_order(self, instance):  # 완납 회차 구하기
         price = get_contract_price(instance)  # 분양가 [price, price_build, price_land, price_tax]
-        payment_amounts = get_pay_amount(instance, price[0])  # 계약금, 중도금, 잔금, 중개수수료, 중개수수료포함여부
-        amount = payment_amounts[:3]  # 계약금, 중도금, 잔금 (첫 3개 요소만 사용)
+
+        # 계약가격이 있는 경우 계산된 값 사용
+        try:
+            cont_price = instance.contractprice
+            down = cont_price.down_pay_calculated
+            middle = cont_price.middle_pay_calculated
+            remain = cont_price.remain_pay_calculated
+        except:
+            # 계약가격이 없는 경우 0으로 설정
+            down = 0
+            middle = 0
+            remain = 0
+
+        amount = (down, middle, remain)  # 계약금, 중도금, 잔금
         total_paid = self.get_total_paid(instance)  # 총 납부액
 
         due_amt = 0  # 총 약정액
@@ -374,7 +313,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         # 분양가격 설정 데이터 불러오기
         price = get_contract_price(contract)
-        pay_amount = get_pay_amount(contract, price[0])
 
         # 3. 동호수 연결
         if self.initial_data.get('houseunit'):
@@ -385,19 +323,18 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
             # 분양가격 설정 데이터 불러오기
             price = get_contract_price(contract, house_unit)
-            pay_amount = get_pay_amount(contract, price[0])
 
-        # 4. 계약 가격 정보 등록
+        # 4. 계약 가격 정보 등록 (price 정보만 저장, 납부 금액은 property로 계산)
         cont_price = ContractPrice(contract=contract,
                                    price=price[0],
                                    price_build=price[1],
                                    price_land=price[2],
                                    price_tax=price[3],
-                                   down_pay=pay_amount[0],
-                                   biz_agency_fee=pay_amount[3],
-                                   is_included_baf=pay_amount[4],
-                                   middle_pay=pay_amount[1],
-                                   remain_pay=pay_amount[2])
+                                   down_pay=0,  # 임시값, property로 계산됨
+                                   biz_agency_fee=0,  # 임시값, property로 계산됨
+                                   is_included_baf=False,  # 임시값, property로 계산됨
+                                   middle_pay=0,  # 임시값, property로 계산됨
+                                   remain_pay=0)  # 임시값, property로 계산됨
         cont_price.save()
 
         # 5. 계약자 정보 테이블 입력
@@ -581,7 +518,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         # 4. 계약가격 정보 등록
         price = get_contract_price(instance, house_unit)
-        pay_amount = get_pay_amount(instance, price[0])
 
         try:  # 계약가격 정보 존재 여부 확인
             cont_price = instance.contractprice
@@ -590,16 +526,12 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         if cont_price:  # 계약가격 데이터가 존재하는 경우
             if not same_unit_exist:  # 동호수가 생성 또는 변경 된 경우
-                # 계약 가격 정보 업데이트
+                # 계약 가격 정보 업데이트 (price 정보만 저장, 납부 금액은 property로 계산)
                 cont_price.price = price[0]
                 cont_price.price_build = price[1]
                 cont_price.price_land = price[2]
                 cont_price.price_tax = price[3]
-                cont_price.down_pay = pay_amount[0]
-                cont_price.biz_agency_fee = pay_amount[3]
-                cont_price.is_included_baf = pay_amount[4]
-                cont_price.middle_pay = pay_amount[1]
-                cont_price.remain_pay = pay_amount[2]
+                # down_pay, middle_pay, remain_pay, biz_agency_fee, is_included_baf는 property로 계산됨
                 cont_price.save()
 
         else:  # 계약가격 데이터가 존재하지 않는 경우 계약 가격 정보 생성
@@ -608,11 +540,11 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                        price_build=price[1],
                                        price_land=price[2],
                                        price_tax=price[3],
-                                       down_pay=pay_amount[0],
-                                       biz_agency_fee=pay_amount[3],
-                                       is_included_baf=pay_amount[4],
-                                       middle_pay=pay_amount[1],
-                                       remain_pay=pay_amount[2])
+                                       down_pay=0,  # 임시값, property로 계산됨
+                                       biz_agency_fee=0,  # 임시값, property로 계산됨
+                                       is_included_baf=False,  # 임시값, property로 계산됨
+                                       middle_pay=0,  # 임시값, property로 계산됨
+                                       remain_pay=0)  # 임시값, property로 계산됨
             cont_price.save()
 
         # 5. 계약자 정보 테이블 입력

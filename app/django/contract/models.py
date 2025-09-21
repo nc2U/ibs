@@ -97,6 +97,84 @@ class ContractPrice(models.Model):
     middle_pay = models.PositiveIntegerField('중도금', help_text='중도금 분납 시 회당 납부하는 금액 기재')
     remain_pay = models.PositiveIntegerField('잔금', help_text='잔금 분납 시 회당 납부하는 금액 기재')
 
+    @property
+    def payment_amounts_calculated(self):
+        """
+        실시간으로 계산된 납부 금액들 반환 (캐싱 적용)
+
+        Returns:
+            tuple: (down, middle, remain, biz_agency_fee, is_included_baf)
+        """
+        if not hasattr(self, '_cached_payment_amounts'):
+            from _utils.contract_price import get_contract_payment_plan, get_sales_price_by_gt
+
+            if not self.contract:
+                self._cached_payment_amounts = (0, 0, 0, 0, False)
+                return self._cached_payment_amounts
+
+            try:
+                plan = get_contract_payment_plan(self.contract)
+
+                down = 0
+                middle = 0
+                remain = 0
+                biz_fee = 0
+
+                for plan_item in plan:
+                    installment = plan_item['installment_order']
+                    amount = plan_item['amount']
+
+                    if installment.pay_sort == '1':  # 계약금
+                        down += amount
+                    elif installment.pay_sort == '2':  # 중도금
+                        middle += amount
+                    elif installment.pay_sort == '3':  # 잔금
+                        remain += amount
+                    elif installment.pay_sort == '7':  # 업무 대행비
+                        biz_fee += amount
+
+                # is_included_baf는 SalesPriceByGT에서 확인
+                is_included_baf = False
+                try:
+                    sales_price = get_sales_price_by_gt(self.contract)
+                    if sales_price:
+                        is_included_baf = sales_price.is_included_baf
+                except:
+                    pass
+
+                self._cached_payment_amounts = (down, middle, remain, biz_fee, is_included_baf)
+
+            except Exception:
+                # 오류 발생 시 기본값 반환
+                self._cached_payment_amounts = (0, 0, 0, 0, False)
+
+        return self._cached_payment_amounts
+
+    @property
+    def down_pay_calculated(self):
+        """계산된 계약금 반환"""
+        return self.payment_amounts_calculated[0]
+
+    @property
+    def middle_pay_calculated(self):
+        """계산된 중도금 반환"""
+        return self.payment_amounts_calculated[1]
+
+    @property
+    def remain_pay_calculated(self):
+        """계산된 잔금 반환"""
+        return self.payment_amounts_calculated[2]
+
+    @property
+    def biz_agency_fee_calculated(self):
+        """계산된 업무대행비 반환"""
+        return self.payment_amounts_calculated[3]
+
+    @property
+    def is_included_baf_calculated(self):
+        """계산된 업무대행비 포함 여부 반환"""
+        return self.payment_amounts_calculated[4]
+
     def __str__(self):
         return f'{self.price}'
 
