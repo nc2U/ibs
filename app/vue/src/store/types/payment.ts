@@ -32,11 +32,6 @@ export interface Price {
   price_land: number
   price_tax: number
   price: number
-  down_pay: number | null
-  biz_agency_fee: number | null
-  is_included_baf: false
-  middle_pay: number | null
-  remain_pay: number | null
 }
 
 export interface DownPay {

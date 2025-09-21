@@ -25,8 +25,7 @@ class SalesPriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalesPriceByGT
         fields = ('pk', 'project', 'order_group', 'unit_type', 'price_setting',
-                  'unit_floor_type', 'price_build', 'price_land', 'price_tax', 'price',
-                  'down_pay', 'biz_agency_fee', 'is_included_baf', 'middle_pay', 'remain_pay')
+                  'unit_floor_type', 'price_build', 'price_land', 'price_tax', 'price')
 
     @staticmethod
     def get_price_setting(obj):

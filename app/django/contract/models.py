@@ -133,14 +133,8 @@ class ContractPrice(models.Model):
                     elif installment.pay_sort == '7':  # 업무 대행비
                         biz_fee += amount
 
-                # is_included_baf는 SalesPriceByGT에서 확인
-                is_included_baf = False
-                try:
-                    sales_price = get_sales_price_by_gt(self.contract)
-                    if sales_price:
-                        is_included_baf = sales_price.is_included_baf
-                except:
-                    pass
+                # is_included_baf는 업무대행비(pay_sort='7') 항목 존재 여부로 판단
+                is_included_baf = biz_fee > 0
 
                 self._cached_payment_amounts = (down, middle, remain, biz_fee, is_included_baf)
 
