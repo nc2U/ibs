@@ -554,7 +554,7 @@ class SalesPaymentLV(LoginRequiredMixin, ListView, FormView):
         return kwargs
 
     def get_queryset(self):
-        results = ProjectCashBook.objects.filter(project=self.get_project(), project_account_d3__in=(1, 4),
+        results = ProjectCashBook.objects.filter(project=self.get_project(), project_account_d3__in=(1, 5),
                                                  refund_contractor=None).order_by('-deal_date', '-id')
 
         if self.request.GET.get('sd'):
@@ -688,7 +688,7 @@ class SalesPaymentRegister(LoginRequiredMixin, FormView):
             if self.request.GET.get('contract') else 0
         if not context['this_contract'] or context['this_contract'].activation:
             payments = ProjectCashBook.objects.filter(contract=context['this_contract'],
-                                                      project_account_d3__in=(1, 4))
+                                                      project_account_d3__in=(1, 5))
         else:
             payments = ProjectCashBook.objects.filter(contract=context['this_contract'])
 

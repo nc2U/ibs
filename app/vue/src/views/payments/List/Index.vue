@@ -2,6 +2,7 @@
 import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payments/_menu/headermixin'
+import type { Project } from '@/store/types/project.ts'
 import type { CashBookFilter, ProjectCashBook } from '@/store/types/proCash'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
@@ -32,7 +33,7 @@ const filterItems = ref<CashBookFilter>({
 })
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const fetchIncBudgetList = (proj: number) => projStore.fetchIncBudgetList(proj)
 

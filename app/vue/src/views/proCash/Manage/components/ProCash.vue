@@ -29,7 +29,7 @@ const rowColor = computed(() => {
   const { proCash } = props
   if (proCash?.separated) return 'light'
   if (proCash?.is_separate) return 'primary'
-  if (proCash?.contract && [1, 4].includes(proCash?.project_account_d3 ?? 0)) return 'info'
+  if (proCash?.contract && [1, 5].includes(proCash?.project_account_d3 ?? 0)) return 'info'
 
   return ''
 })

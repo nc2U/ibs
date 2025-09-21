@@ -249,7 +249,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_payment_list(instance):
-        return instance.payments.filter(project_account_d3__in=(1, 4))
+        return instance.payments.filter(project_account_d3__in=(1, 5))
 
     def get_payments(self, instance):  # 납부 분담금/분양대금 리스트
         payments = self.get_payment_list(instance).order_by('deal_date', 'id')

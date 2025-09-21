@@ -121,7 +121,7 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
         for contractor in paginate_queryset:
             contract = contractor.contract
             payment_by_cont = ProjectCashBook.objects.filter(income__isnull=False,
-                                                             project_account_d3__in=(1, 4),
+                                                             project_account_d3__in=(1, 5),
                                                              contract=contract).aggregate(Sum('income'))['income__sum']
             total_pay_by_contract.append(payment_by_cont)  # 계약자별 총 납입액 배열화
             try:  # 동호수 지정여부

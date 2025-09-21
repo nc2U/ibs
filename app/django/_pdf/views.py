@@ -39,7 +39,7 @@ def get_simple_orders(payment_orders, contract, amount, is_past=False):
 
     amount_total = 0
     try:
-        calc_start = payment_orders.filter(Q(is_prep_discount=True)|Q(is_late_penalty=True)).first().pay_code
+        calc_start = payment_orders.filter(Q(is_prep_discount=True) | Q(is_late_penalty=True)).first().pay_code
     except AttributeError:
         calc_start = 2
     for order in payment_orders:
@@ -195,7 +195,7 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
     calc_start_pay_code = simple_orders[0].get('calc_start')  # 연체/가산 적용 시작 회차 코드
     paid_list = ProjectCashBook.objects.filter(
         income__isnull=False,
-        project_account_d3__in=(1, 4),  # 분(부)담금 or 분양수입금
+        project_account_d3__in=(1, 5),  # 분(부)담금 or 분양수입금
         contract=contract,
         deal_date__lte=pub_date
     ).order_by('deal_date', 'id')  # 해당 계약 건 납부 데이터
@@ -524,7 +524,7 @@ class PdfExportBill(View):
         """
         paid_list = ProjectCashBook.objects.filter(
             income__isnull=False,
-            project_account_d3__in=(1, 4),  # 분(부)담금 or 분양수입금
+            project_account_d3__in=(1, 5),  # 분(부)담금 or 분양수입금
             contract=contract,
         ).order_by('deal_date', 'id')  # 해당 계약 건 납부 데이터
 
@@ -547,7 +547,7 @@ class PdfExportBill(View):
 
         # 지연가산금 관련 계산 시작 회차 ----------------------------------------------
         try:
-            calc_start_code = payment_orders.filter(Q(is_prep_discount=True)|Q(is_late_penalty=True))[0].pay_code
+            calc_start_code = payment_orders.filter(Q(is_prep_discount=True) | Q(is_late_penalty=True))[0].pay_code
         except IndexError:
             calc_start_code = 2
 
@@ -666,7 +666,7 @@ class PdfExportBill(View):
         late_fee_sum = 0
 
         try:
-            calc_start_code = payment_orders.filter(Q(is_prep_discount=True)|Q(is_late_penalty=True))[0].pay_code
+            calc_start_code = payment_orders.filter(Q(is_prep_discount=True) | Q(is_late_penalty=True))[0].pay_code
         except IndexError:
             calc_start_code = 2
 
