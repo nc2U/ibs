@@ -65,6 +65,9 @@ const paidTotal = computed(() => {
 
 // 납부해야할 총액
 const dueTotal = computed(() => {
+  // paymentPlan이 로드되지 않은 경우 0 반환
+  if (!paymentPlan.value.length) return 0
+
   const commitment: number[] = []
   const today = getToday()
 
