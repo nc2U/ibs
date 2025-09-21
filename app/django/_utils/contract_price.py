@@ -133,36 +133,8 @@ def get_contract_price(contract, houseunit=None, is_set=False):
                     sales_price.price_tax or 0
                 )
         else:
-            # Use contract's houseunit (existing logic)
-            unit_floor_type = get_floor_type(contract)
-
-            # Query SalesPriceByGT with different conditions
-            sales_price_query = SalesPriceByGT.objects.filter(
-                project=contract.project,
-                order_group=contract.order_group,
-                unit_type=contract.unit_type
-            )
-
-            if unit_floor_type:
-                # Try with unit_floor_type first
-                sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
-                if sales_price:
-                    return (
-                        sales_price.price or 0,
-                        sales_price.price_build or 0,
-                        sales_price.price_land or 0,
-                        sales_price.price_tax or 0
-                    )
-
-            # Try without unit_floor_type
-            sales_price = sales_price_query.first()
-            if sales_price:
-                return (
-                    sales_price.price or 0,
-                    sales_price.price_build or 0,
-                    sales_price.price_land or 0,
-                    sales_price.price_tax or 0
-                )
+            # houseunit is None, use contract.key_unit.houseunit
+            pass
 
     except AttributeError:
         # contract.project, contract.order_group, or contract.unit_type is None

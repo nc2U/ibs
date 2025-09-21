@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Sum, Q
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
@@ -8,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary
+from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, get_contract_price
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen
@@ -656,17 +657,29 @@ def contract_price_update_preview(request):
         validation_result = service.validate_project()
         contracts = service.get_contracts_to_update()
 
-        contract_list = [
-            {
+        contract_list = []
+        for contract in contracts[:10]:  # 최대 10개만 미리보기
+            # 기존 가격
+            current_price = getattr(contract.contractprice, 'price', None) if hasattr(contract, 'contractprice') else None
+
+            # 업데이트될 예정인 새로운 가격 계산
+            try:
+                house_unit = contract.key_unit.houseunit
+            except (AttributeError, ObjectDoesNotExist):
+                house_unit = None
+
+            new_price_data = get_contract_price(contract, house_unit, True)
+            new_price = new_price_data[0] if new_price_data else None
+
+            contract_list.append({
                 'id': contract.pk,
                 'serial_number': contract.serial_number,
                 'contractor_name': contract.contractor.name if hasattr(contract, 'contractor') else None,
                 'unit_type': contract.unit_type.name if contract.unit_type else None,
-                'current_price': getattr(contract.contractprice, 'price', None) if hasattr(contract,
-                                                                                           'contractprice') else None
-            }
-            for contract in contracts[:10]  # 최대 10개만 미리보기
-        ]
+                'current_price': current_price,
+                'new_price': new_price,
+                'price_changed': current_price != new_price if current_price and new_price else True
+            })
 
         return Response({
             'success': True,

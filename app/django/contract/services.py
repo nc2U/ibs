@@ -78,7 +78,8 @@ class ContractPriceBulkUpdateService:
             'errors': errors
         }
 
-    def _update_or_create_contract_price(self, contract, price):
+    @staticmethod
+    def _update_or_create_contract_price(contract, price):
         """
         개별 계약의 ContractPrice 업데이트 또는 생성
 
