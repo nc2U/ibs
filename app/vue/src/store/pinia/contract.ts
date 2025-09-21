@@ -139,15 +139,6 @@ export const useContract = defineStore('contract', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const contList = ref<SimpleCont[]>([])
-  const fetchContList = (project: number) =>
-    api
-      .get(`/contract/?project=${project}`)
-      .then(res => {
-        contList.value = res.data.results
-      })
-      .catch(err => errorHandle(err.response.data))
-
   // 일괄 가격 업데이트 미리보기
   const previewContractPriceUpdate = async (project: number) => {
     try {
@@ -170,13 +161,6 @@ export const useContract = defineStore('contract', () => {
       throw err
     }
   }
-
-  // 개별 계약 가격 업데이트 (기존 함수명 유지하되 기능 단순화)
-  const allContPriceSet = (payload: SimpleCont) =>
-    api
-      .put(`/contract/${payload.pk}/`, payload)
-      .then(() => message('info', '', '개별 계약건 공급가가 재설정 되었습니다.', 5000))
-      .catch(err => errorHandle(err.response.data))
 
   const contractor = ref<Contractor | null>(null)
   const contractorList = ref<Contractor[]>([])
@@ -484,12 +468,8 @@ export const useContract = defineStore('contract', () => {
     findContractPage,
     createContractSet,
     updateContractSet,
-
-    contList,
-    fetchContList,
     previewContractPriceUpdate,
     bulkUpdateContractPrices,
-    // allContPriceSet,
 
     contractor,
     contractorList,
