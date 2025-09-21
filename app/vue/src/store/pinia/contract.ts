@@ -162,6 +162,17 @@ export const useContract = defineStore('contract', () => {
     }
   }
 
+  // 계약별 납부 계획 조회
+  const fetchContractPaymentPlan = async (contractId: number) => {
+    try {
+      const response = await api.get(`/contract/${contractId}/payment-plan/`)
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      throw err
+    }
+  }
+
   const contractor = ref<Contractor | null>(null)
   const contractorList = ref<Contractor[]>([])
 
@@ -470,6 +481,7 @@ export const useContract = defineStore('contract', () => {
     updateContractSet,
     previewContractPriceUpdate,
     bulkUpdateContractPrices,
+    fetchContractPaymentPlan,
 
     contractor,
     contractorList,

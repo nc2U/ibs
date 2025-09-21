@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, get_contract_price
+from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, get_contract_price, get_contract_payment_plan
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen
@@ -163,6 +163,53 @@ class ContractViewSet(viewsets.ModelViewSet):
             cache.set(cache_key, result, timeout=3600)  # Cache for 1 hour
 
         return Response(result)
+
+    @action(detail=True, methods=['get'], url_path='payment-plan')
+    def payment_plan(self, request, pk=None):
+        """
+        Get payment plan for a specific contract using get_contract_payment_plan.
+
+        Returns:
+            List of installment orders with calculated amounts for the contract.
+        """
+        try:
+            contract = self.get_object()
+            payment_plan = get_contract_payment_plan(contract)
+
+            # Serialize the data
+            result = []
+            for plan_item in payment_plan:
+                installment_order = plan_item['installment_order']
+                result.append({
+                    'installment_order': {
+                        'pk': installment_order.pk,
+                        'pay_sort': installment_order.pay_sort,
+                        'pay_code': installment_order.pay_code,
+                        'pay_time': installment_order.pay_time,
+                        'pay_name': installment_order.pay_name,
+                        'alias_name': installment_order.alias_name,
+                        'pay_amt': installment_order.pay_amt,
+                        'pay_ratio': installment_order.pay_ratio,
+                        'pay_due_date': installment_order.pay_due_date,
+                        'days_since_prev': installment_order.days_since_prev,
+                        'is_except_price': installment_order.is_except_price,
+                    },
+                    'amount': plan_item['amount'],
+                    'source': plan_item['source']
+                })
+
+            return Response(result)
+
+        except Contract.DoesNotExist:
+            return Response(
+                {'error': 'Contract not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to get payment plan: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @action(detail=False, methods=['get'], url_path='multi-project-payment-summary')
     def multi_project_payment_summary(self, request):

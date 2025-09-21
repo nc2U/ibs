@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { computed, ref, watch, type PropType } from 'vue'
 import { usePayment } from '@/store/pinia/payment'
-import type { Contract } from '@/store/types/contract.ts'
-import { type AllPayment, type DownPay, type PayOrder, type Price } from '@/store/types/payment'
+import { useContract } from '@/store/pinia/contract'
+import type { Contract, ContractPaymentPlan } from '@/store/types/contract.ts'
+import { type AllPayment, type PayOrder, type Price } from '@/store/types/payment'
 import { numFormat, getToday } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 import Order from '@/views/payments/Register/components/Order.vue'
@@ -13,9 +14,34 @@ const props = defineProps({
 })
 
 const paymentStore = usePayment()
+const contractStore = useContract()
 const payOrderList = computed(() => paymentStore.payOrderList)
 const priceList = computed(() => paymentStore.priceList)
-const downPayList = computed(() => paymentStore.downPayList)
+
+// Payment plan data from API
+const paymentPlan = ref<ContractPaymentPlan>([])
+const isLoadingPaymentPlan = ref(false)
+
+// Fetch payment plan for contract
+const fetchPaymentPlan = async () => {
+  if (!props.contract?.pk) {
+    paymentPlan.value = []
+    return
+  }
+
+  try {
+    isLoadingPaymentPlan.value = true
+    paymentPlan.value = await contractStore.fetchContractPaymentPlan(props.contract.pk)
+  } catch (error) {
+    console.error('Failed to fetch payment plan:', error)
+    paymentPlan.value = []
+  } finally {
+    isLoadingPaymentPlan.value = false
+  }
+}
+
+// Watch for contract changes and fetch payment plan
+watch(() => props.contract?.pk, fetchPaymentPlan, { immediate: true })
 
 const thisPrice = computed(() => {
   if (props.contract) {
@@ -31,11 +57,6 @@ const thisPrice = computed(() => {
   return 0
 })
 
-const numDown = computed(
-  () => payOrderList.value.filter((o: PayOrder) => o.pay_sort === '1').length,
-)
-
-const numMid = computed(() => payOrderList.value.filter((o: PayOrder) => o.pay_sort === '2').length)
 
 const paidTotal = computed(() => {
   const paid = props.paymentList.map((p: AllPayment) => p.income)
@@ -58,34 +79,21 @@ const dueTotal = computed(() => {
     .map((o: PayOrder) => o.pay_time)
 
   dueOrder.forEach((el: number | null | undefined) => {
-    if (el) commitment.push(getCommits(el))
+    if (el) commitment.push(getCommitsFromAPI(el))
   })
   return commitment.length !== 0 ? commitment.reduce((x, y) => x + y) : 0
 })
 
-const getCommits = (el: number | undefined) => {
-  // 약정금 구하기
-  const down = downPayList.value
-    .filter((d: DownPay) => d.order_group === props.contract?.order_group)
-    .filter(d => d.unit_type === props.contract?.unit_type)
-    .map(d => d.payment_amount)[0] // 1. downPayList, 2. payByOrder, 3. 분양가 / 총회차수
+// Get payment amount from API data instead of client-side calculation
+const getCommitsFromAPI = (payTime: number | undefined) => {
+  if (!payTime || !paymentPlan.value.length) return 0
 
-  const order = payOrderList.value.find((o: PayOrder) => o.pay_time === el)
+  // Find the payment plan item that matches the pay_time
+  const planItem = paymentPlan.value.find(
+    item => item.installment_order.pay_time === payTime
+  )
 
-  const payByOrder = order?.pay_ratio
-    ? (thisPrice.value * Number(order.pay_ratio)) / 100
-    : thisPrice.value * 0.1 // 1. payByOrder === '중도금' (지정된 비율이 없으면 회당 10%)
-  const downPay = down ? down : payByOrder
-  const balance = thisPrice.value - downPay * numDown.value - payByOrder * numMid.value // 분양가 - (계약금 + 중도금), 2. payByOrder
-  const balancePay = balance ? balance : (payByOrder * Number(order?.pay_ratio)) / 100
-
-  if (order?.pay_sort === '1') {
-    return downPay // 계약금
-  } else if (order?.pay_sort === '2') {
-    return payByOrder // 중도금
-  } else if (order?.pay_sort === '3') {
-    return balancePay // 잔금
-  } else return 0
+  return planItem ? planItem.amount : 0
 }
 </script>
 
@@ -115,7 +123,7 @@ const getCommits = (el: number | undefined) => {
           :contract="contract"
           :price="thisPrice"
           :order="po"
-          :commit="getCommits(po.pay_time as number)"
+          :commit="getCommitsFromAPI(po.pay_time as number)"
           :payment-list="paymentList"
         />
       </CTableRow>

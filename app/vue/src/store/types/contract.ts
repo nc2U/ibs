@@ -264,3 +264,23 @@ export interface ContractRelease {
   completion_date: string
   note: string
 }
+
+export interface ContractPaymentPlanItem {
+  installment_order: {
+    pk: number
+    pay_sort: '1' | '2' | '3' | '4' | '5' | '6' | '7'
+    pay_code: number
+    pay_time: number
+    pay_name: string
+    alias_name: string | null
+    pay_amt: number | null
+    pay_ratio: number | null
+    pay_due_date: string | null
+    days_since_prev: number | null
+    is_except_price: boolean
+  }
+  amount: number
+  source: 'calculated' | 'payment_per_installment'
+}
+
+export type ContractPaymentPlan = ContractPaymentPlanItem[]
