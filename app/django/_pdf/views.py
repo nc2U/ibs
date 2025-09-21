@@ -181,6 +181,7 @@ def get_late_fee(project, late_amt, days, is_past=False):
 
         elif start is not None and end is None:  # 특정 기간 이상 연체인 경우
             return int(calc_fee + (late_amt * (days - calc_days) * rate / 365))
+    return None
 
 
 def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
@@ -424,40 +425,33 @@ class PdfExportBill(View):
         # 동호수
         bill_data['unit'] = unit
 
-        # 이 계약 건 분양가 (계약금, 중도금, 잔금 약정액)
+        # 이 계약 건 분양가격
         try:
             cont_price = contract.contractprice
             price = cont_price.price
             price_build = cont_price.price_build
             price_land = cont_price.price_land
             price_tax = cont_price.price_tax
-
-            down = cont_price.down_pay
-            middle = cont_price.middle_pay
-            remain = cont_price.remain_pay
         except ObjectDoesNotExist:
             price = 0
             price_build = 0
             price_land = 0
             price_tax = 0
 
-            down = 0
-            middle = 0
-            remain = 0
-
         bill_data['price'] = price if unit else '동호 지정 후 고지'  # 이 건 분양가격
         bill_data['price_build'] = price_build if unit else '-'  # 이 건 건물가
         bill_data['price_land'] = price_land if unit else '-'  # 이 건 대지가
         bill_data['price_tax'] = price_tax if unit else '-'  # 이 건 부가세
 
-        amount = {'1': down, '2': middle, '3': remain}
+        # get_contract_payment_plan을 사용해서 정확한 회차별 금액 계산
+        payment_plan = get_contract_payment_plan(contract)
 
         # 납부목록, 완납금액 구하기 ------------------------------------------
         paid_list, paid_sum_total = self.get_paid(contract)
         # --------------------------------------------------------------
 
-        # 해당 계약 건의 회차별 관련 정보
-        orders_info = self.get_orders_info(payment_orders, amount, paid_sum_total)
+        # 해당 계약 건의 회차별 관련 정보 (payment_plan을 직접 사용)
+        orders_info = self.get_orders_info(payment_orders, payment_plan, paid_sum_total)
 
         # 완납 회차
         paid_code = self.get_paid_code(orders_info, paid_sum_total)
@@ -534,17 +528,23 @@ class PdfExportBill(View):
         return paid_list, paid_sum_total
 
     @staticmethod
-    def get_orders_info(payment_orders, amount, paid_sum_total):
+    def get_orders_info(payment_orders, payment_plan, paid_sum_total):
         """
-        :: 회차별 부가정보
+        :: 회차별 부가정보 (payment_plan 기반으로 정확한 회차별 금액 계산)
         :param payment_orders: 회차 정보
-        :param amount: {'1': down_pay, '2': middle_pay, '3': remain_pay}
+        :param payment_plan: get_contract_payment_plan에서 반환된 payment plan 데이터
         :param paid_sum_total: 기 납부 총액
         :return list(dict(order_info_list)): 회차별 부가정보 딕셔너리 리스트
         """
         order_info_list = []
         sum_pay_amount = 0  # 회당 납부 약정액 누계
         pm_cost_sum = 0  # PM 용역비 합계
+
+        # payment_plan을 딕셔너리로 변환하여 O(1) 조회 가능하도록 함
+        plan_dict = {}
+        for plan_item in payment_plan:
+            order_pk = plan_item['installment_order'].pk
+            plan_dict[order_pk] = plan_item['amount']
 
         # 지연가산금 관련 계산 시작 회차 ----------------------------------------------
         try:
@@ -554,7 +554,10 @@ class PdfExportBill(View):
 
         for order in payment_orders:
             info = {'order': order}
-            pay_amount = amount[order.pay_sort]  # 회당 납부 약정액
+
+            # payment_plan에서 해당 회차의 정확한 금액을 가져옴
+            pay_amount = plan_dict.get(order.pk, 0)  # 회당 납부 약정액 (정확한 값)
+
             info['pay_amount'] = pay_amount  # 회당 납부 약정액
             sum_pay_amount += pay_amount  # 회당 납부 약정액 누계
             info['sum_pay_amount'] = sum_pay_amount  # 회당 납부 약정액 누계
@@ -788,6 +791,7 @@ class PdfExportBill(View):
         return remain_amt_list
 
 
+
 class PdfExportPayments(View):
 
     @staticmethod
@@ -851,7 +855,8 @@ class PdfExportPayments(View):
         context['simple_orders'] = simple_orders = PdfExportPayments.get_simple_orders_from_plan(payment_plan, contract)
 
         # 4. 납부목록, 완납금액 구하기 (payment_plan 기반)
-        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_from_plan(contract, simple_orders, pub_date, is_calc=calc)
+        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_from_plan(contract, simple_orders, pub_date,
+                                                                                     is_calc=calc)
         context['paid_dicts'] = paid_dicts
         context['paid_sum_total'] = paid_sum_total
         context['calc_sums'] = calc_sums
@@ -878,7 +883,9 @@ class PdfExportPayments(View):
 
         try:
             calc_start = next((plan['installment_order'].pay_code for plan in payment_plan
-                             if plan['installment_order'].is_prep_discount or plan['installment_order'].is_late_penalty), 2)
+                               if
+                               plan['installment_order'].is_prep_discount or plan['installment_order'].is_late_penalty),
+                              2)
         except StopIteration:
             calc_start = 2
 
@@ -927,8 +934,8 @@ class PdfExportPayments(View):
             return item[0].deal_date if isinstance(item, tuple) else item['due_date']
 
         calc_orders = [item for item in simple_orders
-                      if item.get('pay_code', 0) >= calc_start_pay_code
-                      and is_due(get_due_date_per_order(contract, item, simple_orders))]
+                       if item.get('pay_code', 0) >= calc_start_pay_code
+                       and is_due(get_due_date_per_order(contract, item, simple_orders))]
 
         calc_orders = calc_orders if kwargs.get('is_calc', None) else []
 
@@ -1025,9 +1032,9 @@ class PdfExportPayments(View):
                 penalty_sum += penalty
                 discount_sum += discount
                 paid_dict = {'paid': paid[0], 'sum': curr_paid_total, 'order': paid_ord_name, 'diff': diff,
-                           'delay_days': days,
-                           'penalty': penalty,
-                           'discount': discount}
+                             'delay_days': days,
+                             'penalty': penalty,
+                             'discount': discount}
                 paid_dict_list.append(paid_dict)
             else:
                 ord_i_list.append(i)
@@ -1144,4 +1151,3 @@ class PdfExportCalculation(View):
         except SpecialDownPay.DoesNotExist:
             # 특수 계약금 데이터가 없는 경우 기본값 반환
             return 0, 0
-
