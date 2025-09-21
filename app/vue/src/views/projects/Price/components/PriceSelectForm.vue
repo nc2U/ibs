@@ -161,8 +161,10 @@ onMounted(() => {
       </p>
     </template>
     <template #footer>
-      <v-btn color="blue-grey-darken-1" size="small" @click="preViewModalAction">미리보기</v-btn>
-      <v-btn color="blue-grey-darken-2" size="small" @click="bulkUpdateModalAction">재설정</v-btn>
+      <v-btn color="light-green-darken-3" size="small" @click="preViewModalAction">미리보기</v-btn>
+      <v-btn color="blue-grey-darken-1" size="small" @click="bulkUpdateModalAction">
+        전체 공급가 재설정
+      </v-btn>
     </template>
   </ConfirmModal>
 </template>
