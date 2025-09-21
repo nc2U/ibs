@@ -170,10 +170,11 @@ def get_contract_price(contract, houseunit=None, is_set=False):
 
     # Step 3: Check ProjectIncBudget.average_price (only price, others 0)
     try:
-        project_budget = ProjectIncBudget.objects.filter(
+        project_budget = ProjectIncBudget.objects.get(
             project=contract.project,
+            order_group=contract.order_group,
             unit_type=contract.unit_type
-        ).first()
+        )
 
         if project_budget and project_budget.average_price:
             return project_budget.average_price, 0, 0, 0
@@ -718,8 +719,10 @@ def get_multiple_projects_payment_summary(projects, order_group=None, unit_type=
 
                 combined_summaries[installment_id]['total_amount'] += summary['total_amount']
                 combined_summaries[installment_id]['contract_count'] += summary['contract_count']
-                combined_summaries[installment_id]['source_breakdown']['calculated'] += summary['source_breakdown']['calculated']
-                combined_summaries[installment_id]['source_breakdown']['payment_per_installment'] += summary['source_breakdown']['payment_per_installment']
+                combined_summaries[installment_id]['source_breakdown']['calculated'] += summary['source_breakdown'][
+                    'calculated']
+                combined_summaries[installment_id]['source_breakdown']['payment_per_installment'] += \
+                    summary['source_breakdown']['payment_per_installment']
 
         except Exception as e:
             import logging

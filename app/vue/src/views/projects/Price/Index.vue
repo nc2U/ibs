@@ -33,7 +33,6 @@ const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
 
 const contStore = useContract()
-const contList = computed(() => contStore.contList)
 const orderGroupList = computed(() => contStore.orderGroupList)
 
 const pDataStore = useProjectData()
@@ -50,7 +49,6 @@ const condTexts = computed(() => {
 
 provide('condTexts', condTexts)
 
-const fetchContList = (projId: number) => contStore.fetchContList(projId)
 const fetchOrderGroupList = (projId: number, sort: '' | '1' | '2' = '') =>
   contStore.fetchOrderGroupList(projId, sort)
 const previewContractPriceUpdate = (projectId: number) =>
@@ -157,7 +155,6 @@ const contPriceSet = async () => {
 }
 
 const dataSetup = (pk: number) => {
-  fetchContList(pk)
   fetchOrderGroupList(pk)
   fetchTypeList(pk, sort.value)
   fetchFloorTypeList(pk, sort.value)
@@ -166,7 +163,6 @@ const dataSetup = (pk: number) => {
 }
 
 const dataReset = () => {
-  contStore.contList = []
   contStore.orderGroupList = []
   pDataStore.unitTypeList = []
   pDataStore.floorTypeList = []
