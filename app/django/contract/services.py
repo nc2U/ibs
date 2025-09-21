@@ -157,7 +157,7 @@ class ContractPriceUpdateService:
         except ObjectDoesNotExist:
             house_unit = None
 
-        price = get_contract_price(contract, house_unit)
+        price = get_contract_price(contract, house_unit, True)  # is_set=True for consistency
 
         cont_price, created = ContractPrice.objects.update_or_create(
             contract=contract,
