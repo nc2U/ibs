@@ -148,6 +148,30 @@ export const useContract = defineStore('contract', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // 일괄 가격 업데이트 미리보기
+  const previewContractPriceUpdate = async (project: number) => {
+    try {
+      const response = await api.post('/contract-price-update-preview/', { project })
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      throw err
+    }
+  }
+
+  // 일괄 가격 업데이트 실행
+  const bulkUpdateContractPrices = async (project: number) => {
+    try {
+      const response = await api.post('/contract-bulk-price-update/', { project })
+      message('success', '완료!', '프로젝트 내 모든 계약 가격이 일괄 업데이트되었습니다.', 5000)
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      throw err
+    }
+  }
+
+  // 개별 계약 가격 업데이트 (기존 함수명 유지하되 기능 단순화)
   const allContPriceSet = (payload: SimpleCont) =>
     api
       .put(`/contract/${payload.pk}/`, payload)
@@ -463,7 +487,9 @@ export const useContract = defineStore('contract', () => {
 
     contList,
     fetchContList,
-    allContPriceSet,
+    previewContractPriceUpdate,
+    bulkUpdateContractPrices,
+    // allContPriceSet,
 
     contractor,
     contractorList,

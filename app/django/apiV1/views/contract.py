@@ -3,11 +3,13 @@ from django.db.models import Count, Sum, Q
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary
+from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen
 from ..permission import *
@@ -521,3 +523,169 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         page_number = (items_before // limit) + 1
 
         return Response({'page': page_number})
+
+
+# Contract Price Bulk Update API Views
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def bulk_update_contract_prices(request):
+    """
+    프로젝트 내 모든 계약 가격 일괄 업데이트
+
+    SalesPriceByGT 변경 후 기존 계약들에 새 가격 정책을 반영할 때 사용
+
+    Request Body:
+        {
+            "project": <project_id>,
+            "dry_run": <boolean, optional>  // true일 경우 실제 업데이트 없이 미리보기만
+        }
+
+    Response:
+        {
+            "success": true,
+            "message": "업데이트 완료",
+            "data": {
+                "total_processed": 50,
+                "updated_count": 45,
+                "created_count": 5,
+                "updated_contracts": [1, 2, 3, ...],
+                "errors": []
+            }
+        }
+    """
+    project_id = request.data.get('project')
+    dry_run = request.data.get('dry_run', False)
+
+    if not project_id:
+        return Response({
+            'success': False,
+            'message': 'project parameter is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        project = Project.objects.get(pk=project_id)
+    except Project.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': f'Project with ID {project_id} not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    service = ContractPriceBulkUpdateService(project)
+
+    try:
+        # 프로젝트 유효성 검증
+        validation_result = service.validate_project()
+        if not validation_result['is_valid']:
+            return Response({
+                'success': False,
+                'message': '업데이트할 유효한 계약이 없습니다',
+                'data': validation_result
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if dry_run:
+            # 미리보기 모드: 실제 업데이트 없이 대상 계약만 조회
+            contracts = service.get_contracts_to_update()
+            contract_list = [
+                {
+                    'id': contract.pk,
+                    'serial_number': contract.serial_number,
+                    'contractor_name': contract.contractor.name if hasattr(contract, 'contractor') else None,
+                    'unit_type': contract.unit_type.name if contract.unit_type else None
+                }
+                for contract in contracts
+            ]
+
+            return Response({
+                'success': True,
+                'message': f'{len(contract_list)}개 계약이 업데이트 대상입니다 (미리보기)',
+                'data': {
+                    'total_contracts': len(contract_list),
+                    'contracts': contract_list,
+                    'project_info': validation_result
+                }
+            })
+
+        else:
+            # 실제 업데이트 실행
+            result = service.update_all_contract_prices()
+
+            if result['errors']:
+                return Response({
+                    'success': True,
+                    'message': f"부분적으로 완료됨. {result['updated_count'] + result['created_count']}개 성공, {len(result['errors'])}개 실패",
+                    'data': result
+                }, status=status.HTTP_206_PARTIAL_CONTENT)
+
+            return Response({
+                'success': True,
+                'message': f"{result['updated_count'] + result['created_count']}개 계약 가격이 성공적으로 업데이트되었습니다",
+                'data': result
+            })
+
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'업데이트 중 오류 발생: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def contract_price_update_preview(request):
+    """
+    계약 가격 업데이트 미리보기
+
+    Query Parameters:
+        project: 프로젝트 ID
+
+    Response:
+        프로젝트 정보와 업데이트 대상 계약 목록
+    """
+    project_id = request.GET.get('project')
+
+    if not project_id:
+        return Response({
+            'success': False,
+            'message': 'project parameter is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        project = Project.objects.get(pk=project_id)
+        service = ContractPriceBulkUpdateService(project)
+
+        validation_result = service.validate_project()
+        contracts = service.get_contracts_to_update()
+
+        contract_list = [
+            {
+                'id': contract.pk,
+                'serial_number': contract.serial_number,
+                'contractor_name': contract.contractor.name if hasattr(contract, 'contractor') else None,
+                'unit_type': contract.unit_type.name if contract.unit_type else None,
+                'current_price': getattr(contract.contractprice, 'price', None) if hasattr(contract,
+                                                                                           'contractprice') else None
+            }
+            for contract in contracts[:10]  # 최대 10개만 미리보기
+        ]
+
+        return Response({
+            'success': True,
+            'message': '미리보기 조회 완료',
+            'data': {
+                'project_info': validation_result,
+                'sample_contracts': contract_list,
+                'total_contracts': contracts.count(),
+                'showing_sample': len(contract_list)
+            }
+        })
+
+    except Project.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': f'Project with ID {project_id} not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'조회 중 오류 발생: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

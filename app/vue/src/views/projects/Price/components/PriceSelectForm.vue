@@ -11,7 +11,13 @@ const props = defineProps({
   types: { type: Array as PropType<UnitType[]>, default: () => [] },
 })
 
-const emit = defineEmits(['on-sort-select', 'on-order-select', 'on-type-select', 'cont-price-set'])
+const emit = defineEmits([
+  'on-sort-select',
+  'on-order-select',
+  'on-type-select',
+  'cont-price-view',
+  'cont-price-set',
+])
 
 const refConfirmModal = ref()
 
@@ -47,7 +53,12 @@ const superAuth = computed(() => accStore.superAuth)
 
 const contPriceSet = () => refConfirmModal.value.callModal()
 
-const modalAction = () => {
+const preViewModalAction = () => {
+  emit('cont-price-view')
+  refConfirmModal.value.close()
+}
+
+const bulkUpdateModalAction = () => {
   emit('cont-price-set')
   refConfirmModal.value.close()
 }
@@ -150,7 +161,8 @@ onMounted(() => {
       </p>
     </template>
     <template #footer>
-      <v-btn color="blue-grey-darken-2" @click="modalAction">재설정</v-btn>
+      <v-btn color="blue-grey-darken-1" size="small" @click="preViewModalAction">미리보기</v-btn>
+      <v-btn color="blue-grey-darken-2" size="small" @click="bulkUpdateModalAction">재설정</v-btn>
     </template>
   </ConfirmModal>
 </template>

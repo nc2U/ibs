@@ -52,7 +52,10 @@ provide('condTexts', condTexts)
 const fetchContList = (projId: number) => contStore.fetchContList(projId)
 const fetchOrderGroupList = (projId: number, sort: '' | '1' | '2' = '') =>
   contStore.fetchOrderGroupList(projId, sort)
-const allContPriceSet = (payload: SimpleCont) => contStore.allContPriceSet(payload)
+const previewContractPriceUpdate = (projectId: number) =>
+  contStore.previewContractPriceUpdate(projectId)
+const bulkUpdateContractPrices = (projectId: number) =>
+  contStore.bulkUpdateContractPrices(projectId)
 
 const fetchTypeList = (projId: number, sort?: '1' | '2' | '3' | '4' | '5' | '6') =>
   pDataStore.fetchTypeList(projId, sort)
@@ -118,9 +121,23 @@ const onCreatePrice = (payload: Price) => createPrice(payload)
 const onUpdatePrice = (payload: Price) => updatePrice(payload)
 const onDeletePrice = (pk: number) => deletePrice({ ...{ pk }, ...pFilters })
 
-const contPriceSet = () => {
-  const cont = contList.value[0]
-  allContPriceSet({ ...cont })
+const contPriceView = async () => {
+  if (!project.value) return
+
+  try {
+    await previewContractPriceUpdate(project.value)
+  } catch (error) {
+    console.error('계약 가격 일괄 업데이트 미리보기 실패:', error)
+  }
+}
+const contPriceSet = async () => {
+  if (!project.value) return
+
+  try {
+    await bulkUpdateContractPrices(project.value)
+  } catch (error) {
+    console.error('계약 가격 일괄 업데이트 실패:', error)
+  }
 }
 
 const dataSetup = (pk: number) => {
@@ -173,6 +190,7 @@ onBeforeMount(async () => {
         @on-sort-select="sortSelect"
         @on-order-select="orderSelect"
         @on-type-select="typeSelect"
+        @cont-price-view="contPriceView"
         @cont-price-set="contPriceSet"
       />
       <PriceFormList

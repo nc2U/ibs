@@ -8,6 +8,7 @@ from _utils.contract_price import get_contract_price
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
                              ContractorContact, Succession, ContractorRelease, ContractFile)
+from contract.services import ContractPriceUpdateService
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import HouseUnit, KeyUnit
 from payment.models import InstallmentPaymentOrder
@@ -110,86 +111,16 @@ class ContractSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        # 현재 유효한 계약 목록 가져 오기
-        contracts = Contract.objects.filter(project=instance.project, activation=True)
-        installments = get_installments(instance.project)
+        """
+        개별 계약 정보 업데이트
 
-        for contract in contracts:  # 유효 계약 건 마다 적용
-            try:
-                house_unit = contract.key_unit.houseunit  # 동호 지정 여부 확인
-            except ObjectDoesNotExist:
-                house_unit = None
+        Note: 프로젝트 전체 계약 가격 일괄 업데이트는 ContractPriceBulkUpdateService 사용
+        """
+        # 기본 계약 정보 업데이트
+        instance = super().update(instance, validated_data)
 
-            # 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가 순 참조 공급가 가져 오기
-            price = get_contract_price(contract, house_unit, True)
-
-            # 계약 건별 공급 가격 정보 설정
-            try:  # 계약가격 정보 존재 여부 확인
-                cont_price = contract.contractprice
-            except ContractPrice.DoesNotExist:
-                cont_price = None
-
-            if cont_price:  # 계약가격 데이터가 존재하는 경우 계약 가격 정보 업데이트
-                cont_price.price = price[0]
-                cont_price.price_build = price[1]
-                cont_price.price_land = price[2]
-                cont_price.price_tax = price[3]
-                # 이하 삭제 후 PaymentPerInstallment 로 대체 예정
-                # cont_price.down_pay = pay_amount[0]
-                # cont_price.biz_agency_fee = pay_amount[3]
-                # cont_price.is_included_baf = pay_amount[4]
-                # cont_price.middle_pay = pay_amount[1]
-                # cont_price.remain_pay = pay_amount[2]
-                cont_price.save()
-
-            else:  # 계약가격 데이터가 존재하지 않는 경우 계약 가격 정보 생성
-                cont_price = ContractPrice(contract=contract,
-                                           price=price[0],
-                                           price_build=price[1],
-                                           price_land=price[2],
-                                           price_tax=price[3])
-                # 이하 삭제 후 PaymentPerInstallment 로 대체 예정
-                # down_pay=pay_amount[0],
-                # biz_agency_fee=pay_amount[3],
-                # is_included_baf=pay_amount[4],
-                # middle_pay=pay_amount[1],
-                # remain_pay=pay_amount[2])
-                cont_price.save()
-
-            # # 계약 건별 공급 가격 -> PaymentPerInstallment(회차별 납부 금액) 설정
-            # try:
-            #     payments_install = PaymentPerInstallment.objects.filter(cont_price=cont_price)
-            # except ObjectDoesNotExist:
-            #     payments_install = None
-            #
-            # if payments_install:
-            #     for i, order in enumerate(installments):
-            #         amount = get_payment_amount(contract, order)
-            #         if payments_install[i]:
-            #             payment = payments_install[i]
-            #             payment.cont_price = cont_price
-            #             payment.pay_order = order
-            #             payment.amount = amount
-            #             payment.disable = False
-            #         else:
-            #             payment = PaymentPerInstallment(cont_price=cont_price,
-            #                                             pay_order=order,
-            #                                             amount=amount)
-            #         payment.save()
-            #     # 기존 등록된 회차 수가 납부 회차 보다 많을 경우 초과 등록된 객체 비 활성화
-            #     if len(payments_install) > len(installments):
-            #         for i, payment in enumerate(payments_install):
-            #             if i >= len(installments):
-            #                 payment.disable = True
-            #                 payment.save()
-            #
-            # else:
-            #     for order in installments:
-            #         amount = get_payment_amount(contract, order)
-            #         payment = PaymentPerInstallment(cont_price=cont_price,
-            #                                         pay_order=order,
-            #                                         amount=amount)
-            #         payment.save()
+        # 해당 계약의 가격 정보만 업데이트
+        ContractPriceUpdateService.update_single_contract_price(instance)
 
         return instance
 

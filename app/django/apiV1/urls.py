@@ -177,6 +177,12 @@ urlpatterns = router.urls
 urlpatterns += [path('cont-aggregate/<int:project_id>/', contract.ContractAggreateView.as_view(),
                      name='cont-aggregate')]
 urlpatterns += [path('cont-price-sum/<int:project_id>/', contract.ContPriceSumView.as_view(), name='cont-price-sum')]
+
+# Contract price bulk update APIs
+urlpatterns += [path('contract-bulk-price-update/', contract.bulk_update_contract_prices,
+                     name='contract-bulk-price-update')]
+urlpatterns += [path('contract-price-update-preview/', contract.contract_price_update_preview,
+                     name='contract-price-update-preview')]
 urlpatterns += [path('issue-by-member/', work.IssueCountByMemberView.as_view(), name='issue-by-member')]
 urlpatterns += [path('admin-create-user/', accounts.AdminCreateUserView.as_view(), name='admin-create-user')]
 urlpatterns += [path('check-password/', accounts.CheckPasswordView.as_view(), name='check-password')]
