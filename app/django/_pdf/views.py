@@ -195,7 +195,7 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
     calc_start_pay_code = simple_orders[0].get('calc_start')  # 연체/가산 적용 시작 회차 코드
     paid_list = ProjectCashBook.objects.filter(
         income__isnull=False,
-        project_account_d3__in=(1, 5),  # 분(부)담금 or 분양수입금
+        project_account_d3__is_payment=True,  # 분(부)담금 or 분양수입금
         contract=contract,
         deal_date__lte=pub_date
     ).order_by('deal_date', 'id')  # 해당 계약 건 납부 데이터
@@ -524,7 +524,7 @@ class PdfExportBill(View):
         """
         paid_list = ProjectCashBook.objects.filter(
             income__isnull=False,
-            project_account_d3__in=(1, 5),  # 분(부)담금 or 분양수입금
+            project_account_d3__is_payment=True,  # 분(부)담금 or 분양수입금
             contract=contract,
         ).order_by('deal_date', 'id')  # 해당 계약 건 납부 데이터
 
