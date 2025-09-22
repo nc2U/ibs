@@ -97,10 +97,7 @@ class ContractPriceBulkUpdateService:
                 'price_build': price[1],
                 'price_land': price[2],
                 'price_tax': price[3],
-                # 납부 금액들은 property로 계산되므로 임시값으로 설정
-                'down_pay': 0,
-                'middle_pay': 0,
-                'remain_pay': 0
+                # payment_amounts는 save() 메서드에서 자동 계산됨
             }
         )
         return cont_price, created
@@ -164,9 +161,7 @@ class ContractPriceUpdateService:
                 'price_build': price[1],
                 'price_land': price[2],
                 'price_tax': price[3],
-                'down_pay': 0,
-                'middle_pay': 0,
-                'remain_pay': 0
+                # payment_amounts는 save() 메서드에서 자동 계산됨
             }
         )
         return cont_price, created
