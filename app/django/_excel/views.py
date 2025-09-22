@@ -92,9 +92,6 @@ class ExportContracts(View):
                       ['부가세', 'contractor__contract__contractprice__price_tax', 11],
                       ['공급가액', 'contractor__contract__contractprice__price', 12],
                       ['납입금합계', '', 12],
-                      ['회당계약금', 'contractor__contract__contractprice__down_pay', 11],
-                      ['회당중도금', 'contractor__contract__contractprice__middle_pay', 11],
-                      ['회당잔금', 'contractor__contract__contractprice__remain_pay', 12],
                       ['생년월일', 'contractor__birth_date', 12],
                       ['연락처[1]', 'contractor__contractorcontact__cell_phone', 14],
                       ['연락처[2]', 'contractor__contractorcontact__home_phone', 14],
@@ -148,7 +145,7 @@ class ExportContracts(View):
         }
 
         # Turn off some of the warnings:
-        worksheet.ignore_errors({'number_stored_as_text': 'B:H'})
+        worksheet.ignore_errors({'number_stored_as_text': 'B:Y'})
 
         # ----------------- get_queryset start ----------------- #
         # Get some data to write to the spreadsheet.
