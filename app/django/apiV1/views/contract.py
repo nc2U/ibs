@@ -747,7 +747,8 @@ def contract_price_update_preview(request):
             'message': f'Project with ID {project_id} not found'
         }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
+        logging.exception("Error occurred during contract price update preview")
         return Response({
             'success': False,
-            'message': f'조회 중 오류 발생: {str(e)}'
+            'message': '내부 서버 오류가 발생했습니다.'  # "An internal server error occurred." in Korean
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
