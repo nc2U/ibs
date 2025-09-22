@@ -72,13 +72,10 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       {{ numFormat(contract.contractprice?.price || 0) }}
     </CTableDataCell>
     <CTableDataCell class="text-right">
-      {{ numFormat(contract.contractprice?.down_pay || 0) }}
+      {{ numFormat(contract.total_paid) }}
     </CTableDataCell>
     <CTableDataCell>
       {{ !contract.last_paid_order ? '-' : contract.last_paid_order.__str__ }}
-    </CTableDataCell>
-    <CTableDataCell class="text-right">
-      {{ numFormat(contract.total_paid) }}
     </CTableDataCell>
     <CTableDataCell>
       <span v-if="!!contract.contract_files.length" class="pointer">

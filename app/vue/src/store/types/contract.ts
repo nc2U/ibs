@@ -78,9 +78,6 @@ export interface ContPrice {
   price_build: number | null
   price_land: number | null
   price_tax: number | null
-  down_pay: number
-  middle_pay: number
-  remain_pay: number
 }
 
 export interface Contractor {

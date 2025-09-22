@@ -8,7 +8,7 @@ import Contract from '@/views/contracts/List/components/Contract.vue'
 
 const emit = defineEmits(['page-select'])
 
-const props = defineProps({ 
+const props = defineProps({
   limit: { type: Number, default: 10 },
   highlightId: { type: [Number, null] as PropType<number | null>, default: null },
   currentPage: { type: Number, default: 1 },
@@ -24,20 +24,19 @@ const pageSelect = (page: number) => emit('page-select', page)
 <template>
   <CTable hover responsive align="middle">
     <colgroup>
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 6%" />
-      <col style="width: 5%" />
       <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 8%" />
+      <col style="width: 6%" />
+      <col style="width: 8%" />
       <col style="width: 8%" />
       <col style="width: 8%" />
       <col style="width: 8%" />
       <col style="width: 9%" />
       <col style="width: 8%" />
       <col style="width: 10%" />
-      <col style="width: 8%" />
       <col style="width: 6%" />
-      <col v-if="write_contract" style="width: 5%" />
+      <col v-if="write_contract" style="width: 6%" />
     </colgroup>
 
     <CTableHead>
@@ -51,18 +50,17 @@ const pageSelect = (page: number) => emit('page-select', page)
         <CTableHeaderCell scope="col">가입 계약일</CTableHeaderCell>
         <CTableHeaderCell scope="col">공급 계약일</CTableHeaderCell>
         <CTableHeaderCell scope="col">공급계약가격</CTableHeaderCell>
-        <CTableHeaderCell scope="col">회당 계약금</CTableHeaderCell>
-        <CTableHeaderCell scope="col">최종납입회차</CTableHeaderCell>
         <CTableHeaderCell scope="col">납입금액합계</CTableHeaderCell>
+        <CTableHeaderCell scope="col">최종납입회차</CTableHeaderCell>
         <CTableHeaderCell scope="col">계약서</CTableHeaderCell>
         <CTableHeaderCell v-if="write_contract" scope="col">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
     <CTableBody>
-      <Contract 
-        v-for="contract in contractList" 
-        :key="contract.pk" 
+      <Contract
+        v-for="contract in contractList"
+        :key="contract.pk"
         :contract="contract"
         :is-highlighted="props.highlightId === contract.pk"
         :current-page="props.currentPage"
