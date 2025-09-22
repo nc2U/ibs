@@ -272,7 +272,7 @@ class ContractViewSet(viewsets.ModelViewSet):
 
 class ContractSetViewSet(ContractViewSet):
     serializer_class = ContractSetSerializer
-    pagination_class = PageNumberPaginationThreeThousand
+    pagination_class = PageNumberPaginationTen
 
     def perform_update(self, serializer):
         # from_page 정보를 임시로 저장
