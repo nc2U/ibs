@@ -99,8 +99,6 @@ class ContractPriceBulkUpdateService:
                 'price_tax': price[3],
                 # 납부 금액들은 property로 계산되므로 임시값으로 설정
                 'down_pay': 0,
-                'biz_agency_fee': 0,
-                'is_included_baf': False,
                 'middle_pay': 0,
                 'remain_pay': 0
             }
@@ -167,8 +165,6 @@ class ContractPriceUpdateService:
                 'price_land': price[2],
                 'price_tax': price[3],
                 'down_pay': 0,
-                'biz_agency_fee': 0,
-                'is_included_baf': False,
                 'middle_pay': 0,
                 'remain_pay': 0
             }

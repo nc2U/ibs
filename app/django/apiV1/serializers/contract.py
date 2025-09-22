@@ -262,8 +262,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                    price_land=price[2],
                                    price_tax=price[3],
                                    down_pay=0,  # 임시값, property로 계산됨
-                                   biz_agency_fee=0,  # 임시값, property로 계산됨
-                                   is_included_baf=False,  # 임시값, property로 계산됨
                                    middle_pay=0,  # 임시값, property로 계산됨
                                    remain_pay=0)  # 임시값, property로 계산됨
         cont_price.save()
@@ -462,7 +460,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
                 cont_price.price_build = price[1]
                 cont_price.price_land = price[2]
                 cont_price.price_tax = price[3]
-                # down_pay, middle_pay, remain_pay, biz_agency_fee, is_included_baf는 property로 계산됨
+                # down_pay, middle_pay, remain_pay는 property로 계산됨
                 cont_price.save()
 
         else:  # 계약가격 데이터가 존재하지 않는 경우 계약 가격 정보 생성
@@ -472,8 +470,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                        price_land=price[2],
                                        price_tax=price[3],
                                        down_pay=0,  # 임시값, property로 계산됨
-                                       biz_agency_fee=0,  # 임시값, property로 계산됨
-                                       is_included_baf=False,  # 임시값, property로 계산됨
                                        middle_pay=0,  # 임시값, property로 계산됨
                                        remain_pay=0)  # 임시값, property로 계산됨
             cont_price.save()
