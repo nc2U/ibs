@@ -5,8 +5,9 @@ from django_filters import DateFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
-from _utils.contract_price import get_multiple_projects_payment_summary
+from _utils.contract_price import get_project_payment_summary
 from items.models import KeyUnit
+from project.models import Project
 from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
@@ -127,20 +128,39 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         if not project_id:
             return Response({'error': 'project parameter is required'}, status=400)
 
-        # 납부 회차 데이터 조회
+        # 프로젝트 및 납부 회차 데이터 조회
+        project = Project.objects.get(id=project_id)
         pay_orders = InstallmentPaymentOrder.objects.filter(project_id=project_id).order_by('pay_code', 'pay_time')
+
+        # 핵심 최적화: 프로젝트 납부 요약을 한 번만 계산하여 캐시
+        project_payment_summary = get_project_payment_summary(project)
+        payment_amounts_cache = {}
+
+        # 납부 금액 캐시 생성
+        for installment_summary in project_payment_summary.get('installment_summaries', []):
+            installment_order = installment_summary['installment_order']
+            payment_amounts_cache[installment_order.pay_sort] = installment_summary['total_amount']
+
+        # 수납 데이터를 배치로 조회하여 캐시
+        collection_cache = self._get_all_collection_data(project_id, date, pay_orders)
 
         result_pay_orders = []
 
         for order in pay_orders:
-            # 해당 회차의 계약 금액 합계
-            contract_amount = self._get_contract_amount(order, project_id)
+            # 캐시된 계약 금액 사용
+            contract_amount = payment_amounts_cache.get(order.pay_sort, 0)
 
-            # 수납 관련 집계
-            collection_data = self._get_collection_data(order, project_id, date)
+            # 캐시된 수납 데이터 사용
+            collection_data = collection_cache.get(order.pk, {
+                'collected_amount': 0,
+                'discount_amount': 0,
+                'overdue_fee': 0,
+                'actual_collected': 0,
+                'collection_rate': 0
+            })
 
-            # 기간도래 관련 집계
-            due_period_data = self._get_due_period_data(order, project_id, date)
+            # 기간도래 관련 집계 (최적화된 계산)
+            due_period_data = self._get_due_period_data_optimized(order, contract_amount, collection_data, date)
 
             # 기간미도래 미수금
             not_due_unpaid = self._get_not_due_unpaid(order, project_id, date)
@@ -175,49 +195,107 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_contract_amount(order, project_id):
-        """해당 회차의 계약 금액 합계 계산 (성능 최적화된 동적 계산)"""
+        """해당 회차의 계약 금액 합계 계산 (프로젝트 수준 최적화)"""
 
-        # 기본 납부 회차(1,2,3)는 프로젝트 수준에서 효율적으로 계산
-        if order.pay_sort in ['1', '2', '3']:
-            try:
-                # 프로젝트 객체 가져오기
-                from project.models import Project
-                project = Project.objects.get(id=project_id)
+        try:
+            # 단일 프로젝트의 모든 납부 회차에 대한 합계를 한 번에 계산
+            project = Project.objects.get(id=project_id)
+            summary = get_project_payment_summary(project)
 
-                # 다중 프로젝트 요약 함수를 단일 프로젝트에 활용
-                summary = get_multiple_projects_payment_summary([project])
+            # 해당 pay_sort에 맞는 금액 찾기
+            for installment_summary in summary.get('installment_summaries', []):
+                installment_order = installment_summary['installment_order']
+                if installment_order.pay_sort == order.pay_sort:
+                    return installment_summary['total_amount']
 
-                # 해당 pay_sort에 맞는 금액 찾기
-                for installment_summary in summary.get('installment_summaries', []):
-                    installment_order = installment_summary['installment_order']
-                    if installment_order.pay_sort == order.pay_sort:
-                        return installment_summary['total_amount']
+            return 0
 
-                return 0
+        except Exception as e:
+            # 실패 시 개별 계약별 계산으로 폴백
+            from contract.models import Contract
+            from _utils.contract_price import get_contract_payment_plan
 
-            except Exception:
-                # 실패 시 기존 방식으로 폴백
-                pass
+            contracts = Contract.objects.filter(project_id=project_id).select_related('contractprice')
+            total_amount = 0
 
-        # 기타 회차 또는 실패 시: 개별 계약별 계산
-        from _utils.contract_price import get_contract_payment_plan
+            for contract in contracts:
+                try:
+                    payment_plan = get_contract_payment_plan(contract)
+                    for plan_item in payment_plan:
+                        if plan_item['installment_order'].pay_sort == order.pay_sort:
+                            total_amount += plan_item['amount']
+                except Exception:
+                    continue
 
-        contracts = Contract.objects.filter(project_id=project_id).select_related('contractprice')
-        total_amount = 0
+            return total_amount
 
-        for contract in contracts:
-            try:
-                payment_plan = get_contract_payment_plan(contract)
-                for plan_item in payment_plan:
-                    if plan_item['installment_order'].pay_sort == order.pay_sort:
-                        total_amount += plan_item['amount']
-            except Exception:
-                continue
+    def _get_all_collection_data(self, project_id, date, pay_orders):
+        """모든 납부 회차의 수납 데이터를 배치로 조회하여 캐시 생성"""
+        from django.db.models import Q
 
-        return total_amount
+        # 모든 납부 회차의 수납 데이터를 한 번에 조회
+        order_ids = [order.pk for order in pay_orders]
+        payments_data = ProjectCashBook.objects.filter(
+            project_id=project_id,
+            installment_order__in=order_ids,
+            income__isnull=False,
+            deal_date__lte=date
+        ).values('installment_order').annotate(
+            total_collected=Sum('income')
+        )
+
+        # 수납 데이터를 딕셔너리로 변환
+        payments_dict = {item['installment_order']: item['total_collected'] for item in payments_data}
+
+        collection_cache = {}
+
+        for order in pay_orders:
+            collected_amount = payments_dict.get(order.pk, 0)
+
+            # TODO: 실제 할인료, 연체료 계산 로직 구현 필요
+            discount_amount = 0
+            overdue_fee = 0
+            actual_collected = collected_amount + overdue_fee - discount_amount
+
+            collection_cache[order.pk] = {
+                'collected_amount': collected_amount,
+                'discount_amount': discount_amount,
+                'overdue_fee': overdue_fee,
+                'actual_collected': actual_collected,
+                'collection_rate': 0  # 나중에 계산
+            }
+
+        return collection_cache
+
+    def _get_due_period_data_optimized(self, order, contract_amount, collection_data, date):
+        """최적화된 기간도래 관련 데이터 집계 (캐시된 데이터 사용)"""
+
+        # 캐시된 수납 데이터 사용
+        collected_amount = collection_data['collected_amount']
+
+        # 기간도래 미수금 = 계약금액 - 수납액
+        unpaid_amount = max(0, contract_amount - collected_amount)
+        unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
+
+        # TODO: 기간도래분 연체료 계산 로직 구현 필요
+        overdue_fee = 0
+        subtotal = unpaid_amount + overdue_fee
+
+        # collection_rate 계산 및 업데이트
+        collection_rate = (collection_data['actual_collected'] / contract_amount * 100) if contract_amount > 0 else 0
+        collection_data['collection_rate'] = round(collection_rate, 2)
+
+        return {
+            'contract_amount': contract_amount,
+            'unpaid_amount': unpaid_amount,
+            'unpaid_rate': round(unpaid_rate, 2),
+            'overdue_fee': overdue_fee,
+            'subtotal': subtotal
+        }
 
     def _get_collection_data(self, order, project_id, date):
-        """수납 관련 데이터 집계"""
+        """수납 관련 데이터 집계 (레거시 메서드 - 사용하지 않음)"""
+        # 이 메서드는 이제 사용하지 않지만 호환성을 위해 유지
         payments = ProjectCashBook.objects.filter(
             project_id=project_id,
             installment_order=order,
@@ -226,7 +304,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         )
 
         collected_amount = payments.aggregate(total=Sum('income'))['total'] or 0
-        # TODO: 실제 할인료, 연체료 계산 로직 구현 필요
         discount_amount = 0
         overdue_fee = 0
         actual_collected = collected_amount + overdue_fee - discount_amount
@@ -243,11 +320,10 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         }
 
     def _get_due_period_data(self, order, project_id, date):
-        """기간도래 관련 데이터 집계"""
-        # 기준일 기준으로 기간이 도래한 계약 금액
+        """기간도래 관련 데이터 집계 (레거시 메서드 - 사용하지 않음)"""
+        # 이 메서드는 이제 사용하지 않지만 호환성을 위해 유지
         contract_amount = self._get_contract_amount(order, project_id)
 
-        # 기간도래분 중 실제 수납된 금액
         collected_amount = ProjectCashBook.objects.filter(
             project_id=project_id,
             installment_order=order,
@@ -255,11 +331,9 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             deal_date__lte=date
         ).aggregate(total=Sum('income'))['total'] or 0
 
-        # 기간도래 미수금 = 계약금액 - 수납액
         unpaid_amount = max(0, contract_amount - collected_amount)
         unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
 
-        # TODO: 기간도래분 연체료 계산 로직 구현 필요
         overdue_fee = 0
         subtotal = unpaid_amount + overdue_fee
 
