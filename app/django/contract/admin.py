@@ -42,8 +42,7 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(ContractPrice)
 class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'contract', 'price', 'price_build', 'price_land', 'price_tax',
-                    'down_pay', 'middle_pay', 'remain_pay')
+    list_display = ('id', 'contract', 'price', 'price_build', 'price_land', 'price_tax')
     list_display_links = ('contract',)
     list_editable = ('price', 'price_build', 'price_land', 'price_tax')
     list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',

@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
 import { usePayment } from '@/store/pinia/payment'
-import { useContract } from '@/store/pinia/contract'
 import { numFormat } from '@/utils/baseMixins'
 import type { OverallSummary as QS, OverallSummaryPayOrder as QSPO } from '@/store/types/payment'
 
@@ -11,9 +10,6 @@ defineProps({ date: { type: String, default: '' } })
 const payStore = usePayment()
 const payOrderList = computed<QSPO[]>(() => (payStore.overallSummary as QS)?.pay_orders || [])
 const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
-
-const contStore = useContract()
-const contPriceSum = computed(() => contStore.contPriceSum)
 </script>
 
 <template>

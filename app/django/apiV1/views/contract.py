@@ -10,7 +10,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, get_contract_price, get_contract_payment_plan
+from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
+    get_contract_price, get_contract_payment_plan
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationTen
@@ -409,21 +410,6 @@ class ContractAggreateView(APIView):
         return Response(serializer.data)
 
 
-class ContPriceSumView(APIView):
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-
-    def get(self, request, project_id, ):
-        totals = ContractPrice.objects.filter(contract__project_id=project_id,
-                                              contract__activation=True,
-                                              contract__contractor__status='2').aggregate(
-            down_pay_sum=Sum('down_pay'),
-            middle_pay_sum=Sum('middle_pay'),
-            remain_pay_sum=Sum('remain_pay'),
-        )
-        serializer = ContPriceSumSerializer(totals)
-        return Response(serializer.data)
-
-
 class ContractorViewSet(viewsets.ModelViewSet):
     queryset = Contractor.objects.all()
     serializer_class = ContractorSerializer
@@ -711,7 +697,8 @@ def contract_price_update_preview(request):
         contract_list = []
         for contract in contracts[:10]:  # 최대 10개만 미리보기
             # 기존 가격
-            current_price = getattr(contract.contractprice, 'price', None) if hasattr(contract, 'contractprice') else None
+            current_price = getattr(contract.contractprice, 'price', None) \
+                if hasattr(contract, 'contractprice') else None
 
             # 업데이트될 예정인 새로운 가격 계산
             try:

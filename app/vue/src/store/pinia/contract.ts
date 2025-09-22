@@ -201,11 +201,6 @@ export const useContract = defineStore('contract', () => {
     conts_num: number
     non_conts_num: number
   } | null>()
-  const contPriceSum = ref<{
-    down_pay_sum: number
-    middle_pay_sum: number
-    remain_pay_sum: number
-  } | null>(null)
 
   // actions
   const fetchSubsSummaryList = (project: number) =>
@@ -227,14 +222,6 @@ export const useContract = defineStore('contract', () => {
       .get(`/cont-aggregate/${project}/`)
       .then(res => (contAggregate.value = res.data))
       .catch(err => errorHandle(err.response.data))
-
-  const fetchContPriceSum = (project: number) =>
-    api
-      .get(`/cont-price-sum/${project}/`)
-      .then(res => (contPriceSum.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-  const removeContPriceSum = () => (contPriceSum.value = null)
 
   const orderGroupList = ref<OrderGroup[]>([])
   const getOrderGroups = computed(() =>
@@ -493,14 +480,11 @@ export const useContract = defineStore('contract', () => {
     subsSummaryList,
     contSummaryList,
     contAggregate,
-    contPriceSum,
 
     fetchSubsSummaryList,
     fetchContSummaryList,
     removeContAggregate,
     fetchContAggregate,
-    fetchContPriceSum,
-    removeContPriceSum,
 
     orderGroupList,
     getOrderGroups,

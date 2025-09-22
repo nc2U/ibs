@@ -176,7 +176,6 @@ router.register(r'docs-trash-can', docs.DocsInTrashViewSet, basename='docs-trash
 urlpatterns = router.urls
 urlpatterns += [path('cont-aggregate/<int:project_id>/', contract.ContractAggreateView.as_view(),
                      name='cont-aggregate')]
-urlpatterns += [path('cont-price-sum/<int:project_id>/', contract.ContPriceSumView.as_view(), name='cont-price-sum')]
 
 # Contract price bulk update APIs
 urlpatterns += [path('contract-bulk-price-update/', contract.bulk_update_contract_prices,

@@ -6,6 +6,7 @@ import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { getToday } from '@/utils/baseMixins'
+import type { Project } from '@/store/types/project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -21,7 +22,7 @@ const excelUrl1 = computed(() => `/excel/paid-status/?project=${project.value}&d
 const excelUrl2 = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const fetchIncBudgetList = (proj: number) => projStore.fetchIncBudgetList(proj)
 
@@ -56,7 +57,6 @@ const dataSetup = (pk: number) => {
   fetchPayOrderList(pk)
   fetchOverallSummary(pk, date.value)
   contStore.fetchContAggregate(pk)
-  contStore.fetchContPriceSum(pk)
 }
 
 const dataReset = () => {
@@ -67,7 +67,6 @@ const dataReset = () => {
   payStore.paySumList = []
   payStore.overallSummary = null
   contStore.removeContAggregate()
-  contStore.removeContPriceSum()
 }
 
 const projSelect = (target: number | null) => {
