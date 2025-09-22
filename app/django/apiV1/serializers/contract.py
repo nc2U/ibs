@@ -84,8 +84,7 @@ class ContactInContractorSerializer(serializers.ModelSerializer):
 class ContPriceInContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractPrice
-        fields = ('pk', 'price', 'price_build', 'price_land',
-                  'price_tax', 'down_pay', 'middle_pay', 'remain_pay')
+        fields = ('pk', 'price', 'price_build', 'price_land', 'price_tax')
 
 
 class ContractorInContractSerializer(serializers.ModelSerializer):
@@ -265,10 +264,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                    price=price[0],
                                    price_build=price[1],
                                    price_land=price[2],
-                                   price_tax=price[3],
-                                   down_pay=0,  # 임시값, property로 계산됨
-                                   middle_pay=0,  # 임시값, property로 계산됨
-                                   remain_pay=0)  # 임시값, property로 계산됨
+                                   price_tax=price[3])
         cont_price.save()
 
         # 5. 계약자 정보 테이블 입력
@@ -465,7 +461,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
                 cont_price.price_build = price[1]
                 cont_price.price_land = price[2]
                 cont_price.price_tax = price[3]
-                # down_pay, middle_pay, remain_pay는 property로 계산됨
                 cont_price.save()
 
         else:  # 계약가격 데이터가 존재하지 않는 경우 계약 가격 정보 생성
@@ -473,10 +468,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                        price=price[0],
                                        price_build=price[1],
                                        price_land=price[2],
-                                       price_tax=price[3],
-                                       down_pay=0,  # 임시값, property로 계산됨
-                                       middle_pay=0,  # 임시값, property로 계산됨
-                                       remain_pay=0)  # 임시값, property로 계산됨
+                                       price_tax=price[3])
             cont_price.save()
 
         # 5. 계약자 정보 테이블 입력
@@ -595,8 +587,7 @@ class SimpleContractSerializer(serializers.ModelSerializer):
 class ContractPriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractPrice
-        fields = ('pk', 'contract', 'price', 'price_build', 'price_land',
-                  'price_tax', 'down_pay', 'middle_pay', 'remain_pay')
+        fields = ('pk', 'contract', 'price', 'price_build', 'price_land', 'price_tax')
 
 
 class SubsSummarySerializer(serializers.ModelSerializer):

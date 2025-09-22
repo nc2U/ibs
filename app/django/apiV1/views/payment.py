@@ -177,40 +177,33 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_contract_amount(order, project_id):
-        """해당 회차의 계약 금액 합계 계산 (ContractPrice 모델 직접 사용으로 성능 최적화)"""
+        """해당 회차의 계약 금액 합계 계산 (동적 계산 사용)"""
 
-        # 성능을 위해 ContractPrice 모델에서 직접 계산
-        from contract.models import ContractPrice
+        from contract.models import Contract
+        from _utils.contract_price import get_contract_payment_amounts
 
-        # pay_sort에 따라 해당하는 계약 금액 합계 계산
-        if order.pay_sort == '1':  # 계약금
-            total_amount = ContractPrice.objects.filter(
-                contract__project_id=project_id
-            ).aggregate(total=Sum('down_pay'))['total'] or 0
+        # 모든 계약의 동적 계산된 금액 합계
+        contracts = Contract.objects.filter(project_id=project_id).select_related('contractprice')
+        total_amount = 0
 
-        elif order.pay_sort == '2':  # 중도금
-            total_amount = ContractPrice.objects.filter(
-                contract__project_id=project_id
-            ).aggregate(total=Sum('middle_pay'))['total'] or 0
+        for contract in contracts:
+            try:
+                down_pay, middle_pay, remain_pay = get_contract_payment_amounts(contract)
 
-        elif order.pay_sort == '3':  # 잔금
-            total_amount = ContractPrice.objects.filter(
-                contract__project_id=project_id
-            ).aggregate(total=Sum('remain_pay'))['total'] or 0
-
-        else:  # 기타 (7: 업무대행비 등)
-            # 기타 회차는 개별 계약의 payment plan에서 계산
-            contracts = Contract.objects.filter(project_id=project_id).select_related('contractprice')
-            total_amount = 0
-
-            for contract in contracts:
-                try:
+                if order.pay_sort == '1':  # 계약금
+                    total_amount += down_pay
+                elif order.pay_sort == '2':  # 중도금
+                    total_amount += middle_pay
+                elif order.pay_sort == '3':  # 잔금
+                    total_amount += remain_pay
+                else:  # 기타 (7: 업무대행비 등)
+                    # 기타 회차는 개별 계약의 payment plan에서 계산
                     payment_plan = get_contract_payment_plan(contract)
                     for plan_item in payment_plan:
                         if plan_item['installment_order'].pay_sort == order.pay_sort:
                             total_amount += plan_item['amount']
-                except Exception:
-                    continue
+            except Exception:
+                continue
 
         return total_amount
 
