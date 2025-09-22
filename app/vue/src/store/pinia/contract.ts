@@ -176,10 +176,10 @@ export const useContract = defineStore('contract', () => {
 
   // ContractPrice JSON 캐시 기반 납부 계획 조회 (고성능)
   const fetchContractPricePaymentPlan = async (
-    contractPriceId: number,
+    contractId: number,
   ): Promise<ContractPriceWithPaymentPlan> => {
     try {
-      const response = await api.get(`/contract-price/${contractPriceId}/payment-plan/`)
+      const response = await api.get(`/contract/${contractId}/price-payment-plan/`)
       return response.data
     } catch (err: any) {
       errorHandle(err.response.data)
