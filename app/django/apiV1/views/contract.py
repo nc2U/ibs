@@ -252,8 +252,9 @@ class ContractViewSet(viewsets.ModelViewSet):
                 )
 
         except (ValueError, OrderGroup.DoesNotExist, UnitType.DoesNotExist) as e:
+            logging.warning("Invalid parameter provided in multi_project_payment_summary", exc_info=True)
             return Response(
-                {'error': f'Invalid parameter provided: {str(e)}'},
+                {'error': 'Invalid parameter provided'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
