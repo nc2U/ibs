@@ -137,8 +137,9 @@ class ContractViewSet(viewsets.ModelViewSet):
             unit_type = UnitType.objects.get(id=unit_type_id) if unit_type_id else None
 
         except (Project.DoesNotExist, OrderGroup.DoesNotExist, UnitType.DoesNotExist) as e:
+            logging.exception("Invalid ID provided in payment_summary endpoint.")
             return Response(
-                {'error': f'Invalid ID provided: {str(e)}'},
+                {'error': 'Invalid ID provided.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
