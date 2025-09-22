@@ -210,16 +210,12 @@ class ContractSetSerializer(serializers.ModelSerializer):
         if total_paid <= 0:
             return None
 
-        # 3. 회차 순서대로 정렬 (pay_code, pay_time 기준)
-        sorted_plan = sorted(payment_plan,
-                             key=lambda x: (x['installment_order'].pay_code,
-                                            x['installment_order'].pay_time))
-
-        # 4. 순차적으로 누적 약정 금액 계산하여 완납 회차 찾기
+        # 3. 순차적으로 누적 약정 금액 계산하여 완납 회차 찾기
+        # (get_contract_payment_plan에서 이미 pay_code, pay_time 순으로 정렬됨)
         cumulative_amount = 0
         last_paid_installment = None
 
-        for plan_item in sorted_plan:
+        for plan_item in payment_plan:
             installment_order = plan_item['installment_order']
             amount = plan_item['amount']
             cumulative_amount += amount
