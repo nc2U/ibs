@@ -5,14 +5,12 @@ from django_filters import DateFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
+from _utils.contract_price import get_multiple_projects_payment_summary
 from items.models import KeyUnit
 from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
 from ..serializers.payment import *
-from payment.models import PaymentPerInstallment
-from _utils.contract_price import get_contract_payment_plan
-from contract.models import Contract
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
@@ -177,31 +175,42 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_contract_amount(order, project_id):
-        """해당 회차의 계약 금액 합계 계산 (동적 계산 사용)"""
+        """해당 회차의 계약 금액 합계 계산 (성능 최적화된 동적 계산)"""
 
-        from contract.models import Contract
-        from _utils.contract_price import get_contract_payment_amounts
+        # 기본 납부 회차(1,2,3)는 프로젝트 수준에서 효율적으로 계산
+        if order.pay_sort in ['1', '2', '3']:
+            try:
+                # 프로젝트 객체 가져오기
+                from project.models import Project
+                project = Project.objects.get(id=project_id)
 
-        # 모든 계약의 동적 계산된 금액 합계
+                # 다중 프로젝트 요약 함수를 단일 프로젝트에 활용
+                summary = get_multiple_projects_payment_summary([project])
+
+                # 해당 pay_sort에 맞는 금액 찾기
+                for installment_summary in summary.get('installment_summaries', []):
+                    installment_order = installment_summary['installment_order']
+                    if installment_order.pay_sort == order.pay_sort:
+                        return installment_summary['total_amount']
+
+                return 0
+
+            except Exception:
+                # 실패 시 기존 방식으로 폴백
+                pass
+
+        # 기타 회차 또는 실패 시: 개별 계약별 계산
+        from _utils.contract_price import get_contract_payment_plan
+
         contracts = Contract.objects.filter(project_id=project_id).select_related('contractprice')
         total_amount = 0
 
         for contract in contracts:
             try:
-                down_pay, middle_pay, remain_pay = get_contract_payment_amounts(contract)
-
-                if order.pay_sort == '1':  # 계약금
-                    total_amount += down_pay
-                elif order.pay_sort == '2':  # 중도금
-                    total_amount += middle_pay
-                elif order.pay_sort == '3':  # 잔금
-                    total_amount += remain_pay
-                else:  # 기타 (7: 업무대행비 등)
-                    # 기타 회차는 개별 계약의 payment plan에서 계산
-                    payment_plan = get_contract_payment_plan(contract)
-                    for plan_item in payment_plan:
-                        if plan_item['installment_order'].pay_sort == order.pay_sort:
-                            total_amount += plan_item['amount']
+                payment_plan = get_contract_payment_plan(contract)
+                for plan_item in payment_plan:
+                    if plan_item['installment_order'].pay_sort == order.pay_sort:
+                        total_amount += plan_item['amount']
             except Exception:
                 continue
 
