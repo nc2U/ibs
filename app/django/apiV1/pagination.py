@@ -2,7 +2,12 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
 
 
-class PageNumberPaginationCustomBasic(PageNumberPagination):
+class PageNumberPaginationBase(PageNumberPagination):
+    """모든 커스텀 페이지네이션의 기본 클래스"""
+    page_size_query_param = 'limit'
+
+
+class PageNumberPaginationCustomBasic(PageNumberPaginationBase):
     max_page_size = 5000
 
 
@@ -10,9 +15,8 @@ class LimitOffsetPaginationCustomBasic(LimitOffsetPagination):
     max_limit = 500
 
 
-class PageNumberPaginationThreeThousand(PageNumberPagination):
+class PageNumberPaginationThreeThousand(PageNumberPaginationBase):
     page_size = 3000
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
     def get_paginated_response(self, data):
         return Response({
@@ -23,9 +27,8 @@ class PageNumberPaginationThreeThousand(PageNumberPagination):
         })
 
 
-class PageNumberPaginationOneThousand(PageNumberPagination):
+class PageNumberPaginationOneThousand(PageNumberPaginationBase):
     page_size = 1000
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
     def get_paginated_response(self, data):
         return Response({
@@ -36,9 +39,8 @@ class PageNumberPaginationOneThousand(PageNumberPagination):
         })
 
 
-class PageNumberPaginationFiveHundred(PageNumberPagination):
+class PageNumberPaginationFiveHundred(PageNumberPaginationBase):
     page_size = 500
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
     def get_paginated_response(self, data):
         return Response({
@@ -49,9 +51,8 @@ class PageNumberPaginationFiveHundred(PageNumberPagination):
         })
 
 
-class PageNumberPaginationThreeHundred(PageNumberPagination):
+class PageNumberPaginationThreeHundred(PageNumberPaginationBase):
     page_size = 300
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
     def get_paginated_response(self, data):
         return Response({
@@ -62,9 +63,8 @@ class PageNumberPaginationThreeHundred(PageNumberPagination):
         })
 
 
-class PageNumberPaginationTwoHundred(PageNumberPagination):
+class PageNumberPaginationTwoHundred(PageNumberPaginationBase):
     page_size = 200
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
     def get_paginated_response(self, data):
         return Response({
@@ -75,9 +75,8 @@ class PageNumberPaginationTwoHundred(PageNumberPagination):
         })
 
 
-class PageNumberPaginationOneHundred(PageNumberPagination):
+class PageNumberPaginationOneHundred(PageNumberPaginationBase):
     page_size = 100
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
     def get_paginated_response(self, data):
         return Response({
@@ -88,9 +87,8 @@ class PageNumberPaginationOneHundred(PageNumberPagination):
         })
 
 
-class PageNumberPaginationFifty(PageNumberPagination):
+class PageNumberPaginationFifty(PageNumberPaginationBase):
     page_size = 50
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
     def get_paginated_response(self, data):
         return Response({
@@ -101,9 +99,8 @@ class PageNumberPaginationFifty(PageNumberPagination):
         })
 
 
-class PageNumberPaginationTwentyFive(PageNumberPagination):
+class PageNumberPaginationTwentyFive(PageNumberPaginationBase):
     page_size = 25
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
     def get_paginated_response(self, data):
         return Response({
@@ -114,16 +111,13 @@ class PageNumberPaginationTwentyFive(PageNumberPagination):
         })
 
 
-class PageNumberPaginationTwenty(PageNumberPagination):
+class PageNumberPaginationTwenty(PageNumberPaginationBase):
     page_size = 20
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
 
-class PageNumberPaginationFifteen(PageNumberPagination):
+class PageNumberPaginationFifteen(PageNumberPaginationBase):
     page_size = 15
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
 
 
-class PageNumberPaginationTen(PageNumberPagination):
+class PageNumberPaginationTen(PageNumberPaginationBase):
     page_size = 10
-    page_size_query_param = 'limit'  # 쿼리 파라미터로 사용할 이름
