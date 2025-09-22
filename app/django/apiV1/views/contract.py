@@ -1,4 +1,5 @@
 from django.core.cache import cache
+import logging
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Sum, Q
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
@@ -206,8 +207,9 @@ class ContractViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            logging.exception("Error while getting payment plan")
             return Response(
-                {'error': f'Failed to get payment plan: {str(e)}'},
+                {'error': 'Failed to get payment plan due to an internal error.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
