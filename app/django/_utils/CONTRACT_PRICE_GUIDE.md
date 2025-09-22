@@ -180,6 +180,112 @@ for item in payment_plan:
     print(f"{installment.pay_name}: {amount:,}원 ({source})")
 ```
 
+### 4. 프로젝트 납부 요약 조회
+
+```python
+from _utils.contract_price import get_project_payment_summary
+from project.models import Project
+from contract.models import OrderGroup, UnitType
+
+# 기본 프로젝트 요약
+project = Project.objects.get(id=1)
+summary = get_project_payment_summary(project)
+
+print(f"총 계약 수: {summary['total_contracts']}")
+print(f"총 납부 금액: {summary['grand_total']:,}원")
+
+for installment_summary in summary['installment_summaries']:
+    installment = installment_summary['installment_order']
+    total_amount = installment_summary['total_amount']
+    contract_count = installment_summary['contract_count']
+    average_amount = installment_summary['average_amount']
+
+    print(f"{installment.pay_name}:")
+    print(f"  총액: {total_amount:,}원")
+    print(f"  계약 수: {contract_count}개")
+    print(f"  평균: {average_amount:,}원")
+
+# 필터링된 프로젝트 요약
+order_group = OrderGroup.objects.get(id=1)
+unit_type = UnitType.objects.get(id=2)
+filtered_summary = get_project_payment_summary(project, order_group, unit_type)
+```
+
+### 5. 다중 프로젝트 납부 요약 조회
+
+```python
+from _utils.contract_price import get_multiple_projects_payment_summary
+from project.models import Project
+
+# 여러 프로젝트 통합 요약
+projects = Project.objects.filter(id__in=[1, 2, 3])
+combined_summary = get_multiple_projects_payment_summary(projects)
+
+print(f"총 프로젝트: {len(projects)}개")
+print(f"총 계약 수: {combined_summary['total_contracts']}")
+print(f"통합 총액: {combined_summary['grand_total']:,}원")
+
+for installment_summary in combined_summary['installment_summaries']:
+    installment = installment_summary['installment_order']
+    total_amount = installment_summary['total_amount']
+    source_breakdown = installment_summary['source_breakdown']
+
+    print(f"{installment.pay_name}: {total_amount:,}원")
+    print(f"  계산된 금액: {source_breakdown['calculated']:,}원")
+    print(f"  개별 설정 금액: {source_breakdown['payment_per_installment']:,}원")
+
+# 차수 및 타입별 필터링
+order_group = OrderGroup.objects.get(id=1)
+unit_type = UnitType.objects.get(id=2)
+filtered_combined = get_multiple_projects_payment_summary(projects, order_group, unit_type)
+```
+
+### 6. API 엔드포인트 사용
+
+#### 다중 프로젝트 납부 요약 API
+```
+GET /api/v1/contract/multi-project-payment-summary/
+```
+
+**필수 파라미터**:
+- `projects`: 쉼표로 구분된 프로젝트 ID (예: `1,2,3`)
+
+**선택적 파라미터**:
+- `order_group`: 차수 그룹 ID
+- `unit_type`: 유닛 타입 ID
+
+**사용 예시**:
+```
+# 기본 사용
+GET /api/v1/contract/multi-project-payment-summary/?projects=1,2,3
+
+# 필터링 포함
+GET /api/v1/contract/multi-project-payment-summary/?projects=1,2,3&order_group=1&unit_type=2
+```
+
+**응답 형식**:
+```json
+{
+  "projects": [1, 2, 3],
+  "order_group": 1,
+  "unit_type": 2,
+  "installment_summaries": [
+    {
+      "installment_order": {...},
+      "total_amount": 5000000000,
+      "contract_count": 100,
+      "average_amount": 50000000,
+      "source_breakdown": {
+        "calculated": 4500000000,
+        "payment_per_installment": 500000000
+      }
+    }
+  ],
+  "grand_total": 50000000000,
+  "total_contracts": 100
+}
+```
+
 ## 주요 모델 관계
 
 ### 계약가격 관련 모델
