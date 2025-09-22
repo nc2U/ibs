@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers
 
-from _utils.contract_price import get_contract_price, get_contract_payment_plan, get_contract_payment_amounts
+from _utils.contract_price import get_contract_price, get_contract_payment_plan
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
                              ContractorContact, Succession, ContractorRelease, ContractFile)

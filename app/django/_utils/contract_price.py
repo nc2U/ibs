@@ -30,7 +30,7 @@ def get_floor_type(contract):
 
 def get_sales_price_by_gt(contract, houseunit=None):
     """
-    Get SalesPriceByGT instance for specific contract and houseunit.
+    Get SalesPriceByGT instance for a specific contract and houseunit.
 
     Args:
         contract: Contract instance
@@ -46,7 +46,7 @@ def get_sales_price_by_gt(contract, houseunit=None):
     if not contract:
         return None
 
-    # Use provided houseunit or extract from contract
+    # Use a provided houseunit or extract from a contract
     if houseunit is None:
         if not contract.key_unit:
             return None
@@ -168,7 +168,7 @@ def get_contract_price(contract, houseunit=None, is_set=False):
 
 def get_down_payment(contract, installment_order):
     """
-    Get down payment amount for specific contract and installment order.
+    Get down payment amount for a specific contract and installment order.
 
     Args:
         contract: Contract instance
@@ -193,15 +193,15 @@ def get_down_payment(contract, installment_order):
 
     # Step 1: Check PaymentPerInstallment (new structure using SalesPriceByGT)
     try:
-        # Get unit_floor_type for SalesPriceByGT lookup
-        unit_floor_type = get_floor_type(contract)
-
         # Find matching SalesPriceByGT
         sales_price_query = SalesPriceByGT.objects.filter(
             project=contract.project,
             order_group=contract.order_group,
             unit_type=contract.unit_type
         )
+
+        # Get unit_floor_type for SalesPriceByGT lookup
+        unit_floor_type = get_floor_type(contract)
 
         if unit_floor_type:
             sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
@@ -239,7 +239,7 @@ def get_down_payment(contract, installment_order):
 
     # Step 3: Use InstallmentPaymentOrder.pay_ratio (default 10%)
     try:
-        # Get contract price first
+        # Get the contract price first
         contract_price_data = get_contract_price(contract)
         contract_price = contract_price_data[0]  # Get price from tuple
         if not contract_price:
@@ -250,7 +250,7 @@ def get_down_payment(contract, installment_order):
         if pay_ratio is None:
             pay_ratio = Decimal('10.0')  # Default 10%
 
-        # Calculate amount: contract_price * (pay_ratio / 100)
+        # Calculate the amount: contract_price * (pay_ratio / 100)
         down_payment_amount = int(contract_price * (pay_ratio / 100))
         return down_payment_amount
 
@@ -297,7 +297,7 @@ def calculate_remain_payment(contract, remain_installment_order):
         total_other_payments = 0
 
         for installment in other_installments:
-            # Get payment amount for each installment
+            # Get a payment amount for each installment
             amount = get_payment_amount(contract, installment)
             total_other_payments += amount
 
@@ -316,7 +316,7 @@ def calculate_remain_payment(contract, remain_installment_order):
 
 def get_payment_amount(contract, installment_order):
     """
-    Get payment amount for specific contract and installment order with 5-step priority logic.
+    Get payment amount for a specific contract and installment order with 5-step priority logic.
 
     Args:
         contract: Contract instance
@@ -327,15 +327,15 @@ def get_payment_amount(contract, installment_order):
 
     Priority logic:
         1. InstallmentPaymentOrder.pay_amt (fixed amount for all types) - highest priority
-        2. For 중도금 (pay_sort='2'): Always use pay_ratio (default 10%)
-        3. For 잔금 (pay_sort='3'): Total price minus sum of other installments
-        4. For 계약금 (pay_sort='1'): Use get_down_payment function
-        5. For other types: pay_amt/pay_ratio -> PaymentPerInstallment -> 0
+        2. For 계약금 (pay_sort='1'): Use get_down_payment function
+        3. For 중도금 (pay_sort='2'): Always use pay_ratio (default 10%)
+        4. For other types: pay_amt/pay_ratio -> PaymentPerInstallment -> 0
+        5. For 잔금 (pay_sort='3'): Total price minus sum of other installments
     """
     if not contract or not installment_order:
         return 0
 
-    # Step 1: Check InstallmentPaymentOrder.pay_amt (highest priority for all types)
+    # Step 1: Check InstallmentPaymentOrder.pay_amt (the highest priority for all types)
     if installment_order.pay_amt:
         return installment_order.pay_amt
 
@@ -347,24 +347,20 @@ def get_payment_amount(contract, installment_order):
 
     pay_sort = installment_order.pay_sort
 
-    # Step 2: Handle 중도금 (always use pay_ratio)
-    if pay_sort == '2':  # 중도금
+    # Step 2: Handle 계약금 (use get_down_payment function)
+    if pay_sort == '1':  # 계약금
+        down_payment = get_down_payment(contract, installment_order)
+        return down_payment if down_payment is not None else 0
+
+    # Step 3: Handle 중도금 (always use pay_ratio)
+    elif pay_sort == '2':  # 중도금
         pay_ratio = installment_order.pay_ratio
         if pay_ratio is None:
             pay_ratio = Decimal('10.0')  # Default 10%
         return int(contract_price * (pay_ratio / 100))
 
-    # Step 3: Handle 잔금 (total minus other installments)
-    elif pay_sort == '3':  # 잔금
-        return calculate_remain_payment(contract, installment_order)
-
-    # Step 4: Handle 계약금 (use get_down_payment function)
-    elif pay_sort == '1':  # 계약금
-        down_payment = get_down_payment(contract, installment_order)
-        return down_payment if down_payment is not None else 0
-
-    # Step 5: Handle other types (기타 부담금, 제세 공과금, 금융 비용, 업무 대행비)
-    else:
+    # Step 4: Handle other types (기타 부담금, 제세 공과금, 금융 비용, 업무 대행비)
+    elif pay_sort not in ['1', '2', '3']:  # 기타 타입들
         # Try pay_ratio first
         if installment_order.pay_ratio:
             return int(contract_price * (installment_order.pay_ratio / 100))
@@ -403,10 +399,14 @@ def get_payment_amount(contract, installment_order):
         # Default to 0
         return 0
 
+    # Step 5: Handle 잔금 (total minus other installments)
+    else:  # pay_sort == '3' (잔금)
+        return calculate_remain_payment(contract, installment_order)
+
 
 def get_contract_payment_plan(contract):
     """
-    Get complete payment plan for a contract with all installment amounts.
+    Get a complete payment plan for a contract with all installment amounts.
     캐싱을 적용하여 동일한 계약에 대한 중복 계산을 방지합니다.
 
     Args:
@@ -539,7 +539,7 @@ def get_contract_payment_amounts(contract):
 
 def get_project_payment_summary(project, order_group=None, unit_type=None):
     """
-    Get payment summary for all contracts in a project with installment-wise totals.
+    Get a payment summary for all contracts in a project with installment-wise totals.
 
     Args:
         project: Project instance
@@ -688,7 +688,7 @@ def get_project_payment_summary(project, order_group=None, unit_type=None):
 
 def get_multiple_projects_payment_summary(projects, order_group=None, unit_type=None):
     """
-    Get payment summary for multiple projects.
+    Get a payment summary for multiple projects.
 
     Args:
         projects: List of Project instances
