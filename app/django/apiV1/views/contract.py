@@ -673,9 +673,10 @@ def bulk_update_contract_prices(request):
             })
 
     except Exception as e:
+        logging.exception("Error occurred during bulk contract price update")  # log stack trace
         return Response({
             'success': False,
-            'message': f'업데이트 중 오류 발생: {str(e)}'
+            'message': '업데이트 중 서버에 오류가 발생했습니다. 관리자에게 문의하세요.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
