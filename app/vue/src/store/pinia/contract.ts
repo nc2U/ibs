@@ -16,6 +16,7 @@ import {
   type Succession,
   type BuyerForm,
   type ContractRelease,
+  type ContractPriceWithPaymentPlan,
 } from '@/store/types/contract'
 
 export interface ContFilter {
@@ -162,10 +163,23 @@ export const useContract = defineStore('contract', () => {
     }
   }
 
-  // 계약별 납부 계획 조회
+  // 계약별 납부 계획 조회 (기존 방식)
   const fetchContractPaymentPlan = async (contractId: number) => {
     try {
       const response = await api.get(`/contract/${contractId}/payment-plan/`)
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      throw err
+    }
+  }
+
+  // ContractPrice JSON 캐시 기반 납부 계획 조회 (고성능)
+  const fetchContractPricePaymentPlan = async (
+    contractPriceId: number,
+  ): Promise<ContractPriceWithPaymentPlan> => {
+    try {
+      const response = await api.get(`/contract-price/${contractPriceId}/payment-plan/`)
       return response.data
     } catch (err: any) {
       errorHandle(err.response.data)
@@ -469,6 +483,7 @@ export const useContract = defineStore('contract', () => {
     previewContractPriceUpdate,
     bulkUpdateContractPrices,
     fetchContractPaymentPlan,
+    fetchContractPricePaymentPlan,
 
     contractor,
     contractorList,

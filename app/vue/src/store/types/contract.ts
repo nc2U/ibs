@@ -281,3 +281,27 @@ export interface ContractPaymentPlanItem {
 }
 
 export type ContractPaymentPlan = ContractPaymentPlanItem[]
+
+// ContractPrice with cached payment plan types
+export interface ContractPriceWithPaymentPlan {
+  pk: number
+  price: number
+  price_build: number | null
+  price_land: number | null
+  price_tax: number | null
+  payment_amounts: Record<string, number> // { "1": 10000000, "2": 30000000, ... }
+  calculated_at: string
+  is_cache_valid: boolean
+  payment_plan: ContractPricePaymentPlanItem[]
+}
+
+export interface ContractPricePaymentPlanItem {
+  installment_order: {
+    pk: number
+    pay_sort: string
+    pay_name: string
+    pay_time: number
+  }
+  amount: number
+  source: 'cached'
+}
