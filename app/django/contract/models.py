@@ -92,6 +92,55 @@ class ContractPrice(models.Model):
     price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
     price_tax = models.PositiveIntegerField('부가세', null=True, blank=True)
 
+    # 회차별 납부 금액 저장 (JSON 필드)
+    payment_amounts = models.JSONField('회차별 납부금액', default=dict, blank=True,
+                                     help_text='회차별 납부 금액 {"1": 10000000, "2": 30000000, "3": 20000000}')
+
+    # 캐시 갱신 관련 필드
+    calculated_at = models.DateTimeField('계산일시', auto_now=True, help_text='마지막 계산 수행 시각')
+    is_cache_valid = models.BooleanField('캐시 유효성', default=False, help_text='저장된 계산값이 유효한지 여부')
+
+    def save(self, *args, **kwargs):
+        # 저장 시 자동으로 납부 금액 계산 및 캐시
+        if self.contract:
+            self.calculate_and_cache_payments()
+        super().save(*args, **kwargs)
+
+    def calculate_and_cache_payments(self):
+        """계약의 납부 계획을 계산하여 JSON 필드에 저장"""
+        from _utils.contract_price import get_contract_payment_plan
+
+        try:
+            payment_plan = get_contract_payment_plan(self.contract)
+            payment_amounts = {}
+
+            # 회차별 금액 저장
+            for plan_item in payment_plan:
+                installment = plan_item['installment_order']
+                amount = plan_item['amount']
+                pay_sort = installment.pay_sort
+
+                if pay_sort in payment_amounts:
+                    payment_amounts[pay_sort] += amount
+                else:
+                    payment_amounts[pay_sort] = amount
+
+            self.payment_amounts = payment_amounts
+            self.is_cache_valid = True
+
+        except Exception as e:
+            # 계산 실패 시 캐시 무효화
+            self.is_cache_valid = False
+            print(f"Payment calculation error for contract {self.contract.id}: {e}")
+
+    def get_payment_amount_by_sort(self, pay_sort):
+        """회차별 납부 금액 조회"""
+        if not self.is_cache_valid:
+            self.calculate_and_cache_payments()
+            self.save()
+
+        return self.payment_amounts.get(pay_sort, 0)
+
     def __str__(self):
         return f'{self.price}'
 
