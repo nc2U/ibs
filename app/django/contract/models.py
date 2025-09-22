@@ -100,16 +100,13 @@ class ContractPrice(models.Model):
         """
         실시간으로 계산된 납부 금액들 반환 (캐싱 적용)
 
-        Returns:
-            tuple: (down, middle, remain, biz_agency_fee, is_included_baf)
-
-        Note: biz_agency_fee and is_included_baf are maintained for backward compatibility
+        Returns: tuple: (down, middle, remain)
         """
         if not hasattr(self, '_cached_payment_amounts'):
             from _utils.contract_price import get_contract_payment_plan, get_sales_price_by_gt
 
             if not self.contract:
-                self._cached_payment_amounts = (0, 0, 0, 0, False)
+                self._cached_payment_amounts = (0, 0, 0)
                 return self._cached_payment_amounts
 
             try:
@@ -118,7 +115,6 @@ class ContractPrice(models.Model):
                 down = 0
                 middle = 0
                 remain = 0
-                biz_fee = 0
 
                 for plan_item in plan:
                     installment = plan_item['installment_order']
@@ -130,17 +126,15 @@ class ContractPrice(models.Model):
                         middle += amount
                     elif installment.pay_sort == '3':  # 잔금
                         remain += amount
-                    elif installment.pay_sort == '7':  # 업무 대행비
-                        biz_fee += amount
 
-                # is_included_baf는 업무대행비(pay_sort='7') 항목 존재 여부로 판단
-                is_included_baf = biz_fee > 0
+                self._cached_payment_amounts = (down, middle, remain)
 
-                self._cached_payment_amounts = (down, middle, remain, biz_fee, is_included_baf)
-
-            except Exception:
-                # 오류 발생 시 기본값 반환
-                self._cached_payment_amounts = (0, 0, 0, 0, False)
+            except (AttributeError, TypeError, ValueError, ImportError):
+                # AttributeError: contract.project/order_group/unit_type is None
+                # TypeError: Invalid filter parameter types or method calls
+                # ValueError: Invalid data conversion or arithmetic operations
+                # ImportError: Module import failures
+                self._cached_payment_amounts = (0, 0, 0)
 
         return self._cached_payment_amounts
 
@@ -158,16 +152,6 @@ class ContractPrice(models.Model):
     def remain_pay_calculated(self):
         """계산된 잔금 반환"""
         return self.payment_amounts_calculated[2]
-
-    @property
-    def biz_agency_fee_calculated(self):
-        """계산된 업무대행비 반환"""
-        return self.payment_amounts_calculated[3]
-
-    @property
-    def is_included_baf_calculated(self):
-        """계산된 업무대행비 포함 여부 반환"""
-        return self.payment_amounts_calculated[4]
 
     def __str__(self):
         return f'{self.price}'
