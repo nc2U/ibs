@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers
 
-from _utils.contract_price import get_contract_price
+from _utils.contract_price import get_contract_price, get_contract_payment_plan
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
                              ContractorContact, Succession, ContractorRelease, ContractFile)
@@ -193,39 +193,48 @@ class ContractSetSerializer(serializers.ModelSerializer):
         return sum([inc.get('income') for inc in inc_data])
 
     def get_last_paid_order(self, instance):  # 완납 회차 구하기
-        price = get_contract_price(instance)  # 분양가 [price, price_build, price_land, price_tax]
+        """
+        해당 계약자가 납부 완료한 마지막 회차를 반환
 
-        # 계약가격이 있는 경우 계산된 값 사용
-        try:
-            cont_price = instance.contractprice
-            down = cont_price.down_pay_calculated
-            middle = cont_price.middle_pay_calculated
-            remain = cont_price.remain_pay_calculated
-        except:
-            # 계약가격이 없는 경우 0으로 설정
-            down = 0
-            middle = 0
-            remain = 0
+        Returns:
+            Serialized InstallmentPaymentOrder data or None
+        """
 
-        amount = (down, middle, remain)  # 계약금, 중도금, 잔금
-        total_paid = self.get_total_paid(instance)  # 총 납부액
+        # 1. 해당 계약의 정확한 납부 계획 조회
+        payment_plan = get_contract_payment_plan(instance)
+        if not payment_plan:
+            return None
 
-        due_amt = 0  # 총 약정액
-        order_data = {}  # 회차 데이터
-        payment_orders = get_installments(instance.project)
+        # 2. 총 납부액 조회
+        total_paid = self.get_total_paid(instance)
+        if total_paid <= 0:
+            return None
 
-        for order in payment_orders:
-            sort = int(order.pay_sort) - 1
-            # pay_sort가 1, 2, 3 범위를 벗어나는 경우 해당 회차는 건너뛰기
-            if 0 <= sort < len(amount):
-                due_amt += amount[sort]  # 0: 계약금, 1: 중도금, 2: 잔금
-                if total_paid >= due_amt:
-                    project_cash = ProjectCashBook.objects.filter(installment_order=order).first()
-                    order_data = ProjectCashBookOrderInContractSerializer(project_cash, read_only=True).data
-                else:
-                    break
+        # 3. 회차 순서대로 정렬 (pay_code, pay_time 기준)
+        sorted_plan = sorted(payment_plan,
+                             key=lambda x: (x['installment_order'].pay_code,
+                                            x['installment_order'].pay_time))
 
-        return order_data.get('installment_order') if order_data else None
+        # 4. 순차적으로 누적 약정 금액 계산하여 완납 회차 찾기
+        cumulative_amount = 0
+        last_paid_installment = None
+
+        for plan_item in sorted_plan:
+            installment_order = plan_item['installment_order']
+            amount = plan_item['amount']
+            cumulative_amount += amount
+
+            # 총 납부액이 누적 약정 금액 이상이면 해당 회차까지 완납
+            if total_paid >= cumulative_amount:
+                last_paid_installment = installment_order
+            else:
+                # 납부액이 부족하면 중단
+                break
+
+        # 5. 결과를 JSON 직렬화 가능한 형태로 반환
+        if last_paid_installment:
+            return SimpleInstallmentOrderSerializer(last_paid_installment).data
+        return None
 
     @transaction.atomic
     def create(self, validated_data):
