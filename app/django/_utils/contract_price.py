@@ -407,6 +407,7 @@ def get_payment_amount(contract, installment_order):
 def get_contract_payment_plan(contract):
     """
     Get complete payment plan for a contract with all installment amounts.
+    캐싱을 적용하여 동일한 계약에 대한 중복 계산을 방지합니다.
 
     Args:
         contract: Contract instance
@@ -426,6 +427,13 @@ def get_contract_payment_plan(contract):
     """
     if not contract:
         return []
+
+    # 캐싱 키 생성 (계약 ID 기반)
+    cache_key = f"contract_payment_plan_{contract.id}"
+
+    # 캐시에서 확인
+    if hasattr(contract, '_cached_payment_plan'):
+        return contract._cached_payment_plan
 
     try:
         # Get unit_floor_type once outside the loop
@@ -487,12 +495,46 @@ def get_contract_payment_plan(contract):
                     'source': 'calculated'
                 })
 
+        # 결과를 캐시에 저장
+        contract._cached_payment_plan = payment_plan
         return payment_plan
 
     except (AttributeError, TypeError):
         # AttributeError: contract.project/unit_type is None
         # TypeError: Invalid filter operations
-        return []
+        empty_plan = []
+        contract._cached_payment_plan = empty_plan
+        return empty_plan
+
+
+def get_contract_payment_amounts(contract):
+    """
+    계약의 납부 금액을 계약금, 중도금, 잔금으로 분류하여 반환
+
+    Args:
+        contract: Contract instance
+
+    Returns:
+        tuple: (down_pay, middle_pay, remain_pay)
+    """
+    payment_plan = get_contract_payment_plan(contract)
+
+    down_pay = 0
+    middle_pay = 0
+    remain_pay = 0
+
+    for plan_item in payment_plan:
+        installment = plan_item['installment_order']
+        amount = plan_item['amount']
+
+        if installment.pay_sort == '1':  # 계약금
+            down_pay += amount
+        elif installment.pay_sort == '2':  # 중도금
+            middle_pay += amount
+        elif installment.pay_sort == '3':  # 잔금
+            remain_pay += amount
+
+    return down_pay, middle_pay, remain_pay
 
 
 def get_project_payment_summary(project, order_group=None, unit_type=None):

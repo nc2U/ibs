@@ -95,64 +95,6 @@ class ContractPrice(models.Model):
     middle_pay = models.PositiveIntegerField('중도금', help_text='중도금 분납 시 회당 납부하는 금액 기재')
     remain_pay = models.PositiveIntegerField('잔금', help_text='잔금 분납 시 회당 납부하는 금액 기재')
 
-    @property
-    def payment_amounts_calculated(self):
-        """
-        실시간으로 계산된 납부 금액들 반환 (캐싱 적용)
-
-        Returns: tuple: (down, middle, remain)
-        """
-        if not hasattr(self, '_cached_payment_amounts'):
-            from _utils.contract_price import get_contract_payment_plan, get_sales_price_by_gt
-
-            if not self.contract:
-                self._cached_payment_amounts = (0, 0, 0)
-                return self._cached_payment_amounts
-
-            try:
-                plan = get_contract_payment_plan(self.contract)
-
-                down = 0
-                middle = 0
-                remain = 0
-
-                for plan_item in plan:
-                    installment = plan_item['installment_order']
-                    amount = plan_item['amount']
-
-                    if installment.pay_sort == '1':  # 계약금
-                        down += amount
-                    elif installment.pay_sort == '2':  # 중도금
-                        middle += amount
-                    elif installment.pay_sort == '3':  # 잔금
-                        remain += amount
-
-                self._cached_payment_amounts = (down, middle, remain)
-
-            except (AttributeError, TypeError, ValueError, ImportError):
-                # AttributeError: contract.project/order_group/unit_type is None
-                # TypeError: Invalid filter parameter types or method calls
-                # ValueError: Invalid data conversion or arithmetic operations
-                # ImportError: Module import failures
-                self._cached_payment_amounts = (0, 0, 0)
-
-        return self._cached_payment_amounts
-
-    @property
-    def down_pay_calculated(self):
-        """계산된 계약금 반환"""
-        return self.payment_amounts_calculated[0]
-
-    @property
-    def middle_pay_calculated(self):
-        """계산된 중도금 반환"""
-        return self.payment_amounts_calculated[1]
-
-    @property
-    def remain_pay_calculated(self):
-        """계산된 잔금 반환"""
-        return self.payment_amounts_calculated[2]
-
     def __str__(self):
         return f'{self.price}'
 
