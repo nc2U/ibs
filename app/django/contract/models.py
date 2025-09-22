@@ -94,7 +94,7 @@ class ContractPrice(models.Model):
 
     # 회차별 납부 금액 저장 (JSON 필드)
     payment_amounts = models.JSONField('회차별 납부금액', default=dict, blank=True,
-                                     help_text='회차별 납부 금액 {"1": 10000000, "2": 30000000, "3": 20000000}')
+                                     help_text='납부순서별 납부 금액 {"1": 10000000, "2": 30000000, "3": 20000000} (pay_time 기준)')
 
     # 캐시 갱신 관련 필드
     calculated_at = models.DateTimeField('계산일시', auto_now=True, help_text='마지막 계산 수행 시각')
@@ -114,16 +114,13 @@ class ContractPrice(models.Model):
             payment_plan = get_contract_payment_plan(self.contract)
             payment_amounts = {}
 
-            # 회차별 금액 저장
+            # pay_time별 금액 저장 (고유 식별자)
             for plan_item in payment_plan:
                 installment = plan_item['installment_order']
                 amount = plan_item['amount']
-                pay_sort = installment.pay_sort
+                pay_time = str(installment.pay_time)  # JSON 키는 문자열
 
-                if pay_sort in payment_amounts:
-                    payment_amounts[pay_sort] += amount
-                else:
-                    payment_amounts[pay_sort] = amount
+                payment_amounts[pay_time] = amount
 
             self.payment_amounts = payment_amounts
             self.is_cache_valid = True
@@ -133,13 +130,34 @@ class ContractPrice(models.Model):
             self.is_cache_valid = False
             print(f"Payment calculation error for contract {self.contract.id}: {e}")
 
-    def get_payment_amount_by_sort(self, pay_sort):
-        """회차별 납부 금액 조회"""
+    def get_payment_amount_by_time(self, pay_time):
+        """납부순서별 납부 금액 조회"""
         if not self.is_cache_valid:
             self.calculate_and_cache_payments()
             self.save()
 
-        return self.payment_amounts.get(pay_sort, 0)
+        return self.payment_amounts.get(str(pay_time), 0)
+
+    def get_payment_amount_by_sort(self, pay_sort):
+        """납부종류별 납부 금액 합계 조회 (동일 pay_sort의 모든 pay_time 합계)"""
+        if not self.is_cache_valid:
+            self.calculate_and_cache_payments()
+            self.save()
+
+        # pay_sort와 매칭되는 모든 pay_time의 금액 합계
+        from payment.models import InstallmentPaymentOrder
+
+        # 해당 계약의 프로젝트에서 pay_sort에 해당하는 모든 pay_time 조회
+        pay_times = InstallmentPaymentOrder.objects.filter(
+            project=self.contract.project,
+            pay_sort=pay_sort
+        ).values_list('pay_time', flat=True)
+
+        total_amount = 0
+        for pay_time in pay_times:
+            total_amount += self.payment_amounts.get(str(pay_time), 0)
+
+        return total_amount
 
     def __str__(self):
         return f'{self.price}'

@@ -189,26 +189,34 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_contract_amount(order, project_id):
-        """해당 회차의 계약 금액 합계 계산 (JSON 필드 기반 집계)"""
+        """해당 회차의 계약 금액 합계 계산 (JSON 필드 기반 집계, pay_time 사용)"""
         from contract.models import ContractPrice
         from django.db.models import Sum
-        from django.contrib.postgres.aggregates import JSONBAgg
+        from payment.models import InstallmentPaymentOrder
 
         try:
-            # PostgreSQL JSON 집계를 사용한 효율적인 계산
-            pay_sort = order.pay_sort
+            # 해당 pay_sort에 속하는 모든 pay_time들 조회
+            pay_times = InstallmentPaymentOrder.objects.filter(
+                project_id=project_id,
+                pay_sort=order.pay_sort
+            ).values_list('pay_time', flat=True)
 
-            # JSON 필드에서 해당 pay_sort의 금액을 직접 집계
+            if not pay_times:
+                return 0
+
+            # PostgreSQL JSON 집계를 사용한 효율적인 계산
             from django.db import connection
             with connection.cursor() as cursor:
-                cursor.execute("""
-                    SELECT COALESCE(SUM(CAST(payment_amounts->>%s AS INTEGER)), 0) as total_amount
-                    FROM contract_contractprice
+                placeholders = ','.join(['%s'] * len(pay_times))
+                cursor.execute(f"""
+                    SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
+                    FROM contract_contractprice,
+                         jsonb_each_text(payment_amounts)
                     WHERE contract_id IN (
                         SELECT id FROM contract_contract WHERE project_id = %s
                     ) AND is_cache_valid = true
-                    AND payment_amounts ? %s
-                """, [pay_sort, project_id, pay_sort])
+                    AND key IN ({placeholders})
+                """, [project_id] + [str(pt) for pt in pay_times])
 
                 result = cursor.fetchone()
                 total_amount = result[0] if result else 0
@@ -256,38 +264,35 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         return total_amount
 
     def _get_payment_amounts_cache(self, project_id, pay_orders):
-        """PostgreSQL JSON 집계를 사용한 효율적인 납부 금액 캐시 생성"""
+        """PostgreSQL JSON 집계를 사용한 효율적인 납부 금액 캐시 생성 (pay_time 기반)"""
         from django.db import connection
 
-        # 모든 pay_sort를 한 번에 조회
-        pay_sorts = [order.pay_sort for order in pay_orders]
+        # pay_sort별로 해당하는 pay_time들을 매핑
+        pay_sort_to_times = {}
+        for order in pay_orders:
+            if order.pay_sort not in pay_sort_to_times:
+                pay_sort_to_times[order.pay_sort] = []
+            pay_sort_to_times[order.pay_sort].append(str(order.pay_time))
+
         payment_amounts_cache = {}
 
         try:
             with connection.cursor() as cursor:
-                # 모든 회차의 납부 금액을 한 번의 쿼리로 집계
-                placeholders = ','.join(['%s'] * len(pay_sorts))
-                cursor.execute(f"""
-                    SELECT
-                        key as pay_sort,
-                        COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
-                    FROM contract_contractprice,
-                         jsonb_each_text(payment_amounts)
-                    WHERE contract_id IN (
-                        SELECT id FROM contract_contract WHERE project_id = %s
-                    ) AND is_cache_valid = true
-                    AND key IN ({placeholders})
-                    GROUP BY key
-                """, [project_id] + pay_sorts)
+                # pay_sort별로 해당하는 pay_time들의 금액을 집계
+                for pay_sort, pay_times in pay_sort_to_times.items():
+                    placeholders = ','.join(['%s'] * len(pay_times))
+                    cursor.execute(f"""
+                        SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
+                        FROM contract_contractprice,
+                             jsonb_each_text(payment_amounts)
+                        WHERE contract_id IN (
+                            SELECT id FROM contract_contract WHERE project_id = %s
+                        ) AND is_cache_valid = true
+                        AND key IN ({placeholders})
+                    """, [project_id] + pay_times)
 
-                results = cursor.fetchall()
-                for pay_sort, total_amount in results:
-                    payment_amounts_cache[pay_sort] = total_amount
-
-                # 조회되지 않은 회차는 0으로 설정
-                for pay_sort in pay_sorts:
-                    if pay_sort not in payment_amounts_cache:
-                        payment_amounts_cache[pay_sort] = 0
+                    result = cursor.fetchone()
+                    payment_amounts_cache[pay_sort] = result[0] if result else 0
 
         except Exception as e:
             # 실패 시 기존 방식으로 폴백
