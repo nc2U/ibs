@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from payment.models import InstallmentPaymentOrder
 
 
 class OrderGroup(models.Model):
@@ -94,7 +95,7 @@ class ContractPrice(models.Model):
 
     # 회차별 납부 금액 저장 (JSON 필드)
     payment_amounts = models.JSONField('회차별 납부금액', default=dict, blank=True,
-                                     help_text='납부순서별 납부 금액 {"1": 10000000, "2": 30000000, "3": 20000000} (pay_time 기준)')
+                                       help_text='납부순서별 납부 금액 {"1": 10000000, "2": 30000000, "3": 20000000} (pay_time 기준)')
 
     # 캐시 갱신 관련 필드
     calculated_at = models.DateTimeField('계산일시', auto_now=True, help_text='마지막 계산 수행 시각')
@@ -145,8 +146,6 @@ class ContractPrice(models.Model):
             self.save()
 
         # pay_sort와 매칭되는 모든 pay_time의 금액 합계
-        from payment.models import InstallmentPaymentOrder
-
         # 해당 계약의 프로젝트에서 pay_sort에 해당하는 모든 pay_time 조회
         pay_times = InstallmentPaymentOrder.objects.filter(
             project=self.contract.project,

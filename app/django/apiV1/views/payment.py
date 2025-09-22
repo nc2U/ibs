@@ -1,11 +1,12 @@
 from datetime import datetime
 
+from django.db import connection
 from django.db.models import Sum, F
 from django_filters import DateFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
-from _utils.contract_price import get_project_payment_summary
+from contract.models import ContractPrice
 from items.models import KeyUnit
 from project.models import Project
 from .cash import ProjectCashBookViewSet
@@ -190,10 +191,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
     @staticmethod
     def _get_contract_amount(order, project_id):
         """해당 회차의 계약 금액 합계 계산 (JSON 필드 기반 집계, pay_time 사용)"""
-        from contract.models import ContractPrice
-        from django.db.models import Sum
-        from payment.models import InstallmentPaymentOrder
-
         try:
             # 해당 pay_sort에 속하는 모든 pay_time들 조회
             pay_times = InstallmentPaymentOrder.objects.filter(
@@ -205,7 +202,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 return 0
 
             # PostgreSQL JSON 집계를 사용한 효율적인 계산
-            from django.db import connection
             with connection.cursor() as cursor:
                 placeholders = ','.join(['%s'] * len(pay_times))
                 cursor.execute(f"""
@@ -241,7 +237,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
     @staticmethod
     def _get_contract_amount_fallback(order, project_id):
         """캐시 실패 시 동적 계산 폴백"""
-        from contract.models import Contract
         from _utils.contract_price import get_contract_payment_plan
 
         contracts = Contract.objects.filter(
@@ -265,8 +260,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     def _get_payment_amounts_cache(self, project_id, pay_orders):
         """PostgreSQL JSON 집계를 사용한 효율적인 납부 금액 캐시 생성 (pay_time 기반)"""
-        from django.db import connection
-
         # pay_sort별로 해당하는 pay_time들을 매핑
         pay_sort_to_times = {}
         for order in pay_orders:
@@ -304,7 +297,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     def _get_all_collection_data(self, project_id, date, pay_orders):
         """모든 납부 회차의 수납 데이터를 배치로 조회하여 캐시 생성"""
-        from django.db.models import Q
 
         # 모든 납부 회차의 수납 데이터를 한 번에 조회
         order_ids = [order.pk for order in pay_orders]
