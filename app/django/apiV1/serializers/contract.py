@@ -87,6 +87,47 @@ class ContPriceInContractSerializer(serializers.ModelSerializer):
         fields = ('pk', 'price', 'price_build', 'price_land', 'price_tax')
 
 
+class ContractPriceWithPaymentPlanSerializer(serializers.ModelSerializer):
+    payment_plan = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ContractPrice
+        fields = ('pk', 'price', 'price_build', 'price_land', 'price_tax',
+                  'payment_amounts', 'is_cache_valid', 'calculated_at', 'payment_plan')
+
+    @staticmethod
+    def get_payment_plan(obj):
+        """JSON payment_amounts를 납부 계획 형태로 변환"""
+        if not obj.payment_amounts or not obj.contract:
+            return []
+
+        result = []
+        for pay_time_str, amount in obj.payment_amounts.items():
+            try:
+                installment = InstallmentPaymentOrder.objects.get(
+                    project=obj.contract.project,
+                    pay_time=int(pay_time_str)
+                )
+                result.append({
+                    'installment_order': {
+                        'pk': installment.pk,
+                        'pay_sort': installment.pay_sort,
+                        'pay_code': installment.pay_code,
+                        'pay_time': installment.pay_time,
+                        'pay_name': installment.pay_name,
+                        'alias_name': installment.alias_name,
+                        'pay_due_date': installment.pay_due_date,
+                    },
+                    'amount': amount,
+                    'source': 'cached'  # JSON 캐시에서 가져온 데이터임을 표시
+                })
+            except InstallmentPaymentOrder.DoesNotExist:
+                continue
+
+        # pay_time 순으로 정렬
+        return sorted(result, key=lambda x: x['installment_order']['pay_time'])
+
+
 class ContractorInContractSerializer(serializers.ModelSerializer):
     qualifi_display = serializers.CharField(source='get_qualification_display', read_only=True)
     contractoraddress = AddressInContractorSerializer()
