@@ -166,6 +166,21 @@ def get_contract_price(contract, houseunit=None, is_set=False):
     return 0, 0, 0, 0
 
 
+def get_fixed_payment_amount(installment_order):
+    """
+    Check if InstallmentPaymentOrder has a fixed amount (pay_amt).
+
+    Args:
+        installment_order: InstallmentPaymentOrder instance
+
+    Returns:
+        int or None: Fixed amount if exists, None otherwise
+    """
+    if installment_order and installment_order.pay_amt:
+        return installment_order.pay_amt
+    return None
+
+
 def get_down_payment(contract, installment_order):
     """
     Get down payment amount for a specific contract and installment order.
@@ -178,9 +193,10 @@ def get_down_payment(contract, installment_order):
         int: Down payment amount or None if calculation failed
 
     Priority order:
-        1. PaymentPerInstallment (if exists for this sales_price and installment_order)
-        2. DownPayment (matched by order_group and unit_type)
-        3. InstallmentPaymentOrder.pay_ratio (default 10%)
+        1. InstallmentPaymentOrder.pay_amt (fixed amount) - highest priority
+        2. PaymentPerInstallment (if exists for this sales_price and installment_order)
+        3. DownPayment (matched by order_group and unit_type)
+        4. InstallmentPaymentOrder.pay_ratio (default 10%)
 
     For optimization, use prefetch when calling:
     Contract.objects.select_related('order_group', 'unit_type')
@@ -191,7 +207,12 @@ def get_down_payment(contract, installment_order):
     if installment_order.pay_sort != '1':  # Only for 계약금
         return None
 
-    # Step 1: Check PaymentPerInstallment (new structure using SalesPriceByGT)
+    # Step 1: Check a fixed amount (highest priority)
+    fixed_amount = get_fixed_payment_amount(installment_order)
+    if fixed_amount is not None:
+        return fixed_amount
+
+    # Step 2: Check PaymentPerInstallment (new structure using SalesPriceByGT)
     try:
         # Find matching SalesPriceByGT
         sales_price_query = SalesPriceByGT.objects.filter(
@@ -222,7 +243,7 @@ def get_down_payment(contract, installment_order):
         # ValueError: Invalid data conversion
         pass
 
-    # Step 2: Check DownPayment
+    # Step 3: Check DownPayment
     try:
         down_payment = DownPayment.objects.filter(
             project=contract.project,
@@ -237,7 +258,7 @@ def get_down_payment(contract, installment_order):
         # TypeError: Invalid filter parameter types
         pass
 
-    # Step 3: Use InstallmentPaymentOrder.pay_ratio (default 10%)
+    # Step 4: Use InstallmentPaymentOrder.pay_ratio (default 10%)
     try:
         # Get the contract price first
         contract_price_data = get_contract_price(contract)
@@ -335,9 +356,17 @@ def get_payment_amount(contract, installment_order):
     if not contract or not installment_order:
         return 0
 
-    # Step 1: Check InstallmentPaymentOrder.pay_amt (the highest priority for all types)
-    if installment_order.pay_amt:
-        return installment_order.pay_amt
+    pay_sort = installment_order.pay_sort
+
+    # Step 1: Handle 계약금 (use get_down_payment function - includes fixed amount check)
+    if pay_sort == '1':  # 계약금
+        down_payment = get_down_payment(contract, installment_order)
+        return down_payment if down_payment is not None else 0
+
+    # Step 2: Check fixed amount (highest priority for non-계약금 types)
+    fixed_amount = get_fixed_payment_amount(installment_order)
+    if fixed_amount is not None:
+        return fixed_amount
 
     # Get contract price
     contract_price_data = get_contract_price(contract)
@@ -345,15 +374,8 @@ def get_payment_amount(contract, installment_order):
     if not contract_price:
         return 0
 
-    pay_sort = installment_order.pay_sort
-
-    # Step 2: Handle 계약금 (use get_down_payment function)
-    if pay_sort == '1':  # 계약금
-        down_payment = get_down_payment(contract, installment_order)
-        return down_payment if down_payment is not None else 0
-
     # Step 3: Handle 중도금 (always use pay_ratio)
-    elif pay_sort == '2':  # 중도금
+    if pay_sort == '2':  # 중도금
         pay_ratio = installment_order.pay_ratio
         if pay_ratio is None:
             pay_ratio = Decimal('10.0')  # Default 10%

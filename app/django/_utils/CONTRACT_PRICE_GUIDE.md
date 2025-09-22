@@ -66,13 +66,16 @@ def get_down_payment(contract, installment_order):
 
 #### 우선순위 로직
 
-1. **PaymentPerInstallment** - 개별 설정된 회차별 납부 금액
+1. **InstallmentPaymentOrder.pay_amt**
+    - `pay_amt` 모든 타입 공통 납부금액 최우선 적용
+
+2. **PaymentPerInstallment** - 개별 설정된 회차별 납부 금액
     - `SalesPriceByGT` + `InstallmentPaymentOrder` 조합으로 조회
 
-2. **DownPayment** - 차수별/타입별 설정된 회당 납부 계약금
+3. **DownPayment** - 차수별/타입별 설정된 회당 납부 계약금
     - `order_group` + `unit_type`으로 조회
 
-3. **InstallmentPaymentOrder.pay_ratio** - 납부 회차 테이블에 등록된 납부 비율 * 가격 계산 (중도금의 경우 기본 10%)
+4. **InstallmentPaymentOrder.pay_ratio** - 납부 회차 테이블에 등록된 납부 비율 * 가격 계산 (중도금의 경우 기본 10%)
     - 계약가격 × (비율 / 100)
 
 ## 데이터 흐름도
@@ -100,16 +103,19 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Contract + InstallmentOrder] --> B{PaymentPerInstallment 존재?}
-    B -->|Yes| C[PaymentPerInstallment.amount 반환]
-    B -->|No| D[DownPayment 조회]
+    A[Contract + InstallmentOrder] --> B{pay_amt 존재?}
+    B -->|Yes| C[pay_amt 반환]
+    B -->|No| D{PaymentPerInstallment 존재?}
 
-    D --> E{DownPayment 존재?}
-    E -->|Yes| F[DownPayment.payment_amount 반환]
-    E -->|No| G[비율 계산]
+    D -->|Yes| E[PaymentPerInstallment.amount 반환]
+    D -->|No| F[DownPayment 조회]
 
-    G --> H[계약가격 × pay_ratio/100]
-    H --> I[계약금 반환]
+    F --> G{DownPayment 존재?}
+    G -->|Yes| H[DownPayment.payment_amount 반환]
+    G -->|No| I[비율 계산]
+
+    I --> J[계약가격 × pay_ratio/100]
+    J --> K[계약금 반환]
 ```
 
 ## 성능 최적화
