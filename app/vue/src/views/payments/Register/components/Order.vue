@@ -49,7 +49,7 @@ const calcClass = () => {
     {{ order.pay_name }}
   </CTableDataCell>
   <CTableDataCell>
-    {{ numFormat(Math.ceil(commit)) }}
+    {{ numFormat(commit) }}
   </CTableDataCell>
   <CTableDataCell :class="paidByOrder > 0 ? 'text-primary' : ''">
     {{ numFormat(paidByOrder) }}
