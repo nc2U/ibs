@@ -100,6 +100,12 @@ class ContractPriceBulkUpdateService:
                 # payment_amounts는 save() 메서드에서 자동 계산됨
             }
         )
+
+        # update_or_create의 update는 save() 메서드를 호출하지 않으므로
+        # 기존 레코드가 업데이트된 경우 수동으로 save() 호출하여 payment_amounts 계산
+        if not created:
+            cont_price.save()
+
         return cont_price, created
 
     def get_contracts_to_update(self):

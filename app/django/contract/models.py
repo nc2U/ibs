@@ -4,6 +4,7 @@ import magic
 from django.conf import settings
 from django.db import models
 
+from _utils.contract_price import get_contract_payment_plan
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 from payment.models import InstallmentPaymentOrder
 
@@ -109,7 +110,6 @@ class ContractPrice(models.Model):
 
     def calculate_and_cache_payments(self):
         """계약의 납부 계획을 계산하여 JSON 필드에 저장"""
-        from _utils.contract_price import get_contract_payment_plan
 
         try:
             payment_plan = get_contract_payment_plan(self.contract)
@@ -129,7 +129,8 @@ class ContractPrice(models.Model):
         except Exception as e:
             # 계산 실패 시 캐시 무효화
             self.is_cache_valid = False
-            print(f"Payment calculation error for contract {self.contract.id}: {e}")
+            # 에러 로깅은 상위에서 처리하도록 함
+            pass
 
     def get_payment_amount_by_time(self, pay_time):
         """납부순서별 납부 금액 조회"""

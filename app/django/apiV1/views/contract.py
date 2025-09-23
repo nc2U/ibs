@@ -1,6 +1,6 @@
-from django.core.cache import cache
 import logging
-from django.core.exceptions import ObjectDoesNotExist
+
+from django.core.cache import cache
 from django.db.models import Count, Sum, Q
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
@@ -10,11 +10,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
-    get_contract_price, get_contract_payment_plan
+from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
-from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationTen
+from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen
 from ..permission import *
 from ..serializers.contract import *
 
@@ -705,6 +704,10 @@ def bulk_update_contract_prices(request):
         else:
             # 실제 업데이트 실행
             result = service.update_all_contract_prices()
+
+            # payment_amounts는 ContractPriceBulkUpdateService의 save() 호출로 이미 계산됨
+            logging.info(
+                f"Contract prices updated for project {project_id}, payment_amounts calculated via save() method")
 
             if result['errors']:
                 return Response({
