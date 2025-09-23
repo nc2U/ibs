@@ -24,7 +24,8 @@ class Command(BaseCommand):
         batch_size = options['batch_size']
 
         # 쿼리셋 준비
-        queryset = ContractPrice.objects.select_related('contract', 'contract__project')
+        queryset = ContractPrice.objects.select_related(
+            'contract', 'contract__project').filter(contract__activation=True)
 
         if project_id:
             queryset = queryset.filter(contract__project_id=project_id)
