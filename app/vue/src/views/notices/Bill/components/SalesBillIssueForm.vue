@@ -418,7 +418,7 @@ onUpdated(() => formDataSetup())
     <template #header> 수납 고지서 발행 정보</template>
     <template #default> 수납 고지서 발행 정보 {{ confirmText }}을(를) 진행하시겠습니까?</template>
     <template #footer>
-      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>
+      <v-btn :color="btnClass" size="small" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 
