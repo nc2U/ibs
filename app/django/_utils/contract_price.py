@@ -151,8 +151,9 @@ def get_contract_price(contract, houseunit=None, is_set=False):
         if project_budget and project_budget.average_price:
             return project_budget.average_price, 0, 0, 0
 
-    except AttributeError:
-        # contract.project or contract.unit_type is None
+    except (AttributeError, ProjectIncBudget.DoesNotExist):
+        # AttributeError: contract.project or contract.unit_type is None
+        # ProjectIncBudget.DoesNotExist: No matching record found
         pass
 
     # Step 4: Check UnitType.average_price (only price, others 0)
