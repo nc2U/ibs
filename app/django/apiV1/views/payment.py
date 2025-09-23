@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from django.db import connection
@@ -8,11 +9,12 @@ from rest_framework import viewsets
 
 from contract.models import ContractPrice
 from items.models import KeyUnit
-from project.models import Project
 from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
 from ..serializers.payment import *
+
+logger = logging.getLogger(__name__)
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
@@ -130,7 +132,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             return Response({'error': 'project parameter is required'}, status=400)
 
         # 프로젝트 및 납부 회차 데이터 조회
-        project = Project.objects.get(id=project_id)
         pay_orders = InstallmentPaymentOrder.objects.filter(project_id=project_id).order_by('pay_code', 'pay_time')
 
         # 핵심 최적화: PostgreSQL JSON 집계를 사용한 효율적인 납부 금액 캐시
@@ -142,8 +143,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         result_pay_orders = []
 
         for order in pay_orders:
-            # 캐시된 계약 금액 사용
-            contract_amount = payment_amounts_cache.get(order.pay_sort, 0)
+            # 캐시된 계약 금액 사용 (pay_time 기준)
+            contract_amount = payment_amounts_cache.get(order.pay_time, 0)
 
             # 캐시된 수납 데이터 사용
             collection_data = collection_cache.get(order.pk, {
@@ -169,6 +170,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 'pay_name': order.pay_name,
                 'pay_due_date': order.pay_due_date,
                 'pay_sort': order.pay_sort,
+                'pay_code': order.pay_code,
+                'pay_time': order.pay_time,
                 'contract_amount': contract_amount,
                 'collection': collection_data,
                 'due_period': due_period_data,
@@ -190,29 +193,22 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_contract_amount(order, project_id):
-        """해당 회차의 계약 금액 합계 계산 (JSON 필드 기반 집계, pay_time 사용)"""
+        """특정 pay_time의 계약 금액 합계 계산 (JSON 필드 기반 집계, pay_time 사용)"""
         try:
-            # 해당 pay_sort에 속하는 모든 pay_time들 조회
-            pay_times = InstallmentPaymentOrder.objects.filter(
-                project_id=project_id,
-                pay_sort=order.pay_sort
-            ).values_list('pay_time', flat=True)
-
-            if not pay_times:
-                return 0
-
-            # PostgreSQL JSON 집계를 사용한 효율적인 계산
+            # PostgreSQL JSON 집계를 사용한 효율적인 계산 (보안 개선된 parameterized query)
             with connection.cursor() as cursor:
-                placeholders = ','.join(['%s'] * len(pay_times))
-                cursor.execute(f"""
-                    SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
-                    FROM contract_contractprice,
-                         jsonb_each_text(payment_amounts)
-                    WHERE contract_id IN (
-                        SELECT id FROM contract_contract WHERE project_id = %s
-                    ) AND is_cache_valid = true
-                    AND key IN ({placeholders})
-                """, [project_id] + [str(pt) for pt in pay_times])
+                query = """
+                        SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
+                        FROM contract_contractprice, jsonb_each_text(payment_amounts)
+                        WHERE contract_id IN (SELECT id
+                                              FROM contract_contract
+                                              WHERE project_id = %s
+                                                AND activation = %s)
+                          AND is_cache_valid = %s
+                          AND key = %s \
+                        """
+
+                cursor.execute(query, [project_id, True, True, str(order.pay_time)])
 
                 result = cursor.fetchone()
                 total_amount = result[0] if result else 0
@@ -220,18 +216,25 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             # 캐시 무효화된 계약이 있으면 동적 계산으로 폴백
             invalid_cache_count = ContractPrice.objects.filter(
                 contract__project_id=project_id,
+                contract__activation=True,
                 is_cache_valid=False
             ).count()
 
             if invalid_cache_count > 0:
                 # 일부 캐시가 무효화된 경우 동적 계산과 병합
+                logger.info(f"Cache invalidated for project {project_id}, using fallback calculation")
                 fallback_amount = OverallSummaryViewSet._get_contract_amount_fallback(order, project_id)
                 return total_amount + fallback_amount
 
             return total_amount
 
+        except (ValueError, TypeError) as e:
+            # 데이터 타입 관련 오류
+            logger.error(f"Data type error in _get_contract_amount for project {project_id}: {e}")
+            return OverallSummaryViewSet._get_contract_amount_fallback(order, project_id)
         except Exception as e:
-            # 완전 실패 시 동적 계산으로 폴백
+            # 기타 모든 예외 - 완전 실패 시 동적 계산으로 폴백
+            logger.error(f"Unexpected error in _get_contract_amount for project {project_id}: {e}")
             return OverallSummaryViewSet._get_contract_amount_fallback(order, project_id)
 
     @staticmethod
@@ -240,7 +243,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         from _utils.contract_price import get_contract_payment_plan
 
         contracts = Contract.objects.filter(
-            project_id=project_id
+            project_id=project_id,
+            activation=True
         ).select_related('contractprice').filter(
             contractprice__is_cache_valid=False
         )
@@ -251,7 +255,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             try:
                 payment_plan = get_contract_payment_plan(contract)
                 for plan_item in payment_plan:
-                    if plan_item['installment_order'].pay_sort == order.pay_sort:
+                    if plan_item['installment_order'].pay_time == order.pay_time:
                         total_amount += plan_item['amount']
             except Exception:
                 continue
@@ -260,39 +264,82 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     def _get_payment_amounts_cache(self, project_id, pay_orders):
         """PostgreSQL JSON 집계를 사용한 효율적인 납부 금액 캐시 생성 (pay_time 기반)"""
-        # pay_sort별로 해당하는 pay_time들을 매핑
-        pay_sort_to_times = {}
+        # pay_time별로 개별 캐시 생성
+        pay_times = set()
         for order in pay_orders:
-            if order.pay_sort not in pay_sort_to_times:
-                pay_sort_to_times[order.pay_sort] = []
-            pay_sort_to_times[order.pay_sort].append(str(order.pay_time))
+            pay_times.add(str(order.pay_time))
+
+        logger.info(f"🔍 Cache calculation started for project {project_id}")
+        logger.info(f"📋 Pay times to calculate: {sorted(pay_times)}")
 
         payment_amounts_cache = {}
 
         try:
             with connection.cursor() as cursor:
-                # pay_sort별로 해당하는 pay_time들의 금액을 집계
-                for pay_sort, pay_times in pay_sort_to_times.items():
-                    placeholders = ','.join(['%s'] * len(pay_times))
-                    cursor.execute(f"""
-                        SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
-                        FROM contract_contractprice,
-                             jsonb_each_text(payment_amounts)
-                        WHERE contract_id IN (
-                            SELECT id FROM contract_contract WHERE project_id = %s
-                        ) AND is_cache_valid = true
-                        AND key IN ({placeholders})
-                    """, [project_id] + pay_times)
+                # 먼저 전체 활성 계약 수 확인
+                cursor.execute("""
+                    SELECT COUNT(*) FROM contract_contract
+                    WHERE project_id = %s AND activation = %s
+                """, [project_id, True])
+                total_active_contracts = cursor.fetchone()[0]
+                logger.info(f"📊 Total active contracts: {total_active_contracts}")
+
+                # 캐시 유효한 계약 수 확인
+                cursor.execute("""
+                    SELECT COUNT(*) FROM contract_contractprice cp
+                    JOIN contract_contract cc ON cp.contract_id = cc.id
+                    WHERE cc.project_id = %s AND cc.activation = %s AND cp.is_cache_valid = %s
+                """, [project_id, True, True])
+                valid_cache_contracts = cursor.fetchone()[0]
+                logger.info(f"💾 Valid cache contracts: {valid_cache_contracts}")
+
+                # pay_time별로 개별 금액을 집계 (보안 개선된 parameterized query)
+                for pay_time in sorted(pay_times):
+                    query = """
+                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount,
+                                   COUNT(*) as contract_count
+                            FROM contract_contractprice, jsonb_each_text(payment_amounts)
+                            WHERE contract_id IN (SELECT id
+                                                  FROM contract_contract
+                                                  WHERE project_id = %s
+                                                    AND activation = %s)
+                              AND is_cache_valid = %s
+                              AND key = %s \
+                            """
+
+                    logger.info(f"🔍 Executing query for pay_time={pay_time}")
+                    logger.info(f"📝 Query parameters: project_id={project_id}, activation=True, is_cache_valid=True, key={pay_time}")
+
+                    cursor.execute(query, [project_id, True, True, pay_time])
 
                     result = cursor.fetchone()
-                    payment_amounts_cache[pay_sort] = result[0] if result else 0
+                    total_amount = result[0] if result else 0
+                    contract_count = result[1] if result else 0
+
+                    payment_amounts_cache[int(pay_time)] = total_amount
+
+                    logger.info(f"✅ pay_time={pay_time}: amount={total_amount:,}, contracts_found={contract_count}")
+
+                # pay_sort=1인 경우 동일성 검증
+                pay_sort_1_times = [pt for pt in pay_times if int(pt) in [1, 2, 3]]
+                if len(pay_sort_1_times) > 1:
+                    amounts = [payment_amounts_cache[int(pt)] for pt in pay_sort_1_times]
+                    logger.info(f"🔍 pay_sort=1 verification:")
+                    for i, pt in enumerate(pay_sort_1_times):
+                        logger.info(f"   pay_time={pt}: {amounts[i]:,}")
+
+                    if len(set(amounts)) == 1:
+                        logger.info(f"✅ pay_sort=1 amounts are identical: {amounts[0]:,}")
+                    else:
+                        logger.error(f"❌ pay_sort=1 amounts are different: {amounts}")
 
         except Exception as e:
             # 실패 시 기존 방식으로 폴백
-            print(f"JSON aggregation failed: {e}")
+            logger.error(f"JSON aggregation failed for project {project_id}: {e}")
             for order in pay_orders:
-                payment_amounts_cache[order.pay_sort] = self._get_contract_amount(order, project_id)
+                payment_amounts_cache[order.pay_time] = self._get_contract_amount(order, project_id)
 
+        logger.info(f"🏁 Cache calculation completed: {payment_amounts_cache}")
         return payment_amounts_cache
 
     def _get_all_collection_data(self, project_id, date, pay_orders):

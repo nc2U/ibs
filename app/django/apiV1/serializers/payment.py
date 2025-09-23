@@ -151,8 +151,9 @@ class OverallSummaryPayOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InstallmentPaymentOrder
-        fields = ('pk', 'pay_name', 'pay_due_date', 'pay_sort', 'contract_amount',
-                  'collection', 'due_period', 'not_due_unpaid', 'total_unpaid', 'total_unpaid_rate')
+        fields = ('pk', 'pay_name', 'pay_due_date', 'pay_sort', 'pay_code',
+                  'pay_time', 'contract_amount', 'collection', 'due_period',
+                  'not_due_unpaid', 'total_unpaid', 'total_unpaid_rate')
 
 
 class OverallSummaryAggregateSerializer(serializers.Serializer):
