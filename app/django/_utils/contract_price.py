@@ -1,4 +1,6 @@
 from decimal import Decimal
+
+from items.models import UnitType
 from payment.models import SalesPriceByGT, DownPayment, InstallmentPaymentOrder, PaymentPerInstallment
 from project.models import ProjectIncBudget
 
@@ -160,7 +162,7 @@ def get_contract_price(contract, houseunit=None, is_set=False):
     try:
         if contract.unit_type and contract.unit_type.average_price:
             return contract.unit_type.average_price, 0, 0, 0
-    except AttributeError:
+    except AttributeError and UnitType.DoesNotExist:
         pass
 
     # Step 5: Return default values
