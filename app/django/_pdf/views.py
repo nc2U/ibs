@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 from itertools import accumulate
+
 # --------------------------------------------------------
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
@@ -9,12 +10,12 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
+from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from cash.models import ProjectCashBook
 from contract.models import Contract
 from notice.models import SalesBillIssue
 from payment.models import (InstallmentPaymentOrder, OverDueRule,
                             SpecialPaymentOrder, SpecialDownPay, SpecialOverDueRule)
-from _utils.contract_price import get_contract_payment_plan
 
 TODAY = date.today()
 
@@ -426,17 +427,7 @@ class PdfExportBill(View):
         bill_data['unit'] = unit
 
         # 이 계약 건 분양가격
-        try:
-            cont_price = contract.contractprice
-            price = cont_price.price
-            price_build = cont_price.price_build
-            price_land = cont_price.price_land
-            price_tax = cont_price.price_tax
-        except ObjectDoesNotExist:
-            price = 0
-            price_build = 0
-            price_land = 0
-            price_tax = 0
+        price, price_build, price_land, price_tax = get_contract_price(contract)
 
         bill_data['price'] = price if unit else '동호 지정 후 고지'  # 이 건 분양가격
         bill_data['price_build'] = price_build if unit else '-'  # 이 건 건물가
@@ -791,7 +782,6 @@ class PdfExportBill(View):
         return remain_amt_list
 
 
-
 class PdfExportPayments(View):
 
     @staticmethod
@@ -820,17 +810,7 @@ class PdfExportPayments(View):
         context['unit'] = unit
 
         # 1. 이 계약 건 분양가격
-        try:
-            cont_price = contract.contractprice  # 공급가격
-            price = cont_price.price
-            price_build = cont_price.price_build
-            price_land = cont_price.price_land
-            price_tax = cont_price.price_tax
-        except ObjectDoesNotExist:
-            price = 0
-            price_build = 0
-            price_land = 0
-            price_tax = 0
+        price, price_build, price_land, price_tax = get_contract_price(contract)
 
         context['price'] = price if unit else '동호 지정 후 고지'  # 이 건 분양가격
         context['price_build'] = price_build if unit else '-'  # 이 건 건물가
@@ -840,7 +820,7 @@ class PdfExportPayments(View):
         # 2. 정확한 결제 계획 가져오기 (get_contract_payment_plan 사용)
         payment_plan = get_contract_payment_plan(contract)
 
-        # Create amount dictionary from payment plan for backward compatibility with existing functions
+        # Create amount dictionary from a payment plan for backward compatibility with existing functions
         amount_by_sort = {}
         for plan_item in payment_plan:
             pay_sort = plan_item['installment_order'].pay_sort
@@ -1098,17 +1078,8 @@ class PdfExportCalculation(View):
         context['unit'] = unit
 
         # 1. 이 계약 건 분양가격 (계약금, 중도금, 잔금 약정액)
-        try:
-            cont_price = contract.contractprice  # 공급가격
-            price = cont_price.price
-            price_build = cont_price.price_build
-            price_land = cont_price.price_land
-            price_tax = cont_price.price_tax
-        except ObjectDoesNotExist:
-            price = 0
-            price_build = 0
-            price_land = 0
-            price_tax = 0
+        price, price_build, price_land, price_tax = get_contract_price(contract)
+
         context['price'] = price if unit else '동호 지정 후 고지'  # 이 건 분양가격
         context['price_build'] = price_build if unit else '-'  # 이 건 건물가
         context['price_land'] = price_land if unit else '-'  # 이 건 대지가
