@@ -40,7 +40,7 @@ const patchSalesBillIssue = (payload: SalesBillIssue) => noticeStore.patchSalesB
 const paymentStore = usePayment()
 const payOrder = computed(() => paymentStore.payOrder)
 
-const payOrderTime = computed(() => (payOrder.value ? payOrder.value.pay_time : null))
+const payOrderTime = computed(() => (payOrder.value ? payOrder.value.pay_time : 0))
 const payOrderName = computed(() => (payOrder.value ? payOrder.value.__str__ : ''))
 
 const fetchPayOrder = (pk: number) => paymentStore.fetchPayOrder(pk)
