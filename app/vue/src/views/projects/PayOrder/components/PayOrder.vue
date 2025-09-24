@@ -212,7 +212,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
 
     <CTableDataCell class="pl-lg-5 pt-3">
-      <CFormSwitch v-model="isExpand" :id="`i-expand-${payOrder.pk}`" label="추가입력" />
+      <CFormSwitch v-model="isExpand" :id="`i-expand-${payOrder.pk}`" label="추가설정" />
     </CTableDataCell>
 
     <CTableDataCell v-if="write_project" class="text-center pt-3">

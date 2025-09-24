@@ -96,7 +96,7 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
         <!--            연체료 계산 기준은 납부기한일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선 적용한다.-->
         <!--          </v-tooltip>-->
         <!--        </CTableHeaderCell>-->
-        <CTableHeaderCell class="text-center">추가입력</CTableHeaderCell>
+        <CTableHeaderCell class="text-center">설정 확장</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
