@@ -148,7 +148,12 @@ const contPriceSet = async () => {
   if (!project.value) return
 
   try {
-    await bulkUpdateContractPrices(project.value)
+    const result = await bulkUpdateContractPrices(project.value)
+    console.log('🔍 계약 가격 일괄 업데이트 결과:', result)
+
+    if (result.debug_info) {
+      console.log('🐛 디버그 정보:', result.debug_info)
+    }
   } catch (error) {
     console.error('계약 가격 일괄 업데이트 실패:', error)
   }

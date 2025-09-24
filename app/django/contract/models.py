@@ -108,7 +108,11 @@ class ContractPrice(models.Model):
     def save(self, *args, **kwargs):
         # 저장 시 자동으로 납부 금액 계산 및 캐시
         if self.contract:
+            # 계약이 있는 경우 일반 계산
             self.calculate_and_cache_payments()
+        elif self.house_unit and self.house_unit.unit_type:
+            # 미계약 상태이지만 house_unit이 있는 경우 임시 계약으로 계산
+            self.calculate_uncontracted_payments()
         super().save(*args, **kwargs)
 
     def calculate_and_cache_payments(self):
@@ -134,6 +138,54 @@ class ContractPrice(models.Model):
             self.is_cache_valid = False
             # 에러 로깅은 상위에서 처리하도록 함
             pass
+
+    def calculate_uncontracted_payments(self):
+        """미계약 상태에서 house_unit 기반으로 납부 계획을 계산하여 JSON 필드에 저장"""
+        try:
+            project = self.house_unit.unit_type.project
+
+            # 프로젝트의 기본 미계약 차수가 설정되어 있는지 확인
+            if not project.default_uncontracted_order_group:
+                self.is_cache_valid = False
+                return
+
+            # InstallmentPaymentOrder 직접 조회하여 납부 계획 계산
+            from payment.models import InstallmentPaymentOrder
+            from _utils.contract_price import get_payment_amount
+
+            # 임시 계약 객체 생성 - get_payment_amount 함수용
+            class TempContract:
+                def __init__(self, project, order_group, unit_type):
+                    self.project = project
+                    self.order_group = order_group
+                    self.unit_type = unit_type
+
+            temp_contract = TempContract(
+                project,
+                project.default_uncontracted_order_group,
+                self.house_unit.unit_type
+            )
+
+            # 해당 프로젝트와 타입의 분할납부차수 조회
+            installments = InstallmentPaymentOrder.objects.filter(
+                project=project,
+                type_sort=self.house_unit.unit_type.sort
+            ).order_by('pay_code', 'pay_time')
+
+            payment_amounts = {}
+
+            # 각 분할납부차수별 금액 계산
+            for installment in installments:
+                amount = get_payment_amount(temp_contract, installment)
+                pay_time = str(installment.pay_time)  # JSON 키는 문자열
+                payment_amounts[pay_time] = amount
+
+            self.payment_amounts = payment_amounts
+            self.is_cache_valid = True
+
+        except Exception as e:
+            # 계산 실패 시 캐시 무효화
+            self.is_cache_valid = False
 
     def get_payment_amount_by_time(self, pay_time):
         """납부순서별 납부 금액 조회"""

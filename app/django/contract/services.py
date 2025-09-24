@@ -177,8 +177,33 @@ class ContractPriceBulkUpdateService:
 
         for house_unit in uncontracted_houses:
             try:
-                # 이미 ContractPrice가 있는 세대는 건너뜀
+                # 이미 ContractPrice가 있는 세대는 payment_amounts 업데이트
                 if hasattr(house_unit, 'contract_price') and house_unit.contract_price:
+                    existing_contract_price = house_unit.contract_price
+
+                    # 기준 가격 조회 및 업데이트
+                    try:
+                        sales_price = SalesPriceByGT.objects.get(
+                            project=self.project,
+                            order_group=self.order_group_for_uncontracted,
+                            unit_type=house_unit.unit_type,
+                            unit_floor_type=house_unit.floor_type
+                        )
+
+                        # 가격 정보 업데이트
+                        existing_contract_price.price = sales_price.price
+                        existing_contract_price.price_build = sales_price.price_build
+                        existing_contract_price.price_land = sales_price.price_land
+                        existing_contract_price.price_tax = sales_price.price_tax
+
+                        # save() 호출 시 자동으로 payment_amounts 계산됨
+                        existing_contract_price.save()
+                        created_count += 1  # 업데이트도 카운트
+
+                    except SalesPriceByGT.DoesNotExist:
+                        # 해당 조건의 기준 가격이 없는 경우 건너뜀
+                        pass
+
                     continue
 
                 # SalesPriceByGT에서 기준 가격 조회
