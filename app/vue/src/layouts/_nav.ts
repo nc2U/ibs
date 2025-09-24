@@ -351,13 +351,13 @@ const project = {
         },
         {
           component: 'CNavItem',
-          name: '공급 가격 등록',
-          to: '/project/settings/price',
+          name: '계약 금액 등록',
+          to: '/project/settings/down-payment',
         },
         {
           component: 'CNavItem',
-          name: '계약 금액 등록',
-          to: '/project/settings/down-payment',
+          name: '공급 가격 등록',
+          to: '/project/settings/price',
         },
         {
           component: 'CNavItem',

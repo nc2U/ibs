@@ -83,7 +83,7 @@ class DownPayment(models.Model):
     order_group = models.ForeignKey('contract.OrderGroup', on_delete=models.CASCADE, verbose_name='차수정보')
     unit_type = models.ForeignKey('items.UnitType', on_delete=models.CASCADE, verbose_name='타입정보')
     payment_amount = models.PositiveIntegerField('회차별 계약금액',
-                                                 help_text='차수 및 타입별 고정 납부 계약금액, 납부 회수는 납부 회차 모델에서 별도 등록/설정')
+                                                 help_text='동호 미지정 계약 등 차수 및 타입별 각 계약금 회차 고정 납부 계약금. 미지정 시 공급가격 * 회차별 납부비율 적용')
 
     def __str__(self):
         return f'{self.payment_amount}'
