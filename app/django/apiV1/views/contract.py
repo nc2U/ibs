@@ -633,7 +633,8 @@ def bulk_update_contract_prices(request):
     Request Body:
         {
             "project": <project_id>,
-            "dry_run": <boolean, optional>  // true일 경우 실제 업데이트 없이 미리보기만
+            "dry_run": <boolean, optional>,  // true일 경우 실제 업데이트 없이 미리보기만
+            "uncontracted_order_group": <order_group_id, optional>  // 미계약 세대용 차수 ID
         }
 
     Response:
@@ -644,6 +645,7 @@ def bulk_update_contract_prices(request):
                 "total_processed": 50,
                 "updated_count": 45,
                 "created_count": 5,
+                "uncontracted_created_count": 20,  // 미계약 세대 ContractPrice 생성 수
                 "updated_contracts": [1, 2, 3, ...],
                 "errors": []
             }
@@ -651,6 +653,7 @@ def bulk_update_contract_prices(request):
     """
     project_id = request.data.get('project')
     dry_run = request.data.get('dry_run', False)
+    uncontracted_order_group_id = request.data.get('uncontracted_order_group')
 
     if not project_id:
         return Response({
@@ -666,7 +669,22 @@ def bulk_update_contract_prices(request):
             'message': f'Project with ID {project_id} not found'
         }, status=status.HTTP_404_NOT_FOUND)
 
-    service = ContractPriceBulkUpdateService(project)
+    # 미계약 세대용 차수 검증
+    order_group_for_uncontracted = None
+    if uncontracted_order_group_id:
+        try:
+            order_group_for_uncontracted = OrderGroup.objects.get(
+                pk=uncontracted_order_group_id,
+                project=project
+            )
+        except OrderGroup.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': f'OrderGroup with ID {uncontracted_order_group_id} not found for project {project.name}'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    # ContractPriceBulkUpdateService는 이제 자동으로 프로젝트 기본 차수를 참조합니다
+    service = ContractPriceBulkUpdateService(project, order_group_for_uncontracted)
 
     try:
         # 프로젝트 유효성 검증
@@ -716,9 +734,15 @@ def bulk_update_contract_prices(request):
                     'data': result
                 }, status=status.HTTP_206_PARTIAL_CONTENT)
 
+            total_success = result['updated_count'] + result['created_count'] + result.get('uncontracted_created_count', 0)
+            message_parts = [f"{result['updated_count'] + result['created_count']}개 계약 가격이 성공적으로 업데이트되었습니다"]
+
+            if result.get('uncontracted_created_count', 0) > 0:
+                message_parts.append(f"{result['uncontracted_created_count']}개 미계약 세대 ContractPrice가 생성되었습니다")
+
             return Response({
                 'success': True,
-                'message': f"{result['updated_count'] + result['created_count']}개 계약 가격이 성공적으로 업데이트되었습니다",
+                'message': ', '.join(message_parts),
                 'data': result
             })
 
@@ -738,11 +762,13 @@ def contract_price_update_preview(request):
 
     Query Parameters:
         project: 프로젝트 ID
+        uncontracted_order_group: 미계약 세대용 차수 ID (옵션)
 
     Response:
         프로젝트 정보와 업데이트 대상 계약 목록
     """
     project_id = request.GET.get('project')
+    uncontracted_order_group_id = request.GET.get('uncontracted_order_group')
 
     if not project_id:
         return Response({
@@ -752,7 +778,23 @@ def contract_price_update_preview(request):
 
     try:
         project = Project.objects.get(pk=project_id)
-        service = ContractPriceBulkUpdateService(project)
+
+        # 미계약 세대용 차수 검증
+        order_group_for_uncontracted = None
+        if uncontracted_order_group_id:
+            try:
+                order_group_for_uncontracted = OrderGroup.objects.get(
+                    pk=uncontracted_order_group_id,
+                    project=project
+                )
+            except OrderGroup.DoesNotExist:
+                return Response({
+                    'success': False,
+                    'message': f'OrderGroup with ID {uncontracted_order_group_id} not found for project {project.name}'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+        # ContractPriceBulkUpdateService는 이제 자동으로 프로젝트 기본 차수를 참조합니다
+        service = ContractPriceBulkUpdateService(project, order_group_for_uncontracted)
 
         validation_result = service.validate_project()
         contracts = service.get_contracts_to_update()
@@ -782,6 +824,25 @@ def contract_price_update_preview(request):
                 'price_changed': current_price != new_price if current_price and new_price else True
             })
 
+        # 미계약 세대 정보
+        uncontracted_info = {}
+        # service.order_group_for_uncontracted를 사용하여 실제 사용될 차수 정보 표시
+        if service.order_group_for_uncontracted:
+            from items.models import HouseUnit
+            uncontracted_houses = HouseUnit.objects.filter(
+                unit_type__project=project,
+            ).exclude(
+                key_unit__contract__isnull=False,
+                key_unit__contract__activation=True
+            ).count()
+
+            uncontracted_info = {
+                'order_group_name': service.order_group_for_uncontracted.name,
+                'order_group_id': service.order_group_for_uncontracted.pk,
+                'estimated_uncontracted_count': uncontracted_houses,
+                'is_project_default': order_group_for_uncontracted is None  # 프로젝트 기본 차수 사용 여부
+            }
+
         return Response({
             'success': True,
             'message': '미리보기 조회 완료',
@@ -789,7 +850,8 @@ def contract_price_update_preview(request):
                 'project_info': validation_result,
                 'sample_contracts': contract_list,
                 'total_contracts': contracts.count(),
-                'showing_sample': len(contract_list)
+                'showing_sample': len(contract_list),
+                'uncontracted_info': uncontracted_info
             }
         })
 

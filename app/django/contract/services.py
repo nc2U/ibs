@@ -21,7 +21,11 @@ class ContractPriceBulkUpdateService:
 
     def __init__(self, project, order_group_for_uncontracted=None):
         self.project = project
-        self.order_group_for_uncontracted = order_group_for_uncontracted
+        # order_group_for_uncontracted가 명시적으로 제공되지 않으면 프로젝트의 기본 차수 사용
+        if order_group_for_uncontracted is None:
+            self.order_group_for_uncontracted = project.default_uncontracted_order_group
+        else:
+            self.order_group_for_uncontracted = order_group_for_uncontracted
 
     @transaction.atomic
     def update_all_contract_prices(self):

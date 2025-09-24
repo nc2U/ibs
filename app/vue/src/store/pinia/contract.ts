@@ -141,9 +141,13 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
 
   // 일괄 가격 업데이트 미리보기
-  const previewContractPriceUpdate = async (project: number) => {
+  const previewContractPriceUpdate = async (project: number, uncontractedOrderGroup?: number) => {
     try {
-      const response = await api.get(`/contract-price-update-preview/?project=${project}`)
+      let url = `/contract-price-update-preview/?project=${project}`
+      if (uncontractedOrderGroup) {
+        url += `&uncontracted_order_group=${uncontractedOrderGroup}`
+      }
+      const response = await api.get(url)
       return response.data
     } catch (err: any) {
       errorHandle(err.response.data)
@@ -152,10 +156,30 @@ export const useContract = defineStore('contract', () => {
   }
 
   // 일괄 가격 업데이트 실행
-  const bulkUpdateContractPrices = async (project: number) => {
+  const bulkUpdateContractPrices = async (
+    project: number,
+    uncontractedOrderGroup?: number,
+    dryRun?: boolean,
+  ) => {
     try {
-      const response = await api.post('/contract-bulk-price-update/', { project })
-      message('success', '완료!', '프로젝트 내 모든 계약 가격이 일괄 업데이트되었습니다.', 5000)
+      const payload: { project: number; uncontracted_order_group?: number; dry_run?: boolean } = {
+        project,
+      }
+      if (uncontractedOrderGroup) {
+        payload.uncontracted_order_group = uncontractedOrderGroup
+      }
+      if (dryRun !== undefined) {
+        payload.dry_run = dryRun
+      }
+
+      const response = await api.post('/bulk-update-contract-prices/', payload)
+
+      if (!dryRun) {
+        const successMessage =
+          response.data.message || '프로젝트 내 모든 계약 가격이 일괄 업데이트되었습니다.'
+        message('success', '완료!', successMessage, 5000)
+      }
+
       return response.data
     } catch (err: any) {
       errorHandle(err.response.data)

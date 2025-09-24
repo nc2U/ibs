@@ -47,7 +47,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--uncontracted-order-group',
             type=int,
-            help='미계약 세대 ContractPrice 생성시 사용할 차수(OrderGroup) ID'
+            help='미계약 세대 ContractPrice 생성시 사용할 차수(OrderGroup) ID (미지정시 프로젝트 기본 차수 사용)'
         )
 
     def handle(self, *args, **options):
@@ -73,12 +73,16 @@ class Command(BaseCommand):
             except OrderGroup.DoesNotExist:
                 raise CommandError(f'프로젝트 {project.name}에서 차수 ID {uncontracted_order_group_id}를 찾을 수 없습니다.')
 
+        # ContractPriceBulkUpdateService는 이제 자동으로 프로젝트 기본 차수를 참조합니다
         service = ContractPriceBulkUpdateService(project, order_group_for_uncontracted)
 
         if verbosity >= 1:
             self.stdout.write(f'프로젝트: {project.name} (ID: {project.pk})')
-            if order_group_for_uncontracted:
-                self.stdout.write(f'미계약 세대 대상 차수: {order_group_for_uncontracted.name} (ID: {order_group_for_uncontracted.pk})')
+            if service.order_group_for_uncontracted:
+                prefix = "사용자 지정" if order_group_for_uncontracted else "프로젝트 기본"
+                self.stdout.write(f'미계약 세대 대상 차수: {service.order_group_for_uncontracted.name} (ID: {service.order_group_for_uncontracted.pk}) [{prefix}]')
+            else:
+                self.stdout.write('미계약 세대 처리: 차수가 설정되지 않음')
 
         # 프로젝트 유효성 검증
         validation_result = service.validate_project()
