@@ -155,8 +155,8 @@ class ContractPrice(models.Model):
 
             # 임시 계약 객체 생성 - get_payment_amount 함수용
             class TempContract:
-                def __init__(self, project, order_group, unit_type):
-                    self.project = project
+                def __init__(self, _project, order_group, unit_type):
+                    self.project = _project
                     self.order_group = order_group
                     self.unit_type = unit_type
 
