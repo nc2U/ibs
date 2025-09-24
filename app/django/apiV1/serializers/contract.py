@@ -288,6 +288,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
         contract.save()
 
         # 3. 동호수 연결
+        house_unit = None
         if self.initial_data.get('houseunit'):
             house_unit_data = self.initial_data.get('houseunit')
             house_unit = HouseUnit.objects.get(pk=house_unit_data)
@@ -302,6 +303,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         # 4. 계약 가격 정보 등록 (price 정보만 저장, 납부 금액은 property로 계산)
         cont_price = ContractPrice(contract=contract,
+                                   house_unit=house_unit,  # house_unit 필드 추가
                                    price=price[0],
                                    price_build=price[1],
                                    price_land=price[2],
@@ -498,6 +500,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
         if cont_price:  # 계약가격 데이터가 존재하는 경우
             if not same_unit_exist:  # 동호수가 생성 또는 변경 된 경우
                 # 계약 가격 정보 업데이트 (price 정보만 저장, 납부 금액은 property로 계산)
+                cont_price.house_unit = house_unit  # house_unit 필드 업데이트
                 cont_price.price = price[0]
                 cont_price.price_build = price[1]
                 cont_price.price_land = price[2]
@@ -506,6 +509,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         else:  # 계약가격 데이터가 존재하지 않는 경우 계약 가격 정보 생성
             cont_price = ContractPrice(contract=instance,
+                                       house_unit=house_unit,  # house_unit 필드 추가
                                        price=price[0],
                                        price_build=price[1],
                                        price_land=price[2],
