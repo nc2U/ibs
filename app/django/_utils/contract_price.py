@@ -195,11 +195,10 @@ def get_down_payment(contract, installment_order):
     Returns:
         int: Down payment amount or None if calculation failed
 
-    Priority order:
-        1. InstallmentPaymentOrder.pay_amt (fixed amount) - highest priority
-        2. PaymentPerInstallment (if exists for this sales_price and installment_order)
-        3. DownPayment (matched by order_group and unit_type)
-        4. InstallmentPaymentOrder.pay_ratio (default 10%)
+    Priority logic based on installment_order.calculation_method:
+        - 'auto' (default): pay_amt → PaymentPerInstallment → DownPayment → pay_ratio
+        - 'ratio': pay_amt → PaymentPerInstallment → pay_ratio (DownPayment 건너뜀)
+        - 'downpayment': pay_amt → PaymentPerInstallment → DownPayment → pay_ratio (동일하지만 명시적)
 
     For optimization, use prefetch when calling:
     Contract.objects.select_related('order_group', 'unit_type')
@@ -243,20 +242,24 @@ def get_down_payment(contract, installment_order):
         # PaymentPerInstallment.DoesNotExist: No matching PaymentPerInstallment record
         pass
 
-    # Step 3: Check DownPayment
-    try:
-        down_payment = DownPayment.objects.filter(
-            project=contract.project,
-            order_group=contract.order_group,
-            unit_type=contract.unit_type
-        ).first()
+    # Step 3: Check DownPayment (skip if calculation_method is 'ratio')
+    calculation_method = getattr(installment_order, 'calculation_method', 'auto')
 
-        if down_payment and down_payment.payment_amount:
-            return down_payment.payment_amount
-    except (AttributeError, TypeError):
-        # AttributeError: contract.project/order_group/unit_type is None
-        # TypeError: Invalid filter parameter types
-        pass
+    if calculation_method != 'ratio':  # 'auto' 또는 'downpayment'인 경우에만 실행
+        try:
+            down_payment = DownPayment.objects.get(
+                project=contract.project,
+                order_group=contract.order_group,
+                unit_type=contract.unit_type
+            )
+
+            if down_payment.payment_amount:
+                return down_payment.payment_amount
+        except (AttributeError, TypeError, DownPayment.DoesNotExist):
+            # AttributeError: contract.project/order_group/unit_type is None
+            # TypeError: Invalid filter parameter types
+            # DownPayment.DoesNotExist: No matching DownPayment record
+            pass
 
     # Step 4: Use InstallmentPaymentOrder.pay_ratio (default 10%)
     try:
@@ -527,36 +530,6 @@ def get_contract_payment_plan(contract):
         empty_plan = []
         contract._cached_payment_plan = empty_plan
         return empty_plan
-
-
-def get_contract_payment_amounts(contract):
-    """
-    계약의 납부 금액을 계약금, 중도금, 잔금으로 분류하여 반환
-
-    Args:
-        contract: Contract instance
-
-    Returns:
-        tuple: (down_pay, middle_pay, remain_pay)
-    """
-    payment_plan = get_contract_payment_plan(contract)
-
-    down_pay = 0
-    middle_pay = 0
-    remain_pay = 0
-
-    for plan_item in payment_plan:
-        installment = plan_item['installment_order']
-        amount = plan_item['amount']
-
-        if installment.pay_sort == '1':  # 계약금
-            down_pay += amount
-        elif installment.pay_sort == '2':  # 중도금
-            middle_pay += amount
-        elif installment.pay_sort == '3':  # 잔금
-            remain_pay += amount
-
-    return down_pay, middle_pay, remain_pay
 
 
 def get_project_payment_summary(project, order_group=None, unit_type=None):

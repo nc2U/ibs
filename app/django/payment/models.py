@@ -33,6 +33,20 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     extra_due_date = models.DateField('연체 기준일', null=True, blank=True,
                                       help_text='연체료 계산 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선 적용한다.')
 
+    # 계약금 계산 방식 선택 (계약금에만 적용)
+    CALCULATION_METHOD_CHOICES = (
+        ('auto', '자동 (기존 우선순위)'),      # 기본값: PaymentPerInstallment → DownPayment → pay_ratio
+        ('ratio', '분양가 × 납부비율'),         # pay_ratio 강제 사용
+        ('downpayment', 'DownPayment 우선'),   # DownPayment 강제 사용 (없으면 pay_ratio)
+    )
+    calculation_method = models.CharField(
+        '계약금 계산 방식',
+        max_length=20,
+        choices=CALCULATION_METHOD_CHOICES,
+        default='auto',
+        help_text='계약금(pay_sort=1) 항목의 계산 방식 선택. 다른 납부 항목에는 적용되지 않음'
+    )
+
     def __str__(self):
         return f'[{self.get_pay_sort_display()}] - {self.pay_name}'
 
@@ -93,6 +107,7 @@ class DownPayment(models.Model):
         ordering = ('id',)
         verbose_name = '04. 타입별 일괄 계약금'
         verbose_name_plural = '04. 타입별 일괄 계약금'
+        unique_together = (('project', 'order_group', 'unit_type'),)
 
 
 class OverDueRule(models.Model):
