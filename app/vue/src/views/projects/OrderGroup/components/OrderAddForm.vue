@@ -15,6 +15,7 @@ const form = reactive({
   order_number: null,
   sort: '',
   name: '',
+  is_default_for_uncontracted: false,
 })
 
 const onSubmit = (event: Event) => {
@@ -43,13 +44,14 @@ const resetForm = () => {
   form.order_number = null
   form.sort = ''
   form.name = ''
+  form.is_default_for_uncontracted = false
 }
 </script>
 
 <template>
   <CForm novalidate class="needs-validation" :validated="validated" @submit.prevent="onSubmit">
     <CRow class="p-2" color="success">
-      <CCol md="3" class="mb-2">
+      <CCol md="2" class="mb-2">
         <CFormInput
           v-model.number="form.order_number"
           placeholder="등록차수"
@@ -60,7 +62,7 @@ const resetForm = () => {
         />
       </CCol>
 
-      <CCol md="3" class="mb-2">
+      <CCol md="2" class="mb-2">
         <CFormSelect v-model="form.sort" :disabled="disabled" required>
           <option value="">구분선택</option>
           <option value="1">조합모집</option>
@@ -68,7 +70,7 @@ const resetForm = () => {
         </CFormSelect>
       </CCol>
 
-      <CCol md="3" class="mb-2">
+      <CCol md="2" class="mb-2">
         <CFormInput
           v-model="form.name"
           placeholder="차수그룹명"
@@ -76,6 +78,19 @@ const resetForm = () => {
           required
           :disabled="disabled"
         />
+      </CCol>
+
+      <CCol md="3" class="mb-2 pt-sm-1">
+        <CFormCheck
+          v-model="form.is_default_for_uncontracted"
+          label="미계약세대 기본설정"
+          id="is_default_for_uncontracted"
+          :disabled="disabled"
+        >
+        </CFormCheck>
+        <div class="form-text d-none d-lg-block">
+          미계약 세대 분양(공급)가격 생성시 용할 기본 차수 여적
+        </div>
       </CCol>
 
       <CCol md="3" class="d-grid gap-2 d-lg-block mb-3">

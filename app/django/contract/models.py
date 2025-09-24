@@ -17,7 +17,7 @@ class OrderGroup(models.Model):
     sort = models.CharField('구분', max_length=1, choices=SORT_CHOICES, default='1')
     name = models.CharField('차수명', max_length=20, db_index=True)
     is_default_for_uncontracted = models.BooleanField('미계약세대 기본설정', default=False,
-                                                      help_text='미계약 세대 ContractPrice 생성시 사용할 기본 차수 여부')
+                                                      help_text='미계약 세대 ContractPrice 생성 시 적용할 기본 차수 여부')
 
     def __str__(self):
         return self.name
@@ -51,8 +51,8 @@ class OrderGroup(models.Model):
             if existing_default.exists():
                 raise ValidationError({
                     'is_default_for_uncontracted':
-                    f'프로젝트 "{self.project.name}"에서는 하나의 차수만 미계약세대 기본설정으로 지정할 수 있습니다. '
-                    f'현재 "{existing_default.first().name}"이(가) 이미 설정되어 있습니다.'
+                        f'프로젝트 "{self.project.name}"에서는 하나의 차수만 미계약세대 기본설정으로 지정할 수 있습니다. '
+                        f'현재 "{existing_default.first().name}"이(가) 이미 설정되어 있습니다.'
                 })
 
     class Meta:
