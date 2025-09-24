@@ -7,6 +7,9 @@ SalesPriceByGT 변경 후 프로젝트 내 모든 계약의 가격 정보를 일
     # 특정 프로젝트의 계약 가격 업데이트
     python manage.py update_contract_prices --project 1
 
+    # 미계약 세대 ContractPrice도 함께 생성 (차수 ID 지정)
+    python manage.py update_contract_prices --project 1 --uncontracted-order-group 2
+
     # 미리보기 모드 (실제 업데이트 없이 대상 계약만 확인)
     python manage.py update_contract_prices --project 1 --dry-run
 
@@ -18,6 +21,7 @@ from django.db import transaction
 
 from contract.services import ContractPriceBulkUpdateService
 from project.models import Project
+from contract.models import OrderGroup
 
 
 class Command(BaseCommand):
@@ -40,22 +44,41 @@ class Command(BaseCommand):
             action='store_true',
             help='오류 발생한 계약들의 상세 정보 표시'
         )
+        parser.add_argument(
+            '--uncontracted-order-group',
+            type=int,
+            help='미계약 세대 ContractPrice 생성시 사용할 차수(OrderGroup) ID'
+        )
 
     def handle(self, *args, **options):
         project_id = options['project']
         dry_run = options['dry_run']
         show_errors = options['show_errors']
         verbosity = options['verbosity']
+        uncontracted_order_group_id = options.get('uncontracted_order_group')
 
         try:
             project = Project.objects.get(pk=project_id)
         except Project.DoesNotExist:
             raise CommandError(f'프로젝트 ID {project_id}를 찾을 수 없습니다.')
 
-        service = ContractPriceBulkUpdateService(project)
+        # 미계약 세대용 차수 검증
+        order_group_for_uncontracted = None
+        if uncontracted_order_group_id:
+            try:
+                order_group_for_uncontracted = OrderGroup.objects.get(
+                    pk=uncontracted_order_group_id,
+                    project=project
+                )
+            except OrderGroup.DoesNotExist:
+                raise CommandError(f'프로젝트 {project.name}에서 차수 ID {uncontracted_order_group_id}를 찾을 수 없습니다.')
+
+        service = ContractPriceBulkUpdateService(project, order_group_for_uncontracted)
 
         if verbosity >= 1:
             self.stdout.write(f'프로젝트: {project.name} (ID: {project.pk})')
+            if order_group_for_uncontracted:
+                self.stdout.write(f'미계약 세대 대상 차수: {order_group_for_uncontracted.name} (ID: {order_group_for_uncontracted.pk})')
 
         # 프로젝트 유효성 검증
         validation_result = service.validate_project()
@@ -121,6 +144,8 @@ class Command(BaseCommand):
                     self.stdout.write(f'- 처리된 계약 수: {result["total_processed"]}개')
                     self.stdout.write(f'- 업데이트된 계약: {result["updated_count"]}개')
                     self.stdout.write(f'- 새로 생성된 가격정보: {result["created_count"]}개')
+                    if result.get('uncontracted_created_count', 0) > 0:
+                        self.stdout.write(f'- 미계약 세대 ContractPrice 생성: {result["uncontracted_created_count"]}개')
                     self.stdout.write(f'- 성공: {success_count}개')
                     self.stdout.write(f'- 실패: {error_count}개')
 

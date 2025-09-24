@@ -88,7 +88,10 @@ related_file_cleanup(Contract, related_name='contract_files', file_field_name='f
 
 
 class ContractPrice(models.Model):
-    contract = models.OneToOneField(Contract, on_delete=models.SET_NULL, null=True)
+    contract = models.OneToOneField(Contract, on_delete=models.SET_NULL, null=True, blank=True)
+    house_unit = models.OneToOneField('items.HouseUnit', on_delete=models.PROTECT,
+                                      verbose_name='세대정보', related_name='contract_price',
+                                      null=True, blank=True)
     price = models.PositiveIntegerField('분양가격')
     price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
     price_land = models.PositiveIntegerField('대지가', null=True, blank=True)

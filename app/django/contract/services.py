@@ -6,6 +6,8 @@ from django.db import transaction
 
 from _utils.contract_price import get_contract_price
 from contract.models import Contract, ContractPrice
+from items.models import HouseUnit
+from payment.models import SalesPriceByGT
 
 
 class ContractPriceBulkUpdateService:
@@ -17,19 +19,21 @@ class ContractPriceBulkUpdateService:
     - 프로젝트 전체 계약의 ContractPrice 일괄 업데이트
     """
 
-    def __init__(self, project):
+    def __init__(self, project, order_group_for_uncontracted=None):
         self.project = project
+        self.order_group_for_uncontracted = order_group_for_uncontracted
 
     @transaction.atomic
     def update_all_contract_prices(self):
         """
-        프로젝트 내 모든 유효 계약의 가격 정보 업데이트
+        프로젝트 내 모든 유효 계약의 가격 정보 업데이트 및 미계약 세대 ContractPrice 생성
 
         Returns:
             dict: 업데이트 결과 정보
                 - updated_count: 업데이트된 계약 수
                 - created_count: 새로 생성된 ContractPrice 수
                 - updated_contracts: 업데이트된 계약 ID 목록
+                - uncontracted_created_count: 미계약 세대 ContractPrice 생성 수
                 - errors: 오류 발생한 계약 정보
         """
         contracts = Contract.objects.filter(
@@ -42,6 +46,7 @@ class ContractPriceBulkUpdateService:
         updated_count = 0
         errors = []
 
+        # Phase 1: 계약이 있는 ContractPrice 업데이트
         for contract in contracts:
             try:
                 # 동호수 지정 여부 확인
@@ -53,8 +58,8 @@ class ContractPriceBulkUpdateService:
                 # 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가 순 참조 공급가 가져오기
                 price = get_contract_price(contract, house_unit, True)
 
-                # ContractPrice 업데이트/생성
-                cont_price, created = self._update_or_create_contract_price(contract, price)
+                # ContractPrice 업데이트/생성 (house_unit도 함께 설정)
+                cont_price, created = self._update_or_create_contract_price(contract, price, house_unit)
 
                 if created:
                     created_count += 1
@@ -70,35 +75,48 @@ class ContractPriceBulkUpdateService:
                     'error': str(e)
                 })
 
+        # Phase 2: 미계약 세대에 대한 ContractPrice 생성
+        uncontracted_created_count = 0
+        if self.order_group_for_uncontracted:
+            uncontracted_created_count = self._create_uncontracted_prices()
+
         return {
             'total_processed': len(contracts),
             'updated_count': updated_count,
             'created_count': created_count,
             'updated_contracts': updated_contracts,
+            'uncontracted_created_count': uncontracted_created_count,
             'errors': errors
         }
 
     @staticmethod
-    def _update_or_create_contract_price(contract, price):
+    def _update_or_create_contract_price(contract, price, house_unit=None):
         """
         개별 계약의 ContractPrice 업데이트 또는 생성
 
         Args:
             contract: Contract 인스턴스
             price: 가격 정보 튜플 (price, price_build, price_land, price_tax)
+            house_unit: HouseUnit 인스턴스 (옵션)
 
         Returns:
             tuple: (ContractPrice 인스턴스, created 여부)
         """
+        defaults = {
+            'price': price[0],
+            'price_build': price[1],
+            'price_land': price[2],
+            'price_tax': price[3],
+            # payment_amounts는 save() 메서드에서 자동 계산됨
+        }
+
+        # house_unit이 있으면 추가
+        if house_unit:
+            defaults['house_unit'] = house_unit
+
         cont_price, created = ContractPrice.objects.update_or_create(
             contract=contract,
-            defaults={
-                'price': price[0],
-                'price_build': price[1],
-                'price_land': price[2],
-                'price_tax': price[3],
-                # payment_amounts는 save() 메서드에서 자동 계산됨
-            }
+            defaults=defaults
         )
 
         # update_or_create의 update는 save() 메서드를 호출하지 않으므로
@@ -135,6 +153,57 @@ class ContractPriceBulkUpdateService:
             'active_contracts_count': contracts_count,
             'is_valid': contracts_count > 0
         }
+
+    def _create_uncontracted_prices(self):
+        """
+        미계약 세대에 대한 ContractPrice 생성
+
+        Returns:
+            int: 생성된 ContractPrice 수
+        """
+        created_count = 0
+
+        # 미계약 세대 조회 (key_unit이 없거나 contract가 없는 세대들)
+        uncontracted_houses = HouseUnit.objects.filter(
+            unit_type__project=self.project,
+        ).exclude(
+            key_unit__contract__isnull=False,  # 계약이 있는 세대는 제외
+            key_unit__contract__activation=True  # 활성화된 계약만 제외
+        ).select_related('unit_type', 'floor_type')
+
+        for house_unit in uncontracted_houses:
+            try:
+                # 이미 ContractPrice가 있는 세대는 건너뜀
+                if hasattr(house_unit, 'contract_price') and house_unit.contract_price:
+                    continue
+
+                # SalesPriceByGT에서 기준 가격 조회
+                sales_price = SalesPriceByGT.objects.get(
+                    project=self.project,
+                    order_group=self.order_group_for_uncontracted,
+                    unit_type=house_unit.unit_type,
+                    unit_floor_type=house_unit.floor_type
+                )
+
+                # ContractPrice 생성 (계약 없이)
+                ContractPrice.objects.create(
+                    contract=None,  # 미계약 상태
+                    house_unit=house_unit,
+                    price=sales_price.price,
+                    price_build=sales_price.price_build,
+                    price_land=sales_price.price_land,
+                    price_tax=sales_price.price_tax
+                )
+                created_count += 1
+
+            except SalesPriceByGT.DoesNotExist:
+                # 해당 조건의 기준 가격이 없는 경우 건너뜀
+                continue
+            except Exception as e:
+                # 기타 오류 발생시 건너뜀 (운영시에는 적절한 로깅 필요)
+                continue
+
+        return created_count
 
 
 class ContractPriceUpdateService:
