@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers
 
-from _utils.contract_price import get_contract_price, get_contract_payment_plan
+from _utils.contract_price import get_sales_price_by_gt, get_contract_price, get_contract_payment_plan
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
                              ContractorContact, Succession, ContractorRelease, ContractFile)
@@ -896,6 +896,44 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
             # 3. 키유닛과 계약 간 연결 해제
             contract.key_unit = None
             contract.save()
+
+            # 3-1. 계약가격 정보 해지 처리 - 미계약 상태로 전환
+            try:
+                contract_price = contract.contractprice
+                # contract를 None으로 설정하여 미계약 상태로 전환
+                contract_price.contract = None
+
+                # house_unit이 있고 미계약용 기본 차수가 설정된 경우 SalesPriceByGT 기준 가격으로 업데이트
+                if unit and contract.project.default_uncontracted_order_group:
+                    # 임시 계약 객체 생성 (미계약용 기본 차수와 프로젝트 정보로)
+                    # get_sales_price_by_gt 함수에서 필요한 contract 속성들을 제공
+                    class TempContract:
+                        def __init__(self, project, order_group, unit_type):
+                            self.project = project
+                            self.order_group = order_group
+                            self.unit_type = unit_type
+
+                    temp_contract = TempContract(
+                        contract.project,
+                        contract.project.default_uncontracted_order_group,
+                        unit.unit_type
+                    )
+
+                    # get_sales_price_by_gt 함수로 기준 가격 조회
+                    sales_price = get_sales_price_by_gt(temp_contract, unit)
+
+                    if sales_price:
+                        # 미계약 기준 가격으로 업데이트
+                        contract_price.price = sales_price.price
+                        contract_price.price_build = sales_price.price_build
+                        contract_price.price_land = sales_price.price_land
+                        contract_price.price_tax = sales_price.price_tax
+
+                contract_price.save()
+
+            except ContractPrice.DoesNotExist:
+                # ContractPrice가 없는 경우 무시
+                pass
 
             # 4. 해당 납부분담금 환불처리
             sort = AccountSort.objects.get(pk=1)  # 입금 종류 선택(1=입금, 2=출금)
