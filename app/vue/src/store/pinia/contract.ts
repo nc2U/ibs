@@ -172,7 +172,7 @@ export const useContract = defineStore('contract', () => {
         payload.dry_run = dryRun
       }
 
-      const response = await api.post('/bulk-update-contract-prices/', payload)
+      const response = await api.post('/contract-bulk-price-update/', payload)
 
       if (!dryRun) {
         const successMessage =
