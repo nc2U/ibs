@@ -11,6 +11,11 @@ const emit = defineEmits(['on-update', 'on-delete'])
 const contractStore = useContract()
 const orderGroupList = computed(() => contractStore.orderGroupList)
 
+// 현재 선택된 기본 OrderGroup이 있는지 확인
+const hasDefaultOrderGroup = computed(() => {
+  return orderGroupList.value.some(og => og.is_default_for_uncontracted)
+})
+
 const onUpdateOrder = (payload: og) => emit('on-update', payload)
 const onDeleteOrder = (pk: number) => emit('on-delete', pk)
 </script>
@@ -40,6 +45,7 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
         v-for="order in orderGroupList"
         :key="order.pk"
         :order="order"
+        :has-default="hasDefaultOrderGroup"
         @on-update="onUpdateOrder"
         @on-delete="onDeleteOrder"
       />

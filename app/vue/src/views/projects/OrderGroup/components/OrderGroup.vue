@@ -6,7 +6,10 @@ import type { OrderGroup } from '@/store/types/contract.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const props = defineProps({ order: { type: Object as PropType<OrderGroup>, required: true } })
+const props = defineProps({
+  order: { type: Object as PropType<OrderGroup>, required: true },
+  hasDefault: { type: Boolean, required: true }
+})
 const emit = defineEmits(['on-update', 'on-delete'])
 
 const form = reactive({
@@ -25,6 +28,15 @@ const formsCheck = computed(() => {
   const c = form.name === props.order?.name
   const d = form.is_default_for_uncontracted === props.order?.is_default_for_uncontracted
   return a && b && c && d
+})
+
+// 체크박스 disabled 로직
+const isCheckboxDisabled = computed(() => {
+  // 아무것도 선택되지 않았으면 모든 체크박스 활성화
+  if (!props.hasDefault) return false
+
+  // 하나라도 선택된 상태이면서 현재 컴포넌트가 선택되지 않은 경우 비활성화
+  return props.hasDefault && !form.is_default_for_uncontracted
 })
 
 const formCheck = (bool: boolean) => {
@@ -101,6 +113,7 @@ onBeforeMount(() => dataSetup())
     <CTableDataCell class="pl-lg-5 pt-sm-3 pt-lg-1">
       <CFormCheck
         v-model="form.is_default_for_uncontracted"
+        :disabled="isCheckboxDisabled"
         label="미계약세대 기본설정"
         :id="`uncontracted-base-order-${order.pk}`"
       />
