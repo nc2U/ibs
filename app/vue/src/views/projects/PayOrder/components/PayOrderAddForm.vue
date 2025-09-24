@@ -4,6 +4,7 @@ import { write_project } from '@/utils/pageAuth'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import { CCol, CForm, CRow } from '@coreui/vue'
 
 defineProps({ disabled: Boolean })
 
@@ -16,6 +17,7 @@ const validated = ref(false)
 const form = reactive({
   type_sort: '1',
   pay_sort: '',
+  calculation_method: 'auto',
   is_except_price: false,
   pay_code: null as string | null,
   pay_time: null as string | null,
@@ -60,6 +62,7 @@ const modalAction = () => {
 const resetForm = () => {
   form.type_sort = '1'
   form.pay_sort = ''
+  form.calculation_method = 'auto'
   form.is_except_price = false
   form.pay_code = null
   form.pay_time = null
@@ -81,113 +84,111 @@ const resetForm = () => {
 <template>
   <CForm novalidate class="needs-validation" :validated="validated" @submit.prevent="onSubmit">
     <CRow>
-      <CCol xl="12">
+      <CCol xl="7">
         <CRow>
-          <CCol xl="11">
-            <CRow>
-              <CCol xl="6">
-                <CRow>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormSelect v-model="form.type_sort" :disabled="disabled" required>
-                      <option value="">타입 종류</option>
-                      <option value="1">공동주택</option>
-                      <option value="2">오피스텔</option>
-                      <option value="3">숙박시설</option>
-                      <option value="4">지식산업센터</option>
-                      <option value="5">근린생활시설</option>
-                      <option value="6">기타</option>
-                    </CFormSelect>
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormSelect v-model="form.pay_sort" :disabled="disabled" required>
-                      <option value="">회차 종류</option>
-                      <option value="1">계약금</option>
-                      <option value="2">중도금</option>
-                      <option value="3">잔 금</option>
-                      <option value="4">기타 부담금</option>
-                      <option value="5">제세 공과금</option>
-                      <option value="6">금융 비용</option>
-                      <option value="7">업무 대행비</option>
-                    </CFormSelect>
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CRow>
-                      <CCol class="pt-2 col-form-label">
-                        <CFormSwitch
-                          v-model="form.is_except_price"
-                          id="is_prep_discount"
-                          label="공급가 불포함"
-                          :disabled="disabled"
-                        />
-                      </CCol>
-                    </CRow>
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormInput
-                      v-model.number="form.pay_code"
-                      placeholder="납입회차 코드"
-                      type="number"
-                      min="0"
-                      required
-                      :disabled="disabled"
-                    />
-                    <v-tooltip activator="parent" location="start">
-                      프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능
-                    </v-tooltip>
-                  </CCol>
-                </CRow>
-              </CCol>
-              <CCol xl="6">
-                <CRow>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormInput
-                      v-model.number="form.pay_time"
-                      placeholder="납부순서"
-                      type="number"
-                      min="0"
-                      required
-                      :disabled="disabled"
-                    />
-                    <v-tooltip activator="parent" location="start">
-                      동일 납부회차에 2가지 항목을 별도로 납부하여야 하는 경우(ex: 분담금 +
-                      업무대행료) 하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.
-                    </v-tooltip>
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormInput
-                      v-model="form.pay_name"
-                      maxlength="20"
-                      placeholder="납부회차 명"
-                      required
-                      :disabled="disabled"
-                    />
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormInput
-                      v-model="form.alias_name"
-                      maxlength="20"
-                      placeholder="별칭 이름"
-                      :disabled="disabled"
-                    />
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormInput
-                      v-model="form.pay_amt"
-                      maxlength="20"
-                      type="number"
-                      placeholder="납부 약정금액"
-                      :disabled="disabled || form.pay_sort === '3'"
-                    />
-                    <v-tooltip activator="parent" location="start">
-                      약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)
-                    </v-tooltip>
-                  </CCol>
-                </CRow>
-              </CCol>
-            </CRow>
+          <CCol lg="2" md="6" class="mb-3">
+            <CFormSelect v-model="form.type_sort" :disabled="disabled" required>
+              <option value="">타입 종류</option>
+              <option value="1">공동주택</option>
+              <option value="2">오피스텔</option>
+              <option value="3">숙박시설</option>
+              <option value="4">지식산업센터</option>
+              <option value="5">근린생활시설</option>
+              <option value="6">기타</option>
+            </CFormSelect>
           </CCol>
-          <CCol class="mb-3">
-            <!--            <CCol lg="6" xl="3" class="mb-3">-->
+          <CCol lg="2" md="6" class="mb-3">
+            <CFormSelect v-model="form.pay_sort" :disabled="disabled" required>
+              <option value="">회차 종류</option>
+              <option value="1">계약금</option>
+              <option value="2">중도금</option>
+              <option value="3">잔금</option>
+              <option value="4">계약금 정산</option>
+              <option value="5">미납 연체료</option>
+              <option value="6">기타 부담금</option>
+              <option value="7">제세 공과금</option>
+              <option value="8">후불 이자</option>
+              <option value="9">업무 대행비</option>
+            </CFormSelect>
+          </CCol>
+          <CCol lg="2" md="6" class="mb-3">
+            <CFormSelect v-model="form.calculation_method" :disabled="form.pay_sort !== '1'">
+              <option value="auto">---------</option>
+              <option value="downpayment">등록 계약 금액 우선</option>
+              <option value="ratio">분양가격 × 납부비율</option>
+            </CFormSelect>
+          </CCol>
+
+          <CCol lg="2" md="6" class="pt-2 col-form-label mb-3">
+            <CFormSwitch
+              v-model="form.is_except_price"
+              id="is_prep_discount"
+              label="공급가 불포함"
+              :disabled="disabled"
+            />
+          </CCol>
+          <CCol lg="2" md="6" class="mb-3">
+            <CFormInput
+              v-model.number="form.pay_code"
+              placeholder="납입회차 코드"
+              type="number"
+              min="0"
+              required
+              :disabled="disabled"
+            />
+            <v-tooltip activator="parent" location="start">
+              프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능
+            </v-tooltip>
+          </CCol>
+          <CCol lg="2" md="6" class="mb-3">
+            <CFormInput
+              v-model.number="form.pay_time"
+              placeholder="납부순서"
+              type="number"
+              min="0"
+              required
+              :disabled="disabled"
+            />
+            <v-tooltip activator="parent" location="start">
+              동일 납부회차에 2가지 항목을 별도로 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
+              하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.
+            </v-tooltip>
+          </CCol>
+        </CRow>
+      </CCol>
+
+      <CCol xl="5">
+        <CRow>
+          <CCol lg="3" md="6" class="mb-3">
+            <CFormInput
+              v-model="form.pay_name"
+              maxlength="20"
+              placeholder="납부회차 명"
+              required
+              :disabled="disabled"
+            />
+          </CCol>
+          <CCol lg="3" md="6" class="mb-3">
+            <CFormInput
+              v-model="form.alias_name"
+              maxlength="20"
+              placeholder="별칭 이름"
+              :disabled="disabled"
+            />
+          </CCol>
+          <CCol lg="3" md="6" class="mb-3">
+            <CFormInput
+              v-model="form.pay_amt"
+              maxlength="20"
+              type="number"
+              placeholder="납부 약정금액"
+              :disabled="disabled || form.pay_sort === '3'"
+            />
+            <v-tooltip activator="parent" location="start">
+              약정금이 차수, 타입에 관계 없이 정액인 경우 설정(예: 세대별 업무대행비)
+            </v-tooltip>
+          </CCol>
+          <CCol lg="3" md="6" class="mb-3">
             <CFormInput
               v-model="form.pay_ratio"
               maxlength="20"
@@ -199,118 +200,115 @@ const resetForm = () => {
               분양가 대비 납부비율, 계약금 항목인 경우 "계약 금액 등록" 데이터 우선, 잔금 항목인
               경우 "공급 가격 등록" 데이터와 비교 차액 데이터 우선
             </v-tooltip>
-            <!--            </CCol>-->
           </CCol>
         </CRow>
+      </CCol>
 
+      <CCol xl="11">
         <CRow>
-          <CCol xl="11">
+          <CCol lg="6">
             <CRow>
-              <CCol xl="6">
+              <CCol lg="6" xl="3" class="mb-3">
+                <DatePicker
+                  v-model="form.pay_due_date"
+                  maxlength="10"
+                  placeholder="납부 약정일"
+                  :required="false"
+                  :disabled="disabled"
+                />
+              </CCol>
+              <CCol lg="3" md="6" class="mb-3">
+                <CFormInput
+                  v-model.number="form.days_since_prev"
+                  type="number"
+                  maxlength="20"
+                  placeholder="전회 기준 경과일수"
+                  :disabled="disabled"
+                />
+                <v-tooltip activator="parent" location="start">
+                  전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수
+                </v-tooltip>
+              </CCol>
+              <CCol lg="3" md="6" class="mb-3">
                 <CRow>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <DatePicker
-                      v-model="form.pay_due_date"
-                      maxlength="10"
-                      placeholder="납부 약정일"
-                      :required="false"
-                      :disabled="disabled"
-                    />
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormInput
-                      v-model.number="form.days_since_prev"
-                      type="number"
-                      maxlength="20"
-                      placeholder="전회 기준 경과일수"
-                      :disabled="disabled"
-                    />
-                    <v-tooltip activator="parent" location="start">
-                      전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수
-                    </v-tooltip>
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CRow>
-                      <CCol class="pt-2 col-form-label">
-                        <CFormSwitch
-                          v-model="form.is_prep_discount"
-                          id="is_prep_discount"
-                          label="선납할인 적용"
-                          :disabled="disabled"
-                        />
-                      </CCol>
-                    </CRow>
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormInput
-                      v-model="form.prep_discount_ratio"
-                      maxlength="20"
-                      type="number"
-                      placeholder="선납할인율(%, 연리)"
+                  <CCol class="pt-2 col-form-label">
+                    <CFormSwitch
+                      v-model="form.is_prep_discount"
+                      id="is_prep_discount"
+                      label="선납할인 적용"
                       :disabled="disabled"
                     />
                   </CCol>
                 </CRow>
               </CCol>
-              <CCol xl="6">
-                <CRow>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <DatePicker
-                      v-model="form.prep_ref_date"
-                      maxlength="10"
-                      placeholder="선납 기준일"
-                      :required="false"
-                      :disabled="disabled"
-                    />
-                    <v-tooltip activator="parent" location="start">
-                      선납 할인 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 선납 기준일로 우선
-                      적용한다.
-                    </v-tooltip>
-                  </CCol>
-
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CRow>
-                      <CCol class="pt-2 col-form-label">
-                        <CFormSwitch
-                          v-model="form.is_late_penalty"
-                          id="is_late_penalty"
-                          label="연체가산 적용"
-                          :disabled="disabled"
-                        />
-                      </CCol>
-                    </CRow>
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <CFormInput
-                      v-model="form.late_penalty_ratio"
-                      maxlength="20"
-                      type="number"
-                      placeholder="연체가산율(%, 연리)"
-                      :disabled="disabled"
-                    />
-                  </CCol>
-                  <CCol lg="6" xl="3" class="mb-3">
-                    <DatePicker
-                      v-model="form.extra_due_date"
-                      maxlength="10"
-                      placeholder="연체 기준일"
-                      :required="false"
-                      :disabled="disabled"
-                    />
-                    <v-tooltip activator="parent" location="start">
-                      연체료 계산 기준은 납부기한일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선
-                      적용한다.
-                    </v-tooltip>
-                  </CCol>
-                </CRow>
+              <CCol lg="3" md="6" class="mb-3">
+                <CFormInput
+                  v-model="form.prep_discount_ratio"
+                  maxlength="20"
+                  type="number"
+                  placeholder="선납할인율(%, 연리)"
+                  :disabled="disabled"
+                />
               </CCol>
             </CRow>
           </CCol>
+          <CCol lg="6">
+            <CRow>
+              <CCol lg="3" md="6" class="mb-3">
+                <DatePicker
+                  v-model="form.prep_ref_date"
+                  maxlength="10"
+                  placeholder="선납 기준일"
+                  :required="false"
+                  :disabled="disabled"
+                />
+                <v-tooltip activator="parent" location="start">
+                  선납 할인 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 선납 기준일로 우선
+                  적용한다.
+                </v-tooltip>
+              </CCol>
 
-          <CCol xl="1" class="mb-3 text-right">
-            <v-btn color="primary" type="submit" :disabled="disabled"> 회차추가</v-btn>
+              <CCol lg="3" md="6" class="mb-3">
+                <CRow>
+                  <CCol class="pt-2 col-form-label">
+                    <CFormSwitch
+                      v-model="form.is_late_penalty"
+                      id="is_late_penalty"
+                      label="연체가산 적용"
+                      :disabled="disabled"
+                    />
+                  </CCol>
+                </CRow>
+              </CCol>
+              <CCol lg="3" md="6" class="mb-3">
+                <CFormInput
+                  v-model="form.late_penalty_ratio"
+                  maxlength="20"
+                  type="number"
+                  placeholder="연체가산율(%, 연리)"
+                  :disabled="disabled"
+                />
+              </CCol>
+              <CCol lg="3" md="6" class="mb-3">
+                <DatePicker
+                  v-model="form.extra_due_date"
+                  maxlength="10"
+                  placeholder="연체 기준일"
+                  :required="false"
+                  :disabled="disabled"
+                />
+                <v-tooltip activator="parent" location="start">
+                  연체료 계산 기준은 납부기한일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선
+                  적용한다.
+                </v-tooltip>
+              </CCol>
+            </CRow>
           </CCol>
         </CRow>
+      </CCol>
+
+      <CCol xl="1" class="mb-3 text-right">
+        <v-btn color="primary" type="submit" :disabled="disabled"> 회차추가</v-btn>
       </CCol>
     </CRow>
   </CForm>

@@ -4,7 +4,7 @@
 
 ## 개요
 
-계약가격과 계약금 산출은 여러 단계의 우선순위 로직을 통해 처리되며, 각 단계별로 다른 데이터 소스를 참조합니다.
+분양(공급)계약 가격과 계약금 산출은 여러 단계의 우선순위 로직을 통해 처리되며, 각 단계별로 다른 데이터 소스를 참조합니다.
 
 ## 주요 함수
 
@@ -29,15 +29,15 @@ def get_contract_price(contract, houseunit=None, is_set=False):
 
 **읽기 모드 (is_set=False)**:
 
-1. **ContractPrice** - 개별 계약의 직접 입력된 가격 참조 - 계약별 가격 설정 시
-2. **SalesPriceByGT** - 차수별/타입별/층타입별 표준 공급 가격 - 공급 가격 설정 시
+1. **ContractPrice** - 개별 계약의 직접 입력된 가격 참조 - 계약별 가격 설정 시 (기준 공급가와 동일)
+2. **SalesPriceByGT** - 차수별/타입별/층타입별 표준 공급 가격 - 기준 공급 가격 설정 시
 3. **ProjectIncBudget.average_price** - 차수별/타입별 평균 예산 가격 (가격만) - 수입 예산 설정 시
 4. **UnitType.average_price** - 타입별 평균가격 (가격만) - 타입만 설정 시
 5. **(0, 0, 0, 0)** - 기본값
 
 **쓰기 모드 (is_set=True)**:
 
-1. **SalesPriceByGT** - 공급 가격 설정 시 개별 계약에 등록
+1. **SalesPriceByGT** - 기준 공급 가격 설정 시 -> 개별 계약에 등록
 2. **ProjectIncBudget.average_price** - 수입 예산 설정 시
 3. **UnitType.average_price** - 타입만 설정 시
 4. **(0, 0, 0, 0)**
@@ -48,7 +48,32 @@ def get_contract_price(contract, houseunit=None, is_set=False):
 - **ProjectIncBudget**: `order_group` + `unit_type` - 차수 + 타입
 - **UnitType**: `unit_type` - 타입
 
-### 2. `get_down_payment()` - 계약금 산출
+### 2. `get_payment_amount()` - 납부금액 산출 (통합 함수)
+
+#### 함수 시그니처
+
+```python
+def get_payment_amount(contract, installment_order):
+    """
+    Args:
+        contract: Contract 인스턴스
+        installment_order: InstallmentPaymentOrder 인스턴스
+
+    Returns:
+        int: 납부 금액 또는 0
+    """
+```
+
+#### 우선순위 로직
+
+1. **계약금** (`pay_sort='1'`): `get_down_payment()` 함수 사용 (고정 금액 체크 포함)
+2. **계약금 정산** (`pay_sort='4'`): `get_down_payment_settlement()` 동후 지정 후 적응 금액 정산
+3. **고정 금액** (`pay_amt`): 기타 납부 유형의 고정 금액 최우선 적용
+4. **중도금** (`pay_sort='2'`): 항상 `pay_ratio` 사용 (기본 10%)
+5. **잔금** (`pay_sort='3'`): 총 가격에서 다른 납부액 차감
+6. **기타 유형**: `pay_amt`/`pay_ratio` → `PaymentPerInstallment` → 0
+
+### 2-1. `get_down_payment()` - 계약금 산출
 
 #### 함수 시그니처
 
@@ -66,17 +91,86 @@ def get_down_payment(contract, installment_order):
 
 #### 우선순위 로직
 
-1. **InstallmentPaymentOrder.pay_amt**
-    - `pay_amt` 모든 타입 공통 납부금액 최우선 적용
+1. **InstallmentPaymentOrder.pay_amt** - 고정 납부금액 최우선 적용
 
 2. **PaymentPerInstallment** - 개별 설정된 회차별 납부 금액
     - `SalesPriceByGT` + `InstallmentPaymentOrder` 조합으로 조회
+    - `unit_floor_type` 존재 시에만 조회 (필수 조건)
 
 3. **DownPayment** - 차수별/타입별 설정된 회당 납부 계약금
     - `order_group` + `unit_type`으로 조회
+    - `calculation_method`가 'ratio'인 경우 건너뜀 ⭐
 
-4. **InstallmentPaymentOrder.pay_ratio** - 납부 회차 테이블에 등록된 납부 비율 * 가격 계산 (중도금의 경우 기본 10%)
+4. **InstallmentPaymentOrder.pay_ratio** - 납부 비율 기반 계산 (기본 10%)
     - 계약가격 × (비율 / 100)
+
+#### 계약금 계산 방식 제어 ⭐ (신규)
+
+`InstallmentPaymentOrder.calculation_method` 필드로 제어:
+
+- **'auto'** (기본): 기존 우선순위대로 처리
+- **'ratio'**: DownPayment 건너뛰고 비율 계산 강제
+- **'downpayment'**: DownPayment 우선 (명시적)
+
+### 2-2. `get_down_payment_settlement()` - 계약금 정산 ⭐ (신규)
+
+#### 함수 시그니처
+
+```python
+def get_down_payment_settlement(contract, installment_order):
+    """
+    조합원 모집 → 공급계약 전환 시 계약금 정산
+
+    Args:
+        contract: Contract 인스턴스
+        installment_order: InstallmentPaymentOrder 인스턴스 (pay_sort='4')
+
+    Returns:
+        int: 정산 금액 (양수: 추가납부, 음수: 환급, 0: 정산불필요)
+    """
+```
+
+#### 계산 로직
+
+**공식**: `(목표 계약금 비율 × 현재 공급가) - 기납부 계약금 합계`
+
+1. `installment_order.pay_ratio`에서 목표 비율 획득 (필수)
+2. 현재 공급가격 조회 (`get_contract_price()`)
+3. 목표 총 계약금 계산: `공급가 × (목표비율 / 100)`
+4. 기납부 계약금 합계 조회 (`get_total_paid_down_payments()`)
+5. 정산 금액 = 목표 총액 - 기납부 총액
+
+#### 사용 시나리오
+
+```python
+# 계약금 정산 회차 생성
+InstallmentPaymentOrder.objects.create(
+    project=project,
+    pay_sort='4',  # 계약금 정산
+    pay_ratio=20.0,  # 목표: 총 계약금 20%
+    pay_name='계약금 정산',
+    pay_code=15  # 중도금 전에 실행
+)
+```
+
+### 2-3. `get_total_paid_down_payments()` - 기납부 계약금 조회 ⭐ (신규)
+
+#### 함수 시그니처
+
+```python
+def get_total_paid_down_payments(contract):
+    """
+    Args:
+        contract: Contract 인스턴스
+
+    Returns:
+        int: 기납부 계약금 총액
+    """
+```
+
+#### 계산 로직
+
+`pay_sort='1'`인 모든 `InstallmentPaymentOrder`의 납부 예정 금액 합계
 
 ## 데이터 흐름도
 
@@ -243,18 +337,22 @@ filtered_combined = get_multiple_projects_payment_summary(projects, order_group,
 ### 6. API 엔드포인트 사용
 
 #### 다중 프로젝트 납부 요약 API
+
 ```
 GET /api/v1/contract/multi-project-payment-summary/
 ```
 
 **필수 파라미터**:
+
 - `projects`: 쉼표로 구분된 프로젝트 ID (예: `1,2,3`)
 
 **선택적 파라미터**:
+
 - `order_group`: 차수 그룹 ID
 - `unit_type`: 유닛 타입 ID
 
 **사용 예시**:
+
 ```
 # 기본 사용
 GET /api/v1/contract/multi-project-payment-summary/?projects=1,2,3
@@ -264,14 +362,21 @@ GET /api/v1/contract/multi-project-payment-summary/?projects=1,2,3&order_group=1
 ```
 
 **응답 형식**:
+
 ```json
 {
-  "projects": [1, 2, 3],
+  "projects": [
+    1,
+    2,
+    3
+  ],
   "order_group": 1,
   "unit_type": 2,
   "installment_summaries": [
     {
-      "installment_order": {...},
+      "installment_order": {
+        ...
+      },
       "total_amount": 5000000000,
       "contract_count": 100,
       "average_amount": 50000000,

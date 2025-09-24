@@ -287,6 +287,74 @@ def get_down_payment(contract, installment_order):
     return None
 
 
+def get_total_paid_down_payments(contract):
+    """
+    해당 계약의 계약금 정산 전 기납부 계약금 총액 조회
+    pay_sort='1'인 모든 InstallmentPaymentOrder의 납부 예정 금액 합계
+    Args: contract: Contract instance
+    Returns: int: 기납부 계약금 총액
+    """
+    if not contract:
+        return 0
+
+    try:
+        # pay_sort='1'인 모든 회차 조회
+        down_payment_orders = InstallmentPaymentOrder.objects.filter(
+            project=contract.project,
+            type_sort=contract.unit_type.sort,
+            pay_sort='1'  # 계약금만
+        )
+
+        total_paid = 0
+        for order in down_payment_orders:
+            # 각 회차별 납부 예정 금액 계산
+            amount = get_down_payment(contract, order)  # 기존 함수 활용
+            if amount:
+                total_paid += amount
+
+        return total_paid
+
+    except (AttributeError, TypeError):
+        # AttributeError: contract.project/unit_type is None
+        # TypeError: Invalid filter operations
+        return 0
+
+
+def get_down_payment_settlement(contract, installment_order):
+    """
+    계약금 정산 금액 계산
+    계산식: (목표 계약금 비율 × 현재 공급가) - 기납부 계약금 합계(get_total_paid_down_payments)
+    Args:
+        contract: Contract instance
+        installment_order: pay_sort='4'인 InstallmentPaymentOrder
+    Returns: int: 정산 금액 (양수: 추가납부, 음수: 환급, 0: 정산불필요)
+    """
+    if not contract or not installment_order:
+        return 0
+
+    # 1. 목표 계약금 비율 (pay_ratio 필수)
+    target_ratio = installment_order.pay_ratio
+    if not target_ratio:
+        return 0  # pay_ratio가 없으면 정산하지 않음
+
+    # 2. 현재 공급가격 조회
+    contract_price_data = get_contract_price(contract)
+    contract_price = contract_price_data[0]
+    if not contract_price:
+        return 0
+
+    # 3. 목표 계약금 총액 계산
+    target_total_down_payment = int(contract_price * (target_ratio / 100))
+
+    # 4. 기납부 계약금 합계 계산 (pay_sort='1'인 모든 항목)
+    paid_down_payments = get_total_paid_down_payments(contract)
+
+    # 5. 정산 금액 = 목표 총액 - 기납부 총액
+    settlement_amount = target_total_down_payment - paid_down_payments
+
+    return settlement_amount
+
+
 def calculate_remain_payment(contract, remain_installment_order):
     """
     Calculate remain payment by subtracting all other installment amounts from total price.
@@ -350,11 +418,12 @@ def get_payment_amount(contract, installment_order):
         int: Payment amount or 0 if no amount found
 
     Priority logic:
-        1. InstallmentPaymentOrder.pay_amt (fixed amount for all types) - highest priority
-        2. For 계약금 (pay_sort='1'): Use get_down_payment function
-        3. For 중도금 (pay_sort='2'): Always use pay_ratio (default 10%)
-        4. For other types: pay_amt/pay_ratio -> PaymentPerInstallment -> 0
+        1. For 계약금 (pay_sort='1'): Use get_down_payment function (includes fixed amount check)
+        2. For 계약금정산 (pay_sort='4'): Use get_down_payment_settlement function (right after 계약금)
+        3. For fixed types: InstallmentPaymentOrder.pay_amt (fixed amount) - highest priority
+        4. For 중도금 (pay_sort='2'): Always use pay_ratio (default 10%)
         5. For 잔금 (pay_sort='3'): Total price minus sum of other installments
+        6. For remaining types: pay_amt/pay_ratio -> PaymentPerInstallment -> 0
     """
     if not contract or not installment_order:
         return 0
@@ -366,7 +435,11 @@ def get_payment_amount(contract, installment_order):
         down_payment = get_down_payment(contract, installment_order)
         return down_payment if down_payment is not None else 0
 
-    # Step 2: Check fixed amount (highest priority for non-계약금 types)
+    # Step 2: Handle 계약금 정산 (right after 계약금, before other types)
+    elif pay_sort == '4':  # 계약금 정산
+        return get_down_payment_settlement(contract, installment_order)
+
+    # Step 3: Check fixed amount (for other payment types)
     fixed_amount = get_fixed_payment_amount(installment_order)
     if fixed_amount is not None:
         return fixed_amount
@@ -377,15 +450,19 @@ def get_payment_amount(contract, installment_order):
     if not contract_price:
         return 0
 
-    # Step 3: Handle 중도금 (always use pay_ratio)
-    if pay_sort == '2':  # 중도금
+    # Step 4: Handle 중도금 (always use pay_ratio)
+    elif pay_sort == '2':  # 중도금
         pay_ratio = installment_order.pay_ratio
         if pay_ratio is None:
             pay_ratio = Decimal('10.0')  # Default 10%
         return int(contract_price * (pay_ratio / 100))
 
-    # Step 4: Handle other types (기타 부담금, 제세 공과금, 금융 비용, 업무 대행비)
-    elif pay_sort not in ['1', '2', '3']:  # 기타 타입들
+    # Step 5: Handle 잔금 (total minus other installments)
+    elif pay_sort == '3':  # 잔금
+        return calculate_remain_payment(contract, installment_order)
+
+    # Step 6: Handle other types (기타 부담금, 제세 공과금, 금융 비용, 업무 대행비)
+    elif pay_sort not in ['1', '2', '3', '4']:  # 기타 타입들
         # Try pay_ratio first
         if installment_order.pay_ratio:
             return int(contract_price * (installment_order.pay_ratio / 100))
@@ -421,9 +498,8 @@ def get_payment_amount(contract, installment_order):
         # Default to 0
         return 0
 
-    # Step 5: Handle 잔금 (total minus other installments)
-    else:  # pay_sort == '3' (잔금)
-        return calculate_remain_payment(contract, installment_order)
+    # This should not be reached if all pay_sort values are handled above
+    return 0
 
 
 def get_contract_payment_plan(contract):

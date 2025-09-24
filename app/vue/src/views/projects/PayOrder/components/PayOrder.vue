@@ -6,7 +6,7 @@ import type { PayOrder } from '@/store/types/payment'
 import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import { CTableDataCell, CTableHeaderCell, CTableRow } from '@coreui/vue'
+import { CFormInput, CTableDataCell, CTableHeaderCell, CTableRow } from '@coreui/vue'
 
 const emit = defineEmits(['on-update', 'on-delete'])
 const props = defineProps({ payOrder: { type: Object as PropType<PayOrder>, required: true } })
@@ -134,10 +134,12 @@ onBeforeMount(() => dataSetup())
         <option value="1">계약금</option>
         <option value="2">중도금</option>
         <option value="3">잔금</option>
-        <option value="4">기타 부담금</option>
-        <option value="5">제세 공과금</option>
-        <option value="6">금융 비용</option>
-        <option value="7">업무 대행비</option>
+        <option value="4">계약금 정산</option>
+        <option value="5">미납 연체료</option>
+        <option value="6">기타 부담금</option>
+        <option value="7">제세 공과금</option>
+        <option value="8">후불 이자</option>
+        <option value="9">업무 대행비</option>
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
@@ -197,6 +199,7 @@ onBeforeMount(() => dataSetup())
         placeholder="납부 약정액"
         type="number"
         min="0"
+        :disabled="form.pay_sort === '2' || form.pay_sort === '3'"
         @keypress.enter="formCheck(form.pay_amt !== payOrder.pay_amt)"
       />
     </CTableDataCell>
@@ -223,7 +226,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
   </CTableRow>
 
-  <CTableRow v-show="isExpand">
+  <CTableRow v-show="isExpand" color="warning">
     <CTableDataCell> </CTableDataCell>
     <CTableDataCell>
       <DatePicker
