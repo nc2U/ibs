@@ -59,6 +59,7 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
         ordering = ('order_group', 'unit_type', 'unit_floor_type', 'project')
         verbose_name = '02. 기준 공급가격'
         verbose_name_plural = '02. 기준 공급가격'
+        unique_together = (('project', 'order_group', 'unit_type', 'unit_floor_type'),)
 
 
 class PaymentPerInstallment(models.Model):

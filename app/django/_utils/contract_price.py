@@ -222,25 +222,25 @@ def get_down_payment(contract, installment_order):
 
         # Only proceed if unit_floor_type exists (SalesPriceByGT requires it)
         if unit_floor_type:
-            sales_price = SalesPriceByGT.objects.filter(
+            sales_price = SalesPriceByGT.objects.get(
                 project=contract.project,
                 order_group=contract.order_group,
                 unit_type=contract.unit_type,
                 unit_floor_type=unit_floor_type
-            ).first()
+            )
 
-            if sales_price:
-                payment_per_installment = PaymentPerInstallment.objects.filter(
-                    sales_price=sales_price,
-                    pay_order=installment_order
-                ).first()
+            payment_per_installment = PaymentPerInstallment.objects.get(
+                sales_price=sales_price,
+                pay_order=installment_order
+            )
 
-                if payment_per_installment:
-                    return payment_per_installment.amount
-    except (AttributeError, TypeError, ValueError):
+            return payment_per_installment.amount
+    except (AttributeError, TypeError, ValueError, SalesPriceByGT.DoesNotExist, PaymentPerInstallment.DoesNotExist):
         # AttributeError: contract.project/order_group/unit_type is None
         # TypeError: Invalid filter parameter types
         # ValueError: Invalid data conversion
+        # SalesPriceByGT.DoesNotExist: No matching SalesPriceByGT record
+        # PaymentPerInstallment.DoesNotExist: No matching PaymentPerInstallment record
         pass
 
     # Step 3: Check DownPayment
@@ -394,25 +394,25 @@ def get_payment_amount(contract, installment_order):
 
             # Only proceed if unit_floor_type exists (SalesPriceByGT requires it)
             if unit_floor_type:
-                sales_price = SalesPriceByGT.objects.filter(
+                sales_price = SalesPriceByGT.objects.get(
                     project=contract.project,
                     order_group=contract.order_group,
                     unit_type=contract.unit_type,
                     unit_floor_type=unit_floor_type
-                ).first()
+                )
 
-                if sales_price:
-                    payment_per_installment = PaymentPerInstallment.objects.filter(
-                        sales_price=sales_price,
-                        pay_order=installment_order
-                    ).first()
+                payment_per_installment = PaymentPerInstallment.objects.get(
+                    sales_price=sales_price,
+                    pay_order=installment_order
+                )
 
-                    if payment_per_installment:
-                        return payment_per_installment.amount
-        except (AttributeError, TypeError, ValueError):
+                return payment_per_installment.amount
+        except (AttributeError, TypeError, ValueError, SalesPriceByGT.DoesNotExist, PaymentPerInstallment.DoesNotExist):
             # AttributeError: contract.project/order_group/unit_type is None
             # TypeError: Invalid filter parameter types
             # ValueError: Invalid data conversion
+            # SalesPriceByGT.DoesNotExist: No matching SalesPriceByGT record
+            # PaymentPerInstallment.DoesNotExist: No matching PaymentPerInstallment record
             pass
 
         # Default to 0
@@ -461,12 +461,17 @@ def get_contract_payment_plan(contract):
         # Find matching SalesPriceByGT once outside the loop (only if unit_floor_type exists)
         sales_price = None
         if unit_floor_type:
-            sales_price = SalesPriceByGT.objects.filter(
-                project=contract.project,
-                order_group=contract.order_group,
-                unit_type=contract.unit_type,
-                unit_floor_type=unit_floor_type
-            ).first()
+            try:
+                sales_price = SalesPriceByGT.objects.get(
+                    project=contract.project,
+                    order_group=contract.order_group,
+                    unit_type=contract.unit_type,
+                    unit_floor_type=unit_floor_type
+                )
+            except (SalesPriceByGT.DoesNotExist, AttributeError):
+                # SalesPriceByGT.DoesNotExist: No matching record
+                # AttributeError: contract fields are None
+                sales_price = None
 
         # Cache all manual payments in a dictionary for O(1) lookup
         manual_payments = {}
