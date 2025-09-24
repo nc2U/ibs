@@ -7,9 +7,25 @@ from .models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfo
 
 
 class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'issue_project', 'name', 'order', 'kind', 'num_unit', 'build_size', 'area_usage')
+    list_display = ('id', 'issue_project', 'name', 'order', 'kind', 'num_unit',
+                    'build_size', 'area_usage', 'default_uncontracted_order_group')
     list_display_links = ('name',)
-    list_editable = ('issue_project', 'order', 'kind', 'num_unit', 'build_size', 'area_usage')
+    list_editable = ('issue_project', 'order', 'kind', 'num_unit', 'build_size',
+                     'area_usage', 'default_uncontracted_order_group')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "default_uncontracted_order_group":
+            # 현재 편집 중인 프로젝트의 ID 가져오기
+            if request.resolver_match and request.resolver_match.kwargs.get('object_id'):
+                project_id = request.resolver_match.kwargs['object_id']
+                try:
+                    # 해당 프로젝트의 차수만 필터링
+                    from contract.models import OrderGroup
+                    kwargs["queryset"] = OrderGroup.objects.filter(project_id=project_id)
+                except:
+                    # 새 프로젝트 생성 시에는 모든 차수 표시
+                    pass
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class ProjectIncBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
