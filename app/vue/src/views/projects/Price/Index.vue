@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, reactive, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin6'
+import { message } from '@/utils/helper.ts'
 import type { Price } from '@/store/types/payment'
 import type { Project } from '@/store/types/project.ts'
 import { type PriceFilter, usePayment } from '@/store/pinia/payment'
@@ -13,8 +14,9 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PriceSelectForm from '@/views/projects/Price/components/PriceSelectForm.vue'
 import PriceFormList from '@/views/projects/Price/components/PriceFormList.vue'
-import { message } from '@/utils/helper.ts'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
+const RefAlertModal = ref()
 const selectForm = ref()
 const sort = ref<'1' | '2' | '3' | '4' | '5' | '6'>('1')
 const order_group = ref<number | null>(null)
@@ -31,6 +33,9 @@ const priceMessage = ref('')
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
+const default_order_group = computed(
+  () => (projStore.project as Project)?.default_uncontracted_order_group,
+)
 
 const contStore = useContract()
 const orderGroupList = computed(() => contStore.orderGroupList)
@@ -144,18 +149,28 @@ const contPriceView = async () => {
     console.error('계약 가격 일괄 업데이트 미리보기 실패:', error)
   }
 }
+
 const contPriceSet = async () => {
   if (!project.value) return
 
-  try {
-    const result = await bulkUpdateContractPrices(project.value)
-    console.log('🔍 계약 가격 일괄 업데이트 결과:', result)
+  if (!default_order_group.value) {
+    RefAlertModal.value.callModal(
+      '알림 : 미계약 세대 기본 적용 차수 미설정',
+      '이 작업을 진행하려면 [프로젝트]의 "미계약 세대 기본 적용 차수"를 설정하세요.',
+      '',
+      'warning',
+    )
+  } else {
+    try {
+      const result = await bulkUpdateContractPrices(project.value)
+      console.log('🔍 계약 가격 일괄 업데이트 결과:', result)
 
-    if (result.debug_info) {
-      console.log('🐛 디버그 정보:', result.debug_info)
+      if (result.debug_info) {
+        console.log('🐛 디버그 정보:', result.debug_info)
+      }
+    } catch (error) {
+      console.error('계약 가격 일괄 업데이트 실패:', error)
     }
-  } catch (error) {
-    console.error('계약 가격 일괄 업데이트 실패:', error)
   }
 }
 
@@ -221,4 +236,6 @@ onBeforeMount(async () => {
       />
     </CCardBody>
   </ContentBody>
+
+  <AlertModal ref="RefAlertModal" />
 </template>

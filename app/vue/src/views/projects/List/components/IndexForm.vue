@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onBeforeMount, type PropType, onUpdated } from 'vue'
-import { useAccount } from '@/store/pinia/account'
+import { computed, onBeforeMount, onUpdated, type PropType, reactive, ref } from 'vue'
 import { useStore } from '@/store'
 import { type Project } from '@/store/types/project'
-import type { IssueProject } from '@/store/types/work_project.ts'
-import { callAddress, type AddressData } from '@/components/DaumPostcode/address'
+import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import { useProject } from '@/store/pinia/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
@@ -109,9 +107,9 @@ const formsCheck = computed(() => {
     const y = form.num_legal_parking === props.project.num_legal_parking
     const z = form.num_planed_parking === props.project.num_planed_parking
 
-    const group1 = a && b && c && d && e && f && g && h
-    const group2 = i && j && k && l && m && n && o && p && q
-    const group3 = r && s && t && u && v && w && x && y && z
+    const group1 = a && b && c && d && e && f && g && h && i
+    const group2 = j && k && l && m && n && o && p && q && r
+    const group3 = s && t && u && v && w && x && y && z
 
     return group1 && group2 && group3
   } else return false
