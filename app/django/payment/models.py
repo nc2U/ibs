@@ -6,8 +6,8 @@ from items.models import UnitType
 class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     type_sort = models.CharField('타입종류', max_length=1, choices=UnitType.SORT_CHOICES, default='1')
-    PAY_SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '기타 부담금'),
-                        ('5', '제세 공과금'), ('6', '금융 비용'), ('7', '업무 대행비'))
+    PAY_SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '계약금 정산'), ('5', '미납 연체료'),
+                        ('6', '기타 부담금'), ('7', '제세 공과금'), ('8', '후불 이자'), ('9', '업무 대행비'))
     pay_sort = models.CharField('종류', max_length=1, choices=PAY_SORT_CHOICES, default='1')
     is_except_price = models.BooleanField('공급가 불포함 여부', default=False, help_text='취등록세, 후불 이자 등 공급가 불포함 항목인지 여부')
     pay_code = models.PositiveSmallIntegerField('납입회차 코드', help_text='프로젝트 내 납부회차별 코드번호 - 동일 회차 중복(분리) 등록 가능')
@@ -35,9 +35,9 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
 
     # 계약금 계산 방식 선택 (계약금에만 적용)
     CALCULATION_METHOD_CHOICES = (
-        ('auto', '자동 (기존 우선순위)'),      # 기본값: PaymentPerInstallment → DownPayment → pay_ratio
-        ('ratio', '분양가 × 납부비율'),         # pay_ratio 강제 사용
-        ('downpayment', 'DownPayment 우선'),   # DownPayment 강제 사용 (없으면 pay_ratio)
+        ('auto', '자동 (기존 우선순위)'),  # 기본값: PaymentPerInstallment → DownPayment → pay_ratio
+        ('ratio', '분양가 × 납부비율'),  # pay_ratio 강제 사용
+        ('downpayment', 'DownPayment 우선'),  # DownPayment 강제 사용 (없으면 pay_ratio)
     )
     calculation_method = models.CharField(
         '계약금 계산 방식',
