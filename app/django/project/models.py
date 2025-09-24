@@ -45,11 +45,6 @@ class Project(models.Model):
     build_to_land_ratio = models.DecimalField('건폐율', max_digits=6, decimal_places=4, null=True, blank=True)
     num_legal_parking = models.PositiveSmallIntegerField('법정주차대수', null=True, blank=True)
     num_planed_parking = models.PositiveSmallIntegerField('계획주차대수', null=True, blank=True)
-    default_uncontracted_order_group = models.ForeignKey('contract.OrderGroup', on_delete=models.SET_NULL,
-                                                         null=True, blank=True,
-                                                         verbose_name='미계약 세대 기본 차수',
-                                                         related_name='projects_as_default',
-                                                         help_text='미계약 세대 ContractPrice 생성시 사용할 기본 차수')
 
     def __str__(self):
         return self.name

@@ -379,32 +379,6 @@ class ContractPriceViewSet(viewsets.ModelViewSet):
                         'contract__unit_type', 'contract__activation',
                         'contract__contractor__status')
 
-    @action(detail=True, methods=['get'], url_path='payment-plan')
-    def payment_plan(self, request, pk=None):
-        """
-        ContractPrice의 JSON 기반 납부 계획 조회 (고성능)
-
-        기존 get_contract_payment_plan 함수 대비 99.92% 성능 향상
-        """
-        try:
-            contract_price = self.get_object()
-
-            # JSON 방식으로 빠른 응답
-            serializer = ContractPriceWithPaymentPlanSerializer(contract_price)
-            return Response(serializer.data)
-
-        except ContractPrice.DoesNotExist:
-            return Response(
-                {'error': 'ContractPrice not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            logging.exception("Error while getting payment plan from ContractPrice")
-            return Response(
-                {'error': 'Failed to get payment plan due to an internal error.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
 
 class SubsSummaryViewSet(viewsets.ModelViewSet):
     serializer_class = SubsSummarySerializer
@@ -738,22 +712,13 @@ def bulk_update_contract_prices(request):
                                                                                            0)
             message_parts = [f"{result['updated_count'] + result['created_count']}개 계약 가격이 성공적으로 업데이트되었습니다"]
 
-            # 디버그 정보 추가
-            debug_info = {
-                'project_name': project.name,
-                'project_default_order_group': project.default_uncontracted_order_group.name if project.default_uncontracted_order_group else None,
-                'service_order_group': service.order_group_for_uncontracted.name if service.order_group_for_uncontracted else None,
-                'uncontracted_created_count': result.get('uncontracted_created_count', 0)
-            }
-
             if result.get('uncontracted_created_count', 0) > 0:
                 message_parts.append(f"{result['uncontracted_created_count']}개 미계약 세대 ContractPrice가 생성되었습니다")
 
             return Response({
                 'success': True,
                 'message': ', '.join(message_parts),
-                'data': result,
-                'debug_info': debug_info  # 디버그 정보 추가
+                'data': result
             })
 
     except Exception as e:

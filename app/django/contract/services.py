@@ -5,7 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 
 from _utils.contract_price import get_contract_price
-from contract.models import Contract, ContractPrice
+from contract.models import Contract, ContractPrice, OrderGroup
 from items.models import HouseUnit
 from payment.models import SalesPriceByGT
 
@@ -23,7 +23,7 @@ class ContractPriceBulkUpdateService:
         self.project = project
         # order_group_for_uncontracted가 명시적으로 제공되지 않으면 프로젝트의 기본 차수 사용
         if order_group_for_uncontracted is None:
-            self.order_group_for_uncontracted = project.default_uncontracted_order_group
+            self.order_group_for_uncontracted = OrderGroup.get_default_for_project(project)
         else:
             self.order_group_for_uncontracted = order_group_for_uncontracted
 

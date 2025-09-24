@@ -7,9 +7,10 @@ from .models import (OrderGroup, Contract, ContractPrice, ContractFile,
 
 @admin.register(OrderGroup)
 class OrderGroupAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'name', 'order_number', 'sort')
+    list_display = ('id', 'project', 'name', 'order_number', 'sort', 'is_default_for_uncontracted')
     list_display_links = ('project', 'name',)
     list_filter = ('project', 'sort')
+    list_editable = ('order_number', 'is_default_for_uncontracted',)
     search_fields = ('name',)
 
 

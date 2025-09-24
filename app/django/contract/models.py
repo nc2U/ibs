@@ -2,6 +2,7 @@ import os
 
 import magic
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from _utils.contract_price import get_contract_payment_plan
@@ -15,14 +16,56 @@ class OrderGroup(models.Model):
     SORT_CHOICES = (('1', '조합모집'), ('2', '일반분양'))
     sort = models.CharField('구분', max_length=1, choices=SORT_CHOICES, default='1')
     name = models.CharField('차수명', max_length=20, db_index=True)
+    is_default_for_uncontracted = models.BooleanField('미계약세대 기본설정', default=False,
+                                                      help_text='미계약 세대 ContractPrice 생성시 사용할 기본 차수 여부')
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def get_default_for_project(cls, project):
+        """
+        프로젝트의 기본 미계약 차수를 반환합니다.
+        Args: project: Project 인스턴스
+        Returns: OrderGroup 인스턴스 또는 None
+        """
+        if not project:
+            return None
+
+        return cls.objects.filter(
+            project=project,
+            is_default_for_uncontracted=True
+        ).first()
+
+    def clean(self):
+        """모델 검증"""
+        super().clean()
+
+        if self.is_default_for_uncontracted:
+            # 동일 프로젝트에서 이미 기본으로 설정된 다른 OrderGroup이 있는지 확인
+            existing_default = OrderGroup.objects.filter(
+                project=self.project,
+                is_default_for_uncontracted=True
+            ).exclude(pk=self.pk)
+
+            if existing_default.exists():
+                raise ValidationError({
+                    'is_default_for_uncontracted':
+                    f'프로젝트 "{self.project.name}"에서는 하나의 차수만 미계약세대 기본설정으로 지정할 수 있습니다. '
+                    f'현재 "{existing_default.first().name}"이(가) 이미 설정되어 있습니다.'
+                })
 
     class Meta:
         ordering = ['-project', 'id']
         verbose_name = '01. 차수 (계약그룹)'
         verbose_name_plural = '01. 차수 (계약그룹)'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['project'],
+                condition=models.Q(is_default_for_uncontracted=True),
+                name='unique_default_uncontracted_per_project'
+            )
+        ]
 
 
 class Contract(models.Model):
@@ -144,8 +187,9 @@ class ContractPrice(models.Model):
         try:
             project = self.house_unit.unit_type.project
 
-            # 프로젝트의 기본 미계약 차수가 설정되어 있는지 확인
-            if not project.default_uncontracted_order_group:
+            # 프로젝트의 기본 미계약 차수를 OrderGroup.get_default_for_project로 조회
+            default_order_group = OrderGroup.get_default_for_project(project)
+            if not default_order_group:
                 self.is_cache_valid = False
                 return
 
@@ -162,7 +206,7 @@ class ContractPrice(models.Model):
 
             temp_contract = TempContract(
                 project,
-                project.default_uncontracted_order_group,
+                default_order_group,
                 self.house_unit.unit_type
             )
 

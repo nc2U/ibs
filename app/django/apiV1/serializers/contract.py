@@ -51,7 +51,7 @@ class OrderGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderGroup
-        fields = ('pk', 'project', 'order_number', 'sort', 'sort_desc', 'name')
+        fields = ('pk', 'project', 'order_number', 'sort', 'sort_desc', 'name', 'is_default_for_uncontracted')
 
 
 class HouseUnitInKeyUnitSerializer(serializers.ModelSerializer):

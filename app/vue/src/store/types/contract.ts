@@ -149,6 +149,7 @@ export interface OrderGroup {
   sort: '1' | '2' // '조합모집' | '일반분양'
   sort_desc: string
   name: string
+  is_default_for_uncontracted: boolean
 }
 
 export interface SalesPrice {

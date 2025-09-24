@@ -5,7 +5,7 @@ import { message } from '@/utils/helper.ts'
 import type { Price } from '@/store/types/payment'
 import type { Project } from '@/store/types/project.ts'
 import { type PriceFilter, usePayment } from '@/store/pinia/payment'
-import type { OrderGroup, SimpleCont, UnitType } from '@/store/types/contract'
+import type { OrderGroup } from '@/store/types/contract'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
@@ -36,6 +36,9 @@ const project = computed(() => (projStore.project as Project)?.pk)
 
 const contStore = useContract()
 const orderGroupList = computed(() => contStore.orderGroupList)
+const default_order = computed(
+  () => orderGroupList.value.filter(o => o.is_default_for_uncontracted)[0]?.pk,
+)
 
 const pDataStore = useProjectData()
 const unitTypeList = computed(() => pDataStore.unitTypeList)
@@ -150,10 +153,10 @@ const contPriceView = async () => {
 const contPriceSet = async () => {
   if (!project.value) return
 
-  if (!default_order_group.value) {
+  if (!default_order.value) {
     RefAlertModal.value.callModal(
-      '알림 : 미계약 세대 기본 적용 차수 미설정',
-      '이 작업을 진행하려면 [프로젝트]의 "미계약 세대 기본 적용 차수"를 설정하세요.',
+      '알림 : 미계약세대 기본설정 차수 미설정',
+      '이 작업을 진행하려면 [차수분류]의 데이터 중 "미계약세대 기본설정" 차수를 지정하세요.',
       '',
       'warning',
     )
