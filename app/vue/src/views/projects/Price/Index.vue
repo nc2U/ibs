@@ -33,9 +33,6 @@ const priceMessage = ref('')
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
-const default_order_group = computed(
-  () => (projStore.project as Project)?.default_uncontracted_order_group,
-)
 
 const contStore = useContract()
 const orderGroupList = computed(() => contStore.orderGroupList)
