@@ -217,29 +217,26 @@ def get_down_payment(contract, installment_order):
 
     # Step 2: Check PaymentPerInstallment (new structure using SalesPriceByGT)
     try:
-        # Find matching SalesPriceByGT
-        sales_price_query = SalesPriceByGT.objects.filter(
-            project=contract.project,
-            order_group=contract.order_group,
-            unit_type=contract.unit_type
-        )
-
-        # Get unit_floor_type for SalesPriceByGT lookup
+        # Get unit_floor_type first - SalesPriceByGT requires this field
         unit_floor_type = get_floor_type(contract)
 
+        # Only proceed if unit_floor_type exists (SalesPriceByGT requires it)
         if unit_floor_type:
-            sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
-        else:
-            sales_price = sales_price_query.first()
-
-        if sales_price:
-            payment_per_installment = PaymentPerInstallment.objects.filter(
-                sales_price=sales_price,
-                pay_order=installment_order
+            sales_price = SalesPriceByGT.objects.filter(
+                project=contract.project,
+                order_group=contract.order_group,
+                unit_type=contract.unit_type,
+                unit_floor_type=unit_floor_type
             ).first()
 
-            if payment_per_installment:
-                return payment_per_installment.amount
+            if sales_price:
+                payment_per_installment = PaymentPerInstallment.objects.filter(
+                    sales_price=sales_price,
+                    pay_order=installment_order
+                ).first()
+
+                if payment_per_installment:
+                    return payment_per_installment.amount
     except (AttributeError, TypeError, ValueError):
         # AttributeError: contract.project/order_group/unit_type is None
         # TypeError: Invalid filter parameter types
@@ -392,29 +389,26 @@ def get_payment_amount(contract, installment_order):
 
         # Try PaymentPerInstallment (new structure using SalesPriceByGT)
         try:
-            # Get unit_floor_type for SalesPriceByGT lookup
+            # Get unit_floor_type first - SalesPriceByGT requires this field
             unit_floor_type = get_floor_type(contract)
 
-            # Find matching SalesPriceByGT
-            sales_price_query = SalesPriceByGT.objects.filter(
-                project=contract.project,
-                order_group=contract.order_group,
-                unit_type=contract.unit_type
-            )
-
+            # Only proceed if unit_floor_type exists (SalesPriceByGT requires it)
             if unit_floor_type:
-                sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
-            else:
-                sales_price = sales_price_query.first()
-
-            if sales_price:
-                payment_per_installment = PaymentPerInstallment.objects.filter(
-                    sales_price=sales_price,
-                    pay_order=installment_order
+                sales_price = SalesPriceByGT.objects.filter(
+                    project=contract.project,
+                    order_group=contract.order_group,
+                    unit_type=contract.unit_type,
+                    unit_floor_type=unit_floor_type
                 ).first()
 
-                if payment_per_installment:
-                    return payment_per_installment.amount
+                if sales_price:
+                    payment_per_installment = PaymentPerInstallment.objects.filter(
+                        sales_price=sales_price,
+                        pay_order=installment_order
+                    ).first()
+
+                    if payment_per_installment:
+                        return payment_per_installment.amount
         except (AttributeError, TypeError, ValueError):
             # AttributeError: contract.project/order_group/unit_type is None
             # TypeError: Invalid filter parameter types
@@ -464,17 +458,15 @@ def get_contract_payment_plan(contract):
         # Get unit_floor_type once outside the loop
         unit_floor_type = get_floor_type(contract)
 
-        # Find matching SalesPriceByGT once outside the loop
-        sales_price_query = SalesPriceByGT.objects.filter(
-            project=contract.project,
-            order_group=contract.order_group,
-            unit_type=contract.unit_type
-        )
-
+        # Find matching SalesPriceByGT once outside the loop (only if unit_floor_type exists)
+        sales_price = None
         if unit_floor_type:
-            sales_price = sales_price_query.filter(unit_floor_type=unit_floor_type).first()
-        else:
-            sales_price = sales_price_query.first()
+            sales_price = SalesPriceByGT.objects.filter(
+                project=contract.project,
+                order_group=contract.order_group,
+                unit_type=contract.unit_type,
+                unit_floor_type=unit_floor_type
+            ).first()
 
         # Cache all manual payments in a dictionary for O(1) lookup
         manual_payments = {}
