@@ -5,6 +5,7 @@ import { usePayment } from '@/store/pinia/payment'
 import { type PayOrder as po } from '@/store/types/payment'
 import { TableSecondary } from '@/utils/cssMixins'
 import PayOrder from '@/views/projects/PayOrder/components/PayOrder.vue'
+import { CTableHeaderCell } from '@coreui/vue'
 
 const emit = defineEmits(['on-update', 'on-delete'])
 
@@ -18,29 +19,24 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive>
     <colgroup>
+      <col style="width: 8%" />
+      <col style="width: 8%" />
+      <col style="width: 8%" />
       <col style="width: 6%" />
-      <col style="width: 5%" />
-      <col style="width: 5%" />
-      <col style="width: 4%" />
-      <col style="width: 4%" />
-      <col style="width: 6%" />
-      <col style="width: 5%" />
-      <col style="width: 6%" />
-      <col style="width: 5%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 8%" />
+      <col style="width: 7%" />
+      <col style="width: 8%" />
       <col style="width: 7%" />
       <col style="width: 5%" />
-      <col style="width: 6%" />
-      <col style="width: 5%" />
-      <col style="width: 7%" />
-      <col style="width: 6%" />
-      <col style="width: 5%" />
-      <col style="width: 7%" />
-      <col v-if="write_project" style="width: 6%" />
+      <col v-if="write_project" style="width: 8%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
         <CTableHeaderCell>타입종류</CTableHeaderCell>
         <CTableHeaderCell>회차종류</CTableHeaderCell>
+        <CTableHeaderCell>계약금 산정방법</CTableHeaderCell>
         <CTableHeaderCell>공급가 포함 여부</CTableHeaderCell>
         <CTableHeaderCell class="cursor-help">
           회차코드
@@ -74,32 +70,33 @@ const onDeletePayOrder = (pk: number) => emit('on-delete', pk)
             "공급 가격 등록" 데이터와 비교 차액 데이터 우선
           </v-tooltip>
         </CTableHeaderCell>
-        <CTableHeaderCell>납부약정일</CTableHeaderCell>
-        <CTableHeaderCell class="cursor-help">
-          전회기준 경과일수
-          <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
-          <v-tooltip activator="parent" location="top">
-            전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수
-          </v-tooltip>
-        </CTableHeaderCell>
-        <CTableHeaderCell>선납할인 적용</CTableHeaderCell>
-        <CTableHeaderCell>선납할인율</CTableHeaderCell>
-        <CTableHeaderCell class="cursor-help">
-          선납기준일
-          <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
-          <v-tooltip activator="parent" location="top">
-            선납 할인 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 선납 기준일로 우선 적용한다.
-          </v-tooltip>
-        </CTableHeaderCell>
-        <CTableHeaderCell>연체가산 적용</CTableHeaderCell>
-        <CTableHeaderCell>연체가산율</CTableHeaderCell>
-        <CTableHeaderCell class="cursor-help">
-          연체기준일
-          <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />
-          <v-tooltip activator="parent" location="top">
-            연체료 계산 기준은 납부기한일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선 적용한다.
-          </v-tooltip>
-        </CTableHeaderCell>
+        <!--        <CTableHeaderCell>납부약정일</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell class="cursor-help">-->
+        <!--          전회기준 경과일수-->
+        <!--          <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />-->
+        <!--          <v-tooltip activator="parent" location="top">-->
+        <!--            전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수-->
+        <!--          </v-tooltip>-->
+        <!--        </CTableHeaderCell>-->
+        <!--        <CTableHeaderCell>선납할인 적용</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell>선납할인율</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell class="cursor-help">-->
+        <!--          선납기준일-->
+        <!--          <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />-->
+        <!--          <v-tooltip activator="parent" location="top">-->
+        <!--            선납 할인 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 선납 기준일로 우선 적용한다.-->
+        <!--          </v-tooltip>-->
+        <!--        </CTableHeaderCell>-->
+        <!--        <CTableHeaderCell>연체가산 적용</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell>연체가산율</CTableHeaderCell>-->
+        <!--        <CTableHeaderCell class="cursor-help">-->
+        <!--          연체기준일-->
+        <!--          <v-icon icon="mdi-tooltip-question-outline" size="14" color="grey" />-->
+        <!--          <v-tooltip activator="parent" location="top">-->
+        <!--            연체료 계산 기준은 납부기한일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선 적용한다.-->
+        <!--          </v-tooltip>-->
+        <!--        </CTableHeaderCell>-->
+        <CTableHeaderCell class="text-center">추가입력</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
