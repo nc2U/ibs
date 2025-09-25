@@ -12,6 +12,7 @@ import {
   type AllPayment,
   type OverallSummary,
   type SalesSummaryByGroupType,
+  type PaymentStatusByUnitType,
 } from '@/store/types/payment'
 
 export type DownPayFilter = {
@@ -252,6 +253,19 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // state & getters
+  const paymentStatusByUnitType = ref<PaymentStatusByUnitType[]>([])
+
+  // actions
+  const fetchPaymentStatusByUnitType = async (project: number, date?: string) => {
+    let url = `/payment-status-by-unit-type/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (paymentStatusByUnitType.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
   return {
     priceList,
 
@@ -301,5 +315,9 @@ export const usePayment = defineStore('payment', () => {
     salesSummaryByGroupType,
 
     fetchSalesSummaryByGroupType,
+
+    paymentStatusByUnitType,
+
+    fetchPaymentStatusByUnitType,
   }
 })

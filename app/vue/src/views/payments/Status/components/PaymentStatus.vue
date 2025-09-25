@@ -1,97 +1,59 @@
 <script lang="ts" setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { Project } from '@/store/types/project.ts'
 import { useProject } from '@/store/pinia/project'
-import { useContract } from '@/store/pinia/contract'
-import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { TableSecondary } from '@/utils/cssMixins'
 
-defineProps({
+const props = defineProps({
   date: { type: String, default: '' },
 })
 
 const proStore = useProject()
-const budgetList = computed(() => proStore.proIncBudgetList)
-
-const contStore = useContract()
-const orderGroup = computed(() => contStore.orderGroupList)
-const contSum = computed(() => contStore.contSummaryList)
-
-const prDataStore = useProjectData()
-const unitType = computed(() => prDataStore.unitTypeList)
-
 const paymentStore = usePayment()
-const paySumList = computed(() => paymentStore.paySumList)
-const salesSummaryByGroupType = computed(() => paymentStore.salesSummaryByGroupType)
+const paymentStatusData = computed(() => paymentStore.paymentStatusByUnitType)
 
-// Fetch sales summary data on component mount
+// Fetch payment status data on component mount
 onMounted(async () => {
   const currentProject = (proStore.project as Project)?.pk
   if (currentProject) {
-    await paymentStore.fetchSalesSummaryByGroupType(currentProject)
+    await paymentStore.fetchPaymentStatusByUnitType(currentProject, props.date)
   }
 })
 
-// Helper function to get total sales amount by order group and unit type (contract + non-contract)
-const getSalesAmount = (og: number, ut: number) => {
-  const summary = salesSummaryByGroupType.value.find(
-    s => s.order_group === og && s.unit_type === ut,
-  )
-  if (summary) {
-    // 전체 매출액 = API에서 계산된 total_sales_amount 사용 (계약 + 미계약 합계)
-    return summary.total_sales_amount || 0
+// Watch date changes and refetch data
+watch(() => props.date, async (newDate) => {
+  const currentProject = (proStore.project as Project)?.pk
+  if (currentProject) {
+    await paymentStore.fetchPaymentStatusByUnitType(currentProject, newDate)
   }
-  return 0
+})
+
+// 차수별 첫번째 타입인지 확인
+const isFirstTypeInOrderGroup = (item: any) => {
+  const sameOrderGroupItems = paymentStatusData.value.filter(
+    d => d.order_group_id === item.order_group_id
+  )
+  return sameOrderGroupItems[0]?.unit_type_id === item.unit_type_id
 }
 
-// 차수명
-const getOGName = (og: number) =>
-  orderGroup.value.length ? orderGroup.value.filter(o => o.pk === og)[0] : { name: '' }
-// 타입명
-const getUTName = (ut: number) =>
-  unitType.value.length ? unitType.value.filter(u => u.pk === ut)[0] : { name: '', color: '' }
-// 차수 및 타입별 계약 건수
-const getContNum = (og: number, ut: number) =>
-  contSum.value.filter(c => c.order_group === og && c.unit_type === ut).map(c => c.conts_num)[0]
-// 차수 및 타입별 계약 가격 총액
-const getContSum = (og: number, ut: number) =>
-  contSum.value.filter(c => c.order_group === og && c.unit_type === ut).map(c => c.price_sum)[0]
-// 차수별 타입수
-const getUTbyOGNum = (og: number) => budgetList.value.filter(b => b.order_group === og).length
-// 차수별 첫번째 타입
-const getFirstType = (og: number) => budgetList.value.filter(b => b.order_group === og)[0].unit_type
+// 차수별 타입 수
+const getUnitTypeCountByOrderGroup = (orderGroupId: number) => {
+  return paymentStatusData.value.filter(d => d.order_group_id === orderGroupId).length
+}
 
-const paidSum = (og: number, ut: number) =>
-  paySumList.value.filter(s => s.order_group === og && s.unit_type === ut)[0]
-
-const totalBudgetNum = computed(
-  () => budgetList.value.map(b => b.quantity).reduce((p, n) => p + n, 0), // 총 계획 세대수
-)
-const totalContNum = computed(() =>
-  budgetList.value.length ? contSum.value.map(c => c.conts_num).reduce((x, y) => x + y, 0) : 0,
-) // 총 계약 세대수
-
-const totalContSum = computed(() =>
-  contSum.value.map(c => c.price_sum || 0).reduce((x, y) => x + y, 0),
-) // 총 계약금액
-
-const totalPaidSum = computed(() =>
-  budgetList.value.length ? paySumList.value.map(s => s.paid_sum).reduce((x, y) => x + y, 0) : 0,
-) // 총 실수납 금액
-
-const totalBudget = computed(
-  () => budgetList.value.map(b => b.budget).reduce((x, y) => x + y, 0), // 총 예산합계
-) // 총 예산 합계
-
-const totalSalesSum = computed(() =>
-  budgetList.value.length
-    ? budgetList.value
-        .map(b => getSalesAmount(b.order_group || 0, b.unit_type || 0))
-        .reduce((x, y) => x + y, 0)
-    : 0,
-) // 총 매출액 합계
+// 총계 계산
+const totals = computed(() => ({
+  totalSalesAmount: paymentStatusData.value.reduce((sum, item) => sum + item.total_sales_amount, 0),
+  totalPlannedUnits: paymentStatusData.value.reduce((sum, item) => sum + item.planned_units, 0),
+  totalContractUnits: paymentStatusData.value.reduce((sum, item) => sum + item.contract_units, 0),
+  totalContractAmount: paymentStatusData.value.reduce((sum, item) => sum + item.contract_amount, 0),
+  totalPaidAmount: paymentStatusData.value.reduce((sum, item) => sum + item.paid_amount, 0),
+  totalUnpaidAmount: paymentStatusData.value.reduce((sum, item) => sum + item.unpaid_amount, 0),
+  totalNonContractAmount: paymentStatusData.value.reduce((sum, item) => sum + item.non_contract_amount, 0),
+  totalBudget: paymentStatusData.value.reduce((sum, item) => sum + item.total_budget, 0),
+}))
 </script>
 
 <template>
@@ -138,75 +100,54 @@ const totalSalesSum = computed(() =>
       </CTableRow>
     </CTableHead>
 
-    <CTableBody v-if="budgetList.length">
-      <CTableRow v-for="bg in budgetList" :key="bg.pk" class="text-right">
+    <CTableBody v-if="paymentStatusData.length">
+      <CTableRow v-for="item in paymentStatusData" :key="`${item.order_group_id}-${item.unit_type_id}`" class="text-right">
         <CTableDataCell
-          v-if="bg.unit_type === getFirstType(bg.order_group || 0)"
-          :rowspan="getUTbyOGNum(bg.order_group || 0)"
+          v-if="isFirstTypeInOrderGroup(item)"
+          :rowspan="getUnitTypeCountByOrderGroup(item.order_group_id)"
           class="text-center"
           :color="TableSecondary"
         >
           <!-- 차수명 -->
-          {{ getOGName(bg.order_group || 0)?.name }}
+          {{ item.order_group_name }}
         </CTableDataCell>
         <CTableDataCell class="text-left pl-4">
-          <v-icon icon="mdi mdi-square" :color="getUTName(bg.unit_type || 0)?.color" size="sm" />
+          <v-icon icon="mdi mdi-square" :color="item.unit_type_color" size="sm" />
           <!-- 타입명 -->
-          {{ getUTName(bg.unit_type || 0)?.name }}
+          {{ item.unit_type_name }}
         </CTableDataCell>
-        <!-- 매출액 -->
+        <!-- 전체 매출액 -->
         <CTableDataCell>
-          {{ numFormat(getSalesAmount(bg.order_group || 0, bg.unit_type || 0)) }}
+          {{ numFormat(item.total_sales_amount) }}
         </CTableDataCell>
-        <!-- 계획세대수 -->
-        <CTableDataCell>{{ numFormat(bg.quantity) }}</CTableDataCell>
+        <!-- 계획 세대수 -->
+        <CTableDataCell>{{ numFormat(item.planned_units) }}</CTableDataCell>
         <CTableDataCell>
-          <!-- 계약세대수 -->
-          {{ numFormat(getContNum(bg.order_group || 0, bg.unit_type || 0)) }}
-        </CTableDataCell>
-        <CTableDataCell>
-          <!-- 계약금액 -->
-          {{ numFormat(getContSum(bg.order_group || 0, bg.unit_type || 0)) }}
+          <!-- 계약 세대수 -->
+          {{ numFormat(item.contract_units) }}
         </CTableDataCell>
         <CTableDataCell>
-          <!-- 실수납금액 -->
-          {{
-            numFormat(
-              paidSum(bg.order_group || 0, bg.unit_type || 0)
-                ? paidSum(bg.order_group || 0, bg.unit_type || 0).paid_sum
-                : 0,
-            )
-          }}
+          <!-- 계약 금액 -->
+          {{ numFormat(item.contract_amount) }}
         </CTableDataCell>
         <CTableDataCell>
-          <!-- 미수금액 -->
-          {{
-            numFormat(
-              getContSum(bg.order_group || 0, bg.unit_type || 0) -
-                (paidSum(bg.order_group || 0, bg.unit_type || 0)
-                  ? paidSum(bg.order_group || 0, bg.unit_type || 0).paid_sum
-                  : 0),
-            )
-          }}
+          <!-- 실수납 금액 -->
+          {{ numFormat(item.paid_amount) }}
+        </CTableDataCell>
+        <CTableDataCell>
+          <!-- 미수 금액 -->
+          {{ numFormat(item.unpaid_amount) }}
         </CTableDataCell>
         <CTableDataCell
           :class="{
-            'text-danger':
-              0 >
-              (bg.average_price || 0) *
-                (bg.quantity - (getContNum(bg.order_group || 0, bg.unit_type || 0) || 0)),
+            'text-danger': item.non_contract_amount < 0,
           }"
         >
           <!-- 미계약 금액 -->
-          {{
-            numFormat(
-              (bg.average_price || 0) *
-                (bg.quantity - (getContNum(bg.order_group || 0, bg.unit_type || 0) || 0)),
-            )
-          }}
+          {{ numFormat(item.non_contract_amount) }}
         </CTableDataCell>
         <!-- 합계 -->
-        <CTableDataCell>{{ numFormat(bg.budget) }}</CTableDataCell>
+        <CTableDataCell>{{ numFormat(item.total_budget) }}</CTableDataCell>
       </CTableRow>
     </CTableBody>
 
@@ -225,30 +166,30 @@ const totalSalesSum = computed(() =>
         <CTableHeaderCell colspan="2" class="text-center"> 합계</CTableHeaderCell>
         <CTableHeaderCell class="text-right">
           <!-- 전체 매출액 합계 -->
-          {{ numFormat(totalSalesSum) }}
+          {{ numFormat(totals.totalSalesAmount) }}
         </CTableHeaderCell>
         <!-- 계획 세대수 합계 -->
-        <CTableHeaderCell>{{ numFormat(totalBudgetNum) }}</CTableHeaderCell>
+        <CTableHeaderCell>{{ numFormat(totals.totalPlannedUnits) }}</CTableHeaderCell>
         <!-- 계약 세대수 합계 -->
-        <CTableHeaderCell>{{ numFormat(totalContNum) }}</CTableHeaderCell>
+        <CTableHeaderCell>{{ numFormat(totals.totalContractUnits) }}</CTableHeaderCell>
         <CTableHeaderCell>
           <!-- 계약 금액 합계 -->
-          {{ numFormat(totalContSum) }}
+          {{ numFormat(totals.totalContractAmount) }}
         </CTableHeaderCell>
         <CTableHeaderCell>
           <!-- 실수납 금액 합계 -->
-          {{ numFormat(totalPaidSum) }}
+          {{ numFormat(totals.totalPaidAmount) }}
         </CTableHeaderCell>
         <CTableHeaderCell>
           <!-- 미수 금액 합계 -->
-          {{ numFormat(totalContSum - totalPaidSum) }}
+          {{ numFormat(totals.totalUnpaidAmount) }}
         </CTableHeaderCell>
         <CTableHeaderCell>
           <!-- 미계약 금액 합계 -->
-          {{ numFormat(totalBudget - totalContSum) }}
+          {{ numFormat(totals.totalNonContractAmount) }}
         </CTableHeaderCell>
         <!-- 총계 -->
-        <CTableHeaderCell>{{ numFormat(totalBudget) }}</CTableHeaderCell>
+        <CTableHeaderCell>{{ numFormat(totals.totalBudget) }}</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
   </CTable>

@@ -100,6 +100,22 @@ export interface SalesSummaryByGroupType {
   non_contract_amount: number
 }
 
+export interface PaymentStatusByUnitType {
+  order_group_id: number
+  order_group_name: string
+  unit_type_id: number
+  unit_type_name: string
+  unit_type_color: string
+  total_sales_amount: number
+  planned_units: number
+  contract_units: number
+  contract_amount: number
+  paid_amount: number
+  unpaid_amount: number
+  non_contract_amount: number
+  total_budget: number
+}
+
 export interface AllPayment {
   pk: number
   deal_date: string

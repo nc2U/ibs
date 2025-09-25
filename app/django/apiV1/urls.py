@@ -114,6 +114,7 @@ router.register(r'all-payment', payment.AllPaymentViewSet, basename='all-payment
 router.register(r'payment-sum', payment.PaymentSummaryViewSet, basename='payment-sum')  # only list
 router.register(r'overall-summary', payment.OverallSummaryViewSet, basename='overall-summary')  # only list
 router.register(r'sales-summary-by-group-type', payment.SalesSummaryByGroupTypeViewSet, basename='sales-summary-by-group-type')  # only list
+router.register(r'payment-status-by-unit-type', payment.PaymentStatusByUnitTypeViewSet, basename='payment-status-by-unit-type')  # only list
 
 # cash
 router.register(r'bank-code', cash.BankCodeViewSet)

@@ -3,7 +3,6 @@ import { ref, computed, onBeforeMount, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payments/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
-import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { getToday } from '@/utils/baseMixins'
 import type { Project } from '@/store/types/project.ts'
@@ -24,18 +23,10 @@ const excelUrl2 = computed(() => `/excel/paid-status/?project=${project.value}&d
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
 
-const fetchIncBudgetList = (proj: number) => projStore.fetchIncBudgetList(proj)
-
-const prDataStore = useProjectData()
-const fetchTypeList = (proj: number) => prDataStore.fetchTypeList(proj)
-
 const contStore = useContract()
 const fetchOrderGroupList = (proj: number) => contStore.fetchOrderGroupList(proj)
-const fetchContSummaryList = (proj: number, date?: string) =>
-  contStore.fetchContSummaryList(proj, date)
 
 const payStore = usePayment()
-const fetchPaySumList = (proj: number, date?: string) => payStore.fetchPaySumList(proj, date)
 const fetchPayOrderList = (proj: number) => payStore.fetchPayOrderList(proj)
 const fetchOverallSummary = (proj: number, date?: string) =>
   payStore.fetchOverallSummary(proj, date)
@@ -45,8 +36,7 @@ const setDate = (d: string) => {
   if (project.value) {
     // 현재 선택된 메뉴에 따라 필요한 API만 호출
     if (menu.value === '수납요약') {
-      fetchPaySumList(project.value, date.value)
-      fetchContSummaryList(project.value, date.value)
+      payStore.fetchPaymentStatusByUnitType(project.value, date.value)
     } else if (menu.value === '총괄집계') {
       fetchOverallSummary(project.value, date.value)
     }
@@ -55,27 +45,21 @@ const setDate = (d: string) => {
 
 const dataSetup = (pk: number) => {
   // 공통 데이터 로드
-  fetchTypeList(pk)
   fetchOrderGroupList(pk)
-  fetchIncBudgetList(pk)
   fetchPayOrderList(pk)
   contStore.fetchContAggregate(pk)
 
   // 현재 선택된 메뉴에 따라 필요한 데이터만 로드
   if (menu.value === '수납요약') {
-    fetchPaySumList(pk, date.value)
-    fetchContSummaryList(pk, date.value)
+    payStore.fetchPaymentStatusByUnitType(pk, date.value)
   } else if (menu.value === '총괄집계') {
     fetchOverallSummary(pk, date.value)
   }
 }
 
 const dataReset = () => {
-  prDataStore.unitTypeList = []
   contStore.orderGroupList = []
-  contStore.contSummaryList = []
-  projStore.proIncBudgetList = []
-  payStore.paySumList = []
+  payStore.paymentStatusByUnitType = []
   payStore.overallSummary = null
   contStore.removeContAggregate()
 }
@@ -89,9 +73,8 @@ const projSelect = (target: number | null) => {
 watch(menu, (newMenu) => {
   if (project.value) {
     if (newMenu === '수납요약') {
-      // 수납요약 탭으로 변경 시 필요한 API들 호출
-      fetchPaySumList(project.value, date.value)
-      fetchContSummaryList(project.value, date.value)
+      // 수납요약 탭으로 변경 시 새로운 API 호출
+      payStore.fetchPaymentStatusByUnitType(project.value, date.value)
     } else if (newMenu === '총괄집계') {
       // 총괄집계 탭으로 변경 시 필요한 API 호출
       fetchOverallSummary(project.value, date.value)

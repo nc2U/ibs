@@ -175,3 +175,19 @@ class SalesSummaryByGroupTypeSerializer(serializers.Serializer):
     total_sales_amount = serializers.IntegerField()
     contract_amount = serializers.IntegerField()
     non_contract_amount = serializers.IntegerField()
+
+
+class PaymentStatusByUnitTypeSerializer(serializers.Serializer):
+    order_group_id = serializers.IntegerField()
+    order_group_name = serializers.CharField()
+    unit_type_id = serializers.IntegerField()
+    unit_type_name = serializers.CharField()
+    unit_type_color = serializers.CharField()
+    total_sales_amount = serializers.IntegerField()
+    planned_units = serializers.IntegerField()
+    contract_units = serializers.IntegerField()
+    contract_amount = serializers.IntegerField()
+    paid_amount = serializers.IntegerField()
+    unpaid_amount = serializers.IntegerField()
+    non_contract_amount = serializers.IntegerField()
+    total_budget = serializers.IntegerField()
