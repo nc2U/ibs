@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 from django.db import connection
@@ -14,8 +13,6 @@ from ..pagination import *
 from ..permission import *
 from ..serializers.payment import *
 
-logger = logging.getLogger(__name__)
-
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
 
@@ -29,7 +26,8 @@ class InstallmentOrderFilterSet(FilterSet):
         model = InstallmentPaymentOrder
         fields = ['project', 'pay_sort']
 
-    def filter_pay_sort_in(self, queryset, name, value):
+    @staticmethod
+    def filter_pay_sort_in(queryset, name, value):
         """
         pay_sort__in 파라미터로 다중 선택 필터링
         예: ?pay_sort__in=1,4,5,6,7
@@ -222,7 +220,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
             if invalid_cache_count > 0:
                 # 일부 캐시가 무효화된 경우 동적 계산과 병합
-                logger.info(f"Cache invalidated for project {project_id}, using fallback calculation")
                 fallback_amount = OverallSummaryViewSet._get_contract_amount_fallback(order, project_id)
                 return total_amount + fallback_amount
 
@@ -230,11 +227,9 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
         except (ValueError, TypeError) as e:
             # 데이터 타입 관련 오류
-            logger.error(f"Data type error in _get_contract_amount for project {project_id}: {e}")
             return OverallSummaryViewSet._get_contract_amount_fallback(order, project_id)
         except Exception as e:
             # 기타 모든 예외 - 완전 실패 시 동적 계산으로 폴백
-            logger.error(f"Unexpected error in _get_contract_amount for project {project_id}: {e}")
             return OverallSummaryViewSet._get_contract_amount_fallback(order, project_id)
 
     @staticmethod
@@ -269,35 +264,35 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         for order in pay_orders:
             pay_times.add(str(order.pay_time))
 
-        logger.info(f"🔍 Cache calculation started for project {project_id}")
-        logger.info(f"📋 Pay times to calculate: {sorted(pay_times)}")
-
         payment_amounts_cache = {}
 
         try:
             with connection.cursor() as cursor:
                 # 먼저 전체 활성 계약 수 확인
                 cursor.execute("""
-                    SELECT COUNT(*) FROM contract_contract
-                    WHERE project_id = %s AND activation = %s
-                """, [project_id, True])
+                               SELECT COUNT(*)
+                               FROM contract_contract
+                               WHERE project_id = %s
+                                 AND activation = %s
+                               """, [project_id, True])
                 total_active_contracts = cursor.fetchone()[0]
-                logger.info(f"📊 Total active contracts: {total_active_contracts}")
 
                 # 캐시 유효한 계약 수 확인
                 cursor.execute("""
-                    SELECT COUNT(*) FROM contract_contractprice cp
-                    JOIN contract_contract cc ON cp.contract_id = cc.id
-                    WHERE cc.project_id = %s AND cc.activation = %s AND cp.is_cache_valid = %s
-                """, [project_id, True, True])
+                               SELECT COUNT(*)
+                               FROM contract_contractprice cp
+                                        JOIN contract_contract cc ON cp.contract_id = cc.id
+                               WHERE cc.project_id = %s
+                                 AND cc.activation = %s
+                                 AND cp.is_cache_valid = %s
+                               """, [project_id, True, True])
                 valid_cache_contracts = cursor.fetchone()[0]
-                logger.info(f"💾 Valid cache contracts: {valid_cache_contracts}")
 
                 # pay_time별로 개별 금액을 집계 (보안 개선된 parameterized query)
                 for pay_time in sorted(pay_times):
                     query = """
                             SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount,
-                                   COUNT(*) as contract_count
+                                   COUNT(*)                                 as contract_count
                             FROM contract_contractprice, jsonb_each_text(payment_amounts)
                             WHERE contract_id IN (SELECT id
                                                   FROM contract_contract
@@ -307,9 +302,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                               AND key = %s \
                             """
 
-                    logger.info(f"🔍 Executing query for pay_time={pay_time}")
-                    logger.info(f"📝 Query parameters: project_id={project_id}, activation=True, is_cache_valid=True, key={pay_time}")
-
                     cursor.execute(query, [project_id, True, True, pay_time])
 
                     result = cursor.fetchone()
@@ -318,28 +310,16 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
                     payment_amounts_cache[int(pay_time)] = total_amount
 
-                    logger.info(f"✅ pay_time={pay_time}: amount={total_amount:,}, contracts_found={contract_count}")
-
                 # pay_sort=1인 경우 동일성 검증
                 pay_sort_1_times = [pt for pt in pay_times if int(pt) in [1, 2, 3]]
                 if len(pay_sort_1_times) > 1:
                     amounts = [payment_amounts_cache[int(pt)] for pt in pay_sort_1_times]
-                    logger.info(f"🔍 pay_sort=1 verification:")
-                    for i, pt in enumerate(pay_sort_1_times):
-                        logger.info(f"   pay_time={pt}: {amounts[i]:,}")
-
-                    if len(set(amounts)) == 1:
-                        logger.info(f"✅ pay_sort=1 amounts are identical: {amounts[0]:,}")
-                    else:
-                        logger.error(f"❌ pay_sort=1 amounts are different: {amounts}")
 
         except Exception as e:
             # 실패 시 기존 방식으로 폴백
-            logger.error(f"JSON aggregation failed for project {project_id}: {e}")
             for order in pay_orders:
                 payment_amounts_cache[order.pay_time] = self._get_contract_amount(order, project_id)
 
-        logger.info(f"🏁 Cache calculation completed: {payment_amounts_cache}")
         return payment_amounts_cache
 
     def _get_all_collection_data(self, project_id, date, pay_orders):
