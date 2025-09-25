@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from django.db import connection
 from django.db.models import Sum, F
@@ -144,6 +144,9 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 수납 데이터를 배치로 조회하여 캐시
         collection_cache = self._get_all_collection_data(project_id, date, pay_orders)
 
+        # 기간미도래 미수금 캐시 (성능 최적화)
+        not_due_unpaid_cache = self._get_not_due_unpaid_cache(project_id, date, pay_orders, payment_amounts_cache, collection_cache)
+
         result_pay_orders = []
 
         for order in pay_orders:
@@ -165,8 +168,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             # 기간도래 관련 집계 (최적화된 계산)
             due_period_data = self._get_due_period_data_optimized(order, contract_amount, collection_data, date)
 
-            # 기간미도래 미수금
-            not_due_unpaid = self._get_not_due_unpaid(order, project_id, date)
+            # 기간미도래 미수금 (캐시된 데이터 사용)
+            not_due_unpaid = not_due_unpaid_cache.get(order.pk, 0)
 
             # 총 미수금 및 비율
             total_unpaid = due_period_data['unpaid_amount'] + not_due_unpaid
@@ -411,9 +414,46 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         return collection_cache
 
     @staticmethod
+    def _get_not_due_unpaid_cache(project_id, date, pay_orders, payment_amounts_cache, collection_cache):
+        """기간미도래 미수금 캐시 생성 (성능 최적화)"""
+        not_due_unpaid_cache = {}
+
+        for order in pay_orders:
+            # 기간미도래가 아닌 경우 0
+            if OverallSummaryViewSet._is_due_period(order, date):
+                not_due_unpaid_cache[order.pk] = 0
+                continue
+
+            # 기간미도래인 경우 계산
+            contract_amount = payment_amounts_cache.get(order.pay_time, 0)
+            collection_data = collection_cache.get(order.pk, {'collected_amount': 0})
+            collected_amount = collection_data['collected_amount']
+
+            # 미수금 = 계약금액 - 수납금액 (최소 0)
+            not_due_unpaid = max(0, contract_amount - collected_amount)
+            not_due_unpaid_cache[order.pk] = not_due_unpaid
+
+        return not_due_unpaid_cache
+
+    @staticmethod
     def _get_due_period_data_optimized(order, contract_amount, collection_data, date):
         """최적화된 기간도래 관련 데이터 집계 (캐시된 데이터 사용)"""
 
+        # 기간도래 여부 확인
+        is_due = OverallSummaryViewSet._is_due_period(order, date)
+
+        if not is_due:
+            # 기간미도래인 경우 모든 값을 0으로 반환
+            collection_data['collection_rate'] = 0
+            return {
+                'contract_amount': 0,
+                'unpaid_amount': 0,
+                'unpaid_rate': 0,
+                'overdue_fee': 0,
+                'subtotal': 0
+            }
+
+        # 기간도래인 경우 기존 로직 적용
         # 캐시된 수납 데이터 사용
         collected_amount = collection_data['collected_amount']
 
@@ -490,11 +530,51 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         }
 
     @staticmethod
+    def _is_due_period(order, date_str):
+        """납부 회차의 기간도래 여부 판단
+
+        Args:
+            order: InstallmentPaymentOrder 인스턴스
+            date_str: 기준 날짜 문자열 (YYYY-MM-DD)
+
+        Returns:
+            bool: 기간도래 여부
+        """
+        # 날짜 문자열을 datetime.date 객체로 변환
+        current_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+        if order.pay_sort == '1':  # 계약금
+            # 계약금은 pay_due_date가 None이면 항상 기간도래
+            if order.pay_due_date is None:
+                return True
+            return order.pay_due_date <= current_date
+        else:  # 기타 항목 (중도금, 잔금 등)
+            # 기타 항목은 pay_due_date가 None이면 항상 기간미도래
+            if order.pay_due_date is None:
+                return False
+            return order.pay_due_date <= current_date
+
+    @staticmethod
     def _get_not_due_unpaid(order, project_id, date):
-        """기간미도래 미수금 계산"""
-        # TODO: 실제 기간미도래 로직 구현 필요
-        # 현재는 0으로 반환
-        return 0
+        """기간미도래 미수금 계산 (레거시 메서드 - 사용하지 않음)"""
+        # 이 메서드는 이제 사용하지 않지만 호환성을 위해 유지
+        # 기간미도래가 아닌 경우 0 반환
+        if OverallSummaryViewSet._is_due_period(order, date):
+            return 0
+
+        # 기간미도래인 경우 해당 회차의 계약금액에서 수납금액을 차감
+        contract_amount = OverallSummaryViewSet._get_contract_amount(order, project_id)
+
+        # 수납금액 조회
+        collected_amount = ProjectCashBook.objects.filter(
+            project_id=project_id,
+            installment_order=order,
+            income__isnull=False,
+            deal_date__lte=date
+        ).aggregate(total=Sum('income'))['total'] or 0
+
+        # 미수금 = 계약금액 - 수납금액 (최소 0)
+        return max(0, contract_amount - collected_amount)
 
     @staticmethod
     def _get_aggregate_data(project_id):

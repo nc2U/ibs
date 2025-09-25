@@ -4,7 +4,6 @@ import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 import { usePayment } from '@/store/pinia/payment'
 import type { OverallSummary as QS, OverallSummaryPayOrder as QSPO } from '@/store/types/payment'
-import { CTable, CTableBody } from '@coreui/vue'
 
 defineProps({ date: { type: String, default: '' } })
 
