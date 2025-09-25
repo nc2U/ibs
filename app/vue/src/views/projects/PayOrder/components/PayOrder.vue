@@ -156,7 +156,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput
-        v-model.number="form.pay_code"
+        v-model.number="form.pay_code as string | number"
         placeholder="납입회차 코드"
         type="number"
         min="0"
@@ -166,7 +166,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput
-        v-model.number="form.pay_time"
+        v-model.number="form.pay_time as string | number"
         placeholder="납부순서"
         type="number"
         min="0"
@@ -195,7 +195,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput
-        v-model.number="form.pay_amt"
+        v-model.number="form.pay_amt as string | number"
         placeholder="납부 약정액"
         type="number"
         min="0"
@@ -205,7 +205,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput
-        v-model.number="form.pay_ratio"
+        v-model.number="form.pay_ratio as string | number"
         placeholder="납부비율"
         type="number"
         min="0"
@@ -239,7 +239,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput
-        v-model="form.days_since_prev"
+        v-model="form.days_since_prev as string | number"
         type="number"
         maxlength="20"
         placeholder="전회 기준 경과일수"
@@ -256,7 +256,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput
-        v-model.number="form.prep_discount_ratio"
+        v-model.number="form.prep_discount_ratio as string | number"
         placeholder="선납할인율"
         type="number"
         min="0"
@@ -279,7 +279,7 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
     <CTableDataCell>
       <CFormInput
-        v-model.number="form.late_penalty_ratio"
+        v-model.number="form.late_penalty_ratio as string | number"
         placeholder="연체가산율"
         type="number"
         min="0"
