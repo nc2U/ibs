@@ -149,14 +149,14 @@ const totalSalesSum = computed(() =>
           {{ getOGName(bg.order_group || 0).name }}
         </CTableDataCell>
         <CTableDataCell class="text-left pl-4">
-          <v-icon icon="mdi mdi-square" :color="getUTName(bg.unit_type || 0).color" size="sm" />
+          <v-icon icon="mdi mdi-square" :color="getUTName(bg.unit_type || 0)?.color" size="sm" />
           <!-- 타입명 -->
           {{ getUTName(bg.unit_type || 0).name }}
         </CTableDataCell>
         <!-- 매출액 -->
-        <CTableDataCell>{{
-          numFormat(getSalesAmount(bg.order_group || 0, bg.unit_type || 0))
-        }}</CTableDataCell>
+        <CTableDataCell>
+          {{ numFormat(getSalesAmount(bg.order_group || 0, bg.unit_type || 0)) }}
+        </CTableDataCell>
         <!-- 계획세대수 -->
         <CTableDataCell>{{ numFormat(bg.quantity) }}</CTableDataCell>
         <CTableDataCell>

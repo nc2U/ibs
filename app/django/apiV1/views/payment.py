@@ -179,8 +179,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 'pay_sort': order.pay_sort,
                 'pay_code': order.pay_code,
                 'pay_time': order.pay_time,
-                'contract_amount': contract_amount,
-                'non_contract_amount': non_contract_amount,
+                'contract_amount': contract_amount,  # 계약세대 당 회차 납부약정 총액
+                'non_contract_amount': non_contract_amount,  # 미계약 세대 당 회차 납부금액 총계
                 'collection': collection_data,
                 'due_period': due_period_data,
                 'not_due_unpaid': not_due_unpaid,
@@ -349,12 +349,10 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                             SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
                             FROM contract_contractprice, jsonb_each_text(payment_amounts)
                             WHERE contract_id IS NULL
-                              AND house_unit_id IN (
-                                  SELECT hu.id
-                                  FROM items_houseunit hu
-                                  JOIN items_unittype ut ON hu.unit_type_id = ut.id
-                                  WHERE ut.project_id = %s
-                              )
+                              AND house_unit_id IN (SELECT hu.id
+                                                    FROM items_houseunit hu
+                                                             JOIN items_unittype ut ON hu.unit_type_id = ut.id
+                                                    WHERE ut.project_id = %s)
                               AND is_cache_valid = %s
                               AND key = %s
                             """
@@ -537,32 +535,29 @@ class SalesSummaryByGroupTypeViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 query = """
-                    SELECT
-                        COALESCE(c.order_group_id, og.id) as order_group,
-                        hu.unit_type_id as unit_type,
-                        SUM(cp.price) as total_sales_amount,
-                        SUM(CASE WHEN cp.contract_id IS NOT NULL THEN cp.price ELSE 0 END) as contract_amount,
-                        SUM(CASE WHEN cp.contract_id IS NULL THEN cp.price ELSE 0 END) as non_contract_amount
-                    FROM contract_contractprice cp
-                    INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
-                    INNER JOIN items_unittype ut ON hu.unit_type_id = ut.id
-                    LEFT JOIN contract_contract c ON cp.contract_id = c.id
-                    INNER JOIN contract_ordergroup og ON (
-                        CASE
-                            WHEN cp.contract_id IS NOT NULL THEN c.order_group_id = og.id
-                            ELSE og.project_id = ut.project_id AND og.is_default_for_uncontracted = true
-                        END
-                    )
-                    WHERE ut.project_id = %s
-                      AND ut.main_or_sub = '1'
-                      AND cp.is_cache_valid = true
-                    GROUP BY
-                        COALESCE(c.order_group_id, og.id),
-                        hu.unit_type_id
-                    ORDER BY
-                        COALESCE(c.order_group_id, og.id),
-                        hu.unit_type_id
-                """
+                        SELECT COALESCE(c.order_group_id, og.id)                                  as order_group,
+                               hu.unit_type_id                                                    as unit_type,
+                               SUM(cp.price)                                                      as total_sales_amount,
+                               SUM(CASE WHEN cp.contract_id IS NOT NULL THEN cp.price ELSE 0 END) as contract_amount,
+                               SUM(CASE WHEN cp.contract_id IS NULL THEN cp.price ELSE 0 END)     as non_contract_amount
+                        FROM contract_contractprice cp
+                                 INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
+                                 INNER JOIN items_unittype ut ON hu.unit_type_id = ut.id
+                                 LEFT JOIN contract_contract c ON cp.contract_id = c.id
+                                 INNER JOIN contract_ordergroup og ON (
+                            CASE
+                                WHEN cp.contract_id IS NOT NULL THEN c.order_group_id = og.id
+                                ELSE og.project_id = ut.project_id AND og.is_default_for_uncontracted = true
+                                END
+                            )
+                        WHERE ut.project_id = %s
+                          AND ut.main_or_sub = '1'
+                          AND cp.is_cache_valid = true
+                        GROUP BY COALESCE(c.order_group_id, og.id),
+                                 hu.unit_type_id
+                        ORDER BY COALESCE(c.order_group_id, og.id),
+                                 hu.unit_type_id \
+                        """
 
                 cursor.execute(query, [project_id])
 
