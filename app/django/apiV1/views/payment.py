@@ -6,12 +6,15 @@ from django_filters import DateFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
+import logging
 from contract.models import ContractPrice
 from items.models import KeyUnit
 from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
 from ..serializers.payment import *
+
+logger = logging.getLogger(__name__)
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
@@ -577,4 +580,5 @@ class SalesSummaryByGroupTypeViewSet(viewsets.ViewSet):
                 return Response(serializer.data)
 
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            logger.exception(e)
+            return Response({'error': 'An internal server error occurred.'}, status=500)
