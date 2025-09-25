@@ -1,5 +1,5 @@
 // If you want to override variables do it here
-@import 'variables';
+@use 'variables' as *;
 
 // Import styles Chart.js Tooltips
 @import 'ui/scss/themes/dark';
