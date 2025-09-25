@@ -171,7 +171,7 @@ const total_total_unpaid = computed(() =>
       <CTableRow>
         <CTableDataCell class="text-center">수납율</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
-          {{ numFormat(order.collection?.collection_rate ?? 0) }}%
+          {{ numFormat(order.collection?.collection_rate ?? 0, 2) }}%
         </CTableDataCell>
         <CTableDataCell class="text-right">
           {{ numFormat((total_actual_collected / total_cont_amount) * 100, 2) }}%
@@ -183,7 +183,9 @@ const total_total_unpaid = computed(() =>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.contract_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat(total_due_contract_amount) }}</CTableDataCell>
+        <CTableDataCell class="text-right">
+          {{ numFormat(total_due_contract_amount) }}
+        </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수금</CTableDataCell>
@@ -195,9 +197,11 @@ const total_total_unpaid = computed(() =>
       <CTableRow>
         <CTableDataCell class="text-center">미수율</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
-          {{ numFormat(order.due_period?.unpaid_rate ?? 0) }}%
+          {{ numFormat(order.due_period?.unpaid_rate ?? 0, 2) }}%
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat((total_due_unpaid_amount / total_due_contract_amount) * 100, 2) }}%</CTableDataCell>
+        <CTableDataCell class="text-right">
+          {{ numFormat((total_due_unpaid_amount / total_due_contract_amount) * 100, 2) }}%
+        </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">연체료</CTableDataCell>
@@ -232,9 +236,13 @@ const total_total_unpaid = computed(() =>
       <CTableRow>
         <CTableDataCell class="text-center">미수율</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
-          {{ numFormat(order.total_unpaid_rate ?? 0) }}%
+          {{ numFormat(order.total_unpaid_rate ?? 0, 2) }}%
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat((total_total_unpaid / (total_cont_amount + total_non_cont_amount)) * 100, 2) }}%</CTableDataCell>
+        <CTableDataCell class="text-right">
+          {{
+            numFormat((total_total_unpaid / (total_cont_amount + total_non_cont_amount)) * 100, 2)
+          }}%
+        </CTableDataCell>
       </CTableRow>
     </CTableBody>
 
