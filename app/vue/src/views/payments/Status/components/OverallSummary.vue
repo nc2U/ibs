@@ -4,6 +4,7 @@ import { TableSecondary } from '@/utils/cssMixins'
 import { usePayment } from '@/store/pinia/payment'
 import { numFormat } from '@/utils/baseMixins'
 import type { OverallSummary as QS, OverallSummaryPayOrder as QSPO } from '@/store/types/payment'
+import { CTableDataCell, CTableHeaderCell } from '@coreui/vue'
 
 defineProps({ date: { type: String, default: '' } })
 
@@ -16,7 +17,7 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
   <CTable hover responsive bordered align="middle">
     <CTableHead>
       <CTableRow>
-        <CTableDataCell :colspan="payOrderList.length ? payOrderList.length + 1 : 11">
+        <CTableDataCell :colspan="payOrderList.length ? payOrderList.length + 2 : 12">
           <strong>
             <CIcon name="cilFolderOpen" />
             총괄 집계 현황
@@ -30,13 +31,14 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell>구분</CTableHeaderCell>
         <template v-if="payOrderList.length">
-          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk">
+          <CTableHeaderCell v-for="order in payOrderList" :key="order.pk as number">
             {{ order.pay_name }}
           </CTableHeaderCell>
         </template>
         <template v-else>
           <CTableHeaderCell v-for="i in 10" :key="i">{{ `${i}차 분담금` }}</CTableHeaderCell>
         </template>
+        <CTableHeaderCell>계</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
@@ -44,9 +46,10 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
       <CTableRow class="text-center">
         <CTableDataCell>기본</CTableDataCell>
         <CTableDataCell>약정일</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number">
           {{ order.pay_due_date }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
 
       <CTableRow>
@@ -55,120 +58,137 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
           계약({{ numFormat(contAggregate?.conts_num ?? 0) }})
         </CTableDataCell>
 
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.contract_amount ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
 
       <CTableRow>
         <CTableDataCell class="text-center">
           미계약({{ numFormat(contAggregate?.non_conts_num ?? 0) }})
         </CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
-          -
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+          {{ numFormat(order.non_contract_amount ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">
           총계({{ numFormat(contAggregate?.total_units ?? 0) }})
         </CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
-          {{ numFormat(order.contract_amount ?? 0) }}
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+          {{ numFormat((order.contract_amount ?? 0) + (order.non_contract_amount ?? 0)) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">계약율</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(contAggregate?.contract_rate ?? 0) }}%
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="5" class="text-center">수납</CTableDataCell>
         <CTableDataCell class="text-center">수납액</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.collected_amount ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">할인료</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.discount_amount ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">연체료</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.overdue_fee ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">실수납액</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.actual_collected ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">수납율</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.collection_rate ?? 0) }}%
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="5" class="text-center">기간도래</CTableDataCell>
         <CTableDataCell class="text-center">약정금액</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.contract_amount ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수금</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.unpaid_amount ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수율</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.unpaid_rate ?? 0) }}%
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">연체료</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.overdue_fee ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">소계</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.subtotal ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">기간미도래</CTableDataCell>
         <CTableDataCell class="text-center">미수금</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.not_due_unpaid ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="2" class="text-center">총계</CTableDataCell>
         <CTableDataCell class="text-center">미수금</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.total_unpaid ?? 0) }}
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수율</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.total_unpaid_rate ?? 0) }}%
         </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
       </CTableRow>
     </CTableBody>
 
     <CTableBody v-else>
       <CTableRow>
-        <CTableDataCell colspan="12" style="height: 200px; text-align: center">
+        <CTableDataCell colspan="13" style="height: 200px; text-align: center">
           [
           <router-link :to="{ name: '납부 회차 등록' }"> 납부 회차 등록</router-link>
           ] >> [ PR 등록 관리 ] > [ 분양 계약 조건 ]에서 데이터를 등록하세요.

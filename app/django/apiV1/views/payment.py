@@ -135,6 +135,9 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 핵심 최적화: PostgreSQL JSON 집계를 사용한 효율적인 납부 금액 캐시
         payment_amounts_cache = self._get_payment_amounts_cache(project_id, pay_orders)
 
+        # 미계약 세대 납부 금액 캐시
+        non_contract_amounts_cache = self._get_non_contract_amounts_cache(project_id, pay_orders)
+
         # 수납 데이터를 배치로 조회하여 캐시
         collection_cache = self._get_all_collection_data(project_id, date, pay_orders)
 
@@ -143,6 +146,9 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         for order in pay_orders:
             # 캐시된 계약 금액 사용 (pay_time 기준)
             contract_amount = payment_amounts_cache.get(order.pay_time, 0)
+
+            # 캐시된 미계약 금액 사용 (pay_time 기준)
+            non_contract_amount = non_contract_amounts_cache.get(order.pay_time, 0)
 
             # 캐시된 수납 데이터 사용
             collection_data = collection_cache.get(order.pk, {
@@ -171,6 +177,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 'pay_code': order.pay_code,
                 'pay_time': order.pay_time,
                 'contract_amount': contract_amount,
+                'non_contract_amount': non_contract_amount,
                 'collection': collection_data,
                 'due_period': due_period_data,
                 'not_due_unpaid': not_due_unpaid,
@@ -321,6 +328,47 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 payment_amounts_cache[order.pay_time] = self._get_contract_amount(order, project_id)
 
         return payment_amounts_cache
+
+    def _get_non_contract_amounts_cache(self, project_id, pay_orders):
+        """미계약 세대 납부 금액 캐시 생성 (pay_time 기반)"""
+        # pay_time별로 개별 캐시 생성
+        pay_times = set()
+        for order in pay_orders:
+            pay_times.add(str(order.pay_time))
+
+        non_contract_amounts_cache = {}
+
+        try:
+            with connection.cursor() as cursor:
+                # pay_time별로 미계약 세대의 개별 금액을 집계
+                for pay_time in sorted(pay_times):
+                    query = """
+                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
+                            FROM contract_contractprice, jsonb_each_text(payment_amounts)
+                            WHERE contract_id IS NULL
+                              AND house_unit_id IN (
+                                  SELECT hu.id
+                                  FROM items_houseunit hu
+                                  JOIN items_unittype ut ON hu.unit_type_id = ut.id
+                                  WHERE ut.project_id = %s
+                              )
+                              AND is_cache_valid = %s
+                              AND key = %s
+                            """
+
+                    cursor.execute(query, [project_id, True, pay_time])
+
+                    result = cursor.fetchone()
+                    total_amount = result[0] if result else 0
+
+                    non_contract_amounts_cache[int(pay_time)] = total_amount
+
+        except Exception as e:
+            # 실패 시 0으로 초기화
+            for order in pay_orders:
+                non_contract_amounts_cache[order.pay_time] = 0
+
+        return non_contract_amounts_cache
 
     def _get_all_collection_data(self, project_id, date, pay_orders):
         """모든 납부 회차의 수납 데이터를 배치로 조회하여 캐시 생성"""
