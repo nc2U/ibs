@@ -127,19 +127,27 @@ def get_contract_price(contract, houseunit=None, is_set=False):
         if houseunit is not None:
             # Use explicit houseunit parameter
             sales_price = get_sales_price_by_gt(contract, houseunit)
-            if sales_price:
-                return (
-                    sales_price.price or 0,
-                    sales_price.price_build or 0,
-                    sales_price.price_land or 0,
-                    sales_price.price_tax or 0
-                )
         else:
-            # houseunit is None, use contract.key_unit.houseunit
-            pass
+            # houseunit is None, try to get from contract.key_unit.houseunit
+            try:
+                houseunit = contract.key_unit.houseunit
+                sales_price = get_sales_price_by_gt(contract, houseunit)
+            except AttributeError:
+                # contract.key_unit or contract.key_unit.houseunit is None
+                sales_price = None
 
-    except AttributeError:
-        # contract.project, contract.order_group, or contract.unit_type is None
+        # If SalesPriceByGT data found, use it
+        if sales_price:
+            return (
+                sales_price.price or 0,
+                sales_price.price_build or 0,
+                sales_price.price_land or 0,
+                sales_price.price_tax or 0
+            )
+
+    except (AttributeError, Exception):
+        # AttributeError: contract.project, contract.order_group, or contract.unit_type is None
+        # SalesPriceByGT.DoesNotExist is handled in get_sales_price_by_gt function
         pass
 
     # Step 3: Check ProjectIncBudget.average_price (only price, others 0)
@@ -221,25 +229,33 @@ def get_down_payment(contract, installment_order):
 
         # Only proceed if unit_floor_type exists (SalesPriceByGT requires it)
         if unit_floor_type:
-            sales_price = SalesPriceByGT.objects.get(
-                project=contract.project,
-                order_group=contract.order_group,
-                unit_type=contract.unit_type,
-                unit_floor_type=unit_floor_type
-            )
+            try:
+                sales_price = SalesPriceByGT.objects.get(
+                    project=contract.project,
+                    order_group=contract.order_group,
+                    unit_type=contract.unit_type,
+                    unit_floor_type=unit_floor_type
+                )
 
-            payment_per_installment = PaymentPerInstallment.objects.get(
-                sales_price=sales_price,
-                pay_order=installment_order
-            )
+                # Try to get PaymentPerInstallment
+                payment_per_installment = PaymentPerInstallment.objects.get(
+                    sales_price=sales_price,
+                    pay_order=installment_order
+                )
 
-            return payment_per_installment.amount
-    except (AttributeError, TypeError, ValueError, SalesPriceByGT.DoesNotExist, PaymentPerInstallment.DoesNotExist):
+                return payment_per_installment.amount
+
+            except SalesPriceByGT.DoesNotExist:
+                # No matching SalesPriceByGT record - proceed to next step
+                pass
+            except PaymentPerInstallment.DoesNotExist:
+                # SalesPriceByGT exists but no PaymentPerInstallment - proceed to next step
+                pass
+
+    except (AttributeError, TypeError, ValueError):
         # AttributeError: contract.project/order_group/unit_type is None
         # TypeError: Invalid filter parameter types
         # ValueError: Invalid data conversion
-        # SalesPriceByGT.DoesNotExist: No matching SalesPriceByGT record
-        # PaymentPerInstallment.DoesNotExist: No matching PaymentPerInstallment record
         pass
 
     # Step 3: Check DownPayment (skip if calculation_method is 'ratio')
