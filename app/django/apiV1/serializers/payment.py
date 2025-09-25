@@ -167,3 +167,11 @@ class OverallSummaryAggregateSerializer(serializers.Serializer):
 class OverallSummarySerializer(serializers.Serializer):
     pay_orders = OverallSummaryPayOrderSerializer(many=True)
     aggregate = OverallSummaryAggregateSerializer()
+
+
+class SalesSummaryByGroupTypeSerializer(serializers.Serializer):
+    order_group = serializers.IntegerField()
+    unit_type = serializers.IntegerField()
+    total_sales_amount = serializers.IntegerField()
+    contract_amount = serializers.IntegerField()
+    non_contract_amount = serializers.IntegerField()

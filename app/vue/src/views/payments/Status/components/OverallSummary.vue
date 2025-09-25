@@ -49,7 +49,7 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number">
           {{ order.pay_due_date }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
 
       <CTableRow>
@@ -61,7 +61,7 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.contract_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right">888,888,000,000</CTableDataCell>
       </CTableRow>
 
       <CTableRow>
@@ -71,7 +71,7 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.non_contract_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">
@@ -80,14 +80,14 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat((order.contract_amount ?? 0) + (order.non_contract_amount ?? 0)) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">계약율</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(contAggregate?.contract_rate ?? 0) }}%
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="5" class="text-center">수납</CTableDataCell>
@@ -95,35 +95,35 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.collected_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">할인료</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.discount_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">연체료</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.overdue_fee ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">실수납액</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.actual_collected ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">수납율</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.collection?.collection_rate ?? 0) }}%
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="5" class="text-center">기간도래</CTableDataCell>
@@ -131,35 +131,35 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.contract_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수금</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.unpaid_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수율</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.unpaid_rate ?? 0) }}%
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">연체료</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.overdue_fee ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">소계</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.due_period?.subtotal ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">기간미도래</CTableDataCell>
@@ -167,7 +167,7 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.not_due_unpaid ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="2" class="text-center">총계</CTableDataCell>
@@ -175,14 +175,14 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.total_unpaid ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수율</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
           {{ numFormat(order.total_unpaid_rate ?? 0) }}%
         </CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell class="text-right"></CTableDataCell>
       </CTableRow>
     </CTableBody>
 

@@ -519,3 +519,62 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             'total_units': total_units,
             'contract_rate': round(contract_rate, 2)
         }
+
+
+class SalesSummaryByGroupTypeViewSet(viewsets.ViewSet):
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+    def list(self, request):
+        project_id = request.query_params.get('project')
+
+        if not project_id:
+            return Response({'error': 'project parameter is required'}, status=400)
+
+        # ContractPrice에서 house_unit을 통해 order_group, unit_type별로 집계
+        try:
+            with connection.cursor() as cursor:
+                query = """
+                    SELECT
+                        COALESCE(c.order_group_id, og.id) as order_group,
+                        hu.unit_type_id as unit_type,
+                        SUM(cp.price) as total_sales_amount,
+                        SUM(CASE WHEN cp.contract_id IS NOT NULL THEN cp.price ELSE 0 END) as contract_amount,
+                        SUM(CASE WHEN cp.contract_id IS NULL THEN cp.price ELSE 0 END) as non_contract_amount
+                    FROM contract_contractprice cp
+                    INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
+                    INNER JOIN items_unittype ut ON hu.unit_type_id = ut.id
+                    LEFT JOIN contract_contract c ON cp.contract_id = c.id
+                    INNER JOIN contract_ordergroup og ON (
+                        CASE
+                            WHEN cp.contract_id IS NOT NULL THEN c.order_group_id = og.id
+                            ELSE og.project_id = ut.project_id AND og.is_default_for_uncontracted = true
+                        END
+                    )
+                    WHERE ut.project_id = %s
+                      AND ut.main_or_sub = '1'
+                      AND cp.is_cache_valid = true
+                    GROUP BY
+                        COALESCE(c.order_group_id, og.id),
+                        hu.unit_type_id
+                    ORDER BY
+                        COALESCE(c.order_group_id, og.id),
+                        hu.unit_type_id
+                """
+
+                cursor.execute(query, [project_id])
+
+                results = []
+                for row in cursor.fetchall():
+                    results.append({
+                        'order_group': row[0],
+                        'unit_type': row[1],
+                        'total_sales_amount': row[2],
+                        'contract_amount': row[3],
+                        'non_contract_amount': row[4]
+                    })
+
+                serializer = SalesSummaryByGroupTypeSerializer(results, many=True)
+                return Response(serializer.data)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)

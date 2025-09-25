@@ -92,6 +92,14 @@ export interface OverallSummary {
   aggregate: OverallSummaryAggregate
 }
 
+export interface SalesSummaryByGroupType {
+  order_group: number
+  unit_type: number
+  total_sales_amount: number
+  contract_amount: number
+  non_contract_amount: number
+}
+
 export interface AllPayment {
   pk: number
   deal_date: string

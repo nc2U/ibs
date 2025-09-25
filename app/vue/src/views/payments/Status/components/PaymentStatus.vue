@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
@@ -23,6 +23,23 @@ const unitType = computed(() => prDataStore.unitTypeList)
 
 const paymentStore = usePayment()
 const paySumList = computed(() => paymentStore.paySumList)
+const salesSummaryByGroupType = computed(() => paymentStore.salesSummaryByGroupType)
+
+// Fetch sales summary data on component mount
+onMounted(async () => {
+  const currentProject = proStore.project?.pk
+  if (currentProject) {
+    await paymentStore.fetchSalesSummaryByGroupType(currentProject)
+  }
+})
+
+// Helper function to get sales amount by order group and unit type
+const getSalesAmount = (og: number, ut: number) => {
+  const summary = salesSummaryByGroupType.value.find(
+    s => s.order_group === og && s.unit_type === ut,
+  )
+  return summary ? summary.total_sales_amount : 0
+}
 
 // 차수명
 const getOGName = (og: number) =>
@@ -93,7 +110,7 @@ const totalBudget = computed(
       <CTableRow :color="TableSecondary" class="text-center" align="middle">
         <CTableHeaderCell rowspan="2">차수</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">타입</CTableHeaderCell>
-        <CTableHeaderCell rowspan="2">단가(평균)</CTableHeaderCell>
+        <CTableHeaderCell rowspan="2">전체 매출액</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">계획 세대수</CTableHeaderCell>
         <CTableHeaderCell colspan="4">계약 현황</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">미계약 금액</CTableHeaderCell>
@@ -124,8 +141,10 @@ const totalBudget = computed(
           <!-- 타입명 -->
           {{ getUTName(bg.unit_type || 0).name }}
         </CTableDataCell>
-        <!-- 단가(평균) -->
-        <CTableDataCell>{{ numFormat(bg.average_price || 0) }}</CTableDataCell>
+        <!-- 매출액 -->
+        <CTableDataCell>{{
+          numFormat(getSalesAmount(bg.order_group || 0, bg.unit_type || 0))
+        }}</CTableDataCell>
         <!-- 계획세대수 -->
         <CTableDataCell>{{ numFormat(bg.quantity) }}</CTableDataCell>
         <CTableDataCell>
@@ -191,7 +210,7 @@ const totalBudget = computed(
     <CTableHead>
       <CTableRow class="text-right" :color="TableSecondary">
         <CTableHeaderCell colspan="2" class="text-center"> 합계</CTableHeaderCell>
-        <CTableHeaderCell></CTableHeaderCell>
+        <CTableHeaderCell class="text-right"></CTableHeaderCell>
         <!-- 계획 세대수 합계 -->
         <CTableHeaderCell>{{ numFormat(totalBudgetNum) }}</CTableHeaderCell>
         <!-- 계약 세대수 합계 -->

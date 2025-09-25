@@ -11,6 +11,7 @@ import {
   type ContractNum,
   type AllPayment,
   type OverallSummary,
+  type SalesSummaryByGroupType,
 } from '@/store/types/payment'
 
 export type DownPayFilter = {
@@ -240,6 +241,17 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // state & getters
+  const salesSummaryByGroupType = ref<SalesSummaryByGroupType[]>([])
+
+  // actions
+  const fetchSalesSummaryByGroupType = async (project: number) => {
+    return await api
+      .get(`/sales-summary-by-group-type/?project=${project}`)
+      .then(res => (salesSummaryByGroupType.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
   return {
     priceList,
 
@@ -285,5 +297,9 @@ export const usePayment = defineStore('payment', () => {
     overallSummary,
 
     fetchOverallSummary,
+
+    salesSummaryByGroupType,
+
+    fetchSalesSummaryByGroupType,
   }
 })
