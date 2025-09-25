@@ -1,10 +1,9 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 import { usePayment } from '@/store/pinia/payment'
-import { numFormat } from '@/utils/baseMixins'
 import type { OverallSummary as QS, OverallSummaryPayOrder as QSPO } from '@/store/types/payment'
-import { CTableDataCell, CTableHeaderCell } from '@coreui/vue'
 
 defineProps({ date: { type: String, default: '' } })
 
@@ -14,6 +13,7 @@ const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
 </script>
 
 <template>
+  {{ payOrderList }}
   <CTable hover responsive bordered align="middle">
     <CTableHead>
       <CTableRow>

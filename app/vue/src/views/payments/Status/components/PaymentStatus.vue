@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed, onMounted } from 'vue'
+import { numFormat } from '@/utils/baseMixins'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { TableSecondary } from '@/utils/cssMixins'
-import { numFormat } from '@/utils/baseMixins'
 
 defineProps({
   date: { type: String, default: '' },
@@ -85,9 +85,11 @@ const totalBudget = computed(
 ) // 총 예산 합계
 
 const totalSalesSum = computed(() =>
-  budgetList.value.length ? budgetList.value.map(b =>
-    getSalesAmount(b.order_group || 0, b.unit_type || 0)
-  ).reduce((x, y) => x + y, 0) : 0,
+  budgetList.value.length
+    ? budgetList.value
+        .map(b => getSalesAmount(b.order_group || 0, b.unit_type || 0))
+        .reduce((x, y) => x + y, 0)
+    : 0,
 ) // 총 매출액 합계
 </script>
 
