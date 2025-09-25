@@ -165,6 +165,10 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 'collection_rate': 0
             })
 
+            # collection_rate 먼저 계산 (전체 계약금액 대비 실수납액)
+            collection_rate = (collection_data['actual_collected'] / contract_amount * 100) if contract_amount > 0 else 0
+            collection_data['collection_rate'] = round(collection_rate, 2)
+
             # 기간도래 관련 집계 (최적화된 계산)
             due_period_data = self._get_due_period_data_optimized(order, contract_amount, collection_data, date)
 
@@ -444,7 +448,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
         if not is_due:
             # 기간미도래인 경우 모든 값을 0으로 반환
-            collection_data['collection_rate'] = 0
             return {
                 'contract_amount': 0,
                 'unpaid_amount': 0,
@@ -464,10 +467,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # TODO: 기간도래분 연체료 계산 로직 구현 필요
         overdue_fee = 0
         subtotal = unpaid_amount + overdue_fee
-
-        # collection_rate 계산 및 업데이트
-        collection_rate = (collection_data['actual_collected'] / contract_amount * 100) if contract_amount > 0 else 0
-        collection_data['collection_rate'] = round(collection_rate, 2)
 
         return {
             'contract_amount': contract_amount,

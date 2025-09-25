@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onMounted } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
+import type { Project } from '@/store/types/project.ts'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
@@ -27,7 +28,7 @@ const salesSummaryByGroupType = computed(() => paymentStore.salesSummaryByGroupT
 
 // Fetch sales summary data on component mount
 onMounted(async () => {
-  const currentProject = proStore.project?.pk
+  const currentProject = (proStore.project as Project)?.pk
   if (currentProject) {
     await paymentStore.fetchSalesSummaryByGroupType(currentProject)
   }
