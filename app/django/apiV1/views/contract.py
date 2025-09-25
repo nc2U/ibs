@@ -710,10 +710,10 @@ def bulk_update_contract_prices(request):
 
             total_success = result['updated_count'] + result['created_count'] + result.get('uncontracted_created_count',
                                                                                            0)
-            message_parts = [f"{result['updated_count'] + result['created_count']}개 계약 가격이 성공적으로 업데이트되었습니다"]
+            message_parts = [f"{result['updated_count'] + result['created_count']}개 계약가격 정보가 성공적으로 업데이트되었습니다"]
 
             if result.get('uncontracted_created_count', 0) > 0:
-                message_parts.append(f"{result['uncontracted_created_count']}개 미계약 세대 ContractPrice가 생성(수정) 되었습니다")
+                message_parts.append(f"{result['uncontracted_created_count']}개 미계약 세대 계약가격 정보가 생성(수정) 되었습니다")
 
             return Response({
                 'success': True,
