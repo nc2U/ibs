@@ -206,9 +206,9 @@ const resetForm = () => {
 
       <CCol xl="11">
         <CRow>
-          <CCol lg="6">
+          <CCol xl="6">
             <CRow>
-              <CCol lg="6" xl="3" class="mb-3">
+              <CCol lg="3" md="6" class="mb-3">
                 <DatePicker
                   v-model="form.pay_due_date"
                   maxlength="10"
@@ -252,7 +252,8 @@ const resetForm = () => {
               </CCol>
             </CRow>
           </CCol>
-          <CCol lg="6">
+
+          <CCol xl="6">
             <CRow>
               <CCol lg="3" md="6" class="mb-3">
                 <DatePicker
