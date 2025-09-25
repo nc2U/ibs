@@ -147,7 +147,7 @@ const totalSalesSum = computed(() =>
           :color="TableSecondary"
         >
           <!-- 차수명 -->
-          {{ getOGName(bg.order_group || 0).name }}
+          {{ getOGName(bg.order_group || 0)?.name }}
         </CTableDataCell>
         <CTableDataCell class="text-left pl-4">
           <v-icon icon="mdi mdi-square" :color="getUTName(bg.unit_type || 0)?.color" size="sm" />
