@@ -33,12 +33,16 @@ onMounted(async () => {
   }
 })
 
-// Helper function to get sales amount by order group and unit type
+// Helper function to get total sales amount by order group and unit type (contract + non-contract)
 const getSalesAmount = (og: number, ut: number) => {
   const summary = salesSummaryByGroupType.value.find(
     s => s.order_group === og && s.unit_type === ut,
   )
-  return summary ? summary.total_sales_amount : 0
+  if (summary) {
+    // 전체 매출액 = API에서 계산된 total_sales_amount 사용 (계약 + 미계약 합계)
+    return summary.total_sales_amount || 0
+  }
+  return 0
 }
 
 // 차수명
@@ -79,6 +83,12 @@ const totalPaidSum = computed(() =>
 const totalBudget = computed(
   () => budgetList.value.map(b => b.budget).reduce((x, y) => x + y, 0), // 총 예산합계
 ) // 총 예산 합계
+
+const totalSalesSum = computed(() =>
+  budgetList.value.length ? budgetList.value.map(b =>
+    getSalesAmount(b.order_group || 0, b.unit_type || 0)
+  ).reduce((x, y) => x + y, 0) : 0,
+) // 총 매출액 합계
 </script>
 
 <template>
@@ -210,7 +220,10 @@ const totalBudget = computed(
     <CTableHead>
       <CTableRow class="text-right" :color="TableSecondary">
         <CTableHeaderCell colspan="2" class="text-center"> 합계</CTableHeaderCell>
-        <CTableHeaderCell class="text-right"></CTableHeaderCell>
+        <CTableHeaderCell class="text-right">
+          <!-- 전체 매출액 합계 -->
+          {{ numFormat(totalSalesSum) }}
+        </CTableHeaderCell>
         <!-- 계획 세대수 합계 -->
         <CTableHeaderCell>{{ numFormat(totalBudgetNum) }}</CTableHeaderCell>
         <!-- 계약 세대수 합계 -->
