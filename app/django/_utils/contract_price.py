@@ -545,9 +545,10 @@ def get_contract_payment_plan(contract):
     # 캐싱 키 생성 (계약 ID 기반)
     cache_key = f"contract_payment_plan_{contract.id}"
 
-    # 캐시에서 확인
-    if hasattr(contract, '_cached_payment_plan'):
-        return contract._cached_payment_plan
+    # 캐시에서 확인 (public 메소드 사용)
+    cached_plan = contract.get_cached_payment_plan()
+    if cached_plan is not None:
+        return cached_plan
 
     try:
         # Get unit_floor_type once outside the loop
@@ -612,15 +613,15 @@ def get_contract_payment_plan(contract):
                     'source': 'calculated'
                 })
 
-        # 결과를 캐시에 저장
-        contract._cached_payment_plan = payment_plan
+        # 결과를 캐시에 저장 (public 메소드 사용)
+        contract.set_cached_payment_plan(payment_plan)
         return payment_plan
 
     except (AttributeError, TypeError):
         # AttributeError: contract.project/unit_type is None
         # TypeError: Invalid filter operations
         empty_plan = []
-        contract._cached_payment_plan = empty_plan
+        contract.set_cached_payment_plan(empty_plan)
         return empty_plan
 
 

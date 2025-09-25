@@ -88,6 +88,24 @@ class Contract(models.Model):
     def __str__(self):
         return f'[{self.project.id}] {self.serial_number}'
 
+    def get_cached_payment_plan(self):
+        """
+        Get cached payment plan if available.
+
+        Returns:
+            list or None: Cached payment plan data if available, None otherwise
+        """
+        return getattr(self, '_cached_payment_plan', None)
+
+    def set_cached_payment_plan(self, payment_plan):
+        """
+        Set cached payment plan data.
+
+        Args:
+            payment_plan: Payment plan data to cache
+        """
+        self._cached_payment_plan = payment_plan
+
     class Meta:
         ordering = ('-project', '-created')
         verbose_name = '02. 계약 정보'
