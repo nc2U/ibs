@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue'
+import { ref, computed, onBeforeMount, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payments/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
@@ -43,20 +43,31 @@ const fetchOverallSummary = (proj: number, date?: string) =>
 const setDate = (d: string) => {
   date.value = d
   if (project.value) {
-    fetchPaySumList(project.value, date.value)
-    fetchContSummaryList(project.value, date.value)
+    // 현재 선택된 메뉴에 따라 필요한 API만 호출
+    if (menu.value === '수납요약') {
+      fetchPaySumList(project.value, date.value)
+      fetchContSummaryList(project.value, date.value)
+    } else if (menu.value === '총괄집계') {
+      fetchOverallSummary(project.value, date.value)
+    }
   }
 }
 
 const dataSetup = (pk: number) => {
+  // 공통 데이터 로드
   fetchTypeList(pk)
   fetchOrderGroupList(pk)
-  fetchContSummaryList(pk)
   fetchIncBudgetList(pk)
-  fetchPaySumList(pk)
   fetchPayOrderList(pk)
-  fetchOverallSummary(pk, date.value)
   contStore.fetchContAggregate(pk)
+
+  // 현재 선택된 메뉴에 따라 필요한 데이터만 로드
+  if (menu.value === '수납요약') {
+    fetchPaySumList(pk, date.value)
+    fetchContSummaryList(pk, date.value)
+  } else if (menu.value === '총괄집계') {
+    fetchOverallSummary(pk, date.value)
+  }
 }
 
 const dataReset = () => {
@@ -73,6 +84,20 @@ const projSelect = (target: number | null) => {
   dataReset()
   if (!!target) dataSetup(target)
 }
+
+// 메뉴 변경 시 필요한 API 호출
+watch(menu, (newMenu) => {
+  if (project.value) {
+    if (newMenu === '수납요약') {
+      // 수납요약 탭으로 변경 시 필요한 API들 호출
+      fetchPaySumList(project.value, date.value)
+      fetchContSummaryList(project.value, date.value)
+    } else if (newMenu === '총괄집계') {
+      // 총괄집계 탭으로 변경 시 필요한 API 호출
+      fetchOverallSummary(project.value, date.value)
+    }
+  }
+})
 
 const loading = ref(true)
 onBeforeMount(async () => {
