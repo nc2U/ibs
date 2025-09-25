@@ -332,7 +332,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
         return payment_amounts_cache
 
-    def _get_non_contract_amounts_cache(self, project_id, pay_orders):
+    @staticmethod
+    def _get_non_contract_amounts_cache(project_id, pay_orders):
         """미계약 세대 납부 금액 캐시 생성 (pay_time 기반)"""
         # pay_time별로 개별 캐시 생성
         pay_times = set()
@@ -371,7 +372,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
         return non_contract_amounts_cache
 
-    def _get_all_collection_data(self, project_id, date, pay_orders):
+    @staticmethod
+    def _get_all_collection_data(project_id, date, pay_orders):
         """모든 납부 회차의 수납 데이터를 배치로 조회하여 캐시 생성"""
 
         # 모든 납부 회차의 수납 데이터를 한 번에 조회
@@ -408,7 +410,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
         return collection_cache
 
-    def _get_due_period_data_optimized(self, order, contract_amount, collection_data, date):
+    @staticmethod
+    def _get_due_period_data_optimized(order, contract_amount, collection_data, date):
         """최적화된 기간도래 관련 데이터 집계 (캐시된 데이터 사용)"""
 
         # 캐시된 수납 데이터 사용
@@ -525,7 +528,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 class SalesSummaryByGroupTypeViewSet(viewsets.ViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
-    def list(self, request):
+    @staticmethod
+    def list(request):
         project_id = request.query_params.get('project')
 
         if not project_id:
