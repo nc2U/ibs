@@ -90,19 +90,15 @@ class Contract(models.Model):
 
     def get_cached_payment_plan(self):
         """
-        Get cached payment plan if available.
-
-        Returns:
-            list or None: Cached payment plan data if available, None otherwise
+        Get a cached payment plan if available.
+        Returns: list or None: Cached payment plan data if available, None otherwise
         """
         return getattr(self, '_cached_payment_plan', None)
 
     def set_cached_payment_plan(self, payment_plan):
         """
         Set cached payment plan data.
-
-        Args:
-            payment_plan: Payment plan data to cache
+        Args: payment_plan: Payment plan data to cache
         """
         self._cached_payment_plan = payment_plan
 
@@ -241,6 +237,19 @@ class ContractPrice(models.Model):
                 amount = get_payment_amount(temp_contract, installment)
                 pay_time = str(installment.pay_time)  # JSON 키는 문자열
                 payment_amounts[pay_time] = amount
+
+            # 근린생활시설의 경우 InstallmentPaymentOrder가 없으면 기본 납부회차 적용
+            if not payment_amounts and self.house_unit.unit_type.name == '근린생활시설':
+                # 기본 납부회차: 계약시 10%, 2차계약금 10%, 잔금 80%
+                contract_payment = int(self.price * 0.1)    # 계약시 10%
+                second_payment = int(self.price * 0.1)      # 2차계약금 10%
+                final_payment = self.price - contract_payment - second_payment  # 잔금 80%
+
+                payment_amounts = {
+                    "1": contract_payment,    # 계약시
+                    "2": second_payment,      # 2차계약금
+                    "3": final_payment        # 잔금
+                }
 
             self.payment_amounts = payment_amounts
             self.is_cache_valid = True

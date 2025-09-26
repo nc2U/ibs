@@ -24,6 +24,7 @@ from docs.models import LawsuitCase
 from items.models import UnitType, BuildingUnit, HouseUnit
 from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment
 from project.models import Project, ProjectIncBudget, ProjectOutBudget, Site, SiteOwner, SiteContract
+from apiV1.views.payment import PaymentStatusByUnitTypeViewSet
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
@@ -1464,17 +1465,17 @@ class ExportPaymentStatus(View):
             'bg_color': '#eeeeee',
         }
 
-        # Header_contents
+        # Header_contents - Vue 컴포넌트와 동일한 구조
         header_src = [['차수', 'order_group', 13],
                       ['타입', 'unit_type', 13],
-                      ['단가(평균)', 'average_price', 15],
-                      ['계획세대수', 'quantity', 11],
+                      ['전체매출액', 'total_sales_amount', 18],
                       ['계약 현황', '', 11],
                       ['', '', 18],
                       ['', '', 18],
                       ['', '', 18],
-                      ['미계약금액', '', 18],
-                      ['합계', 'budget', 18]]
+                      ['미계약세대수', 'non_contract_units', 13],
+                      ['미계약금액', 'non_contract_amount', 18],
+                      ['합계', 'total_budget', 18]]
 
         titles = []  # 헤더명
         params = []  # 헤더 컬럼(db)
@@ -1500,10 +1501,10 @@ class ExportPaymentStatus(View):
             worksheet.write(row_num, col_num, title, h1format)
 
         # Write header
-        cont_col_num = (4, 5, 6, 7)
+        cont_col_num = (3, 4, 5, 6)  # 계약 현황 관련 컬럼들
 
         for col_num, title in enumerate(titles):  # 헤더 줄 제목 세팅
-            if int(col_num) == 4:
+            if int(col_num) == 3:  # 계약 현황
                 worksheet.merge_range(row_num, col_num, row_num, col_num + 3, title, h1format)
             elif int(col_num) not in cont_col_num:
                 worksheet.merge_range(row_num, col_num, row_num + 1, col_num, title, h1format)
@@ -1512,13 +1513,13 @@ class ExportPaymentStatus(View):
         worksheet.set_row(row_num, 23)
 
         for col_num, col in enumerate(titles):
-            if int(col_num) == 4:
+            if int(col_num) == 3:  # 계약 현황
                 worksheet.write(row_num, col_num, '계약세대수', h1format)
-            if int(col_num) == 5:
+            if int(col_num) == 4:
                 worksheet.write(row_num, col_num, '계약금액', h1format)
-            if int(col_num) == 6:
+            if int(col_num) == 5:
                 worksheet.write(row_num, col_num, '실수납금액', h1format)
-            if int(col_num) == 7:
+            if int(col_num) == 6:
                 worksheet.write(row_num, col_num, '미수금액', h1format)
 
         # 4. Body
@@ -1534,65 +1535,46 @@ class ExportPaymentStatus(View):
         # Turn off some of the warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'B:C'})
 
-        # ----------------- get_queryset start ----------------- #
-        # Get some data to write to the spreadsheet.
-        obj_list = ProjectIncBudget.objects.filter(project=project).order_by('order_group', 'unit_type')
+        # ----------------- get_data_using_api start ----------------- #
+        # PaymentStatusByUnitTypeViewSet와 동일한 로직 사용
+        from unittest.mock import Mock
 
-        og_list = OrderGroup.objects.filter(project=project)
-        og_params = ['pk', 'name']
-        order_group = og_list.values_list(*og_params)
+        # Mock request 객체 생성
+        mock_request = Mock()
+        mock_request.query_params = {
+            'project': str(project.pk),
+            'date': date if date else 'null'
+        }
 
-        ut_list = UnitType.objects.filter(project=project)
-        ut_params = ['pk', 'name', 'color']
-        unit_type = ut_list.values_list(*ut_params)
+        # API ViewSet의 list 메서드 호출
+        viewset = PaymentStatusByUnitTypeViewSet()
+        response = viewset.list(mock_request)
+        api_data = response.data
 
-        cont_num_list = Contract.objects.filter(project=project,
-                                                contractor__contract_date__lte=date,
-                                                activation=True,
-                                                contractor__status=2) \
-            .values('order_group', 'unit_type') \
-            .annotate(conts_num=Count('order_group')) \
-            .annotate(price_sum=Sum('contractprice__price'))
+        # ----------------- get_data_using_api finish ----------------- #
 
-        paid_sum_list = ProjectCashBook.objects.filter(project=project,
-                                                       income__isnull=False,
-                                                       project_account_d3__is_payment=True,
-                                                       contract__activation=True,
-                                                       contract__contractor__status=2,
-                                                       deal_date__lte=date) \
-            .order_by('contract__order_group', 'contract__unit_type') \
-            .annotate(order_group=F('contract__order_group')) \
-            .annotate(unit_type=F('contract__unit_type')) \
-            .values('order_group', 'unit_type') \
-            .annotate(paid_sum=Sum('income'))
+        # Helper function for order_group row spanning
+        def get_og_item_count(order_group_id):
+            return len([item for item in api_data if item['order_group_id'] == order_group_id])
 
-        # ----------------- get_queryset finish ----------------- #
+        def is_first_type_in_order_group(item):
+            same_order_group_items = [d for d in api_data if d['order_group_id'] == item['order_group_id']]
+            return same_order_group_items[0]['unit_type_id'] == item['unit_type_id']
 
-        rows = obj_list.values_list(*params)
+        # 합계 계산
+        totals = {
+            'total_sales_amount': sum(item['total_sales_amount'] for item in api_data),
+            'contract_units': sum(item['contract_units'] for item in api_data),
+            'contract_amount': sum(item['contract_amount'] for item in api_data),
+            'paid_amount': sum(item['paid_amount'] for item in api_data),
+            'unpaid_amount': sum(item['unpaid_amount'] for item in api_data),
+            'non_contract_units': sum(item['non_contract_units'] for item in api_data),
+            'non_contract_amount': sum(item['non_contract_amount'] for item in api_data),
+            'total_budget': sum(item['total_budget'] for item in api_data),
+        }
 
-        def get_obj_name(pk, obj):
-            return [o for o in obj if o[0] == pk][0][1]
-
-        def get_og_num(og):
-            return len([o for o in rows if o[0] == og])
-
-        def get_cont_num(og, ut):
-            num = [o for o in cont_num_list if o.get('order_group') == og and o.get('unit_type') == ut]
-            return num[0].get('conts_num') if num else 0
-
-        def get_price_sum(og, ut):
-            sum = [o for o in cont_num_list if o.get('order_group') == og and o.get('unit_type') == ut]
-            return sum[0].get('price_sum') if sum else 0
-
-        def get_paid_sum(og, ut):
-            sum = [o for o in paid_sum_list if o.get('order_group') == og and o.get('unit_type') == ut]
-            return sum[0].get('paid_sum') if sum else 0
-
-        first_type = unit_type.first()[0]
-        total_cont_sum = 0  # 계약 금액 총 합계
-
-        # Write data
-        for row in rows:
+        # Write data - API 데이터 사용
+        for item in api_data:
             row_num += 1
 
             for col_num, title in enumerate(titles):
@@ -1604,42 +1586,43 @@ class ExportPaymentStatus(View):
 
                 bformat = workbook.add_format(body_format)
 
-                type_num = get_og_num(row[0]) - 1
-                og_name = get_obj_name(row[0], order_group)
-                ut_name = get_obj_name(row[1], unit_type)
+                type_count = get_og_item_count(item['order_group_id']) - 1
 
-                cont_num = get_cont_num(row[0], row[1])
-                cont_sum = get_price_sum(row[0], row[1])  # cont_num * row[2] ## 계약세대수 * 단가평균
-                paid_sum = get_paid_sum(row[0], row[1])
-
-                if col_num == 0 and first_type == row[1]:
-                    worksheet.merge_range(row_num, col_num, row_num + type_num, col_num, og_name, bformat)  # 차수명
+                if col_num == 0 and is_first_type_in_order_group(item):
+                    # 차수명 (행 병합)
+                    worksheet.merge_range(row_num, col_num, row_num + type_count, col_num, item['order_group_name'], bformat)
                 elif col_num == 1:
-                    worksheet.write(row_num, col_num, ut_name, bformat)  # 타입 명
-                elif col_num == 2 or col_num == 3:
-                    worksheet.write(row_num, col_num, row[col_num], bformat)  # 단가 - 계획 세대수
+                    # 타입명
+                    worksheet.write(row_num, col_num, item['unit_type_name'], bformat)
+                elif col_num == 2:
+                    # 전체매출액
+                    worksheet.write(row_num, col_num, item['total_sales_amount'], bformat)
+                elif col_num == 3:
+                    # 계약 세대수
+                    worksheet.write(row_num, col_num, item['contract_units'], bformat)
                 elif col_num == 4:
-                    worksheet.write(row_num, col_num, cont_num, bformat)  # 계약 세대수
+                    # 계약 금액
+                    worksheet.write(row_num, col_num, item['contract_amount'], bformat)
                 elif col_num == 5:
-                    total_cont_sum += cont_sum
-                    worksheet.write(row_num, col_num, cont_sum, bformat)  # 계약 금액
+                    # 실수납 금액
+                    worksheet.write(row_num, col_num, item['paid_amount'], bformat)
                 elif col_num == 6:
-                    worksheet.write(row_num, col_num, paid_sum, bformat)  # 실수납 금액
+                    # 미수 금액
+                    worksheet.write(row_num, col_num, item['unpaid_amount'], bformat)
                 elif col_num == 7:
-                    worksheet.write(row_num, col_num, cont_sum - paid_sum, bformat)  # 미수 금액
+                    # 미계약 세대수
+                    worksheet.write(row_num, col_num, item['non_contract_units'], bformat)
                 elif col_num == 8:
-                    worksheet.write(row_num, col_num, row[4] - cont_sum, bformat)  # 미계약 금액
+                    # 미계약 금액
+                    worksheet.write(row_num, col_num, item['non_contract_amount'], bformat)
                 elif col_num == 9:
-                    worksheet.write(row_num, col_num, row[4], bformat)  # 합계
+                    # 합계
+                    worksheet.write(row_num, col_num, item['total_budget'], bformat)
 
         row_num += 1
         worksheet.set_row(row_num, 23)
 
-        total_num = sum([n[3] for n in rows])
-        total_cont_num = sum([n.get('conts_num') for n in cont_num_list])
-        total_paid_sum = sum([s.get('paid_sum') for s in paid_sum_list])
-        total_budget = sum([n[4] for n in rows])
-
+        # 합계 행 작성 - API 데이터 기반
         for col_num, col in enumerate(titles):
             # css 정렬
             if col_num == 0:
@@ -1652,21 +1635,29 @@ class ExportPaymentStatus(View):
             if col_num == 0:
                 worksheet.merge_range(row_num, col_num, row_num, col_num + 1, '합계', h2format)
             elif col_num == 2:
-                worksheet.write(row_num, col_num, None, h2format)
+                # 전체매출액 합계
+                worksheet.write(row_num, col_num, totals['total_sales_amount'], h2format)
             elif col_num == 3:
-                worksheet.write(row_num, col_num, total_num, h2format)  # 계획 세대수 합계
+                # 계약 세대수 합계
+                worksheet.write(row_num, col_num, totals['contract_units'], h2format)
             elif col_num == 4:
-                worksheet.write(row_num, col_num, total_cont_num, h2format)  # 계약 세대수 합계
+                # 계약 금액 합계
+                worksheet.write(row_num, col_num, totals['contract_amount'], h2format)
             elif col_num == 5:
-                worksheet.write(row_num, col_num, total_cont_sum, h2format)  # 계약 금액 합계
+                # 실수납 금액 합계
+                worksheet.write(row_num, col_num, totals['paid_amount'], h2format)
             elif col_num == 6:
-                worksheet.write(row_num, col_num, total_paid_sum, h2format)  # 실수납 금액 합계
+                # 미수 금액 합계
+                worksheet.write(row_num, col_num, totals['unpaid_amount'], h2format)
             elif col_num == 7:
-                worksheet.write(row_num, col_num, total_cont_sum - total_paid_sum, h2format)  # 미수 금액 합계
+                # 미계약 세대수 합계
+                worksheet.write(row_num, col_num, totals['non_contract_units'], h2format)
             elif col_num == 8:
-                worksheet.write(row_num, col_num, total_budget - total_cont_sum, h2format)  # 미계약 금액 합계
+                # 미계약 금액 합계
+                worksheet.write(row_num, col_num, totals['non_contract_amount'], h2format)
             elif col_num == 9:
-                worksheet.write(row_num, col_num, total_budget, h2format)  # 예산 합계
+                # 합계 (총 예산)
+                worksheet.write(row_num, col_num, totals['total_budget'], h2format)
 
         # Close the workbook before sending the data.
         workbook.close()
