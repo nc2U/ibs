@@ -13,6 +13,7 @@ urlpatterns = [
     path('payments/', ExportPayments.as_view(), name='payments'),
     path('paid-by-cont/', ExportPaymentsByCont.as_view(), name='paid-by-cont'),
     path('paid-status/', ExportPaymentStatus.as_view(), name='paid-status'),
+    path('overall-sum/', ExportOverallSummary.as_view(), name='overall-summary'),
     path('p-balance/', ExportProjectBalance.as_view(), name='project-balance'),
     path('p-daily-cash/', ExportProjectDateCashbook.as_view(), name='project-daily-cash'),
     path('p-budget/', ExportBudgetExecutionStatus.as_view(), name='budget'),

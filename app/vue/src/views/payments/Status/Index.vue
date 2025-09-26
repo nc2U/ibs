@@ -18,7 +18,7 @@ const date = ref(getToday())
 const menu = ref('수납요약')
 
 const excelUrl1 = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
-const excelUrl2 = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
+const excelUrl2 = computed(() => `/excel/overall-sum/?project=${project.value}&date=${date.value}`)
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -70,7 +70,7 @@ const projSelect = (target: number | null) => {
 }
 
 // 메뉴 변경 시 필요한 API 호출
-watch(menu, (newMenu) => {
+watch(menu, newMenu => {
   if (project.value) {
     if (newMenu === '수납요약') {
       // 수납요약 탭으로 변경 시 새로운 API 호출
@@ -119,7 +119,7 @@ onBeforeMount(async () => {
         <PaymentStatus :date="date" />
       </template>
       <template v-else>
-        <TableTitleRow excel :url="excelUrl2" :disabled="true" />
+        <TableTitleRow excel :url="excelUrl2" :disabled="!project" />
         <OverallSummary :date="date" />
       </template>
     </CCardBody>

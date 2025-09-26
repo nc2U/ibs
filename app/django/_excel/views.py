@@ -24,7 +24,7 @@ from docs.models import LawsuitCase
 from items.models import UnitType, BuildingUnit, HouseUnit
 from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment
 from project.models import Project, ProjectIncBudget, ProjectOutBudget, Site, SiteOwner, SiteContract
-from apiV1.views.payment import PaymentStatusByUnitTypeViewSet
+from apiV1.views.payment import PaymentStatusByUnitTypeViewSet, OverallSummaryViewSet
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
@@ -1529,7 +1529,7 @@ class ExportPaymentStatus(View):
             'border': True,
             'align': 'right',
             'valign': 'vcenter',
-            'num_format': '#,##0'
+            'num_format': '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@_-'
         }
 
         # Turn off some of the warnings:
@@ -1582,7 +1582,7 @@ class ExportPaymentStatus(View):
                 if col_num <= 1:
                     body_format['align'] = 'center'
                 else:
-                    body_format['num_format'] = 41
+                    body_format['num_format'] = '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@_-'
 
                 bformat = workbook.add_format(body_format)
 
@@ -1590,7 +1590,8 @@ class ExportPaymentStatus(View):
 
                 if col_num == 0 and is_first_type_in_order_group(item):
                     # 차수명 (행 병합)
-                    worksheet.merge_range(row_num, col_num, row_num + type_count, col_num, item['order_group_name'], bformat)
+                    worksheet.merge_range(row_num, col_num, row_num + type_count, col_num, item['order_group_name'],
+                                          bformat)
                 elif col_num == 1:
                     # 타입명
                     worksheet.write(row_num, col_num, item['unit_type_name'], bformat)
@@ -1628,7 +1629,7 @@ class ExportPaymentStatus(View):
             if col_num == 0:
                 h_format['align'] = 'center'
             else:
-                h_format['num_format'] = 41
+                h_format['num_format'] = '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@_-'
 
             h2format = workbook.add_format(h_format)
 
@@ -1667,6 +1668,299 @@ class ExportPaymentStatus(View):
 
         # Set up the Http response.
         filename = '{this_date}-payment-status.xlsx'.format(this_date=date)
+        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = HttpResponse(output, content_type=file_format)
+        response['Content-Disposition'] = 'attachment; filename=%s' % filename
+
+        return response
+
+
+class ExportOverallSummary(View):
+    """총괄 집계 현황"""
+
+    @staticmethod
+    def get(request):
+
+        # Create an in-memory output file for the new workbook.
+        output = io.BytesIO()
+
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        workbook = xlsxwriter.Workbook(output)
+        worksheet = workbook.add_worksheet('총괄_집계_현황')
+
+        worksheet.set_default_row(20)
+
+        # ----------------- get_queryset start ----------------- #
+        project = Project.objects.get(pk=request.GET.get('project'))
+        date = request.GET.get('date')
+        # ----------------- get_queryset finish ----------------- #
+
+        # ----------------- get_data_using_api start ----------------- #
+        # OverallSummaryViewSet와 동일한 로직 사용
+        from unittest.mock import Mock
+
+        # Mock request 객체 생성
+        mock_request = Mock()
+        mock_request.query_params = {
+            'project': str(project.pk),
+            'date': date if date else 'null'
+        }
+
+        # API ViewSet의 list 메서드 호출
+        viewset = OverallSummaryViewSet()
+        response = viewset.list(mock_request)
+        api_data = response.data
+
+        pay_orders = api_data.get('pay_orders', [])
+        aggregate_data = api_data.get('aggregate', {})
+
+        # ----------------- get_data_using_api finish ----------------- #
+
+        # 동적 컬럼 수 계산 (빈열 + 구분열 + 납부회차들 + 계열)
+        col_count = 2 + len(pay_orders) + 1
+
+        # 1. Title
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        title_format = workbook.add_format()
+        title_format.set_bold()
+        title_format.set_font_size(18)
+        title_format.set_align('vcenter')
+        worksheet.merge_range(row_num, 0, row_num, col_count - 1, str(project) + ' 총괄 집계 현황', title_format)
+
+        # 2. Pre Header - Date
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, col_count - 1, date + ' 현재', workbook.add_format({'align': 'right'}))
+
+        # 3. Header
+        row_num = 2
+        worksheet.set_row(row_num, 23)
+
+        h_format = {
+            'bold': True,
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'bg_color': '#eeeeee',
+        }
+
+        # 컬럼 너비 설정
+        worksheet.set_column(0, 0, 12)  # 빈 열
+        worksheet.set_column(1, 1, 15)  # 구분 열
+        for i in range(len(pay_orders)):
+            worksheet.set_column(2 + i, 2 + i, 15)  # 각 납부회차 열
+        worksheet.set_column(col_count - 1, col_count - 1, 18)  # 계 열
+
+        h1format = workbook.add_format(h_format)
+
+        # Write main header
+        worksheet.write(row_num, 0, '', h1format)  # 빈 열
+        worksheet.write(row_num, 1, '구분', h1format)
+
+        # 납부회차 헤더들
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['pay_name'], h1format)
+
+        worksheet.write(row_num, col_count - 1, '계', h1format)
+
+        # 4. 약정일 행
+        row_num = 3
+        worksheet.set_row(row_num, 20)
+
+        due_date_format = workbook.add_format({
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter'
+        })
+
+        worksheet.write(row_num, 0, '기본', due_date_format)
+        worksheet.write(row_num, 1, '약정일', due_date_format)
+
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order.get('pay_due_date', ''), due_date_format)
+
+        worksheet.write(row_num, col_count - 1, '', due_date_format)
+
+        # 5. Body - 계약 섹션 (4행)
+        body_format = {
+            'border': True,
+            'align': 'right',
+            'valign': 'vcenter',
+            'num_format': '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@_-'
+        }
+
+        center_format = {
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter'
+        }
+
+        # 계약 섹션 - 계약
+        row_num += 1
+        worksheet.merge_range(row_num, 0, row_num + 3, 0, '계약', workbook.add_format({**center_format, **h_format}))
+
+        # 계약(세대수)
+        worksheet.write(row_num, 1, f'계약({aggregate_data.get("conts_num", 0):,})', workbook.add_format(center_format))
+        total_contract_amount = sum(order['contract_amount'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['contract_amount'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_contract_amount, workbook.add_format(body_format))
+
+        # 미계약(세대수)
+        row_num += 1
+        worksheet.write(row_num, 1, f'미계약({aggregate_data.get("non_conts_num", 0):,})', workbook.add_format(center_format))
+        total_non_contract_amount = sum(order['non_contract_amount'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['non_contract_amount'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_non_contract_amount, workbook.add_format(body_format))
+
+        # 총계(세대수)
+        row_num += 1
+        worksheet.write(row_num, 1, f'총계({aggregate_data.get("total_units", 0):,})', workbook.add_format(center_format))
+        total_amount = total_contract_amount + total_non_contract_amount
+        for i, order in enumerate(pay_orders):
+            total_per_order = order['contract_amount'] + order['non_contract_amount']
+            worksheet.write(row_num, 2 + i, total_per_order, workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_amount, workbook.add_format(body_format))
+
+        # 계약율
+        row_num += 1
+        worksheet.write(row_num, 1, '계약율', workbook.add_format(center_format))
+        contract_rate = float(aggregate_data.get('contract_rate', 0))
+        percent_format = workbook.add_format({**body_format, 'num_format': '_-* 0.00%_-;-* 0.00%_-;_-* "-"??%_-;_-@_-'})
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, contract_rate / 100, percent_format)
+        worksheet.write(row_num, col_count - 1, contract_rate / 100, percent_format)
+
+        # 6. 수납 섹션 (5행)
+        row_num += 1
+        worksheet.merge_range(row_num, 0, row_num + 4, 0, '수납', workbook.add_format({**center_format, **h_format}))
+
+        # 수납액
+        worksheet.write(row_num, 1, '수납액', workbook.add_format(center_format))
+        total_collected_amount = sum(order['collection']['collected_amount'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['collection']['collected_amount'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_collected_amount, workbook.add_format(body_format))
+
+        # 할인료
+        row_num += 1
+        worksheet.write(row_num, 1, '할인료', workbook.add_format(center_format))
+        total_discount_amount = sum(order['collection']['discount_amount'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['collection']['discount_amount'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_discount_amount, workbook.add_format(body_format))
+
+        # 연체료
+        row_num += 1
+        worksheet.write(row_num, 1, '연체료', workbook.add_format(center_format))
+        total_overdue_fee = sum(order['collection']['overdue_fee'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['collection']['overdue_fee'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_overdue_fee, workbook.add_format(body_format))
+
+        # 실수납액
+        row_num += 1
+        worksheet.write(row_num, 1, '실수납액', workbook.add_format(center_format))
+        total_actual_collected = sum(order['collection']['actual_collected'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['collection']['actual_collected'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_actual_collected, workbook.add_format(body_format))
+
+        # 수납율
+        row_num += 1
+        worksheet.write(row_num, 1, '수납율', workbook.add_format(center_format))
+        total_collection_rate = (total_actual_collected / total_contract_amount * 100) if total_contract_amount > 0 else 0
+        for i, order in enumerate(pay_orders):
+            collection_rate = float(order['collection']['collection_rate'])
+            worksheet.write(row_num, 2 + i, collection_rate / 100, percent_format)
+        worksheet.write(row_num, col_count - 1, total_collection_rate / 100, percent_format)
+
+        # 7. 기간도래 섹션 (5행)
+        row_num += 1
+        worksheet.merge_range(row_num, 0, row_num + 4, 0, '기간도래', workbook.add_format({**center_format, **h_format}))
+
+        # 약정금액
+        worksheet.write(row_num, 1, '약정금액', workbook.add_format(center_format))
+        total_due_contract_amount = sum(order['due_period']['contract_amount'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['due_period']['contract_amount'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_due_contract_amount, workbook.add_format(body_format))
+
+        # 미수금
+        row_num += 1
+        worksheet.write(row_num, 1, '미수금', workbook.add_format(center_format))
+        total_due_unpaid_amount = sum(order['due_period']['unpaid_amount'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['due_period']['unpaid_amount'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_due_unpaid_amount, workbook.add_format(body_format))
+
+        # 미수율
+        row_num += 1
+        worksheet.write(row_num, 1, '미수율', workbook.add_format(center_format))
+        total_due_unpaid_rate = (total_due_unpaid_amount / total_due_contract_amount * 100) if total_due_contract_amount > 0 else 0
+        for i, order in enumerate(pay_orders):
+            unpaid_rate = float(order['due_period']['unpaid_rate'])
+            worksheet.write(row_num, 2 + i, unpaid_rate / 100, percent_format)
+        worksheet.write(row_num, col_count - 1, total_due_unpaid_rate / 100, percent_format)
+
+        # 연체료
+        row_num += 1
+        worksheet.write(row_num, 1, '연체료', workbook.add_format(center_format))
+        total_due_overdue_fee = sum(order['due_period']['overdue_fee'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['due_period']['overdue_fee'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_due_overdue_fee, workbook.add_format(body_format))
+
+        # 소계
+        row_num += 1
+        worksheet.write(row_num, 1, '소계', workbook.add_format(center_format))
+        total_due_subtotal = sum(order['due_period']['subtotal'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['due_period']['subtotal'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_due_subtotal, workbook.add_format(body_format))
+
+        # 8. 기간미도래 섹션 (1행)
+        row_num += 1
+        worksheet.write(row_num, 0, '기간미도래', workbook.add_format({**center_format, **h_format}))
+        worksheet.write(row_num, 1, '미수금', workbook.add_format(center_format))
+        total_not_due_unpaid = sum(order['not_due_unpaid'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['not_due_unpaid'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_not_due_unpaid, workbook.add_format(body_format))
+
+        # 9. 총계 섹션 (2행)
+        row_num += 1
+        worksheet.merge_range(row_num, 0, row_num + 1, 0, '총계', workbook.add_format({**center_format, **h_format}))
+
+        # 미수금
+        worksheet.write(row_num, 1, '미수금', workbook.add_format(center_format))
+        total_total_unpaid = sum(order['total_unpaid'] for order in pay_orders)
+        for i, order in enumerate(pay_orders):
+            worksheet.write(row_num, 2 + i, order['total_unpaid'], workbook.add_format(body_format))
+        worksheet.write(row_num, col_count - 1, total_total_unpaid, workbook.add_format(body_format))
+
+        # 미수율
+        row_num += 1
+        worksheet.write(row_num, 1, '미수율', workbook.add_format(center_format))
+        total_total_unpaid_rate = (total_total_unpaid / (total_contract_amount + total_non_contract_amount) * 100) if (total_contract_amount + total_non_contract_amount) > 0 else 0
+        for i, order in enumerate(pay_orders):
+            total_unpaid_rate = float(order['total_unpaid_rate'])
+            worksheet.write(row_num, 2 + i, total_unpaid_rate / 100, percent_format)
+        worksheet.write(row_num, col_count - 1, total_total_unpaid_rate / 100, percent_format)
+
+        # Close the workbook before sending the data.
+        workbook.close()
+
+        # Rewind the buffer.
+        output.seek(0)
+
+        # Set up the Http response.
+        filename = '{this_date}-overall-summary.xlsx'.format(this_date=date)
         file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response = HttpResponse(output, content_type=file_format)
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
