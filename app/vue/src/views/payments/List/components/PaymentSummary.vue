@@ -1,56 +1,25 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
-import type { UnitType } from '@/store/types/project.ts'
 import { numFormat } from '@/utils/baseMixins'
 import { usePayment } from '@/store/pinia/payment'
-import { useProject } from '@/store/pinia/project'
-import { useContract } from '@/store/pinia/contract'
-import { useProjectData } from '@/store/pinia/project_data'
 
 defineProps({ project: { type: Number, default: null } })
 
-const proStore = useProject()
-const budgetList = computed(() => proStore.proIncBudgetList)
-
-const contStore = useContract()
-const contSum = computed(() => contStore.contSummaryList)
-
-const proDataStore = useProjectData()
-const unitTypeList = computed<UnitType[]>(() => proDataStore.unitTypeList)
-
 const paymentStore = usePayment()
-const paySumList = computed(() => paymentStore.paySumList)
+const paymentSummaryList = computed(() => paymentStore.paymentSummaryList)
 
 const getTotalBudget = computed(() =>
-  budgetList.value.map(b => b.budget).reduce((x, y) => x + y, 0),
+  paymentSummaryList.value.reduce((sum, item) => sum + item.total_budget, 0)
 )
 
 const getTotalCont = computed(() =>
-  contSum.value.map(s => s.price_sum || 0).reduce((x, y) => x + y, 0),
+  paymentSummaryList.value.reduce((sum, item) => sum + item.total_contract_amount, 0)
 )
 
 const getTotalPaid = computed(() =>
-  paySumList.value.map(b => b.paid_sum).reduce((x, y) => x + y, 0),
+  paymentSummaryList.value.reduce((sum, item) => sum + item.total_paid_amount, 0)
 )
-
-const getBudgetByType = (ut: number) =>
-  budgetList.value
-    .filter(b => b.unit_type === ut)
-    .map(b => b.budget)
-    .reduce((x, y) => x + y, 0)
-
-const getContByType = (ut: number) =>
-  contSum.value
-    .filter(s => s.unit_type === ut)
-    .map(s => s.price_sum || 0)
-    .reduce((x, y) => x + y, 0)
-
-const getPaidByType = (ut: number) =>
-  paySumList.value
-    .filter(b => b.unit_type === ut)
-    .map(b => b.paid_sum)
-    .reduce((x, y) => x + y, 0)
 </script>
 
 <template>
@@ -67,25 +36,25 @@ const getPaidByType = (ut: number) =>
     </CTableHead>
 
     <CTableBody v-if="project">
-      <CTableRow v-for="type in unitTypeList" :key="type.pk" class="text-right">
+      <CTableRow v-for="item in paymentSummaryList" :key="item.unit_type_id" class="text-right">
         <CTableHeaderCell class="text-left pl-5">
-          <CIcon name="cib-node-js" :style="{ color: type.color }" size="sm" class="mr-1" />
-          {{ type.name }}
+          <CIcon name="cib-node-js" :style="{ color: item.unit_type_color }" size="sm" class="mr-1" />
+          {{ item.unit_type_name }}
         </CTableHeaderCell>
         <CTableDataCell>
-          {{ numFormat(getBudgetByType(type.pk as number)) }}
+          {{ numFormat(item.total_budget) }}
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getContByType(type.pk as number)) }}
+          {{ numFormat(item.total_contract_amount) }}
         </CTableDataCell>
         <CTableDataCell class="text-primary">
-          {{ numFormat(getPaidByType(type.pk as number)) }}
+          {{ numFormat(item.total_paid_amount) }}
         </CTableDataCell>
         <CTableDataCell class="text-danger">
-          {{ numFormat(getContByType(type.pk as number) - getPaidByType(type.pk as number)) }}
+          {{ numFormat(item.unpaid_amount) }}
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getBudgetByType(type.pk as number) - getContByType(type.pk as number)) }}
+          {{ numFormat(item.unsold_amount) }}
         </CTableDataCell>
       </CTableRow>
 

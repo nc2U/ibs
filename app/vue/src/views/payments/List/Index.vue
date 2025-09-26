@@ -45,7 +45,7 @@ const proDataStore = useProjectData()
 const fetchTypeList = (projId: number) => proDataStore.fetchTypeList(projId)
 
 const paymentStore = usePayment()
-const fetchPaySumList = (projId: number) => paymentStore.fetchPaySumList(projId)
+const fetchPaymentSummaryList = (projId: number) => paymentStore.fetchPaymentSummaryList(projId)
 const fetchPayOrderList = (projId: number) => paymentStore.fetchPayOrderList(projId)
 const fetchPaymentList = (payload: CashBookFilter) => paymentStore.fetchPaymentList(payload)
 
@@ -104,7 +104,7 @@ const dataSetup = (pk: number) => {
   fetchTypeList(pk)
   fetchIncBudgetList(pk)
   fetchContSummaryList(pk)
-  fetchPaySumList(pk)
+  fetchPaymentSummaryList(pk)
   fetchPaymentList({ project: pk })
   fetchPayOrderList(pk)
   fetchAllProBankAccList(pk)
@@ -116,7 +116,7 @@ const dataReset = () => {
   proCashStore.proBankAccountList = []
   projStore.proIncBudgetList = []
   contStore.contSummaryList = []
-  paymentStore.paySumList = []
+  paymentStore.paymentSummaryList = []
   paymentStore.paymentList = []
   paymentStore.payOrderList = []
   paymentStore.paymentsCount = 0

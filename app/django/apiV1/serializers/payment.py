@@ -9,6 +9,18 @@ from .items import SimpleUnitTypeSerializer
 # Payment --------------------------------------------------------------------------
 
 
+class PaymentSummaryComponentSerializer(serializers.Serializer):
+    """PaymentSummary 컴포넌트용 시리얼라이저"""
+    unit_type_id = serializers.IntegerField()
+    unit_type_name = serializers.CharField()
+    unit_type_color = serializers.CharField()
+    total_budget = serializers.IntegerField()
+    total_contract_amount = serializers.IntegerField()
+    total_paid_amount = serializers.IntegerField()
+    unpaid_amount = serializers.IntegerField()
+    unsold_amount = serializers.IntegerField()
+
+
 class InstallmentOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstallmentPaymentOrder

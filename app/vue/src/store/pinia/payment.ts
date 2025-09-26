@@ -7,7 +7,7 @@ import {
   type Price,
   type PayOrder,
   type DownPay,
-  type PaySumByType,
+  type PaymentSummaryComponent,
   type ContractNum,
   type AllPayment,
   type OverallSummary,
@@ -209,15 +209,19 @@ export const usePayment = defineStore('payment', () => {
 
   const paymentPages = (itemsPerPage: number) => Math.ceil(paymentsCount.value / itemsPerPage)
 
-  // state & getters
-  const paySumList = ref<PaySumByType[]>([])
+
+  // state & getters - PaymentSummary Component
+  const paymentSummaryList = ref<PaymentSummaryComponent[]>([])
 
   // actions
-  const fetchPaySumList = (project: number, date = '') =>
-    api
-      .get(`/payment-sum/?project=${project}&to_deal_date=${date}`)
-      .then(res => (paySumList.value = res.data.results))
+  const fetchPaymentSummaryList = async (project: number, date = '') => {
+    let url = `/payment-summary/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (paymentSummaryList.value = res.data))
       .catch(err => errorHandle(err.response.data))
+  }
 
   // state & getters
   const contNumList = ref<ContractNum[]>([])
@@ -300,9 +304,9 @@ export const usePayment = defineStore('payment', () => {
     fetchAllPaymentList,
     paymentPages,
 
-    paySumList,
+    paymentSummaryList,
 
-    fetchPaySumList,
+    fetchPaymentSummaryList,
 
     contNumList,
 

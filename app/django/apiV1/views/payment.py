@@ -663,6 +663,202 @@ class SalesSummaryByGroupTypeViewSet(viewsets.ViewSet):
             return Response({'error': 'An internal server error occurred.'}, status=500)
 
 
+class PaymentSummaryViewSet(viewsets.ViewSet):
+    """PaymentSummary 컴포넌트용 unit_type별 요약 현황 ViewSet"""
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+    @staticmethod
+    def list(request):
+        project_id = request.query_params.get('project')
+        date = request.query_params.get('date')
+
+        if not project_id:
+            return Response({'error': 'project parameter is required'}, status=400)
+
+        try:
+            # PaymentStatusByUnitType API 데이터를 활용하여 정확한 계산
+            from collections import defaultdict
+
+            # PaymentStatusByUnitType ViewSet 사용
+            payment_status_viewset = PaymentStatusByUnitTypeViewSet()
+            payment_status_request = type('MockRequest', (), {
+                'query_params': {'project': project_id}
+            })()
+            if date:
+                payment_status_request.query_params['date'] = date
+
+            payment_status_response = payment_status_viewset.list(payment_status_request)
+
+            if payment_status_response.status_code != 200:
+                return Response({'error': 'Failed to fetch payment status data'}, status=500)
+
+            payment_status_data = payment_status_response.data
+
+            # unit_type별로 그룹화해서 합계 계산
+            unit_type_aggregates = defaultdict(lambda: {
+                'unit_type_id': 0,
+                'unit_type_name': '',
+                'unit_type_color': '',
+                'total_budget': 0,
+                'total_contract_amount': 0,
+                'total_paid_amount': 0,
+                'unpaid_amount': 0,
+                'non_contract_amount': 0
+            })
+
+            for item in payment_status_data:
+                unit_type_name = item['unit_type_name']
+                unit_type_id = item['unit_type_id']
+                unit_type_color = item['unit_type_color']
+
+                agg = unit_type_aggregates[unit_type_name]
+                agg['unit_type_id'] = unit_type_id
+                agg['unit_type_name'] = unit_type_name
+                agg['unit_type_color'] = unit_type_color
+                agg['total_budget'] += item['total_budget']
+                agg['total_contract_amount'] += item['contract_amount']
+                agg['total_paid_amount'] += item['paid_amount']
+                agg['unpaid_amount'] += item['unpaid_amount']
+                agg['non_contract_amount'] += item['non_contract_amount']
+
+            # 결과 생성
+            results = []
+            for unit_type_name, agg in unit_type_aggregates.items():
+                # 미분양금액 = 총예산 - 계약금액
+                unsold_amount = max(0, agg['total_budget'] - agg['total_contract_amount'])
+
+                results.append({
+                    'unit_type_id': agg['unit_type_id'],
+                    'unit_type_name': agg['unit_type_name'],
+                    'unit_type_color': agg['unit_type_color'],
+                    'total_budget': agg['total_budget'],                    # 총 매출예산(A)
+                    'total_contract_amount': agg['total_contract_amount'],  # 총 분양금액(B)
+                    'total_paid_amount': agg['total_paid_amount'],          # 총 수납금액(C)
+                    'unpaid_amount': agg['unpaid_amount'],                  # 미수납금액(B-C)
+                    'unsold_amount': unsold_amount                          # 미분양금액(A-B)
+                })
+
+            # unit_type_id로 정렬
+            results.sort(key=lambda x: x['unit_type_id'])
+
+            serializer = PaymentSummaryComponentSerializer(results, many=True)
+            return Response(serializer.data)
+
+        except Exception as e:
+            logger.exception(f"PaymentSummary API error: {str(e)}")
+            return Response({
+                'error': 'An internal server error has occurred.'
+            }, status=500)
+
+    @staticmethod
+    def _get_total_contract_amount(project_id, unit_type_id):
+        """실제 계약 체결된 총 금액 계산"""
+        try:
+            with connection.cursor() as cursor:
+                query = """
+                        SELECT COALESCE(SUM(cp.price), 0) as total_amount
+                        FROM contract_contractprice cp
+                        INNER JOIN contract_contract c ON cp.contract_id = c.id
+                        WHERE c.project_id = %s
+                          AND c.unit_type_id = %s
+                          AND c.activation = true
+                        """
+
+                cursor.execute(query, [project_id, unit_type_id])
+                result = cursor.fetchone()
+                return result[0] if result else 0
+
+        except Exception as e:
+            logger.error(f"_get_total_contract_amount error: {str(e)}")
+            return 0
+
+    @staticmethod
+    def _get_total_paid_amount(project_id, unit_type_id, date):
+        """실제 수납된 총 금액 계산"""
+        try:
+            with connection.cursor() as cursor:
+                date_filter = ""
+                params = [project_id, unit_type_id]
+
+                if date:
+                    date_filter = "AND pcb.deal_date <= %s"
+                    params.append(date)
+
+                query = f"""
+                        SELECT COALESCE(SUM(pcb.income), 0) as total_paid
+                        FROM cash_projectcashbook pcb
+                        INNER JOIN contract_contract c ON pcb.contract_id = c.id
+                        INNER JOIN ibs_projectaccountd3 pad3 ON pcb.project_account_d3_id = pad3.id
+                        WHERE c.project_id = %s
+                          AND c.unit_type_id = %s
+                          AND c.activation = true
+                          AND pcb.income IS NOT NULL
+                          AND pad3.is_payment = true
+                          {date_filter}
+                        """
+
+                cursor.execute(query, params)
+                result = cursor.fetchone()
+                return result[0] if result else 0
+
+        except Exception as e:
+            logger.error(f"_get_total_paid_amount error: {str(e)}")
+            return 0
+
+    @staticmethod
+    def _get_total_budget(project, unit_type_id, contract_amount):
+        """총 매출예산 계산 (계약금액 + 미계약 잠재금액)"""
+        try:
+            # 미계약 잠재금액 계산
+            non_contract_potential = PaymentSummaryViewSet._calculate_non_contract_potential(
+                project, unit_type_id
+            )
+
+            return contract_amount + non_contract_potential
+
+        except Exception as e:
+            logger.error(f"_get_total_budget error: {str(e)}")
+            return contract_amount  # 에러시 최소한 계약금액은 반환
+
+    @staticmethod
+    def _calculate_non_contract_potential(project, unit_type_id):
+        """미계약 세대의 잠재 매출 계산"""
+        try:
+            from contract.models import OrderGroup
+            from payment.models import SalesPriceByGT
+
+            # 기본 미계약 차수 조회
+            default_og = OrderGroup.get_default_for_project(project)
+            if not default_og:
+                return 0
+
+            with connection.cursor() as cursor:
+                # 미계약 ContractPrice의 잠재 매출 계산
+                # SalesPriceByGT를 참조하여 미계약 세대의 잠재 가격 합계
+                query = """
+                        SELECT COALESCE(SUM(spg.price), 0) as potential_amount
+                        FROM contract_contractprice cp
+                        INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
+                        INNER JOIN payment_salespricebygt spg ON (
+                            spg.project_id = %s AND
+                            spg.order_group_id = %s AND
+                            spg.unit_type_id = %s AND
+                            spg.unit_floor_type_id = hu.floor_type_id
+                        )
+                        WHERE cp.contract_id IS NULL
+                          AND hu.unit_type_id = %s
+                          AND cp.is_cache_valid = true
+                        """
+
+                cursor.execute(query, [project.pk, default_og.pk, unit_type_id, unit_type_id])
+                result = cursor.fetchone()
+                return result[0] if result else 0
+
+        except Exception as e:
+            logger.error(f"_calculate_non_contract_potential error: {str(e)}")
+            return 0
+
+
 class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
     """ContractPrice 모델 기반의 unit_type별 결제 현황 ViewSet"""
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
