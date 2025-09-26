@@ -778,53 +778,63 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 project = Project.objects.get(pk=project_id)
                 default_og = OrderGroup.get_default_for_project(project)
 
-                # 해당 order_group과 unit_type의 계약 있는 가격 합계 (payment_amounts 기준)
-                contract_query = """
-                        SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as contract_amount
-                        FROM contract_contractprice cp
-                        CROSS JOIN jsonb_each_text(cp.payment_amounts)
-                        INNER JOIN contract_contract c ON cp.contract_id = c.id
-                        WHERE c.project_id = %s
-                          AND c.order_group_id = %s
-                          AND c.unit_type_id = %s
-                          AND c.activation = true
-                          AND cp.is_cache_valid = true
-                        """
+                # 근린생활시설(unit_type_id=4)은 기본 납부회차 적용, 나머지는 payment_amounts 사용
+                if unit_type_id == 4:  # 근린생활시설
+                    # 근린생활시설의 계약 가격 (기본 납부회차 적용)
+                    # 근린생활시설은 모든 payment_amounts가 비어있으므로 price 필드 사용
+                    contract_query = """
+                            SELECT COALESCE(SUM(cp.price), 0) as contract_amount
+                            FROM contract_contractprice cp
+                            INNER JOIN contract_contract c ON cp.contract_id = c.id
+                            WHERE c.project_id = %s
+                              AND c.order_group_id = %s
+                              AND c.unit_type_id = %s
+                              AND c.activation = true
+                              AND cp.is_cache_valid = true
+                            """
+                else:
+                    # 다른 unit_type의 계약 가격 (payment_amounts 기준)
+                    contract_query = """
+                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as contract_amount
+                            FROM contract_contractprice cp
+                            CROSS JOIN jsonb_each_text(cp.payment_amounts)
+                            INNER JOIN contract_contract c ON cp.contract_id = c.id
+                            WHERE c.project_id = %s
+                              AND c.order_group_id = %s
+                              AND c.unit_type_id = %s
+                              AND c.activation = true
+                              AND cp.is_cache_valid = true
+                            """
 
                 cursor.execute(contract_query, [project_id, order_group_id, unit_type_id])
                 contract_result = cursor.fetchone()
                 contract_amount = contract_result[0] if contract_result else 0
 
-                # 미계약 가격 합계 (기본 order_group에만 해당, payment_amounts 기준)
+                # 미계약 가격 합계 (기본 order_group에만 해당)
                 non_contract_amount = 0
                 if default_og and order_group_id == default_og.pk:
-                    # 모든 unit_type의 미계약 가격을 합산 (payment_amounts 기준)
-                    non_contract_query = """
-                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as non_contract_amount
-                            FROM contract_contractprice cp
-                            CROSS JOIN jsonb_each_text(cp.payment_amounts)
-                            INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
-                            WHERE cp.contract_id IS NULL
-                              AND hu.unit_type_id = %s
-                              AND cp.is_cache_valid = true
-                            """
-
-                    cursor.execute(non_contract_query, [unit_type_id])
-                    non_contract_result = cursor.fetchone()
-                    non_contract_amount = non_contract_result[0] if non_contract_result else 0
-
-                # 근린생활시설의 경우 별도 처리 (payment_amounts 기준)
-                elif unit_type_id == 4:  # 근린생활시설 unit_type_id = 4
-                    # 근린생활시설의 미계약 가격 (payment_amounts 기준)
-                    non_contract_query = """
-                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as non_contract_amount
-                            FROM contract_contractprice cp
-                            CROSS JOIN jsonb_each_text(cp.payment_amounts)
-                            INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
-                            WHERE cp.contract_id IS NULL
-                              AND hu.unit_type_id = %s
-                              AND cp.is_cache_valid = true
-                            """
+                    if unit_type_id == 4:  # 근린생활시설
+                        # 근린생활시설의 미계약 가격 (기본 납부회차 적용)
+                        # 근린생활시설은 모든 payment_amounts가 비어있으므로 price 필드 사용
+                        non_contract_query = """
+                                SELECT COALESCE(SUM(cp.price), 0) as non_contract_amount
+                                FROM contract_contractprice cp
+                                INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
+                                WHERE cp.contract_id IS NULL
+                                  AND hu.unit_type_id = %s
+                                  AND cp.is_cache_valid = true
+                                """
+                    else:
+                        # 다른 unit_type의 미계약 가격 (payment_amounts 기준)
+                        non_contract_query = """
+                                SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as non_contract_amount
+                                FROM contract_contractprice cp
+                                CROSS JOIN jsonb_each_text(cp.payment_amounts)
+                                INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
+                                WHERE cp.contract_id IS NULL
+                                  AND hu.unit_type_id = %s
+                                  AND cp.is_cache_valid = true
+                                """
 
                     cursor.execute(non_contract_query, [unit_type_id])
                     non_contract_result = cursor.fetchone()
@@ -918,18 +928,29 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
             if order_group_id == default_og.pk:
                 with connection.cursor() as cursor:
                     # 해당 unit_type의 미계약 금액 계산
-                    query = """
-                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as non_contract_amount
-                            FROM contract_contractprice cp,
-                                 jsonb_each_text(cp.payment_amounts)
-                            WHERE cp.contract_id IS NULL
-                              AND cp.house_unit_id IN (
-                                  SELECT hu.id
-                                  FROM items_houseunit hu
-                                  WHERE hu.unit_type_id = %s
-                              )
-                              AND cp.is_cache_valid = true
-                            """
+                    # 근린생활시설(unit_type_id=4)의 경우 기본 납부회차 적용
+                    if unit_type_id == 4:
+                        query = """
+                                SELECT COALESCE(SUM(cp.price), 0) as non_contract_amount
+                                FROM contract_contractprice cp
+                                INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
+                                WHERE cp.contract_id IS NULL
+                                  AND hu.unit_type_id = %s
+                                  AND cp.is_cache_valid = true
+                                """
+                    else:
+                        query = """
+                                SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as non_contract_amount
+                                FROM contract_contractprice cp,
+                                     jsonb_each_text(cp.payment_amounts)
+                                WHERE cp.contract_id IS NULL
+                                  AND cp.house_unit_id IN (
+                                      SELECT hu.id
+                                      FROM items_houseunit hu
+                                      WHERE hu.unit_type_id = %s
+                                  )
+                                  AND cp.is_cache_valid = true
+                                """
 
                     cursor.execute(query, [unit_type_id])
                     result = cursor.fetchone()

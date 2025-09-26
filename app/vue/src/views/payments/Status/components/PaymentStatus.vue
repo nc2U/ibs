@@ -97,13 +97,13 @@ const totals = computed(() => ({
         <CTableHeaderCell rowspan="2">타입</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">전체 매출액</CTableHeaderCell>
         <CTableHeaderCell colspan="4">계약 현황</CTableHeaderCell>
-        <CTableHeaderCell rowspan="2">미계약 세대수</CTableHeaderCell>
+        <CTableHeaderCell rowspan="2">미계약 세대(실)수</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">미계약 금액</CTableHeaderCell>
-        <CTableHeaderCell rowspan="2">합계</CTableHeaderCell>
+        <CTableHeaderCell rowspan="2">합 계</CTableHeaderCell>
       </CTableRow>
 
       <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell>계약 세대수</CTableHeaderCell>
+        <CTableHeaderCell>계약 세대(실)수</CTableHeaderCell>
         <CTableHeaderCell>계약 금액</CTableHeaderCell>
         <CTableHeaderCell>실수납 금액</CTableHeaderCell>
         <CTableHeaderCell>미수 금액</CTableHeaderCell>
@@ -177,12 +177,12 @@ const totals = computed(() => ({
 
     <CTableHead>
       <CTableRow class="text-right" :color="TableSecondary">
-        <CTableHeaderCell colspan="2" class="text-center"> 합계</CTableHeaderCell>
+        <CTableHeaderCell colspan="2" class="text-center"> 총 계</CTableHeaderCell>
         <CTableHeaderCell class="text-right">
           <!-- 전체 매출액 합계 -->
           {{ numFormat(totals.totalSalesAmount) }}
         </CTableHeaderCell>
-        <!-- 계약 세대수 합계 -->
+        <!-- 계약 세대(실)수 합계 -->
         <CTableHeaderCell>{{ numFormat(totals.totalContractUnits) }}</CTableHeaderCell>
         <CTableHeaderCell>
           <!-- 계약 금액 합계 -->
@@ -196,7 +196,7 @@ const totals = computed(() => ({
           <!-- 미수 금액 합계 -->
           {{ numFormat(totals.totalUnpaidAmount) }}
         </CTableHeaderCell>
-        <!-- 미계약 세대수 합계 -->
+        <!-- 미계약 세대(실)수 합계 -->
         <CTableHeaderCell>{{ numFormat(totals.totalNonContractUnits) }}</CTableHeaderCell>
         <CTableHeaderCell>
           <!-- 미계약 금액 합계 -->
