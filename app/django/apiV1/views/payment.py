@@ -732,6 +732,11 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                         project_id, order_group_id, unit_type_id
                     )
 
+                    # 미계약 세대수: contract_contractprice에서 contract_id IS NULL인 세대 수
+                    non_contract_units = PaymentStatusByUnitTypeViewSet._get_non_contract_units_by_unit_type(
+                        project_id, order_group_id, unit_type_id
+                    )
+
                     # 합계 = 계약금액 + 미계약금액 (total_budget 대신 계산)
                     total_amount = contract_amount + non_contract_amount
 
@@ -744,6 +749,7 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                         'total_sales_amount': total_sales_amount,
                         'planned_units': planned_units,
                         'contract_units': contract_units,
+                        'non_contract_units': non_contract_units,
                         'contract_amount': contract_amount,
                         'paid_amount': paid_amount,
                         'unpaid_amount': unpaid_amount,
@@ -934,4 +940,43 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
 
         except Exception as e:
             logger.error(f"_get_non_contract_amount_by_unit_type error: {str(e)}")
+            return 0
+
+    @staticmethod
+    def _get_non_contract_units_by_unit_type(project_id, order_group_id, unit_type_id):
+        """order_group과 unit_type별 미계약 세대수 계산 (get_default_for_project 활용)"""
+        try:
+            from project.models import Project
+            from contract.models import OrderGroup
+
+            # 프로젝트 인스턴스 가져오기
+            project = Project.objects.get(pk=project_id)
+
+            # 미계약 기본 order_group 가져오기
+            default_og = OrderGroup.get_default_for_project(project)
+            if not default_og:
+                return 0
+
+            # 미계약 기본 order_group에 해당하는 경우만 미계약 세대수 계산
+            if order_group_id == default_og.pk:
+                with connection.cursor() as cursor:
+                    # 해당 unit_type의 미계약 세대수 계산
+                    query = """
+                            SELECT COUNT(*) as non_contract_units
+                            FROM contract_contractprice cp
+                            INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
+                            WHERE cp.contract_id IS NULL
+                              AND hu.unit_type_id = %s
+                              AND cp.is_cache_valid = true
+                            """
+
+                    cursor.execute(query, [unit_type_id])
+                    result = cursor.fetchone()
+                    return result[0] if result else 0
+            else:
+                # 미계약 기본 order_group이 아닌 경우 0
+                return 0
+
+        except Exception as e:
+            logger.error(f"_get_non_contract_units_by_unit_type error: {str(e)}")
             return 0

@@ -186,6 +186,7 @@ class PaymentStatusByUnitTypeSerializer(serializers.Serializer):
     total_sales_amount = serializers.IntegerField()
     planned_units = serializers.IntegerField()
     contract_units = serializers.IntegerField()
+    non_contract_units = serializers.IntegerField()
     contract_amount = serializers.IntegerField()
     paid_amount = serializers.IntegerField()
     unpaid_amount = serializers.IntegerField()

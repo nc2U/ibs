@@ -12,7 +12,7 @@ const props = defineProps({
 
 const proStore = useProject()
 const paymentStore = usePayment()
-const paymentStatusData = computed(() => paymentStore.paymentStatusByUnitType)
+const paymentStatusData = computed<any[]>(() => paymentStore.paymentStatusByUnitType)
 
 // Fetch payment status data on component mount
 onMounted(async () => {
@@ -23,17 +23,20 @@ onMounted(async () => {
 })
 
 // Watch date changes and refetch data
-watch(() => props.date, async (newDate) => {
-  const currentProject = (proStore.project as Project)?.pk
-  if (currentProject) {
-    await paymentStore.fetchPaymentStatusByUnitType(currentProject, newDate)
-  }
-})
+watch(
+  () => props.date,
+  async newDate => {
+    const currentProject = (proStore.project as Project)?.pk
+    if (currentProject) {
+      await paymentStore.fetchPaymentStatusByUnitType(currentProject, newDate)
+    }
+  },
+)
 
 // 차수별 첫번째 타입인지 확인
 const isFirstTypeInOrderGroup = (item: any) => {
   const sameOrderGroupItems = paymentStatusData.value.filter(
-    d => d.order_group_id === item.order_group_id
+    d => d.order_group_id === item.order_group_id,
   )
   return sameOrderGroupItems[0]?.unit_type_id === item.unit_type_id
 }
@@ -48,10 +51,17 @@ const totals = computed(() => ({
   totalSalesAmount: paymentStatusData.value.reduce((sum, item) => sum + item.total_sales_amount, 0),
   totalPlannedUnits: paymentStatusData.value.reduce((sum, item) => sum + item.planned_units, 0),
   totalContractUnits: paymentStatusData.value.reduce((sum, item) => sum + item.contract_units, 0),
+  totalNonContractUnits: paymentStatusData.value.reduce(
+    (sum, item) => sum + item.non_contract_units,
+    0,
+  ),
   totalContractAmount: paymentStatusData.value.reduce((sum, item) => sum + item.contract_amount, 0),
   totalPaidAmount: paymentStatusData.value.reduce((sum, item) => sum + item.paid_amount, 0),
   totalUnpaidAmount: paymentStatusData.value.reduce((sum, item) => sum + item.unpaid_amount, 0),
-  totalNonContractAmount: paymentStatusData.value.reduce((sum, item) => sum + item.non_contract_amount, 0),
+  totalNonContractAmount: paymentStatusData.value.reduce(
+    (sum, item) => sum + item.non_contract_amount,
+    0,
+  ),
   totalBudget: paymentStatusData.value.reduce((sum, item) => sum + item.total_budget, 0),
 }))
 </script>
@@ -63,10 +73,10 @@ const totals = computed(() => ({
       <col style="width: 8%" />
       <col style="width: 10%" />
       <col style="width: 7%" />
+      <col style="width: 12%" />
+      <col style="width: 12%" />
+      <col style="width: 12%" />
       <col style="width: 7%" />
-      <col style="width: 12%" />
-      <col style="width: 12%" />
-      <col style="width: 12%" />
       <col style="width: 12%" />
       <col style="width: 12%" />
     </colgroup>
@@ -86,8 +96,8 @@ const totals = computed(() => ({
         <CTableHeaderCell rowspan="2">차수</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">타입</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">전체 매출액</CTableHeaderCell>
-        <CTableHeaderCell rowspan="2">계획 세대수</CTableHeaderCell>
         <CTableHeaderCell colspan="4">계약 현황</CTableHeaderCell>
+        <CTableHeaderCell rowspan="2">미계약 세대수</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">미계약 금액</CTableHeaderCell>
         <CTableHeaderCell rowspan="2">합계</CTableHeaderCell>
       </CTableRow>
@@ -101,7 +111,11 @@ const totals = computed(() => ({
     </CTableHead>
 
     <CTableBody v-if="paymentStatusData.length">
-      <CTableRow v-for="item in paymentStatusData" :key="`${item.order_group_id}-${item.unit_type_id}`" class="text-right">
+      <CTableRow
+        v-for="item in paymentStatusData"
+        :key="`${item.order_group_id}-${item.unit_type_id}`"
+        class="text-right"
+      >
         <CTableDataCell
           v-if="isFirstTypeInOrderGroup(item)"
           :rowspan="getUnitTypeCountByOrderGroup(item.order_group_id)"
@@ -120,8 +134,6 @@ const totals = computed(() => ({
         <CTableDataCell>
           {{ numFormat(item.total_sales_amount) }}
         </CTableDataCell>
-        <!-- 계획 세대수 -->
-        <CTableDataCell>{{ numFormat(item.planned_units) }}</CTableDataCell>
         <CTableDataCell>
           <!-- 계약 세대수 -->
           {{ numFormat(item.contract_units) }}
@@ -138,6 +150,8 @@ const totals = computed(() => ({
           <!-- 미수 금액 -->
           {{ numFormat(item.unpaid_amount) }}
         </CTableDataCell>
+        <!-- 미계약 세대수 -->
+        <CTableDataCell>{{ numFormat(item.non_contract_units) }}</CTableDataCell>
         <CTableDataCell
           :class="{
             'text-danger': item.non_contract_amount < 0,
@@ -168,8 +182,6 @@ const totals = computed(() => ({
           <!-- 전체 매출액 합계 -->
           {{ numFormat(totals.totalSalesAmount) }}
         </CTableHeaderCell>
-        <!-- 계획 세대수 합계 -->
-        <CTableHeaderCell>{{ numFormat(totals.totalPlannedUnits) }}</CTableHeaderCell>
         <!-- 계약 세대수 합계 -->
         <CTableHeaderCell>{{ numFormat(totals.totalContractUnits) }}</CTableHeaderCell>
         <CTableHeaderCell>
@@ -184,6 +196,8 @@ const totals = computed(() => ({
           <!-- 미수 금액 합계 -->
           {{ numFormat(totals.totalUnpaidAmount) }}
         </CTableHeaderCell>
+        <!-- 미계약 세대수 합계 -->
+        <CTableHeaderCell>{{ numFormat(totals.totalNonContractUnits) }}</CTableHeaderCell>
         <CTableHeaderCell>
           <!-- 미계약 금액 합계 -->
           {{ numFormat(totals.totalNonContractAmount) }}
