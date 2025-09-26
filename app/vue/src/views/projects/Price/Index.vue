@@ -162,7 +162,9 @@ const contPriceSet = async () => {
     )
   } else {
     try {
+      loading.value = true
       const result = await bulkUpdateContractPrices(project.value)
+      loading.value = false
       console.log('🔍 계약 가격 일괄 업데이트 결과:', result)
 
       if (result.debug_info) {
@@ -198,7 +200,7 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await dataSetup(project.value || projStore.initProjId)
+  dataSetup(project.value || projStore.initProjId)
   loading.value = false
 })
 </script>

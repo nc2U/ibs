@@ -5,7 +5,7 @@ import type { OrderGroup } from '@/store/types/contract'
 import type { UnitType } from '@/store/types/project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-const props = defineProps({
+defineProps({
   project: { type: Number, default: null },
   orders: { type: Array as PropType<OrderGroup[]>, default: () => [] },
   types: { type: Array as PropType<UnitType[]>, default: () => [] },
