@@ -755,13 +755,9 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 return Response(serializer.data)
 
         except Exception as e:
-            import traceback
-            error_traceback = traceback.format_exc()
             logger.exception(f"PaymentStatusByUnitType API error: {str(e)}")
-            logger.error(f"Traceback: {error_traceback}")
             return Response({
-                'error': f'An internal server error occurred: {str(e)}',
-                'traceback': error_traceback
+                'error': 'An internal server error has occurred.'
             }, status=500)
 
     @staticmethod
