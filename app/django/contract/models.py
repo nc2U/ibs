@@ -149,6 +149,9 @@ class ContractPrice(models.Model):
     house_unit = models.OneToOneField('items.HouseUnit', on_delete=models.PROTECT,
                                       verbose_name='세대정보', related_name='contract_price',
                                       null=True, blank=True)
+    order_group = models.ForeignKey('OrderGroup', on_delete=models.PROTECT,
+                                   null=True, blank=True, verbose_name='차수',
+                                   help_text='분양 차수 - 생성 시 자동 설정, 수정 시 유지')
     price = models.PositiveIntegerField('분양가격')
     price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
     price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
@@ -163,6 +166,19 @@ class ContractPrice(models.Model):
     is_cache_valid = models.BooleanField('캐시 유효성', default=False, help_text='저장된 계산값이 유효한지 여부')
 
     def save(self, *args, **kwargs):
+        # order_group은 생성 시에만 자동 설정 (수정 시에는 기존값 유지)
+        if not self.pk and not self.order_group:  # 새로 생성하는 경우에만
+            if self.contract and self.contract.order_group:
+                # 계약이 있으면 계약의 차수 사용
+                self.order_group = self.contract.order_group
+            elif self.house_unit and self.house_unit.unit_type:
+                # 미계약이면 프로젝트의 기본 차수 사용
+                default_og = OrderGroup.get_default_for_project(
+                    self.house_unit.unit_type.project
+                )
+                if default_og:
+                    self.order_group = default_og
+
         # 저장 시 자동으로 납부 금액 계산 및 캐시
         if self.contract:
             # 계약이 있는 경우 일반 계산

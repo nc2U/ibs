@@ -96,7 +96,7 @@ class ContractPriceBulkUpdateService:
     @staticmethod
     def _update_or_create_contract_price(contract, price, house_unit=None):
         """
-        개별 계약의 ContractPrice 업데이트 또는 생성
+        개별 계약의 ContractPrice 업데이트 또는 생성 (생성/수정 분리 방식)
 
         Args:
             contract: Contract 인스턴스
@@ -106,29 +106,40 @@ class ContractPriceBulkUpdateService:
         Returns:
             tuple: (ContractPrice 인스턴스, created 여부)
         """
-        defaults = {
-            'price': price[0],
-            'price_build': price[1],
-            'price_land': price[2],
-            'price_tax': price[3],
-            # payment_amounts는 save() 메서드에서 자동 계산됨
-        }
+        try:
+            # 기존 ContractPrice 조회
+            existing = ContractPrice.objects.get(contract=contract)
 
-        # house_unit이 있으면 추가
-        if house_unit:
-            defaults['house_unit'] = house_unit
+            # 수정: 가격 정보만 업데이트, order_group은 유지
+            existing.price = price[0]
+            existing.price_build = price[1]
+            existing.price_land = price[2]
+            existing.price_tax = price[3]
 
-        cont_price, created = ContractPrice.objects.update_or_create(
-            contract=contract,
-            defaults=defaults
-        )
+            if house_unit:
+                existing.house_unit = house_unit
 
-        # update_or_create의 update는 save() 메서드를 호출하지 않으므로
-        # 기존 레코드가 업데이트된 경우 수동으로 save() 호출하여 payment_amounts 계산
-        if not created:
-            cont_price.save()
+            existing.save()  # order_group은 변경되지 않음 (save 메서드에서 생성시에만 설정)
+            return existing, False
 
-        return cont_price, created
+        except ContractPrice.DoesNotExist:
+            # 생성: 모든 필드 포함하여 새로 생성
+            defaults = {
+                'price': price[0],
+                'price_build': price[1],
+                'price_land': price[2],
+                'price_tax': price[3],
+            }
+
+            if house_unit:
+                defaults['house_unit'] = house_unit
+
+            # order_group은 save() 메서드에서 자동 설정됨
+            new_contract_price = ContractPrice.objects.create(
+                contract=contract,
+                **defaults
+            )
+            return new_contract_price, True
 
     def get_contracts_to_update(self):
         """
@@ -160,12 +171,12 @@ class ContractPriceBulkUpdateService:
 
     def _create_uncontracted_prices(self):
         """
-        미계약 세대에 대한 ContractPrice 생성
+        미계약 세대에 대한 ContractPrice 생성/수정 (생성/수정 분리 방식)
 
         Returns:
-            int: 생성된 ContractPrice 수
+            int: 생성/수정된 ContractPrice 수
         """
-        created_count = 0
+        processed_count = 0
 
         # 미계약 세대 조회 (key_unit이 없거나 contract가 없는 세대들)
         uncontracted_houses = HouseUnit.objects.filter(
@@ -177,11 +188,11 @@ class ContractPriceBulkUpdateService:
 
         for house_unit in uncontracted_houses:
             try:
-                # 이미 ContractPrice가 있는 세대는 payment_amounts 업데이트
-                if hasattr(house_unit, 'contract_price') and house_unit.contract_price:
-                    existing_contract_price = house_unit.contract_price
+                # 기존 미계약 ContractPrice 조회
+                try:
+                    existing = ContractPrice.objects.get(house_unit=house_unit, contract__isnull=True)
 
-                    # 기준 가격 조회 및 업데이트
+                    # 수정: 가격만 업데이트, order_group은 유지
                     try:
                         sales_price = SalesPriceByGT.objects.get(
                             project=self.project,
@@ -190,49 +201,45 @@ class ContractPriceBulkUpdateService:
                             unit_floor_type=house_unit.floor_type
                         )
 
-                        # 가격 정보 업데이트
-                        existing_contract_price.price = sales_price.price
-                        existing_contract_price.price_build = sales_price.price_build
-                        existing_contract_price.price_land = sales_price.price_land
-                        existing_contract_price.price_tax = sales_price.price_tax
-
-                        # save() 호출 시 자동으로 payment_amounts 계산됨
-                        existing_contract_price.save()
-                        created_count += 1  # 업데이트도 카운트
+                        existing.price = sales_price.price
+                        existing.price_build = sales_price.price_build
+                        existing.price_land = sales_price.price_land
+                        existing.price_tax = sales_price.price_tax
+                        existing.save()  # order_group은 유지됨
+                        processed_count += 1
 
                     except SalesPriceByGT.DoesNotExist:
-                        # 해당 조건의 기준 가격이 없는 경우 건너뜀
                         pass
 
-                    continue
+                except ContractPrice.DoesNotExist:
+                    # 생성: 새로 생성 (order_group은 save()에서 자동 설정)
+                    try:
+                        sales_price = SalesPriceByGT.objects.get(
+                            project=self.project,
+                            order_group=self.order_group_for_uncontracted,
+                            unit_type=house_unit.unit_type,
+                            unit_floor_type=house_unit.floor_type
+                        )
 
-                # SalesPriceByGT에서 기준 가격 조회
-                sales_price = SalesPriceByGT.objects.get(
-                    project=self.project,
-                    order_group=self.order_group_for_uncontracted,
-                    unit_type=house_unit.unit_type,
-                    unit_floor_type=house_unit.floor_type
-                )
+                        ContractPrice.objects.create(
+                            contract=None,
+                            house_unit=house_unit,
+                            price=sales_price.price,
+                            price_build=sales_price.price_build,
+                            price_land=sales_price.price_land,
+                            price_tax=sales_price.price_tax
+                            # order_group은 save()에서 자동 설정됨
+                        )
+                        processed_count += 1
 
-                # ContractPrice 생성 (계약 없이)
-                ContractPrice.objects.create(
-                    contract=None,  # 미계약 상태
-                    house_unit=house_unit,
-                    price=sales_price.price,
-                    price_build=sales_price.price_build,
-                    price_land=sales_price.price_land,
-                    price_tax=sales_price.price_tax
-                )
-                created_count += 1
+                    except SalesPriceByGT.DoesNotExist:
+                        continue
 
-            except SalesPriceByGT.DoesNotExist:
-                # 해당 조건의 기준 가격이 없는 경우 건너뜀
-                continue
             except Exception as e:
                 # 기타 오류 발생시 건너뜀 (운영시에는 적절한 로깅 필요)
                 continue
 
-        return created_count
+        return processed_count
 
 
 class ContractPriceUpdateService:
@@ -243,7 +250,7 @@ class ContractPriceUpdateService:
     @staticmethod
     def update_single_contract_price(contract):
         """
-        단일 계약의 가격 정보 업데이트
+        단일 계약의 가격 정보 업데이트 (생성/수정 분리 방식)
 
         Args:
             contract: Contract 인스턴스
@@ -258,14 +265,36 @@ class ContractPriceUpdateService:
 
         price = get_contract_price(contract, house_unit, True)  # is_set=True for consistency
 
-        cont_price, created = ContractPrice.objects.update_or_create(
-            contract=contract,
-            defaults={
+        try:
+            # 기존 ContractPrice 조회
+            existing = ContractPrice.objects.get(contract=contract)
+
+            # 수정: 가격 정보만 업데이트, order_group은 유지
+            existing.price = price[0]
+            existing.price_build = price[1]
+            existing.price_land = price[2]
+            existing.price_tax = price[3]
+
+            if house_unit:
+                existing.house_unit = house_unit
+
+            existing.save()  # order_group은 변경되지 않음
+            return existing, False
+
+        except ContractPrice.DoesNotExist:
+            # 생성: 새로 생성 (order_group은 save()에서 자동 설정)
+            defaults = {
                 'price': price[0],
                 'price_build': price[1],
                 'price_land': price[2],
                 'price_tax': price[3],
-                # payment_amounts는 save() 메서드에서 자동 계산됨
             }
-        )
-        return cont_price, created
+
+            if house_unit:
+                defaults['house_unit'] = house_unit
+
+            new_contract_price = ContractPrice.objects.create(
+                contract=contract,
+                **defaults
+            )
+            return new_contract_price, True
