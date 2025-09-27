@@ -66,7 +66,7 @@ class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'order_group', 'contract_status', 'contract', 'house_unit', 'unit_type_display', 'price',
                     'is_cache_valid')
     list_display_links = ('contract', 'house_unit')
-    list_editable = ('order_group', 'price', 'price_build', 'price_land', 'price_tax')
+    list_editable = ('order_group', 'price')
     list_filter = (
         'contract__project',
         'order_group',  # order_group 직접 필터
@@ -80,7 +80,7 @@ class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
         'house_unit__name',
         'house_unit__unit_type__name'
     )
-    readonly_fields = ('calculated_at',)
+    readonly_fields = ('calculated',)
 
     def contract_status(self, obj):
         """계약 상태 표시"""

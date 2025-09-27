@@ -47,7 +47,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"    ContractPrice ID: {contract_price.id}")
                 self.stdout.write(f"    분양가격: {contract_price.price:,}원")
                 self.stdout.write(f"    캐시 유효성: {contract_price.is_cache_valid}")
-                self.stdout.write(f"    계산일시: {contract_price.calculated_at}")
+                self.stdout.write(f"    계산일시: {contract_price.calculated}")
 
                 if contract_price.payment_amounts:
                     self.stdout.write(f"    payment_amounts: {len(contract_price.payment_amounts)}개 항목")

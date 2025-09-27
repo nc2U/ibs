@@ -93,7 +93,7 @@ class ContractPriceWithPaymentPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractPrice
         fields = ('pk', 'price', 'price_build', 'price_land', 'price_tax',
-                  'payment_amounts', 'is_cache_valid', 'calculated_at', 'payment_plan')
+                  'payment_amounts', 'is_cache_valid', 'calculated', 'payment_plan')
 
     @staticmethod
     def get_payment_plan(obj):

@@ -291,7 +291,7 @@ export interface ContractPriceWithPaymentPlan {
   price_land: number | null
   price_tax: number | null
   payment_amounts: Record<string, number> // { "1": 10000000, "2": 30000000, ... }
-  calculated_at: string
+  calculated: string
   is_cache_valid: boolean
   payment_plan: ContractPricePaymentPlanItem[]
 }

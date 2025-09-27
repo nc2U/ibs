@@ -162,7 +162,7 @@ class ContractPrice(models.Model):
                                        help_text='납부순서별 납부 금액 {"1": 10000000, "2": 30000000, "3": 20000000} (pay_time 기준)')
 
     # 캐시 갱신 관련 필드
-    calculated_at = models.DateTimeField('계산일시', auto_now=True, help_text='마지막 계산 수행 시각')
+    calculated = models.DateTimeField('계산일시', auto_now=True, help_text='마지막 계산 수행 시각')
     is_cache_valid = models.BooleanField('캐시 유효성', default=False, help_text='저장된 계산값이 유효한지 여부')
 
     def save(self, *args, **kwargs):
