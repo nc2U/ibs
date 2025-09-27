@@ -102,7 +102,7 @@ defineExpose({
               </td>
               <td class="text-right">{{ numFormat(item.amount as number) }}원</td>
               <td>
-                <v-btn size="x-small" color="warning" class="mr-1" @click="handleEdit(item)">
+                <v-btn size="x-small" color="success" class="mr-1" @click="handleEdit(item)">
                   수정
                 </v-btn>
                 <v-btn size="x-small" color="error" @click="handleDelete(item)"> 삭제 </v-btn>

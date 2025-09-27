@@ -5,7 +5,7 @@ import { useAccount } from '@/store/pinia/account'
 import type {
   PayOrder,
   Price,
-  PaymentPerInstallment as PaymentPerInstallmentType,
+  PaymentPerInstallment as PayInstallType,
   PaymentPerInstallmentPayload,
 } from '@/store/types/payment'
 import { type UnitFloorType } from '@/store/types/project'
@@ -190,7 +190,7 @@ const handlePaymentCreate = () => {
   refFormModal.value.callModal()
 }
 
-const handlePaymentEdit = (item: PaymentPerInstallmentType) => {
+const handlePaymentEdit = (item: PayInstallType) => {
   paymentEditMode.value = true
   paymentEditId.value = item.pk
   isPaymentModal.value = true
@@ -199,7 +199,7 @@ const handlePaymentEdit = (item: PaymentPerInstallmentType) => {
   refFormModal.value.callModal()
 }
 
-const handlePaymentDelete = (item: PaymentPerInstallmentType) => {
+const handlePaymentDelete = (item: PayInstallType) => {
   confirmModalType.value = 'payment'
   paymentEditId.value = item.pk
   refConfirmModal.value.confirmOpen(
