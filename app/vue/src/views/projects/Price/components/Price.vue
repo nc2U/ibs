@@ -54,8 +54,12 @@ const isPaymentModal = ref(false)
 const confirmModalType = ref<'price' | 'payment'>('price')
 
 const payStore = usePayment()
-const { createPaymentPerInstallment, updatePaymentPerInstallment, deletePaymentPerInstallment } =
-  payStore
+const {
+  createPaymentPerInstallment,
+  updatePaymentPerInstallment,
+  deletePaymentPerInstallment,
+  paymentPerInstallmentList,
+} = payStore
 
 watch(form, val => {
   if (!val.price_build) form.price_build = null
@@ -160,9 +164,23 @@ const onPaymentChanged = () => {
 }
 
 // PaymentPerInstallment 관련 함수들
-const availablePayOrders = computed(() =>
-  props.payOrders.filter(order => order.pay_sort && !['2', '3'].includes(order.pay_sort)),
-)
+const availablePayOrders = computed(() => {
+  // Filter out 중도금(2) and 잔금(3) payment orders
+  const filteredOrders = props.payOrders.filter(
+    order => order.pay_sort && !['2', '3'].includes(order.pay_sort),
+  )
+
+  // In edit mode, show all filtered orders
+  if (paymentEditMode.value) {
+    return filteredOrders
+  }
+
+  // In create mode, filter out orders that already have PaymentPerInstallment records
+  const usedPayOrderIds = paymentPerInstallmentList
+    .map(ppi => ppi.pay_order)
+    .filter(id => id !== null) as number[]
+  return filteredOrders.filter(order => order.pk && !usedPayOrderIds.includes(order.pk))
+})
 
 const handlePaymentCreate = () => {
   paymentEditMode.value = false
@@ -233,8 +251,24 @@ const handlePaymentModalAction = async () => {
     // Refresh PaymentPerInstallment data
     refPaymentPerInstallment.value?.loadData()
     emit('payment-changed')
-  } catch (error) {
+  } catch (error: any) {
     console.error('PaymentPerInstallment operation failed:', error)
+
+    // Handle unique constraint violation
+    if (error?.response?.data?.non_field_errors) {
+      const errorMessage = error.response.data.non_field_errors[0]
+      if (errorMessage.includes('고유해야 합니다')) {
+        refAlertModal.value.alertOpen(
+          '',
+          '해당 납부 회차에 대한 특별 약정금액이 이미 존재합니다.',
+          'warning',
+        )
+      } else {
+        refAlertModal.value.alertOpen('', errorMessage, 'danger')
+      }
+    } else {
+      refAlertModal.value.alertOpen('', '특별 약정금액 처리 중 오류가 발생했습니다.', 'danger')
+    }
   }
 }
 
@@ -309,7 +343,14 @@ onUpdated(() => {
       >
         {{ showPaymentDetails ? '접기' : '보기' }}
       </v-btn>
-      <v-btn color="primary" size="x-small" @click="handlePaymentCreate"> 추가</v-btn>
+      <v-btn
+        color="primary"
+        size="x-small"
+        @click="handlePaymentCreate"
+        :disabled="!price || !availablePayOrders.length"
+      >
+        추가</v-btn
+      >
     </CTableDataCell>
   </CTableRow>
 
@@ -330,13 +371,15 @@ onUpdated(() => {
   </CTableRow>
 
   <FormModal ref="refFormModal">
-    <template #header>{{
-      isPaymentModal
-        ? paymentEditMode
-          ? '특별 약정금액 수정'
-          : '특별 약정금액 등록'
-        : '특별약정 추가'
-    }}</template>
+    <template #header>
+      {{
+        isPaymentModal
+          ? paymentEditMode
+            ? '특별 약정금액 수정'
+            : '특별 약정금액 등록'
+          : '특별약정 추가'
+      }}
+    </template>
     <template #default>
       <CForm v-if="isPaymentModal">
         <CModalBody class="text-body">
@@ -381,8 +424,9 @@ onUpdated(() => {
             size="small"
             :disabled="!paymentFormsCheck"
             @click="handlePaymentModalAction"
-            >확인</v-btn
           >
+            확인
+          </v-btn>
         </CModalFooter>
       </CForm>
       <CForm v-else>

@@ -59,7 +59,7 @@ class PaymentPerInstallmentSerializer(serializers.ModelSerializer):
                 'project': obj.sales_price.project.name if obj.sales_price.project else None,
                 'order_group': obj.sales_price.order_group.name if obj.sales_price.order_group else None,
                 'unit_type': obj.sales_price.unit_type.name if obj.sales_price.unit_type else None,
-                'unit_floor_type': obj.sales_price.unit_floor_type.name if obj.sales_price.unit_floor_type else None,
+                'unit_floor_type': obj.sales_price.unit_floor_type.alias_name if obj.sales_price.unit_floor_type else None,
                 'price': obj.sales_price.price
             }
         return None
