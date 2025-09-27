@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
 from .models import (OrderGroup, Contract, ContractPrice, ContractFile,
                      Contractor, ContractorAddress,
@@ -41,13 +42,64 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin]
 
 
+class ContractStatusFilter(admin.SimpleListFilter):
+    """계약 상태에 따른 필터 (계약 있음/미계약)"""
+    title = _('계약 상태')
+    parameter_name = 'contract_status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('contracted', _('계약 - 체결')),
+            ('uncontracted', _('미계약')),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'contracted':
+            return queryset.filter(contract__isnull=False)
+        if self.value() == 'uncontracted':
+            return queryset.filter(contract__isnull=True)
+        return queryset
+
+
 @admin.register(ContractPrice)
 class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'contract', 'price', 'price_build', 'price_land', 'price_tax')
-    list_display_links = ('contract',)
-    list_editable = ('price', 'price_build', 'price_land', 'price_tax')
-    list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',
-                   'contract__activation', 'contract__contractor__status')
+    list_display = ('id', 'order_group', 'contract_status', 'contract', 'house_unit', 'unit_type_display', 'price',
+                    'is_cache_valid')
+    list_display_links = ('contract', 'house_unit')
+    list_editable = ('order_group', 'price', 'price_build', 'price_land', 'price_tax')
+    list_filter = (
+        'contract__project',
+        'order_group',  # order_group 직접 필터
+        'house_unit__unit_type',  # 미계약 세대의 unit_type 필터
+        ContractStatusFilter,  # 계약 상태 필터 추가
+        'is_cache_valid',  # 캐시 유효성 필터
+    )
+    search_fields = (
+        'contract__serial_number',
+        'contract__contractor__name',
+        'house_unit__name',
+        'house_unit__unit_type__name'
+    )
+    readonly_fields = ('calculated_at',)
+
+    def contract_status(self, obj):
+        """계약 상태 표시"""
+        if obj.contract:
+            return "✅ 계약"
+        else:
+            return "⚪ 미계약"
+
+    contract_status.short_description = "계약 상태"
+
+    def unit_type_display(self, obj):
+        """유닛 타입 표시 (계약 또는 house_unit에서)"""
+        if obj.contract and obj.contract.unit_type:
+            return obj.contract.unit_type.name
+        elif obj.house_unit and obj.house_unit.unit_type:
+            return obj.house_unit.unit_type.name
+        return "-"
+
+    unit_type_display.short_description = "유닛 타입"
 
 
 class CAdressInline(ImportExportMixin, admin.StackedInline):
