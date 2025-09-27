@@ -102,11 +102,14 @@ defineExpose({
       <template #default>
         <CRow v-for="item in localPaymentPerInstallmentList" :key="item.pk" class="p-1 text-center">
           <CCol>
-            납부 회차 :
-            {{ item.pay_order_info?.pay_name || getPayOrderName(item.pay_order as number) }}
+            <span class="strong">납부 회차</span>
+            :
+            <u>{{ item.pay_order_info?.pay_name || getPayOrderName(item.pay_order as number) }}</u>
           </CCol>
 
-          <CCol> 약정금액 : {{ numFormat(item.amount as number) }}원 </CCol>
+          <CCol>
+            <span class="strong">약정금액</span> : <u>{{ numFormat(item.amount as number) }}원</u>
+          </CCol>
           <CCol>
             <v-btn size="x-small" color="success" class="mr-1" @click="handleEdit(item)">
               수정
