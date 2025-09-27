@@ -147,6 +147,13 @@ export interface PaymentPerInstallment {
   amount: number | null
 }
 
+export interface PaymentPerInstallmentPayload {
+  pk?: number
+  sales_price: number
+  pay_order: number | null
+  amount: number | null
+}
+
 export interface AllPayment {
   pk: number
   deal_date: string

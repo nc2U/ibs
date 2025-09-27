@@ -14,6 +14,7 @@ import {
   type SalesSummaryByGroupType,
   type PaymentStatusByUnitType,
   type PaymentPerInstallment,
+  type PaymentPerInstallmentPayload,
 } from '@/store/types/payment'
 
 export type DownPayFilter = {
@@ -301,13 +302,13 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const createPaymentPerInstallment = (payload: PaymentPerInstallment) =>
+  const createPaymentPerInstallment = (payload: PaymentPerInstallmentPayload) =>
     api
       .post('/payment-installment/', payload)
       .then(() => fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
-  const updatePaymentPerInstallment = (payload: PaymentPerInstallment) =>
+  const updatePaymentPerInstallment = (payload: PaymentPerInstallmentPayload) =>
     api
       .put(`/payment-installment/${payload.pk}/`, payload)
       .then(() => fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()))

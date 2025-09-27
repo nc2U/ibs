@@ -1,11 +1,8 @@
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { PaymentPerInstallment, PayOrder } from '@/store/types/payment'
 import { usePayment } from '@/store/pinia/payment'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import AlertModal from '@/components/Modals/AlertModal.vue'
-import FormModal from '@/components/Modals/FormModal.vue'
 
 const props = defineProps<{
   salesPriceId: number
@@ -14,33 +11,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  created: []
-  updated: []
-  deleted: []
+  editRequested: [item: PaymentPerInstallment]
+  deleteRequested: [item: PaymentPerInstallment]
+  createRequested: []
 }>()
 
-const refFormModal = ref()
-const refConfirmModal = ref()
-const refAlertModal = ref()
-
 const payStore = usePayment()
-const {
-  paymentPerInstallmentList,
-  fetchPaymentPerInstallmentList,
-  createPaymentPerInstallment,
-  updatePaymentPerInstallment,
-  deletePaymentPerInstallment,
-} = payStore
-
-// Form data
-const form = reactive<Partial<PaymentPerInstallment>>({
-  sales_price: props.salesPriceId,
-  pay_order: null,
-  amount: null,
-})
-
-const editMode = ref(false)
-const editId = ref<number | null>(null)
+const { paymentPerInstallmentList, fetchPaymentPerInstallmentList } = payStore
 
 // Available pay orders (filtering out 중도금=2, 잔금=3)
 const availablePayOrders = computed(() =>
@@ -67,80 +44,27 @@ const loadData = async () => {
   }
 }
 
-const openCreateModal = () => {
-  editMode.value = false
-  editId.value = null
-  resetForm()
-  refFormModal.value.modalOpen()
+const handleCreate = () => {
+  emit('createRequested')
 }
 
-const openEditModal = (item: PaymentPerInstallment) => {
-  editMode.value = true
-  editId.value = item.pk
-  form.pay_order = item.pay_order
-  form.amount = item.amount
-  refFormModal.value.modalOpen()
+const handleEdit = (item: PaymentPerInstallment) => {
+  emit('editRequested', item)
 }
 
-const resetForm = () => {
-  form.sales_price = props.salesPriceId
-  form.pay_order = null
-  form.amount = null
-}
-
-const formsCheck = computed(() => {
-  return form.pay_order && form.amount && form.amount > 0
-})
-
-const modalAction = async () => {
-  if (!formsCheck.value) {
-    refAlertModal.value.alertOpen('', '필수 항목을 모두 입력해주세요.', 'warning')
-    return
-  }
-
-  try {
-    const payload = {
-      ...form,
-      pk: editId.value,
-      sales_price: props.salesPriceId,
-    } as PaymentPerInstallment
-
-    if (editMode.value && editId.value) {
-      await updatePaymentPerInstallment(payload)
-      emit('updated')
-    } else {
-      await createPaymentPerInstallment(payload)
-      emit('created')
-    }
-
-    refFormModal.value.modalClose()
-    resetForm()
-  } catch (error) {
-    console.error('Error saving payment per installment:', error)
-  }
-}
-
-const confirmDelete = (item: PaymentPerInstallment) => {
-  editId.value = item.pk
-  refConfirmModal.value.confirmOpen(
-    '',
-    `'${item.pay_order_info?.pay_name}' 특별 약정금액을 삭제하시겠습니까?`,
-    'warning',
-  )
-}
-
-const deleteAction = async () => {
-  if (editId.value) {
-    await deletePaymentPerInstallment(editId.value, props.salesPriceId)
-    emit('deleted')
-    editId.value = null
-  }
+const handleDelete = (item: PaymentPerInstallment) => {
+  emit('deleteRequested', item)
 }
 
 const getPayOrderName = (payOrderId: number) => {
   const payOrder = availablePayOrders.value.find(order => order.pk === payOrderId)
   return payOrder ? payOrder.pay_name : '알 수 없음'
 }
+
+// 부모 컴포넌트에서 데이터 새로고침을 위한 함수 노출
+defineExpose({
+  loadData,
+})
 </script>
 
 <template>
@@ -150,7 +74,7 @@ const getPayOrderName = (payOrderId: number) => {
       <v-btn
         size="small"
         color="primary"
-        @click="openCreateModal"
+        @click="handleCreate"
         :disabled="!availablePayOrders.length"
       >
         추가
@@ -184,60 +108,16 @@ const getPayOrderName = (payOrderId: number) => {
               </td>
               <td class="text-right">{{ numFormat(item.amount as number) }}원</td>
               <td>
-                <v-btn size="x-small" color="warning" class="mr-1" @click="openEditModal(item)">
+                <v-btn size="x-small" color="warning" class="mr-1" @click="handleEdit(item)">
                   수정
                 </v-btn>
-                <v-btn size="x-small" color="error" @click="confirmDelete(item)"> 삭제 </v-btn>
+                <v-btn size="x-small" color="error" @click="handleDelete(item)"> 삭제 </v-btn>
               </td>
             </tr>
           </tbody>
         </template>
       </v-simple-table>
     </v-card-text>
-
-    <!-- Form Modal -->
-    <FormModal
-      ref="refFormModal"
-      :title="editMode ? '특별 약정금액 수정' : '특별 약정금액 등록'"
-      :width="500"
-      :form-check="formsCheck"
-      @modal-action="modalAction"
-    >
-      <template #default>
-        <v-row dense>
-          <v-col cols="12">
-            <v-select
-              v-model="form.pay_order"
-              label="납부 회차 *"
-              :items="availablePayOrders"
-              item-title="pay_name"
-              item-value="pk"
-              outlined
-              dense
-              hide-details
-              :disabled="editMode"
-            />
-          </v-col>
-          <v-col cols="12">
-            <v-text-field
-              v-model.number="form.amount"
-              label="약정금액 *"
-              type="number"
-              outlined
-              dense
-              hide-details
-              suffix="원"
-            />
-          </v-col>
-        </v-row>
-      </template>
-    </FormModal>
-
-    <!-- Confirm Modal -->
-    <ConfirmModal ref="refConfirmModal" @confirm-action="deleteAction" />
-
-    <!-- Alert Modal -->
-    <AlertModal ref="refAlertModal" />
   </v-card>
 </template>
 

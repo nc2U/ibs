@@ -2,11 +2,17 @@
 import { computed, inject, onMounted, onUpdated, type PropType, reactive, ref, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins.ts'
 import { useAccount } from '@/store/pinia/account'
-import type { PayOrder, Price } from '@/store/types/payment'
+import type {
+  PayOrder,
+  Price,
+  PaymentPerInstallment as PaymentPerInstallmentType,
+  PaymentPerInstallmentPayload,
+} from '@/store/types/payment'
 import { type UnitFloorType } from '@/store/types/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import type { PriceFilter } from '@/store/pinia/payment.ts'
+import { usePayment } from '@/store/pinia/payment'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -26,6 +32,7 @@ const emit = defineEmits(['on-create', 'on-update', 'on-delete', 'payment-change
 const refFormModal = ref()
 const refConfirmModal = ref()
 const refAlertModal = ref()
+const refPaymentPerInstallment = ref()
 
 const form = reactive({
   price_build: null as number | null,
@@ -33,6 +40,22 @@ const form = reactive({
   price_tax: null as number | null,
   price: null as number | null,
 })
+
+// PaymentPerInstallment form
+const paymentForm = reactive<Partial<PaymentPerInstallmentPayload>>({
+  sales_price: undefined,
+  pay_order: null,
+  amount: null,
+})
+
+const paymentEditMode = ref(false)
+const paymentEditId = ref<number | null>(null)
+const isPaymentModal = ref(false)
+const confirmModalType = ref<'price' | 'payment'>('price')
+
+const payStore = usePayment()
+const { createPaymentPerInstallment, updatePaymentPerInstallment, deletePaymentPerInstallment } =
+  payStore
 
 watch(form, val => {
   if (!val.price_build) form.price_build = null
@@ -84,13 +107,31 @@ const onStorePrice = () => {
 }
 
 const deletePrice = () => {
-  if (useAccount().superAuth) refConfirmModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (useAccount().superAuth) {
+    confirmModalType.value = 'price'
+    refConfirmModal.value.callModal()
+  } else {
+    refAlertModal.value.callModal()
+  }
 }
-const modalAction = () => {
-  emit('on-delete', props.price?.pk)
-  refConfirmModal.value.close()
-  dataReset()
+
+const modalAction = async () => {
+  try {
+    if (confirmModalType.value === 'price') {
+      // Delete Price
+      emit('on-delete', props.price?.pk)
+      dataReset()
+    } else if (confirmModalType.value === 'payment' && paymentEditId.value) {
+      // Delete PaymentPerInstallment
+      await deletePaymentPerInstallment(paymentEditId.value, props.price?.pk as number)
+      // Refresh PaymentPerInstallment data
+      refPaymentPerInstallment.value?.loadData()
+      emit('payment-changed')
+    }
+    refConfirmModal.value.close()
+  } catch (error) {
+    console.error('Delete operation failed:', error)
+  }
 }
 
 const dataSetup = () => {
@@ -116,6 +157,85 @@ const togglePaymentDetails = () => {
 const onPaymentChanged = () => {
   // PaymentPerInstallment 데이터 변경 시 상위 컴포넌트에 알림
   emit('payment-changed')
+}
+
+// PaymentPerInstallment 관련 함수들
+const availablePayOrders = computed(() =>
+  props.payOrders.filter(order => order.pay_sort && !['2', '3'].includes(order.pay_sort)),
+)
+
+const handlePaymentCreate = () => {
+  paymentEditMode.value = false
+  paymentEditId.value = null
+  isPaymentModal.value = true
+  resetPaymentForm()
+  refFormModal.value.callModal()
+}
+
+const handlePaymentEdit = (item: PaymentPerInstallmentType) => {
+  paymentEditMode.value = true
+  paymentEditId.value = item.pk
+  isPaymentModal.value = true
+  paymentForm.pay_order = item.pay_order
+  paymentForm.amount = item.amount
+  refFormModal.value.callModal()
+}
+
+const handlePaymentDelete = (item: PaymentPerInstallmentType) => {
+  confirmModalType.value = 'payment'
+  paymentEditId.value = item.pk
+  refConfirmModal.value.confirmOpen(
+    '',
+    `'${item.pay_order_info?.pay_name}' 특별 약정금액을 삭제하시겠습니까?`,
+    'warning',
+  )
+}
+
+const resetPaymentForm = () => {
+  paymentForm.sales_price = props.price?.pk || undefined
+  paymentForm.pay_order = null
+  paymentForm.amount = null
+}
+
+const paymentFormsCheck = computed(() => {
+  return paymentForm.pay_order && paymentForm.amount && paymentForm.amount > 0
+})
+
+const handlePaymentModalAction = async () => {
+  if (!paymentFormsCheck.value) return
+
+  try {
+    if (paymentEditMode.value && paymentEditId.value) {
+      // Update existing PaymentPerInstallment
+      const payload: PaymentPerInstallmentPayload = {
+        pk: paymentEditId.value,
+        sales_price: props.price?.pk as number,
+        pay_order: paymentForm.pay_order as number,
+        amount: paymentForm.amount as number,
+      }
+      await updatePaymentPerInstallment(payload)
+    } else {
+      // Create new PaymentPerInstallment
+      const payload: PaymentPerInstallmentPayload = {
+        sales_price: props.price?.pk as number,
+        pay_order: paymentForm.pay_order as number,
+        amount: paymentForm.amount as number,
+      }
+      await createPaymentPerInstallment(payload)
+    }
+
+    refFormModal.value.close()
+    isPaymentModal.value = false
+    paymentEditMode.value = false
+    paymentEditId.value = null
+    resetPaymentForm()
+
+    // Refresh PaymentPerInstallment data
+    refPaymentPerInstallment.value?.loadData()
+    emit('payment-changed')
+  } catch (error) {
+    console.error('PaymentPerInstallment operation failed:', error)
+  }
 }
 
 onMounted(() => dataSetup())
@@ -181,7 +301,7 @@ onUpdated(() => {
     </CTableDataCell>
     <CTableDataCell v-if="write_project" class="text-center pt-3">
       <v-btn
-        :color="showPaymentDetails ? 'warning' : 'info'"
+        :color="showPaymentDetails ? 'secondary' : 'info'"
         size="x-small"
         class="mr-1"
         @click="togglePaymentDetails"
@@ -189,7 +309,7 @@ onUpdated(() => {
       >
         {{ showPaymentDetails ? '접기' : '보기' }}
       </v-btn>
-      <v-btn color="primary" size="x-small" @click="refFormModal.callModal()"> 추가</v-btn>
+      <v-btn color="primary" size="x-small" @click="handlePaymentCreate"> 추가</v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -197,31 +317,85 @@ onUpdated(() => {
   <CTableRow v-show="showPaymentDetails && price" class="payment-detail-row">
     <CTableDataCell :colspan="totalColumns" class="pa-0">
       <PaymentPerInstallment
+        ref="refPaymentPerInstallment"
         v-if="price && showPaymentDetails"
         :sales-price-id="price.pk"
         :project-id="pFilters.project as number"
         :pay-orders="payOrders"
-        @created="onPaymentChanged"
-        @updated="onPaymentChanged"
-        @deleted="onPaymentChanged"
+        @create-requested="handlePaymentCreate"
+        @edit-requested="handlePaymentEdit"
+        @delete-requested="handlePaymentDelete"
       />
     </CTableDataCell>
   </CTableRow>
 
   <FormModal ref="refFormModal">
-    <template #header>특별약정 추가</template>
+    <template #header>{{
+      isPaymentModal
+        ? paymentEditMode
+          ? '특별 약정금액 수정'
+          : '특별 약정금액 등록'
+        : '특별약정 추가'
+    }}</template>
     <template #default>
-      <CForm>
+      <CForm v-if="isPaymentModal">
         <CModalBody class="text-body">
           <CRow class="mb-3">
-            <CFormLabel for="inputEmail3" class="col-sm-4 col-form-label">기준 공급가</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label">기준 공급가</CFormLabel>
             <CCol sm="8" class="pt-2">
-              <span class="text-primary bold">{{ numFormat(price.price) }} </span>
+              <span class="text-primary bold">{{ numFormat(price?.price || 0) }} </span>
               ({{ condTexts?.orderText }} / {{ condTexts?.typeText }} / {{ floor.alias_name }})
             </CCol>
           </CRow>
           <CRow class="mb-3">
-            <CFormLabel for="inputEmail3" class="col-sm-4 col-form-label">지정 납부회차</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label">지정 납부회차 *</CFormLabel>
+            <CCol sm="8">
+              <CFormSelect v-model="paymentForm.pay_order" :disabled="paymentEditMode">
+                <option value="">---------</option>
+                <option
+                  v-for="po in availablePayOrders"
+                  :value="po?.pk as number"
+                  :key="po?.pk as number"
+                >
+                  {{ po.pay_name }}
+                </option>
+              </CFormSelect>
+            </CCol>
+          </CRow>
+          <CRow class="mb-3">
+            <CFormLabel class="col-sm-4 col-form-label">납부 약정금액 *</CFormLabel>
+            <CCol sm="8">
+              <CFormInput
+                v-model.number="paymentForm.amount"
+                type="number"
+                placeholder="특별 지정 납부 약정금액"
+                text="일반 납부회차의 경우 기준 공급가 * 회당 납부비율을 적용 하나, 이 데이터 등록 시 예외적으로 이 데이터를 우선 적용함"
+              />
+            </CCol>
+          </CRow>
+        </CModalBody>
+        <CModalFooter>
+          <v-btn :color="btnLight" size="small" @click="refFormModal.close()"> 닫기</v-btn>
+          <v-btn
+            color="primary"
+            size="small"
+            :disabled="!paymentFormsCheck"
+            @click="handlePaymentModalAction"
+            >확인</v-btn
+          >
+        </CModalFooter>
+      </CForm>
+      <CForm v-else>
+        <CModalBody class="text-body">
+          <CRow class="mb-3">
+            <CFormLabel class="col-sm-4 col-form-label">기준 공급가</CFormLabel>
+            <CCol sm="8" class="pt-2">
+              <span class="text-primary bold">{{ numFormat(price?.price || 0) }} </span>
+              ({{ condTexts?.orderText }} / {{ condTexts?.typeText }} / {{ floor.alias_name }})
+            </CCol>
+          </CRow>
+          <CRow class="mb-3">
+            <CFormLabel class="col-sm-4 col-form-label">지정 납부회차</CFormLabel>
             <CCol sm="8">
               <CFormSelect>
                 <option value="">---------</option>
@@ -232,9 +406,7 @@ onUpdated(() => {
             </CCol>
           </CRow>
           <CRow class="mb-3">
-            <CFormLabel for="inputPassword3" class="col-sm-4 col-form-label">
-              납부 약정금액
-            </CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label">납부 약정금액</CFormLabel>
             <CCol sm="8">
               <CFormInput
                 type="number"
