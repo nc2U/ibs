@@ -58,7 +58,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <Price
         v-for="floor in floorTypeList"
         :key="floor.pk"
-        :p-filters="pFilters"
+        :p-filters="pFilters as any"
         :floor="floor"
         :price="getPrice(floor.pk)"
         :pay-orders="payOrderList"

@@ -32,7 +32,6 @@ const emit = defineEmits(['on-create', 'on-update', 'on-delete', 'payment-change
 const refFormModal = ref()
 const refConfirmModal = ref()
 const refAlertModal = ref()
-const refPaymentPerInstallment = ref()
 
 const form = reactive({
   price_build: null as number | null,
@@ -41,16 +40,6 @@ const form = reactive({
   price: null as number | null,
 })
 
-// PaymentPerInstallment form
-const paymentForm = reactive<Partial<PaymentPerInstallmentPayload>>({
-  sales_price: undefined,
-  pay_order: null,
-  amount: null,
-})
-
-const paymentEditMode = ref(false)
-const paymentEditId = ref<number | null>(null)
-const isPaymentModal = ref(false)
 const confirmModalType = ref<'price' | 'payment'>('price')
 
 const payStore = usePayment()
@@ -154,9 +143,22 @@ const dataReset = () => {
   form.price = null
 }
 
-const togglePaymentDetails = () => {
-  showPaymentDetails.value = !showPaymentDetails.value
-}
+// -------------------------------------------------------- //
+
+const refPaymentPerInstallment = ref()
+
+// PaymentPerInstallment form
+const paymentForm = reactive<Partial<PaymentPerInstallmentPayload>>({
+  sales_price: undefined,
+  pay_order: null,
+  amount: null,
+})
+
+const paymentEditMode = ref(false)
+const paymentEditId = ref<number | null>(null)
+const isPaymentModal = ref(false)
+
+const togglePaymentDetails = () => (showPaymentDetails.value = !showPaymentDetails.value)
 
 const onPaymentChanged = () => {
   // PaymentPerInstallment 데이터 변경 시 상위 컴포넌트에 알림
@@ -171,9 +173,7 @@ const availablePayOrders = computed(() => {
   )
 
   // In edit mode, show all filtered orders
-  if (paymentEditMode.value) {
-    return filteredOrders
-  }
+  if (paymentEditMode.value) return filteredOrders
 
   // In create mode, filter out orders that already have PaymentPerInstallment records
   const usedPayOrderIds = paymentPerInstallmentList
@@ -233,7 +233,7 @@ const handlePaymentModalAction = async () => {
       }
       await updatePaymentPerInstallment(payload)
     } else {
-      // Create new PaymentPerInstallment
+      // Create a new PaymentPerInstallment
       const payload: PaymentPerInstallmentPayload = {
         sales_price: props.price?.pk as number,
         pay_order: paymentForm.pay_order as number,
