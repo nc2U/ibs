@@ -158,6 +158,9 @@ const paymentEditMode = ref(false)
 const paymentEditId = ref<number | null>(null)
 const isPaymentModal = ref(false)
 
+// 현재 Price 레코드에서 사용된 pay_order ID들 (로컬 상태)
+const localUsedPayOrderIds = ref<number[]>([])
+
 const togglePaymentDetails = () => (showPaymentDetails.value = !showPaymentDetails.value)
 
 const onPaymentChanged = () => {
@@ -176,11 +179,14 @@ const availablePayOrders = computed(() => {
   if (paymentEditMode.value) return filteredOrders
 
   // In create mode, filter out orders that already have PaymentPerInstallment records
-  const usedPayOrderIds = paymentPerInstallmentList
-    .map(ppi => ppi.pay_order)
-    .filter(id => id !== null) as number[]
-  return filteredOrders.filter(order => order.pk && !usedPayOrderIds.includes(order.pk))
+  // 로컬 상태를 사용하여 현재 Price 레코드의 데이터만 고려
+  return filteredOrders.filter(order => order.pk && !localUsedPayOrderIds.value.includes(order.pk))
 })
+
+// PaymentPerInstallment 컴포넌트에서 사용된 pay_order ID들 업데이트
+const handleUsedPayOrdersChanged = (usedIds: number[]) => {
+  localUsedPayOrderIds.value = usedIds
+}
 
 const handlePaymentCreate = () => {
   paymentEditMode.value = false
@@ -354,12 +360,14 @@ onUpdated(() => {
       <PaymentPerInstallment
         ref="refPaymentPerInstallment"
         v-if="price && showPaymentDetails"
+        :key="`payment-per-installment-${price.pk}`"
         :project-id="pFilters.project as number"
         :sales-price-id="price.pk"
         :pay-orders="payOrders"
         @create-requested="handlePaymentCreate"
         @edit-requested="handlePaymentEdit"
         @delete-requested="handlePaymentDelete"
+        @used-pay-orders-changed="handleUsedPayOrdersChanged"
       />
     </CTableDataCell>
   </CTableRow>

@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { usePayment } from '@/store/pinia/payment'
 import type { PaymentPerInstallment, PayOrder } from '@/store/types/payment'
+import api from '@/api'
 
 const props = defineProps<{
   salesPriceId: number
@@ -11,20 +12,36 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  editRequested: [item: PaymentPerInstallment]
-  deleteRequested: [item: PaymentPerInstallment]
-  createRequested: []
+  (e: 'editRequested', item: PaymentPerInstallment): void
+  (e: 'deleteRequested', item: PaymentPerInstallment): void
+  (e: 'createRequested'): void
+  (e: 'usedPayOrdersChanged', usedPayOrderIds: number[]): void
 }>()
 
 const payStore = usePayment()
-const { paymentPerInstallmentList, fetchPaymentPerInstallmentList } = payStore
+const { fetchPaymentPerInstallmentList } = payStore
+
+// 로컬 상태로 변경 (전역 상태 대신)
+const localPaymentPerInstallmentList = ref<PaymentPerInstallment[]>([])
 
 // Available pay orders (filtering out 중도금=2, 잔금=3)
 const availablePayOrders = computed(() =>
   props.payOrders.filter(order => order.pay_sort && !['2', '3'].includes(order.pay_sort)),
 )
 
-// Load data on mount
+// 사용된 pay_order ID들 계산
+const usedPayOrderIds = computed(() => {
+  return localPaymentPerInstallmentList.value
+    .map(ppi => ppi.pay_order)
+    .filter(id => id !== null) as number[]
+})
+
+// 데이터 변경 시 부모에게 알림
+watch(usedPayOrderIds, (newIds) => {
+  emit('usedPayOrdersChanged', newIds)
+}, { immediate: true })
+
+// Load data on mount and when salesPriceId changes
 onMounted(() => {
   loadData()
 })
@@ -32,15 +49,22 @@ onMounted(() => {
 watch(
   () => props.salesPriceId,
   () => {
-    if (props.salesPriceId) {
-      loadData()
-    }
-  },
+    loadData()
+  }
 )
 
 const loadData = async () => {
   if (props.salesPriceId) {
-    await fetchPaymentPerInstallmentList({ sales_price: props.salesPriceId })
+    try {
+      // API를 통해 로컬 상태 업데이트 (인증 헤더 포함)
+      const response = await api.get(`/payment-installment/?sales_price=${props.salesPriceId}`)
+      localPaymentPerInstallmentList.value = response.data.results || []
+    } catch (error) {
+      console.error('Error loading PaymentPerInstallment data:', error)
+      localPaymentPerInstallmentList.value = []
+    }
+  } else {
+    localPaymentPerInstallmentList.value = []
   }
 }
 
@@ -82,7 +106,7 @@ defineExpose({
         사용 가능한 납부 회차가 없습니다.
       </div>
 
-      <div v-else-if="!paymentPerInstallmentList.length" class="text-center py-4 text-grey">
+      <div v-else-if="!localPaymentPerInstallmentList.length" class="text-center py-4 text-grey">
         등록된 특별 약정금액이 없습니다.
       </div>
 
@@ -96,7 +120,7 @@ defineExpose({
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in paymentPerInstallmentList" :key="item.pk">
+            <tr v-for="item in localPaymentPerInstallmentList" :key="item.pk">
               <td>
                 {{ item.pay_order_info?.pay_name || getPayOrderName(item.pay_order as number) }}
               </td>

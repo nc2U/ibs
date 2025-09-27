@@ -65,7 +65,7 @@ class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentPerInstallmentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('sales_price__project', 'sales_price__order_group',
+    filterset_fields = ('sales_price', 'sales_price__project', 'sales_price__order_group',
                         'sales_price__unit_type', 'pay_order')
 
 
