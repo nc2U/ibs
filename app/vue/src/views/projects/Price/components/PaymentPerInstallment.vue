@@ -89,7 +89,7 @@ defineExpose({
 </script>
 
 <template>
-  <CRow class="py-3" style="background: lightyellow">
+  <CRow class="p-3" style="background: lightyellow">
     <CCol v-if="!availablePayOrders.length" class="text-center py-4 text-grey">
       사용 가능한 납부 회차가 없습니다.
     </CCol>
@@ -98,26 +98,24 @@ defineExpose({
       등록된 특별 약정금액이 없습니다.
     </CCol>
 
-    <CCol v-else>
-      <template #default>
-        <CRow v-for="item in localPaymentPerInstallmentList" :key="item.pk" class="p-1 text-center">
-          <CCol>
-            <span class="strong">납부 회차</span>
-            :
-            <u>{{ item.pay_order_info?.pay_name || getPayOrderName(item.pay_order as number) }}</u>
-          </CCol>
+    <CCol v-else class="px-5">
+      <CRow v-for="item in localPaymentPerInstallmentList" :key="item.pk" class="p-1 text-center">
+        <CCol class="text-right">
+          <span class="strong">납부 회차</span>
+          :
+          <u>{{ item.pay_order_info?.pay_name || getPayOrderName(item.pay_order as number) }}</u>
+        </CCol>
 
-          <CCol>
-            <span class="strong">약정금액</span> : <u>{{ numFormat(item.amount as number) }}원</u>
-          </CCol>
-          <CCol>
-            <v-btn size="x-small" color="success" class="mr-1" @click="handleEdit(item)">
-              수정
-            </v-btn>
-            <v-btn size="x-small" color="warning" @click="handleDelete(item)"> 삭제 </v-btn>
-          </CCol>
-        </CRow>
-      </template>
+        <CCol class="text-center">
+          <span class="strong">약정금액</span> : <u>{{ numFormat(item.amount as number) }}원</u>
+        </CCol>
+        <CCol class="text-left">
+          <v-btn size="x-small" color="success" class="mr-1" @click="handleEdit(item)">
+            수정
+          </v-btn>
+          <v-btn size="x-small" color="warning" @click="handleDelete(item)"> 삭제 </v-btn>
+        </CCol>
+      </CRow>
     </CCol>
   </CRow>
 </template>
