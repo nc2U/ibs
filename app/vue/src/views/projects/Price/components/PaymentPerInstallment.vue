@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onMounted, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
-import type { PaymentPerInstallment, PayOrder } from '@/store/types/payment'
 import { usePayment } from '@/store/pinia/payment'
+import type { PaymentPerInstallment, PayOrder } from '@/store/types/payment'
 
 const props = defineProps<{
   salesPriceId: number
@@ -44,17 +44,11 @@ const loadData = async () => {
   }
 }
 
-const handleCreate = () => {
-  emit('createRequested')
-}
+const handleCreate = () => emit('createRequested')
 
-const handleEdit = (item: PaymentPerInstallment) => {
-  emit('editRequested', item)
-}
+const handleEdit = (item: PaymentPerInstallment) => emit('editRequested', item as any)
 
-const handleDelete = (item: PaymentPerInstallment) => {
-  emit('deleteRequested', item)
-}
+const handleDelete = (item: PaymentPerInstallment) => emit('deleteRequested', item as any)
 
 const getPayOrderName = (payOrderId: number) => {
   const payOrder = availablePayOrders.value.find(order => order.pk === payOrderId)

@@ -9,14 +9,14 @@ import type {
   PaymentPerInstallmentPayload,
 } from '@/store/types/payment'
 import { type UnitFloorType } from '@/store/types/project'
+import type { PriceFilter } from '@/store/pinia/payment.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
-import type { PriceFilter } from '@/store/pinia/payment.ts'
 import { usePayment } from '@/store/pinia/payment'
+import PaymentPerInstallment from './PaymentPerInstallment.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
-import PaymentPerInstallment from './PaymentPerInstallment.vue'
 
 const condTexts = inject<{ orderText: string; typeText: string }>('condTexts')
 
@@ -252,8 +252,6 @@ const handlePaymentModalAction = async () => {
     refPaymentPerInstallment.value?.loadData()
     emit('payment-changed')
   } catch (error: any) {
-    console.error('PaymentPerInstallment operation failed:', error)
-
     // Handle unique constraint violation
     if (error?.response?.data?.non_field_errors) {
       const errorMessage = error.response.data.non_field_errors[0]
@@ -263,12 +261,8 @@ const handlePaymentModalAction = async () => {
           '해당 납부 회차에 대한 특별 약정금액이 이미 존재합니다.',
           'warning',
         )
-      } else {
-        refAlertModal.value.alertOpen('', errorMessage, 'danger')
-      }
-    } else {
-      refAlertModal.value.alertOpen('', '특별 약정금액 처리 중 오류가 발생했습니다.', 'danger')
-    }
+      } else refAlertModal.value.alertOpen('', errorMessage, 'danger')
+    } else refAlertModal.value.alertOpen('', '특별 약정금액 처리 중 오류가 발생했습니다.', 'danger')
   }
 }
 
@@ -349,8 +343,8 @@ onUpdated(() => {
         @click="handlePaymentCreate"
         :disabled="!price || !availablePayOrders.length"
       >
-        추가</v-btn
-      >
+        추가
+      </v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -360,8 +354,8 @@ onUpdated(() => {
       <PaymentPerInstallment
         ref="refPaymentPerInstallment"
         v-if="price && showPaymentDetails"
-        :sales-price-id="price.pk"
         :project-id="pFilters.project as number"
+        :sales-price-id="price.pk"
         :pay-orders="payOrders"
         @create-requested="handlePaymentCreate"
         @edit-requested="handlePaymentEdit"
