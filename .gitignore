@@ -37,6 +37,15 @@ __pycache__
 *.pyc
 *.pyo
 
+# debug scripts in root (prevent accidental commits)
+/debug_*.py
+/test_*.py
+/check_*.py
+/simple_*.py
+/final_*.py
+/facility_*.py
+/update_*.py
+
 # django etc
 app/repos
 migrations
