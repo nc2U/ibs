@@ -324,6 +324,28 @@ export const usePayment = defineStore('payment', () => {
       )
       .catch(err => errorHandle(err.response.data))
 
+  // 컴포넌트용 PaymentPerInstallment 데이터 조회 (전역 상태 업데이트 없음)
+  const getPaymentPerInstallmentData = async (payload: PaymentPerInstallmentFilter): Promise<PaymentPerInstallment[]> => {
+    let url = '/payment-installment/?'
+    const params = new URLSearchParams()
+
+    if (payload.sales_price) params.append('sales_price', payload.sales_price.toString())
+    if (payload.sales_price__project) params.append('sales_price__project', payload.sales_price__project.toString())
+    if (payload.sales_price__order_group) params.append('sales_price__order_group', payload.sales_price__order_group.toString())
+    if (payload.sales_price__unit_type) params.append('sales_price__unit_type', payload.sales_price__unit_type.toString())
+    if (payload.pay_order) params.append('pay_order', payload.pay_order.toString())
+
+    url += params.toString()
+
+    try {
+      const response = await api.get(url)
+      return response.data.results || []
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return []
+    }
+  }
+
   return {
     priceList,
 
@@ -381,6 +403,7 @@ export const usePayment = defineStore('payment', () => {
     paymentPerInstallmentList,
 
     fetchPaymentPerInstallmentList,
+    getPaymentPerInstallmentData,
     createPaymentPerInstallment,
     updatePaymentPerInstallment,
     deletePaymentPerInstallment,

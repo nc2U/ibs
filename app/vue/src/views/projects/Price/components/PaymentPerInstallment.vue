@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { usePayment } from '@/store/pinia/payment'
 import type { PaymentPerInstallment, PayOrder } from '@/store/types/payment'
-import api from '@/api'
 
 const props = defineProps<{
   salesPriceId: number
@@ -19,7 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const payStore = usePayment()
-const { fetchPaymentPerInstallmentList } = payStore
+const { getPaymentPerInstallmentData } = payStore
 
 // 로컬 상태로 변경 (전역 상태 대신)
 const localPaymentPerInstallmentList = ref<PaymentPerInstallment[]>([])
@@ -37,9 +36,13 @@ const usedPayOrderIds = computed(() => {
 })
 
 // 데이터 변경 시 부모에게 알림
-watch(usedPayOrderIds, (newIds) => {
-  emit('usedPayOrdersChanged', newIds)
-}, { immediate: true })
+watch(
+  usedPayOrderIds,
+  newIds => {
+    emit('usedPayOrdersChanged', newIds)
+  },
+  { immediate: true },
+)
 
 // Load data on mount and when salesPriceId changes
 onMounted(() => {
@@ -50,15 +53,15 @@ watch(
   () => props.salesPriceId,
   () => {
     loadData()
-  }
+  },
 )
 
 const loadData = async () => {
   if (props.salesPriceId) {
     try {
-      // API를 통해 로컬 상태 업데이트 (인증 헤더 포함)
-      const response = await api.get(`/payment-installment/?sales_price=${props.salesPriceId}`)
-      localPaymentPerInstallmentList.value = response.data.results || []
+      // Pinia 메서드를 통해 로컬 상태 업데이트
+      const data = await getPaymentPerInstallmentData({ sales_price: props.salesPriceId })
+      localPaymentPerInstallmentList.value = data
     } catch (error) {
       console.error('Error loading PaymentPerInstallment data:', error)
       localPaymentPerInstallmentList.value = []
@@ -86,70 +89,32 @@ defineExpose({
 </script>
 
 <template>
-  <v-card flat>
-    <v-card-title class="d-flex justify-space-between align-center py-2">
-      <span class="text-subtitle-2">특별 약정금액 관리</span>
-      <v-btn
-        size="small"
-        color="primary"
-        @click="handleCreate"
-        :disabled="!availablePayOrders.length"
-      >
-        추가
-      </v-btn>
-    </v-card-title>
+  <CRow class="py-3" style="background: lightyellow">
+    <CCol v-if="!availablePayOrders.length" class="text-center py-4 text-grey">
+      사용 가능한 납부 회차가 없습니다.
+    </CCol>
 
-    <v-divider />
+    <CCol v-else-if="!localPaymentPerInstallmentList.length" class="text-center py-4 text-grey">
+      등록된 특별 약정금액이 없습니다.
+    </CCol>
 
-    <v-card-text class="pa-2">
-      <div v-if="!availablePayOrders.length" class="text-center py-4 text-grey">
-        사용 가능한 납부 회차가 없습니다.
-      </div>
+    <CCol v-else>
+      <template #default>
+        <CRow v-for="item in localPaymentPerInstallmentList" :key="item.pk" class="p-1 text-center">
+          <CCol>
+            납부 회차 :
+            {{ item.pay_order_info?.pay_name || getPayOrderName(item.pay_order as number) }}
+          </CCol>
 
-      <div v-else-if="!localPaymentPerInstallmentList.length" class="text-center py-4 text-grey">
-        등록된 특별 약정금액이 없습니다.
-      </div>
-
-      <v-simple-table v-else dense class="text-caption">
-        <template #default>
-          <thead>
-            <tr>
-              <th width="30%">납부 회차</th>
-              <th width="40%">약정금액</th>
-              <th width="30%">관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in localPaymentPerInstallmentList" :key="item.pk">
-              <td>
-                {{ item.pay_order_info?.pay_name || getPayOrderName(item.pay_order as number) }}
-              </td>
-              <td class="text-right">{{ numFormat(item.amount as number) }}원</td>
-              <td>
-                <v-btn size="x-small" color="success" class="mr-1" @click="handleEdit(item)">
-                  수정
-                </v-btn>
-                <v-btn size="x-small" color="error" @click="handleDelete(item)"> 삭제 </v-btn>
-              </td>
-            </tr>
-          </tbody>
-        </template>
-      </v-simple-table>
-    </v-card-text>
-  </v-card>
+          <CCol> 약정금액 : {{ numFormat(item.amount as number) }}원 </CCol>
+          <CCol>
+            <v-btn size="x-small" color="success" class="mr-1" @click="handleEdit(item)">
+              수정
+            </v-btn>
+            <v-btn size="x-small" color="warning" @click="handleDelete(item)"> 삭제 </v-btn>
+          </CCol>
+        </CRow>
+      </template>
+    </CCol>
+  </CRow>
 </template>
-
-<style scoped>
-.v-simple-table {
-  border: 1px solid #e0e0e0;
-}
-
-.v-simple-table th {
-  background-color: #f5f5f5;
-  font-weight: 600;
-}
-
-.v-simple-table tbody tr:hover {
-  background-color: #f9f9f9;
-}
-</style>

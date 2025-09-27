@@ -69,7 +69,7 @@ const showPaymentDetails = ref(false)
 
 // 테이블 총 컬럼 수 (write_project 권한에 따라 달라짐)
 const totalColumns = computed(() => {
-  return write_project.value ? 7 : 5 // 기본 5개 + 관리 2개 컬럼
+  return write_project.value ? 9 : 7 // 기본 5개 + 관리 2개 컬럼
 })
 
 const formsCheck = computed(() => {
