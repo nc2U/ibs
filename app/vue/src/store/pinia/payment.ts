@@ -13,6 +13,7 @@ import {
   type OverallSummary,
   type SalesSummaryByGroupType,
   type PaymentStatusByUnitType,
+  type PaymentPerInstallment,
 } from '@/store/types/payment'
 
 export type DownPayFilter = {
@@ -25,6 +26,14 @@ export type PriceFilter = {
   project?: number | null
   order_group?: number | null
   unit_type?: number | null
+}
+
+export type PaymentPerInstallmentFilter = {
+  sales_price?: number | null
+  sales_price__project?: number | null
+  sales_price__order_group?: number | null
+  sales_price__unit_type?: number | null
+  pay_order?: number | null
 }
 
 export const usePayment = defineStore('payment', () => {
@@ -270,6 +279,50 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // PaymentPerInstallment state & getters
+  const paymentPerInstallmentList = ref<PaymentPerInstallment[]>([])
+
+  // PaymentPerInstallment actions
+  const fetchPaymentPerInstallmentList = async (payload: PaymentPerInstallmentFilter) => {
+    let url = '/payment-installment/?'
+    const params = new URLSearchParams()
+
+    if (payload.sales_price) params.append('sales_price', payload.sales_price.toString())
+    if (payload.sales_price__project) params.append('sales_price__project', payload.sales_price__project.toString())
+    if (payload.sales_price__order_group) params.append('sales_price__order_group', payload.sales_price__order_group.toString())
+    if (payload.sales_price__unit_type) params.append('sales_price__unit_type', payload.sales_price__unit_type.toString())
+    if (payload.pay_order) params.append('pay_order', payload.pay_order.toString())
+
+    url += params.toString()
+
+    return await api
+      .get(url)
+      .then(res => (paymentPerInstallmentList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const createPaymentPerInstallment = (payload: PaymentPerInstallment) =>
+    api
+      .post('/payment-installment/', payload)
+      .then(() => fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+
+  const updatePaymentPerInstallment = (payload: PaymentPerInstallment) =>
+    api
+      .put(`/payment-installment/${payload.pk}/`, payload)
+      .then(() => fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+
+  const deletePaymentPerInstallment = (pk: number, salesPriceId: number) =>
+    api
+      .delete(`/payment-installment/${pk}/`)
+      .then(() =>
+        fetchPaymentPerInstallmentList({ sales_price: salesPriceId }).then(() =>
+          message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
+        ),
+      )
+      .catch(err => errorHandle(err.response.data))
+
   return {
     priceList,
 
@@ -323,5 +376,12 @@ export const usePayment = defineStore('payment', () => {
     paymentStatusByUnitType,
 
     fetchPaymentStatusByUnitType,
+
+    paymentPerInstallmentList,
+
+    fetchPaymentPerInstallmentList,
+    createPaymentPerInstallment,
+    updatePaymentPerInstallment,
+    deletePaymentPerInstallment,
   }
 })

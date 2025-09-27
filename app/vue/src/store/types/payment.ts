@@ -127,6 +127,26 @@ export interface PaymentStatusByUnitType {
   total_budget: number
 }
 
+export interface PaymentPerInstallment {
+  pk: number
+  sales_price: number
+  sales_price_info: {
+    project: string
+    order_group: string
+    unit_type: string
+    unit_floor_type: string
+    price: number
+  }
+  pay_order: number | null
+  pay_order_info: {
+    pay_sort: string
+    pay_name: string
+    pay_code: number
+    pay_time: number
+  }
+  amount: number | null
+}
+
 export interface AllPayment {
   pk: number
   deal_date: string

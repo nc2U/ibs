@@ -1,25 +1,27 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, onMounted, onUpdated, inject, type PropType } from 'vue'
+import { computed, inject, onMounted, onUpdated, type PropType, reactive, ref, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import type { PayOrder, Price } from '@/store/types/payment'
 import { type UnitFloorType } from '@/store/types/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
+import type { PriceFilter } from '@/store/pinia/payment.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import PaymentPerInstallment from './PaymentPerInstallment.vue'
 
 const condTexts = inject<{ orderText: string; typeText: string }>('condTexts')
 
 const props = defineProps({
   floor: { type: Object as PropType<UnitFloorType>, required: true },
-  pFilters: { type: Object, default: null },
+  pFilters: { type: Object as PropType<PriceFilter>, default: null },
   price: { type: Object as PropType<Price>, default: null },
   payOrders: { type: Array as PropType<PayOrder[]>, default: () => [] },
 })
 
-const emit = defineEmits(['on-create', 'on-update', 'on-delete'])
+const emit = defineEmits(['on-create', 'on-update', 'on-delete', 'payment-changed'])
 
 const refFormModal = ref()
 const refConfirmModal = ref()
@@ -46,6 +48,14 @@ watch(props, val => {
 const btnColor = computed(() => (props.price ? 'success' : 'primary'))
 const btnTitle = computed(() => (props.price ? '수정' : '등록'))
 
+// PaymentPerInstallment 토글 상태
+const showPaymentDetails = ref(false)
+
+// 테이블 총 컬럼 수 (write_project 권한에 따라 달라짐)
+const totalColumns = computed(() => {
+  return write_project.value ? 7 : 5 // 기본 5개 + 관리 2개 컬럼
+})
+
 const formsCheck = computed(() => {
   if (props.price) {
     const a = form.price_build === props.price.price_build
@@ -54,12 +64,7 @@ const formsCheck = computed(() => {
     const d = form.price === props.price.price || !props.price
     return a && b && c && d
   } else {
-    return (
-      !form.price_build &&
-      !form.price_land &&
-      !form.price_tax &&
-      !form.price
-    )
+    return !form.price_build && !form.price_land && !form.price_tax && !form.price
   }
 })
 
@@ -102,6 +107,15 @@ const dataReset = () => {
   form.price_land = null
   form.price_tax = null
   form.price = null
+}
+
+const togglePaymentDetails = () => {
+  showPaymentDetails.value = !showPaymentDetails.value
+}
+
+const onPaymentChanged = () => {
+  // PaymentPerInstallment 데이터 변경 시 상위 컴포넌트에 알림
+  emit('payment-changed')
 }
 
 onMounted(() => dataSetup())
@@ -166,7 +180,31 @@ onUpdated(() => {
       <v-btn color="warning" size="x-small" :disabled="!price" @click="deletePrice"> 삭제</v-btn>
     </CTableDataCell>
     <CTableDataCell v-if="write_project" class="text-center pt-3">
+      <v-btn
+        :color="showPaymentDetails ? 'warning' : 'info'"
+        size="x-small"
+        class="mr-1"
+        @click="togglePaymentDetails"
+        :disabled="!price"
+      >
+        {{ showPaymentDetails ? '접기' : '보기' }}
+      </v-btn>
       <v-btn color="primary" size="x-small" @click="refFormModal.callModal()"> 추가</v-btn>
+    </CTableDataCell>
+  </CTableRow>
+
+  <!-- PaymentPerInstallment 확장 행 -->
+  <CTableRow v-show="showPaymentDetails && price" class="payment-detail-row">
+    <CTableDataCell :colspan="totalColumns" class="pa-0">
+      <PaymentPerInstallment
+        v-if="price && showPaymentDetails"
+        :sales-price-id="price.pk"
+        :project-id="pFilters.project as number"
+        :pay-orders="payOrders"
+        @created="onPaymentChanged"
+        @updated="onPaymentChanged"
+        @deleted="onPaymentChanged"
+      />
     </CTableDataCell>
   </CTableRow>
 
@@ -226,3 +264,14 @@ onUpdated(() => {
 
   <AlertModal ref="refAlertModal" />
 </template>
+
+<style scoped>
+.payment-detail-row {
+  background-color: #f8f9fa;
+}
+
+.payment-detail-row td {
+  border-top: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+}
+</style>
