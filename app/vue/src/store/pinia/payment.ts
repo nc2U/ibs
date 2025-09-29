@@ -11,7 +11,6 @@ import {
   type ContractNum,
   type AllPayment,
   type OverallSummary,
-  type SalesSummaryByGroupType,
   type PaymentStatusByUnitType,
   type PaymentPerInstallment,
   type PaymentPerInstallmentPayload,
@@ -219,7 +218,6 @@ export const usePayment = defineStore('payment', () => {
 
   const paymentPages = (itemsPerPage: number) => Math.ceil(paymentsCount.value / itemsPerPage)
 
-
   // state & getters - PaymentSummary Component
   const paymentSummaryList = ref<PaymentSummaryComponent[]>([])
 
@@ -257,17 +255,6 @@ export const usePayment = defineStore('payment', () => {
   }
 
   // state & getters
-  const salesSummaryByGroupType = ref<SalesSummaryByGroupType[]>([])
-
-  // actions
-  const fetchSalesSummaryByGroupType = async (project: number) => {
-    return await api
-      .get(`/sales-summary-by-group-type/?project=${project}`)
-      .then(res => (salesSummaryByGroupType.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  // state & getters
   const paymentStatusByUnitType = ref<PaymentStatusByUnitType[]>([])
 
   // actions
@@ -289,9 +276,12 @@ export const usePayment = defineStore('payment', () => {
     const params = new URLSearchParams()
 
     if (payload.sales_price) params.append('sales_price', payload.sales_price.toString())
-    if (payload.sales_price__project) params.append('sales_price__project', payload.sales_price__project.toString())
-    if (payload.sales_price__order_group) params.append('sales_price__order_group', payload.sales_price__order_group.toString())
-    if (payload.sales_price__unit_type) params.append('sales_price__unit_type', payload.sales_price__unit_type.toString())
+    if (payload.sales_price__project)
+      params.append('sales_price__project', payload.sales_price__project.toString())
+    if (payload.sales_price__order_group)
+      params.append('sales_price__order_group', payload.sales_price__order_group.toString())
+    if (payload.sales_price__unit_type)
+      params.append('sales_price__unit_type', payload.sales_price__unit_type.toString())
     if (payload.pay_order) params.append('pay_order', payload.pay_order.toString())
 
     url += params.toString()
@@ -305,13 +295,17 @@ export const usePayment = defineStore('payment', () => {
   const createPaymentPerInstallment = (payload: PaymentPerInstallmentPayload) =>
     api
       .post('/payment-installment/', payload)
-      .then(() => fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()))
+      .then(() =>
+        fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()),
+      )
       .catch(err => errorHandle(err.response.data))
 
   const updatePaymentPerInstallment = (payload: PaymentPerInstallmentPayload) =>
     api
       .put(`/payment-installment/${payload.pk}/`, payload)
-      .then(() => fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()))
+      .then(() =>
+        fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()),
+      )
       .catch(err => errorHandle(err.response.data))
 
   const deletePaymentPerInstallment = (pk: number, salesPriceId: number) =>
@@ -325,14 +319,19 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
 
   // 컴포넌트용 PaymentPerInstallment 데이터 조회 (전역 상태 업데이트 없음)
-  const getPaymentPerInstallmentData = async (payload: PaymentPerInstallmentFilter): Promise<PaymentPerInstallment[]> => {
+  const getPaymentPerInstallmentData = async (
+    payload: PaymentPerInstallmentFilter,
+  ): Promise<PaymentPerInstallment[]> => {
     let url = '/payment-installment/?'
     const params = new URLSearchParams()
 
     if (payload.sales_price) params.append('sales_price', payload.sales_price.toString())
-    if (payload.sales_price__project) params.append('sales_price__project', payload.sales_price__project.toString())
-    if (payload.sales_price__order_group) params.append('sales_price__order_group', payload.sales_price__order_group.toString())
-    if (payload.sales_price__unit_type) params.append('sales_price__unit_type', payload.sales_price__unit_type.toString())
+    if (payload.sales_price__project)
+      params.append('sales_price__project', payload.sales_price__project.toString())
+    if (payload.sales_price__order_group)
+      params.append('sales_price__order_group', payload.sales_price__order_group.toString())
+    if (payload.sales_price__unit_type)
+      params.append('sales_price__unit_type', payload.sales_price__unit_type.toString())
     if (payload.pay_order) params.append('pay_order', payload.pay_order.toString())
 
     url += params.toString()
@@ -381,27 +380,18 @@ export const usePayment = defineStore('payment', () => {
     paymentPages,
 
     paymentSummaryList,
-
     fetchPaymentSummaryList,
 
     contNumList,
-
     fetchContNumList,
 
     overallSummary,
-
     fetchOverallSummary,
 
-    salesSummaryByGroupType,
-
-    fetchSalesSummaryByGroupType,
-
     paymentStatusByUnitType,
-
     fetchPaymentStatusByUnitType,
 
     paymentPerInstallmentList,
-
     fetchPaymentPerInstallmentList,
     getPaymentPerInstallmentData,
     createPaymentPerInstallment,
