@@ -9,6 +9,8 @@ from django.http import HttpResponse
 from django.views.generic import View
 import xlsxwriter
 
+from project.models import Project
+
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
@@ -135,7 +137,6 @@ class ProjectFilterMixin:
     @staticmethod
     def get_project(request):
         """요청에서 프로젝트 추출"""
-        from project.models import Project
         project_id = request.GET.get('project')
         if project_id:
             return Project.objects.get(pk=project_id)
