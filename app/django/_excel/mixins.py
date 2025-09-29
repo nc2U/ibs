@@ -18,10 +18,10 @@ class ExcelExportMixin(View):
     """Excel 내보내기 공통 기능 믹스인"""
 
     @staticmethod
-    def create_workbook(sheet_name=None):
+    def create_workbook(sheet_name=None, in_memory=False):
         """워크북과 워크시트 생성"""
         output = io.BytesIO()
-        workbook = xlsxwriter.Workbook(output)
+        workbook = xlsxwriter.Workbook(output, {'in_memory': in_memory})
         worksheet = workbook.add_worksheet(sheet_name or '데이터')
         worksheet.set_default_row(20)
         return output, workbook, worksheet
@@ -54,11 +54,16 @@ class ExcelExportMixin(View):
         return row_num + 1
 
     @staticmethod
-    def write_date_info(worksheet, workbook, row_num, col_count, date_str=None):
-        """날짜 정보 작성"""
+    def write_date_info(worksheet, workbook, row_num, col_count, date_str=None, right_format=None):
+        """날짜 정보 작성 (성능 최적화)"""
         date_info = (date_str or TODAY) + ' 현재'
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, col_count, date_info, workbook.add_format({'align': 'right'}))
+
+        # Use the provided format or create once
+        if right_format is None:
+            right_format = workbook.add_format({'align': 'right'})
+
+        worksheet.write(row_num, col_count, date_info, right_format)
         return row_num + 1
 
     def write_headers(self, worksheet, workbook, row_num, headers):
@@ -74,17 +79,42 @@ class ExcelExportMixin(View):
         return row_num + 1
 
     def write_data_rows(self, worksheet, workbook, row_num, headers, data_list):
-        """데이터 행 작성"""
-        c_format = workbook.add_format()
-        c_format.set_border()
-        c_format.set_align('center')
-        c_format.set_align('vcenter')
+        """데이터 행 작성 (성능 최적화)"""
+        # Pre-create format objects for reuse
+        default_format = workbook.add_format({
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter'
+        })
+
+        date_format = workbook.add_format({
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'num_format': 'yyyy-mm-dd'
+        })
+
+        number_format = workbook.add_format({
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'num_format': '#,##0'
+        })
 
         for item in data_list:
             for col_num, (header_name, field_name, width) in enumerate(headers):
                 if header_name and field_name:  # 빈 헤더와 필드 제외
                     value = self.get_field_value(item, field_name)
-                    worksheet.write(row_num, col_num, value, c_format)
+
+                    # Select appropriate format based on value type
+                    if isinstance(value, (int, float)) and '금액' in header_name:
+                        cell_format = number_format
+                    elif '일자' in header_name or '날짜' in header_name:
+                        cell_format = date_format
+                    else:
+                        cell_format = default_format
+
+                    worksheet.write(row_num, col_num, value, cell_format)
             row_num += 1
 
         return row_num
@@ -188,3 +218,104 @@ class ExcelUtilsMixin:
             return result if result is not None else default
         except (AttributeError, TypeError):
             return default
+
+
+class AdvancedExcelMixin:
+    """고급 Excel 포맷팅 기능 믹스인"""
+
+    @staticmethod
+    def create_format_objects(workbook):
+        """재사용 가능한 포맷 객체들을 미리 생성"""
+        return {
+            'default': workbook.add_format({
+                'border': True,
+                'align': 'center',
+                'valign': 'vcenter'
+            }),
+            'date': workbook.add_format({
+                'border': True,
+                'align': 'center',
+                'valign': 'vcenter',
+                'num_format': 'yyyy-mm-dd'
+            }),
+            'number': workbook.add_format({
+                'border': True,
+                'align': 'center',
+                'valign': 'vcenter',
+                'num_format': '#,##0'
+            }),
+            'currency': workbook.add_format({
+                'border': True,
+                'align': 'right',
+                'valign': 'vcenter',
+                'num_format': '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@_-'
+            }),
+            'percent': workbook.add_format({
+                'border': True,
+                'align': 'center',
+                'valign': 'vcenter',
+                'num_format': '_-* 0.00%_-;-* 0.00%_-;_-* "-"??%_-;_-@_-'
+            }),
+            'header': workbook.add_format({
+                'bold': True,
+                'border': True,
+                'align': 'center',
+                'valign': 'vcenter',
+                'bg_color': '#eeeeee'
+            }),
+            'title': workbook.add_format({
+                'bold': True,
+                'font_size': 18,
+                'align': 'vcenter'
+            }),
+            'right_align': workbook.add_format({
+                'align': 'right'
+            })
+        }
+
+    @staticmethod
+    def write_multi_level_headers(worksheet, workbook, row_num, header_structure, formats):
+        """다단계 헤더 작성"""
+        for level, headers in enumerate(header_structure):
+            current_row = row_num + level
+            worksheet.set_row(current_row, 23)
+
+            for header_info in headers:
+                if len(header_info) == 5:  # [start_col, end_col, start_row, end_row, text]
+                    start_col, end_col, start_row, end_row, text = header_info
+                    if start_col == end_col and start_row == end_row:
+                        worksheet.write(current_row + start_row, start_col, text, formats['header'])
+                    else:
+                        worksheet.merge_range(
+                            current_row + start_row, start_col,
+                            current_row + end_row, end_col,
+                            text, formats['header']
+                        )
+
+        return row_num + len(header_structure)
+
+    @staticmethod
+    def write_summary_row(worksheet, workbook, row_num, data, formats, summary_format=None):
+        """합계 행 작성"""
+        if summary_format is None:
+            summary_format = formats['header']
+
+        for col_num, value in enumerate(data):
+            worksheet.write(row_num, col_num, value, summary_format)
+
+        return row_num + 1
+
+    @staticmethod
+    def apply_conditional_formatting(worksheet, range_str, condition_type, criteria, format_obj):
+        """조건부 서식 적용"""
+        worksheet.conditional_format(range_str, {
+            'type': condition_type,
+            'criteria': criteria,
+            'format': format_obj
+        })
+
+    @staticmethod
+    def set_column_widths(worksheet, widths):
+        """컬럼 너비 일괄 설정"""
+        for col_num, width in enumerate(widths):
+            worksheet.set_column(col_num, col_num, width)
