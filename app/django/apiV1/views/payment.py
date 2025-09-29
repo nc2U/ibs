@@ -1045,7 +1045,7 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_paid_amount_by_unit_type(project_id, order_group_id, unit_type_id, date):
-        """order_group과 unit_type별 실수납금액 계산 (OverallSummary와 일치하도록 installment_order 기준)"""
+        """order_group과 unit_type별 실수납금액 계산 (ExportPaymentStatus 표준화 방식과 일치)"""
         try:
             with connection.cursor() as cursor:
                 date_filter = ""
@@ -1055,17 +1055,19 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                     date_filter = "AND pcb.deal_date <= %s"
                     params.append(date)
 
-                # OverallSummary와 동일한 방식: installment_order 기준으로 수납액 집계 (활성화된 계약만)
+                # ExportPaymentStatus와 동일한 표준화된 방식: installment_order 조건 없이 차수×타입별 직접 집계
                 query = f"""
                         SELECT COALESCE(SUM(pcb.income), 0) as paid_amount
                         FROM cash_projectcashbook pcb
-                        INNER JOIN payment_installmentpaymentorder ipo ON pcb.installment_order_id = ipo.id
                         INNER JOIN contract_contract c ON pcb.contract_id = c.id
-                        WHERE ipo.project_id = %s
+                        WHERE pcb.project_id = %s
                           AND c.order_group_id = %s
                           AND c.unit_type_id = %s
                           AND c.activation = true
                           AND pcb.income IS NOT NULL
+                          AND pcb.project_account_d3_id IN (
+                              SELECT id FROM ibs_projectaccountd3 WHERE is_payment = true
+                          )
                           {date_filter}
                         """
 
