@@ -4,14 +4,11 @@ Payment Excel Export Views
 납부 관련 Excel 내보내기 뷰들
 """
 import datetime
-import io
 
-import xlsxwriter
 import xlwt
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import HttpResponse
-from django.views.generic import View
 
 from _excel.mixins import ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin
 from apiV1.views.payment import PaymentStatusByUnitTypeViewSet, OverallSummaryViewSet
@@ -21,6 +18,28 @@ from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment
 from project.models import Project, ProjectIncBudget
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
+
+
+def get_standardized_payment_sum(project, date=None, date_range=None):
+    """표준화된 납부액 집계 - ExportPaymentsByCont 방식 기준"""
+    filters = {
+        'project': project,
+        'income__isnull': False,
+        'project_account_d3__is_payment': True,
+        'contract__isnull': False,
+        'contract__activation': True
+    }
+
+    if date_range:
+        # ExportPayments용 날짜 범위
+        filters['deal_date__range'] = date_range
+    elif date:
+        # ExportPaymentsByCont, ExportPaymentStatus용 특정 날짜까지
+        filters['deal_date__lte'] = date
+
+    return ProjectCashBook.objects.filter(**filters).aggregate(
+        total=Sum('income')
+    )['total'] or 0
 
 
 def export_payments_xls(request):
@@ -267,7 +286,9 @@ class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
             project=project,
             income__isnull=False,
             project_account_d3__is_payment=True,
-            deal_date__range=(sd, ed)
+            deal_date__range=(sd, ed),
+            contract__isnull=False,
+            contract__activation=True
         ).order_by('deal_date', 'created')
 
         # Apply filters
@@ -491,7 +512,8 @@ class ExportPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
                                                    income__isnull=False,
                                                    project_account_d3__is_payment=True,
                                                    deal_date__lte=date,
-                                                   contract__isnull=False)
+                                                   contract__isnull=False,
+                                                   contract__activation=True)
         paid_dict = paid_data.values_list(*paid_params)
 
         # 계약금 분납 횟수
@@ -701,13 +723,48 @@ class ExportPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
             same_order_group_items = [d for d in api_data if d['order_group_id'] == item['order_group_id']]
             return same_order_group_items[0]['unit_type_id'] == item['unit_type_id']
 
+        # 개별 차수×타입별 실수납 금액을 표준화된 방식으로 재계산
+        for item in api_data:
+            # 해당 차수×타입에 대한 표준화된 실수납 금액 계산
+            from cash.models import ProjectCashBook
+            from django.db.models import Sum
+
+            filters = {
+                'project': project,
+                'income__isnull': False,
+                'project_account_d3__is_payment': True,
+                'contract__isnull': False,
+                'contract__activation': True,
+                'contract__order_group_id': item['order_group_id'],
+                'contract__unit_type_id': item['unit_type_id']
+            }
+
+            if date and date != 'null':
+                filters['deal_date__lte'] = date
+
+            standardized_item_paid = ProjectCashBook.objects.filter(**filters).aggregate(
+                total=Sum('income')
+            )['total'] or 0
+
+            # API 데이터의 paid_amount를 표준화된 값으로 교체
+            item['paid_amount'] = standardized_item_paid
+
+            # 미수금액도 재계산: 계약금액 - 표준화된 실수납금액
+            item['unpaid_amount'] = max(0, item['contract_amount'] - standardized_item_paid)
+
+        # 합계 계산 - 표준화된 집계 방식 사용
+        standardized_paid_amount = get_standardized_payment_sum(project, date)
+
         # 합계 계산
+        total_contract_amount = sum(item['contract_amount'] for item in api_data)
+        standardized_total_unpaid = max(0, total_contract_amount - standardized_paid_amount)
+
         totals = {
             'total_sales_amount': sum(item['total_sales_amount'] for item in api_data),
             'contract_units': sum(item['contract_units'] for item in api_data),
-            'contract_amount': sum(item['contract_amount'] for item in api_data),
-            'paid_amount': sum(item['paid_amount'] for item in api_data),
-            'unpaid_amount': sum(item['unpaid_amount'] for item in api_data),
+            'contract_amount': total_contract_amount,
+            'paid_amount': standardized_paid_amount,  # 표준화된 집계 사용
+            'unpaid_amount': standardized_total_unpaid,  # 계약금액 - 표준화된 실수납금액
             'non_contract_units': sum(item['non_contract_units'] for item in api_data),
             'non_contract_amount': sum(item['non_contract_amount'] for item in api_data),
             'total_budget': sum(item['total_budget'] for item in api_data),
@@ -960,12 +1017,13 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         })
         worksheet.merge_range(row_num, 0, row_num + 4, 0, '수납', collection_format)
 
-        # 수납액
+        # 수납액 - 표준화된 집계 방식 사용
         worksheet.write(row_num, 1, '수납액', center_format)
-        total_collected_amount = sum(order['collection']['collected_amount'] for order in pay_orders)
+        standardized_collected_amount = get_standardized_payment_sum(project, date)
+        # 기존 API 데이터는 호환성을 위해 회차별로는 유지하되, 총합계만 표준화 사용
         for i, order in enumerate(pay_orders):
             worksheet.write(row_num, 2 + i, order['collection']['collected_amount'], body_format)
-        worksheet.write(row_num, col_count - 1, total_collected_amount, body_format)
+        worksheet.write(row_num, col_count - 1, standardized_collected_amount, body_format)
 
         # 할인료
         row_num += 1
@@ -983,19 +1041,20 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             worksheet.write(row_num, 2 + i, order['collection']['overdue_fee'], body_format)
         worksheet.write(row_num, col_count - 1, total_overdue_fee, body_format)
 
-        # 실수납액
+        # 실수납액 - 표준화된 집계 방식 사용
         row_num += 1
         worksheet.write(row_num, 1, '실수납액', center_format)
-        total_actual_collected = sum(order['collection']['actual_collected'] for order in pay_orders)
+        standardized_actual_collected = get_standardized_payment_sum(project, date)
+        # 기존 API 데이터는 호환성을 위해 회차별로는 유지하되, 총합계만 표준화 사용
         for i, order in enumerate(pay_orders):
             worksheet.write(row_num, 2 + i, order['collection']['actual_collected'], body_format)
-        worksheet.write(row_num, col_count - 1, total_actual_collected, body_format)
+        worksheet.write(row_num, col_count - 1, standardized_actual_collected, body_format)
 
-        # 수납율
+        # 수납율 - 표준화된 집계 기반으로 계산
         row_num += 1
         worksheet.write(row_num, 1, '수납율', center_format)
         total_collection_rate = (
-                total_actual_collected / total_contract_amount * 100) if total_contract_amount > 0 else 0
+                standardized_actual_collected / total_contract_amount * 100) if total_contract_amount > 0 else 0
         for i, order in enumerate(pay_orders):
             collection_rate = float(order['collection']['collection_rate'])
             worksheet.write(row_num, 2 + i, collection_rate / 100, percent_format)
