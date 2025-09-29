@@ -9,14 +9,14 @@ from django.http import HttpResponse
 from django.views.generic import View
 import xlsxwriter
 
-
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
 class ExcelExportMixin(View):
     """Excel 내보내기 공통 기능 믹스인"""
 
-    def create_workbook(self, sheet_name=None):
+    @staticmethod
+    def create_workbook(sheet_name=None):
         """워크북과 워크시트 생성"""
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output)
@@ -24,7 +24,8 @@ class ExcelExportMixin(View):
         worksheet.set_default_row(20)
         return output, workbook, worksheet
 
-    def create_title_format(self, workbook, font_size=18):
+    @staticmethod
+    def create_title_format(workbook, font_size=18):
         """제목 형식 생성"""
         title_format = workbook.add_format()
         title_format.set_font_size(font_size)
@@ -32,7 +33,8 @@ class ExcelExportMixin(View):
         title_format.set_bold()
         return title_format
 
-    def create_header_format(self, workbook):
+    @staticmethod
+    def create_header_format(workbook):
         """헤더 형식 생성"""
         h_format = workbook.add_format()
         h_format.set_bold()
@@ -49,7 +51,8 @@ class ExcelExportMixin(View):
         worksheet.merge_range(row_num, 0, row_num, col_count, title, title_format)
         return row_num + 1
 
-    def write_date_info(self, worksheet, workbook, row_num, col_count, date_str=None):
+    @staticmethod
+    def write_date_info(worksheet, workbook, row_num, col_count, date_str=None):
         """날짜 정보 작성"""
         date_info = (date_str or TODAY) + ' 현재'
         worksheet.set_row(row_num, 18)
@@ -84,7 +87,8 @@ class ExcelExportMixin(View):
 
         return row_num
 
-    def get_field_value(self, obj, field_name):
+    @staticmethod
+    def get_field_value(obj, field_name):
         """객체에서 필드 값 추출 (중첩 필드 지원)"""
         if not field_name:
             return ''
@@ -111,7 +115,8 @@ class ExcelExportMixin(View):
         except (AttributeError, KeyError, TypeError):
             return ''
 
-    def create_response(self, output, workbook, filename):
+    @staticmethod
+    def create_response(output, workbook, filename):
         """HTTP 응답 생성"""
         workbook.close()
         output.seek(0)
@@ -127,7 +132,8 @@ class ExcelExportMixin(View):
 class ProjectFilterMixin:
     """프로젝트 필터링 공통 기능"""
 
-    def get_project(self, request):
+    @staticmethod
+    def get_project(request):
         """요청에서 프로젝트 추출"""
         from project.models import Project
         project_id = request.GET.get('project')
@@ -135,7 +141,8 @@ class ProjectFilterMixin:
             return Project.objects.get(pk=project_id)
         return None
 
-    def get_selected_columns(self, request):
+    @staticmethod
+    def get_selected_columns(request):
         """선택된 컬럼 목록 추출"""
         col_param = request.GET.get('col', '')
         if col_param:
