@@ -10,11 +10,16 @@ from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContract
 from docs.exports import ExportSuitCases, ExportSuitCase
 from company.exports import ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades
 
-# from .views import *
-
 app_name = 'excel'
 
 urlpatterns = [
+    # Company 관련 (새 모듈)
+    path('staffs/', ExportStaffs.as_view(), name='staffs'),
+    path('departs/', ExportDeparts.as_view(), name='departs'),
+    path('positions/', ExportPositions.as_view(), name='positions'),
+    path('duties/', ExportDuties.as_view(), name='duties'),
+    path('grades/', ExportGrades.as_view(), name='grades'),
+
     # Contract 관련 (새 모듈)
     path('contracts/', ExportContracts.as_view(), name='contracts'),
     path('reservations/', ExportApplicants.as_view(), name='reservations'),
@@ -46,9 +51,4 @@ urlpatterns = [
     # Docs 관련 (새 모듈)
     path('suitcases/', ExportSuitCases.as_view(), name='suitcases'),
     path('suitcase/', ExportSuitCase.as_view(), name='suitcase'),
-    # path('staffs/', ExportStaffs.as_view(), name='staffs'),
-    # path('departs/', ExportDeparts.as_view(), name='departs'),
-    # path('positions/', ExportPositions.as_view(), name='positions'),
-    # path('duties/', ExportDuties.as_view(), name='duties'),
-    # path('grades/', ExportGrades.as_view(), name='grades'),
 ]
