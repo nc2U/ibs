@@ -244,7 +244,7 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
 
                     contract_units = contract_data['contract_units']
                     contract_amount = contract_data['contract_amount']
-                    unpaid_amount = max(0, contract_amount - paid_amount)
+                    unpaid_amount = contract_amount - paid_amount  # 음수 포함 - 초과납부 반영
 
                     # 미계약 금액: contract_contractprice에서 contract_id IS NULL인 것들의 합계 (총괄집계와 동일)
                     non_contract_amount = PaymentStatusByUnitTypeViewSet._get_non_contract_amount_by_unit_type(
@@ -519,19 +519,22 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 'collection_rate': 0
             })
 
-            # collection_rate 먼저 계산 (전체 계약금액 대비 실수납액)
+            # collection_rate 계산 (회차별 계약금액 대비 실수납액)
             collection_rate = (
                     collection_data['actual_collected'] / contract_amount * 100) if contract_amount > 0 else 0
             collection_data['collection_rate'] = round(collection_rate, 2)
 
-            # 기간도래 관련 집계 (최적화된 계산)
+            # 기간도래 관련 집계 (기존 방식 사용)
             due_period_data = self._get_due_period_data_optimized(order, contract_amount, collection_data, date)
 
             # 기간미도래 미수금 (캐시된 데이터 사용)
             not_due_unpaid = not_due_unpaid_cache.get(order.pk, 0)
 
-            # 총 미수금 및 비율
-            total_unpaid = due_period_data['unpaid_amount'] + not_due_unpaid
+            # 총 미수금 = 해당 회차의 기간도래 미수금 + 해당 회차의 기간미도래 미수금
+            due_unpaid = due_period_data['unpaid_amount']  # 해당 회차의 기간도래 미수금
+            not_due_unpaid = not_due_unpaid_cache.get(order.pk, 0)  # 해당 회차의 기간미도래 미수금
+
+            total_unpaid = due_unpaid + not_due_unpaid
             total_unpaid_rate = (total_unpaid / contract_amount * 100) if contract_amount > 0 else 0
 
             # 회차별 계약률 계산 (계약금액 / 총금액)
@@ -554,6 +557,23 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 'total_unpaid': total_unpaid,
                 'total_unpaid_rate': round(total_unpaid_rate, 2)
             })
+
+        # 전체 미수금 계산 (모든 회차의 총 미수금 합계)
+        total_overall_unpaid = sum(order['total_unpaid'] for order in result_pay_orders)
+
+        # 전체 계약금액 계산 (모든 회차)
+        total_all_contract_amount = sum(
+            payment_amounts_cache.get(order.pay_time, 0) for order in pay_orders
+        )
+
+        # 전체 미수율 계산
+        total_overall_unpaid_rate = (total_overall_unpaid / total_all_contract_amount * 100) if total_all_contract_amount > 0 else 0
+
+        # 마지막 회차에 전체 미수금 정보 추가 (표시용)
+        if result_pay_orders:
+            last_order = result_pay_orders[-1]
+            last_order['total_overall_unpaid'] = total_overall_unpaid
+            last_order['total_overall_unpaid_rate'] = round(total_overall_unpaid_rate, 2)
 
         # 집계 데이터 조회
         aggregate_data = self._get_aggregate_data(project_id)
@@ -741,17 +761,23 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_all_collection_data(project_id, date, pay_orders):
-        """모든 납부 회차의 수납 데이터를 배치로 조회하여 캐시 생성 (contract 연결된 것만)"""
+        """표준화된 수납 데이터 배치 조회 (get_standardized_payment_sum 로직 기반)"""
 
-        # 모든 납부 회차의 수납 데이터를 한 번에 조회 (활성화된 contract와 연결된 것만)
+        # 표준화된 필터 조건 사용 (ExportOverallSummary와 일치)
+        base_filters = {
+            'project_id': project_id,
+            'income__isnull': False,
+            'project_account_d3__is_payment': True,
+            'contract__isnull': False,
+            'contract__activation': True,
+            'deal_date__lte': date
+        }
+
+        # 모든 납부 회차의 수납 데이터를 한 번에 조회 (표준화된 조건으로)
         order_ids = [order.pk for order in pay_orders]
         payments_data = ProjectCashBook.objects.filter(
-            project_id=project_id,
             installment_order__in=order_ids,
-            contract__isnull=False,  # contract와 연결된 수납액만
-            contract__activation=True,  # 활성화된 계약만
-            income__isnull=False,
-            deal_date__lte=date
+            **base_filters
         ).values('installment_order').annotate(
             total_collected=Sum('income')
         )
@@ -795,15 +821,15 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             collection_data = collection_cache.get(order.pk, {'collected_amount': 0})
             collected_amount = collection_data['collected_amount']
 
-            # 미수금 = 계약금액 - 수납금액 (최소 0)
-            not_due_unpaid = max(0, contract_amount - collected_amount)
+            # 미수금 = 계약금액 - 수납금액 (음수 포함 - 초과납부 반영)
+            not_due_unpaid = contract_amount - collected_amount
             not_due_unpaid_cache[order.pk] = not_due_unpaid
 
         return not_due_unpaid_cache
 
     @staticmethod
     def _get_due_period_data_optimized(order, contract_amount, collection_data, date):
-        """최적화된 기간도래 관련 데이터 집계 (캐시된 데이터 사용)"""
+        """최적화된 기간도래 관련 데이터 집계 (캐시된 데이터 사용) - 레거시 메서드"""
 
         # 기간도래 여부 확인
         is_due = OverallSummaryViewSet._is_due_period(order, date)
@@ -822,8 +848,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 캐시된 수납 데이터 사용
         collected_amount = collection_data['collected_amount']
 
-        # 기간도래 미수금 = 계약금액 - 수납액
-        unpaid_amount = max(0, contract_amount - collected_amount)
+        # 기간도래 미수금 = 계약금액 - 수납액 (음수 포함 - 초과납부 반영)
+        unpaid_amount = contract_amount - collected_amount
         unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
 
         # TODO: 기간도래분 연체료 계산 로직 구현 필요
@@ -837,6 +863,78 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             'overdue_fee': overdue_fee,
             'subtotal': subtotal
         }
+
+    @staticmethod
+    def _get_due_period_data_with_carryover(order, contract_amount, collection_data, date, carryover_amount):
+        """초과납부 이월을 포함한 기간도래 관련 데이터 집계"""
+
+        # 기간도래 여부 확인
+        is_due = OverallSummaryViewSet._is_due_period(order, date)
+
+        if not is_due:
+            # 기간미도래인 경우 모든 값을 0으로 반환하되, carryover_amount는 유지
+            return {
+                'contract_amount': 0,
+                'unpaid_amount': 0,
+                'unpaid_rate': 0,
+                'overdue_fee': 0,
+                'subtotal': 0,
+                'carryover_amount': carryover_amount
+            }
+
+        # 기간도래인 경우 초과납부 이월 적용
+        collected_amount = collection_data['collected_amount']
+
+        # 실제 납부 필요 금액 = 계약금액 - 이월된 초과납부액
+        actual_required_amount = max(0, contract_amount - carryover_amount)
+
+        # 미수금 계산
+        if collected_amount >= actual_required_amount:
+            # 이번 회차 납부가 충분한 경우
+            unpaid_amount = 0
+            # 다음 회차로 이월할 초과납부액 = 기존 이월액 + 이번 회차 초과분 - 이번 회차에서 사용한 이월액
+            new_carryover = carryover_amount + collected_amount - contract_amount
+            new_carryover = max(0, new_carryover)  # 음수가 될 수는 없음
+        else:
+            # 이번 회차 납부가 부족한 경우
+            unpaid_amount = actual_required_amount - collected_amount
+            new_carryover = 0  # 초과납부액 모두 소진
+
+        unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
+
+        # TODO: 기간도래분 연체료 계산 로직 구현 필요
+        overdue_fee = 0
+        subtotal = unpaid_amount + overdue_fee
+
+        return {
+            'contract_amount': contract_amount,
+            'unpaid_amount': unpaid_amount,
+            'unpaid_rate': round(unpaid_rate, 2),
+            'overdue_fee': overdue_fee,
+            'subtotal': subtotal,
+            'carryover_amount': new_carryover
+        }
+
+    @staticmethod
+    def _get_not_due_unpaid_with_carryover(order, date, payment_amounts_cache, collection_cache, carryover_amount):
+        """초과납부 이월을 포함한 기간미도래 미수금 계산"""
+
+        # 기간미도래가 아닌 경우 0
+        if OverallSummaryViewSet._is_due_period(order, date):
+            return 0
+
+        # 기간미도래인 경우 계산
+        contract_amount = payment_amounts_cache.get(order.pay_time, 0)
+        collection_data = collection_cache.get(order.pk, {'collected_amount': 0})
+        collected_amount = collection_data['collected_amount']
+
+        # 실제 납부 필요 금액 = 계약금액 - 이월된 초과납부액
+        actual_required_amount = max(0, contract_amount - carryover_amount)
+
+        # 미수금 = 실제 필요금액 - 수납금액 (최소 0)
+        not_due_unpaid = max(0, actual_required_amount - collected_amount)
+
+        return not_due_unpaid
 
     def _get_collection_data(self, order, project_id, date):
         """수납 관련 데이터 집계 (레거시 메서드 - 사용하지 않음)"""
@@ -876,7 +974,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             deal_date__lte=date
         ).aggregate(total=Sum('income'))['total'] or 0
 
-        unpaid_amount = max(0, contract_amount - collected_amount)
+        unpaid_amount = contract_amount - collected_amount  # 음수 포함 - 초과납부 반영
         unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
 
         overdue_fee = 0
@@ -934,8 +1032,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             deal_date__lte=date
         ).aggregate(total=Sum('income'))['total'] or 0
 
-        # 미수금 = 계약금액 - 수납금액 (최소 0)
-        return max(0, contract_amount - collected_amount)
+        # 미수금 = 계약금액 - 수납금액 (음수 포함 - 초과납부 반영)
+        return contract_amount - collected_amount
 
     @staticmethod
     def _get_aggregate_data(project_id):

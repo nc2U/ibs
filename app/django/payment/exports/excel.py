@@ -41,6 +41,23 @@ def get_standardized_payment_sum(project, date=None, date_range=None):
     )['total'] or 0
 
 
+def get_standardized_payment_sum_by_order(project, date, installment_order_id):
+    """회차별 표준화된 납부액 집계"""
+    filters = {
+        'project': project,
+        'installment_order_id': installment_order_id,
+        'income__isnull': False,
+        'project_account_d3__is_payment': True,
+        'contract__isnull': False,
+        'contract__activation': True,
+        'deal_date__lte': date
+    }
+
+    return ProjectCashBook.objects.filter(**filters).aggregate(
+        total=Sum('income')
+    )['total'] or 0
+
+
 class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
     """수납건별 수납내역 리스트 (Mixins 사용)"""
 
@@ -609,15 +626,15 @@ class ExportPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
             # API 데이터의 paid_amount를 표준화된 값으로 교체
             item['paid_amount'] = standardized_item_paid
 
-            # 미수금액도 재계산: 계약금액 - 표준화된 실수납금액
-            item['unpaid_amount'] = max(0, item['contract_amount'] - standardized_item_paid)
+            # 미수금액도 재계산: 계약금액 - 표준화된 실수납금액 (음수 포함 - 초과납부 반영)
+            item['unpaid_amount'] = item['contract_amount'] - standardized_item_paid
 
         # 합계 계산 - 표준화된 집계 방식 사용
         standardized_paid_amount = get_standardized_payment_sum(project, date)
 
         # 합계 계산
         total_contract_amount = sum(item['contract_amount'] for item in api_data)
-        standardized_total_unpaid = max(0, total_contract_amount - standardized_paid_amount)
+        standardized_total_unpaid = total_contract_amount - standardized_paid_amount  # 음수 포함 - 초과납부 반영
 
         totals = {
             'total_sales_amount': sum(item['total_sales_amount'] for item in api_data),
@@ -901,12 +918,13 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         })
         worksheet.merge_range(row_num, 0, row_num + 4, 0, '수납', collection_format)
 
-        # 수납액 - 표준화된 집계 방식 사용
+        # 수납액 - 표준화된 집계 방식 사용 (회차별, 합계 모두 표준화)
         worksheet.write(row_num, 1, '수납액', center_format)
         standardized_collected_amount = get_standardized_payment_sum(project, date)
-        # 기존 API 데이터는 호환성을 위해 회차별로는 유지하되, 총합계만 표준화 사용
+        # 회차별로도 표준화된 계산 사용
         for i, order in enumerate(pay_orders):
-            worksheet.write(row_num, 2 + i, order['collection']['collected_amount'], body_format)
+            standardized_order_collected = get_standardized_payment_sum_by_order(project, date, order['pk'])
+            worksheet.write(row_num, 2 + i, standardized_order_collected, body_format)
         worksheet.write(row_num, col_count - 1, standardized_collected_amount, body_format)
 
         # 할인료
@@ -925,23 +943,27 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             worksheet.write(row_num, 2 + i, order['collection']['overdue_fee'], body_format)
         worksheet.write(row_num, col_count - 1, total_overdue_fee, body_format)
 
-        # 실수납액 - 표준화된 집계 방식 사용
+        # 실수납액 - 표준화된 집계 방식 사용 (회차별, 합계 모두 표준화)
         row_num += 1
         worksheet.write(row_num, 1, '실수납액', center_format)
         standardized_actual_collected = get_standardized_payment_sum(project, date)
-        # 기존 API 데이터는 호환성을 위해 회차별로는 유지하되, 총합계만 표준화 사용
+        # 회차별로도 표준화된 계산 사용 (할인료, 연체료 미구현으로 수납액과 동일)
         for i, order in enumerate(pay_orders):
-            worksheet.write(row_num, 2 + i, order['collection']['actual_collected'], body_format)
+            standardized_order_actual = get_standardized_payment_sum_by_order(project, date, order['pk'])
+            worksheet.write(row_num, 2 + i, standardized_order_actual, body_format)
         worksheet.write(row_num, col_count - 1, standardized_actual_collected, body_format)
 
-        # 수납율 - 표준화된 집계 기반으로 계산
+        # 수납율 - 표준화된 집계 기반으로 계산 (회차별, 합계 모두 표준화)
         row_num += 1
         worksheet.write(row_num, 1, '수납율', center_format)
         total_collection_rate = (
                 standardized_actual_collected / total_contract_amount * 100) if total_contract_amount > 0 else 0
+        # 회차별 수납율도 표준화된 계산으로 수정
         for i, order in enumerate(pay_orders):
-            collection_rate = float(order['collection']['collection_rate'])
-            worksheet.write(row_num, 2 + i, collection_rate / 100, percent_format)
+            standardized_order_actual = get_standardized_payment_sum_by_order(project, date, order['pk'])
+            order_contract_amount = order['contract_amount']
+            order_collection_rate = (standardized_order_actual / order_contract_amount * 100) if order_contract_amount > 0 else 0
+            worksheet.write(row_num, 2 + i, order_collection_rate / 100, percent_format)
         worksheet.write(row_num, col_count - 1, total_collection_rate / 100, percent_format)
 
         # 7. 기간도래 섹션 (5행)
@@ -1023,22 +1045,31 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         })
         worksheet.merge_range(row_num, 0, row_num + 1, 0, '총계', total_format)
 
-        # 미수금
+        # 미수금 (기간도래 누적 + 기간미도래 전체)
         worksheet.write(row_num, 1, '미수금', center_format)
-        total_total_unpaid = sum(order['total_unpaid'] for order in pay_orders)
+
+        # 전체 미수금 찾기 (마지막 기간도래 회차에서)
+        total_overall_unpaid = sum(order['total_unpaid'] for order in pay_orders)  # 기본값
+        for order in reversed(pay_orders):  # 뒤에서부터 찾기
+            if 'total_overall_unpaid' in order:
+                total_overall_unpaid = order['total_overall_unpaid']
+                break
+
         for i, order in enumerate(pay_orders):
             worksheet.write(row_num, 2 + i, order['total_unpaid'], body_format)
-        worksheet.write(row_num, col_count - 1, total_total_unpaid, body_format)
+        worksheet.write(row_num, col_count - 1, total_overall_unpaid, body_format)
 
-        # 미수율
+        # 미수율 (전체 미수금 기준)
         row_num += 1
         worksheet.write(row_num, 1, '미수율', center_format)
-        total_total_unpaid_rate = (total_total_unpaid / (total_contract_amount + total_non_contract_amount) * 100) if (
-                                                                                                                              total_contract_amount + total_non_contract_amount) > 0 else 0
+
+        # 전체 미수율 계산 (총 미수금 / 총 계약매출액)
+        total_overall_unpaid_rate = (total_overall_unpaid / (total_contract_amount + total_non_contract_amount) * 100) if (total_contract_amount + total_non_contract_amount) > 0 else 0
+
         for i, order in enumerate(pay_orders):
             total_unpaid_rate = float(order['total_unpaid_rate'])
             worksheet.write(row_num, 2 + i, total_unpaid_rate / 100, percent_format)
-        worksheet.write(row_num, col_count - 1, total_total_unpaid_rate / 100, percent_format)
+        worksheet.write(row_num, col_count - 1, total_overall_unpaid_rate / 100, percent_format)
 
         # Create a response using mixin
         return self.create_response(output, workbook, f'{date}-overall-summary')
