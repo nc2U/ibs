@@ -4,6 +4,7 @@ Payment Excel Export Views
 납부 관련 Excel 내보내기 뷰들
 """
 import datetime
+from unittest.mock import Mock
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Sum
@@ -560,8 +561,6 @@ class ExportPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
 
         # ----------------- get_data_using_api start ----------------- #
         # PaymentStatusByUnitTypeViewSet와 동일한 로직 사용
-        from unittest.mock import Mock
-
         # Mock request 객체 생성
         mock_request = Mock()
         mock_request.query_params = {
@@ -745,8 +744,6 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
 
         # ----------------- get_data_using_api start ----------------- #
         # OverallSummaryViewSet와 동일한 로직 사용
-        from unittest.mock import Mock
-
         # Mock request 객체 생성
         mock_request = Mock()
         mock_request.query_params = {
