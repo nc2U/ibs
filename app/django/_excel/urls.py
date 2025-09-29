@@ -6,6 +6,7 @@ from payment.exports import ExportPayments, ExportPaymentsByCont, ExportPaymentS
 from cash.exports import (ExportProjectBalance, ExportProjectDateCashbook, ExportBalanceByAcc,
                           ExportBudgetExecutionStatus, ExportDateCashbook, export_cashbook_xls,
                           export_project_cash_xls)
+from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContracts
 from company.exports import ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades
 
 # from .views import *
@@ -36,9 +37,10 @@ urlpatterns = [
     path('daily-cash/', ExportDateCashbook.as_view(), name='daily-cash'),
     path('cashbook/', export_cashbook_xls, name='cashbook'),
 
-    # path('sites/', ExportSites.as_view(), name='sites'),
-    # path('sites-by-owner/', ExportSitesByOwner.as_view(), name='sites-by-owner'),
-    # path('sites-contracts/', ExportSitesContracts.as_view(), name='sites-contracts'),
+    # Project - site 관련 (새 모듈)
+    path('sites/', ExportSites.as_view(), name='sites'),
+    path('sites-by-owner/', ExportSitesByOwner.as_view(), name='sites-by-owner'),
+    path('sites-contracts/', ExportSitesContracts.as_view(), name='sites-contracts'),
 
     # path('suitcases/', ExportSuitCases.as_view(), name='suitcases'),
     # path('suitcase/', ExportSuitCase.as_view(), name='suitcase'),
