@@ -156,6 +156,7 @@ class PayOrderDuePeriodSerializer(serializers.Serializer):
 class OverallSummaryPayOrderSerializer(serializers.ModelSerializer):
     contract_amount = serializers.IntegerField()
     non_contract_amount = serializers.IntegerField()
+    contract_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
     collection = PayOrderCollectionSerializer()
     due_period = PayOrderDuePeriodSerializer()
     not_due_unpaid = serializers.IntegerField()
@@ -165,7 +166,7 @@ class OverallSummaryPayOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstallmentPaymentOrder
         fields = ('pk', 'pay_name', 'pay_due_date', 'pay_sort', 'pay_code',
-                  'pay_time', 'contract_amount', 'non_contract_amount', 'collection', 'due_period',
+                  'pay_time', 'contract_amount', 'non_contract_amount', 'contract_rate', 'collection', 'due_period',
                   'not_due_unpaid', 'total_unpaid', 'total_unpaid_rate')
 
 

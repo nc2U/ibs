@@ -124,7 +124,7 @@ const total_total_unpaid = computed(() =>
       <CTableRow>
         <CTableDataCell class="text-center">계약율</CTableDataCell>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
-          {{ numFormat(contAggregate?.contract_rate ?? 0, 2) }}%
+          {{ numFormat(order.contract_rate ?? 0, 2) }}%
         </CTableDataCell>
         <CTableDataCell class="text-right">
           {{ numFormat(contAggregate?.contract_rate ?? 0, 2) }}%

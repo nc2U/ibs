@@ -84,6 +84,7 @@ export interface PayOrderDuePeriod {
 export interface OverallSummaryPayOrder extends PayOrder {
   contract_amount: number
   non_contract_amount: number
+  contract_rate: number
   collection: PayOrderCollection
   due_period: PayOrderDuePeriod
   not_due_unpaid: number

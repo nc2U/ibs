@@ -1,20 +1,18 @@
-from datetime import datetime, date
+from datetime import datetime
+from unittest.mock import Mock
 
 from django.db import connection
-from django.db.models import Sum, F
-from django_filters import DateFilter, CharFilter
+from django.db.models import Sum
+from django_filters import CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
-import logging
 from contract.models import ContractPrice
 from items.models import KeyUnit
 from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
 from ..serializers.payment import *
-
-logger = logging.getLogger(__name__)
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
@@ -180,7 +178,6 @@ class PaymentSummaryViewSet(viewsets.ViewSet):
             return Response(serializer.data)
 
         except Exception as e:
-            logger.exception(f"PaymentSummary API error: {str(e)}")
             return Response({
                 'error': 'An internal server error has occurred.'
             }, status=500)
@@ -283,7 +280,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 return Response(serializer.data)
 
         except Exception as e:
-            logger.exception(f"PaymentStatusByUnitType API error: {str(e)}")
             return Response({
                 'error': 'An internal server error has occurred.'
             }, status=500)
@@ -337,7 +333,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 return contract_amount + non_contract_amount
 
         except Exception as e:
-            logger.error(f"_get_sales_amount_by_unit_type error: {str(e)}")
             return 0
 
     @staticmethod
@@ -365,7 +360,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 }
 
         except Exception as e:
-            logger.error(f"_get_contract_data_by_unit_type error: {str(e)}")
             return {'contract_units': 0, 'contract_amount': 0}
 
     @staticmethod
@@ -401,7 +395,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 return result[0] if result else 0
 
         except Exception as e:
-            logger.error(f"_get_paid_amount_by_unit_type error: {str(e)}")
             return 0
 
     @staticmethod
@@ -441,7 +434,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 return 0
 
         except Exception as e:
-            logger.error(f"_get_non_contract_amount_by_unit_type error: {str(e)}")
             return 0
 
     @staticmethod
@@ -480,7 +472,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 return 0
 
         except Exception as e:
-            logger.error(f"_get_non_contract_units_by_unit_type error: {str(e)}")
             return 0
 
 
@@ -543,6 +534,10 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             total_unpaid = due_period_data['unpaid_amount'] + not_due_unpaid
             total_unpaid_rate = (total_unpaid / contract_amount * 100) if contract_amount > 0 else 0
 
+            # 회차별 계약률 계산 (계약금액 / 총금액)
+            order_total_amount = contract_amount + non_contract_amount
+            order_contract_rate = (contract_amount / order_total_amount * 100) if order_total_amount > 0 else 0
+
             result_pay_orders.append({
                 'pk': order.pk,
                 'pay_name': order.pay_name,
@@ -552,6 +547,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 'pay_time': order.pay_time,
                 'contract_amount': contract_amount,  # 계약세대 당 회차 납부약정 총액
                 'non_contract_amount': non_contract_amount,  # 미계약 세대 당 회차 납부금액 총계
+                'contract_rate': round(order_contract_rate, 2),  # 회차별 계약률
                 'collection': collection_data,
                 'due_period': due_period_data,
                 'not_due_unpaid': not_due_unpaid,
@@ -959,8 +955,22 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 미계약 세대수
         non_conts_num = total_units - conts_num
 
-        # 계약률
-        contract_rate = (conts_num / total_units * 100) if total_units > 0 else 0
+        # 계약률 계산 (금액 기준): 계약금액 / 총매출액
+        # PaymentStatusByUnitTypeViewSet를 사용하여 정확한 금액 계산
+        mock_request = Mock()
+        mock_request.query_params = {'project': str(project_id)}
+
+        payment_status_viewset = PaymentStatusByUnitTypeViewSet()
+        payment_status_response = payment_status_viewset.list(mock_request)
+
+        contract_rate = 0
+        if payment_status_response.status_code == 200:
+            payment_status_data = payment_status_response.data
+            total_contract_amount = sum(item['contract_amount'] for item in payment_status_data)
+            total_sales_amount = sum(item['total_sales_amount'] for item in payment_status_data)
+
+            # 계약률 = 계약금액 / 총매출액 * 100
+            contract_rate = (total_contract_amount / total_sales_amount * 100) if total_sales_amount > 0 else 0
 
         return {
             'conts_num': conts_num,

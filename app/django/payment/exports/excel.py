@@ -854,15 +854,41 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             worksheet.write(row_num, 2 + i, total_per_order, body_format)
         worksheet.write(row_num, col_count - 1, total_amount, body_format)
 
-        # 계약율
+        # 계약율 (금액 기준): 회차별 계약금액/약정금액, 합계는 총 계약금액/총매출액
         row_num += 1
         worksheet.write(row_num, 1, '계약율', center_format)
-        contract_rate = float(aggregate_data.get('contract_rate', 0))
+
+        # PaymentStatusByUnitTypeViewSet에서 금액 데이터 가져와서 총 계약률 계산
+        payment_status_mock_request = Mock()
+        payment_status_mock_request.query_params = {
+            'project': str(project.pk),
+            'date': date if date else 'null'
+        }
+
+        payment_status_viewset = PaymentStatusByUnitTypeViewSet()
+        payment_status_response = payment_status_viewset.list(payment_status_mock_request)
+
+        total_contract_rate = 0
+        if payment_status_response.status_code == 200:
+            payment_status_data = payment_status_response.data
+            total_contract_amount = sum(item['contract_amount'] for item in payment_status_data)
+            total_sales_amount = sum(item['total_sales_amount'] for item in payment_status_data)
+
+            # 총 계약률 = 총 계약금액 / 총매출액 * 100
+            total_contract_rate = (total_contract_amount / total_sales_amount * 100) if total_sales_amount > 0 else 0
+
         # Use percent format from mixin
         percent_format = formats['percent']
+
+        # 회차별 계약률 계산 (Excel에서 직접 계산)
         for i, order in enumerate(pay_orders):
-            worksheet.write(row_num, 2 + i, contract_rate / 100, percent_format)
-        worksheet.write(row_num, col_count - 1, contract_rate / 100, percent_format)
+            # Excel에서 직접 계산 (API 데이터 문제로 인해 임시 직접 계산)
+            order_total_amount = order['contract_amount'] + order['non_contract_amount']
+            order_contract_rate = (order['contract_amount'] / order_total_amount * 100) if order_total_amount > 0 else 0
+            worksheet.write(row_num, 2 + i, order_contract_rate / 100, percent_format)
+
+        # 합계는 총 계약률 사용
+        worksheet.write(row_num, col_count - 1, total_contract_rate / 100, percent_format)
 
         # 6. 수납 섹션 (5행)
         row_num += 1
