@@ -232,6 +232,29 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                         project_id, order_group_id, unit_type_id
                     )
 
+                    # 근린생활시설 특별 처리: HouseUnit이 있지만 SalesPriceByGT가 없을 때 fallback 적용
+                    if total_budget == 0 and total_sales_amount > 0:
+                        # unit_type.sort == '5'이고 HouseUnit이 있는지 확인
+                        from items.models import UnitType, HouseUnit
+                        from payment.models import SalesPriceByGT
+                        try:
+                            unit_type = UnitType.objects.get(pk=unit_type_id)
+                            if unit_type.sort == '5':  # 근린생활시설
+                                # 해당 타입의 HouseUnit이 있는지 확인
+                                has_house_units = HouseUnit.objects.filter(unit_type_id=unit_type_id).exists()
+                                # 해당 타입의 SalesPriceByGT가 있는지 확인
+                                has_sales_price = SalesPriceByGT.objects.filter(
+                                    project_id=project_id,
+                                    order_group_id=order_group_id,
+                                    unit_type_id=unit_type_id
+                                ).exists()
+
+                                # HouseUnit은 있지만 SalesPriceByGT가 없을 때만 fallback 적용
+                                if has_house_units and not has_sales_price:
+                                    total_budget = total_sales_amount  # fallback 값 사용
+                        except UnitType.DoesNotExist:
+                            pass
+
                     # 계약 현황 계산
                     contract_data = PaymentStatusByUnitTypeViewSet._get_contract_data_by_unit_type(
                         project_id, order_group_id, unit_type_id
@@ -258,6 +281,30 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
 
                     # 합계 = 계약금액 + 미계약금액 (total_budget 대신 계산)
                     total_amount = contract_amount + non_contract_amount
+
+                    # 근린생활시설 특별 처리: total_amount가 0이고 unit_type.sort == '5'일 때 fallback 적용
+                    if total_amount == 0:
+                        from items.models import UnitType, HouseUnit
+                        from payment.models import SalesPriceByGT
+                        try:
+                            unit_type = UnitType.objects.get(pk=unit_type_id)
+                            if unit_type.sort == '5':  # 근린생활시설
+                                # 해당 타입의 HouseUnit이 있는지 확인
+                                has_house_units = HouseUnit.objects.filter(unit_type_id=unit_type_id).exists()
+                                # 해당 타입의 SalesPriceByGT가 있는지 확인
+                                has_sales_price = SalesPriceByGT.objects.filter(
+                                    project_id=project_id,
+                                    order_group_id=order_group_id,
+                                    unit_type_id=unit_type_id
+                                ).exists()
+
+                                # HouseUnit은 있지만 SalesPriceByGT가 없을 때만 fallback 적용
+                                if has_house_units and not has_sales_price:
+                                    total_amount = PaymentStatusByUnitTypeViewSet._get_commercial_fallback_amount(
+                                        project_id, order_group_id, unit_type_id
+                                    )
+                        except UnitType.DoesNotExist:
+                            pass
 
                     results.append({
                         'order_group_id': order_group_id,
@@ -330,7 +377,70 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                     non_contract_result = cursor.fetchone()
                     non_contract_amount = non_contract_result[0] if non_contract_result else 0
 
-                return contract_amount + non_contract_amount
+                total_amount = contract_amount + non_contract_amount
+
+                # 근린생활시설 특별 처리: HouseUnit이 있지만 SalesPriceByGT가 없을 때 fallback 적용
+                if total_amount == 0:
+                    # unit_type.sort == '5'이고 HouseUnit이 있는지 확인
+                    from items.models import UnitType, HouseUnit
+                    from payment.models import SalesPriceByGT
+                    try:
+                        unit_type = UnitType.objects.get(pk=unit_type_id)
+                        if unit_type.sort == '5':  # 근린생활시설
+                            # 해당 타입의 HouseUnit이 있는지 확인
+                            has_house_units = HouseUnit.objects.filter(unit_type_id=unit_type_id).exists()
+                            # 해당 타입의 SalesPriceByGT가 있는지 확인
+                            has_sales_price = SalesPriceByGT.objects.filter(
+                                project_id=project_id,
+                                order_group_id=order_group_id,
+                                unit_type_id=unit_type_id
+                            ).exists()
+
+                            # HouseUnit은 있지만 SalesPriceByGT가 없을 때만 fallback 적용
+                            if has_house_units and not has_sales_price:
+                                total_amount = PaymentStatusByUnitTypeViewSet._get_commercial_fallback_amount(
+                                    project_id, order_group_id, unit_type_id
+                                )
+                    except UnitType.DoesNotExist:
+                        pass
+
+                return total_amount
+
+        except Exception as e:
+            return 0
+
+    @staticmethod
+    def _get_commercial_fallback_amount(project_id, order_group_id, unit_type_id):
+        """
+        근린생활시설 전용 fallback 로직: ContractPrice가 없을 경우 순차적으로 검색
+        1. ProjectIncBudget (예산 데이터) - 우선 반환
+        2. UnitType 평균가 - 예산 데이터가 없을 경우에만 사용
+        """
+        try:
+            from project.models import ProjectIncBudget
+            from items.models import UnitType
+
+            # 1. ProjectIncBudget에서 예산 데이터 우선 조회
+            try:
+                budget = ProjectIncBudget.objects.get(
+                    project_id=project_id,
+                    order_group_id=order_group_id,
+                    unit_type_id=unit_type_id
+                )
+                if budget.budget and budget.budget > 0:
+                    return budget.budget  # 예산 데이터 우선 반환
+            except ProjectIncBudget.DoesNotExist:
+                pass
+
+            # 2. 예산 데이터가 없을 경우에만 UnitType 평균가 조회
+            try:
+                unit_type = UnitType.objects.get(pk=unit_type_id)
+                if hasattr(unit_type, 'average_price') and unit_type.average_price and unit_type.average_price > 0:
+                    return unit_type.average_price
+            except UnitType.DoesNotExist:
+                pass
+
+            return 0
 
         except Exception as e:
             return 0
@@ -721,7 +831,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_non_contract_amounts_cache(project_id, pay_orders):
-        """미계약 세대 납부 금액 캐시 생성 (pay_time 기반)"""
+        """미계약 세대 납부 금액 캐시 생성 (pay_time 기반) - 근린생활시설 fallback 포함"""
         # pay_time별로 개별 캐시 생성
         pay_times = set()
         for order in pay_orders:
@@ -750,6 +860,12 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                     result = cursor.fetchone()
                     total_amount = result[0] if result else 0
 
+                    # 근린생활시설 fallback 로직 추가 (기존 금액에 추가)
+                    commercial_fallback = OverallSummaryViewSet._get_commercial_fallback_for_overall(
+                        project_id, int(pay_time)
+                    )
+                    total_amount += commercial_fallback
+
                     non_contract_amounts_cache[int(pay_time)] = total_amount
 
         except Exception as e:
@@ -758,6 +874,110 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 non_contract_amounts_cache[order.pay_time] = 0
 
         return non_contract_amounts_cache
+
+    @staticmethod
+    def _get_commercial_fallback_for_overall(project_id, pay_time):
+        """
+        총괄 집계용 근린생활시설 fallback 로직 - 회차별 계산
+        근린생활시설이 있지만 ContractPrice 데이터가 없을 때 fallback 적용
+        납부회차가 없으면 기본 납부회차(잔금 100%) 적용
+        """
+        try:
+            from project.models import Project
+            from contract.models import OrderGroup
+            from items.models import UnitType, HouseUnit
+            from payment.models import SalesPriceByGT, InstallmentPaymentOrder
+
+            # 프로젝트의 기본 order_group 가져오기
+            project = Project.objects.get(pk=project_id)
+            default_og = OrderGroup.get_default_for_project(project)
+
+            if not default_og:
+                return 0
+
+            # 근린생활시설 타입 찾기 (sort='5')
+            commercial_unit_types = UnitType.objects.filter(
+                project_id=project_id,
+                sort='5'
+            )
+
+            total_fallback_amount = 0
+
+            for unit_type in commercial_unit_types:
+                # 해당 타입의 HouseUnit이 있는지 확인
+                has_house_units = HouseUnit.objects.filter(unit_type_id=unit_type.pk).exists()
+
+                # 해당 타입의 SalesPriceByGT가 있는지 확인
+                has_sales_price = SalesPriceByGT.objects.filter(
+                    project_id=project_id,
+                    order_group_id=default_og.pk,
+                    unit_type_id=unit_type.pk
+                ).exists()
+
+                # HouseUnit은 있지만 SalesPriceByGT가 없을 때만 fallback 적용
+                if has_house_units and not has_sales_price:
+                    # 예산 데이터에서 기본 금액 가져오기
+                    base_amount = PaymentStatusByUnitTypeViewSet._get_commercial_fallback_amount(
+                        project_id, default_og.pk, unit_type.pk
+                    )
+
+                    if base_amount > 0:
+                        # 프로젝트의 근린생활시설용 InstallmentPaymentOrder가 있는지 확인
+                        installment_orders = InstallmentPaymentOrder.objects.filter(
+                            project_id=project_id,
+                            type_sort='5'  # 근린생활시설
+                        )
+
+                        if not installment_orders.exists():
+                            # InstallmentPaymentOrder가 없으면 기본 납부회차 적용: 잔금 100%
+                            # 잔금인지 확인 (pay_sort='3')
+                            try:
+                                pay_order = InstallmentPaymentOrder.objects.get(
+                                    project_id=project_id,
+                                    pay_time=pay_time
+                                )
+                                if pay_order.pay_sort == '3':  # 잔금
+                                    installment_amount = base_amount
+                                    total_fallback_amount += installment_amount
+                            except InstallmentPaymentOrder.DoesNotExist:
+                                pass
+                        else:
+                            # InstallmentPaymentOrder가 있으면 해당 회차에 따라 계산
+                            try:
+                                pay_order = InstallmentPaymentOrder.objects.get(
+                                    project_id=project_id,
+                                    pay_time=pay_time,
+                                    type_sort='5'  # 근린생활시설용만
+                                )
+
+                                if pay_order.pay_amt:
+                                    # pay_amt가 설정된 경우 그 값 사용
+                                    installment_amount = pay_order.pay_amt
+                                    total_fallback_amount += installment_amount
+                                elif pay_order.pay_ratio:
+                                    # pay_ratio가 설정된 경우 base_amount에 비율 적용
+                                    installment_amount = int(base_amount * (pay_order.pay_ratio / 100))
+                                    total_fallback_amount += installment_amount
+                                elif pay_order.pay_name == '잔금':
+                                    # 잔금의 경우 남은 비율을 자동 계산
+                                    other_orders = InstallmentPaymentOrder.objects.filter(
+                                        project_id=project_id,
+                                        type_sort='5'
+                                    ).exclude(pay_time=pay_time)
+                                    used_ratio = sum(order.pay_ratio or 0 for order in other_orders)
+                                    remaining_ratio = 100 - used_ratio
+
+                                    if remaining_ratio > 0:
+                                        installment_amount = int(base_amount * (remaining_ratio / 100))
+                                        total_fallback_amount += installment_amount
+
+                            except InstallmentPaymentOrder.DoesNotExist:
+                                pass
+
+            return total_fallback_amount
+
+        except Exception as e:
+            return 0
 
     @staticmethod
     def _get_all_collection_data(project_id, date, pay_orders):

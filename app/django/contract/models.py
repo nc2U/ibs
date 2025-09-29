@@ -150,8 +150,8 @@ class ContractPrice(models.Model):
                                       verbose_name='세대정보', related_name='contract_price',
                                       null=True, blank=True)
     order_group = models.ForeignKey('OrderGroup', on_delete=models.PROTECT,
-                                   null=True, blank=True, verbose_name='차수',
-                                   help_text='분양 차수 - 생성 시 자동 설정, 수정 시 유지')
+                                    null=True, blank=True, verbose_name='차수',
+                                    help_text='분양 차수 - 생성 시 자동 설정, 수정 시 유지')
     price = models.PositiveIntegerField('분양가격')
     price_build = models.PositiveIntegerField('건물가', null=True, blank=True)
     price_land = models.PositiveIntegerField('대지가', null=True, blank=True)
@@ -256,16 +256,23 @@ class ContractPrice(models.Model):
 
             # 근린생활시설의 경우 InstallmentPaymentOrder가 없으면 기본 납부회차 적용
             if not payment_amounts and self.house_unit.unit_type.name == '근린생활시설':
-                # 기본 납부회차: 계약시 10%, 2차계약금 10%, 잔금 80%
-                contract_payment = int(self.price * 0.1)    # 계약시 10%
-                second_payment = int(self.price * 0.1)      # 2차계약금 10%
-                final_payment = self.price - contract_payment - second_payment  # 잔금 80%
-
-                payment_amounts = {
-                    "1": contract_payment,    # 계약시
-                    "2": second_payment,      # 2차계약금
-                    "3": final_payment        # 잔금
-                }
+                # 기본 납부회차: 잔금 100%
+                # 잔금(pay_sort='3')에 해당하는 pay_time 찾기
+                from payment.models import InstallmentPaymentOrder
+                try:
+                    final_payment_order = InstallmentPaymentOrder.objects.get(
+                        project=project,
+                        pay_sort='3'  # 잔금
+                    )
+                    final_pay_time = str(final_payment_order.pay_time)
+                    payment_amounts = {
+                        final_pay_time: self.price  # 잔금 100%
+                    }
+                except InstallmentPaymentOrder.DoesNotExist:
+                    # 잔금 InstallmentPaymentOrder가 없으면 기본적으로 "10" 사용
+                    payment_amounts = {
+                        "10": self.price  # 잔금 100%
+                    }
 
             self.payment_amounts = payment_amounts
             self.is_cache_valid = True
