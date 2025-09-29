@@ -84,3 +84,6 @@ certificate.yml
 /tests/e2e/reports/
 selenium-debug.log
 chromedriver.log
+
+# Claude 로컬 설정 파일 무시
+.claude/

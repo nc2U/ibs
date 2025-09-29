@@ -172,7 +172,7 @@ class ExportPayments(View):
         # files during assembly for efficiency. To avoid this on servers that
         # don't allow temp files, for example the Google APP Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
+        workbook = xlsxwriter.Workbook(output, {'in_memory': False})
         worksheet = workbook.add_worksheet('수납건별_납부내역')
 
         worksheet.set_default_row(20)
@@ -291,25 +291,37 @@ class ExportPayments(View):
         # Turn off the warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'C:F'})
 
-        # Default CSS setting
-        body_format = {
+        # Pre-create format objects for reuse
+        date_format = workbook.add_format({
             'border': True,
             'align': 'center',
             'valign': 'vcenter',
             'num_format': 'yyyy-mm-dd'
-        }
+        })
+
+        number_format = workbook.add_format({
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'num_format': 41
+        })
+
+        default_format = workbook.add_format({
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter'
+        })
 
         # Write header
         for i, row in enumerate(data):
             row_num += 1
 
             for col_num, cell_data in enumerate(row):
+                # Use pre-created format objects instead of creating new ones
                 if col_num == 0 or col_num == 11:
-                    body_format['num_format'] = 'yyyy-mm-dd'
+                    bformat = date_format
                 else:
-                    body_format['num_format'] = 41
-
-                bformat = workbook.add_format(body_format)
+                    bformat = number_format
 
                 worksheet.write(row_num, col_num, cell_data, bformat)
 
@@ -341,7 +353,7 @@ class ExportPaymentsByCont(View):
         # files during assembly for efficiency. To avoid this on servers that
         # don't allow temp files, for example the Google APP Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
+        workbook = xlsxwriter.Workbook(output, {'in_memory': False})
         worksheet = workbook.add_worksheet('계약자별_납부내역')
 
         worksheet.set_default_row(20)
@@ -483,12 +495,27 @@ class ExportPaymentsByCont(View):
                     digit_col.append(col_num)
 
         # 4. Body
-        body_format = {
+        # Pre-create format objects for reuse
+        default_body_format = workbook.add_format({
             'border': True,
             'valign': 'vcenter',
             'num_format': '#,##0',
             'align': 'center',
-        }
+        })
+
+        date_body_format = workbook.add_format({
+            'border': True,
+            'valign': 'vcenter',
+            'num_format': 'yyyy-mm-dd',
+            'align': 'center',
+        })
+
+        digit_body_format = workbook.add_format({
+            'border': True,
+            'valign': 'vcenter',
+            'num_format': 41,
+            'align': 'center',
+        })
 
         # Turn off some of the warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'E:G'})
@@ -579,15 +606,15 @@ class ExportPaymentsByCont(View):
             row[0] = i + 1  # pk 대신 순서 삽입
 
             for col_num, cell_data in enumerate(row):
-                # css 설정
+                # Use pre-created format objects
                 if col_num <= 4 + is_us_cn:
-                    body_format['num_format'] = '#,##0'
+                    bf = default_body_format
                 elif col_num in date_col:  # 날짜 컬럼 일때
-                    body_format['num_format'] = 'yyyy-mm-dd'
+                    bf = date_body_format
                 elif col_num in digit_col:  # 숫자(금액) 컬럼 일때
-                    body_format['num_format'] = 41
-
-                bf = workbook.add_format(body_format)
+                    bf = digit_body_format
+                else:
+                    bf = default_body_format
 
                 worksheet.write(row_num, col_num, cell_data, bf)
 
@@ -619,7 +646,7 @@ class ExportPaymentStatus(View):
         # files during assembly for efficiency. To avoid this on servers that
         # don't allow temp files, for example the Google APP Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
+        workbook = xlsxwriter.Workbook(output, {'in_memory': False})
         worksheet = workbook.add_worksheet('차수_타입별_수납집계')
 
         worksheet.set_default_row(20)
@@ -717,12 +744,20 @@ class ExportPaymentStatus(View):
         # 4. Body
         # Get some data to write to the spreadsheet.
 
-        body_format = {
+        # Pre-create format objects for reuse
+        center_body_format = workbook.add_format({
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'num_format': '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@_-'
+        })
+
+        right_body_format = workbook.add_format({
             'border': True,
             'align': 'right',
             'valign': 'vcenter',
             'num_format': '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@_-'
-        }
+        })
 
         # Turn off some of the warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'B:C'})
@@ -770,13 +805,11 @@ class ExportPaymentStatus(View):
             row_num += 1
 
             for col_num, title in enumerate(titles):
-                # css 정렬
+                # Use pre-created format objects
                 if col_num <= 1:
-                    body_format['align'] = 'center'
+                    bformat = center_body_format
                 else:
-                    body_format['num_format'] = '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@_-'
-
-                bformat = workbook.add_format(body_format)
+                    bformat = right_body_format
 
                 type_count = get_og_item_count(item['order_group_id']) - 1
 
@@ -880,7 +913,7 @@ class ExportOverallSummary(View):
         # files during assembly for efficiency. To avoid this on servers that
         # don't allow temp files, for example the Google APP Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
+        workbook = xlsxwriter.Workbook(output, {'in_memory': False})
         worksheet = workbook.add_worksheet('총괄_집계_현황')
 
         worksheet.set_default_row(20)
