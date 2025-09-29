@@ -7,6 +7,7 @@ Cash Exports Module
 from .excel import (
     ExportBalanceByAcc,
     ExportDateCashbook,
+    ExportBudgetExecutionStatus,
     export_cashbook_xls,
     ExportProjectBalance,
     ExportProjectDateCashbook,
@@ -16,6 +17,7 @@ from .excel import (
 __all__ = [
     'ExportBalanceByAcc',
     'ExportDateCashbook',
+    'ExportBudgetExecutionStatus',
     'export_cashbook_xls',
     'ExportProjectBalance',
     'ExportProjectDateCashbook',
