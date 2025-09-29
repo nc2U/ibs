@@ -5,17 +5,15 @@ Payment Excel Export Views
 """
 import datetime
 
-import xlwt
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Sum
-from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin
 from apiV1.views.payment import PaymentStatusByUnitTypeViewSet, OverallSummaryViewSet
 from cash.models import ProjectCashBook
 from contract.models import Contract
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment
-from project.models import Project, ProjectIncBudget
+from project.models import ProjectIncBudget
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
@@ -40,143 +38,6 @@ def get_standardized_payment_sum(project, date=None, date_range=None):
     return ProjectCashBook.objects.filter(**filters).aggregate(
         total=Sum('income')
     )['total'] or 0
-
-
-def export_payments_xls(request):
-    """수납건별 수납내역 리스트"""
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename={date}-payments.xls'.format(date=TODAY)
-
-    wb = xlwt.Workbook(encoding='utf-8')
-    ws = wb.add_sheet('수납건별_납부내역')  # 시트 이름
-
-    # get_data: ?project=1&sd=2020-12-01&ed=2020-12-02&ipo=4&ba=5&up=on&q=#
-    project = Project.objects.get(pk=request.GET.get('project'))
-    sd = request.GET.get('sd')
-    ed = request.GET.get('ed')
-    og = request.GET.get('og')
-    ut = request.GET.get('ut')
-    ipo = request.GET.get('ipo')
-    ba = request.GET.get('ba')
-    nc = request.GET.get('nc')
-    ni = request.GET.get('ni')
-    q = request.GET.get('q')
-
-    sd = sd if sd else '1900-01-01'
-    ed = TODAY if not ed or ed == 'null' else ed
-    obj_list = ProjectCashBook.objects.filter(project=project,
-                                              income__isnull=False,
-                                              project_account_d3__is_payment=True,
-                                              deal_date__range=(sd, ed)).order_by('deal_date', 'created')
-
-    obj_list = obj_list.filter(contract__order_group=og) if og else obj_list
-    obj_list = obj_list.filter(contract__unit_type=ut) if ut else obj_list
-    obj_list = obj_list.filter(installment_order_id=ipo) if ipo else obj_list
-    obj_list = obj_list.filter(bank_account__id=ba) if ba else obj_list
-    obj_list = obj_list.filter(contract__isnull=True) if nc else obj_list
-    obj_list = obj_list.filter(installment_order__isnull=True, contract__isnull=False) if ni else obj_list
-    obj_list = obj_list = obj_list.filter(
-        Q(contract__contractor__name__icontains=q) |
-        Q(content__icontains=q) |
-        Q(trader__icontains=q) |
-        Q(note__icontains=q)) if q else obj_list
-
-    # Sheet Title, first row
-    row_num = 0
-
-    style = xlwt.XFStyle()
-    style.font.bold = True
-    style.font.height = 300
-    style.alignment.vert = style.alignment.VERT_CENTER  # 수직정렬
-
-    ws.write(row_num, 0, str(project) + ' 계약자 대금 납부내역', style)
-    ws.row(0).height_mismatch = True
-    ws.row(0).height = 38 * 20
-
-    # title_list
-
-    resources = [
-        ['거래일자', 'deal_date'],
-        ['차수', 'contract__order_group__name'],
-        ['타입', 'contract__key_unit__unit_type__name'],
-        ['일련번호', 'contract__serial_number'],
-        ['계약자', 'contract__contractor__name'],
-        ['입금 금액', 'income'],
-        ['납입회차', 'installment_order__pay_name'],
-        ['수납계좌', 'bank_account__alias_name'],
-        ['입금자', 'trader']
-    ]
-
-    columns = []
-    params = []
-
-    for rsc in resources:
-        columns.append(rsc[0])
-        params.append(rsc[1])
-
-    rows = obj_list.values_list(*params)
-
-    # Sheet header, second row
-    row_num = 1
-
-    style = xlwt.XFStyle()
-    style.font.bold = True
-
-    # 테두리 설정
-    # 가는 실선 : 1, 작은 굵은 실선 : 2,가는 파선 : 3, 중간가는 파선 : 4, 큰 굵은 실선 : 5, 이중선 : 6,가는 점선 : 7
-    # 큰 굵은 점선 : 8,가는 점선 : 9, 굵은 점선 : 10,가는 이중 점선 : 11, 굵은 이중 점선 : 12, 사선 점선 : 13
-    style.borders.left = 1
-    style.borders.right = 1
-    style.borders.top = 1
-    style.borders.bottom = 1
-
-    style.pattern.pattern = xlwt.Pattern.SOLID_PATTERN
-    style.pattern.pattern_fore_colour = xlwt.Style.colour_map['silver_ega']
-
-    style.alignment.vert = style.alignment.VERT_CENTER  # 수직정렬
-    style.alignment.horz = style.alignment.HORZ_CENTER  # 수평정렬
-
-    for col_num in range(len(columns)):
-        ws.write(row_num, col_num, columns[col_num], style)
-
-    # Sheet body, remaining rows
-    style = xlwt.XFStyle()
-    # 테두리 설정
-    style.borders.left = 1
-    style.borders.right = 1
-    style.borders.top = 1
-    style.borders.bottom = 1
-
-    style.alignment.vert = style.alignment.VERT_CENTER  # 수직정렬
-    # style.alignment.horz = style.alignment.HORZ_CENTER  # 수평정렬
-
-    for row in rows:
-        row_num += 1
-        for col_num, col in enumerate(columns):
-            row = list(row)
-
-            if col_num == 0:
-                style.num_format_str = 'yyyy-mm-dd'
-                ws.col(col_num).width = 110 * 30
-
-            if '금액' in col:
-                style.num_format_str = '#,##'
-                style.alignment.horz = style.alignment.HORZ_RIGHT
-                ws.col(col_num).width = 110 * 30
-
-            if col == '차수' or col == '납입회차' or col == '일련번호':
-                ws.col(col_num).width = 110 * 30
-
-            if col == '수납계좌':
-                ws.col(col_num).width = 170 * 30
-
-            if col == '입금자' or col == '계약자':
-                ws.col(col_num).width = 110 * 30
-
-            ws.write(row_num, col_num, row[col_num], style)
-
-    wb.save(response)
-    return response
 
 
 class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):

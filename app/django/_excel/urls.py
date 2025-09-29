@@ -34,7 +34,6 @@ urlpatterns = [
     path('status/', ExportUnitStatus.as_view(), name='unit-status'),
 
     # Payment 관련 (새 모듈)
-    # path('payments/', export_payments_xls, name='payments'),
     path('payments/', ExportPayments.as_view(), name='payments'),
     path('paid-by-cont/', ExportPaymentsByCont.as_view(), name='paid-by-cont'),
     path('paid-status/', ExportPaymentStatus.as_view(), name='paid-status'),
