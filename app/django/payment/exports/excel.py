@@ -1063,8 +1063,8 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         row_num += 1
         worksheet.write(row_num, 1, '미수율', center_format)
 
-        # 전체 미수율 계산 (총 미수금 / 총 계약매출액)
-        total_overall_unpaid_rate = (total_overall_unpaid / (total_contract_amount + total_non_contract_amount) * 100) if (total_contract_amount + total_non_contract_amount) > 0 else 0
+        # 전체 미수율 계산 (총 미수금 / 총 계약금액)
+        total_overall_unpaid_rate = (total_overall_unpaid / total_contract_amount * 100) if total_contract_amount > 0 else 0
 
         for i, order in enumerate(pay_orders):
             total_unpaid_rate = float(order['total_unpaid_rate'])

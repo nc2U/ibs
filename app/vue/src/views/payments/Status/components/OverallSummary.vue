@@ -238,9 +238,7 @@ const total_total_unpaid = computed(() =>
           {{ numFormat(order.total_unpaid_rate ?? 0, 2) }}%
         </CTableDataCell>
         <CTableDataCell class="text-right">
-          {{
-            numFormat((total_total_unpaid / (total_cont_amount + total_non_cont_amount)) * 100, 2)
-          }}%
+          {{ numFormat(total_cont_amount > 0 ? (total_total_unpaid / total_cont_amount) * 100 : 0, 2) }}%
         </CTableDataCell>
       </CTableRow>
     </CTableBody>
