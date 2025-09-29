@@ -813,7 +813,7 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         for i, order in enumerate(pay_orders):
             worksheet.write(row_num, 2 + i, order['pay_name'], h1format)
 
-        worksheet.write(row_num, col_count - 1, '계', h1format)
+        worksheet.write(row_num, col_count - 1, '합계', h1format)
 
         # 4. 약정일 행
         row_num = 3

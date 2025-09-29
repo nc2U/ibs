@@ -75,7 +75,7 @@ const total_total_unpaid = computed(() =>
         <template v-else>
           <CTableHeaderCell v-for="i in 10" :key="i">{{ `${i}차 분담금` }}</CTableHeaderCell>
         </template>
-        <CTableHeaderCell>계</CTableHeaderCell>
+        <CTableHeaderCell>합계</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
