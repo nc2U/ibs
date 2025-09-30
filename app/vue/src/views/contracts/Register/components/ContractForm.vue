@@ -23,7 +23,7 @@ import type {
   Contractor,
   ContractFile,
   ContractorContact,
-  ContractorAddress,
+  AddressInContractor,
 } from '@/store/types/contract'
 import { isValidate } from '@/utils/helper'
 import { numFormat, diffDate } from '@/utils/baseMixins'
@@ -162,7 +162,7 @@ const formsCheck = computed(() => {
   if (props.contract && props.contractor) {
     const contact: ContractorContact | null | undefined =
       props.contract.contractor?.contractorcontact
-    const address: ContractorAddress | null | undefined =
+    const address: AddressInContractor | null | undefined =
       props.contract.contractor?.contractoraddress
 
     const a = form.order_group === props.contract.order_group

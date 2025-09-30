@@ -26,7 +26,7 @@ interface ContractorInContract {
   gender: 'M' | 'F' | ''
   qualification: '1' | '2' | '3' | '4'
   qualifi_display: '일반분양' | '미인가' | '인가' | '부적격'
-  contractoraddress: ContractorAddress
+  contractoraddress: AddressInContractor
   contractorcontact: ContractorContact
   status: '1' | '2' | '3' | '4' | '5'
   reservation_date: string | null
@@ -98,6 +98,18 @@ export interface Contractor {
   contractorrelease: number | null
 }
 
+export interface AddressInContractor {
+  pk: number
+  id_zipcode: string
+  id_address1: string
+  id_address2: string
+  id_address3: string
+  dm_zipcode: string
+  dm_address1: string
+  dm_address2: string
+  dm_address3: string
+}
+
 export interface ContractorAddress {
   pk: number
   id_zipcode: string
@@ -108,6 +120,7 @@ export interface ContractorAddress {
   dm_address1: string
   dm_address2: string
   dm_address3: string
+  is_current: boolean
 }
 
 export interface ContractorContact {
