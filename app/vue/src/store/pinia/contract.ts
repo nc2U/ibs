@@ -4,7 +4,6 @@ import { defineStore } from 'pinia'
 import { message, errorHandle } from '@/utils/helper'
 import {
   type Contract,
-  type SimpleCont,
   type Contractor,
   type SubsSummary,
   type ContSummary,
@@ -44,223 +43,6 @@ export type UnitFilter = {
 }
 
 export const useContract = defineStore('contract', () => {
-  // state & getters
-  const contract = ref<Contract | null>(null)
-  const contractList = ref<Contract[]>([])
-  const isLoading = ref(false)
-  const contractsCount = ref<number>(0)
-  const getContracts = ref<{ value: number; label: string }[]>([])
-
-  // actions
-  const fetchAllContracts = async (project: number) =>
-    await api
-      .get(`/simple-contract/?project=${project}`)
-      .then(res => (getContracts.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
-  const contractPages = (itemsPerPage: number) => Math.ceil(contractsCount.value / itemsPerPage)
-
-  const fetchContract = (pk: number) =>
-    api
-      .get(`/contract-set/${pk}/`)
-      .then(res => (contract.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-  const removeContract = () => (contract.value = null)
-
-  const fetchContractList = async (payload: ContFilter) => {
-    isLoading.value = true
-    const status = payload.status ?? '2'
-    const limit = payload.limit ?? 10
-    let url = `/contract-set/`
-    url += `?project=${payload.project}&activation=true&contractor__status=${status}&limit=${limit}`
-    if (payload.order_group) url += `&order_group=${payload.order_group}`
-    if (payload.unit_type) url += `&unit_type=${payload.unit_type}`
-    if (payload.building) url += `&keyunit__houseunit__building_unit=${payload.building}`
-    if (payload.null_unit) url += '&houseunit__isnull=true'
-    if (payload.qualification) url += `&contractor__qualification=${payload.qualification}`
-    if (payload.is_sup_cont) url += `&is_sup_cont=${payload.is_sup_cont}`
-    if (payload.from_date) url += `&from_contract_date=${payload.from_date}`
-    if (payload.to_date) url += `&to_contract_date=${payload.to_date}`
-    if (payload.search) url += `&search=${payload.search}`
-    const ordering = payload.ordering ? payload.ordering : '-created'
-    const page = payload.page ? payload.page : 1
-    url += `&ordering=${ordering}&page=${page}`
-
-    return await api
-      .get(url)
-      .then(res => {
-        contractList.value = res.data.results
-        contractsCount.value = res.data.count
-        isLoading.value = false
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const findContractPage = async (highlightId: number, filters: ContFilter) => {
-    const status = filters.status ?? '2'
-    const limit = filters.limit ?? 10
-    let url = `/contract-set/find_page/?highlight_id=${highlightId}`
-    url += `&project=${filters.project}&activation=true&contractor__status=${status}&limit=${limit}`
-    if (filters.order_group) url += `&order_group=${filters.order_group}`
-    if (filters.unit_type) url += `&unit_type=${filters.unit_type}`
-    if (filters.building) url += `&keyunit__houseunit__building_unit=${filters.building}`
-    if (filters.null_unit) url += '&houseunit__isnull=true'
-    if (filters.qualification) url += `&contractor__qualification=${filters.qualification}`
-    if (filters.is_sup_cont) url += `&is_sup_cont=${filters.is_sup_cont}`
-    if (filters.from_date) url += `&from_contract_date=${filters.from_date}`
-    if (filters.to_date) url += `&to_contract_date=${filters.to_date}`
-    if (filters.search) url += `&search=${filters.search}`
-    const ordering = filters.ordering ? filters.ordering : '-created'
-    url += `&ordering=${ordering}`
-
-    try {
-      const response = await api.get(url)
-      return response.data.page
-    } catch (err: any) {
-      errorHandle(err.response.data)
-      return 1
-    }
-  }
-
-  const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
-
-  const createContractSet = (payload: FormData) =>
-    api
-      .post(`/contract-set/`, payload, config_headers)
-      .then(() => message())
-      .catch(err => errorHandle(err.response.data))
-
-  const updateContractSet = (pk: number, payload: FormData) =>
-    api
-      .put(`/contract-set/${pk}/`, payload, config_headers)
-      .then(async res => {
-        await fetchContract(res.data.pk)
-        message()
-      })
-      .catch(err => errorHandle(err.response.data))
-
-  // 일괄 가격 업데이트 미리보기
-  const previewContractPriceUpdate = async (project: number, uncontractedOrderGroup?: number) => {
-    try {
-      let url = `/contract-price-update-preview/?project=${project}`
-      if (uncontractedOrderGroup) {
-        url += `&uncontracted_order_group=${uncontractedOrderGroup}`
-      }
-      const response = await api.get(url)
-      return response.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
-      throw err
-    }
-  }
-
-  // 일괄 가격 업데이트 실행
-  const bulkUpdateContractPrices = async (
-    project: number,
-    uncontractedOrderGroup?: number,
-    dryRun?: boolean,
-  ) => {
-    try {
-      const payload: { project: number; uncontracted_order_group?: number; dry_run?: boolean } = {
-        project,
-      }
-      if (uncontractedOrderGroup) {
-        payload.uncontracted_order_group = uncontractedOrderGroup
-      }
-      if (dryRun !== undefined) {
-        payload.dry_run = dryRun
-      }
-
-      const response = await api.post('/contract-bulk-price-update/', payload)
-
-      if (!dryRun) {
-        const successMessage =
-          response.data.message || '프로젝트 내 모든 계약 가격이 일괄 업데이트되었습니다.'
-        message('success', '완료!', successMessage, 5000)
-      }
-
-      return response.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
-      throw err
-    }
-  }
-
-  // 계약별 납부 계획 조회 (기존 방식)
-  const fetchContractPaymentPlan = async (contractId: number) => {
-    try {
-      const response = await api.get(`/contract/${contractId}/payment-plan/`)
-      return response.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
-      throw err
-    }
-  }
-
-  // ContractPrice JSON 캐시 기반 납부 계획 조회 (고성능)
-  const fetchContractPricePaymentPlan = async (
-    contractId: number,
-  ): Promise<ContractPriceWithPaymentPlan> => {
-    try {
-      const response = await api.get(`/contract/${contractId}/price-payment-plan/`)
-      return response.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
-      throw err
-    }
-  }
-
-  const contractor = ref<Contractor | null>(null)
-  const contractorList = ref<Contractor[]>([])
-
-  // actions
-  const fetchContractor = (pk: number, project?: number) =>
-    api
-      .get(`/contractor/${pk}/?project=${project || ''}`)
-      .then(res => (contractor.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-  const removeContractor = () => (contractor.value = null)
-
-  const fetchContractorList = (project: number, search = '') => {
-    api
-      .get(`/contractor/?contract__project=${project}&search=${search}&is_active=true`)
-      .then(res => (contractorList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  // state & getters
-  const subsSummaryList = ref<SubsSummary[]>([])
-  const contSummaryList = ref<ContSummary[]>([])
-  const contAggregate = ref<{
-    total_units: number
-    subs_num: number
-    conts_num: number
-    non_conts_num: number
-  } | null>()
-
-  // actions
-  const fetchSubsSummaryList = (project: number) =>
-    api
-      .get(`/subs-sum/?project=${project}`)
-      .then(res => (subsSummaryList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
-  const fetchContSummaryList = (project: number, date = '') =>
-    api
-      .get(`/cont-sum/?project=${project}&to_contract_date=${date}`)
-      .then(res => (contSummaryList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
-  const removeContAggregate = () => (contAggregate.value = null)
-
-  const fetchContAggregate = (project: number) =>
-    api
-      .get(`/cont-aggregate/${project}/`)
-      .then(res => (contAggregate.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
   const orderGroupList = ref<OrderGroup[]>([])
   const getOrderGroups = computed(() =>
     orderGroupList.value.map(o => ({
@@ -373,6 +155,150 @@ export const useContract = defineStore('contract', () => {
       .then(res => (downPaymentList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
+
+  // state & getters
+  const contract = ref<Contract | null>(null)
+  const contractList = ref<Contract[]>([])
+  const isLoading = ref(false)
+  const contractsCount = ref<number>(0)
+  const getContracts = ref<{ value: number; label: string }[]>([])
+
+  // actions
+  const fetchAllContracts = async (project: number) =>
+    await api
+      .get(`/simple-contract/?project=${project}`)
+      .then(res => (getContracts.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const contractPages = (itemsPerPage: number) => Math.ceil(contractsCount.value / itemsPerPage)
+
+  const fetchContract = (pk: number) =>
+    api
+      .get(`/contract-set/${pk}/`)
+      .then(res => (contract.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const removeContract = () => (contract.value = null)
+
+  const fetchContractList = async (payload: ContFilter) => {
+    isLoading.value = true
+    const status = payload.status ?? '2'
+    const limit = payload.limit ?? 10
+    let url = `/contract-set/`
+    url += `?project=${payload.project}&activation=true&contractor__status=${status}&limit=${limit}`
+    if (payload.order_group) url += `&order_group=${payload.order_group}`
+    if (payload.unit_type) url += `&unit_type=${payload.unit_type}`
+    if (payload.building) url += `&keyunit__houseunit__building_unit=${payload.building}`
+    if (payload.null_unit) url += '&houseunit__isnull=true'
+    if (payload.qualification) url += `&contractor__qualification=${payload.qualification}`
+    if (payload.is_sup_cont) url += `&is_sup_cont=${payload.is_sup_cont}`
+    if (payload.from_date) url += `&from_contract_date=${payload.from_date}`
+    if (payload.to_date) url += `&to_contract_date=${payload.to_date}`
+    if (payload.search) url += `&search=${payload.search}`
+    const ordering = payload.ordering ? payload.ordering : '-created'
+    const page = payload.page ? payload.page : 1
+    url += `&ordering=${ordering}&page=${page}`
+
+    return await api
+      .get(url)
+      .then(res => {
+        contractList.value = res.data.results
+        contractsCount.value = res.data.count
+        isLoading.value = false
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const findContractPage = async (highlightId: number, filters: ContFilter) => {
+    const status = filters.status ?? '2'
+    const limit = filters.limit ?? 10
+    let url = `/contract-set/find_page/?highlight_id=${highlightId}`
+    url += `&project=${filters.project}&activation=true&contractor__status=${status}&limit=${limit}`
+    if (filters.order_group) url += `&order_group=${filters.order_group}`
+    if (filters.unit_type) url += `&unit_type=${filters.unit_type}`
+    if (filters.building) url += `&keyunit__houseunit__building_unit=${filters.building}`
+    if (filters.null_unit) url += '&houseunit__isnull=true'
+    if (filters.qualification) url += `&contractor__qualification=${filters.qualification}`
+    if (filters.is_sup_cont) url += `&is_sup_cont=${filters.is_sup_cont}`
+    if (filters.from_date) url += `&from_contract_date=${filters.from_date}`
+    if (filters.to_date) url += `&to_contract_date=${filters.to_date}`
+    if (filters.search) url += `&search=${filters.search}`
+    const ordering = filters.ordering ? filters.ordering : '-created'
+    url += `&ordering=${ordering}`
+
+    try {
+      const response = await api.get(url)
+      return response.data.page
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return 1
+    }
+  }
+
+  const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
+
+  const createContractSet = (payload: FormData) =>
+    api
+      .post(`/contract-set/`, payload, config_headers)
+      .then(() => message())
+      .catch(err => errorHandle(err.response.data))
+
+  const updateContractSet = (pk: number, payload: FormData) =>
+    api
+      .put(`/contract-set/${pk}/`, payload, config_headers)
+      .then(async res => {
+        await fetchContract(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const contractor = ref<Contractor | null>(null)
+  const contractorList = ref<Contractor[]>([])
+
+  // actions
+  const fetchContractor = (pk: number, project?: number) =>
+    api
+      .get(`/contractor/${pk}/?project=${project || ''}`)
+      .then(res => (contractor.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const removeContractor = () => (contractor.value = null)
+
+  const fetchContractorList = (project: number, search = '') => {
+    api
+      .get(`/contractor/?contract__project=${project}&search=${search}&is_active=true`)
+      .then(res => (contractorList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  // state & getters
+  const contAddress = ref(null)
+  const contAddressList = ref([])
+
+  // actions
+  const fetchContAddress = (pk: number) =>
+    api.get(`/contractor-address/${pk}/`).then(res => (contAddress.value = res.data))
+  const fetchContAddressList = (project: number) =>
+    api
+      .get(`/contractor-address/?project=${project}`)
+      .then(res => (contAddressList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createContAddress = (payload: any) =>
+    api
+      .post(`/contractor-address/`, payload)
+      .then(res => {
+        fetchContAddressList(payload.project).then(() => message())
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchContAddress = (pk: number, payload: any) =>
+    api
+      .patch(`/contractor-address/${pk}/`, payload)
+      .then(res => {
+        fetchContAddress(res.data.pk).then(() => message())
+      })
+      .catch(err => errorHandle(err.response.data))
 
   // state & getters
   const succession = ref<Succession | null>(null)
@@ -489,13 +415,132 @@ export const useContract = defineStore('contract', () => {
       .then(() => fetchContReleaseList(payload.project, payload.page).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
+  // 일괄 가격 업데이트 미리보기
+  const previewContractPriceUpdate = async (project: number, uncontractedOrderGroup?: number) => {
+    try {
+      let url = `/contract-price-update-preview/?project=${project}`
+      if (uncontractedOrderGroup) {
+        url += `&uncontracted_order_group=${uncontractedOrderGroup}`
+      }
+      const response = await api.get(url)
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      throw err
+    }
+  }
+
+  // 일괄 가격 업데이트 실행
+  const bulkUpdateContractPrices = async (
+    project: number,
+    uncontractedOrderGroup?: number,
+    dryRun?: boolean,
+  ) => {
+    try {
+      const payload: { project: number; uncontracted_order_group?: number; dry_run?: boolean } = {
+        project,
+      }
+      if (uncontractedOrderGroup) {
+        payload.uncontracted_order_group = uncontractedOrderGroup
+      }
+      if (dryRun !== undefined) {
+        payload.dry_run = dryRun
+      }
+
+      const response = await api.post('/contract-bulk-price-update/', payload)
+
+      if (!dryRun) {
+        const successMessage =
+          response.data.message || '프로젝트 내 모든 계약 가격이 일괄 업데이트되었습니다.'
+        message('success', '완료!', successMessage, 5000)
+      }
+
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      throw err
+    }
+  }
+
+  // 계약별 납부 계획 조회 (기존 방식)
+  const fetchContractPaymentPlan = async (contractId: number) => {
+    try {
+      const response = await api.get(`/contract/${contractId}/payment-plan/`)
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      throw err
+    }
+  }
+
+  // ContractPrice JSON 캐시 기반 납부 계획 조회 (고성능)
+  const fetchContractPricePaymentPlan = async (
+    contractId: number,
+  ): Promise<ContractPriceWithPaymentPlan> => {
+    try {
+      const response = await api.get(`/contract/${contractId}/price-payment-plan/`)
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      throw err
+    }
+  }
+
+  // state & getters
+  const subsSummaryList = ref<SubsSummary[]>([])
+  const contSummaryList = ref<ContSummary[]>([])
+  const contAggregate = ref<{
+    total_units: number
+    subs_num: number
+    conts_num: number
+    non_conts_num: number
+  } | null>()
+
+  // actions
+  const fetchSubsSummaryList = (project: number) =>
+    api
+      .get(`/subs-sum/?project=${project}`)
+      .then(res => (subsSummaryList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchContSummaryList = (project: number, date = '') =>
+    api
+      .get(`/cont-sum/?project=${project}&to_contract_date=${date}`)
+      .then(res => (contSummaryList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const removeContAggregate = () => (contAggregate.value = null)
+
+  const fetchContAggregate = (project: number) =>
+    api
+      .get(`/cont-aggregate/${project}/`)
+      .then(res => (contAggregate.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
   return {
+    orderGroupList,
+    getOrderGroups,
+    fetchOrderGroupList,
+    createOrderGroup,
+    updateOrderGroup,
+    deleteOrderGroup,
+
+    keyUnitList,
+    getKeyUnits,
+    houseUnitList,
+    getHouseUnits,
+    salesPriceList,
+    downPaymentList,
+    fetchKeyUnitList,
+    fetchHouseUnitList,
+    fetchSalePriceList,
+    fetchDownPayList,
+
     contract,
     contractList,
     isLoading,
     contractsCount,
     getContracts,
-
     fetchAllContracts,
     contractPages,
     fetchContract,
@@ -511,44 +556,20 @@ export const useContract = defineStore('contract', () => {
 
     contractor,
     contractorList,
-
     fetchContractor,
     removeContractor,
     fetchContractorList,
 
-    subsSummaryList,
-    contSummaryList,
-    contAggregate,
-
-    fetchSubsSummaryList,
-    fetchContSummaryList,
-    removeContAggregate,
-    fetchContAggregate,
-
-    orderGroupList,
-    getOrderGroups,
-
-    fetchOrderGroupList,
-    createOrderGroup,
-    updateOrderGroup,
-    deleteOrderGroup,
-
-    keyUnitList,
-    getKeyUnits,
-    houseUnitList,
-    getHouseUnits,
-    salesPriceList,
-    downPaymentList,
-
-    fetchKeyUnitList,
-    fetchHouseUnitList,
-    fetchSalePriceList,
-    fetchDownPayList,
+    contAddress,
+    contAddressList,
+    fetchContAddress,
+    fetchContAddressList,
+    createContAddress,
+    patchContAddress,
 
     succession,
     successionList,
     successionCount,
-
     successionPages,
     fetchSuccession,
     fetchSuccessionList,
@@ -559,12 +580,19 @@ export const useContract = defineStore('contract', () => {
     contRelease,
     contReleaseList,
     contReleaseCount,
-
     releasePages,
     fetchContRelease,
     fetchContReleaseList,
     createRelease,
     updateRelease,
     findContractorReleasePage,
+
+    subsSummaryList,
+    contSummaryList,
+    contAggregate,
+    fetchSubsSummaryList,
+    fetchContSummaryList,
+    removeContAggregate,
+    fetchContAggregate,
   }
 })
