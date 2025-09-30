@@ -690,6 +690,23 @@ class ContractorAddressSerializer(serializers.ModelSerializer):
         instance = ContractorAddress.objects.create(**validated_data)
         return instance
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        # is_current 값이 True로 변경되는 경우 처리
+        if validated_data.get('is_current', False) and not instance.is_current:
+            # 동일 contractor의 다른 모든 주소를 is_current=False로 변경
+            ContractorAddress.objects.filter(
+                contractor=instance.contractor,
+                is_current=True
+            ).exclude(pk=instance.pk).update(is_current=False)
+
+        # 인스턴스 업데이트
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
+
 
 class ContractorContactSerializer(serializers.ModelSerializer):
     class Meta:

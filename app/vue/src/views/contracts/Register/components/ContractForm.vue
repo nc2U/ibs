@@ -1040,6 +1040,7 @@ onBeforeRouteLeave(() => formDataReset())
             color="primary"
             size="small"
             class="mt-1"
+            :disabled="!write_contract"
             @click="refChangeAddr.callModal()"
           >
             주소변경
@@ -1096,7 +1097,11 @@ onBeforeRouteLeave(() => formDataReset())
   <FormModal ref="refChangeAddr" size="xl">
     <template #header>주소변경 등록</template>
     <template #default>
-      <AddressForm :address="address" @close="refChangeAddr.close()" />
+      <AddressForm
+        :contractor="contractor?.pk as number"
+        :address="address"
+        @close="refChangeAddr.close()"
+      />
     </template>
   </FormModal>
 

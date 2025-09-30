@@ -99,7 +99,7 @@ export interface Contractor {
 }
 
 export interface AddressInContractor {
-  pk: number
+  pk?: number
   id_zipcode: string
   id_address1: string
   id_address2: string
@@ -112,6 +112,7 @@ export interface AddressInContractor {
 
 export interface ContractorAddress {
   pk: number
+  contractor: number
   id_zipcode: string
   id_address1: string
   id_address2: string

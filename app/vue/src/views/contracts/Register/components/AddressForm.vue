@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType, ref } from 'vue'
+import { computed, inject, onBeforeMount, type PropType, ref } from 'vue'
 import { isValidate } from '@/utils/helper.ts'
-import { write_contract } from '@/utils/pageAuth.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { AddressInContractor, ContractorAddress } from '@/store/types/contract.ts'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 
-defineProps({
+const props = defineProps({
+  contractor: { type: Number, required: true },
   address: { type: Object as PropType<AddressInContractor>, default: () => ({}) },
 })
 
@@ -18,6 +18,7 @@ const validated = ref(false)
 const isDark = inject('isDark')
 
 const form = ref({
+  contractor: null as number,
   id_zipcode: '',
   id_address1: '',
   id_address2: '',
@@ -36,9 +37,21 @@ const sameAddr = ref(false)
 const contStore = useContract()
 const contAddressList = computed<ContractorAddress[]>(() => contStore.contAddressList)
 
-const createContAddress = (data: AddressInContractor) => contStore.createContAddress(data)
-const patchContAddress = (pk: number, data: AddressInContractor) =>
+const createContAddress = (data: Omit<AddressInContractor, 'pk'>) =>
+  contStore.createContAddress(data)
+const patchContAddress = (pk: number, data: Partial<AddressInContractor>) =>
   contStore.patchContAddress(pk, data)
+
+const changeToCurrentAddress = async (addressPk: number) => {
+  try {
+    await patchContAddress(addressPk, { is_current: true } as Partial<AddressInContractor>)
+    // 주소 목록 새로고침 (store에서 자동으로 처리됨)
+    // 성공 메시지나 추가 처리가 필요하면 여기에 추가
+  } catch (error) {
+    console.error('주소 변경 중 오류가 발생했습니다:', error)
+    // 에러 처리 로직 추가 가능
+  }
+}
 
 const toSame = () => {
   sameAddr.value = !sameAddr.value
@@ -76,9 +89,13 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_contract) console.log({ ...form.value })
+    createContAddress(form.value)
   }
 }
+
+onBeforeMount(() => {
+  props.contractor && (form.value.contractor = props.contractor)
+})
 </script>
 
 <template>
@@ -213,8 +230,15 @@ const onSubmit = (event: Event) => {
               {{ addr.id_address3 }}
             </CTableDataCell>
             <CTableDataCell rowspan="2">2025/02/01 등록</CTableDataCell>
-            <CTableDataCell rowspan="2" class="text-left">
-              <CFormCheck id="a3" label="이 주소로 변경" />
+            <CTableDataCell rowspan="2">
+              <v-btn
+                size="small"
+                color="primary"
+                variant="outlined"
+                @click="changeToCurrentAddress(addr.pk)"
+              >
+                이 주소로 변경
+              </v-btn>
             </CTableDataCell>
           </CTableRow>
           <CTableRow>
