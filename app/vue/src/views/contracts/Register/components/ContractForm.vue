@@ -926,10 +926,10 @@ onBeforeRouteLeave(() => formDataReset())
         </CAlert>
       </CRow>
 
-      <CRow v-show="isContract" class="mb-3">
+      <CRow v-show="isContract">
         <CFormLabel sm="2" class="col-lg-1 col-form-label required"> 주민등록 주소</CFormLabel>
 
-        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-lg-0 mb-3">
           <CInputGroup>
             <CInputGroupText @click="refPostCode.initiate(2)"> 우편번호</CInputGroupText>
             <CFormInput
@@ -945,7 +945,7 @@ onBeforeRouteLeave(() => formDataReset())
             <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
-        <CCol sm="12" md="6" lg="4" class="mb-lg-0">
+        <CCol sm="12" md="6" lg="4" class="mb-lg-0 mb-3">
           <CFormInput
             v-model="form.id_address1"
             maxlength="35"
@@ -957,7 +957,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>주민등록 주소를 입력하세요.</CFormFeedback>
         </CCol>
 
-        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-lg-0 mb-3">
           <CFormInput
             ref="address21"
             v-model="form.id_address2"
@@ -978,9 +978,9 @@ onBeforeRouteLeave(() => formDataReset())
         </CCol>
       </CRow>
 
-      <CRow v-show="isContract" class="mb-3">
+      <CRow v-show="isContract">
         <CFormLabel sm="2" class="col-lg-1 col-form-label required"> 우편수령 주소</CFormLabel>
-        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-lg-0 mb-3">
           <CInputGroup>
             <CInputGroupText @click="refPostCode.initiate(3)"> 우편번호</CInputGroupText>
             <CFormInput
@@ -996,7 +996,7 @@ onBeforeRouteLeave(() => formDataReset())
             <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
-        <CCol sm="12" md="6" lg="4" class="mb-lg-0">
+        <CCol sm="12" md="6" lg="4" class="mb-lg-0 mb-3">
           <CFormInput
             v-model="form.dm_address1"
             maxlength="50"
@@ -1007,7 +1007,7 @@ onBeforeRouteLeave(() => formDataReset())
           />
           <CFormFeedback invalid> 우편물 수령 주소를 입력하세요.</CFormFeedback>
         </CCol>
-        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-lg-0 mb-3">
           <CFormInput
             ref="address22"
             v-model="form.dm_address2"
@@ -1017,7 +1017,7 @@ onBeforeRouteLeave(() => formDataReset())
           />
           <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
         </CCol>
-        <CCol sm="12" md="6" lg="2">
+        <CCol sm="12" md="6" lg="2" class="mb-3">
           <CFormInput
             v-model="form.dm_address3"
             maxlength="30"
@@ -1025,7 +1025,7 @@ onBeforeRouteLeave(() => formDataReset())
             :disabled="!isContract || !!address"
           />
         </CCol>
-        <CCol sm="12" lg="1">
+        <CCol sm="12" lg="1" class="mb-3">
           <v-checkbox-btn
             v-if="!address"
             id="to-same"
