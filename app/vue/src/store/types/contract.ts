@@ -122,6 +122,7 @@ export interface ContractorAddress {
   dm_address2: string
   dm_address3: string
   is_current: boolean
+  created: string
 }
 
 export interface ContractorContact {

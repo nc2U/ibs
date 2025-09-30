@@ -673,7 +673,7 @@ class ContractorAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractorAddress
         fields = ('pk', 'contractor', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3',
-                  'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3', 'is_current')
+                  'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3', 'is_current', 'created')
 
     @transaction.atomic
     def create(self, validated_data):

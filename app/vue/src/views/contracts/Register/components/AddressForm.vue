@@ -1,11 +1,14 @@
 <script lang="ts" setup>
 import { computed, inject, onBeforeMount, type PropType, ref } from 'vue'
 import { isValidate } from '@/utils/helper.ts'
+import { dateFormat } from '@/utils/baseMixins.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { AddressInContractor, ContractorAddress } from '@/store/types/contract.ts'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   contractor: { type: Number, required: true },
@@ -13,7 +16,7 @@ const props = defineProps({
 })
 
 const refModalPost = ref()
-const validated = ref(false)
+const refConfirmChk = ref()
 
 const isDark = inject('isDark')
 
@@ -31,6 +34,8 @@ const form = ref({
 
 const refAddress1 = ref()
 const refAddress2 = ref()
+
+const validated = ref(false)
 
 const sameAddr = ref(false)
 
@@ -88,9 +93,7 @@ const addressCallback = (data: AddressData) => {
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
-  } else {
-    createContAddress(form.value)
-  }
+  } else createContAddress(form.value)
 }
 
 onBeforeMount(() => {
@@ -193,9 +196,9 @@ onBeforeMount(() => {
             label="상동"
             density="compact"
             :color="isDark ? '#857DCC' : '#321FDB'"
+            :disabled="!form.id_zipcode"
             @click="toSame"
           />
-          <!--            :disabled="!form.id_zipcode"-->
         </CCol>
       </CRow>
       <v-divider />
@@ -229,7 +232,7 @@ onBeforeMount(() => {
               ({{ addr.id_zipcode }}) {{ addr.id_address1 }} {{ addr.id_address2 }}
               {{ addr.id_address3 }}
             </CTableDataCell>
-            <CTableDataCell rowspan="2">2025/02/01 등록</CTableDataCell>
+            <CTableDataCell rowspan="2">{{ dateFormat(addr.created, '/') }} 등록됨</CTableDataCell>
             <CTableDataCell rowspan="2">
               <v-btn
                 size="small"
@@ -268,4 +271,6 @@ onBeforeMount(() => {
   </CForm>
 
   <DaumPostcode ref="refModalPost" @address-callback="addressCallback" />
+
+  <ConfirmModal ref="refConfirmChk" />
 </template>
