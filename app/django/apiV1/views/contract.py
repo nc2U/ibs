@@ -1,5 +1,3 @@
-import logging
-
 from django.core.cache import cache
 from django.db.models import Count, Sum, Q
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
@@ -137,7 +135,6 @@ class ContractViewSet(viewsets.ModelViewSet):
             unit_type = UnitType.objects.get(id=unit_type_id) if unit_type_id else None
 
         except (Project.DoesNotExist, OrderGroup.DoesNotExist, UnitType.DoesNotExist) as e:
-            logging.exception("Invalid ID provided in payment_summary endpoint.")
             return Response(
                 {'error': 'Invalid ID provided.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -208,7 +205,6 @@ class ContractViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logging.exception("Error while getting payment plan")
             return Response(
                 {'error': 'Failed to get payment plan due to an internal error.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -242,7 +238,6 @@ class ContractViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logging.exception("Error while getting ContractPrice payment plan for contract")
             return Response(
                 {'error': 'Failed to get payment plan due to an internal error.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -287,7 +282,6 @@ class ContractViewSet(viewsets.ModelViewSet):
                 )
 
         except (ValueError, OrderGroup.DoesNotExist, UnitType.DoesNotExist) as e:
-            logging.warning("Invalid parameter provided in multi_project_payment_summary", exc_info=True)
             return Response(
                 {'error': 'Invalid parameter provided'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -698,9 +692,6 @@ def bulk_update_contract_prices(request):
             result = service.update_all_contract_prices()
 
             # payment_amounts는 ContractPriceBulkUpdateService의 save() 호출로 이미 계산됨
-            logging.info(
-                f"Contract prices updated for project {project_id}, payment_amounts calculated via save() method")
-
             if result['errors']:
                 return Response({
                     'success': True,
@@ -722,7 +713,6 @@ def bulk_update_contract_prices(request):
             })
 
     except Exception as e:
-        logging.exception("Error occurred during bulk contract price update")  # log stack trace
         return Response({
             'success': False,
             'message': '업데이트 중 서버에 오류가 발생했습니다. 관리자에게 문의하세요.'
@@ -836,7 +826,6 @@ def contract_price_update_preview(request):
             'message': f'Project with ID {project_id} not found'
         }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        logging.exception("Error occurred during contract price update preview")
         return Response({
             'success': False,
             'message': '내부 서버 오류가 발생했습니다.'  # "An internal server error occurred." in Korean
