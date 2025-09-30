@@ -32,6 +32,18 @@ const form = ref({
   dm_address3: '',
 })
 
+const resetForm = () => {
+  form.value.contractor = null
+  form.value.id_zipcode = ''
+  form.value.id_address1 = ''
+  form.value.id_address2 = ''
+  form.value.id_address3 = ''
+  form.value.dm_zipcode = ''
+  form.value.dm_address1 = ''
+  form.value.dm_address2 = ''
+  form.value.dm_address3 = ''
+}
+
 const refAddress1 = ref()
 const refAddress2 = ref()
 
@@ -108,8 +120,10 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = async () => {
-  if (mode.value === 'create') await createContAddress(form.value)
-  else if (mode.value === 'update' && selectedPk.value !== null)
+  if (mode.value === 'create') {
+    await createContAddress(form.value)
+    resetForm()
+  } else if (mode.value === 'update' && selectedPk.value !== null)
     await patchContAddress(selectedPk.value, { is_current: true } as Partial<AddressInContractor>)
   refConfirmChk.value.close()
 }
