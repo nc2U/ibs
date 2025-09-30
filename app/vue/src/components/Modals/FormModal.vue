@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { type PropType, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 
-defineProps({ size: { type: String, default: '' } })
+defineProps({ size: { type: String as PropType<'sm' | 'lg' | 'xl'>, default: '' } })
 
 const visible = ref(false)
 
