@@ -15,6 +15,7 @@ import {
   type Succession,
   type BuyerForm,
   type ContractRelease,
+  type ContractorAddress,
   type ContractPriceWithPaymentPlan,
 } from '@/store/types/contract'
 
@@ -272,31 +273,31 @@ export const useContract = defineStore('contract', () => {
   }
 
   // state & getters
-  const contAddress = ref(null)
-  const contAddressList = ref([])
+  const contAddressList = ref<ContractorAddress[]>([])
 
-  // actions
-  const fetchContAddress = (pk: number) =>
-    api.get(`/contractor-address/${pk}/`).then(res => (contAddress.value = res.data))
-  const fetchContAddressList = (project: number) =>
+  const fetchContAddressList = (contractor: number, is_current: boolean = false) =>
     api
-      .get(`/contractor-address/?project=${project}`)
+      .get(`/contractor-address/?contractor=${contractor}&is_current=${is_current}`)
       .then(res => (contAddressList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   const createContAddress = (payload: any) =>
     api
       .post(`/contractor-address/`, payload)
-      .then(res => {
-        fetchContAddressList(payload.project).then(() => message())
+      .then(async res => {
+        await fetchContract(res.data.contractor.contract.pk)
+        await fetchContAddressList(payload.project)
+        message()
       })
       .catch(err => errorHandle(err.response.data))
 
   const patchContAddress = (pk: number, payload: any) =>
     api
       .patch(`/contractor-address/${pk}/`, payload)
-      .then(res => {
-        fetchContAddress(res.data.pk).then(() => message())
+      .then(async res => {
+        await fetchContract(res.data.contractor.contract.pk)
+        await fetchContAddressList(payload.project)
+        message()
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -560,9 +561,7 @@ export const useContract = defineStore('contract', () => {
     removeContractor,
     fetchContractorList,
 
-    contAddress,
     contAddressList,
-    fetchContAddress,
     fetchContAddressList,
     createContAddress,
     patchContAddress,

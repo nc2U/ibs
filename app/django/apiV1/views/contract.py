@@ -459,6 +459,7 @@ class ContractorViewSet(viewsets.ModelViewSet):
 class ContAddressViewSet(viewsets.ModelViewSet):
     queryset = ContractorAddress.objects.all()
     serializer_class = ContractorAddressSerializer
+    filterset_fields = ('contractor', 'is_current')
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
     def perform_create(self, serializer):
