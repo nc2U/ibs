@@ -85,10 +85,9 @@ services:
 
   celery:
     container_name: ibs-celery
-    build: docker/python/dev  # 또는 docker/python (개발 환경에 따라)
     image: nc2u/django
-    entrypoint: []
-    command: ["celery", "-A", "_config", "worker", "--loglevel=info", "--concurrency=4"]
+    entrypoint: [ ]
+    command: [ "celery", "-A", "_config", "worker", "--loglevel=info", "--concurrency=4" ]
     working_dir: /app/django
     volumes:
       - ../app/django:/app/django
