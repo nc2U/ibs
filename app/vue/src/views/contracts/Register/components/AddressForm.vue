@@ -8,7 +8,6 @@ import type { AddressInContractor, ContractorAddress } from '@/store/types/contr
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   contractor: { type: Number, required: true },
@@ -47,17 +46,6 @@ const createContAddress = (data: Omit<AddressInContractor, 'pk'>) =>
 const patchContAddress = (pk: number, data: Partial<AddressInContractor>) =>
   contStore.patchContAddress(pk, data)
 
-const changeToCurrentAddress = async (addressPk: number) => {
-  try {
-    await patchContAddress(addressPk, { is_current: true } as Partial<AddressInContractor>)
-    // 주소 목록 새로고침 (store에서 자동으로 처리됨)
-    // 성공 메시지나 추가 처리가 필요하면 여기에 추가
-  } catch (error) {
-    console.error('주소 변경 중 오류가 발생했습니다:', error)
-    // 에러 처리 로직 추가 가능
-  }
-}
-
 const toSame = () => {
   sameAddr.value = !sameAddr.value
   if (sameAddr.value) {
@@ -90,10 +78,37 @@ const addressCallback = (data: AddressData) => {
   }
 }
 
+const mode = ref<'create' | 'update'>('create')
+const selectedPk = ref<number | null>(null)
+
+const changeToCurrentAddress = async (addressPk: number) => {
+  mode.value = 'update'
+  selectedPk.value = addressPk
+  refConfirmChk.value.callModal()
+}
+
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
-  } else createContAddress(form.value)
+  } else {
+    mode.value = 'create'
+    refConfirmChk.value.callModal() //createContAddress(form.value)
+  }
+}
+
+const modalAction = async () => {
+  if (mode.value === 'create') alert('create')
+  else if (mode.value === 'update') {
+    try {
+      await patchContAddress(selectedPk.value, { is_current: true } as Partial<AddressInContractor>)
+      // 주소 목록 새로고침 (store에서 자동으로 처리됨)
+      // 성공 메시지나 추가 처리가 필요하면 여기에 추가
+    } catch (error) {
+      console.error('주소 변경 중 오류가 발생했습니다:', error)
+      // 에러 처리 로직 추가 가능
+    }
+  }
+  refConfirmChk.value.close()
 }
 
 onBeforeMount(() => {
@@ -272,5 +287,9 @@ onBeforeMount(() => {
 
   <DaumPostcode ref="refModalPost" @address-callback="addressCallback" />
 
-  <ConfirmModal ref="refConfirmChk" />
+  <ConfirmModal ref="refConfirmChk">
+    <template #footer>
+      <v-btn size="small" color="primary" @click="modalAction">확인</v-btn>
+    </template>
+  </ConfirmModal>
 </template>
