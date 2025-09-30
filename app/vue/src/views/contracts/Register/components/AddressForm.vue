@@ -2,14 +2,12 @@
 import { inject, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
-import {
-  CForm,
-  CFormCheck,
-  CModalBody,
-  CTableBody,
-  CTableDataCell,
-  CTableHeaderCell,
-} from '@coreui/vue'
+import { CForm, CModalBody, CTableBody, CTableDataCell } from '@coreui/vue'
+
+defineProps({
+  address: { type: Object, default: () => ({}) },
+  past_addresses: { type: Array, default: () => [] },
+})
 
 const refModalPost = ref()
 
@@ -99,26 +97,28 @@ const addressCallback = () => 1
         </CCol>
       </CRow>
       <v-divider />
-      <h6>변경전 주소</h6>
+      <h6>변경전 (현재) 주소</h6>
       <CTable borderless responsive align="middle" class="mb-0" color="warning">
         <CTableBody class="text-center">
           <CTableRow>
             <CTableHeaderCell>주민등록 주소</CTableHeaderCell>
             <CTableDataCell class="pl-2 text-left">
-              (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
+              ({{ address.id_zipcode }}) {{ address.id_address1 }} {{ address.id_address2 }}
+              {{ address.id_address3 }}
             </CTableDataCell>
           </CTableRow>
           <CTableRow>
             <CTableHeaderCell>우편수령 주소</CTableHeaderCell>
             <CTableDataCell class="pl-2 text-left">
-              (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
+              ({{ address.dm_zipcode }}) {{ address.dm_address1 }} {{ address.dm_address2 }}
+              {{ address.dm_address3 }}
             </CTableDataCell>
           </CTableRow>
         </CTableBody>
       </CTable>
       <v-divider />
       <h6>과거 주소</h6>
-      <CTable bordered responsive align="middle" class="mb-0">
+      <CTable v-if="past_addresses.length" bordered responsive align="middle" class="mb-0">
         <CTableBody class="text-center">
           <CTableRow>
             <CTableDataCell rowspan="2">3</CTableDataCell>
@@ -173,6 +173,16 @@ const addressCallback = () => 1
             <CTableHeaderCell>우편수령 주소</CTableHeaderCell>
             <CTableDataCell class="pl-2 text-left">
               (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
+            </CTableDataCell>
+          </CTableRow>
+        </CTableBody>
+      </CTable>
+
+      <CTable v-else borderless align="middle">
+        <CTableBody>
+          <CTableRow class="text-center">
+            <CTableDataCell style="height: 100px; color: grey">
+              현재 주소 이전 주소 데이터가 없습니다.
             </CTableDataCell>
           </CTableRow>
         </CTableBody>

@@ -1097,7 +1097,7 @@ onBeforeRouteLeave(() => formDataReset())
   <FormModal ref="refChangeAddr" size="xl">
     <template #header>주소변경 등록</template>
     <template #default>
-      <AddressForm @close="refChangeAddr.close()" />
+      <AddressForm :address="address" @close="refChangeAddr.close()" />
     </template>
   </FormModal>
 

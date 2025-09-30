@@ -31,7 +31,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['address-callback', 'address-callback'])
+const emit = defineEmits(['address-callback'])
 
 const element_layer = ref()
 const displayVal = ref('none')
