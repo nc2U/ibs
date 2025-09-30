@@ -357,10 +357,11 @@ class ContractorAddress(models.Model):
     dm_address1 = models.CharField('우편송부 주소', max_length=50)
     dm_address2 = models.CharField('상세주소', max_length=50, blank=True)
     dm_address3 = models.CharField('참고항목', max_length=30, blank=True)
+    is_current = models.BooleanField('현주소 여부', default=True)
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                                verbose_name='등록자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
         return f'[주소] - {self.contractor}'
