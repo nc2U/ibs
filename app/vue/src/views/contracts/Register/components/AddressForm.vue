@@ -248,7 +248,7 @@ onBeforeMount(() => {
       <v-divider />
       <h6 class="mb-2">
         <v-icon icon="mdi-office-building-marker" size="small" color="warning" class="mr-1" />
-        과거 주소
+        과거 주소 이력
       </h6>
       <CTable v-if="contAddressList.length" bordered responsive align="middle" class="mb-0">
         <CTableBody v-for="(addr, index) in contAddressList" :key="addr.pk" class="text-center">
