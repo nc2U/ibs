@@ -675,6 +675,21 @@ class ContractorAddressSerializer(serializers.ModelSerializer):
         fields = ('pk', 'contractor', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3',
                   'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3', 'is_current')
 
+    @transaction.atomic
+    def create(self, validated_data):
+        contractor = validated_data.get('contractor')
+
+        # 동일 계약자의 기존 현재 주소를 False로 변경
+        if contractor:
+            ContractorAddress.objects.filter(
+                contractor=contractor,
+                is_current=True
+            ).update(is_current=False)
+
+        # 새 주소 인스턴스 생성
+        instance = ContractorAddress.objects.create(**validated_data)
+        return instance
+
 
 class ContractorContactSerializer(serializers.ModelSerializer):
     class Meta:
