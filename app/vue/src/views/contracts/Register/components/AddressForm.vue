@@ -227,18 +227,18 @@ onBeforeMount(() => {
         <v-icon icon="mdi-office-building-marker" size="small" color="info" class="mr-1" />
         변경전 (현재) 주소
       </h6>
-      <CTable borderless responsive align="middle" class="mb-0" color="warning">
+      <CTable borderless responsive align="middle" class="mb-0" color="info">
         <CTableBody class="text-center">
           <CTableRow>
-            <CTableHeaderCell>주민등록 주소</CTableHeaderCell>
-            <CTableDataCell class="pl-2 text-left">
+            <CTableHeaderCell class="pt-3">주민등록 주소</CTableHeaderCell>
+            <CTableDataCell class="pt-3 pl-2 text-left">
               ({{ address.id_zipcode }}) {{ address.id_address1 }} {{ address.id_address2 }}
               {{ address.id_address3 }}
             </CTableDataCell>
           </CTableRow>
           <CTableRow>
-            <CTableHeaderCell>우편수령 주소</CTableHeaderCell>
-            <CTableDataCell class="pl-2 text-left">
+            <CTableHeaderCell class="pb-3">우편수령 주소</CTableHeaderCell>
+            <CTableDataCell class="pb-3 pl-2 text-left">
               ({{ address.dm_zipcode }}) {{ address.dm_address1 }} {{ address.dm_address2 }}
               {{ address.dm_address3 }}
             </CTableDataCell>
