@@ -342,13 +342,19 @@ class Contractor(models.Model):
     def __str__(self):
         return f'{self.name}({self.contract.serial_number if self.contract else self.prev_contract.serial_number})'
 
+    @property
+    def contractoraddress(self):
+        """현주소 반환 (하위 호환성을 위한 프로퍼티)"""
+        return self.addresses.filter(is_current=True).first()
+
     class Meta:
         verbose_name = '05. 계약자 정보'
         verbose_name_plural = '05. 계약자 정보'
 
 
 class ContractorAddress(models.Model):
-    contractor = models.OneToOneField('Contractor', on_delete=models.CASCADE, verbose_name='계약자 정보')
+    contractor = models.ForeignKey('Contractor', on_delete=models.CASCADE, verbose_name='계약자 정보',
+                                   related_name='addresses')
     id_zipcode = models.CharField('우편번호', max_length=5)
     id_address1 = models.CharField('주민등록 주소', max_length=50)
     id_address2 = models.CharField('상세주소', max_length=30, blank=True)
@@ -369,6 +375,13 @@ class ContractorAddress(models.Model):
     class Meta:
         verbose_name = '06. 계약자 주소'
         verbose_name_plural = '06. 계약자 주소'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['contractor'],
+                condition=models.Q(is_current=True),
+                name='unique_current_address_per_contractor'
+            )
+        ]
 
 
 class ContractorContact(models.Model):
