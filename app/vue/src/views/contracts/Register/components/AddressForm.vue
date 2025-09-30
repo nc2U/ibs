@@ -8,7 +8,6 @@ import type { AddressInContractor, ContractorAddress } from '@/store/types/contr
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { CForm } from '@coreui/vue'
 
 const props = defineProps({
   contractor: { type: Number, required: true },
