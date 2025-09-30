@@ -1,32 +1,25 @@
 <script lang="ts" setup>
 import {
-  ref,
-  reactive,
   computed,
+  inject,
   nextTick,
-  watch,
   onMounted,
   onUpdated,
   type PropType,
-  inject,
+  reactive,
+  ref,
+  watch,
 } from 'vue'
-import { useRouter, onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
 import { type PayOrder } from '@/store/types/payment'
-import type {
-  Payment,
-  Contract,
-  Contractor,
-  ContractFile,
-  ContractorContact,
-  AddressInContractor,
-} from '@/store/types/contract'
+import type { Contract, ContractFile, Contractor, Payment } from '@/store/types/contract'
 import { isValidate } from '@/utils/helper'
-import { numFormat, diffDate } from '@/utils/baseMixins'
+import { diffDate, numFormat } from '@/utils/baseMixins'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
@@ -34,12 +27,13 @@ import Multiselect from '@vueform/multiselect'
 import ContNavigation from './ContNavigation.vue'
 import ContController from './ContController.vue'
 import ContractorAlert from './ContractorAlert.vue'
+import DatePicker from '@/components/DatePicker/index.vue'
 import AttatchFile from '@/components/AttatchFile/Index.vue'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import DatePicker from '@/components/DatePicker/index.vue'
-import { CCol } from '@coreui/vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import AddressForm from '@/views/contracts/Register/components/AddressForm.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -57,6 +51,8 @@ const router = useRouter()
 const refPostCode = ref()
 const address21 = ref()
 const address22 = ref()
+const address23 = ref()
+const refChangeAddr = ref()
 const refDelModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -158,13 +154,11 @@ const downPayments = computed(() =>
     : [],
 )
 
+const address = computed(() => props.contract?.contractor?.contractoraddress)
+const contact = computed(() => props.contract?.contractor?.contractorcontact)
+
 const formsCheck = computed(() => {
   if (props.contract && props.contractor) {
-    const contact: ContractorContact | null | undefined =
-      props.contract.contractor?.contractorcontact
-    const address: AddressInContractor | null | undefined =
-      props.contract.contractor?.contractoraddress
-
     const a = form.order_group === props.contract.order_group
     const b = form.unit_type === props.contract.unit_type
     const c = form.key_unit === props.contract.key_unit?.pk
@@ -177,23 +171,23 @@ const formsCheck = computed(() => {
     const j = form.birth_date === props.contractor.birth_date
     const k = form.gender === props.contractor?.gender
     const l = form.qualification === props.contractor?.qualification
-    const m = form.cell_phone === contact?.cell_phone
-    const n = form.home_phone === contact?.home_phone
-    const o = form.other_phone === contact?.other_phone
-    const p = form.email === contact?.email
+    const m = form.cell_phone === contact.value?.cell_phone
+    const n = form.home_phone === contact.value?.home_phone
+    const o = form.other_phone === contact.value?.other_phone
+    const p = form.email === contact.value?.email
     const q = !form.deal_date
     const r = !form.income
     const s = !form.bank_account
     const t = !form.trader
     const u = !form.installment_order
-    const v = form.id_zipcode === address?.id_zipcode
-    const w = form.id_address1 === address?.id_address1
-    const x = form.id_address2 === address?.id_address2
-    const y = form.id_address3 === address?.id_address3
-    const z = form.dm_zipcode === address?.dm_zipcode
-    const a1 = form.dm_address1 === address?.dm_address1
-    const b1 = form.dm_address2 === address?.dm_address2
-    const c1 = form.dm_address3 === address?.dm_address3
+    const v = form.id_zipcode === address.value?.id_zipcode
+    const w = form.id_address1 === address.value?.id_address1
+    const x = form.id_address2 === address.value?.id_address2
+    const y = form.id_address3 === address.value?.id_address3
+    const z = form.dm_zipcode === address.value?.dm_zipcode
+    const a1 = form.dm_address1 === address.value?.dm_address1
+    const b1 = form.dm_address2 === address.value?.dm_address2
+    const c1 = form.dm_address3 === address.value?.dm_address3
     const d1 = form.note === props.contract.contractor?.note
 
     const e1 = !newFile.value
@@ -360,22 +354,20 @@ const formDataSetup = () => {
 
     // address
     if (props.contract.contractor?.status === '2') {
-      const address = props.contract.contractor?.contractoraddress
-      form.id_zipcode = address?.id_zipcode ?? '' // 20
-      form.id_address1 = address?.id_address1 ?? '' // 21
-      form.id_address2 = address?.id_address2 ?? '' // 22
-      form.id_address3 = address?.id_address3 ?? '' // 23
-      form.dm_zipcode = address?.dm_zipcode ?? '' // 24
-      form.dm_address1 = address?.dm_address1 ?? ''
-      form.dm_address2 = address?.dm_address2 ?? '' // 26
-      form.dm_address3 = address?.dm_address3 ?? '' // 27
+      form.id_zipcode = address.value?.id_zipcode ?? '' // 20
+      form.id_address1 = address.value?.id_address1 ?? '' // 21
+      form.id_address2 = address.value?.id_address2 ?? '' // 22
+      form.id_address3 = address.value?.id_address3 ?? '' // 23
+      form.dm_zipcode = address.value?.dm_zipcode ?? '' // 24
+      form.dm_address1 = address.value?.dm_address1 ?? ''
+      form.dm_address2 = address.value?.dm_address2 ?? '' // 26
+      form.dm_address3 = address.value?.dm_address3 ?? '' // 27
     }
     // contact
-    const contact = props.contract.contractor?.contractorcontact
-    form.cell_phone = contact?.cell_phone ?? ''
-    form.home_phone = contact?.home_phone ?? '' // 11 // 12
-    form.other_phone = contact?.other_phone ?? '' // 13
-    form.email = contact?.email ?? '' // 14
+    form.cell_phone = contact.value?.cell_phone ?? ''
+    form.home_phone = contact.value?.home_phone ?? '' // 11 // 12
+    form.other_phone = contact.value?.other_phone ?? '' // 13
+    form.email = contact.value?.email ?? '' // 14
 
     sameAddrBtnSet(matchAddr.value)
   }
@@ -938,7 +930,7 @@ onBeforeRouteLeave(() => formDataReset())
       <CRow v-show="isContract" class="mb-3">
         <CFormLabel sm="2" class="col-lg-1 col-form-label required"> 주민등록 주소</CFormLabel>
 
-        <CCol sm="12" md="6" lg="2" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
           <CInputGroup>
             <CInputGroupText @click="refPostCode.initiate(2)"> 우편번호</CInputGroupText>
             <CFormInput
@@ -948,31 +940,31 @@ onBeforeRouteLeave(() => formDataReset())
               maxlength="5"
               placeholder="우편번호"
               :required="isContract"
-              :disabled="!isContract"
+              :disabled="!isContract || !!address"
               @focus="refPostCode.initiate(2)"
             />
             <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
-        <CCol sm="12" md="6" lg="4" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="4" class="mb-lg-0">
           <CFormInput
             v-model="form.id_address1"
             maxlength="35"
             placeholder="주민등록 주소를 입력하세요"
             :required="isContract"
-            :disabled="!isContract"
+            :disabled="!isContract || !!address"
             @focus="refPostCode.initiate(2)"
           />
           <CFormFeedback invalid>주민등록 주소를 입력하세요.</CFormFeedback>
         </CCol>
 
-        <CCol sm="12" md="6" lg="2" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
           <CFormInput
             ref="address21"
             v-model="form.id_address2"
             maxlength="50"
             placeholder="상세주소를 입력하세요"
-            :disabled="!isContract"
+            :disabled="!isContract || !!address"
           />
           <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
         </CCol>
@@ -982,14 +974,14 @@ onBeforeRouteLeave(() => formDataReset())
             v-model="form.id_address3"
             maxlength="30"
             placeholder="참고항목을 입력하세요"
-            :disabled="!isContract"
+            :disabled="!isContract || !!address"
           />
         </CCol>
       </CRow>
 
       <CRow v-show="isContract" class="mb-3">
         <CFormLabel sm="2" class="col-lg-1 col-form-label required"> 우편수령 주소</CFormLabel>
-        <CCol sm="12" md="6" lg="2" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
           <CInputGroup>
             <CInputGroupText @click="refPostCode.initiate(3)"> 우편번호</CInputGroupText>
             <CFormInput
@@ -999,30 +991,30 @@ onBeforeRouteLeave(() => formDataReset())
               maxlength="5"
               placeholder="우편번호"
               :required="isContract"
-              :disabled="!isContract"
+              :disabled="!isContract || !!address"
               @focus="refPostCode.initiate(3)"
             />
             <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
-        <CCol sm="12" md="6" lg="4" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="4" class="mb-lg-0">
           <CFormInput
             v-model="form.dm_address1"
             maxlength="50"
             placeholder="우편물 수령 주소를 입력하세요"
             :required="isContract"
-            :disabled="!isContract"
+            :disabled="!isContract || !!address"
             @focus="refPostCode.initiate(3)"
           />
           <CFormFeedback invalid> 우편물 수령 주소를 입력하세요.</CFormFeedback>
         </CCol>
-        <CCol sm="12" md="6" lg="2" class="mb-3 mb-lg-0">
+        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
           <CFormInput
             ref="address22"
             v-model="form.dm_address2"
             maxlength="50"
             placeholder="상세주소를 입력하세요"
-            :disabled="!isContract"
+            :disabled="!isContract || !!address"
           />
           <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
         </CCol>
@@ -1031,11 +1023,12 @@ onBeforeRouteLeave(() => formDataReset())
             v-model="form.dm_address3"
             maxlength="30"
             placeholder="참고항목을 입력하세요"
-            :disabled="!isContract"
+            :disabled="!isContract || !!address"
           />
         </CCol>
         <CCol sm="12" lg="1">
           <v-checkbox-btn
+            v-if="!address"
             id="to-same"
             v-model="sameAddr"
             label="상동"
@@ -1043,6 +1036,15 @@ onBeforeRouteLeave(() => formDataReset())
             :disabled="!isContract || !form.id_zipcode"
             @click="toSame"
           />
+          <v-btn
+            v-else
+            color="primary"
+            size="small"
+            class="mt-1"
+            @click="refChangeAddr.callModal()"
+          >
+            주소변경
+          </v-btn>
         </CCol>
       </CRow>
 
@@ -1091,6 +1093,13 @@ onBeforeRouteLeave(() => formDataReset())
   </CForm>
 
   <DaumPostcode ref="refPostCode" @address-callback="addressCallback" />
+
+  <FormModal ref="refChangeAddr" size="xl">
+    <template #header>주소변경 등록</template>
+    <template #default>
+      <AddressForm @close="refChangeAddr.close()" />
+    </template>
+  </FormModal>
 
   <ConfirmModal ref="refDelModal">
     <template #header>프로젝트정보 삭제</template>
