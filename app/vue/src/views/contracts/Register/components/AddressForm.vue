@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { inject, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
+import { type AddressData, callAddress } from '@/components/DaumPostcode/address.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
-import { CForm, CModalBody, CTableBody, CTableDataCell } from '@coreui/vue'
 
 defineProps({
   address: { type: Object, default: () => ({}) },
@@ -13,8 +13,53 @@ const refModalPost = ref()
 
 const isDark = inject('isDark')
 
-const toSame = () => {}
-const addressCallback = () => 1
+const form = ref({
+  id_zipcode: '',
+  id_address1: '',
+  id_address2: '',
+  id_address3: '',
+  dm_zipcode: '',
+  dm_address1: '',
+  dm_address2: '',
+  dm_address3: '',
+})
+
+const refAddress1 = ref()
+const refAddress2 = ref()
+
+const sameAddr = ref(false)
+
+const toSame = () => {
+  sameAddr.value = !sameAddr.value
+  if (sameAddr.value) {
+    form.value.dm_zipcode = form.value.id_zipcode
+    form.value.dm_address1 = form.value.id_address1
+    form.value.dm_address2 = form.value.id_address2
+    form.value.dm_address3 = form.value.id_address3
+  } else {
+    form.value.dm_zipcode = ''
+    form.value.dm_address1 = ''
+    form.value.dm_address2 = ''
+    form.value.dm_address3 = ''
+  }
+}
+
+const addressCallback = (data: AddressData) => {
+  const { formNum, zipcode, address1, address3 } = callAddress(data)
+  if (formNum === 1) {
+    form.value.id_zipcode = zipcode
+    form.value.id_address1 = address1
+    form.value.id_address2 = ''
+    form.value.id_address3 = address3
+    refAddress1.value.$el.nextElementSibling.focus()
+  } else if (formNum === 2) {
+    form.value.dm_zipcode = zipcode
+    form.value.dm_address1 = address1
+    form.value.dm_address2 = ''
+    form.value.dm_address3 = address3
+    refAddress2.value.$el.nextElementSibling.focus()
+  }
+}
 </script>
 
 <template>
@@ -28,6 +73,7 @@ const addressCallback = () => 1
           <CInputGroup>
             <CInputGroupText @click="refModalPost.initiate(1)"> 우편번호</CInputGroupText>
             <CFormInput
+              v-model="form.id_zipcode"
               v-maska
               data-maska="#####"
               maxlength="5"
@@ -40,6 +86,7 @@ const addressCallback = () => 1
         </CCol>
         <CCol sm="12" md="6" lg="4" class="mb-lg-0">
           <CFormInput
+            v-model="form.id_address1"
             maxlength="35"
             placeholder="주민등록 주소를 입력하세요"
             required
@@ -48,11 +95,20 @@ const addressCallback = () => 1
         </CCol>
 
         <CCol sm="12" md="6" lg="2" class="mb-lg-0">
-          <CFormInput ref="address21" maxlength="50" placeholder="상세주소를 입력하세요" />
+          <CFormInput
+            ref="refAddress1"
+            v-model="form.id_address2"
+            maxlength="50"
+            placeholder="상세주소를 입력하세요"
+          />
         </CCol>
 
         <CCol sm="12" md="6" lg="2">
-          <CFormInput maxlength="30" placeholder="참고항목을 입력하세요" />
+          <CFormInput
+            v-model="form.id_address3"
+            maxlength="30"
+            placeholder="참고항목을 입력하세요"
+          />
         </CCol>
       </CRow>
       <CRow class="mb-3">
@@ -61,6 +117,7 @@ const addressCallback = () => 1
           <CInputGroup>
             <CInputGroupText @click="refModalPost.initiate(2)"> 우편번호</CInputGroupText>
             <CFormInput
+              v-model="form.dm_zipcode"
               v-maska
               data-maska="#####"
               maxlength="5"
@@ -72,6 +129,7 @@ const addressCallback = () => 1
         </CCol>
         <CCol sm="12" md="6" lg="4" class="mb-lg-0">
           <CFormInput
+            v-model="form.dm_address1"
             maxlength="50"
             placeholder="우편물 수령 주소를 입력하세요"
             required
@@ -79,14 +137,23 @@ const addressCallback = () => 1
           />
         </CCol>
         <CCol sm="12" md="6" lg="2" class="mb-lg-0">
-          <CFormInput ref="address22" maxlength="50" placeholder="상세주소를 입력하세요" />
-          <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
+          <CFormInput
+            ref="refAddress2"
+            v-model="form.dm_address2"
+            maxlength="50"
+            placeholder="상세주소를 입력하세요"
+          />
         </CCol>
         <CCol sm="12" md="6" lg="2">
-          <CFormInput maxlength="30" placeholder="참고항목을 입력하세요" />
+          <CFormInput
+            v-model="form.dm_address3"
+            maxlength="30"
+            placeholder="참고항목을 입력하세요"
+          />
         </CCol>
         <CCol sm="12" lg="1" class="pt-1">
           <v-checkbox-btn
+            v-model="sameAddr"
             id="to-same-for-modal"
             label="상동"
             density="compact"
