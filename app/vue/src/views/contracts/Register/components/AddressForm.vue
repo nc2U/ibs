@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, inject, onBeforeMount, onBeforeUnmount, type PropType, ref } from 'vue'
 import { isValidate } from '@/utils/helper.ts'
 import { dateFormat } from '@/utils/baseMixins.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
@@ -50,13 +50,39 @@ const validated = ref(false)
 
 const sameAddr = ref(false)
 
+// 테이블 색상 상태 관리
+const currentTableColor = ref<'info' | 'warning'>('info')
+const colorTimeout = ref<NodeJS.Timeout | null>(null)
+
 const contStore = useContract()
 const contAddressList = computed<ContractorAddress[]>(() => contStore.contAddressList)
 
-const createContAddress = (payload: Omit<AddressInContractor, 'pk'>) =>
-  contStore.createContAddress(payload)
-const patchContAddress = (pk: number, payload: Partial<AddressInContractor>) =>
-  contStore.patchContAddress(pk, payload)
+// 테이블 색상을 일시적으로 변경하는 함수
+const highlightTableChange = () => {
+  // 기존 타이머가 있으면 클리어
+  if (colorTimeout.value) {
+    clearTimeout(colorTimeout.value)
+  }
+
+  // 색상을 warning으로 변경
+  currentTableColor.value = 'warning'
+
+  // 5초 후에 info로 되돌리기
+  colorTimeout.value = setTimeout(() => {
+    currentTableColor.value = 'info'
+    colorTimeout.value = null
+  }, 5000)
+}
+
+const createContAddress = async (payload: Omit<AddressInContractor, 'pk'>) => {
+  await contStore.createContAddress(payload)
+  highlightTableChange()
+}
+
+const patchContAddress = async (pk: number, payload: Partial<AddressInContractor>) => {
+  await contStore.patchContAddress(pk, payload)
+  highlightTableChange()
+}
 
 const toSame = () => {
   sameAddr.value = !sameAddr.value
@@ -129,6 +155,13 @@ const modalAction = async () => {
 
 onBeforeMount(() => {
   props.contractor && (form.value.contractor = props.contractor)
+})
+
+onBeforeUnmount(() => {
+  // 컴포넌트 언마운트 시 타이머 정리
+  if (colorTimeout.value) {
+    clearTimeout(colorTimeout.value)
+  }
 })
 </script>
 
@@ -240,7 +273,13 @@ onBeforeMount(() => {
         <v-icon icon="mdi-office-building-marker" size="small" color="info" class="mr-1" />
         변경전 (현재) 주소
       </h6>
-      <CTable borderless responsive align="middle" class="mb-0" color="info">
+      <CTable
+        borderless
+        responsive
+        align="middle"
+        class="mb-0 address-table-transition"
+        :color="currentTableColor"
+      >
         <CTableBody class="text-center">
           <CTableRow>
             <CTableHeaderCell class="pt-3">주민등록 주소</CTableHeaderCell>
@@ -318,3 +357,18 @@ onBeforeMount(() => {
     </template>
   </ConfirmModal>
 </template>
+
+<style scoped>
+.address-table-transition {
+  transition: all 1.5s ease-in-out;
+}
+
+.address-table-transition tbody tr {
+  transition: background-color 1.5s ease-in-out, border-color 1.5s ease-in-out;
+}
+
+.address-table-transition tbody tr th,
+.address-table-transition tbody tr td {
+  transition: background-color 1.5s ease-in-out, border-color 1.5s ease-in-out;
+}
+</style>
