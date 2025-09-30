@@ -20,7 +20,7 @@ const refConfirmChk = ref()
 const isDark = inject('isDark')
 
 const form = ref({
-  contractor: null as number,
+  contractor: null as number | null,
   id_zipcode: '',
   id_address1: '',
   id_address2: '',
@@ -41,10 +41,10 @@ const sameAddr = ref(false)
 const contStore = useContract()
 const contAddressList = computed<ContractorAddress[]>(() => contStore.contAddressList)
 
-const createContAddress = (data: Omit<AddressInContractor, 'pk'>) =>
-  contStore.createContAddress(data)
-const patchContAddress = (pk: number, data: Partial<AddressInContractor>) =>
-  contStore.patchContAddress(pk, data)
+const createContAddress = (payload: Omit<AddressInContractor, 'pk'>) =>
+  contStore.createContAddress(payload)
+const patchContAddress = (pk: number, payload: Partial<AddressInContractor>) =>
+  contStore.patchContAddress(pk, payload)
 
 const toSame = () => {
   sameAddr.value = !sameAddr.value
@@ -108,9 +108,8 @@ const onSubmit = (event: Event) => {
 
 const modalAction = async () => {
   if (mode.value === 'create') await createContAddress(form.value)
-  else if (mode.value === 'update')
+  else if (mode.value === 'update' && selectedPk.value !== null)
     await patchContAddress(selectedPk.value, { is_current: true } as Partial<AddressInContractor>)
-
   refConfirmChk.value.close()
 }
 

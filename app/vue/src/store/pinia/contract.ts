@@ -285,21 +285,33 @@ export const useContract = defineStore('contract', () => {
     api
       .post(`/contractor-address/`, payload)
       .then(async res => {
-        await fetchContract(res.data.contractor.contract.pk)
-        await fetchContAddressList(payload.project)
-        message()
+        try {
+          if (contract.value?.pk) {
+            await fetchContract(contract.value.pk)
+          }
+          await fetchContAddressList(res.data.contractor)
+          message()
+        } catch (error) {
+          message('danger', '데이터 갱신 에러', `${error}`, 5000)
+        }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response))
 
   const patchContAddress = (pk: number, payload: any) =>
     api
       .patch(`/contractor-address/${pk}/`, payload)
       .then(async res => {
-        await fetchContract(res.data.contractor.contract.pk)
-        await fetchContAddressList(payload.project)
-        message()
+        try {
+          if (contract.value?.pk) {
+            await fetchContract(contract.value.pk)
+          }
+          await fetchContAddressList(res.data.contractor)
+          message()
+        } catch (error) {
+          message('danger', '데이터 갱신 에러', `${error}`, 5000)
+        }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response))
 
   // state & getters
   const succession = ref<Succession | null>(null)

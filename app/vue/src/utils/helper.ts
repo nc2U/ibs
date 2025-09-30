@@ -31,13 +31,30 @@ type Error = {
   stack?: string
 }
 
-export const errorHandle = (err: Error) => {
-  if (err.code === 'token_not_valid') {
+export const errorHandle = (err: any) => {
+  // Handle different error response structures
+  const errorData = err?.data || err
+
+  if (errorData?.code === 'token_not_valid') {
     console.log('token_not_valid')
   } else {
     console.log(err)
-    for (const key in err) {
-      message('danger', `${key} - 에러`, `${err[key]}`, 10000)
+
+    // If errorData is an object with error details, iterate through them
+    if (errorData && typeof errorData === 'object') {
+      for (const key in errorData) {
+        if (typeof errorData[key] === 'string') {
+          message('danger', `${key} - 에러`, `${errorData[key]}`, 10000)
+        } else if (Array.isArray(errorData[key])) {
+          // Handle array of error messages
+          errorData[key].forEach((msg: string) => {
+            message('danger', `${key} - 에러`, msg, 10000)
+          })
+        }
+      }
+    } else {
+      // Fallback for simple error messages
+      message('danger', '에러', String(errorData || err || '알 수 없는 오류가 발생했습니다.'), 10000)
     }
   }
 }
