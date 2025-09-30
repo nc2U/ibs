@@ -226,7 +226,7 @@ onBeforeMount(() => {
       <CTable v-if="contAddressList.length" bordered responsive align="middle" class="mb-0">
         <CTableBody v-for="(addr, index) in contAddressList" :key="addr.pk" class="text-center">
           <CTableRow>
-            <CTableDataCell rowspan="2">{{ index }}</CTableDataCell>
+            <CTableDataCell rowspan="2">{{ contAddressList.length - index }}</CTableDataCell>
             <CTableHeaderCell>주민등록 주소</CTableHeaderCell>
             <CTableDataCell class="pl-2 text-left">
               ({{ addr.id_zipcode }}) {{ addr.id_address1 }} {{ addr.id_address2 }}

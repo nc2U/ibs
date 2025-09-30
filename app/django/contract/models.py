@@ -375,6 +375,7 @@ class ContractorAddress(models.Model):
     class Meta:
         verbose_name = '06. 계약자 주소'
         verbose_name_plural = '06. 계약자 주소'
+        ordering = ['-created']
         constraints = [
             models.UniqueConstraint(
                 fields=['contractor'],
