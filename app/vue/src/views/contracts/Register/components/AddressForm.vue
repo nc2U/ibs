@@ -1,15 +1,20 @@
 <script lang="ts" setup>
-import { inject, ref } from 'vue'
+import { computed, inject, type PropType, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
+import { useContract } from '@/store/pinia/contract.ts'
+import type { AddressInContractor, ContractorAddress } from '@/store/types/contract.ts'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
+import { CForm, CModalBody } from '@coreui/vue'
+import { isValidate } from '@/utils/helper.ts'
+import { write_contract } from '@/utils/pageAuth.ts'
 
 defineProps({
-  address: { type: Object, default: () => ({}) },
-  past_addresses: { type: Array, default: () => [] },
+  address: { type: Object as PropType<AddressInContractor>, default: () => ({}) },
 })
 
 const refModalPost = ref()
+const validated = ref(false)
 
 const isDark = inject('isDark')
 
@@ -28,6 +33,9 @@ const refAddress1 = ref()
 const refAddress2 = ref()
 
 const sameAddr = ref(false)
+
+const contStore = useContract()
+const contAddressList = computed<ContractorAddress[]>(() => contStore.contAddressList)
 
 const toSame = () => {
   sameAddr.value = !sameAddr.value
@@ -60,10 +68,18 @@ const addressCallback = (data: AddressData) => {
     refAddress2.value.$el.nextElementSibling.focus()
   }
 }
+
+const onSubmit = (event: Event) => {
+  if (isValidate(event)) {
+    validated.value = true
+  } else {
+    console.log({ ...form.value })
+  }
+}
 </script>
 
 <template>
-  <CForm>
+  <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
     <CModalBody class="text-body">
       <h6>변경할 주소</h6>
       <CRow class="mb-3">
@@ -81,7 +97,6 @@ const addressCallback = (data: AddressData) => {
               required
               @focus="refModalPost.initiate(1)"
             />
-            <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
           </CInputGroup>
         </CCol>
         <CCol sm="12" md="6" lg="4" class="mb-lg-0">
@@ -185,13 +200,14 @@ const addressCallback = (data: AddressData) => {
       </CTable>
       <v-divider />
       <h6>과거 주소</h6>
-      <CTable v-if="past_addresses.length" bordered responsive align="middle" class="mb-0">
-        <CTableBody class="text-center">
+      <CTable v-if="contAddressList.length" bordered responsive align="middle" class="mb-0">
+        <CTableBody v-for="(addr, index) in contAddressList" :key="addr.pk" class="text-center">
           <CTableRow>
-            <CTableDataCell rowspan="2">3</CTableDataCell>
+            <CTableDataCell rowspan="2">{{ index }}</CTableDataCell>
             <CTableHeaderCell>주민등록 주소</CTableHeaderCell>
             <CTableDataCell class="pl-2 text-left">
-              (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
+              ({{ addr.id_zipcode }}) {{ addr.id_address1 }} {{ addr.id_address2 }}
+              {{ addr.id_address3 }}
             </CTableDataCell>
             <CTableDataCell rowspan="2">2025/02/01 등록</CTableDataCell>
             <CTableDataCell rowspan="2" class="text-left">
@@ -201,45 +217,8 @@ const addressCallback = (data: AddressData) => {
           <CTableRow>
             <CTableHeaderCell>우편수령 주소</CTableHeaderCell>
             <CTableDataCell class="pl-2 text-left">
-              (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
-            </CTableDataCell>
-          </CTableRow>
-        </CTableBody>
-        <CTableBody class="text-center">
-          <CTableRow>
-            <CTableDataCell rowspan="2">2</CTableDataCell>
-            <CTableHeaderCell>주민등록 주소</CTableHeaderCell>
-            <CTableDataCell class="pl-2 text-left">
-              (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
-            </CTableDataCell>
-            <CTableDataCell rowspan="2">2025/02/01 등록</CTableDataCell>
-            <CTableDataCell rowspan="2" class="text-left">
-              <CFormCheck id="a2" label="이 주소로 변경" />
-            </CTableDataCell>
-          </CTableRow>
-          <CTableRow>
-            <CTableHeaderCell>우편수령 주소</CTableHeaderCell>
-            <CTableDataCell class="pl-2 text-left">
-              (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
-            </CTableDataCell>
-          </CTableRow>
-        </CTableBody>
-        <CTableBody class="text-center">
-          <CTableRow>
-            <CTableDataCell rowspan="2">1</CTableDataCell>
-            <CTableHeaderCell>주민등록 주소</CTableHeaderCell>
-            <CTableDataCell class="pl-2 text-left">
-              (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
-            </CTableDataCell>
-            <CTableDataCell rowspan="2">2025/02/01 등록</CTableDataCell>
-            <CTableDataCell rowspan="2" class="text-left">
-              <CFormCheck id="a1" label="이 주소로 변경" />
-            </CTableDataCell>
-          </CTableRow>
-          <CTableRow>
-            <CTableHeaderCell>우편수령 주소</CTableHeaderCell>
-            <CTableDataCell class="pl-2 text-left">
-              (21111) 인천광역시 연수구 능허대로289번길 21 대성빌딩 4층 (동춘동)
+              ({{ addr.dm_zipcode }}) {{ addr.dm_address1 }} {{ addr.dm_address2 }}
+              {{ addr.dm_address3 }}
             </CTableDataCell>
           </CTableRow>
         </CTableBody>
@@ -257,7 +236,7 @@ const addressCallback = (data: AddressData) => {
     </CModalBody>
     <CModalFooter>
       <v-btn :color="btnLight" size="small" @click="$emit('close')">닫기</v-btn>
-      <v-btn color="primary" size="small">확인</v-btn>
+      <v-btn type="submit" color="primary" size="small">확인</v-btn>
     </CModalFooter>
   </CForm>
 

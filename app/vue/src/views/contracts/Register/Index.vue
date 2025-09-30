@@ -3,7 +3,7 @@ import { ref, computed, watch, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/contracts/_menu/headermixin'
 import type { Project } from '@/store/types/project'
 import { type UnitFilter, useContract } from '@/store/pinia/contract'
-import type { Contract, Contractor } from '@/store/types/contract'
+import type { Contract, Contractor, ContractorAddress } from '@/store/types/contract'
 import { useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import { usePayment } from '@/store/pinia/payment'
@@ -19,7 +19,9 @@ const contForm = ref()
 const [route, router] = [useRoute(), useRouter()]
 
 // URL에서 from_page 파라미터 읽기
-const fromPage = computed(() => route.query.from_page ? parseInt(route.query.from_page as string, 10) : null)
+const fromPage = computed(() =>
+  route.query.from_page ? parseInt(route.query.from_page as string, 10) : null,
+)
 
 const contStore = useContract()
 const contract = computed<Contract | null>(() => contStore.contract)
@@ -36,6 +38,8 @@ const fetchContractor = (contor: number, proj?: number) => contStore.fetchContra
 
 const fetchContractorList = (projId: number, search = '') =>
   contStore.fetchContractorList(projId, search)
+
+const fetchContAddressList = (contor: number) => contStore.fetchContAddressList(contor)
 
 const fetchOrderGroupList = (projId: number) => contStore.fetchOrderGroupList(projId)
 
@@ -64,9 +68,11 @@ watch(route, val => {
 const resumeForm = (contor: string) => getContract(contor)
 
 watch(contractor, val => {
-  if (!!val)
+  if (!!val) {
     if (val.contract && !!contract.value && contract.value.pk !== val.contract)
       fetchContract(val.contract)
+    fetchContAddressList(val.pk)
+  }
 })
 
 watch(contract, newVal => {
@@ -92,8 +98,9 @@ watch(contract, newVal => {
 })
 
 const getContract = async (contor: string) => {
-  await fetchContractor(Number(contor), project.value)
+  await fetchContractor(parseInt(contor), project.value)
   await fetchContract(contractor.value?.contract as number)
+  await fetchContAddressList(parseInt(contor))
 }
 
 const typeSelect = (payload: {
@@ -113,7 +120,7 @@ const onSubmit = (payload: Contract & { status: '1' | '2' }) => {
   const form = new FormData()
 
   for (const key in getData) form.set(key, getData[key] ?? '')
-  
+
   // from_page 정보 추가 (수정인 경우에만)
   if (pk && fromPage.value) {
     form.set('from_page', fromPage.value.toString())
@@ -164,10 +171,13 @@ const projSelect = (target: number | null) => {
 const loading = ref(true)
 onBeforeMount(async () => {
   dataSetup(project.value || projStore.initProjId)
-  if (route.query.contractor) await getContract(route.query.contractor as string)
-  else {
+  if (route.query.contractor) {
+    await getContract(route.query.contractor as string)
+    await fetchContAddressList(parseInt(route.query.contractor as string))
+  } else {
     contStore.removeContract()
     contStore.removeContractor()
+    contStore.contAddressList = []
   }
   loading.value = false
 })
