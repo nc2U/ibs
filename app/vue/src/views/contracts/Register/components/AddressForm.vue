@@ -8,6 +8,7 @@ import type { AddressInContractor, ContractorAddress } from '@/store/types/contr
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { CForm } from '@coreui/vue'
 
 const props = defineProps({
   contractor: { type: Number, required: true },
@@ -88,7 +89,7 @@ const changeToCurrentAddress = async (addressPk: number) => {
     '주소변경 등록',
     '이 종전 주소를 현재 주소로 다시 변경하시겠습니까?',
     'mdi-office-building-marker',
-    'success',
+    'warning',
   )
 }
 
@@ -121,11 +122,14 @@ onBeforeMount(() => {
 <template>
   <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
     <CModalBody class="text-body">
-      <h6>변경할 주소</h6>
-      <CRow class="mb-3">
-        <CFormLabel sm="2" class="col-lg-1 col-form-label required"> 주민등록</CFormLabel>
+      <h6 class="mb-2">
+        <v-icon icon="mdi-office-building-marker" size="small" color="primary" class="mr-1" />
+        변경할 주소
+      </h6>
+      <CRow>
+        <CFormLabel sm="2" class="col-lg-2 col-xl-1 col-form-label required"> 주민등록</CFormLabel>
 
-        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
+        <CCol sm="12" lg="4" xl="2" class="mb-lg-0 mb-3">
           <CInputGroup>
             <CInputGroupText @click="refModalPost.initiate(1)"> 우편번호</CInputGroupText>
             <CFormInput
@@ -139,7 +143,7 @@ onBeforeMount(() => {
             />
           </CInputGroup>
         </CCol>
-        <CCol sm="12" md="6" lg="4" class="mb-lg-0">
+        <CCol sm="12" lg="6" xl="4" class="mb-lg-0 mb-3">
           <CFormInput
             v-model="form.id_address1"
             maxlength="35"
@@ -149,7 +153,7 @@ onBeforeMount(() => {
           />
         </CCol>
 
-        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
+        <CCol sm="12" lg="6" xl="2" class="mb-lg-0 mb-3">
           <CFormInput
             ref="refAddress1"
             v-model="form.id_address2"
@@ -158,7 +162,7 @@ onBeforeMount(() => {
           />
         </CCol>
 
-        <CCol sm="12" md="6" lg="2">
+        <CCol sm="12" lg="6" xl="2" class="mb-3">
           <CFormInput
             v-model="form.id_address3"
             maxlength="30"
@@ -166,9 +170,9 @@ onBeforeMount(() => {
           />
         </CCol>
       </CRow>
-      <CRow class="mb-3">
-        <CFormLabel sm="2" class="col-lg-1 col-form-label required"> 우편수령</CFormLabel>
-        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
+      <CRow>
+        <CFormLabel sm="2" class="col-lg-2 col-xl-1 col-form-label required"> 우편수령</CFormLabel>
+        <CCol sm="12" lg="4" xl="2" class="mb-lg-0 mb-3">
           <CInputGroup>
             <CInputGroupText @click="refModalPost.initiate(2)"> 우편번호</CInputGroupText>
             <CFormInput
@@ -182,7 +186,7 @@ onBeforeMount(() => {
             />
           </CInputGroup>
         </CCol>
-        <CCol sm="12" md="6" lg="4" class="mb-lg-0">
+        <CCol sm="12" lg="6" xl="4" class="mb-lg-0 mb-3">
           <CFormInput
             v-model="form.dm_address1"
             maxlength="50"
@@ -191,7 +195,7 @@ onBeforeMount(() => {
             @focus="refModalPost.initiate(2)"
           />
         </CCol>
-        <CCol sm="12" md="6" lg="2" class="mb-lg-0">
+        <CCol sm="12" lg="6" xl="2" class="mb-lg-0 mb-3">
           <CFormInput
             ref="refAddress2"
             v-model="form.dm_address2"
@@ -199,14 +203,14 @@ onBeforeMount(() => {
             placeholder="상세주소를 입력하세요"
           />
         </CCol>
-        <CCol sm="12" md="6" lg="2">
+        <CCol sm="12" lg="6" xl="2" class="mb-3">
           <CFormInput
             v-model="form.dm_address3"
             maxlength="30"
             placeholder="참고항목을 입력하세요"
           />
         </CCol>
-        <CCol sm="12" lg="1" class="pt-1">
+        <CCol sm="12" lg="2" xl="1" class="pt-1 mb-3">
           <v-checkbox-btn
             v-model="sameAddr"
             id="to-same-for-modal"
@@ -219,7 +223,10 @@ onBeforeMount(() => {
         </CCol>
       </CRow>
       <v-divider />
-      <h6>변경전 (현재) 주소</h6>
+      <h6 class="mb-2">
+        <v-icon icon="mdi-office-building-marker" size="small" color="info" class="mr-1" />
+        변경전 (현재) 주소
+      </h6>
       <CTable borderless responsive align="middle" class="mb-0" color="warning">
         <CTableBody class="text-center">
           <CTableRow>
@@ -239,7 +246,10 @@ onBeforeMount(() => {
         </CTableBody>
       </CTable>
       <v-divider />
-      <h6>과거 주소</h6>
+      <h6 class="mb-2">
+        <v-icon icon="mdi-office-building-marker" size="small" color="warning" class="mr-1" />
+        과거 주소
+      </h6>
       <CTable v-if="contAddressList.length" bordered responsive align="middle" class="mb-0">
         <CTableBody v-for="(addr, index) in contAddressList" :key="addr.pk" class="text-center">
           <CTableRow>
