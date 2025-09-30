@@ -182,7 +182,7 @@ const addressCallback = () => 1
         <CTableBody>
           <CTableRow class="text-center">
             <CTableDataCell style="height: 100px; color: grey">
-              현재 주소 이전 주소 데이터가 없습니다.
+              현재 주소 이전에 등록 된 데이터가 없습니다.
             </CTableDataCell>
           </CTableRow>
         </CTableBody>
