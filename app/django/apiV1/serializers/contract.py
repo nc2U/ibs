@@ -130,7 +130,7 @@ class ContractPriceWithPaymentPlanSerializer(serializers.ModelSerializer):
 
 class ContractorInContractSerializer(serializers.ModelSerializer):
     qualifi_display = serializers.CharField(source='get_qualification_display', read_only=True)
-    contractoraddress = AddressInContractorSerializer()
+    contractoraddress = AddressInContractorSerializer(read_only=True)
     contractorcontact = ContactInContractorSerializer()
 
     class Meta:
@@ -421,7 +421,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
             try:
                 file_to_edit = ContractFile.objects.get(pk=edit_file)
                 old_file_path = file_to_edit.file.path
-                # Remove old file if it exists
+                # Remove an old file if it exists
                 if os.path.isfile(old_file_path):
                     os.remove(old_file_path)
                 # Save new file
@@ -537,26 +537,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
         contractor.note = contractor_note
         contractor.save()
 
-        # 6. 계약자 주소 테이블 입력
-        address_id_zipcode = data.get('id_zipcode')
-        address_id_address1 = data.get('id_address1')
-        address_id_address2 = data.get('id_address2')
-        address_id_address3 = data.get('id_address3')
-        address_dm_zipcode = data.get('dm_zipcode')
-        address_dm_address1 = data.get('dm_address1')
-        address_dm_address2 = data.get('dm_address2')
-        address_dm_address3 = data.get('dm_address3')
-
-        contractor_address = ContractorAddress.objects.get(contractor=contractor)
-        contractor_address.id_zipcode = address_id_zipcode
-        contractor_address.id_address1 = address_id_address1
-        contractor_address.id_address2 = address_id_address2
-        contractor_address.id_address3 = address_id_address3
-        contractor_address.dm_zipcode = address_dm_zipcode
-        contractor_address.dm_address1 = address_dm_address1
-        contractor_address.dm_address2 = address_dm_address2
-        contractor_address.dm_address3 = address_dm_address3
-        contractor_address.save()
+        # 6. 계약자 주소 테이블 수정 금지 => 주소관리에서 직접 이력 관리
 
         # 7. 계약자 연락처 테이블 입력
         contact_cell_phone = data.get('cell_phone')
@@ -692,7 +673,7 @@ class ContractorAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractorAddress
         fields = ('pk', 'contractor', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3',
-                  'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3')
+                  'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3', 'is_current')
 
 
 class ContractorContactSerializer(serializers.ModelSerializer):

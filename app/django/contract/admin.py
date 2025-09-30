@@ -126,8 +126,8 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(ContractorAddress)
 class CAdressAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('__str__', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3',
-                    'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3')
+    list_display = ('__str__', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3', 'is_current')
+    list_editable = ('is_current',)
 
 
 @admin.register(ContractorContact)
