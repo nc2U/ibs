@@ -32,7 +32,7 @@ defineExpose({ callModal, close })
     <CModalHeader class="text-body">
       <CModalTitle>
         <slot name="icon">
-          <v-icon :icon="headIcon" :color="headerColor" class="mr-2" />
+          <v-icon :icon="headIcon" size="20" :color="headerColor" class="mr-2" />
         </slot>
         <slot name="header">{{ headerMessage }}</slot>
       </CModalTitle>

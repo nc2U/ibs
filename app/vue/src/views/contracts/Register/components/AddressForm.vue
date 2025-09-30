@@ -84,7 +84,12 @@ const selectedPk = ref<number | null>(null)
 const changeToCurrentAddress = async (addressPk: number) => {
   mode.value = 'update'
   selectedPk.value = addressPk
-  refConfirmChk.value.callModal()
+  refConfirmChk.value.callModal(
+    '주소변경 등록',
+    '이 종전 주소를 현재 주소로 다시 변경하시겠습니까?',
+    'mdi-office-building-marker',
+    'success',
+  )
 }
 
 const onSubmit = (event: Event) => {
@@ -92,22 +97,20 @@ const onSubmit = (event: Event) => {
     validated.value = true
   } else {
     mode.value = 'create'
-    refConfirmChk.value.callModal() //createContAddress(form.value)
+    refConfirmChk.value.callModal(
+      '주소변경 등록',
+      '입력하신 주소를 새로운 현재 주소로 등록하시겠습니까?',
+      'mdi-office-building-marker',
+      'primary',
+    )
   }
 }
 
 const modalAction = async () => {
-  if (mode.value === 'create') alert('create')
-  else if (mode.value === 'update') {
-    try {
-      await patchContAddress(selectedPk.value, { is_current: true } as Partial<AddressInContractor>)
-      // 주소 목록 새로고침 (store에서 자동으로 처리됨)
-      // 성공 메시지나 추가 처리가 필요하면 여기에 추가
-    } catch (error) {
-      console.error('주소 변경 중 오류가 발생했습니다:', error)
-      // 에러 처리 로직 추가 가능
-    }
-  }
+  if (mode.value === 'create') await createContAddress(form.value)
+  else if (mode.value === 'update')
+    await patchContAddress(selectedPk.value, { is_current: true } as Partial<AddressInContractor>)
+
   refConfirmChk.value.close()
 }
 
