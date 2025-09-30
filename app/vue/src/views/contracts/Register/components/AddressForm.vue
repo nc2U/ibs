@@ -1,13 +1,12 @@
 <script lang="ts" setup>
 import { computed, inject, type PropType, ref } from 'vue'
+import { isValidate } from '@/utils/helper.ts'
+import { write_contract } from '@/utils/pageAuth.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { AddressInContractor, ContractorAddress } from '@/store/types/contract.ts'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address.ts'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
-import { CForm, CModalBody } from '@coreui/vue'
-import { isValidate } from '@/utils/helper.ts'
-import { write_contract } from '@/utils/pageAuth.ts'
 
 defineProps({
   address: { type: Object as PropType<AddressInContractor>, default: () => ({}) },
@@ -36,6 +35,10 @@ const sameAddr = ref(false)
 
 const contStore = useContract()
 const contAddressList = computed<ContractorAddress[]>(() => contStore.contAddressList)
+
+const createContAddress = (data: AddressInContractor) => contStore.createContAddress(data)
+const patchContAddress = (pk: number, data: AddressInContractor) =>
+  contStore.patchContAddress(pk, data)
 
 const toSame = () => {
   sameAddr.value = !sameAddr.value
@@ -73,7 +76,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    console.log({ ...form.value })
+    if (write_contract) console.log({ ...form.value })
   }
 }
 </script>
