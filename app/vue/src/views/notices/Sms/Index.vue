@@ -86,7 +86,8 @@ const sendMessage = () => {
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
   <ContentBody>
-    <CRow>
+    <CCardBody>
+      <CRow>
       <!-- 수신자 관리 섹션 (고정) -->
       <CCol :md="6" :xs="12">
         <CCard class="mb-4">
@@ -388,6 +389,7 @@ const sendMessage = () => {
         </CRow>
       </CCardBody>
     </CCard>
+    </CCardBody>
   </ContentBody>
 </template>
 
