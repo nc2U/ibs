@@ -185,15 +185,15 @@ const notice = {
       name: '수납 고지서 출력',
       to: '/notices/bill',
     },
-    // {
-    //   component: 'CNavItem',
-    //   name: 'SMS 발송 관리',
-    //   to: '/notices/sms',
-    //   badge: {
-    //     color: 'danger',
-    //     text: 'u.c',
-    //   },
-    // },
+    {
+      component: 'CNavItem',
+      name: 'SMS 발송 관리',
+      to: '/notices/sms',
+      badge: {
+        color: 'warning',
+        text: 'ing..',
+      },
+    },
     // {
     //   component: 'CNavItem',
     //   name: 'MAIL 발송 관리',
