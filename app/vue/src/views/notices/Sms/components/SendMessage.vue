@@ -42,10 +42,18 @@ const handleSendMessage = () => {
           <div v-if="props.currentForm.scheduledSend" class="mb-3">
             <CRow>
               <CCol :md="6">
-                <CFormInput v-model="props.currentForm.scheduleDate" type="date" label="발송 날짜" />
+                <CFormInput
+                  v-model="props.currentForm.scheduleDate"
+                  type="date"
+                  label="발송 날짜"
+                />
               </CCol>
               <CCol :md="6">
-                <CFormInput v-model="props.currentForm.scheduleTime" type="time" label="발송 시간" />
+                <CFormInput
+                  v-model="props.currentForm.scheduleTime"
+                  type="time"
+                  label="발송 시간"
+                />
               </CCol>
             </CRow>
           </div>
@@ -53,7 +61,7 @@ const handleSendMessage = () => {
 
         <!-- 발송 실행 -->
         <CCol :md="6" :xs="12">
-          <div class="text-center">
+          <div class="text-right">
             <v-btn
               :color="props.activeTab === 'sms' ? 'primary' : 'success'"
               size="large"

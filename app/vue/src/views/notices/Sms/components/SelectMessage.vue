@@ -14,7 +14,7 @@ const emit = defineEmits<{
 }>()
 
 // Computed 속성들
-const project = computed(() => 'project')
+const project = computed(() => '동춘1구역9블럭지역주택조합')
 
 const handleSelectTemplate = () => {
   emit('selectTemplate')
@@ -29,12 +29,12 @@ const handlePreviewMessage = () => {
   <CCol :md="6" :xs="12">
     <CCard class="mb-4">
       <CCardHeader class="p-0">
-        <v-tabs v-model="activeTab" bg-color="primary" align-tabs="center">
-          <v-tab value="sms" prepend-icon="mdi-message-text">
-            <span class="text-h6">SMS 전송</span>
-          </v-tab>
+        <v-tabs v-model="activeTab" bg-color="blue-grey-lighten-1" align-tabs="center">
           <v-tab value="kakao" prepend-icon="mdi-chat">
             <span class="text-h6">카카오 알림톡</span>
+          </v-tab>
+          <v-tab value="sms" prepend-icon="mdi-message-text">
+            <span class="text-h6">SMS 전송</span>
           </v-tab>
         </v-tabs>
       </CCardHeader>
@@ -59,7 +59,12 @@ const handlePreviewMessage = () => {
             <div class="mb-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <CFormLabel>메시지 템플릿</CFormLabel>
-                <v-btn size="small" color="primary" variant="outlined" @click="handleSelectTemplate">
+                <v-btn
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  @click="handleSelectTemplate"
+                >
                   템플릿 선택
                 </v-btn>
               </div>
@@ -129,7 +134,7 @@ const handlePreviewMessage = () => {
               <strong>템플릿 미리보기</strong>
               <div class="mt-2 p-3 bg-grey-lighten-4 rounded">
                 안녕하세요 [이름]님,<br />
-                {{ project }} 관련하여 안내드립니다.<br />
+                [프로젝트] 관련하여 안내드립니다.<br />
                 자세한 내용은 고객센터로 문의하세요.
               </div>
             </v-alert>

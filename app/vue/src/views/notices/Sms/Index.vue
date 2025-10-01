@@ -9,7 +9,7 @@ import SelectMessage from './components/SelectMessage.vue'
 import SendMessage from './components/SendMessage.vue'
 
 const loading = ref(true)
-const activeTab = ref('sms')
+const activeTab = ref('kakao')
 
 // 공통 데이터
 const recipientInput = ref('')
@@ -123,21 +123,3 @@ const sendMessage = () => {
     </CCardBody>
   </ContentBody>
 </template>
-
-<style scoped>
-.v-expansion-panel-text {
-  padding: 16px !important;
-}
-
-.v-tabs {
-  margin-bottom: 0;
-}
-
-.text-h6 {
-  font-weight: 600;
-}
-
-.bg-grey-lighten-4 {
-  background-color: #f5f5f5;
-}
-</style>
