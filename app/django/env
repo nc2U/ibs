@@ -27,8 +27,15 @@ NFS_USER=
 NFS_PASS=
 NFS_PATH=                   # path where set the django media files & backup files
 
+### FOR SMS SERVICE
+IWINV_API_KEY=
+IWINV_AUTH_KEY=
+
 ### FOR DEVELOPMENT - OPTIONAL  ------------------------------------------------------------------------
 DOCKERHUB_USER=
 DOCKERHUB_TOKEN=
 
 SLACK_INCOMING_URL=
+
+SLACK_COMPANY_URL=
+SLACK_PROJECT_PROJECT_NAME=

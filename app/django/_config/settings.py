@@ -354,3 +354,7 @@ APP_ORDER = [
 
 # Slack Notifications Settings
 SLACK_NOTIFICATIONS_ENABLED = config('SLACK_NOTIFICATIONS_ENABLED', default=True, cast=bool)
+
+# iwinv SMS API Settings
+IWINV_API_KEY = config('IWINV_API_KEY', default='')
+IWINV_AUTH_KEY = config('IWINV_AUTH_KEY', default='')
