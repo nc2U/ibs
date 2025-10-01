@@ -4,16 +4,17 @@ Contract Excel Export Views
 계약 관련 Excel 내보내기 뷰들
 """
 import datetime
-
 import io
+
 import xlsxwriter
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q, Max
+from django.db.models import Q, Max, OuterRef, Subquery
 from django.http import HttpResponse
 from django.views.generic import View
 
 from cash.models import ProjectCashBook
 from contract.models import Contract, Succession, ContractorRelease
+from contract.models import ContractorAddress
 from items.models import HouseUnit, BuildingUnit
 from project.models import Project
 
@@ -89,14 +90,14 @@ class ExportContracts(View):
                       ['연락처[2]', 'contractor__contractorcontact__home_phone', 14],
                       ['연락처[3]', 'contractor__contractorcontact__other_phone', 14],
                       ['이메일', 'contractor__contractorcontact__email', 15],
-                      ['주소[등본]', 'contractor__current_address__id_zipcode', 7],
-                      ['', 'contractor__current_address__id_address1', 35],
-                      ['', 'contractor__current_address__id_address2', 20],
-                      ['', 'contractor__current_address__id_address3', 40],
-                      ['주소[우편]', 'contractor__current_address__dm_zipcode', 7],
-                      ['', 'contractor__current_address__dm_address1', 35],
-                      ['', 'contractor__current_address__dm_address2', 20],
-                      ['', 'contractor__current_address__dm_address3', 40],
+                      ['주소[등본]', 'contractor__addresses__id_zipcode', 7],
+                      ['', 'contractor__addresses__id_address1', 35],
+                      ['', 'contractor__addresses__id_address2', 20],
+                      ['', 'contractor__addresses__id_address3', 40],
+                      ['주소[우편]', 'contractor__addresses__dm_zipcode', 7],
+                      ['', 'contractor__addresses__dm_address1', 35],
+                      ['', 'contractor__addresses__dm_address2', 20],
+                      ['', 'contractor__addresses__dm_address3', 40],
                       ['비고', 'contractor__note', 45]]
 
         titles = ['No']
@@ -141,9 +142,14 @@ class ExportContracts(View):
 
         # ----------------- get_queryset start ----------------- #
         # Get some data to write to the spreadsheet.
+        # Use select_related to optimize and ensure we get current address
         queryset = Contract.objects.filter(project=project,
                                            activation=True,
-                                           contractor__status='2').order_by('contractor__contract_date')
+                                           contractor__status='2').select_related(
+            'contractor'
+        ).prefetch_related(
+            'contractor__addresses'
+        ).order_by('contractor__contract_date')
         status = request.GET.get('status')
         group = request.GET.get('group')
         type = request.GET.get('type')
@@ -179,7 +185,48 @@ class ExportContracts(View):
         queryset = queryset.order_by(order_list[int(order_qry)]) if order_qry else queryset
 
         # ----------------- get_queryset finish ----------------- #
-        data = queryset.values_list(*params)
+        # Use annotations to get current address fields
+
+        # Annotate with current address fields using Subquery
+        current_address_subquery = ContractorAddress.objects.filter(
+            contractor=OuterRef('contractor'),
+            is_current=True
+        )
+
+        queryset = queryset.annotate(
+            current_id_zipcode=Subquery(current_address_subquery.values('id_zipcode')[:1]),
+            current_id_address1=Subquery(current_address_subquery.values('id_address1')[:1]),
+            current_id_address2=Subquery(current_address_subquery.values('id_address2')[:1]),
+            current_id_address3=Subquery(current_address_subquery.values('id_address3')[:1]),
+            current_dm_zipcode=Subquery(current_address_subquery.values('dm_zipcode')[:1]),
+            current_dm_address1=Subquery(current_address_subquery.values('dm_address1')[:1]),
+            current_dm_address2=Subquery(current_address_subquery.values('dm_address2')[:1]),
+            current_dm_address3=Subquery(current_address_subquery.values('dm_address3')[:1]),
+        )
+
+        # Replace address field references with annotated fields
+        updated_params = []
+        for param in params:
+            if param == 'contractor__addresses__id_zipcode':
+                updated_params.append('current_id_zipcode')
+            elif param == 'contractor__addresses__id_address1':
+                updated_params.append('current_id_address1')
+            elif param == 'contractor__addresses__id_address2':
+                updated_params.append('current_id_address2')
+            elif param == 'contractor__addresses__id_address3':
+                updated_params.append('current_id_address3')
+            elif param == 'contractor__addresses__dm_zipcode':
+                updated_params.append('current_dm_zipcode')
+            elif param == 'contractor__addresses__dm_address1':
+                updated_params.append('current_dm_address1')
+            elif param == 'contractor__addresses__dm_address2':
+                updated_params.append('current_dm_address2')
+            elif param == 'contractor__addresses__dm_address3':
+                updated_params.append('current_dm_address3')
+            else:
+                updated_params.append(param)
+
+        data = queryset.values_list(*updated_params)
 
         is_date = []  # ('생년월일', '계약일자')
         is_left = []  # ('주소', '비고')
