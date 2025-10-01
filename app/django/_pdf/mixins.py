@@ -4,12 +4,17 @@ PDF Export Common Mixins
 공통 PDF 내보내기 기능을 제공하는 믹스인 클래스들
 """
 from datetime import date, datetime
+
 from django.core.files.storage import FileSystemStorage
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
+from cash.models import ProjectCashBook
+from contract.models import Contract
+from payment.models import InstallmentPaymentOrder
 
 TODAY = date.today()
 
@@ -17,7 +22,8 @@ TODAY = date.today()
 class PdfExportMixin(View):
     """PDF 내보내기 공통 기능 믹스인"""
 
-    def create_pdf_response(self, template_name, context, filename):
+    @staticmethod
+    def create_pdf_response(template_name, context, filename):
         """PDF 응답 생성"""
         html_string = render_to_string(template_name, context)
         html = HTML(string=html_string)
@@ -29,7 +35,8 @@ class PdfExportMixin(View):
             response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
             return response
 
-    def get_base_context(self, **kwargs):
+    @staticmethod
+    def get_base_context(**kwargs):
         """기본 컨텍스트 생성"""
         context = {
             'pub_date': kwargs.get('pub_date', TODAY),
@@ -41,19 +48,22 @@ class PdfExportMixin(View):
 class ContractPdfMixin:
     """계약 관련 PDF 공통 기능"""
 
-    def get_contract(self, cont_id):
+    @staticmethod
+    def get_contract(cont_id):
         """계약 가져오기"""
-        from contract.models import Contract
+
         return Contract.objects.get(pk=cont_id)
 
-    def get_contract_unit(self, contract):
+    @staticmethod
+    def get_contract_unit(contract):
         """계약 동호수 정보 가져오기"""
         try:
             return contract.key_unit.houseunit
         except AttributeError:
             return None
 
-    def get_contract_content(self, contract, unit):
+    @staticmethod
+    def get_contract_content(contract, unit):
         """계약 내용 정보 구성"""
         return {
             'contractor': contract.contractor.name,
@@ -66,15 +76,15 @@ class ContractPdfMixin:
 class PaymentPdfMixin:
     """납부 관련 PDF 공통 기능"""
 
-    def get_payment_orders(self, project):
+    @staticmethod
+    def get_payment_orders(project):
         """납부 회차 정보 가져오기"""
-        from payment.models import InstallmentPaymentOrder
+
         return InstallmentPaymentOrder.objects.filter(project=project)
 
-    def get_paid_list(self, contract, pub_date=None):
+    @staticmethod
+    def get_paid_list(contract, pub_date=None):
         """기 납부 목록 가져오기"""
-        from cash.models import ProjectCashBook
-        from django.db.models import Sum
 
         queryset = ProjectCashBook.objects.filter(
             income__isnull=False,
@@ -153,12 +163,14 @@ class FormattingMixin:
 class PdfUtilsMixin:
     """PDF 관련 유틸리티 기능"""
 
-    def get_blank_line_count(self, content_count, max_lines=14):
+    @staticmethod
+    def get_blank_line_count(content_count, max_lines=14):
         """공백 라인 수 계산"""
         blank_count = max_lines - content_count
         return max(0, blank_count)
 
-    def create_filename(self, base_name, identifier=None, extension='pdf'):
+    @staticmethod
+    def create_filename(base_name, identifier=None, extension='pdf'):
         """파일명 생성"""
         filename_parts = [base_name]
 
@@ -168,7 +180,8 @@ class PdfUtilsMixin:
         filename = '_'.join(filename_parts)
         return f"{filename}.{extension}"
 
-    def paginate_data(self, data_list, items_per_page=20):
+    @staticmethod
+    def paginate_data(data_list, items_per_page=20):
         """데이터 페이지네이션"""
         paginated_data = []
         for i in range(0, len(data_list), items_per_page):

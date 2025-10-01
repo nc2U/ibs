@@ -1,12 +1,11 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from itertools import accumulate
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Sum, Q
 
-from contract.models import Contract
 from cash.models import ProjectCashBook
-from payment.models import InstallmentPaymentOrder, OverDueRule, SpecialOverDueRule
+from contract.models import Contract
+from payment.models import OverDueRule, SpecialOverDueRule
 
 TODAY = date.today()
 
