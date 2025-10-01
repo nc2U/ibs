@@ -89,14 +89,14 @@ class ExportContracts(View):
                       ['연락처[2]', 'contractor__contractorcontact__home_phone', 14],
                       ['연락처[3]', 'contractor__contractorcontact__other_phone', 14],
                       ['이메일', 'contractor__contractorcontact__email', 15],
-                      ['주소[등본]', 'contractor__addresses__id_zipcode', 7],
-                      ['', 'contractor__addresses__id_address1', 35],
-                      ['', 'contractor__addresses__id_address2', 20],
-                      ['', 'contractor__addresses__id_address3', 40],
-                      ['주소[우편]', 'contractor__addresses__dm_zipcode', 7],
-                      ['', 'contractor__addresses__dm_address1', 35],
-                      ['', 'contractor__addresses__dm_address2', 20],
-                      ['', 'contractor__addresses__dm_address3', 40],
+                      ['주소[등본]', 'contractor__current_address__id_zipcode', 7],
+                      ['', 'contractor__current_address__id_address1', 35],
+                      ['', 'contractor__current_address__id_address2', 20],
+                      ['', 'contractor__current_address__id_address3', 40],
+                      ['주소[우편]', 'contractor__current_address__dm_zipcode', 7],
+                      ['', 'contractor__current_address__dm_address1', 35],
+                      ['', 'contractor__current_address__dm_address2', 20],
+                      ['', 'contractor__current_address__dm_address3', 40],
                       ['비고', 'contractor__note', 45]]
 
         titles = ['No']
