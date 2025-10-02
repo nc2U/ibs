@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { inject, computed } from 'vue'
+
 // Props 정의
 const recipientInput = defineModel<string>('recipientInput')
 const recipientsList = defineModel<string[]>('recipientsList')
@@ -8,6 +10,14 @@ const emit = defineEmits<{
   addRecipient: []
   removeRecipient: [index: number]
 }>()
+
+// 다크 테마 감지
+const isDark = inject<any>('isDark')
+
+// v-expansion-panels 배경색 (다크 테마 대응)
+const panelBgColor = computed(() => {
+  return isDark?.value ? '#282933' : '#ffffff'
+})
 
 const handleAddRecipient = () => {
   emit('addRecipient')
@@ -27,7 +37,7 @@ const handleRemoveRecipient = (index: number) => {
       </CCardHeader>
       <CCardBody>
         <!-- 수신자 입력 방법 선택 -->
-        <v-expansion-panels class="mb-3">
+        <v-expansion-panels class="mb-3" :bg-color="panelBgColor">
           <v-expansion-panel>
             <v-expansion-panel-title>
               <v-icon icon="mdi-account-plus" class="me-2" />
