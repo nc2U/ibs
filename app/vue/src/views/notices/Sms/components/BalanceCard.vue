@@ -47,7 +47,7 @@ const isLowBalance = computed(() => props.balance < 10000)
   <CCard class="mb-3">
     <CCardHeader
       class="d-flex justify-content-between align-items-center"
-      style="cursor: pointer"
+      style="cursor: pointer; height: 48px"
       @click="toggle"
     >
       <CCol class="d-flex align-items-center">

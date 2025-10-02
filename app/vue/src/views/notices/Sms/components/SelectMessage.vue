@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { CCol } from '@coreui/vue'
 
 // Props 정의
 const activeTab = defineModel<string>('activeTab')
@@ -29,11 +30,11 @@ const handlePreviewMessage = () => {
   <CCol :md="6" :xs="12">
     <CCard class="mb-4">
       <CCardHeader class="p-0">
-        <v-tabs v-model="activeTab" bg-color="indigo-lighten-1" align-tabs="center">
-          <v-tab value="sms" prepend-icon="mdi-message-text">
+        <v-tabs v-model="activeTab" align-tabs="center">
+          <v-tab value="sms" prepend-icon="mdi-message-text" variant="tonal">
             <span class="strong">SMS 전송</span>
           </v-tab>
-          <v-tab value="kakao" prepend-icon="mdi-chat">
+          <v-tab value="kakao" prepend-icon="mdi-chat" variant="tonal">
             <span class="strong">카카오 알림톡</span>
           </v-tab>
         </v-tabs>

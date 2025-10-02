@@ -31,7 +31,7 @@ const handleRemoveRecipient = (index: number) => {
 <template>
   <CCol :md="6" :xs="12">
     <CCard class="mb-4">
-      <CCardHeader>
+      <CCardHeader style="height: 48px; padding-top: 12px">
         <v-icon icon="mdi-account-multiple" class="me-2" />
         <strong>수신자 관리</strong>
       </CCardHeader>
