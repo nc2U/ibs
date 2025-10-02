@@ -114,28 +114,18 @@ onBeforeMount(() => {
     <!-- 메인 탭 (발송 / 히스토리) -->
     <CCard>
       <CCardHeader>
-        <CNav variant="tabs" role="tablist">
-          <CNavItem>
-            <CNavLink
-              href="javascript:void(0);"
-              :active="mainTab === 'send'"
-              @click="mainTab = 'send'"
-            >
-              <CIcon name="cilSend" class="me-1" />
-              발송
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink
-              href="javascript:void(0);"
-              :active="mainTab === 'history'"
-              @click="mainTab = 'history'"
-            >
-              <CIcon name="cilHistory" class="me-1" />
-              히스토리
-            </CNavLink>
-          </CNavItem>
-        </CNav>
+        <CRow class="mt-3">
+          <CCol>
+            <v-tabs density="compact">
+              <v-tab :active="mainTab === 'send'" @click="mainTab = 'send'" variant="tonal">
+                발송
+              </v-tab>
+              <v-tab :active="mainTab === 'history'" @click="mainTab = 'history'" variant="tonal">
+                히스토리
+              </v-tab>
+            </v-tabs>
+          </CCol>
+        </CRow>
       </CCardHeader>
       <CCardBody>
         <!-- 발송 탭 내용 -->
