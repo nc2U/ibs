@@ -99,10 +99,9 @@ const refreshBalance = () => {
   }, 500)
 }
 
-// 초기 잔액 로드
+// 초기화 (잔액은 사용자가 아코디언 열 때 로드)
 onBeforeMount(() => {
   loading.value = false
-  refreshBalance()
 })
 </script>
 
@@ -161,16 +160,24 @@ onBeforeMount(() => {
             />
           </CRow>
 
-          <!-- 발송 설정 및 실행 -->
-          <SendMessage
-            :active-tab="activeTab"
-            :current-form="currentForm"
-            :is-disabled="isDisabled"
-            :button-text="buttonText"
-            :is-sending="isSending"
-            :send-progress="sendProgress"
-            @send-message="sendMessage"
-          />
+          <CRow>
+            <CCol>
+              <!-- 잔액 아코디언 -->
+              <BalanceCard :balance="balance" :loading="balanceLoading" @refresh="refreshBalance" />
+            </CCol>
+            <CCol>
+              <!-- 발송 설정 및 실행 -->
+              <SendMessage
+                :active-tab="activeTab"
+                :current-form="currentForm"
+                :is-disabled="isDisabled"
+                :button-text="buttonText"
+                :is-sending="isSending"
+                :send-progress="sendProgress"
+                @send-message="sendMessage"
+              />
+            </CCol>
+          </CRow>
         </div>
 
         <!-- 히스토리 탭 내용 -->
@@ -179,8 +186,5 @@ onBeforeMount(() => {
         </div>
       </CCardBody>
     </CCard>
-
-    <!-- 잔액 표시 -->
-    <BalanceCard :balance="balance" :loading="balanceLoading" @refresh="refreshBalance" />
   </ContentBody>
 </template>

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 // Props
 interface Props {
@@ -17,9 +17,21 @@ const emit = defineEmits<{
   refresh: []
 }>()
 
+// 열림/닫힘 상태
+const visible = ref(false)
+
 // 잔액 새로고침
 const handleRefresh = () => {
   emit('refresh')
+}
+
+// 토글
+const toggle = () => {
+  visible.value = !visible.value
+  // 열릴 때 자동으로 잔액 조회
+  if (visible.value && !props.loading) {
+    handleRefresh()
+  }
 }
 
 // 잔액 포맷팅
@@ -28,46 +40,60 @@ const formatBalance = (amount: number) => {
 }
 
 // 잔액 부족 여부 (10,000원 미만)
-const isLowBalance = ref(props.balance < 10000)
+const isLowBalance = computed(() => props.balance < 10000)
 </script>
 
 <template>
   <CCard class="mb-3">
-    <CCardBody class="py-3">
-      <CRow class="align-items-center">
-        <CCol :md="8">
-          <div class="d-flex align-items-center">
-            <div class="me-3">
-              <CIcon name="cilWallet" size="xl" />
-            </div>
-            <div>
-              <div class="text-medium-emphasis small">현재 잔액</div>
-              <div class="fs-5 fw-semibold">
-                <span :class="{ 'text-danger': isLowBalance }">
-                  {{ formatBalance(balance) }}원
-                </span>
-                <CSpinner v-if="loading" size="sm" class="ms-2" />
+    <CCardHeader
+      class="d-flex justify-content-between align-items-center"
+      style="cursor: pointer"
+      @click="toggle"
+    >
+      <div class="d-flex align-items-center">
+        <CIcon name="cilWallet" class="me-2" />
+        <strong>잔액 확인</strong>
+        <CBadge v-if="visible && isLowBalance" color="danger" class="ms-2"> 잔액 부족 </CBadge>
+      </div>
+      <CIcon :name="visible ? 'cilChevronTop' : 'cilChevronBottom'" />
+    </CCardHeader>
+    <CCollapse :visible="visible">
+      <CCardBody>
+        <CRow class="align-items-center">
+          <CCol :md="8">
+            <div class="d-flex align-items-center">
+              <div class="me-3">
+                <CIcon name="cilWallet" size="xl" />
               </div>
-              <div v-if="isLowBalance" class="text-danger small mt-1">
-                <CIcon name="cilWarning" size="sm" class="me-1" />
-                잔액이 부족합니다. 충전이 필요합니다.
+              <div>
+                <div class="text-medium-emphasis small">현재 잔액</div>
+                <div class="fs-5 fw-semibold">
+                  <span :class="{ 'text-danger': isLowBalance }">
+                    {{ formatBalance(balance) }}원
+                  </span>
+                  <CSpinner v-if="loading" size="sm" class="ms-2" />
+                </div>
+                <div v-if="isLowBalance" class="text-danger small mt-1">
+                  <CIcon name="cilWarning" size="sm" class="me-1" />
+                  잔액이 부족합니다. 충전이 필요합니다.
+                </div>
               </div>
             </div>
-          </div>
-        </CCol>
-        <CCol :md="4" class="text-end">
-          <CButton
-            color="primary"
-            variant="outline"
-            size="sm"
-            @click="handleRefresh"
-            :disabled="loading"
-          >
-            <CIcon name="cilReload" class="me-1" />
-            새로고침
-          </CButton>
-        </CCol>
-      </CRow>
-    </CCardBody>
+          </CCol>
+          <CCol :md="4" class="text-end">
+            <CButton
+              color="primary"
+              variant="outline"
+              size="sm"
+              @click.stop="handleRefresh"
+              :disabled="loading"
+            >
+              <CIcon name="cilReload" class="me-1" />
+              새로고침
+            </CButton>
+          </CCol>
+        </CRow>
+      </CCardBody>
+    </CCollapse>
   </CCard>
 </template>
