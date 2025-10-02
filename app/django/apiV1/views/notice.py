@@ -3,11 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-import logging
 from ..permission import *
 from ..serializers.notice import *
-
-logger = logging.getLogger(__name__)
 
 from notice.models import SalesBillIssue
 from notice.utils import IwinvSMSService
@@ -217,20 +214,33 @@ class MessageViewSet(viewsets.ViewSet):
             return Response(result, status=response_status)
 
         except ValueError as e:
+            # Handle case where validated_data might not be defined
+            fail_count = 0
+            try:
+                fail_count = len(validated_data.get('recipients', []))
+            except NameError:
+                fail_count = 0
+
             return Response({
                 'code': -1,
                 'message': str(e),
                 'success': 0,
-                'fail': len(validated_data.get('recipients', []))
-            logger.error("Internal server error in send_kakao", exc_info=True)
+                'fail': fail_count
             }, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
+            # Handle case where validated_data might not be defined
+            fail_count = 0
+            try:
+                fail_count = len(validated_data.get('recipients', []))
+            except NameError:
+                fail_count = 0
+
             return Response({
                 'code': -1,
                 'message': '서버 내부 오류가 발생했습니다.',
                 'success': 0,
-                'fail': len(validated_data.get('recipients', []))
+                'fail': fail_count
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['get'], url_path='error-codes')
@@ -241,7 +251,8 @@ class MessageViewSet(viewsets.ViewSet):
             sms_error_codes[code] = IwinvSMSService.get_error_message(code)
 
         kakao_error_codes = {}
-        kakao_codes = [200, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 540]
+        kakao_codes = [200, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518,
+                       519, 540]
         for code in kakao_codes:
             kakao_error_codes[code] = IwinvSMSService.get_kakao_error_message(code)
 
