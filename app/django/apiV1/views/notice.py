@@ -3,8 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
+import logging
 from ..permission import *
 from ..serializers.notice import *
+
+logger = logging.getLogger(__name__)
 
 from notice.models import SalesBillIssue
 from notice.utils import IwinvSMSService
@@ -219,12 +222,13 @@ class MessageViewSet(viewsets.ViewSet):
                 'message': str(e),
                 'success': 0,
                 'fail': len(validated_data.get('recipients', []))
+            logger.error("Internal server error in send_kakao", exc_info=True)
             }, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             return Response({
                 'code': -1,
-                'message': f'서버 오류: {str(e)}',
+                'message': '서버 내부 오류가 발생했습니다.',
                 'success': 0,
                 'fail': len(validated_data.get('recipients', []))
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
