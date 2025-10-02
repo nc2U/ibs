@@ -4,11 +4,14 @@ import { pageTitle, navMenu } from '@/views/notices/_menu/headermixin'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import BalanceCard from './components/BalanceCard.vue'
 import SelectRecipient from './components/SelectRecipient.vue'
 import SelectMessage from './components/SelectMessage.vue'
 import SendMessage from './components/SendMessage.vue'
+import HistoryTab from './components/HistoryTab.vue'
 
 const loading = ref(true)
+const mainTab = ref('send') // 'send' or 'history'
 const activeTab = ref('sms')
 
 // 공통 데이터
@@ -81,6 +84,26 @@ const sendMessage = () => {
   isSending.value = true
   sendProgress.value = 0
 }
+
+// 잔액 관련
+const balance = ref(0)
+const balanceLoading = ref(false)
+
+const refreshBalance = () => {
+  balanceLoading.value = true
+  // TODO: 실제 API 호출
+  // await noticeStore.fetchBalance()
+  setTimeout(() => {
+    balance.value = 12500 // 더미 데이터
+    balanceLoading.value = false
+  }, 500)
+}
+
+// 초기 잔액 로드
+onBeforeMount(() => {
+  loading.value = false
+  refreshBalance()
+})
 </script>
 
 <template>
@@ -89,37 +112,79 @@ const sendMessage = () => {
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
   <ContentBody>
-    <CCardBody>
-      <CRow>
-        <!-- 수신자 관리 섹션 (고정) -->
-        <SelectRecipient
-          v-model:recipient-input="recipientInput"
-          v-model:recipients-list="recipientsList"
-          @add-recipient="addRecipient"
-          @remove-recipient="removeRecipient"
-        />
+    <!-- 잔액 표시 -->
+    <BalanceCard
+      :balance="balance"
+      :loading="balanceLoading"
+      @refresh="refreshBalance"
+    />
 
-        <!-- 메시지 작성 섹션 (탭으로 구분) -->
-        <SelectMessage
-          v-model:active-tab="activeTab"
-          v-model:sms-form="smsForm"
-          v-model:kakao-form="kakaoForm"
-          v-model:message-count="messageCount"
-          @select-template="selectTemplate"
-          @preview-message="previewMessage"
-        />
-      </CRow>
+    <!-- 메인 탭 (발송 / 히스토리) -->
+    <CCard>
+      <CCardHeader>
+        <CNav variant="tabs" role="tablist">
+          <CNavItem>
+            <CNavLink
+              href="javascript:void(0);"
+              :active="mainTab === 'send'"
+              @click="mainTab = 'send'"
+            >
+              <CIcon name="cilSend" class="me-1" />
+              발송
+            </CNavLink>
+          </CNavItem>
+          <CNavItem>
+            <CNavLink
+              href="javascript:void(0);"
+              :active="mainTab === 'history'"
+              @click="mainTab = 'history'"
+            >
+              <CIcon name="cilHistory" class="me-1" />
+              히스토리
+            </CNavLink>
+          </CNavItem>
+        </CNav>
+      </CCardHeader>
+      <CCardBody>
+        <!-- 발송 탭 내용 -->
+        <div v-show="mainTab === 'send'">
+          <CRow>
+            <!-- 수신자 관리 섹션 (고정) -->
+            <SelectRecipient
+              v-model:recipient-input="recipientInput"
+              v-model:recipients-list="recipientsList"
+              @add-recipient="addRecipient"
+              @remove-recipient="removeRecipient"
+            />
 
-      <!-- 발송 설정 및 실행 -->
-      <SendMessage
-        :active-tab="activeTab"
-        :current-form="currentForm"
-        :is-disabled="isDisabled"
-        :button-text="buttonText"
-        :is-sending="isSending"
-        :send-progress="sendProgress"
-        @send-message="sendMessage"
-      />
-    </CCardBody>
+            <!-- 메시지 작성 섹션 (탭으로 구분) -->
+            <SelectMessage
+              v-model:active-tab="activeTab"
+              v-model:sms-form="smsForm"
+              v-model:kakao-form="kakaoForm"
+              v-model:message-count="messageCount"
+              @select-template="selectTemplate"
+              @preview-message="previewMessage"
+            />
+          </CRow>
+
+          <!-- 발송 설정 및 실행 -->
+          <SendMessage
+            :active-tab="activeTab"
+            :current-form="currentForm"
+            :is-disabled="isDisabled"
+            :button-text="buttonText"
+            :is-sending="isSending"
+            :send-progress="sendProgress"
+            @send-message="sendMessage"
+          />
+        </div>
+
+        <!-- 히스토리 탭 내용 -->
+        <div v-show="mainTab === 'history'">
+          <HistoryTab />
+        </div>
+      </CCardBody>
+    </CCard>
   </ContentBody>
 </template>
