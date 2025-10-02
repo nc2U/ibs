@@ -112,13 +112,6 @@ onBeforeMount(() => {
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
   <ContentBody>
-    <!-- 잔액 표시 -->
-    <BalanceCard
-      :balance="balance"
-      :loading="balanceLoading"
-      @refresh="refreshBalance"
-    />
-
     <!-- 메인 탭 (발송 / 히스토리) -->
     <CCard>
       <CCardHeader>
@@ -186,5 +179,8 @@ onBeforeMount(() => {
         </div>
       </CCardBody>
     </CCard>
+
+    <!-- 잔액 표시 -->
+    <BalanceCard :balance="balance" :loading="balanceLoading" @refresh="refreshBalance" />
   </ContentBody>
 </template>
