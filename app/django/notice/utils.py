@@ -1,11 +1,11 @@
 import base64
-import json
-import requests
+import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+
+import requests
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,8 @@ class IwinvSMSService:
         """카카오 알림톡 API 인증을 위한 AUTH 헤더 생성"""
         return base64.b64encode(self.api_key.encode('utf-8')).decode('utf-8')
 
-    def _format_phone_number(self, phone: str) -> str:
+    @staticmethod
+    def _format_phone_number(phone: str) -> str:
         """전화번호 포맷 정리 (하이픈 제거)"""
         return phone.replace('-', '').replace(' ', '')
 
@@ -53,7 +54,8 @@ class IwinvSMSService:
 
         return formatted_recipients
 
-    def _format_datetime(self, date_str: Optional[str], time_str: Optional[str]) -> Optional[str]:
+    @staticmethod
+    def _format_datetime(date_str: Optional[str], time_str: Optional[str]) -> Optional[str]:
         """예약 발송을 위한 날짜/시간 포맷팅"""
         if not date_str or not time_str:
             return None
@@ -349,12 +351,12 @@ class IwinvSMSService:
             }
 
     def send_auto_message(self,
-                         recipients: List[str],
-                         message: str,
-                         sender_number: str,
-                         title: Optional[str] = None,
-                         schedule_date: Optional[str] = None,
-                         schedule_time: Optional[str] = None) -> Dict[str, Any]:
+                          recipients: List[str],
+                          message: str,
+                          sender_number: str,
+                          title: Optional[str] = None,
+                          schedule_date: Optional[str] = None,
+                          schedule_time: Optional[str] = None) -> Dict[str, Any]:
         """
         자동 메시지 타입 판별 발송
         90byte 이하: SMS, 초과: LMS로 자동 발송
@@ -396,16 +398,16 @@ class IwinvSMSService:
             )
 
     def send_kakao_alimtalk(self,
-                           recipients: List[Dict[str, Any]],
-                           template_code: str,
-                           sender_number: str,
-                           reserve: bool = False,
-                           send_date: Optional[str] = None,
-                           send_time: Optional[str] = None,
-                           re_send: bool = False,
-                           resend_type: str = 'Y',
-                           resend_title: Optional[str] = None,
-                           resend_content: Optional[str] = None) -> Dict[str, Any]:
+                            recipients: List[Dict[str, Any]],
+                            template_code: str,
+                            sender_number: str,
+                            reserve: bool = False,
+                            send_date: Optional[str] = None,
+                            send_time: Optional[str] = None,
+                            re_send: bool = False,
+                            resend_type: str = 'Y',
+                            resend_title: Optional[str] = None,
+                            resend_content: Optional[str] = None) -> Dict[str, Any]:
         """
         카카오 알림톡 발송
 

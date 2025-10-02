@@ -14,7 +14,7 @@ const handleAddRecipient = () => {
 }
 
 const handleRemoveRecipient = (index: number) => {
-  emit('removeRecipient', index)
+  emit('removeRecipient', index as any)
 }
 </script>
 
