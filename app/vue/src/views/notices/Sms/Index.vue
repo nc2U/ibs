@@ -9,7 +9,7 @@ import SelectMessage from './components/SelectMessage.vue'
 import SendMessage from './components/SendMessage.vue'
 
 const loading = ref(true)
-const activeTab = ref('kakao')
+const activeTab = ref('sms')
 
 // 공통 데이터
 const recipientInput = ref('')

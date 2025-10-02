@@ -29,12 +29,12 @@ const handlePreviewMessage = () => {
   <CCol :md="6" :xs="12">
     <CCard class="mb-4">
       <CCardHeader class="p-0">
-        <v-tabs v-model="activeTab" bg-color="blue-grey-lighten-1" align-tabs="center">
-          <v-tab value="kakao" prepend-icon="mdi-chat">
-            <span class="text-h6">카카오 알림톡</span>
-          </v-tab>
+        <v-tabs v-model="activeTab" bg-color="indigo-lighten-1" align-tabs="center">
           <v-tab value="sms" prepend-icon="mdi-message-text">
-            <span class="text-h6">SMS 전송</span>
+            <span class="strong">SMS 전송</span>
+          </v-tab>
+          <v-tab value="kakao" prepend-icon="mdi-chat">
+            <span class="strong">카카오 알림톡</span>
           </v-tab>
         </v-tabs>
       </CCardHeader>
