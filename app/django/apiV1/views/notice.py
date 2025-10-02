@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-
+import logging
 from ..permission import *
 from ..serializers.notice import *
 
@@ -314,9 +314,10 @@ class MessageViewSet(viewsets.ViewSet):
             return Response(result, status=response_status)
 
         except ValueError as e:
+            logging.warning("ValueError in get_send_history: %s", str(e))
             return Response({
                 'resultCode': -1,
-                'message': str(e),
+                'message': '요청 값이 유효하지 않습니다.',  # "The request values are invalid."
                 'totalCount': 0,
                 'list': []
             }, status=status.HTTP_400_BAD_REQUEST)
