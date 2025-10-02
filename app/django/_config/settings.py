@@ -10,9 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
-from pathlib import Path
-from decouple import config, Csv
+import sys
 from datetime import timedelta
+from pathlib import Path
+
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -358,3 +360,25 @@ SLACK_NOTIFICATIONS_ENABLED = config('SLACK_NOTIFICATIONS_ENABLED', default=True
 # iwinv SMS API Settings
 IWINV_API_KEY = config('IWINV_API_KEY', default='')
 IWINV_AUTH_KEY = config('IWINV_AUTH_KEY', default='')
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,  # 중요: stdout으로 보내기
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+    },
+}
