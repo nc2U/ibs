@@ -576,3 +576,254 @@ class IwinvSMSService:
         }
 
         return kakao_error_messages.get(code, f"알 수 없는 오류 (코드: {code})")
+
+    def get_send_history(self,
+                        company_id: str,
+                        start_date: str,
+                        end_date: str,
+                        request_no: Optional[str] = None,
+                        page_num: int = 1,
+                        page_size: int = 15,
+                        phone: Optional[str] = None) -> Dict[str, Any]:
+        """
+        전송 내역 조회 (최근 90일 이내)
+
+        Args:
+            company_id: 조직(업체) 발송 아이디
+            start_date: 발송 요청 시작일자 (YYYY-MM-DD)
+            end_date: 발송 요청 마감일자 (YYYY-MM-DD)
+            request_no: 메시지 발송요청 고유번호 (선택)
+            page_num: 페이지 번호 (기본:1)
+            page_size: 조회 건수 (기본:15, 최대:1000)
+            phone: 수신번호 (선택)
+
+        Returns:
+            API 응답 결과
+        """
+        try:
+            # 날짜 유효성 검사
+            try:
+                start = datetime.strptime(start_date, "%Y-%m-%d")
+                end = datetime.strptime(end_date, "%Y-%m-%d")
+
+                # 90일 이내 체크
+                if (end - start).days > 90:
+                    raise ValueError("조회 기간은 90일 이내만 가능합니다.")
+
+                if start > end:
+                    raise ValueError("시작일이 마감일보다 늦을 수 없습니다.")
+
+            except ValueError as e:
+                if "does not match format" in str(e):
+                    raise ValueError("날짜 형식은 YYYY-MM-DD 형식이어야 합니다.")
+                raise
+
+            # 페이지 크기 검증
+            if page_size > 1000:
+                raise ValueError("조회 건수는 최대 1000건까지 가능합니다.")
+
+            # API 요청 데이터 구성
+            payload = {
+                "version": "1.0",
+                "companyid": company_id,
+                "startDate": start_date,
+                "endDate": end_date,
+                "pageNum": str(page_num),
+                "pageSize": str(page_size)
+            }
+
+            # 선택적 파라미터 추가
+            if request_no:
+                payload["requestNo"] = request_no
+            if phone:
+                payload["phone"] = self._format_phone_number(phone)
+
+            # 헤더 구성
+            headers = {
+                'Content-Type': 'application/json;charset=UTF-8',
+                'secret': self._get_secret_header()
+            }
+
+            # API 요청
+            response = requests.post(
+                "https://sms.bizservice.iwinv.kr/api/history/",
+                json=payload,
+                headers=headers,
+                timeout=30,
+                verify=True
+            )
+
+            response.raise_for_status()
+            result = response.json()
+
+            # 로깅
+            logger.info(f"전송 내역 조회 요청: {start_date} ~ {end_date}, "
+                       f"결과 코드: {result.get('resultCode')}, "
+                       f"총 건수: {result.get('totalCount', 0)}")
+
+            return result
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"전송 내역 조회 API 요청 실패: {str(e)}")
+            return {
+                "resultCode": -1,
+                "message": f"API 요청 실패: {str(e)}",
+                "totalCount": 0,
+                "list": []
+            }
+        except Exception as e:
+            logger.error(f"전송 내역 조회 중 오류: {str(e)}")
+            return {
+                "resultCode": -1,
+                "message": f"조회 중 오류: {str(e)}",
+                "totalCount": 0,
+                "list": []
+            }
+
+    @staticmethod
+    def get_send_status_message(msg_type: str, status_code: str) -> str:
+        """전송 결과 코드에 따른 상태 메시지 반환"""
+
+        # SMS 전송 결과 코드
+        sms_status_messages = {
+            "01": "시스템 장애",
+            "02": "인증실패, 직후 연결을 끊음",
+            "03": "메시지 형식 오류",
+            "04": "BIND 안됨",
+            "06": "전송 성공",
+            "07": "비가입자, 결번, 서비스정지",
+            "08": "단말기 Power-off 상태",
+            "09": "음영",
+            "10": "단말기 메시지 FULL",
+            "11": "타임아웃",
+            "17": "CallbackURL 사용자 아님",
+            "18": "메시지 중복 발송",
+            "19": "월 송신 건수 초과",
+            "20": "이동통신사에서 정의되지 않은 결과 코드",
+            "21": "착신번호 에러(자리수 에러)",
+            "22": "착신번호 에러(없는 국번)",
+            "23": "수신거부 메시지 없음",
+            "24": "21시 이후 광고",
+            "25": "성인광고, 대출광고 등 기타 제한",
+            "26": "데이콤 스팸 필터링",
+            "27": "야간 발송차단",
+            "28": "사전 미등록 발신번호 사용",
+            "29": "전화번호 세칙 미준수 발신번호 사용",
+            "30": "발신번호 변작으로 등록된 발신번호 사용",
+            "31": "번호 도용 문자 차단 서비스에 가입된 발신번호 사용",
+            "40": "단말기착신거부(스팸등)",
+            "91": "발송 미허용 시간 때 발송 실패 처리",
+            "92": "발신 번호 사전 등록 테이블(PCB)에 등록되지 않은 발신 번호 차단",
+            "93": "수신 거부 테이블(SPAM)에 등록된 수신 번호 차단",
+            "99": "적용 시간(초) 이내에 수진자번호+메시지내용 이 중복되어 실패"
+        }
+
+        # LMS/MMS 전송 결과 코드
+        lms_mms_status_messages = {
+            "1000": "전송 성공",
+            "2000": "포맷 에러",
+            "2001": "잘못된 번호",
+            "2002": "컨텐츠 사이즈 및 개수 초과",
+            "2003": "잘못된 컨텐츠",
+            "3000": "기업형 MMS 미지원 단말기",
+            "3001": "단말기 메시지 저장개수 초과",
+            "3002": "전송시간 초과",
+            "3004": "전원 꺼짐",
+            "3005": "음영지역",
+            "3006": "기타",
+            "4000": "서버문제로 인한 접수 실패",
+            "4001": "단말기 일시 서비스 정지",
+            "4002": "통신사 내부 실패(무선망단)",
+            "4003": "서비스의 일시적인 에러",
+            "4101": "계정 차단",
+            "4102": "허용되지 않은 IP 접근",
+            "4104": "건수 부족",
+            "4201": "국제 MMS 발송 권한이 없음",
+            "4202": "PUSH 권한 없음",
+            "5000": "번호이동에러",
+            "5001": "선불발급 발송건수 초과",
+            "5003": "스팸",
+            "5201": "중복된 키 접수 차단",
+            "5202": "중복된 수신번호 접수 차단",
+            "5301": "사전 미등록 발신번호 사용",
+            "5302": "전화번호 세칙 미 준수 발신번호 사용",
+            "5303": "발신번호 변작으로 등록된 발신번호 사용",
+            "5304": "번호 도용 문자 차단 서비스에 가입된 발신번호 사용",
+            "6000": "폰 정보 조회 실패",
+            "6100": "이미지 변환 실패",
+            "9001": "발송 미허용 시간 때 발송 실패",
+            "9002": "폰 넘버 에러",
+            "9003": "스팸 번호",
+            "9004": "이통사에서 응답 없음",
+            "9005": "파일크기 오류",
+            "9006": "지원되지 않는 파일",
+            "9007": "파일오류",
+            "9008": "MMS_MSG의 MSG_TYPE 값이 잘못되었음",
+            "9010": "재전송 횟수 초과로 실패",
+            "9011": "발송 지연으로 인한 실패",
+            "9012": "발신 번호 사전 등록 테이블(PCB)에 등록되지 않은 발신 번호 차단",
+            "9013": "수신 거부 테이블(SPAM)에 등록된 수신 번호 차단",
+            "9014": "템플릿 키 값 없음",
+            "9015": "바코드 키 값 없음",
+            "9016": "CLI_EXT_OBJ 데이터값 오류"
+        }
+
+        if msg_type == "SMS":
+            return sms_status_messages.get(status_code, f"알 수 없는 상태 코드: {status_code}")
+        elif msg_type in ["LMS", "MMS"]:
+            return lms_mms_status_messages.get(status_code, f"알 수 없는 상태 코드: {status_code}")
+        else:
+            return f"알 수 없는 메시지 타입: {msg_type}"
+
+    def get_balance(self) -> Dict[str, Any]:
+        """
+        잔액 조회
+        자동 결제(충전)된 요금에서 메시지 발송 후 남은 금액과
+        메시지 발송 실패 시 반환된 금액의 합계
+
+        Returns:
+            API 응답 결과
+        """
+        try:
+            # API 요청 데이터 구성
+            payload = {
+                "version": "1.0"
+            }
+
+            # 헤더 구성
+            headers = {
+                'Content-Type': 'application/json;charset=UTF-8',
+                'secret': self._get_secret_header()
+            }
+
+            # API 요청
+            response = requests.post(
+                "https://sms.bizservice.iwinv.kr/api/charge/",
+                json=payload,
+                headers=headers,
+                timeout=30,
+                verify=True
+            )
+
+            response.raise_for_status()
+            result = response.json()
+
+            # 로깅
+            logger.info(f"잔액 조회 요청 완료: {result.get('code')}, 잔액: {result.get('charge', 0)}")
+
+            return result
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"잔액 조회 API 요청 실패: {str(e)}")
+            return {
+                "code": -1,
+                "message": f"API 요청 실패: {str(e)}",
+                "charge": 0.0
+            }
+        except Exception as e:
+            logger.error(f"잔액 조회 중 오류: {str(e)}")
+            return {
+                "code": -1,
+                "message": f"조회 중 오류: {str(e)}",
+                "charge": 0.0
+            }

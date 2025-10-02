@@ -80,7 +80,8 @@ class SMSMessageSerializer(serializers.Serializer):
 
         return data
 
-    def validate_message(self, value):
+    @staticmethod
+    def validate_message(value):
         """메시지 내용 유효성 검사"""
         if len(value.encode('utf-8')) > 2000:
             raise serializers.ValidationError(
@@ -88,7 +89,8 @@ class SMSMessageSerializer(serializers.Serializer):
             )
         return value
 
-    def validate_title(self, value):
+    @staticmethod
+    def validate_title(value):
         """제목 유효성 검사"""
         if value and len(value.encode('utf-8')) > 40:
             raise serializers.ValidationError(
@@ -96,7 +98,8 @@ class SMSMessageSerializer(serializers.Serializer):
             )
         return value
 
-    def validate_recipients(self, value):
+    @staticmethod
+    def validate_recipients(value):
         """수신자 번호 유효성 검사"""
         if len(value) > 1000:
             raise serializers.ValidationError(
@@ -120,7 +123,8 @@ class MMSMessageSerializer(SMSMessageSerializer):
         help_text="이미지 파일 (100KB 미만 JPG)"
     )
 
-    def validate_image(self, value):
+    @staticmethod
+    def validate_image(value):
         """이미지 파일 유효성 검사"""
         # 파일 크기 검사 (100KB)
         if value.size > 100 * 1024:
@@ -189,7 +193,8 @@ class KakaoMessageSerializer(serializers.Serializer):
         help_text="대체 문자 내용"
     )
 
-    def validate_recipients(self, value):
+    @staticmethod
+    def validate_recipients(value):
         """수신자 정보 유효성 검사"""
         if len(value) > 10000:
             raise serializers.ValidationError(
@@ -200,20 +205,20 @@ class KakaoMessageSerializer(serializers.Serializer):
             # 필수 필드 검사
             if 'phone' not in recipient:
                 raise serializers.ValidationError(
-                    f"수신자 {i+1}번째: 전화번호(phone)가 필요합니다."
+                    f"수신자 {i + 1}번째: 전화번호(phone)가 필요합니다."
                 )
 
             # 전화번호 형식 검사
             phone = str(recipient['phone']).replace('-', '').replace(' ', '')
             if not phone.isdigit() or len(phone) < 10 or len(phone) > 11:
                 raise serializers.ValidationError(
-                    f"수신자 {i+1}번째: 잘못된 전화번호 형식 - {recipient['phone']}"
+                    f"수신자 {i + 1}번째: 잘못된 전화번호 형식 - {recipient['phone']}"
                 )
 
             # 템플릿 변수는 선택사항이지만 있다면 리스트여야 함
             if 'template_param' in recipient and not isinstance(recipient['template_param'], list):
                 raise serializers.ValidationError(
-                    f"수신자 {i+1}번째: template_param은 리스트여야 합니다."
+                    f"수신자 {i + 1}번째: template_param은 리스트여야 합니다."
                 )
 
         return value
@@ -235,3 +240,72 @@ class KakaoMessageSerializer(serializers.Serializer):
                 )
 
         return data
+
+
+class SMSHistoryQuerySerializer(serializers.Serializer):
+    """SMS 전송 내역 조회 시리얼라이저"""
+    company_id = serializers.CharField(
+        max_length=100,
+        help_text="조직(업체) 발송 아이디"
+    )
+    start_date = serializers.DateField(
+        help_text="발송 요청 시작일자 (YYYY-MM-DD)"
+    )
+    end_date = serializers.DateField(
+        help_text="발송 요청 마감일자 (YYYY-MM-DD)"
+    )
+    request_no = serializers.CharField(
+        max_length=50,
+        required=False,
+        allow_blank=True,
+        help_text="메시지 발송요청 고유번호"
+    )
+    page_num = serializers.IntegerField(
+        default=1,
+        min_value=1,
+        help_text="페이지 번호 (기본:1)"
+    )
+    page_size = serializers.IntegerField(
+        default=15,
+        min_value=1,
+        max_value=1000,
+        help_text="조회 건수 (기본:15, 최대:1000)"
+    )
+    phone = serializers.CharField(
+        max_length=20,
+        required=False,
+        allow_blank=True,
+        help_text="수신번호"
+    )
+
+    def validate(self, data):
+        """전체 유효성 검사"""
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if start_date and end_date:
+            # 시작일이 마감일보다 늦은지 체크
+            if start_date > end_date:
+                raise serializers.ValidationError(
+                    "시작일이 마감일보다 늦을 수 없습니다."
+                )
+
+            # 90일 이내 체크
+            date_diff = (end_date - start_date).days
+            if date_diff > 90:
+                raise serializers.ValidationError(
+                    "조회 기간은 90일 이내만 가능합니다."
+                )
+
+        return data
+
+    @staticmethod
+    def validate_phone(value):
+        """전화번호 유효성 검사"""
+        if value:
+            clean_phone = value.replace('-', '').replace(' ', '')
+            if not clean_phone.isdigit() or len(clean_phone) < 10 or len(clean_phone) > 11:
+                raise serializers.ValidationError(
+                    f"잘못된 전화번호 형식: {value}"
+                )
+        return value

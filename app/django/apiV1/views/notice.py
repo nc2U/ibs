@@ -265,3 +265,91 @@ class MessageViewSet(viewsets.ViewSet):
             'sms_error_codes': sms_error_codes,
             'kakao_error_codes': kakao_error_codes
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='send-history')
+    def get_send_history(self, request):
+        """전송 내역 조회"""
+        from ..serializers.notice import SMSHistoryQuerySerializer
+
+        serializer = SMSHistoryQuerySerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # iwinv SMS 서비스 초기화
+            sms_service = IwinvSMSService()
+
+            # 조회 데이터 준비
+            validated_data = serializer.validated_data
+
+            # 날짜를 문자열로 변환
+            start_date = validated_data['start_date'].strftime('%Y-%m-%d')
+            end_date = validated_data['end_date'].strftime('%Y-%m-%d')
+
+            # 전송 내역 조회
+            result = sms_service.get_send_history(
+                company_id=validated_data['company_id'],
+                start_date=start_date,
+                end_date=end_date,
+                request_no=validated_data.get('request_no'),
+                page_num=validated_data.get('page_num', 1),
+                page_size=validated_data.get('page_size', 15),
+                phone=validated_data.get('phone')
+            )
+
+            # 결과에 따른 응답 상태 코드 결정
+            if result.get('resultCode') == 0:
+                response_status = status.HTTP_200_OK
+
+                # 각 항목에 상태 메시지 추가
+                for item in result.get('list', []):
+                    if 'sendStatusCode' in item and 'msgType' in item:
+                        item['sendStatusMessage'] = IwinvSMSService.get_send_status_message(
+                            item['msgType'],
+                            item['sendStatusCode']
+                        )
+            else:
+                response_status = status.HTTP_400_BAD_REQUEST
+
+            return Response(result, status=response_status)
+
+        except ValueError as e:
+            return Response({
+                'resultCode': -1,
+                'message': str(e),
+                'totalCount': 0,
+                'list': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({
+                'resultCode': -1,
+                'message': '서버 내부 오류가 발생했습니다.',
+                'totalCount': 0,
+                'list': []
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='balance')
+    def get_balance(self, request):
+        """잔액 조회"""
+        try:
+            # iwinv SMS 서비스 초기화
+            sms_service = IwinvSMSService()
+
+            # 잔액 조회
+            result = sms_service.get_balance()
+
+            # 결과에 따른 응답 상태 코드 결정
+            if result.get('code') == 0:
+                response_status = status.HTTP_200_OK
+            else:
+                response_status = status.HTTP_400_BAD_REQUEST
+
+            return Response(result, status=response_status)
+
+        except Exception as e:
+            return Response({
+                'code': -1,
+                'message': '서버 내부 오류가 발생했습니다.',
+                'charge': 0.0
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
