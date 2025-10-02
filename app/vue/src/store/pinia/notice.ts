@@ -61,11 +61,8 @@ export const useNotice = defineStore('notice', () => {
     try {
       const response = await api.post<SMSResponse>('/messages/send-sms/', payload)
 
-      if (response.data.resultCode === 0) {
-        message('success', '', 'SMS가 성공적으로 발송되었습니다.')
-      } else {
-        message('error', '', response.data.message)
-      }
+      if (response.data.resultCode === 0) message('success', '', 'SMS가 성공적으로 발송되었습니다.')
+      else message('warning', '', response.data.message)
 
       return response.data
     } catch (err: any) {
@@ -90,15 +87,13 @@ export const useNotice = defineStore('notice', () => {
 
       if (payload.schedule_date) formData.append('schedule_date', payload.schedule_date)
       if (payload.schedule_time) formData.append('schedule_time', payload.schedule_time)
-      if (payload.use_v2_api !== undefined) formData.append('use_v2_api', String(payload.use_v2_api))
+      if (payload.use_v2_api !== undefined)
+        formData.append('use_v2_api', String(payload.use_v2_api))
 
       const response = await api.post<SMSResponse>('/messages/send-mms/', formData)
 
-      if (response.data.resultCode === 0) {
-        message('success', '', 'MMS가 성공적으로 발송되었습니다.')
-      } else {
-        message('error', '', response.data.message)
-      }
+      if (response.data.resultCode === 0) message('success', '', 'MMS가 성공적으로 발송되었습니다.')
+      else message('warning', '', response.data.message)
 
       return response.data
     } catch (err: any) {
@@ -115,11 +110,13 @@ export const useNotice = defineStore('notice', () => {
     try {
       const response = await api.post<KakaoResponse>('/messages/send-kakao/', payload)
 
-      if (response.data.code === 200) {
-        message('success', '', `카카오 알림톡이 성공적으로 발송되었습니다. (성공: ${response.data.success}건)`)
-      } else {
-        message('error', '', response.data.message)
-      }
+      if (response.data.code === 200)
+        message(
+          'success',
+          '',
+          `카카오 알림톡이 성공적으로 발송되었습니다. (성공: ${response.data.success}건)`,
+        )
+      else message('warning', '', response.data.message)
 
       return response.data
     } catch (err: any) {
@@ -136,11 +133,8 @@ export const useNotice = defineStore('notice', () => {
     try {
       const response = await api.get<SendHistoryResponse>('/messages/send-history/', { params })
 
-      if (response.data.resultCode === 0) {
-        sendHistory.value = response.data
-      } else {
-        message('error', '', response.data.message)
-      }
+      if (response.data.resultCode === 0) sendHistory.value = response.data
+      else message('warning', '', response.data.message)
 
       return response.data
     } catch (err: any) {
@@ -157,11 +151,8 @@ export const useNotice = defineStore('notice', () => {
     try {
       const response = await api.get<BalanceResponse>('/messages/balance/')
 
-      if (response.data.code === 0) {
-        balance.value = response.data.charge
-      } else {
-        message('error', '', response.data.message)
-      }
+      if (response.data.code === 0) balance.value = response.data.charge
+      else message('warning', '', response.data.message)
 
       return response.data.charge
     } catch (err: any) {
@@ -173,7 +164,10 @@ export const useNotice = defineStore('notice', () => {
   }
 
   // 에러 코드 조회
-  const fetchErrorCodes = async (): Promise<{ sms_error_codes: Record<string, string>; kakao_error_codes: Record<string, string> }> => {
+  const fetchErrorCodes = async (): Promise<{
+    sms_error_codes: Record<string, string>
+    kakao_error_codes: Record<string, string>
+  }> => {
     try {
       const response = await api.get('/messages/error-codes/')
       return response.data
