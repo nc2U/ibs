@@ -37,6 +37,9 @@ export const errorHandle = (err: any) => {
 
   if (errorData?.code === 'token_not_valid') {
     console.log('token_not_valid')
+  } else if (errorData?.detail === '자격 인증 데이터가 제공되지 않았습니다.') {
+    // 401 Unauthorized 에러의 경우 조용히 처리 (이미 API 인터셉터에서 리다이렉트 처리됨)
+    console.log('Unauthorized - redirecting to login')
   } else {
     console.log(err)
 
