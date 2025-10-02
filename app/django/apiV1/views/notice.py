@@ -100,7 +100,7 @@ class MessageViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({
                 'resultCode': -1,
-                'message': f'서버 오류: {str(e)}',
+                'message': '서버 내부 오류가 발생했습니다.',
                 'requestNo': None,
                 'msgType': message_type
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -156,7 +156,7 @@ class MessageViewSet(viewsets.ViewSet):
             # logging.error(f"ValueError in send_mms: {str(e)}")
             return Response({
                 'resultCode': -1,
-                'message': '입력 값 오류가 발생했습니다.',  # Generic message: "Input value error occurred."
+                'message': '서버 내부 오류가 발생했습니다.',  # Generic message: "Input value error occurred."
                 'requestNo': None,
                 'msgType': 'MMS'
             }, status=status.HTTP_400_BAD_REQUEST)
