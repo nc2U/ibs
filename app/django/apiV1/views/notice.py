@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+import logging
 
 from ..permission import *
 from ..serializers.notice import *
@@ -159,9 +160,10 @@ class MessageViewSet(viewsets.ViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
+            logging.exception("Unhandled exception occurred while sending MMS.")
             return Response({
                 'resultCode': -1,
-                'message': f'서버 오류: {str(e)}',
+                'message': '서버 내부 오류가 발생했습니다.',
                 'requestNo': None,
                 'msgType': 'MMS'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
