@@ -50,12 +50,12 @@ const isLowBalance = computed(() => props.balance < 10000)
       style="cursor: pointer"
       @click="toggle"
     >
-      <div class="d-flex align-items-center">
+      <CCol class="d-flex align-items-center">
         <CIcon name="cilWallet" class="me-2" />
         <strong>잔액 확인</strong>
         <CBadge v-if="visible && isLowBalance" color="danger" class="ms-2"> 잔액 부족 </CBadge>
-      </div>
-      <CIcon :name="visible ? 'cilChevronTop' : 'cilChevronBottom'" />
+      </CCol>
+      <v-icon :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
     </CCardHeader>
     <CCollapse :visible="visible">
       <CCardBody>
