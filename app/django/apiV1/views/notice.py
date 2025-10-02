@@ -3,12 +3,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
+import logging
 from ..permission import *
 from ..serializers.notice import *
 
 from notice.models import SalesBillIssue
 from notice.utils import IwinvSMSService
 
+logger = logging.getLogger(__name__)
 
 class BillIssueViewSet(viewsets.ModelViewSet):
     queryset = SalesBillIssue.objects.all()
@@ -215,6 +217,7 @@ class MessageViewSet(viewsets.ViewSet):
 
         except ValueError as e:
             # Handle case where validated_data might not be defined
+            logger.error("ValueError in send_kakao: %s", str(e), exc_info=True)
             fail_count = 0
             try:
                 fail_count = len(validated_data.get('recipients', []))
@@ -223,11 +226,12 @@ class MessageViewSet(viewsets.ViewSet):
 
             return Response({
                 'code': -1,
-                'message': str(e),
+                'message': '입력 값에 오류가 있습니다.',  # Generic error message for end user
                 'success': 0,
                 'fail': fail_count
             }, status=status.HTTP_400_BAD_REQUEST)
 
+            logger.error("Unhandled exception in send_kakao: %s", str(e), exc_info=True)
         except Exception as e:
             # Handle case where validated_data might not be defined
             fail_count = 0
