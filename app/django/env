@@ -30,6 +30,7 @@ NFS_PATH=                   # path where set the django media files & backup fil
 ### FOR SMS SERVICE
 IWINV_API_KEY=
 IWINV_AUTH_KEY=
+IWINV_REGISTERED_SENDER_NUMBERS=
 
 ### FOR DEVELOPMENT - OPTIONAL  ------------------------------------------------------------------------
 DOCKERHUB_USER=

@@ -1,13 +1,14 @@
+import logging
+
+from django.conf import settings
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-import logging
+from rest_framework.response import Response
+
+from notice.utils import IwinvSMSService
 from ..permission import *
 from ..serializers.notice import *
-
-from notice.models import SalesBillIssue
-from notice.utils import IwinvSMSService
 
 
 class BillIssueViewSet(viewsets.ModelViewSet):
@@ -353,4 +354,22 @@ class MessageViewSet(viewsets.ViewSet):
                 'code': -1,
                 'message': '서버 내부 오류가 발생했습니다.',
                 'charge': 0.0
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='registered-sender-numbers')
+    def get_registered_sender_numbers(self, request):
+        """등록된 발신번호 목록 조회"""
+        try:
+            registered_numbers = getattr(settings, 'IWINV_REGISTERED_SENDER_NUMBERS', [])
+
+            return Response({
+                'numbers': registered_numbers,
+                'count': len(registered_numbers)
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'numbers': [],
+                'count': 0,
+                'message': '발신번호 목록 조회 중 오류가 발생했습니다.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

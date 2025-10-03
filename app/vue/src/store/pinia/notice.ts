@@ -177,6 +177,17 @@ export const useNotice = defineStore('notice', () => {
     }
   }
 
+  // 등록된 발신번호 목록 조회
+  const fetchRegisteredSenderNumbers = async (): Promise<string[]> => {
+    try {
+      const response = await api.get('/messages/registered-sender-numbers/')
+      return response.data.numbers || []
+    } catch (err: any) {
+      errorHandle(err.response?.data || { message: '발신번호 목록 조회 중 오류가 발생했습니다.' })
+      throw err
+    }
+  }
+
   return {
     // state
     billIssue,
@@ -198,5 +209,6 @@ export const useNotice = defineStore('notice', () => {
     fetchSendHistory,
     fetchBalance,
     fetchErrorCodes,
+    fetchRegisteredSenderNumbers,
   }
 })
