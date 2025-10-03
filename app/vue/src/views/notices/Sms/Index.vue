@@ -59,16 +59,6 @@ const buttonText = computed(() => {
   return currentForm.value.scheduledSend ? '예약 등록' : `${prefix} 전송`
 })
 
-// // 메소드 (비즈니스 로직은 제외하고 UI만)
-// const addRecipient = (tel: string) => {
-//   // recipientsList.value.push(tel)
-// }
-//
-// const removeRecipient = (index: number) => {
-//   // alert(index)
-//   // recipientsList.value.splice(index, 1)
-// }
-
 const selectTemplate = () => {
   // UI만 구현
 }
@@ -143,8 +133,6 @@ onBeforeMount(() => {
               v-model:recipient-input="recipientInput"
               v-model:recipients-list="recipientsList"
             />
-            <!--            @add-recipient="addRecipient"-->
-            <!--            @remove-recipient="removeRecipient"-->
 
             <!-- 메시지 작성 섹션 (탭으로 구분) -->
             <SelectMessage
