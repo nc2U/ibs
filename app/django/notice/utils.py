@@ -125,13 +125,9 @@ class IwinvSMSService:
             response.raise_for_status()
             result = response.json()
 
-            # 로깅
-            logger.info(f"SMS 발송 요청: {len(recipients)}명, 결과: {result.get('resultCode')}")
-
             return result
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"SMS API 요청 실패: {str(e)}")
             return {
                 "resultCode": -1,
                 "message": f"API 요청 실패: {str(e)}",
@@ -139,7 +135,6 @@ class IwinvSMSService:
                 "msgType": "SMS"
             }
         except Exception as e:
-            logger.error(f"SMS 발송 중 오류: {str(e)}")
             return {
                 "resultCode": -1,
                 "message": f"발송 중 오류: {str(e)}",
@@ -216,13 +211,9 @@ class IwinvSMSService:
             response.raise_for_status()
             result = response.json()
 
-            # 로깅
-            logger.info(f"LMS 발송 요청: {len(recipients)}명, 결과: {result.get('resultCode')}")
-
             return result
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"LMS API 요청 실패: {str(e)}")
             return {
                 "resultCode": -1,
                 "message": f"API 요청 실패: {str(e)}",
@@ -230,7 +221,6 @@ class IwinvSMSService:
                 "msgType": "LMS"
             }
         except Exception as e:
-            logger.error(f"LMS 발송 중 오류: {str(e)}")
             return {
                 "resultCode": -1,
                 "message": f"발송 중 오류: {str(e)}",
@@ -325,13 +315,9 @@ class IwinvSMSService:
             response.raise_for_status()
             result = response.json()
 
-            # 로깅
-            logger.info(f"MMS 발송 요청: {len(recipients)}명, 결과: {result.get('resultCode')}")
-
             return result
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"MMS API 요청 실패: {str(e)}")
             return {
                 "resultCode": -1,
                 "message": f"API 요청 실패: {str(e)}",
@@ -339,7 +325,6 @@ class IwinvSMSService:
                 "msgType": "MMS"
             }
         except Exception as e:
-            logger.error(f"MMS 발송 중 오류: {str(e)}")
             return {
                 "resultCode": -1,
                 "message": f"발송 중 오류: {str(e)}",
@@ -497,13 +482,9 @@ class IwinvSMSService:
             response.raise_for_status()
             result = response.json()
 
-            # 로깅
-            logger.info(f"카카오 알림톡 발송 요청: {len(recipients)}명, 결과: {result.get('code')}")
-
             return result
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"카카오 알림톡 API 요청 실패: {str(e)}")
             return {
                 "code": -1,
                 "message": f"API 요청 실패: {str(e)}",
@@ -511,7 +492,6 @@ class IwinvSMSService:
                 "fail": len(recipients) if recipients else 0
             }
         except Exception as e:
-            logger.error(f"카카오 알림톡 발송 중 오류: {str(e)}")
             return {
                 "code": -1,
                 "message": f"발송 중 오류: {str(e)}",
@@ -656,15 +636,9 @@ class IwinvSMSService:
             response.raise_for_status()
             result = response.json()
 
-            # 로깅
-            logger.info(f"전송 내역 조회 요청: {start_date} ~ {end_date}, "
-                       f"결과 코드: {result.get('resultCode')}, "
-                       f"총 건수: {result.get('totalCount', 0)}")
-
             return result
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"전송 내역 조회 API 요청 실패: {str(e)}")
             return {
                 "resultCode": -1,
                 "message": f"API 요청 실패: {str(e)}",
@@ -672,7 +646,6 @@ class IwinvSMSService:
                 "list": []
             }
         except Exception as e:
-            logger.error(f"전송 내역 조회 중 오류: {str(e)}")
             return {
                 "resultCode": -1,
                 "message": f"조회 중 오류: {str(e)}",
@@ -808,20 +781,15 @@ class IwinvSMSService:
             response.raise_for_status()
             result = response.json()
 
-            # 로깅
-            logger.info(f"잔액 조회 요청 완료: {result.get('code')}, 잔액: {result.get('charge', 0)}")
-
             return result
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"잔액 조회 API 요청 실패: {str(e)}")
             return {
                 "code": -1,
                 "message": f"API 요청 실패: {str(e)}",
                 "charge": 0.0
             }
         except Exception as e:
-            logger.error(f"잔액 조회 중 오류: {str(e)}")
             return {
                 "code": -1,
                 "message": f"조회 중 오류: {str(e)}",
