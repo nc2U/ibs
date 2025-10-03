@@ -3,7 +3,10 @@ import router from '@/router'
 import Cookies from 'js-cookie'
 import { start, close } from '@/utils/nprogress'
 
-const api = axios.create({ baseURL: '/api/v1/' })
+const api = axios.create({
+  baseURL: '/api/v1/',
+  validateStatus: (status) => status < 500, // 500 미만은 모두 정상 응답으로 처리 (400 에러도 포함)
+})
 
 // 초기 토큰 주입 (쿠키에서 불러옴)
 const token = Cookies.get('accessToken')

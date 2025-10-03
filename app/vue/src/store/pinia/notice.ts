@@ -61,12 +61,75 @@ export const useNotice = defineStore('notice', () => {
     try {
       const response = await api.post<SMSResponse>('/messages/send-sms/', payload)
 
-      if (response.data.resultCode === 0) message('success', '', 'SMS가 성공적으로 발송되었습니다.')
-      else message('warning', '', response.data.message)
+      if (response.data.resultCode !== 0) {
+        message('danger', '발송 실패', response.data.message || '알 수 없는 오류가 발생했습니다.')
+        return response.data
+      }
+
+      // company_id가 없으면 즉시 경고 메시지 (전송 내역 조회 불가)
+      if (!payload.company_id) {
+        message(
+          'warning',
+          '발송 요청 접수',
+          'SMS 발송 요청이 접수되었습니다. 조직 구분 ID가 없어 발송 결과를 확인할 수 없습니다.',
+        )
+        return response.data
+      }
+
+      // API 접수는 성공했으나, 실제 발송 결과는 비동기로 처리됨
+      // 2-3초 후 전송 내역을 조회하여 실제 발송 상태 확인
+      message('info', '', '발송 요청이 접수되었습니다. 실제 발송 결과를 확인 중...')
+
+      // 2.5초 대기 (iwinv API가 실제 발송 처리할 시간)
+      await new Promise(resolve => setTimeout(resolve, 2500))
+
+      // 전송 내역 조회 (오늘 날짜, requestNo로 필터링)
+      const today = new Date()
+      const historyParams = {
+        company_id: payload.company_id,
+        start_date: today.toISOString().split('T')[0],
+        end_date: today.toISOString().split('T')[0],
+        request_no: response.data.requestNo,
+        page_num: 1,
+        page_size: 10,
+      }
+
+      const historyResponse = await api.get<SendHistoryResponse>('/messages/send-history/', {
+        params: historyParams,
+      })
+
+      if (historyResponse.data.resultCode === 0 && historyResponse.data.list.length > 0) {
+        const sendResult = historyResponse.data.list[0]
+
+        // 발송 상태 확인 (sendStatusCode: '0'=성공, 그 외=실패)
+        if (sendResult.sendStatusCode === '0') {
+          message(
+            'success',
+            '발송 성공',
+            `SMS가 성공적으로 발송되었습니다. (${payload.recipients.length}건)`,
+          )
+        } else {
+          message(
+            'danger',
+            '발송 실패',
+            sendResult.sendStatusMessage ||
+              `발송에 실패했습니다. (코드: ${sendResult.sendStatusCode})`,
+          )
+        }
+      } else {
+        // 전송 내역 조회 실패 시 경고 메시지
+        message(
+          'warning',
+          '발송 확인 필요',
+          `발송 요청은 접수되었으나 결과 확인에 실패했습니다. (${historyResponse.data.message || '전송 내역을 확인해주세요.'})`,
+        )
+      }
 
       return response.data
     } catch (err: any) {
-      errorHandle(err.response?.data || { message: '발송 중 오류가 발생했습니다.' })
+      const errorMsg = err.response?.data?.message || '발송 중 오류가 발생했습니다.'
+      message('danger', '발송 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
       throw err
     } finally {
       loading.value = false
@@ -92,12 +155,17 @@ export const useNotice = defineStore('notice', () => {
 
       const response = await api.post<SMSResponse>('/messages/send-mms/', formData)
 
-      if (response.data.resultCode === 0) message('success', '', 'MMS가 성공적으로 발송되었습니다.')
-      else message('warning', '', response.data.message)
+      if (response.data.resultCode === 0) {
+        message('success', '', 'MMS가 성공적으로 발송되었습니다.')
+      } else {
+        message('danger', '발송 실패', response.data.message || '알 수 없는 오류가 발생했습니다.')
+      }
 
       return response.data
     } catch (err: any) {
-      errorHandle(err.response?.data || { message: '발송 중 오류가 발생했습니다.' })
+      const errorMsg = err.response?.data?.message || '발송 중 오류가 발생했습니다.'
+      message('danger', '발송 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
       throw err
     } finally {
       loading.value = false
@@ -110,17 +178,21 @@ export const useNotice = defineStore('notice', () => {
     try {
       const response = await api.post<KakaoResponse>('/messages/send-kakao/', payload)
 
-      if (response.data.code === 200)
+      if (response.data.code === 200) {
         message(
           'success',
           '',
           `카카오 알림톡이 성공적으로 발송되었습니다. (성공: ${response.data.success}건)`,
         )
-      else message('warning', '', response.data.message)
+      } else {
+        message('danger', '발송 실패', response.data.message || '알 수 없는 오류가 발생했습니다.')
+      }
 
       return response.data
     } catch (err: any) {
-      errorHandle(err.response?.data || { message: '발송 중 오류가 발생했습니다.' })
+      const errorMsg = err.response?.data?.message || '발송 중 오류가 발생했습니다.'
+      message('danger', '발송 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
       throw err
     } finally {
       loading.value = false

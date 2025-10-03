@@ -269,7 +269,7 @@ class SMSHistoryQuerySerializer(serializers.Serializer):
         default=15,
         min_value=1,
         max_value=1000,
-        help_text="조회 건수 (기본:15, 최대:1000)"
+        help_text="조회 건수 (기본:15, 최대:1000) - 주의: iwinv API 버그로 인해 실제로는 사용되지 않음"
     )
     phone = serializers.CharField(
         max_length=20,

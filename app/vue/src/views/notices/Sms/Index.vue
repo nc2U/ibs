@@ -28,6 +28,7 @@ const smsForm = ref({
   messageType: 'SMS',
   message: '',
   senderNumber: '',
+  companyId: 'default', // iwinv 조직 아이디 (임의의 구분값)
   scheduledSend: false,
   scheduleDate: '',
   scheduleTime: '',
@@ -83,6 +84,7 @@ const sendMessage = async () => {
         title: smsForm.value.messageType === 'LMS' ? '안내' : undefined,
         sender_number: smsForm.value.senderNumber,
         recipients: recipientsList.value,
+        company_id: smsForm.value.companyId || undefined,
         scheduled_send: smsForm.value.scheduledSend,
         schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
         schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,

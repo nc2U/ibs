@@ -1,5 +1,3 @@
-import logging
-
 from django.conf import settings
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -79,7 +77,9 @@ class MessageViewSet(viewsets.ViewSet):
                 )
 
             # 결과에 따른 응답 상태 코드 결정
-            if result.get('resultCode') == 0:
+            result_code = result.get('resultCode')
+
+            if result_code == 0:
                 response_status = status.HTTP_200_OK
             else:
                 response_status = status.HTTP_400_BAD_REQUEST
@@ -287,14 +287,17 @@ class MessageViewSet(viewsets.ViewSet):
             start_date = validated_data['start_date'].strftime('%Y-%m-%d')
             end_date = validated_data['end_date'].strftime('%Y-%m-%d')
 
+            page_num = validated_data.get('page_num', 1)
+            page_size = validated_data.get('page_size', 15)
+
             # 전송 내역 조회
             result = sms_service.get_send_history(
                 company_id=validated_data['company_id'],
                 start_date=start_date,
                 end_date=end_date,
                 request_no=validated_data.get('request_no'),
-                page_num=validated_data.get('page_num', 1),
-                page_size=validated_data.get('page_size', 15),
+                page_num=page_num,
+                page_size=page_size,
                 phone=validated_data.get('phone')
             )
 
@@ -315,7 +318,6 @@ class MessageViewSet(viewsets.ViewSet):
             return Response(result, status=response_status)
 
         except ValueError as e:
-            logging.warning("ValueError in get_send_history: %s", str(e))
             return Response({
                 'resultCode': -1,
                 'message': '요청 값이 유효하지 않습니다.',  # "The request values are invalid."

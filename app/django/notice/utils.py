@@ -1,13 +1,10 @@
 import base64
-import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 import requests
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
-
-logger = logging.getLogger(__name__)
 
 
 class IwinvSMSService:
@@ -623,18 +620,21 @@ class IwinvSMSService:
                 raise ValueError("조회 건수는 최대 1000건까지 가능합니다.")
 
             # API 요청 데이터 구성
+            # 주의: iwinv API는 pageSize 파라미터를 지원하지 않음 (API 버그)
+            # pageNum만 전송하고 pageSize는 제외
+            page_num_str = str(page_num) if page_num is not None else "1"
+
             payload = {
                 "version": "1.0",
                 "companyid": company_id,
                 "startDate": start_date,
                 "endDate": end_date,
-                "pageNum": str(page_num),
-                "pageSize": str(page_size)
+                "pageNum": page_num_str
             }
 
             # 선택적 파라미터 추가
             if request_no:
-                payload["requestNo"] = request_no
+                payload["requestNo"] = str(request_no)
             if phone:
                 payload["phone"] = self._format_phone_number(phone)
 

@@ -36,6 +36,7 @@ export declare interface SMSMessage {
   schedule_date?: string
   schedule_time?: string
   use_v2_api?: boolean
+  company_id?: string
 }
 
 export declare interface MMSMessage extends SMSMessage {
