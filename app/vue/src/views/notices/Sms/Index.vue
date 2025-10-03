@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { onBeforeMount, ref, computed } from 'vue'
+import { onBeforeMount, ref, computed, inject, type ComputedRef } from 'vue'
 import { pageTitle, navMenu } from '@/views/notices/_menu/headermixin'
 import { useNotice } from '@/store/pinia/notice.ts'
+import type { Company } from '@/store/types/settings.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -23,12 +24,15 @@ const messageCount = ref(0)
 const sendProgress = ref(0)
 const isSending = ref(false)
 
+// 회사 정보
+const company = inject<ComputedRef<Company | null>>('company')
+
 // 폼 데이터
 const smsForm = ref({
   messageType: 'SMS',
   message: '',
   senderNumber: '',
-  companyId: 'default', // iwinv 조직 아이디 (임의의 구분값)
+  companyId: company?.value?.pk ? `company${company.value.pk}` : 'default', // 회사 PK로 자동 생성
   scheduledSend: false,
   scheduleDate: '',
   scheduleTime: '',

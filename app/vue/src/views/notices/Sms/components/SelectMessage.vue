@@ -121,15 +121,6 @@ const handlePreviewMessage = () => {
               class="mb-3"
             />
 
-            <!-- iwinv 조직 아이디 -->
-            <CFormInput
-              v-model="smsForm.companyId"
-              label="조직 구분 ID (선택)"
-              placeholder="조직을 구분하기 위한 임의의 값 (예: company1, hq, branch1)"
-              class="mb-3"
-              text="발송 결과 조회 시 이 값으로 필터링됩니다. 기본값: 'default'"
-            />
-
             <!-- 미리보기 버튼 -->
             <v-btn
               color="info"
