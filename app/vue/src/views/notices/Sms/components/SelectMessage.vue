@@ -1,11 +1,10 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { CCol } from '@coreui/vue'
 
 // Props 정의
 const activeTab = defineModel<string>('activeTab')
-const smsForm = defineModel<any>('smsForm')
-const kakaoForm = defineModel<any>('kakaoForm')
+const smsForm = defineModel<any>('smsForm') as any
+const kakaoForm = defineModel<any>('kakaoForm') as any
 const messageCount = defineModel<number>('messageCount')
 
 // Emits 정의
@@ -91,7 +90,7 @@ const handlePreviewMessage = () => {
                 v-model="smsForm.message"
                 rows="6"
                 placeholder="전송할 메시지를 입력하세요..."
-                @input="messageCount = smsForm.message.length"
+                @input="(messageCount as any) = smsForm?.message?.length || 0"
               />
             </div>
 
