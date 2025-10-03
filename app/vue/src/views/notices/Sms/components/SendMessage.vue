@@ -16,9 +16,7 @@ const emit = defineEmits<{
   sendMessage: []
 }>()
 
-const handleSendMessage = () => {
-  emit('sendMessage')
-}
+const handleSendMessage = () => emit('sendMessage')
 </script>
 
 <template>
@@ -64,12 +62,12 @@ const handleSendMessage = () => {
           <div class="text-right">
             <v-btn
               :color="props.activeTab === 'sms' ? 'primary' : 'success'"
-              size="large"
-              @click="handleSendMessage"
               :loading="props.isSending"
               :disabled="props.isDisabled"
               :prepend-icon="props.activeTab === 'sms' ? 'mdi-send' : 'mdi-chat'"
+              size="large"
               class="mb-3"
+              @click="handleSendMessage"
             >
               {{ props.buttonText }}
             </v-btn>

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { onBeforeMount, ref, computed } from 'vue'
 import { pageTitle, navMenu } from '@/views/notices/_menu/headermixin'
+import { useNotice } from '@/store/pinia/notice.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -67,10 +68,43 @@ const previewMessage = () => {
   // UI만 구현
 }
 
-const sendMessage = () => {
-  // UI만 구현
+const notiStore = useNotice()
+
+const sendMessage = async () => {
   isSending.value = true
   sendProgress.value = 0
+
+  try {
+    if (activeTab.value === 'sms') {
+      // SMS/LMS 발송
+      await notiStore.sendSMS({
+        message_type: smsForm.value.messageType as 'SMS' | 'LMS' | 'AUTO',
+        message: smsForm.value.message,
+        title: smsForm.value.messageType === 'LMS' ? '안내' : undefined,
+        sender_number: smsForm.value.senderNumber,
+        recipients: recipientsList.value,
+        scheduled_send: smsForm.value.scheduledSend,
+        schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
+        schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
+        use_v2_api: true,
+      })
+    } else {
+      // 카카오 알림톡 발송
+      await notiStore.sendKakao({
+        template_code: kakaoForm.value.templateId,
+        recipients: recipientsList.value.map(phone => ({ phone })),
+        sender_number: '02-1234-5678', // TODO: 실제 발신번호로 변경
+        scheduled_send: kakaoForm.value.scheduledSend,
+        schedule_date: kakaoForm.value.scheduledSend ? kakaoForm.value.scheduleDate : undefined,
+        schedule_time: kakaoForm.value.scheduledSend ? kakaoForm.value.scheduleTime : undefined,
+      })
+    }
+  } catch (error) {
+    console.error('발송 실패:', error)
+  } finally {
+    isSending.value = false
+    sendProgress.value = 100
+  }
 }
 
 // 잔액 관련
