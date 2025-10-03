@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { inject, computed } from 'vue'
+import { inject, computed, ref } from 'vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
 // Props 정의
 const recipientInput = defineModel<string>('recipient-input')
@@ -7,6 +8,8 @@ const recipientsList = defineModel<string[]>('recipients-list')
 
 // 다크 테마 감지
 const isDark = inject<any>('isDark')
+
+const refAlertModal = ref<InstanceType<typeof AlertModal>>()
 
 // v-expansion-panels 배경색 (다크 테마 대응)
 const panelBgColor = computed(() => {
@@ -17,7 +20,23 @@ const handleAddRecipient = () => {
   const input = recipientInput.value
   if (!input) return
 
+  // v-maska 포맷: ###-###-#### (12자) 또는 ###-####-#### (13자)
+  const phoneLength = input.length
+  if (phoneLength !== 12 && phoneLength !== 13) {
+    // alert('올바른 전화번호 형식을 입력하세요. (예: 010-1234-5678)')
+    refAlertModal.value?.callModal('', '올바른 전화번호 형식을 입력하세요. (예: 010-1234-5678)')
+    return
+  }
+
   const list: string[] = (recipientsList.value || []) as string[]
+
+  // 중복 체크
+  if (list.includes(input)) {
+    // alert('이미 추가된 번호입니다.')
+    refAlertModal.value?.callModal('', '이미 추가된 번호입니다.')
+    return
+  }
+
   list.push(input)
   recipientsList.value = list as any
 
@@ -53,13 +72,14 @@ const handleClearAll = () => (recipientsList.value = [] as any)
             <v-expansion-panel-text>
               <CRow class="align-items-end">
                 <CCol cols="12" md="8">
+                  <label for="recipient-phone-input" class="form-label">휴대폰 번호</label>
                   <input
+                    id="recipient-phone-input"
                     v-model="recipientInput"
                     v-maska
                     data-maska="['###-###-####', '###-####-####']"
                     maxlength="13"
-                    placeholder="010-1234-5678"
-                    label="휴대폰 번호"
+                    placeholder="휴대전화 번호를 입력하세요."
                     class="form-control"
                     @keydown.enter="handleAddRecipient"
                   />
@@ -141,4 +161,6 @@ const handleClearAll = () => (recipientsList.value = [] as any)
       </CCardBody>
     </CCard>
   </CCol>
+
+  <AlertModal ref="refAlertModal" />
 </template>

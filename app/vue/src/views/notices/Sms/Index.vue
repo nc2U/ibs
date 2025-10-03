@@ -106,8 +106,6 @@ onBeforeMount(() => {
     <hr />
     {{ kakaoForm }}
     <hr />
-    {{ recipientInput }} // {{ recipientsList }}
-    <hr />
 
     <CCard>
       <CCardHeader>
