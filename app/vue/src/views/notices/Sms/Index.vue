@@ -16,7 +16,8 @@ const activeTab = ref('sms')
 
 // 공통 데이터
 const recipientInput = ref('')
-const recipientsList = ref([])
+const recipientsList = ref<string[]>([])
+
 const messageCount = ref(0)
 const sendProgress = ref(0)
 const isSending = ref(false)
@@ -58,18 +59,15 @@ const buttonText = computed(() => {
   return currentForm.value.scheduledSend ? '예약 등록' : `${prefix} 전송`
 })
 
-onBeforeMount(() => {
-  loading.value = false
-})
-
-// 메소드 (비즈니스 로직은 제외하고 UI만)
-const addRecipient = () => {
-  // UI만 구현
-}
-
-const removeRecipient = (index: number) => {
-  // UI만 구현
-}
+// // 메소드 (비즈니스 로직은 제외하고 UI만)
+// const addRecipient = (tel: string) => {
+//   // recipientsList.value.push(tel)
+// }
+//
+// const removeRecipient = (index: number) => {
+//   // alert(index)
+//   // recipientsList.value.splice(index, 1)
+// }
 
 const selectTemplate = () => {
   // UI만 구현
@@ -112,6 +110,15 @@ onBeforeMount(() => {
 
   <ContentBody>
     <!-- 메인 탭 (발송 / 히스토리) -->
+
+    <hr />
+    {{ smsForm }}
+    <hr />
+    {{ kakaoForm }}
+    <hr />
+    {{ recipientInput }} // {{ recipientsList }}
+    <hr />
+
     <CCard>
       <CCardHeader>
         <CRow class="mt-3">
@@ -135,9 +142,9 @@ onBeforeMount(() => {
             <SelectRecipient
               v-model:recipient-input="recipientInput"
               v-model:recipients-list="recipientsList"
-              @add-recipient="addRecipient"
-              @remove-recipient="removeRecipient"
             />
+            <!--            @add-recipient="addRecipient"-->
+            <!--            @remove-recipient="removeRecipient"-->
 
             <!-- 메시지 작성 섹션 (탭으로 구분) -->
             <SelectMessage

@@ -16,33 +16,59 @@ IBS 프로젝트에서 제공하는 문자 메시지 발송 및 관리 REST API 
 
 ---
 
-## 인증
+[//]: # (## 인증)
 
-모든 API 요청은 JWT 토큰을 사용한 인증이 필요합니다.
+[//]: # ()
 
-### 헤더 설정
+[//]: # (모든 API 요청은 JWT 토큰을 사용한 인증이 필요합니다.)
 
-```http
-Authorization: Bearer <your_jwt_token>
-Content-Type: application/json
-```
+[//]: # ()
 
-### 토큰 발급
+[//]: # (### 헤더 설정)
 
-```javascript
-// 로그인 후 토큰 발급
-const response = await fetch('/api/v1/token/', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    username: 'your_username',
-    password: 'your_password'
-  })
-});
+[//]: # ()
 
-const { access, refresh } = await response.json();
-// access 토큰을 Authorization 헤더에 사용
-```
+[//]: # (```http)
+
+[//]: # (Authorization: Bearer <your_jwt_token>)
+
+[//]: # (Content-Type: application/json)
+
+[//]: # (```)
+
+[//]: # ()
+
+[//]: # (### 토큰 발급)
+
+[//]: # ()
+
+[//]: # (```javascript)
+
+[//]: # (// 로그인 후 토큰 발급)
+
+[//]: # (const response = await fetch&#40;'/api/v1/token/', {)
+
+[//]: # (  method: 'POST',)
+
+[//]: # (  headers: { 'Content-Type': 'application/json' },)
+
+[//]: # (  body: JSON.stringify&#40;{)
+
+[//]: # (    username: 'your_username',)
+
+[//]: # (    password: 'your_password')
+
+[//]: # (  }&#41;)
+
+[//]: # (}&#41;;)
+
+[//]: # ()
+
+[//]: # (const { access, refresh } = await response.json&#40;&#41;;)
+
+[//]: # (// access 토큰을 Authorization 헤더에 사용)
+
+[//]: # (```)
 
 ---
 
@@ -57,12 +83,15 @@ https://your-domain.com/api/v1/messages/
 ### 공통 응답 형식
 
 #### 성공 응답
+
 - **HTTP Status**: `200 OK`
 - **Body**: API별 상이 (각 섹션 참조)
 
 #### 실패 응답
+
 - **HTTP Status**: `400 Bad Request` 또는 `500 Internal Server Error`
 - **Body**:
+
 ```json
 {
   "resultCode": -1,
@@ -85,17 +114,17 @@ POST /api/v1/messages/send-sms/
 
 ### 요청 파라미터
 
-| 파라미터 | 타입 | 필수 | 설명 | 예시 |
-|---------|------|------|------|------|
-| message_type | String | ❌ | 메시지 타입 (`SMS`, `LMS`, `AUTO`) | `"AUTO"` |
-| message | String | ✅ | 메시지 내용 (최대 2000 bytes) | `"안녕하세요..."` |
-| title | String | ❌ | 제목 (LMS용, 최대 40 bytes) | `"공지사항"` |
-| sender_number | String | ✅ | 발신번호 | `"0212345678"` |
-| recipients | Array | ✅ | 수신자 번호 리스트 (최대 1000명) | `["01012345678"]` |
-| scheduled_send | Boolean | ❌ | 예약 발송 여부 | `false` |
-| schedule_date | Date | ❌ | 예약 발송 날짜 (YYYY-MM-DD) | `"2025-10-15"` |
-| schedule_time | Time | ❌ | 예약 발송 시간 (HH:mm) | `"14:30"` |
-| use_v2_api | Boolean | ❌ | v2 API 사용 여부 | `true` |
+| 파라미터           | 타입      | 필수 | 설명                            | 예시                |
+|----------------|---------|----|-------------------------------|-------------------|
+| message_type   | String  | ❌  | 메시지 타입 (`SMS`, `LMS`, `AUTO`) | `"AUTO"`          |
+| message        | String  | ✅  | 메시지 내용 (최대 2000 bytes)        | `"안녕하세요..."`      |
+| title          | String  | ❌  | 제목 (LMS용, 최대 40 bytes)        | `"공지사항"`          |
+| sender_number  | String  | ✅  | 발신번호                          | `"0212345678"`    |
+| recipients     | Array   | ✅  | 수신자 번호 리스트 (최대 1000명)         | `["01012345678"]` |
+| scheduled_send | Boolean | ❌  | 예약 발송 여부                      | `false`           |
+| schedule_date  | Date    | ❌  | 예약 발송 날짜 (YYYY-MM-DD)         | `"2025-10-15"`    |
+| schedule_time  | Time    | ❌  | 예약 발송 시간 (HH:mm)              | `"14:30"`         |
+| use_v2_api     | Boolean | ❌  | v2 API 사용 여부                  | `true`            |
 
 ### 요청 예시
 
@@ -104,7 +133,7 @@ const sendSMS = async () => {
   const response = await fetch('/api/v1/messages/send-sms/', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'Authorization': `Bearer ${ accessToken }`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -124,6 +153,7 @@ const sendSMS = async () => {
 ### 응답 예시
 
 #### 성공
+
 ```json
 {
   "resultCode": 0,
@@ -134,6 +164,7 @@ const sendSMS = async () => {
 ```
 
 #### 실패
+
 ```json
 {
   "resultCode": 13,
@@ -162,17 +193,17 @@ POST /api/v1/messages/send-mms/
 
 ### 요청 파라미터
 
-| 파라미터 | 타입 | 필수 | 설명 | 제약 조건 |
-|---------|------|------|------|----------|
-| message | String | ✅ | 메시지 내용 | 최대 2000 bytes |
-| title | String | ✅ | 제목 | 최대 40 bytes |
-| sender_number | String | ✅ | 발신번호 | - |
-| recipients | Array | ✅ | 수신자 번호 리스트 | 최대 1000명 |
-| image | File | ✅ | 이미지 파일 | JPG, 100KB 미만 |
-| scheduled_send | Boolean | ❌ | 예약 발송 여부 | - |
-| schedule_date | Date | ❌ | 예약 발송 날짜 | YYYY-MM-DD |
-| schedule_time | Time | ❌ | 예약 발송 시간 | HH:mm |
-| use_v2_api | Boolean | ❌ | v2 API 사용 여부 | 기본 true |
+| 파라미터           | 타입      | 필수 | 설명           | 제약 조건         |
+|----------------|---------|----|--------------|---------------|
+| message        | String  | ✅  | 메시지 내용       | 최대 2000 bytes |
+| title          | String  | ✅  | 제목           | 최대 40 bytes   |
+| sender_number  | String  | ✅  | 발신번호         | -             |
+| recipients     | Array   | ✅  | 수신자 번호 리스트   | 최대 1000명      |
+| image          | File    | ✅  | 이미지 파일       | JPG, 100KB 미만 |
+| scheduled_send | Boolean | ❌  | 예약 발송 여부     | -             |
+| schedule_date  | Date    | ❌  | 예약 발송 날짜     | YYYY-MM-DD    |
+| schedule_time  | Time    | ❌  | 예약 발송 시간     | HH:mm         |
+| use_v2_api     | Boolean | ❌  | v2 API 사용 여부 | 기본 true       |
 
 ### 요청 예시
 
@@ -189,7 +220,7 @@ const sendMMS = async (imageFile) => {
   const response = await fetch('/api/v1/messages/send-mms/', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${accessToken}`
+      'Authorization': `Bearer ${ accessToken }`
       // Content-Type은 브라우저가 자동 설정
     },
     body: formData
@@ -231,18 +262,18 @@ POST /api/v1/messages/send-kakao/
 
 ### 요청 파라미터
 
-| 파라미터 | 타입 | 필수 | 설명 |
-|---------|------|------|------|
-| template_code | String | ✅ | 승인된 템플릿 코드 |
-| recipients | Array | ✅ | 수신자 정보 배열 (최대 10,000명) |
-| sender_number | String | ✅ | 발신번호 (사전 등록 필요) |
-| scheduled_send | Boolean | ❌ | 예약 발송 여부 |
-| schedule_date | Date | ❌ | 예약 발송 날짜 (YYYY-MM-DD) |
-| schedule_time | Time | ❌ | 예약 발송 시간 (HH:mm) |
-| re_send | Boolean | ❌ | 실패 시 대체 문자 발송 여부 |
-| resend_type | String | ❌ | 대체 발송 타입 (`Y`: 알림톡 내용, `N`: 직접 입력) |
-| resend_title | String | ❌ | 대체 문자 제목 (LMS용) |
-| resend_content | String | ❌ | 대체 문자 내용 |
+| 파라미터           | 타입      | 필수 | 설명                                 |
+|----------------|---------|----|------------------------------------|
+| template_code  | String  | ✅  | 승인된 템플릿 코드                         |
+| recipients     | Array   | ✅  | 수신자 정보 배열 (최대 10,000명)             |
+| sender_number  | String  | ✅  | 발신번호 (사전 등록 필요)                    |
+| scheduled_send | Boolean | ❌  | 예약 발송 여부                           |
+| schedule_date  | Date    | ❌  | 예약 발송 날짜 (YYYY-MM-DD)              |
+| schedule_time  | Time    | ❌  | 예약 발송 시간 (HH:mm)                   |
+| re_send        | Boolean | ❌  | 실패 시 대체 문자 발송 여부                   |
+| resend_type    | String  | ❌  | 대체 발송 타입 (`Y`: 알림톡 내용, `N`: 직접 입력) |
+| resend_title   | String  | ❌  | 대체 문자 제목 (LMS용)                    |
+| resend_content | String  | ❌  | 대체 문자 내용                           |
 
 ### Recipients 배열 구조
 
@@ -262,7 +293,7 @@ const sendKakao = async () => {
   const response = await fetch('/api/v1/messages/send-kakao/', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'Authorization': `Bearer ${ accessToken }`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -302,10 +333,10 @@ const sendKakao = async () => {
 
 ### 대체 발송 설정
 
-| resend_type | 설명 | resend_content 필요 |
-|-------------|------|-------------------|
-| `Y` | 알림톡 내용 그대로 SMS 발송 | ❌ |
-| `N` | 직접 입력한 내용으로 SMS 발송 | ✅ |
+| resend_type | 설명                 | resend_content 필요 |
+|-------------|--------------------|-------------------|
+| `Y`         | 알림톡 내용 그대로 SMS 발송  | ❌                 |
+| `N`         | 직접 입력한 내용으로 SMS 발송 | ✅                 |
 
 ---
 
@@ -321,15 +352,15 @@ GET /api/v1/messages/send-history/
 
 ### 쿼리 파라미터
 
-| 파라미터 | 타입 | 필수 | 설명 | 제약 조건 |
-|---------|------|------|------|----------|
-| company_id | String | ✅ | 조직(업체) 발송 아이디 | - |
-| start_date | String | ✅ | 조회 시작일 | YYYY-MM-DD |
-| end_date | String | ✅ | 조회 마감일 | YYYY-MM-DD |
-| request_no | String | ❌ | 메시지 발송요청 고유번호 | - |
-| page_num | Integer | ❌ | 페이지 번호 | 기본 1 |
-| page_size | Integer | ❌ | 조회 건수 | 기본 15, 최대 1000 |
-| phone | String | ❌ | 수신번호 필터 | - |
+| 파라미터       | 타입      | 필수 | 설명            | 제약 조건          |
+|------------|---------|----|---------------|----------------|
+| company_id | String  | ✅  | 조직(업체) 발송 아이디 | -              |
+| start_date | String  | ✅  | 조회 시작일        | YYYY-MM-DD     |
+| end_date   | String  | ✅  | 조회 마감일        | YYYY-MM-DD     |
+| request_no | String  | ❌  | 메시지 발송요청 고유번호 | -              |
+| page_num   | Integer | ❌  | 페이지 번호        | 기본 1           |
+| page_size  | Integer | ❌  | 조회 건수         | 기본 15, 최대 1000 |
+| phone      | String  | ❌  | 수신번호 필터       | -              |
 
 ### 요청 예시
 
@@ -343,10 +374,10 @@ const getSendHistory = async (startDate, endDate) => {
     page_size: 20
   });
 
-  const response = await fetch(`/api/v1/messages/send-history/?${params}`, {
+  const response = await fetch(`/api/v1/messages/send-history/?${ params }`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${accessToken}`
+      'Authorization': `Bearer ${ accessToken }`
     }
   });
 
@@ -390,6 +421,7 @@ const getSendHistory = async (startDate, endDate) => {
 ### 전송 상태 코드
 
 #### SMS
+
 - `06`: 전송 성공
 - `07`: 비가입자, 결번, 서비스정지
 - `08`: 단말기 Power-off 상태
@@ -397,6 +429,7 @@ const getSendHistory = async (startDate, endDate) => {
 - [전체 코드](#sms-상태-코드)
 
 #### LMS/MMS
+
 - `1000`: 전송 성공
 - `2001`: 잘못된 번호
 - `4104`: 건수 부족
@@ -432,7 +465,7 @@ const getBalance = async () => {
   const response = await fetch('/api/v1/messages/balance/', {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${accessToken}`
+      'Authorization': `Bearer ${ accessToken }`
     }
   });
 
@@ -478,7 +511,7 @@ const getErrorCodes = async () => {
   const response = await fetch('/api/v1/messages/error-codes/', {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${accessToken}`
+      'Authorization': `Bearer ${ accessToken }`
     }
   });
 
@@ -513,16 +546,17 @@ const getErrorCodes = async () => {
 
 ### HTTP 상태 코드
 
-| 코드 | 의미 | 처리 방법 |
-|------|------|----------|
-| 200 | 성공 | 응답 데이터 사용 |
-| 400 | 잘못된 요청 | 요청 파라미터 확인 |
-| 401 | 인증 실패 | 토큰 재발급 필요 |
-| 500 | 서버 오류 | 재시도 또는 관리자 문의 |
+| 코드  | 의미     | 처리 방법         |
+|-----|--------|---------------|
+| 200 | 성공     | 응답 데이터 사용     |
+| 400 | 잘못된 요청 | 요청 파라미터 확인    |
+| 401 | 인증 실패  | 토큰 재발급 필요     |
+| 500 | 서버 오류  | 재시도 또는 관리자 문의 |
 
 ### 공통 에러 응답 구조
 
 #### SMS/LMS/MMS
+
 ```json
 {
   "resultCode": -1,
@@ -533,6 +567,7 @@ const getErrorCodes = async () => {
 ```
 
 #### 카카오 알림톡
+
 ```json
 {
   "code": -1,
@@ -550,7 +585,7 @@ const handleSendSMS = async (data) => {
     const response = await fetch('/api/v1/messages/send-sms/', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${ accessToken }`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
@@ -581,38 +616,38 @@ const handleSendSMS = async (data) => {
 
 ### SMS 상태 코드
 
-| 코드 | 메시지 | 설명 |
-|------|--------|------|
-| 06 | 전송 성공 | ✅ 정상 발송 |
-| 07 | 비가입자, 결번, 서비스정지 | 수신번호 확인 필요 |
-| 08 | 단말기 Power-off 상태 | 재발송 권장 |
-| 28 | 사전 미등록 발신번호 사용 | 발신번호 등록 필요 |
-| 40 | 단말기착신거부(스팸등) | 수신자가 차단한 상태 |
-| 92 | 발신 번호 사전 등록되지 않음 | 발신번호 등록 필요 |
-| 93 | 수신 거부 테이블에 등록됨 | 스팸 등록된 번호 |
+| 코드 | 메시지              | 설명          |
+|----|------------------|-------------|
+| 06 | 전송 성공            | ✅ 정상 발송     |
+| 07 | 비가입자, 결번, 서비스정지  | 수신번호 확인 필요  |
+| 08 | 단말기 Power-off 상태 | 재발송 권장      |
+| 28 | 사전 미등록 발신번호 사용   | 발신번호 등록 필요  |
+| 40 | 단말기착신거부(스팸등)     | 수신자가 차단한 상태 |
+| 92 | 발신 번호 사전 등록되지 않음 | 발신번호 등록 필요  |
+| 93 | 수신 거부 테이블에 등록됨   | 스팸 등록된 번호   |
 
 ### LMS/MMS 상태 코드
 
-| 코드 | 메시지 | 설명 |
-|------|--------|------|
-| 1000 | 전송 성공 | ✅ 정상 발송 |
-| 2001 | 잘못된 번호 | 수신번호 형식 오류 |
-| 3001 | 단말기 메시지 저장개수 초과 | 수신자 메시지함 가득참 |
-| 4104 | 건수 부족 | 잔액 부족 |
-| 5301 | 사전 미등록 발신번호 사용 | 발신번호 등록 필요 |
-| 9012 | 발신 번호 사전 등록되지 않음 | 발신번호 등록 필요 |
-| 9013 | 수신 거부 테이블에 등록됨 | 스팸 등록된 번호 |
+| 코드   | 메시지              | 설명           |
+|------|------------------|--------------|
+| 1000 | 전송 성공            | ✅ 정상 발송      |
+| 2001 | 잘못된 번호           | 수신번호 형식 오류   |
+| 3001 | 단말기 메시지 저장개수 초과  | 수신자 메시지함 가득참 |
+| 4104 | 건수 부족            | 잔액 부족        |
+| 5301 | 사전 미등록 발신번호 사용   | 발신번호 등록 필요   |
+| 9012 | 발신 번호 사전 등록되지 않음 | 발신번호 등록 필요   |
+| 9013 | 수신 거부 테이블에 등록됨   | 스팸 등록된 번호    |
 
 ### 카카오 알림톡 에러 코드
 
-| 코드 | 메시지 | 설명 |
-|------|--------|------|
-| 200 | 메시지가 발송되었습니다 | ✅ 정상 발송 |
+| 코드  | 메시지               | 설명           |
+|-----|-------------------|--------------|
+| 200 | 메시지가 발송되었습니다      | ✅ 정상 발송      |
 | 501 | templateCode 값 오류 | 템플릿 코드 확인 필요 |
-| 505 | 사전 등록되지 않은 발신번호 | 발신번호 등록 필요 |
-| 509 | 메시지 내용이 템플릿과 불일치 | 템플릿 변수 확인 |
-| 514 | 최대 10,000건 초과 | 발송 건수 제한 |
-| 519 | 잔액 부족 | 충전 필요 |
+| 505 | 사전 등록되지 않은 발신번호   | 발신번호 등록 필요   |
+| 509 | 메시지 내용이 템플릿과 불일치  | 템플릿 변수 확인    |
+| 514 | 최대 10,000건 초과     | 발송 건수 제한     |
+| 519 | 잔액 부족             | 충전 필요        |
 
 ---
 
@@ -621,84 +656,85 @@ const handleSendSMS = async (data) => {
 ### Composition API
 
 ```vue
+
 <script setup>
-import { ref } from 'vue';
+  import { ref } from 'vue';
 
-const accessToken = ref(localStorage.getItem('access_token'));
-const loading = ref(false);
-const error = ref(null);
+  const accessToken = ref(localStorage.getItem('access_token'));
+  const loading = ref(false);
+  const error = ref(null);
 
-// SMS 발송
-const sendSMS = async (message, recipients, senderNumber) => {
-  loading.value = true;
-  error.value = null;
+  // SMS 발송
+  const sendSMS = async (message, recipients, senderNumber) => {
+    loading.value = true;
+    error.value = null;
 
-  try {
-    const response = await fetch('/api/v1/messages/send-sms/', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken.value}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        message_type: 'AUTO',
-        message,
-        sender_number: senderNumber,
-        recipients,
-        scheduled_send: false
-      })
+    try {
+      const response = await fetch('/api/v1/messages/send-sms/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${ accessToken.value }`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message_type: 'AUTO',
+          message,
+          sender_number: senderNumber,
+          recipients,
+          scheduled_send: false
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.resultCode === 0) {
+        return { success: true, requestNo: result.requestNo };
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err) {
+      error.value = err.message;
+      return { success: false, error: err.message };
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 잔액 조회
+  const getBalance = async () => {
+    try {
+      const response = await fetch('/api/v1/messages/balance/', {
+        headers: {
+          'Authorization': `Bearer ${ accessToken.value }`
+        }
+      });
+
+      const result = await response.json();
+      return result.charge;
+    } catch (err) {
+      console.error('잔액 조회 실패:', err);
+      return 0;
+    }
+  };
+
+  // 전송 내역 조회
+  const getHistory = async (startDate, endDate, pageNum = 1) => {
+    const params = new URLSearchParams({
+      company_id: 'myCompany',
+      start_date: startDate,
+      end_date: endDate,
+      page_num: pageNum,
+      page_size: 20
     });
 
-    const result = await response.json();
-
-    if (response.ok && result.resultCode === 0) {
-      return { success: true, requestNo: result.requestNo };
-    } else {
-      throw new Error(result.message);
-    }
-  } catch (err) {
-    error.value = err.message;
-    return { success: false, error: err.message };
-  } finally {
-    loading.value = false;
-  }
-};
-
-// 잔액 조회
-const getBalance = async () => {
-  try {
-    const response = await fetch('/api/v1/messages/balance/', {
+    const response = await fetch(`/api/v1/messages/send-history/?${ params }`, {
       headers: {
-        'Authorization': `Bearer ${accessToken.value}`
+        'Authorization': `Bearer ${ accessToken.value }`
       }
     });
 
-    const result = await response.json();
-    return result.charge;
-  } catch (err) {
-    console.error('잔액 조회 실패:', err);
-    return 0;
-  }
-};
-
-// 전송 내역 조회
-const getHistory = async (startDate, endDate, pageNum = 1) => {
-  const params = new URLSearchParams({
-    company_id: 'myCompany',
-    start_date: startDate,
-    end_date: endDate,
-    page_num: pageNum,
-    page_size: 20
-  });
-
-  const response = await fetch(`/api/v1/messages/send-history/?${params}`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken.value}`
-    }
-  });
-
-  return await response.json();
-};
+    return await response.json();
+  };
 </script>
 
 <template>
@@ -734,7 +770,7 @@ export const useSMS = () => {
       const response = await fetch('/api/v1/messages/send-sms/', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${ localStorage.getItem('access_token') }`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -764,7 +800,7 @@ export const useSMS = () => {
   const getBalance = async () => {
     const response = await fetch('/api/v1/messages/balance/', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        'Authorization': `Bearer ${ localStorage.getItem('access_token') }`
       }
     });
 
