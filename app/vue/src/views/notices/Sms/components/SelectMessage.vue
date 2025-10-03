@@ -1,20 +1,38 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 // Props 정의
 const activeTab = defineModel<string>('activeTab')
 const smsForm = defineModel<any>('smsForm') as any
 const kakaoForm = defineModel<any>('kakaoForm') as any
-const messageCount = defineModel<number>('messageCount')
+const messageCount = defineModel<number>('messageCount') as any
 
 // Emits 정의
 const emit = defineEmits<{
   selectTemplate: []
   previewMessage: []
+  'update:messageCount': [value: number]
 }>()
 
 // Computed 속성들
 const project = computed(() => '동춘1구역9블럭지역주택조합')
+
+// SMS 메시지 변경 감지 및 자동 타입 변경
+watch(
+  () => smsForm.value?.message,
+  newMessage => {
+    if (newMessage === undefined) return
+
+    const messageLength = newMessage.length
+
+    // 메시지 길이에 따라 자동으로 SMS/LMS 전환
+    if (messageLength > 90 && smsForm.value?.messageType === 'SMS')
+      smsForm.value.messageType = 'LMS'
+    else if (messageLength <= 90 && smsForm.value?.messageType === 'LMS')
+      smsForm.value.messageType = 'SMS'
+  },
+  { immediate: true, deep: true },
+)
 
 const handleSelectTemplate = () => {
   emit('selectTemplate')
@@ -83,14 +101,15 @@ const handlePreviewMessage = () => {
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <CFormLabel>메시지 내용</CFormLabel>
                 <small class="text-muted">
-                  {{ messageCount }}/{{ smsForm.messageType === 'SMS' ? '90' : '2000' }}자
+                  {{ smsForm?.message?.length || 0 }}/{{
+                    smsForm.messageType === 'SMS' ? '90' : '2000'
+                  }}자
                 </small>
               </div>
               <CFormTextarea
                 v-model="smsForm.message"
                 rows="6"
                 placeholder="전송할 메시지를 입력하세요..."
-                @input="(messageCount as any) = smsForm?.message?.length || 0"
               />
             </div>
 
