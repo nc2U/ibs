@@ -102,9 +102,8 @@ const handleClearAll = () => (recipientsList.value = [] as any)
               <CFormSelect
                 label="수신자 그룹"
                 :options="[
-                  { value: 'all', label: '전체 계약자' },
-                  { value: 'contractors', label: '계약 완료자' },
-                  { value: 'applicants', label: '청약자' },
+                  { value: '', label: '---------' },
+                  { value: 'contractors', label: '전체 계약자' },
                 ]"
               />
             </v-expansion-panel-text>
