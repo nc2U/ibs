@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, watch, ref, onMounted } from 'vue'
+import { computed, watch, ref, onMounted, nextTick } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import SenderNumberModal from './SenderNumberModal.vue'
 import MessageTemplateModal from './MessageTemplateModal.vue'
@@ -67,14 +67,18 @@ const handleOpenTemplateModal = () => {
 }
 
 const handleTemplateSelect = () => {
-  if (!selectedTemplate.value) return
+  nextTick(() => {
+    if (!selectedTemplate.value) return
 
-  const template = notiStore.messageTemplates.find(t => t.id.toString() === selectedTemplate.value)
+    const template = notiStore.messageTemplates.find(
+      t => t.id.toString() === selectedTemplate.value,
+    )
 
-  if (template) {
-    smsForm.value.messageType = template.message_type
-    smsForm.value.message = template.content
-  }
+    if (template) {
+      smsForm.value.messageType = template.message_type
+      smsForm.value.message = template.content
+    }
+  })
 }
 
 // Computed 속성들
