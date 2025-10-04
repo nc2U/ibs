@@ -53,3 +53,33 @@ class RegisteredSenderNumber(models.Model):
         if self.label:
             return f'{self.phone_number} ({self.label})'
         return self.phone_number
+
+
+class MessageTemplate(models.Model):
+    """메시지 템플릿"""
+    MESSAGE_TYPE_CHOICES = [
+        ('SMS', 'SMS'),
+        ('LMS', 'LMS'),
+        ('MMS', 'MMS'),
+    ]
+
+    title = models.CharField('템플릿 제목', max_length=100,
+                             help_text='템플릿 이름 (LMS 전송 시 제목으로도 사용 가능)')
+    message_type = models.CharField('메시지 타입', max_length=10,
+                                    choices=MESSAGE_TYPE_CHOICES, default='SMS', db_index=True)
+    content = models.TextField('메시지 내용')
+    variables = models.JSONField('변수 목록', default=list, blank=True,
+                                 help_text='템플릿에서 사용하는 변수 예: ["이름", "금액"]')
+    is_active = models.BooleanField('활성화', default=True, db_index=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                   null=True, blank=True, verbose_name='등록자')
+    created_at = models.DateTimeField('등록일', auto_now_add=True)
+    updated_at = models.DateTimeField('수정일', auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "03. 메시지 템플릿"
+        verbose_name_plural = "03. 메시지 템플릿"
+
+    def __str__(self):
+        return f'{self.title} ({self.message_type})'
