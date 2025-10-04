@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
@@ -8,10 +8,11 @@ import type { BranchInfo, Repository, Tree } from '@/store/types/work_git_repo.t
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import BranchTree from './components/BranchTree.vue'
-import ViewFile from './components/ViewFile.vue'
-import ViewRevision from './components/ViewRevision.vue'
 import Revisions from './components/Revisions.vue'
-import ViewDiff from './components/ViewDiff.vue'
+// Async components for code splitting
+const ViewDiff = defineAsyncComponent(() => import('./components/ViewDiff.vue'))
+const ViewFile = defineAsyncComponent(() => import('./components/ViewFile.vue'))
+const ViewRevision = defineAsyncComponent(() => import('./components/ViewRevision.vue'))
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -164,21 +165,32 @@ onBeforeMount(async () => {
         />
       </template>
 
-      <ViewDiff v-if="route.name === '(저장소) - 차이점 보기'" />
+      <Suspense v-if="route.name === '(저장소) - 차이점 보기'">
+        <ViewDiff />
+        <template #fallback>
+          <div class="text-center p-4">
+            <v-progress-circular indeterminate color="primary" />
+          </div>
+        </template>
+      </Suspense>
 
-      <ViewFile
-        v-else-if="route.name === '(저장소) - 파일 보기'"
-        :repo-name="repo?.slug as string"
-        :curr-refs="curr_refs"
-        @into-path="intoPath"
-      />
+      <Suspense v-else-if="route.name === '(저장소) - 파일 보기'">
+        <ViewFile :repo-name="repo?.slug as string" :curr-refs="curr_refs" @into-path="intoPath" />
+        <template #fallback>
+          <div class="text-center p-4">
+            <v-progress-circular indeterminate color="primary" />
+          </div>
+        </template>
+      </Suspense>
 
-      <ViewRevision
-        v-else-if="route.name === '(저장소) - 리비전 보기'"
-        :repo="repo?.pk as number"
-        @change-refs="changeRefs"
-        @into-path="intoPath"
-      />
+      <Suspense v-else-if="route.name === '(저장소) - 리비전 보기'">
+        <ViewRevision :repo="repo?.pk as number" @change-refs="changeRefs" @into-path="intoPath" />
+        <template #fallback>
+          <div class="text-center p-4">
+            <v-progress-circular indeterminate color="primary" />
+          </div>
+        </template>
+      </Suspense>
     </template>
 
     <template v-slot:aside></template>

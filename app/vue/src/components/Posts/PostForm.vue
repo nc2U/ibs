@@ -1,14 +1,13 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
-import { ref, reactive, computed, onMounted, onUpdated } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUpdated, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Post, PostLink } from '@/store/types/board'
 import { AlertSecondary, btnLight } from '@/utils/cssMixins'
-import Multiselect from '@vueform/multiselect'
-import QuillEditor from '@/components/QuillEditor/index.vue'
-import DatePicker from '@/components/DatePicker/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+// Async component for QuillEditor (heavy quill library)
+const QuillEditor = defineAsyncComponent(() => import('@/components/QuillEditor/index.vue'))
 
 const props = defineProps({
   sortName: { type: String, default: '【본사】' },

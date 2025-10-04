@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeMount, watch } from 'vue'
 import { btnSecondary, TableSecondary } from '@/utils/cssMixins.ts'
-import type { Repository, Commit, Dag } from '@/store/types/work_git_repo.ts'
+import type { Commit, Dag, Repository } from '@/store/types/work_git_repo.ts'
 import { useRouter } from 'vue-router'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
-import GitGraph from './atomics/GitGraph.vue'
 import Pagination from '@/components/Pagination'
+// Async component for GitGraph (heavy gitgraph library)
+const GitGraph = defineAsyncComponent(() => import('./atomics/GitGraph.vue'))
 
 const router = useRouter()
 

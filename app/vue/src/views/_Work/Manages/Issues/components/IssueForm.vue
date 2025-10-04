@@ -1,5 +1,14 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
+import {
+  computed,
+  type ComputedRef,
+  defineAsyncComponent,
+  inject,
+  onBeforeMount,
+  type PropType,
+  ref,
+  watch,
+} from 'vue'
 import type { getProject, IssueProject, Member, SimpleMember } from '@/store/types/work_project.ts'
 import type {
   CodeValue,
@@ -16,13 +25,14 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { btnLight, colorLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
-import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
 import WatcherAdd from '@/views/_Work/Manages/Issues/components/aside/WatcherAdd.vue'
 import FormInIssueCategory from '@/views/_Work/Manages/Issues/components/FormInIssueCategory.vue'
 import FormInIssueVersion from '@/views/_Work/Manages/Issues/components/FormInIssueVersion.vue'
+// Async component for MdEditor (heavy markdown-it library)
+const MdEditor = defineAsyncComponent(() => import('@/components/MdEditor/Index.vue'))
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },

@@ -1,11 +1,20 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUpdate, type PropType, reactive, ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeMount,
+  onBeforeUpdate,
+  type PropType,
+  reactive,
+  ref,
+} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
 import { btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
-import QuillEditor from '@/components/QuillEditor/index.vue'
 import DatePicker from '@/components/DatePicker/index.vue'
+// Async component for QuillEditor (heavy quill library)
+const QuillEditor = defineAsyncComponent(() => import('@/components/QuillEditor/index.vue'))
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
 import LinkModify from '@/components/LinkControl/LinkModify.vue'
