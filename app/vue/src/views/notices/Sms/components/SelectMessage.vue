@@ -13,7 +13,6 @@ const messageCount = defineModel<number>('messageCount') as any
 // Emits 정의
 const emit = defineEmits<{
   selectTemplate: []
-  previewMessage: []
   'update:messageCount': [value: number]
 }>()
 
@@ -27,6 +26,9 @@ const editingSenderNumber = ref<{ id: number; phone_number: string; label: strin
 // Template management
 const templateModal = ref()
 const selectedTemplate = ref<string>('')
+
+// Preview management
+const showPreview = ref(false)
 
 // Computed for sender number options
 const senderNumberOptions = computed(() => {
@@ -100,10 +102,6 @@ watch(
   },
   { immediate: true, deep: true },
 )
-
-const handlePreviewMessage = () => {
-  emit('previewMessage')
-}
 </script>
 
 <template>
@@ -194,16 +192,29 @@ const handlePreviewMessage = () => {
               />
             </div>
 
+            <!-- 미리보기 영역 (토글) -->
+            <v-alert v-if="showPreview" type="info" variant="tonal" class="mb-3">
+              <strong>📱 {{ smsForm.messageType }} 미리보기</strong>
+              <div class="d-flex mt-3">
+                <div class="p-3 rounded message-preview-box">
+                  {{ smsForm.message || '메시지를 입력하세요...' }}
+                </div>
+              </div>
+              <small class="text-muted d-block mt-2">
+                타입: {{ smsForm.messageType }} | 길이: {{ smsForm.message?.length || 0 }}자
+              </small>
+            </v-alert>
+
             <!-- 미리보기 버튼 -->
             <v-btn
               color="info"
               variant="outlined"
-              @click="handlePreviewMessage"
-              prepend-icon="mdi-eye"
+              @click="showPreview = !showPreview"
+              :prepend-icon="showPreview ? 'mdi-eye-off' : 'mdi-eye'"
               block
               class="mb-3"
             >
-              미리보기
+              {{ showPreview ? '미리보기 숨기기' : '미리보기' }}
             </v-btn>
           </v-tabs-window-item>
 
@@ -267,3 +278,25 @@ const handlePreviewMessage = () => {
     <MessageTemplateModal ref="templateModal" />
   </CCol>
 </template>
+
+<style scoped lang="scss">
+.message-preview-box {
+  max-width: 360px;
+  width: 100%;
+  background: lightyellow;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.dark-theme {
+  .message-preview-box {
+    background: #475b49;
+    border-color: #3a3b45;
+    color: #fff;
+  }
+}
+</style>
