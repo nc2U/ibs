@@ -103,14 +103,30 @@ export const useNotice = defineStore('notice', () => {
       })
 
       if (historyResponse.data.resultCode === 0 && historyResponse.data.list.length > 0) {
-        const sendResult = historyResponse.data.list[0]
+        // 같은 requestNo에 대해 여러 레코드가 있을 수 있음 (WAIT 상태와 최종 상태)
+        // 최종 상태를 우선적으로 확인 (구분이 "API"인 것 또는 WAIT가 아닌 것)
+        const records = historyResponse.data.list.filter(
+          item => item.requestNo === response.data.requestNo
+        )
 
-        // 발송 상태 확인 (sendStatusCode: '0'=성공, 그 외=실패)
-        if (sendResult.sendStatusCode === '0') {
+        // API 구분이 있는 것(최종 상태) 우선, 없으면 첫 번째 레코드
+        const sendResult = records.find(item => item.sendStatusCode !== 'WAIT') || records[0]
+
+        // 발송 상태 확인
+        // '0', '06' = 성공
+        // 'WAIT' = 대기 중
+        // 그 외 = 실패
+        if (sendResult.sendStatusCode === '0' || sendResult.sendStatusCode === '06') {
           message(
             'success',
             '발송 성공',
             `SMS가 성공적으로 발송되었습니다. (${payload.recipients.length}건)`,
+          )
+        } else if (sendResult.sendStatusCode === 'WAIT') {
+          message(
+            'info',
+            '발송 대기 중',
+            `SMS 발송이 접수되었습니다. 전송 처리 중입니다. (${payload.recipients.length}건)`,
           )
         } else {
           message(

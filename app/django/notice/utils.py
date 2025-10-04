@@ -659,6 +659,8 @@ class IwinvSMSService:
 
         # SMS 전송 결과 코드
         sms_status_messages = {
+            "0": "전송 대기 중",
+            "WAIT": "전송 대기 중",
             "01": "시스템 장애",
             "02": "인증실패, 직후 연결을 끊음",
             "03": "메시지 형식 오류",
@@ -693,6 +695,8 @@ class IwinvSMSService:
 
         # LMS/MMS 전송 결과 코드
         lms_mms_status_messages = {
+            "0": "전송 대기 중",
+            "WAIT": "전송 대기 중",
             "1000": "전송 성공",
             "2000": "포맷 에러",
             "2001": "잘못된 번호",

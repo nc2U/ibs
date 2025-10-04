@@ -76,6 +76,12 @@ const previewMessage = () => {
 const notiStore = useNotice()
 
 const sendMessage = async () => {
+  // 이미 발송 중이면 중복 실행 방지
+  if (isSending.value) {
+    console.warn('이미 발송 중입니다.')
+    return
+  }
+
   isSending.value = true
   sendProgress.value = 0
 
