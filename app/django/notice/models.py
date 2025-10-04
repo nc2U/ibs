@@ -1,30 +1,8 @@
 from django.db import models
 from django.conf import settings
-from import_export.admin import ImportExportMixin
 
 
-class RegisteredSenderNumber(models.Model):
-    """등록된 발신번호 (iwinv API에서 사전 등록 필요)"""
-    phone_number = models.CharField('발신번호', max_length=20, unique=True, db_index=True,
-                                    help_text='iwinv 관리자 페이지에서 사전 등록된 발신번호')
-    label = models.CharField('설명', max_length=50, blank=True,
-                            help_text='발신번호에 대한 설명 (예: 본사, 고객센터)')
-    is_active = models.BooleanField('활성화', default=True, db_index=True)
-    created_at = models.DateTimeField('등록일', auto_now_add=True)
-    updated_at = models.DateTimeField('수정일', auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = "02. 등록된 발신번호"
-        verbose_name_plural = "02. 등록된 발신번호"
-
-    def __str__(self):
-        if self.label:
-            return f'{self.phone_number} ({self.label})'
-        return self.phone_number
-
-
-class SalesBillIssue(ImportExportMixin, models.Model):
+class SalesBillIssue(models.Model):
     project = models.OneToOneField('project.Project', on_delete=models.CASCADE, unique=True, verbose_name='프로젝트')
     now_payment_order = models.ForeignKey('payment.InstallmentPaymentOrder', on_delete=models.SET_NULL,
                                           null=True, blank=True, verbose_name='현재 발행회차')
@@ -54,3 +32,24 @@ class SalesBillIssue(ImportExportMixin, models.Model):
 
     def __str__(self):
         return f'{self.project}-고지서 정보'
+
+
+class RegisteredSenderNumber(models.Model):
+    """등록된 발신번호 (iwinv API에서 사전 등록 필요)"""
+    phone_number = models.CharField('발신번호', max_length=20, unique=True, db_index=True,
+                                    help_text='iwinv 관리자 페이지에서 사전 등록된 발신번호')
+    label = models.CharField('설명', max_length=50, blank=True,
+                             help_text='발신번호에 대한 설명 (예: 본사, 고객센터)')
+    is_active = models.BooleanField('활성화', default=True, db_index=True)
+    created_at = models.DateTimeField('등록일', auto_now_add=True)
+    updated_at = models.DateTimeField('수정일', auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "02. 등록된 발신번호"
+        verbose_name_plural = "02. 등록된 발신번호"
+
+    def __str__(self):
+        if self.label:
+            return f'{self.phone_number} ({self.label})'
+        return self.phone_number
