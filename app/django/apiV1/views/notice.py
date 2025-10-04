@@ -464,6 +464,5 @@ class MessageViewSet(viewsets.ViewSet):
 
         except Exception as e:
             return Response({
-                'error': '연락처 조회 중 오류가 발생했습니다.',
-                'detail': str(e)
+                'error': '연락처 조회 중 오류가 발생했습니다.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
