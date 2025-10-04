@@ -55,7 +55,7 @@ const handleClearAll = () => (recipientsList.value = [] as any)
 </script>
 
 <template>
-  <CCol :md="6" :xs="12">
+  <CCol :xs="12">
     <CCard class="mb-4">
       <CCardHeader style="height: 48px; padding-top: 12px">
         <v-icon icon="mdi-account-multiple" class="me-2" />

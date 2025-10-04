@@ -165,29 +165,28 @@ onBeforeMount(() => {
         <!-- 발송 탭 내용 -->
         <div v-show="mainTab === 'send'">
           <CRow>
-            <!-- 수신자 관리 섹션 (고정) -->
-            <SelectRecipient
-              v-model:recipient-input="recipientInput"
-              v-model:recipients-list="recipientsList"
-            />
-
-            <!-- 메시지 작성 섹션 (탭으로 구분) -->
-            <SelectMessage
-              v-model:active-tab="activeTab"
-              v-model:sms-form="smsForm"
-              v-model:kakao-form="kakaoForm"
-              v-model:message-count="messageCount"
-              @select-template="selectTemplate"
-              @preview-message="previewMessage"
-            />
+            <CCol lg="7">
+              <!-- 메시지 작성 섹션 (탭으로 구분) -->
+              <SelectMessage
+                v-model:active-tab="activeTab"
+                v-model:sms-form="smsForm"
+                v-model:kakao-form="kakaoForm"
+                v-model:message-count="messageCount"
+                @select-template="selectTemplate"
+                @preview-message="previewMessage"
+              />
+            </CCol>
+            <CCol lg="5">
+              <!-- 수신자 관리 섹션 (고정) -->
+              <SelectRecipient
+                v-model:recipient-input="recipientInput"
+                v-model:recipients-list="recipientsList"
+              />
+            </CCol>
           </CRow>
 
           <CRow>
-            <CCol>
-              <!-- 잔액 아코디언 -->
-              <BalanceCard :balance="balance" :loading="balanceLoading" @refresh="refreshBalance" />
-            </CCol>
-            <CCol>
+            <CCol lg="7">
               <!-- 발송 설정 및 실행 -->
               <SendMessage
                 :active-tab="activeTab"
@@ -198,6 +197,11 @@ onBeforeMount(() => {
                 :send-progress="sendProgress"
                 @send-message="sendMessage"
               />
+            </CCol>
+
+            <CCol lg="5">
+              <!-- 잔액 아코디언 -->
+              <BalanceCard :balance="balance" :loading="balanceLoading" @refresh="refreshBalance" />
             </CCol>
           </CRow>
         </div>

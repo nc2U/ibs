@@ -105,7 +105,7 @@ watch(
 </script>
 
 <template>
-  <CCol :md="6" :xs="12">
+  <CCol :xs="12">
     <CCard class="mb-4">
       <CCardHeader class="p-0">
         <v-tabs v-model="activeTab" align-tabs="center">
