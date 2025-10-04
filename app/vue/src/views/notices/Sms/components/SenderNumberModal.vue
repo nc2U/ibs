@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import { btnLight } from '@/utils/cssMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
+import { CModalBody } from '@coreui/vue'
 
 // Props
 const props = defineProps<{
@@ -55,10 +56,7 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
-  if (!form.value.phone_number) {
-    alert('발신번호를 입력해주세요.')
-    return
-  }
+  if (!form.value.phone_number) return
 
   submitting.value = true
 
@@ -102,12 +100,14 @@ defineExpose({ openModal, closeModal })
       </CAlert>
 
       <!-- 발신번호 입력 -->
-      <CFormInput
+      <input
         v-model="form.phone_number"
         label="발신번호"
+        v-maska
+        data-maska="['###-###-####', '###-####-####']"
         placeholder="예: 02-1234-5678 또는 01012345678"
+        class="mb-3 form-control"
         required
-        class="mb-3"
       />
 
       <!-- 설명 입력 -->
