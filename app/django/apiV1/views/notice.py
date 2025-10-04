@@ -1,10 +1,10 @@
-from django.conf import settings
+from django.db.models import Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
-from notice.models import RegisteredSenderNumber, MessageTemplate
+from contract.models import ContractorContact, Contractor, Contract
 from notice.utils import IwinvSMSService
 from ..permission import *
 from ..serializers.notice import *
@@ -311,8 +311,6 @@ class MessageViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path='send-history')
     def get_send_history(self, request):
         """전송 내역 조회"""
-        from ..serializers.notice import SMSHistoryQuerySerializer
-
         serializer = SMSHistoryQuerySerializer(data=request.query_params)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -397,4 +395,75 @@ class MessageViewSet(viewsets.ViewSet):
                 'code': -1,
                 'message': '서버 내부 오류가 발생했습니다.',
                 'charge': 0.0
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='recipient-groups')
+    def get_recipient_groups(self, request):
+        """수신자 그룹별 연락처 조회 (프로젝트 + 차수별 필터링 지원)"""
+        project_id = request.query_params.get('project')
+        group_type = request.query_params.get('group_type')
+
+        if not project_id:
+            return Response({
+                'error': 'project 파라미터가 필요합니다.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not group_type:
+            return Response({
+                'error': 'group_type 파라미터가 필요합니다.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 기본 필터: 유효한 계약(activation=True) + 유효한 계약자(is_active=True)
+        base_filter = Q(
+            contractor__contract__project_id=project_id,
+            contractor__contract__activation=True,  # 계약 유효성 (해지 제외)
+            contractor__is_active=True  # 계약자 유효성 (양도인 제외)
+        )
+
+        # 차수별 필터링 (추후 확장)
+        if group_type.startswith('order_'):
+            order_id = group_type.replace('order_', '')
+            base_filter &= Q(contractor__contract__order_group_id=order_id)
+        # 'all'은 base_filter만 사용
+
+        try:
+            # 디버깅: 각 필터 단계별 카운트
+            total_contractors = Contractor.objects.filter(
+                contract__project_id=project_id
+            ).count()
+
+            active_contracts = Contract.objects.filter(
+                project_id=project_id,
+                activation=True
+            ).count()
+
+            active_contractors = Contractor.objects.filter(
+                contract__project_id=project_id,
+                contract__activation=True,
+                is_active=True
+            ).count()
+
+            # 유효한 휴대폰 번호만 조회 (중복 제거)
+            contacts = ContractorContact.objects.filter(
+                base_filter
+            ).exclude(
+                Q(cell_phone__isnull=True) | Q(cell_phone='')
+            ).values_list('cell_phone', flat=True).distinct()
+
+            phone_list = list(contacts)
+
+            return Response({
+                'count': len(phone_list),
+                'phone_numbers': phone_list,
+                'debug': {
+                    'total_contractors': total_contractors,
+                    'active_contracts': active_contracts,
+                    'active_contractors': active_contractors,
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'error': '연락처 조회 중 오류가 발생했습니다.',
+                'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
