@@ -1,7 +1,32 @@
 from rest_framework import serializers
 
-from notice.models import SalesBillIssue
+from notice.models import SalesBillIssue, RegisteredSenderNumber
 from apiV1.serializers.accounts import SimpleUserSerializer
+
+
+# Registered Sender Number --------------------------------------------------------
+class RegisteredSenderNumberSerializer(serializers.ModelSerializer):
+    """등록된 발신번호 시리얼라이저"""
+
+    class Meta:
+        model = RegisteredSenderNumber
+        fields = ('id', 'phone_number', 'label', 'is_active', 'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
+
+    def validate_phone_number(self, value):
+        """전화번호 유효성 검사"""
+        # 하이픈 제거 후 숫자만 추출
+        clean_number = value.replace('-', '').replace(' ', '')
+
+        # 숫자만 있는지 확인
+        if not clean_number.isdigit():
+            raise serializers.ValidationError("전화번호는 숫자와 하이픈(-)만 포함해야 합니다.")
+
+        # 길이 검증 (지역번호 2-3자리 + 나머지 7-8자리)
+        if len(clean_number) < 9 or len(clean_number) > 11:
+            raise serializers.ValidationError("올바른 전화번호 형식이 아닙니다.")
+
+        return value
 
 
 # Notice --------------------------------------------------------------------------

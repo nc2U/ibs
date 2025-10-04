@@ -20,6 +20,8 @@ export const useNotice = defineStore('notice', () => {
   const sendHistory = ref<SendHistoryResponse | null>(null)
   const balance = ref<number>(0)
   const loading = ref<boolean>(false)
+  const senderNumbers = ref<Array<{ id: number; phone_number: string; label: string }>>([])
+
 
   // Sales Bill Issue actions
   const fetchSalesBillIssue = (pk: number) =>
@@ -250,13 +252,71 @@ export const useNotice = defineStore('notice', () => {
   }
 
   // 등록된 발신번호 목록 조회
-  const fetchRegisteredSenderNumbers = async (): Promise<string[]> => {
+  const fetchSenderNumbers = async () => {
+    loading.value = true
     try {
-      const response = await api.get('/messages/registered-sender-numbers/')
-      return response.data.numbers || []
+      const response = await api.get('/registered-sender-numbers/')
+      senderNumbers.value = Array.isArray(response.data) ? response.data : []
+      return response.data
     } catch (err: any) {
+      senderNumbers.value = [] // Ensure it remains an array on error
       errorHandle(err.response?.data || { message: '발신번호 목록 조회 중 오류가 발생했습니다.' })
       throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 발신번호 생성
+  const createSenderNumber = async (payload: { phone_number: string; label: string }) => {
+    loading.value = true
+    try {
+      const response = await api.post('/registered-sender-numbers/', payload)
+      message('success', '', '발신번호가 등록되었습니다.')
+      await fetchSenderNumbers() // 목록 갱신
+      return response.data
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.phone_number?.[0] || err.response?.data?.message || '발신번호 등록 중 오류가 발생했습니다.'
+      message('danger', '등록 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 발신번호 수정
+  const updateSenderNumber = async (id: number, payload: { phone_number?: string; label?: string }) => {
+    loading.value = true
+    try {
+      const response = await api.patch(`/registered-sender-numbers/${id}/`, payload)
+      message('success', '', '발신번호가 수정되었습니다.')
+      await fetchSenderNumbers() // 목록 갱신
+      return response.data
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.phone_number?.[0] || err.response?.data?.message || '발신번호 수정 중 오류가 발생했습니다.'
+      message('danger', '수정 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 발신번호 삭제 (soft delete)
+  const deleteSenderNumber = async (id: number) => {
+    loading.value = true
+    try {
+      await api.delete(`/registered-sender-numbers/${id}/`)
+      message('warning', '', '발신번호가 삭제되었습니다.')
+      await fetchSenderNumbers() // 목록 갱신
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || '발신번호 삭제 중 오류가 발생했습니다.'
+      message('danger', '삭제 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
@@ -266,6 +326,7 @@ export const useNotice = defineStore('notice', () => {
     sendHistory,
     balance,
     loading,
+    senderNumbers,
 
     // Sales Bill Issue actions
     fetchSalesBillIssue,
@@ -281,6 +342,11 @@ export const useNotice = defineStore('notice', () => {
     fetchSendHistory,
     fetchBalance,
     fetchErrorCodes,
-    fetchRegisteredSenderNumbers,
+
+    // Sender Number actions
+    fetchSenderNumbers,
+    createSenderNumber,
+    updateSenderNumber,
+    deleteSenderNumber,
   }
 })

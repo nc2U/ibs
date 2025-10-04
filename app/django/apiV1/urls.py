@@ -149,6 +149,7 @@ router.register(r'contractor-release', contract.ContReleaseViewSet)
 # notice
 router.register(r'sales-bill-issue', notice.BillIssueViewSet)
 router.register(r'messages', notice.MessageViewSet, basename='messages')
+router.register(r'registered-sender-numbers', notice.RegisteredSenderNumberViewSet)
 
 # board
 router.register(r'board', board.BoardViewSet)

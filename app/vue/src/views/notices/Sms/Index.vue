@@ -140,13 +140,6 @@ onBeforeMount(() => {
 
   <ContentBody>
     <!-- 메인 탭 (발송 / 히스토리) -->
-
-    <hr />
-    {{ smsForm }}
-    <hr />
-    {{ kakaoForm }}
-    <hr />
-
     <CCard>
       <CCardHeader>
         <CRow class="mt-3">

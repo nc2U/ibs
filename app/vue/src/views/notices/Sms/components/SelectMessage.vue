@@ -1,5 +1,7 @@
 <script lang="ts" setup>
-import { computed, watch } from 'vue'
+import { computed, watch, ref, onMounted } from 'vue'
+import { useNotice } from '@/store/pinia/notice'
+import SenderNumberModal from './SenderNumberModal.vue'
 
 // Props 정의
 const activeTab = defineModel<string>('activeTab')
@@ -13,6 +15,36 @@ const emit = defineEmits<{
   previewMessage: []
   'update:messageCount': [value: number]
 }>()
+
+// Store
+const notiStore = useNotice()
+
+// Sender number management
+const senderNumberModal = ref()
+const editingSenderNumber = ref<{ id: number; phone_number: string; label: string } | null>(null)
+
+// Computed for sender number options
+const senderNumberOptions = computed(() => {
+  if (!Array.isArray(notiStore.senderNumbers)) return []
+  return notiStore.senderNumbers.map(item => ({
+    value: item.phone_number,
+    label: item.label ? `${item.phone_number} (${item.label})` : item.phone_number,
+  }))
+})
+
+// Load sender numbers on the mount
+onMounted(async () => {
+  try {
+    await notiStore.fetchSenderNumbers()
+  } catch (error) {
+    console.error('발신번호 목록 조회 실패:', error)
+  }
+})
+
+const handleOpenSenderModal = () => {
+  editingSenderNumber.value = null
+  senderNumberModal.value?.openModal()
+}
 
 // Computed 속성들
 const project = computed(() => '동춘1구역9블럭지역주택조합')
@@ -114,12 +146,24 @@ const handlePreviewMessage = () => {
             </div>
 
             <!-- 발송자 번호 -->
-            <CFormInput
-              v-model="smsForm.senderNumber"
-              label="발송자 번호"
-              placeholder="02-1234-5678"
-              class="mb-3"
-            />
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <CFormLabel>발송자 번호</CFormLabel>
+                <v-btn
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  prepend-icon="mdi-plus"
+                  @click="handleOpenSenderModal"
+                >
+                  등록
+                </v-btn>
+              </div>
+              <CFormSelect
+                v-model="smsForm.senderNumber"
+                :options="[{ value: '', label: '발신번호 선택' }, ...senderNumberOptions]"
+              />
+            </div>
 
             <!-- 미리보기 버튼 -->
             <v-btn
@@ -186,5 +230,8 @@ const handlePreviewMessage = () => {
         </v-tabs-window>
       </CCardBody>
     </CCard>
+
+    <!-- Sender Number Modal -->
+    <SenderNumberModal ref="senderNumberModal" :edit-item="editingSenderNumber" />
   </CCol>
 </template>

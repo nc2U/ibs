@@ -4,9 +4,28 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
+from notice.models import RegisteredSenderNumber
 from notice.utils import IwinvSMSService
 from ..permission import *
 from ..serializers.notice import *
+
+
+class RegisteredSenderNumberViewSet(viewsets.ModelViewSet):
+    """등록된 발신번호 관리 ViewSet"""
+    queryset = RegisteredSenderNumber.objects.filter(is_active=True)
+    serializer_class = RegisteredSenderNumberSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        """활성화된 발신번호만 조회"""
+        return RegisteredSenderNumber.objects.filter(is_active=True).order_by('-created_at')
+
+    def destroy(self, request, *args, **kwargs):
+        """삭제 대신 비활성화"""
+        instance = self.get_object()
+        instance.is_active = False
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class BillIssueViewSet(viewsets.ModelViewSet):
@@ -356,22 +375,4 @@ class MessageViewSet(viewsets.ViewSet):
                 'code': -1,
                 'message': '서버 내부 오류가 발생했습니다.',
                 'charge': 0.0
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @action(detail=False, methods=['get'], url_path='registered-sender-numbers')
-    def get_registered_sender_numbers(self, request):
-        """등록된 발신번호 목록 조회"""
-        try:
-            registered_numbers = getattr(settings, 'IWINV_REGISTERED_SENDER_NUMBERS', [])
-
-            return Response({
-                'numbers': registered_numbers,
-                'count': len(registered_numbers)
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({
-                'numbers': [],
-                'count': 0,
-                'message': '발신번호 목록 조회 중 오류가 발생했습니다.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
