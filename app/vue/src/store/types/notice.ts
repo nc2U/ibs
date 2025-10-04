@@ -108,3 +108,16 @@ export declare interface KakaoResponse {
   success: number
   fail: number
 }
+
+// 메시지 템플릿 관련 타입
+export declare interface MessageTemplate {
+  id: number
+  title: string
+  message_type: 'SMS' | 'LMS' | 'MMS'
+  content: string
+  variables?: string[]
+  is_active: boolean
+  created_by?: number
+  created_at: string
+  updated_at: string
+}

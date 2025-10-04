@@ -12,6 +12,7 @@ import type {
   BalanceResponse,
   SMSResponse,
   KakaoResponse,
+  MessageTemplate,
 } from '@/store/types/notice'
 
 export const useNotice = defineStore('notice', () => {
@@ -21,6 +22,7 @@ export const useNotice = defineStore('notice', () => {
   const balance = ref<number>(0)
   const loading = ref<boolean>(false)
   const senderNumbers = ref<Array<{ id: number; phone_number: string; label: string }>>([])
+  const messageTemplates = ref<MessageTemplate[]>([])
 
 
   // Sales Bill Issue actions
@@ -322,6 +324,77 @@ export const useNotice = defineStore('notice', () => {
     }
   }
 
+  // 메시지 템플릿 목록 조회
+  const fetchMessageTemplates = async () => {
+    loading.value = true
+    try {
+      const response = await api.get('/message-templates/')
+      // DRF pagination response: { count, next, previous, results }
+      const data = response.data.results || response.data
+      messageTemplates.value = Array.isArray(data) ? data : []
+      return response.data
+    } catch (err: any) {
+      messageTemplates.value = [] // Ensure it remains an array on error
+      errorHandle(err.response?.data || { message: '템플릿 목록 조회 중 오류가 발생했습니다.' })
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 메시지 템플릿 생성
+  const createMessageTemplate = async (payload: { title: string; message_type: string; content: string; variables?: string[] }) => {
+    loading.value = true
+    try {
+      const response = await api.post('/message-templates/', payload)
+      message('success', '', '메시지 템플릿이 등록되었습니다.')
+      await fetchMessageTemplates() // 목록 갱신
+      return response.data
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.title?.[0] || err.response?.data?.message || '템플릿 등록 중 오류가 발생했습니다.'
+      message('danger', '등록 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 메시지 템플릿 수정
+  const updateMessageTemplate = async (id: number, payload: Partial<MessageTemplate>) => {
+    loading.value = true
+    try {
+      const response = await api.patch(`/message-templates/${id}/`, payload)
+      message('success', '', '메시지 템플릿이 수정되었습니다.')
+      await fetchMessageTemplates() // 목록 갱신
+      return response.data
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.title?.[0] || err.response?.data?.message || '템플릿 수정 중 오류가 발생했습니다.'
+      message('danger', '수정 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 메시지 템플릿 삭제 (soft delete)
+  const deleteMessageTemplate = async (id: number) => {
+    loading.value = true
+    try {
+      await api.delete(`/message-templates/${id}/`)
+      message('warning', '', '메시지 템플릿이 삭제되었습니다.')
+      await fetchMessageTemplates() // 목록 갱신
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || '템플릿 삭제 중 오류가 발생했습니다.'
+      message('danger', '삭제 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // state
     billIssue,
@@ -329,6 +402,7 @@ export const useNotice = defineStore('notice', () => {
     balance,
     loading,
     senderNumbers,
+    messageTemplates,
 
     // Sales Bill Issue actions
     fetchSalesBillIssue,
@@ -350,5 +424,11 @@ export const useNotice = defineStore('notice', () => {
     createSenderNumber,
     updateSenderNumber,
     deleteSenderNumber,
+
+    // Message Template actions
+    fetchMessageTemplates,
+    createMessageTemplate,
+    updateMessageTemplate,
+    deleteMessageTemplate,
   }
 })
