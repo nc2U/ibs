@@ -56,6 +56,9 @@ const panelBgColor = computed(() => {
   return isDark?.value ? '#282933' : '#ffffff'
 })
 
+// v-expansion-panels 초기 활성 패널 (기본: 첫 번째 패널)
+const activePanel = ref<number | null>(0)
+
 const handleAddRecipient = () => {
   const input = recipientInput.value
   if (!input) return
@@ -163,7 +166,7 @@ const handleGroupSelect = async () => {
       </CCardHeader>
       <CCardBody>
         <!-- 수신자 입력 방법 선택 -->
-        <v-expansion-panels class="mb-3" :bg-color="panelBgColor">
+        <v-expansion-panels v-model="activePanel" class="mb-3" :bg-color="panelBgColor">
           <v-expansion-panel>
             <v-expansion-panel-title>
               <v-icon icon="mdi-account-plus" class="me-2" />
@@ -171,7 +174,7 @@ const handleGroupSelect = async () => {
             </v-expansion-panel-title>
             <v-expansion-panel-text>
               <CRow class="align-items-end">
-                <CCol cols="12" md="8">
+                <CCol cols="12" md="10">
                   <label for="recipient-phone-input" class="form-label">휴대폰 번호</label>
                   <input
                     id="recipient-phone-input"
@@ -184,7 +187,7 @@ const handleGroupSelect = async () => {
                     @keydown.enter="handleAddRecipient"
                   />
                 </CCol>
-                <CCol cols="12" md="4">
+                <CCol cols="12" md="2">
                   <v-btn color="primary" @click="handleAddRecipient" prepend-icon="mdi-plus" block>
                     추가
                   </v-btn>
