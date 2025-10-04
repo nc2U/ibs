@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
-from notice.models import RegisteredSenderNumber
+from notice.models import RegisteredSenderNumber, MessageTemplate
 from notice.utils import IwinvSMSService
 from ..permission import *
 from ..serializers.notice import *
@@ -19,6 +19,28 @@ class RegisteredSenderNumberViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """활성화된 발신번호만 조회"""
         return RegisteredSenderNumber.objects.filter(is_active=True).order_by('-created_at')
+
+    def destroy(self, request, *args, **kwargs):
+        """삭제 대신 비활성화"""
+        instance = self.get_object()
+        instance.is_active = False
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MessageTemplateViewSet(viewsets.ModelViewSet):
+    """메시지 템플릿 관리 ViewSet"""
+    queryset = MessageTemplate.objects.filter(is_active=True)
+    serializer_class = MessageTemplateSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        """활성화된 템플릿만 조회"""
+        return MessageTemplate.objects.filter(is_active=True).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        """템플릿 생성 시 현재 사용자 저장"""
+        serializer.save(created_by=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         """삭제 대신 비활성화"""

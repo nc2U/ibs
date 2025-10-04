@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from notice.models import SalesBillIssue, RegisteredSenderNumber
+from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate
 from apiV1.serializers.accounts import SimpleUserSerializer
 
 
@@ -26,6 +26,24 @@ class RegisteredSenderNumberSerializer(serializers.ModelSerializer):
         if len(clean_number) < 9 or len(clean_number) > 11:
             raise serializers.ValidationError("올바른 전화번호 형식이 아닙니다.")
 
+        return value
+
+
+# Message Template ----------------------------------------------------------------
+class MessageTemplateSerializer(serializers.ModelSerializer):
+    """메시지 템플릿 시리얼라이저"""
+
+    class Meta:
+        model = MessageTemplate
+        fields = ('id', 'title', 'message_type', 'content', 'variables', 'is_active',
+                 'created_by', 'created_at', 'updated_at')
+        read_only_fields = ('created_by', 'created_at', 'updated_at')
+
+    def validate_message_type(self, value):
+        """메시지 타입 유효성 검사"""
+        valid_types = ['SMS', 'LMS', 'MMS']
+        if value not in valid_types:
+            raise serializers.ValidationError(f"메시지 타입은 {', '.join(valid_types)} 중 하나여야 합니다.")
         return value
 
 
