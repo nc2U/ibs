@@ -256,7 +256,9 @@ export const useNotice = defineStore('notice', () => {
     loading.value = true
     try {
       const response = await api.get('/registered-sender-numbers/')
-      senderNumbers.value = Array.isArray(response.data) ? response.data : []
+      // DRF pagination response: { count, next, previous, results }
+      const data = response.data.results || response.data
+      senderNumbers.value = Array.isArray(data) ? data : []
       return response.data
     } catch (err: any) {
       senderNumbers.value = [] // Ensure it remains an array on error
