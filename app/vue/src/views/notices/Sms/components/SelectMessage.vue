@@ -2,6 +2,7 @@
 import { computed, watch, ref, onMounted } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import SenderNumberModal from './SenderNumberModal.vue'
+import MessageTemplateModal from './MessageTemplateModal.vue'
 
 // Props 정의
 const activeTab = defineModel<string>('activeTab')
@@ -23,6 +24,10 @@ const notiStore = useNotice()
 const senderNumberModal = ref()
 const editingSenderNumber = ref<{ id: number; phone_number: string; label: string } | null>(null)
 
+// Template management
+const templateModal = ref()
+const selectedTemplate = ref<string>('')
+
 // Computed for sender number options
 const senderNumberOptions = computed(() => {
   if (!Array.isArray(notiStore.senderNumbers)) return []
@@ -32,18 +37,44 @@ const senderNumberOptions = computed(() => {
   }))
 })
 
-// Load sender numbers on the mount
+// Computed for template options
+const templateOptions = computed(() => {
+  if (!Array.isArray(notiStore.messageTemplates)) return []
+  return notiStore.messageTemplates.map(item => ({
+    value: item.id.toString(),
+    label: `${item.title} (${item.message_type})`,
+    template: item,
+  }))
+})
+
+// Load sender numbers and templates on mount
 onMounted(async () => {
   try {
     await notiStore.fetchSenderNumbers()
+    await notiStore.fetchMessageTemplates()
   } catch (error) {
-    console.error('발신번호 목록 조회 실패:', error)
+    console.error('데이터 조회 실패:', error)
   }
 })
 
 const handleOpenSenderModal = () => {
   editingSenderNumber.value = null
   senderNumberModal.value?.openModal()
+}
+
+const handleOpenTemplateModal = () => {
+  templateModal.value?.openModal()
+}
+
+const handleTemplateSelect = () => {
+  if (!selectedTemplate.value) return
+
+  const template = notiStore.messageTemplates.find(t => t.id.toString() === selectedTemplate.value)
+
+  if (template) {
+    smsForm.value.messageType = template.message_type
+    smsForm.value.message = template.content
+  }
 }
 
 // Computed 속성들
@@ -65,10 +96,6 @@ watch(
   },
   { immediate: true, deep: true },
 )
-
-const handleSelectTemplate = () => {
-  emit('selectTemplate')
-}
 
 const handlePreviewMessage = () => {
   emit('previewMessage')
@@ -113,18 +140,16 @@ const handlePreviewMessage = () => {
                   size="small"
                   color="primary"
                   variant="outlined"
-                  @click="handleSelectTemplate"
+                  prepend-icon="mdi-plus"
+                  @click="handleOpenTemplateModal"
                 >
-                  템플릿 선택
+                  등록
                 </v-btn>
               </div>
               <CFormSelect
-                :options="[
-                  { value: '', label: '직접 입력' },
-                  { value: 'welcome', label: '환영 메시지' },
-                  { value: 'payment', label: '납입 안내' },
-                  { value: 'notice', label: '공지사항' },
-                ]"
+                v-model="selectedTemplate"
+                :options="[{ value: '', label: '직접 입력' }, ...templateOptions]"
+                @change="handleTemplateSelect"
               />
             </div>
 
@@ -233,5 +258,8 @@ const handlePreviewMessage = () => {
 
     <!-- Sender Number Modal -->
     <SenderNumberModal ref="senderNumberModal" :edit-item="editingSenderNumber" />
+
+    <!-- Message Template Modal -->
+    <MessageTemplateModal ref="templateModal" />
   </CCol>
 </template>
