@@ -4,6 +4,15 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,shrink-to-fit=no">
+
+  <!-- DNS Prefetch for external resources -->
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+  <link rel="dns-prefetch" href="https://t1.kakaocdn.net">
+
+  <!-- Preconnect to critical origins -->
+  <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+  <link rel="preconnect" href="https://t1.kakaocdn.net" crossorigin>
+
   <!-- favicons for all devices -->
   <link rel="apple-touch-icon" sizes="57x57" href="/static/dist/img/icons/apple-icon-57x57.png">
   <link rel="apple-touch-icon" sizes="60x60" href="/static/dist/img/icons/apple-icon-60x60.png">
@@ -23,23 +32,23 @@
   <meta name="msapplication-TileImage" content="/static/dist/img/icons/ms-icon-144x144.png">
   <meta name="theme-color" content="#ffffff">
   <title>IBS</title>
-  <!-- geotagging -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-118965717-1"></script>
+
+  <!-- Google Analytics - async with defer pattern -->
   <script>
     window.dataLayer = window.dataLayer || []
-
     function gtag() {
       dataLayer.push(arguments)
     }
-
     gtag('js', new Date())
     gtag('config', 'UA-118965717-1')
   </script>
-  <!-- kakao talk developer source-->
-  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.5.0/kakao.min.js"
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-118965717-1"></script>
+
+  <!-- Kakao SDK - defer to avoid blocking -->
+  <script defer src="https://t1.kakaocdn.net/kakao_js_sdk/2.5.0/kakao.min.js"
           integrity="sha384-kYPsUbBPlktXsY6/oNHSUDZoTX6+YI51f63jCPEIPFP09ttByAdxd2mEjKuhdqn4"
-          crossorigin="anonymous"></script>
-  <script>Kakao.init('045a46021f7f0d649b3cb50eca1d2358')</script>
+          crossorigin="anonymous"
+          onload="Kakao.init('045a46021f7f0d649b3cb50eca1d2358')"></script>
 </head>
 <body>
 <noscript>
