@@ -216,6 +216,9 @@ importers:
       start-server-and-test:
         specifier: ^2.1.1
         version: 2.1.1
+      terser:
+        specifier: ^5.36.0
+        version: 5.44.0
       typescript:
         specifier: ~5.8.3
         version: 5.8.3
