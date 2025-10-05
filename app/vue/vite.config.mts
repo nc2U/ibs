@@ -69,7 +69,11 @@ export default defineConfig({
           if (id.includes('vue-router') || id.includes('pinia')) {
             return 'vue-core'
           }
-          if (id.includes('/vue/') && !id.includes('vue-')) {
+          // Vue 코어 및 모든 Vue 관련 패키지
+          if (id.includes('node_modules/vue/') ||
+              id.includes('node_modules/@vue/') ||
+              id.includes('/vue/dist/') ||
+              id.match(/node_modules[\/\\]vue[\/\\]/)) {
             return 'vue-core'
           }
 
