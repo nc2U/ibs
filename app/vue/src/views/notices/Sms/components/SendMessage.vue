@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 // Props 정의
+import { CCard, CCardBody } from '@coreui/vue'
+
 interface Props {
   activeTab: string
   currentForm: any
@@ -34,6 +36,13 @@ const handleSendMessage = () => emit('sendMessage')
             <v-radio-group v-model="props.currentForm.scheduledSend" inline>
               <v-radio label="즉시 발송" :value="false" />
               <v-radio label="예약 발송" :value="true" />
+              <span>
+                <v-icon icon="mdi-information-box-outline" class="m-2 pt-1" color="grey" />
+                <v-tooltip activator="parent" location="top">
+                  전송되길 원하는 시간을 선택해 주세요.<br />
+                  예약 발송은 현재 시간 15분 이후 한달 이전까지만 가능합니다.
+                </v-tooltip>
+              </span>
             </v-radio-group>
           </div>
 
