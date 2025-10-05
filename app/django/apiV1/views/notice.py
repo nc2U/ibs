@@ -17,6 +17,16 @@ from ..permission import *
 from ..serializers.notice import *
 
 
+class BillIssueViewSet(viewsets.ModelViewSet):
+    queryset = SalesBillIssue.objects.all()
+    serializer_class = SallesBillIssueSerializer
+    filterset_fields = ('project',)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+
 class RegisteredSenderNumberViewSet(viewsets.ModelViewSet):
     """등록된 발신번호 관리 ViewSet"""
     queryset = RegisteredSenderNumber.objects.filter(is_active=True)
@@ -55,16 +65,6 @@ class MessageTemplateViewSet(viewsets.ModelViewSet):
         instance.is_active = False
         instance.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class BillIssueViewSet(viewsets.ModelViewSet):
-    queryset = SalesBillIssue.objects.all()
-    serializer_class = SallesBillIssueSerializer
-    filterset_fields = ('project',)
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
 
 
 class MessageViewSet(viewsets.ViewSet):
@@ -154,7 +154,9 @@ class MessageViewSet(viewsets.ViewSet):
                         # 발송 성공 확인 (sendStatusCode가 '0' 또는 '06')
                         if history_result.get('resultCode') == 0 and history_result.get('list'):
                             records = [item for item in history_result['list'] if item.get('requestNo') == request_no]
-                            send_result = next((item for item in records if item.get('sendStatusCode') not in ['WAIT', 'FAIL']), records[0] if records else None)
+                            send_result = next(
+                                (item for item in records if item.get('sendStatusCode') not in ['WAIT', 'FAIL']),
+                                records[0] if records else None)
 
                             if send_result and send_result.get('sendStatusCode') in ['0', '06']:
                                 # 예약 발송 일시 조합
@@ -283,7 +285,9 @@ class MessageViewSet(viewsets.ViewSet):
                         # 발송 성공 확인 (sendStatusCode가 '0' 또는 '06')
                         if history_result.get('resultCode') == 0 and history_result.get('list'):
                             records = [item for item in history_result['list'] if item.get('requestNo') == request_no]
-                            send_result = next((item for item in records if item.get('sendStatusCode') not in ['WAIT', 'FAIL']), records[0] if records else None)
+                            send_result = next(
+                                (item for item in records if item.get('sendStatusCode') not in ['WAIT', 'FAIL']),
+                                records[0] if records else None)
 
                             if send_result and send_result.get('sendStatusCode') in ['0', '06']:
                                 # 예약 발송 일시 조합

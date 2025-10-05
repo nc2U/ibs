@@ -4,6 +4,18 @@ from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplat
 from apiV1.serializers.accounts import SimpleUserSerializer
 
 
+# Notice --------------------------------------------------------------------------
+class SallesBillIssueSerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = SalesBillIssue
+        fields = ('pk', 'project', 'now_payment_order', 'host_name', 'host_tel',
+                  'agency', 'agency_tel', 'bank_account1', 'bank_number1', 'bank_host1',
+                  'bank_account2', 'bank_number2', 'bank_host2', 'zipcode', 'address1',
+                  'address2', 'address3', 'title', 'content', 'creator', 'updated')
+
+
 # Registered Sender Number --------------------------------------------------------
 class RegisteredSenderNumberSerializer(serializers.ModelSerializer):
     """등록된 발신번호 시리얼라이저"""
@@ -36,7 +48,7 @@ class MessageTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = MessageTemplate
         fields = ('id', 'title', 'message_type', 'content', 'variables', 'is_active',
-                 'created_by', 'created_at', 'updated_at')
+                  'created_by', 'created_at', 'updated_at')
         read_only_fields = ('created_by', 'created_at', 'updated_at')
 
     def validate_message_type(self, value):
@@ -45,18 +57,6 @@ class MessageTemplateSerializer(serializers.ModelSerializer):
         if value not in valid_types:
             raise serializers.ValidationError(f"메시지 타입은 {', '.join(valid_types)} 중 하나여야 합니다.")
         return value
-
-
-# Notice --------------------------------------------------------------------------
-class SallesBillIssueSerializer(serializers.ModelSerializer):
-    creator = SimpleUserSerializer(read_only=True)
-
-    class Meta:
-        model = SalesBillIssue
-        fields = ('pk', 'project', 'now_payment_order', 'host_name', 'host_tel',
-                  'agency', 'agency_tel', 'bank_account1', 'bank_number1', 'bank_host1',
-                  'bank_account2', 'bank_number2', 'bank_host2', 'zipcode', 'address1',
-                  'address2', 'address3', 'title', 'content', 'creator', 'updated')
 
 
 # SMS/MMS Message Serializers -------------------------------------------------------
@@ -383,6 +383,7 @@ class MessageSendHistorySerializer(serializers.ModelSerializer):
 class MessageSendHistoryListSerializer(serializers.ModelSerializer):
     """메시지 발송 기록 목록 시리얼라이저 (경량화)"""
     sent_by = SimpleUserSerializer(read_only=True)
+
     # recipients는 목록에서 제외 (상세보기에서만 표시)
 
     class Meta:
