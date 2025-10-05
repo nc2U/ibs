@@ -46,12 +46,7 @@ const getTypeColor = computed(() => {
 </script>
 
 <template>
-  <CModal
-    :visible="visible"
-    @close="handleClose"
-    size="lg"
-    backdrop="static"
-  >
+  <CModal :visible="visible" @close="handleClose" size="lg" backdrop="static" alignment="center">
     <CModalHeader>
       <CModalTitle>발송 상세 내역</CModalTitle>
     </CModalHeader>
@@ -82,9 +77,7 @@ const getTypeColor = computed(() => {
           <div class="mb-3">
             <strong class="text-medium-emphasis">수신자 수</strong>
             <div class="mt-1">
-              <CBadge color="info" size="lg">
-                {{ item.recipient_count }}명
-              </CBadge>
+              <CBadge color="info" size="lg"> {{ item.recipient_count }}명 </CBadge>
             </div>
           </div>
         </CCol>
@@ -132,7 +125,7 @@ const getTypeColor = computed(() => {
       <div class="mb-3">
         <strong class="text-medium-emphasis">메시지 내용</strong>
         <CCard class="mt-2">
-          <CCardBody style="white-space: pre-wrap; background-color: #f8f9fa;">
+          <CCardBody style="white-space: pre-wrap; background-color: #f8f9fa">
             {{ item.message_content }}
           </CCardBody>
         </CCard>
@@ -141,7 +134,7 @@ const getTypeColor = computed(() => {
       <div class="mb-3">
         <strong class="text-medium-emphasis">수신번호 목록</strong>
         <CCard class="mt-2">
-          <CCardBody style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa;">
+          <CCardBody style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa">
             <div v-for="(phone, index) in item.recipients" :key="index" class="mb-1">
               {{ index + 1 }}. {{ phone }}
             </div>
@@ -150,9 +143,7 @@ const getTypeColor = computed(() => {
       </div>
     </CModalBody>
     <CModalFooter>
-      <CButton color="secondary" @click="handleClose">
-        닫기
-      </CButton>
+      <CButton color="secondary" @click="handleClose"> 닫기 </CButton>
     </CModalFooter>
   </CModal>
 </template>
