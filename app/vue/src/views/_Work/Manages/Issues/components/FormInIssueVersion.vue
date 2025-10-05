@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const emit = defineEmits(['create-version', 'close'])
 

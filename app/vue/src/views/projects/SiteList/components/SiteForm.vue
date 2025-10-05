@@ -7,7 +7,7 @@ import { type Project, type Site } from '@/store/types/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import AttatchFile from '@/components/AttatchFile/Index.vue'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 

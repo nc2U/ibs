@@ -5,7 +5,7 @@ import { useComCash } from '@/store/pinia/comCash'
 import type { CompanyBank } from '@/store/types/comCash'
 import { write_company_cash } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 

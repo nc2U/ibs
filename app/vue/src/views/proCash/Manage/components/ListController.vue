@@ -5,7 +5,7 @@ import { useProCash } from '@/store/pinia/proCash'
 import { useContract } from '@/store/pinia/contract'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 
 const emit = defineEmits(['list-filtering'])

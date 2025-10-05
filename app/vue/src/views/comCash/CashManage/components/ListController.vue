@@ -4,7 +4,7 @@ import type { Project } from '@/store/types/project'
 import { useComCash, type DataFilter } from '@/store/pinia/comCash'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 defineProps({ projects: { type: Array as PropType<Project[]>, default: () => [] } })
 const emit = defineEmits(['list-filtering'])

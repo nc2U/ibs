@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { isValidate } from '@/utils/helper'
 import { colorLight } from '@/utils/cssMixins'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const emit = defineEmits(['on-submit'])
 

@@ -8,7 +8,7 @@ import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { User } from '@/store/types/accounts.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({
   toDate: { type: Date, required: true },

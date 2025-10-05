@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createVuetify } from 'vuetify'
 
-import DatePicker from '../DatePicker/index.vue'
+import DatePicker from '../DatePicker/DatePicker.vue'
 
 const vuetify = createVuetify()
 

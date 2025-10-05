@@ -4,7 +4,7 @@ import { useProjectData } from '@/store/pinia/project_data'
 import { useContract, type ContFilter } from '@/store/pinia/contract'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({ status: { type: String, default: '2' } })
 const emit = defineEmits(['cont-filtering'])

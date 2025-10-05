@@ -4,7 +4,7 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import { type Contractor, type ContractRelease } from '@/store/types/contract'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 

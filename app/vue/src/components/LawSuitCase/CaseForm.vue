@@ -5,7 +5,7 @@ import { type SuitCase } from '@/store/types/docs'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { courtChoices } from './components/court'
 import MultiSelect from '@/components/MultiSelect/index.vue'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 

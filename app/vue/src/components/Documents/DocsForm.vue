@@ -12,7 +12,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
 import { btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 // Async component for QuillEditor (heavy quill library)
 const QuillEditor = defineAsyncComponent(() => import('@/components/QuillEditor/index.vue'))
 import FileModify from '@/components/FileControl/FileModify.vue'

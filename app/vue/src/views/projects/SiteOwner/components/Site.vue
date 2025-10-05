@@ -3,7 +3,7 @@ import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vu
 import { numFormat } from '@/utils/baseMixins'
 import { write_project_site } from '@/utils/pageAuth'
 import { type SiteOwner, type SimpleSite } from '@/store/types/project'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({
   owner: { type: Object as PropType<SiteOwner>, required: true },

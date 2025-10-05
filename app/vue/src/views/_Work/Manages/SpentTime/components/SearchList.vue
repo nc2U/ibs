@@ -5,7 +5,7 @@ import type { IssueStatus, Tracker, TimeEntryFilter } from '@/store/types/work_i
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
 import Multiselect from '@vueform/multiselect'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
 
 const props = defineProps({

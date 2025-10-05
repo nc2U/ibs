@@ -7,7 +7,7 @@ import { useProCash } from '@/store/pinia/proCash'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import Multiselect from '@vueform/multiselect'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({ byCont: { type: Boolean, default: false } })
 const emit = defineEmits(['payment-filtering'])

@@ -2,7 +2,7 @@
 import { ref, reactive, type PropType, onBeforeMount, watch } from 'vue'
 import type { getProject, ProjectFilter } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
 
 const props = defineProps({

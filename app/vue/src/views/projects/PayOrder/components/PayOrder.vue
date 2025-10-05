@@ -3,7 +3,7 @@ import { ref, reactive, computed, onBeforeMount, nextTick, type PropType } from 
 import { useAccount } from '@/store/pinia/account'
 import { write_project } from '@/utils/pageAuth'
 import type { PayOrder } from '@/store/types/payment'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import { CFormInput, CTableDataCell, CTableHeaderCell, CTableRow } from '@coreui/vue'

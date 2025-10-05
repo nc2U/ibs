@@ -7,7 +7,7 @@ import { isValidate } from '@/utils/helper'
 import { getToday } from '@/utils/baseMixins'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 

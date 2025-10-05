@@ -7,7 +7,7 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 import { btnLight, colorLight } from '@/utils/cssMixins'
 import { dateFormat } from '@/utils/baseMixins'
 import type { getProject, IssueProject } from '@/store/types/work_project.ts'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import Multiselect from '@vueform/multiselect'
 import type { TimeEntry } from '@/store/types/work_issue.ts'
 

@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onMounted, type PropType } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { type Profile, type User } from '@/store/types/accounts'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AvatarInput from './AvatarInput.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'

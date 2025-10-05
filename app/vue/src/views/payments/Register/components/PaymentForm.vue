@@ -7,7 +7,7 @@ import { getToday, diffDate } from '@/utils/baseMixins'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_payment } from '@/utils/pageAuth'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 

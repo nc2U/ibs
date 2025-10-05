@@ -8,7 +8,7 @@ import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_human_resource } from '@/utils/pageAuth'
 import Multiselect from '@vueform/multiselect'
-import DatePicker from '@/components/DatePicker/index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
