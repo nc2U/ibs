@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 // Emits
 const emit = defineEmits<{
@@ -80,69 +81,47 @@ initDates()
     <CCardBody>
       <CRow class="g-3">
         <!-- 날짜 범위 -->
-        <CCol :md="6">
+        <CCol :md="12" lg="4">
           <CFormLabel>기간</CFormLabel>
           <CRow class="g-2">
             <CCol :md="6">
-              <CFormInput
-                v-model="filterData.startDate"
-                type="date"
-                placeholder="시작일"
-              />
+              <DatePicker v-model="filterData.startDate" type="date" placeholder="시작일" />
             </CCol>
             <CCol :md="6">
-              <CFormInput
-                v-model="filterData.endDate"
-                type="date"
-                placeholder="종료일"
-              />
+              <DatePicker v-model="filterData.endDate" type="date" placeholder="종료일" />
             </CCol>
           </CRow>
-          <CFormText class="text-medium-emphasis">
-            최대 90일까지 조회 가능합니다.
-          </CFormText>
+          <!--          <CFormText class="text-medium-emphasis"> 최대 90일까지 조회 가능합니다. </CFormText>-->
         </CCol>
 
         <!-- 메시지 타입 -->
-        <CCol :md="3">
+        <CCol :md="6" lg="2">
           <CFormLabel>메시지 타입</CFormLabel>
           <CFormSelect v-model="filterData.messageType">
-            <option
-              v-for="option in messageTypeOptions"
-              :key="option.value"
-              :value="option.value"
-            >
+            <option v-for="option in messageTypeOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
           </CFormSelect>
         </CCol>
 
         <!-- 발송 상태 -->
-        <CCol :md="3">
+        <CCol :md="6" lg="2">
           <CFormLabel>발송 상태</CFormLabel>
           <CFormSelect v-model="filterData.status">
-            <option
-              v-for="option in statusOptions"
-              :key="option.value"
-              :value="option.value"
-            >
+            <option v-for="option in statusOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
           </CFormSelect>
         </CCol>
 
         <!-- 전화번호 검색 -->
-        <CCol :md="8">
+        <CCol :md="6" lg="2">
           <CFormLabel>전화번호 검색</CFormLabel>
-          <CFormInput
-            v-model="filterData.phone"
-            type="text"
-            placeholder="전화번호 입력 (숫자만)"
-          />
+          <CFormInput v-model="filterData.phone" type="text" placeholder="전화번호 입력 (숫자만)" />
         </CCol>
 
         <!-- 버튼 -->
-        <CCol :md="4" class="d-flex align-items-end">
+        <CCol :md="6" lg="2" class="d-flex align-items-end">
           <CButton color="primary" class="me-2" @click="handleSearch">
             <CIcon name="cilSearch" class="me-1" />
             검색
