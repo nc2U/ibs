@@ -129,17 +129,15 @@ const sendMessage = async () => {
 }
 
 // 잔액 관련
-const balance = ref(0)
-const balanceLoading = ref(false)
+const balance = computed(() => notiStore.balance)
+const balanceLoading = computed(() => notiStore.loading)
 
-const refreshBalance = () => {
-  balanceLoading.value = true
-  // TODO: 실제 API 호출
-  // await noticeStore.fetchBalance()
-  setTimeout(() => {
-    balance.value = 12500 // 더미 데이터
-    balanceLoading.value = false
-  }, 500)
+const refreshBalance = async () => {
+  try {
+    await notiStore.fetchBalance()
+  } catch (error) {
+    // 에러는 store에서 처리
+  }
 }
 
 // 초기화 (잔액은 사용자가 아코디언 열 때 로드)
@@ -209,7 +207,7 @@ onBeforeMount(() => {
             </CCol>
 
             <CCol>
-              <!-- 잔액 아코디언 -->
+              <!-- 잔액 확인 -->
               <BalanceCard :balance="balance" :loading="balanceLoading" @refresh="refreshBalance" />
             </CCol>
           </CRow>
