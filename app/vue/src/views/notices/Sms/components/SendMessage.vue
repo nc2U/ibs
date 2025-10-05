@@ -1,7 +1,5 @@
 <script lang="ts" setup>
 // Props 정의
-import { CCard, CCardBody } from '@coreui/vue'
-
 interface Props {
   activeTab: string
   currentForm: any
