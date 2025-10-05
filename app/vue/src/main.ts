@@ -17,10 +17,11 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-const accStore = useAccount()
-const cookie = Cookies.get('accessToken')
-
 const init = async () => {
+  // Pinia 초기화 후 store 사용
+  const accStore = useAccount()
+  const cookie = Cookies.get('accessToken')
+
   if (!cookie) {
     console.warn('No accessToken found, skipping login')
     return
