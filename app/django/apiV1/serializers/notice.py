@@ -388,9 +388,6 @@ class MessageSendHistoryListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MessageSendHistory
-        fields = (
-            'id', 'message_type', 'sender_number', 'title',
-            'recipient_count', 'sent_at', 'request_no',
-            'scheduled_send', 'sent_by', 'created'
-        )
+        fields = ('id', 'message_type', 'sender_number', 'title', 'message_content', 'recipient_count',
+                  'sent_at', 'request_no', 'scheduled_send', 'sent_by', 'created')
         read_only_fields = ('id', 'sent_by', 'created')
