@@ -17,26 +17,8 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-const init = async () => {
-  // Pinia 초기화 후 store 사용
-  const accStore = useAccount()
-  const cookie = Cookies.get('accessToken')
-
-  if (!cookie) {
-    console.warn('No accessToken found, skipping login')
-    return
-  }
-  try {
-    await accStore.loginByToken(cookie)
-  } catch (error) {
-    console.error('Login by token failed:', error)
-    await router.push({ name: 'Login' })
-  }
-}
-
 ;(async () => {
   try {
-    await init()
     await loadFonts()
     app.use(router)
     app.use(vuetify)
@@ -46,8 +28,20 @@ const init = async () => {
     app.component('CIcon', CIcon)
     app.directive('maska', vMaska)
     app.mount('#app')
+
+    // 앱 마운트 후 초기화
+    const accStore = useAccount()
+    const cookie = Cookies.get('accessToken')
+
+    if (cookie) {
+      try {
+        await accStore.loginByToken(cookie)
+      } catch (error) {
+        console.error('Login by token failed:', error)
+        await router.push({ name: 'Login' })
+      }
+    }
   } catch (error) {
     console.error('App initialization failed:', error)
-    // 예: 에러 페이지 렌더링
   }
 })()
