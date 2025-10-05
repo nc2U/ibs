@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate
+from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory
 from apiV1.serializers.accounts import SimpleUserSerializer
 
 
@@ -104,6 +104,17 @@ class SMSMessageSerializer(serializers.Serializer):
     use_v2_api = serializers.BooleanField(
         default=True,
         help_text="v2 API 사용 여부"
+    )
+    company_id = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_blank=True,
+        help_text="조직 구분 ID (히스토리 저장용)"
+    )
+    project = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="프로젝트 ID (히스토리 저장용)"
     )
 
     def validate(self, data):
@@ -352,3 +363,33 @@ class SMSHistoryQuerySerializer(serializers.Serializer):
                     f"잘못된 전화번호 형식: {value}"
                 )
         return value
+
+
+# Message Send History ------------------------------------------------------------
+class MessageSendHistorySerializer(serializers.ModelSerializer):
+    """메시지 발송 기록 시리얼라이저"""
+    sent_by = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = MessageSendHistory
+        fields = (
+            'id', 'message_type', 'sender_number', 'message_content', 'title',
+            'recipients', 'recipient_count', 'sent_at', 'request_no', 'company_id',
+            'project', 'scheduled_send', 'schedule_datetime', 'sent_by', 'created'
+        )
+        read_only_fields = ('id', 'sent_by', 'created')
+
+
+class MessageSendHistoryListSerializer(serializers.ModelSerializer):
+    """메시지 발송 기록 목록 시리얼라이저 (경량화)"""
+    sent_by = SimpleUserSerializer(read_only=True)
+    # recipients는 목록에서 제외 (상세보기에서만 표시)
+
+    class Meta:
+        model = MessageSendHistory
+        fields = (
+            'id', 'message_type', 'sender_number', 'title',
+            'recipient_count', 'sent_at', 'request_no',
+            'scheduled_send', 'sent_by', 'created'
+        )
+        read_only_fields = ('id', 'sent_by', 'created')

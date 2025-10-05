@@ -151,6 +151,7 @@ router.register(r'sales-bill-issue', notice.BillIssueViewSet)
 router.register(r'messages', notice.MessageViewSet, basename='messages')
 router.register(r'registered-sender-numbers', notice.RegisteredSenderNumberViewSet)
 router.register(r'message-templates', notice.MessageTemplateViewSet)
+router.register(r'message-send-history', notice.MessageSendHistoryViewSet)
 
 # board
 router.register(r'board', board.BoardViewSet)
