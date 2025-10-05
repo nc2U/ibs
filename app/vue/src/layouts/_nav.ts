@@ -24,7 +24,7 @@ const work_admin = {
 }
 
 const company_cash = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: '본사 자금 관리',
   to: '/cashes',
   icon: 'cil-laptop',
@@ -43,7 +43,7 @@ const company_cash = {
 }
 
 const company_docs = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: '본사 문서 관리',
   to: '/docs/general',
   icon: 'cil-cloud-download',
@@ -76,7 +76,7 @@ const company_docs = {
 }
 
 const human_resource = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: '본사 인사 관리',
   to: '/hr-manage',
   icon: 'cilPeople',
@@ -92,7 +92,7 @@ const human_resource = {
       to: '/hr-manage/department',
     },
     {
-      component: 'CNavItem',
+      component: 'CNavGroup',
       name: '기타 설정 관리',
       icon: 'cil-user-follow',
       items: [
@@ -117,7 +117,7 @@ const human_resource = {
 }
 
 const contract = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: '공급 계약 관리',
   to: '/contracts',
   icon: 'cil-spreadsheet',
@@ -151,7 +151,7 @@ const contract = {
 }
 
 const payment = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: '분양 수납 관리',
   to: '/payments',
   icon: 'cil-calculator',
@@ -175,7 +175,7 @@ const payment = {
 }
 
 const notice = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: '고객 고지 관리',
   to: '/notices',
   icon: 'cil-envelope-letter',
@@ -225,7 +225,7 @@ const notice = {
 }
 
 const project_cash = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: 'PR 자금 관리',
   to: '/project-cash',
   icon: 'cil-money',
@@ -249,7 +249,7 @@ const project_cash = {
 }
 
 const project_docs = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: 'PR 문서 관리',
   to: '/project-docs',
   icon: 'cil-library',
@@ -273,7 +273,7 @@ const project_docs = {
 }
 
 const project = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: 'PR 등록 관리',
   to: '/project',
   icon: 'cil-building',
@@ -284,7 +284,7 @@ const project = {
       to: '/project/manage/index',
     },
     {
-      component: 'CNavItem',
+      component: 'CNavGroup',
       name: '차수 타입 관리',
       icon: 'cil-list-numbered',
       items: [
@@ -306,7 +306,7 @@ const project = {
       ],
     },
     {
-      component: 'CNavItem',
+      component: 'CNavGroup',
       name: '유닛 등록 관리',
       icon: 'cil-room',
       items: [
@@ -323,7 +323,7 @@ const project = {
       ],
     },
     {
-      component: 'CNavItem',
+      component: 'CNavGroup',
       name: '예산 등록 관리',
       icon: 'cil-exposure',
       items: [
@@ -340,7 +340,7 @@ const project = {
       ],
     },
     {
-      component: 'CNavItem',
+      component: 'CNavGroup',
       name: '분양 계약 조건',
       icon: 'cil-cog',
       items: [
@@ -367,7 +367,7 @@ const project = {
       ],
     },
     {
-      component: 'CNavItem',
+      component: 'CNavGroup',
       name: '사업 부지 관리',
       icon: 'cil-location-pin',
       items: [
@@ -392,7 +392,7 @@ const project = {
 }
 
 const settings = {
-  component: 'CNavItem',
+  component: 'CNavGroup',
   name: '환 경 설 정',
   to: '/settings',
   icon: 'cil-settings',
