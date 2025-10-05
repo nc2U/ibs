@@ -24,7 +24,7 @@ const emit = defineEmits<{
 const noticeStore = useNotice()
 
 // 히스토리 데이터
-const historyData = computed<HistoryListResponse>(() => noticeStore.messageSendHistory)
+const historyData = computed<HistoryListResponse | null>(() => noticeStore.messageSendHistory)
 const historyList = computed(() => historyData.value?.results || [])
 const totalCount = computed(() => historyData.value?.count || 0)
 const currentPage = computed(() => {
