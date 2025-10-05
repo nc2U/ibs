@@ -124,26 +124,36 @@ const AppSidebarNav = defineComponent({
         : h(resolveComponent(item.component), {}, () => item.name)
     }
 
-    const wmPos = 2 // 업무 설정관리 위치
-    const coPos = workManager.value ? 3 : 2 // 본사 관리 위치
-    const coNum = 1 + 3 // 본사관리 메뉴 개수
-    const caPos = coPos + 1 // 본사자금 메뉴 위치
+    // 권한에 따라 메뉴 필터링 (reactive computed)
+    const filteredNav = computed(() => {
+      let items = [...nav] // 원본 배열을 변경하지 않도록 복사
 
-    if (!workManager.value) nav.splice(wmPos, 1) // 업무 설정 관리 메뉴 제외
+      // 업무 설정 관리 메뉴 제외
+      if (!workManager.value) {
+        items = items.filter((item) => item.name !== '설 정 관 리')
+      }
 
-    if (!isStaff.value) {
-      // 본사 관리 직원 권한이 없으면
-      nav.splice(coPos, coNum) // 본사 관련 메뉴 제외
-    }
-    // 본사 자금 관리 권한 없으면 자금 관리 메뉴 제외
-    else if (!isComCash.value) nav.splice(caPos, 1)
+      // 본사 관리 직원 권한이 없으면 본사 관련 메뉴 제외
+      if (!isStaff.value) {
+        const companyMenus = ['본사 자금 관리', '본사 문서 관리', '본사 인사 관리']
+        items = items.filter(
+          (item) => item.name !== '본사 관리' && !companyMenus.includes(item.name || ''),
+        )
+      }
+      // 본사 자금 관리 권한 없으면 자금 관리 메뉴 제외
+      else if (!isComCash.value) {
+        items = items.filter((item) => item.name !== '본사 자금 관리')
+      }
+
+      return items
+    })
 
     return () =>
       h(
         CSidebarNav,
         {},
         {
-          default: () => nav.map((item: Item) => renderItem(item)),
+          default: () => filteredNav.value.map((item: Item) => renderItem(item)),
         },
       )
   },
