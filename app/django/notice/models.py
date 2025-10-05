@@ -83,3 +83,49 @@ class MessageTemplate(models.Model):
 
     def __str__(self):
         return f'{self.title} ({self.message_type})'
+
+
+class MessageSendHistory(models.Model):
+    # 기본 정보
+    company_id = models.CharField('조직 구분 ID', max_length=100, blank=True)
+    project = models.ForeignKey('project.Project', on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='프로젝트')
+    request_no = models.CharField('요청번호', max_length=100, blank=True, db_index=True,
+                                  help_text='iwinv API 요청번호')
+
+    # 발송 정보
+    """메시지 발송 기록 (성공한 발송만 저장)"""
+    MESSAGE_TYPE_CHOICES = [
+        ('SMS', 'SMS'),
+        ('LMS', 'LMS'),
+        ('MMS', 'MMS'),
+        ('KAKAO', '카카오 알림톡'),
+    ]
+    message_type = models.CharField('메시지 타입', max_length=10, choices=MESSAGE_TYPE_CHOICES, db_index=True)
+    sender_number = models.CharField('발신번호', max_length=20, db_index=True)
+    title = models.CharField('제목', max_length=100, blank=True, help_text='LMS 발송 시 제목')
+    message_content = models.TextField('메시지 내용')
+
+    # 수신자 정보 (JSONField로 전체 배열 저장)
+    recipients = models.JSONField('수신번호 목록', help_text='발송된 전체 수신번호 배열')
+    recipient_count = models.IntegerField('수신자 수', default=0, db_index=True)
+
+    # 예약 발송 정보
+    scheduled_send = models.BooleanField('예약 발송', default=False)
+    schedule_datetime = models.DateTimeField('예약 일시', null=True, blank=True)
+
+    # 발송 시간 및 발송자
+    sent_at = models.DateTimeField('발송 일시', db_index=True)
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, verbose_name='발송자')
+
+    # 메타 정보
+    created = models.DateTimeField('등록일', auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created']
+        verbose_name = "04. 메시지 발송 기록"
+        verbose_name_plural = "04. 메시지 발송 기록"
+
+    def __str__(self):
+        return f'{self.message_type} - {self.sender_number} ({self.recipient_count}명) - {self.sent_at.strftime("%Y-%m-%d %H:%M")}'
