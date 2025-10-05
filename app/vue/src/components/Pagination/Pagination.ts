@@ -6,7 +6,7 @@ const Pagination = defineComponent({
   name: 'CSmartPagination',
   props: {
     /**
-     * Horizontall align
+     * Horizontally align
      *
      * @default 'start'
      */
@@ -131,7 +131,7 @@ const Pagination = defineComponent({
   },
   emits: [
     /**
-     * On active page change callback.
+     * On the active page change callback.
      */
     'activePageChange',
   ],
