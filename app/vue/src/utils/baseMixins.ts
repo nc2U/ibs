@@ -5,7 +5,7 @@ export const numFormat = (val: number | string, n = 0, zero: string | 0 = '-') =
   return !value || value === 0 ? zero : parts.join('.')
 }
 
-export const cutString = (str = '', len = 0, abb = '...') =>
+export const cutString = (str = '', len = 20, abb = '...') =>
   str.length > len ? `${str.substring(0, len)}${abb}` : str
 
 export const diffDate = (date1: Date | string, date2?: Date) => {

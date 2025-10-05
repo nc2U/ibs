@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
-import type { MessageSendHistoryList } from '@/store/types/notice'
+import { cutString } from '@/utils/baseMixins.ts'
+import type { HistoryListResponse, MessageSendHistoryList } from '@/store/types/notice'
 
 // Props
 interface Props {
@@ -22,11 +23,12 @@ const emit = defineEmits<{
 const noticeStore = useNotice()
 
 // 히스토리 데이터
-const historyList = computed(() => noticeStore.messageSendHistory?.results || [])
-const totalCount = computed(() => noticeStore.messageSendHistory?.count || 0)
+const historyData = computed<HistoryListResponse>(() => noticeStore.messageSendHistory)
+const historyList = computed(() => historyData.value?.results || [])
+const totalCount = computed(() => historyData.value?.count || 0)
 const currentPage = computed(() => {
-  const nextUrl = noticeStore.messageSendHistory?.next
-  const prevUrl = noticeStore.messageSendHistory?.previous
+  const nextUrl = historyData.value?.next
+  const prevUrl = historyData.value?.previous
   if (!nextUrl && !prevUrl) return 1
   // URL에서 page 번호 추출하여 계산
   return 1 // 기본값
@@ -42,9 +44,7 @@ const handlePageChange = (page: number) => {
 }
 
 // 상세보기
-const handleDetail = (item: MessageSendHistoryList) => {
-  emit('detail', item.id)
-}
+const handleDetail = (item: MessageSendHistoryList) => emit('detail', item.id as any)
 
 // 메시지 타입 뱃지 색상
 const getTypeColor = (type: string) => {
@@ -67,11 +67,6 @@ const formatDate = (dateStr: string) => {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   const seconds = String(date.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-}
-
-// 메시지 요약 (30자)
-const getSummary = (message: string) => {
-  return message.length > 30 ? message.substring(0, 30) + '...' : message
 }
 </script>
 
@@ -136,25 +131,16 @@ const getSummary = (message: string) => {
               </CBadge>
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <CBadge color="info">
-                {{ item.recipient_count }}명
-              </CBadge>
+              <CBadge color="info"> {{ item.recipient_count }}명 </CBadge>
             </CTableDataCell>
             <CTableDataCell>
-              {{ getSummary(item.title || '(제목 없음)') }}
+              {{ cutString(item.title || '(제목 없음)') }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
               {{ item.sent_by?.username || '-' }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <CButton
-                color="info"
-                variant="outline"
-                size="sm"
-                @click="handleDetail(item)"
-              >
-                <CIcon name="cilZoom" />
-              </CButton>
+              <v-btn color="info" size="x-small" @click="handleDetail(item)"> 확인 </v-btn>
             </CTableDataCell>
           </CTableRow>
         </CTableBody>
