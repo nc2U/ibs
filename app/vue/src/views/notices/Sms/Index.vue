@@ -146,7 +146,7 @@ onBeforeMount(() => {
 
   <ContentBody>
     <!-- 메인 탭 (발송 / 히스토리) -->
-    <CCard>
+    <CCol>
       <CCardHeader>
         <CRow class="mt-3">
           <CCol>
@@ -211,6 +211,6 @@ onBeforeMount(() => {
           <HistoryTab />
         </div>
       </CCardBody>
-    </CCard>
+    </CCol>
   </ContentBody>
 </template>
