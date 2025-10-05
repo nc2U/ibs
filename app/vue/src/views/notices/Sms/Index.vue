@@ -163,7 +163,7 @@ onBeforeMount(() => {
       </CCardHeader>
       <CCardBody>
         <!-- 발송 탭 내용 -->
-        <div v-show="mainTab === 'send'">
+        <CCol v-show="mainTab === 'send'">
           <CRow>
             <CCol>
               <!-- 메시지 작성 섹션 (탭으로 구분) -->
@@ -204,12 +204,12 @@ onBeforeMount(() => {
               <BalanceCard :balance="balance" :loading="balanceLoading" @refresh="refreshBalance" />
             </CCol>
           </CRow>
-        </div>
+        </CCol>
 
         <!-- 히스토리 탭 내용 -->
-        <div v-show="mainTab === 'history'">
+        <CCol v-show="mainTab === 'history'">
           <HistoryTab />
-        </div>
+        </CCol>
       </CCardBody>
     </CCol>
   </ContentBody>
