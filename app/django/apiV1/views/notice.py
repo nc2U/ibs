@@ -130,73 +130,74 @@ class MessageViewSet(viewsets.ViewSet):
             if result_code == 0:
                 response_status = status.HTTP_200_OK
 
-                # 발송 성공 시 히스토리 저장 (company_id가 있을 때만)
+                # 발송 성공 시 히스토리 저장
                 company_id = validated_data.get('company_id')
                 request_no = result.get('requestNo')
 
-                if company_id and request_no:
+                if request_no:
                     try:
-                        # 2.5초 대기 (iwinv API가 실제 발송 처리할 시간)
-                        time.sleep(2.5)
+                        # 예약 발송 일시 조합
+                        schedule_datetime = None
+                        if schedule_date and schedule_time:
+                            schedule_datetime = timezone.make_aware(
+                                datetime.combine(schedule_date, schedule_time)
+                            )
 
-                        # 전송 내역 조회로 실제 발송 성공 여부 확인
-                        from datetime import date
-                        today = date.today()
-                        history_result = sms_service.get_send_history(
-                            company_id=company_id,
-                            start_date=today.strftime('%Y-%m-%d'),
-                            end_date=today.strftime('%Y-%m-%d'),
+                        # 실제 발송 시간 (company_id가 있으면 API에서 가져오기, 없으면 현재 시간)
+                        actual_sent_at = timezone.now()
+
+                        if company_id:
+                            # company_id가 있으면 발송 내역 조회로 실제 발송 시간 확인
+                            time.sleep(2.5)  # iwinv API 처리 대기
+
+                            from datetime import date
+                            today = date.today()
+                            history_result = sms_service.get_send_history(
+                                company_id=company_id,
+                                start_date=today.strftime('%Y-%m-%d'),
+                                end_date=today.strftime('%Y-%m-%d'),
+                                request_no=request_no,
+                                page_num=1,
+                                page_size=10
+                            )
+
+                            if history_result.get('resultCode') == 0 and history_result.get('list'):
+                                records = [item for item in history_result['list'] if
+                                           item.get('requestNo') == request_no]
+                                send_result = next(
+                                    (item for item in records if item.get('sendStatusCode') not in ['WAIT', 'FAIL']),
+                                    records[0] if records else None)
+
+                                if send_result:
+                                    # sendDate 파싱
+                                    send_date_str = send_result.get('sendDate')
+                                    if send_date_str:
+                                        try:
+                                            actual_sent_at = datetime.strptime(send_date_str, '%Y-%m-%d %H:%M:%S')
+                                            actual_sent_at = timezone.make_aware(actual_sent_at)
+                                        except ValueError:
+                                            pass
+
+                        # 히스토리 저장 (resultCode=0이면 성공으로 간주)
+                        MessageSendHistory.objects.create(
+                            message_type=result.get('msgType', message_type),
+                            sender_number=validated_data['sender_number'],
+                            message_content=validated_data['message'],
+                            title=validated_data.get('title', ''),
+                            recipients=validated_data['recipients'],
+                            recipient_count=len(validated_data['recipients']),
+                            sent_at=actual_sent_at,
                             request_no=request_no,
-                            page_num=1,
-                            page_size=10
+                            company_id=company_id or '',
+                            project_id=request.data.get('project'),
+                            scheduled_send=validated_data.get('scheduled_send', False),
+                            schedule_datetime=schedule_datetime,
+                            sent_by=request.user
                         )
 
-                        # 발송 성공 확인 (sendStatusCode가 '0' 또는 '06')
-                        if history_result.get('resultCode') == 0 and history_result.get('list'):
-                            records = [item for item in history_result['list'] if item.get('requestNo') == request_no]
-                            send_result = next(
-                                (item for item in records if item.get('sendStatusCode') not in ['WAIT', 'FAIL']),
-                                records[0] if records else None)
-
-                            if send_result and send_result.get('sendStatusCode') in ['0', '06']:
-                                # 예약 발송 일시 조합
-                                schedule_datetime = None
-                                if schedule_date and schedule_time:
-                                    schedule_datetime = timezone.make_aware(
-                                        datetime.combine(schedule_date, schedule_time)
-                                    )
-
-                                # 실제 발송 시간 파싱 (iwinv API의 sendDate 사용)
-                                actual_sent_at = timezone.now()  # 기본값
-                                send_date_str = send_result.get('sendDate')
-                                if send_date_str:
-                                    try:
-                                        # sendDate 형식: "2024-01-01 14:30:00"
-                                        actual_sent_at = datetime.strptime(send_date_str, '%Y-%m-%d %H:%M:%S')
-                                        actual_sent_at = timezone.make_aware(actual_sent_at)
-                                    except ValueError:
-                                        # 파싱 실패 시 현재 시간 사용
-                                        actual_sent_at = timezone.now()
-
-                                # 히스토리 저장
-                                MessageSendHistory.objects.create(
-                                    message_type=result.get('msgType', message_type),
-                                    sender_number=validated_data['sender_number'],
-                                    message_content=validated_data['message'],
-                                    title=validated_data.get('title', ''),
-                                    recipients=validated_data['recipients'],
-                                    recipient_count=len(validated_data['recipients']),
-                                    sent_at=actual_sent_at,
-                                    request_no=request_no,
-                                    company_id=company_id,
-                                    project_id=request.data.get('project'),
-                                    scheduled_send=validated_data.get('scheduled_send', False),
-                                    schedule_datetime=schedule_datetime,
-                                    sent_by=request.user
-                                )
-                    except Exception as e:
+                    except Exception:
                         # 히스토리 저장 실패는 무시 (발송 자체는 성공)
-                        print(f"히스토리 저장 실패: {str(e)}")
+                        pass
             else:
                 response_status = status.HTTP_400_BAD_REQUEST
 
@@ -261,73 +262,74 @@ class MessageViewSet(viewsets.ViewSet):
             if result_code == 0:
                 response_status = status.HTTP_200_OK
 
-                # 발송 성공 시 히스토리 저장 (company_id가 있을 때만)
+                # 발송 성공 시 히스토리 저장
                 company_id = validated_data.get('company_id')
                 request_no = result.get('requestNo')
 
-                if company_id and request_no:
+                if request_no:
                     try:
-                        # 2.5초 대기 (iwinv API가 실제 발송 처리할 시간)
-                        time.sleep(2.5)
+                        # 예약 발송 일시 조합
+                        schedule_datetime = None
+                        if schedule_date and schedule_time:
+                            schedule_datetime = timezone.make_aware(
+                                datetime.combine(schedule_date, schedule_time)
+                            )
 
-                        # 전송 내역 조회로 실제 발송 성공 여부 확인
-                        from datetime import date
-                        today = date.today()
-                        history_result = sms_service.get_send_history(
-                            company_id=company_id,
-                            start_date=today.strftime('%Y-%m-%d'),
-                            end_date=today.strftime('%Y-%m-%d'),
+                        # 실제 발송 시간 (company_id가 있으면 API에서 가져오기, 없으면 현재 시간)
+                        actual_sent_at = timezone.now()
+
+                        if company_id:
+                            # company_id가 있으면 발송 내역 조회로 실제 발송 시간 확인
+                            time.sleep(2.5)  # iwinv API 처리 대기
+
+                            from datetime import date
+                            today = date.today()
+                            history_result = sms_service.get_send_history(
+                                company_id=company_id,
+                                start_date=today.strftime('%Y-%m-%d'),
+                                end_date=today.strftime('%Y-%m-%d'),
+                                request_no=request_no,
+                                page_num=1,
+                                page_size=10
+                            )
+
+                            if history_result.get('resultCode') == 0 and history_result.get('list'):
+                                records = [item for item in history_result['list'] if
+                                           item.get('requestNo') == request_no]
+                                send_result = next(
+                                    (item for item in records if item.get('sendStatusCode') not in ['WAIT', 'FAIL']),
+                                    records[0] if records else None)
+
+                                if send_result:
+                                    # sendDate 파싱
+                                    send_date_str = send_result.get('sendDate')
+                                    if send_date_str:
+                                        try:
+                                            actual_sent_at = datetime.strptime(send_date_str, '%Y-%m-%d %H:%M:%S')
+                                            actual_sent_at = timezone.make_aware(actual_sent_at)
+                                        except ValueError:
+                                            pass
+
+                        # 히스토리 저장 (resultCode=0이면 성공으로 간주)
+                        MessageSendHistory.objects.create(
+                            message_type='MMS',
+                            sender_number=validated_data['sender_number'],
+                            message_content=validated_data['message'],
+                            title=validated_data.get('title', ''),
+                            recipients=validated_data['recipients'],
+                            recipient_count=len(validated_data['recipients']),
+                            sent_at=actual_sent_at,
                             request_no=request_no,
-                            page_num=1,
-                            page_size=10
+                            company_id=company_id or '',
+                            project_id=request.data.get('project'),
+                            scheduled_send=validated_data.get('scheduled_send', False),
+                            schedule_datetime=schedule_datetime,
+                            sent_by=request.user
                         )
 
-                        # 발송 성공 확인 (sendStatusCode가 '0' 또는 '06')
-                        if history_result.get('resultCode') == 0 and history_result.get('list'):
-                            records = [item for item in history_result['list'] if item.get('requestNo') == request_no]
-                            send_result = next(
-                                (item for item in records if item.get('sendStatusCode') not in ['WAIT', 'FAIL']),
-                                records[0] if records else None)
-
-                            if send_result and send_result.get('sendStatusCode') in ['0', '06']:
-                                # 예약 발송 일시 조합
-                                schedule_datetime = None
-                                if schedule_date and schedule_time:
-                                    schedule_datetime = timezone.make_aware(
-                                        datetime.combine(schedule_date, schedule_time)
-                                    )
-
-                                # 실제 발송 시간 파싱 (iwinv API의 sendDate 사용)
-                                actual_sent_at = timezone.now()  # 기본값
-                                send_date_str = send_result.get('sendDate')
-                                if send_date_str:
-                                    try:
-                                        # sendDate 형식: "2024-01-01 14:30:00"
-                                        actual_sent_at = datetime.strptime(send_date_str, '%Y-%m-%d %H:%M:%S')
-                                        actual_sent_at = timezone.make_aware(actual_sent_at)
-                                    except ValueError:
-                                        # 파싱 실패 시 현재 시간 사용
-                                        actual_sent_at = timezone.now()
-
-                                # 히스토리 저장
-                                MessageSendHistory.objects.create(
-                                    message_type='MMS',
-                                    sender_number=validated_data['sender_number'],
-                                    message_content=validated_data['message'],
-                                    title=validated_data.get('title', ''),
-                                    recipients=validated_data['recipients'],
-                                    recipient_count=len(validated_data['recipients']),
-                                    sent_at=actual_sent_at,
-                                    request_no=request_no,
-                                    company_id=company_id,
-                                    project_id=request.data.get('project'),
-                                    scheduled_send=validated_data.get('scheduled_send', False),
-                                    schedule_datetime=schedule_datetime,
-                                    sent_by=request.user
-                                )
-                    except Exception as e:
+                    except Exception:
                         # 히스토리 저장 실패는 무시 (발송 자체는 성공)
-                        print(f"히스토리 저장 실패: {str(e)}")
+                        pass
             else:
                 response_status = status.HTTP_400_BAD_REQUEST
 

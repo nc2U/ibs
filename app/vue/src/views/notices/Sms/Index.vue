@@ -32,7 +32,7 @@ const smsForm = ref({
   messageType: 'SMS',
   message: '',
   senderNumber: '',
-  companyId: company?.value?.pk ? `company${company.value.pk}` : 'default', // 회사 PK로 자동 생성
+  companyId: company?.value?.pk ? `company${company.value.pk}` : '', // 회사 PK로 자동 생성, 없으면 빈 문자열
   scheduledSend: false,
   scheduleDate: '',
   scheduleTime: '',
@@ -78,7 +78,6 @@ const notiStore = useNotice()
 const sendMessage = async () => {
   // 이미 발송 중이면 중복 실행 방지
   if (isSending.value) {
-    console.warn('이미 발송 중입니다.')
     return
   }
 
@@ -88,7 +87,7 @@ const sendMessage = async () => {
   try {
     if (activeTab.value === 'sms') {
       // SMS/LMS 발송
-      await notiStore.sendSMS({
+      const smsData = {
         message_type: smsForm.value.messageType as 'SMS' | 'LMS' | 'AUTO',
         message: smsForm.value.message,
         title: smsForm.value.messageType === 'LMS' ? '안내' : undefined,
@@ -99,7 +98,9 @@ const sendMessage = async () => {
         schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
         schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
         use_v2_api: true,
-      })
+      }
+
+      await notiStore.sendSMS(smsData)
     } else {
       // 카카오 알림톡 발송
       await notiStore.sendKakao({
@@ -111,8 +112,16 @@ const sendMessage = async () => {
         schedule_time: kakaoForm.value.scheduledSend ? kakaoForm.value.scheduleTime : undefined,
       })
     }
+
+    // 발송 성공 후 히스토리 새로고침 및 탭 전환
+    await notiStore.fetchMessageSendHistory({
+      page: 1,
+      ordering: '-created',
+    })
+
+    mainTab.value = 'history'
   } catch (error) {
-    console.error('발송 실패:', error)
+    // 에러 처리
   } finally {
     isSending.value = false
     sendProgress.value = 100
