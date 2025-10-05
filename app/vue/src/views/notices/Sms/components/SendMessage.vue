@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import TimePicker from '@/components/DatePicker/TimePicker.vue'
+
 // Props 정의
 interface Props {
   activeTab: string
@@ -47,18 +50,12 @@ const handleSendMessage = () => emit('sendMessage')
           <div v-if="props.currentForm.scheduledSend" class="mb-3">
             <CRow>
               <CCol :md="6">
-                <CFormInput
-                  v-model="props.currentForm.scheduleDate"
-                  type="date"
-                  label="발송 날짜"
-                />
+                <label class="form-label">발송 날짜</label>
+                <DatePicker v-model="props.currentForm.scheduleDate" />
               </CCol>
               <CCol :md="6">
-                <CFormInput
-                  v-model="props.currentForm.scheduleTime"
-                  type="time"
-                  label="발송 시간"
-                />
+                <label class="form-label">발송 시간</label>
+                <TimePicker v-model="props.currentForm.scheduleTime" />
               </CCol>
             </CRow>
           </div>
