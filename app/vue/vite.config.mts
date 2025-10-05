@@ -25,7 +25,7 @@ export default defineConfig({
             return
           }
 
-          // UI Frameworks (구체적인 것 먼저)
+          // 큰 UI 프레임워크만 분리
           if (id.includes('vuetify')) {
             return 'vuetify'
           }
@@ -33,46 +33,7 @@ export default defineConfig({
             return 'coreui'
           }
 
-          // Charts & Data Visualization
-          if (id.includes('chartjs') || id.includes('node_modules/d3')) {
-            return 'charts'
-          }
-
-          // Calendar & Gantt
-          if (id.includes('fullcalendar') || id.includes('ganttastic')) {
-            return 'calendar'
-          }
-
-          // Editors
-          if (id.includes('quill') || id.includes('md-editor') || id.includes('markdown-it')) {
-            return 'editors'
-          }
-
-          // Form controls
-          if (id.includes('datepicker') || id.includes('multiselect') ||
-              id.includes('maska') || id.includes('cropper')) {
-            return 'form-controls'
-          }
-
-          // Utils
-          if (id.includes('axios') || id.includes('cookie') || id.includes('vueuse') ||
-              id.includes('nprogress') || id.includes('mosha') || id.includes('dompurify')) {
-            return 'utils'
-          }
-
-          // Core Vue ecosystem (마지막에)
-          if (id.includes('vue-router') || id.includes('pinia')) {
-            return 'vue-core'
-          }
-          // Vue 코어 및 모든 Vue 관련 패키지
-          if (id.includes('node_modules/vue/') ||
-              id.includes('node_modules/@vue/') ||
-              id.includes('/vue/dist/') ||
-              id.match(/node_modules[\/\\]vue[\/\\]/)) {
-            return 'vue-core'
-          }
-
-          // 나머지 vendor 라이브러리
+          // 나머지는 모두 vendor로 통합 (Vue 포함)
           return 'vendor'
         },
         chunkFileNames: 'assets/[name]-[hash].js',
