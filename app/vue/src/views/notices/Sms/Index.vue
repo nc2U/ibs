@@ -6,6 +6,7 @@ import type { Company } from '@/store/types/settings.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import NoticeAuthGuard from '@/components/AuthGuard/NoticeAuthGuard.vue'
 import BalanceCard from './components/BalanceCard.vue'
 import SelectRecipient from './components/SelectRecipient.vue'
 import SelectMessage from './components/SelectMessage.vue'
@@ -147,77 +148,83 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
+  <NoticeAuthGuard>
+    <Loading v-model:active="loading" />
 
-  <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
-  <ContentBody>
-    <!-- 메인 탭 (발송 / 히스토리) -->
-    <CCol>
-      <CCardHeader>
-        <CRow class="mt-3">
-          <CCol>
-            <v-tabs density="compact">
-              <v-tab :active="mainTab === 'send'" @click="mainTab = 'send'" variant="tonal">
-                발송
-              </v-tab>
-              <v-tab :active="mainTab === 'history'" @click="mainTab = 'history'" variant="tonal">
-                히스토리
-              </v-tab>
-            </v-tabs>
+    <ContentBody>
+      <!-- 메인 탭 (발송 / 히스토리) -->
+      <CCol>
+        <CCardHeader>
+          <CRow class="mt-3">
+            <CCol>
+              <v-tabs density="compact">
+                <v-tab :active="mainTab === 'send'" @click="mainTab = 'send'" variant="tonal">
+                  발송
+                </v-tab>
+                <v-tab :active="mainTab === 'history'" @click="mainTab = 'history'" variant="tonal">
+                  히스토리
+                </v-tab>
+              </v-tabs>
+            </CCol>
+          </CRow>
+        </CCardHeader>
+        <CCardBody>
+          <!-- 발송 탭 내용 -->
+          <CCol v-show="mainTab === 'send'">
+            <CRow>
+              <CCol>
+                <!-- 메시지 작성 섹션 (탭으로 구분) -->
+                <SelectMessage
+                  v-model:active-tab="activeTab"
+                  v-model:sms-form="smsForm"
+                  v-model:kakao-form="kakaoForm"
+                  v-model:message-count="messageCount"
+                  @select-template="selectTemplate"
+                  @preview-message="previewMessage"
+                />
+              </CCol>
+              <CCol>
+                <!-- 수신자 관리 섹션 (고정) -->
+                <SelectRecipient
+                  v-model:recipient-input="recipientInput"
+                  v-model:recipients-list="recipientsList"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow>
+              <CCol>
+                <!-- 발송 설정 및 실행 -->
+                <SendMessage
+                  :active-tab="activeTab"
+                  :current-form="currentForm"
+                  :is-disabled="isDisabled"
+                  :button-text="buttonText"
+                  :is-sending="isSending"
+                  :send-progress="sendProgress"
+                  @send-message="sendMessage"
+                />
+              </CCol>
+
+              <CCol>
+                <!-- 잔액 확인 -->
+                <BalanceCard
+                  :balance="balance"
+                  :loading="balanceLoading"
+                  @refresh="refreshBalance"
+                />
+              </CCol>
+            </CRow>
           </CCol>
-        </CRow>
-      </CCardHeader>
-      <CCardBody>
-        <!-- 발송 탭 내용 -->
-        <CCol v-show="mainTab === 'send'">
-          <CRow>
-            <CCol>
-              <!-- 메시지 작성 섹션 (탭으로 구분) -->
-              <SelectMessage
-                v-model:active-tab="activeTab"
-                v-model:sms-form="smsForm"
-                v-model:kakao-form="kakaoForm"
-                v-model:message-count="messageCount"
-                @select-template="selectTemplate"
-                @preview-message="previewMessage"
-              />
-            </CCol>
-            <CCol>
-              <!-- 수신자 관리 섹션 (고정) -->
-              <SelectRecipient
-                v-model:recipient-input="recipientInput"
-                v-model:recipients-list="recipientsList"
-              />
-            </CCol>
-          </CRow>
 
-          <CRow>
-            <CCol>
-              <!-- 발송 설정 및 실행 -->
-              <SendMessage
-                :active-tab="activeTab"
-                :current-form="currentForm"
-                :is-disabled="isDisabled"
-                :button-text="buttonText"
-                :is-sending="isSending"
-                :send-progress="sendProgress"
-                @send-message="sendMessage"
-              />
-            </CCol>
-
-            <CCol>
-              <!-- 잔액 확인 -->
-              <BalanceCard :balance="balance" :loading="balanceLoading" @refresh="refreshBalance" />
-            </CCol>
-          </CRow>
-        </CCol>
-
-        <!-- 히스토리 탭 내용 -->
-        <CCol v-show="mainTab === 'history'">
-          <HistoryTab />
-        </CCol>
-      </CCardBody>
-    </CCol>
-  </ContentBody>
+          <!-- 히스토리 탭 내용 -->
+          <CCol v-show="mainTab === 'history'">
+            <HistoryTab />
+          </CCol>
+        </CCardBody>
+      </CCol>
+    </ContentBody>
+  </NoticeAuthGuard>
 </template>

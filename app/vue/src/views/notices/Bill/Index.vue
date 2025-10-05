@@ -12,6 +12,7 @@ import { type ContFilter, useContract } from '@/store/pinia/contract'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
+import NoticeAuthGuard from '@/components/AuthGuard/NoticeAuthGuard.vue'
 import SalesBillIssueForm from '@/views/notices/Bill/components/SalesBillIssueForm.vue'
 import ListController from '@/views/notices/Bill/components/ListController.vue'
 import DownloadButton from '@/views/notices/Bill/components/DownloadButton.vue'
@@ -148,36 +149,38 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
 </script>
 
 <template>
-  <Loading v-model:active="isLoading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+  <NoticeAuthGuard>
+    <Loading v-model:active="isLoading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <SalesBillIssueForm
-        :project="project || undefined"
-        :bill-issue="billIssue as SalesBillIssue"
-        @get-now-order="getNowOrder"
-        @set-pub-date="setPubDate"
-        @on-submit="onSubmit"
-      />
-      <ListController
-        ref="listControl"
-        :now-order-name="payOrderName"
-        @list-filtering="listFiltering"
-      />
-      <DownloadButton :print-data="printData" :contracts="cont_ids" />
-      <ContractList
-        :now-order="payOrderTime || undefined"
-        :limit="limit"
-        @on-cont-chk="onContChk"
-        @page-select="pageSelect"
-        @all-un-checked="allUnChecked"
-      />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <SalesBillIssueForm
+          :project="project || undefined"
+          :bill-issue="billIssue as SalesBillIssue"
+          @get-now-order="getNowOrder"
+          @set-pub-date="setPubDate"
+          @on-submit="onSubmit"
+        />
+        <ListController
+          ref="listControl"
+          :now-order-name="payOrderName"
+          @list-filtering="listFiltering"
+        />
+        <DownloadButton :print-data="printData" :contracts="cont_ids" />
+        <ContractList
+          :now-order="payOrderTime || undefined"
+          :limit="limit"
+          @on-cont-chk="onContChk"
+          @page-select="pageSelect"
+          @all-un-checked="allUnChecked"
+        />
+      </CCardBody>
+    </ContentBody>
+  </NoticeAuthGuard>
 </template>
