@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import { cutString } from '@/utils/baseMixins.ts'
 import type { HistoryListResponse, MessageSendHistoryList } from '@/store/types/notice'
-import { CTableDataCell } from '@coreui/vue'
+import Pagination from '@/components/Pagination'
 
 // Props
 interface Props {
@@ -152,11 +152,13 @@ const formatDate = (dateStr: string) => {
       </CTable>
 
       <!-- 페이지네이션 -->
-      <div v-if="!loading && historyList.length > 0" class="d-flex justify-content-center mt-3">
-        <CPagination
-          :pages="totalPages"
+      <div v-if="!loading && historyList.length > 0" class="d-flex mt-3">
+        <Pagination
           :active-page="currentPage"
-          @update:active-page="handlePageChange"
+          :limit="8"
+          :pages="totalPages"
+          class="mt-3"
+          @active-page-change="handlePageChange"
         />
       </div>
     </CCardBody>
