@@ -13,8 +13,7 @@ interface FilterData {
   startDate: string
   endDate: string
   messageType: string
-  status: string
-  phone: string
+  senderNumber: string
 }
 
 // 필터 데이터
@@ -22,8 +21,7 @@ const filterData = ref<FilterData>({
   startDate: '',
   endDate: '',
   messageType: 'all',
-  status: 'all',
-  phone: '',
+  senderNumber: '',
 })
 
 // 메시지 타입 옵션
@@ -33,13 +31,6 @@ const messageTypeOptions = [
   { label: 'LMS', value: 'LMS' },
   { label: 'MMS', value: 'MMS' },
   { label: '카카오', value: 'KAKAO' },
-]
-
-// 상태 옵션
-const statusOptions = [
-  { label: '전체', value: 'all' },
-  { label: '성공', value: 'success' },
-  { label: '실패', value: 'fail' },
 ]
 
 // 검색 실행
@@ -53,8 +44,7 @@ const handleReset = () => {
     startDate: '',
     endDate: '',
     messageType: 'all',
-    status: 'all',
-    phone: '',
+    senderNumber: '',
   }
   emit('reset')
 }
@@ -95,7 +85,7 @@ initDates()
         </CCol>
 
         <!-- 메시지 타입 -->
-        <CCol :md="6" lg="2">
+        <CCol :md="6" lg="3">
           <CFormLabel>메시지 타입</CFormLabel>
           <CFormSelect v-model="filterData.messageType">
             <option v-for="option in messageTypeOptions" :key="option.value" :value="option.value">
@@ -104,20 +94,10 @@ initDates()
           </CFormSelect>
         </CCol>
 
-        <!-- 발송 상태 -->
-        <CCol :md="6" lg="2">
-          <CFormLabel>발송 상태</CFormLabel>
-          <CFormSelect v-model="filterData.status">
-            <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </CFormSelect>
-        </CCol>
-
-        <!-- 전화번호 검색 -->
-        <CCol :md="6" lg="2">
-          <CFormLabel>전화번호 검색</CFormLabel>
-          <CFormInput v-model="filterData.phone" type="text" placeholder="전화번호 입력 (숫자만)" />
+        <!-- 발신번호 검색 -->
+        <CCol :md="6" lg="3">
+          <CFormLabel>발신번호</CFormLabel>
+          <CFormInput v-model="filterData.senderNumber" type="text" placeholder="발신번호 입력" />
         </CCol>
 
         <!-- 버튼 -->

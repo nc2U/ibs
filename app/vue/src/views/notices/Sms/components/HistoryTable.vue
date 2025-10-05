@@ -1,5 +1,7 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
+import { useNotice } from '@/store/pinia/notice'
+import type { MessageSendHistoryList } from '@/store/types/notice'
 
 // Props
 interface Props {
@@ -12,68 +14,36 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  detail: [item: HistoryItem]
+  detail: [id: number]
   pageChange: [page: number]
 }>()
 
-// 히스토리 아이템 타입
-interface HistoryItem {
-  requestNo: string
-  sendDate: string
-  phone: string
-  msgType: 'SMS' | 'LMS' | 'MMS' | 'KAKAO'
-  status: string
-  statusMessage: string
-  message: string
-}
+// Store
+const noticeStore = useNotice()
 
-// 더미 데이터 (실제로는 props로 받거나 store에서 가져옴)
-const historyList = ref<HistoryItem[]>([
-  {
-    requestNo: '20250103001',
-    sendDate: '2025-01-03 14:30:25',
-    phone: '010-1234-5678',
-    msgType: 'SMS',
-    status: '01',
-    statusMessage: '전송 성공',
-    message: '[테스트] 안녕하세요. 발송 테스트입니다.',
-  },
-  {
-    requestNo: '20250103002',
-    sendDate: '2025-01-03 15:45:12',
-    phone: '010-9876-5432',
-    msgType: 'LMS',
-    status: '01',
-    statusMessage: '전송 성공',
-    message: '[공지] 긴 메시지 테스트입니다. 이 메시지는 LMS로 발송되었습니다.',
-  },
-  {
-    requestNo: '20250103003',
-    sendDate: '2025-01-03 16:20:45',
-    phone: '010-5555-6666',
-    msgType: 'KAKAO',
-    status: '200',
-    statusMessage: '발송 성공',
-    message: '[알림] 카카오 알림톡 테스트입니다.',
-  },
-])
+// 히스토리 데이터
+const historyList = computed(() => noticeStore.messageSendHistory?.results || [])
+const totalCount = computed(() => noticeStore.messageSendHistory?.count || 0)
+const currentPage = computed(() => {
+  const nextUrl = noticeStore.messageSendHistory?.next
+  const prevUrl = noticeStore.messageSendHistory?.previous
+  if (!nextUrl && !prevUrl) return 1
+  // URL에서 page 번호 추출하여 계산
+  return 1 // 기본값
+})
 
 // 페이지네이션
-const currentPage = ref(1)
-const pageSize = ref(15)
-const totalCount = ref(100)
-
-const totalPages = computed(() => Math.ceil(totalCount.value / pageSize.value))
+const pageSize = 15
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
 
 // 페이지 변경
 const handlePageChange = (page: number) => {
-  currentPage.value = page
   emit('pageChange', page)
 }
 
 // 상세보기
-const handleDetail = (item: HistoryItem) => {
-  emit('detail', item)
+const handleDetail = (item: MessageSendHistoryList) => {
+  emit('detail', item.id)
 }
 
 // 메시지 타입 뱃지 색상
@@ -87,10 +57,16 @@ const getTypeColor = (type: string) => {
   return colors[type] || 'secondary'
 }
 
-// 상태 뱃지 색상
-const getStatusColor = (status: string) => {
-  if (status === '01' || status === '200') return 'success'
-  return 'danger'
+// 날짜 포맷팅
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 // 메시지 요약 (30자)
@@ -113,15 +89,18 @@ const getSummary = (message: string) => {
               발송일시
             </CTableHeaderCell>
             <CTableHeaderCell scope="col" class="text-center" style="width: 120px">
-              수신번호
+              발신번호
             </CTableHeaderCell>
             <CTableHeaderCell scope="col" class="text-center" style="width: 80px">
               타입
             </CTableHeaderCell>
             <CTableHeaderCell scope="col" class="text-center" style="width: 100px">
-              상태
+              수신자 수
             </CTableHeaderCell>
-            <CTableHeaderCell scope="col">메시지</CTableHeaderCell>
+            <CTableHeaderCell scope="col">제목</CTableHeaderCell>
+            <CTableHeaderCell scope="col" class="text-center" style="width: 100px">
+              발송자
+            </CTableHeaderCell>
             <CTableHeaderCell scope="col" class="text-center" style="width: 80px">
               상세
             </CTableHeaderCell>
@@ -130,7 +109,7 @@ const getSummary = (message: string) => {
         <CTableBody>
           <!-- 로딩 중 -->
           <CTableRow v-if="loading">
-            <CTableDataCell colspan="6" class="text-center py-5">
+            <CTableDataCell colspan="7" class="text-center py-5">
               <CSpinner color="primary" />
               <div class="mt-2 text-medium-emphasis">데이터를 불러오는 중...</div>
             </CTableDataCell>
@@ -138,31 +117,34 @@ const getSummary = (message: string) => {
 
           <!-- 데이터 없음 -->
           <CTableRow v-else-if="historyList.length === 0">
-            <CTableDataCell colspan="6" class="text-center py-5">
+            <CTableDataCell colspan="7" class="text-center py-5">
               <div class="text-medium-emphasis">조회된 내역이 없습니다.</div>
             </CTableDataCell>
           </CTableRow>
 
           <!-- 데이터 목록 -->
-          <CTableRow v-else v-for="item in historyList" :key="item.requestNo">
+          <CTableRow v-else v-for="item in historyList" :key="item.id">
             <CTableDataCell class="text-center">
-              {{ item.sendDate }}
+              {{ formatDate(item.sent_at) }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              {{ item.phone }}
+              {{ item.sender_number }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <CBadge :color="getTypeColor(item.msgType)">
-                {{ item.msgType }}
+              <CBadge :color="getTypeColor(item.message_type)">
+                {{ item.message_type }}
               </CBadge>
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <CBadge :color="getStatusColor(item.status)">
-                {{ item.statusMessage }}
+              <CBadge color="info">
+                {{ item.recipient_count }}명
               </CBadge>
             </CTableDataCell>
             <CTableDataCell>
-              {{ getSummary(item.message) }}
+              {{ getSummary(item.title || '(제목 없음)') }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center">
+              {{ item.sent_by?.username || '-' }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
               <CButton

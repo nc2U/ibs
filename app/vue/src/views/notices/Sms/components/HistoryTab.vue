@@ -1,80 +1,124 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, onBeforeMount } from 'vue'
+import { useNotice } from '@/store/pinia/notice'
+import type { MessageSendHistory, HistoryListParams } from '@/store/types/notice'
 import HistoryFilter from './HistoryFilter.vue'
 import HistoryTable from './HistoryTable.vue'
 import HistoryDetail from './HistoryDetail.vue'
-
-// 히스토리 아이템 타입
-interface HistoryItem {
-  requestNo: string
-  sendDate: string
-  phone: string
-  callback?: string
-  msgType: 'SMS' | 'LMS' | 'MMS' | 'KAKAO'
-  status: string
-  statusMessage: string
-  message: string
-}
 
 // 필터 데이터 타입
 interface FilterData {
   startDate: string
   endDate: string
   messageType: string
-  status: string
-  phone: string
+  senderNumber: string
 }
+
+const noticeStore = useNotice()
 
 // 상태
 const loading = ref(false)
 const detailVisible = ref(false)
-const selectedItem = ref<HistoryItem | null>(null)
+const selectedItem = ref<MessageSendHistory | null>(null)
+const currentPage = ref(1)
+const pageSize = ref(15)
+
+// 현재 필터
+const currentFilters = ref<FilterData>({
+  startDate: '',
+  endDate: '',
+  messageType: '',
+  senderNumber: '',
+})
 
 // 검색 실행
-const handleSearch = (filters: FilterData) => {
-  console.log('검색 필터:', filters)
-  loading.value = true
-
-  // TODO: 실제 API 호출
-  // await noticeStore.fetchSendHistory(...)
-
-  setTimeout(() => {
-    loading.value = false
-  }, 1000)
+const handleSearch = async (filters: FilterData) => {
+  currentFilters.value = { ...filters }
+  currentPage.value = 1 // 검색 시 첫 페이지로 리셋
+  await loadHistory()
 }
 
 // 필터 초기화
-const handleReset = () => {
-  console.log('필터 초기화')
-  // TODO: 데이터 리셋
+const handleReset = async () => {
+  currentFilters.value = {
+    startDate: '',
+    endDate: '',
+    messageType: '',
+    senderNumber: '',
+  }
+  currentPage.value = 1
+  await loadHistory()
 }
 
 // 페이지 변경
-const handlePageChange = (page: number) => {
-  console.log('페이지 변경:', page)
+const handlePageChange = async (page: number) => {
+  currentPage.value = page
+  await loadHistory()
+}
+
+// 히스토리 로드
+const loadHistory = async () => {
   loading.value = true
+  try {
+    const params: HistoryListParams = {
+      page: currentPage.value,
+      page_size: pageSize.value,
+      ordering: '-created',
+    }
 
-  // TODO: 실제 API 호출 (페이지 번호와 함께)
+    // 필터 적용
+    if (currentFilters.value.startDate) {
+      params.start_date = currentFilters.value.startDate
+    }
+    if (currentFilters.value.endDate) {
+      params.end_date = currentFilters.value.endDate
+    }
+    if (currentFilters.value.messageType) {
+      params.message_type = currentFilters.value.messageType
+    }
+    if (currentFilters.value.senderNumber) {
+      params.sender_number = currentFilters.value.senderNumber
+    }
 
-  setTimeout(() => {
+    await noticeStore.fetchMessageSendHistory(params)
+  } catch (error) {
+    console.error('히스토리 로드 실패:', error)
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 상세보기
-const handleDetail = (item: HistoryItem) => {
-  selectedItem.value = item
-  detailVisible.value = true
+const handleDetail = async (id: number) => {
+  try {
+    const detail = await noticeStore.fetchMessageSendHistoryDetail(id)
+    selectedItem.value = detail
+    detailVisible.value = true
+  } catch (error) {
+    console.error('상세 조회 실패:', error)
+  }
 }
 
-// 컴포넌트 마운트 시 초기 데이터 로드
+// 초기 데이터 로드 (최근 7일)
 const loadInitialData = () => {
-  console.log('초기 데이터 로드')
-  // TODO: 초기 데이터 로드 (최근 7일)
+  const today = new Date()
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(today.getDate() - 7)
+
+  currentFilters.value = {
+    startDate: sevenDaysAgo.toISOString().split('T')[0],
+    endDate: today.toISOString().split('T')[0],
+    messageType: '',
+    senderNumber: '',
+  }
+
+  loadHistory()
 }
 
-// 초기화
-loadInitialData()
+// 컴포넌트 마운트 시 초기화
+onBeforeMount(() => {
+  loadInitialData()
+})
 </script>
 
 <template>
