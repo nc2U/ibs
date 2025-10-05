@@ -48,11 +48,6 @@ export default defineConfig({
             return 'editors'
           }
 
-          // Git & Diff tools
-          if (id.includes('gitgraph') || id.includes('diff2html') || id.includes('highlight')) {
-            return 'git-tools'
-          }
-
           // Form controls
           if (id.includes('datepicker') || id.includes('multiselect') ||
               id.includes('maska') || id.includes('cropper')) {
