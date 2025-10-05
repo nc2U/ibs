@@ -13,6 +13,9 @@ import type {
   SMSResponse,
   KakaoResponse,
   MessageTemplate,
+  MessageSendHistory,
+  HistoryListParams,
+  HistoryListResponse,
 } from '@/store/types/notice'
 
 export const useNotice = defineStore('notice', () => {
@@ -23,6 +26,8 @@ export const useNotice = defineStore('notice', () => {
   const balance = ref<number>(0)
   const senderNumbers = ref<Array<{ id: number; phone_number: string; label: string }>>([])
   const messageTemplates = ref<MessageTemplate[]>([])
+  const messageSendHistory = ref<HistoryListResponse | null>(null)
+  const currentHistory = ref<MessageSendHistory | null>(null)
 
   // Sales Bill Issue actions
   const fetchSalesBillIssue = (pk: number) =>
@@ -457,6 +462,40 @@ export const useNotice = defineStore('notice', () => {
     }
   }
 
+  // 메시지 발송 기록 목록 조회
+  const fetchMessageSendHistory = async (params: HistoryListParams): Promise<HistoryListResponse> => {
+    loading.value = true
+    try {
+      const response = await api.get<HistoryListResponse>('/message-send-history/', { params })
+      messageSendHistory.value = response.data
+      return response.data
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || '발송 기록 조회 중 오류가 발생했습니다.'
+      message('danger', '조회 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 메시지 발송 기록 상세 조회
+  const fetchMessageSendHistoryDetail = async (id: number): Promise<MessageSendHistory> => {
+    loading.value = true
+    try {
+      const response = await api.get<MessageSendHistory>(`/message-send-history/${id}/`)
+      currentHistory.value = response.data
+      return response.data
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || '발송 기록 상세 조회 중 오류가 발생했습니다.'
+      message('danger', '조회 실패', errorMsg)
+      errorHandle(err.response?.data || { message: errorMsg })
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // state
     billIssue,
@@ -465,6 +504,8 @@ export const useNotice = defineStore('notice', () => {
     loading,
     senderNumbers,
     messageTemplates,
+    messageSendHistory,
+    currentHistory,
 
     // Sales Bill Issue actions
     fetchSalesBillIssue,
@@ -495,5 +536,9 @@ export const useNotice = defineStore('notice', () => {
 
     // Recipient Group actions
     fetchRecipientGroup,
+
+    // Message Send History actions
+    fetchMessageSendHistory,
+    fetchMessageSendHistoryDetail,
   }
 })

@@ -121,3 +121,59 @@ export declare interface MessageTemplate {
   created_at: string
   updated_at: string
 }
+
+// 메시지 발송 기록 관련 타입
+export declare interface MessageSendHistory {
+  id: number
+  message_type: 'SMS' | 'LMS' | 'MMS' | 'KAKAO'
+  sender_number: string
+  message_content: string
+  title: string
+  recipients: string[]
+  recipient_count: number
+  sent_at: string
+  request_no: string
+  company_id: string
+  project: number | null
+  scheduled_send: boolean
+  schedule_datetime: string | null
+  sent_by: {
+    pk: number
+    username: string
+  } | null
+  created: string
+}
+
+export declare interface MessageSendHistoryList {
+  id: number
+  message_type: 'SMS' | 'LMS' | 'MMS' | 'KAKAO'
+  sender_number: string
+  title: string
+  recipient_count: number
+  sent_at: string
+  request_no: string
+  scheduled_send: boolean
+  sent_by: {
+    pk: number
+    username: string
+  } | null
+  created: string
+}
+
+export declare interface HistoryListParams {
+  start_date?: string
+  end_date?: string
+  message_type?: string
+  sender_number?: string
+  project?: number
+  page?: number
+  page_size?: number
+  ordering?: string
+}
+
+export declare interface HistoryListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: MessageSendHistoryList[]
+}
