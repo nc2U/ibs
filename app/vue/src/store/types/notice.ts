@@ -149,6 +149,7 @@ export declare interface MessageSendHistoryList {
   message_type: 'SMS' | 'LMS' | 'MMS' | 'KAKAO'
   sender_number: string
   title: string
+  message_content: string
   recipient_count: number
   sent_at: string
   request_no: string

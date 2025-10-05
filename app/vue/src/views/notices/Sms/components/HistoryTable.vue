@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import { cutString } from '@/utils/baseMixins.ts'
 import type { HistoryListResponse, MessageSendHistoryList } from '@/store/types/notice'
+import { CTableDataCell } from '@coreui/vue'
 
 // Props
 interface Props {
@@ -93,6 +94,7 @@ const formatDate = (dateStr: string) => {
               수신자 수
             </CTableHeaderCell>
             <CTableHeaderCell scope="col">제목</CTableHeaderCell>
+            <CTableHeaderCell scope="col">내용</CTableHeaderCell>
             <CTableHeaderCell scope="col" class="text-center" style="width: 100px">
               발송자
             </CTableHeaderCell>
@@ -135,6 +137,9 @@ const formatDate = (dateStr: string) => {
             </CTableDataCell>
             <CTableDataCell>
               {{ cutString(item.title || '(제목 없음)') }}
+            </CTableDataCell>
+            <CTableDataCell>
+              {{ cutString(item.message_content, 30) }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
               {{ item.sent_by?.username || '-' }}
