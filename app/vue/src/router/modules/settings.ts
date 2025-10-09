@@ -1,18 +1,4 @@
-import { computed, h, resolveComponent } from 'vue'
-import { useAccount } from '@/store/pinia/account'
-
-const account = computed(() => useAccount())
-const compViewAuth = computed(
-  () =>
-    account.value.userInfo?.is_superuser ||
-    (account.value.userInfo?.staffauth && account.value.userInfo.staffauth?.company_settings > '0'),
-)
-
-const authViewAuth = computed(
-  () =>
-    account.value.userInfo?.is_superuser ||
-    (account.value.userInfo?.staffauth && account.value.userInfo.staffauth?.auth_manage > '0'),
-)
+import { h, resolveComponent } from 'vue'
 
 const settings = {
   path: 'settings',
@@ -27,20 +13,22 @@ const settings = {
     {
       path: 'company',
       name: '회사 정보 관리',
-      component: () =>
-        compViewAuth.value
-          ? import('@/views/settings/Company/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '회사 정보 관리', auth: true },
+      component: () => import('@/views/settings/Company/Index.vue'),
+      meta: {
+        title: '회사 정보 관리',
+        auth: true,
+        requiresCompanySettingsAuth: true,
+      },
     },
     {
       path: 'authorization',
       name: '권한 설정 관리',
-      component: () =>
-        authViewAuth.value
-          ? import('@/views/settings/Authorization/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '권한 설정 관리', auth: true },
+      component: () => import('@/views/settings/Authorization/Index.vue'),
+      meta: {
+        title: '권한 설정 관리',
+        auth: true,
+        requiresAuthManageAuth: true,
+      },
     },
   ],
 }

@@ -6,6 +6,7 @@ import { type Company } from '@/store/types/settings'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import CompanySettingsAuthGuard from '@/components/AuthGuard/CompanySettingsAuthGuard.vue'
 import CompanyForm from './components/CompanyForm.vue'
 import CompanyDetail from './components/CompanyDetail.vue'
 
@@ -39,6 +40,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
+  <CompanySettingsAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -69,4 +71,5 @@ onBeforeMount(() => {
       <div style="display: none"></div>
     </template>
   </ContentBody>
+  </CompanySettingsAuthGuard>
 </template>

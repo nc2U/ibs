@@ -7,6 +7,7 @@ import { useAccount, type UserByAdmin } from '@/store/pinia/account'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import AuthManageAuthGuard from '@/components/AuthGuard/AuthManageAuthGuard.vue'
 import UserSelect from './components/UserSelect.vue'
 import SideBarManageAuth from './components/SideBarManageAuth.vue'
 import AddUserFormModal from './components/AddUserFormModal.vue'
@@ -226,6 +227,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <AuthManageAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
   <ContentBody>
@@ -277,4 +279,5 @@ onBeforeMount(async () => {
 
     <AlertModal ref="refAlertModal" />
   </ContentBody>
+  </AuthManageAuthGuard>
 </template>
