@@ -10,6 +10,7 @@ import { write_project_site } from '@/utils/pageAuth'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import ListController from './components/ListController.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import AddSite from './components/AddSite.vue'
@@ -189,6 +190,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ProjectAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -228,4 +230,5 @@ onBeforeMount(async () => {
       />
     </CCardBody>
   </ContentBody>
+  </ProjectAuthGuard>
 </template>

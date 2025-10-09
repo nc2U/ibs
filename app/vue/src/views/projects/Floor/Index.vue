@@ -8,6 +8,7 @@ import type { Project, UnitFloorType } from '@/store/types/project'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import FloorAddForm from '@/views/projects/Floor/components/FloorAddForm.vue'
 import FloorFormList from '@/views/projects/Floor/components/FloorFormList.vue'
 
@@ -43,6 +44,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ProjectAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -57,4 +59,5 @@ onBeforeMount(async () => {
       <FloorFormList @on-update="onUpdateFloor" @on-delete="onDeleteFloor" />
     </CCardBody>
   </ContentBody>
+  </ProjectAuthGuard>
 </template>

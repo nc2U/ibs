@@ -9,6 +9,7 @@ import { message } from '@/utils/helper'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import UnitController from '@/views/projects/Unit/components/UnitController.vue'
 import UnitTable from '@/views/projects/Unit/components/UnitTable.vue'
 
@@ -168,6 +169,7 @@ onBeforeRouteLeave(async () => {
 </script>
 
 <template>
+  <ProjectAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -190,4 +192,5 @@ onBeforeRouteLeave(async () => {
   </ContentBody>
 
   <AlertModal ref="alertModal" />
+  </ProjectAuthGuard>
 </template>

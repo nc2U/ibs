@@ -12,6 +12,7 @@ import { useProjectData } from '@/store/pinia/project_data'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import PriceSelectForm from '@/views/projects/Price/components/PriceSelectForm.vue'
 import PriceFormList from '@/views/projects/Price/components/PriceFormList.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -206,6 +207,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ProjectAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -240,4 +242,5 @@ onBeforeMount(async () => {
   </ContentBody>
 
   <AlertModal ref="RefAlertModal" />
+  </ProjectAuthGuard>
 </template>

@@ -10,6 +10,7 @@ import type { Project, ProOutBudget } from '@/store/types/project'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import BudgetAddForm from '@/views/projects/OutBudget/components/BudgetAddForm.vue'
 import BudgetFormList from '@/views/projects/OutBudget/components/BudgetFormList.vue'
 
@@ -86,6 +87,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ProjectAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -100,4 +102,5 @@ onBeforeMount(async () => {
       <BudgetFormList @on-update="onUpdateBudget" @on-delete="onDeleteBudget" />
     </CCardBody>
   </ContentBody>
+  </ProjectAuthGuard>
 </template>

@@ -9,6 +9,7 @@ import type { Project } from '@/store/types/project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import PayOrderAddForm from '@/views/projects/PayOrder/components/PayOrderAddForm.vue'
 import PayOrderFormList from '@/views/projects/PayOrder/components/PayOrderFormList.vue'
 
@@ -44,6 +45,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ProjectAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -58,4 +60,5 @@ onBeforeMount(async () => {
       <PayOrderFormList @on-update="onUpdatePayOrder" @on-delete="onDeletePayOrder" />
     </CCardBody>
   </ContentBody>
+  </ProjectAuthGuard>
 </template>

@@ -8,6 +8,7 @@ import type { Project, UnitType } from '@/store/types/project'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import TypeAddForm from '@/views/projects/Type/components/TypeAddForm.vue'
 import TypeFormList from '@/views/projects/Type/components/TypeFormList.vue'
 
@@ -51,6 +52,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ProjectAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -65,4 +67,5 @@ onBeforeMount(async () => {
       <TypeFormList @on-update="onUpdateType" @on-delete="onDeleteType" />
     </CCardBody>
   </ContentBody>
+  </ProjectAuthGuard>
 </template>
