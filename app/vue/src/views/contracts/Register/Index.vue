@@ -186,32 +186,32 @@ onBeforeMount(async () => {
 
 <template>
   <ContractAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
-
-  <ContentBody>
-    <ContractForm
-      ref="contForm"
-      :project="project ?? undefined"
-      :contract="contract ?? undefined"
-      :contractor="contractor ?? undefined"
-      :unit-set="unitSet"
-      :is-union="isUnion"
-      :from-page="fromPage"
-      @type-select="typeSelect"
-      @on-submit="onSubmit"
-      @resume-form="resumeForm"
-      @search-contractor="searchContractor"
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
     />
 
-    <template #footer>
-      <div style="display: none"></div>
-    </template>
-  </ContentBody>
+    <ContentBody>
+      <ContractForm
+        ref="contForm"
+        :project="project ?? undefined"
+        :contract="contract ?? undefined"
+        :contractor="contractor ?? undefined"
+        :unit-set="unitSet"
+        :is-union="isUnion"
+        :from-page="fromPage"
+        @type-select="typeSelect"
+        @on-submit="onSubmit"
+        @resume-form="resumeForm"
+        @search-contractor="searchContractor"
+      />
+
+      <template #footer>
+        <div style="display: none"></div>
+      </template>
+    </ContentBody>
   </ContractAuthGuard>
 </template>

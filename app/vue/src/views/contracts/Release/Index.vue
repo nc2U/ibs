@@ -190,58 +190,58 @@ watch(route, async newRoute => {
 
 <template>
   <ContractAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ContNavigation :cont-on="!!contOn" />
-      <ContController
-        :project="project || undefined"
-        @search-contractor="searchContractor"
-        @call-form="callForm"
-      />
-      <ContractorAlert v-if="contractor" :contractor="contractor" />
-      <ReleasetButton
-        v-if="contractor"
-        :contractor="contractor"
-        :cont-release="contRelease ?? undefined"
-        @call-form="callForm"
-      />
-      <TableTitleRow
-        title="계약 해지 현황"
-        color="grey"
-        excel
-        :url="downloadUrl"
-        :disabled="!project"
-      />
-      <ReleaseList
-        :highlight-id="highlightId"
-        :current-page="page"
-        @page-select="pageSelect"
-        @call-form="callForm"
-        @on-submit="onSubmit"
-      />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ContNavigation :cont-on="!!contOn" />
+        <ContController
+          :project="project || undefined"
+          @search-contractor="searchContractor"
+          @call-form="callForm"
+        />
+        <ContractorAlert v-if="contractor" :contractor="contractor" />
+        <ReleasetButton
+          v-if="contractor"
+          :contractor="contractor"
+          :cont-release="contRelease ?? undefined"
+          @call-form="callForm"
+        />
+        <TableTitleRow
+          title="계약 해지 현황"
+          color="grey"
+          excel
+          :url="downloadUrl"
+          :disabled="!project"
+        />
+        <ReleaseList
+          :highlight-id="highlightId"
+          :current-page="page"
+          @page-select="pageSelect"
+          @call-form="callForm"
+          @on-submit="onSubmit"
+        />
+      </CCardBody>
+    </ContentBody>
 
-  <FormModal ref="releaseFormModal" size="lg">
-    <template #header>계약 해지 수정 등록</template>
-    <template #default>
-      <ReleaseForm
-        :release="contRelease ?? undefined"
-        :contractor="contractor as Contractor"
-        @on-submit="onSubmit"
-        @close="releaseFormModal.close()"
-      />
-    </template>
-  </FormModal>
+    <FormModal ref="releaseFormModal" size="lg">
+      <template #header>계약 해지 수정 등록</template>
+      <template #default>
+        <ReleaseForm
+          :release="contRelease ?? undefined"
+          :contractor="contractor as Contractor"
+          @on-submit="onSubmit"
+          @close="releaseFormModal.close()"
+        />
+      </template>
+    </FormModal>
 
-  <AlertModal ref="releaseAlertModal" />
+    <AlertModal ref="releaseAlertModal" />
   </ContractAuthGuard>
 </template>

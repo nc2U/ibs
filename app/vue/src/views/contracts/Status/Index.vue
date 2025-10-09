@@ -62,31 +62,31 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
 
 <template>
   <ContractAuthGuard>
-  <Loading v-model:active="isLoading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="isLoading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ContSummary />
-      <TableTitleRow excel :url="excelUrl" :disabled="!project">
-        <div class="p-2">
-          <CFormSwitch
-            id="flexCheckDefault"
-            v-model="isContor"
-            label="계약자명 표시"
-            style="font-size: 0.825em"
-            :disabled="!project"
-          />
-        </div>
-      </TableTitleRow>
-      <v-divider color="grey" class="my-0" />
-      <ContractBoard />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ContSummary />
+        <TableTitleRow excel :url="excelUrl" :disabled="!project">
+          <div class="p-2">
+            <CFormSwitch
+              id="flexCheckDefault"
+              v-model="isContor"
+              label="계약자명 표시"
+              style="font-size: 0.825em"
+              :disabled="!project"
+            />
+          </div>
+        </TableTitleRow>
+        <v-divider color="grey" class="my-0" />
+        <ContractBoard />
+      </CCardBody>
+    </ContentBody>
   </ContractAuthGuard>
 </template>

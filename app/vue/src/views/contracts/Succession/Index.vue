@@ -269,49 +269,49 @@ onBeforeMount(async () => {
 
 <template>
   <ContractAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ContNavigation :cont-on="!!contractor?.status && contractor.status < '3'" />
-      <ContController :project="project || undefined" @search-contractor="searchContractor" />
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ContNavigation :cont-on="!!contractor?.status && contractor.status < '3'" />
+        <ContController :project="project || undefined" @search-contractor="searchContractor" />
 
-      <ContractorAlert v-if="contractor" :contractor="contractor" />
+        <ContractorAlert v-if="contractor" :contractor="contractor" />
 
-      <SuccessionButton
-        v-if="contractor"
-        :is-succession="isSuccession"
-        @call-form="callFormModal"
-      />
-      <TableTitleRow title="승계 진행 건 목록" excel :url="downloadUrl" :disabled="!project" />
-      <SuccessionList
-        :highlight-id="highlightId ?? undefined"
-        :current-page="page"
-        @page-select="pageSelect"
-        @call-form="callFormModal"
-        @done-alert="doneAlert"
-      />
-    </CCardBody>
-  </ContentBody>
+        <SuccessionButton
+          v-if="contractor"
+          :is-succession="isSuccession"
+          @call-form="callFormModal"
+        />
+        <TableTitleRow title="승계 진행 건 목록" excel :url="downloadUrl" :disabled="!project" />
+        <SuccessionList
+          :highlight-id="highlightId ?? undefined"
+          :current-page="page"
+          @page-select="pageSelect"
+          @call-form="callFormModal"
+          @done-alert="doneAlert"
+        />
+      </CCardBody>
+    </ContentBody>
 
-  <FormModal ref="successionFormModal" size="lg">
-    <template #header>권리 의무 승계 수정 등록</template>
-    <template #default>
-      <SuccessionForm
-        :succession="succession ?? undefined"
-        :is-succession="isSuccession"
-        @on-submit="onSubmit"
-        @close="successionFormModal.close()"
-      />
-    </template>
-  </FormModal>
+    <FormModal ref="successionFormModal" size="lg">
+      <template #header>권리 의무 승계 수정 등록</template>
+      <template #default>
+        <SuccessionForm
+          :succession="succession ?? undefined"
+          :is-succession="isSuccession"
+          @on-submit="onSubmit"
+          @close="successionFormModal.close()"
+        />
+      </template>
+    </FormModal>
 
-  <AlertModal ref="successionAlertModal" />
+    <AlertModal ref="successionAlertModal" />
   </ContractAuthGuard>
 </template>

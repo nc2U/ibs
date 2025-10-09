@@ -264,40 +264,40 @@ onBeforeMount(async () => {
 
 <template>
   <ContractAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :key="headerKey"
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  >
-    <ContractSummary :project="project ?? undefined" />
-  </ContentHeader>
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :key="headerKey"
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    >
+      <ContractSummary :project="project ?? undefined" />
+    </ContentHeader>
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ListController ref="listControl" :status="status" @cont-filtering="onContFiltering" />
-      <TableTitleRow title="계약현황" excel :url="excelUrl" :disabled="!project">
-        <v-btn
-          size="small"
-          rounded="0"
-          flat
-          class="text-blue-accent-4 mt-1"
-          style="font-size: 0.825em"
-          @click="visible = !visible"
-        >
-          [엑셀 출력항목 선택]
-        </v-btn>
-      </TableTitleRow>
-      <SelectItems :visible="visible" :unit-set="unitSet" @print-items="setItems" />
-      <ContractList
-        :limit="limit"
-        :highlight-id="highlightId ?? undefined"
-        :current-page="currentFilters.page || 1"
-        @page-select="pageSelect"
-      />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ListController ref="listControl" :status="status" @cont-filtering="onContFiltering" />
+        <TableTitleRow title="계약현황" excel :url="excelUrl" :disabled="!project">
+          <v-btn
+            size="small"
+            rounded="0"
+            flat
+            class="text-blue-accent-4 mt-1"
+            style="font-size: 0.825em"
+            @click="visible = !visible"
+          >
+            [엑셀 출력항목 선택]
+          </v-btn>
+        </TableTitleRow>
+        <SelectItems :visible="visible" :unit-set="unitSet" @print-items="setItems" />
+        <ContractList
+          :limit="limit"
+          :highlight-id="highlightId ?? undefined"
+          :current-page="currentFilters.page || 1"
+          @page-select="pageSelect"
+        />
+      </CCardBody>
+    </ContentBody>
   </ContractAuthGuard>
 </template>
