@@ -4,6 +4,7 @@ import { pageTitle, navMenu } from '@/views/comDocs/_menu/headermixin'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ComDocsAuthGuard from '@/components/AuthGuard/ComDocsAuthGuard.vue'
 
 const msg = ref(pageTitle)
 
@@ -14,12 +15,14 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
-  <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
-  <ContentBody>
-    <CCardBody>
-      {{ msg }}
-      <div style="height: 420px"></div>
-    </CCardBody>
-  </ContentBody>
+  <ComDocsAuthGuard>
+    <Loading v-model:active="loading" />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
+    <ContentBody>
+      <CCardBody>
+        {{ msg }}
+        <div style="height: 420px"></div>
+      </CCardBody>
+    </ContentBody>
+  </ComDocsAuthGuard>
 </template>

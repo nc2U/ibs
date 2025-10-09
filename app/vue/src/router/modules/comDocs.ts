@@ -1,12 +1,4 @@
-import { computed, h, resolveComponent } from 'vue'
-import { useAccount } from '@/store/pinia/account'
-
-const account = computed(() => useAccount())
-const pageViewAuth = computed(
-  () =>
-    account.value.userInfo?.is_superuser ||
-    (account.value.userInfo?.staffauth && account.value.userInfo.staffauth?.company_docs > '0'),
-)
+import { h, resolveComponent } from 'vue'
 
 const comDocs = {
   path: 'docs',
@@ -21,11 +13,12 @@ const comDocs = {
     {
       path: 'general/docs',
       name: '본사 일반 문서',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/comDocs/GeneralDocs/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '본사 일반 문서', auth: true },
+      component: () => import('@/views/comDocs/GeneralDocs/Index.vue'),
+      meta: {
+        title: '본사 일반 문서',
+        auth: true,
+        requiresCompanyDocsAuth: true,
+      },
       children: [
         {
           path: ':docsId(\\d+)',
@@ -44,11 +37,12 @@ const comDocs = {
     {
       path: 'lawsuit/docs',
       name: '본사 소송 문서',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/comDocs/LawsuitDocs/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '본사 소송 문서', auth: true },
+      component: () => import('@/views/comDocs/LawsuitDocs/Index.vue'),
+      meta: {
+        title: '본사 소송 문서',
+        auth: true,
+        requiresCompanyDocsAuth: true,
+      },
       children: [
         {
           path: ':docsId(\\d+)',
@@ -67,11 +61,12 @@ const comDocs = {
     {
       path: 'lawsuit/case',
       name: '본사 소송 사건',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/comDocs/LawsuitCase/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '본사 소송 사건', auth: true },
+      component: () => import('@/views/comDocs/LawsuitCase/Index.vue'),
+      meta: {
+        title: '본사 소송 사건',
+        auth: true,
+        requiresCompanyDocsAuth: true,
+      },
       children: [
         {
           path: ':caseId(\\d+)',
@@ -90,11 +85,12 @@ const comDocs = {
     {
       path: 'official/letters',
       name: '본사 공문 발송',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/comDocs/OfficialLetter/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '본사 공문 발송', auth: true },
+      component: () => import('@/views/comDocs/OfficialLetter/Index.vue'),
+      meta: {
+        title: '본사 공문 발송',
+        auth: true,
+        requiresCompanyDocsAuth: true,
+      },
       children: [
         {
           path: ':letterId(\\d+)',

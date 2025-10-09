@@ -18,6 +18,7 @@ import type { AFile, Link, SuitCase } from '@/store/types/docs'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ComDocsAuthGuard from '@/components/AuthGuard/ComDocsAuthGuard.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import ListController from '@/components/LawSuitCase/ListController.vue'
 import CaseView from '@/components/LawSuitCase/CaseView.vue'
@@ -321,16 +322,17 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :key="headerKey"
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="CompanySelect"
-    @com-select="comSelect"
-  />
+  <ComDocsAuthGuard>
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :key="headerKey"
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="CompanySelect"
+      @com-select="comSelect"
+    />
 
-  <ContentBody>
+    <ContentBody>
     <CCardBody class="pb-5">
       <div v-if="route.name === `${mainViewName}`" class="pt-3">
         <ListController
@@ -392,4 +394,5 @@ onBeforeRouteLeave(() => {
       </div>
     </CCardBody>
   </ContentBody>
+  </ComDocsAuthGuard>
 </template>
