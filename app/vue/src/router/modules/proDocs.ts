@@ -1,12 +1,4 @@
-import { computed, h, resolveComponent } from 'vue'
-import { useAccount } from '@/store/pinia/account'
-
-const account = computed(() => useAccount())
-const pageViewAuth = computed(
-  () =>
-    account.value.userInfo?.is_superuser ||
-    (account.value.userInfo?.staffauth && account.value.userInfo.staffauth?.project_docs > '0'),
-)
+import { h, resolveComponent } from 'vue'
 
 const proDocs = {
   path: 'project-docs',
@@ -21,11 +13,12 @@ const proDocs = {
     {
       path: 'general/docs',
       name: 'PR 일반 문서',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/proDocs/GeneralDocs/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: 'PR 일반 문서', auth: true },
+      component: () => import('@/views/proDocs/GeneralDocs/Index.vue'),
+      meta: {
+        title: 'PR 일반 문서',
+        auth: true,
+        requiresProjectDocsAuth: true,
+      },
       children: [
         {
           path: ':docsId(\\d+)',
@@ -44,11 +37,12 @@ const proDocs = {
     {
       path: 'lawsuit/docs',
       name: 'PR 소송 문서',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/proDocs/LawsuitDocs/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: 'PR 소송 문서', auth: true },
+      component: () => import('@/views/proDocs/LawsuitDocs/Index.vue'),
+      meta: {
+        title: 'PR 소송 문서',
+        auth: true,
+        requiresProjectDocsAuth: true,
+      },
       children: [
         {
           path: ':docsId(\\d+)',
@@ -67,11 +61,12 @@ const proDocs = {
     {
       path: 'lawsuit/case',
       name: 'PR 소송 사건',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/proDocs/LawsuitCase/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: 'PR 소송 사건', auth: true },
+      component: () => import('@/views/proDocs/LawsuitCase/Index.vue'),
+      meta: {
+        title: 'PR 소송 사건',
+        auth: true,
+        requiresProjectDocsAuth: true,
+      },
       children: [
         {
           path: ':caseId(\\d+)',

@@ -8,6 +8,7 @@ import type { Grade, ComFilter } from '@/store/types/company'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import HrAuthGuard from '@/components/AuthGuard/HrAuthGuard.vue'
 import ListController from './components/ListController.vue'
 import AddGrade from './components/AddGrade.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -89,6 +90,7 @@ onMounted(async () => {
 </script>
 
 <template>
+  <HrAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -104,4 +106,5 @@ onMounted(async () => {
       <GradeList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
     </CCardBody>
   </ContentBody>
+  </HrAuthGuard>
 </template>

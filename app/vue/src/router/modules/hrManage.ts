@@ -1,12 +1,4 @@
-import { computed, h, resolveComponent } from 'vue'
-import { useAccount } from '@/store/pinia/account'
-
-const account = computed(() => useAccount())
-const pageViewAuth = computed(
-  () =>
-    account.value.userInfo?.is_superuser ||
-    (account.value.userInfo?.staffauth && account.value.userInfo.staffauth?.human_resource > '0'),
-)
+import { h, resolveComponent } from 'vue'
 
 const hrManage = {
   path: 'hr-manage',
@@ -21,47 +13,52 @@ const hrManage = {
     {
       path: 'staff',
       name: '직원 정보 관리',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/hrManage/Staff/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '직원 정보 관리', auth: true },
+      component: () => import('@/views/hrManage/Staff/Index.vue'),
+      meta: {
+        title: '직원 정보 관리',
+        auth: true,
+        requiresHrAuth: true,
+      },
     },
     {
       path: 'department',
       name: '부서 정보 관리',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/hrManage/Department/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '부서 정보 관리', auth: true },
+      component: () => import('@/views/hrManage/Department/Index.vue'),
+      meta: {
+        title: '부서 정보 관리',
+        auth: true,
+        requiresHrAuth: true,
+      },
     },
     {
       path: 'position',
       name: '직위 정보 관리',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/hrManage/Position/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '직위 정보 관리', auth: true },
+      component: () => import('@/views/hrManage/Position/Index.vue'),
+      meta: {
+        title: '직위 정보 관리',
+        auth: true,
+        requiresHrAuth: true,
+      },
     },
     {
       path: 'duty',
       name: '직책 정보 관리',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/hrManage/Duty/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '직책 정보 관리', auth: true },
+      component: () => import('@/views/hrManage/Duty/Index.vue'),
+      meta: {
+        title: '직책 정보 관리',
+        auth: true,
+        requiresHrAuth: true,
+      },
     },
     {
       path: 'grade',
       name: '직급 정보 관리',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/hrManage/Grade/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '직급 정보 관리', auth: true },
+      component: () => import('@/views/hrManage/Grade/Index.vue'),
+      meta: {
+        title: '직급 정보 관리',
+        auth: true,
+        requiresHrAuth: true,
+      },
     },
   ],
 }

@@ -10,6 +10,7 @@ import type { ProCalculated } from '@/store/types/proCash'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProCashAuthGuard from '@/components/AuthGuard/ProCashAuthGuard.vue'
 import DateChoicer from '@/views/proCash/Status/components/DateChoicer.vue'
 import TabSelect from '@/views/proCash/Status/components/TabSelect.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -177,6 +178,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ProCashAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -216,4 +218,5 @@ onBeforeMount(async () => {
       />
     </CCardBody>
   </ContentBody>
+  </ProCashAuthGuard>
 </template>

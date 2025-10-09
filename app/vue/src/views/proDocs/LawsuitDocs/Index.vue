@@ -16,6 +16,7 @@ import type { AFile, Attatches, Docs, Link, PatchDocs, SuitCase } from '@/store/
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProDocsAuthGuard from '@/components/AuthGuard/ProDocsAuthGuard.vue'
 import ListController from '@/components/Documents/ListController.vue'
 import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
@@ -211,6 +212,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ProDocsAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -294,4 +296,5 @@ onBeforeMount(async () => {
       </div>
     </CCardBody>
   </ContentBody>
+  </ProDocsAuthGuard>
 </template>

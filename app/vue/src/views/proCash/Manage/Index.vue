@@ -18,6 +18,7 @@ import { write_project_cash } from '@/utils/pageAuth'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ProCashAuthGuard from '@/components/AuthGuard/ProCashAuthGuard.vue'
 import ListController from '@/views/proCash/Manage/components/ListController.vue'
 import AddProCash from '@/views/proCash/Manage/components/AddProCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -365,6 +366,7 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
+  <ProCashAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -415,4 +417,5 @@ onBeforeRouteLeave(() => {
       />
     </CCardBody>
   </ContentBody>
+  </ProCashAuthGuard>
 </template>
