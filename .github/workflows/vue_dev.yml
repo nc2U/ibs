@@ -60,25 +60,112 @@ jobs:
       
       # setup and lint 에러가 없으면 빌드
       - name: Build the Source Code
-        run: cd app/vue && pnpm build
-      
+        env:
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+        run: |
+          cd app/vue
+          # 타임스탬프 디렉터리로 빌드
+          export BUILD_DIR="../django/static/dist_${BUILD_TIMESTAMP}"
+          pnpm build
+
+      # 배포 메타데이터 생성
+      - name: Create deployment metadata
+        env:
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+        run: |
+          cd app/django/static
+          echo "{
+            \"build_time\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"git_sha\": \"${{ github.sha }}\",
+            \"git_branch\": \"${{ github.ref_name }}\",
+            \"build_number\": \"${{ github.run_number }}\",
+            \"deployer\": \"${{ github.actor }}\"
+          }" > dist_${BUILD_TIMESTAMP}/deploy.json
+
       # 단위 테스트
       - name: Vue Unit Test using Vitest
         run: cd app/vue && pnpm test:unit
-      
-      # Vue Source to server copy transfer
-      - name: List dist directory contents
-        run: ls -al app/django/static/dist
 
-      # Vue Source to server copy transfer
-      - name: Copy Vue -> django static/dist (NFS server)
+      # 새 빌드만 업로드 (전체 static이 아닌)
+      - name: Upload new build to server
+        env:
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.CICD_HOST }}
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
-          source: 'app/django/static'
-          target: ${{ secrets.CICD_PATH }}/dev/
+          source: 'app/django/static/dist_${{ github.run_number }}_${{ github.sha }}'
+          target: ${{ secrets.CICD_PATH }}/dev/app/django/static/
+
+      # 원자적 배포 (Symlink Swap)
+      - name: Atomic deployment with symlink swap
+        env:
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/dev/app/django/static
+
+            # 새 빌드 디렉터리명
+            NEW_BUILD="dist_${{ github.run_number }}_${{ github.sha }}"
+
+            echo "📦 New build: $NEW_BUILD"
+
+            # 심볼릭 링크 원자적 교체
+            ln -sfn "$NEW_BUILD" dist.tmp
+            mv -Tf dist.tmp dist
+
+            # 오래된 빌드 정리 (최근 2개만 유지: 현재 + 이전)
+            echo "🧹 Cleaning old builds..."
+            ls -dt dist_* 2>/dev/null | tail -n +3 | xargs -r rm -rf
+
+            echo "✅ Deployed: $NEW_BUILD"
+            echo "📊 Remaining builds:"
+            ls -lth | grep "^d" | grep "dist_" | head -3
+
+      # 배포 검증
+      - name: Verify deployment
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/dev/app/django/static
+
+            # index.html 존재 확인
+            if [ ! -f "dist/index.html" ]; then
+              echo "❌ Deployment failed: index.html not found"
+              exit 1
+            fi
+
+            # 배포 정보 출력
+            echo "✅ Deployment verified"
+            if [ -f "dist/deploy.json" ]; then
+              cat dist/deploy.json
+            fi
+
+      # Kubernetes Pod 재시작 (Django 템플릿 캐시 클리어)
+      - name: Restart web and nginx pods
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            echo "🔄 Restarting Nginx and Web pods..."
+            kubectl rollout restart deployment/nginx -n ibs-dev
+            kubectl rollout restart deployment/web -n ibs-dev
+
+            echo "⏳ Waiting for rollout to complete..."
+            kubectl rollout status deployment/nginx -n ibs-dev --timeout=120s
+            kubectl rollout status deployment/web -n ibs-dev --timeout=120s
+
+            echo "✅ Pods restarted successfully"
 
       # web pod --> fetch_commits
       - name: Django fetch_commits
