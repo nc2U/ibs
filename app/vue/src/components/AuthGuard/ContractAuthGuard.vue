@@ -5,6 +5,8 @@ import NoAuth from '@/views/_Accounts/NoAuth.vue'
 
 const account = useAccount()
 
+const isLoading = computed(() => account.userInfo === null || account.userInfo === undefined)
+
 const hasAuth = computed(
   () =>
     account.userInfo?.is_superuser ||
@@ -13,6 +15,7 @@ const hasAuth = computed(
 </script>
 
 <template>
-  <NoAuth v-if="!hasAuth" />
+  <div v-if="isLoading"></div>
+  <NoAuth v-else-if="!hasAuth" />
   <slot v-else />
 </template>
