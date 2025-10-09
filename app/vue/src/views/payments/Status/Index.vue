@@ -119,13 +119,11 @@ onBeforeMount(async () => {
       <template v-if="menu === '수납요약'">
         <TableTitleRow excel :url="excelUrl1" :disabled="!project" />
         <PaymentStatus :date="date" />
-        </PaymentAuthGuard>
-</template>
+      </template>
       <template v-else>
         <TableTitleRow excel :url="excelUrl2" :disabled="!project" />
         <OverallSummary :date="date" />
-        </PaymentAuthGuard>
-</template>
+      </template>
     </CCardBody>
   </ContentBody>
   </PaymentAuthGuard>

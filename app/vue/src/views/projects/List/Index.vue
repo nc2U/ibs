@@ -80,8 +80,7 @@ onBeforeMount(async () => {
 
     <template #footer>
       <div style="display: none"></div>
-      </ProjectAuthGuard>
-</template>
+    </template>
   </ContentBody>
   </ProjectAuthGuard>
 </template>

@@ -301,8 +301,7 @@ onBeforeMount(async () => {
   </ContentBody>
 
   <FormModal ref="successionFormModal" size="lg">
-    <template #header>권리 의무 승계 수정 등록  </ContractAuthGuard>
-</template>
+    <template #header>권리 의무 승계 수정 등록</template>
     <template #default>
       <SuccessionForm
         :succession="succession ?? undefined"
@@ -310,8 +309,7 @@ onBeforeMount(async () => {
         @on-submit="onSubmit"
         @close="successionFormModal.close()"
       />
-      </ContractAuthGuard>
-</template>
+    </template>
   </FormModal>
 
   <AlertModal ref="successionAlertModal" />

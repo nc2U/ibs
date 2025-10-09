@@ -231,8 +231,7 @@ watch(route, async newRoute => {
   </ContentBody>
 
   <FormModal ref="releaseFormModal" size="lg">
-    <template #header>계약 해지 수정 등록  </ContractAuthGuard>
-</template>
+    <template #header>계약 해지 수정 등록</template>
     <template #default>
       <ReleaseForm
         :release="contRelease ?? undefined"
@@ -240,8 +239,7 @@ watch(route, async newRoute => {
         @on-submit="onSubmit"
         @close="releaseFormModal.close()"
       />
-      </ContractAuthGuard>
-</template>
+    </template>
   </FormModal>
 
   <AlertModal ref="releaseAlertModal" />

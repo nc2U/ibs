@@ -211,8 +211,7 @@ onBeforeMount(async () => {
 
     <template #footer>
       <div style="display: none"></div>
-      </ContractAuthGuard>
-</template>
+    </template>
   </ContentBody>
   </ContractAuthGuard>
 </template>
