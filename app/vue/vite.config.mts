@@ -9,7 +9,7 @@ import vuetify from 'vite-plugin-vuetify'
 export default defineConfig({
   base: process.env.NODE_ENV === 'production' ? '/static/dist' : '/',
   build: {
-    outDir: '../django/static/dist',
+    outDir: process.env.BUILD_DIR || '../django/static/dist',
     emptyOutDir: true,
     chunkSizeWarningLimit: 2500,
     sourcemap: process.env.NODE_ENV !== 'production',
