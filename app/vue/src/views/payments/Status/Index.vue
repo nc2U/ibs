@@ -9,6 +9,7 @@ import type { Project } from '@/store/types/project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import PaymentAuthGuard from '@/components/AuthGuard/PaymentAuthGuard.vue'
 import DateChoicer from '@/views/payments/Status/components/DateChoicer.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import PaymentStatus from './components/PaymentStatus.vue'
@@ -90,6 +91,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <PaymentAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -117,11 +119,14 @@ onBeforeMount(async () => {
       <template v-if="menu === '수납요약'">
         <TableTitleRow excel :url="excelUrl1" :disabled="!project" />
         <PaymentStatus :date="date" />
-      </template>
+        </PaymentAuthGuard>
+</template>
       <template v-else>
         <TableTitleRow excel :url="excelUrl2" :disabled="!project" />
         <OverallSummary :date="date" />
-      </template>
+        </PaymentAuthGuard>
+</template>
     </CCardBody>
   </ContentBody>
+  </PaymentAuthGuard>
 </template>

@@ -16,6 +16,7 @@ import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import PaymentAuthGuard from '@/components/AuthGuard/PaymentAuthGuard.vue'
 import ContChoicer from '@/views/payments/Register/components/ContChoicer.vue'
 import PaymentListAll from '@/views/payments/Register/components/PaymentListAll.vue'
 import OrdersBoard from '@/views/payments/Register/components/OrdersBoard.vue'
@@ -202,6 +203,7 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
+  <PaymentAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -281,4 +283,5 @@ onBeforeRouteLeave(() => {
       </CRow>
     </CCardBody>
   </ContentBody>
+  </PaymentAuthGuard>
 </template>
