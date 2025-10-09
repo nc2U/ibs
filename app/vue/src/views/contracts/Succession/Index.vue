@@ -9,6 +9,7 @@ import type { BuyerForm, Contractor, Succession } from '@/store/types/contract'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import ContNavigation from '@/views/contracts/Register/components/ContNavigation.vue'
 import ContractorAlert from '@/views/contracts/Register/components/ContractorAlert.vue'
 import ContController from './components/ContController.vue'
@@ -267,6 +268,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ContractAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -299,7 +301,8 @@ onBeforeMount(async () => {
   </ContentBody>
 
   <FormModal ref="successionFormModal" size="lg">
-    <template #header>권리 의무 승계 수정 등록</template>
+    <template #header>권리 의무 승계 수정 등록  </ContractAuthGuard>
+</template>
     <template #default>
       <SuccessionForm
         :succession="succession ?? undefined"
@@ -307,8 +310,10 @@ onBeforeMount(async () => {
         @on-submit="onSubmit"
         @close="successionFormModal.close()"
       />
-    </template>
+      </ContractAuthGuard>
+</template>
   </FormModal>
 
   <AlertModal ref="successionAlertModal" />
+  </ContractAuthGuard>
 </template>

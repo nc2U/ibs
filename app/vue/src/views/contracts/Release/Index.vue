@@ -10,6 +10,7 @@ import { write_contract } from '@/utils/pageAuth'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import ReleasetButton from '@/views/contracts/Release/components/ReleasetButton.vue'
 import ContNavigation from '@/views/contracts/Register/components/ContNavigation.vue'
 import ContractorAlert from '@/views/contracts/Register/components/ContractorAlert.vue'
@@ -188,6 +189,7 @@ watch(route, async newRoute => {
 </script>
 
 <template>
+  <ContractAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -229,7 +231,8 @@ watch(route, async newRoute => {
   </ContentBody>
 
   <FormModal ref="releaseFormModal" size="lg">
-    <template #header>계약 해지 수정 등록</template>
+    <template #header>계약 해지 수정 등록  </ContractAuthGuard>
+</template>
     <template #default>
       <ReleaseForm
         :release="contRelease ?? undefined"
@@ -237,8 +240,10 @@ watch(route, async newRoute => {
         @on-submit="onSubmit"
         @close="releaseFormModal.close()"
       />
-    </template>
+      </ContractAuthGuard>
+</template>
   </FormModal>
 
   <AlertModal ref="releaseAlertModal" />
+  </ContractAuthGuard>
 </template>

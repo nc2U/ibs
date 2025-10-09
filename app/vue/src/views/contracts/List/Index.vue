@@ -9,6 +9,7 @@ import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import ContractSummary from './components/ContractSummary.vue'
 import ListController from '@/views/contracts/List/components/ListController.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -262,6 +263,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ContractAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :key="headerKey"
@@ -297,4 +299,5 @@ onBeforeMount(async () => {
       />
     </CCardBody>
   </ContentBody>
+  </ContractAuthGuard>
 </template>

@@ -7,6 +7,7 @@ import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import Loading from '@/components/Loading/Index.vue'
 import ContSummary from '@/views/contracts/Status/components/ContSummary.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -60,6 +61,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
 </script>
 
 <template>
+  <ContractAuthGuard>
   <Loading v-model:active="isLoading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -86,4 +88,5 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
       <ContractBoard />
     </CCardBody>
   </ContentBody>
+  </ContractAuthGuard>
 </template>

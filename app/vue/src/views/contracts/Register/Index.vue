@@ -12,6 +12,7 @@ import { useProjectData } from '@/store/pinia/project_data'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import ContractForm from './components/ContractForm.vue'
 
 const contForm = ref()
@@ -184,6 +185,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <ContractAuthGuard>
   <Loading v-model:active="loading" />
   <ContentHeader
     :page-title="pageTitle"
@@ -209,6 +211,8 @@ onBeforeMount(async () => {
 
     <template #footer>
       <div style="display: none"></div>
-    </template>
+      </ContractAuthGuard>
+</template>
   </ContentBody>
+  </ContractAuthGuard>
 </template>

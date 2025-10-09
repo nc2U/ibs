@@ -1,12 +1,4 @@
-import { computed, h, resolveComponent } from 'vue'
-import { useAccount } from '@/store/pinia/account'
-
-const account = computed(() => useAccount())
-const pageViewAuth = computed(
-  () =>
-    account.value.userInfo?.is_superuser ||
-    (account.value.userInfo?.staffauth && account.value.userInfo.staffauth?.contract > '0'),
-)
+import { h, resolveComponent } from 'vue'
 
 const contract = {
   path: 'contracts',
@@ -21,47 +13,52 @@ const contract = {
     {
       path: 'index',
       name: '계약 내역 조회',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/contracts/List/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '계약 내역 조회', auth: true },
+      component: () => import('@/views/contracts/List/Index.vue'),
+      meta: {
+        title: '계약 내역 조회',
+        auth: true,
+        requiresContractAuth: true,
+      },
     },
     {
       path: 'register',
       name: '계약 등록 수정',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/contracts/Register/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '계약 등록 수정', auth: true },
+      component: () => import('@/views/contracts/Register/Index.vue'),
+      meta: {
+        title: '계약 등록 수정',
+        auth: true,
+        requiresContractAuth: true,
+      },
     },
     {
       path: 'succession',
       name: '권리 의무 승계',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/contracts/Succession/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '권리 의무 승계', auth: true },
+      component: () => import('@/views/contracts/Succession/Index.vue'),
+      meta: {
+        title: '권리 의무 승계',
+        auth: true,
+        requiresContractAuth: true,
+      },
     },
     {
       path: 'release',
       name: '계약 해지 관리',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/contracts/Release/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '계약 해지 관리', auth: true },
+      component: () => import('@/views/contracts/Release/Index.vue'),
+      meta: {
+        title: '계약 해지 관리',
+        auth: true,
+        requiresContractAuth: true,
+      },
     },
     {
       path: 'status',
       name: '동호 배치 현황',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/contracts/Status/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '동호 배치 현황', auth: true },
+      component: () => import('@/views/contracts/Status/Index.vue'),
+      meta: {
+        title: '동호 배치 현황',
+        auth: true,
+        requiresContractAuth: true,
+      },
     },
   ],
 }
