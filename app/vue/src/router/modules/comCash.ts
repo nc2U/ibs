@@ -1,12 +1,4 @@
-import { computed, h, resolveComponent } from 'vue'
-import { useAccount } from '@/store/pinia/account'
-
-const account = computed(() => useAccount())
-const pageViewAuth = computed(
-  () =>
-    account.value.userInfo?.is_superuser ||
-    (account.value.userInfo?.staffauth && account.value.userInfo.staffauth?.company_cash > '0'),
-)
+import { h, resolveComponent } from 'vue'
 
 const comCash = {
   path: 'cashes',
@@ -21,20 +13,22 @@ const comCash = {
     {
       path: 'status',
       name: '본사 자금 현황',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/comCash/Status/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '본사 자금 현황', auth: true },
+      component: () => import('@/views/comCash/Status/Index.vue'),
+      meta: {
+        title: '본사 자금 현황',
+        auth: true,
+        requiresCompanyCashAuth: true,
+      },
     },
     {
       path: 'index',
       name: '본사 출납 내역',
-      component: () =>
-        pageViewAuth.value
-          ? import('@/views/comCash/CashManage/Index.vue')
-          : import('@/views/_Accounts/NoAuth.vue'),
-      meta: { title: '본사 출납 내역', auth: true },
+      component: () => import('@/views/comCash/CashManage/Index.vue'),
+      meta: {
+        title: '본사 출납 내역',
+        auth: true,
+        requiresCompanyCashAuth: true,
+      },
     },
   ],
 }

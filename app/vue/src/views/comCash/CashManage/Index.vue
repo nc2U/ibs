@@ -11,6 +11,7 @@ import type { CashBook, CompanyBank, SepItems } from '@/store/types/comCash'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ComCashAuthGuard from '@/components/AuthGuard/ComCashAuthGuard.vue'
 import ListController from '@/views/comCash/CashManage/components/ListController.vue'
 import AddCash from '@/views/comCash/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -326,44 +327,46 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="CompanySelect"
-    @com-select="comSelect"
-  />
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ListController ref="listControl" :projects="projectList" @list-filtering="listFiltering" />
-      <AddCash
-        v-if="write_company_cash"
-        :company="company as number"
-        :projects="projectList"
-        @multi-submit="multiSubmit"
-        @patch-d3-hide="patchD3Hide"
-        @on-bank-create="onBankCreate"
-        @on-bank-update="onBankUpdate"
-      />
-      <TableTitleRow
-        title="본사 입출금 관리"
-        color="indigo"
-        excel
-        :url="excelUrl"
-        :disabled="!company"
-      />
-      <CashList
-        :company="company as number"
-        :projects="projectList"
-        :highlight-id="highlightId ?? undefined"
-        :current-page="dataFilter.page || 1"
-        @page-select="pageSelect"
-        @multi-submit="multiSubmit"
-        @on-delete="onDelete"
-        @patch-d3-hide="patchD3Hide"
-        @on-bank-create="onBankCreate"
-        @on-bank-update="onBankUpdate"
-      />
-    </CCardBody>
-  </ContentBody>
+  <ComCashAuthGuard>
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="CompanySelect"
+      @com-select="comSelect"
+    />
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ListController ref="listControl" :projects="projectList" @list-filtering="listFiltering" />
+        <AddCash
+          v-if="write_company_cash"
+          :company="company as number"
+          :projects="projectList"
+          @multi-submit="multiSubmit"
+          @patch-d3-hide="patchD3Hide"
+          @on-bank-create="onBankCreate"
+          @on-bank-update="onBankUpdate"
+        />
+        <TableTitleRow
+          title="본사 입출금 관리"
+          color="indigo"
+          excel
+          :url="excelUrl"
+          :disabled="!company"
+        />
+        <CashList
+          :company="company as number"
+          :projects="projectList"
+          :highlight-id="highlightId ?? undefined"
+          :current-page="dataFilter.page || 1"
+          @page-select="pageSelect"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+          @patch-d3-hide="patchD3Hide"
+          @on-bank-create="onBankCreate"
+          @on-bank-update="onBankUpdate"
+        />
+      </CCardBody>
+    </ContentBody>
+  </ComCashAuthGuard>
 </template>

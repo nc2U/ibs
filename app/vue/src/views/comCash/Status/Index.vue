@@ -10,6 +10,7 @@ import type { ComCalculated } from '@/store/types/comCash'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ComCashAuthGuard from '@/components/AuthGuard/ComCashAuthGuard.vue'
 import DateChoicer from '@/views/comCash/Status/components/DateChoicer.vue'
 import TabSelect from '@/views/comCash/Status/components/TabSelect.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -128,34 +129,36 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="CompanySelect"
-    @com-select="comSelect"
-  />
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <DateChoicer @set-date="setDate" />
+  <ComCashAuthGuard>
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="CompanySelect"
+      @com-select="comSelect"
+    />
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <DateChoicer @set-date="setDate" />
 
-      <TabSelect @tab-select="showTab" />
+        <TabSelect @tab-select="showTab" />
 
-      <TableTitleRow excel :url="excelUrl" :disabled="!company" />
+        <TableTitleRow excel :url="excelUrl" :disabled="!company" />
 
-      <StatusByAccount
-        v-if="compName === 'StatusByAccount'"
-        :date="date"
-        @is-exist-balance="isExistBalance"
-      />
+        <StatusByAccount
+          v-if="compName === 'StatusByAccount'"
+          :date="date"
+          @is-exist-balance="isExistBalance"
+        />
 
-      <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />
+        <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />
 
-      <Calculated
-        :calc-date="comCalculated?.calculated"
-        :is-calculated="isCalculated"
-        @to-calculate="checkBalance"
-      />
-    </CCardBody>
-  </ContentBody>
+        <Calculated
+          :calc-date="comCalculated?.calculated"
+          :is-calculated="isCalculated"
+          @to-calculate="checkBalance"
+        />
+      </CCardBody>
+    </ContentBody>
+  </ComCashAuthGuard>
 </template>
