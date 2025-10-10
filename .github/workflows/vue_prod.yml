@@ -141,7 +141,22 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           source: 'app/django/static/dist_${{ github.run_number }}_${{ github.sha }}'
-          target: ${{ secrets.CICD_PATH }}/prod/app/django/static/
+          target: ${{ secrets.CICD_PATH }}/prod/
+
+      # 디버깅: 업로드된 위치 확인
+      - name: Debug uploaded location
+        env:
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            echo "🔍 Searching for uploaded build..."
+            find ${{ secrets.CICD_PATH }}/prod -name "dist_${{ github.run_number }}_*" -type d
+            echo "---"
+            echo "Expected: ${{ secrets.CICD_PATH }}/prod/app/django/static/dist_${{ github.run_number }}_${{ github.sha }}"
 
       # SCP 후 파일 무결성 검증
       - name: Verify upload integrity
