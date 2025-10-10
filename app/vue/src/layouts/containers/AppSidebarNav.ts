@@ -20,18 +20,21 @@ type Item = {
   to?: string
 }
 
-const workManager = computed(() => useAccount().workManager)
-const isStaff = computed(() => useAccount().isStaff)
-const isComCash = computed(() => useAccount().isComCash)
+// 권한 데이터
+const account = useAccount()
+const workManager = computed(() => account.workManager) // 업무 관리자
+const isStaff = computed(() => account.isStaff) // 본사 직원
+const isComCash = computed(() => account.isComCash) // 본사 자금 관리 권한
 
+// 요청 URL 정규화
 const normalizePath = (path: string) =>
   decodeURI(path)
     .replace(/#.*$/, '')
     .replace(/(index)?\.(html)$/, '')
 
+// ROUTE(경로)가 LINK(문자열)과 같은지 확인
 const isActiveLink = (route: RouteLocation, link: string) => {
   if (link === undefined) return false
-
   if (route.hash === link) return true
 
   const currentPath = normalizePath(route.path)
@@ -40,14 +43,13 @@ const isActiveLink = (route: RouteLocation, link: string) => {
   return currentPath === targetPath
 }
 
+// ROUTE(경로)가 ITEM(메뉴아이템)과 같은지 확인
 const isActiveItem = (route: RouteLocation, item: Item): boolean => {
-  if (item.to && isActiveLink(route, item.to)) return true
+  if (item.to && isActiveLink(route, item.to)) return true // 요청 메뉴 === 경로
+  if (item.items) return item.items.some(child => isActiveItem(route, child)) // 자식들 중 하나라도 경로와 같은지 확인
+  if (item.name && route.meta.title) return item.name === route.meta.title // 메뉴의 이름이 경로의 메타 제목과 같은지 확인
 
-  if (item.items) return item.items.some(child => isActiveItem(route, child))
-
-  if (item.name && route.meta.title) return item.name === route.meta.title
-
-  return false
+  return false // 위 셋 중 해당사항이 없으면 false 리턴
 }
 
 const AppSidebarNav = defineComponent({
@@ -130,19 +132,19 @@ const AppSidebarNav = defineComponent({
 
       // 업무 설정 관리 메뉴 제외
       if (!workManager.value) {
-        items = items.filter((item) => item.name !== '설 정 관 리')
+        items = items.filter(item => item.name !== '설 정 관 리')
       }
 
       // 본사 관리 직원 권한이 없으면 본사 관련 메뉴 제외
       if (!isStaff.value) {
         const companyMenus = ['본사 자금 관리', '본사 문서 관리', '본사 인사 관리']
         items = items.filter(
-          (item) => item.name !== '본사 관리' && !companyMenus.includes(item.name || ''),
+          item => item.name !== '본사 관리' && !companyMenus.includes(item.name || ''),
         )
       }
       // 본사 자금 관리 권한 없으면 자금 관리 메뉴 제외
       else if (!isComCash.value) {
-        items = items.filter((item) => item.name !== '본사 자금 관리')
+        items = items.filter(item => item.name !== '본사 자금 관리')
       }
 
       return items
