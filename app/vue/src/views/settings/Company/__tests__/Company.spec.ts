@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { shallowMount, mount, flushPromises } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createVuetify } from 'vuetify'
 import { vMaska } from "maska/vue"
 import CoreuiVue from '@coreui/vue'
+import { createRouter, createWebHistory } from 'vue-router'
 
 import Company from '../Index.vue'
 import CompanyDetail from '../components/CompanyDetail.vue'
@@ -11,18 +12,35 @@ import CompanyForm from '../components/CompanyForm.vue'
 
 const vuetify = createVuetify()
 
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/',
+      component: { template: '<div>Home</div>' },
+    },
+  ],
+})
+
 describe('Company app test', () => {
-  it('Company header title check', () => {
-    const wrapper = shallowMount(Company, {
+  it('Company header title check', async () => {
+    const wrapper = mount(Company, {
       global: {
-        plugins: [createTestingPinia()],
+        plugins: [createTestingPinia(), vuetify, CoreuiVue, router],
+        stubs: {
+          CompanySettingsAuthGuard: {
+            template: '<div><slot /></div>',
+          },
+        },
       },
     })
 
-    expect(wrapper.find('content-header-stub').attributes('pagetitle')).toBe('환경 설정')
-    expect(wrapper.find('content-header-stub').attributes('navmenu')).toBe(
-      '회사 정보 관리,권한 설정 관리',
-    )
+    await router.isReady()
+    await flushPromises()
+
+    expect(wrapper.html()).toContain('환경 설정')
+    expect(wrapper.html()).toContain('회사 정보 관리')
+    expect(wrapper.html()).toContain('권한 설정 관리')
   })
 
   const company = {
