@@ -138,6 +138,64 @@ jobs:
           source: 'app/django/static/dist_${{ github.run_number }}_${{ github.sha }}'
           target: ${{ secrets.CICD_PATH }}/dev/app/django/static/
 
+      # SCP 후 파일 무결성 검증
+      - name: Verify upload integrity
+        env:
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/dev/app/django/static
+            NEW_BUILD="dist_${{ github.run_number }}_${{ github.sha }}"
+
+            echo "🔍 Verifying uploaded files for: $NEW_BUILD"
+
+            if [ ! -d "$NEW_BUILD" ]; then
+              echo "❌ ERROR: Build directory not found: $NEW_BUILD"
+              exit 1
+            fi
+
+            if [ ! -f "$NEW_BUILD/index.html" ]; then
+              echo "❌ ERROR: index.html not uploaded!"
+              exit 1
+            fi
+
+            if [ ! -d "$NEW_BUILD/assets" ]; then
+              echo "❌ ERROR: assets directory not uploaded!"
+              exit 1
+            fi
+
+            ASSET_COUNT=$(find "$NEW_BUILD/assets" -type f 2>/dev/null | wc -l)
+            if [ "$ASSET_COUNT" -lt 10 ]; then
+              echo "❌ ERROR: Too few assets uploaded ($ASSET_COUNT files)"
+              exit 1
+            fi
+
+            MAIN_JS=$(grep -o 'assets/index-[^"]*\.js' "$NEW_BUILD/index.html" 2>/dev/null | head -1)
+            if [ -n "$MAIN_JS" ]; then
+              if [ ! -f "$NEW_BUILD/$MAIN_JS" ]; then
+                echo "❌ ERROR: Referenced main JS file missing: $MAIN_JS"
+                exit 1
+              fi
+              echo "  ✓ Main JS verified: $MAIN_JS"
+            fi
+
+            CSS_COUNT=$(find "$NEW_BUILD/assets" -name "*.css" 2>/dev/null | wc -l)
+            if [ "$CSS_COUNT" -eq 0 ]; then
+              echo "⚠️  WARNING: No CSS files found!"
+            else
+              echo "  ✓ CSS files: $CSS_COUNT"
+            fi
+
+            echo "✅ Upload integrity verified"
+            echo "📊 Upload summary:"
+            echo "  - index.html: $(wc -c < $NEW_BUILD/index.html) bytes"
+            echo "  - Total assets: $ASSET_COUNT files"
+            echo "  - Total size: $(du -sh $NEW_BUILD 2>/dev/null | cut -f1)"
+
       # 원자적 배포 (Symlink Swap)
       - name: Atomic deployment with symlink swap
         env:
@@ -150,22 +208,68 @@ jobs:
           command: |
             cd ${{ secrets.CICD_PATH }}/dev/app/django/static
 
-            # 새 빌드 디렉터리명
             NEW_BUILD="dist_${{ github.run_number }}_${{ github.sha }}"
+            echo "📦 Deploying: $NEW_BUILD"
 
-            echo "📦 New build: $NEW_BUILD"
+            if [ ! -d "$NEW_BUILD" ]; then
+              echo "❌ ERROR: Build directory not found: $NEW_BUILD"
+              exit 1
+            fi
 
-            # 심볼릭 링크 원자적 교체
+            if [ -L "dist" ]; then
+              PREVIOUS_BUILD=$(readlink dist)
+              echo "Previous build: $PREVIOUS_BUILD"
+            fi
+
             ln -sfn "$NEW_BUILD" dist.tmp
             mv -Tf dist.tmp dist
 
-            # 오래된 빌드 정리 (최근 2개만 유지: 현재 + 이전)
-            echo "🧹 Cleaning old builds..."
-            ls -dt dist_* 2>/dev/null | tail -n +3 | xargs -r rm -rf
+            if [ ! -L "dist" ]; then
+              echo "❌ ERROR: Failed to create symlink!"
+              exit 1
+            fi
 
-            echo "✅ Deployed: $NEW_BUILD"
-            echo "📊 Remaining builds:"
-            ls -lth | grep "^d" | grep "dist_" | head -3
+            CURRENT_LINK=$(readlink dist)
+            if [ "$CURRENT_LINK" != "$NEW_BUILD" ]; then
+              echo "❌ ERROR: Symlink points to wrong target: $CURRENT_LINK"
+              exit 1
+            fi
+
+            if [ ! -d "dist" ]; then
+              echo "❌ ERROR: Symlink is broken! Rolling back..."
+              if [ -n "$PREVIOUS_BUILD" ] && [ -d "$PREVIOUS_BUILD" ]; then
+                ln -sfn "$PREVIOUS_BUILD" dist.tmp
+                mv -Tf dist.tmp dist
+                echo "Rolled back to: $PREVIOUS_BUILD"
+              fi
+              exit 1
+            fi
+
+            echo "✅ Symlink verified: dist -> $CURRENT_LINK"
+
+            echo ""
+            echo "🧹 Cleaning old builds (keeping 3 most recent)..."
+            ALL_BUILDS=$(ls -dt dist_* 2>/dev/null)
+            BUILD_COUNT=$(echo "$ALL_BUILDS" | wc -l)
+            echo "Total builds found: $BUILD_COUNT"
+
+            if [ "$BUILD_COUNT" -gt 3 ]; then
+              echo "$ALL_BUILDS" | tail -n +4 | while read OLD_BUILD; do
+                if [ "$OLD_BUILD" != "$CURRENT_LINK" ]; then
+                  echo "  Removing: $OLD_BUILD"
+                  rm -rf "$OLD_BUILD"
+                else
+                  echo "  Skipping active build: $OLD_BUILD"
+                fi
+              done
+            fi
+
+            echo ""
+            echo "✅ Deployment complete!"
+            echo "📊 Current state:"
+            echo "  Active: $(readlink dist)"
+            echo "  Remaining builds:"
+            ls -lth | grep "^d" | grep "dist_" | head -5
 
       # NFS 동기화 대기
       - name: Wait for NFS sync
@@ -174,8 +278,8 @@ jobs:
           sleep 5
           echo "✅ NFS sync complete"
 
-      # 배포 검증
-      - name: Verify deployment
+      # 배포 검증 (파일 무결성 확인)
+      - name: Verify deployment integrity
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.CICD_HOST }}
@@ -184,17 +288,49 @@ jobs:
           command: |
             cd ${{ secrets.CICD_PATH }}/dev/app/django/static
 
-            # index.html 존재 확인
+            echo "🔍 Verifying deployment integrity..."
+
             if [ ! -f "dist/index.html" ]; then
               echo "❌ Deployment failed: index.html not found"
               exit 1
             fi
 
-            # 배포 정보 출력
-            echo "✅ Deployment verified"
+            if [ ! -d "dist/assets" ]; then
+              echo "❌ Deployment failed: assets directory not found"
+              exit 1
+            fi
+
+            MAIN_JS=$(grep -o 'assets/index-[^"]*\.js' dist/index.html 2>/dev/null | head -1)
+            if [ -n "$MAIN_JS" ]; then
+              if [ ! -f "dist/$MAIN_JS" ]; then
+                echo "❌ Deployment failed: Referenced main JS missing: $MAIN_JS"
+                echo "Available index JS files:"
+                ls -lh dist/assets/index-*.js 2>/dev/null || echo "  None found!"
+                exit 1
+              fi
+              echo "  ✓ Main JS exists: $MAIN_JS"
+            else
+              echo "⚠️  WARNING: Could not detect main JS reference in index.html"
+            fi
+
+            CSS_COUNT=$(find dist/assets -name "*.css" 2>/dev/null | wc -l)
+            if [ "$CSS_COUNT" -eq 0 ]; then
+              echo "❌ ERROR: No CSS files found in deployment!"
+              exit 1
+            fi
+            echo "  ✓ CSS files: $CSS_COUNT"
+
+            TOTAL_ASSETS=$(find dist/assets -type f 2>/dev/null | wc -l)
+            echo "  ✓ Total assets: $TOTAL_ASSETS"
+
+            echo ""
+            echo "✅ Deployment integrity verified"
+            echo "📊 Deployment info:"
             if [ -f "dist/deploy.json" ]; then
               cat dist/deploy.json
             fi
+            echo ""
+            echo "Active build: $(readlink dist)"
 
       # Kubernetes Pod 재시작 (Django 템플릿 캐시 클리어)
       - name: Restart web and nginx pods
