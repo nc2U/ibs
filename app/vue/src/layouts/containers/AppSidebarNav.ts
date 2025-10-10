@@ -134,13 +134,11 @@ const AppSidebarNav = defineComponent({
     const predicates = computed(() => {
       const list: ((it: Item) => boolean)[] = []
 
-      if (!workManager.value) {
-        list.push(it => (it.name || '') !== '설 정 관 리')
-      }
+      if (!workManager.value) list.push(it => (it.name || '') !== '설 정 관 리')
 
       if (!isStaff.value) {
         // remove company-related
-        const companyMenus = new Set(['본사 자금 관리', '본사 문서 관리', '본사 인사 관리'])
+        const companyMenus = new Set(['본사 문서 관리', '본사 인사 관리'])
         list.push(it => (it.name || '') !== '본사 관리' && !companyMenus.has(it.name || ''))
       } else if (!isComCash.value) {
         // staff but no cash permission
@@ -190,7 +188,7 @@ const AppSidebarNav = defineComponent({
     // computed to decide if a group should be visible (open) - dynamic on route change
     const groupVisibleFor = (group: Item) =>
       computed(() => {
-        // If group has direct children that match current route, open it.
+        // If a group has direct children that match the current route, open it.
         if (!group.items) return false
         return group.items.some(child => isActiveItem(route, child))
       })
@@ -202,7 +200,7 @@ const AppSidebarNav = defineComponent({
         const visible = firstRender.value
           ? groupVisibleFor(item).value
           : groupVisibleFor(item).value
-        // Note: firstRender kept for compatibility; you can remove firstRender logic if unnecessary
+        // Note: firstRender kept for compatibility; you can remove the firstRender logic if unnecessary
         return h(
           CNavGroup,
           {
