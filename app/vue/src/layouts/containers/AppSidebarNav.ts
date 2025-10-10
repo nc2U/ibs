@@ -1,4 +1,4 @@
-import { type Component, computed, defineComponent, h, resolveComponent } from 'vue'
+import { type Component, computed, defineComponent, h, onMounted, ref, resolveComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
@@ -43,7 +43,12 @@ const isActiveLink = (route: RouteLocationNormalized, link?: string) => {
 
   const currentPath = normalizePath(route.path || '')
   const targetPath = normalizePath(link)
-  return currentPath === targetPath
+
+  // 정확한 매칭
+  if (currentPath === targetPath) return true
+
+  // 부모 경로 매칭: /contracts/succession은 /contracts의 하위
+  return currentPath.startsWith(targetPath + '/')
 }
 
 const isActiveItem = (route: RouteLocationNormalized, item: Item): boolean => {
@@ -95,6 +100,11 @@ const AppSidebarNav = defineComponent({
   },
   setup() {
     const route = useRoute()
+    const firstRender = ref(true)
+
+    onMounted(() => {
+      firstRender.value = false
+    })
 
     // Pinia store: call once and destructure reactive refs
     const account = useAccount()
@@ -155,23 +165,17 @@ const AppSidebarNav = defineComponent({
       return children
     }
 
-    // 그룹이 표시되어야 하는지(열려 있어야 하는지) 결정하기 위해 계산됨 - 경로 변경 시 동적
-    const groupVisibleFor = (group: Item) =>
-      computed(() => {
-        // If a group has direct children that match the current route, open it.
-        if (!group.items) return false
-        return group.items.some(child => isActiveItem(route, child))
-      })
-
     // renderItem: CNavGroup 또는 RouterLink로 래핑된 항목에 대한 VNode를 반환.
     const renderItem = (item: Item) => {
       // If item has children -> CNavGroup
       if (Array.isArray(item.items) && item.items.length > 0) {
-        const visible = groupVisibleFor(item).value
         return h(
           CNavGroup,
           {
-            visible,
+            // CoreUI 공식 로직: 첫 렌더링 시에만 visible 전달
+            ...(firstRender.value && {
+              visible: item.items.some(child => isActiveItem(route, child)),
+            }),
           },
           {
             togglerContent: () => renderContent(item),
