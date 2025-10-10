@@ -1,8 +1,8 @@
-import { defineComponent, h, ref, resolveComponent, computed, type Component } from 'vue'
+import { type Component, computed, defineComponent, h, resolveComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
-import { RouterLink, useRoute, type RouteLocationNormalized } from 'vue-router'
-import { CBadge, CNavGroup, CNavItem, CSidebarNav, CNavTitle } from '@coreui/vue'
+import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
+import { CBadge, CNavGroup, CNavItem, CNavTitle, CSidebarNav } from '@coreui/vue'
 import { CIcon } from '@coreui/icons-vue'
 
 import nav from '@/layouts/_nav'
@@ -84,33 +84,6 @@ function filterNavItems(items: Item[], predicates: ((it: Item) => boolean)[]): I
 }
 
 /* ---------------------------
-   Find active menu path
-   - 현재 라우트에 해당하는 메뉴의 경로를 찾음
-   --------------------------- */
-function findActiveMenuPath(
-  items: Item[],
-  route: RouteLocationNormalized,
-  currentPath: string[] = [],
-): string[] | null {
-  for (const item of items) {
-    const itemPath = [...currentPath, item.name || 'unnamed']
-
-    // 현재 아이템이 활성 링크인지 확인
-    if (item.to && isActiveLink(route, item.to)) {
-      return itemPath
-    }
-
-    // 자식이 있으면 재귀 탐색
-    if (item.items) {
-      const childPath = findActiveMenuPath(item.items, route, itemPath)
-      if (childPath) return childPath
-    }
-  }
-
-  return null
-}
-
-/* ---------------------------
    Component
    --------------------------- */
 const AppSidebarNav = defineComponent({
@@ -126,9 +99,6 @@ const AppSidebarNav = defineComponent({
     // Pinia store: call once and destructure reactive refs
     const account = useAccount()
     const { workManager, isStaff, isComCash } = storeToRefs(account)
-
-    // First render flag (still kept but used only for firstRender behavior if desired)
-    const firstRender = ref(true)
 
     // Predicates for filtering top-level items (you can extend these)
     const predicates = computed(() => {
@@ -154,7 +124,7 @@ const AppSidebarNav = defineComponent({
       return filterNavItems(items, predicates.value)
     })
 
-    // helper: render the content (icon + name + badge) to avoid repetition
+    // helper: 반복을 피하기 위해 콘텐츠(아이콘 + 이름 + 배지)를 렌더링.
     const renderContent = (item: Item) => {
       const children: any[] = []
 
@@ -185,7 +155,7 @@ const AppSidebarNav = defineComponent({
       return children
     }
 
-    // computed to decide if a group should be visible (open) - dynamic on route change
+    // 그룹이 표시되어야 하는지(열려 있어야 하는지) 결정하기 위해 계산됨 - 경로 변경 시 동적
     const groupVisibleFor = (group: Item) =>
       computed(() => {
         // If a group has direct children that match the current route, open it.
@@ -193,14 +163,11 @@ const AppSidebarNav = defineComponent({
         return group.items.some(child => isActiveItem(route, child))
       })
 
-    // renderItem: returns VNode for CNavGroup or RouterLink-wrapped item
+    // renderItem: CNavGroup 또는 RouterLink로 래핑된 항목에 대한 VNode를 반환.
     const renderItem = (item: Item) => {
       // If item has children -> CNavGroup
       if (Array.isArray(item.items) && item.items.length > 0) {
-        const visible = firstRender.value
-          ? groupVisibleFor(item).value
-          : groupVisibleFor(item).value
-        // Note: firstRender kept for compatibility; you can remove the firstRender logic if unnecessary
+        const visible = groupVisibleFor(item).value
         return h(
           CNavGroup,
           {
@@ -248,14 +215,6 @@ const AppSidebarNav = defineComponent({
 
       return h(component, {}, () => renderContent(item))
     }
-
-    // After mount first render flag => false (optional)
-    // If you want the firstRender behavior only on the initial display, you can toggle here.
-    // (In composition API normal lifecycle you'd use onMounted(); but since this is a render-only component,
-    //  leaving firstRender true for now; remove firstRender if not needed.)
-    setTimeout(() => {
-      firstRender.value = false
-    }, 0)
 
     // render function
     return () =>
