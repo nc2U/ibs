@@ -51,7 +51,7 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             cd ${{ secrets.CICD_PATH }}/dev/
-            rm -rf .git* *.md app/vue app/svelte deploy/docker .docker-compose.yml && \
+            rm -rf .git* *.md app/vue deploy/docker .docker-compose.yml && \
             mkdir -p ./app/repos
 
       # helm install or upgrade

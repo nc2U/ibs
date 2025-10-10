@@ -6,7 +6,7 @@
 ![Stars](https://img.shields.io/github/stars/nc2U/ibs)
 ![Forks](https://img.shields.io/github/forks/nc2U/ibs)
 
-# Django 5.2 + Vue3 + Svelte using Nginx + MariaDB or PostgreSQL (deploy as Docker or Kubernetes)
+# Django 5.2 + Vue3 using Nginx + MariaDB or PostgreSQL (deploy as Docker or Kubernetes)
 
 ## Deploy Using Docker
 
@@ -169,25 +169,6 @@ or Vue application deploy -> node build
 pnpm build    # npm run build (or) yarn build
 ```
 
-#### Svelte (Single Page Application) Development
-
-```bash
-cd ../app/svelte
-pnpm i      # npm i (or) yarn
-```
-
-Svelte application development -> node dev server on.
-
-```bash
-pnpm dev    # npm run dev (or) yarn dev
-```
-
-or Svelte application deploy -> node build
-
-```bash
-pnpm build # npm run build (or) yarn build
-```
-
 ## Or Deploy Using Kubernetes
 
 #### Requirement
@@ -340,7 +321,7 @@ cd /mnt/nfs/ibs  # your CICD_HOST
 mkdir ./prod && cd prod
 git clone https://github.com/nc2u/ibs .   # or forked your project
 
-rm -rf .git* *.md app/vue app/svelte deploy/docker .docker-compose.yml && \
+rm -rf .git* *.md app/vue deploy/docker .docker-compose.yml && \
 mkdir -p ./app/repos
 
 cd app/django
@@ -485,26 +466,6 @@ or Vue application deploy -> node build
 
 ```bash
 pnpm build    # npm run build (or) yarn build
-```
-
-#### Svelte (Single Page Application) Development
-
-```bash
-cd ..
-cd app/svelte
-pnpm i      # npm i (or) yarn
-```
-
-Svelte application development -> node dev server on.
-
-```bash
-pnpm dev    # npm run dev (or) yarn dev
-```
-
-or Svelte application deploy -> node build
-
-```bash
-pnpm build # npm run build (or) yarn build
 ```
 
 #### Reference

@@ -77,32 +77,6 @@ jobs:
           source: 'app/django/static'
           target: ${{ secrets.CICD_PATH }}/dev/
 
-      # node_modules 캐싱
-      - name: Cache svelte node
-        uses: actions/cache@v3
-        id: cache_svelte
-        with:
-          path: ./app/svelte/node_modules
-          key: pnpm-packages-${{ hashFiles('**/pnpm.lock') }}
-      
-      # node_modules 변화기 있으면 빌드
-      - name: Install Dependencies
-        if: steps.cache_svelte.outputs.cache-hit != 'true'
-        run: cd app/svelte && pnpm i
-
-      - run: cd app/svelte && pnpm build
-        if: ${{ always() }}
-      
-      # Source to NFS server copy transfer
-      - name: Copy Svelte -> django static/dist (NFS server)
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.CICD_HOST }}
-          username: ${{ secrets.CICD_USER }}
-          password: ${{ secrets.CICD_PASS }}
-          source: 'app/django/static'
-          target: ${{ secrets.CICD_PATH }}/dev/
-
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
         uses: ./.github/actions/slack-notify    # 직접 '만든' Action이므로 uses 키워드를 이용해서 아래 경로를 입력해줍니다.
