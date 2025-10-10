@@ -38,9 +38,6 @@ postgres:
     password: "my-secret"
     replicationPassword: "my-secret"
 
-  image:
-    tag: latest
-
   volumes:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
