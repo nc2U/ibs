@@ -61,6 +61,7 @@ jobs:
       # setup and lint 에러가 없으면 빌드
       - name: Build the Source Code
         env:
+          NODE_ENV: production
           BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
         run: |
           cd app/vue
@@ -81,6 +82,45 @@ jobs:
             \"build_number\": \"${{ github.run_number }}\",
             \"deployer\": \"${{ github.actor }}\"
           }" > dist_${BUILD_TIMESTAMP}/deploy.json
+
+      # 빌드 검증
+      - name: Verify Production Build
+        env:
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+        run: |
+          cd app/django/static/dist_${BUILD_TIMESTAMP}
+
+          echo "🔍 Verifying production build..."
+
+          # index.html 존재 확인
+          if [ ! -f "index.html" ]; then
+            echo "❌ ERROR: index.html not found!"
+            exit 1
+          fi
+
+          # base path 검증 (/static/dist 경로 사용 확인)
+          if ! grep -q '/static/dist/assets/' index.html; then
+            echo "❌ ERROR: Build base path incorrect! Expected '/static/dist/assets/'"
+            echo "Found paths:"
+            grep -o 'src="[^"]*"' index.html | head -5
+            exit 1
+          fi
+
+          # console.log 제거 확인 (경고만)
+          if find assets -name "*.js" -exec grep -l 'console\.log' {} \; 2>/dev/null | grep -q .; then
+            echo "⚠️  WARNING: Console logs found in production build"
+          fi
+
+          # sourcemap 제외 확인 (경고만)
+          if find assets -name "*.map" 2>/dev/null | grep -q .; then
+            echo "⚠️  WARNING: Sourcemap files found in production build"
+          fi
+
+          echo "✅ Production build verification passed"
+          echo "📊 Build stats:"
+          echo "  - index.html: $(wc -c < index.html) bytes"
+          echo "  - Total assets: $(find assets -type f | wc -l) files"
+          echo "  - Total size: $(du -sh assets | cut -f1)"
 
       # 단위 테스트
       - name: Vue Unit Test using Vitest
@@ -126,6 +166,13 @@ jobs:
             echo "✅ Deployed: $NEW_BUILD"
             echo "📊 Remaining builds:"
             ls -lth | grep "^d" | grep "dist_" | head -3
+
+      # NFS 동기화 대기
+      - name: Wait for NFS sync
+        run: |
+          echo "⏳ Waiting for NFS synchronization..."
+          sleep 5
+          echo "✅ NFS sync complete"
 
       # 배포 검증
       - name: Verify deployment
