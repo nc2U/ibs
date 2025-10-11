@@ -183,7 +183,7 @@ watch(
                   prepend-icon="mdi-plus"
                   @click="handleOpenTemplateModal"
                 >
-                  등록
+                  관리
                 </v-btn>
               </div>
               <CFormSelect
