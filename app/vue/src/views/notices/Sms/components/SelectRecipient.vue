@@ -51,6 +51,93 @@ const getGroupName = (groupType: string): string => {
   return groupNames[groupType] || groupType
 }
 
+/**
+ * 전화번호 포맷 정리 및 유효성 검증
+ * @param rawPhone 원본 전화번호 문자열
+ * @returns 포맷팅된 전화번호 또는 null (무효)
+ *
+ * 지원 형식:
+ * - 9자리: 021112222 → 02-111-2222 (서울 3자리 국번)
+ * - 10자리: 0212345678 → 02-1234-5678 (서울 4자리 국번)
+ * - 10자리: 0311234567 → 031-123-4567 (경기 3자리 국번)
+ * - 11자리: 01012345678 → 010-1234-5678 (휴대폰)
+ */
+const normalizePhoneNumber = (rawPhone: string): string | null => {
+  // 공백, 하이픈, 괄호, 점 제거
+  const digitsOnly = rawPhone.replace(/[\s\-().]/g, '')
+
+  // 숫자만 남았는지 확인
+  if (!/^\d+$/.test(digitsOnly)) {
+    return null
+  }
+
+  const length = digitsOnly.length
+
+  // 길이 검증 (9~11자)
+  if (length < 9 || length > 11) {
+    return null
+  }
+
+  // 11자리: 휴대폰 (010, 011, 016, 017, 018, 019)
+  if (length === 11) {
+    return `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 7)}-${digitsOnly.slice(7)}`
+  }
+
+  // 10자리: 지역번호 판단
+  if (length === 10) {
+    const prefix = digitsOnly.slice(0, 2)
+
+    // 02 (서울): 02-XXXX-XXXX
+    if (prefix === '02') {
+      return `${digitsOnly.slice(0, 2)}-${digitsOnly.slice(2, 6)}-${digitsOnly.slice(6)}`
+    }
+
+    // 031~070 (지역번호): 0XX-XXX-XXXX
+    return `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`
+  }
+
+  // 9자리: 서울 3자리 국번 또는 지역번호 3자리 국번
+  if (length === 9) {
+    const prefix = digitsOnly.slice(0, 2)
+
+    // 02 (서울): 02-XXX-XXXX
+    if (prefix === '02') {
+      return `${digitsOnly.slice(0, 2)}-${digitsOnly.slice(2, 5)}-${digitsOnly.slice(5)}`
+    }
+
+    // 031~070 (지역번호): 0XX-XXX-XXXX
+    return `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`
+  }
+
+  return null
+}
+
+/**
+ * 여러 줄의 전화번호 텍스트를 파싱
+ * @param text 입력된 텍스트 (줄바꿈 포함 가능)
+ * @returns { valid: string[], invalid: string[] }
+ */
+const parseMultiplePhoneNumbers = (text: string): { valid: string[]; invalid: string[] } => {
+  const lines = text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+
+  const valid: string[] = []
+  const invalid: string[] = []
+
+  for (const line of lines) {
+    const normalized = normalizePhoneNumber(line)
+    if (normalized) {
+      valid.push(normalized)
+    } else {
+      invalid.push(line)
+    }
+  }
+
+  return { valid, invalid }
+}
+
 // v-expansion-panels 배경색 (다크 테마 대응)
 const panelBgColor = computed(() => {
   return isDark?.value ? '#282933' : '#ffffff'
@@ -63,21 +150,47 @@ const handleAddRecipient = () => {
   const input = recipientInput.value
   if (!input) return
 
-  // v-maska 포맷: ###-###-#### (12자) 또는 ###-####-#### (13자)
-  const phoneLength = input.length
-  if (phoneLength !== 12 && phoneLength !== 13) {
-    refAlertModal.value?.callModal('', '올바른 전화번호 형식을 입력하세요. (예: 010-1234-5678)')
+  // 여러 줄 파싱
+  const { valid, invalid } = parseMultiplePhoneNumbers(input)
+
+  // 유효한 번호가 없는 경우
+  if (valid.length === 0) {
+    if (invalid.length > 0) {
+      refAlertModal.value?.callModal(
+        '잘못된 전화번호',
+        `유효하지 않은 번호:\n${invalid.join('\n')}\n\n올바른 형식:\n- 휴대폰: 010-1234-5678 (11자리)\n- 서울: 02-1234-5678 (9~10자리)\n- 지역: 031-123-4567 (9~10자리)`,
+      )
+    }
     return
   }
 
-  // 중복 체크 (전체 목록에서)
+  // 중복 체크 및 필터링
   const allRecipients = recipientsList.value || []
-  if ((allRecipients as any[]).includes(input)) {
-    refAlertModal.value?.callModal('', '이미 추가된 번호입니다.')
-    return
+  const newRecipients = valid.filter(phone => !allRecipients.includes(phone))
+  const duplicates = valid.filter(phone => allRecipients.includes(phone))
+
+  // 새로운 번호 추가
+  if (newRecipients.length > 0) {
+    individualRecipients.value.push(...newRecipients)
   }
 
-  individualRecipients.value.push(input)
+  // 결과 메시지
+  let message = ''
+  if (newRecipients.length > 0) {
+    message += `✅ ${newRecipients.length}개의 번호가 추가되었습니다.`
+  }
+  if (duplicates.length > 0) {
+    message += `\n⚠️ ${duplicates.length}개의 번호는 이미 존재합니다.`
+  }
+  if (invalid.length > 0) {
+    message += `\n❌ ${invalid.length}개의 번호는 형식이 올바르지 않습니다:\n${invalid.slice(0, 3).join('\n')}${invalid.length > 3 ? '\n...' : ''}`
+  }
+
+  if (message) {
+    refAlertModal.value?.callModal('추가 결과', message)
+  }
+
+  // 입력 필드 초기화
   recipientInput.value = undefined as any
 }
 
@@ -175,21 +288,28 @@ const handleGroupSelect = async () => {
             <v-expansion-panel-text>
               <CRow class="align-items-end">
                 <CCol cols="12" md="10">
-                  <label for="recipient-phone-input" class="form-label">휴대폰 번호</label>
-                  <input
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="recipient-phone-input" class="form-label mb-0">휴대폰 번호</label>
+                    <small v-if="recipientInput" class="text-muted">
+                      {{ parseMultiplePhoneNumbers(recipientInput).valid.length }}개 유효 /
+                      {{ parseMultiplePhoneNumbers(recipientInput).invalid.length }}개 무효
+                    </small>
+                  </div>
+                  <textarea
                     id="recipient-phone-input"
                     v-model="recipientInput"
-                    v-maska
-                    data-maska="['###-###-####', '###-####-####']"
-                    maxlength="13"
-                    placeholder="휴대전화 번호를 입력하세요."
+                    rows="3"
+                    placeholder="휴대전화 번호를 입력하세요. (직접 입력 또는 엑셀 메모장 붙여넣기)
+한 줄에 하나씩 입력하거나, 여러 줄을 한번에 입력할 수 있습니다.
+예: 010-1234-5678, 01012345678, 02-111-2222, 031-123-4567"
                     class="form-control"
-                    @keydown.enter="handleAddRecipient"
                   />
+                  <!--                  @keydown.enter.exact.prevent="handleAddRecipient"-->
+                  <!--                  @keydown.ctrl.enter="handleAddRecipient"-->
                 </CCol>
                 <CCol cols="12" md="2">
                   <v-btn color="primary" @click="handleAddRecipient" prepend-icon="mdi-plus" block>
-                    추가
+                    {{ recipientInput?.includes('\n') ? '일괄 추가' : '추가' }}
                   </v-btn>
                 </CCol>
               </CRow>
