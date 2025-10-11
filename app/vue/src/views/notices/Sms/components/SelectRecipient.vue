@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { inject, computed, ref, watch, nextTick } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import { useProject } from '@/store/pinia/project'
@@ -157,7 +157,7 @@ const parseMultiplePhoneNumbers = (text: string): { valid: string[]; invalid: st
 }
 
 /**
- * 엑셀 파일에서 전화번호 추출 (변수 모드 지원)
+ * 엑셀 파일에서 전화번호 추출 (변수 모드 지원) - ExcelJS 사용
  * @param file Excel 파일 객체
  * @returns Promise<string[] | Array<{phone: string, variables: Record<string, string>}>>
  */
@@ -167,29 +167,43 @@ const parseExcelFile = async (
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
-    reader.onload = e => {
+    reader.onload = async e => {
       try {
-        const data = e.target?.result
-        const workbook = XLSX.read(data, { type: 'binary' })
+        const arrayBuffer = e.target?.result as ArrayBuffer
 
-        // 첫 번째 시트 사용
-        const firstSheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[firstSheetName]
+        // ExcelJS Workbook 생성
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.load(arrayBuffer)
 
-        // 시트를 JSON으로 변환 (헤더 포함)
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+        // 첫 번째 워크시트 가져오기
+        const worksheet = workbook.worksheets[0]
+
+        if (!worksheet) {
+          reject(new Error('엑셀 파일에 시트가 없습니다.'))
+          return
+        }
+
+        // 모든 행을 배열로 변환
+        const rows: any[][] = []
+        worksheet.eachRow((row, rowNumber) => {
+          const rowValues: any[] = []
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            rowValues.push(cell.value)
+          })
+          rows.push(rowValues)
+        })
 
         // 변수 모드인 경우
         if (props.hasTemplateVariables && props.variableNames && props.variableNames.length > 0) {
           const result: Array<{ phone: string; variables: Record<string, string> }> = []
 
-          if (jsonData.length === 0) {
+          if (rows.length === 0) {
             reject(new Error('엑셀 파일이 비어있습니다.'))
             return
           }
 
           // 헤더 행 검증
-          const headerRow = jsonData[0] as any[]
+          const headerRow = rows[0]
           if (!headerRow || headerRow.length < 2) {
             reject(
               new Error('엑셀 파일 형식이 올바르지 않습니다. (최소 2개 열 필요: 전화번호 + 변수)'),
@@ -200,7 +214,7 @@ const parseExcelFile = async (
           // 헤더에서 변수명 추출 (A열은 전화번호, B열부터 변수)
           const excelVariableNames: string[] = []
           for (let i = 1; i < headerRow.length; i++) {
-            const varName = String(headerRow[i]).trim()
+            const varName = headerRow[i] ? String(headerRow[i]).trim() : ''
             if (varName) {
               excelVariableNames.push(varName)
             }
@@ -218,8 +232,8 @@ const parseExcelFile = async (
           }
 
           // 데이터 행 순회 (헤더 다음 행부터)
-          for (let i = 1; i < jsonData.length; i++) {
-            const row = jsonData[i] as any[]
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i]
 
             // A열: 전화번호
             const phone = row[0] ? String(row[0]).trim() : ''
@@ -228,7 +242,7 @@ const parseExcelFile = async (
             // B열 이후: 변수 값
             const variables: Record<string, string> = {}
             for (let j = 1; j < headerRow.length; j++) {
-              const varName = String(headerRow[j]).trim()
+              const varName = headerRow[j] ? String(headerRow[j]).trim() : ''
               const varValue = row[j] ? String(row[j]).trim() : ''
               if (varName) {
                 variables[varName] = varValue
@@ -245,17 +259,17 @@ const parseExcelFile = async (
           let startRow = 0
 
           // 헤더 감지 (첫 번째 행에 문자열이 많으면 헤더로 판단)
-          if (jsonData.length > 0) {
-            const firstRow = jsonData[0] as any[]
+          if (rows.length > 0) {
+            const firstRow = rows[0]
             const hasHeader = firstRow.some(
-              cell => typeof cell === 'string' && isNaN(Number(cell.replace(/[^\d]/g, ''))),
+              cell => typeof cell === 'string' && isNaN(Number(String(cell).replace(/[^\d]/g, ''))),
             )
             startRow = hasHeader ? 1 : 0
           }
 
           // 데이터 행 순회
-          for (let i = startRow; i < jsonData.length; i++) {
-            const row = jsonData[i] as any[]
+          for (let i = startRow; i < rows.length; i++) {
+            const row = rows[i]
 
             // A열 우선, B열 대체
             const cellA = row[0]
@@ -289,7 +303,7 @@ const parseExcelFile = async (
       reject(new Error('파일 읽기 실패'))
     }
 
-    reader.readAsBinaryString(file)
+    reader.readAsArrayBuffer(file)
   })
 }
 
