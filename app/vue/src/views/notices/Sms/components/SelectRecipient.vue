@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import * as XLSX from 'xlsx'
 import { inject, computed, ref, watch, nextTick } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import { useProject } from '@/store/pinia/project'
@@ -20,6 +21,10 @@ const refAlertModal = ref<InstanceType<typeof AlertModal>>()
 
 // 그룹 선택
 const selectedGroup = ref('')
+
+// 엑셀 파일 처리
+const excelLoading = ref(false)
+const excelFileInput = ref<File | null>(null)
 
 // 그룹 정보 저장
 interface RecipientGroup {
@@ -136,6 +141,183 @@ const parseMultiplePhoneNumbers = (text: string): { valid: string[]; invalid: st
   }
 
   return { valid, invalid }
+}
+
+/**
+ * 엑셀 파일에서 전화번호 추출
+ * @param file Excel 파일 객체
+ * @returns Promise<string[]> 추출된 전화번호 배열
+ */
+const parseExcelFile = async (file: File): Promise<string[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = e => {
+      try {
+        const data = e.target?.result
+        const workbook = XLSX.read(data, { type: 'binary' })
+
+        // 첫 번째 시트 사용
+        const firstSheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[firstSheetName]
+
+        // 시트를 JSON으로 변환 (헤더 포함)
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+
+        const phoneNumbers: string[] = []
+        let startRow = 0
+
+        // 헤더 감지 (첫 번째 행에 문자열이 많으면 헤더로 판단)
+        if (jsonData.length > 0) {
+          const firstRow = jsonData[0] as any[]
+          const hasHeader = firstRow.some(
+            cell => typeof cell === 'string' && isNaN(Number(cell.replace(/[^\d]/g, ''))),
+          )
+          startRow = hasHeader ? 1 : 0
+        }
+
+        // 데이터 행 순회
+        for (let i = startRow; i < jsonData.length; i++) {
+          const row = jsonData[i] as any[]
+
+          // A열 우선, B열 대체
+          const cellA = row[0]
+          const cellB = row[1]
+
+          let phone: string | null = null
+
+          // A열 확인
+          if (cellA) {
+            phone = String(cellA).trim()
+          }
+
+          // A열이 비어있으면 B열 확인
+          if (!phone && cellB) {
+            phone = String(cellB).trim()
+          }
+
+          if (phone) {
+            phoneNumbers.push(phone)
+          }
+        }
+
+        resolve(phoneNumbers)
+      } catch (error) {
+        reject(error)
+      }
+    }
+
+    reader.onerror = () => {
+      reject(new Error('파일 읽기 실패'))
+    }
+
+    reader.readAsBinaryString(file)
+  })
+}
+
+/**
+ * 엑셀 파일 선택 시 자동 처리
+ * @param file 선택된 File 또는 File 배열
+ */
+const handleExcelFileChange = async (file: File | File[] | null) => {
+  // 파일이 없으면 무시
+  if (!file) {
+    return
+  }
+
+  // File 배열인 경우 첫 번째 파일 선택
+  const selectedFile = Array.isArray(file) ? file[0] : file
+
+  if (!selectedFile) {
+    return
+  }
+
+  // 파일 크기 확인 (10MB 제한)
+  const maxSize = 10 * 1024 * 1024 // 10MB
+  if (selectedFile.size > maxSize) {
+    refAlertModal.value?.callModal('파일 크기 초과', '파일 크기는 10MB 이하여야 합니다.')
+    excelFileInput.value = null
+    return
+  }
+
+  excelLoading.value = true
+
+  try {
+    // 엑셀 파일 파싱
+    const extractedPhones = await parseExcelFile(selectedFile)
+
+    // 최대 개수 확인 (1,000개 제한)
+    if (extractedPhones.length > 1000) {
+      refAlertModal.value?.callModal(
+        '전화번호 개수 초과',
+        `추출된 전화번호가 ${extractedPhones.length}개입니다.\n최대 1,000개까지만 처리할 수 있습니다.`,
+      )
+      excelFileInput.value = null
+      excelLoading.value = false
+      return
+    }
+
+    // 전화번호 없음
+    if (extractedPhones.length === 0) {
+      refAlertModal.value?.callModal(
+        '전화번호 없음',
+        '엑셀 파일에서 유효한 전화번호를 찾을 수 없습니다.',
+      )
+      excelFileInput.value = null
+      excelLoading.value = false
+      return
+    }
+
+    // 전화번호 검증 및 포맷팅
+    const { valid, invalid } = parseMultiplePhoneNumbers(extractedPhones.join('\n'))
+
+    // 유효한 번호가 없는 경우
+    if (valid.length === 0) {
+      refAlertModal.value?.callModal(
+        '유효한 전화번호 없음',
+        `추출된 ${extractedPhones.length}개의 번호가 모두 유효하지 않습니다.\n\n올바른 형식:\n- 휴대폰: 010-1234-5678 (11자리)\n- 서울: 02-1234-5678 (9~10자리)\n- 지역: 031-123-4567 (9~10자리)`,
+      )
+      excelFileInput.value = null
+      excelLoading.value = false
+      return
+    }
+
+    // 중복 체크 및 필터링
+    const allRecipients = recipientsList.value || []
+    const newRecipients = valid.filter(phone => !allRecipients.includes(phone))
+    const duplicates = valid.filter(phone => allRecipients.includes(phone))
+
+    // 새로운 번호 추가
+    if (newRecipients.length > 0) {
+      individualRecipients.value.push(...newRecipients)
+    }
+
+    // 결과 메시지
+    let message = `📊 엑셀 파일 처리 결과:\n\n`
+    message += `📁 파일명: ${selectedFile.name}\n`
+    message += `📝 추출된 번호: ${extractedPhones.length}개\n\n`
+
+    if (newRecipients.length > 0) {
+      message += `✅ 추가된 번호: ${newRecipients.length}개\n`
+    }
+    if (duplicates.length > 0) {
+      message += `⚠️ 중복된 번호: ${duplicates.length}개\n`
+    }
+    if (invalid.length > 0) {
+      message += `❌ 유효하지 않은 번호: ${invalid.length}개\n`
+      message += `\n유효하지 않은 번호 예시:\n${invalid.slice(0, 3).join('\n')}${invalid.length > 3 ? '\n...' : ''}`
+    }
+
+    refAlertModal.value?.callModal('엑셀 업로드 완료', message)
+  } catch (error: any) {
+    refAlertModal.value?.callModal(
+      '파일 처리 오류',
+      `파일을 처리하는 중 오류가 발생했습니다:\n${error.message}`,
+    )
+  } finally {
+    excelFileInput.value = null
+    excelLoading.value = false
+  }
 }
 
 // v-expansion-panels 배경색 (다크 테마 대응)
@@ -346,13 +528,24 @@ const handleGroupSelect = async () => {
             </v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-file-input
+                v-model="excelFileInput"
                 label="Excel 파일 선택"
                 accept=".xlsx,.xls"
                 prepend-icon="mdi-file-excel"
                 show-size
+                :loading="excelLoading"
+                :disabled="excelLoading"
+                @update:model-value="handleExcelFileChange"
               />
+              <div v-if="excelLoading" class="mt-2">
+                <v-progress-linear indeterminate color="primary" />
+                <small class="text-muted">파일을 처리하고 있습니다...</small>
+              </div>
               <v-alert type="info" variant="tonal" class="mt-2" density="compact">
-                첫 번째 열에 휴대폰 번호를 입력해주세요.
+                <strong>파일 형식:</strong> .xlsx, .xls (최대 10MB)<br />
+                <strong>전화번호 위치:</strong> A열(우선) 또는 B열에 입력<br />
+                <strong>자동 인식:</strong> 헤더 행 자동 감지 및 제외<br />
+                <strong>최대 개수:</strong> 1,000개
               </v-alert>
             </v-expansion-panel-text>
           </v-expansion-panel>
