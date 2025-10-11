@@ -177,12 +177,20 @@ jobs:
             [ "$ASSET_COUNT" -ge 10 ] || { echo "❌ ERROR: Too few assets ($ASSET_COUNT)"; exit 1; }
 
             MAIN_JS=$(grep -o 'assets/index-[^"]*\.js' "$NEW_BUILD/index.html" 2>/dev/null | head -1)
-            if [ -n "$MAIN_JS" ] && [ ! -f "$NEW_BUILD/$MAIN_JS" ]; then
-              echo "❌ ERROR: Referenced main JS missing: $MAIN_JS"
-              exit 1
+            if [ -n "$MAIN_JS" ]; then
+              if [ ! -f "$NEW_BUILD/$MAIN_JS" ]; then
+                echo "❌ ERROR: Referenced main JS missing: $MAIN_JS"
+                exit 1
+              fi
+            else
+              echo "⚠️  WARNING: Could not detect main JS reference in index.html"
             fi
 
             CSS_COUNT=$(find "$NEW_BUILD/assets" -name "*.css" 2>/dev/null | wc -l)
+            if [ "$CSS_COUNT" -eq 0 ]; then
+              echo "❌ ERROR: No CSS files found in deployment!"
+              exit 1
+            fi
 
             echo "✅ Upload integrity verified"
             echo "  ✓ Main JS: $MAIN_JS"
