@@ -61,26 +61,36 @@ export default defineConfig({
               return 'vendor-utils'
             }
 
-            // Vue ecosystem - more specific matching
-            if (id.match(/\/node_modules\/vue\//) || id.match(/\/node_modules\/.pnpm\/vue@/)) {
+            // Vue ecosystem - more comprehensive matching for pnpm
+            if (
+              id.match(/\/node_modules\/vue\//) ||
+              id.match(/\/node_modules\/.pnpm\/vue@/) ||
+              id.match(/\/.pnpm\/vue@/)
+            ) {
               return 'vendor-vue-core'
             }
-            if (id.includes('vue-router') || id.includes('pinia')) {
+            if (
+              id.includes('vue-router') ||
+              id.includes('pinia') ||
+              id.match(/\/.pnpm\/vue-router@/) ||
+              id.match(/\/.pnpm\/pinia@/)
+            ) {
               return 'vendor-vue-router-pinia'
             }
-            if (id.includes('@vue/') || id.includes('vue-demi')) {
+            if (
+              id.includes('@vue/') ||
+              id.includes('vue-demi') ||
+              id.match(/\/.pnpm\/@vue\//)
+            ) {
               return 'vendor-vue-ecosystem'
             }
 
-            // Remaining small packages - group by pnpm structure
-            const match = id.match(/node_modules\/\.pnpm\/([^@\/]+)/)
-            if (match) {
-              return `vendor-.pnpm`
+            // Other vendor packages - avoid generic pnpm grouping
+            const pkgMatch = id.match(/node_modules\/(?:\.pnpm\/)?([^@\/]+(?:@[^\/]+)?)/)
+            if (pkgMatch) {
+              const pkgName = pkgMatch[1].split('@')[0]
+              return `vendor-${pkgName.replace(/[^a-zA-Z0-9]/g, '-')}`
             }
-
-            // Other vendor packages
-            const pkgName = id.toString().split('node_modules/')[1].split('/')[0]
-            return `vendor-${pkgName.replace('@', '')}`
           }
         },
         chunkFileNames: 'assets/[name]-[hash].js',
@@ -112,6 +122,12 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: [
+      'vue',
+      'vue-router',
+      'pinia',
+      '@vue/shared',
+      '@vue/runtime-dom',
+      '@vue/runtime-core',
       'md-editor-v3',
       'highlight.js',
     ],
