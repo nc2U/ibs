@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-IBS is a comprehensive construction management system built with Django 5.2 backend and Vue 3 frontend.
+IBS is a comprehensive construction management system built with Django 5.2.7 backend and Vue 3.5 frontend.
 It manages construction projects, contracts, payments, cash flow, and document management for construction
 companies.
 
@@ -111,7 +111,7 @@ pnpm type-check
 
 ### Frontend Integration
 
-- **Vue 3**: Main SPA with Vite build system, TypeScript, Vuetify UI framework
+- **Vue 3.5**: Main SPA with Vite 6.3 build system, TypeScript 5.8, Vuetify 3.10 UI framework
     - Rich component ecosystem (d3, charts, markdown editor, date picker)
     - State management with Pinia
     - Testing with Vitest and Cypress
@@ -128,11 +128,14 @@ pnpm type-check
 
 ### Docker Deployment (Production Ready)
 
-- **Multi-container setup**: nginx (reverse proxy), Django (uwsgi), PostgreSQL
+- **Multi-container setup**: 5-container architecture
+    - `ibs-nginx` - Nginx reverse proxy (port 80)
+    - `ibs-web` - Django application with uWSGI (port 8000)
+    - `ibs-postgres` - PostgreSQL database (port 5432)
+    - `ibs-redis` - Redis 7 for caching and session storage
+    - `ibs-celery` - Celery worker for asynchronous tasks
 - **Configuration**: `deploy/docker-compose.yml` with service definitions
-- **Current Status**: 3 containers running (ibs-nginx, ibs-django, ibs-postgres)
-- **Ports**: nginx on port 80, Django internal on 8000, PostgreSQL on 5432
-- **Volumes**: Persistent data, static/media files, database backups
+- **Volumes**: Persistent data, static/media files, database backups, Redis data
 - **Environment**: Timezone set to Asia/Seoul, Korean language support
 
 ### Kubernetes Deployment
@@ -199,8 +202,9 @@ pnpm test:e2e
 ### Development Practices
 
 - All database migrations applied and up to date
-- Docker containers stable (7+ days uptime)
 - Master-slave database routing for scalability
+- Redis-based caching and session management
+- Celery for asynchronous task processing
 - Git integration in work app for commit tracking and issue management
 
 ### File Structure

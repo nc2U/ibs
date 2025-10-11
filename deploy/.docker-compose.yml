@@ -50,18 +50,15 @@ services:
     image: redis:7-alpine
     restart: always
     command: redis-server --appendonly yes
-    volumes:
-      - ../volume/redis:/data
     environment:
       TZ: Asia/Seoul
+    volumes:
+      - ../volume/redis:/data
 
   web:
     container_name: ibs-web
     build: docker/python/dev  # 또는 docker/python (개발 환경에 따라)
     image: nc2u/django
-    volumes:
-      - ../app/django:/app/django
-      - ../app/repos:/app/repos
     environment:
       DATABASE_TYPE: mariadb  # mariadb | postgres (default: mariadb)
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
@@ -79,6 +76,9 @@ services:
       DJANGO_SETTINGS_MODULE: _config.settings # Django settings 모드 지정
       CELERY_BROKER_URL: redis://redis:6379/0 # Celery 브로커 URL 추가
       CELERY_RESULT_BACKEND: redis://redis:6379/0 # Celery 결과 백엔드 추가
+    volumes:
+      - ../app/django:/app/django
+      - ../app/repos:/app/repos
     depends_on:
       - redis
       - mariadb  # 또는 postgres (사용하는 DB에 따라)
@@ -90,9 +90,6 @@ services:
     command: [ "celery", "-A", "_config", "worker", "--loglevel=info", "--concurrency=4" ]
     working_dir: /app/django
     restart: always
-    volumes:
-      - ../app/django:/app/django
-      - ../app/repos:/app/repos
     environment:
       DATABASE_TYPE: mariadb  # mariadb | postgres (default: mariadb)
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
@@ -106,6 +103,9 @@ services:
       DJANGO_SETTINGS_MODULE: _config.settings
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - ../app/django:/app/django
+      - ../app/repos:/app/repos
     depends_on:
       - redis
       - mariadb  # 또는 postgres (사용하는 DB에 따라)
