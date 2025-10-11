@@ -3,6 +3,7 @@ import { computed, watch, ref, onMounted, nextTick } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import SenderNumberModal from './SenderNumberModal.vue'
 import MessageTemplateModal from './MessageTemplateModal.vue'
+import SpecialCharModal from './SpecialCharModal.vue'
 
 // Props 정의
 const activeTab = defineModel<string>('activeTab')
@@ -29,6 +30,11 @@ const selectedTemplate = ref<string>('')
 
 // Preview management
 const showPreview = ref(false)
+
+// Special character modal
+const specialCharModal = ref()
+const messageTextareaEl = ref<HTMLTextAreaElement | null>(null)
+const cursorPosition = ref(0)
 
 // Computed for sender number options
 const senderNumberOptions = computed(() => {
@@ -79,6 +85,38 @@ const handleTemplateSelect = () => {
     if (template) {
       smsForm.value.messageType = template.message_type
       smsForm.value.message = template.content
+    }
+  })
+}
+
+// textarea 엘리먼트 업데이트
+const updateTextareaRef = (event: Event) => {
+  const target = event.target as HTMLTextAreaElement
+  messageTextareaEl.value = target
+  cursorPosition.value = target.selectionStart || 0
+}
+
+// 특수문자 모달 열기
+const handleOpenSpecialCharModal = () => {
+  specialCharModal.value?.openModal()
+}
+
+// 특수문자 삽입
+const insertSpecialChar = (char: string) => {
+  const currentMessage = smsForm.value.message || ''
+  const position = cursorPosition.value
+
+  // 커서 위치에 특수문자 삽입
+  smsForm.value.message = currentMessage.slice(0, position) + char + currentMessage.slice(position)
+
+  // 다음 틱에서 커서 위치를 삽입된 문자 다음으로 이동
+  nextTick(() => {
+    const el = messageTextareaEl.value as HTMLTextAreaElement | null
+    if (el) {
+      const newPosition = position + char.length
+      el.focus()
+      el.setSelectionRange(newPosition, newPosition)
+      cursorPosition.value = newPosition
     }
   })
 }
@@ -169,7 +207,20 @@ watch(
                 v-model="smsForm.message"
                 rows="6"
                 placeholder="전송할 메시지를 입력하세요..."
+                @click="updateTextareaRef"
+                @keyup="updateTextareaRef"
+                @focus="updateTextareaRef"
               />
+              <v-btn
+                size="small"
+                color="grey"
+                variant="outlined"
+                prepend-icon="mdi-code-braces"
+                class="mt-2"
+                @click="handleOpenSpecialCharModal"
+              >
+                특수문자
+              </v-btn>
             </div>
 
             <!-- 발송자 번호 -->
@@ -276,6 +327,9 @@ watch(
 
     <!-- Message Template Modal -->
     <MessageTemplateModal ref="templateModal" />
+
+    <!-- Special Character Modal -->
+    <SpecialCharModal ref="specialCharModal" @insert="insertSpecialChar" />
   </CCol>
 </template>
 
