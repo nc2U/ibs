@@ -785,6 +785,10 @@ class IwinvSMSService:
             response.raise_for_status()
             result = response.json()
 
+            # 응답 포맷 통일 (iwinv API는 resultCode를 사용하지만, 프론트엔드는 code를 기대)
+            if 'resultCode' in result:
+                result['code'] = result['resultCode']
+
             return result
 
         except requests.exceptions.RequestException as e:

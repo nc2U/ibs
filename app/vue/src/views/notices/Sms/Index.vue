@@ -136,14 +136,17 @@ const balanceLoading = computed(() => notiStore.loading)
 const refreshBalance = async () => {
   try {
     await notiStore.fetchBalance()
-  } catch (error) {
-    // 에러는 store에서 처리
+  } catch (error: any) {
+    // Store에서 기본 에러 처리는 하지만, 추가 로깅이 필요한 경우
+    console.error('잔액 조회 실패:', error)
   }
 }
 
-// 초기화 (잔액은 사용자가 아코디언 열 때 로드)
-onBeforeMount(() => {
+// 초기화 (잔액 자동 조회)
+onBeforeMount(async () => {
   loading.value = false
+  // 페이지 로드 시 잔액 자동 조회
+  await refreshBalance()
 })
 </script>
 
