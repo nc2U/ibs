@@ -5,10 +5,23 @@ import { useNotice } from '@/store/pinia/notice'
 import { useProject } from '@/store/pinia/project'
 import type { Project } from '@/store/types/project.ts'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import { CCard, CCol } from '@coreui/vue'
 
 // Props 정의
 const recipientInput = defineModel<string>('recipient-input')
 const recipientsList = defineModel<string[]>('recipients-list')
+
+const props = defineProps<{
+  hasTemplateVariables?: boolean
+  variableNames?: string[]
+}>()
+
+// Emits 정의
+const emit = defineEmits<{
+  'update:recipientsWithVariables': [
+    value: Array<{ phone: string; variables: Record<string, string> }>,
+  ]
+}>()
 
 // Stores
 const projectStore = useProject()
@@ -144,11 +157,13 @@ const parseMultiplePhoneNumbers = (text: string): { valid: string[]; invalid: st
 }
 
 /**
- * 엑셀 파일에서 전화번호 추출
+ * 엑셀 파일에서 전화번호 추출 (변수 모드 지원)
  * @param file Excel 파일 객체
- * @returns Promise<string[]> 추출된 전화번호 배열
+ * @returns Promise<string[] | Array<{phone: string, variables: Record<string, string>}>>
  */
-const parseExcelFile = async (file: File): Promise<string[]> => {
+const parseExcelFile = async (
+  file: File,
+): Promise<string[] | Array<{ phone: string; variables: Record<string, string> }>> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
@@ -164,44 +179,107 @@ const parseExcelFile = async (file: File): Promise<string[]> => {
         // 시트를 JSON으로 변환 (헤더 포함)
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
 
-        const phoneNumbers: string[] = []
-        let startRow = 0
+        // 변수 모드인 경우
+        if (props.hasTemplateVariables && props.variableNames && props.variableNames.length > 0) {
+          const result: Array<{ phone: string; variables: Record<string, string> }> = []
 
-        // 헤더 감지 (첫 번째 행에 문자열이 많으면 헤더로 판단)
-        if (jsonData.length > 0) {
-          const firstRow = jsonData[0] as any[]
-          const hasHeader = firstRow.some(
-            cell => typeof cell === 'string' && isNaN(Number(cell.replace(/[^\d]/g, ''))),
-          )
-          startRow = hasHeader ? 1 : 0
+          if (jsonData.length === 0) {
+            reject(new Error('엑셀 파일이 비어있습니다.'))
+            return
+          }
+
+          // 헤더 행 검증
+          const headerRow = jsonData[0] as any[]
+          if (!headerRow || headerRow.length < 2) {
+            reject(
+              new Error('엑셀 파일 형식이 올바르지 않습니다. (최소 2개 열 필요: 전화번호 + 변수)'),
+            )
+            return
+          }
+
+          // 헤더에서 변수명 추출 (A열은 전화번호, B열부터 변수)
+          const excelVariableNames: string[] = []
+          for (let i = 1; i < headerRow.length; i++) {
+            const varName = String(headerRow[i]).trim()
+            if (varName) {
+              excelVariableNames.push(varName)
+            }
+          }
+
+          // 템플릿 변수와 엑셀 헤더 일치 확인
+          const missingVars = props.variableNames.filter(v => !excelVariableNames.includes(v))
+          if (missingVars.length > 0) {
+            reject(
+              new Error(
+                `엑셀 헤더에 필요한 변수가 없습니다.\n필요한 변수: ${props.variableNames.join(', ')}\n엑셀 헤더: ${excelVariableNames.join(', ')}\n누락된 변수: ${missingVars.join(', ')}`,
+              ),
+            )
+            return
+          }
+
+          // 데이터 행 순회 (헤더 다음 행부터)
+          for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i] as any[]
+
+            // A열: 전화번호
+            const phone = row[0] ? String(row[0]).trim() : ''
+            if (!phone) continue
+
+            // B열 이후: 변수 값
+            const variables: Record<string, string> = {}
+            for (let j = 1; j < headerRow.length; j++) {
+              const varName = String(headerRow[j]).trim()
+              const varValue = row[j] ? String(row[j]).trim() : ''
+              if (varName) {
+                variables[varName] = varValue
+              }
+            }
+
+            result.push({ phone, variables })
+          }
+
+          resolve(result)
+        } else {
+          // 일반 모드 (변수 없음)
+          const phoneNumbers: string[] = []
+          let startRow = 0
+
+          // 헤더 감지 (첫 번째 행에 문자열이 많으면 헤더로 판단)
+          if (jsonData.length > 0) {
+            const firstRow = jsonData[0] as any[]
+            const hasHeader = firstRow.some(
+              cell => typeof cell === 'string' && isNaN(Number(cell.replace(/[^\d]/g, ''))),
+            )
+            startRow = hasHeader ? 1 : 0
+          }
+
+          // 데이터 행 순회
+          for (let i = startRow; i < jsonData.length; i++) {
+            const row = jsonData[i] as any[]
+
+            // A열 우선, B열 대체
+            const cellA = row[0]
+            const cellB = row[1]
+
+            let phone: string | null = null
+
+            // A열 확인
+            if (cellA) {
+              phone = String(cellA).trim()
+            }
+
+            // A열이 비어있으면 B열 확인
+            if (!phone && cellB) {
+              phone = String(cellB).trim()
+            }
+
+            if (phone) {
+              phoneNumbers.push(phone)
+            }
+          }
+
+          resolve(phoneNumbers)
         }
-
-        // 데이터 행 순회
-        for (let i = startRow; i < jsonData.length; i++) {
-          const row = jsonData[i] as any[]
-
-          // A열 우선, B열 대체
-          const cellA = row[0]
-          const cellB = row[1]
-
-          let phone: string | null = null
-
-          // A열 확인
-          if (cellA) {
-            phone = String(cellA).trim()
-          }
-
-          // A열이 비어있으면 B열 확인
-          if (!phone && cellB) {
-            phone = String(cellB).trim()
-          }
-
-          if (phone) {
-            phoneNumbers.push(phone)
-          }
-        }
-
-        resolve(phoneNumbers)
       } catch (error) {
         reject(error)
       }
@@ -216,7 +294,7 @@ const parseExcelFile = async (file: File): Promise<string[]> => {
 }
 
 /**
- * 엑셀 파일 선택 시 자동 처리
+ * 엑셀 파일 선택 시 자동 처리 (변수 모드 지원)
  * @param file 선택된 File 또는 File 배열
  */
 const handleExcelFileChange = async (file: File | File[] | null) => {
@@ -244,71 +322,161 @@ const handleExcelFileChange = async (file: File | File[] | null) => {
 
   try {
     // 엑셀 파일 파싱
-    const extractedPhones = await parseExcelFile(selectedFile)
+    const extractedData = await parseExcelFile(selectedFile)
 
-    // 최대 개수 확인 (1,000개 제한)
-    if (extractedPhones.length > 1000) {
-      refAlertModal.value?.callModal(
-        '전화번호 개수 초과',
-        `추출된 전화번호가 ${extractedPhones.length}개입니다.\n최대 1,000개까지만 처리할 수 있습니다.`,
-      )
-      excelFileInput.value = null
-      excelLoading.value = false
-      return
+    // 변수 모드 처리
+    if (props.hasTemplateVariables && props.variableNames && props.variableNames.length > 0) {
+      const recipientsWithVars = extractedData as Array<{
+        phone: string
+        variables: Record<string, string>
+      }>
+
+      // 최대 개수 확인 (1,000개 제한)
+      if (recipientsWithVars.length > 1000) {
+        refAlertModal.value?.callModal(
+          '전화번호 개수 초과',
+          `추출된 전화번호가 ${recipientsWithVars.length}개입니다.\n최대 1,000개까지만 처리할 수 있습니다.`,
+        )
+        excelFileInput.value = null
+        excelLoading.value = false
+        return
+      }
+
+      // 전화번호 없음
+      if (recipientsWithVars.length === 0) {
+        refAlertModal.value?.callModal(
+          '전화번호 없음',
+          '엑셀 파일에서 유효한 전화번호를 찾을 수 없습니다.',
+        )
+        excelFileInput.value = null
+        excelLoading.value = false
+        return
+      }
+
+      // 전화번호 검증 및 포맷팅
+      const validRecipientsWithVars: Array<{
+        phone: string
+        variables: Record<string, string>
+      }> = []
+      const invalid: string[] = []
+
+      for (const item of recipientsWithVars) {
+        const normalized = normalizePhoneNumber(item.phone)
+        if (normalized) {
+          validRecipientsWithVars.push({
+            phone: normalized,
+            variables: item.variables,
+          })
+        } else {
+          invalid.push(item.phone)
+        }
+      }
+
+      // 유효한 번호가 없는 경우
+      if (validRecipientsWithVars.length === 0) {
+        refAlertModal.value?.callModal(
+          '유효한 전화번호 없음',
+          `추출된 ${recipientsWithVars.length}개의 번호가 모두 유효하지 않습니다.\n\n올바른 형식:\n- 휴대폰: 010-1234-5678 (11자리)\n- 서울: 02-1234-5678 (9~10자리)\n- 지역: 031-123-4567 (9~10자리)`,
+        )
+        excelFileInput.value = null
+        excelLoading.value = false
+        return
+      }
+
+      // 부모 컴포넌트에 변수 포함 수신자 전달
+      emit('update:recipientsWithVariables', validRecipientsWithVars)
+
+      // recipientsList도 업데이트 (전화번호만)
+      const phones = validRecipientsWithVars.map(item => item.phone)
+      recipientsList.value = phones as any
+
+      // individualRecipients도 업데이트 (v-chip 표시를 위해)
+      // 기존 수신자 초기화 후 새로운 수신자 추가
+      individualRecipients.value = []
+      recipientGroups.value = []
+      individualRecipients.value.push(...phones)
+
+      // 결과 메시지
+      let message = `📊 변수 템플릿 엑셀 처리 결과:\n\n`
+      message += `📁 파일명: ${selectedFile.name}\n`
+      message += `📝 추출된 번호: ${recipientsWithVars.length}개\n`
+      message += `📋 변수: ${props.variableNames.join(', ')}\n\n`
+      message += `✅ 유효한 번호: ${validRecipientsWithVars.length}개\n`
+
+      if (invalid.length > 0) {
+        message += `❌ 유효하지 않은 번호: ${invalid.length}개\n`
+        message += `\n유효하지 않은 번호 예시:\n${invalid.slice(0, 3).join('\n')}${invalid.length > 3 ? '\n...' : ''}`
+      }
+
+      refAlertModal.value?.callModal('엑셀 업로드 완료', message)
+    } else {
+      // 일반 모드 처리 (변수 없음)
+      const extractedPhones = extractedData as string[]
+
+      // 최대 개수 확인 (1,000개 제한)
+      if (extractedPhones.length > 1000) {
+        refAlertModal.value?.callModal(
+          '전화번호 개수 초과',
+          `추출된 전화번호가 ${extractedPhones.length}개입니다.\n최대 1,000개까지만 처리할 수 있습니다.`,
+        )
+        excelFileInput.value = null
+        excelLoading.value = false
+        return
+      }
+
+      // 전화번호 없음
+      if (extractedPhones.length === 0) {
+        refAlertModal.value?.callModal(
+          '전화번호 없음',
+          '엑셀 파일에서 유효한 전화번호를 찾을 수 없습니다.',
+        )
+        excelFileInput.value = null
+        excelLoading.value = false
+        return
+      }
+
+      // 전화번호 검증 및 포맷팅
+      const { valid, invalid } = parseMultiplePhoneNumbers(extractedPhones.join('\n'))
+
+      // 유효한 번호가 없는 경우
+      if (valid.length === 0) {
+        refAlertModal.value?.callModal(
+          '유효한 전화번호 없음',
+          `추출된 ${extractedPhones.length}개의 번호가 모두 유효하지 않습니다.\n\n올바른 형식:\n- 휴대폰: 010-1234-5678 (11자리)\n- 서울: 02-1234-5678 (9~10자리)\n- 지역: 031-123-4567 (9~10자리)`,
+        )
+        excelFileInput.value = null
+        excelLoading.value = false
+        return
+      }
+
+      // 중복 체크 및 필터링
+      const allRecipients = recipientsList.value || []
+      const newRecipients = valid.filter(phone => !allRecipients.includes(phone))
+      const duplicates = valid.filter(phone => allRecipients.includes(phone))
+
+      // 새로운 번호 추가
+      if (newRecipients.length > 0) {
+        individualRecipients.value.push(...newRecipients)
+      }
+
+      // 결과 메시지
+      let message = `📊 엑셀 파일 처리 결과:\n\n`
+      message += `📁 파일명: ${selectedFile.name}\n`
+      message += `📝 추출된 번호: ${extractedPhones.length}개\n\n`
+
+      if (newRecipients.length > 0) {
+        message += `✅ 추가된 번호: ${newRecipients.length}개\n`
+      }
+      if (duplicates.length > 0) {
+        message += `⚠️ 중복된 번호: ${duplicates.length}개\n`
+      }
+      if (invalid.length > 0) {
+        message += `❌ 유효하지 않은 번호: ${invalid.length}개\n`
+        message += `\n유효하지 않은 번호 예시:\n${invalid.slice(0, 3).join('\n')}${invalid.length > 3 ? '\n...' : ''}`
+      }
+
+      refAlertModal.value?.callModal('엑셀 업로드 완료', message)
     }
-
-    // 전화번호 없음
-    if (extractedPhones.length === 0) {
-      refAlertModal.value?.callModal(
-        '전화번호 없음',
-        '엑셀 파일에서 유효한 전화번호를 찾을 수 없습니다.',
-      )
-      excelFileInput.value = null
-      excelLoading.value = false
-      return
-    }
-
-    // 전화번호 검증 및 포맷팅
-    const { valid, invalid } = parseMultiplePhoneNumbers(extractedPhones.join('\n'))
-
-    // 유효한 번호가 없는 경우
-    if (valid.length === 0) {
-      refAlertModal.value?.callModal(
-        '유효한 전화번호 없음',
-        `추출된 ${extractedPhones.length}개의 번호가 모두 유효하지 않습니다.\n\n올바른 형식:\n- 휴대폰: 010-1234-5678 (11자리)\n- 서울: 02-1234-5678 (9~10자리)\n- 지역: 031-123-4567 (9~10자리)`,
-      )
-      excelFileInput.value = null
-      excelLoading.value = false
-      return
-    }
-
-    // 중복 체크 및 필터링
-    const allRecipients = recipientsList.value || []
-    const newRecipients = valid.filter(phone => !allRecipients.includes(phone))
-    const duplicates = valid.filter(phone => allRecipients.includes(phone))
-
-    // 새로운 번호 추가
-    if (newRecipients.length > 0) {
-      individualRecipients.value.push(...newRecipients)
-    }
-
-    // 결과 메시지
-    let message = `📊 엑셀 파일 처리 결과:\n\n`
-    message += `📁 파일명: ${selectedFile.name}\n`
-    message += `📝 추출된 번호: ${extractedPhones.length}개\n\n`
-
-    if (newRecipients.length > 0) {
-      message += `✅ 추가된 번호: ${newRecipients.length}개\n`
-    }
-    if (duplicates.length > 0) {
-      message += `⚠️ 중복된 번호: ${duplicates.length}개\n`
-    }
-    if (invalid.length > 0) {
-      message += `❌ 유효하지 않은 번호: ${invalid.length}개\n`
-      message += `\n유효하지 않은 번호 예시:\n${invalid.slice(0, 3).join('\n')}${invalid.length > 3 ? '\n...' : ''}`
-    }
-
-    refAlertModal.value?.callModal('엑셀 업로드 완료', message)
   } catch (error: any) {
     refAlertModal.value?.callModal(
       '파일 처리 오류',
@@ -327,6 +495,20 @@ const panelBgColor = computed(() => {
 
 // v-expansion-panels 초기 활성 패널 (기본: 첫 번째 패널)
 const activePanel = ref<number | null>(0)
+
+// 변수 모드 활성화 시 엑셀 업로드 패널 자동 열기
+watch(
+  () => props.hasTemplateVariables,
+  hasVariables => {
+    if (hasVariables) {
+      // 변수 모드 활성화 시 엑셀 업로드 패널(2번)로 전환
+      activePanel.value = 2
+    } else {
+      // 변수 모드 해제 시 첫 번째 패널(0번)로 전환
+      activePanel.value = 0
+    }
+  },
+)
 
 const handleAddRecipient = () => {
   const input = recipientInput.value
@@ -460,12 +642,30 @@ const handleGroupSelect = async () => {
         <strong>수신자 관리</strong>
       </CCardHeader>
       <CCardBody>
+        <!-- 변수 모드 안내 -->
+        <v-alert
+          v-if="hasTemplateVariables"
+          type="info"
+          color="primary"
+          variant="tonal"
+          class="mb-3"
+          density="compact"
+        >
+          <strong>📋 변수 템플릿 모드</strong><br />
+          선택한 템플릿에 변수가 포함되어 있습니다: <strong>{{ variableNames?.join(', ') }}</strong
+          ><br />
+          Excel 파일 업로드만 사용할 수 있습니다. (A열: 전화번호, B열 이후: 변수 값)
+        </v-alert>
+
         <!-- 수신자 입력 방법 선택 -->
         <v-expansion-panels v-model="activePanel" class="mb-3" :bg-color="panelBgColor">
-          <v-expansion-panel>
+          <v-expansion-panel :disabled="!!hasTemplateVariables">
             <v-expansion-panel-title>
               <v-icon icon="mdi-account-plus" class="me-2" />
               개별 번호 입력
+              <v-chip v-if="hasTemplateVariables" size="small" color="dark" class="ms-2">
+                변수 모드에서 비활성화
+              </v-chip>
             </v-expansion-panel-title>
             <v-expansion-panel-text>
               <CRow class="align-items-end">
@@ -480,14 +680,14 @@ const handleGroupSelect = async () => {
                   <textarea
                     id="recipient-phone-input"
                     v-model="recipientInput"
+                    @keydown.shift.enter="handleAddRecipient"
+                    @keydown.ctrl.enter="handleAddRecipient"
                     rows="3"
                     placeholder="휴대전화 번호를 입력하세요. (직접 입력 또는 엑셀 메모장 붙여넣기)
-한 줄에 하나씩 입력하거나, 여러 줄을 한번에 입력할 수 있습니다.
+한 줄에 하나씩 여러 줄을 입력하여 한번에 발송할 수 있습니다.
 예: 010-1234-5678, 01012345678, 02-111-2222, 031-123-4567"
                     class="form-control"
                   />
-                  <!--                  @keydown.enter.exact.prevent="handleAddRecipient"-->
-                  <!--                  @keydown.ctrl.enter="handleAddRecipient"-->
                 </CCol>
                 <CCol cols="12" md="2">
                   <v-btn color="primary" @click="handleAddRecipient" prepend-icon="mdi-plus" block>
@@ -498,10 +698,13 @@ const handleGroupSelect = async () => {
             </v-expansion-panel-text>
           </v-expansion-panel>
 
-          <v-expansion-panel>
+          <v-expansion-panel :disabled="!!hasTemplateVariables">
             <v-expansion-panel-title>
               <v-icon icon="mdi-account-group" class="me-2" />
               그룹 선택
+              <v-chip v-if="hasTemplateVariables" size="small" color="dark" class="ms-2">
+                변수 모드에서 비활성화
+              </v-chip>
             </v-expansion-panel-title>
             <v-expansion-panel-text>
               <CFormSelect
@@ -525,6 +728,9 @@ const handleGroupSelect = async () => {
             <v-expansion-panel-title>
               <v-icon icon="mdi-file-excel" class="me-2" />
               Excel 파일 업로드
+              <v-chip v-if="hasTemplateVariables" size="small" color="primary" class="ms-2">
+                변수 모드에서 사용 가능
+              </v-chip>
             </v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-file-input
@@ -541,7 +747,30 @@ const handleGroupSelect = async () => {
                 <v-progress-linear indeterminate color="primary" />
                 <small class="text-muted">파일을 처리하고 있습니다...</small>
               </div>
-              <v-alert type="info" variant="tonal" class="mt-2" density="compact">
+
+              <!-- 변수 모드 안내 -->
+              <v-alert
+                v-if="hasTemplateVariables"
+                type="info"
+                color="primary"
+                variant="tonal"
+                class="mt-2"
+                density="compact"
+              >
+                <strong>📋 변수 템플릿 EXCEL 파일 형식 : </strong><br />
+                <strong>A열 : </strong> 전화번호<br />
+                <strong>B열 이후 : </strong> 변수 값 (헤더: {{ variableNames?.join(', ') }})<br />
+                <strong>예시 : </strong><br />
+                <code>
+                  | 전화번호 | {{ variableNames?.[0] || '변수1' }} |
+                  {{ variableNames?.[1] || '변수2' }} |
+                </code>
+                <br />
+                <code>| 010-1234-5678 | 홍길동 | 1,000,000 |</code>
+              </v-alert>
+
+              <!-- 일반 모드 안내 -->
+              <v-alert v-else type="info" variant="tonal" class="mt-2" density="compact">
                 <strong>파일 형식:</strong> .xlsx, .xls (최대 10MB)<br />
                 <strong>전화번호 위치:</strong> A열(우선) 또는 B열에 입력<br />
                 <strong>자동 인식:</strong> 헤더 행 자동 감지 및 제외<br />
@@ -600,3 +829,22 @@ const handleGroupSelect = async () => {
 
   <AlertModal ref="refAlertModal" />
 </template>
+
+<style>
+/* 비활성화된 expansion-panel 가시성 개선 - global 스타일 */
+.v-expansion-panel--disabled .v-expansion-panel-title {
+  opacity: 1 !important;
+}
+
+/* 라이트 모드 - 비활성화 텍스트 */
+.v-expansion-panel--disabled .v-expansion-panel-title,
+.v-expansion-panel--disabled .v-expansion-panel-title .v-icon {
+  color: rgba(0, 0, 0, 0.38) !important;
+}
+
+/* 다크모드 - 비활성화 텍스트 (모든 가능한 셀렉터) */
+body[class*='dark'] .v-expansion-panel--disabled .v-expansion-panel-title,
+body[class*='dark'] .v-expansion-panel--disabled .v-expansion-panel-title * {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+</style>

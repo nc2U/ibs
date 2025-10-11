@@ -25,6 +25,13 @@ const messageCount = ref(0)
 const sendProgress = ref(0)
 const isSending = ref(false)
 
+// 템플릿 변수 관련 상태
+const templateHasVariables = ref(false)
+const templateVariableNames = ref<string[]>([])
+const recipientsWithVariables = ref<Array<{ phone: string; variables: Record<string, string> }>>(
+  [],
+)
+
 // 회사 정보
 const company = inject<ComputedRef<Company | null>>('company')
 
@@ -76,6 +83,16 @@ const previewMessage = () => {
 
 const notiStore = useNotice()
 
+// 변수 치환 함수
+const replaceVariables = (template: string, variables: Record<string, string>): string => {
+  let result = template
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`\\{${key}\\}`, 'g')
+    result = result.replace(regex, value)
+  }
+  return result
+}
+
 const sendMessage = async () => {
   // 이미 발송 중이면 중복 실행 방지
   if (isSending.value) {
@@ -87,21 +104,46 @@ const sendMessage = async () => {
 
   try {
     if (activeTab.value === 'sms') {
-      // SMS/LMS 발송
-      const smsData = {
-        message_type: smsForm.value.messageType as 'SMS' | 'LMS' | 'AUTO',
-        message: smsForm.value.message,
-        title: smsForm.value.messageType === 'LMS' ? '안내' : undefined,
-        sender_number: smsForm.value.senderNumber,
-        recipients: recipientsList.value,
-        company_id: smsForm.value.companyId || undefined,
-        scheduled_send: smsForm.value.scheduledSend,
-        schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
-        schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
-        use_v2_api: true,
-      }
+      // 변수 모드: 개별 메시지 생성
+      if (templateHasVariables.value && recipientsWithVariables.value.length > 0) {
+        // 각 수신자마다 개별 메시지 생성
+        const personalizedRecipients = recipientsWithVariables.value.map(item => ({
+          phone: item.phone,
+          message: replaceVariables(smsForm.value.message, item.variables),
+        }))
 
-      await notiStore.sendSMS(smsData)
+        // 개별 메시지 발송 (백엔드에서 지원하는 경우)
+        const smsData = {
+          message_type: smsForm.value.messageType as 'SMS' | 'LMS' | 'AUTO',
+          title: smsForm.value.messageType === 'LMS' ? '안내' : undefined,
+          sender_number: smsForm.value.senderNumber,
+          personalized_recipients: personalizedRecipients, // 개별 메시지 배열
+          company_id: smsForm.value.companyId || undefined,
+          scheduled_send: smsForm.value.scheduledSend,
+          schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
+          schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
+          use_v2_api: true,
+          is_personalized: true, // 개별 메시지 플래그
+        }
+
+        await notiStore.sendSMS(smsData as any)
+      } else {
+        // 일반 모드: 동일 메시지 발송
+        const smsData = {
+          message_type: smsForm.value.messageType as 'SMS' | 'LMS' | 'AUTO',
+          message: smsForm.value.message,
+          title: smsForm.value.messageType === 'LMS' ? '안내' : undefined,
+          sender_number: smsForm.value.senderNumber,
+          recipients: recipientsList.value,
+          company_id: smsForm.value.companyId || undefined,
+          scheduled_send: smsForm.value.scheduledSend,
+          schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
+          schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
+          use_v2_api: true,
+        }
+
+        await notiStore.sendSMS(smsData)
+      }
     } else {
       // 카카오 알림톡 발송
       await notiStore.sendKakao({
@@ -186,6 +228,8 @@ onBeforeMount(async () => {
                   v-model:message-count="messageCount"
                   @select-template="selectTemplate"
                   @preview-message="previewMessage"
+                  @update:has-variables="templateHasVariables = $event"
+                  @update:variable-names="templateVariableNames = $event"
                 />
               </CCol>
               <CCol>
@@ -193,6 +237,9 @@ onBeforeMount(async () => {
                 <SelectRecipient
                   v-model:recipient-input="recipientInput"
                   v-model:recipients-list="recipientsList"
+                  :has-template-variables="templateHasVariables"
+                  :variable-names="templateVariableNames"
+                  @update:recipients-with-variables="recipientsWithVariables = $event"
                 />
               </CCol>
             </CRow>

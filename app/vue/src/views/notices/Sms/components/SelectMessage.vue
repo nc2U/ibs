@@ -15,10 +15,28 @@ const messageCount = defineModel<number>('messageCount') as any
 const emit = defineEmits<{
   selectTemplate: []
   'update:messageCount': [value: number]
+  'update:hasVariables': [value: boolean]
+  'update:variableNames': [value: string[]]
 }>()
 
 // Store
 const notiStore = useNotice()
+
+// Variable extraction function
+const extractVariables = (content: string): string[] => {
+  const regex = /\{([^}]+)\}/g
+  const variables: string[] = []
+  let match
+
+  while ((match = regex.exec(content)) !== null) {
+    const varName = match[1].trim()
+    if (!variables.includes(varName)) {
+      variables.push(varName)
+    }
+  }
+
+  return variables
+}
 
 // Sender number management
 const senderNumberModal = ref()
@@ -76,7 +94,15 @@ const handleOpenTemplateModal = () => {
 
 const handleTemplateSelect = () => {
   nextTick(() => {
-    if (!selectedTemplate.value) return
+    if (!selectedTemplate.value) {
+      // 템플릿 선택 해제 시 (직접 입력 선택 시)
+      // 변수 상태 초기화
+      emit('update:hasVariables', false as any)
+      emit('update:variableNames', [] as any)
+      // 메시지 내용 초기화
+      smsForm.value.message = ''
+      return
+    }
 
     const template = notiStore.messageTemplates.find(
       t => t.id.toString() === selectedTemplate.value,
@@ -85,6 +111,14 @@ const handleTemplateSelect = () => {
     if (template) {
       smsForm.value.messageType = template.message_type
       smsForm.value.message = template.content
+
+      // 템플릿 내용에서 변수 추출
+      const variables = extractVariables(template.content)
+      const hasVariables = variables.length > 0
+
+      // 부모 컴포넌트에 변수 정보 전달
+      emit('update:hasVariables', hasVariables as any)
+      emit('update:variableNames', variables as any)
     }
   })
 }
