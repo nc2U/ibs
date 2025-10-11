@@ -99,6 +99,7 @@ const AppSidebarNav = defineComponent({
     CNavTitle,
   },
   setup() {
+    // Todo 페이지 새로고침 시 안정적으로 작동하도록 개선 요망
     const route = useRoute()
     const firstRender = ref(true)
 
