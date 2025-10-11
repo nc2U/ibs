@@ -156,13 +156,15 @@ defineExpose({ openModal, closeModal })
       <div class="mb-3">
         <CFormLabel>메시지 내용</CFormLabel>
         <CFormTextarea v-model="form.content" rows="6" placeholder="메시지 내용을 입력하세요..." />
-        <small class="text-grey"> 변수 사용 시: {이름}, {금액} 등의 형식으로 입력 가능 </small>
       </div>
     </CModalBody>
 
     <CModalFooter>
       <v-btn :color="btnLight" size="small" @click="closeModal" :disabled="submitting">
         취소
+      </v-btn>
+      <v-btn v-if="editingId" size="small" color="primary" @click="handleCancelEdit">
+        새 템플릿
       </v-btn>
       <v-btn
         :color="editingId ? 'success' : 'primary'"
@@ -179,20 +181,11 @@ defineExpose({ openModal, closeModal })
       <v-divider class="my-4" />
 
       <!-- 목록 헤더 -->
-      <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
         <h6 class="mb-0">
           <v-icon icon="mdi-format-list-bulleted" class="me-2" size="small" />
           등록된 템플릿 ({{ notiStore.messageTemplates.length }}개)
         </h6>
-        <v-btn
-          v-if="editingId"
-          size="small"
-          variant="outlined"
-          color="primary"
-          @click="handleCancelEdit"
-        >
-          새 템플릿 등록
-        </v-btn>
       </div>
 
       <!-- 템플릿 목록 -->
@@ -206,7 +199,7 @@ defineExpose({ openModal, closeModal })
             v-for="template in notiStore.messageTemplates"
             :key="template.id"
             :class="{ 'bg-primary-lighten-5': editingId === template.id }"
-            class="mb-2"
+            class="py-0"
           >
             <template #prepend>
               <v-chip size="small" :color="getTypeColor(template.message_type)" class="me-2">
