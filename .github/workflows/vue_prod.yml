@@ -229,15 +229,30 @@ jobs:
             if [ -L "dist" ]; then
               PREVIOUS_BUILD=$(readlink dist)
               echo "Previous build: $PREVIOUS_BUILD"
+            elif [ -d "dist" ]; then
+              echo "⚠️  WARNING: dist is a directory, not a symlink. Converting to symlink..."
+              PREVIOUS_BUILD=""
             fi
 
-            # 심볼릭 링크 원자적 교체
-            ln -sfn "$NEW_BUILD" dist.tmp
-            mv -Tf dist.tmp dist
+            # 심볼릭 링크 원자적 교체 (디렉터리도 처리)
+            ln -sfn "$NEW_BUILD" dist.new
+
+            # 기존 dist 백업 (롤백용)
+            if [ -e "dist" ] || [ -L "dist" ]; then
+              mv dist dist.backup
+            fi
+
+            # 새 심볼릭 링크를 dist로 이동
+            mv dist.new dist
 
             # 심볼릭 링크 검증
             if [ ! -L "dist" ]; then
               echo "❌ ERROR: Failed to create symlink!"
+              # 롤백
+              if [ -e "dist.backup" ]; then
+                mv dist.backup dist
+                echo "Rolled back to previous state"
+              fi
               exit 1
             fi
 
@@ -250,15 +265,21 @@ jobs:
             # 심볼릭 링크가 실제 디렉터리를 가리키는지 확인 (깨진 링크 방지)
             if [ ! -d "dist" ]; then
               echo "❌ ERROR: Symlink is broken! Rolling back..."
-              if [ -n "$PREVIOUS_BUILD" ] && [ -d "$PREVIOUS_BUILD" ]; then
-                ln -sfn "$PREVIOUS_BUILD" dist.tmp
-                mv -Tf dist.tmp dist
+              rm -f dist
+              if [ -e "dist.backup" ]; then
+                mv dist.backup dist
+                echo "Rolled back to previous state"
+              elif [ -n "$PREVIOUS_BUILD" ] && [ -d "$PREVIOUS_BUILD" ]; then
+                ln -sfn "$PREVIOUS_BUILD" dist
                 echo "Rolled back to: $PREVIOUS_BUILD"
               fi
               exit 1
             fi
 
             echo "✅ Symlink verified: dist -> $CURRENT_LINK"
+
+            # 백업 제거 (성공 시)
+            rm -rf dist.backup
 
             # 안전한 구 빌드 정리 (최근 3개 유지로 증가)
             echo ""
