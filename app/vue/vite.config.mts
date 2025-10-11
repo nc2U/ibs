@@ -41,8 +41,13 @@ export default defineConfig({
               return 'vendor-calendar'
             }
 
+            // Markdown editor (separate due to initialization issues)
+            if (id.includes('md-editor-v3')) {
+              return 'vendor-md-editor'
+            }
+
             // Rich text editors
-            if (id.includes('quill') || id.includes('markdown') || id.includes('highlight.js')) {
+            if (id.includes('quill') || id.includes('highlight.js')) {
               return 'vendor-editors'
             }
 
@@ -104,6 +109,13 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
     extensions: ['.js', '.json', '.jsx', '.mjs', '.ts', '.mts', '.tsx', '.vue'],
+  },
+  optimizeDeps: {
+    include: [
+      'md-editor-v3',
+      'highlight.js',
+    ],
+    exclude: [],
   },
   server: {
     proxy: {
