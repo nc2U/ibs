@@ -114,7 +114,7 @@ const formatDate = (dateStr: string) => {
 
           <!-- 데이터 없음 -->
           <CTableRow v-else-if="historyList.length === 0">
-            <CTableDataCell colspan="7" class="text-center py-5">
+            <CTableDataCell colspan="8" class="text-center py-5">
               <div class="text-medium-emphasis">조회된 내역이 없습니다.</div>
             </CTableDataCell>
           </CTableRow>
