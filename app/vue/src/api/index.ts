@@ -28,12 +28,27 @@ api.interceptors.request.use(
 
 // 응답 인터셉터
 api.interceptors.response.use(
-  response => {
+  async response => {
     close() // 정상 응답 시 진행바 닫기
+
+    // validateStatus 때문에 401이 success로 처리되므로 여기서 체크
+    if (response.status === 401) {
+      const redirectPath = Cookies.get('redirectPath') || '/'
+      // 로그인 페이지로 리다이렉트
+      await router.push({
+        name: 'Login',
+        query: { redirect: redirectPath },
+      })
+      // 401을 에러로 변환
+      return Promise.reject(new Error('Unauthorized'))
+    }
+
     return response
   },
   async error => {
     close() // 에러 발생 시 진행바 닫기
+
+    // 500 이상 에러 처리 (validateStatus 설정으로 여기까지 오는 경우)
     if (error.response && error.response.status === 401) {
       const redirectPath = Cookies.get('redirectPath') || '/'
       // 로그인 페이지로 리다이렉트
