@@ -28,9 +28,7 @@ const isSending = ref(false)
 // 템플릿 변수 관련 상태
 const templateHasVariables = ref(false)
 const templateVariableNames = ref<string[]>([])
-const recipientsWithVariables = ref<Array<{ phone: string; variables: Record<string, string> }>>(
-  [],
-)
+const recipientsWithVariables = ref<Array<{ phone: string; variables: Record<string, string> }>>([])
 
 // 회사 정보
 const company = inject<ComputedRef<Company | null>>('company')
@@ -219,7 +217,7 @@ onBeforeMount(async () => {
           <!-- 발송 탭 내용 -->
           <CCol v-show="mainTab === 'send'">
             <CRow>
-              <CCol>
+              <CCol sm="6">
                 <!-- 메시지 작성 섹션 (탭으로 구분) -->
                 <SelectMessage
                   v-model:active-tab="activeTab"
@@ -232,7 +230,7 @@ onBeforeMount(async () => {
                   @update:variable-names="templateVariableNames = $event"
                 />
               </CCol>
-              <CCol>
+              <CCol sm="6">
                 <!-- 수신자 관리 섹션 (고정) -->
                 <SelectRecipient
                   v-model:recipient-input="recipientInput"
@@ -245,7 +243,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow>
-              <CCol>
+              <CCol sm="6">
                 <!-- 발송 설정 및 실행 -->
                 <SendMessage
                   :active-tab="activeTab"
@@ -258,7 +256,7 @@ onBeforeMount(async () => {
                 />
               </CCol>
 
-              <CCol>
+              <CCol sm="6">
                 <!-- 잔액 확인 -->
                 <BalanceCard
                   :balance="balance"

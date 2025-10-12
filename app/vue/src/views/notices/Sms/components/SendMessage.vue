@@ -23,7 +23,7 @@ const handleSendMessage = () => emit('sendMessage')
 </script>
 
 <template>
-  <CCard>
+  <CCard class="mb-4">
     <CCardHeader style="height: 48px; padding-top: 12px">
       <v-icon icon="mdi-send" class="me-2" />
       <strong>발송 설정 및 실행</strong>
