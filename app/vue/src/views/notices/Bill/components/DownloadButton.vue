@@ -48,12 +48,12 @@ const printBill = () => {
 <template>
   <CAlert :color="AlertSecondary" class="pb-2">
     <CRow class="p-0 m-0">
-      <CCol>
+      <CCol sm="6">
         <v-btn color="primary" :disabled="!contracts.length" @click="printBill">
           선택 건별 고지서 내려받기
         </v-btn>
       </CCol>
-      <CCol class="text-right">
+      <CCol sm="6" class="text-right">
         <v-checkbox-btn v-model="noPrice" color="success" label="가격정보 미표시" inline />
         <v-checkbox-btn v-model="noLate" color="success" label="연체정보 미표시" inline disabled />
       </CCol>
