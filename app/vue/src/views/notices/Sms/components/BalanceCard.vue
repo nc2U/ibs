@@ -61,7 +61,7 @@ const isLowBalance = computed(() => props.balance < 10000)
     <CCollapse :visible="visible">
       <CCardBody>
         <CRow class="align-items-center">
-          <CCol xl="5" class="mb-2">
+          <CCol xl="4" class="mb-2">
             <div class="d-flex align-items-center">
               <div class="me-3">
                 <CIcon name="cilWallet" size="xl" />
@@ -81,22 +81,22 @@ const isLowBalance = computed(() => props.balance < 10000)
               </div>
             </div>
           </CCol>
-          <CCol xl="5" class="d-none d-xl-block">
-            <v-alert color="info" variant="tonal">
-              ■ 요금 충전 및 관련 정보:<br />https://console.iwinv.kr/msg/plan<br />
-              ※ 자동 충전 카드 등록 중
-            </v-alert>
-          </CCol>
           <CCol xl="2" class="text-end">
-            <CButton
+            <v-btn
               color="primary"
-              variant="outline"
-              size="sm"
+              variant="outlined"
+              size="small"
               @click.stop="handleRefresh"
               :disabled="loading"
             >
               새로고침
-            </CButton>
+            </v-btn>
+          </CCol>
+          <CCol xl="6" class="d-none d-xl-block">
+            <v-alert color="secondary" variant="tonal">
+              ■ 요금 충전 및 관련 정보:<br />https://console.iwinv.kr/msg/plan<br />
+              ※ 자동 충전 카드 등록 중
+            </v-alert>
           </CCol>
         </CRow>
       </CCardBody>
