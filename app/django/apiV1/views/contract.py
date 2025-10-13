@@ -443,9 +443,9 @@ class ContractorViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('contract__project', 'gender', 'qualification', 'status', 'is_active')
     search_fields = ('name', 'note', 'contract__serial_number', 'contract__succession__seller__name',
-                     'contractoraddress__id_address1', 'contractoraddress__id_address2',
-                     'contractoraddress__id_address3', 'contractoraddress__dm_address1',
-                     'contractoraddress__dm_address2', 'contractoraddress__dm_address3',
+                     'addresses__id_address1', 'addresses__id_address2',
+                     'addresses__id_address3', 'addresses__dm_address1',
+                     'addresses__dm_address2', 'addresses__dm_address3',
                      'contractorcontact__cell_phone', 'contractorcontact__home_phone',
                      'contractorcontact__other_phone', 'contractorcontact__email')
 
