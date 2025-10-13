@@ -201,7 +201,7 @@ watch(
               :options="[
                 { value: 'SMS', label: 'SMS (90자 이내)' },
                 { value: 'LMS', label: 'LMS (장문메시지)' },
-                { value: 'MMS', label: 'MMS (멀티미디어)' },
+                // { value: 'MMS', label: 'MMS (멀티미디어)' },
               ]"
               class="mb-3"
             />

@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
+import { CAlert } from '@coreui/vue'
 
 // Props
 interface Props {
@@ -60,7 +61,7 @@ const isLowBalance = computed(() => props.balance < 10000)
     <CCollapse :visible="visible">
       <CCardBody>
         <CRow class="align-items-center">
-          <CCol :md="8">
+          <CCol xl="5" class="mb-2">
             <div class="d-flex align-items-center">
               <div class="me-3">
                 <CIcon name="cilWallet" size="xl" />
@@ -80,7 +81,13 @@ const isLowBalance = computed(() => props.balance < 10000)
               </div>
             </div>
           </CCol>
-          <CCol :md="4" class="text-end">
+          <CCol xl="5" class="d-none d-xl-block">
+            <v-alert color="info" variant="tonal">
+              ■ 요금 충전 및 관련 정보:<br />https://console.iwinv.kr/msg/plan<br />
+              ※ 자동 충전 카드 등록 중
+            </v-alert>
+          </CCol>
+          <CCol xl="2" class="text-end">
             <CButton
               color="primary"
               variant="outline"
@@ -88,7 +95,6 @@ const isLowBalance = computed(() => props.balance < 10000)
               @click.stop="handleRefresh"
               :disabled="loading"
             >
-              <CIcon name="cilReload" class="me-1" />
               새로고침
             </CButton>
           </CCol>
