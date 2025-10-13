@@ -190,8 +190,8 @@ const notice = {
       name: 'SMS 발송 관리',
       to: '/notices/sms',
       badge: {
-        color: 'warning',
-        text: 'ing..',
+        color: 'info',
+        text: 'new',
       },
     },
     // {
