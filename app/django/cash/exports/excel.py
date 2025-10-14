@@ -8,10 +8,9 @@ import io
 
 import xlsxwriter
 import xlwt
-from django.db.models import Q, Sum, When, F, PositiveBigIntegerField
+from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 from django.views.generic import View
-from sqlparse.sql import Case
 
 from cash.models import CashBook, ProjectCashBook
 from company.models import Company
