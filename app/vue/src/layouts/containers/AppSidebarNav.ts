@@ -1,4 +1,14 @@
-import { type Component, computed, defineComponent, h, nextTick, reactive, resolveComponent, watch } from 'vue'
+import {
+  type Component,
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  reactive,
+  ref,
+  resolveComponent,
+  watch,
+} from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
@@ -7,7 +17,16 @@ import { CIcon } from '@coreui/icons-vue'
 import nav from '@/layouts/_nav'
 
 type Badge = { color?: string; text?: string }
-type Item = { badge?: Badge; component: string | Component; icon?: string; items?: Item[]; name?: string; to?: string; visible?: boolean; manuallyToggled?: boolean }
+type Item = {
+  badge?: Badge
+  component: string | Component
+  icon?: string
+  items?: Item[]
+  name?: string
+  to?: string
+  visible?: boolean
+  manuallyToggled?: boolean
+}
 
 const normalizePath = (path = '') =>
   decodeURI(path)
@@ -45,6 +64,7 @@ const AppSidebarNav = defineComponent({
   setup() {
     const route = useRoute()
     const userClickedSidebar = reactive({ value: false })
+    const sidebarKey = ref(0)
 
     // Pinia store
     const account = useAccount()
@@ -63,17 +83,21 @@ const AppSidebarNav = defineComponent({
       return list
     })
 
-    const reactiveNav = reactive(filterNavItems(Array.isArray(nav) ? (nav as Item[]) : [], predicates.value))
+    const reactiveNav = reactive(
+      filterNavItems(Array.isArray(nav) ? (nav as Item[]) : [], predicates.value),
+    )
 
     // ---------------------------
-    // 활성 메뉴 기준으로 부모 메뉴 자동 열기
-    // - manuallyToggled가 true이면 사용자가 직접 토글한 메뉴이므로 무시
+    // 활성 메뉴 기준으로 부모 메뉴 자동 열기/닫기
+    // - 활성 자식이 있으면 열고, 없으면 닫음
+    // - 라우트 변경 시 manuallyToggled를 리셋하여 항상 현재 라우트 기준으로 동작
     // ---------------------------
     const openActiveMenu = (items: Item[]) => {
       items.forEach(item => {
         if (Array.isArray(item.items) && item.items.length > 0) {
           const hasActiveChild = item.items.some(child => isActiveItem(route, child))
-          if (hasActiveChild && !item.manuallyToggled) item.visible = true
+          item.manuallyToggled = false
+          item.visible = hasActiveChild
           openActiveMenu(item.items)
         }
       })
@@ -87,7 +111,13 @@ const AppSidebarNav = defineComponent({
       if (item.icon) children.push(h(CIcon, { customClassName: 'nav-icon', name: item.icon }))
       if (item.name) children.push(item.name)
       if (item.badge)
-        children.push(h(CBadge, { class: 'ms-auto', color: item.badge.color }, () => item.badge && item.badge.text))
+        children.push(
+          h(
+            CBadge,
+            { class: 'ms-auto', color: item.badge.color },
+            () => item.badge && item.badge.text,
+          ),
+        )
       return children
     }
 
@@ -115,7 +145,10 @@ const AppSidebarNav = defineComponent({
           { to: item.to, custom: true },
           {
             default: (props: any) => {
-              const component = typeof item.component === 'string' ? resolveComponent(item.component) : item.component
+              const component =
+                typeof item.component === 'string'
+                  ? resolveComponent(item.component)
+                  : item.component
               return h(
                 component,
                 {
@@ -133,7 +166,8 @@ const AppSidebarNav = defineComponent({
         )
       }
 
-      const component = typeof item.component === 'string' ? resolveComponent(item.component) : item.component
+      const component =
+        typeof item.component === 'string' ? resolveComponent(item.component) : item.component
       return h(component, {}, () => renderContent(item))
     }
 
@@ -149,11 +183,18 @@ const AppSidebarNav = defineComponent({
         }
         await nextTick()
         openActiveMenu(reactiveNav)
+        // CSidebarNav 전체를 재생성하여 CNavGroup의 내부 상태 강제 동기화
+        sidebarKey.value++
       },
       { immediate: true },
     )
 
-    return () => h(CSidebarNav, {}, { default: () => reactiveNav.map((item: Item) => renderItem(item)) })
+    return () =>
+      h(
+        CSidebarNav,
+        { key: sidebarKey.value },
+        { default: () => reactiveNav.map((item: Item) => renderItem(item)) },
+      )
   },
 })
 
