@@ -207,7 +207,7 @@ onBeforeMount(async () => {
                   발송
                 </v-tab>
                 <v-tab :active="mainTab === 'history'" @click="mainTab = 'history'" variant="tonal">
-                  히스토리
+                  내역
                 </v-tab>
               </v-tabs>
             </CCol>
