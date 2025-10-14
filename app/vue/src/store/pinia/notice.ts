@@ -168,10 +168,16 @@ export const useNotice = defineStore('notice', () => {
       formData.append('message', payload.message)
       formData.append('title', payload.title || '')
       formData.append('sender_number', payload.sender_number)
-      formData.append('recipients', JSON.stringify(payload.recipients))
+
+      // recipients는 배열이므로 각각 개별적으로 append (DRF가 배열로 인식)
+      payload.recipients.forEach(phone => {
+        formData.append('recipients', phone)
+      })
+
       formData.append('image', payload.image)
       formData.append('scheduled_send', String(payload.scheduled_send || false))
 
+      if (payload.company_id) formData.append('company_id', payload.company_id)
       if (payload.schedule_date) formData.append('schedule_date', payload.schedule_date)
       if (payload.schedule_time) formData.append('schedule_time', payload.schedule_time)
       if (payload.use_v2_api !== undefined)
@@ -187,7 +193,7 @@ export const useNotice = defineStore('notice', () => {
 
       return response.data
     } catch (err: any) {
-      const errorMsg = err.response?.data?.message || '발송 중 오류가 발생했습니다.'
+      const errorMsg = err.response?.data?.detail || err.response?.data?.message || '발송 중 오류가 발생했습니다.'
       message('danger', '발송 실패', errorMsg)
       errorHandle(err.response?.data || { message: errorMsg })
       throw err

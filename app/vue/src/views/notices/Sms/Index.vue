@@ -30,6 +30,9 @@ const templateHasVariables = ref(false)
 const templateVariableNames = ref<string[]>([])
 const recipientsWithVariables = ref<Array<{ phone: string; variables: Record<string, string> }>>([])
 
+// MMS 이미지 첨부
+const attachedImages = ref<File[]>([])
+
 // 회사 정보
 const company = inject<ComputedRef<Company | null>>('company')
 
@@ -60,14 +63,22 @@ const currentForm = computed(() => {
 
 const isDisabled = computed(() => {
   if (activeTab.value === 'sms') {
-    return recipientsList.value.length === 0 || !smsForm.value.message
+    const basicValidation = recipientsList.value.length === 0 || !smsForm.value.message
+    // MMS 타입일 때는 이미지 첨부 필수
+    if (smsForm.value.messageType === 'MMS') {
+      return basicValidation || attachedImages.value.length === 0
+    }
+    return basicValidation
   } else {
     return recipientsList.value.length === 0 || !kakaoForm.value.templateId
   }
 })
 
 const buttonText = computed(() => {
-  const prefix = activeTab.value === 'sms' ? 'SMS' : '알림톡'
+  let prefix = '알림톡'
+  if (activeTab.value === 'sms') {
+    prefix = smsForm.value.messageType || 'SMS' // SMS, LMS, MMS 타입 표시
+  }
   return currentForm.value.scheduledSend ? '예약 등록' : `${prefix} 전송`
 })
 
@@ -102,8 +113,25 @@ const sendMessage = async () => {
 
   try {
     if (activeTab.value === 'sms') {
+      // MMS 타입이면서 이미지가 첨부된 경우
+      if (smsForm.value.messageType === 'MMS' && attachedImages.value.length > 0) {
+        const mmsData = {
+          message: smsForm.value.message,
+          title: '포토 메시지',
+          sender_number: smsForm.value.senderNumber,
+          recipients: recipientsList.value,
+          image: attachedImages.value[0], // 첫 번째 이미지
+          company_id: smsForm.value.companyId || undefined,
+          scheduled_send: smsForm.value.scheduledSend,
+          schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
+          schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
+          use_v2_api: true,
+        }
+
+        await notiStore.sendMMS(mmsData as any)
+      }
       // 변수 모드: 개별 메시지 생성
-      if (templateHasVariables.value && recipientsWithVariables.value.length > 0) {
+      else if (templateHasVariables.value && recipientsWithVariables.value.length > 0) {
         // 각 수신자마다 개별 메시지 생성
         const personalizedRecipients = recipientsWithVariables.value.map(item => ({
           phone: item.phone,
@@ -228,6 +256,7 @@ onBeforeMount(async () => {
                   @preview-message="previewMessage"
                   @update:has-variables="templateHasVariables = $event"
                   @update:variable-names="templateVariableNames = $event"
+                  @update:attached-images="attachedImages = $event"
                 />
               </CCol>
               <CCol sm="6">
