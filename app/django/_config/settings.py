@@ -361,13 +361,6 @@ SLACK_NOTIFICATIONS_ENABLED = config('SLACK_NOTIFICATIONS_ENABLED', default=True
 IWINV_API_KEY = config('IWINV_API_KEY', default='')
 IWINV_AUTH_KEY = config('IWINV_AUTH_KEY', default='')
 
-# 등록된 발신번호 목록 (iwinv 관리자 페이지에서 사전 등록 필요)
-IWINV_REGISTERED_SENDER_NUMBERS = config(
-    'IWINV_REGISTERED_SENDER_NUMBERS',
-    default='02-1234-5678,031-1234-5678',
-    cast=Csv()
-)
-
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -379,7 +372,7 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "DEBUG",
+        "level": "INFO",
     },
     "loggers": {
         "django": {
