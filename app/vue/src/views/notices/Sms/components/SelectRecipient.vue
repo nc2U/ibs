@@ -5,7 +5,6 @@ import { useNotice } from '@/store/pinia/notice'
 import { useProject } from '@/store/pinia/project'
 import type { Project } from '@/store/types/project.ts'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import { CCard, CCol } from '@coreui/vue'
 
 // Props 정의
 const recipientInput = defineModel<string>('recipient-input')
