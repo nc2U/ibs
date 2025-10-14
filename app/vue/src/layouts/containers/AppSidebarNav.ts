@@ -1,4 +1,13 @@
-import { type Component, computed, defineComponent, h, onMounted, ref, resolveComponent } from 'vue'
+import {
+  type Component,
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onMounted,
+  ref,
+  resolveComponent,
+} from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
@@ -103,7 +112,8 @@ const AppSidebarNav = defineComponent({
     const route = useRoute()
     const firstRender = ref(true)
 
-    onMounted(() => {
+    onMounted(async () => {
+      await nextTick()
       firstRender.value = false
     })
 
