@@ -127,20 +127,17 @@ const headerKey = ref(0)
 
 // company 변경을 감지하여 자동으로 데이터 다시 로드
 const isInitializing = ref(true)
-watch(company, async (newCompany, oldCompany) => {
-  console.log('Company watch triggered - old:', oldCompany, 'new:', newCompany, 'initializing:', isInitializing.value)
-  
-  // 초기화 중이거나 URL에서 회사 변경 중인 경우 무시
-  if (isInitializing.value) {
-    console.log('Skipping watch during initialization')
-    return
-  }
-  
-  if (newCompany && newCompany !== oldCompany && oldCompany !== undefined) {
-    console.log('Company changed, reloading data for company:', newCompany)
-    await dataSetup(newCompany, route.params?.docsId)
-  }
-}, { immediate: false })
+watch(
+  company,
+  async (newCompany, oldCompany) => {
+    // 초기화 중이거나 URL에서 회사 변경 중인 경우 무시
+    if (isInitializing.value) return
+
+    if (newCompany && newCompany !== oldCompany && oldCompany !== undefined)
+      await dataSetup(newCompany, route.params?.docsId)
+  },
+  { immediate: false },
+)
 
 const docsRenewal = (page: number) => {
   docsFilter.value.page = page
@@ -216,42 +213,23 @@ const fileHit = async (pk: number) => {
 }
 
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
-  console.log('dataSetup called with pk:', pk, 'current company.value:', company.value)
   docsFilter.value.company = pk
-  
+
   // workStore.fetchAllIssueProjectList가 회사를 변경하므로 현재 회사 저장
   const targetCompany = pk
-  
-  console.log('Before workStore.fetchAllIssueProjectList, company.value:', company.value)
   await workStore.fetchAllIssueProjectList(pk, '2', '')
-  console.log('After workStore.fetchAllIssueProjectList, company.value:', company.value)
-  
+
   // workStore 함수가 회사를 변경했다면 다시 원래 회사로 복원
   if (company.value !== targetCompany) {
-    console.log(`Company was changed to ${company.value}, restoring to ${targetCompany}`)
     Cookies.set('curr-company', `${targetCompany}`)
     await comStore.fetchCompany(targetCompany)
-    console.log('Company restored to:', company.value)
   }
-  
-  console.log('Before fetchDocTypeList, company.value:', company.value)
+
   await fetchDocTypeList()
-  console.log('After fetchDocTypeList, company.value:', company.value)
-  
-  console.log('Before fetchCategoryList, company.value:', company.value)
   await fetchCategoryList(typeNumber.value)
-  console.log('After fetchCategoryList, company.value:', company.value)
-  
-  console.log('Before fetchDocsList, company.value:', company.value)
   await fetchDocsList(docsFilter.value)
-  console.log('After fetchDocsList, company.value:', company.value)
-  
-  if (docsId) {
-    console.log('Before fetchDocs, company.value:', company.value)
-    await fetchDocs(Number(docsId))
-    console.log('After fetchDocs, company.value:', company.value)
-  }
-  console.log('dataSetup completed, final company.value:', company.value)
+
+  if (docsId) await fetchDocs(Number(docsId))
 }
 
 const dataReset = () => {
@@ -295,11 +273,11 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
 
   if (!!target) {
     console.log('Before fetchCompany - target:', target)
-    
+
     // 쿠키 설정 (ContentHeader와 동일한 방식)
     Cookies.set('curr-company', `${target}`)
     console.log('Cookie set to:', target)
-    
+
     // 회사 변경
     await comStore.fetchCompany(target)
     console.log('fetchCompany completed')
@@ -310,7 +288,7 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
       console.log('Normal selection - navigating to list')
       await router.replace({ name: '본사 일반 문서' })
     }
-    
+
     // 초기화 중이거나 watch가 비활성화된 경우 직접 데이터 로딩
     if (isInitializing.value) {
       console.log('Loading data directly during initialization')
@@ -336,7 +314,9 @@ onBeforeRouteUpdate(async to => {
   console.log('Parsed toCompanyId:', toCompanyId)
 
   if (toCompanyId && toCompanyId !== company.value) {
-    console.log(`Route update - switching to company ${toCompanyId} from URL parameter (current: ${company.value})`)
+    console.log(
+      `Route update - switching to company ${toCompanyId} from URL parameter (current: ${company.value})`,
+    )
     await comSelect(toCompanyId, true)
   } else {
     console.log('No company change needed, calling dataSetup')
@@ -349,7 +329,7 @@ onBeforeMount(async () => {
   // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
   let companyId = company.value ?? comStore.initComId
   console.log('onBeforeMount - Current company:', companyId, 'URL company:', urlCompanyId.value)
-  
+
   if (urlCompanyId.value) {
     console.log(`Switching to company ${urlCompanyId.value} from URL parameter`)
     // 회사 전환 (query string 정리 건너뛰기) 및 문서 로드
@@ -384,75 +364,75 @@ onBeforeRouteLeave(() => {
     />
 
     <ContentBody>
-    <CCardBody class="pb-5">
-      <div v-if="route.name === `${mainViewName}`" class="pt-3">
-        <ListController
-          ref="fController"
-          :com-from="true"
-          :projects="getAllProjPks"
-          :docs-filter="docsFilter"
-          @list-filter="listFiltering"
-        />
+      <CCardBody class="pb-5">
+        <div v-if="route.name === `${mainViewName}`" class="pt-3">
+          <ListController
+            ref="fController"
+            :com-from="true"
+            :projects="getAllProjPks"
+            :docs-filter="docsFilter"
+            @list-filter="listFiltering"
+          />
 
-        <CategoryTabs
-          :category="docsFilter.category as number"
-          :category-list="categoryList"
-          @select-cate="selectCate"
-        />
+          <CategoryTabs
+            :category="docsFilter.category as number"
+            :category-list="categoryList"
+            @select-cate="selectCate"
+          />
 
-        <DocsList
-          :company="company as number"
-          :limit="docsFilter.limit || 10"
-          :page="docsFilter.page"
-          :docs-list="docsList"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @page-select="pageSelect"
-        />
-      </div>
+          <DocsList
+            :company="company as number"
+            :limit="docsFilter.limit || 10"
+            :page="docsFilter.page"
+            :docs-list="docsList"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @page-select="pageSelect"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('보기')">
-        <DocsView
-          :type-num="typeNumber"
-          :heated-page="heatedPage"
-          :re-order="docsFilter.ordering !== '-created'"
-          :category="docsFilter.category as number"
-          :docs="docs as Docs"
-          :view-route="mainViewName"
-          :curr-page="docsFilter.page ?? 1"
-          :write-auth="writeAuth"
-          :docs-filter="docsFilter"
-          @docs-hit="docsHit"
-          @link-hit="linkHit"
-          @file-hit="fileHit"
-          @docs-scrape="docsScrape"
-          @docs-renewal="docsRenewal"
-        />
-      </div>
+        <div v-else-if="route.name.includes('보기')">
+          <DocsView
+            :type-num="typeNumber"
+            :heated-page="heatedPage"
+            :re-order="docsFilter.ordering !== '-created'"
+            :category="docsFilter.category as number"
+            :docs="docs as Docs"
+            :view-route="mainViewName"
+            :curr-page="docsFilter.page ?? 1"
+            :write-auth="writeAuth"
+            :docs-filter="docsFilter"
+            @docs-hit="docsHit"
+            @link-hit="linkHit"
+            @file-hit="fileHit"
+            @docs-scrape="docsScrape"
+            @docs-renewal="docsRenewal"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('작성')">
-        <DocsForm
-          :sort-name="formTitle"
-          :board-num="typeNumber"
-          :category-list="categoryList"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @on-submit="onSubmit"
-        />
-      </div>
+        <div v-else-if="route.name.includes('작성')">
+          <DocsForm
+            :sort-name="formTitle"
+            :board-num="typeNumber"
+            :category-list="categoryList"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @on-submit="onSubmit"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('수정')">
-        <DocsForm
-          :sort-name="formTitle"
-          :type-num="typeNumber"
-          :category-list="categoryList"
-          :docs="docs as Docs"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @on-submit="onSubmit"
-        />
-      </div>
-    </CCardBody>
-  </ContentBody>
+        <div v-else-if="route.name.includes('수정')">
+          <DocsForm
+            :sort-name="formTitle"
+            :type-num="typeNumber"
+            :category-list="categoryList"
+            :docs="docs as Docs"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @on-submit="onSubmit"
+          />
+        </div>
+      </CCardBody>
+    </ContentBody>
   </ComDocsAuthGuard>
 </template>

@@ -128,25 +128,20 @@ const headerKey = ref(0)
 
 // company 변경을 감지하여 자동으로 데이터 다시 로드
 const isInitializing = ref(true)
-watch(company, async (newCompany, oldCompany) => {
-  console.log('LawsuitCase Company watch triggered - old:', oldCompany, 'new:', newCompany, 'initializing:', isInitializing.value)
-  
-  // 초기화 중이거나 URL에서 회사 변경 중인 경우 무시
-  if (isInitializing.value) {
-    console.log('Skipping watch during initialization')
-    return
-  }
-  
-  if (newCompany && newCompany !== oldCompany && oldCompany !== undefined) {
-    console.log('Company changed, reloading data for company:', newCompany)
-    await dataSetup(newCompany, route.params?.caseId)
-  }
-}, { immediate: false })
+watch(
+  company,
+  async (newCompany, oldCompany) => {
+    // 초기화 중이거나 URL에서 회사 변경 중인 경우 무시
+    if (isInitializing.value) return
+
+    if (newCompany && newCompany !== oldCompany && oldCompany !== undefined)
+      await dataSetup(newCompany, route.params?.caseId)
+  },
+  { immediate: false },
+)
 
 const onSubmit = (payload: SuitCase) => {
   if (!!company.value) {
-    console.log(payload)
-
     if (payload.pk) {
       updateSuitCase(payload)
       router.replace({
@@ -184,28 +179,22 @@ const relatedFilter = (related: number) => {
 }
 
 const dataSetup = async (pk: number, caseId?: string | string[]) => {
-  console.log('LawsuitCase dataSetup called with pk:', pk, 'current company.value:', company.value)
   caseFilter.value.company = pk
-  
+
   // workStore.fetchAllIssueProjectList가 회사를 변경하므로 현재 회사 저장
   const targetCompany = pk
-  
-  console.log('Before workStore.fetchAllIssueProjectList, company.value:', company.value)
+
   await workStore.fetchAllIssueProjectList(pk, '2', '')
-  console.log('After workStore.fetchAllIssueProjectList, company.value:', company.value)
-  
+
   // workStore 함수가 회사를 변경했다면 다시 원래 회사로 복원
   if (company.value !== targetCompany) {
-    console.log(`Company was changed to ${company.value}, restoring to ${targetCompany}`)
     Cookies.set('curr-company', `${targetCompany}`)
     await comStore.fetchCompany(targetCompany)
-    console.log('Company restored to:', company.value)
   }
-  
+
   await fetchAllSuitCaseList({ company: pk, is_real_dev: 'false' })
   await fetchSuitCaseList(caseFilter.value)
   if (caseId) await fetchSuitCase(Number(caseId))
-  console.log('LawsuitCase dataSetup completed, final company.value:', company.value)
 }
 
 const dataReset = () => {
@@ -233,40 +222,29 @@ const clearQueryString = () => {
 }
 
 const comSelect = async (target: number | null, skipClearQuery = false) => {
-  console.log('LawsuitCase comSelect called with target:', target, 'skipClearQuery:', skipClearQuery, 'current route:', route.name)
-  
   // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
   if (!skipClearQuery) clearQueryString()
 
   if (fController.value) fController.value.resetForm(false)
 
   if (!!target) {
-    console.log('Before fetchCompany - target:', target)
-    
     // 쿠키 설정 (ContentHeader와 동일한 방식)
     Cookies.set('curr-company', `${target}`)
-    console.log('Cookie set to:', target)
-    
+
     // 회사 변경
     await comStore.fetchCompany(target)
-    console.log('fetchCompany completed')
 
     // 슬랙 링크 진입 시 보기 화면에서 목록으로 이동하지 않음
     const isSlackEntry = skipClearQuery && route.name?.includes('보기')
     if (!isSlackEntry && route.name?.includes('보기')) {
-      console.log('Normal selection - navigating to list')
       await router.replace({ name: '본사 소송 사건' })
     }
-    
+
     // 초기화 중이거나 watch가 비활성화된 경우 직접 데이터 로딩
     if (isInitializing.value) {
-      console.log('Loading data directly during initialization')
       await dataSetup(target, route.params?.caseId)
       // ContentHeader 강제 리렌더링으로 CompanySelect 업데이트
       headerKey.value++
-      console.log('ContentHeader re-rendered with key:', headerKey.value)
-    } else {
-      console.log('comSelect completed, watch will handle data loading')
     }
   } else {
     dataReset()
@@ -280,35 +258,24 @@ const caseRenewal = (page: number) => {
 }
 
 onBeforeRouteUpdate(async to => {
-  console.log('LawsuitCase onBeforeRouteUpdate called with to.query.company:', to.query.company)
-  
   // URL에서 회사 ID 파라미터 확인
   const toCompanyId = to.query.company ? parseInt(to.query.company as string, 10) : null
-  
-  if (toCompanyId && toCompanyId !== company.value) {
-    console.log(`Route update - switching to company ${toCompanyId} from URL parameter`)
-    await comSelect(toCompanyId, true)
-  } else {
-    await dataSetup(company.value || comStore.initComId, to.params?.caseId)
-  }
+
+  if (toCompanyId && toCompanyId !== company.value) await comSelect(toCompanyId, true)
+  else await dataSetup(company.value || comStore.initComId, to.params?.caseId)
 })
 
 const loading = ref(true)
 onBeforeMount(async () => {
   // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
   let companyId = company.value || comStore.initComId
-  console.log('LawsuitCase onBeforeMount - Current company:', companyId, 'URL company:', urlCompanyId.value)
-  
-  if (urlCompanyId.value) {
-    console.log(`Switching to company ${urlCompanyId.value} from URL parameter`)
+
+  if (urlCompanyId.value)
     // 회사 전환 (query string 정리 건너뛰기) 및 사건 로드
     await comSelect(urlCompanyId.value, true)
-    // comSelect에서 데이터까지 로딩하므로 추가 작업 불필요
-    console.log('After comSelect - company change completed')
-  } else {
+  else
     // URL에 회사 파라미터가 없는 경우에만 일반 데이터 설정
     await dataSetup(companyId, route.params?.caseId)
-  }
 
   // 초기화 완료 후 watch 활성화
   isInitializing.value = false
@@ -333,66 +300,66 @@ onBeforeRouteLeave(() => {
     />
 
     <ContentBody>
-    <CCardBody class="pb-5">
-      <div v-if="route.name === `${mainViewName}`" class="pt-3">
-        <ListController
-          ref="fController"
-          :com-from="true"
-          :projects="getAllProjPks"
-          :case-filter="caseFilter"
-          @list-filter="listFiltering"
-        />
+      <CCardBody class="pb-5">
+        <div v-if="route.name === `${mainViewName}`" class="pt-3">
+          <ListController
+            ref="fController"
+            :com-from="true"
+            :projects="getAllProjPks"
+            :case-filter="caseFilter"
+            @list-filter="listFiltering"
+          />
 
-        <TableTitleRow title="본사 소송 사건 목록" excel :url="excelUrl" :disabled="!company" />
+          <TableTitleRow title="본사 소송 사건 목록" excel :url="excelUrl" :disabled="!company" />
 
-        <CaseList
-          :company="company || undefined"
-          :limit="caseFilter.limit || 10"
-          :page="caseFilter.page || 1"
-          :case-list="suitcaseList"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @page-select="pageSelect"
-          @agency-filter="agencyFilter"
-          @agency-search="agencySearch"
-          @related-filter="relatedFilter"
-        />
-      </div>
+          <CaseList
+            :company="company || undefined"
+            :limit="caseFilter.limit || 10"
+            :page="caseFilter.page || 1"
+            :case-list="suitcaseList"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @page-select="pageSelect"
+            @agency-filter="agencyFilter"
+            @agency-search="agencySearch"
+            @related-filter="relatedFilter"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('보기')">
-        <CaseView
-          :curr-page="caseFilter.page ?? 1"
-          :suitcase="suitcase as SuitCase"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @link-hit="linkHit"
-          @file-hit="fileHit"
-          @case-renewal="caseRenewal"
-        />
-      </div>
+        <div v-else-if="route.name.includes('보기')">
+          <CaseView
+            :curr-page="caseFilter.page ?? 1"
+            :suitcase="suitcase as SuitCase"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @link-hit="linkHit"
+            @file-hit="fileHit"
+            @case-renewal="caseRenewal"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('작성')">
-        <CaseForm
-          :sort-name="formTitle"
-          :get-suit-case="getSuitCase"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @on-submit="onSubmit"
-        />
-      </div>
+        <div v-else-if="route.name.includes('작성')">
+          <CaseForm
+            :sort-name="formTitle"
+            :get-suit-case="getSuitCase"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @on-submit="onSubmit"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('수정')">
-        <CaseForm
-          :sort-name="formTitle"
-          :get-suit-case="getSuitCase"
-          :suitcase="suitcase"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @on-submit="onSubmit"
-          @on-delete="onDelete"
-        />
-      </div>
-    </CCardBody>
-  </ContentBody>
+        <div v-else-if="route.name.includes('수정')">
+          <CaseForm
+            :sort-name="formTitle"
+            :get-suit-case="getSuitCase"
+            :suitcase="suitcase"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @on-submit="onSubmit"
+            @on-delete="onDelete"
+          />
+        </div>
+      </CCardBody>
+    </ContentBody>
   </ComDocsAuthGuard>
 </template>
