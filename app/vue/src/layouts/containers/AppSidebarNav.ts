@@ -1,30 +1,20 @@
-import { type Component, computed, defineComponent, h, onMounted, ref, resolveComponent, reactive } from 'vue'
+import { type Component, computed, defineComponent, h, nextTick, reactive, resolveComponent, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
 import { CBadge, CNavGroup, CNavItem, CNavTitle, CSidebarNav } from '@coreui/vue'
 import { CIcon } from '@coreui/icons-vue'
-
 import nav from '@/layouts/_nav'
 
-/* ---------------------------
-   Types
---------------------------- */
 type Badge = { color?: string; text?: string }
-export type Item = { badge?: Badge; component: string | Component; icon?: string; items?: Item[]; name?: string; to?: string; visible?: boolean; manuallyToggled?: boolean }
+type Item = { badge?: Badge; component: string | Component; icon?: string; items?: Item[]; name?: string; to?: string; visible?: boolean; manuallyToggled?: boolean }
 
-/* ---------------------------
-   normalizePath
---------------------------- */
-export const normalizePath = (path = '') =>
+const normalizePath = (path = '') =>
   decodeURI(path)
     .replace(/#.*$/, '')
     .replace(/(index)?\.(html)$/, '')
 
-/* ---------------------------
-   isActiveItem
---------------------------- */
-export const isActiveLink = (route: RouteLocationNormalized, link?: string) => {
+const isActiveLink = (route: RouteLocationNormalized, link?: string) => {
   if (!link) return false
   if (route.hash && route.hash === link) return true
   const currentPath = normalizePath(route.path || '')
@@ -32,17 +22,13 @@ export const isActiveLink = (route: RouteLocationNormalized, link?: string) => {
   return currentPath === targetPath || currentPath.startsWith(targetPath + '/')
 }
 
-export const isActiveItem = (route: RouteLocationNormalized, item: Item): boolean => {
+const isActiveItem = (route: RouteLocationNormalized, item: Item): boolean => {
   if (item.to && isActiveLink(route, item.to)) return true
-  if (Array.isArray(item.items) && item.items.length > 0) return item.items.some(child => isActiveItem(route, child))
+  if (Array.isArray(item.items)) return item.items.some(child => isActiveItem(route, child))
   const metaTitle = (route.meta && (route.meta.title as string | undefined)) || undefined
-  if (item.name && metaTitle) return item.name === metaTitle
-  return false
+  return !!(item.name && metaTitle && item.name === metaTitle)
 }
 
-/* ---------------------------
-   filterNavItems
---------------------------- */
 function filterNavItems(items: Item[], predicates: ((it: Item) => boolean)[]): Item[] {
   const passAllPredicates = (it: Item) => predicates.every(p => p(it))
   return items
@@ -50,29 +36,21 @@ function filterNavItems(items: Item[], predicates: ((it: Item) => boolean)[]): I
     .filter(it => passAllPredicates(it) || (Array.isArray(it.items) && it.items.length > 0))
 }
 
-/* ---------------------------
-   reactiveNav export
---------------------------- */
-export const reactiveNav = reactive(filterNavItems(nav as Item[], [])) // 기본 필터 없이 초기화
-
-/* ---------------------------
-   AppSidebarNav Component
---------------------------- */
+// ---------------------------
+// AppSidebarNav
+// ---------------------------
 const AppSidebarNav = defineComponent({
   name: 'AppSidebarNav',
   components: { CNavItem, CNavGroup, CNavTitle },
   setup() {
     const route = useRoute()
-    const firstRender = ref(true)
-
-    onMounted(() => {
-      firstRender.value = false
-    })
+    const userClickedSidebar = reactive({ value: false })
 
     // Pinia store
     const account = useAccount()
     const { workManager, isStaff, isComCash } = storeToRefs(account)
 
+    // 필터링 규칙
     const predicates = computed(() => {
       const list: ((it: Item) => boolean)[] = []
       if (!workManager.value) list.push(it => (it.name || '') !== '설 정 관 리')
@@ -85,45 +63,98 @@ const AppSidebarNav = defineComponent({
       return list
     })
 
-    const filteredNav = computed(() => filterNavItems(reactiveNav, predicates.value))
+    const reactiveNav = reactive(filterNavItems(Array.isArray(nav) ? (nav as Item[]) : [], predicates.value))
 
+    // ---------------------------
+    // 활성 메뉴 기준으로 부모 메뉴 자동 열기
+    // - manuallyToggled가 true이면 사용자가 직접 토글한 메뉴이므로 무시
+    // ---------------------------
+    const openActiveMenu = (items: Item[]) => {
+      items.forEach(item => {
+        if (Array.isArray(item.items) && item.items.length > 0) {
+          const hasActiveChild = item.items.some(child => isActiveItem(route, child))
+          if (hasActiveChild && !item.manuallyToggled) item.visible = true
+          openActiveMenu(item.items)
+        }
+      })
+    }
+
+    // ---------------------------
+    // render helpers
+    // ---------------------------
     const renderContent = (item: Item) => {
       const children: any[] = []
       if (item.icon) children.push(h(CIcon, { customClassName: 'nav-icon', name: item.icon }))
       if (item.name) children.push(item.name)
-      if (item.badge) children.push(h(CBadge, { class: 'ms-auto', color: item.badge.color }, () => item.badge && item.badge.text))
+      if (item.badge)
+        children.push(h(CBadge, { class: 'ms-auto', color: item.badge.color }, () => item.badge && item.badge.text))
       return children
     }
 
     const renderItem = (item: Item) => {
       if (Array.isArray(item.items) && item.items.length > 0) {
-        return h(CNavGroup,
+        return h(
+          CNavGroup,
           {
-            visible: firstRender.value ? item.items.some(child => isActiveItem(route, child)) : item.visible,
-            onUpdateVisible: (val: boolean) => { item.visible = val; item.manuallyToggled = true }
+            visible: !!item.visible,
+            onToggle: (visible: boolean) => {
+              item.manuallyToggled = true
+              item.visible = visible
+            },
           },
           {
             togglerContent: () => renderContent(item),
             default: () => item.items && item.items.map(child => renderItem(child)),
-          }
+          },
         )
       }
 
       if (item.to) {
-        return h(RouterLink, { to: item.to, custom: true }, {
-          default: (props: any) => {
-            const component = typeof item.component === 'string' ? resolveComponent(item.component) : item.component
-            return h(component, { active: props.isActive, href: props.href, onClick: () => props.navigate() }, () => renderContent(item))
-          }
-        })
+        return h(
+          RouterLink,
+          { to: item.to, custom: true },
+          {
+            default: (props: any) => {
+              const component = typeof item.component === 'string' ? resolveComponent(item.component) : item.component
+              return h(
+                component,
+                {
+                  active: props.isActive,
+                  href: props.href,
+                  onClick: () => {
+                    userClickedSidebar.value = true
+                    props.navigate()
+                  },
+                },
+                () => renderContent(item),
+              )
+            },
+          },
+        )
       }
 
       const component = typeof item.component === 'string' ? resolveComponent(item.component) : item.component
       return h(component, {}, () => renderContent(item))
     }
 
-    return () => h(CSidebarNav, {}, { default: () => filteredNav.value.map(item => renderItem(item)) })
-  }
+    // ---------------------------
+    // 라우트 변경 감지
+    // ---------------------------
+    watch(
+      () => route.fullPath,
+      async () => {
+        if (userClickedSidebar.value) {
+          userClickedSidebar.value = false
+          return
+        }
+        await nextTick()
+        openActiveMenu(reactiveNav)
+      },
+      { immediate: true },
+    )
+
+    return () => h(CSidebarNav, {}, { default: () => reactiveNav.map((item: Item) => renderItem(item)) })
+  },
 })
 
 export { AppSidebarNav }
