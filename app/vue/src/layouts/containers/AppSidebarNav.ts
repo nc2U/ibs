@@ -12,7 +12,7 @@ import {
 import { storeToRefs } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
-import { CBadge, CNavGroup, CNavItem, CNavTitle, CSidebarNav } from '@coreui/vue'
+import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
 import { CIcon } from '@coreui/icons-vue'
 import nav from '@/layouts/_nav'
 
@@ -44,7 +44,7 @@ const isActiveLink = (route: RouteLocationNormalized, link?: string) => {
 const isActiveItem = (route: RouteLocationNormalized, item: Item): boolean => {
   if (item.to && isActiveLink(route, item.to)) return true
   if (Array.isArray(item.items)) return item.items.some(child => isActiveItem(route, child))
-  const metaTitle = (route.meta && (route.meta.title as string | undefined)) || undefined
+  const metaTitle = route.meta?.title as string | undefined
   return !!(item.name && metaTitle && item.name === metaTitle)
 }
 
@@ -55,12 +55,8 @@ function filterNavItems(items: Item[], predicates: ((it: Item) => boolean)[]): I
     .filter(it => passAllPredicates(it) || (Array.isArray(it.items) && it.items.length > 0))
 }
 
-// ---------------------------
-// AppSidebarNav
-// ---------------------------
 const AppSidebarNav = defineComponent({
   name: 'AppSidebarNav',
-  components: { CNavItem, CNavGroup, CNavTitle },
   setup() {
     const route = useRoute()
     const userClickedSidebar = reactive({ value: false })
@@ -70,7 +66,6 @@ const AppSidebarNav = defineComponent({
     const account = useAccount()
     const { workManager, isStaff, isComCash } = storeToRefs(account)
 
-    // 필터링 규칙
     const predicates = computed(() => {
       const list: ((it: Item) => boolean)[] = []
       if (!workManager.value) list.push(it => (it.name || '') !== '설 정 관 리')
@@ -88,23 +83,21 @@ const AppSidebarNav = defineComponent({
     )
 
     // ---------------------------
-    // 활성 메뉴 기준으로 부모 메뉴 자동 열기/닫기
-    // - 활성 자식이 있으면 열고, 없으면 닫음
-    // - 라우트 변경 시 manuallyToggled를 리셋하여 항상 현재 라우트 기준으로 동작
+    // 활성 메뉴 자동 열기/닫기
     // ---------------------------
     const openActiveMenu = (items: Item[]) => {
       items.forEach(item => {
         if (Array.isArray(item.items) && item.items.length > 0) {
           const hasActiveChild = item.items.some(child => isActiveItem(route, child))
-          item.manuallyToggled = false
           item.visible = hasActiveChild
+          item.manuallyToggled = false
           openActiveMenu(item.items)
         }
       })
     }
 
     // ---------------------------
-    // render helpers
+    // 렌더 헬퍼
     // ---------------------------
     const renderContent = (item: Item) => {
       const children: any[] = []
@@ -112,11 +105,7 @@ const AppSidebarNav = defineComponent({
       if (item.name) children.push(item.name)
       if (item.badge)
         children.push(
-          h(
-            CBadge,
-            { class: 'ms-auto', color: item.badge.color },
-            () => item.badge && item.badge.text,
-          ),
+          h(CBadge, { class: 'ms-auto', color: item.badge.color }, () => item.badge?.text),
         )
       return children
     }
@@ -134,7 +123,7 @@ const AppSidebarNav = defineComponent({
           },
           {
             togglerContent: () => renderContent(item),
-            default: () => item.items && item.items.map(child => renderItem(child)),
+            default: () => item.items!.map(renderItem),
           },
         )
       }
@@ -172,7 +161,7 @@ const AppSidebarNav = defineComponent({
     }
 
     // ---------------------------
-    // 라우트 변경 감지
+    // 라우트 변경 감지 (사이드바 클릭 제외)
     // ---------------------------
     watch(
       () => route.fullPath,
@@ -183,18 +172,13 @@ const AppSidebarNav = defineComponent({
         }
         await nextTick()
         openActiveMenu(reactiveNav)
-        // CSidebarNav 전체를 재생성하여 CNavGroup의 내부 상태 강제 동기화
-        sidebarKey.value++
+        sidebarKey.value++ // 강제 재렌더링
       },
       { immediate: true },
     )
 
     return () =>
-      h(
-        CSidebarNav,
-        { key: sidebarKey.value },
-        { default: () => reactiveNav.map((item: Item) => renderItem(item)) },
-      )
+      h(CSidebarNav, { key: sidebarKey.value }, { default: () => reactiveNav.map(renderItem) })
   },
 })
 
