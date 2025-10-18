@@ -57,8 +57,8 @@ class OrderGroup(models.Model):
 
     class Meta:
         ordering = ['-project', 'id']
-        verbose_name = '01. 차수 (계약그룹)'
-        verbose_name_plural = '01. 차수 (계약그룹)'
+        verbose_name = '01. 계약 차수 그룹'
+        verbose_name_plural = '01. 계약 차수 그룹'
         constraints = [
             models.UniqueConstraint(
                 fields=['project'],
