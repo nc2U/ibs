@@ -68,6 +68,90 @@ class OrderGroup(models.Model):
         ]
 
 
+class DocumentType(models.Model):
+    """서류 유형 마스터 테이블"""
+    name = models.CharField('서류명', max_length=100, unique=True)
+    code = models.CharField('서류코드', max_length=50, unique=True, db_index=True,
+                            help_text='시스템 내부 식별 코드 (예: BIZ_LICENSE, CORP_SEAL)')
+    description = models.TextField('설명', blank=True)
+    default_quantity = models.PositiveIntegerField('기본 수량', default=1)
+    is_mandatory = models.BooleanField('필수 서류 여부', default=False,
+                                       help_text='프로젝트 생성 시 자동으로 추가될 필수 서류')
+    display_order = models.PositiveIntegerField('표시 순서', default=0,
+                                                help_text='서류 목록 표시 시 정렬 순서')
+    is_active = models.BooleanField('사용 여부', default=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, related_name='updated_document_types',
+                                verbose_name='편집자')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'contract_document_type'
+        ordering = ['display_order', 'name']
+        verbose_name = '02. 필요 서류 유형'
+        verbose_name_plural = '02. 필요 서류 유형'
+
+
+class ContractRequiredDocument(models.Model):
+    """계약 시 필요 서류 (프로젝트별 관리)"""
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE,
+                                verbose_name='프로젝트', related_name='contract_required_documents')
+    document_type = models.ForeignKey(DocumentType, on_delete=models.PROTECT,
+                                      verbose_name='서류 유형', related_name='project_requirements')
+    quantity = models.PositiveIntegerField('필요 수량', default=1)
+    notes = models.TextField('비고', blank=True, help_text='프로젝트별 특이사항 또는 추가 요구사항')
+    is_required = models.BooleanField('필수 여부', default=True,
+                                      help_text='이 프로젝트에서 반드시 제출해야 하는 서류인지 여부')
+
+    # 제출 현황 관리
+    submitted_quantity = models.PositiveIntegerField('제출 수량', default=0)
+    STATUS_CHOICES = (
+        ('pending', '미제출'),
+        ('submitted', '제출완료'),
+        ('approved', '승인'),
+        ('rejected', '반려'),
+    )
+    status = models.CharField('제출 상태', max_length=20, choices=STATUS_CHOICES, default='pending')
+    due_date = models.DateField('제출 기한', null=True, blank=True)
+    submission_date = models.DateField('제출일', null=True, blank=True)
+
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, related_name='updated_contract_required_documents',
+                                verbose_name='편집자')
+
+    def __str__(self):
+        return f'{self.project.name} - {self.document_type.name}'
+
+    @property
+    def is_complete(self):
+        """제출 완료 여부 확인"""
+        return self.submitted_quantity >= self.quantity
+
+    @property
+    def completion_rate(self):
+        """제출 완료율 (백분율)"""
+        if self.quantity == 0:
+            return 0
+        return round((self.submitted_quantity / self.quantity) * 100, 1)
+
+    class Meta:
+        db_table = 'contract_required_document'
+        ordering = ['document_type__display_order', 'document_type__name']
+        unique_together = [['project', 'document_type']]
+        verbose_name = '03. 계약 시 필요 서류'
+        verbose_name_plural = '03. 계약 시 필요 서류'
+
+
 class Contract(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트')
     serial_number = models.CharField('계약 일련 번호', max_length=30, unique=True, db_index=True)
@@ -104,8 +188,8 @@ class Contract(models.Model):
 
     class Meta:
         ordering = ('-project', '-created')
-        verbose_name = '02. 계약 정보'
-        verbose_name_plural = '02. 계약 정보'
+        verbose_name = '04. 계약 정보'
+        verbose_name_plural = '04. 계약 정보'
 
 
 def get_contract_file_name(instance, filename):
@@ -313,8 +397,8 @@ class ContractPrice(models.Model):
 
     class Meta:
         ordering = ('-contract__project', 'contract')
-        verbose_name = '03. 계약 공급가격'
-        verbose_name_plural = '03. 계약 공급가격'
+        verbose_name = '05. 계약 공급가격'
+        verbose_name_plural = '05. 계약 공급가격'
 
 
 class Contractor(models.Model):
@@ -348,8 +432,8 @@ class Contractor(models.Model):
         return self.addresses.filter(is_current=True).first()
 
     class Meta:
-        verbose_name = '05. 계약자 정보'
-        verbose_name_plural = '05. 계약자 정보'
+        verbose_name = '06. 계약자 정보'
+        verbose_name_plural = '06. 계약자 정보'
 
 
 class ContractorAddress(models.Model):
@@ -373,8 +457,8 @@ class ContractorAddress(models.Model):
         return f'[주소] - {self.contractor}'
 
     class Meta:
-        verbose_name = '06. 계약자 주소'
-        verbose_name_plural = '06. 계약자 주소'
+        verbose_name = '07. 계약자 주소'
+        verbose_name_plural = '07. 계약자 주소'
         ordering = ['-created']
         constraints = [
             models.UniqueConstraint(
@@ -398,10 +482,6 @@ class ContractorContact(models.Model):
 
     def __str__(self):
         return f'[연락처] - {self.contractor}'
-
-    class Meta:
-        verbose_name = '07. 계약자 연락처'
-        verbose_name_plural = '07. 계약자 연락처'
 
 
 class Succession(models.Model):

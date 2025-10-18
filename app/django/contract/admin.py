@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
 from .models import (OrderGroup, Contract, ContractPrice, ContractFile,
-                     Contractor, ContractorAddress,
-                     ContractorContact, Succession, ContractorRelease)
+                     Contractor, ContractorAddress, ContractorContact, Succession,
+                     ContractorRelease, DocumentType, ContractRequiredDocument)
 
 
 @admin.register(OrderGroup)
@@ -13,6 +13,16 @@ class OrderGroupAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'sort')
     list_editable = ('order_number', 'is_default_for_uncontracted',)
     search_fields = ('name',)
+
+
+@admin.register(DocumentType)
+class DocumentTypeAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'name', 'code', 'description')
+
+
+@admin.register(ContractRequiredDocument)
+class ContractRequiredDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'project', 'document_type', 'quantity', 'notes', 'is_required')
 
 
 class ContractPriceInline(admin.StackedInline):
@@ -128,11 +138,6 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
 class CAdressAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('__str__', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3', 'is_current')
     list_editable = ('is_current',)
-
-
-@admin.register(ContractorContact)
-class CContactAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('__str__', 'cell_phone', 'home_phone', 'other_phone', 'email')
 
 
 @admin.register(Succession)
