@@ -73,13 +73,13 @@ class DocumentType(models.Model):
     name = models.CharField('서류명', max_length=100, unique=True)
     code = models.CharField('서류코드', max_length=50, unique=True, db_index=True,
                             help_text='시스템 내부 식별 코드 (예: BIZ_LICENSE, CORP_SEAL)')
-    description = models.TextField('설명', blank=True)
+    is_default_item = models.BooleanField('기본 서류 여부', default=False,
+                                          help_text='프로젝트 생성 시 자동으로 추가될 필수 서류')
     default_quantity = models.PositiveIntegerField('기본 수량', default=1)
-    is_mandatory = models.BooleanField('필수 서류 여부', default=False,
-                                       help_text='프로젝트 생성 시 자동으로 추가될 필수 서류')
+    is_active = models.BooleanField('사용 여부', default=True)
+    description = models.TextField('설명', blank=True)
     display_order = models.PositiveIntegerField('표시 순서', default=0,
                                                 help_text='서류 목록 표시 시 정렬 순서')
-    is_active = models.BooleanField('사용 여부', default=True)
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -106,8 +106,12 @@ class ContractRequiredDocument(models.Model):
                                       verbose_name='서류 유형', related_name='project_requirements')
     quantity = models.PositiveIntegerField('필요 수량', default=1)
     notes = models.TextField('비고', blank=True, help_text='프로젝트별 특이사항 또는 추가 요구사항')
-    is_required = models.BooleanField('필수 여부', default=True,
-                                      help_text='이 프로젝트에서 반드시 제출해야 하는 서류인지 여부')
+    DOCUMENT_REQUIRE_TYPE = (
+        ('required', '필수'),
+        ('optional', '선택'),
+        ('conditional', '조건부 필수'),
+    )
+    require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
 
     # 제출 현황 관리
     submitted_quantity = models.PositiveIntegerField('제출 수량', default=0)
