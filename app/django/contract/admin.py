@@ -17,10 +17,10 @@ class OrderGroupAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(DocumentType)
 class DocumentTypeAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'code', 'is_default_item', 'default_quantity',
+    list_display = ('id', 'name', 'code', 'default_quantity', 'is_default_item',
                     'is_active', 'description', 'display_order')
     list_display_links = ('name',)
-    list_editable = ('code', 'is_default_item', 'default_quantity', 'is_active', 'display_order')
+    list_editable = ('code', 'default_quantity', 'is_default_item', 'is_active', 'display_order')
     list_filter = ('is_default_item', 'is_active')
     search_fields = ('name',)
 

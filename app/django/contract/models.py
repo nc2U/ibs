@@ -73,9 +73,9 @@ class DocumentType(models.Model):
     name = models.CharField('서류명', max_length=100, unique=True)
     code = models.CharField('서류코드', max_length=50, unique=True, db_index=True,
                             help_text='시스템 내부 식별 코드 (예: BIZ_LICENSE, CORP_SEAL)')
+    default_quantity = models.PositiveIntegerField('기본 수량', default=1)
     is_default_item = models.BooleanField('기본 서류 여부', default=True,
                                           help_text='프로젝트 생성 시 자동으로 추가될 필수 서류')
-    default_quantity = models.PositiveIntegerField('기본 수량', default=1)
     is_active = models.BooleanField('사용 여부', default=True)
     description = models.TextField('설명', blank=True)
     display_order = models.PositiveIntegerField('표시 순서', default=0,
