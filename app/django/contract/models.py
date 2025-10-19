@@ -205,7 +205,6 @@ class Contract(models.Model):
         """하위 호환성: 계약자의 계약서 파일 접근"""
         if hasattr(self, 'contractor'):
             return self.contractor.contractor_files.all()
-        from contract.models import ContractFile
         return ContractFile.objects.none()
 
     class Meta:
