@@ -80,7 +80,6 @@ class DocumentType(models.Model):
                                           help_text='프로젝트 생성 시 자동으로 추가될 필수 서류')
     description = models.CharField('설명', max_length=255, blank=True, default='')
     is_active = models.BooleanField('사용 여부', default=True)
-    display_order = models.PositiveIntegerField('표시 순서', default=0, help_text='서류 목록 표시 시 정렬 순서')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -93,7 +92,7 @@ class DocumentType(models.Model):
 
     class Meta:
         db_table = 'contract_document_type'
-        ordering = ['display_order', 'id']
+        ordering = ['id']
         verbose_name = '02. 필요 서류 유형'
         verbose_name_plural = '02. 필요 서류 유형'
 
@@ -109,6 +108,7 @@ class RequiredDocument(models.Model):
                                     default='required')
     description = models.CharField('비고', max_length=255, blank=True, default='',
                                    help_text='프로젝트별 특이사항, 요구 조건 또는 추가 요구사항')
+    display_order = models.PositiveIntegerField('표시 순서', default=0, help_text='서류 목록 표시 시 정렬 순서')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -120,7 +120,7 @@ class RequiredDocument(models.Model):
         return f'{self.project.name} - {self.document_type.name}'
 
     class Meta:
-        ordering = ['document_type__display_order', 'id']
+        ordering = ['display_order', 'id']
         unique_together = [['project', 'document_type']]
         verbose_name = '03. 계약 시 필요 서류'
         verbose_name_plural = '03. 계약 시 필요 서류'
@@ -479,7 +479,7 @@ class ContractDocument(models.Model):
 
     class Meta:
         db_table = 'contract_document'
-        ordering = ['document_type__display_order', 'id']
+        # ordering = ['required_document__display_order', 'id']
         unique_together = [['contractor', 'document_type']]
         verbose_name = '계약자 제출 서류'
         verbose_name_plural = '계약자 제출 서류'
