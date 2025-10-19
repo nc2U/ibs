@@ -80,15 +80,13 @@ class DocumentType(models.Model):
                                           help_text='프로젝트 생성 시 자동으로 추가될 필수 서류')
     description = models.CharField('설명', max_length=255, blank=True, default='')
     is_active = models.BooleanField('사용 여부', default=True)
-    display_order = models.PositiveIntegerField('표시 순서', default=0,
-                                                help_text='서류 목록 표시 시 정렬 순서')
+    display_order = models.PositiveIntegerField('표시 순서', default=0, help_text='서류 목록 표시 시 정렬 순서')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                 null=True, blank=True, verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                null=True, blank=True, related_name='updated_document_types',
-                                verbose_name='편집자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_document_types', verbose_name='편집자')
 
     def __str__(self):
         return self.name
