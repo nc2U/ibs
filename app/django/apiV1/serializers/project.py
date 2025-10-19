@@ -4,11 +4,12 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
+from cash.models import ProjectCashBook
+from contract.models import DocumentType, RequiredDocument
+from ibs.models import ProjectAccountD2, ProjectAccountD3
 from notice.models import SalesBillIssue
 from project.models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
                             SiteOwner, SiteOwnshipRelationship, SiteContract, SiteContractFile)
-from ibs.models import ProjectAccountD2, ProjectAccountD3
-from cash.models import ProjectCashBook
 
 
 # Project --------------------------------------------------------------------------
@@ -42,6 +43,57 @@ class ProjectSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_company(obj):
         return obj.issue_project.company.pk
+
+    def _create_default_required_documents(self, project):
+        """
+        프로젝트에 기본 필요 서류 자동 생성
+
+        Args:
+            project: Project 인스턴스
+        """
+        # 기본 서류 타입들을 RequiredDocument로 자동 등록
+        default_document_types = DocumentType.objects.filter(
+            is_default_item=True,
+            is_active=True
+        ).order_by('display_order')
+
+        required_docs = [
+            RequiredDocument(
+                project=project,
+                document_type=doc_type,
+                quantity=doc_type.default_quantity,
+                require_type='required',
+                creator=self.context.get('request').user if self.context.get('request') else None
+            )
+            for doc_type in default_document_types
+        ]
+
+        if required_docs:
+            RequiredDocument.objects.bulk_create(required_docs)
+
+    @transaction.atomic
+    def create(self, validated_data):
+        """프로젝트 생성 시 기본 필요 서류 자동 생성"""
+        project = super().create(validated_data)
+        self._create_default_required_documents(project)
+        return project
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """
+        프로젝트 업데이트 시 필요 서류 검사
+        RequiredDocument가 하나도 없을 경우에만 기본값 생성 (안전장치)
+        """
+        # 프로젝트 업데이트
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # RequiredDocument가 하나도 없는 경우에만 기본값 생성
+        if not RequiredDocument.objects.filter(project=instance).exists():
+            self._create_default_required_documents(instance)
+
+        return instance
 
 
 class ProjectIncBudgetSerializer(serializers.ModelSerializer):
