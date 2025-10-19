@@ -105,11 +105,7 @@ class RequiredDocument(models.Model):
     document_type = models.ForeignKey(DocumentType, on_delete=models.PROTECT,
                                       verbose_name='서류 유형', related_name='project_requirements')
     quantity = models.PositiveIntegerField('필요 수량', default=1)
-    DOCUMENT_REQUIRE_TYPE = (
-        ('required', '필수'),
-        ('optional', '선택'),
-        ('conditional', '조건부 필수'),
-    )
+    DOCUMENT_REQUIRE_TYPE = (('required', '필수'), ('optional', '선택'), ('conditional', '조건부 필수'))
     require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
     notes = models.TextField('비고', blank=True, default='', help_text='프로젝트별 특이사항, 요구 조건 또는 추가 요구사항')
     created = models.DateTimeField('등록일시', auto_now_add=True)
