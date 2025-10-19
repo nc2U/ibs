@@ -55,7 +55,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         default_document_types = DocumentType.objects.filter(
             is_default_item=True,
             is_active=True
-        ).order_by('display_order')
+        ).order_by('id')
 
         required_docs = [
             RequiredDocument(
