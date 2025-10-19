@@ -93,8 +93,8 @@ class DocumentType(models.Model):
     class Meta:
         db_table = 'contract_document_type'
         ordering = ['id']
-        verbose_name = '02. 필요 서류 유형'
-        verbose_name_plural = '02. 필요 서류 유형'
+        verbose_name = '02. 필요 서류 유형 [템플릿]'
+        verbose_name_plural = '02. 필요 서류 유형 [템플릿]'
 
 
 class RequiredDocument(models.Model):
@@ -122,8 +122,8 @@ class RequiredDocument(models.Model):
     class Meta:
         ordering = ['display_order', 'id']
         unique_together = [['project', 'document_type']]
-        verbose_name = '03. 계약 시 필요 서류'
-        verbose_name_plural = '03. 계약 시 필요 서류'
+        verbose_name = '03. 계약 시 필요 서류 (프로젝트별)'
+        verbose_name_plural = '03. 계약 시 필요 서류 (프로젝트별)'
 
 
 class Contract(models.Model):
