@@ -62,7 +62,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                 project=project,
                 document_type=doc_type,
                 quantity=doc_type.default_quantity,
-                require_type='required',
+                require_type=doc_type.require_type,
                 creator=self.context.get('request').user if self.context.get('request') else None
             )
             for doc_type in default_document_types
