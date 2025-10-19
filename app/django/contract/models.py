@@ -105,25 +105,14 @@ class ContractRequiredDocument(models.Model):
     document_type = models.ForeignKey(DocumentType, on_delete=models.PROTECT,
                                       verbose_name='서류 유형', related_name='project_requirements')
     quantity = models.PositiveIntegerField('필요 수량', default=1)
-    notes = models.TextField('비고', blank=True, help_text='프로젝트별 특이사항 또는 추가 요구사항')
     DOCUMENT_REQUIRE_TYPE = (
         ('required', '필수'),
         ('optional', '선택'),
         ('conditional', '조건부 필수'),
     )
     require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
-
-    # 제출 현황 관리
     submitted_quantity = models.PositiveIntegerField('제출 수량', default=0)
-    STATUS_CHOICES = (
-        ('pending', '미제출'),
-        ('submitted', '제출완료'),
-        ('approved', '승인'),
-        ('rejected', '반려'),
-    )
-    status = models.CharField('제출 상태', max_length=20, choices=STATUS_CHOICES, default='pending')
-    due_date = models.DateField('제출 기한', null=True, blank=True)
-    submission_date = models.DateField('제출일', null=True, blank=True)
+    notes = models.TextField('비고', blank=True, help_text='프로젝트별 특이사항 또는 추가 요구사항')
 
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
@@ -190,10 +179,148 @@ class Contract(models.Model):
         """
         self._cached_payment_plan = payment_plan
 
+    @property
+    def document_completion_rate(self):
+        """서류 제출 완료율 (백분율)"""
+        total = self.contract_documents.count()
+        if total == 0:
+            return 0
+        completed = self.contract_documents.filter(
+            submitted_quantity__gte=models.F('required_quantity')
+        ).count()
+        return round((completed / total) * 100, 1)
+
+    @property
+    def all_required_documents_submitted(self):
+        """필수 서류가 모두 제출되었는지 확인"""
+        return not self.contract_documents.filter(
+            require_type='required',
+            submitted_quantity__lt=models.F('required_quantity')
+        ).exists()
+
+    def get_missing_documents(self):
+        """미비 서류 목록 조회"""
+        return self.contract_documents.filter(
+            submitted_quantity__lt=models.F('required_quantity')
+        )
+
+    def get_pending_required_documents(self):
+        """미제출 필수 서류 목록 조회"""
+        return self.contract_documents.filter(
+            require_type='required',
+            status='pending'
+        )
+
     class Meta:
         ordering = ('-project', '-created')
         verbose_name = '04. 계약 정보'
         verbose_name_plural = '04. 계약 정보'
+
+
+class ContractDocument(models.Model):
+    """계약별 서류 제출 기록"""
+    contract = models.ForeignKey('Contract', on_delete=models.CASCADE,
+                                 verbose_name='계약', related_name='contract_documents')
+    document_type = models.ForeignKey(DocumentType, on_delete=models.PROTECT,
+                                      verbose_name='서류 유형')
+    required_quantity = models.PositiveIntegerField('필요 수량', default=1)
+    submitted_quantity = models.PositiveIntegerField('제출 수량', default=0)
+
+    DOCUMENT_REQUIRE_TYPE = (
+        ('required', '필수'),
+        ('optional', '선택'),
+        ('conditional', '조건부 필수'),
+    )
+    require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
+
+    STATUS_CHOICES = (
+        ('pending', '미제출'),
+        ('submitted', '제출완료'),
+        ('approved', '승인'),
+        ('rejected', '반려'),
+    )
+    status = models.CharField('제출 상태', max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    submission_date = models.DateField('제출일', null=True, blank=True)
+    approved_date = models.DateField('승인일', null=True, blank=True)
+    rejected_reason = models.TextField('반려 사유', blank=True)
+    notes = models.TextField('비고', blank=True)
+
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, related_name='updated_contract_documents',
+                                verbose_name='편집자')
+
+    def __str__(self):
+        return f'{self.contract.serial_number} - {self.document_type.name}'
+
+    @property
+    def is_complete(self):
+        """제출 완료 여부 확인"""
+        return self.submitted_quantity >= self.required_quantity
+
+    @property
+    def completion_rate(self):
+        """제출 완료율 (백분율)"""
+        if self.required_quantity == 0:
+            return 0
+        return round((self.submitted_quantity / self.required_quantity) * 100, 1)
+
+    class Meta:
+        db_table = 'contract_document'
+        ordering = ['document_type__display_order', 'document_type__name']
+        unique_together = [['contract', 'document_type']]
+        verbose_name = '04. 계약 서류 제출 기록'
+        verbose_name_plural = '04. 계약 서류 제출 기록'
+
+
+def get_contract_document_file_name(instance, filename):
+    """계약 서류 파일 업로드 경로"""
+    contract = instance.contract_document.contract
+    slug = contract.project.issue_project.slug
+    serial = contract.serial_number
+    doc_code = instance.contract_document.document_type.code
+    return os.path.join('contract_documents', f'{slug}', serial, doc_code, filename)
+
+
+class ContractDocumentFile(models.Model):
+    """계약 서류 첨부 파일"""
+    contract_document = models.ForeignKey(ContractDocument, on_delete=models.CASCADE,
+                                          verbose_name='계약 서류', related_name='files')
+    file = models.FileField(upload_to=get_contract_document_file_name, verbose_name='파일')
+    file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
+    file_type = models.CharField('파일 타입', max_length=80, blank=True)
+    file_size = models.PositiveBigIntegerField('파일 크기', blank=True, null=True)
+    uploaded_date = models.DateTimeField('업로드일시', auto_now_add=True)
+    uploader = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                 null=True, blank=True, verbose_name='업로드자')
+
+    def __str__(self):
+        return f'{self.contract_document} - {self.file_name}'
+
+    def save(self, *args, **kwargs):
+        if self.file:
+            self.file_name = self.file.name.split('/')[-1]
+            mime = magic.Magic(mime=True)
+            file_pos = self.file.tell()
+            self.file_type = mime.from_buffer(self.file.read(2048))
+            self.file.seek(file_pos)
+            self.file_size = self.file.size
+        super().save(*args, **kwargs)
+
+    class Meta:
+        db_table = 'contract_document_file'
+        ordering = ['-uploaded_date']
+        verbose_name = '05. 계약 서류 파일'
+        verbose_name_plural = '05. 계약 서류 파일'
+
+
+# 파일 삭제 시그널 설정
+file_cleanup_signals(ContractDocumentFile)
+related_file_cleanup(ContractDocument, related_name='files', file_field_name='file')
 
 
 def get_contract_file_name(instance, filename):
