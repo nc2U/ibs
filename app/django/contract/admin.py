@@ -44,12 +44,12 @@ class ContractorInline(admin.StackedInline):
     extra = 0
 
 
-class ContractFileAdmin(admin.StackedInline):
+class ContractFileAdmin(admin.TabularInline):
     model = ContractFile
     extra = 0
 
 
-class ContractDocumentInline(admin.StackedInline):
+class ContractDocumentInline(admin.TabularInline):
     model = ContractDocument
     extra = 0
 

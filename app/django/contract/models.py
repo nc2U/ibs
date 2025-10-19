@@ -212,7 +212,6 @@ class ContractDocument(models.Model):
     DOCUMENT_REQUIRE_TYPE = (('required', '필수'), ('optional', '선택'), ('conditional', '조건부 필수'))
     require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
     submission_date = models.DateField('제출일', null=True, blank=True)
-    notes = models.TextField('비고', blank=True)
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -233,8 +232,8 @@ class ContractDocument(models.Model):
         db_table = 'contract_document'
         ordering = ['document_type__display_order', 'id']
         unique_together = [['contract', 'document_type']]
-        verbose_name = '04. 계약 서류 제출 기록'
-        verbose_name_plural = '04. 계약 서류 제출 기록'
+        verbose_name = '계약 시 제출 서류'
+        verbose_name_plural = '계약 시 제출 서류'
 
 
 def get_contract_document_file_name(instance, filename):
@@ -274,8 +273,8 @@ class ContractDocumentFile(models.Model):
     class Meta:
         db_table = 'contract_document_file'
         ordering = ['-uploaded_date']
-        verbose_name = '05. 계약 서류 파일'
-        verbose_name_plural = '05. 계약 서류 파일'
+        verbose_name = '제출 서류 파일'
+        verbose_name_plural = '제출 서류 파일'
 
 
 # 파일 삭제 시그널 설정
