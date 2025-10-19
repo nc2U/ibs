@@ -200,46 +200,18 @@ class Contract(models.Model):
             status='pending'
         )
 
+    @property
+    def contract_files(self):
+        """하위 호환성: 계약자의 계약서 파일 접근"""
+        if hasattr(self, 'contractor'):
+            return self.contractor.contractor_files.all()
+        from contract.models import ContractFile
+        return ContractFile.objects.none()
+
     class Meta:
         ordering = ('-project', '-created')
         verbose_name = '04. 계약 정보'
         verbose_name_plural = '04. 계약 정보'
-
-
-def get_contract_file_name(instance, filename):
-    slug = instance.contract.project.issue_project.slug
-    unit_type = instance.contract.unit_type.name
-    ord_group = f'ord_grp_{instance.contract.order_group.order_number}'
-    return os.path.join('contract', f'{slug}', unit_type, ord_group, filename)
-
-
-class ContractFile(models.Model):
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, default=None, verbose_name='계약서',
-                                 related_name='contract_files')
-    file = models.FileField(upload_to=get_contract_file_name, verbose_name='파일경로')
-    file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
-    file_type = models.CharField('타입', max_length=80, blank=True)
-    file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
-    created = models.DateTimeField(auto_now_add=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                null=True, blank=True, verbose_name='사용자')
-
-    def __str__(self):
-        return self.file_name
-
-    def save(self, *args, **kwargs):
-        if self.file:
-            self.file_name = self.file.name.split('/')[-1]
-            mime = magic.Magic(mime=True)
-            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
-            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
-            self.file.seek(file_pos)  # 원래 위치로 복구
-            self.file_size = self.file.size
-        super().save(*args, **kwargs)
-
-
-file_cleanup_signals(ContractFile)  # 파일인스턴스 직접 삭제시
-related_file_cleanup(Contract, related_name='contract_files', file_field_name='file')  # 연관 모델 삭제 시
 
 
 class ContractPrice(models.Model):
@@ -448,6 +420,42 @@ class Contractor(models.Model):
     class Meta:
         verbose_name = '06. 계약자 정보'
         verbose_name_plural = '06. 계약자 정보'
+
+
+def get_contract_file_name(instance, filename):
+    slug = instance.contractor.contract.project.issue_project.slug
+    unit_type = instance.contractor.contract.unit_type.name
+    ord_group = f'ord_grp_{instance.contractor.contract.order_group.order_number}'
+    return os.path.join('contract', f'{slug}', unit_type, ord_group, filename)
+
+
+class ContractFile(models.Model):
+    contractor = models.ForeignKey('Contractor', on_delete=models.CASCADE, verbose_name='계약자',
+                                   related_name='contractor_files')
+    file = models.FileField(upload_to=get_contract_file_name, verbose_name='파일경로')
+    file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
+    file_type = models.CharField('타입', max_length=80, blank=True)
+    file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='사용자')
+
+    def __str__(self):
+        return self.file_name
+
+    def save(self, *args, **kwargs):
+        if self.file:
+            self.file_name = self.file.name.split('/')[-1]
+            mime = magic.Magic(mime=True)
+            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
+            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
+            self.file.seek(file_pos)  # 원래 위치로 복구
+            self.file_size = self.file.size
+        super().save(*args, **kwargs)
+
+
+file_cleanup_signals(ContractFile)  # ContractFile 파일인스턴스 직접 삭제시
+related_file_cleanup(Contractor, related_name='contractor_files', file_field_name='file')  # Contractor 연관 모델 삭제 시
 
 
 class ContractDocument(models.Model):
