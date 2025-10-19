@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
 from .models import (OrderGroup, Contract, ContractPrice, ContractFile,
                      Contractor, ContractorAddress, ContractorContact, Succession,
-                     ContractorRelease, DocumentType, ContractRequiredDocument)
+                     ContractorRelease, DocumentType, RequiredDocument)
 
 
 @admin.register(OrderGroup)
@@ -25,8 +25,8 @@ class DocumentTypeAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('name',)
 
 
-@admin.register(ContractRequiredDocument)
-class ContractRequiredDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
+@admin.register(RequiredDocument)
+class RequiredDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'document_type', 'quantity', 'notes', 'require_type')
     list_display_links = ('project', 'document_type')
     list_filter = ('project', 'document_type', 'require_type')

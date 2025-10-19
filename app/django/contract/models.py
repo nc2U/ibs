@@ -98,7 +98,7 @@ class DocumentType(models.Model):
         verbose_name_plural = '02. 필요 서류 유형'
 
 
-class ContractRequiredDocument(models.Model):
+class RequiredDocument(models.Model):
     """계약 시 필요 서류 (프로젝트별 관리)"""
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE,
                                 verbose_name='프로젝트', related_name='contract_required_documents')
@@ -111,33 +111,18 @@ class ContractRequiredDocument(models.Model):
         ('conditional', '조건부 필수'),
     )
     require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
-    notes = models.TextField('비고', blank=True, default='', help_text='프로젝트별 특이사항 또는 추가 요구사항')
-
+    notes = models.TextField('비고', blank=True, default='', help_text='프로젝트별 특이사항, 요구 조건 또는 추가 요구사항')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                 null=True, blank=True, verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                null=True, blank=True, related_name='updated_contract_required_documents',
-                                verbose_name='편집자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_required_documents', verbose_name='편집자')
 
     def __str__(self):
         return f'{self.project.name} - {self.document_type.name}'
 
-    @property
-    def is_complete(self):
-        """제출 완료 여부 확인"""
-        return self.submitted_quantity >= self.quantity
-
-    @property
-    def completion_rate(self):
-        """제출 완료율 (백분율)"""
-        if self.quantity == 0:
-            return 0
-        return round((self.submitted_quantity / self.quantity) * 100, 1)
-
     class Meta:
-        db_table = 'contract_required_document'
         ordering = ['document_type__display_order', 'id']
         unique_together = [['project', 'document_type']]
         verbose_name = '03. 계약 시 필요 서류'
