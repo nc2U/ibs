@@ -1,8 +1,8 @@
 from django.contrib import admin
-from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
-from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
+
 from .models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractDocument,
                      ContractDocumentFile, ContractPrice, ContractFile, Contractor,
                      ContractorAddress, ContractorContact, Succession, ContractorRelease)
@@ -51,114 +51,84 @@ class ContractFileAdmin(admin.TabularInline):
     extra = 0
 
 
-class ContractDocumentFileInline(admin.TabularInline):
-    """계약 서류 파일 Inline (ContractDocument 상세 페이지에서 사용)"""
-    model = ContractDocumentFile
-    extra = 1
-    fields = ['file', 'file_name', 'file_size', 'uploaded_date', 'uploader']
-    readonly_fields = ['file_name', 'file_size', 'uploaded_date', 'uploader']
-
-    def has_add_permission(self, request, obj=None):
-        return True
-
-    def has_delete_permission(self, request, obj=None):
-        return True
-
-
 class ContractDocumentInline(admin.TabularInline):
-    """계약 서류 Inline (Contract 페이지에서 사용)"""
+    """계약 서류 Inline (1줄로 간단히 관리)"""
     model = ContractDocument
     extra = 0
-    fields = ['document_type', 'require_type', 'quantity_display',
-              'submission_date', 'file_count', 'manage_link']
-    readonly_fields = ['quantity_display', 'file_count', 'manage_link']
+    fields = ['document_type', 'require_type', 'required_qty', 'submitted_qty',
+              'submission_date', 'is_complete_display', 'files_info']
+    readonly_fields = ['required_qty', 'submitted_qty', 'is_complete_display', 'files_info']
 
-    def quantity_display(self, obj):
-        """제출 현황 (색상 표시)"""
+    def required_qty(self, obj):
+        """필요 수량"""
         if not obj.pk:
             return '-'
-        percentage = (obj.submitted_quantity / obj.required_quantity * 100) if obj.required_quantity > 0 else 0
-        color = 'green' if percentage == 100 else 'orange' if percentage >= 50 else 'red'
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{}/{} ({}%)</span>',
-            color, obj.submitted_quantity, obj.required_quantity, int(percentage)
+            '<input type="number" name="required_quantity_{}" value="{}" min="0" style="width: 50px;">',
+            obj.pk, obj.required_quantity
         )
-    quantity_display.short_description = '제출현황'
 
-    def file_count(self, obj):
-        """첨부파일 수"""
+    required_qty.short_description = '필요 수량'
+
+    def submitted_qty(self, obj):
+        """제출 수량"""
         if not obj.pk:
             return '-'
-        count = obj.files.count()
-        if count == 0:
-            return format_html('<span style="color: gray;">없음</span>')
-        return format_html('<span style="color: blue; font-weight: bold;">📎 {}개</span>', count)
-    file_count.short_description = '파일'
+        return format_html(
+            '<input type="number" name="submitted_quantity_{}" value="{}" min="0" style="width: 50px;">',
+            obj.pk, obj.submitted_quantity
+        )
 
-    def manage_link(self, obj):
-        """상세 관리 링크"""
+    submitted_qty.short_description = '제출 수량'
+
+    def is_complete_display(self, obj):
+        """제출 완료 여부"""
         if not obj.pk:
             return '-'
-        url = reverse('admin:contract_contractdocument_change', args=[obj.pk])
-        return format_html(
-            '<a href="{}" target="_blank" style="background: #417690; color: white; padding: 5px 10px; '
-            'text-decoration: none; border-radius: 3px;">상세/파일관리 ➜</a>', url
+        if obj.is_complete:
+            return format_html('<span style="color: green; font-weight: bold;">✓ 완료</span>')
+        else:
+            return format_html('<span style="color: gray;">미완료</span>')
+
+    is_complete_display.short_description = '완료'
+
+    def files_info(self, obj):
+        """파일 정보 (업로드/삭제)"""
+        if not obj.pk:
+            return '-'
+
+        files = obj.files.all()
+        parts = []
+
+        # 기존 파일 목록
+        if files:
+            file_links = []
+            for f in files:
+                file_links.append(
+                    '<div style="margin: 2px 0;">'
+                    '<input type="checkbox" name="delete_file_{}" value="1" style="margin-right: 3px;"> '
+                    '<a href="{}" target="_blank" title="{}KB">📎 {}</a>'
+                    '</div>'.format(
+                        f.pk,
+                        f.file.url,
+                        f.file_size // 1024 if f.file_size else 0,
+                        f.file_name[:20] + '...' if len(f.file_name) > 20 else f.file_name
+                    )
+                )
+            parts.append(''.join(file_links))
+        else:
+            parts.append('<span style="color: gray;">파일 없음</span>')
+
+        # 파일 업로드
+        parts.append(
+            '<div style="margin-top: 5px;">'
+            '<input type="file" name="upload_file_{}" multiple style="font-size: 11px;">'
+            '</div>'.format(obj.pk)
         )
-    manage_link.short_description = '관리'
 
+        return format_html('<div style="min-width: 200px;">{}</div>'.format(''.join(parts)))
 
-@admin.register(ContractDocument)
-class ContractDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
-    """계약 서류 상세 관리 (파일 업로드 포함)"""
-    inlines = [ContractDocumentFileInline]
-    list_display = ['contract', 'document_type', 'require_type', 'quantity_status',
-                    'submission_date', 'file_count_display', 'created']
-    list_display_links = ['contract', 'document_type']
-    list_filter = ['require_type', 'contract__project', 'document_type']
-    search_fields = ['contract__serial_number', 'document_type__name', 'contract__contractor__name']
-    readonly_fields = ['contract', 'document_type', 'created', 'updated', 'creator', 'updator']
-
-    fieldsets = (
-        ('서류 정보', {
-            'fields': ('contract', 'document_type', 'require_type')
-        }),
-        ('제출 현황', {
-            'fields': ('required_quantity', 'submitted_quantity', 'submission_date')
-        }),
-        ('시스템 정보', {
-            'fields': ('created', 'updated', 'creator', 'updator'),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def quantity_status(self, obj):
-        """제출 현황 (색상 표시)"""
-        percentage = (obj.submitted_quantity / obj.required_quantity * 100) if obj.required_quantity > 0 else 0
-        color = 'green' if percentage == 100 else 'orange' if percentage >= 50 else 'red'
-        icon = '✅' if percentage == 100 else '⏳'
-        return format_html(
-            '<span style="color: {};">{} {}/{} ({}%)</span>',
-            color, icon, obj.submitted_quantity, obj.required_quantity, int(percentage)
-        )
-    quantity_status.short_description = '제출현황'
-
-    def file_count_display(self, obj):
-        """파일 개수"""
-        count = obj.files.count()
-        if count == 0:
-            return format_html('<span style="color: gray;">📎 0개</span>')
-        return format_html('<span style="color: blue; font-weight: bold;">📎 {}개</span>', count)
-    file_count_display.short_description = '첨부파일'
-
-    def save_formset(self, request, form, formset, change):
-        """파일 업로드 시 uploader 자동 설정"""
-        instances = formset.save(commit=False)
-        for instance in instances:
-            if isinstance(instance, ContractDocumentFile):
-                if not instance.pk:  # 새로 생성하는 경우
-                    instance.uploader = request.user
-                instance.save()
-        formset.save_m2m()
+    files_info.short_description = '파일 (☐삭제/업로드)'
 
 
 @admin.register(Contract)
@@ -170,6 +140,54 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'order_group', 'unit_type', 'activation', 'contractor__status')
     search_fields = ('serial_number', 'contractor__name')
     inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin, ContractDocumentInline]
+
+    def save_model(self, request, obj, form, change):
+        """계약 저장"""
+        super().save_model(request, obj, form, change)
+
+        # ContractDocument 수량 업데이트
+        for key, value in request.POST.items():
+            if key.startswith('required_quantity_'):
+                doc_id = key.split('_')[-1]
+                try:
+                    doc = ContractDocument.objects.get(pk=doc_id)
+                    doc.required_quantity = int(value)
+                    doc.save()
+                except (ContractDocument.DoesNotExist, ValueError):
+                    pass
+            elif key.startswith('submitted_quantity_'):
+                doc_id = key.split('_')[-1]
+                try:
+                    doc = ContractDocument.objects.get(pk=doc_id)
+                    doc.submitted_quantity = int(value)
+                    doc.save()
+                except (ContractDocument.DoesNotExist, ValueError):
+                    pass
+
+        # 파일 삭제 처리
+        for key, value in request.POST.items():
+            if key.startswith('delete_file_') and value == '1':
+                file_id = key.split('_')[-1]
+                try:
+                    file_obj = ContractDocumentFile.objects.get(pk=file_id)
+                    file_obj.delete()
+                except ContractDocumentFile.DoesNotExist:
+                    pass
+
+        # 파일 업로드 처리
+        for key, file_list in request.FILES.lists():
+            if key.startswith('upload_file_'):
+                doc_id = key.split('_')[-1]
+                try:
+                    doc = ContractDocument.objects.get(pk=doc_id)
+                    for uploaded_file in file_list:
+                        ContractDocumentFile.objects.create(
+                            contract_document=doc,
+                            file=uploaded_file,
+                            uploader=request.user
+                        )
+                except ContractDocument.DoesNotExist:
+                    pass
 
 
 class ContractStatusFilter(admin.SimpleListFilter):
