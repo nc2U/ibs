@@ -139,55 +139,7 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project', 'serial_number',)
     list_filter = ('project', 'order_group', 'unit_type', 'activation', 'contractor__status')
     search_fields = ('serial_number', 'contractor__name')
-    inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin, ContractDocumentInline]
-
-    def save_model(self, request, obj, form, change):
-        """계약 저장"""
-        super().save_model(request, obj, form, change)
-
-        # ContractDocument 수량 업데이트
-        for key, value in request.POST.items():
-            if key.startswith('required_quantity_'):
-                doc_id = key.split('_')[-1]
-                try:
-                    doc = ContractDocument.objects.get(pk=doc_id)
-                    doc.required_quantity = int(value)
-                    doc.save()
-                except (ContractDocument.DoesNotExist, ValueError):
-                    pass
-            elif key.startswith('submitted_quantity_'):
-                doc_id = key.split('_')[-1]
-                try:
-                    doc = ContractDocument.objects.get(pk=doc_id)
-                    doc.submitted_quantity = int(value)
-                    doc.save()
-                except (ContractDocument.DoesNotExist, ValueError):
-                    pass
-
-        # 파일 삭제 처리
-        for key, value in request.POST.items():
-            if key.startswith('delete_file_') and value == '1':
-                file_id = key.split('_')[-1]
-                try:
-                    file_obj = ContractDocumentFile.objects.get(pk=file_id)
-                    file_obj.delete()
-                except ContractDocumentFile.DoesNotExist:
-                    pass
-
-        # 파일 업로드 처리
-        for key, file_list in request.FILES.lists():
-            if key.startswith('upload_file_'):
-                doc_id = key.split('_')[-1]
-                try:
-                    doc = ContractDocument.objects.get(pk=doc_id)
-                    for uploaded_file in file_list:
-                        ContractDocumentFile.objects.create(
-                            contract_document=doc,
-                            file=uploaded_file,
-                            uploader=request.user
-                        )
-                except ContractDocument.DoesNotExist:
-                    pass
+    inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin]
 
 
 class ContractStatusFilter(admin.SimpleListFilter):
@@ -269,7 +221,55 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',
                    'contract_date', 'gender', 'qualification', 'status')
     list_editable = ('gender', 'qualification', 'is_active')
-    inlines = (CContactInline, CAdressInline)
+    inlines = (CContactInline, CAdressInline, ContractDocumentInline)
+
+    def save_model(self, request, obj, form, change):
+        """계약자 저장"""
+        super().save_model(request, obj, form, change)
+
+        # ContractDocument 수량 업데이트
+        for key, value in request.POST.items():
+            if key.startswith('required_quantity_'):
+                doc_id = key.split('_')[-1]
+                try:
+                    doc = ContractDocument.objects.get(pk=doc_id)
+                    doc.required_quantity = int(value)
+                    doc.save()
+                except (ContractDocument.DoesNotExist, ValueError):
+                    pass
+            elif key.startswith('submitted_quantity_'):
+                doc_id = key.split('_')[-1]
+                try:
+                    doc = ContractDocument.objects.get(pk=doc_id)
+                    doc.submitted_quantity = int(value)
+                    doc.save()
+                except (ContractDocument.DoesNotExist, ValueError):
+                    pass
+
+        # 파일 삭제 처리
+        for key, value in request.POST.items():
+            if key.startswith('delete_file_') and value == '1':
+                file_id = key.split('_')[-1]
+                try:
+                    file_obj = ContractDocumentFile.objects.get(pk=file_id)
+                    file_obj.delete()
+                except ContractDocumentFile.DoesNotExist:
+                    pass
+
+        # 파일 업로드 처리
+        for key, file_list in request.FILES.lists():
+            if key.startswith('upload_file_'):
+                doc_id = key.split('_')[-1]
+                try:
+                    doc = ContractDocument.objects.get(pk=doc_id)
+                    for uploaded_file in file_list:
+                        ContractDocumentFile.objects.create(
+                            contract_document=doc,
+                            file=uploaded_file,
+                            uploader=request.user
+                        )
+                except ContractDocument.DoesNotExist:
+                    pass
 
 
 @admin.register(ContractorAddress)
