@@ -209,27 +209,10 @@ class ContractDocument(models.Model):
                                       verbose_name='서류 유형')
     required_quantity = models.PositiveIntegerField('필요 수량', default=1)
     submitted_quantity = models.PositiveIntegerField('제출 수량', default=0)
-
-    DOCUMENT_REQUIRE_TYPE = (
-        ('required', '필수'),
-        ('optional', '선택'),
-        ('conditional', '조건부 필수'),
-    )
+    DOCUMENT_REQUIRE_TYPE = (('required', '필수'), ('optional', '선택'), ('conditional', '조건부 필수'))
     require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
-
-    STATUS_CHOICES = (
-        ('pending', '미제출'),
-        ('submitted', '제출완료'),
-        ('approved', '승인'),
-        ('rejected', '반려'),
-    )
-    status = models.CharField('제출 상태', max_length=20, choices=STATUS_CHOICES, default='pending')
-
     submission_date = models.DateField('제출일', null=True, blank=True)
-    approved_date = models.DateField('승인일', null=True, blank=True)
-    rejected_reason = models.TextField('반려 사유', blank=True)
     notes = models.TextField('비고', blank=True)
-
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -246,16 +229,9 @@ class ContractDocument(models.Model):
         """제출 완료 여부 확인"""
         return self.submitted_quantity >= self.required_quantity
 
-    @property
-    def completion_rate(self):
-        """제출 완료율 (백분율)"""
-        if self.required_quantity == 0:
-            return 0
-        return round((self.submitted_quantity / self.required_quantity) * 100, 1)
-
     class Meta:
         db_table = 'contract_document'
-        ordering = ['document_type__display_order', 'document_type__name']
+        ordering = ['document_type__display_order', 'id']
         unique_together = [['contract', 'document_type']]
         verbose_name = '04. 계약 서류 제출 기록'
         verbose_name_plural = '04. 계약 서류 제출 기록'

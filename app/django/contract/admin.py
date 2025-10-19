@@ -1,9 +1,9 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
-from .models import (OrderGroup, Contract, ContractPrice, ContractFile,
-                     Contractor, ContractorAddress, ContractorContact, Succession,
-                     ContractorRelease, DocumentType, RequiredDocument)
+from .models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractDocument,
+                     ContractDocumentFile, ContractPrice, ContractFile, Contractor,
+                     ContractorAddress, ContractorContact, Succession, ContractorRelease)
 
 
 @admin.register(OrderGroup)
@@ -49,6 +49,11 @@ class ContractFileAdmin(admin.StackedInline):
     extra = 0
 
 
+class ContractDocumentInline(admin.StackedInline):
+    model = ContractDocument
+    extra = 0
+
+
 @admin.register(Contract)
 class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'serial_number', 'key_unit', 'order_group', 'unit_type',
@@ -57,7 +62,7 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project', 'serial_number',)
     list_filter = ('project', 'order_group', 'unit_type', 'activation', 'contractor__status')
     search_fields = ('serial_number', 'contractor__name')
-    inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin]
+    inlines = [ContractPriceInline, ContractorInline, ContractFileAdmin, ContractDocumentInline]
 
 
 class ContractStatusFilter(admin.SimpleListFilter):
