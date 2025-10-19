@@ -54,20 +54,8 @@ class ContractDocumentInline(admin.TabularInline):
     """계약 서류 Inline (1줄로 간단히 관리)"""
     model = ContractDocument
     extra = 0
-    fields = ['document_type', 'require_type', 'required_qty', 'submitted_qty',
-              'submission_date', 'is_complete_display', 'files_info']
-    readonly_fields = ['required_qty', 'submitted_qty', 'is_complete_display', 'files_info']
-
-    def required_qty(self, obj):
-        """필요 수량"""
-        if not obj.pk:
-            return '-'
-        return format_html(
-            '<input type="number" name="required_quantity_{}" value="{}" min="0" style="width: 50px;">',
-            obj.pk, obj.required_quantity
-        )
-
-    required_qty.short_description = '필요 수량'
+    fields = ['required_document', 'submitted_qty', 'submission_date', 'is_complete_display', 'files_info']
+    readonly_fields = ['submitted_qty', 'is_complete_display', 'files_info']
 
     def submitted_qty(self, obj):
         """제출 수량"""
@@ -228,15 +216,7 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
 
         # ContractDocument 수량 업데이트
         for key, value in request.POST.items():
-            if key.startswith('required_quantity_'):
-                doc_id = key.split('_')[-1]
-                try:
-                    doc = ContractDocument.objects.get(pk=doc_id)
-                    doc.required_quantity = int(value)
-                    doc.save()
-                except (ContractDocument.DoesNotExist, ValueError):
-                    pass
-            elif key.startswith('submitted_quantity_'):
+            if key.startswith('submitted_quantity_'):
                 doc_id = key.split('_')[-1]
                 try:
                     doc = ContractDocument.objects.get(pk=doc_id)

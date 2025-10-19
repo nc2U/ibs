@@ -454,12 +454,9 @@ class ContractDocument(models.Model):
     """계약자별 서류 제출 기록"""
     contractor = models.ForeignKey('Contractor', on_delete=models.CASCADE,
                                    verbose_name='계약자', related_name='submitted_documents')
-    document_type = models.ForeignKey(DocumentType, on_delete=models.PROTECT,
-                                      verbose_name='서류 유형')
-    required_quantity = models.PositiveIntegerField('필요 수량', default=1)
+    required_document = models.ForeignKey(RequiredDocument, on_delete=models.PROTECT,
+                                          verbose_name='필요 서류', related_name='contractor_submissions')
     submitted_quantity = models.PositiveIntegerField('제출 수량', default=0)
-    DOCUMENT_REQUIRE_TYPE = (('required', '필수'), ('optional', '선택'), ('conditional', '조건부 필수'))
-    require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
     submission_date = models.DateField('제출일', null=True, blank=True)
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
@@ -470,17 +467,36 @@ class ContractDocument(models.Model):
                                 verbose_name='편집자')
 
     def __str__(self):
-        return f'{self.contractor.name} - {self.document_type.name}'
+        if self.required_document:
+            return f'{self.contractor.name} - {self.required_document.document_type.name}'
+        return f'{self.contractor.name} - (서류 미지정)'
 
     @property
     def is_complete(self):
         """제출 완료 여부 확인"""
-        return self.submitted_quantity >= self.required_quantity
+        if not self.required_document:
+            return False
+        return self.submitted_quantity >= self.required_document.quantity
+
+    @property
+    def document_type(self):
+        """하위 호환성을 위한 속성"""
+        return self.required_document.document_type if self.required_document else None
+
+    @property
+    def required_quantity(self):
+        """필요 수량 (RequiredDocument에서 가져옴)"""
+        return self.required_document.quantity if self.required_document else 0
+
+    @property
+    def require_type(self):
+        """필수 여부 (RequiredDocument에서 가져옴)"""
+        return self.required_document.require_type if self.required_document else 'required'
 
     class Meta:
         db_table = 'contract_document'
-        # ordering = ['required_document__display_order', 'id']
-        unique_together = [['contractor', 'document_type']]
+        ordering = ['required_document__display_order', 'id']
+        unique_together = [['contractor', 'required_document']]
         verbose_name = '계약자 제출 서류'
         verbose_name_plural = '계약자 제출 서류'
 
@@ -491,7 +507,7 @@ def get_contract_document_file_name(instance, filename):
     contract = contractor.contract
     slug = contract.project.issue_project.slug
     contractor_name = contractor.name
-    doc_code = instance.contract_document.document_type.code
+    doc_code = instance.contract_document.required_document.document_type.code
     return os.path.join('contract_documents', f'{slug}', contractor_name, doc_code, filename)
 
 
