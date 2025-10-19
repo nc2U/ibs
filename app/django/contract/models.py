@@ -74,6 +74,8 @@ class DocumentType(models.Model):
     code = models.CharField('서류코드', max_length=50, unique=True, db_index=True,
                             help_text='시스템 내부 식별 코드 (예: BIZ_LICENSE, CORP_SEAL)')
     default_quantity = models.PositiveIntegerField('기본 수량', default=1)
+    DOCUMENT_REQUIRE_TYPE = (('required', '필수'), ('optional', '선택'), ('conditional', '조건부 필수'))
+    require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
     is_default_item = models.BooleanField('기본 서류 여부', default=True,
                                           help_text='프로젝트 생성 시 자동으로 추가될 필수 서류')
     is_active = models.BooleanField('사용 여부', default=True)
@@ -105,8 +107,8 @@ class RequiredDocument(models.Model):
     document_type = models.ForeignKey(DocumentType, on_delete=models.PROTECT,
                                       verbose_name='서류 유형', related_name='project_requirements')
     quantity = models.PositiveIntegerField('필요 수량', default=1)
-    DOCUMENT_REQUIRE_TYPE = (('required', '필수'), ('optional', '선택'), ('conditional', '조건부 필수'))
-    require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
+    require_type = models.CharField('필수 여부', max_length=20, choices=DocumentType.DOCUMENT_REQUIRE_TYPE,
+                                    default='required')
     notes = models.TextField('비고', blank=True, default='', help_text='프로젝트별 특이사항, 요구 조건 또는 추가 요구사항')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
