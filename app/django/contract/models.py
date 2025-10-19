@@ -111,7 +111,7 @@ class ContractRequiredDocument(models.Model):
         ('conditional', '조건부 필수'),
     )
     require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
-    notes = models.TextField('비고', blank=True, help_text='프로젝트별 특이사항 또는 추가 요구사항')
+    notes = models.TextField('비고', blank=True, default='', help_text='프로젝트별 특이사항 또는 추가 요구사항')
 
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
@@ -138,7 +138,7 @@ class ContractRequiredDocument(models.Model):
 
     class Meta:
         db_table = 'contract_required_document'
-        ordering = ['document_type__display_order', 'document_type__name']
+        ordering = ['document_type__display_order', 'id']
         unique_together = [['project', 'document_type']]
         verbose_name = '03. 계약 시 필요 서류'
         verbose_name_plural = '03. 계약 시 필요 서류'
