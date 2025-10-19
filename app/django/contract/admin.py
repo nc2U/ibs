@@ -28,6 +28,9 @@ class DocumentTypeAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(ContractRequiredDocument)
 class ContractRequiredDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'document_type', 'quantity', 'notes', 'require_type')
+    list_display_links = ('project', 'document_type')
+    list_filter = ('project', 'document_type', 'require_type')
+    search_fields = ('document_type__name',)
 
 
 class ContractPriceInline(admin.StackedInline):
