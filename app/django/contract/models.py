@@ -481,7 +481,7 @@ class ContractDocument(models.Model):
     class Meta:
         db_table = 'contract_document'
         ordering = ['document_type__display_order', 'id']
-        # unique_together = [['contractor', 'document_type']]  # 임시 제거 - 서버 마이그레이션 후 복원 예정
+        unique_together = [['contractor', 'document_type']]
         verbose_name = '계약자 제출 서류'
         verbose_name_plural = '계약자 제출 서류'
 
