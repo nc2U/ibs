@@ -421,6 +421,210 @@
     }
   },
   {
+    "model": "contract.documenttype",
+    "pk": 1,
+    "fields": {
+      "name": "계약자 신분증 사본",
+      "code": "ID_CONTRACTOR_COPY",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.034Z",
+      "updated": "2025-10-18T16:18:41.034Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 2,
+    "fields": {
+      "name": "인감도장",
+      "code": "SEAL_STAMP",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.035Z",
+      "updated": "2025-10-18T16:18:41.035Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 3,
+    "fields": {
+      "name": "인감증명서",
+      "code": "SEAL_CERTIFICATE_01",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.036Z",
+      "updated": "2025-10-18T16:18:41.036Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 4,
+    "fields": {
+      "name": "주민등록등본",
+      "code": "REGISTRATION_01",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "주민등록번호 기재 필수",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.037Z",
+      "updated": "2025-10-18T16:18:41.037Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 5,
+    "fields": {
+      "name": "주민등록초본",
+      "code": "REGISTRATION_02",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "주소변경 5년 이상 포함",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.038Z",
+      "updated": "2025-10-18T16:18:41.038Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 6,
+    "fields": {
+      "name": "가족관계증명서",
+      "code": "FAMILY_RELATIONSHIP",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.039Z",
+      "updated": "2025-10-18T16:18:41.039Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 7,
+    "fields": {
+      "name": "배우자 주민등록등본",
+      "code": "SPOUSE_REGISTRATION",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "세대주 및 배우자 분리 세대인 경우",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.040Z",
+      "updated": "2025-10-18T16:18:41.040Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 8,
+    "fields": {
+      "name": "제출용 계약자 도장",
+      "code": "SUBMISSION_STAMP",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "조합 제출용",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.041Z",
+      "updated": "2025-10-18T16:18:41.041Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 9,
+    "fields": {
+      "name": "계약금 무통장 입금증",
+      "code": "TRANSFER_RECEIPT",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.042Z",
+      "updated": "2025-10-18T16:18:41.042Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 10,
+    "fields": {
+      "name": "위임장",
+      "code": "POWER_OF_AGENT",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "[대리인 계약 시], 계약자 인감날인 필, 계약 장소 비치",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.043Z",
+      "updated": "2025-10-18T16:18:41.043Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 11,
+    "fields": {
+      "name": "계약자 인감증명서",
+      "code": "SEAL_CERTIFICATE_02",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "[대리인 계약 시]",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.044Z",
+      "updated": "2025-10-18T16:18:41.044Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 12,
+    "fields": {
+      "name": "대리인 신분증 사본",
+      "code": "ID_AGENT_COPY",
+      "default_quantity": 1,
+      "is_default_item": true,
+      "is_active": true,
+      "description": "[대리인 계약 시]",
+      "display_order": 0,
+      "created": "2025-10-18T16:18:41.045Z",
+      "updated": "2025-10-18T16:18:41.045Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
     "model": "ibs.accountsort",
     "pk": 1,
     "fields": {
