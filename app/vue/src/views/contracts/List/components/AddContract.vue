@@ -23,7 +23,7 @@ const createConfirm = () => createFormModal.value.callModal()
   <FormModal ref="createFormModal" size="xl">
     <template #header>청약 / 계약 등록 수정</template>
     <template #default>
-      <ContractForm :project="project" :unit-set="unitSet" />
+      <ContractForm :project="project" :unit-set="unitSet" @close="createFormModal.close()" />
     </template>
   </FormModal>
 </template>

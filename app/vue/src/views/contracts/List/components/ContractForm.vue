@@ -41,7 +41,7 @@ const props = defineProps({
   fromPage: { type: [Number, null] as PropType<number | null>, default: null },
 })
 
-const emit = defineEmits(['type-select', 'on-submit', 'search-contractor', 'resume-form'])
+const emit = defineEmits(['type-select', 'on-submit', 'search-contractor', 'resume-form', 'close'])
 
 const router = useRouter()
 
@@ -1009,7 +1009,7 @@ onBeforeRouteLeave(() => formDataReset())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" :color="btnLight" @click="formDataReset"> 취소</v-btn>
+      <v-btn type="button" :color="btnLight" @click="$emit('close')">닫기</v-btn>
       <v-btn
         v-if="write_contract && contract"
         type="button"

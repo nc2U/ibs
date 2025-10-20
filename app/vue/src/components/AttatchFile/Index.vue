@@ -3,6 +3,20 @@ import { inject, type PropType, ref } from 'vue'
 import { cutString, humanizeFileSize } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
+const props = defineProps({
+  labelClass: { type: String, default: 'col-sm-2' },
+  labelWidth: { type: Number, default: 2 },
+  labelName: { type: String, default: '첨부파일' },
+  disabled: { type: Boolean, default: false },
+  attatchFiles: { type: Array as PropType<AttatchFile[]>, default: () => [] },
+  deleted: { type: Number, default: null },
+  density: { type: String as PropType<'default' | 'comfortable' | 'compact'>, default: 'default' },
+  variant: {
+    type: String as PropType<'outlined' | 'underlined' | 'filled' | 'solo' | 'solo-filled'>,
+    default: 'filled',
+  },
+})
+
 interface AttatchFile {
   pk: number
   file: string
@@ -11,14 +25,6 @@ interface AttatchFile {
   created: string
   creator: { pk: number; username: string }
 }
-
-const props = defineProps({
-  labelClass: { type: String, default: 'col-sm-2' },
-  labelName: { type: String, default: '첨부파일' },
-  disabled: { type: Boolean, default: false },
-  attatchFiles: { type: Array as PropType<AttatchFile[]>, default: () => [] },
-  deleted: { type: Number, default: null },
-})
 
 const emit = defineEmits(['file-control'])
 
@@ -34,24 +40,21 @@ defineExpose({ doneEdit })
 const editFile = ref<number | null>(null)
 const cngFile = ref<File | null>(null)
 
-const loadFile = (data: Event, pk = null as null | number) => {
-  const el = data.target as HTMLInputElement
+// v-file-input을 위한 헬퍼 함수
+const handleNewFile = (file: File | File[] | null) => {
+  newFile.value = Array.isArray(file) ? file[0] : file
+  emit('file-control', { newFile: newFile.value })
+}
 
-  if (el.files && el.files[0]) {
-    if (el.id === 'scan-new-file') {
-      newFile.value = el.files[0]
-      emit('file-control', { newFile: newFile.value })
-    } else {
-      editFile.value = pk
-      cngFile.value = el.files[0]
-      emit('file-control', { editFile: editFile.value, cngFile: cngFile.value })
-    }
+const handleEditFile = (pk: number) => {
+  return (file: File | File[] | null) => {
+    editFile.value = pk
+    cngFile.value = Array.isArray(file) ? file[0] : file
+    emit('file-control', { editFile: editFile.value, cngFile: cngFile.value })
   }
 }
 
 const removeFile = (id: string) => {
-  const file_form = document.getElementById(id) as HTMLInputElement
-  file_form.value = ''
   if (id === 'scan-new-file') {
     newFile.value = null
     emit('file-control', { newFile: null })
@@ -84,7 +87,7 @@ const delFileSubmit = () => {
 <template>
   <CRow class="my-3 py-2" :class="{ 'bg-light': !isDark }">
     <CFormLabel :class="labelClass" class="col-form-label">{{ labelName }}</CFormLabel>
-    <CCol sm="10">
+    <CCol>
       <template v-if="!!attatchFiles.length">
         <CRow v-for="file in attatchFiles" :key="file.pk" class="mb-2" style="padding-top: 6px">
           <CCol sm="10">
@@ -122,37 +125,35 @@ const delFileSubmit = () => {
           </CCol>
 
           <CRow>
-            <CInputGroup v-if="editMode" class="mt-2">
-              <CFormInput
-                id="scan-edit-file"
-                type="file"
-                @change="loadFile($event, file.pk)"
-                :disabled="disabled"
-              />
-              <CInputGroupText v-if="editFile">
-                <v-icon
-                  icon="mdi-trash-can-outline"
-                  color="grey"
-                  size="16"
-                  @click="removeFile('scan-edit-file')"
-                />
-              </CInputGroupText>
-            </CInputGroup>
+            <v-file-input
+              v-if="editMode"
+              v-model="cngFile"
+              @update:model-value="handleEditFile(file.pk)"
+              :clearable="!!cngFile"
+              @click:clear="removeFile('scan-edit-file')"
+              :disabled="disabled"
+              label="계약서 파일"
+              :variant="variant"
+              :density="density"
+              hide-details
+              class="mt-2"
+            />
           </CRow>
         </CRow>
       </template>
 
-      <CInputGroup v-else>
-        <CFormInput id="scan-new-file" type="file" @change="loadFile" :disabled="disabled" />
-        <CInputGroupText v-if="newFile">
-          <v-icon
-            icon="mdi-trash-can-outline"
-            color="grey"
-            size="16"
-            @click="removeFile('scan-new-file')"
-          />
-        </CInputGroupText>
-      </CInputGroup>
+      <v-file-input
+        v-else
+        v-model="newFile"
+        @update:model-value="handleNewFile"
+        :clearable="!!newFile"
+        @click:clear="removeFile('scan-new-file')"
+        :disabled="disabled"
+        label="계약서 파일"
+        :variant="variant"
+        :density="density"
+        hide-details
+      />
     </CCol>
   </CRow>
 
