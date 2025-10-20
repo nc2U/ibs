@@ -3,6 +3,15 @@ import { inject, type PropType, ref } from 'vue'
 import { cutString, humanizeFileSize } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
+interface AttatchFile {
+  pk: number
+  file: string
+  file_name: string
+  file_size: number
+  created: string
+  creator: { pk: number; username: string }
+}
+
 const props = defineProps({
   labelClass: { type: String, default: 'col-sm-2' },
   labelWidth: { type: Number, default: 2 },
@@ -16,15 +25,6 @@ const props = defineProps({
     default: 'filled',
   },
 })
-
-interface AttatchFile {
-  pk: number
-  file: string
-  file_name: string
-  file_size: number
-  created: string
-  creator: { pk: number; username: string }
-}
 
 const emit = defineEmits(['file-control'])
 

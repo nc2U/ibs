@@ -252,15 +252,21 @@ const fetchHouseUnitList = (payload: UnitFilter) => contStore.fetchHouseUnitList
 
 const typeSelect = () => {
   nextTick(async () => {
-    const payload =
+    const payload: {
+      unit_type?: number
+      contract?: number
+      available?: 'true' | ''
+    } =
       !!props.contract && form.unit_type === props.contract.unit_type
-        ? { unit_type: form.unit_type, contract: props.contract.pk }
-        : { unit_type: form.unit_type, available: 'true' }
+        ? { unit_type: form.unit_type as number, contract: props.contract.pk }
+        : { unit_type: form.unit_type as number, available: 'true' }
 
     form.key_unit = null
     form.houseunit = null
-    await fetchKeyUnitList({ project: props.project as number, ...payload })
-    await fetchHouseUnitList({ project: props.project as number, ...payload })
+    if (props.project) {
+      await fetchKeyUnitList({ project: props.project as number, ...payload })
+      await fetchHouseUnitList({ project: props.project as number, ...payload })
+    }
   })
 }
 
