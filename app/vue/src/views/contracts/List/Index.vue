@@ -16,6 +16,7 @@ import AddContract from '@/views/contracts/List/components/AddContract.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SelectItems from '@/views/contracts/List/components/SelectItems.vue'
 import ContractList from '@/views/contracts/List/components/ContractList.vue'
+import { useProCash } from '@/store/pinia/proCash.ts'
 
 const route = useRoute()
 const listControl = ref()
@@ -40,24 +41,22 @@ const visible = ref(false)
 const filteredStr = ref(`&status=${status.value}`)
 const printItems = ref(['1', '3', '4', '5', '8', '13', '14'])
 
-const projStore = useProject()
-const project = computed<Project | null>(() => projStore.project)
-const unitSet = computed(() => (projStore.project as Project)?.is_unit_set)
-watch(project, nVal => {
-  if (!!nVal)
-    if (nVal?.is_unit_set && !printItems.value.includes('6-7')) printItems.value.splice(4, 0, '6-7')
-})
-
 const excelUrl = computed(() => {
   const pk = project.value ? project.value?.pk : ''
   const items = printItems.value.join('-')
   return `/excel/contracts/?project=${pk}${filteredStr.value}&col=${items}`
 })
 
+const projStore = useProject()
+const project = computed(() => projStore.project as Project)
+const unitSet = computed(() => (projStore.project as Project)?.is_unit_set)
+watch(project, nVal => {
+  if (!!nVal)
+    if (nVal?.is_unit_set && !printItems.value.includes('6-7')) printItems.value.splice(4, 0, '6-7')
+})
+
 const contStore = useContract()
-
 const fetchOrderGroupList = (pk: number) => contStore.fetchOrderGroupList(pk)
-
 const fetchContractList = (payload: ContFilter) => contStore.fetchContractList(payload)
 const findContractPage = (highlightId: number, filters: ContFilter) =>
   contStore.findContractPage(highlightId, filters)
@@ -65,9 +64,11 @@ const fetchSubsSummaryList = (pk: number) => contStore.fetchSubsSummaryList(pk)
 const fetchContSummaryList = (pk: number) => contStore.fetchContSummaryList(pk)
 
 const proDataStore = useProjectData()
-
 const fetchTypeList = (projId: number) => proDataStore.fetchTypeList(projId)
 const fetchBuildingList = (projId: number) => proDataStore.fetchBuildingList(projId)
+
+const proCashStore = useProCash()
+const fetchAllProBankAccList = (projId: number) => proCashStore.fetchAllProBankAccList(projId)
 
 const pageSelect = (page: number) => {
   // 페이지 변경 시 query string 정리
@@ -144,6 +145,7 @@ const dataSetup = async (proj: number) => {
   await fetchOrderGroupList(proj)
   await fetchTypeList(proj)
   await fetchBuildingList(proj)
+  await fetchAllProBankAccList(proj)
 
   // 초기 필터 설정
   currentFilters.value = { project: proj, limit: limit.value, status: status.value }
@@ -169,6 +171,7 @@ const dataReset = () => {
   contStore.contractList = []
   contStore.contractsCount = 0
   proDataStore.buildingList = []
+  proCashStore.allProBankAccountList = []
 }
 
 const projSelect = async (target: number | null, skipClearQuery = false) => {
