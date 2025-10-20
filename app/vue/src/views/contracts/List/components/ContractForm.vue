@@ -230,12 +230,8 @@ const getOGSort = (pk: number): string =>
 
 const getKUCode = (pk: number) => getKeyUnits.value.filter(k => k.value === pk).map(k => k.label)[0]
 
-const setOGSort = () => {
-  nextTick(() => {
-    const pk = Number(form.order_group)
-    form.order_group_sort = getOGSort(pk)
-  })
-}
+const setOGSort = () =>
+  nextTick(() => (form.order_group_sort = getOGSort(Number(form.order_group))))
 
 const setKeyCode = () => {
   nextTick(() => {
@@ -261,12 +257,10 @@ const typeSelect = () => {
         ? { unit_type: form.unit_type, contract: props.contract.pk }
         : { unit_type: form.unit_type, available: 'true' }
 
-    if (props.project) {
-      await fetchKeyUnitList({ project: props.project, ...payload })
-      await fetchHouseUnitList({ project: props.project, ...payload })
-      form.key_unit = null
-      form.houseunit = null
-    }
+    form.key_unit = null
+    form.houseunit = null
+    await fetchKeyUnitList({ project: props.project as number, ...payload })
+    await fetchHouseUnitList({ project: props.project as number, ...payload })
   })
 }
 
