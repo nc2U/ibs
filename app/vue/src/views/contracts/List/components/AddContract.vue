@@ -8,7 +8,6 @@ defineProps({
   project: { type: Number, default: null },
   unitSet: { type: Boolean, default: false },
 })
-const emit = defineEmits(['multi-submit', 'on-bank-create', 'on-bank-update'])
 
 const createFormModal = ref()
 

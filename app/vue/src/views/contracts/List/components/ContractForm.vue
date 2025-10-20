@@ -12,7 +12,7 @@ import {
 } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
-import { useContract } from '@/store/pinia/contract'
+import { type UnitFilter, useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
@@ -41,7 +41,7 @@ const props = defineProps({
   fromPage: { type: [Number, null] as PropType<number | null>, default: null },
 })
 
-const emit = defineEmits(['type-select', 'on-submit', 'search-contractor', 'resume-form', 'close'])
+const emit = defineEmits(['on-submit', 'close'])
 
 const router = useRouter()
 
@@ -123,10 +123,10 @@ watch(matchAddr, val => sameAddrBtnSet(val))
 
 const isDark = inject('isDark')
 
-const contractStore = useContract()
-const getOrderGroups = computed(() => contractStore.getOrderGroups)
-const getKeyUnits = computed(() => contractStore.getKeyUnits)
-const getHouseUnits = computed(() => contractStore.getHouseUnits)
+const contStore = useContract()
+const getOrderGroups = computed(() => contStore.getOrderGroups)
+const getKeyUnits = computed(() => contStore.getKeyUnits)
+const getHouseUnits = computed(() => contStore.getHouseUnits)
 
 const projectDataStore = useProjectData()
 const getTypes = computed(() => projectDataStore.getTypes)
@@ -251,16 +251,22 @@ const unitReset = () => {
   })
 }
 
+const fetchKeyUnitList = (payload: UnitFilter) => contStore.fetchKeyUnitList(payload)
+const fetchHouseUnitList = (payload: UnitFilter) => contStore.fetchHouseUnitList(payload)
+
 const typeSelect = () => {
-  nextTick(() => {
+  nextTick(async () => {
     const payload =
       !!props.contract && form.unit_type === props.contract.unit_type
         ? { unit_type: form.unit_type, contract: props.contract.pk }
         : { unit_type: form.unit_type, available: 'true' }
 
-    emit('type-select', payload)
-    form.key_unit = null
-    form.houseunit = null
+    if (props.project) {
+      await fetchKeyUnitList({ project: props.project, ...payload })
+      await fetchHouseUnitList({ project: props.project, ...payload })
+      form.key_unit = null
+      form.houseunit = null
+    }
   })
 }
 
@@ -268,8 +274,6 @@ const deleteContract = () => {
   if (useAccount().superAuth) refDelModal.value.callModal()
   else refAlertModal.value.callModal()
 }
-
-const searchContractor = (contor: string) => emit('search-contractor', contor)
 
 const remove_sup_cDate = () => (form.is_sup_cont ? (form.sup_cont_date = null) : null)
 
@@ -319,7 +323,7 @@ const formDataReset = () => {
   form.home_phone = ''
   form.other_phone = ''
   form.email = ''
-  contractStore.removeContract()
+  contStore.removeContract()
   sameAddr.value = false
 }
 
@@ -369,8 +373,6 @@ const formDataSetup = () => {
   }
   form.project = props.project as number
 }
-
-const resumeForm = (contor: string) => emit('resume-form', contor)
 
 const addressCallback = (data: AddressData) => {
   const { formNum, zipcode, address1, address3 } = callAddress(data)
