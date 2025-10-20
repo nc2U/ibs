@@ -41,7 +41,7 @@ const props = defineProps({
   fromPage: { type: [Number, null] as PropType<number | null>, default: null },
 })
 
-const emit = defineEmits(['on-submit', 'close'])
+const emit = defineEmits(['on-submit', 'close', 'subscription-created'])
 
 const router = useRouter()
 
@@ -435,6 +435,9 @@ const saveContract = (payload: any) => {
 }
 
 const modalAction = async () => {
+  // 신규 청약 생성 여부 확인
+  const isNewSubscription = !form.pk && form.status === '1'
+
   await saveContract({
     ...form,
     newFile: newFile.value,
@@ -449,7 +452,10 @@ const modalAction = async () => {
   cngFile.value = ''
   delFile.value = undefined
   RefContFile.value.doneEdit()
+
   emit('close')
+  // 신규 청약이면 subscription-created 이벤트 (status UI 동기화용)
+  if (isNewSubscription) emit('subscription-created')
 }
 
 const fileControl = (payload: any) => {

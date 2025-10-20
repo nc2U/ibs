@@ -54,8 +54,15 @@ watch(from_date, () => listFiltering(1))
 
 watch(to_date, () => listFiltering(1))
 
+watch(
+  () => props.status,
+  newStatus => {
+    form.status = newStatus
+  },
+)
+
 const listFiltering = (page = 1) => {
-  form.search = form.search?.trim()
+  form.search = (form.search as string)?.trim()
   form.from_date = from_date.value
   form.to_date = to_date.value
   nextTick(() => {

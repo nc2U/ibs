@@ -105,6 +105,11 @@ const onContFiltering = (payload: ContFilter) => {
 }
 const setItems = (arr: string[]) => (printItems.value = arr)
 
+const handleSubscription = async () => {
+  // 청약 목록으로 전환 (실제 목록은 pinia에서 이미 로드됨)
+  status.value = '1'
+}
+
 const scrollToHighlight = async () => {
   if (highlightId.value) {
     await nextTick()
@@ -281,7 +286,11 @@ onBeforeMount(async () => {
     <ContentBody>
       <CCardBody class="pb-5">
         <ListController ref="listControl" :status="status" @cont-filtering="onContFiltering" />
-        <AddContract :project="project?.pk" :unit-set="unitSet" />
+        <AddContract
+          :project="project?.pk"
+          :unit-set="unitSet"
+          @subscription-created="handleSubscription"
+        />
         <TableTitleRow title="계약현황" excel :url="excelUrl" :disabled="!project">
           <v-btn
             size="small"

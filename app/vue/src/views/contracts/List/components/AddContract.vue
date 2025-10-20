@@ -9,6 +9,8 @@ defineProps({
   unitSet: { type: Boolean, default: false },
 })
 
+const emit = defineEmits(['subscription-created'])
+
 const createFormModal = ref()
 
 const createConfirm = () => createFormModal.value.callModal()
@@ -22,7 +24,12 @@ const createConfirm = () => createFormModal.value.callModal()
   <FormModal ref="createFormModal" size="xl">
     <template #header>청약 / 계약 등록 수정</template>
     <template #default>
-      <ContractForm :project="project" :unit-set="unitSet" @close="createFormModal.close()" />
+      <ContractForm
+        :project="project"
+        :unit-set="unitSet"
+        @close="createFormModal.close()"
+        @subscription-created="$emit('subscription-created')"
+      />
     </template>
   </FormModal>
 </template>
