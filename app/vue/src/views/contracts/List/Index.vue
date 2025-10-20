@@ -12,6 +12,7 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import ContractSummary from './components/ContractSummary.vue'
 import ListController from '@/views/contracts/List/components/ListController.vue'
+import AddContract from '@/views/contracts/List/components/AddContract.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SelectItems from '@/views/contracts/List/components/SelectItems.vue'
 import ContractList from '@/views/contracts/List/components/ContractList.vue'
@@ -278,6 +279,7 @@ onBeforeMount(async () => {
     <ContentBody>
       <CCardBody class="pb-5">
         <ListController ref="listControl" :status="status" @cont-filtering="onContFiltering" />
+        <AddContract :project="project?.pk" />
         <TableTitleRow title="계약현황" excel :url="excelUrl" :disabled="!project">
           <v-btn
             size="small"

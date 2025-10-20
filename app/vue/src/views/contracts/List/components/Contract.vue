@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { useRouter } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
@@ -11,8 +11,8 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
 })
 
-const contractor = computed(() => props.contract?.contractor?.pk)
 const router = useRouter()
+const contractor = computed(() => props.contract?.contractor?.pk)
 
 const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
   q ? { '1': 'info', '2': 'warning', '3': 'success', '4': 'danger' }[q] : ''
