@@ -122,8 +122,8 @@ class RequiredDocument(models.Model):
     class Meta:
         ordering = ['display_order', 'id']
         unique_together = [['project', 'document_type']]
-        verbose_name = '03. 계약 시 필요 서류 (프로젝트별)'
-        verbose_name_plural = '03. 계약 시 필요 서류 (프로젝트별)'
+        verbose_name = '03. 프로젝트별 필요 서류'
+        verbose_name_plural = '03. 프로젝트별 필요 서류'
 
 
 class Contract(models.Model):
