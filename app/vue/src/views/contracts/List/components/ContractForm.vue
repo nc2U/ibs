@@ -585,8 +585,12 @@ onBeforeRouteLeave(() => formDataReset())
               <CFormFeedback invalid>공급계약 체결일을 입력하세요.</CFormFeedback>
             </CCol>
             <CCol class="form-text">
-              공급계약이란 조합원 가입 시 체결하는 가입계약이 아닌 사업계획승인 후 시공사와 체결하는
-              주택공급계약을 말하는 것으로 주택공급계약 체결 시 이 항목을 체크.
+              공급계약이란 조합원 가입계약이 아닌
+              <b>
+                사업계획승인 후 조합원이 시공사와 체결하는 주택공급계약 체결 또는 일반(임의)분양
+                계약
+              </b>
+              을 지칭하는 것으로 이에 해당되는 경우 이 항목을 체크.
             </CCol>
           </CRow>
         </CAlert>
@@ -641,7 +645,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>생년월일 입력하세요.</CFormFeedback>
         </CCol>
 
-        <CCol v-show="isContract" xs="6" lg="1" class="pt-2 p-0 text-center">
+        <CCol v-show="isContract" xs="6" lg="2" class="pt-2 p-0 text-center">
           <div class="form-check form-check-inline">
             <input
               id="male"
@@ -794,54 +798,6 @@ onBeforeRouteLeave(() => formDataReset())
                   </CTableRow>
                 </CTableBody>
               </CTable>
-              <!--              <CRow-->
-              <!--                v-for="(payment, i) in downPayments as Payment[]"-->
-              <!--                :key="payment.pk"-->
-              <!--                class="text-center mb-1"-->
-              <!--                :class="form.payment === payment.pk ? 'text-success text-decoration-underline' : ''"-->
-              <!--              >-->
-              <!--                <CCol>-->
-              <!--                  계약금-->
-              <!--                  <router-link-->
-              <!--                    v-c-tooltip="'건별 수납 관리'"-->
-              <!--                    :to="{-->
-              <!--                      name: '건별 수납 관리',-->
-              <!--                      query: { contract: contract.pk },-->
-              <!--                    }"-->
-              <!--                  >-->
-              <!--                    납부내역-->
-              <!--                  </router-link>-->
-              <!--                  [{{ i + 1 }}]-->
-              <!--                </CCol>-->
-              <!--                <CCol class="text-right">{{ payment.deal_date }}</CCol>-->
-              <!--                <CCol class="text-right">-->
-              <!--                  <router-link-->
-              <!--                    v-c-tooltip="'건별 수납 관리'"-->
-              <!--                    :to="{-->
-              <!--                      name: '건별 수납 관리',-->
-              <!--                      query: { contract: contract.pk },-->
-              <!--                    }"-->
-              <!--                  >-->
-              <!--                    {{ numFormat(payment.income) }}-->
-              <!--                  </router-link>-->
-              <!--                </CCol>-->
-              <!--                <CCol>-->
-              <!--                  {{-->
-              <!--                    allProBankAccountList-->
-              <!--                      .filter(b => b.pk === payment.bank_account)-->
-              <!--                      .map(b => b.alias_name)[0]-->
-              <!--                  }}-->
-              <!--                </CCol>-->
-              <!--                <CCol>{{ payment.trader }}</CCol>-->
-              <!--                <CCol>-->
-              <!--                  {{ payment.installment_order.__str__ }}-->
-              <!--                </CCol>-->
-              <!--                <CCol>-->
-              <!--                  <v-btn type="button" color="success" size="x-small" @click="payUpdate(payment)">-->
-              <!--                    수정-->
-              <!--                  </v-btn>-->
-              <!--                </CCol>-->
-              <!--              </CRow>-->
             </CCol>
           </CRow>
 
@@ -1053,9 +1009,6 @@ onBeforeRouteLeave(() => formDataReset())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" :color="btnLight" @click="router.push({ name: '계약 내역 조회' })">
-        목록으로
-      </v-btn>
       <v-btn type="button" :color="btnLight" @click="formDataReset"> 취소</v-btn>
       <v-btn
         v-if="write_contract && contract"
@@ -1091,7 +1044,7 @@ onBeforeRouteLeave(() => formDataReset())
   </FormModal>
 
   <ConfirmModal ref="refDelModal">
-    <template #header>프로젝트정보 삭제</template>
+    <template #header>{{ contLabel }} 정보 삭제</template>
     <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
     <template #footer>
       <v-btn color="warning" size="small" disabled>삭제</v-btn>
