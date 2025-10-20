@@ -59,8 +59,8 @@ const form = reactive({
   // contract
   pk: null as number | null,
   project: null as null | number,
-  order_group: null as number | null,
   order_group_sort: '',
+  order_group: null as number | null,
   unit_type: null as number | null,
   serial_number: '',
   activation: true,
@@ -231,7 +231,7 @@ const getOGSort = (pk: number): string =>
 const getKUCode = (pk: number) => getKeyUnits.value.filter(k => k.value === pk).map(k => k.label)[0]
 
 const setOGSort = () =>
-  nextTick(() => (form.order_group_sort = getOGSort(Number(form.order_group))))
+  nextTick(() => (form.order_group_sort = getOGSort(Number(form.order_group as number))))
 
 const setKeyCode = () => {
   nextTick(() => {
@@ -423,8 +423,19 @@ const editFile = ref<number | ''>('')
 const cngFile = ref<File | ''>('')
 const delFile = ref<number | undefined>(undefined)
 
-const modalAction = () => {
-  emit('on-submit', {
+const saveContract = (payload: any) => {
+  const { pk, ...getData } = payload as { [key: string]: any }
+
+  const form = new FormData()
+
+  for (const key in getData) form.set(key, getData[key] ?? '')
+
+  if (!pk) contStore.createContractSet(form)
+  else contStore.updateContractSet(pk, form)
+}
+
+const modalAction = async () => {
+  await saveContract({
     ...form,
     newFile: newFile.value,
     editFile: editFile.value,
