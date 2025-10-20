@@ -299,13 +299,28 @@ class ContractSetSerializer(serializers.ModelSerializer):
             price = get_contract_price(contract, None, True)  # is_set=True for consistency
 
         # 4. 계약 가격 정보 등록 (price 정보만 저장, 납부 금액은 property로 계산)
-        cont_price = ContractPrice(contract=contract,
-                                   house_unit=house_unit,  # house_unit 필드 추가
-                                   price=price[0],
-                                   price_build=price[1],
-                                   price_land=price[2],
-                                   price_tax=price[3])
-        cont_price.save()
+        # house_unit이 이미 ContractPrice와 연결되어 있으면 업데이트, 없으면 생성
+        if house_unit:
+            cont_price, created = ContractPrice.objects.update_or_create(
+                house_unit=house_unit,
+                defaults={
+                    'contract': contract,
+                    'price': price[0],
+                    'price_build': price[1],
+                    'price_land': price[2],
+                    'price_tax': price[3],
+                }
+            )
+        else:
+            # house_unit이 없는 경우 새로 생성
+            cont_price = ContractPrice.objects.create(
+                contract=contract,
+                house_unit=None,
+                price=price[0],
+                price_build=price[1],
+                price_land=price[2],
+                price_tax=price[3]
+            )
 
         # 5. 계약자 정보 테이블 입력
         contractor_name = self.initial_data.get('name')
