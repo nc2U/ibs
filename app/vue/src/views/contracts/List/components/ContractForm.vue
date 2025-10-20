@@ -449,6 +449,7 @@ const modalAction = async () => {
   cngFile.value = ''
   delFile.value = undefined
   RefContFile.value.doneEdit()
+  emit('close')
 }
 
 const fileControl = (payload: any) => {

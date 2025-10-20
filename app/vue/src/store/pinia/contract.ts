@@ -241,7 +241,10 @@ export const useContract = defineStore('contract', () => {
   const createContractSet = (payload: FormData) =>
     api
       .post(`/contract-set/`, payload, config_headers)
-      .then(() => message())
+      .then(async res => {
+        await fetchContractList({ project: res.data.project, is_sup_cont: res.data.is_sup_cont })
+        message()
+      })
       .catch(err => errorHandle(err.response.data))
 
   const updateContractSet = (pk: number, payload: FormData) =>
