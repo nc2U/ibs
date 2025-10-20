@@ -277,9 +277,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
         # 1. 계약정보 테이블 입력
         contract = Contract.objects.create(**validated_data)
         request = self.context['request']
-        new_file = request.data.get('newFile', None)
-        if new_file:
-            ContractFile.objects.create(contract=contract, file=new_file, creator=request.user)
 
         # 2. 계약 유닛 연결
         unit_pk = self.initial_data.get('key_unit')
@@ -365,6 +362,11 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                                               email=contact_email)
         contractor_contact.save()
 
+        # 7-1. 계약서 파일 업로드 처리 (contractor 생성 후)
+        new_file = request.data.get('newFile', None)
+        if new_file:
+            ContractFile.objects.create(contractor=contractor, file=new_file, creator=request.user)
+
         # 8. 계약금 -- 수납 정보 테이블 입력
         if self.initial_data.get('deal_date'):
             project = self.initial_data.get('project')
@@ -412,7 +414,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
         new_file = data.get('newFile', None)
         if new_file:
-            ContractFile.objects.create(contract=instance, file=new_file, creator=user)
+            contractor = Contractor.objects.get(contract=instance)
+            ContractFile.objects.create(contractor=contractor, file=new_file, creator=user)
 
         edit_file = data.get('editFile', None)  # pk of file to edit
         cng_file = data.get('cngFile', None)  # change file
