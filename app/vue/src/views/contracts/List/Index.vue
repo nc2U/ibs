@@ -36,15 +36,14 @@ const urlProjectId = computed(() => {
 const currentFilters = ref<ContFilter>({ project: null })
 
 const visible = ref(false)
-const unitSet = ref(false)
 
 const filteredStr = ref(`&status=${status.value}`)
 const printItems = ref(['1', '3', '4', '5', '8', '13', '14'])
 
 const projStore = useProject()
 const project = computed<Project | null>(() => projStore.project)
+const unitSet = computed(() => (projStore.project as Project)?.is_unit_set)
 watch(project, nVal => {
-  unitSet.value = nVal?.is_unit_set || false
   if (!!nVal)
     if (nVal?.is_unit_set && !printItems.value.includes('6-7')) printItems.value.splice(4, 0, '6-7')
 })
@@ -279,7 +278,7 @@ onBeforeMount(async () => {
     <ContentBody>
       <CCardBody class="pb-5">
         <ListController ref="listControl" :status="status" @cont-filtering="onContFiltering" />
-        <AddContract :project="project?.pk" />
+        <AddContract :project="project?.pk" :unit-set="unitSet" />
         <TableTitleRow title="계약현황" excel :url="excelUrl" :disabled="!project">
           <v-btn
             size="small"

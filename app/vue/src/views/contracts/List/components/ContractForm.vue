@@ -24,9 +24,6 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import Multiselect from '@vueform/multiselect'
-// import ContNavigation from './ContNavigation.vue'
-// import ContController from './ContController.vue'
-// import ContractorAlert from './ContractorAlert.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AttatchFile from '@/components/AttatchFile/Index.vue'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
@@ -467,28 +464,17 @@ onBeforeRouteLeave(() => formDataReset())
 <template>
   <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
     <CCardBody>
-      <ContNavigation :cont-on="!!form.pk" />
-      <ContController :project="project" @search-contractor="searchContractor" />
-      <ContractorAlert
-        v-if="contractor"
-        :is-blank="!form.pk"
-        :contractor="contractor"
-        @resume-form="resumeForm"
-      />
-
-      <v-divider />
-
       <CRow class="mb-3">
         <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 구분</CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <Multiselect
             v-model="form.status"
+            placeholder="---------"
             :options="[
               { value: '1', label: '청약' },
               { value: '2', label: '계약' },
             ]"
             required
-            placeholder="---------"
             autocomplete="label"
             :classes="{
               search: 'form-control multiselect-search',
@@ -498,7 +484,6 @@ onBeforeRouteLeave(() => formDataReset())
             :disabled="!project"
             @change="unitReset"
           />
-          <CFormFeedback invalid>구분 항목을 선택하세요.</CFormFeedback>
         </CCol>
       </CRow>
 

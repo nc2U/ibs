@@ -1,22 +1,18 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { AlertLight } from '@/utils/cssMixins'
-// import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ContractForm from '@/views/contracts/List/components/ContractForm.vue'
 
-defineProps({ project: { type: Number, default: null } })
+defineProps({
+  project: { type: Number, default: null },
+  unitSet: { type: Boolean, default: false },
+})
 const emit = defineEmits(['multi-submit', 'on-bank-create', 'on-bank-update'])
 
 const createFormModal = ref()
 
 const createConfirm = () => createFormModal.value.callModal()
-
-// const multiSubmit = (payload: { formData: ProjectCashBook; sepData: ProjectCashBook | null }) =>
-//   emit('multi-submit', payload)
-
-// const onBankCreate = (payload: ProBankAcc) => emit('on-bank-create', payload)
-// const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
 </script>
 
 <template>
@@ -25,13 +21,9 @@ const createConfirm = () => createFormModal.value.callModal()
   </CAlert>
 
   <FormModal ref="createFormModal" size="xl">
-    <template #header>프로젝트 입출금 거래 건별 등록</template>
+    <template #header>청약 / 계약 등록 수정</template>
     <template #default>
-      <ContractForm />
-      <!--      @multi-submit="multiSubmit"-->
-      <!--      @on-bank-create="onBankCreate"-->
-      <!--      @on-bank-update="onBankUpdate"-->
-      <!--      @close="createFormModal.close()"-->
+      <ContractForm :project="project" :unit-set="unitSet" />
     </template>
   </FormModal>
 </template>
