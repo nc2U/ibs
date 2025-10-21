@@ -10,6 +10,7 @@ const emit = defineEmits(['page-select'])
 
 const props = defineProps({
   limit: { type: Number, default: 10 },
+  unitSet: { type: Boolean, default: false },
   highlightId: { type: [Number, null] as PropType<number | null>, default: null },
   currentPage: { type: Number, default: 1 },
 })
@@ -62,6 +63,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         v-for="contract in contractList"
         :key="contract.pk"
         :contract="contract"
+        :unit-set="unitSet"
         :is-highlighted="props.highlightId === contract.pk"
         :current-page="props.currentPage"
       />

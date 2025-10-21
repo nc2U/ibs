@@ -306,6 +306,7 @@ onBeforeMount(async () => {
         <SelectItems :visible="visible" :unit-set="unitSet" @print-items="setItems" />
         <ContractList
           :limit="limit"
+          :unit-set="unitSet"
           :highlight-id="highlightId ?? undefined"
           :current-page="currentFilters.page || 1"
           @page-select="pageSelect"

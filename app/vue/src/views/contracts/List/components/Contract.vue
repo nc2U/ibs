@@ -4,12 +4,17 @@ import { numFormat } from '@/utils/baseMixins'
 import { useRouter } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
 import { type Contract } from '@/store/types/contract'
+import ContractForm from '@/views/contracts/List/components/ContractForm.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
+  unitSet: { type: Boolean, default: false },
   isHighlighted: { type: Boolean, default: false },
   currentPage: { type: Number, default: 1 },
 })
+
+const updateFormModal = ref()
 
 const router = useRouter()
 const contractor = computed(() => props.contract?.contractor?.pk)
@@ -92,19 +97,39 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       </span>
     </CTableDataCell>
     <CTableDataCell v-if="write_contract">
+<!--      <v-btn-->
+<!--        type="button"-->
+<!--        color="success"-->
+<!--        size="x-small"-->
+<!--        @click="-->
+<!--          router.push({-->
+<!--            name: '계약 등록 수정',-->
+<!--            query: { contractor, from_page: props.currentPage },-->
+<!--          })-->
+<!--        "-->
+<!--      >-->
+<!--        수정-->
+<!--      </v-btn>-->
       <v-btn
         type="button"
         color="success"
         size="x-small"
-        @click="
-          router.push({
-            name: '계약 등록 수정',
-            query: { contractor, from_page: props.currentPage },
-          })
-        "
+        @click="updateFormModal.callModal()"
       >
         수정
       </v-btn>
     </CTableDataCell>
   </CTableRow>
+
+  <FormModal ref="updateFormModal" size="xl">
+    <template #header>청약 / 계약 등록 수정</template>
+    <template #default>
+      <ContractForm
+        :project="contract.project"
+        :unit-set="unitSet"
+        @close="updateFormModal.close()"
+        @subscription-created="$emit('subscription-created')"
+      />
+    </template>
+  </FormModal>
 </template>
