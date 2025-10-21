@@ -30,7 +30,7 @@ import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import AddressForm from '@/views/contracts/Register/components/AddressForm.vue'
+import AddressForm from '@/views/contracts/List/components/AddressForm.vue'
 import { CForm } from '@coreui/vue'
 
 const props = defineProps({
@@ -515,7 +515,7 @@ onBeforeRouteLeave(() => formDataReset())
 
 <template>
   <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
-    <CCardBody>
+    <CCardBody class="text-body">
       <CRow class="mb-3">
         <CFormLabel class="col-sm-2 col-lg-1 col-form-label"> 구분</CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">

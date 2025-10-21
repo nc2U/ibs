@@ -33,7 +33,7 @@ import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import AddressForm from '@/views/contracts/Register/components/AddressForm.vue'
+import AddressForm from '@/views/contracts/List/components/AddressForm.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
