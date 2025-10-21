@@ -435,11 +435,11 @@ const saveContract = (payload: any) => {
   else contStore.updateContractSet(pk, form)
 }
 
-const modalAction = async () => {
+const modalAction = () => {
   // 신규 청약 생성 여부 확인
   const isNewSubscription = !form.pk && form.status === '1'
 
-  await saveContract({
+  saveContract({
     ...form,
     newFile: newFile.value,
     editFile: editFile.value,
