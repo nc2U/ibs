@@ -23,7 +23,7 @@ const contract = {
     {
       path: 'register',
       name: '계약 상세 관리',
-      component: () => import('@/views/contracts/Register/Index.vue'),
+      component: () => import('@/views/contracts/Manage/Index.vue'),
       meta: {
         title: '계약 상세 관리',
         auth: true,
