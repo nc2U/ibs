@@ -900,7 +900,7 @@ onBeforeRouteLeave(() => formDataReset())
               maxlength="5"
               placeholder="우편번호"
               :required="isContract"
-              :disabled="!isContract || !!address"
+              :disabled="!isContract || !!address?.id_zipcode"
               @focus="refPostCode.initiate(2)"
             />
             <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
@@ -912,7 +912,7 @@ onBeforeRouteLeave(() => formDataReset())
             maxlength="35"
             placeholder="주민등록 주소를 입력하세요"
             :required="isContract"
-            :disabled="!isContract || !!address"
+            :disabled="!isContract || !!address?.id_zipcode"
             @focus="refPostCode.initiate(2)"
           />
           <CFormFeedback invalid>주민등록 주소를 입력하세요.</CFormFeedback>
@@ -924,7 +924,7 @@ onBeforeRouteLeave(() => formDataReset())
             v-model="form.id_address2"
             maxlength="50"
             placeholder="상세주소를 입력하세요"
-            :disabled="!isContract || !!address"
+            :disabled="!isContract || !!address?.id_zipcode"
           />
           <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
         </CCol>
@@ -934,7 +934,7 @@ onBeforeRouteLeave(() => formDataReset())
             v-model="form.id_address3"
             maxlength="30"
             placeholder="참고항목을 입력하세요"
-            :disabled="!isContract || !!address"
+            :disabled="!isContract || !!address?.id_zipcode"
           />
         </CCol>
       </CRow>
@@ -951,7 +951,7 @@ onBeforeRouteLeave(() => formDataReset())
               maxlength="5"
               placeholder="우편번호"
               :required="isContract"
-              :disabled="!isContract || !!address"
+              :disabled="!isContract || !!address?.dm_zipcode"
               @focus="refPostCode.initiate(3)"
             />
             <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
@@ -963,7 +963,7 @@ onBeforeRouteLeave(() => formDataReset())
             maxlength="50"
             placeholder="우편물 수령 주소를 입력하세요"
             :required="isContract"
-            :disabled="!isContract || !!address"
+            :disabled="!isContract || !!address?.dm_zipcode"
             @focus="refPostCode.initiate(3)"
           />
           <CFormFeedback invalid> 우편물 수령 주소를 입력하세요.</CFormFeedback>
@@ -974,7 +974,7 @@ onBeforeRouteLeave(() => formDataReset())
             v-model="form.dm_address2"
             maxlength="50"
             placeholder="상세주소를 입력하세요"
-            :disabled="!isContract || !!address"
+            :disabled="!isContract || !!address?.dm_zipcode"
           />
           <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
         </CCol>
@@ -983,7 +983,7 @@ onBeforeRouteLeave(() => formDataReset())
             v-model="form.dm_address3"
             maxlength="30"
             placeholder="참고항목을 입력하세요"
-            :disabled="!isContract || !!address"
+            :disabled="!isContract || !!address?.dm_zipcode"
           />
         </CCol>
         <CCol sm="12" lg="1" class="mb-3">
