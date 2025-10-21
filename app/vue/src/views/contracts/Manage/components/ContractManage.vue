@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType } from 'vue'
+import { computed, inject, ref, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins'
 import { write_contract } from '@/utils/pageAuth'
@@ -19,9 +19,32 @@ const isDark = inject('isDark')
 const contStore = useContract()
 const addressList = computed(() => contStore.contAddressList)
 const currentAddress = computed(() => addressList.value.find(addr => addr.is_current))
+const pastAddresses = computed(() => addressList.value.filter(addr => !addr.is_current))
+
+// 과거 주소 히스토리 표시 토글
+const showPastAddresses = ref(false)
 
 // 계약 정보가 있는지 확인
 const hasContract = computed(() => !!props.contract && !!props.contractor)
+
+// 탭 표시 상태
+const visibleTabs = ref({
+  contract: true, // 계약 내역
+  payment: true, // 납부 내역
+  extra: false, // 기타 정보
+})
+
+// 선택된 탭 개수에 따라 컬럼 크기 계산
+const selectedTabsCount = computed(() => {
+  return Object.values(visibleTabs.value).filter(Boolean).length
+})
+
+const getColSize = computed(() => {
+  if (selectedTabsCount.value === 1) return 12
+  if (selectedTabsCount.value === 2) return 6
+  if (selectedTabsCount.value === 3) return 4
+  return 12
+})
 
 // 자격구분 색상
 const getQualificationColor = (q: '1' | '2' | '3' | '4' | '') => {
@@ -57,32 +80,60 @@ const goBack = () => {
   </div>
 
   <div v-else>
-    <!-- 상단 액션 바 -->
+    <!-- 탭 선택 영역 -->
     <CRow class="mb-3">
       <CCol>
-        <div class="d-flex justify-content-between align-items-center">
-          <v-btn color="secondary" size="small" @click="goBack">
-            <v-icon icon="mdi-arrow-left" class="mr-1" />
-            목록으로
-          </v-btn>
-          <div v-if="write_contract">
-            <v-btn color="primary" size="small" class="mr-2">
-              <v-icon icon="mdi-pencil" class="mr-1" />
-              수정
-            </v-btn>
-            <v-btn color="danger" size="small">
-              <v-icon icon="mdi-delete" class="mr-1" />
-              삭제
-            </v-btn>
-          </div>
-        </div>
+        <CCard>
+          <CCardBody class="py-2">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input
+                    id="tab-contract"
+                    v-model="visibleTabs.contract"
+                    class="form-check-input"
+                    type="checkbox"
+                  />
+                  <label class="form-check-label" for="tab-contract">
+                    <v-icon icon="mdi-file-document-outline" size="small" class="mr-1" />
+                    계약 내역
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input
+                    id="tab-payment"
+                    v-model="visibleTabs.payment"
+                    class="form-check-input"
+                    type="checkbox"
+                  />
+                  <label class="form-check-label" for="tab-payment">
+                    <v-icon icon="mdi-cash-multiple" size="small" class="mr-1" />
+                    납부 내역
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input
+                    id="tab-extra"
+                    v-model="visibleTabs.extra"
+                    class="form-check-input"
+                    type="checkbox"
+                  />
+                  <label class="form-check-label" for="tab-extra">
+                    <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
+                    기타 정보
+                  </label>
+                </div>
+              </div>
+            </div>
+          </CCardBody>
+        </CCard>
       </CCol>
     </CRow>
 
-    <!-- 2단 컬럼 레이아웃 -->
+    <!-- 탭 컨텐츠 영역 -->
     <CRow>
-      <!-- 왼쪽 컬럼 -->
-      <CCol :md="8" :lg="7">
+      <!-- 계약 내역 탭 -->
+      <CCol v-if="visibleTabs.contract" :md="getColSize">
         <!-- 계약 기본 정보 카드 -->
         <CCard class="mb-3">
           <CCardHeader>
@@ -173,10 +224,7 @@ const goBack = () => {
                 </CCol>
                 <CCol :sm="6">
                   <strong>자격구분:</strong>
-                  <CBadge
-                    :color="getQualificationColor(contractor.qualification)"
-                    class="ml-2"
-                  >
+                  <CBadge :color="getQualificationColor(contractor.qualification)" class="ml-2">
                     {{ contractor.qualifi_display }}
                   </CBadge>
                 </CCol>
@@ -194,10 +242,7 @@ const goBack = () => {
             </div>
 
             <!-- 연락처 정보 -->
-            <div
-              v-if="contract.contractor?.contractorcontact"
-              class="mb-3 pb-3 border-bottom"
-            >
+            <div v-if="contract.contractor?.contractorcontact" class="mb-3 pb-3 border-bottom">
               <h6 class="mb-2">연락처</h6>
               <CRow class="mb-2">
                 <CCol :sm="6">
@@ -300,6 +345,53 @@ const goBack = () => {
               <div v-else class="text-muted">주소 정보가 없습니다.</div>
             </div>
 
+            <!-- 과거 주소 히스토리 -->
+            <div class="mb-3 pb-3 border-bottom">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">과거 주소 내역</h6>
+                <v-btn
+                  size="x-small"
+                  variant="outlined"
+                  @click="showPastAddresses = !showPastAddresses"
+                >
+                  <v-icon :icon="showPastAddresses ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
+                  {{ showPastAddresses ? '숨기기' : '보기' }}
+                </v-btn>
+              </div>
+
+              <div v-if="showPastAddresses" class="mt-3">
+                <div v-if="pastAddresses.length > 0">
+                  <div
+                    v-for="(address, index) in pastAddresses"
+                    :key="address.pk"
+                    class="mb-3 p-2 border rounded"
+                    :class="isDark ? 'bg-dark' : 'bg-light'"
+                  >
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <strong class="text-primary">변경 #{{ pastAddresses.length - index }}</strong>
+                      <small class="text-muted">{{ address.created }}</small>
+                    </div>
+
+                    <div v-if="address.id_address1" class="mb-2">
+                      <div class="text-muted small">주민등록 주소</div>
+                      <div>({{ address.id_zipcode }}) {{ address.id_address1 }}</div>
+                      <div>{{ address.id_address2 }} {{ address.id_address3 }}</div>
+                    </div>
+
+                    <div v-if="address.dm_address1">
+                      <div class="text-muted small">우편물 수령 주소</div>
+                      <div>({{ address.dm_zipcode }}) {{ address.dm_address1 }}</div>
+                      <div>{{ address.dm_address2 }} {{ address.dm_address3 }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-center text-muted py-3">
+                  <v-icon icon="mdi-history" size="large" class="mb-2" />
+                  <div>과거 주소 히스토리가 없습니다.</div>
+                </div>
+              </div>
+            </div>
+
             <!-- 메모 -->
             <div>
               <h6 class="mb-2">메모</h6>
@@ -309,8 +401,8 @@ const goBack = () => {
         </CCard>
       </CCol>
 
-      <!-- 오른쪽 컬럼 -->
-      <CCol :md="4" :lg="5">
+      <!-- 납부 내역 탭 -->
+      <CCol v-if="visibleTabs.payment" :md="getColSize">
         <!-- 금액 정보 카드 -->
         <CCard class="mb-3">
           <CCardHeader>
@@ -439,6 +531,70 @@ const goBack = () => {
             </div>
           </CCardBody>
         </CCard>
+      </CCol>
+
+      <!-- 기타 정보 탭 -->
+      <CCol v-if="visibleTabs.extra" :md="getColSize">
+        <!-- 구비서류 제출 현황 카드 -->
+        <CCard class="mb-3">
+          <CCardHeader>
+            <strong>구비서류 제출 현황</strong>
+          </CCardHeader>
+          <CCardBody>
+            <div class="text-center text-muted py-3">
+              <v-icon icon="mdi-file-document-check-outline" size="large" class="mb-2" />
+              <div>구비서류 제출 현황 정보가 없습니다.</div>
+            </div>
+          </CCardBody>
+        </CCard>
+
+        <!-- 상담 내역 카드 -->
+        <CCard class="mb-3">
+          <CCardHeader>
+            <strong>상담 내역</strong>
+          </CCardHeader>
+          <CCardBody>
+            <div class="text-center text-muted py-3">
+              <v-icon icon="mdi-message-text-outline" size="large" class="mb-2" />
+              <div>상담 내역이 없습니다.</div>
+            </div>
+          </CCardBody>
+        </CCard>
+
+        <!-- 특이사항 카드 -->
+        <CCard class="mb-3">
+          <CCardHeader>
+            <strong>특이사항</strong>
+          </CCardHeader>
+          <CCardBody>
+            <div class="text-center text-muted py-3">
+              <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2" />
+              <div>특이사항이 없습니다.</div>
+            </div>
+          </CCardBody>
+        </CCard>
+      </CCol>
+    </CRow>
+
+    <!-- 하단 액션 버튼 -->
+    <CRow class="mt-4">
+      <CCol>
+        <div class="d-flex justify-content-between align-items-center">
+          <v-btn color="secondary" size="small" @click="goBack">
+            <v-icon icon="mdi-arrow-left" class="mr-1" />
+            목록으로
+          </v-btn>
+          <div v-if="write_contract">
+            <v-btn color="success" size="small" class="mr-2">
+              <v-icon icon="mdi-pencil" class="mr-1" />
+              수정
+            </v-btn>
+            <!--            <v-btn color="danger" size="small">-->
+            <!--              <v-icon icon="mdi-delete" class="mr-1" />-->
+            <!--              삭제-->
+            <!--            </v-btn>-->
+          </div>
+        </div>
       </CCol>
     </CRow>
   </div>
