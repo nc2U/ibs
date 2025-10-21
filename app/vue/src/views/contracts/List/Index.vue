@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeMount, ref, watch } from 'vue'
+import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import type { Project } from '@/store/types/project'
+import { useProCash } from '@/store/pinia/proCash.ts'
 import { useProjectData } from '@/store/pinia/project_data'
 import { type ContFilter, type UnitFilter, useContract } from '@/store/pinia/contract'
-import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -16,7 +17,6 @@ import AddContract from '@/views/contracts/List/components/AddContract.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SelectItems from '@/views/contracts/List/components/SelectItems.vue'
 import ContractList from '@/views/contracts/List/components/ContractList.vue'
-import { useProCash } from '@/store/pinia/proCash.ts'
 
 const route = useRoute()
 const listControl = ref()
@@ -110,6 +110,11 @@ const setItems = (arr: string[]) => (printItems.value = arr)
 const handleSubscription = async () => {
   // 청약 목록으로 전환 (실제 목록은 pinia에서 이미 로드됨)
   status.value = '1'
+}
+
+const handleContract = async () => {
+  // 계약 목록으로 전환 (청약을 계약으로 전환했을 때)
+  status.value = '2'
 }
 
 const scrollToHighlight = async () => {
@@ -294,6 +299,7 @@ onBeforeMount(async () => {
           :project="project?.pk"
           :unit-set="unitSet"
           @subscription-created="handleSubscription"
+          @contract-converted="handleContract"
         />
         <TableTitleRow title="계약현황" excel :url="excelUrl" :disabled="!project">
           <v-btn
@@ -314,6 +320,7 @@ onBeforeMount(async () => {
           :highlight-id="highlightId ?? undefined"
           :current-page="currentFilters.page || 1"
           @page-select="pageSelect"
+          @contract-converted="handleContract"
         />
       </CCardBody>
     </ContentBody>

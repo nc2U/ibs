@@ -41,7 +41,7 @@ const props = defineProps({
   fromPage: { type: [Number, null] as PropType<number | null>, default: null },
 })
 
-const emit = defineEmits(['on-submit', 'close', 'subscription-created'])
+const emit = defineEmits(['on-submit', 'close', 'subscription-created', 'contract-converted'])
 
 const router = useRouter()
 
@@ -449,6 +449,9 @@ const modalAction = () => {
   // 신규 청약 생성 여부 확인
   const isNewSubscription = !form.pk && form.status === '1'
 
+  // 청약을 계약으로 전환 여부 확인 (기존 계약이 있고, 기존 상태가 '1'(청약)이었는데 현재 form 상태가 '2'(계약)인 경우)
+  const isContractConversion = props.contract && contractor.value?.status === '1' && form.status === '2'
+
   saveContract({
     ...form,
     newFile: newFile.value,
@@ -467,6 +470,8 @@ const modalAction = () => {
   emit('close')
   // 신규 청약이면 subscription-created 이벤트 (status UI 동기화용)
   if (isNewSubscription) emit('subscription-created')
+  // 청약을 계약으로 전환하면 contract-converted 이벤트 (status UI 동기화용)
+  if (isContractConversion) emit('contract-converted')
 }
 
 const fileControl = (payload: any) => {

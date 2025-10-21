@@ -14,6 +14,8 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
 })
 
+const emit = defineEmits(['contract-converted'])
+
 const updateFormModal = ref()
 
 const router = useRouter()
@@ -124,7 +126,7 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
         :contract="contract"
         :unit-set="unitSet"
         @close="updateFormModal.close()"
-        @subscription-created="$emit('subscription-created')"
+        @contract-converted="$emit('contract-converted')"
       />
     </template>
   </FormModal>

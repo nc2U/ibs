@@ -6,7 +6,7 @@ import { TableSecondary } from '@/utils/cssMixins'
 import Pagination from '@/components/Pagination'
 import Contract from '@/views/contracts/List/components/Contract.vue'
 
-const emit = defineEmits(['page-select'])
+const emit = defineEmits(['page-select', 'contract-converted'])
 
 const props = defineProps({
   limit: { type: Number, default: 10 },
@@ -66,6 +66,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         :unit-set="unitSet"
         :is-highlighted="props.highlightId === contract.pk"
         :current-page="props.currentPage"
+        @contract-converted="$emit('contract-converted')"
       />
     </CTableBody>
   </CTable>
