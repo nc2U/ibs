@@ -13,7 +13,7 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
-import ContractForm from './components/ContractForm.vue'
+import ContractManage from './components/ContractManage.vue'
 
 const contForm = ref()
 
@@ -195,7 +195,7 @@ onBeforeMount(async () => {
     />
 
     <ContentBody>
-      <ContractForm
+      <ContractManage
         ref="contForm"
         :project="project ?? undefined"
         :contract="contract ?? undefined"
