@@ -11,6 +11,7 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import ContractManage from './components/ContractManage.vue'
+import { CCardBody } from '@coreui/vue'
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -96,17 +97,15 @@ onBeforeMount(async () => {
     />
 
     <ContentBody>
-      <ContractManage
-        :project="project ?? undefined"
-        :contract="contract ?? undefined"
-        :contractor="contractor ?? undefined"
-        :from-page="fromPage"
-        @search-contractor="searchContractor"
-      />
-
-      <template #footer>
-        <div style="display: none"></div>
-      </template>
+      <CCardBody class="pb-5">
+        <ContractManage
+          :project="project ?? undefined"
+          :contract="contract ?? undefined"
+          :contractor="contractor ?? undefined"
+          :from-page="fromPage"
+          @search-contractor="searchContractor"
+        />
+      </CCardBody>
     </ContentBody>
   </ContractAuthGuard>
 </template>

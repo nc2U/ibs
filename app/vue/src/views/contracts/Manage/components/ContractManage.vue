@@ -25,7 +25,7 @@ const resumeForm = (contor: string) => emit('resume-form', contor)
 </script>
 
 <template>
-  <CCardBody>
+  <CCol>
     <ContNavigation :cont-on="!!contract" />
     <ContController :project="project" @search-contractor="searchContractor" />
     <ContractorAlert
@@ -34,7 +34,5 @@ const resumeForm = (contor: string) => emit('resume-form', contor)
       :contractor="contractor"
       @resume-form="resumeForm"
     />
-  </CCardBody>
-
-  <!--    <CCardFooter class="text-right"></CCardFooter>-->
+  </CCol>
 </template>
