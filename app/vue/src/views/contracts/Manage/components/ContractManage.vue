@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { inject, type PropType, reactive } from 'vue'
+import { inject, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Contract, ContractFile, Contractor } from '@/store/types/contract'
+import type { Contract, Contractor } from '@/store/types/contract'
 import ContNavigation from './ContNavigation.vue'
 import ContController from './ContController.vue'
 import ContractorAlert from './ContractorAlert.vue'
@@ -10,8 +10,6 @@ const props = defineProps({
   project: { type: Number, default: null },
   contract: { type: Object as PropType<Contract>, default: null },
   contractor: { type: Object as PropType<Contractor>, default: null },
-  unitSet: { type: Boolean, default: false },
-  isUnion: { type: Boolean, default: false },
   fromPage: { type: [Number, null] as PropType<number | null>, default: null },
 })
 

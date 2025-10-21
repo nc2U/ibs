@@ -25,8 +25,6 @@ const contractor = computed(() => contStore.contractor as Contractor | null)
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
-const unitSet = computed(() => (projStore.project as Project)?.is_unit_set)
-const isUnion = computed(() => !(projStore.project as Project)?.is_direct_manage)
 
 const fetchContract = (cont: number) => contStore.fetchContract(cont)
 const fetchContractor = (contor: number, proj?: number) => contStore.fetchContractor(contor, proj)
@@ -102,8 +100,6 @@ onBeforeMount(async () => {
         :project="project ?? undefined"
         :contract="contract ?? undefined"
         :contractor="contractor ?? undefined"
-        :unit-set="unitSet"
-        :is-union="isUnion"
         :from-page="fromPage"
         @search-contractor="searchContractor"
       />
