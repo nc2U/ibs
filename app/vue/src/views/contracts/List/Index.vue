@@ -134,10 +134,8 @@ const loadHighlightPage = async (projectId: number) => {
         status: status.value,
       }
 
-      const targetPage = await findContractPage(highlightId.value, filters)
-
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
-      filters.page = targetPage
+      filters.page = await findContractPage(highlightId.value, filters)
       currentFilters.value = { ...filters }
       await fetchContractList(filters)
     } catch (error) {
