@@ -115,7 +115,7 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
         @click="
           router.push({
             name: '계약 상세 관리',
-            query: { contractorPk, from_page: props.currentPage },
+            query: { contractor: contractorPk, from_page: props.currentPage },
           })
         "
       >
