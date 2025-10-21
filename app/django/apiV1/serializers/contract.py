@@ -214,6 +214,14 @@ class ContractSetSerializer(serializers.ModelSerializer):
                   'contractor', 'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'contract_files',
                   'updator')
 
+    def _has_address_data(self):
+        """주소 정보가 있는지 확인하는 헬퍼 메서드"""
+        address_fields = [
+            'id_zipcode', 'id_address1', 'id_address2', 'id_address3',
+            'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3'
+        ]
+        return any(self.initial_data.get(field) for field in address_fields)
+
     @staticmethod
     def get_order_group_sort(obj):  # '1': 조합모집 or '2': 일반분양
         return obj.order_group.sort
@@ -343,26 +351,27 @@ class ContractSetSerializer(serializers.ModelSerializer):
                                                note=contractor_note)
         contractor.save()
 
-        # 6. 계약자 주소 테이블 입력
-        address_id_zipcode = self.initial_data.get('id_zipcode')
-        address_id_address1 = self.initial_data.get('id_address1')
-        address_id_address2 = self.initial_data.get('id_address2')
-        address_id_address3 = self.initial_data.get('id_address3')
-        address_dm_zipcode = self.initial_data.get('dm_zipcode')
-        address_dm_address1 = self.initial_data.get('dm_address1')
-        address_dm_address2 = self.initial_data.get('dm_address2')
-        address_dm_address3 = self.initial_data.get('dm_address3')
+        # 6. 계약자 주소 테이블 입력 (계약인 경우에만)
+        if contractor_status == '2' and self._has_address_data():
+            address_id_zipcode = self.initial_data.get('id_zipcode')
+            address_id_address1 = self.initial_data.get('id_address1')
+            address_id_address2 = self.initial_data.get('id_address2')
+            address_id_address3 = self.initial_data.get('id_address3')
+            address_dm_zipcode = self.initial_data.get('dm_zipcode')
+            address_dm_address1 = self.initial_data.get('dm_address1')
+            address_dm_address2 = self.initial_data.get('dm_address2')
+            address_dm_address3 = self.initial_data.get('dm_address3')
 
-        contractor_address = ContractorAddress.objects.create(contractor=contractor,
-                                                              id_zipcode=address_id_zipcode,
-                                                              id_address1=address_id_address1,
-                                                              id_address2=address_id_address2,
-                                                              id_address3=address_id_address3,
-                                                              dm_zipcode=address_dm_zipcode,
-                                                              dm_address1=address_dm_address1,
-                                                              dm_address2=address_dm_address2,
-                                                              dm_address3=address_dm_address3)
-        contractor_address.save()
+            contractor_address = ContractorAddress.objects.create(contractor=contractor,
+                                                                  id_zipcode=address_id_zipcode,
+                                                                  id_address1=address_id_address1,
+                                                                  id_address2=address_id_address2,
+                                                                  id_address3=address_id_address3,
+                                                                  dm_zipcode=address_dm_zipcode,
+                                                                  dm_address1=address_dm_address1,
+                                                                  dm_address2=address_dm_address2,
+                                                                  dm_address3=address_dm_address3)
+            contractor_address.save()
 
         # 7. 계약자 연락처 테이블 입력
         contact_cell_phone = self.initial_data.get('cell_phone')
@@ -555,7 +564,33 @@ class ContractSetSerializer(serializers.ModelSerializer):
         contractor.note = contractor_note
         contractor.save()
 
-        # 6. 계약자 주소 테이블 수정 금지 => 주소관리에서 직접 이력 관리
+        # 6. 계약자 주소 테이블 처리
+        # 청약→계약 전환 시 주소 생성, 기존 주소가 있는 경우 주소관리에서 직접 이력 관리
+        if contractor_status == '2' and self._has_address_data():
+            # 기존 주소가 없는 경우에만 새로 생성 (청약→계약 전환 시)
+            try:
+                existing_address = ContractorAddress.objects.get(contractor=contractor)
+            except ContractorAddress.DoesNotExist:
+                # 기존 주소가 없으면 새로 생성
+                address_id_zipcode = data.get('id_zipcode')
+                address_id_address1 = data.get('id_address1')
+                address_id_address2 = data.get('id_address2')
+                address_id_address3 = data.get('id_address3')
+                address_dm_zipcode = data.get('dm_zipcode')
+                address_dm_address1 = data.get('dm_address1')
+                address_dm_address2 = data.get('dm_address2')
+                address_dm_address3 = data.get('dm_address3')
+
+                contractor_address = ContractorAddress.objects.create(contractor=contractor,
+                                                                      id_zipcode=address_id_zipcode,
+                                                                      id_address1=address_id_address1,
+                                                                      id_address2=address_id_address2,
+                                                                      id_address3=address_id_address3,
+                                                                      dm_zipcode=address_dm_zipcode,
+                                                                      dm_address1=address_dm_address1,
+                                                                      dm_address2=address_dm_address2,
+                                                                      dm_address3=address_dm_address3)
+                contractor_address.save()
 
         # 7. 계약자 연락처 테이블 입력
         contact_cell_phone = data.get('cell_phone')
