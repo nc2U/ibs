@@ -330,6 +330,16 @@ const formDataReset = () => {
 
 const formDataSetup = () => {
   if (props.contract) {
+    // 기존 contract에 맞는 KeyUnit 목록 불러오기 추가
+    if (props.contract.unit_type && props.project) {
+      const payload = {
+        project: props.project as number,
+        unit_type: props.contract.unit_type,
+        contract: props.contract.pk,
+      }
+      fetchKeyUnitList(payload)
+      fetchHouseUnitList(payload)
+    }
     // contract
     form.pk = props.contract.pk
     form.order_group = props.contract.order_group
