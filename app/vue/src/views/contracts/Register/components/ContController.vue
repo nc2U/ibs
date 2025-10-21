@@ -19,7 +19,7 @@ watch(props, nVal => {
 
 const router = useRouter()
 const setContractor = (pk: number) => {
-  router.push({ name: '계약 등록 수정', query: { contractor: pk } })
+  router.push({ name: '계약 상세 관리', query: { contractor: pk } })
 
   search.value = ''
   contractStore.contractorList = []

@@ -56,7 +56,7 @@
                 <td class="text-center {% if not object.contract.keyunit.houseunit %}text-danger{% endif %}">
                     {{ object.contract.keyunit.houseunit|default:'미정' }}
                 </td>
-                <td class="text-center" data-toggle="tooltip" data-placement="left" title="계약 등록 수정 [{{ object.name }}]"
+                <td class="text-center" data-toggle="tooltip" data-placement="left" title="계약 상세 관리 [{{ object.name }}]"
                     {% if object.contractorrelease.status == '3' %}data-toggle="popover"
                     data-trigger="hover" title="" data-content="해지신청 상태" data-original-title=""{% endif %}>
                     <a href="{% url 'ibs:contract:register' %}?project={{ this_project.id }}&task=2&order_group={{ object.contract.order_group.id }}&type={{ object.contract.keyunit.unit_type.id }}&contract_unit={{ object.contract.keyunit.id }}&unit_number={{ object.contract.keyunit.houseunit.id }}&cont_id={{ object.contract.id }}">

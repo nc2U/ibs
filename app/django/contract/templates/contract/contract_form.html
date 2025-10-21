@@ -10,7 +10,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        {% include 'ibs/partials/content_title.html' with  second_bs="공급 계약 관리" third_bs="계약 정보 관리" title="계약 등록 수정" %}
+        {% include 'ibs/partials/content_title.html' with  second_bs="공급 계약 관리" third_bs="계약 정보 관리" title="계약 상세 관리" %}
         <!-- end page title -->
 
         <div class="row">
@@ -489,7 +489,7 @@
                                                 </button>
                                             {% endif %}
                                         {% else %}
-                                            <button type="button" class="btn btn-outline-secondary" onclick="alert('계약 등록 수정 권한이 없습니다. 관리자에게 문의하여 주십시요.')">조회권한 사용자</button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="alert('계약 상세 관리 권한이 없습니다. 관리자에게 문의하여 주십시요.')">조회권한 사용자</button>
                                         {% endif %}
                                     </div>
                                 </div>

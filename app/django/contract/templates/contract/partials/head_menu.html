@@ -1,41 +1,44 @@
 <ul class="nav nav-tabs mb-5">
-    <li class="nav-item">
-        <a href="
+  <li class="nav-item">
+    <a href="
                 {% url 'ibs:contract:index' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
-           aria-expanded="{% if menu_order == '1' %}true{% else %}false{% endif %}"
-           class="nav-link  {% if menu_order == '1' %}active{% endif %}">
-            <i class="mdi mdi-deskphone d-md-none d-block"></i>
-            <span class="d-none d-md-block">계약 현황 조회</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a href="
+       aria-expanded="{% if menu_order == '1' %}true{% else %}false{% endif %}"
+       class="nav-link  {% if menu_order == '1' %}active{% endif %}">
+      <i class="mdi mdi-deskphone d-md-none d-block"></i>
+      <span class="d-none d-md-block">계약 현황 조회</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a href="
 
-                {% url 'ibs:contract:register' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
-           aria-expanded="{% if menu_order == '2' %}true{% else %}false{% endif %}"
-           class="nav-link {% if menu_order == '2' %}active{% endif %}">
-            <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
-            <span class="d-none d-md-block">계약 등록 수정</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a href="
 
-                {% url 'ibs:contract:release' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
-           aria-expanded="{% if menu_order == '3' %}true{% else %}false{% endif %}"
-           class="nav-link {% if menu_order == '3' %}active{% endif %}">
-            <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
-            <span class="d-none d-md-block">계약 해지 관리</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a href="
+      {% url 'ibs:contract:register' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+       aria-expanded="{% if menu_order == '2' %}true{% else %}false{% endif %}"
+       class="nav-link {% if menu_order == '2' %}active{% endif %}">
+      <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
+      <span class="d-none d-md-block">계약 상세 관리</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a href="
 
-                {% url 'ibs:contract:dashboard' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
-           aria-expanded="{% if menu_order == '4' %}true{% else %}false{% endif %}"
-           class="nav-link {% if menu_order == '4' %}active{% endif %}">
-            <i class="mdi mdi-pencil-box-multiple-outline d-md-none d-block"></i>
-            <span class="d-none d-md-block">동호수 현황표</span>
-        </a>
-    </li>
+
+      {% url 'ibs:contract:release' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+       aria-expanded="{% if menu_order == '3' %}true{% else %}false{% endif %}"
+       class="nav-link {% if menu_order == '3' %}active{% endif %}">
+      <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
+      <span class="d-none d-md-block">계약 해지 관리</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a href="
+
+
+      {% url 'ibs:contract:dashboard' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
+       aria-expanded="{% if menu_order == '4' %}true{% else %}false{% endif %}"
+       class="nav-link {% if menu_order == '4' %}active{% endif %}">
+      <i class="mdi mdi-pencil-box-multiple-outline d-md-none d-block"></i>
+      <span class="d-none d-md-block">동호수 현황표</span>
+    </a>
+  </li>
 </ul>

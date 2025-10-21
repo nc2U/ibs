@@ -184,7 +184,7 @@
                                         {% if request.user.is_superuser or request.user.staffauth.contract > '1' %}
                                             <button type="submit" class="btn btn-{% if request.GET.release_id %}success{% else %}primary{% endif %}" {% if request.GET.task >= '4' %}onclick="onSubmit()"{% endif %}>등록하기</button>
                                         {% else %}
-                                            <button type="button" class="btn btn-outline-secondary" onclick="alert('계약 등록 수정 권한이 없습니다. 관리자에게 문의하여 주십시요.')">조회권한 사용자</button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="alert('계약 상세 관리 권한이 없습니다. 관리자에게 문의하여 주십시요.')">조회권한 사용자</button>
                                         {% endif %}
                                     </div>
                                 </div>

@@ -129,7 +129,7 @@ const contract = {
     },
     {
       component: 'CNavItem',
-      name: '계약 등록 수정',
+      name: '계약 상세 관리',
       to: '/contracts/register',
     },
     {
