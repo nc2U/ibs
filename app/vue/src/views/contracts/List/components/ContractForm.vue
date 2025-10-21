@@ -450,7 +450,8 @@ const modalAction = () => {
   const isNewSubscription = !form.pk && form.status === '1'
 
   // 청약을 계약으로 전환 여부 확인 (기존 계약이 있고, 기존 상태가 '1'(청약)이었는데 현재 form 상태가 '2'(계약)인 경우)
-  const isContractConversion = props.contract && contractor.value?.status === '1' && form.status === '2'
+  const isContractConversion =
+    props.contract && contractor.value?.status === '1' && form.status === '2'
 
   saveContract({
     ...form,
@@ -1062,14 +1063,14 @@ onBeforeRouteLeave(() => formDataReset())
 
     <CCardFooter class="text-right">
       <v-btn type="button" :color="btnLight" @click="$emit('close')">닫기</v-btn>
-      <v-btn
-        v-if="write_contract && contract"
-        type="button"
-        color="warning"
-        @click="deleteContract"
-      >
-        삭제
-      </v-btn>
+      <!--      <v-btn-->
+      <!--        v-if="write_contract && contract"-->
+      <!--        type="button"-->
+      <!--        color="warning"-->
+      <!--        @click="deleteContract"-->
+      <!--      >-->
+      <!--        삭제-->
+      <!--      </v-btn>-->
       <v-btn
         v-if="write_contract"
         type="submit"
