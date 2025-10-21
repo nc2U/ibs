@@ -2,11 +2,12 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-defineProps({ contOn: { type: Boolean, default: false } })
+defineProps({
+  contOn: { type: Boolean, default: false },
+  contractor: { type: Number, default: null },
+})
 
 const [route, router] = [useRoute(), useRouter()]
-
-const contractor = computed(() => route.query.contractor)
 
 const isRegister = computed(() => route.name === '계약 상세 관리')
 const isSuccession = computed(() => route.name === '권리 의무 승계')

@@ -12,6 +12,9 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import ContractManage from './components/ContractManage.vue'
 import { CCardBody } from '@coreui/vue'
+import ContNavigation from '@/views/contracts/Manage/components/ContNavigation.vue'
+import ContController from '@/views/contracts/Manage/components/ContController.vue'
+import ContractorAlert from '@/views/contracts/Manage/components/ContractorAlert.vue'
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -56,9 +59,9 @@ const getContract = async (contor: string) => {
   await fetchContAddressList(parseInt(contor))
 }
 
-const searchContractor = (search: string) => {
+const searchContractor = async (search: string) => {
   if (search !== '' && project.value) {
-    fetchContractorList(project.value, search)
+    await fetchContractorList(project.value, search)
   } else contStore.contractorList = []
 }
 
@@ -98,12 +101,15 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
+        <ContNavigation :cont-on="!!contract" :contractor="contractor?.pk" />
+        <ContController :project="project" @search-contractor="searchContractor" />
+        <ContractorAlert v-if="contractor" :is-blank="!contract" :contractor="contractor" />
+
         <ContractManage
           :project="project ?? undefined"
           :contract="contract ?? undefined"
           :contractor="contractor ?? undefined"
           :from-page="fromPage"
-          @search-contractor="searchContractor"
         />
       </CCardBody>
     </ContentBody>

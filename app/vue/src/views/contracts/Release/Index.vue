@@ -200,13 +200,14 @@ watch(route, async newRoute => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <ContNavigation :cont-on="!!contOn" />
+        <ContNavigation :cont-on="!!contOn" :contractor="contractor?.pk" />
         <ContController
           :project="project || undefined"
           @search-contractor="searchContractor"
           @call-form="callForm"
         />
         <ContractorAlert v-if="contractor" :contractor="contractor" />
+
         <ReleasetButton
           v-if="contractor"
           :contractor="contractor"

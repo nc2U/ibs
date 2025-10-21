@@ -43,6 +43,7 @@ const downloadUrl = computed(() => `/excel/successions/?project=${project.value}
 
 const contStore = useContract()
 const contractor = computed<Contractor | null>(() => contStore.contractor)
+const contOn = computed(() => contractor.value && contractor.value.status < '3')
 const succession = computed<Succession | null>(() => contStore.succession)
 const isSuccession = computed(() => !!succession.value && !succession.value.is_approval)
 
@@ -279,9 +280,9 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <ContNavigation :cont-on="!!contractor?.status && contractor.status < '3'" />
+        {{ contractor }}
+        <ContNavigation :cont-on="!!contOn" :contractor="contractor?.pk" />
         <ContController :project="project || undefined" @search-contractor="searchContractor" />
-
         <ContractorAlert v-if="contractor" :contractor="contractor" />
 
         <SuccessionButton
