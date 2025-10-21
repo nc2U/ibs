@@ -108,19 +108,19 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       </span>
     </CTableDataCell>
     <CTableDataCell v-if="write_contract">
-      <!--      <v-btn-->
-      <!--        type="button"-->
-      <!--        color="success"-->
-      <!--        size="x-small"-->
-      <!--        @click="-->
-      <!--          router.push({-->
-      <!--            name: '계약 상세 관리',-->
-      <!--            query: { contractorPk, from_page: props.currentPage },-->
-      <!--          })-->
-      <!--        "-->
-      <!--      >-->
-      <!--        수정-->
-      <!--      </v-btn>-->
+      <v-btn
+        type="button"
+        color="info"
+        size="x-small"
+        @click="
+          router.push({
+            name: '계약 상세 관리',
+            query: { contractorPk, from_page: props.currentPage },
+          })
+        "
+      >
+        보기
+      </v-btn>
       <v-btn type="button" color="success" size="x-small" @click="updateFormModal.callModal()">
         수정
       </v-btn>
