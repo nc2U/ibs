@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { AlertLight } from '@/utils/cssMixins'
+import ContractForm from './ContractForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
-import ContractForm from '@/views/contracts/List/components/ContractForm.vue'
 
 defineProps({
   project: { type: Number, default: null },

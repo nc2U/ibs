@@ -3,8 +3,8 @@ import { computed, type PropType, ref } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { useRouter } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
-import { type Contract, type Contractor } from '@/store/types/contract'
-import ContractForm from '@/views/contracts/List/components/ContractForm.vue'
+import { type Contract } from '@/store/types/contract'
+import ContractForm from './ContractForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const props = defineProps({
@@ -17,7 +17,6 @@ const props = defineProps({
 const updateFormModal = ref()
 
 const router = useRouter()
-const contractor = computed(() => props.contract?.contractor)
 const contractorPk = computed(() => props.contract?.contractor?.pk)
 
 const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
@@ -123,7 +122,6 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       <ContractForm
         :project="contract.project"
         :contract="contract"
-        :contractor="contractor"
         :unit-set="unitSet"
         @close="updateFormModal.close()"
         @subscription-created="$emit('subscription-created')"

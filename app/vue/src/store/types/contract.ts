@@ -19,7 +19,7 @@ export interface ContractFile {
   edit?: boolean
 }
 
-interface ContractorInContract {
+export interface ContractorInContract {
   pk: number
   name: string
   birth_date: string | null

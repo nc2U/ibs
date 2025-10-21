@@ -17,7 +17,7 @@ import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
 import { type PayOrder } from '@/store/types/payment'
-import type { Contract, ContractFile, Contractor, Payment } from '@/store/types/contract'
+import type { Contract, ContractFile, Payment } from '@/store/types/contract'
 import { isValidate } from '@/utils/helper'
 import { diffDate, numFormat } from '@/utils/baseMixins'
 import { btnLight } from '@/utils/cssMixins.ts'
@@ -35,7 +35,6 @@ import AddressForm from '@/views/contracts/Register/components/AddressForm.vue'
 const props = defineProps({
   project: { type: Number, default: null },
   contract: { type: Object as PropType<Contract>, default: null },
-  contractor: { type: Object as PropType<Contractor>, default: null },
   unitSet: { type: Boolean, default: false },
   isUnion: { type: Boolean, default: false },
   fromPage: { type: [Number, null] as PropType<number | null>, default: null },
@@ -150,23 +149,24 @@ const downPayments = computed(() =>
     : [],
 )
 
+const contractor = computed(() => props.contract?.contractor)
 const address = computed(() => props.contract?.contractor?.contractoraddress)
 const contact = computed(() => props.contract?.contractor?.contractorcontact)
 
 const formsCheck = computed(() => {
-  if (props.contract && props.contractor) {
+  if (props.contract && contractor.value) {
     const a = form.order_group === props.contract.order_group
     const b = form.unit_type === props.contract.unit_type
     const c = form.key_unit === props.contract.key_unit?.pk
     const d = form.houseunit === props.contract.key_unit?.houseunit?.pk
     const e = form.is_sup_cont === props.contract.is_sup_cont
     const f = form.sup_cont_date === props.contract.sup_cont_date
-    const g = form.reservation_date === props.contractor.reservation_date
-    const h = form.contract_date === props.contractor?.contract_date
-    const i = form.name === props.contractor.name
-    const j = form.birth_date === props.contractor.birth_date
-    const k = form.gender === props.contractor?.gender
-    const l = form.qualification === props.contractor?.qualification
+    const g = form.reservation_date === contractor.value.reservation_date
+    const h = form.contract_date === contractor.value?.contract_date
+    const i = form.name === contractor.value.name
+    const j = form.birth_date === contractor.value.birth_date
+    const k = form.gender === contractor.value?.gender
+    const l = form.qualification === contractor.value?.qualification
     const m = form.cell_phone === contact.value?.cell_phone
     const n = form.home_phone === contact.value?.home_phone
     const o = form.other_phone === contact.value?.other_phone
@@ -184,7 +184,7 @@ const formsCheck = computed(() => {
     const a1 = form.dm_address1 === address.value?.dm_address1
     const b1 = form.dm_address2 === address.value?.dm_address2
     const c1 = form.dm_address3 === address.value?.dm_address3
-    const d1 = form.note === props.contract.contractor?.note
+    const d1 = form.note === contractor.value?.note
 
     const e1 = !newFile.value
     const f1 = !editFile.value
@@ -343,17 +343,17 @@ const formDataSetup = () => {
     form.contract_files = props.contract.contract_files
 
     // contractor
-    form.name = props.contract.contractor?.name ?? ''
-    form.birth_date = props.contract.contractor?.birth_date ?? null
-    form.gender = props.contract.contractor?.gender ?? '' // 9
-    form.qualification = props.contract.contractor?.qualification ?? '' // 10
-    form.status = props.contract.contractor?.status ?? ''
-    form.reservation_date = props.contractor?.reservation_date ?? null
-    form.contract_date = props.contractor?.contract_date ?? null
-    form.note = props.contract.contractor?.note ?? ''
+    form.name = contractor.value?.name ?? ''
+    form.birth_date = contractor.value?.birth_date ?? null
+    form.gender = contractor.value?.gender ?? '' // 9
+    form.qualification = contractor.value?.qualification ?? '' // 10
+    form.status = contractor.value?.status ?? ''
+    form.reservation_date = contractor.value?.reservation_date ?? null
+    form.contract_date = contractor.value?.contract_date ?? null
+    form.note = contractor.value?.note ?? ''
 
     // address
-    if (props.contract.contractor?.status === '2') {
+    if (contractor.value?.status === '2') {
       form.id_zipcode = address.value?.id_zipcode ?? '' // 20
       form.id_address1 = address.value?.id_address1 ?? '' // 21
       form.id_address2 = address.value?.id_address2 ?? '' // 22
