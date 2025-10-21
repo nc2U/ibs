@@ -3,7 +3,7 @@ import { computed, type PropType, ref } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { useRouter } from 'vue-router'
 import { write_contract } from '@/utils/pageAuth'
-import { type Contract } from '@/store/types/contract'
+import { type Contract, type Contractor } from '@/store/types/contract'
 import ContractForm from '@/views/contracts/List/components/ContractForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 
@@ -17,7 +17,8 @@ const props = defineProps({
 const updateFormModal = ref()
 
 const router = useRouter()
-const contractor = computed(() => props.contract?.contractor?.pk)
+const contractor = computed(() => props.contract?.contractor)
+const contractorPk = computed(() => props.contract?.contractor?.pk)
 
 const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
   q ? { '1': 'info', '2': 'warning', '3': 'success', '4': 'danger' }[q] : ''
@@ -32,7 +33,7 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
   >
     <CTableDataCell>
       <router-link
-        :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }"
+        :to="{ name: '계약 등록 수정', query: { contractorPk, from_page: props.currentPage } }"
       >
         {{ contract.serial_number }}
       </router-link>
@@ -56,7 +57,7 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
     </CTableDataCell>
     <CTableDataCell>
       <router-link
-        :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }"
+        :to="{ name: '계약 등록 수정', query: { contractorPk, from_page: props.currentPage } }"
       >
         {{ contract.contractor?.name }}
       </router-link>
@@ -66,7 +67,7 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       :class="contract.key_unit?.houseunit !== null ? '' : 'text-danger'"
     >
       <router-link
-        :to="{ name: '계약 등록 수정', query: { contractor, from_page: props.currentPage } }"
+        :to="{ name: '계약 등록 수정', query: { contractorPk, from_page: props.currentPage } }"
       >
         {{ contract.key_unit?.houseunit ? contract.key_unit?.houseunit.__str__ : '미정' }}
       </router-link>
@@ -97,25 +98,20 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       </span>
     </CTableDataCell>
     <CTableDataCell v-if="write_contract">
-<!--      <v-btn-->
-<!--        type="button"-->
-<!--        color="success"-->
-<!--        size="x-small"-->
-<!--        @click="-->
-<!--          router.push({-->
-<!--            name: '계약 등록 수정',-->
-<!--            query: { contractor, from_page: props.currentPage },-->
-<!--          })-->
-<!--        "-->
-<!--      >-->
-<!--        수정-->
-<!--      </v-btn>-->
-      <v-btn
-        type="button"
-        color="success"
-        size="x-small"
-        @click="updateFormModal.callModal()"
-      >
+      <!--      <v-btn-->
+      <!--        type="button"-->
+      <!--        color="success"-->
+      <!--        size="x-small"-->
+      <!--        @click="-->
+      <!--          router.push({-->
+      <!--            name: '계약 등록 수정',-->
+      <!--            query: { contractorPk, from_page: props.currentPage },-->
+      <!--          })-->
+      <!--        "-->
+      <!--      >-->
+      <!--        수정-->
+      <!--      </v-btn>-->
+      <v-btn type="button" color="success" size="x-small" @click="updateFormModal.callModal()">
         수정
       </v-btn>
     </CTableDataCell>
@@ -126,6 +122,8 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
     <template #default>
       <ContractForm
         :project="contract.project"
+        :contract="contract"
+        :contractor="contractor"
         :unit-set="unitSet"
         @close="updateFormModal.close()"
         @subscription-created="$emit('subscription-created')"
