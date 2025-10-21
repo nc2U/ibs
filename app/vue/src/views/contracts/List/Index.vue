@@ -4,7 +4,7 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vu
 import { useProject } from '@/store/pinia/project'
 import type { Project } from '@/store/types/project'
 import { useProjectData } from '@/store/pinia/project_data'
-import { type ContFilter, useContract } from '@/store/pinia/contract'
+import { type ContFilter, type UnitFilter, useContract } from '@/store/pinia/contract'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -62,6 +62,8 @@ const findContractPage = (highlightId: number, filters: ContFilter) =>
   contStore.findContractPage(highlightId, filters)
 const fetchSubsSummaryList = (pk: number) => contStore.fetchSubsSummaryList(pk)
 const fetchContSummaryList = (pk: number) => contStore.fetchContSummaryList(pk)
+const fetchKeyUnitList = (payload: UnitFilter) => contStore.fetchKeyUnitList(payload)
+const fetchHouseUnitList = (payload: UnitFilter) => contStore.fetchHouseUnitList(payload)
 
 const proDataStore = useProjectData()
 const fetchTypeList = (projId: number) => proDataStore.fetchTypeList(projId)
@@ -151,6 +153,8 @@ const dataSetup = async (proj: number) => {
   await fetchTypeList(proj)
   await fetchBuildingList(proj)
   await fetchAllProBankAccList(proj)
+  await fetchKeyUnitList({ project: proj })
+  await fetchHouseUnitList({ project: proj })
 
   // 초기 필터 설정
   currentFilters.value = { project: proj, limit: limit.value, status: status.value }
@@ -175,6 +179,8 @@ const dataReset = () => {
   contStore.contSummaryList = []
   contStore.contractList = []
   contStore.contractsCount = 0
+  contStore.keyUnitList = []
+  contStore.houseUnitList = []
   proDataStore.buildingList = []
   proCashStore.allProBankAccountList = []
 }
