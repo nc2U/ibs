@@ -243,8 +243,11 @@ onBeforeRouteUpdate(async to => {
 })
 
 // 다른 라우트로 이동 시 query string 정리
-onBeforeRouteLeave(() => {
-  clearQueryString()
+onBeforeRouteLeave((to) => {
+  // contracts 내부 이동이 아닌 경우에만 쿼리 정리
+  if (!to.path.startsWith('/contracts')) {
+    clearQueryString()
+  }
 })
 
 const loading = ref(true)
@@ -280,7 +283,6 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        {{ contractor }}
         <ContNavigation :cont-on="!!contOn" :contractor="contractor?.pk" />
         <ContController :project="project || undefined" @search-contractor="searchContractor" />
         <ContractorAlert v-if="contractor" :contractor="contractor" />
