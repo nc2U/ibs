@@ -35,8 +35,9 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
     <CTableDataCell>
       <router-link
         :to="{
-          name: '계약 상세 관리',
-          query: { contractor: contractorPk, from_page: props.currentPage },
+          name: '계약 상세 보기',
+          params: { contractorId: contractorPk },
+          query: { from_page: props.currentPage },
         }"
       >
         {{ contract.serial_number }}
@@ -62,8 +63,9 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
     <CTableDataCell>
       <router-link
         :to="{
-          name: '계약 상세 관리',
-          query: { contractor: contractorPk, from_page: props.currentPage },
+          name: '계약 상세 보기',
+          params: { contractorId: contractorPk },
+          query: { from_page: props.currentPage },
         }"
       >
         {{ contract.contractor?.name }}
@@ -75,8 +77,9 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
     >
       <router-link
         :to="{
-          name: '계약 상세 관리',
-          query: { contractor: contractorPk, from_page: props.currentPage },
+          name: '계약 상세 보기',
+          params: { contractorId: contractorPk },
+          query: { from_page: props.currentPage },
         }"
       >
         {{ contract.key_unit?.houseunit ? contract.key_unit?.houseunit.__str__ : '미정' }}
@@ -114,8 +117,9 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
         size="x-small"
         @click="
           router.push({
-            name: '계약 상세 관리',
-            query: { contractor: contractorPk, from_page: props.currentPage },
+            name: '계약 상세 보기',
+            params: { contractorId: contractorPk },
+            query: { from_page: props.currentPage },
           })
         "
       >

@@ -31,6 +31,16 @@ const contract = {
       },
     },
     {
+      path: 'register/:contractorId(\\d+)',
+      name: '계약 상세 보기',
+      component: () => import('@/views/contracts/Manage/Index.vue'),
+      meta: {
+        title: '계약 상세 보기',
+        auth: true,
+        requiresContractAuth: true,
+      },
+    },
+    {
       path: 'succession',
       name: '권리 의무 승계',
       component: () => import('@/views/contracts/Succession/Index.vue'),
@@ -41,11 +51,31 @@ const contract = {
       },
     },
     {
+      path: 'succession/:contractorId(\\d+)',
+      name: '권리 의무 승계 보기',
+      component: () => import('@/views/contracts/Succession/Index.vue'),
+      meta: {
+        title: '권리 의무 승계 보기',
+        auth: true,
+        requiresContractAuth: true,
+      },
+    },
+    {
       path: 'release',
       name: '계약 해지 관리',
       component: () => import('@/views/contracts/Release/Index.vue'),
       meta: {
         title: '계약 해지 관리',
+        auth: true,
+        requiresContractAuth: true,
+      },
+    },
+    {
+      path: 'release/:contractorId(\\d+)',
+      name: '계약 해지 보기',
+      component: () => import('@/views/contracts/Release/Index.vue'),
+      meta: {
+        title: '계약 해지 보기',
         auth: true,
         requiresContractAuth: true,
       },

@@ -66,13 +66,16 @@ const patchSuccession = (payload: Succession & BuyerForm & { project: number; pa
   contStore.patchSuccession(payload)
 
 const route = useRoute()
-watch(route, val => {
-  if (val.query.contractor) fetchContractor(Number(val.query.contractor))
-  else {
-    contStore.contract = null
-    contStore.contractor = null
-  }
-})
+watch(
+  () => route.params.contractorId,
+  contractorId => {
+    if (contractorId) fetchContractor(Number(contractorId))
+    else {
+      contStore.contract = null
+      contStore.contractor = null
+    }
+  },
+)
 
 watch(contractor, val => {
   if (val?.contract) fetchContract(val.contract)
@@ -153,7 +156,7 @@ const onSubmit = (payload: { s_data: Succession; b_data: BuyerForm }) => {
 
   if (!isSuccession.value && !s_data.pk) {
     createSuccession({ ...dbData, project: project.value as number, page: 1 })
-    router.push({ name: '권리 의무 승계', query: { contractor: s_data.seller.pk } })
+    router.push({ name: '권리 의무 승계 보기', params: { contractorId: s_data.seller.pk } })
   } else
     patchSuccession({
       ...dbData,
@@ -260,7 +263,7 @@ onBeforeMount(async () => {
     await projSelect(urlProjectId.value, true)
   } else {
     // contractor 파라미터가 있으면 contractor 설정
-    if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
+    if (route.params.contractorId) await fetchContractor(Number(route.params.contractorId))
     else contStore.contractor = null
 
     // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정

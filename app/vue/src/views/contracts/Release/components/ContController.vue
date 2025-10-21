@@ -19,7 +19,7 @@ watch(props, nVal => {
 
 const router = useRouter()
 const setContractor = (pk: number, release: number | null) => {
-  router.push({ name: '계약 해지 관리', query: { contractor: pk } })
+  router.push({ name: '계약 해지 보기', params: { contractorId: pk } })
   if (release !== null) emit('get-release', release)
   else contractStore.contRelease = null
 

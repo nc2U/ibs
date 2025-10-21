@@ -9,9 +9,13 @@ defineProps({
 
 const [route, router] = [useRoute(), useRouter()]
 
-const isRegister = computed(() => route.name === '계약 상세 관리')
-const isSuccession = computed(() => route.name === '권리 의무 승계')
-const isRelease = computed(() => route.name === '계약 해지 관리')
+const isRegister = computed(
+  () => route.name === '계약 상세 관리' || route.name === '계약 상세 보기',
+)
+const isSuccession = computed(
+  () => route.name === '권리 의무 승계' || route.name === '권리 의무 승계 보기',
+)
+const isRelease = computed(() => route.name === '계약 해지 관리' || route.name === '계약 해지 보기')
 </script>
 
 <template>
@@ -21,8 +25,8 @@ const isRelease = computed(() => route.name === '계약 해지 관리')
       :disabled="!contOn || !contractor"
       @click="
         router.push({
-          name: '계약 상세 관리',
-          query: { contractor },
+          name: '계약 상세 보기',
+          params: { contractorId: contractor },
         })
       "
     >
@@ -36,8 +40,8 @@ const isRelease = computed(() => route.name === '계약 해지 관리')
       :disabled="!contOn || !contractor"
       @click="
         router.push({
-          name: '권리 의무 승계',
-          query: { contractor },
+          name: '권리 의무 승계 보기',
+          params: { contractorId: contractor },
         })
       "
     >
@@ -48,8 +52,8 @@ const isRelease = computed(() => route.name === '계약 해지 관리')
       :disabled="!contractor"
       @click="
         router.push({
-          name: '계약 해지 관리',
-          query: { contractor },
+          name: '계약 해지 보기',
+          params: { contractorId: contractor },
         })
       "
     >

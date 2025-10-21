@@ -58,11 +58,14 @@ const updateRelease = (payload: ContractRelease & { page: number }) =>
 const route = useRoute()
 const router = useRouter()
 
-watch(route, val => {
-  if (val.query.contractor) {
-    fetchContractor(Number(val.query.contractor))
-  } else contStore.contractor = null
-})
+watch(
+  () => route.params.contractorId,
+  contractorId => {
+    if (contractorId) {
+      fetchContractor(Number(contractorId))
+    } else contStore.contractor = null
+  },
+)
 
 watch(contractor, val => {
   if (val?.contractorrelease) fetchContRelease(val.contractorrelease)
@@ -89,11 +92,11 @@ const onSubmit = (payload: ContractRelease) => {
 
 const callForm = (contractor: number) => {
   router.replace({
-    name: '계약 해지 관리',
-    query: {
-      ...route.query,
-      contractor,
+    name: '계약 해지 보기',
+    params: {
+      contractorId: contractor,
     },
+    query: route.query,
   })
 
   setTimeout(() => {
@@ -166,7 +169,7 @@ onBeforeMount(async () => {
     await dataSetup(projectId)
   }
 
-  if (route.query.contractor) await fetchContractor(Number(route.query.contractor))
+  if (route.params.contractorId) await fetchContractor(Number(route.params.contractorId))
   else {
     contStore.contract = null
     contStore.contractor = null
@@ -177,7 +180,7 @@ onBeforeMount(async () => {
 
 // URL이 변경될 때 하이라이트 처리
 watch(route, async newRoute => {
-  if (newRoute.query.contractor) await fetchContractor(Number(newRoute.query.contractor))
+  if (newRoute.params.contractorId) await fetchContractor(Number(newRoute.params.contractorId))
   else contStore.contractor = null
 
   // 하이라이트 ID 처리 (프로젝트 변경은 ProjectSelect에서 처리)

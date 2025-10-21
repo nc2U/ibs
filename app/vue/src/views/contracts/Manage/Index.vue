@@ -18,6 +18,11 @@ import ContractorAlert from '@/views/contracts/Manage/components/ContractorAlert
 
 const [route, router] = [useRoute(), useRouter()]
 
+// URL params에서 contractorId 읽기
+const contractorId = computed(() =>
+  route.params.contractorId ? parseInt(route.params.contractorId as string, 10) : null,
+)
+
 // URL에서 from_page 파라미터 읽기
 const fromPage = computed(() =>
   route.query.from_page ? parseInt(route.query.from_page as string, 10) : null,
@@ -37,13 +42,15 @@ const fetchContractorList = (projId: number, search = '') =>
 
 const fetchContAddressList = (contor: number) => contStore.fetchContAddressList(contor)
 
-watch(route, val => {
-  const { contractor } = val.query
-  if (!!contractor) getContract(contractor as string)
-  else {
-    contStore.removeContractor()
-  }
-})
+watch(
+  () => route.params.contractorId,
+  contractorId => {
+    if (contractorId) getContract(contractorId as string)
+    else {
+      contStore.removeContractor()
+    }
+  },
+)
 
 watch(contractor, val => {
   if (!!val) {
@@ -77,9 +84,9 @@ const projSelect = (target: number | null) => {
 const loading = ref(true)
 onBeforeMount(async () => {
   dataSetup(project.value || projStore.initProjId)
-  if (route.query.contractor) {
-    await getContract(route.query.contractor as string)
-    await fetchContAddressList(parseInt(route.query.contractor as string))
+  if (contractorId.value) {
+    await getContract(contractorId.value.toString())
+    await fetchContAddressList(contractorId.value)
   } else {
     contStore.removeContract()
     contStore.removeContractor()
