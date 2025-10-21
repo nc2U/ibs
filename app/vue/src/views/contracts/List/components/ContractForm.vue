@@ -31,6 +31,7 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AddressForm from '@/views/contracts/Register/components/AddressForm.vue'
+import { CForm } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -986,9 +987,9 @@ onBeforeRouteLeave(() => formDataReset())
             :disabled="!isContract || !!address?.dm_zipcode"
           />
         </CCol>
-        <CCol sm="12" lg="1" class="mb-3">
+        <CCol sm="12" lg="1" class="mb-3 pl-0">
           <v-checkbox-btn
-            v-if="!address"
+            v-if="!address?.id_zipcode || !address?.dm_zipcode"
             id="to-same"
             v-model="sameAddr"
             label="상동"
