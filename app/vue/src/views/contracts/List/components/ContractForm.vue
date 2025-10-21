@@ -477,8 +477,24 @@ const fileControl = (payload: any) => {
 
 defineExpose({ formDataReset })
 
-onMounted(() => formDataSetup())
-onUpdated(() => formDataSetup())
+// Props 변경 감지를 위한 이전 값 저장
+const prevContractPk = ref<number | null>(null)
+
+onMounted(() => {
+  formDataSetup()
+  // 초기 contract pk 저장
+  prevContractPk.value = props.contract?.pk ?? null
+})
+
+onUpdated(() => {
+  // props.contract가 실제로 변경되었을 때만 formDataSetup 호출
+  const currentContractPk = props.contract?.pk ?? null
+  if (prevContractPk.value !== currentContractPk) {
+    formDataSetup()
+    prevContractPk.value = currentContractPk
+  }
+})
+
 onBeforeRouteLeave(() => formDataReset())
 </script>
 
