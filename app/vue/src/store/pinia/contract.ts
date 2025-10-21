@@ -251,7 +251,7 @@ export const useContract = defineStore('contract', () => {
     api
       .put(`/contract-set/${pk}/`, payload, config_headers)
       .then(async res => {
-        // await fetchContractList({ project: res.data.project })
+        await fetchContractList({ project: res.data.project, status: res.data.contractor.status })
         await fetchContract(res.data.pk)
         message()
       })
