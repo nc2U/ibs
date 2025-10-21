@@ -21,12 +21,12 @@ describe('DownLoad Component Test', () => {
     })
 
     expect(wrapper.html()).toContain('Pdf Export')
-    expect(wrapper.find('a').attributes('href')).toBe('abc.com/content/1')
-    expect(wrapper.find('a').attributes('disabled')).not.toBeTruthy()
+    expect(wrapper.find('.v-btn').attributes('href')).toBe('abc.com/content/1')
+    expect(wrapper.find('.v-btn').classes()).not.toContain('v-btn--disabled')
 
     await wrapper.setProps({ disabled: true })
 
-    expect(wrapper.find('a').attributes('disabled')).toBeTruthy()
+    expect(wrapper.find('.v-btn').classes()).toContain('v-btn--disabled')
   })
 
   it('excel expoert test', async () => {
@@ -41,11 +41,11 @@ describe('DownLoad Component Test', () => {
     })
 
     expect(wrapper.html()).toContain('Excel Export')
-    expect(wrapper.find('a').attributes('href')).toBe('abc.com/content/2')
-    expect(wrapper.find('a').attributes('disabled')).not.toBeTruthy()
+    expect(wrapper.find('.v-btn').attributes('href')).toBe('abc.com/content/2')
+    expect(wrapper.find('.v-btn').classes()).not.toContain('v-btn--disabled')
 
     await wrapper.setProps({ disabled: true })
 
-    expect(wrapper.find('a').attributes('disabled')).toBeTruthy()
+    expect(wrapper.find('.v-btn').classes()).toContain('v-btn--disabled')
   })
 })
