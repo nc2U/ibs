@@ -218,7 +218,6 @@ class SiteOwnerConsultationLogs(models.Model):
     CHANNEL_CHOICES = (('visit', '방문'), ('phone', '전화'), ('email', '이메일'),
                        ('sms', '문자'), ('kakao', '카카오톡'), ('other', '기타'))
     channel = models.CharField('상담채널', max_length=10, choices=CHANNEL_CHOICES)
-
     # 상담 관련
     title = models.CharField('상담제목', max_length=255, blank=True, default='')
     content = models.TextField('상담내용', blank=True, default='')
