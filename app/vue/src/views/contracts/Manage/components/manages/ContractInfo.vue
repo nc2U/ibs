@@ -68,10 +68,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
         </CCol>
         <CCol :sm="6">
           <strong>호수:</strong>
-          <span
-            class="ml-2"
-            :class="contract.key_unit?.houseunit ? 'text-success' : 'text-danger'"
-          >
+          <span class="ml-2" :class="contract.key_unit?.houseunit ? 'text-success' : 'text-danger'">
             {{ contract.key_unit?.houseunit?.__str__ || '미정' }}
           </span>
         </CCol>
@@ -212,18 +209,15 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                   currentAddress?.id_zipcode || contract.contractor?.contractoraddress?.id_zipcode
                 }})
                 {{
-                  currentAddress?.id_address1 ||
-                  contract.contractor?.contractoraddress?.id_address1
+                  currentAddress?.id_address1 || contract.contractor?.contractoraddress?.id_address1
                 }}
               </div>
               <div>
                 {{
-                  currentAddress?.id_address2 ||
-                  contract.contractor?.contractoraddress?.id_address2
+                  currentAddress?.id_address2 || contract.contractor?.contractoraddress?.id_address2
                 }}
                 {{
-                  currentAddress?.id_address3 ||
-                  contract.contractor?.contractoraddress?.id_address3
+                  currentAddress?.id_address3 || contract.contractor?.contractoraddress?.id_address3
                 }}
               </div>
             </div>
@@ -243,18 +237,15 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                   currentAddress?.dm_zipcode || contract.contractor?.contractoraddress?.dm_zipcode
                 }})
                 {{
-                  currentAddress?.dm_address1 ||
-                  contract.contractor?.contractoraddress?.dm_address1
+                  currentAddress?.dm_address1 || contract.contractor?.contractoraddress?.dm_address1
                 }}
               </div>
               <div>
                 {{
-                  currentAddress?.dm_address2 ||
-                  contract.contractor?.contractoraddress?.dm_address2
+                  currentAddress?.dm_address2 || contract.contractor?.contractoraddress?.dm_address2
                 }}
                 {{
-                  currentAddress?.dm_address3 ||
-                  contract.contractor?.contractoraddress?.dm_address3
+                  currentAddress?.dm_address3 || contract.contractor?.contractoraddress?.dm_address3
                 }}
               </div>
             </div>
@@ -343,12 +334,12 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
             <a :href="file.file" target="_blank" class="text-decoration-none">
               <v-icon icon="mdi-download" color="primary" />
             </a>
-            <v-icon
-              v-if="write_contract"
-              icon="mdi-delete"
-              color="danger"
-              class="ml-2 pointer"
-            />
+            <!--            <v-icon-->
+            <!--              v-if="write_contract"-->
+            <!--              icon="mdi-delete"-->
+            <!--              color="danger"-->
+            <!--              class="ml-2 pointer"-->
+            <!--            />-->
           </div>
         </div>
       </div>
