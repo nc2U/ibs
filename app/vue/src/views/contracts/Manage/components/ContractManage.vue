@@ -34,6 +34,9 @@ const visibleTabs = ref({
   extra: false, // 기타 정보
 })
 
+// v-btn-toggle 선택된 탭들
+const selectedTabs = ref(['contract', 'payment'])
+
 // 선택된 탭 개수에 따라 컬럼 크기 계산
 const selectedTabsCount = computed(() => {
   return Object.values(visibleTabs.value).filter(Boolean).length
@@ -85,50 +88,20 @@ const goBack = () => {
     <!-- 탭 선택 영역 -->
     <CRow class="mb-3">
       <CCol>
-        <CCard>
-          <CCardBody class="py-2">
-            <div class="d-flex justify-content-between align-items-center">
-              <div class="d-flex gap-3">
-                <div class="form-check">
-                  <input
-                    id="tab-contract"
-                    v-model="visibleTabs.contract"
-                    class="form-check-input"
-                    type="checkbox"
-                  />
-                  <label class="form-check-label" for="tab-contract">
-                    <v-icon icon="mdi-file-document-outline" size="small" class="mr-1" />
-                    계약 내역
-                  </label>
-                </div>
-                <div class="form-check">
-                  <input
-                    id="tab-payment"
-                    v-model="visibleTabs.payment"
-                    class="form-check-input"
-                    type="checkbox"
-                  />
-                  <label class="form-check-label" for="tab-payment">
-                    <v-icon icon="mdi-cash-multiple" size="small" class="mr-1" />
-                    납부 내역
-                  </label>
-                </div>
-                <div class="form-check">
-                  <input
-                    id="tab-extra"
-                    v-model="visibleTabs.extra"
-                    class="form-check-input"
-                    type="checkbox"
-                  />
-                  <label class="form-check-label" for="tab-extra">
-                    <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
-                    기타 정보
-                  </label>
-                </div>
-              </div>
-            </div>
-          </CCardBody>
-        </CCard>
+        <v-btn-toggle v-model="selectedTabs" multiple density="compact" rounded="0">
+          <v-btn value="contract" @click="visibleTabs.contract = !visibleTabs.contract">
+            <v-icon icon="mdi-file-document-outline" size="small" class="mr-1" />
+            계약 내역
+          </v-btn>
+          <v-btn value="payment" @click="visibleTabs.payment = !visibleTabs.payment">
+            <v-icon icon="mdi-cash-multiple" size="small" class="mr-1" />
+            납부 내역
+          </v-btn>
+          <v-btn value="extra" @click="visibleTabs.extra = !visibleTabs.extra">
+            <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
+            기타 정보
+          </v-btn>
+        </v-btn-toggle>
       </CCol>
     </CRow>
 
