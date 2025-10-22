@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, ref, type PropType } from 'vue'
+import { computed, inject, ref, type PropType, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins'
 import { write_contract } from '@/utils/pageAuth'
@@ -39,12 +39,14 @@ const selectedTabsCount = computed(() => {
   return Object.values(visibleTabs.value).filter(Boolean).length
 })
 
-const getColSize = computed(() => {
-  if (selectedTabsCount.value === 1) return 12
-  if (selectedTabsCount.value === 2) return 6
-  if (selectedTabsCount.value === 3) return 4
-  return 12
-})
+const getColSize = computed(() =>
+  nextTick(() => {
+    if (selectedTabsCount.value === 1) return 12
+    if (selectedTabsCount.value === 2) return 6
+    if (selectedTabsCount.value === 3) return 4
+    return 12
+  }),
+)
 
 // 자격구분 색상
 const getQualificationColor = (q: '1' | '2' | '3' | '4' | '') => {
