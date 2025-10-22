@@ -21,7 +21,7 @@ const contract = {
       },
     },
     {
-      path: 'register',
+      path: 'detail',
       name: '계약 상세 관리',
       component: () => import('@/views/contracts/Manage/Index.vue'),
       meta: {
@@ -31,7 +31,7 @@ const contract = {
       },
     },
     {
-      path: 'register/:contractorId(\\d+)',
+      path: 'detail/:contractorId(\\d+)',
       name: '계약 상세 보기',
       component: () => import('@/views/contracts/Manage/Index.vue'),
       meta: {
