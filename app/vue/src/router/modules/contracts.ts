@@ -35,7 +35,7 @@ const contract = {
       name: '계약 상세 보기',
       component: () => import('@/views/contracts/Manage/Index.vue'),
       meta: {
-        title: '계약 상세 보기',
+        title: '계약 상세 관리',
         auth: true,
         requiresContractAuth: true,
       },
@@ -55,7 +55,7 @@ const contract = {
       name: '권리 의무 승계 보기',
       component: () => import('@/views/contracts/Succession/Index.vue'),
       meta: {
-        title: '권리 의무 승계 보기',
+        title: '권리 의무 승계',
         auth: true,
         requiresContractAuth: true,
       },
@@ -75,7 +75,7 @@ const contract = {
       name: '계약 해지 보기',
       component: () => import('@/views/contracts/Release/Index.vue'),
       meta: {
-        title: '계약 해지 보기',
+        title: '계약 해지 관리',
         auth: true,
         requiresContractAuth: true,
       },
