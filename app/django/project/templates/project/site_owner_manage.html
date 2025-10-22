@@ -93,7 +93,7 @@
                                                 {{ form.address3|add_class:"form-control"|attr:"placeholder:참고항목" }}
                                             </div>
                                             <div class="form-group col-xs-12 col-lg-10 mb-1">
-                                                {{ form.counsel_record|add_class:"form-control"|attr:"placeholder:상담기록"|attr:"rows:2" }}
+                                                {{ form.note|add_class:"form-control"|attr:"placeholder:상담기록"|attr:"rows:2" }}
                                             </div>
                                             {% if request.user.is_superuser or request.user.staffauth.project > '1' %}
                                                 <div class="col-6 col-lg-1 text-center m-auto">

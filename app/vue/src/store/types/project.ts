@@ -242,7 +242,7 @@ export interface SiteOwner {
   own_sort: string
   own_sort_desc: string
   sites: SimpleSite[]
-  counsel_record: string
+  note: string
   creator?: {
     pk: number
     username: string

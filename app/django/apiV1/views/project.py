@@ -124,7 +124,7 @@ class SiteOwnerViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('project', 'own_sort', 'use_consent')
-    search_fields = ('owner', 'phone1', 'phone2', 'sites__lot_number', 'counsel_record')
+    search_fields = ('owner', 'phone1', 'phone2', 'sites__lot_number', 'note')
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -162,7 +162,7 @@ class SiteOwnerViewSet(viewsets.ModelViewSet):
             page_size = int(page_size) if page_size else 10
         except ValueError:
             page_size = 10
-        
+
         # 동적 페이지 크기로 계산
         page_number = (items_before // page_size) + 1
 
@@ -236,7 +236,7 @@ class SiteContractViewSet(viewsets.ModelViewSet):
             page_size = int(page_size) if page_size else 10
         except ValueError:
             page_size = 10
-        
+
         # 동적 페이지 크기로 계산
         page_number = (items_before // page_size) + 1
 

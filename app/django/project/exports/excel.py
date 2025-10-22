@@ -265,7 +265,7 @@ class ExportSitesByOwner(View):
             Q(phone1__icontains=search) |
             Q(phone2__icontains=search) |
             Q(sites__lot_number__icontains=search) |
-            Q(counsel_record__icontains=search)
+            Q(note__icontains=search)
         ) if search else obj_list
         # -------------------- get_queryset finish -------------------- #
 

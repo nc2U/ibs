@@ -27,7 +27,7 @@ const form = reactive({
   own_sort: '',
   own_sort_desc: '',
   sites: [] as SimpleSite[],
-  counsel_record: '',
+  note: '',
 })
 
 const updateFormModal = ref()
@@ -51,15 +51,15 @@ onBeforeMount(() => {
     form.own_sort = props.owner.own_sort
     form.own_sort_desc = props.owner.own_sort_desc
     form.sites = props.owner.sites
-    form.counsel_record = props.owner.counsel_record
+    form.note = props.owner.note
   }
 })
 </script>
 
 <template>
-  <CTableRow 
-    v-for="(site, index) in owner.sites" 
-    :key="site.pk" 
+  <CTableRow
+    v-for="(site, index) in owner.sites"
+    :key="site.pk"
     class="text-center"
     :class="{ 'table-warning': props.isHighlight && index === 0 }"
     :data-site-owner-id="index === 0 ? owner.pk : null"

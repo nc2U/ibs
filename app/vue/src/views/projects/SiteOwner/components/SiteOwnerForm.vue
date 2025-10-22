@@ -40,7 +40,7 @@ const form = reactive<SiteOwner>({
   address2: '',
   address3: '',
   own_sort_desc: '',
-  counsel_record: '',
+  note: '',
 })
 
 const own_sort_select = [
@@ -71,7 +71,7 @@ const formsCheck = computed(() => {
     const i = form.address1 === props.owner.address1
     const j = form.address2 === props.owner.address2
     const k = form.address3 === props.owner.address3
-    const l = form.counsel_record === props.owner.counsel_record
+    const l = form.note === props.owner.note
 
     return a && b && c && d && e && f && g && h && i && j && k && l
   } else return false
@@ -130,7 +130,7 @@ const dataSetup = () => {
     form.address2 = props.owner.address2
     form.address3 = props.owner.address3
     form.own_sort_desc = props.owner.own_sort_desc
-    form.counsel_record = props.owner.counsel_record
+    form.note = props.owner.note
   } else form.project = project.value
 }
 
@@ -299,11 +299,7 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label"> 주요 상담 기록</CFormLabel>
               <CCol sm="10">
-                <CFormTextarea
-                  v-model="form.counsel_record"
-                  rows="4"
-                  placeholder="주요 상담 기록"
-                />
+                <CFormTextarea v-model="form.note" rows="4" placeholder="주요 상담 기록" />
               </CCol>
             </CRow>
           </CCol>

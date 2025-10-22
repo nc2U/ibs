@@ -178,7 +178,7 @@ class SiteOwner(models.Model):
     own_sort = models.CharField('소유구분', max_length=1, choices=OWN_CHOICES, default='1')
     sites = models.ManyToManyField(Site, through='SiteOwnshipRelationship', through_fields=('site_owner', 'site'),
                                    related_name='owners', verbose_name='소유부지')
-    counsel_record = models.TextField('상담기록', blank=True, default='')
+    note = models.TextField('특이사항', blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name='updated_site_owners', verbose_name='편집자')
@@ -208,6 +208,44 @@ class SiteOwnshipRelationship(models.Model):
         ordering = ('-id',)
         verbose_name = '06. 사업부지 소유관계'
         verbose_name_plural = '06. 사업부지 소유관계'
+
+
+class SiteOwnerConsultationLogs(models.Model):
+    site_owner = models.ForeignKey('SiteOwner', on_delete=models.CASCADE, verbose_name='토지소유자',
+                                   related_name='consultation_logs')
+    # 상담 기본 정보
+    consultation_date = models.DateField('상담일자')
+    CHANNEL_CHOICES = (('visit', '방문'), ('phone', '전화'), ('email', '이메일'),
+                       ('sms', '문자'), ('kakao', '카카오톡'), ('other', '기타'))
+    channel = models.CharField('상담채널', max_length=10, choices=CHANNEL_CHOICES)
+
+    # 상담 관련
+    title = models.CharField('상담제목', max_length=255, blank=True, default='')
+    content = models.TextField('상담내용', blank=True, default='')
+    consultant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='site_owner_consultations', verbose_name='상담담당자')
+    # 후속 조치
+    follow_up_required = models.BooleanField('후속조치 필요', default=False)
+    follow_up_note = models.TextField('후속조치 내용', blank=True)
+    completion_date = models.DateField('처리완료일', null=True, blank=True)
+    # 시스템 필드
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('수정일시', auto_now=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='created_site_consultations', verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_site_consultations', verbose_name='수정자')
+
+    def __str__(self):
+        return f'[{self.consultation_date}] {self.site_owner.owner} - {self.title}'
+
+    class Meta:
+        ordering = ['-consultation_date', '-created']
+        verbose_name = '07. 소유자 상담 기록'
+        verbose_name_plural = '07. 소유자 상담 기록'
+        indexes = [
+            models.Index(fields=['site_owner', '-consultation_date']),
+        ]
 
 
 class SiteContract(models.Model):
@@ -247,8 +285,8 @@ class SiteContract(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '07. 사업부지 계약현황'
-        verbose_name_plural = '07. 사업부지 계약현황'
+        verbose_name = '08. 사업부지 계약현황'
+        verbose_name_plural = '08. 사업부지 계약현황'
 
 
 def get_cont_file(instance, filename):

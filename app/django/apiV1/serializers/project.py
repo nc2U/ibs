@@ -284,7 +284,7 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
         model = SiteOwner
         fields = ('pk', 'project', 'owner', 'use_consent', 'date_of_birth', 'phone1',
                   'phone2', 'zipcode', 'address1', 'address2', 'address3',
-                  'own_sort', 'own_sort_desc', 'sites', 'counsel_record',
+                  'own_sort', 'own_sort_desc', 'sites', 'note',
                   'creator', 'updator', 'created', 'updated')
 
     @transaction.atomic
