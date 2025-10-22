@@ -33,17 +33,4 @@ const props = defineProps({
       </div>
     </CCardBody>
   </CCard>
-
-  <!-- 특이사항 카드 -->
-  <CCard class="mb-3">
-    <CCardHeader>
-      <strong>특이사항</strong>
-    </CCardHeader>
-    <CCardBody>
-      <div class="text-center text-muted py-3">
-        <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2" />
-        <div>특이사항이 없습니다.</div>
-      </div>
-    </CCardBody>
-  </CCard>
 </template>

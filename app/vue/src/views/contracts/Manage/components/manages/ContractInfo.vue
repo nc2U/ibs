@@ -225,7 +225,11 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
           </div>
 
           <!-- 우편물 수령 주소 -->
-          <div v-else-if="selectedAddressTab === 'dm'" key="dm-address" class="p-3 border mt-0">
+          <div
+            v-else-if="selectedAddressTab === 'dm'"
+            key="dm-address"
+            class="p-3 border mt-0 bg-yellow-lighten-5"
+          >
             <div
               v-if="
                 (currentAddress && currentAddress.dm_address1) ||
@@ -360,16 +364,16 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
 <style scoped>
 /* 주소 슬라이드 트랜지션 */
 .slide-fade-enter-active {
-  transition: all 0.3s ease-out;
+  transition: all 0.4s ease-out;
 }
 
 .slide-fade-leave-active {
-  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
+  transition: all 0.15s cubic-bezier(1, 0.5, 0.8, 1);
 }
 
 .slide-fade-enter-from,
 .slide-fade-leave-to {
-  transform: translateY(10px);
+  transform: translateX(15px);
   opacity: 0;
 }
 </style>
