@@ -4,8 +4,8 @@ from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
 
 from .models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractDocument,
-                     ContractDocumentFile, ContractPrice, ContractFile, Contractor,
-                     ContractorAddress, ContractorContact, Succession, ContractorRelease)
+                     ContractDocumentFile, ContractPrice, ContractFile, Contractor, ContractorAddress,
+                     ContractorContact, ContractorConsultationLogs, Succession, ContractorRelease)
 
 
 @admin.register(OrderGroup)
@@ -257,6 +257,73 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
 class CAdressAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('__str__', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3', 'is_current')
     list_editable = ('is_current',)
+
+
+@admin.register(ContractorConsultationLogs)
+class ContractorConsultationLogsAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'contractor', 'consultation_date', 'category', 'channel',
+                    'status_badge', 'priority_badge', 'consultant', 'is_important', 'created')
+    list_display_links = ('contractor',)
+    list_filter = ('status', 'priority', 'category', 'channel', 'is_important', 'consultation_date')
+    list_editable = ('is_important',)
+    search_fields = ('contractor__name', 'title', 'content', 'consultant__username')
+    date_hierarchy = 'consultation_date'
+    readonly_fields = ('created', 'updated', 'creator', 'updator')
+
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('contractor', 'consultation_date', 'category', 'channel')
+        }),
+        ('상담 내용', {
+            'fields': ('title', 'content')
+        }),
+        ('처리 상태', {
+            'fields': ('status', 'priority', 'consultant', 'is_important')
+        }),
+        ('후속 조치', {
+            'fields': ('follow_up_required', 'follow_up_note', 'completion_date')
+        }),
+        ('시스템 정보', {
+            'fields': ('created', 'updated', 'creator', 'updator'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def status_badge(self, obj):
+        colors = {
+            '1': 'gray',
+            '2': 'blue',
+            '3': 'green',
+            '4': 'orange',
+        }
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px;">{}</span>',
+            colors.get(obj.status, 'gray'),
+            obj.get_status_display()
+        )
+
+    status_badge.short_description = '처리상태'
+
+    def priority_badge(self, obj):
+        colors = {
+            'low': '#6c757d',
+            'normal': '#0d6efd',
+            'high': '#fd7e14',
+            'urgent': '#dc3545',
+        }
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px;">{}</span>',
+            colors.get(obj.priority, '#6c757d'),
+            obj.get_priority_display()
+        )
+
+    priority_badge.short_description = '중요도'
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.creator = request.user
+        obj.updator = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Succession)

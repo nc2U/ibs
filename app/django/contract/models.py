@@ -618,41 +618,36 @@ class ContractorConsultationLogs(models.Model):
     # 상담 내용
     title = models.CharField('상담제목', max_length=255, blank=True, default='')
     content = models.TextField('상담내용', blank=True, default='')
-    response = models.TextField('응대내용', blank=True)
     # 상담 처리 상태
     STATUS_CHOICES = (('1', '처리대기'), ('2', '처리중'), ('3', '처리완료'), ('4', '보류'))
     status = models.CharField('처리상태', max_length=1, choices=STATUS_CHOICES, default='1')
     PRIORITY_CHOICES = (('low', '낮음'), ('normal', '보통'), ('high', '높음'), ('urgent', '긴급'))
     priority = models.CharField('중요도', max_length=10, choices=PRIORITY_CHOICES, default='normal')
     # 상담 담당자
-    consultant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                   null=True, blank=True, related_name='consultations',
-                                   verbose_name='상담담당자')
+    consultant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='consultations', verbose_name='상담담당자')
     # 후속 조치
     follow_up_required = models.BooleanField('후속조치 필요', default=False)
-    follow_up_date = models.DateField('후속조치일', null=True, blank=True)
+    # follow_up_date = models.DateField('후속조치일', null=True, blank=True)
     follow_up_note = models.TextField('후속조치 내용', blank=True)
     completion_date = models.DateField('처리완료일', null=True, blank=True)
     # 기타
-    note = models.TextField('비고', blank=True)
     is_important = models.BooleanField('중요표시', default=False)
     # 시스템 필드
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('수정일시', auto_now=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                null=True, blank=True, related_name='created_consultations',
-                                verbose_name='등록자')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                null=True, blank=True, related_name='updated_consultations',
-                                verbose_name='수정자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='created_consultations', verbose_name='등록자')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_consultations', verbose_name='수정자')
 
     def __str__(self):
         return f'[{self.consultation_date}] {self.contractor.name} - {self.get_category_display()}'
 
     class Meta:
         ordering = ['-consultation_date', '-created']
-        verbose_name = '09. 계약자 상담 기록'
-        verbose_name_plural = '09. 계약자 상담 기록'
+        verbose_name = '08. 계약자 상담 기록'
+        verbose_name_plural = '08. 계약자 상담 기록'
 
 
 class Succession(models.Model):
@@ -678,8 +673,8 @@ class Succession(models.Model):
 
     class Meta:
         ordering = ['-apply_date', '-trading_date', '-id']
-        verbose_name = '08. 권리 의무 승계'
-        verbose_name_plural = '08. 권리 의무 승계'
+        verbose_name = '09. 권리 의무 승계'
+        verbose_name_plural = '09. 권리 의무 승계'
 
 
 class ContractorRelease(models.Model):
@@ -705,5 +700,5 @@ class ContractorRelease(models.Model):
         return f'{self.contractor}'
 
     class Meta:
-        verbose_name = '09. 계약 해지 정보'
-        verbose_name_plural = '09. 계약 해지 정보'
+        verbose_name = '10. 계약 해지 정보'
+        verbose_name_plural = '10. 계약 해지 정보'
