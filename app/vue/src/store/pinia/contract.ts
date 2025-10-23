@@ -18,7 +18,6 @@ import {
   type ContractorAddress,
   type ContractPriceWithPaymentPlan,
   type ContractFile,
-  type RequiredDocs,
 } from '@/store/types/contract'
 
 export interface ContFilter {
@@ -83,14 +82,6 @@ export const useContract = defineStore('contract', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
-
-  // state & getters
-  const requiredDocsList = ref<RequiredDocs[]>([])
-  const fetchRequiredDocsList = async (project: number) =>
-    await api
-      .get(`/required-docs/?project=${project}`)
-      .then(res => (requiredDocsList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   // state & getters
@@ -614,9 +605,6 @@ export const useContract = defineStore('contract', () => {
     updateOrderGroup,
     deleteOrderGroup,
 
-    requiredDocsList,
-    fetchRequiredDocsList,
-
     keyUnitList,
     getKeyUnits,
     houseUnitList,
@@ -655,6 +643,7 @@ export const useContract = defineStore('contract', () => {
     createContractFile,
     updateContractFile,
     removeContractFile,
+    fetchContractFiles,
 
     contAddressList,
     fetchContAddressList,

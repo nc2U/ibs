@@ -1,13 +1,3 @@
-export interface RequiredDocs {
-  pk: number
-  project: number
-  document_type: number
-  quantity: number
-  require_type: 'required' | 'optional' | 'conditional'
-  description: string
-  display_order: number
-}
-
 export interface ContractFile {
   pk: number
   file: string
