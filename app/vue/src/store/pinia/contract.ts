@@ -301,7 +301,7 @@ export const useContract = defineStore('contract', () => {
     formData.append('file', file)
 
     return await api
-      .put(`/contract-file/${pk}/`, formData, {
+      .patch(`/contract-file/${pk}/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       .then(async res => {

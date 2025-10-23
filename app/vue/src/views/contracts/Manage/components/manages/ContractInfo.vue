@@ -36,16 +36,6 @@ const isUpdating = ref(false)
 const confirmModal = ref()
 const fileToDelete = ref<number | null>(null)
 
-// 파일 선택 처리
-const handleFileSelect = (files: File | File[] | null) => {
-  selectedFile.value = Array.isArray(files) ? files[0] : files
-}
-
-// 수정할 파일 선택 처리
-const handleEditFileSelect = (files: File | File[] | null) => {
-  editFile.value = Array.isArray(files) ? files[0] : files
-}
-
 // 파일 업로드 실행
 const uploadFile = async () => {
   if (!selectedFile.value || !props.contractor?.pk) return
@@ -103,7 +93,7 @@ const confirmDeleteFile = (filePk: number, fileName: string) => {
     '계약서 파일 삭제',
     `"${fileName}" 파일을 삭제하시겠습니까?\n삭제된 파일은 복구할 수 없습니다.`,
     'mdi-delete-alert',
-    'red-darken-2'
+    'red-darken-2',
   )
 }
 
@@ -424,7 +414,10 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
             <div class="flex-grow-1">
               <div>
                 <v-icon icon="mdi-file-document" size="small" class="mr-1" />
-                <strong>{{ file.file_name }}</strong>
+                <strong class="mr-2">{{ file.file_name }}</strong>
+                <a :href="file.file" target="_blank" class="text-decoration-none">
+                  <v-icon icon="mdi-download" color="primary" />
+                </a>
               </div>
               <small class="text-muted">
                 {{ (file.file_size / 1024).toFixed(2) }} KB
@@ -435,9 +428,6 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
               </small>
             </div>
             <div>
-              <a :href="file.file" target="_blank" class="text-decoration-none">
-                <v-icon icon="mdi-download" color="primary" />
-              </a>
               <v-icon
                 v-if="write_contract"
                 icon="mdi-pencil"
@@ -465,7 +455,6 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
             </div>
             <v-file-input
               v-model="editFile"
-              @update:model-value="handleEditFileSelect"
               density="compact"
               label="새 파일 선택"
               clearable
@@ -504,7 +493,6 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
           <CCol :sm="12">
             <v-file-input
               v-model="selectedFile"
-              @update:model-value="handleFileSelect"
               density="compact"
               label="계약서 파일"
               clearable
