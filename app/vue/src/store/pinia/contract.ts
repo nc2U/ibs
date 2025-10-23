@@ -16,7 +16,7 @@ import {
   type BuyerForm,
   type ContractRelease,
   type ContractorAddress,
-  type ContractPriceWithPaymentPlan,
+  type ContractPriceWithPaymentPlan, type ContractFile,
 } from '@/store/types/contract'
 
 export interface ContFilter {
@@ -275,6 +275,70 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // --> contract-file api 구현
+  const createContractFile = (contractorId: number, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('contractor', contractorId.toString())
+
+    return api
+      .post(`/contract-file/upload/${contractorId}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      .then(res => {
+        message('success', '파일이 업로드되었습니다.')
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const updateContractFile = (pk: number, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    return api
+      .put(`/contract-file/${pk}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      .then(res => {
+        message('success', '파일이 수정되었습니다.')
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const removeContractFile = (pk: number) => {
+    return api
+      .delete(`/contract-file/${pk}/`)
+      .then(() => {
+        message('success', '파일이 삭제되었습니다.')
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const fetchContractFiles = (contractorId: number) => {
+    return api
+      .get(`/contract-file/?contractor=${contractorId}`)
+      .then(res => res.data.results)
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+  
   // state & getters
   const contAddressList = ref<ContractorAddress[]>([])
 
@@ -575,6 +639,10 @@ export const useContract = defineStore('contract', () => {
     fetchContractor,
     removeContractor,
     fetchContractorList,
+
+    createContractFile,
+    updateContractFile,
+    removeContractFile,
 
     contAddressList,
     fetchContAddressList,

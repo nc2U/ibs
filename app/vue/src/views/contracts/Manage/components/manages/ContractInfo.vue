@@ -3,8 +3,8 @@ import { computed, inject, ref, type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { write_contract } from '@/utils/pageAuth'
 import type { Contract, Contractor } from '@/store/types/contract'
-import { CCard, CCardBody } from '@coreui/vue'
 import { bgLight } from '@/utils/cssMixins.ts'
+import { useContractStore } from '@/store/pinia/contract'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -14,12 +14,49 @@ const props = defineProps({
 })
 
 const isDark = inject('isDark')
+const contractStore = useContractStore()
 
 // 과거 주소 히스토리 표시 토글
 const showPastAddresses = ref(false)
 
 // 주소 탭 선택 (id: 주민등록 주소, dm: 우편물 수령 주소)
 const selectedAddressTab = ref('id')
+
+// 파일 업로드 관련
+const emit = defineEmits(['file-uploaded'])
+const selectedFile = ref<File | null>(null)
+const isUploading = ref(false)
+
+// 파일 선택 처리
+const handleFileSelect = (files: File | File[] | null) => {
+  selectedFile.value = Array.isArray(files) ? files[0] : files
+}
+
+// 파일 업로드 실행
+const uploadFile = async () => {
+  if (!selectedFile.value || !props.contractor.pk) return
+
+  isUploading.value = true
+  try {
+    await contractStore.createContractFile(props.contractor.pk, selectedFile.value)
+    selectedFile.value = null
+    emit('file-uploaded') // 부모 컴포넌트에 업로드 완료 알림
+  } catch (error) {
+    console.error('파일 업로드 실패:', error)
+  } finally {
+    isUploading.value = false
+  }
+}
+
+// 파일 삭제
+const deleteFile = async (filePk: number) => {
+  try {
+    await contractStore.removeContractFile(filePk)
+    emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
+  } catch (error) {
+    console.error('파일 삭제 실패:', error)
+  }
+}
 
 // 자격구분 색상
 const getQualificationColor = (q: '1' | '2' | '3' | '4' | '') => {
@@ -346,6 +383,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                 icon="mdi-delete"
                 color="danger"
                 class="ml-2 pointer"
+                @click="deleteFile(file.pk)"
             />
           </div>
         </div>
@@ -360,13 +398,22 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
 
         <CRow class="text-right mt-3">
           <CCol :sm="12">
-            <v-file-input density="compact" label="계약서 파일" clearable />
+            <v-file-input
+              v-model="selectedFile"
+              @update:model-value="handleFileSelect"
+              density="compact"
+              label="계약서 파일"
+              clearable
+              :disabled="!write_contract || isUploading"
+            />
             <v-btn
-                color="primary"
-                size="small"
-                :disabled="!write_contract"
+              color="primary"
+              size="small"
+              :disabled="!write_contract || !selectedFile || isUploading"
+              :loading="isUploading"
+              @click="uploadFile"
             >
-              파일 업로드
+              {{ isUploading ? '업로드 중...' : '파일 업로드' }}
             </v-btn>
           </CCol>
         </CRow>
