@@ -4,6 +4,7 @@ import { write_contract } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight } from '@/utils/cssMixins.ts'
 import type { Contract, Contractor } from '@/store/types/contract'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -30,6 +31,10 @@ const isUploading = ref(false)
 const editingFileId = ref<number | null>(null)
 const editFile = ref<File | null>(null)
 const isUpdating = ref(false)
+
+// ConfirmModal ref
+const confirmModal = ref()
+const fileToDelete = ref<number | null>(null)
 
 // 파일 선택 처리
 const handleFileSelect = (files: File | File[] | null) => {
@@ -91,13 +96,29 @@ const updateFile = async (filePk: number) => {
   }
 }
 
-// 파일 삭제
-const deleteFile = async (filePk: number) => {
+// 파일 삭제 확인
+const confirmDeleteFile = (filePk: number, fileName: string) => {
+  fileToDelete.value = filePk
+  confirmModal.value?.callModal(
+    '계약서 파일 삭제',
+    `"${fileName}" 파일을 삭제하시겠습니까?\n삭제된 파일은 복구할 수 없습니다.`,
+    'mdi-delete-alert',
+    'red-darken-2'
+  )
+}
+
+// 파일 삭제 실행
+const deleteFile = async () => {
+  if (!fileToDelete.value) return
+
   try {
-    await contStore.removeContractFile(filePk, props.contract?.pk as number)
+    await contStore.removeContractFile(fileToDelete.value, props.contract?.pk as number)
     emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
+    confirmModal.value?.close()
   } catch (error) {
     console.error('파일 삭제 실패:', error)
+  } finally {
+    fileToDelete.value = null
   }
 }
 
@@ -431,7 +452,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                 color="grey"
                 size="x-small"
                 class="ml-1 pointer"
-                @click="deleteFile(file.pk)"
+                @click="confirmDeleteFile(file.pk, file.file_name)"
               />
             </div>
           </div>
@@ -503,6 +524,15 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
       </div>
     </CCardBody>
   </CCard>
+
+  <ConfirmModal ref="confirmModal">
+    <template #footer>
+      <v-btn color="error" size="small" @click="deleteFile">
+        <v-icon icon="mdi-delete" size="small" class="mr-1" />
+        삭제
+      </v-btn>
+    </template>
+  </ConfirmModal>
 </template>
 
 <style scoped>

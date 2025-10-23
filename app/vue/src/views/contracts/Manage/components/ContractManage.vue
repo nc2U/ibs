@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, inject, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { write_contract } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
 import type { Contract, Contractor } from '@/store/types/contract'
 import ContractInfo from './manages/ContractInfo.vue'
@@ -129,16 +128,6 @@ const goBack = () => {
             <v-icon icon="mdi-arrow-left" class="mr-1" />
             목록으로
           </v-btn>
-          <div v-if="write_contract">
-            <v-btn color="success" size="small" class="mr-2">
-              <v-icon icon="mdi-pencil" class="mr-1" />
-              수정
-            </v-btn>
-            <!--            <v-btn color="danger" size="small">-->
-            <!--              <v-icon icon="mdi-delete" class="mr-1" />-->
-            <!--              삭제-->
-            <!--            </v-btn>-->
-          </div>
         </div>
       </CCol>
     </CRow>
