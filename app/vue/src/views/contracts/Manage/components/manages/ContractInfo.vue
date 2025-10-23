@@ -3,6 +3,8 @@ import { computed, inject, ref, type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { write_contract } from '@/utils/pageAuth'
 import type { Contract, Contractor } from '@/store/types/contract'
+import { CCard, CCardBody } from '@coreui/vue'
+import { bgLight } from '@/utils/cssMixins.ts'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -309,17 +311,18 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
     </CCardBody>
   </CCard>
 
-  <!-- 계약서 파일 관리 카드 -->
-  <CCard>
+  <!-- 계약서 파일 관리 -->
+  <CCard class="mb-3">
     <CCardHeader>
       <strong>계약서 파일</strong>
     </CCardHeader>
     <CCardBody>
+
       <div v-if="contract.contract_files && contract.contract_files.length > 0">
         <div
-          v-for="file in contract.contract_files"
-          :key="file.pk"
-          class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded"
+            v-for="file in contract.contract_files"
+            :key="file.pk"
+            class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded"
         >
           <div class="flex-grow-1">
             <div>
@@ -338,24 +341,35 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
             <a :href="file.file" target="_blank" class="text-decoration-none">
               <v-icon icon="mdi-download" color="primary" />
             </a>
-            <!--            <v-icon-->
-            <!--              v-if="write_contract"-->
-            <!--              icon="mdi-delete"-->
-            <!--              color="danger"-->
-            <!--              class="ml-2 pointer"-->
-            <!--            />-->
+            <v-icon
+                v-if="write_contract"
+                icon="mdi-delete"
+                color="danger"
+                class="ml-2 pointer"
+            />
           </div>
         </div>
       </div>
-      <div v-else class="text-center text-muted py-3">
-        <v-icon icon="mdi-file-document-outline" size="large" class="mb-2" />
-        <div>등록된 파일이 없습니다.</div>
-      </div>
-      <div v-if="write_contract" class="mt-3">
-        <v-btn color="primary" block size="small">
-          <v-icon icon="mdi-upload" class="mr-1" />
-          파일 업로드
-        </v-btn>
+      <div v-else class="text-muted">
+
+        <CRow>
+          <CCol class="p-3 text-center text-muted" :class="bgLight">
+            등록된 파일이 없습니다.
+          </CCol>
+        </CRow>
+
+        <CRow class="text-right mt-3">
+          <CCol :sm="12">
+            <v-file-input density="compact" label="계약서 파일" clearable />
+            <v-btn
+                color="primary"
+                size="small"
+                :disabled="!write_contract"
+            >
+              파일 업로드
+            </v-btn>
+          </CCol>
+        </CRow>
       </div>
     </CCardBody>
   </CCard>
