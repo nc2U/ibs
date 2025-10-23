@@ -329,6 +329,8 @@ export const useContract = defineStore('contract', () => {
       })
   }
 
+  // state & getters - ContractDocument
+
   // state & getters
   const contAddressList = ref<ContractorAddress[]>([])
 
