@@ -86,7 +86,7 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
 
   // state & getters
-  const requiredDocsList = ref<RequiredDocs[]>()
+  const requiredDocsList = ref<RequiredDocs[]>([])
   const fetchRequiredDocsList = async (project: number) =>
     await api
       .get(`/required-docs/?project=${project}`)
