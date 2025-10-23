@@ -34,6 +34,12 @@ const urlProjectId = computed(() => {
   return id ? parseInt(id as string, 10) : null
 })
 
+// URL에서 page 파라미터 읽기
+const urlPage = computed(() => {
+  const page = route.query.page
+  return page ? parseInt(page as string, 10) : null
+})
+
 const currentFilters = ref<ContFilter>({ project: null })
 
 const visible = ref(false)
@@ -151,7 +157,7 @@ const loadHighlightPage = async (projectId: number) => {
   }
 }
 
-const dataSetup = async (proj: number) => {
+const dataSetup = async (proj: number, initialPage?: number) => {
   await fetchOrderGroupList(proj)
   await fetchTypeList(proj)
   await fetchBuildingList(proj)
@@ -159,12 +165,23 @@ const dataSetup = async (proj: number) => {
   await fetchKeyUnitList({ project: proj })
   await fetchHouseUnitList({ project: proj })
 
-  // 초기 필터 설정
-  currentFilters.value = { project: proj, limit: limit.value, status: status.value }
+  // 초기 필터 설정 (URL에서 page가 있으면 해당 페이지로)
+  currentFilters.value = {
+    project: proj,
+    limit: limit.value,
+    status: status.value,
+    ...(initialPage && { page: initialPage }),
+  }
 
-  // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-  if (highlightId.value) await loadHighlightPage(proj)
-  else await fetchContractList({ project: proj })
+  // page 파라미터가 명시적으로 있으면 그 페이지를 사용하고 스크롤만
+  // page가 없고 highlight_id만 있으면 자동으로 페이지 찾기
+  if (highlightId.value && !initialPage) {
+    // highlight_id만 있을 때: 자동으로 해당 항목이 있는 페이지 찾기
+    await loadHighlightPage(proj)
+  } else {
+    // page가 명시되었거나 highlight_id가 없을 때: 지정된 페이지 로드
+    await fetchContractList(currentFilters.value)
+  }
 
   // 하이라이트 처리 후에도 목록이 비어있다면 기본 목록 로드
   if (highlightId.value && contStore.contractList.length === 0)
@@ -208,7 +225,8 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
       await fetchContSummaryList(target)
     } else {
       // 슬랙 링크 등 자동 전환 시에만 하이라이트 기능 사용
-      await dataSetup(target)
+      // URL에서 page가 있으면 해당 페이지로 진입
+      await dataSetup(target, urlPage.value ?? undefined)
     }
 
     // ContentHeader 강제 리렌더링으로 ProjectSelect 업데이트
@@ -240,13 +258,14 @@ const clearQueryString = () => {
 onBeforeRouteUpdate(async to => {
   // URL에서 프로젝트 ID 파라미터 확인
   const toProjectId = to.query.project ? parseInt(to.query.project as string, 10) : null
+  const toPage = to.query.page ? parseInt(to.query.page as string, 10) : undefined
 
   if (toProjectId && toProjectId !== project.value?.pk) {
     await projSelect(toProjectId, true)
   } else {
     // URL에 highlight_id가 있으면 하이라이트 기능이 필요한 경우이므로 dataSetup 실행
     if (to.query.highlight_id) {
-      await dataSetup(project.value?.pk || projStore.initProjId)
+      await dataSetup(project.value?.pk || projStore.initProjId, toPage)
     }
     // 단순히 project 파라미터만 있는 경우는 이미 올바른 프로젝트가 선택되어 있으므로 추가 작업 불필요
   }
@@ -272,7 +291,8 @@ onBeforeMount(async () => {
     await projSelect(urlProjectId.value, true)
   } else {
     // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
-    await dataSetup(projectId)
+    // URL에 page 파라미터가 있으면 해당 페이지로 진입
+    await dataSetup(projectId, urlPage.value ?? undefined)
   }
 
   loading.value = false
