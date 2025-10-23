@@ -43,11 +43,15 @@ const handleEditFileSelect = (files: File | File[] | null) => {
 
 // 파일 업로드 실행
 const uploadFile = async () => {
-  if (!selectedFile.value || !props.contractor.pk) return
+  if (!selectedFile.value || !props.contractor?.pk) return
 
   isUploading.value = true
   try {
-    await contStore.createContractFile(props.contractor.pk, selectedFile.value, props.contract.pk)
+    await contStore.createContractFile(
+      props.contractor.pk,
+      selectedFile.value,
+      props.contract?.pk as number,
+    )
     selectedFile.value = null
     emit('file-uploaded') // 부모 컴포넌트에 업로드 완료 알림
   } catch (error) {
@@ -76,7 +80,7 @@ const updateFile = async (filePk: number) => {
 
   isUpdating.value = true
   try {
-    await contStore.updateContractFile(filePk, editFile.value, props.contract.pk)
+    await contStore.updateContractFile(filePk, editFile.value, props.contract?.pk as number)
     editingFileId.value = null
     editFile.value = null
     emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
@@ -90,7 +94,7 @@ const updateFile = async (filePk: number) => {
 // 파일 삭제
 const deleteFile = async (filePk: number) => {
   try {
-    await contStore.removeContractFile(filePk, props.contract.pk)
+    await contStore.removeContractFile(filePk, props.contract?.pk as number)
     emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
   } catch (error) {
     console.error('파일 삭제 실패:', error)
