@@ -2,6 +2,7 @@
 import { type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { Contract } from '@/store/types/contract'
+import { CCard } from '@coreui/vue'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -33,7 +34,7 @@ const props = defineProps({
       </CRow>
       <CRow class="mb-3">
         <CCol :cols="6">
-          <small class="text-muted">세금:</small>
+          <small class="text-muted">부가세:</small>
           <div>{{ numFormat(contract.contractprice?.price_tax || 0) }}</div>
         </CCol>
       </CRow>
@@ -82,6 +83,16 @@ const props = defineProps({
             </CTableRow>
           </CTableBody>
         </CTable>
+        <div class="text-right">
+          <router-link
+            :to="{
+              name: '건별 수납 관리',
+              query: { contract: contract.pk },
+            }"
+          >
+            건별 수납 관리 <v-icon icon="mdi-arrow-right" size="18" />
+          </router-link>
+        </div>
       </div>
       <div v-else class="text-center text-muted py-3">납부 내역이 없습니다.</div>
     </CCardBody>
