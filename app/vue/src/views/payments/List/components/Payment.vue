@@ -19,21 +19,22 @@ const contMatchingModal = ref()
 
 const rowClass = computed(() => {
   let cls = ''
-  cls = props.payment.contract && props.payment.installment_order === '-' ? 'danger' : cls
-  cls = !props.payment.contract ? 'warning' : cls
+  cls = props.payment?.contract && props.payment.installment_order === '-' ? 'danger' : cls
+  cls = !props.payment?.contract ? 'warning' : cls
   return cls
 })
 
-const toManage = () => (props.payment.contract ? toRegister() : contMatching())
+const toManage = () => (props.payment?.contract ? toRegister() : contMatching())
 
 const toRegister = () => {
   router.push({
-    name: '건별 수납 관리',
-    query: { contract: props.payment.contract.pk, payment: props.payment.pk },
+    name: '건별 수납 내역',
+    params: { contractId: props.payment?.contract.pk },
+    query: { payment: props.payment?.pk },
   })
 }
 const contMatching = () => {
-  if (!props.payment.contract) contMatchingModal.value.callModal()
+  if (!props.payment?.contract) contMatchingModal.value.callModal()
   return
 }
 

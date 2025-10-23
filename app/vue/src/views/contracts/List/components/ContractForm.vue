@@ -809,8 +809,8 @@ onBeforeRouteLeave(() => formDataReset())
                       <router-link
                         v-c-tooltip="'건별 수납 관리'"
                         :to="{
-                          name: '건별 수납 관리',
-                          query: { contract: contract.pk },
+                          name: '건별 수납 내역',
+                          params: { contractId: contract.pk },
                         }"
                       >
                         납부내역
@@ -822,8 +822,8 @@ onBeforeRouteLeave(() => formDataReset())
                       <router-link
                         v-c-tooltip="'건별 수납 관리'"
                         :to="{
-                          name: '건별 수납 관리',
-                          query: { contract: contract.pk },
+                          name: '건별 수납 내역',
+                          params: { contractId: contract.pk },
                         }"
                       >
                         {{ numFormat(payment.income) }}

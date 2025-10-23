@@ -86,8 +86,8 @@ const props = defineProps({
         <div class="text-right">
           <router-link
             :to="{
-              name: '건별 수납 관리',
-              query: { contract: contract.pk },
+              name: '건별 수납 내역',
+              params: { contractId: contract.pk },
             }"
           >
             건별 수납 관리 <v-icon icon="mdi-arrow-right" size="18" />

@@ -19,7 +19,7 @@ const emit = defineEmits(['on-update', 'on-delete'])
 const updateFormModal = ref()
 
 onMounted(() => {
-  if (props.paymentId === props.payment.pk.toString()) {
+  if (props.paymentId === props.payment?.pk.toString()) {
     showDetail()
   }
 })
@@ -27,18 +27,18 @@ onMounted(() => {
 const router = useRouter()
 const showDetail = () => {
   router.replace({
-    name: '건별 수납 관리',
-    query: { contract: props.contract.pk },
+    name: '건별 수납 내역',
+    params: { contractId: props.contract?.pk },
   })
   updateFormModal.value.callModal()
 }
 
 const updateObject = (payload: ProjectCashBook) => {
-  emit('on-update', { ...{ pk: props.payment.pk }, ...payload })
+  emit('on-update', { ...{ pk: props.payment?.pk }, ...payload })
   updateFormModal.value.close()
 }
 
-const deleteObject = () => emit('on-delete', props.payment.pk)
+const deleteObject = () => emit('on-delete', props.payment?.pk)
 </script>
 
 <template>

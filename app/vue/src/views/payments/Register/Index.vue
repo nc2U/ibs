@@ -86,23 +86,37 @@ const fetchContract = (pk: number) => contractStore.fetchContract(pk)
 
 const [route, router] = [useRoute(), useRouter()]
 
-watch(contract, (newVal: Contract | null) => {
-  if (newVal && project.value) {
-    const order_group = newVal.order_group
-    const unit_type = newVal.unit_type
-    fetchPriceList({ project: project.value, order_group, unit_type })
-    fetchDownPayList({ project: project.value, order_group, unit_type })
-    fetchAllPaymentList({
-      project: project.value,
-      contract: newVal.pk,
-      ordering: 'deal_date',
-    })
-  } else {
-    paymentStore.priceList = []
-    paymentStore.downPayList = []
-    paymentStore.AllPaymentList = []
-  }
-})
+watch(
+  contract,
+  (newVal: Contract | null, oldVal: Contract | null) => {
+    // 같은 contract면 스킵 (중복 로드 방지)
+    // 단, oldVal이 null이 아니고 newVal과 같을 때만 스킵
+    if (oldVal && newVal?.pk === oldVal?.pk) return
+
+    // 이미 로딩 중이면 스킵 (race condition 방지)
+    if (isLoadingPaymentList.value) return
+
+    if (newVal && project.value) {
+      isLoadingPaymentList.value = true
+      const order_group = newVal.order_group
+      const unit_type = newVal.unit_type
+      fetchPriceList({ project: project.value, order_group, unit_type })
+      fetchDownPayList({ project: project.value, order_group, unit_type })
+      fetchAllPaymentList({
+        project: project.value,
+        contract: newVal.pk,
+        ordering: 'deal_date',
+      }).finally(() => {
+        isLoadingPaymentList.value = false
+      })
+    } else {
+      paymentStore.priceList = []
+      paymentStore.downPayList = []
+      paymentStore.AllPaymentList = []
+    }
+  },
+  { immediate: false, deep: false },
+)
 
 const onContFiltering = (payload: ContFilter) => {
   payload.project = project.value
@@ -110,9 +124,9 @@ const onContFiltering = (payload: ContFilter) => {
 }
 
 const getContract = (cont: number) => {
-  router.replace({
-    name: '건별 수납 관리',
-    query: { contract: cont },
+  router.push({
+    name: '건별 수납 내역',
+    params: { contractId: cont },
   })
 }
 
@@ -165,34 +179,61 @@ const projSelect = (target: number | null) => {
 }
 
 const loading = ref(true)
+const isLoadingContract = ref(false)
+const isLoadingPaymentList = ref(false)
+
 onBeforeMount(async () => {
   dataSetup(project.value || projStore.initProjId)
-  if (route.query.payment) paymentId.value = route.query.payment as string
   loading.value = false
 })
 
-onMounted(() => {
-  if (route.query.contract) {
-    router.replace({
-      name: '건별 수납 관리',
-      query: { contract: route.query.contract },
-    })
-    const cont = Number(route.query.contract)
-    fetchContract(cont)
+onMounted(async () => {
+  if (route.params.contractId) {
+    const cont = Number(route.params.contractId)
+
+    // 새로고침 시 데이터가 남아있을 수 있으므로 초기화
+    contractStore.contract = null
+    paymentStore.AllPaymentList = []
+
+    isLoadingContract.value = true
+    await fetchContract(cont)
+    isLoadingContract.value = false
+
+    // fetchContract 완료 후 명시적으로 데이터 로드 (watch에만 의존하지 않음)
+    // watch가 트리거되지 않을 경우를 대비
+    if (contract.value && project.value && !isLoadingPaymentList.value) {
+      isLoadingPaymentList.value = true
+      const order_group = contract.value.order_group
+      const unit_type = contract.value.unit_type
+      fetchPriceList({ project: project.value, order_group, unit_type })
+      fetchDownPayList({ project: project.value, order_group, unit_type })
+      await fetchAllPaymentList({
+        project: project.value,
+        contract: contract.value.pk,
+        ordering: 'deal_date',
+      })
+      isLoadingPaymentList.value = false
+    }
   } else {
     contractStore.contract = null
     paymentStore.AllPaymentList = []
   }
+
+  if (route.query.payment) paymentId.value = route.query.payment as string
 })
 
-onUpdated(() => {
-  if (route.query.contract) {
-    router.replace({
-      name: '건별 수납 관리',
-      query: { contract: route.query.contract },
-    })
-    const cont = Number(route.query.contract)
-    fetchContract(cont)
+onUpdated(async () => {
+  // 이미 로딩 중이면 중복 호출 방지
+  if (isLoadingContract.value) return
+
+  if (route.params.contractId) {
+    const cont = Number(route.params.contractId)
+    // contract가 없거나, 다른 contract로 변경된 경우만 로드
+    if (!contract.value || contract.value.pk !== cont) {
+      isLoadingContract.value = true
+      await fetchContract(cont)
+      isLoadingContract.value = false
+    }
   }
 })
 
@@ -204,84 +245,84 @@ onBeforeRouteLeave(() => {
 
 <template>
   <PaymentAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ContChoicer
-        ref="listControl"
-        :project="project || undefined"
-        :contract="contract as Contract"
-        :payment-url="paymentUrl"
-        @list-filtering="onContFiltering"
-        @get-contract="getContract"
-      />
-      <TableTitleRow :disabled="!project || !contract" pdf :url="paymentUrl">
-        <v-radio-group
-          v-model="isCalc"
-          inline
-          size="sm"
-          density="compact"
-          color="success"
-          class="d-flex flex-row-reverse"
-          style="font-size: 0.8em"
-          :disabled="!project || !contract"
-        >
-          <span v-show="project && contract" class="mr-3">
-            <DatePicker v-model="date" placeholder="발행일자" />
-            <v-tooltip activator="parent" location="top">발행일자</v-tooltip>
-          </span>
-
-          <v-btn
-            v-if="project === 1"
-            :href="calcUrl"
-            flat
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ContChoicer
+          ref="listControl"
+          :project="project || undefined"
+          :contract="contract as Contract"
+          :payment-url="paymentUrl"
+          @list-filtering="onContFiltering"
+          @get-contract="getContract"
+        />
+        <TableTitleRow :disabled="!project || !contract" pdf :url="paymentUrl">
+          <v-radio-group
+            v-model="isCalc"
+            inline
+            size="sm"
+            density="compact"
+            color="success"
+            class="d-flex flex-row-reverse"
+            style="font-size: 0.8em"
             :disabled="!project || !contract"
-            color="light"
-            size="small"
-            class="mt-1 mr-2"
-            style="text-decoration: none"
           >
-            가산(할인) 내역
-          </v-btn>
+            <span v-show="project && contract" class="mr-3">
+              <DatePicker v-model="date" placeholder="발행일자" />
+              <v-tooltip activator="parent" location="top">발행일자</v-tooltip>
+            </span>
 
-          <span>
-            <v-radio label="일반용(미납내역)" value="1" class="mt-1" />
-            <v-tooltip activator="parent" location="top">연체/가산정보 포함</v-tooltip>
-          </span>
-          <span>
-            <v-radio label="확인용" value="" class="mt-1" />
-            <v-tooltip activator="parent" location="top">연체/가산정보 미포함</v-tooltip>
-          </span>
-        </v-radio-group>
-      </TableTitleRow>
-      <CRow>
-        <CCol lg="7">
-          <PaymentListAll
-            :contract="contract as Contract"
-            :payment-id="paymentId"
-            :payment-list="AllPaymentList"
-            @on-update="onUpdate"
-            @on-delete="onDelete"
-          />
+            <v-btn
+              v-if="project === 1"
+              :href="calcUrl"
+              flat
+              :disabled="!project || !contract"
+              color="light"
+              size="small"
+              class="mt-1 mr-2"
+              style="text-decoration: none"
+            >
+              가산(할인) 내역
+            </v-btn>
 
-          <CreateButton
-            v-if="write_payment"
-            :contract="contract as Contract"
-            @on-create="onCreate"
-          />
-        </CCol>
-        <CCol lg="5">
-          <OrdersBoard :contract="contract as Contract" :payment-list="AllPaymentList" />
-        </CCol>
-      </CRow>
-    </CCardBody>
-  </ContentBody>
+            <span>
+              <v-radio label="일반용(미납내역)" value="1" class="mt-1" />
+              <v-tooltip activator="parent" location="top">연체/가산정보 포함</v-tooltip>
+            </span>
+            <span>
+              <v-radio label="확인용" value="" class="mt-1" />
+              <v-tooltip activator="parent" location="top">연체/가산정보 미포함</v-tooltip>
+            </span>
+          </v-radio-group>
+        </TableTitleRow>
+        <CRow>
+          <CCol lg="7">
+            <PaymentListAll
+              :contract="contract as Contract"
+              :payment-id="paymentId"
+              :payment-list="AllPaymentList"
+              @on-update="onUpdate"
+              @on-delete="onDelete"
+            />
+
+            <CreateButton
+              v-if="write_payment"
+              :contract="contract as Contract"
+              @on-create="onCreate"
+            />
+          </CCol>
+          <CCol lg="5">
+            <OrdersBoard :contract="contract as Contract" :payment-list="AllPaymentList" />
+          </CCol>
+        </CRow>
+      </CCardBody>
+    </ContentBody>
   </PaymentAuthGuard>
 </template>
