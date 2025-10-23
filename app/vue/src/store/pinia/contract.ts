@@ -276,18 +276,17 @@ export const useContract = defineStore('contract', () => {
   }
 
   // --> contract-file api 구현
-  const createContractFile = (contractorId: number, file: File) => {
+  const createContractFile = async (contractorId: number, file: File, contract: number) => {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('contractor', contractorId.toString())
 
-    return api
+    return await api
       .post(`/contract-file/upload/${contractorId}/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
-      .then(res => {
+      .then(async res => {
+        await fetchContract(contract)
         message('success', '파일이 업로드되었습니다.')
         return res.data
       })
@@ -297,15 +296,13 @@ export const useContract = defineStore('contract', () => {
       })
   }
 
-  const updateContractFile = (pk: number, file: File) => {
+  const updateContractFile = async (pk: number, file: File) => {
     const formData = new FormData()
     formData.append('file', file)
 
-    return api
+    return await api
       .put(`/contract-file/${pk}/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
       .then(res => {
         message('success', '파일이 수정되었습니다.')
@@ -317,11 +314,12 @@ export const useContract = defineStore('contract', () => {
       })
   }
 
-  const removeContractFile = (pk: number) => {
-    return api
+  const removeContractFile = async (pk: number, contract: number) => {
+    return await api
       .delete(`/contract-file/${pk}/`)
-      .then(() => {
-        message('success', '파일이 삭제되었습니다.')
+      .then(async () => {
+        await fetchContract(contract)
+        message('warning', '파일이 삭제되었습니다.')
       })
       .catch(err => {
         errorHandle(err.response.data)
@@ -329,8 +327,8 @@ export const useContract = defineStore('contract', () => {
       })
   }
 
-  const fetchContractFiles = (contractorId: number) => {
-    return api
+  const fetchContractFiles = async (contractorId: number) => {
+    return await api
       .get(`/contract-file/?contractor=${contractorId}`)
       .then(res => res.data.results)
       .catch(err => {
@@ -338,7 +336,7 @@ export const useContract = defineStore('contract', () => {
         throw err
       })
   }
-  
+
   // state & getters
   const contAddressList = ref<ContractorAddress[]>([])
 

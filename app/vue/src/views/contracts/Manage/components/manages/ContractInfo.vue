@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import { computed, inject, ref, type PropType } from 'vue'
-import { numFormat } from '@/utils/baseMixins'
+import { inject, type PropType, ref } from 'vue'
 import { write_contract } from '@/utils/pageAuth'
-import type { Contract, Contractor } from '@/store/types/contract'
-import { bgLight } from '@/utils/cssMixins.ts'
 import { useContract } from '@/store/pinia/contract'
+import { bgLight } from '@/utils/cssMixins.ts'
+import type { Contract, Contractor } from '@/store/types/contract'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -38,7 +37,7 @@ const uploadFile = async () => {
 
   isUploading.value = true
   try {
-    await contStore.createContractFile(props.contractor.pk, selectedFile.value)
+    await contStore.createContractFile(props.contractor.pk, selectedFile.value, props.contract.pk)
     selectedFile.value = null
     emit('file-uploaded') // 부모 컴포넌트에 업로드 완료 알림
   } catch (error) {
@@ -51,7 +50,7 @@ const uploadFile = async () => {
 // 파일 삭제
 const deleteFile = async (filePk: number) => {
   try {
-    await contStore.removeContractFile(filePk)
+    await contStore.removeContractFile(filePk, props.contract.pk)
     emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
   } catch (error) {
     console.error('파일 삭제 실패:', error)
@@ -354,12 +353,11 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
       <strong>계약서 파일</strong>
     </CCardHeader>
     <CCardBody>
-
       <div v-if="contract.contract_files && contract.contract_files.length > 0">
         <div
-            v-for="file in contract.contract_files"
-            :key="file.pk"
-            class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded"
+          v-for="file in contract.contract_files"
+          :key="file.pk"
+          class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded"
         >
           <div class="flex-grow-1">
             <div>
@@ -379,21 +377,18 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
               <v-icon icon="mdi-download" color="primary" />
             </a>
             <v-icon
-                v-if="write_contract"
-                icon="mdi-delete"
-                color="danger"
-                class="ml-2 pointer"
-                @click="deleteFile(file.pk)"
+              v-if="write_contract"
+              icon="mdi-delete"
+              color="danger"
+              class="ml-2 pointer"
+              @click="deleteFile(file.pk)"
             />
           </div>
         </div>
       </div>
       <div v-else class="text-muted">
-
         <CRow>
-          <CCol class="p-3 text-center text-muted" :class="bgLight">
-            등록된 파일이 없습니다.
-          </CCol>
+          <CCol class="p-3 text-center text-muted" :class="bgLight"> 등록된 파일이 없습니다. </CCol>
         </CRow>
 
         <CRow class="text-right mt-3">
