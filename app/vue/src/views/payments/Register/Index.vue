@@ -86,30 +86,35 @@ const fetchContract = (pk: number) => contractStore.fetchContract(pk)
 
 const [route, router] = [useRoute(), useRouter()]
 
+// contract와 project 모두 watch
 watch(
-  contract,
-  (newVal: Contract | null, oldVal: Contract | null) => {
-    // 같은 contract면 스킵 (중복 로드 방지)
-    // 단, oldVal이 null이 아니고 newVal과 같을 때만 스킵
-    if (oldVal && newVal?.pk === oldVal?.pk) return
+  [contract, project],
+  ([newContract, newProject], [oldContract, oldProject]) => {
+    // 같은 contract와 project면 스킵 (중복 로드 방지)
+    if (oldContract && newContract?.pk === oldContract?.pk && oldProject === newProject) {
+      return
+    }
 
     // 이미 로딩 중이면 스킵 (race condition 방지)
-    if (isLoadingPaymentList.value) return
+    if (isLoadingPaymentList.value) {
+      return
+    }
 
-    if (newVal && project.value) {
+    if (newContract && newProject) {
       isLoadingPaymentList.value = true
-      const order_group = newVal.order_group
-      const unit_type = newVal.unit_type
-      fetchPriceList({ project: project.value, order_group, unit_type })
-      fetchDownPayList({ project: project.value, order_group, unit_type })
+      const order_group = newContract.order_group
+      const unit_type = newContract.unit_type
+      fetchPriceList({ project: newProject, order_group, unit_type })
+      fetchDownPayList({ project: newProject, order_group, unit_type })
       fetchAllPaymentList({
-        project: project.value,
-        contract: newVal.pk,
+        project: newProject,
+        contract: newContract.pk,
         ordering: 'deal_date',
       }).finally(() => {
         isLoadingPaymentList.value = false
       })
-    } else {
+    } else if (!newContract) {
+      // contract가 null일 때만 clear (project가 없는 경우는 clear 하지 않음)
       paymentStore.priceList = []
       paymentStore.downPayList = []
       paymentStore.AllPaymentList = []
@@ -199,20 +204,23 @@ onMounted(async () => {
     await fetchContract(cont)
     isLoadingContract.value = false
 
-    // fetchContract 완료 후 명시적으로 데이터 로드 (watch에만 의존하지 않음)
-    // watch가 트리거되지 않을 경우를 대비
+    // fetchContract 완료 후 명시적으로 데이터 로드
+    // watch가 project 없어서 실행 안 했을 경우를 대비
     if (contract.value && project.value && !isLoadingPaymentList.value) {
-      isLoadingPaymentList.value = true
-      const order_group = contract.value.order_group
-      const unit_type = contract.value.unit_type
-      fetchPriceList({ project: project.value, order_group, unit_type })
-      fetchDownPayList({ project: project.value, order_group, unit_type })
-      await fetchAllPaymentList({
-        project: project.value,
-        contract: contract.value.pk,
-        ordering: 'deal_date',
-      })
-      isLoadingPaymentList.value = false
+      try {
+        isLoadingPaymentList.value = true
+        const order_group = contract.value.order_group
+        const unit_type = contract.value.unit_type
+        fetchPriceList({ project: project.value, order_group, unit_type })
+        fetchDownPayList({ project: project.value, order_group, unit_type })
+        await fetchAllPaymentList({
+          project: project.value,
+          contract: contract.value.pk,
+          ordering: 'deal_date',
+        })
+      } finally {
+        isLoadingPaymentList.value = false
+      }
     }
   } else {
     contractStore.contract = null
