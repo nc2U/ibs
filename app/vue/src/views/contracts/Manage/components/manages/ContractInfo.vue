@@ -1,9 +1,11 @@
 <script lang="ts" setup>
-import { inject, type PropType, ref } from 'vue'
+import { computed, inject, type PropType, ref } from 'vue'
 import { write_contract } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight } from '@/utils/cssMixins.ts'
 import type { Contract, Contractor } from '@/store/types/contract'
+import AddressForm from '@/views/contracts/List/components/AddressForm.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
@@ -21,6 +23,9 @@ const showPastAddresses = ref(false)
 
 // 주소 탭 선택 (id: 주민등록 주소, dm: 우편물 수령 주소)
 const selectedAddressTab = ref('id')
+
+const refChangeAddr = ref() // 주소변경 모달
+const address = computed(() => props.contract?.contractor?.contractoraddress)
 
 // 파일 업로드 관련
 const emit = defineEmits(['file-uploaded'])
@@ -270,10 +275,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
       </div>
 
       <!-- 주소 정보 -->
-      <div
-        v-if="currentAddress || contract.contractor?.contractoraddress"
-        class="mb-3 pb-3 border-bottom"
-      >
+      <div v-if="currentAddress || contract.contractor?.contractoraddress" class="mb-3">
         <div class="d-flex justify-content-between align-items-center">
           <v-btn-toggle v-model="selectedAddressTab" mandatory density="compact" rounded="0">
             <v-btn value="id" size="small">
@@ -285,6 +287,9 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
               우편물 수령 주소
             </v-btn>
           </v-btn-toggle>
+          <v-btn color="primary" variant="outlined" size="small" @click="refChangeAddr.callModal()">
+            주소변경 등록
+          </v-btn>
         </div>
 
         <!-- 주소 컨텐츠 영역 (트랜지션 적용) -->
@@ -367,11 +372,11 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
               v-for="(address, index) in pastAddresses"
               :key="address.pk"
               class="mb-3 p-2 border rounded"
-              :class="isDark ? 'bg-dark' : 'bg-light'"
+              :class="isDark ? '' : 'bg-light'"
             >
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <strong class="text-primary">변경 #{{ pastAddresses.length - index }}</strong>
-                <small class="text-muted">{{ address.created }}</small>
+                <small class="text-grey">{{ address.created }}</small>
               </div>
 
               <div v-if="address.id_address1" class="mb-2">
@@ -512,6 +517,17 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
       </div>
     </CCardBody>
   </CCard>
+
+  <FormModal ref="refChangeAddr" size="xl">
+    <template #header>주소변경 등록</template>
+    <template #default>
+      <AddressForm
+        :contractor="contractor?.pk as number"
+        :address="address"
+        @close="refChangeAddr.close()"
+      />
+    </template>
+  </FormModal>
 
   <ConfirmModal ref="confirmModal">
     <template #footer>
