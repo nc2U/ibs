@@ -296,7 +296,7 @@ export const useContract = defineStore('contract', () => {
       })
   }
 
-  const updateContractFile = async (pk: number, file: File) => {
+  const updateContractFile = async (pk: number, file: File, contract: number) => {
     const formData = new FormData()
     formData.append('file', file)
 
@@ -304,7 +304,8 @@ export const useContract = defineStore('contract', () => {
       .put(`/contract-file/${pk}/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      .then(res => {
+      .then(async res => {
+        await fetchContract(contract)
         message('success', '파일이 수정되었습니다.')
         return res.data
       })

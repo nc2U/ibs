@@ -77,7 +77,7 @@ const updateFile = async (filePk: number) => {
 
   isUpdating.value = true
   try {
-    await contStore.updateContractFile(filePk, editFile.value)
+    await contStore.updateContractFile(filePk, editFile.value, props.contract.pk)
     editingFileId.value = null
     editFile.value = null
     emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
