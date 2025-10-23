@@ -27,19 +27,6 @@ class OrderGroupViewSet(viewsets.ModelViewSet):
     search_fields = ('name',)
 
 
-class RequiredDocumentViewSet(viewsets.ModelViewSet):
-    queryset = RequiredDocument.objects.all()
-    serializer_class = RequiredDocumentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    filterset_fields = ('project',)
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-
-    def perform_update(self, serializer):
-        serializer.save(updator=self.request.user)
-
-
 class ContractFilter(FilterSet):
     houseunit__isnull = BooleanFilter(field_name='keyunit__houseunit', lookup_expr='isnull', label='동호미지정 여부')
     keyunit__houseunit__building_unit = ModelChoiceFilter(queryset=BuildingUnit.objects.all(), label='동(건물)')

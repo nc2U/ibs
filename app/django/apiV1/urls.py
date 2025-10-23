@@ -134,7 +134,6 @@ router.register(r'project-imprest', cash.ProjectImprestViewSet, basename='pr-imp
 
 # contract
 router.register(r'order-group', contract.OrderGroupViewSet)
-router.register(r'required-docs', contract.RequiredDocumentViewSet)
 router.register(r'contract', contract.ContractViewSet)
 router.register(r'contract-set', contract.ContractSetViewSet, basename='cont-set')
 router.register(r'simple-contract', contract.SimpleContractViewSet, basename='simple-contract')
