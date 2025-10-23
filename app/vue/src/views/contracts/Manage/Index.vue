@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import type { Project } from '@/store/types/project'
 import { useContract } from '@/store/pinia/contract'
-import type { Contract, Contractor, RequiredDocs } from '@/store/types/contract'
+import type { Contract, Contractor } from '@/store/types/contract'
 import { useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import Loading from '@/components/Loading/Index.vue'
@@ -34,7 +34,6 @@ const contStore = useContract()
 const contract = computed(() => contStore.contract as Contract | null)
 const contractor = computed(() => contStore.contractor as Contractor | null)
 
-const fetchRequiredDocsList = (projId: number) => contStore.fetchRequiredDocsList(projId)
 const fetchContract = (cont: number) => contStore.fetchContract(cont)
 const fetchContractor = (contor: number, proj?: number) => contStore.fetchContractor(contor, proj)
 const fetchContractorList = (projId: number, search = '') =>
@@ -72,13 +71,9 @@ const searchContractor = async (search: string) => {
   } else contStore.contractorList = []
 }
 
-const dataSetup = (pk: number) => {
-  fetchRequiredDocsList(pk)
-}
+const dataSetup = (pk: number) => {}
 
-const dataReset = () => {
-  contStore.requiredDocsList = []
-}
+const dataReset = () => {}
 
 const projSelect = (target: number | null) => {
   dataReset()

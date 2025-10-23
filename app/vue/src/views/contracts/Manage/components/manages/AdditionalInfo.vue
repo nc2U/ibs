@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import type { Contract, RequiredDocs } from '@/store/types/contract'
+import type { Contract } from '@/store/types/contract'
 import { useContract } from '@/store/pinia/contract.ts'
 import { CCard, CCardBody } from '@coreui/vue'
 
@@ -9,7 +9,7 @@ const props = defineProps({
 })
 
 const contStore = useContract()
-const requiredDocsList = computed(() => contStore.requiredDocsList as RequiredDocs[])
+// const contractFileList = computed(() => contStore.contractFileList as RequiredDocs[])
 </script>
 
 <template>
@@ -19,12 +19,12 @@ const requiredDocsList = computed(() => contStore.requiredDocsList as RequiredDo
       <strong>구비서류 제출 현황</strong>
     </CCardHeader>
     <CCardBody>
-      <div v-if="requiredDocsList.length > 0">
-        <div v-for="doc in requiredDocsList" :key="doc.pk">
-          {{ doc }}
-        </div>
-      </div>
-      <div v-else class="text-center text-muted py-3">
+      <!--      <div v-if="contractFileList.length > 0">-->
+      <!--        <div v-for="file in contractFileList" :key="file">-->
+      <!--          {{ file }}-->
+      <!--        </div>-->
+      <!--      </div>-->
+      <div class="text-center text-muted py-3">
         <v-icon icon="mdi-file-document-check-outline" size="large" class="mb-2" />
         <div>구비서류 제출 현황 정보가 없습니다.</div>
       </div>

@@ -276,7 +276,7 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  // --> contract-file api 구현
+  // state & getters
   const createContractFile = async (contractorId: number, file: File, contract: number) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -323,16 +323,6 @@ export const useContract = defineStore('contract', () => {
         await fetchContract(contract)
         message('warning', '파일이 삭제되었습니다.')
       })
-      .catch(err => {
-        errorHandle(err.response.data)
-        throw err
-      })
-  }
-
-  const fetchContractFiles = async (contractorId: number) => {
-    return await api
-      .get(`/contract-file/?contractor=${contractorId}`)
-      .then(res => res.data.results)
       .catch(err => {
         errorHandle(err.response.data)
         throw err
@@ -643,7 +633,6 @@ export const useContract = defineStore('contract', () => {
     createContractFile,
     updateContractFile,
     removeContractFile,
-    fetchContractFiles,
 
     contAddressList,
     fetchContAddressList,
