@@ -6,8 +6,8 @@ from rest_framework import serializers
 
 from _utils.contract_price import get_sales_price_by_gt, get_contract_price, get_contract_payment_plan
 from cash.models import ProjectBankAccount, ProjectCashBook
-from contract.models import (OrderGroup, Contract, ContractPrice, Contractor, ContractorAddress,
-                             ContractorContact, Succession, ContractorRelease, ContractFile)
+from contract.models import (OrderGroup, RequiredDocument, Contract, ContractPrice, Contractor,
+                             ContractorAddress, ContractorContact, Succession, ContractorRelease, ContractFile)
 from contract.services import ContractPriceUpdateService
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import HouseUnit, KeyUnit
@@ -52,6 +52,12 @@ class OrderGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderGroup
         fields = ('pk', 'project', 'order_number', 'sort', 'sort_desc', 'name', 'is_default_for_uncontracted')
+
+
+class RequiredDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequiredDocument
+        fields = ('pk', 'name', 'is_required')
 
 
 class HouseUnitInKeyUnitSerializer(serializers.ModelSerializer):
