@@ -4,7 +4,7 @@ import { numFormat } from '@/utils/baseMixins'
 import { write_contract } from '@/utils/pageAuth'
 import type { Contract, Contractor } from '@/store/types/contract'
 import { bgLight } from '@/utils/cssMixins.ts'
-import { useContractStore } from '@/store/pinia/contract'
+import { useContract } from '@/store/pinia/contract'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -14,7 +14,7 @@ const props = defineProps({
 })
 
 const isDark = inject('isDark')
-const contractStore = useContractStore()
+const contStore = useContract()
 
 // 과거 주소 히스토리 표시 토글
 const showPastAddresses = ref(false)
@@ -38,7 +38,7 @@ const uploadFile = async () => {
 
   isUploading.value = true
   try {
-    await contractStore.createContractFile(props.contractor.pk, selectedFile.value)
+    await contStore.createContractFile(props.contractor.pk, selectedFile.value)
     selectedFile.value = null
     emit('file-uploaded') // 부모 컴포넌트에 업로드 완료 알림
   } catch (error) {
@@ -51,7 +51,7 @@ const uploadFile = async () => {
 // 파일 삭제
 const deleteFile = async (filePk: number) => {
   try {
-    await contractStore.removeContractFile(filePk)
+    await contStore.removeContractFile(filePk)
     emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
   } catch (error) {
     console.error('파일 삭제 실패:', error)
