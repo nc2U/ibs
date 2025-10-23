@@ -722,6 +722,15 @@ class ContractorSerializer(serializers.ModelSerializer):
                   'contract_date', 'is_active', 'note', 'succession', 'contractorrelease')
 
 
+class ContractFileSerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = ContractFile
+        fields = ('pk', 'contractor', 'file', 'file_name', 'file_type', 'file_size', 'created', 'creator')
+        read_only_fields = ('file_name', 'file_type', 'file_size', 'created', 'creator')
+
+
 class ContractorAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractorAddress

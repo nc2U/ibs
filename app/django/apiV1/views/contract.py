@@ -7,6 +7,8 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.shortcuts import get_object_or_404
 
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary
 from contract.services import ContractPriceBulkUpdateService
@@ -455,6 +457,42 @@ class ContractorViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(creator=self.request.user)
 
+
+class ContractFileViewSet(viewsets.ModelViewSet):
+    """계약서 파일 업로드 관리"""
+    queryset = ContractFile.objects.all()
+    serializer_class = ContractFileSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    parser_classes = [MultiPartParser, FormParser]
+    filterset_fields = ('contractor',)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        contractor_id = self.request.query_params.get('contractor', None)
+        if contractor_id:
+            queryset = queryset.filter(contractor_id=contractor_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+    @action(detail=False, methods=['post'], url_path='upload/(?P<contractor_id>[^/.]+)')
+    def upload_file(self, request, contractor_id=None):
+        """특정 계약자에 대한 파일 업로드"""
+        contractor = get_object_or_404(Contractor, pk=contractor_id)
+
+        if 'file' not in request.FILES:
+            return Response(
+                {'error': '파일이 제공되지 않았습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(contractor=contractor, creator=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ContAddressViewSet(viewsets.ModelViewSet):
     queryset = ContractorAddress.objects.all()
