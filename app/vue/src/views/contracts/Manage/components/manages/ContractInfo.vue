@@ -4,7 +4,6 @@ import { write_contract } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight } from '@/utils/cssMixins.ts'
 import type { Contract, Contractor } from '@/store/types/contract'
-import { CCard, CCardBody } from '@coreui/vue'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
