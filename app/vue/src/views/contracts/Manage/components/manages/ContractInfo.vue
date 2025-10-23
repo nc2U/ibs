@@ -4,6 +4,7 @@ import { write_contract } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight } from '@/utils/cssMixins.ts'
 import type { Contract, Contractor } from '@/store/types/contract'
+import { CCard, CCardBody } from '@coreui/vue'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -26,9 +27,19 @@ const emit = defineEmits(['file-uploaded'])
 const selectedFile = ref<File | null>(null)
 const isUploading = ref(false)
 
+// 파일 수정 관련
+const editingFileId = ref<number | null>(null)
+const editFile = ref<File | null>(null)
+const isUpdating = ref(false)
+
 // 파일 선택 처리
 const handleFileSelect = (files: File | File[] | null) => {
   selectedFile.value = Array.isArray(files) ? files[0] : files
+}
+
+// 수정할 파일 선택 처리
+const handleEditFileSelect = (files: File | File[] | null) => {
+  editFile.value = Array.isArray(files) ? files[0] : files
 }
 
 // 파일 업로드 실행
@@ -44,6 +55,36 @@ const uploadFile = async () => {
     console.error('파일 업로드 실패:', error)
   } finally {
     isUploading.value = false
+  }
+}
+
+// 파일 수정 모드 토글
+const toggleEditMode = (filePk: number) => {
+  if (editingFileId.value === filePk) {
+    // 이미 수정 모드인 경우 취소
+    editingFileId.value = null
+    editFile.value = null
+  } else {
+    // 새로운 파일을 수정 모드로 설정
+    editingFileId.value = filePk
+    editFile.value = null
+  }
+}
+
+// 파일 수정 실행
+const updateFile = async (filePk: number) => {
+  if (!editFile.value) return
+
+  isUpdating.value = true
+  try {
+    await contStore.updateContractFile(filePk, editFile.value)
+    editingFileId.value = null
+    editFile.value = null
+    emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
+  } catch (error) {
+    console.error('파일 수정 실패:', error)
+  } finally {
+    isUpdating.value = false
   }
 }
 
@@ -354,35 +395,79 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
     </CCardHeader>
     <CCardBody>
       <div v-if="contract.contract_files && contract.contract_files.length > 0">
-        <div
-          v-for="file in contract.contract_files"
-          :key="file.pk"
-          class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded"
-        >
-          <div class="flex-grow-1">
-            <div>
-              <v-icon icon="mdi-file-document" size="small" class="mr-1" />
-              <strong>{{ file.file_name }}</strong>
+        <div v-for="file in contract.contract_files" :key="file.pk" class="mb-3">
+          <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+            <div class="flex-grow-1">
+              <div>
+                <v-icon icon="mdi-file-document" size="small" class="mr-1" />
+                <strong>{{ file.file_name }}</strong>
+              </div>
+              <small class="text-muted">
+                {{ (file.file_size / 1024).toFixed(2) }} KB
+                <span class="mx-1">|</span>
+                {{ file.created }}
+                <span class="mx-1">|</span>
+                {{ file.creator.username }}
+              </small>
             </div>
-            <small class="text-muted">
-              {{ (file.file_size / 1024).toFixed(2) }} KB
-              <span class="mx-1">|</span>
-              {{ file.created }}
-              <span class="mx-1">|</span>
-              {{ file.creator.username }}
-            </small>
+            <div>
+              <a :href="file.file" target="_blank" class="text-decoration-none">
+                <v-icon icon="mdi-download" color="primary" />
+              </a>
+              <v-icon
+                v-if="write_contract"
+                icon="mdi-pencil"
+                :color="editingFileId === file.pk ? 'success' : 'warning'"
+                size="x-small"
+                class="ml-3 pointer"
+                @click="toggleEditMode(file.pk)"
+              />
+              <v-icon
+                v-if="write_contract"
+                icon="mdi-delete"
+                color="grey"
+                size="x-small"
+                class="ml-1 pointer"
+                @click="deleteFile(file.pk)"
+              />
+            </div>
           </div>
-          <div>
-            <a :href="file.file" target="_blank" class="text-decoration-none">
-              <v-icon icon="mdi-download" color="primary" />
-            </a>
-            <v-icon
-              v-if="write_contract"
-              icon="mdi-delete"
-              color="danger"
-              class="ml-2 pointer"
-              @click="deleteFile(file.pk)"
+
+          <!-- 파일 수정 폼 -->
+          <div v-if="editingFileId === file.pk" class="mt-2 p-3 border rounded bg-light">
+            <div class="mb-2">
+              <strong class="text-warning">파일 수정</strong>
+              <small class="text-muted ml-2">새 파일을 선택하여 기존 파일을 교체합니다.</small>
+            </div>
+            <v-file-input
+              v-model="editFile"
+              @update:model-value="handleEditFileSelect"
+              density="compact"
+              label="새 파일 선택"
+              clearable
+              :disabled="isUpdating"
+              class="mb-2"
             />
+            <div class="d-flex gap-2">
+              <v-btn
+                color="success"
+                size="small"
+                :disabled="!editFile || isUpdating"
+                :loading="isUpdating"
+                @click="updateFile(file.pk)"
+              >
+                {{ isUpdating ? '수정 중...' : '파일 수정' }}
+              </v-btn>
+              <v-btn
+                color="secondary"
+                size="small"
+                variant="outlined"
+                :disabled="isUpdating"
+                @click="toggleEditMode(file.pk)"
+              >
+                취소
+              </v-btn>
+            </div>
           </div>
         </div>
       </div>
