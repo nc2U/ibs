@@ -476,6 +476,10 @@ class ContractFileViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    def perform_update(self, serializer):
+        # 파일 업데이트 시 creator는 유지하고 기타 필요한 로직 수행
+        serializer.save()
+
     @action(detail=False, methods=['post'], url_path='upload/(?P<contractor_id>[^/.]+)')
     def upload_file(self, request, contractor_id=None):
         """특정 계약자에 대한 파일 업로드"""
