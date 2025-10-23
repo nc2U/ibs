@@ -1,10 +1,11 @@
-export interface SimpleCont {
+export interface RequiredDocs {
   pk: number
   project: number
-  order_group: number
-  unit_type: number
-  serial_number: string
-  activation: boolean
+  document_type: number
+  quantity: number
+  require_type: 'required' | 'optional' | 'conditional'
+  description: string
+  display_order: number
 }
 
 export interface ContractFile {

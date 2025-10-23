@@ -16,7 +16,9 @@ import {
   type BuyerForm,
   type ContractRelease,
   type ContractorAddress,
-  type ContractPriceWithPaymentPlan, type ContractFile,
+  type ContractPriceWithPaymentPlan,
+  type ContractFile,
+  type RequiredDocs,
 } from '@/store/types/contract'
 
 export interface ContFilter {
@@ -81,6 +83,14 @@ export const useContract = defineStore('contract', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
+      .catch(err => errorHandle(err.response.data))
+
+  // state & getters
+  const requiredDocsList = ref<RequiredDocs[]>()
+  const fetchRequiredDocsList = async (project: number) =>
+    await api
+      .get(`/required-docs/?project=${project}`)
+      .then(res => (requiredDocsList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   // state & getters
@@ -283,7 +293,7 @@ export const useContract = defineStore('contract', () => {
 
     return await api
       .post(`/contract-file/upload/${contractorId}/`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
       .then(async res => {
         await fetchContract(contract)
@@ -302,7 +312,7 @@ export const useContract = defineStore('contract', () => {
 
     return await api
       .patch(`/contract-file/${pk}/`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
       .then(async res => {
         await fetchContract(contract)
@@ -603,6 +613,9 @@ export const useContract = defineStore('contract', () => {
     createOrderGroup,
     updateOrderGroup,
     deleteOrderGroup,
+
+    requiredDocsList,
+    fetchRequiredDocsList,
 
     keyUnitList,
     getKeyUnits,
