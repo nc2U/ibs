@@ -103,7 +103,7 @@ const goBack = () => {
     <!-- 탭 컨텐츠 영역 -->
     <CRow>
       <!-- 계약 내역 탭 -->
-      <CCol v-if="visibleTabs.contract" :md="getColSize" :key="`contract-${selectedTabsCount}`">
+      <CCol v-if="visibleTabs.contract" :xl="getColSize" :key="`contract-${selectedTabsCount}`">
         <ContractInfo
           :contract="contract"
           :contractor="contractor"
@@ -113,12 +113,12 @@ const goBack = () => {
       </CCol>
 
       <!-- 납부 내역 탭 -->
-      <CCol v-if="visibleTabs.payment" :md="getColSize" :key="`payment-${selectedTabsCount}`">
+      <CCol v-if="visibleTabs.payment" :xl="getColSize" :key="`payment-${selectedTabsCount}`">
         <PaymentInfo :contract="contract" />
       </CCol>
 
       <!-- 기타 정보 탭 -->
-      <CCol v-if="visibleTabs.extra" :md="getColSize" :key="`extra-${selectedTabsCount}`">
+      <CCol v-if="visibleTabs.extra" :xl="getColSize" :key="`extra-${selectedTabsCount}`">
         <AdditionalInfo :contract="contract" />
       </CCol>
     </CRow>
