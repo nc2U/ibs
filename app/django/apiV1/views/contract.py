@@ -512,6 +512,20 @@ class ContractFileViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ContractDocumentViewSet(viewsets.ModelViewSet):
+    """계약자 제출 서류 관리"""
+    queryset = ContractDocument.objects.all()
+    serializer_class = ContractDocumentSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    filterset_fields = ('contractor', 'required_document', 'contractor__contract__project')
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+
+
 class ContAddressViewSet(viewsets.ModelViewSet):
     queryset = ContractorAddress.objects.all()
     serializer_class = ContractorAddressSerializer

@@ -143,6 +143,7 @@ router.register(r'subs-sum', contract.SubsSummaryViewSet, basename='subs-sum')  
 router.register(r'cont-sum', contract.ContSummaryViewSet, basename='cont-sum')  # only list
 router.register(r'contractor', contract.ContractorViewSet)
 router.register(r'contract-file', contract.ContractFileViewSet)
+router.register(r'contract-docs', contract.ContractDocumentViewSet)
 router.register(r'contractor-address', contract.ContAddressViewSet)
 router.register(r'contractor-contact', contract.ContContactViewSet)
 router.register(r'succession', contract.SuccessionViewSet)

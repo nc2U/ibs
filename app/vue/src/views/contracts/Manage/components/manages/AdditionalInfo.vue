@@ -1,13 +1,7 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
-import type { Contract } from '@/store/types/contract'
 import AddProof from './AddProof.vue'
 import AddPledge from './AddPledge.vue'
 import AddConsultation from './AddConsultation.vue'
-
-const props = defineProps({
-  contract: { type: Object as PropType<Contract>, required: true },
-})
 </script>
 
 <template>

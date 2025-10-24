@@ -7,7 +7,8 @@ from rest_framework import serializers
 from _utils.contract_price import get_sales_price_by_gt, get_contract_price, get_contract_payment_plan
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, RequiredDocument, Contract, ContractPrice, Contractor,
-                             ContractorAddress, ContractorContact, Succession, ContractorRelease, ContractFile)
+                             ContractorAddress, ContractorContact, Succession, ContractorRelease, ContractFile,
+                             ContractDocument)
 from contract.services import ContractPriceUpdateService
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import HouseUnit, KeyUnit
@@ -740,6 +741,12 @@ class ContractFileSerializer(serializers.ModelSerializer):
         model = ContractFile
         fields = ('pk', 'contractor', 'file', 'file_name', 'file_type', 'file_size', 'created', 'creator')
         read_only_fields = ('file_name', 'file_type', 'file_size', 'created', 'creator')
+
+
+class ContractDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContractDocument
+        fields = ('pk', 'contractor', 'required_document', 'submitted_quantity', 'submission_date')
 
 
 class ContractorAddressSerializer(serializers.ModelSerializer):
