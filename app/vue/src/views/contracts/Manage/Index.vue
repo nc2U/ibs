@@ -38,7 +38,7 @@ const fetchContract = (cont: number) => contStore.fetchContract(cont)
 const fetchContractor = (contor: number, proj?: number) => contStore.fetchContractor(contor, proj)
 const fetchContractorList = (projId: number, search = '') =>
   contStore.fetchContractorList(projId, search)
-
+const fetchRequiredDocsList = (projId: number) => contStore.fetchRequiredDocsList(projId)
 const fetchContAddressList = (contor: number) => contStore.fetchContAddressList(contor)
 
 watch(
@@ -71,9 +71,13 @@ const searchContractor = async (search: string) => {
   } else contStore.contractorList = []
 }
 
-const dataSetup = (pk: number) => {}
+const dataSetup = (pk: number) => {
+  fetchRequiredDocsList(pk)
+}
 
-const dataReset = () => {}
+const dataReset = () => {
+  contStore.requiredDocsList = []
+}
 
 const projSelect = (target: number | null) => {
   dataReset()
