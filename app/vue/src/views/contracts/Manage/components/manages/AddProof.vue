@@ -62,11 +62,12 @@ const mergedDocuments = computed<MergedDocument[]>(() => {
   })
 })
 
-// 완료율 계산
+// 완료율 계산 (필수 서류만)
 const completionRate = computed(() => {
-  if (mergedDocuments.value.length === 0) return 0
-  const completed = mergedDocuments.value.filter(doc => doc.is_complete).length
-  return Math.round((completed / mergedDocuments.value.length) * 100)
+  const requiredDocs = mergedDocuments.value.filter(doc => doc.require_type === 'required')
+  if (requiredDocs.length === 0) return 0
+  const completed = requiredDocs.filter(doc => doc.is_complete).length
+  return Math.round((completed / requiredDocs.length) * 100)
 })
 
 // 필수 서류 미제출 건수
@@ -223,17 +224,17 @@ onMounted(() => {
 <template>
   <CCardBody>
     <div class="text-end">
+      <span v-if="missingRequiredDocs > 0" class="text-danger mt-1 mr-2" style="font-size: 0.8rem">
+        필수 서류 미제출: {{ missingRequiredDocs }}건
+      </span>
       <v-progress-circular
         :model-value="completionRate"
         :size="50"
         :width="5"
-        :color="completionRate === 100 ? 'success' : 'primary'"
+        :color="completionRate === 100 ? 'primary' : 'warning'"
       >
         {{ completionRate }}%
       </v-progress-circular>
-      <div v-if="missingRequiredDocs > 0" class="text-danger mt-1" style="font-size: 0.875rem">
-        필수 서류 미제출: {{ missingRequiredDocs }}건
-      </div>
     </div>
 
     <!-- 로딩 상태 -->
@@ -307,11 +308,7 @@ onMounted(() => {
 
           <!-- 제출수량 (편집 가능) -->
           <CTableDataCell class="text-center">
-            <span
-              v-if="editingDocId !== doc.pk"
-              @dblclick="startEdit(doc.pk)"
-              class="pointer"
-            >
+            <span v-if="editingDocId !== doc.pk" @dblclick="startEdit(doc.pk)" class="pointer">
               {{ doc.submitted_quantity }}
             </span>
             <CFormInput
