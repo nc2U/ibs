@@ -6,8 +6,22 @@ import AddConsultation from './AddConsultation.vue'
 
 <template>
   <!-- 구비서류 제출 현황 카드 -->
-  <AddProof />
-  <AddPledge />
+  <CCard class="mb-3">
+    <CCardHeader>
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <strong>구비서류 제출 현황</strong>
+          <!--          <span v-if="contractor" class="ms-2 text-muted">-->
+          <!--            ({{ contractor?.name }} / {{ contractor?.__str__ }})-->
+          <!--          </span>-->
+        </div>
+      </div>
+    </CCardHeader>
+
+    <AddProof />
+
+    <AddPledge />
+  </CCard>
 
   <!-- 상담 내역 카드 -->
   <AddConsultation />

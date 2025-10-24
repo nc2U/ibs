@@ -464,7 +464,6 @@ class ContractDocument(models.Model):
     required_document = models.ForeignKey(RequiredDocument, on_delete=models.PROTECT,
                                           verbose_name='필요 서류', related_name='contractor_submissions')
     submitted_quantity = models.PositiveIntegerField('제출 수량', default=0)
-    submission_date = models.DateField('제출일', null=True, blank=True)
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,

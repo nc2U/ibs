@@ -764,7 +764,7 @@ class ContractDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ContractDocument
-        fields = ('pk', 'contractor', 'required_document', 'submitted_quantity', 'submission_date',
+        fields = ('pk', 'contractor', 'required_document', 'submitted_quantity',
                   'document_name', 'required_quantity', 'require_type', 'is_complete', 'files')
 
 

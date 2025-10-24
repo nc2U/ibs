@@ -2,7 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useContract } from '@/store/pinia/contract.ts'
-import type { ContractDocument, RequiredDocs } from '@/store/types/contract'
+import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
+import { cutString } from '@/utils/baseMixins.ts'
 
 const route = useRoute()
 const contStore = useContract()
@@ -15,11 +16,10 @@ const contractorId = computed(() =>
 // Store 데이터
 const requiredDocsList = computed(() => contStore.requiredDocsList)
 const contractDocumentList = computed(() => contStore.contractDocumentList)
-const contractor = computed(() => contStore.contractor)
+const contractor = computed(() => contStore.contractor as Contractor | null)
 
 // 편집 중인 문서 ID 추적
 const editingDocId = ref<number | null>(null)
-const editingField = ref<'quantity' | 'date' | null>(null)
 
 // 파일 업로드 다이얼로그
 const fileUploadDialog = ref(false)
@@ -33,7 +33,6 @@ const isLoading = ref(false)
 interface MergedDocument extends RequiredDocs {
   contract_doc_pk?: number
   submitted_quantity: number
-  submission_date: string | null
   is_complete: boolean
   files: any[]
 }
@@ -57,7 +56,6 @@ const mergedDocuments = computed<MergedDocument[]>(() => {
       ...required,
       contract_doc_pk: submitted?.pk,
       submitted_quantity: submitted?.submitted_quantity || 0,
-      submission_date: submitted?.submission_date || null,
       is_complete: isComplete,
       files: submitted?.files || [],
     }
@@ -100,7 +98,6 @@ const saveDocument = async (doc: MergedDocument) => {
       contractor: contractorId.value,
       required_document: doc.pk,
       submitted_quantity: doc.submitted_quantity,
-      submission_date: doc.submission_date,
     }
 
     if (doc.contract_doc_pk) {
@@ -126,20 +123,13 @@ const onQuantityChange = (doc: MergedDocument, value: number) => {
   }, 500) // 500ms debounce
 }
 
-// 날짜 변경 핸들러 (즉시 저장)
-const onDateChange = (doc: MergedDocument) => {
-  saveDocument(doc)
-}
-
 // 편집 모드 토글
-const startEdit = (docId: number, field: 'quantity' | 'date') => {
+const startEdit = (docId: number) => {
   editingDocId.value = docId
-  editingField.value = field
 }
 
 const endEdit = () => {
   editingDocId.value = null
-  editingField.value = null
 }
 
 // 파일 업로드 다이얼로그
@@ -231,185 +221,152 @@ onMounted(() => {
 </script>
 
 <template>
-  <CCard class="mb-3">
-    <CCardHeader>
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <strong>구비서류 제출 현황</strong>
-          <span v-if="contractor" class="ms-2 text-muted">
-            ({{ contractor.name }} / {{ contractor.__str__ }})
-          </span>
-        </div>
-        <div class="text-end">
-          <v-progress-circular
-            :model-value="completionRate"
-            :size="50"
-            :width="5"
-            :color="completionRate === 100 ? 'success' : 'primary'"
-          >
-            {{ completionRate }}%
-          </v-progress-circular>
-          <div v-if="missingRequiredDocs > 0" class="text-danger mt-1" style="font-size: 0.875rem">
-            필수 서류 미제출: {{ missingRequiredDocs }}건
-          </div>
-        </div>
+  <CCardBody>
+    <div class="text-end">
+      <v-progress-circular
+        :model-value="completionRate"
+        :size="50"
+        :width="5"
+        :color="completionRate === 100 ? 'success' : 'primary'"
+      >
+        {{ completionRate }}%
+      </v-progress-circular>
+      <div v-if="missingRequiredDocs > 0" class="text-danger mt-1" style="font-size: 0.875rem">
+        필수 서류 미제출: {{ missingRequiredDocs }}건
       </div>
-    </CCardHeader>
-    <CCardBody>
-      <!-- 로딩 상태 -->
-      <div v-if="isLoading" class="text-center py-5">
-        <v-progress-circular indeterminate color="primary" />
-        <div class="mt-2">데이터 로딩 중...</div>
-      </div>
+    </div>
 
-      <!-- 계약자 미선택 -->
-      <div v-else-if="!contractorId" class="text-center py-5 text-muted">
-        계약자를 선택해주세요.
-      </div>
+    <!-- 로딩 상태 -->
+    <div v-if="isLoading" class="text-center py-5">
+      <v-progress-circular indeterminate color="primary" />
+      <div class="mt-2">데이터 로딩 중...</div>
+    </div>
 
-      <!-- 서류 목록이 없음 -->
-      <div v-else-if="mergedDocuments.length === 0" class="text-center py-5 text-muted">
-        등록된 필요 서류가 없습니다.
-      </div>
+    <!-- 계약자 미선택 -->
+    <div v-else-if="!contractorId" class="text-center py-5 text-muted">계약자를 선택해주세요.</div>
 
-      <!-- 서류 목록 테이블 -->
-      <CTable v-else hover responsive>
-        <colgroup>
-          <col style="width: 25%" />
-          <col style="width: 10%" />
-          <col style="width: 12%" />
-          <col style="width: 12%" />
-          <col style="width: 12%" />
-          <col style="width: 20%" />
-          <col style="width: 9%" />
-        </colgroup>
-        <CTableHead>
-          <CTableRow class="text-center">
-            <CTableHeaderCell>해당서류</CTableHeaderCell>
-            <CTableHeaderCell>필수여부</CTableHeaderCell>
-            <CTableHeaderCell>필요수량</CTableHeaderCell>
-            <CTableHeaderCell>제출수량</CTableHeaderCell>
-            <CTableHeaderCell>제출일자</CTableHeaderCell>
-            <CTableHeaderCell>첨부파일</CTableHeaderCell>
-            <CTableHeaderCell>완료</CTableHeaderCell>
-          </CTableRow>
-        </CTableHead>
-        <CTableBody>
-          <CTableRow
-            v-for="doc in mergedDocuments"
-            :key="`required-${doc.pk}`"
-            :class="getRowClass(doc)"
-          >
-            <!-- 서류명 -->
-            <CTableDataCell>
-              <div class="d-flex align-items-center">
-                <v-icon
-                  v-if="doc.require_type === 'required'"
-                  icon="mdi-star"
-                  color="error"
-                  size="16"
-                  class="me-1"
-                />
-                {{ doc.document_name }}
-              </div>
-              <div v-if="doc.description" class="text-muted" style="font-size: 0.8rem">
-                {{ doc.description }}
-              </div>
-            </CTableDataCell>
+    <!-- 서류 목록이 없음 -->
+    <div v-else-if="mergedDocuments.length === 0" class="text-center py-5 text-muted">
+      등록된 필요 서류가 없습니다.
+    </div>
 
-            <!-- 필수여부 -->
-            <CTableDataCell class="text-center">
-              <v-chip :color="doc.require_type === 'required' ? 'error' : 'default'" size="small">
-                {{ doc.required }}
-              </v-chip>
-            </CTableDataCell>
-
-            <!-- 필요수량 -->
-            <CTableDataCell class="text-center">
-              {{ doc.quantity }}
-            </CTableDataCell>
-
-            <!-- 제출수량 (편집 가능) -->
-            <CTableDataCell class="text-center">
-              <span
-                v-if="editingDocId !== doc.pk || editingField !== 'quantity'"
-                @dblclick="startEdit(doc.pk, 'quantity')"
-                class="pointer"
-              >
-                {{ doc.submitted_quantity }}
-              </span>
-              <CFormInput
-                v-else
-                type="number"
-                min="0"
-                :value="doc.submitted_quantity"
-                size="sm"
-                style="width: 70px; margin: 0 auto"
-                @input="onQuantityChange(doc, parseInt(($event.target as HTMLInputElement).value))"
-                @blur="endEdit"
-                @keydown.enter="endEdit"
-              />
-            </CTableDataCell>
-
-            <!-- 제출일자 (편집 가능) -->
-            <CTableDataCell class="text-center">
-              <span
-                v-if="editingDocId !== doc.pk || editingField !== 'date'"
-                @dblclick="startEdit(doc.pk, 'date')"
-                class="pointer"
-              >
-                {{ doc.submission_date || '-' }}
-              </span>
-              <CFormInput
-                v-else
-                type="date"
-                :value="doc.submission_date || ''"
-                size="sm"
-                style="width: 140px; margin: 0 auto"
-                @change="
-                  ((doc.submission_date = ($event.target as HTMLInputElement).value),
-                  onDateChange(doc))
-                "
-                @blur="endEdit"
-              />
-            </CTableDataCell>
-
-            <!-- 첨부파일 -->
-            <CTableDataCell>
-              <div class="d-flex flex-wrap gap-1">
-                <v-chip
-                  v-for="file in doc.files"
-                  :key="file.pk"
-                  size="small"
-                  closable
-                  @click="downloadFile(file.file, file.file_name)"
-                  @click:close="deleteFile(file.pk, doc.contract_doc_pk!)"
-                >
-                  <v-icon icon="mdi-file" size="14" class="me-1" />
-                  {{ file.file_name }}
-                </v-chip>
-                <v-btn
-                  size="x-small"
-                  icon="mdi-plus"
-                  variant="outlined"
-                  @click="openFileUpload(doc)"
-                />
-              </div>
-            </CTableDataCell>
-
-            <!-- 완료 상태 -->
-            <CTableDataCell class="text-center">
+    <!-- 서류 목록 테이블 -->
+    <CTable v-else hover responsive>
+      <colgroup>
+        <col style="width: 25%" />
+        <col style="width: 12%" />
+        <col style="width: 12%" />
+        <col style="width: 15%" />
+        <col style="width: 27%" />
+        <col style="width: 9%" />
+      </colgroup>
+      <CTableHead>
+        <CTableRow class="text-center">
+          <CTableHeaderCell>해당서류</CTableHeaderCell>
+          <CTableHeaderCell>필수여부</CTableHeaderCell>
+          <CTableHeaderCell>필요수량</CTableHeaderCell>
+          <CTableHeaderCell>제출수량</CTableHeaderCell>
+          <CTableHeaderCell>첨부파일</CTableHeaderCell>
+          <CTableHeaderCell>완료</CTableHeaderCell>
+        </CTableRow>
+      </CTableHead>
+      <CTableBody>
+        <CTableRow
+          v-for="doc in mergedDocuments"
+          :key="`required-${doc.pk}`"
+          :class="getRowClass(doc)"
+        >
+          <!-- 서류명 -->
+          <CTableDataCell>
+            <div class="d-flex align-items-center">
               <v-icon
-                :icon="doc.is_complete ? 'mdi-check-circle' : 'mdi-alert-circle'"
-                :color="doc.is_complete ? 'success' : 'warning'"
-                size="24"
+                v-if="doc.require_type === 'required'"
+                icon="mdi-star"
+                color="error"
+                size="16"
+                class="me-1"
               />
-            </CTableDataCell>
-          </CTableRow>
-        </CTableBody>
-      </CTable>
-    </CCardBody>
-  </CCard>
+              {{ doc.document_name }}
+            </div>
+          </CTableDataCell>
+
+          <!-- 필수여부 -->
+          <CTableDataCell class="text-center">
+            <v-chip :color="doc.require_type === 'required' ? 'error' : 'default'" size="small">
+              {{ doc.required }}
+              <v-tooltip v-if="doc.description" activator="parent">
+                {{ doc.description }}
+              </v-tooltip>
+            </v-chip>
+          </CTableDataCell>
+
+          <!-- 필요수량 -->
+          <CTableDataCell class="text-center">
+            {{ doc.quantity }}
+          </CTableDataCell>
+
+          <!-- 제출수량 (편집 가능) -->
+          <CTableDataCell class="text-center">
+            <span
+              v-if="editingDocId !== doc.pk"
+              @dblclick="startEdit(doc.pk)"
+              class="pointer"
+            >
+              {{ doc.submitted_quantity }}
+            </span>
+            <CFormInput
+              v-else
+              type="number"
+              min="0"
+              :value="doc.submitted_quantity"
+              size="sm"
+              style="width: 70px; margin: 0 auto"
+              @input="onQuantityChange(doc, parseInt(($event.target as HTMLInputElement).value))"
+              @blur="endEdit"
+              @keydown.enter="endEdit"
+            />
+          </CTableDataCell>
+
+          <!-- 첨부파일 -->
+          <CTableDataCell>
+            <div
+              class="d-flex align-items-center justify-content-end gap-1"
+              style="flex-wrap: nowrap; overflow-x: auto"
+            >
+              <v-chip
+                v-for="file in doc.files"
+                :key="file.pk"
+                size="small"
+                closable
+                @click="downloadFile(file.file, file.file_name)"
+                @click:close="deleteFile(file.pk, doc.contract_doc_pk!)"
+                style="flex-shrink: 0"
+              >
+                <v-icon icon="mdi-file" size="14" class="me-1" />
+                {{ cutString(file.file_name, 5) }}
+              </v-chip>
+              <v-btn
+                size="x-small"
+                icon="mdi-plus"
+                variant="outlined"
+                @click="openFileUpload(doc)"
+                style="flex-shrink: 0"
+              />
+            </div>
+          </CTableDataCell>
+
+          <!-- 완료 상태 -->
+          <CTableDataCell class="text-center">
+            <v-icon
+              :icon="doc.is_complete ? 'mdi-check-circle' : 'mdi-alert-circle'"
+              :color="doc.is_complete ? 'success' : 'warning'"
+              size="24"
+            />
+          </CTableDataCell>
+        </CTableRow>
+      </CTableBody>
+    </CTable>
+  </CCardBody>
 
   <!-- 파일 업로드 다이얼로그 -->
   <v-dialog v-model="fileUploadDialog" max-width="500">
@@ -417,7 +374,7 @@ onMounted(() => {
       <v-card-title>파일 업로드</v-card-title>
       <v-card-text>
         <CFormInput type="file" @change="onFileSelect" />
-        <div v-if="selectedFile" class="mt-2">선택된 파일: {{ selectedFile.name }}</div>
+        <div v-if="selectedFile" class="mt-2">선택된 파일: {{ (selectedFile as File)?.name }}</div>
       </v-card-text>
       <v-card-actions>
         <v-spacer />

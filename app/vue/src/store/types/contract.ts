@@ -38,7 +38,6 @@ export interface ContractDocument {
   contractor: number
   required_document: number
   submitted_quantity: number
-  submission_date: string | null
   document_name: string  // from RequiredDocument
   required_quantity: number  // from RequiredDocument
   require_type: 'required' | 'optional' | 'conditional'
