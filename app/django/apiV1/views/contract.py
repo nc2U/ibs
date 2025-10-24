@@ -526,6 +526,36 @@ class ContractDocumentViewSet(viewsets.ModelViewSet):
         serializer.save(updator=self.request.user)
 
 
+class ContractDocumentFileViewSet(viewsets.ModelViewSet):
+    """계약자 제출 서류 첨부 파일 관리"""
+    queryset = ContractDocumentFile.objects.all()
+    serializer_class = ContractDocumentFileSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    parser_classes = [MultiPartParser, FormParser]
+    filterset_fields = ('contract_document',)
+
+    def perform_create(self, serializer):
+        serializer.save(uploader=self.request.user)
+
+    @action(detail=False, methods=['post'], url_path='upload/(?P<contract_document_id>[^/.]+)')
+    def upload_file(self, request, contract_document_id=None):
+        """특정 제출 서류에 대한 파일 업로드"""
+        contract_document = get_object_or_404(ContractDocument, pk=contract_document_id)
+
+        if 'file' not in request.FILES:
+            return Response(
+                {'error': '파일이 제공되지 않았습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(contract_document=contract_document, uploader=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class ContAddressViewSet(viewsets.ModelViewSet):
     queryset = ContractorAddress.objects.all()
     serializer_class = ContractorAddressSerializer

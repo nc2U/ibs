@@ -8,7 +8,7 @@ from _utils.contract_price import get_sales_price_by_gt, get_contract_price, get
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, RequiredDocument, Contract, ContractPrice, Contractor,
                              ContractorAddress, ContractorContact, Succession, ContractorRelease, ContractFile,
-                             ContractDocument)
+                             ContractDocument, ContractDocumentFile)
 from contract.services import ContractPriceUpdateService
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import HouseUnit, KeyUnit
@@ -743,10 +743,29 @@ class ContractFileSerializer(serializers.ModelSerializer):
         read_only_fields = ('file_name', 'file_type', 'file_size', 'created', 'creator')
 
 
+class ContractDocumentFileSerializer(serializers.ModelSerializer):
+    """계약자 제출 서류 첨부 파일 Serializer"""
+    uploader = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = ContractDocumentFile
+        fields = ('pk', 'contract_document', 'file', 'file_name', 'file_type', 'file_size',
+                  'uploaded_date', 'uploader')
+        read_only_fields = ('file_name', 'file_type', 'file_size', 'uploaded_date', 'uploader')
+
+
 class ContractDocumentSerializer(serializers.ModelSerializer):
+    """계약자 제출 서류 Serializer"""
+    document_name = serializers.CharField(source='document_type.name', read_only=True)
+    required_quantity = serializers.IntegerField(source='required_document.quantity', read_only=True)
+    require_type = serializers.CharField(source='required_document.require_type', read_only=True)
+    is_complete = serializers.BooleanField(read_only=True)
+    files = ContractDocumentFileSerializer(many=True, read_only=True)
+
     class Meta:
         model = ContractDocument
-        fields = ('pk', 'contractor', 'required_document', 'submitted_quantity', 'submission_date')
+        fields = ('pk', 'contractor', 'required_document', 'submitted_quantity', 'submission_date',
+                  'document_name', 'required_quantity', 'require_type', 'is_complete', 'files')
 
 
 class ContractorAddressSerializer(serializers.ModelSerializer):
