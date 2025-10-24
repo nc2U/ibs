@@ -51,14 +51,18 @@ class OrderGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderGroup
-        fields = ('pk', 'project', 'order_number', 'sort', 'sort_desc', 'name', 'is_default_for_uncontracted')
+        fields = ('pk', 'project', 'order_number', 'sort', 'sort_desc',
+                  'name', 'is_default_for_uncontracted')
 
 
 class RequiredDocumentSerializer(serializers.ModelSerializer):
+    document_name = serializers.CharField(source='document_type.name', read_only=True)
+    required = serializers.CharField(source='get_require_type_display', read_only=True)
+
     class Meta:
         model = RequiredDocument
-        fields = ('pk', 'project', 'document_type', 'quantity',
-                  'require_type', 'description', 'display_order')
+        fields = ('pk', 'project', 'document_type', 'document_name', 'quantity',
+                  'require_type', 'required', 'description', 'display_order')
 
 
 class HouseUnitInKeyUnitSerializer(serializers.ModelSerializer):
