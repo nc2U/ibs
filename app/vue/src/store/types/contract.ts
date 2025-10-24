@@ -1,3 +1,13 @@
+export interface RequiredDocs {
+  pk: number
+  project: number
+  document_type: number
+  quantity: number
+  require_type: 'required' | 'optional' | 'conditional'
+  description: '세대주, 주민등록번호 기재 필수'
+  display_order: 0
+}
+
 export interface ContractFile {
   pk: number
   file: string
