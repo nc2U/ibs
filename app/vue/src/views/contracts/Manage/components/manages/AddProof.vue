@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
 import { cutString } from '@/utils/baseMixins.ts'
+import { CCardBody, CTable, CTableBody } from '@coreui/vue'
 
 const route = useRoute()
 const contStore = useContract()
@@ -272,11 +273,7 @@ onMounted(() => {
         </CTableRow>
       </CTableHead>
       <CTableBody>
-        <CTableRow
-          v-for="doc in mergedDocuments"
-          :key="`required-${doc.pk}`"
-          :class="getRowClass(doc)"
-        >
+        <CTableRow v-for="doc in mergedDocuments" :key="`required-${doc.pk}`">
           <!-- 서류명 -->
           <CTableDataCell>
             <div class="d-flex align-items-center">
@@ -307,7 +304,7 @@ onMounted(() => {
           </CTableDataCell>
 
           <!-- 제출수량 (편집 가능) -->
-          <CTableDataCell class="text-center">
+          <CTableDataCell class="text-center" :class="getRowClass(doc)">
             <span v-if="editingDocId !== doc.pk" @dblclick="startEdit(doc.pk)" class="pointer">
               {{ doc.submitted_quantity }}
             </span>
@@ -340,14 +337,14 @@ onMounted(() => {
                 style="flex-shrink: 0"
               >
                 <v-icon icon="mdi-file" size="14" class="me-1" />
-                {{ cutString(file.file_name, 5) }}
+                {{ cutString(file.file_name, 3) }}
               </v-chip>
-              <v-btn
-                size="x-small"
-                icon="mdi-plus"
-                variant="outlined"
+              <v-icon
+                icon="mdi-plus-circle"
+                size="22"
+                class="me-1 pointer"
+                color="secondary"
                 @click="openFileUpload(doc)"
-                style="flex-shrink: 0"
               />
             </div>
           </CTableDataCell>
@@ -357,7 +354,7 @@ onMounted(() => {
             <v-icon
               :icon="doc.is_complete ? 'mdi-check-circle' : 'mdi-alert-circle'"
               :color="doc.is_complete ? 'success' : 'warning'"
-              size="24"
+              size="22"
             />
           </CTableDataCell>
         </CTableRow>
