@@ -344,13 +344,13 @@ export const useContract = defineStore('contract', () => {
   // actions - ContractDocument CRUD
   const fetchContractDocuments = (contractor: number) =>
     api
-      .get(`/contract-document/?contractor=${contractor}`)
+      .get(`/contract-docs/?contractor=${contractor}`)
       .then(res => (contractDocumentList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   const createContractDocument = async (payload: ContractDocument) => {
     return await api
-      .post(`/contract-document/`, payload)
+      .post(`/contract-docs/`, payload)
       .then(async res => {
         await fetchContractDocuments(res.data.contractor)
         message()
@@ -364,7 +364,7 @@ export const useContract = defineStore('contract', () => {
 
   const updateContractDocument = async (pk: number, payload: Partial<ContractDocument>) => {
     return await api
-      .patch(`/contract-document/${pk}/`, payload)
+      .patch(`/contract-docs/${pk}/`, payload)
       .then(async res => {
         await fetchContractDocuments(res.data.contractor)
         message()
@@ -378,7 +378,7 @@ export const useContract = defineStore('contract', () => {
 
   const deleteContractDocument = async (pk: number, contractor: number) => {
     return await api
-      .delete(`/contract-document/${pk}/`)
+      .delete(`/contract-docs/${pk}/`)
       .then(async () => {
         await fetchContractDocuments(contractor)
         message('warning', '알림!', '서류 기록이 삭제되었습니다.')
@@ -396,7 +396,7 @@ export const useContract = defineStore('contract', () => {
     formData.append('contract_document', contractDocId.toString())
 
     return await api
-      .post(`/contract-document-file/upload/${contractDocId}/`, formData, {
+      .post(`/contract-docs-file/upload/${contractDocId}/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       .then(async res => {
@@ -412,7 +412,7 @@ export const useContract = defineStore('contract', () => {
 
   const deleteDocumentFile = async (pk: number, contractDocId: number, contractor: number) => {
     return await api
-      .delete(`/contract-document-file/${pk}/`)
+      .delete(`/contract-docs-file/${pk}/`)
       .then(async () => {
         await fetchContractDocuments(contractor)
         message('warning', '파일이 삭제되었습니다.')
