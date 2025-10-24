@@ -54,6 +54,13 @@ class OrderGroupSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'order_number', 'sort', 'sort_desc', 'name', 'is_default_for_uncontracted')
 
 
+class RequiredDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequiredDocument
+        fields = ('pk', 'project', 'document_type', 'quantity',
+                  'require_type', 'description', 'display_order')
+
+
 class HouseUnitInKeyUnitSerializer(serializers.ModelSerializer):
     class Meta:
         model = HouseUnit
