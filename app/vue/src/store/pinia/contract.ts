@@ -18,6 +18,7 @@ import {
   type ContractRelease,
   type ContractorAddress,
   type ContractPriceWithPaymentPlan,
+  type ContractDocument,
 } from '@/store/types/contract'
 
 export interface ContFilter {
@@ -338,6 +339,96 @@ export const useContract = defineStore('contract', () => {
   }
 
   // state & getters - ContractDocument
+  const contractDocumentList = ref<ContractDocument[]>([])
+
+  // actions - ContractDocument CRUD
+  const fetchContractDocuments = (contractor: number) =>
+    api
+      .get(`/contract-document/?contractor=${contractor}`)
+      .then(res => (contractDocumentList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createContractDocument = async (payload: ContractDocument) => {
+    return await api
+      .post(`/contract-document/`, payload)
+      .then(async res => {
+        await fetchContractDocuments(res.data.contractor)
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const updateContractDocument = async (pk: number, payload: Partial<ContractDocument>) => {
+    return await api
+      .patch(`/contract-document/${pk}/`, payload)
+      .then(async res => {
+        await fetchContractDocuments(res.data.contractor)
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const deleteContractDocument = async (pk: number, contractor: number) => {
+    return await api
+      .delete(`/contract-document/${pk}/`)
+      .then(async () => {
+        await fetchContractDocuments(contractor)
+        message('warning', '알림!', '서류 기록이 삭제되었습니다.')
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  // actions - ContractDocumentFile
+  const uploadDocumentFile = async (contractDocId: number, file: File, contractor: number) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('contract_document', contractDocId.toString())
+
+    return await api
+      .post(`/contract-document-file/upload/${contractDocId}/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(async res => {
+        await fetchContractDocuments(contractor)
+        message('success', '파일이 업로드되었습니다.')
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const deleteDocumentFile = async (pk: number, contractDocId: number, contractor: number) => {
+    return await api
+      .delete(`/contract-document-file/${pk}/`)
+      .then(async () => {
+        await fetchContractDocuments(contractor)
+        message('warning', '파일이 삭제되었습니다.')
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const downloadDocumentFile = (fileUrl: string, fileName: string) => {
+    const link = document.createElement('a')
+    link.href = fileUrl
+    link.download = fileName
+    link.click()
+  }
 
   // state & getters
   const contAddressList = ref<ContractorAddress[]>([])
@@ -646,6 +737,15 @@ export const useContract = defineStore('contract', () => {
     createContractFile,
     updateContractFile,
     removeContractFile,
+
+    contractDocumentList,
+    fetchContractDocuments,
+    createContractDocument,
+    updateContractDocument,
+    deleteContractDocument,
+    uploadDocumentFile,
+    deleteDocumentFile,
+    downloadDocumentFile,
 
     contAddressList,
     fetchContAddressList,

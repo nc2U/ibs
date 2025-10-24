@@ -22,6 +22,30 @@ export interface ContractFile {
   edit?: boolean
 }
 
+export interface ContractDocumentFile {
+  pk?: number
+  contract_document: number
+  file: string
+  file_name: string
+  file_type: string
+  file_size: number
+  uploaded_date: string
+  uploader: { pk: number; username: string } | null
+}
+
+export interface ContractDocument {
+  pk?: number
+  contractor: number
+  required_document: number
+  submitted_quantity: number
+  submission_date: string | null
+  document_name: string  // from RequiredDocument
+  required_quantity: number  // from RequiredDocument
+  require_type: 'required' | 'optional' | 'conditional'
+  is_complete: boolean
+  files: ContractDocumentFile[]
+}
+
 export interface ContractorInContract {
   pk: number
   name: string
