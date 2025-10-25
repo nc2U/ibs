@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { cutString } from '@/utils/baseMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
+import { CCardBody } from '@coreui/vue'
 
 const route = useRoute()
 const contStore = useContract()
@@ -223,15 +224,16 @@ onMounted(() => {
 
 <template>
   <CCardBody>
-    <div class="text-end">
+    <div class="text-end mb-2">
       <span v-if="missingRequiredDocs > 0" class="text-danger mt-1 mr-2" style="font-size: 0.8rem">
         필수 서류 미제출: {{ missingRequiredDocs }}건
       </span>
       <v-progress-circular
         :model-value="completionRate"
-        :size="50"
-        :width="5"
+        :size="40"
+        :width="4"
         :color="completionRate === 100 ? 'primary' : 'warning'"
+        style="font-size: 0.8rem"
       >
         {{ completionRate }}%
       </v-progress-circular>
@@ -303,8 +305,12 @@ onMounted(() => {
           </CTableDataCell>
 
           <!-- 제출수량 (편집 가능) -->
-          <CTableDataCell class="text-center" :class="getRowClass(doc)">
-            <span v-if="editingDocId !== doc.pk" @dblclick="startEdit(doc.pk)" class="pointer">
+          <CTableDataCell
+            class="text-center pointer"
+            :class="getRowClass(doc)"
+            @dblclick="startEdit(doc.pk)"
+          >
+            <span v-if="editingDocId !== doc.pk">
               {{ doc.submitted_quantity }}
             </span>
             <CFormInput
