@@ -53,6 +53,7 @@ export interface ContractDocumentFile {
 export interface ContractDocument {
   pk?: number
   contractor: number
+  sort: 'proof' | 'pledge' // from RequiredDocument
   required_document: number
   submitted_quantity: number
   document_name: string // from RequiredDocument

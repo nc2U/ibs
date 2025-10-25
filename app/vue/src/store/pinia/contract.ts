@@ -344,9 +344,9 @@ export const useContract = defineStore('contract', () => {
   const contractDocumentList = ref<ContractDocument[]>([])
 
   // actions - ContractDocument CRUD
-  const fetchContractDocuments = (contractor: number) =>
+  const fetchContractDocuments = (contractor: number, sort?: 'proof' | 'pledge') =>
     api
-      .get(`/contract-docs/?contractor=${contractor}`)
+      .get(`/contract-docs/?contractor=${contractor}&sort=${sort || ''}`)
       .then(res => (contractDocumentList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
