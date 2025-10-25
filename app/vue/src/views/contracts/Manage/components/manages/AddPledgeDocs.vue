@@ -275,7 +275,7 @@ onMounted(() => {
         <col style="width: 9%" />
       </colgroup>
       <CTableHead>
-        <CTableRow class="text-center">
+        <CTableRow class="text-center" color="light">
           <CTableHeaderCell>해당서류</CTableHeaderCell>
           <CTableHeaderCell>필수여부</CTableHeaderCell>
           <CTableHeaderCell>필요수량</CTableHeaderCell>
