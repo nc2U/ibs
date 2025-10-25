@@ -19,6 +19,8 @@ import {
   type ContractorAddress,
   type ContractPriceWithPaymentPlan,
   type ContractDocument,
+  type ConsultationLog,
+  type ConsultationLogPagination,
 } from '@/store/types/contract'
 
 export interface ContFilter {
@@ -453,7 +455,7 @@ export const useContract = defineStore('contract', () => {
           message('danger', '데이터 갱신 에러', `${error}`, 5000)
         }
       })
-      .catch(err => errorHandle(err.response))
+      .catch(err => errorHandle(err.response.data))
 
   const patchContAddress = (pk: number, payload: any) =>
     api
@@ -469,7 +471,92 @@ export const useContract = defineStore('contract', () => {
           message('danger', '데이터 갱신 에러', `${error}`, 5000)
         }
       })
-      .catch(err => errorHandle(err.response))
+      .catch(err => errorHandle(err.response.data))
+
+  // Consultation Logs
+  const consultationLogList = ref<ConsultationLog[]>([])
+  const consultationLogPagination = ref({
+    count: 0,
+    next: null as string | null,
+    previous: null as string | null,
+    page: 1,
+    pageSize: 15,
+  })
+
+  const fetchConsultationLogs = async (
+    contractorId: number,
+    params?: { page?: number; status?: string },
+  ) => {
+    const queryParams = new URLSearchParams({
+      contractor: contractorId.toString(),
+      page: (params?.page || 1).toString(),
+      ...(params?.status && { status: params.status }),
+    })
+
+    try {
+      const res = await api.get(`/contractor-consultations/?${queryParams}`)
+      consultationLogList.value = res.data.results
+      consultationLogPagination.value = {
+        count: res.data.count,
+        next: res.data.next,
+        previous: res.data.previous,
+        page: params?.page || 1,
+        pageSize: 15,
+      }
+      return res.data
+    } catch (err: any) {
+      return errorHandle(err.response.data)
+    }
+  }
+
+  const createConsultationLog = async (payload: Partial<ConsultationLog>) => {
+    return await api
+      .post('/contractor-consultations/', payload)
+      .then(async res => {
+        if (payload.contractor) {
+          await fetchConsultationLogs(payload.contractor)
+        }
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const updateConsultationLog = async (pk: number, payload: Partial<ConsultationLog>) => {
+    return await api
+      .patch(`/contractor-consultations/${pk}/`, payload)
+      .then(async res => {
+        if (res.data.contractor) {
+          await fetchConsultationLogs(res.data.contractor, {
+            page: consultationLogPagination.value.page,
+          })
+        }
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const deleteConsultationLog = async (pk: number, contractorId: number) => {
+    return await api
+      .delete(`/contractor-consultations/${pk}/`)
+      .then(async () => {
+        await fetchConsultationLogs(contractorId, {
+          page: consultationLogPagination.value.page,
+        })
+        message('warning', '알림!', '상담 내역이 삭제되었습니다.')
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
 
   // state & getters
   const succession = ref<Succession | null>(null)
@@ -751,6 +838,14 @@ export const useContract = defineStore('contract', () => {
     fetchContAddressList,
     createContAddress,
     patchContAddress,
+
+    // Consultation Logs
+    consultationLogList,
+    consultationLogPagination,
+    fetchConsultationLogs,
+    createConsultationLog,
+    updateConsultationLog,
+    deleteConsultationLog,
 
     succession,
     successionList,

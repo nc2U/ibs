@@ -1,3 +1,20 @@
+export interface OrderGroup {
+  pk: number
+  project: number
+  order_number: number
+  sort: '1' | '2' // '조합모집' | '일반분양'
+  sort_desc: string
+  name: string
+  is_default_for_uncontracted: boolean
+}
+
+export interface UnitType {
+  pk: number
+  name: string
+  color: string
+  average_price: number
+}
+
 export interface RequiredDocs {
   pk: number
   project: number
@@ -38,8 +55,8 @@ export interface ContractDocument {
   contractor: number
   required_document: number
   submitted_quantity: number
-  document_name: string  // from RequiredDocument
-  required_quantity: number  // from RequiredDocument
+  document_name: string // from RequiredDocument
+  required_quantity: number // from RequiredDocument
   require_type: 'required' | 'optional' | 'conditional'
   is_complete: boolean
   files: ContractDocumentFile[]
@@ -176,23 +193,6 @@ interface InstallmentOrder {
   __str__: string
 }
 
-export interface UnitType {
-  pk: number
-  name: string
-  color: string
-  average_price: number
-}
-
-export interface OrderGroup {
-  pk: number
-  project: number
-  order_number: number
-  sort: '1' | '2' // '조합모집' | '일반분양'
-  sort_desc: string
-  name: string
-  is_default_for_uncontracted: boolean
-}
-
 export interface SalesPrice {
   pk: number
   project: number
@@ -212,6 +212,45 @@ export interface DownPayment {
   unit_type: number
   number_payments: number
   payment_amount: number
+}
+
+export interface ConsultationLog {
+  pk?: number
+  contractor: number
+  consultation_date: string
+  channel: 'visit' | 'phone' | 'email' | 'sms' | 'kakao' | 'other'
+  channel_display: string
+  category:
+    | 'payment'
+    | 'contract'
+    | 'change'
+    | 'complaint'
+    | 'question'
+    | 'succession'
+    | 'release'
+    | 'document'
+    | 'etc'
+  category_display: string
+  title: string
+  content: string
+  status: '1' | '2' | '3' | '4'
+  status_display: string
+  priority: 'low' | 'normal' | 'high' | 'urgent'
+  priority_display: string
+  consultant?: { pk: number; username: string }
+  follow_up_required: boolean
+  follow_up_note: string
+  completion_date: string | null
+  is_important: boolean
+  created: string
+  updated: string
+}
+
+export interface ConsultationLogPagination {
+  count: number
+  next: string | null
+  previous: string | null
+  results: ConsultationLog[]
 }
 
 interface SimpleSuccession {
