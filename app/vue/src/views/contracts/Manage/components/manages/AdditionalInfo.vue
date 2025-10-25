@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import AddProof from './AddProof.vue'
-import AddPledge from './AddPledge.vue'
+import AddProofDocs from './AddProofDocs.vue'
+import AddPledgeDocs from './AddPledgeDocs.vue'
 import AddConsultation from './AddConsultation.vue'
 </script>
 
@@ -15,9 +15,9 @@ import AddConsultation from './AddConsultation.vue'
       </div>
     </CCardHeader>
 
-    <AddProof />
+    <AddProofDocs />
 
-    <AddPledge />
+    <AddPledgeDocs />
   </CCard>
 
   <!-- 상담 내역 카드 -->

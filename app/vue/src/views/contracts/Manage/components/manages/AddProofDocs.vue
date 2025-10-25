@@ -1,10 +1,9 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { cutString } from '@/utils/baseMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
-import { cutString } from '@/utils/baseMixins.ts'
-import { CCardBody, CTable, CTableBody } from '@coreui/vue'
 
 const route = useRoute()
 const contStore = useContract()
