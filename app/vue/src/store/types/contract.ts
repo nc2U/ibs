@@ -20,6 +20,7 @@ export interface RequiredDocs {
   project: number
   document_type: number
   document_name: string
+  sort: 'proof' | 'pledge'
   quantity: number
   require_type: 'required' | 'optional' | 'conditional'
   required: '필수' | '선택' | '조건부 필수'

@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
-from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen
+from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationFifty
 from ..permission import *
 from ..serializers.contract import *
 
@@ -31,7 +31,7 @@ class RequiredDocumentViewSet(viewsets.ModelViewSet):
     queryset = RequiredDocument.objects.all()
     serializer_class = RequiredDocumentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    pagination_class = PageNumberPaginationFifteen
+    pagination_class = PageNumberPaginationFifty
     filterset_fields = ('project', 'sort')
 
     def perform_create(self, serializer):
