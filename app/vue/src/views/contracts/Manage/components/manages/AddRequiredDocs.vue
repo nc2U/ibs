@@ -302,7 +302,7 @@ onMounted(() => {
 
           <!-- 필수여부 -->
           <CTableDataCell class="text-center">
-            <v-chip :color="doc.require_type === 'required' ? 'error' : 'default'" size="small">
+            <v-chip :color="doc.require_type === 'required' ? 'error' : 'primary'" size="x-small">
               {{ doc.required }}
               <v-tooltip v-if="doc.description" activator="parent">
                 {{ doc.description }}
