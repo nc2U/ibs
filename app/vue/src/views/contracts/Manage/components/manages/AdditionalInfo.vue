@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import RequiredDocsList from './RequiredDocsList.vue'
+import AddRequiredDocs from './AddRequiredDocs.vue'
 import AddConsultation from './AddConsultation.vue'
 
 // 토글 상태
@@ -40,10 +40,10 @@ const activeDocTab = ref<'proof' | 'pledge'>('proof')
       <!-- 탭 컨텐츠 -->
       <v-window v-model="activeDocTab">
         <v-window-item value="proof">
-          <RequiredDocsList sort-filter="proof" />
+          <AddRequiredDocs sort-filter="proof" />
         </v-window-item>
         <v-window-item value="pledge">
-          <RequiredDocsList sort-filter="pledge" />
+          <AddRequiredDocs sort-filter="pledge" />
         </v-window-item>
       </v-window>
     </CCollapse>
