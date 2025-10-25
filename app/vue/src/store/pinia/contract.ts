@@ -429,6 +429,7 @@ export const useContract = defineStore('contract', () => {
     const link = document.createElement('a')
     link.href = fileUrl
     link.download = fileName
+    link.target = '_blank'
     link.click()
   }
 
