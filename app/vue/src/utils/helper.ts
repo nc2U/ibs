@@ -117,3 +117,12 @@ export const setLocalStorage = (orderedList: Item[], key: string) => {
   }))
   localStorage.setItem(key, JSON.stringify(order))
 }
+
+// 파일 다운로드
+export const downloadFile = (fileUrl: string, fileName: string) => {
+  const link = document.createElement('a')
+  link.href = fileUrl
+  link.download = fileName
+  link.target = '_blank'
+  link.click()
+}

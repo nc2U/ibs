@@ -425,14 +425,6 @@ export const useContract = defineStore('contract', () => {
       })
   }
 
-  const downloadDocumentFile = (fileUrl: string, fileName: string) => {
-    const link = document.createElement('a')
-    link.href = fileUrl
-    link.download = fileName
-    link.target = '_blank'
-    link.click()
-  }
-
   // state & getters
   const contAddressList = ref<ContractorAddress[]>([])
 
@@ -833,7 +825,6 @@ export const useContract = defineStore('contract', () => {
     deleteContractDocument,
     uploadDocumentFile,
     deleteDocumentFile,
-    downloadDocumentFile,
 
     contAddressList,
     fetchContAddressList,

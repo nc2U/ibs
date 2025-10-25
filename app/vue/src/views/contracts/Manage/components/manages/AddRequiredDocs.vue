@@ -2,9 +2,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { cutString } from '@/utils/baseMixins.ts'
+import { downloadFile } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
-import { CCardBody } from '@coreui/vue'
 
 // Props
 const props = defineProps<{
@@ -194,11 +194,6 @@ const deleteFile = async (fileId: number, contractDocId: number) => {
       console.error('파일 삭제 실패:', error)
     }
   }
-}
-
-// 파일 다운로드
-const downloadFile = (fileUrl: string, fileName: string) => {
-  contStore.downloadDocumentFile(fileUrl, fileName)
 }
 
 // 서류 행 스타일 결정
