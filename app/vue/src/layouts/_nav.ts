@@ -132,8 +132,8 @@ const contract = {
       name: '계약 상세 관리',
       to: '/contracts/detail',
       badge: {
-        color: 'warning',
-        text: 'u.c',
+        color: 'info',
+        text: 'new',
       },
     },
     {
