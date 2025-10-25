@@ -21,5 +21,14 @@ import AddConsultation from './AddConsultation.vue'
   </CCard>
 
   <!-- 상담 내역 카드 -->
-  <AddConsultation />
+  <CCard class="mb-3">
+    <CCardHeader>
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <strong>상담 내역</strong>
+        </div>
+      </div>
+    </CCardHeader>
+    <AddConsultation />
+  </CCard>
 </template>
