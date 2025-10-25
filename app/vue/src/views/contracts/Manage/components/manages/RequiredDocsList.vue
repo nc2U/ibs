@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { cutString } from '@/utils/baseMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
+import { CCardBody } from '@coreui/vue'
 
 // Props
 const props = defineProps<{
@@ -22,9 +23,8 @@ const contractorId = computed(() =>
 const requiredDocsList = computed(() => {
   const list = contStore.requiredDocsList
   // sortFilter가 있으면 필터링
-  if (props.sortFilter && list) {
-    return list.filter(doc => doc.sort === props.sortFilter)
-  }
+  if (props.sortFilter && list) return list.filter(doc => (doc as any).sort === props.sortFilter)
+
   return list
 })
 const contractDocumentList = computed(() => contStore.contractDocumentList)
@@ -234,7 +234,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <CCardBody>
+  <CCardBody class="pt-0">
     <div class="text-end mb-2">
       <span v-if="missingRequiredDocs > 0" class="text-danger mt-1 mr-2" style="font-size: 0.8rem">
         필수 서류 미제출: {{ missingRequiredDocs }}건
