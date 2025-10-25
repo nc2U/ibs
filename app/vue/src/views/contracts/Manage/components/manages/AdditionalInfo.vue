@@ -7,6 +7,9 @@ import AddConsultation from './AddConsultation.vue'
 // 토글 상태
 const isProofDocsExpanded = ref(true)
 const isConsultationExpanded = ref(true)
+
+// 서류 탭 상태
+const activeDocTab = ref<'proof' | 'pledge'>('proof')
 </script>
 
 <template>
@@ -28,9 +31,22 @@ const isConsultationExpanded = ref(true)
 
     <CCollapse :visible="isProofDocsExpanded">
       <!-- 탭 -->
-      <AddProofDocs />
+      <CCardBody class="pt-2 pb-0">
+        <v-tabs v-model="activeDocTab" color="primary">
+          <v-tab value="proof">기본 증명</v-tab>
+          <v-tab value="pledge">각종 서약</v-tab>
+        </v-tabs>
+      </CCardBody>
 
-      <AddPledgeDocs />
+      <!-- 탭 컨텐츠 -->
+      <v-window v-model="activeDocTab">
+        <v-window-item value="proof">
+          <AddProofDocs sort-filter="proof" />
+        </v-window-item>
+        <v-window-item value="pledge">
+          <AddPledgeDocs sort-filter="pledge" />
+        </v-window-item>
+      </v-window>
     </CCollapse>
   </CCard>
 
