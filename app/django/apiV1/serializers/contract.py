@@ -756,6 +756,7 @@ class ContractDocumentFileSerializer(serializers.ModelSerializer):
 
 class ContractDocumentSerializer(serializers.ModelSerializer):
     """계약자 제출 서류 Serializer"""
+    sort = serializers.CharField(source='required_document.sort', read_only=True)
     document_name = serializers.CharField(source='document_type.name', read_only=True)
     required_quantity = serializers.IntegerField(source='required_document.quantity', read_only=True)
     require_type = serializers.CharField(source='required_document.require_type', read_only=True)
@@ -764,7 +765,7 @@ class ContractDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ContractDocument
-        fields = ('pk', 'contractor', 'required_document', 'submitted_quantity',
+        fields = ('pk', 'contractor', 'sort', 'required_document', 'submitted_quantity',
                   'document_name', 'required_quantity', 'require_type', 'is_complete', 'files')
 
 
