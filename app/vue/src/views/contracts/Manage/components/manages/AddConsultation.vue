@@ -259,7 +259,7 @@ onMounted(() => {
           </CCol>
         </CRow>
 
-        <CRow class="mt-2">
+        <CRow class="mt-3">
           <CCol class="text-end">
             <v-btn color="primary" size="small" @click="submitForm">
               <v-icon icon="mdi-plus" size="18" class="me-1" />
