@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import { cutString } from '@/utils/baseMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
-import { CCardBody } from '@coreui/vue'
 
 // Props
 const props = defineProps<{
@@ -23,9 +22,8 @@ const contractorId = computed(() =>
 const requiredDocsList = computed(() => {
   const list = contStore.requiredDocsList
   // sortFilter가 있으면 필터링
-  if (props.sortFilter && list) {
-    return list.filter(doc => doc.sort === props.sortFilter)
-  }
+  if (props.sortFilter && list) return list.filter(doc => (doc as any).sort === props.sortFilter)
+
   return list
 })
 const contractDocumentList = computed(() => contStore.contractDocumentList)
