@@ -61,6 +61,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             RequiredDocument(
                 project=project,
                 document_type=doc_type,
+                sort=doc_type.sort,
                 quantity=doc_type.default_quantity,
                 require_type=doc_type.require_type,
                 description=doc_type.description,
@@ -72,6 +73,44 @@ class ProjectSerializer(serializers.ModelSerializer):
         if required_docs:
             RequiredDocument.objects.bulk_create(required_docs)
 
+    def _sync_required_documents(self, project):
+        """
+        프로젝트의 필요 서류를 DocumentType과 동기화
+
+        1. 새로운 기본 서류 추가
+        2. 비활성화된 서류는 그대로 유지 (이미 제출된 서류가 있을 수 있음)
+
+        Args:
+            project: Project 인스턴스
+        """
+        # 현재 프로젝트에 등록된 서류 타입들
+        existing_doc_types = set(
+            RequiredDocument.objects.filter(project=project)
+            .values_list('document_type_id', flat=True)
+        )
+
+        # 기본 서류 중 아직 없는 것들만 추가
+        default_document_types = DocumentType.objects.filter(
+            is_default_item=True,
+            is_active=True
+        ).exclude(id__in=existing_doc_types).order_by('id')
+
+        new_docs = [
+            RequiredDocument(
+                project=project,
+                document_type=doc_type,
+                sort=doc_type.sort,
+                quantity=doc_type.default_quantity,
+                require_type=doc_type.require_type,
+                description=doc_type.description,
+                creator=self.context.get('request').user if self.context.get('request') else None
+            )
+            for doc_type in default_document_types
+        ]
+
+        if new_docs:
+            RequiredDocument.objects.bulk_create(new_docs)
+
     @transaction.atomic
     def create(self, validated_data):
         """프로젝트 생성 시 기본 필요 서류 자동 생성"""
@@ -82,17 +121,19 @@ class ProjectSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         """
-        프로젝트 업데이트 시 필요 서류 검사
-        RequiredDocument가 하나도 없을 경우에만 기본값 생성 (안전장치)
+        프로젝트 업데이트 시 필요 서류 동기화
+        RequiredDocument가 없으면 생성, 있으면 DocumentType과 동기화
         """
         # 프로젝트 업데이트
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # RequiredDocument가 하나도 없는 경우에만 기본값 생성
+        # RequiredDocument가 없으면 생성, 있으면 동기화
         if not RequiredDocument.objects.filter(project=instance).exists():
             self._create_default_required_documents(instance)
+        else:
+            self._sync_required_documents(instance)
 
         return instance
 
