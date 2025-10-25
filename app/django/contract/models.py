@@ -73,8 +73,6 @@ class DocumentType(models.Model):
     DOCUMENT_SORT = (('proof', '기본 증명'), ('pledge', '각종 서약'))
     sort = models.CharField('서류구분', max_length=20, choices=DOCUMENT_SORT, default='proof')
     name = models.CharField('서류명', max_length=100, unique=True)
-    code = models.CharField('서류코드', max_length=50, unique=True, db_index=True,
-                            help_text='시스템 내부 식별 코드 (예: BIZ_LICENSE, CORP_SEAL)')
     default_quantity = models.PositiveIntegerField('기본 수량', default=1)
     DOCUMENT_REQUIRE_TYPE = (('required', '필수'), ('optional', '선택'), ('conditional', '조건부 필수'))
     require_type = models.CharField('필수 여부', max_length=20, choices=DOCUMENT_REQUIRE_TYPE, default='required')
@@ -516,8 +514,8 @@ def get_contract_document_file_name(instance, filename):
     contract = contractor.contract
     slug = contract.project.issue_project.slug
     contractor_name = contractor.name
-    doc_code = instance.contract_document.required_document.document_type.code
-    return os.path.join('contract_documents', f'{slug}', contractor_name, doc_code, filename)
+    doc_sort = instance.contract_document.required_document.sort
+    return os.path.join('contract_documents', f'{slug}', contractor_name, doc_sort, filename)
 
 
 class ContractDocumentFile(models.Model):
