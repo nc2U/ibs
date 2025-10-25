@@ -21,17 +21,9 @@ const contractorId = computed(() =>
 // Store 데이터
 const requiredDocsList = computed(() => {
   const list = contStore.requiredDocsList
-  console.log('🔍 [AddPledgeDocs] Full list:', list)
-  console.log('🔍 [AddPledgeDocs] sortFilter:', props.sortFilter)
-
   // sortFilter가 있으면 필터링
   if (props.sortFilter && list) {
-    const filtered = list.filter(doc => {
-      console.log(`  - doc ${doc.pk}: ${doc.document_name}, sort="${doc.sort}", match=${doc.sort === props.sortFilter}`)
-      return doc.sort === props.sortFilter
-    })
-    console.log('🔍 [AddPledgeDocs] Filtered result:', filtered)
-    return filtered
+    return list.filter(doc => doc.sort === props.sortFilter)
   }
   return list
 })

@@ -77,17 +77,42 @@ class ProjectSerializer(serializers.ModelSerializer):
         """
         프로젝트의 필요 서류를 DocumentType과 동기화
 
-        1. 새로운 기본 서류 추가
-        2. 비활성화된 서류는 그대로 유지 (이미 제출된 서류가 있을 수 있음)
+        1. 기존 서류의 필드 업데이트 (sort, quantity, require_type, description)
+        2. 새로운 기본 서류 추가
+        3. 비활성화된 서류는 그대로 유지 (이미 제출된 서류가 있을 수 있음)
 
         Args:
             project: Project 인스턴스
         """
-        # 현재 프로젝트에 등록된 서류 타입들
-        existing_doc_types = set(
-            RequiredDocument.objects.filter(project=project)
-            .values_list('document_type_id', flat=True)
-        )
+        # 현재 프로젝트의 RequiredDocument 조회 (document_type과 함께)
+        existing_docs = RequiredDocument.objects.filter(project=project).select_related('document_type')
+
+        # 기존 문서들의 필드를 DocumentType과 동기화
+        docs_to_update = []
+        for req_doc in existing_docs:
+            doc_type = req_doc.document_type
+            # DocumentType의 필드가 변경되었는지 확인
+            if (req_doc.sort != doc_type.sort or
+                req_doc.quantity != doc_type.default_quantity or
+                req_doc.require_type != doc_type.require_type or
+                req_doc.description != doc_type.description):
+
+                req_doc.sort = doc_type.sort
+                req_doc.quantity = doc_type.default_quantity
+                req_doc.require_type = doc_type.require_type
+                req_doc.description = doc_type.description
+                req_doc.updator = self.context.get('request').user if self.context.get('request') else None
+                docs_to_update.append(req_doc)
+
+        # 변경된 문서들 일괄 업데이트
+        if docs_to_update:
+            RequiredDocument.objects.bulk_update(
+                docs_to_update,
+                ['sort', 'quantity', 'require_type', 'description', 'updator', 'updated']
+            )
+
+        # 현재 프로젝트에 등록된 서류 타입 ID들
+        existing_doc_types = set(doc.document_type_id for doc in existing_docs)
 
         # 기본 서류 중 아직 없는 것들만 추가
         default_document_types = DocumentType.objects.filter(
