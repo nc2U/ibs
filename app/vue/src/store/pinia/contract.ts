@@ -473,8 +473,11 @@ export const useContract = defineStore('contract', () => {
     next: null as string | null,
     previous: null as string | null,
     page: 1,
-    pageSize: 15,
+    pageSize: 10,
   })
+  const consultationLogCount = ref<number>(0)
+  const consultationLogPages = (itemsPerPage: number) =>
+    Math.ceil(consultationLogCount.value / itemsPerPage)
 
   const fetchConsultationLogs = async (
     contractorId: number,
@@ -489,13 +492,7 @@ export const useContract = defineStore('contract', () => {
     try {
       const res = await api.get(`/contractor-consultations/?${queryParams}`)
       consultationLogList.value = res.data.results
-      consultationLogPagination.value = {
-        count: res.data.count,
-        next: res.data.next,
-        previous: res.data.previous,
-        page: params?.page || 1,
-        pageSize: 15,
-      }
+      consultationLogCount.value = res.data.count
       return res.data
     } catch (err: any) {
       return errorHandle(err.response.data)
@@ -834,6 +831,7 @@ export const useContract = defineStore('contract', () => {
     // Consultation Logs
     consultationLogList,
     consultationLogPagination,
+    consultationLogPages,
     fetchConsultationLogs,
     createConsultationLog,
     updateConsultationLog,

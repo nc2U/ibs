@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ConsultationLog } from '@/store/types/contract'
+import Pagination from '@/components/Pagination'
 import ConsultationForm from './atoms/ConsultationForm.vue'
 import ConsultationFilterChips from './atoms/ConsultationFilterChips.vue'
 import ConsultationListItem from './atoms/ConsultationListItem.vue'
@@ -17,7 +18,6 @@ const contractorId = computed(() =>
 
 // Store 데이터
 const consultationLogList = computed(() => contStore.consultationLogList)
-const pagination = computed(() => contStore.consultationLogPagination)
 
 // 로딩 상태
 const isLoading = ref(false)
@@ -67,6 +67,9 @@ const handleDelete = async (pk: number) => {
     console.error('삭제 실패:', error)
   }
 }
+
+// 페이지
+const consultationLogPages = (pageNum: number) => contStore.consultationLogPages(pageNum)
 
 // 페이지 변경
 const onPageChange = (page: number) => {
@@ -173,14 +176,14 @@ onMounted(() => {
     </CTable>
 
     <!-- 페이지네이션 -->
-    <div v-if="pagination.count > 0" class="d-flex justify-content-center mt-3">
-      <v-pagination
-        :length="Math.ceil(pagination.count / pagination.pageSize)"
-        :model-value="pagination.page"
-        @update:model-value="onPageChange"
-        :total-visible="7"
-        size="small"
+    <CCol class="d-flex justify-content-center mt-0">
+      <Pagination
+        :active-page="1"
+        :limit="8"
+        :pages="consultationLogPages(10)"
+        class="mt-3"
+        @active-page-change="onPageChange"
       />
-    </div>
+    </CCol>
   </CCardBody>
 </template>
