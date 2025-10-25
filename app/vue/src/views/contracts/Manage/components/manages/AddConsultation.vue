@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ConsultationLog } from '@/store/types/contract'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const route = useRoute()
 const contStore = useContract()
@@ -198,9 +199,10 @@ onMounted(() => {
     <CCard class="mb-3 bg-info-lighten">
       <CCardBody>
         <CRow class="g-2">
-          <CCol :md="3">
+          <CCol :md="4">
             <CFormLabel>상담일자</CFormLabel>
-            <CFormInput v-model="formData.consultation_date" type="date" size="sm" />
+            <!--            <CFormInput v-model="formData.consultation_date" type="date" size="sm" />-->
+            <DatePicker v-model="formData.consultation_date" size="small" />
           </CCol>
           <CCol :md="2">
             <CFormLabel>채널</CFormLabel>
@@ -227,13 +229,6 @@ onMounted(() => {
               <option value="etc">기타</option>
             </CFormSelect>
           </CCol>
-          <CCol :md="5">
-            <CFormLabel>제목</CFormLabel>
-            <CFormInput v-model="formData.title" size="sm" placeholder="상담 제목" />
-          </CCol>
-        </CRow>
-
-        <CRow class="g-2 mt-2">
           <CCol :md="2">
             <CFormLabel>처리상태</CFormLabel>
             <CFormSelect v-model="formData.status" size="sm">
@@ -252,9 +247,14 @@ onMounted(() => {
               <option value="urgent">긴급</option>
             </CFormSelect>
           </CCol>
-          <CCol :md="8">
-            <CFormLabel>내용</CFormLabel>
-            <CFormTextarea v-model="formData.content" rows="2" size="sm" />
+        </CRow>
+        <CRow class="g-2 mt-2">
+          <CCol :md="12">
+            <CFormInput v-model="formData.title" size="sm" placeholder="상담 제목" />
+          </CCol>
+
+          <CCol :md="12">
+            <CFormTextarea v-model="formData.content" rows="3" size="sm" placeholder="상담 내용" />
           </CCol>
         </CRow>
 
