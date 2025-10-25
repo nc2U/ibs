@@ -587,7 +587,6 @@ class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):
     queryset = ContractorConsultationLogs.objects.select_related('consultant').all()
     serializer_class = ContractorConsultationLogsSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    pagination_class = PageNumberPaginationFifteen
     filterset_fields = ('contractor', 'status', 'category', 'channel')
     ordering = ['-consultation_date', '-created']
 
