@@ -582,6 +582,22 @@ class ContContactViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
 
+class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):
+    """계약자 상담 내역 관리"""
+    queryset = ContractorConsultationLogs.objects.select_related('consultant').all()
+    serializer_class = ContractorConsultationLogsSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    pagination_class = PageNumberPaginationFifteen
+    filterset_fields = ('contractor', 'status', 'category', 'channel')
+    ordering = ['-consultation_date', '-created']
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user, consultant=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+
+
 class SuccessionViewSet(viewsets.ModelViewSet):
     queryset = Succession.objects.all()
     serializer_class = SuccessionSerializer

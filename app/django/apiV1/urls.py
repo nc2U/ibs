@@ -147,6 +147,7 @@ router.register(r'contract-docs', contract.ContractDocumentViewSet)
 router.register(r'contract-docs-file', contract.ContractDocumentFileViewSet)
 router.register(r'contractor-address', contract.ContAddressViewSet)
 router.register(r'contractor-contact', contract.ContContactViewSet)
+router.register(r'contractor-consultations', contract.ContractorConsultationLogsViewSet)
 router.register(r'succession', contract.SuccessionViewSet)
 router.register(r'contractor-release', contract.ContReleaseViewSet)
 

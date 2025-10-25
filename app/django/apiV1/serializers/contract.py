@@ -7,8 +7,8 @@ from rest_framework import serializers
 from _utils.contract_price import get_sales_price_by_gt, get_contract_price, get_contract_payment_plan
 from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, RequiredDocument, Contract, ContractPrice, Contractor,
-                             ContractorAddress, ContractorContact, Succession, ContractorRelease, ContractFile,
-                             ContractDocument, ContractDocumentFile)
+                             ContractFile, ContractDocument, ContractDocumentFile, ContractorAddress,
+                             ContractorContact, ContractorConsultationLogs, Succession, ContractorRelease)
 from contract.services import ContractPriceUpdateService
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import HouseUnit, KeyUnit
@@ -811,6 +811,23 @@ class ContractorContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractorContact
         fields = ('pk', 'contractor', 'cell_phone', 'home_phone', 'other_phone', 'email')
+
+
+class ContractorConsultationLogsSerializer(serializers.ModelSerializer):
+    """계약자 상담 내역 Serializer"""
+    consultant = SimpleUserSerializer(read_only=True)
+    channel_display = serializers.CharField(source='get_channel_display', read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+
+    class Meta:
+        model = ContractorConsultationLogs
+        fields = ('pk', 'contractor', 'consultation_date', 'channel', 'channel_display',
+                  'category', 'category_display', 'title', 'content', 'status', 'status_display',
+                  'priority', 'priority_display', 'consultant', 'follow_up_required', 'follow_up_note',
+                  'completion_date', 'is_important', 'created', 'updated')
+        read_only_fields = ('created', 'updated')
 
 
 class ContractInSuccessionSerializer(serializers.ModelSerializer):
