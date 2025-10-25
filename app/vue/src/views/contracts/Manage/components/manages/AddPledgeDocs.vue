@@ -244,7 +244,7 @@ onMounted(() => {
         :size="40"
         :width="4"
         :color="completionRate === 100 ? 'primary' : 'warning'"
-        style="font-size: 0.8rem"
+        style="font-size: 0.6rem"
       >
         {{ completionRate }}%
       </v-progress-circular>
