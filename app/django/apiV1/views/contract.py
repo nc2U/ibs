@@ -32,7 +32,7 @@ class RequiredDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = RequiredDocumentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('project',)
+    filterset_fields = ('project', 'sort')
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -518,7 +518,7 @@ class ContractDocumentViewSet(viewsets.ModelViewSet):
     queryset = ContractDocument.objects.all()
     serializer_class = ContractDocumentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    filterset_fields = ('contractor', 'required_document', 'contractor__contract__project')
+    filterset_fields = ('contractor', 'required_document__sort', 'required_document', 'contractor__contract__project')
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

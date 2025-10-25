@@ -70,7 +70,7 @@ class OrderGroup(models.Model):
 
 class DocumentType(models.Model):
     """서류 유형 마스터 테이블"""
-    DOCUMENT_SORT = (('proof', '기본 서류'), ('pledge', '서약 확인'))
+    DOCUMENT_SORT = (('proof', '기본 증명'), ('pledge', '각종 서약'))
     sort = models.CharField('서류구분', max_length=20, choices=DOCUMENT_SORT, default='proof')
     name = models.CharField('서류명', max_length=100, unique=True)
     code = models.CharField('서류코드', max_length=50, unique=True, db_index=True,

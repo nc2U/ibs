@@ -62,7 +62,7 @@ class RequiredDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RequiredDocument
-        fields = ('pk', 'project', 'document_type', 'document_name', 'quantity',
+        fields = ('pk', 'project', 'sort', 'document_type', 'document_name', 'quantity',
                   'require_type', 'required', 'description', 'display_order')
 
 
