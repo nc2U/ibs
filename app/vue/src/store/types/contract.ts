@@ -23,7 +23,7 @@ export interface RequiredDocs {
   quantity: number
   require_type: 'required' | 'optional' | 'conditional'
   required: '필수' | '선택' | '조건부 필수'
-  description: '세대주, 주민등록번호 기재 필수'
+  description: string
   display_order: 0
 }
 

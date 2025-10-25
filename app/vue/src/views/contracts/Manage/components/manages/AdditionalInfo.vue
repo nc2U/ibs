@@ -33,8 +33,8 @@ const activeDocTab = ref<'proof' | 'pledge'>('proof')
       <!-- 탭 -->
       <CCardBody class="pt-2 pb-0">
         <v-tabs v-model="activeDocTab" color="primary">
-          <v-tab value="proof">기본 증명</v-tab>
-          <v-tab value="pledge">각종 서약</v-tab>
+          <v-tab value="proof">증명서류</v-tab>
+          <v-tab value="pledge">동의서류</v-tab>
         </v-tabs>
       </CCardBody>
 
