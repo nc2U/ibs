@@ -70,6 +70,8 @@ class OrderGroup(models.Model):
 
 class DocumentType(models.Model):
     """서류 유형 마스터 테이블"""
+    DOCUMENT_SORT = (('proof', '기본 서류'), ('pledge', '서약 확인'))
+    sort = models.CharField('서류구분', max_length=20, choices=DOCUMENT_SORT, default='proof')
     name = models.CharField('서류명', max_length=100, unique=True)
     code = models.CharField('서류코드', max_length=50, unique=True, db_index=True,
                             help_text='시스템 내부 식별 코드 (예: BIZ_LICENSE, CORP_SEAL)')
@@ -101,6 +103,7 @@ class RequiredDocument(models.Model):
     """계약 시 필요 서류 (프로젝트별 관리)"""
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE,
                                 verbose_name='프로젝트', related_name='contract_required_documents')
+    sort = models.CharField('서류구분', max_length=20, choices=DocumentType.DOCUMENT_SORT, default='proof')
     document_type = models.ForeignKey(DocumentType, on_delete=models.PROTECT,
                                       verbose_name='서류 유형', related_name='project_requirements')
     quantity = models.PositiveIntegerField('필요 수량', default=1)
