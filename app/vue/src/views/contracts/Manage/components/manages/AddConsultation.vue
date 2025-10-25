@@ -198,7 +198,7 @@ onMounted(() => {
 <template>
   <CCardBody>
     <!-- 인라인 등록 폼 -->
-    <CCard class="mb-3 bg-info-lighten">
+    <CCard class="mb-3">
       <CCardBody>
         <CRow class="g-2">
           <CCol :md="4">
