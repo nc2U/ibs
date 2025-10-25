@@ -325,14 +325,14 @@ onMounted(() => {
     </div>
 
     <!-- 상담 내역 리스트 -->
-    <CTable v-else hover>
+    <CTable v-else hover responsive>
       <colgroup>
         <col width="20%" />
         <col width="10%" />
         <col width="10%" />
-        <col width="30%" />
+        <col width="32%" />
         <col width="10%" />
-        <col width="20%" />
+        <col width="18%" />
       </colgroup>
       <CTableHead>
         <CTableRow class="text-center">
@@ -367,12 +367,18 @@ onMounted(() => {
               </v-chip>
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <v-btn size="x-small" icon="mdi-pencil" variant="text" @click.stop="startEdit(log)" />
+              <v-btn
+                size="x-small"
+                icon="mdi-pencil"
+                variant="text"
+                color="success"
+                @click.stop="startEdit(log)"
+              />
               <v-btn
                 size="x-small"
                 icon="mdi-delete"
                 variant="text"
-                color="error"
+                color="grey"
                 @click.stop="deleteLog(log.pk!)"
               />
             </CTableDataCell>
@@ -380,7 +386,7 @@ onMounted(() => {
 
           <!-- 확장 행 -->
           <CTableRow v-if="expandedRow === log.pk">
-            <CTableDataCell colspan="6" class="bg-light">
+            <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
               <!-- 수정 모드 -->
               <div v-if="editingLog && editingLog.pk === log.pk" class="p-3">
                 <CRow class="g-2">
@@ -459,7 +465,7 @@ onMounted(() => {
                     <v-btn color="secondary" size="small" @click="cancelEdit" class="me-2">
                       취소
                     </v-btn>
-                    <v-btn color="primary" size="small" @click="saveEdit">저장</v-btn>
+                    <v-btn color="success" size="small" @click="saveEdit">저장</v-btn>
                   </CCol>
                 </CRow>
               </div>
@@ -467,8 +473,12 @@ onMounted(() => {
               <!-- 상세보기 모드 -->
               <div v-else class="p-3">
                 <CRow>
-                  <CCol :md="12">
-                    <strong>내용:</strong>
+                  <CCol :md="12" class="mb-2">
+                    <strong>[{{ log.title }}]</strong>
+                  </CCol>
+                </CRow>
+                <CRow>
+                  <CCol :md="12" class="mb-2">
                     <div class="mt-1">{{ log.content || '내용 없음' }}</div>
                   </CCol>
                 </CRow>
