@@ -1,11 +1,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { cutString } from '@/utils/baseMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ConsultationLog } from '@/store/types/contract'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import { CCardBody } from '@coreui/vue'
-import { cutString } from '@/utils/baseMixins.ts'
 
 const route = useRoute()
 const contStore = useContract()
@@ -106,10 +105,13 @@ const cancelEdit = () => {
 
 // 수정 저장
 const saveEdit = async () => {
-  if (!editingLog.value || !editingLog.value.pk) return
+  if (!editingLog.value || !(editingLog.value as ConsultationLog)?.pk) return
 
   try {
-    await contStore.updateConsultationLog(editingLog.value.pk, editingLog.value)
+    await contStore.updateConsultationLog(
+      (editingLog.value as ConsultationLog)?.pk as number,
+      editingLog.value,
+    )
     editingLog.value = null
     expandedRow.value = null
   } catch (error) {
@@ -388,15 +390,19 @@ onMounted(() => {
           <CTableRow v-if="expandedRow === log.pk">
             <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
               <!-- 수정 모드 -->
-              <div v-if="editingLog && editingLog.pk === log.pk" class="p-3">
+              <div v-if="editingLog && (editingLog as ConsultationLog).pk === log.pk" class="p-3">
                 <CRow class="g-2">
                   <CCol :md="3">
                     <CFormLabel>상담일자</CFormLabel>
-                    <CFormInput v-model="editingLog.consultation_date" type="date" size="sm" />
+                    <CFormInput
+                      v-model="(editingLog as ConsultationLog).consultation_date"
+                      type="date"
+                      size="sm"
+                    />
                   </CCol>
                   <CCol :md="2">
                     <CFormLabel>채널</CFormLabel>
-                    <CFormSelect v-model="editingLog.channel" size="sm">
+                    <CFormSelect v-model="(editingLog as ConsultationLog).channel" size="sm">
                       <option value="visit">방문</option>
                       <option value="phone">전화</option>
                       <option value="email">이메일</option>
@@ -407,7 +413,7 @@ onMounted(() => {
                   </CCol>
                   <CCol :md="2">
                     <CFormLabel>유형</CFormLabel>
-                    <CFormSelect v-model="editingLog.category" size="sm">
+                    <CFormSelect v-model="(editingLog as ConsultationLog).category" size="sm">
                       <option value="payment">납부상담</option>
                       <option value="contract">계약상담</option>
                       <option value="change">변경상담</option>
@@ -421,7 +427,7 @@ onMounted(() => {
                   </CCol>
                   <CCol :md="2">
                     <CFormLabel>처리상태</CFormLabel>
-                    <CFormSelect v-model="editingLog.status" size="sm">
+                    <CFormSelect v-model="(editingLog as ConsultationLog).status" size="sm">
                       <option value="1">처리대기</option>
                       <option value="2">처리중</option>
                       <option value="3">처리완료</option>
@@ -430,7 +436,7 @@ onMounted(() => {
                   </CCol>
                   <CCol :md="3">
                     <CFormLabel>중요도</CFormLabel>
-                    <CFormSelect v-model="editingLog.priority" size="sm">
+                    <CFormSelect v-model="(editingLog as ConsultationLog).priority" size="sm">
                       <option value="low">낮음</option>
                       <option value="normal">보통</option>
                       <option value="high">높음</option>
@@ -442,21 +448,29 @@ onMounted(() => {
                 <CRow class="g-2 mt-2">
                   <CCol :md="12">
                     <CFormLabel>제목</CFormLabel>
-                    <CFormInput v-model="editingLog.title" size="sm" />
+                    <CFormInput v-model="(editingLog as ConsultationLog).title" size="sm" />
                   </CCol>
                 </CRow>
 
                 <CRow class="g-2 mt-2">
                   <CCol :md="12">
                     <CFormLabel>내용</CFormLabel>
-                    <CFormTextarea v-model="editingLog.content" rows="4" size="sm" />
+                    <CFormTextarea
+                      v-model="(editingLog as ConsultationLog).content"
+                      rows="4"
+                      size="sm"
+                    />
                   </CCol>
                 </CRow>
 
                 <CRow class="g-2 mt-2">
                   <CCol :md="12">
                     <CFormLabel>후속조치 내용</CFormLabel>
-                    <CFormTextarea v-model="editingLog.follow_up_note" rows="2" size="sm" />
+                    <CFormTextarea
+                      v-model="(editingLog as ConsultationLog).follow_up_note"
+                      rows="2"
+                      size="sm"
+                    />
                   </CCol>
                 </CRow>
 
@@ -491,7 +505,7 @@ onMounted(() => {
                 <CRow class="mt-2">
                   <CCol :md="6">
                     <small class="text-muted">
-                      담당자: {{ log.consultant?.username || '미지정' }}
+                      담당자: {{ (log.consultant as any)?.username || '미지정' }}
                     </small>
                   </CCol>
                   <CCol :md="6" class="text-end">
