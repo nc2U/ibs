@@ -1,19 +1,19 @@
 from django.core.cache import cache
 from django.db.models import Count, Sum, Q
+from django.shortcuts import get_object_or_404
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-from django.shortcuts import get_object_or_404
 
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
-from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationTwenty
+from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen
 from ..permission import *
 from ..serializers.contract import *
 
@@ -31,7 +31,7 @@ class RequiredDocumentViewSet(viewsets.ModelViewSet):
     queryset = RequiredDocument.objects.all()
     serializer_class = RequiredDocumentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    pagination_class = PageNumberPaginationTwenty
+    pagination_class = PageNumberPaginationFifteen
     filterset_fields = ('project', 'sort')
 
     def perform_create(self, serializer):
