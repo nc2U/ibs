@@ -29,7 +29,7 @@ const submitForm = () => {
     alert('상담 제목을 입력해주세요.')
     return
   }
-  emit('submit', formData.value)
+  emit('submit', formData.value as any)
   resetForm()
 }
 
@@ -85,21 +85,21 @@ const resetForm = () => {
           </CFormSelect>
         </CCol>
         <CCol :md="2">
-          <CFormLabel>처리상태</CFormLabel>
-          <CFormSelect v-model="formData.status" size="sm">
-            <option value="1">처리대기</option>
-            <option value="2">처리중</option>
-            <option value="3">처리완료</option>
-            <option value="4">보류</option>
-          </CFormSelect>
-        </CCol>
-        <CCol :md="2">
           <CFormLabel>중요도</CFormLabel>
           <CFormSelect v-model="formData.priority" size="sm">
             <option value="low">낮음</option>
             <option value="normal">보통</option>
             <option value="high">높음</option>
             <option value="urgent">긴급</option>
+          </CFormSelect>
+        </CCol>
+        <CCol :md="2">
+          <CFormLabel>처리상태</CFormLabel>
+          <CFormSelect v-model="formData.status" size="sm">
+            <option value="1">처리대기</option>
+            <option value="2">처리중</option>
+            <option value="3">처리완료</option>
+            <option value="4">보류</option>
           </CFormSelect>
         </CCol>
       </CRow>
