@@ -44,14 +44,27 @@ const cancelEdit = () => {
 
 // 수정 저장
 const saveEdit = (log: ConsultationLog) => {
-  emit('edit', log)
+  emit('edit', log as any)
   editingLog.value = null
   isExpanded.value = false
 }
 
 // 삭제
-const handleDelete = () => {
-  emit('delete', props.log.pk!)
+const handleDelete = () => emit('delete', props.log.pk! as any)
+
+// 중요도별 색상
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case 'low':
+      return 'info'
+    case 'normal':
+      return 'success'
+    case 'high':
+      return 'warning'
+    case 'urgent':
+      return 'danger'
+    default:
+  }
 }
 
 // 상태별 색상
@@ -81,18 +94,23 @@ const getStatusColor = (status: string) => {
       </div>
     </CTableDataCell>
     <CTableDataCell class="text-center">
-      <v-chip size="x-small">{{ log.channel_display }}</v-chip>
+      <v-chip size="x-small" :rounded="0">{{ log.channel_display }}</v-chip>
     </CTableDataCell>
     <CTableDataCell class="text-center">
-      <v-chip size="x-small">{{ log.category_display }}</v-chip>
+      <v-chip size="x-small" :rounded="0">{{ log.category_display }}</v-chip>
     </CTableDataCell>
-    <CTableDataCell>{{ cutString(log.title, 11) }}</CTableDataCell>
-    <CTableDataCell class="text-center">
-      <v-chip :color="getStatusColor(log.status)" size="small">
-        {{ log.status_display }}
+    <CTableDataCell>
+      {{ cutString(log.title, 11) }}
+      <v-chip :color="getPriorityColor(log.priority)" size="x-small">
+        {{ log.priority_display }}
       </v-chip>
     </CTableDataCell>
     <CTableDataCell class="text-center">
+      <v-chip :color="getStatusColor(log.status)" size="x-small" :rounded="0">
+        {{ log.status_display }}
+      </v-chip>
+    </CTableDataCell>
+    <CTableDataCell class="text-center py-0">
       <v-btn
         size="x-small"
         icon="mdi-pencil"
@@ -126,9 +144,3 @@ const getStatusColor = (status: string) => {
     </CTableDataCell>
   </CTableRow>
 </template>
-
-<style scoped>
-.pointer {
-  cursor: pointer;
-}
-</style>
