@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ConsultationLog } from '@/store/types/contract'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import { CCardBody } from '@coreui/vue'
+import { cutString } from '@/utils/baseMixins.ts'
 
 const route = useRoute()
 const contStore = useContract()
@@ -201,8 +203,7 @@ onMounted(() => {
         <CRow class="g-2">
           <CCol :md="4">
             <CFormLabel>상담일자</CFormLabel>
-            <!--            <CFormInput v-model="formData.consultation_date" type="date" size="sm" />-->
-            <DatePicker v-model="formData.consultation_date" size="small" />
+            <DatePicker v-model="formData.consultation_date" />
           </CCol>
           <CCol :md="2">
             <CFormLabel>채널</CFormLabel>
@@ -248,13 +249,13 @@ onMounted(() => {
             </CFormSelect>
           </CCol>
         </CRow>
-        <CRow class="g-2 mt-2">
+        <CRow class="g-2 mt-0">
           <CCol :md="12">
             <CFormInput v-model="formData.title" size="sm" placeholder="상담 제목" />
           </CCol>
 
           <CCol :md="12">
-            <CFormTextarea v-model="formData.content" rows="3" size="sm" placeholder="상담 내용" />
+            <CFormTextarea v-model="formData.content" rows="3" placeholder="상담 내용" />
           </CCol>
         </CRow>
 
@@ -325,14 +326,22 @@ onMounted(() => {
 
     <!-- 상담 내역 리스트 -->
     <CTable v-else hover>
+      <colgroup>
+        <col width="20%" />
+        <col width="10%" />
+        <col width="10%" />
+        <col width="30%" />
+        <col width="10%" />
+        <col width="20%" />
+      </colgroup>
       <CTableHead>
         <CTableRow class="text-center">
-          <CTableHeaderCell style="width: 15%">상담일자</CTableHeaderCell>
-          <CTableHeaderCell style="width: 10%">채널</CTableHeaderCell>
-          <CTableHeaderCell style="width: 12%">유형</CTableHeaderCell>
-          <CTableHeaderCell style="width: 38%">제목</CTableHeaderCell>
-          <CTableHeaderCell style="width: 15%">처리상태</CTableHeaderCell>
-          <CTableHeaderCell style="width: 10%">작업</CTableHeaderCell>
+          <CTableHeaderCell>상담일자</CTableHeaderCell>
+          <CTableHeaderCell>채널</CTableHeaderCell>
+          <CTableHeaderCell>유형</CTableHeaderCell>
+          <CTableHeaderCell>제목</CTableHeaderCell>
+          <CTableHeaderCell>처리상태</CTableHeaderCell>
+          <CTableHeaderCell>작업</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
       <CTableBody>
@@ -351,7 +360,7 @@ onMounted(() => {
             <CTableDataCell class="text-center">
               <v-chip size="x-small">{{ log.category_display }}</v-chip>
             </CTableDataCell>
-            <CTableDataCell>{{ log.title }}</CTableDataCell>
+            <CTableDataCell>{{ cutString(log.title, 11) }}</CTableDataCell>
             <CTableDataCell class="text-center">
               <v-chip :color="getStatusColor(log.status)" size="small">
                 {{ log.status_display }}
