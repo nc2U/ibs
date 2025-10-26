@@ -1,14 +1,45 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import AddRequiredDocs from './AddRequiredDocs.vue'
 import AddConsultation from './AddConsultation.vue'
 
-// 토글 상태
+// 로컬 스토리지 키
+const PROOF_DOCS_EXPANDED_KEY = 'contract_proof_docs_expanded'
+const CONSULTATION_EXPANDED_KEY = 'contract_consultation_expanded'
+
+// 토글 상태 (기본값)
 const isProofDocsExpanded = ref(true)
 const isConsultationExpanded = ref(true)
 
+// 로컬 스토리지에서 토글 상태 불러오기
+const loadExpandedState = () => {
+  const proofDocs = localStorage.getItem(PROOF_DOCS_EXPANDED_KEY)
+  const consultation = localStorage.getItem(CONSULTATION_EXPANDED_KEY)
+
+  if (proofDocs !== null) {
+    isProofDocsExpanded.value = proofDocs === 'true'
+  }
+  if (consultation !== null) {
+    isConsultationExpanded.value = consultation === 'true'
+  }
+}
+
+// 상태 변경 시 로컬 스토리지에 저장
+watch(isProofDocsExpanded, newValue => {
+  localStorage.setItem(PROOF_DOCS_EXPANDED_KEY, String(newValue))
+})
+
+watch(isConsultationExpanded, newValue => {
+  localStorage.setItem(CONSULTATION_EXPANDED_KEY, String(newValue))
+})
+
 // 서류 탭 상태
 const activeDocTab = ref<'proof' | 'pledge'>('proof')
+
+// 컴포넌트 마운트 시 로컬 스토리지에서 상태 불러오기
+onMounted(() => {
+  loadExpandedState()
+})
 </script>
 
 <template>
