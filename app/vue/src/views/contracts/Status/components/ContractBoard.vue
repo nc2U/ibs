@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useProjectData } from '@/store/pinia/project_data'
-import Building from '@/views/contracts/Status/components/Building.vue'
+import LazyBuilding from '@/views/contracts/Status/components/LazyBuilding.vue'
 
 import { type KeyUnit } from '@/store/types/project'
 
@@ -33,13 +33,22 @@ const getUnits = (bldg: number): SimpleUnit[] =>
     <CCol class="text-center p-5 text-danger"> 등록된 데이터가 없습니다.</CCol>
   </CRow>
 
-  <CRow v-else class="align-items-end">
-    <Building
+  <div v-else class="buildings-container">
+    <LazyBuilding
       v-for="bldg in getBldg"
       :key="bldg"
       :bldg="bldg"
       :max-floor="maxFloor"
       :units="getUnits(bldg)"
     />
-  </CRow>
+  </div>
 </template>
+
+<style scoped>
+.buildings-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+</style>
