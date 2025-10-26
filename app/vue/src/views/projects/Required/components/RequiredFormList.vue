@@ -9,16 +9,22 @@ const emit = defineEmits(['on-update', 'on-delete'])
 <template>
   <CTable hover responsive>
     <colgroup>
-      <col style="width: 25%" />
-      <col style="width: 25%" />
-      <col style="width: 35%" />
-      <col v-if="write_project" style="width: 15%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col v-if="write_project" style="width: 10%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
-        <CTableHeaderCell>차수</CTableHeaderCell>
-        <CTableHeaderCell>타입</CTableHeaderCell>
-        <CTableHeaderCell>회별 납부금액</CTableHeaderCell>
+        <CTableHeaderCell>서류구분</CTableHeaderCell>
+        <CTableHeaderCell>서류 유형</CTableHeaderCell>
+        <CTableHeaderCell>필요 수량</CTableHeaderCell>
+        <CTableHeaderCell>필수 여부</CTableHeaderCell>
+        <CTableHeaderCell>설명</CTableHeaderCell>
+        <CTableHeaderCell>표시 순서</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
@@ -28,7 +34,7 @@ const emit = defineEmits(['on-update', 'on-delete'])
 
     <CTableBody>
       <CTableRow>
-        <CTableDataCell :colspan="write_project ? 4 : 3" class="text-center p-5 text-danger">
+        <CTableDataCell :colspan="write_project ? 7 : 6" class="text-center p-5 text-danger">
           등록된 데이터가 없습니다.
         </CTableDataCell>
       </CTableRow>

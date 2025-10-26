@@ -37,7 +37,7 @@ onBeforeMount(async () => {
     <ContentBody>
       <CCardBody class="pb-5">
         <RequiredAddForm />
-        <!--        <RequiredFormList />-->
+        <RequiredFormList />
       </CCardBody>
     </ContentBody>
   </ProjectAuthGuard>
