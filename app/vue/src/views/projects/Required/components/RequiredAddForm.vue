@@ -10,23 +10,23 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ disabled: Boolean })
 
-const projStore = useProject()
-const project = computed(() => (projStore.project as Project)?.pk)
-
-const contStore = useContract()
-const documentTypeList = computed(() => contStore.documentTypeList)
-
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const form = reactive({
   sort: 'proof' as 'proof' | 'pledge',
   document_type: null as null | number,
-  quantity: null as null | number,
+  quantity: undefined as undefined | number,
   require_type: 'required' as 'required' | 'optional' | 'conditional',
   description: '',
-  display_order: null as null | number,
+  display_order: undefined as undefined | number,
 })
+
+const projStore = useProject()
+const project = computed(() => (projStore.project as Project)?.pk)
+
+const contStore = useContract()
+const documentTypeList = computed(() => contStore.documentTypeList)
 
 const validated = ref(false)
 
@@ -58,10 +58,10 @@ const modalAction = async () => {
 const resetForm = () => {
   form.sort = 'proof'
   form.document_type = null
-  form.quantity = null
+  form.quantity = undefined
   form.require_type = 'required'
   form.description = ''
-  form.display_order = null
+  form.display_order = undefined
 }
 </script>
 
