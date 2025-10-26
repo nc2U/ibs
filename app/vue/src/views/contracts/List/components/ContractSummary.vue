@@ -24,7 +24,7 @@ const subsNum = (type?: number) => {
   // 청약 수
   let subs: SubsSummary[] | number[] = subsSummaryList.value
   subs = type ? subs.filter((s: SubsSummary) => s.unit_type === type) : subs
-  subs = subs.map((s: SubsSummary) => s.conts_num)
+  subs = subs.map((s: SubsSummary) => s.num_cont)
   return subs.reduce((o: number, n: number) => o + n, 0)
 }
 
@@ -115,7 +115,7 @@ const contNum = (order: number | null, type?: number) => {
         <CTableDataCell class="text-center"> 합계</CTableDataCell>
         <CTableDataCell></CTableDataCell>
         <!-- 타입별 세대수 합계-->
-        <CTableDataCell> {{ numFormat(props.project.num_unit ?? 0) }}세대</CTableDataCell>
+        <CTableDataCell> {{ numFormat(props.project?.num_unit ?? 0) }}세대</CTableDataCell>
         <!-- 청약 건수 타입별 합계-->
         <CTableDataCell>{{ numFormat(subsNum()) }}</CTableDataCell>
         <!--차수별 계약건수 타입별 합계-->
@@ -129,15 +129,15 @@ const contNum = (order: number | null, type?: number) => {
         </CTableDataCell>
         <!-- 타입별 잔여세대 합계-->
         <CTableDataCell>
-          {{ numFormat((props.project.num_unit ?? 0) - contNum(null) - subsNum()) }}
+          {{ numFormat((props.project?.num_unit ?? 0) - contNum(null) - subsNum()) }}
         </CTableDataCell>
         <!-- 타입별 계약율 합계-->
         <CTableDataCell>
-          {{ ratioFormat((contNum(null) / (props.project.num_unit ?? 1)) * 100) }}
+          {{ ratioFormat((contNum(null) / (props.project?.num_unit ?? 1)) * 100) }}
         </CTableDataCell>
         <!-- 타입별 분양율(청약+계약) 합계-->
         <CTableDataCell>
-          {{ ratioFormat(((contNum(null) + subsNum()) / (props.project.num_unit ?? 1)) * 100) }}
+          {{ ratioFormat(((contNum(null) + subsNum()) / (props.project?.num_unit ?? 1)) * 100) }}
         </CTableDataCell>
       </CTableRow>
     </CTableBody>
