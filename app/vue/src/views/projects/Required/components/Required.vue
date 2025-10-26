@@ -29,19 +29,19 @@ const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const formsCheck = computed(() => {
-  const a = form.sort === props.requiredDoc.sort
-  const b = form.document_type === props.requiredDoc.document_type
-  const c = form.quantity === props.requiredDoc.quantity
-  const d = form.require_type === props.requiredDoc.require_type
-  const e = form.description === props.requiredDoc.description
-  const f = form.display_order === props.requiredDoc.display_order
+  const a = form.sort === props.requiredDoc?.sort
+  const b = form.document_type === props.requiredDoc?.document_type
+  const c = form.quantity === props.requiredDoc?.quantity
+  const d = form.require_type === props.requiredDoc?.require_type
+  const e = form.description === props.requiredDoc?.description
+  const f = form.display_order === props.requiredDoc?.display_order
   return a && b && c && d && e && f
 })
 
 const onUpdateRequiredDoc = async () => {
   if (write_project.value) {
     try {
-      await contStore.updateRequiredDoc(props.requiredDoc.pk, form)
+      await contStore.updateRequiredDoc(props.requiredDoc?.pk as number, form)
     } catch (error) {
       console.error('Failed to update required document:', error)
     }
@@ -61,7 +61,10 @@ const onDeleteRequiredDoc = () => {
 
 const modalAction = async () => {
   try {
-    await contStore.deleteRequiredDoc(props.requiredDoc.pk, props.requiredDoc.project)
+    await contStore.deleteRequiredDoc(
+      props.requiredDoc?.pk as number,
+      props.requiredDoc?.project as number,
+    )
     refConfirmModal.value.close()
   } catch (error) {
     console.error('Failed to delete required document:', error)
@@ -69,12 +72,12 @@ const modalAction = async () => {
 }
 
 const dataSetup = () => {
-  form.sort = props.requiredDoc.sort
-  form.document_type = props.requiredDoc.document_type
-  form.quantity = props.requiredDoc.quantity
-  form.require_type = props.requiredDoc.require_type
-  form.description = props.requiredDoc.description
-  form.display_order = props.requiredDoc.display_order
+  form.sort = props.requiredDoc?.sort as any
+  form.document_type = props.requiredDoc?.document_type as number
+  form.quantity = props.requiredDoc?.quantity as number
+  form.require_type = props.requiredDoc?.require_type as any
+  form.description = props.requiredDoc?.description as string
+  form.display_order = props.requiredDoc?.display_order as number
 }
 
 onBeforeMount(() => dataSetup())
