@@ -19,8 +19,10 @@ const dataSetup = async (projId: number) => {
   if (!projId) return
   loading.value = true
   try {
-    await contStore.fetchRequiredDocsList(projId)
-    await contStore.fetchDocumentTypeList()
+    await Promise.all([
+      contStore.fetchDocumentTypeList(),
+      contStore.fetchRequiredDocsList(projId)
+    ])
   } finally {
     loading.value = false
   }
