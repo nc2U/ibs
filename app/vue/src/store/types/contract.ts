@@ -25,7 +25,7 @@ export interface RequiredDocs {
   require_type: 'required' | 'optional' | 'conditional'
   required: '필수' | '선택' | '조건부 필수'
   description: string
-  display_order: 0
+  display_order: number
 }
 
 export interface ContractFile {

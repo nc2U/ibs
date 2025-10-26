@@ -18,11 +18,11 @@ const contStore = useContract()
 
 const form = reactive({
   sort: 'proof' as 'proof' | 'pledge',
-  document_type: null as null | number,
-  quantity: null as null | number,
+  document_type: undefined as number | undefined,
+  quantity: undefined as number | undefined,
   require_type: 'required' as 'required' | 'optional' | 'conditional',
   description: '',
-  display_order: null as null | number,
+  display_order: undefined as number | undefined,
 })
 
 const refAlertModal = ref()
@@ -41,7 +41,7 @@ const formsCheck = computed(() => {
 const onUpdateRequiredDoc = async () => {
   if (write_project.value) {
     try {
-      await contStore.updateRequiredDoc(props.requiredDoc?.pk as number, form)
+      await contStore.updateRequiredDoc(props.requiredDoc?.pk as number, { ...form })
     } catch (error) {
       console.error('Failed to update required document:', error)
     }
