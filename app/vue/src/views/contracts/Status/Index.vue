@@ -17,7 +17,6 @@ const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
 
 const pDataStore = useProjectData()
-const isLoading = computed(() => pDataStore.isLoading)
 const fetchTypeList = (projId: number) => pDataStore.fetchTypeList(projId)
 const fetchBuildingList = (projId: number) => pDataStore.fetchBuildingList(projId)
 const fetchHouseUnitList = (projId: number) => pDataStore.fetchHouseUnitList(projId)
@@ -28,28 +27,40 @@ const fetchSubsSummaryList = (projId: number) => contStore.fetchSubsSummaryList(
 const fetchContSummaryList = (projId: number) => contStore.fetchContSummaryList(projId)
 
 const isContor = ref<boolean>(true)
+const isPageLoading = ref<boolean>(false)
 const excelUrl = computed(() =>
   project.value ? `/excel/status/?project=${project.value}&iscontor=${isContor.value}` : '',
 )
 
 provide('isContor', isContor)
 
-const dataSetup = (pk: number) => {
-  fetchTypeList(pk)
-  fetchBuildingList(pk)
-  fetchHouseUnitList(pk)
-  fetchSubsSummaryList(pk)
-  fetchContractList({ project: pk })
-  fetchContSummaryList(pk)
+const dataSetup = async (pk: number) => {
+  isPageLoading.value = true
+  try {
+    await Promise.all([
+      fetchTypeList(pk),
+      fetchBuildingList(pk),
+      fetchHouseUnitList(pk),
+      fetchSubsSummaryList(pk),
+      fetchContractList({ project: pk }),
+      fetchContSummaryList(pk),
+    ])
+  } finally {
+    isPageLoading.value = false
+  }
 }
 
 const dataReset = () => {
-  pDataStore.unitTypeList = []
-  pDataStore.buildingList = []
-  pDataStore.houseUnitList = []
-  contStore.subsSummaryList = []
-  contStore.contSummaryList = []
-  contStore.contractsCount = 0
+  pDataStore.$patch({
+    unitTypeList: [],
+    buildingList: [],
+    houseUnitList: [],
+  })
+  contStore.$patch({
+    subsSummaryList: [],
+    contSummaryList: [],
+    contractsCount: 0,
+  })
 }
 
 const projSelect = (target: number | null) => {
@@ -62,7 +73,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
 
 <template>
   <ContractAuthGuard>
-    <Loading v-model:active="isLoading" />
+    <Loading v-model:active="isPageLoading" />
     <ContentHeader
       :page-title="pageTitle"
       :nav-menu="navMenu"

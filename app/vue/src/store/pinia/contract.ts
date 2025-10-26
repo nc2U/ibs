@@ -744,6 +744,14 @@ export const useContract = defineStore('contract', () => {
     non_conts_num: number
   } | null>()
 
+  // Computed getters for optimized summary calculations
+  const contSum = computed(() =>
+    contSummaryList.value.reduce((sum, c) => sum + c.conts_num, 0),
+  )
+  const subsSum = computed(() =>
+    subsSummaryList.value.reduce((sum, c) => sum + c.conts_num, 0),
+  )
+
   // actions
   const fetchSubsSummaryList = (project: number) =>
     api
@@ -860,6 +868,8 @@ export const useContract = defineStore('contract', () => {
     subsSummaryList,
     contSummaryList,
     contAggregate,
+    contSum,
+    subsSum,
     fetchSubsSummaryList,
     fetchContSummaryList,
     removeContAggregate,

@@ -10,12 +10,8 @@ const simpleTypes = computed(() => pDataStore.simpleTypes)
 const unitSum = computed(() => pDataStore.unitSummary)
 
 const contStore = useContract()
-const contSum = computed(() =>
-  contStore.contSummaryList.map(c => c.conts_num).reduce((x, y) => x + y, 0),
-)
-const subsSum = computed(() =>
-  contStore.subsSummaryList.map(c => c.conts_num).reduce((x, y) => x + y, 0),
-)
+const contSum = computed(() => contStore.contSum)
+const subsSum = computed(() => contStore.subsSum)
 </script>
 
 <template>
