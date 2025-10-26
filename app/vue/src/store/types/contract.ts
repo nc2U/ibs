@@ -261,13 +261,16 @@ interface SimpleSuccession {
 }
 
 export interface SubsSummary {
+  unit_type: number
+  num_cont: number
+}
+
+export interface ContSummary {
   order_group: number
   unit_type: number
   conts_num: number
   price_sum: number
 }
-
-export type ContSummary = SubsSummary
 
 export interface Succession {
   pk?: number

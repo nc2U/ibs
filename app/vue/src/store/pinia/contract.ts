@@ -749,7 +749,7 @@ export const useContract = defineStore('contract', () => {
     contSummaryList.value.reduce((sum, c) => sum + c.conts_num, 0),
   )
   const subsSum = computed(() =>
-    subsSummaryList.value.reduce((sum, c) => sum + c.conts_num, 0),
+    subsSummaryList.value.reduce((sum, c) => sum + c.num_cont, 0),
   )
 
   // actions
