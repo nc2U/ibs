@@ -365,6 +365,11 @@ const project = {
         },
         {
           component: 'CNavItem',
+          name: '구비 서류 등록',
+          to: '/project/settings/required',
+        },
+        {
+          component: 'CNavItem',
           name: '옵션 품목 등록',
           to: '/project/settings/options',
         },

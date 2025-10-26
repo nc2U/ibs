@@ -131,6 +131,16 @@ const projects = {
       },
     },
     {
+      path: 'settings/down-payment',
+      name: '계약 금액 등록',
+      component: () => import('@/views/projects/DownPay/Index.vue'),
+      meta: {
+        title: '계약 금액 등록',
+        auth: true,
+        requiresProjectAuth: true,
+      },
+    },
+    {
       path: 'settings/price',
       name: '공급 가격 등록',
       component: () => import('@/views/projects/Price/Index.vue'),
@@ -141,11 +151,11 @@ const projects = {
       },
     },
     {
-      path: 'settings/down-payment',
-      name: '계약 금액 등록',
-      component: () => import('@/views/projects/DownPay/Index.vue'),
+      path: 'settings/required',
+      name: '구비 서류 등록',
+      component: () => import('@/views/projects/Required/Index.vue'),
       meta: {
-        title: '계약 금액 등록',
+        title: '구비 서류 등록',
         auth: true,
         requiresProjectAuth: true,
       },
