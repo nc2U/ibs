@@ -424,8 +424,8 @@
     "model": "contract.documenttype",
     "pk": 1,
     "fields": {
+      "sort": "proof",
       "name": "주민등록등본",
-      "code": "REGISTRATION_01",
       "default_quantity": 1,
       "require_type": "required",
       "is_default_item": true,
@@ -441,8 +441,8 @@
     "model": "contract.documenttype",
     "pk": 2,
     "fields": {
+      "sort": "proof",
       "name": "주민등록초본",
-      "code": "REGISTRATION_02",
       "default_quantity": 1,
       "require_type": "required",
       "is_default_item": true,
@@ -458,8 +458,8 @@
     "model": "contract.documenttype",
     "pk": 3,
     "fields": {
+      "sort": "proof",
       "name": "가족관계증명서",
-      "code": "FAMILY_RELATIONSHIP",
       "default_quantity": 1,
       "require_type": "required",
       "is_default_item": true,
@@ -475,8 +475,8 @@
     "model": "contract.documenttype",
     "pk": 4,
     "fields": {
+      "sort": "proof",
       "name": "인감증명서",
-      "code": "SEAL_CERTIFICATE_01",
       "default_quantity": 6,
       "require_type": "required",
       "is_default_item": true,
@@ -492,15 +492,15 @@
     "model": "contract.documenttype",
     "pk": 5,
     "fields": {
+      "sort": "proof",
       "name": "인감도장",
-      "code": "SEAL_STAMP",
       "default_quantity": 1,
       "require_type": "required",
       "is_default_item": true,
-      "description": "",
+      "description": "날인 확인",
       "is_active": true,
       "created": "2025-10-19T14:02:28.722Z",
-      "updated": "2025-10-19T14:02:28.722Z",
+      "updated": "2025-10-24T14:48:09.971Z",
       "creator": null,
       "updator": null
     }
@@ -509,15 +509,15 @@
     "model": "contract.documenttype",
     "pk": 6,
     "fields": {
-      "name": "막도장",
-      "code": "SUBMISSION_STAMP",
+      "sort": "proof",
+      "name": "신분증 사본",
       "default_quantity": 1,
       "require_type": "required",
       "is_default_item": true,
-      "description": "조합제출용",
+      "description": "계약자",
       "is_active": true,
       "created": "2025-10-19T14:02:28.723Z",
-      "updated": "2025-10-19T14:02:28.724Z",
+      "updated": "2025-10-25T15:00:58.916Z",
       "creator": null,
       "updator": null
     }
@@ -526,15 +526,15 @@
     "model": "contract.documenttype",
     "pk": 7,
     "fields": {
-      "name": "신분증 사본",
-      "code": "CONTRACTOR_ID_COPY",
+      "sort": "proof",
+      "name": "배우자 주민등록등본",
       "default_quantity": 1,
-      "require_type": "required",
+      "require_type": "conditional",
       "is_default_item": true,
-      "description": "계약자",
+      "description": "[배우자 분리세대인 경우]",
       "is_active": true,
       "created": "2025-10-19T14:02:28.725Z",
-      "updated": "2025-10-19T14:02:28.725Z",
+      "updated": "2025-10-25T15:01:54.243Z",
       "creator": null,
       "updator": null
     }
@@ -543,15 +543,15 @@
     "model": "contract.documenttype",
     "pk": 8,
     "fields": {
-      "name": "배우자 주민등록등본",
-      "code": "SPOUSE_REGISTRATION",
+      "sort": "proof",
+      "name": "계약금 무통장 입금증",
       "default_quantity": 1,
-      "require_type": "conditional",
+      "require_type": "optional",
       "is_default_item": true,
-      "description": "[분리 세대인 경우]",
+      "description": "",
       "is_active": true,
       "created": "2025-10-19T14:02:28.726Z",
-      "updated": "2025-10-19T14:02:28.726Z",
+      "updated": "2025-10-25T15:02:26.786Z",
       "creator": null,
       "updator": null
     }
@@ -560,15 +560,15 @@
     "model": "contract.documenttype",
     "pk": 9,
     "fields": {
-      "name": "계약금 무통장 입금증",
-      "code": "TRANSFER_RECEIPT",
+      "sort": "proof",
+      "name": "계약용 위임장",
       "default_quantity": 1,
-      "require_type": "optional",
+      "require_type": "conditional",
       "is_default_item": true,
-      "description": "",
+      "description": "[대리인 계약 시], 계약자 인감날인 필, 계약 장소 비치",
       "is_active": true,
       "created": "2025-10-19T14:02:28.728Z",
-      "updated": "2025-10-19T14:02:28.728Z",
+      "updated": "2025-10-25T15:02:55.378Z",
       "creator": null,
       "updator": null
     }
@@ -577,15 +577,15 @@
     "model": "contract.documenttype",
     "pk": 10,
     "fields": {
-      "name": "위임장",
-      "code": "POWER_OF_AGENT",
+      "sort": "proof",
+      "name": "계약자 인감증명서",
       "default_quantity": 1,
       "require_type": "conditional",
       "is_default_item": true,
-      "description": "[대리인 계약 시], 계약자 인감날인 필, 계약 장소 비치",
+      "description": "[대리인 계약 시]",
       "is_active": true,
       "created": "2025-10-19T14:02:28.730Z",
-      "updated": "2025-10-19T14:02:28.730Z",
+      "updated": "2025-10-25T15:03:14.634Z",
       "creator": null,
       "updator": null
     }
@@ -594,15 +594,15 @@
     "model": "contract.documenttype",
     "pk": 11,
     "fields": {
-      "name": "계약자 인감증명서",
-      "code": "SEAL_CERTIFICATE_02",
+      "sort": "proof",
+      "name": "대리인 신분증 사본",
       "default_quantity": 1,
       "require_type": "conditional",
       "is_default_item": true,
       "description": "[대리인 계약 시]",
       "is_active": true,
       "created": "2025-10-19T14:02:28.731Z",
-      "updated": "2025-10-19T14:02:28.731Z",
+      "updated": "2025-10-25T15:03:31.109Z",
       "creator": null,
       "updator": null
     }
@@ -611,15 +611,168 @@
     "model": "contract.documenttype",
     "pk": 12,
     "fields": {
-      "name": "대리인 신분증 사본",
-      "code": "AGENT_ID_COPY",
+      "sort": "pledge",
+      "name": "각서",
       "default_quantity": 1,
-      "require_type": "conditional",
+      "require_type": "required",
       "is_default_item": true,
-      "description": "[대리인 계약 시]",
+      "description": "",
       "is_active": true,
       "created": "2025-10-19T14:02:28.732Z",
-      "updated": "2025-10-19T14:02:28.732Z",
+      "updated": "2025-10-25T15:03:47.461Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 13,
+    "fields": {
+      "sort": "pledge",
+      "name": "사업계획 동의서",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "",
+      "is_active": true,
+      "created": "2025-10-25T14:03:17.863Z",
+      "updated": "2025-10-25T15:00:26.568Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 14,
+    "fields": {
+      "sort": "pledge",
+      "name": "조합규약 동의서",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "",
+      "is_active": true,
+      "created": "2025-10-25T14:04:23.427Z",
+      "updated": "2025-10-25T15:00:19.473Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 15,
+    "fields": {
+      "sort": "pledge",
+      "name": "시공사 선정 동의서",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "",
+      "is_active": true,
+      "created": "2025-10-25T14:04:37.238Z",
+      "updated": "2025-10-25T15:00:13.653Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 16,
+    "fields": {
+      "sort": "pledge",
+      "name": "조합장 선정 동의서",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "",
+      "is_active": true,
+      "created": "2025-10-25T14:04:51.473Z",
+      "updated": "2025-10-25T15:00:05.412Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 17,
+    "fields": {
+      "sort": "pledge",
+      "name": "행정정보 공동이용 사전 동의서",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "",
+      "is_active": true,
+      "created": "2025-10-25T14:05:16.644Z",
+      "updated": "2025-10-25T14:59:58.313Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 18,
+    "fields": {
+      "sort": "pledge",
+      "name": "자금집행 동의서",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "",
+      "is_active": true,
+      "created": "2025-10-25T14:08:24.696Z",
+      "updated": "2025-10-25T14:59:51.039Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 19,
+    "fields": {
+      "sort": "pledge",
+      "name": "위임장",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "",
+      "is_active": true,
+      "created": "2025-10-25T14:08:54.062Z",
+      "updated": "2025-10-25T14:59:43.270Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 20,
+    "fields": {
+      "sort": "pledge",
+      "name": "사용인감계",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "",
+      "is_active": true,
+      "created": "2025-10-25T14:09:41.616Z",
+      "updated": "2025-10-25T14:59:35.930Z",
+      "creator": null,
+      "updator": null
+    }
+  },
+  {
+    "model": "contract.documenttype",
+    "pk": 21,
+    "fields": {
+      "sort": "pledge",
+      "name": "막도장",
+      "default_quantity": 1,
+      "require_type": "required",
+      "is_default_item": true,
+      "description": "조합제출용",
+      "is_active": true,
+      "created": "2025-10-25T14:09:57.357Z",
+      "updated": "2025-10-25T14:59:26.223Z",
       "creator": null,
       "updator": null
     }
