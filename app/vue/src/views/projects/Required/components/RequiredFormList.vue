@@ -1,0 +1,37 @@
+<script lang="ts" setup>
+import { write_project } from '@/utils/pageAuth'
+import { TableSecondary } from '@/utils/cssMixins'
+import Required from './Required.vue'
+
+const emit = defineEmits(['on-update', 'on-delete'])
+</script>
+
+<template>
+  <CTable hover responsive>
+    <colgroup>
+      <col style="width: 25%" />
+      <col style="width: 25%" />
+      <col style="width: 35%" />
+      <col v-if="write_project" style="width: 15%" />
+    </colgroup>
+    <CTableHead :color="TableSecondary" class="text-center">
+      <CTableRow>
+        <CTableHeaderCell>차수</CTableHeaderCell>
+        <CTableHeaderCell>타입</CTableHeaderCell>
+        <CTableHeaderCell>회별 납부금액</CTableHeaderCell>
+        <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      <Required />
+    </CTableBody>
+
+    <CTableBody>
+      <CTableRow>
+        <CTableDataCell :colspan="write_project ? 4 : 3" class="text-center p-5 text-danger">
+          등록된 데이터가 없습니다.
+        </CTableDataCell>
+      </CTableRow>
+    </CTableBody>
+  </CTable>
+</template>

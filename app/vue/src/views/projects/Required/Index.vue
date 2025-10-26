@@ -7,6 +7,8 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
+import RequiredAddForm from '@/views/projects/Required/components/RequiredAddForm.vue'
+import RequiredFormList from '@/views/projects/Required/components/RequiredFormList.vue'
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -33,7 +35,10 @@ onBeforeMount(async () => {
     />
 
     <ContentBody>
-      <CCardBody class="pb-5"> ready! </CCardBody>
+      <CCardBody class="pb-5">
+        <RequiredAddForm />
+        <!--        <RequiredFormList />-->
+      </CCardBody>
     </ContentBody>
   </ProjectAuthGuard>
 </template>
