@@ -1,9 +1,14 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import { write_project } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
+import { useContract } from '@/store/pinia/contract.ts'
 import Required from './Required.vue'
 
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const contStore = useContract()
+const requiredDocsList = computed(() => contStore.requiredDocsList)
 </script>
 
 <template>
@@ -28,11 +33,17 @@ const emit = defineEmits(['on-update', 'on-delete'])
         <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
-    <CTableBody>
-      <Required />
+    <CTableBody v-if="requiredDocsList.length > 0">
+      <Required
+        v-for="doc in requiredDocsList"
+        :key="doc.pk"
+        :required-doc="doc"
+        @on-update="emit('on-update', $event)"
+        @on-delete="emit('on-delete', $event)"
+      />
     </CTableBody>
 
-    <CTableBody>
+    <CTableBody v-else>
       <CTableRow>
         <CTableDataCell :colspan="write_project ? 7 : 6" class="text-center p-5 text-danger">
           등록된 데이터가 없습니다.

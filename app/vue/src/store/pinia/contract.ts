@@ -95,6 +95,47 @@ export const useContract = defineStore('contract', () => {
       .then(res => (requiredDocsList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  const createRequiredDoc = async (payload: RequiredDocs) => {
+    return await api
+      .post(`/required-docs/`, payload)
+      .then(async res => {
+        await fetchRequiredDocsList(res.data.project)
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const updateRequiredDoc = async (pk: number, payload: Partial<RequiredDocs>) => {
+    return await api
+      .patch(`/required-docs/${pk}/`, payload)
+      .then(async res => {
+        await fetchRequiredDocsList(res.data.project)
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
+  const deleteRequiredDoc = async (pk: number, project: number) => {
+    return await api
+      .delete(`/required-docs/${pk}/`)
+      .then(async () => {
+        await fetchRequiredDocsList(project)
+        message('warning', '알림!', '구비 서류가 삭제되었습니다.')
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        throw err
+      })
+  }
+
   // state & getters
   const keyUnitList = ref<KeyUnit[]>([])
   const getKeyUnits = computed(() =>
@@ -783,6 +824,9 @@ export const useContract = defineStore('contract', () => {
 
     requiredDocsList,
     fetchRequiredDocsList,
+    createRequiredDoc,
+    updateRequiredDoc,
+    deleteRequiredDoc,
 
     keyUnitList,
     getKeyUnits,

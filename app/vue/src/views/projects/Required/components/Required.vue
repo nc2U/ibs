@@ -1,13 +1,20 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, inject, onBeforeMount } from 'vue'
+import { ref, reactive, computed, onBeforeMount } from 'vue'
 import { useAccount } from '@/store/pinia/account'
+import { useContract } from '@/store/pinia/contract.ts'
 import { write_project } from '@/utils/pageAuth'
+import type { RequiredDocs } from '@/store/types/contract.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const props = defineProps({ downPay: { type: Object, required: true }, disabled: Boolean })
+const props = defineProps({
+  requiredDoc: { type: Object as () => RequiredDocs, required: true },
+  disabled: Boolean
+})
 
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const contStore = useContract()
 
 const form = reactive({
   sort: 'proof' as 'proof' | 'pledge',
@@ -22,45 +29,52 @@ const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const formsCheck = computed(() => {
-  // const a = form.order_group === props.downPay.order_group
-  // const b = form.unit_type === props.downPay.unit_type
-  // const c = form.payment_amount === props.downPay.payment_amount
-  // return a && b && c
-  return false
+  const a = form.sort === props.requiredDoc.sort
+  const b = form.document_type === props.requiredDoc.document_type
+  const c = form.quantity === props.requiredDoc.quantity
+  const d = form.require_type === props.requiredDoc.require_type
+  const e = form.description === props.requiredDoc.description
+  const f = form.display_order === props.requiredDoc.display_order
+  return a && b && c && d && e && f
 })
 
-const formCheck = (bool: boolean) => {
-  if (bool) onUpdateDownPay()
-  return
-}
-const onUpdateDownPay = () => {
+const onUpdateRequiredDoc = async () => {
   if (write_project.value) {
-    // const pk = props.downPay.pk
-    // emit('on-update', { ...{ pk }, ...form })
+    try {
+      await contStore.updateRequiredDoc(props.requiredDoc.pk, form)
+    } catch (error) {
+      console.error('Failed to update required document:', error)
+    }
   } else {
     refAlertModal.value.callModal()
     dataSetup()
   }
 }
-const onDeleteDownPay = () => {
+
+const onDeleteRequiredDoc = () => {
   if (useAccount().superAuth) refConfirmModal.value.callModal()
   else {
     refAlertModal.value.callModal()
     dataSetup()
   }
 }
-const modalAction = () => {
-  // emit('on-delete', props.downPay.pk)
-  refConfirmModal.value.close()
+
+const modalAction = async () => {
+  try {
+    await contStore.deleteRequiredDoc(props.requiredDoc.pk, props.requiredDoc.project)
+    refConfirmModal.value.close()
+  } catch (error) {
+    console.error('Failed to delete required document:', error)
+  }
 }
 
 const dataSetup = () => {
-  form.sort = 'proof'
-  form.document_type = null
-  form.quantity = null
-  form.require_type = 'required'
-  form.description = ''
-  form.display_order = null
+  form.sort = props.requiredDoc.sort
+  form.document_type = props.requiredDoc.document_type
+  form.quantity = props.requiredDoc.quantity
+  form.require_type = props.requiredDoc.require_type
+  form.description = props.requiredDoc.description
+  form.display_order = props.requiredDoc.display_order
 }
 
 onBeforeMount(() => dataSetup())
@@ -116,10 +130,10 @@ onBeforeMount(() => dataSetup())
     </CTableDataCell>
 
     <CTableDataCell v-if="write_project" class="text-center pt-3">
-      <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateDownPay">
+      <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateRequiredDoc">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" @click="onDeleteDownPay">삭제</v-btn>
+      <v-btn color="warning" size="x-small" @click="onDeleteRequiredDoc">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

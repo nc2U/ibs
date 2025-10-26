@@ -1,11 +1,18 @@
 <script lang="ts" setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { write_project } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
+import { useProject } from '@/store/pinia/project.ts'
+import { useContract } from '@/store/pinia/contract.ts'
+import type { Project } from '@/store/types/project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ disabled: Boolean })
+
+const projStore = useProject()
+const contStore = useContract()
+const project = computed(() => (projStore.project as Project)?.pk)
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -30,11 +37,20 @@ const onSubmit = (event: Event) => {
   }
 }
 
-const modalAction = () => {
-  // emit('on-submit', form)
-  validated.value = false
-  refConfirmModal.value.close()
-  resetForm()
+const modalAction = async () => {
+  if (!project.value) return
+
+  try {
+    await contStore.createRequiredDoc({
+      ...form,
+      project: project.value,
+    } as any)
+    validated.value = false
+    refConfirmModal.value.close()
+    resetForm()
+  } catch (error) {
+    console.error('Failed to create required document:', error)
+  }
 }
 
 const resetForm = () => {

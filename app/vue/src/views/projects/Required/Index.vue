@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin6'
 import { useProject } from '@/store/pinia/project.ts'
+import { useContract } from '@/store/pinia/contract.ts'
 import type { Project } from '@/store/types/project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -11,11 +12,22 @@ import RequiredAddForm from '@/views/projects/Required/components/RequiredAddFor
 import RequiredFormList from '@/views/projects/Required/components/RequiredFormList.vue'
 
 const projStore = useProject()
+const contStore = useContract()
 const project = computed(() => (projStore.project as Project)?.pk)
 
-const dataSetup = (projId: number) => {}
+const dataSetup = async (projId: number) => {
+  if (!projId) return
+  loading.value = true
+  try {
+    await contStore.fetchRequiredDocsList(projId)
+  } finally {
+    loading.value = false
+  }
+}
 
-const projSelect = (target: number | null) => {}
+const projSelect = (target: number | null) => {
+  if (target) dataSetup(target)
+}
 
 const loading = ref(true)
 onBeforeMount(async () => {
