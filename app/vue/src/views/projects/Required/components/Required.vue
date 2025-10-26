@@ -9,7 +9,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   requiredDoc: { type: Object as () => RequiredDocs, required: true },
-  disabled: Boolean
+  disabled: Boolean,
 })
 
 const emit = defineEmits(['on-update', 'on-delete'])
@@ -115,7 +115,7 @@ onBeforeMount(() => dataSetup())
       <CFormInput
         v-model="form.description"
         maxlength="255"
-        placeholder="비고"
+        placeholder="설명"
         :disabled="disabled"
       />
     </CTableDataCell>
