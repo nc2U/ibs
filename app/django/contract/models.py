@@ -104,12 +104,12 @@ class RequiredDocument(models.Model):
     sort = models.CharField('서류구분', max_length=20, choices=DocumentType.DOCUMENT_SORT, default='proof')
     document_type = models.ForeignKey(DocumentType, on_delete=models.PROTECT,
                                       verbose_name='서류 유형', related_name='project_requirements')
-    quantity = models.PositiveIntegerField('필요 수량', default=1)
+    quantity = models.PositiveIntegerField('필요 수량', blank=True, default=1)
     require_type = models.CharField('필수 여부', max_length=20, choices=DocumentType.DOCUMENT_REQUIRE_TYPE,
                                     default='required')
     description = models.CharField('설명', max_length=255, blank=True, default='',
                                    help_text='프로젝트별 특이사항, 요구 조건 또는 추가 요구사항')
-    display_order = models.PositiveIntegerField('표시 순서', default=0, help_text='서류 목록 표시 시 정렬 순서')
+    display_order = models.PositiveIntegerField('표시 순서', blank=True, default=0, help_text='서류 목록 표시 시 정렬 순서')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
