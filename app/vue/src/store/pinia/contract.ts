@@ -88,6 +88,14 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
 
   // state & getters
+  const documentTypeList = ref<{ pk: number; name: string }[]>([])
+  const fetchDocumentTypeList = () =>
+    api
+      .get(`/document-type/`)
+      .then(res => (documentTypeList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  // state & getters
   const requiredDocsList = ref<RequiredDocs[]>([])
   const fetchRequiredDocsList = async (project: number) =>
     await api
@@ -786,12 +794,8 @@ export const useContract = defineStore('contract', () => {
   } | null>()
 
   // Computed getters for optimized summary calculations
-  const contSum = computed(() =>
-    contSummaryList.value.reduce((sum, c) => sum + c.conts_num, 0),
-  )
-  const subsSum = computed(() =>
-    subsSummaryList.value.reduce((sum, c) => sum + c.num_cont, 0),
-  )
+  const contSum = computed(() => contSummaryList.value.reduce((sum, c) => sum + c.conts_num, 0))
+  const subsSum = computed(() => subsSummaryList.value.reduce((sum, c) => sum + c.num_cont, 0))
 
   // actions
   const fetchSubsSummaryList = (project: number) =>
@@ -821,6 +825,9 @@ export const useContract = defineStore('contract', () => {
     createOrderGroup,
     updateOrderGroup,
     deleteOrderGroup,
+
+    documentTypeList,
+    fetchDocumentTypeList,
 
     requiredDocsList,
     fetchRequiredDocsList,
