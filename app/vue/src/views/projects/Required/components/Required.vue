@@ -15,6 +15,7 @@ const props = defineProps({
 const emit = defineEmits(['on-update', 'on-delete'])
 
 const contStore = useContract()
+const documentTypeList = computed(() => contStore.documentTypeList)
 
 const form = reactive({
   sort: 'proof' as 'proof' | 'pledge',
@@ -94,6 +95,9 @@ onBeforeMount(() => dataSetup())
     <CTableDataCell>
       <CFormSelect v-model="form.document_type" :disabled="disabled" required>
         <option value="">서류 유형</option>
+        <option v-for="tp in documentTypeList" :value="tp.pk" :key="tp.pk">
+          {{ tp.name }}
+        </option>
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>

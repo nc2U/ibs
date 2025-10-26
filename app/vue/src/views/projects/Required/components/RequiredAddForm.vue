@@ -11,8 +11,10 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 const props = defineProps({ disabled: Boolean })
 
 const projStore = useProject()
-const contStore = useContract()
 const project = computed(() => (projStore.project as Project)?.pk)
+
+const contStore = useContract()
+const documentTypeList = computed(() => contStore.documentTypeList)
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -78,6 +80,9 @@ const resetForm = () => {
           <CCol md="6" lg="4" xl="2" class="mb-2">
             <CFormSelect v-model="form.document_type" :disabled="disabled" required>
               <option value="">서류 유형</option>
+              <option v-for="tp in documentTypeList" :value="tp.pk" :key="tp.pk">
+                {{ tp.name }}
+              </option>
             </CFormSelect>
           </CCol>
 
