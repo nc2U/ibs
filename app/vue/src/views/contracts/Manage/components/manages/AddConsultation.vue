@@ -176,6 +176,7 @@ onMounted(() => {
     <!-- 페이지네이션 -->
     <CCol class="d-flex justify-content-center mt-0">
       <Pagination
+        v-show="filteredList.length"
         :active-page="1"
         :limit="8"
         :pages="consultationLogPages(10)"
