@@ -107,9 +107,7 @@ watch(
   newId => {
     if (newId) {
       loadData()
-    } else {
-      contStore.consultationLogList = []
-    }
+    } else contStore.consultationLogList = []
   },
   { immediate: true },
 )
