@@ -40,12 +40,18 @@ class DocumentTypeViewSet(viewsets.ModelViewSet):
         serializer.save(updator=self.request.user)
 
 
+class RequiredDocumentFilter(FilterSet):
+    class Meta:
+        model = RequiredDocument
+        fields = ('project', 'sort')
+
+
 class RequiredDocumentViewSet(viewsets.ModelViewSet):
     queryset = RequiredDocument.objects.all()
     serializer_class = RequiredDocumentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationFifty
-    filterset_fields = ('project', 'sort')
+    filterset_class = RequiredDocumentFilter
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
