@@ -5,6 +5,7 @@ import { cutString } from '@/utils/baseMixins.ts'
 import { downloadFile } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
+import { CCardBody } from '@coreui/vue'
 
 // Props
 const props = defineProps<{
@@ -256,7 +257,9 @@ onMounted(() => {
 
     <!-- 서류 목록이 없음 -->
     <div v-else-if="mergedDocuments.length === 0" class="text-center py-5 text-muted">
-      등록된 필요 서류가 없습니다.
+      등록된 필요 서류가 없습니다.<br />
+      <v-icon icon="mdi-arrow-right" size="18" class="me-1" />
+      <router-link :to="{ name: '구비 서류 등록' }">구비 서류 등록 바로가기</router-link>
     </div>
 
     <!-- 서류 목록 테이블 -->
@@ -291,7 +294,8 @@ onMounted(() => {
                 size="16"
                 class="me-1"
               />
-              {{ doc.document_name }}
+              {{ cutString(doc.document_name, 10) }}
+              <v-tooltip activator="parent">{{ doc.document_name }}</v-tooltip>
             </div>
           </CTableDataCell>
 
