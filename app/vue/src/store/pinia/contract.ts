@@ -395,7 +395,7 @@ export const useContract = defineStore('contract', () => {
   // actions - ContractDocument CRUD
   const fetchContractDocuments = (contractor: number, sort?: 'proof' | 'pledge') =>
     api
-      .get(`/contract-docs/?contractor=${contractor}&sort=${sort || ''}`)
+      .get(`/contract-docs/?contractor=${contractor}&sort=${sort || ''}&limit=1000`)
       .then(res => (contractDocumentList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -438,6 +438,18 @@ export const useContract = defineStore('contract', () => {
         errorHandle(err.response.data)
         throw err
       })
+  }
+
+  // 서버에 ContractDocument 존재 여부 확인
+  const checkContractDocumentExists = async (contractor: number, requiredDocument: number) => {
+    try {
+      const response = await api.get(`/contract-docs/?contractor=${contractor}&required_document=${requiredDocument}`)
+      const existingDocs = response.data.results
+      return existingDocs.length > 0 ? existingDocs[0] : null
+    } catch (err: any) {
+      errorHandle(err.response.data)
+      return null
+    }
   }
 
   // actions - ContractDocumentFile
@@ -879,6 +891,7 @@ export const useContract = defineStore('contract', () => {
     createContractDocument,
     updateContractDocument,
     deleteContractDocument,
+    checkContractDocumentExists,
     uploadDocumentFile,
     deleteDocumentFile,
 

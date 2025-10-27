@@ -5,7 +5,6 @@ import { cutString } from '@/utils/baseMixins.ts'
 import { downloadFile } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
-import { CCardBody } from '@coreui/vue'
 
 // Props
 const props = defineProps<{
@@ -114,12 +113,19 @@ const saveDocument = async (doc: MergedDocument) => {
       submitted_quantity: doc.submitted_quantity,
     }
 
-    if (doc.contract_doc_pk) {
-      // 업데이트
-      await contStore.updateContractDocument(doc.contract_doc_pk, payload)
+    // 서버에 실제 데이터가 있는지 확인
+    const existingDoc = await contStore.checkContractDocumentExists(contractorId.value, doc.pk)
+
+    if (existingDoc) {
+      // 서버에 데이터가 있으면 업데이트
+      await contStore.updateContractDocument(existingDoc.pk, payload)
+      // 클라이언트 상태도 동기화
+      doc.contract_doc_pk = existingDoc.pk
     } else {
-      // 신규 생성
-      await contStore.createContractDocument(payload as ContractDocument)
+      // 서버에 데이터가 없으면 신규 생성
+      const newDoc = await contStore.createContractDocument(payload as ContractDocument)
+      // 클라이언트 상태 업데이트
+      doc.contract_doc_pk = newDoc.pk
     }
   } catch (error) {
     console.error('서류 저장 실패:', error)
@@ -127,22 +133,16 @@ const saveDocument = async (doc: MergedDocument) => {
 }
 
 // 수량 변경 핸들러 (debounce 적용)
-let saveTimeout: ReturnType<typeof setTimeout> | null = null
-const onQuantityChange = (doc: MergedDocument, value: number) => {
+const onQuantityChange = (doc: MergedDocument, value: number) =>
   doc.submitted_quantity = value
-
-  if (saveTimeout) clearTimeout(saveTimeout)
-  saveTimeout = setTimeout(() => {
-    saveDocument(doc)
-  }, 500) // 500ms debounce
-}
 
 // 편집 모드 토글
 const startEdit = (docId: number) => {
   editingDocId.value = docId
 }
 
-const endEdit = () => {
+const endEdit = async (doc: MergedDocument) => {
+  await saveDocument(doc)
   editingDocId.value = null
 }
 
@@ -331,7 +331,7 @@ onMounted(() => {
               size="sm"
               style="width: 70px; margin: 0 auto"
               @input="onQuantityChange(doc, parseInt(($event.target as HTMLInputElement).value))"
-              @blur="endEdit"
+              @blur="endEdit(doc)"
               @keydown.enter="endEdit"
             />
           </CTableDataCell>
