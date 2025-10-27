@@ -133,8 +133,7 @@ const saveDocument = async (doc: MergedDocument) => {
 }
 
 // 수량 변경 핸들러 (debounce 적용)
-const onQuantityChange = (doc: MergedDocument, value: number) =>
-  doc.submitted_quantity = value
+const onQuantityChange = (doc: MergedDocument, value: number) => (doc.submitted_quantity = value)
 
 // 편집 모드 토글
 const startEdit = (docId: number) => {
@@ -320,7 +319,10 @@ onMounted(() => {
             :class="getRowClass(doc)"
             @dblclick="startEdit(doc.pk)"
           >
-            <span v-if="editingDocId !== doc.pk">
+            <span
+              v-if="editingDocId !== doc.pk"
+              :class="{ 'text-primary': doc.is_complete, strong: doc.is_complete }"
+            >
               {{ doc.submitted_quantity }}
             </span>
             <CFormInput
