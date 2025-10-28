@@ -18,7 +18,6 @@ import StatusByAccount from '@/views/proCash/Status/components/StatusByAccount.v
 import CashListByDate from '@/views/proCash/Status/components/CashListByDate.vue'
 import SummaryForBudget from '@/views/proCash/Status/components/SummaryForBudget.vue'
 import Calculated from '@/views/comCash/Status/components/Calculated.vue'
-import { CCardBody } from '@coreui/vue'
 
 const date = ref(getToday())
 const direct = ref('0')
@@ -93,6 +92,11 @@ const excelUrl = computed(() => {
     url = `/excel/p-budget/?project=${pj}&date=${dt}&revised=${revised.value}`
   return `${url}`
 })
+
+const cashFlowUrl = computed(
+  () =>
+    `/excel/cash-flow-form/?project=${project.value}&date=${date.value}&revised=${revised.value}`,
+)
 
 const comp: { [key: number]: string } = {
   1: 'StatusByAccount',
@@ -200,7 +204,7 @@ onBeforeMount(async () => {
               size="small"
               color="primary"
               variant="tonal"
-              :href="'#'"
+              :href="cashFlowUrl"
               flat
               width="130"
               :disabled="false"

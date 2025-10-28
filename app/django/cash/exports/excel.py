@@ -495,12 +495,12 @@ class ExportCashFlowForm(View):
         title_format.set_font_size(18)
         title_format.set_align('vcenter')
         title_format.set_bold()
-        worksheet.write(row_num, 0, str(project) + ' 캐시 플로우 현황', title_format)
+        worksheet.write(row_num, 0, str(project) + ' 월별 자금집행 현황', title_format)
 
         # 3. Header - 기준일자
         row_num = 1
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, len(months) + 4, date + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, len(months) + 6, date + ' 현재', workbook.add_format({'align': 'right'}))
 
         # 4. Column Headers
         row_num = 2
@@ -531,6 +531,14 @@ class ExportCashFlowForm(View):
             col = 5 + idx
             worksheet.set_column(col, col, 12)
             worksheet.write(row_num, col, f'{year}-{month:02d}', h_format)
+
+        # 합계 및 미집행 컬럼 (월별 컬럼 이후)
+        total_col = 5 + len(months)
+        remaining_col = total_col + 1
+        worksheet.set_column(total_col, total_col, 15)
+        worksheet.write(row_num, total_col, '집행금액 합계', h_format)
+        worksheet.set_column(remaining_col, remaining_col, 15)
+        worksheet.write(row_num, remaining_col, '미집행금액', h_format)
 
         # 5. Fetch budget items
         budgets = ProjectOutBudget.objects.filter(project=project).order_by('order', 'id')
@@ -616,6 +624,21 @@ class ExportCashFlowForm(View):
             for idx, amount in enumerate(monthly_amounts):
                 worksheet.write(row_num, 5 + idx, amount, b_format)
 
+            # 집행금액 합계 (수식: 누계 + 월별 합계)
+            total_col = 5 + len(months)
+            # E열(누계)부터 마지막 월별 컬럼까지 합계
+            first_col = 'E'
+            last_col = self.get_excel_column(total_col - 1)
+            worksheet.write_formula(row_num, total_col, f'=SUM({first_col}{row_num + 1}:{last_col}{row_num + 1})',
+                                    b_format)
+
+            # 미집행금액 (수식: 예산 - 집행금액 합계)
+            remaining_col = total_col + 1
+            budget_col = 'D'
+            total_col_letter = self.get_excel_column(total_col)
+            worksheet.write_formula(row_num, remaining_col,
+                                    f'={budget_col}{row_num + 1}-{total_col_letter}{row_num + 1}', b_format)
+
         # 8. Sum row
         row_num += 1
         sum_format = workbook.add_format()
@@ -633,6 +656,19 @@ class ExportCashFlowForm(View):
         for idx, total in enumerate(total_monthly):
             worksheet.write(row_num, 5 + idx, total, sum_format)
 
+        # 합계 행의 집행금액 합계 및 미집행금액
+        total_col = 5 + len(months)
+        remaining_col = total_col + 1
+        first_col = 'E'
+        last_col = self.get_excel_column(total_col - 1)
+        worksheet.write_formula(row_num, total_col, f'=SUM({first_col}{row_num + 1}:{last_col}{row_num + 1})',
+                                sum_format)
+
+        budget_col = 'D'
+        total_col_letter = self.get_excel_column(total_col)
+        worksheet.write_formula(row_num, remaining_col, f'={budget_col}{row_num + 1}-{total_col_letter}{row_num + 1}',
+                                sum_format)
+
         # data end ----------------------------------------------- #
 
         # Close the workbook before sending the data.
@@ -642,12 +678,21 @@ class ExportCashFlowForm(View):
         output.seek(0)
 
         # Set up the Http response.
-        filename = f'{project.pk}-cash-flow-form.xlsx'
+        filename = f'{str(project)}-cash-flow-form.xlsx'
         file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response = HttpResponse(output, content_type=file_format)
         response['Content-Disposition'] = f'attachment; filename={filename}'
 
         return response
+
+    @staticmethod
+    def get_excel_column(col_num):
+        """Convert zero-indexed column number to Excel column letter (0 -> A, 25 -> Z, 26 -> AA, etc.)"""
+        result = ""
+        while col_num >= 0:
+            result = chr(col_num % 26 + 65) + result
+            col_num = col_num // 26 - 1
+        return result
 
     @staticmethod
     def get_sub_title(project, sub, d2):
