@@ -478,22 +478,18 @@ class ExportCashFlowForm(View):
         is_revised = int(revised) if revised in ('0', '1') else 0
 
         # 프로젝트 일정 가져오기 (필수 필드)
-        approval_date = project.business_plan_approval_date
+        monthly_aggr_start = project.monthly_aggr_start_date
         construction_start = project.construction_start_date
         construction_months = project.construction_period_months
         buffer_months = 5  # 상수
 
         # 1. 동적 기간 계산
-        # 누계 종료일: 사업계획승인일
-        cumulative_end_date = approval_date
+        # 누계 종료일: 월별집계시작일 이전월 마지막 날
+        # 월별집계시작일이 2024-02-01이면 누계는 2024-01-31까지
+        cumulative_end_date = monthly_aggr_start - relativedelta(days=1)
 
-        # 월별 시작: 사업계획승인일 다음 달 1일
-        monthly_start_date = approval_date + relativedelta(days=1)
-        # 다음 달 1일로 조정
-        if monthly_start_date.day != 1:
-            monthly_start_date = monthly_start_date.replace(day=1)
-            if monthly_start_date <= approval_date:
-                monthly_start_date = monthly_start_date + relativedelta(months=1)
+        # 월별 시작: 월별집계시작일부터
+        monthly_start_date = monthly_aggr_start
 
         monthly_start_year = monthly_start_date.year
         monthly_start_month = monthly_start_date.month
@@ -549,7 +545,7 @@ class ExportCashFlowForm(View):
 
         # 누계 컬럼 (동적 헤더)
         worksheet.set_column(4, 4, 15)
-        cumulative_label = f"{approval_date.strftime('%Y-%m')} 이전 누계"
+        cumulative_label = f"{cumulative_end_date.strftime('%Y-%m-%d')} 이전 누계"
         worksheet.write(row_num, 4, cumulative_label, h_format)
 
         # 월별 컬럼 헤더
@@ -570,7 +566,7 @@ class ExportCashFlowForm(View):
         budgets = ProjectOutBudget.objects.filter(project=project).order_by('order', 'id')
 
         # 6. Pre-fetch all transactions for optimization
-        # 사업계획승인일 이전 누계 (동적)
+        # 월별집계시작일 이전 누계 (동적)
         cumulative_data = ProjectCashBook.objects.filter(
             project=project,
             is_separate=False,
@@ -579,12 +575,12 @@ class ExportCashFlowForm(View):
 
         cumulative_dict = {item['project_account_d3_id']: item['total'] or 0 for item in cumulative_data}
 
-        # 월별 데이터 (승인일 이후 ~ 종료일) (동적)
+        # 월별 데이터 (월별집계시작일 ~ 종료일) (동적)
         monthly_end_date_obj = datetime.date(monthly_end_year, monthly_end_month, 28)
         monthly_transactions = ProjectCashBook.objects.filter(
             project=project,
             is_separate=False,
-            deal_date__gt=cumulative_end_date,
+            deal_date__gte=monthly_start_date,
             deal_date__lte=monthly_end_date_obj
         ).annotate(
             year=F('deal_date__year'),
@@ -615,7 +611,7 @@ class ExportCashFlowForm(View):
             calc_budget = budget.revised_budget or budget.budget if is_revised else budget.budget
             total_budget += calc_budget if calc_budget else 0
 
-            # 누계 (2024-01-31 이전)
+            # 누계 (월별집계시작일 이전)
             cumulative_amount = cumulative_dict.get(budget.account_d3_id, 0)
             total_cumulative += cumulative_amount
 
