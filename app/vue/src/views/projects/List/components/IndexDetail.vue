@@ -60,12 +60,9 @@ const toUpdate = () => {
             </CTableRow>
 
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary">
-                현장주소(대표지번)
-              </CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary"> 대지위치 </CTableHeaderCell>
               <CTableDataCell colspan="3">
-                {{ project.local_address1 }} {{ project.local_address2 }}
-                {{ project.local_address3 }}
+                {{ project.location }}
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
