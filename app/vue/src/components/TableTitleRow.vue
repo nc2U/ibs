@@ -13,7 +13,7 @@ defineProps({
 </script>
 
 <template>
-  <v-row class="justify-end my-1">
+  <v-row class="justify-end my-1 pr-2">
     <v-col class="my-0 py-1">
       <v-icon
         v-if="title"
@@ -31,5 +31,7 @@ defineProps({
 
     <ExcelExport v-if="excel" :url="url" :disabled="disabled" />
     <PdfExport v-if="pdf" :url="url" :disabled="disabled" />
+
+    <slot name="tail" />
   </v-row>
 </template>

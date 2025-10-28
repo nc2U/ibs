@@ -179,44 +179,60 @@ onBeforeMount(async () => {
 
 <template>
   <ProCashAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <DateChoicer @set-date="setDate" />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <DateChoicer @set-date="setDate" />
+        <TabSelect @tab-select="showTab" />
 
-      <TabSelect @tab-select="showTab" />
+        <TableTitleRow excel :url="excelUrl" :disabled="!project">
+          <template #tail>
+            <v-btn
+              v-if="compName === 'SummaryForBudget'"
+              size="small"
+              :href="'#'"
+              flat
+              width="120"
+              :disabled="true"
+              class="mt-1 mx-1"
+              style="text-decoration: none"
+            >
+              <v-icon icon="mdi-microsoft-excel" color="green" class="mr-2" />
+              캐시플로우
+              <v-icon icon="mdi-download" color="grey" class="ml-2" />
+            </v-btn>
+          </template>
+        </TableTitleRow>
 
-      <TableTitleRow excel :url="excelUrl" :disabled="!project" />
+        <StatusByAccount
+          v-if="compName === 'StatusByAccount'"
+          :date="date"
+          :is-balance="isBalance"
+          @is-exist-balance="isExistBalance"
+          @direct-balance="directBalance"
+        />
+        <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />
 
-      <StatusByAccount
-        v-if="compName === 'StatusByAccount'"
-        :date="date"
-        :is-balance="isBalance"
-        @is-exist-balance="isExistBalance"
-        @direct-balance="directBalance"
-      />
-      <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />
+        <SummaryForBudget
+          v-if="compName === 'SummaryForBudget'"
+          :date="date"
+          @patch-budget="patchBudget"
+          @update-revised="updateRevised"
+        />
 
-      <SummaryForBudget
-        v-if="compName === 'SummaryForBudget'"
-        :date="date"
-        @patch-budget="patchBudget"
-        @update-revised="updateRevised"
-      />
-
-      <Calculated
-        :calc-date="proCalculated?.calculated"
-        :is-calculated="isCalculated"
-        @to-calculate="checkBalance"
-      />
-    </CCardBody>
-  </ContentBody>
+        <Calculated
+          :calc-date="proCalculated?.calculated"
+          :is-calculated="isCalculated"
+          @to-calculate="checkBalance"
+        />
+      </CCardBody>
+    </ContentBody>
   </ProCashAuthGuard>
 </template>
