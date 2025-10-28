@@ -45,7 +45,7 @@ const form = reactive<Project>({
   is_returned_area: false,
   is_unit_set: false,
   // 사업 일정 필드 (필수)
-  business_plan_approval_date: '',
+  monthly_aggr_start_date: '',
   construction_start_date: '',
   construction_period_months: null,
   local_zipcode: '',
@@ -94,7 +94,7 @@ const formsCheck = computed(() => {
     const f = form.is_direct_manage === props.project.is_direct_manage
     const g = form.is_returned_area === props.project.is_returned_area
     const h = form.is_unit_set === props.project.is_unit_set
-    const i = form.business_plan_approval_date === props.project.business_plan_approval_date
+    const i = form.monthly_aggr_start_date === props.project.monthly_aggr_start_date
     const j = form.construction_start_date === props.project.construction_start_date
     const k = form.construction_period_months === props.project.construction_period_months
     const l = form.local_zipcode === props.project.local_zipcode
@@ -183,7 +183,7 @@ const formDataSetup = () => {
     form.is_returned_area = props.project.is_returned_area
     form.is_unit_set = props.project.is_unit_set
     // 사업 일정 필드
-    form.business_plan_approval_date = props.project.business_plan_approval_date
+    form.monthly_aggr_start_date = props.project.monthly_aggr_start_date
     form.construction_start_date = props.project.construction_start_date
     form.construction_period_months = props.project.construction_period_months
     form.local_zipcode = props.project.local_zipcode
@@ -362,7 +362,7 @@ onUpdated(() => formDataSetup())
             <CFormLabel class="col-md-2 col-form-label required">월별집계시작일</CFormLabel>
             <CCol md="10" lg="4" class="mb-md-3">
               <DatePicker
-                v-model="form.business_plan_approval_date"
+                v-model="form.monthly_aggr_start_date"
                 placeholder="월별집계시작일"
                 required
               />

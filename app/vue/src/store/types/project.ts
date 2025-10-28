@@ -10,7 +10,7 @@ export interface Project {
   is_direct_manage: boolean
   is_returned_area: boolean
   is_unit_set: boolean
-  business_plan_approval_date: string
+  monthly_aggr_start_date: string
   construction_start_date: string
   construction_period_months: number | null
   local_zipcode: string

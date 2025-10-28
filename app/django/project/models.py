@@ -20,7 +20,7 @@ class Project(models.Model):
     is_returned_area = models.BooleanField('토지환지여부', default=False, help_text='해당 사업부지가 환지방식 도시개발사업구역인 경우 체크')
     is_unit_set = models.BooleanField('동호지정여부', default=False, help_text='현재 동호수를 지정하지 않는 경우 체크하지 않음')
     # 사업 일정 필드 (캐시 플로우 동적 생성용) - 필수 입력
-    business_plan_approval_date = models.DateField('사업계획승인일(예상)', help_text='사업계획승인 예정일 또는 실제 승인일. 이 날짜 이전은 누계로 집계됩니다.')
+    monthly_aggr_start_date = models.DateField('월별집계시작일', help_text='이 날짜 이전은 누계로 집계됩니다.')
     construction_start_date = models.DateField('착공월(예상)', help_text='착공 예정일 또는 실제 착공일. 이 날짜부터 공사기간을 계산합니다.')
     construction_period_months = models.PositiveSmallIntegerField('공사기간(개월)',
                                                                   help_text='예상 공사기간 (개월 단위). 착공월부터 이 기간 + 5개월까지 월별 집계됩니다.')

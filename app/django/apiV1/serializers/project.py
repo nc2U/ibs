@@ -34,7 +34,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ('pk', 'company', 'issue_project', 'name', 'order', 'kind', 'kind_desc',
                   'start_year', 'is_direct_manage', 'is_returned_area', 'is_unit_set',
-                  'business_plan_approval_date', 'construction_start_date', 'construction_period_months',
+                  'monthly_aggr_start_date', 'construction_start_date', 'construction_period_months',
                   'local_zipcode', 'local_address1', 'local_address2', 'local_address3', 'area_usage',
                   'build_size', 'num_unit', 'buy_land_extent', 'scheme_land_extent', 'donation_land_extent',
                   'on_floor_area', 'under_floor_area', 'total_floor_area', 'build_area', 'floor_area_ratio',
