@@ -346,7 +346,7 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid>월별집계시작일을 입력하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">착공일</CFormLabel>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">착공(예상)일</CFormLabel>
             <CCol md="10" lg="2" class="mb-md-3">
               <DatePicker
                 v-model="form.construction_start_date"
