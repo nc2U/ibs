@@ -48,10 +48,7 @@ const form = reactive<Project>({
   monthly_aggr_start_date: '',
   construction_start_date: '',
   construction_period_months: null,
-  local_zipcode: '',
-  local_address1: '',
-  local_address2: '',
-  local_address3: '',
+  location: '',
   area_usage: '',
   build_size: '',
   num_unit: null,
@@ -97,31 +94,27 @@ const formsCheck = computed(() => {
     const i = form.monthly_aggr_start_date === props.project.monthly_aggr_start_date
     const j = form.construction_start_date === props.project.construction_start_date
     const k = form.construction_period_months === props.project.construction_period_months
-    const l = form.local_zipcode === props.project.local_zipcode
-    const m = form.local_address1 === props.project.local_address1
-    const n = form.local_address2 === props.project.local_address2
-    const o = form.local_address3 === props.project.local_address3
-    const p = form.area_usage === props.project.area_usage
-    const q = form.build_size === props.project.build_size
-    const r = form.num_unit === props.project.num_unit
-    const s = form.buy_land_extent === props.project.buy_land_extent
-    const t = form.scheme_land_extent === props.project.scheme_land_extent
-    const u = form.donation_land_extent === props.project.donation_land_extent
-    const v = form.on_floor_area === props.project.on_floor_area
-    const w = form.under_floor_area === props.project.under_floor_area
-    const x = form.total_floor_area === props.project.total_floor_area
-    const y = form.build_area === props.project.build_area
-    const z = form.floor_area_ratio === props.project.floor_area_ratio
-    const aa = form.build_to_land_ratio === props.project.build_to_land_ratio
-    const bb = form.num_legal_parking === props.project.num_legal_parking
-    const cc = form.num_planed_parking === props.project.num_planed_parking
+    const l = form.location === props.project.location
+    const m = form.area_usage === props.project.area_usage
+    const n = form.build_size === props.project.build_size
+    const o = form.num_unit === props.project.num_unit
+    const p = form.buy_land_extent === props.project.buy_land_extent
+    const q = form.scheme_land_extent === props.project.scheme_land_extent
+    const r = form.donation_land_extent === props.project.donation_land_extent
+    const s = form.on_floor_area === props.project.on_floor_area
+    const t = form.under_floor_area === props.project.under_floor_area
+    const u = form.total_floor_area === props.project.total_floor_area
+    const v = form.build_area === props.project.build_area
+    const w = form.floor_area_ratio === props.project.floor_area_ratio
+    const x = form.build_to_land_ratio === props.project.build_to_land_ratio
+    const y = form.num_legal_parking === props.project.num_legal_parking
+    const z = form.num_planed_parking === props.project.num_planed_parking
 
     const group1 = a && b && c && d && e && f && g && h && i
     const group2 = j && k && l && m && n && o && p && q && r
     const group3 = s && t && u && v && w && x && y && z
-    const group4 = aa && bb && cc
 
-    return group1 && group2 && group3 && group4
+    return group1 && group2 && group3
   } else return false
 })
 
@@ -159,18 +152,6 @@ const deleteProject = () => {
   else refAlertModal.value.callModal()
 }
 
-const addressCallback = (data: AddressData) => {
-  const { formNum, zipcode, address1, address3 } = callAddress(data)
-  if (formNum === 1) {
-    // 입력할 데이터와 focus 폼 지정
-    form.local_zipcode = zipcode
-    form.local_address1 = address1
-    form.local_address2 = ''
-    form.local_address3 = address3
-    address2.value.$el.nextElementSibling.focus()
-  }
-}
-
 const formDataSetup = () => {
   if (props.project) {
     form.pk = props.project.pk
@@ -186,10 +167,7 @@ const formDataSetup = () => {
     form.monthly_aggr_start_date = props.project.monthly_aggr_start_date
     form.construction_start_date = props.project.construction_start_date
     form.construction_period_months = props.project.construction_period_months
-    form.local_zipcode = props.project.local_zipcode
-    form.local_address1 = props.project.local_address1
-    form.local_address2 = props.project.local_address2
-    form.local_address3 = props.project.local_address3
+    form.location = props.project.location
     form.area_usage = props.project.area_usage
     form.build_size = props.project.build_size
     form.num_unit = props.project.num_unit
@@ -215,10 +193,10 @@ onUpdated(() => formDataSetup())
   <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
     <CCardBody>
       <CRow>
-        <CCol xl="11" class="pt-3">
+        <CCol xl="12" class="pt-3">
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label required">업무 프로젝트</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">업무 프로젝트</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <MultiSelect
                 v-model="form.issue_project"
                 mode="single"
@@ -228,7 +206,7 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid>업무 프로젝트를 선택하세요.</CFormFeedback>
             </CCol>
-            <CCol style="padding-top: 7px">
+            <CCol md="2" style="padding-top: 7px">
               <div style="width: 20px">
                 <v-icon
                   icon="mdi-plus-circle"
@@ -241,8 +219,8 @@ onUpdated(() => formDataSetup())
             </CCol>
           </CRow>
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label required"> 프로젝트명</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required"> 프로젝트명</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model="form.name"
                 type="text"
@@ -253,8 +231,8 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid>프로젝트명을 입력하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label"> 정렬순서</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 정렬순서</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.order"
                 type="number"
@@ -263,11 +241,9 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid>정렬순서를 입력하세요.</CFormFeedback>
             </CCol>
-          </CRow>
 
-          <CRow>
-            <CFormLabel class="col-md-2 col-form-label required"> 프로젝트종류</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required"> 프로젝트종류</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormSelect v-model="form.kind" required>
                 <option value="">프로젝트 종류</option>
                 <option
@@ -282,8 +258,8 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid>프로젝트종류를 선택하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label required"> 사업개시년도</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required"> 사업개시년도</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <Datepicker
                 v-model.number="form.start_year"
                 placeholder="사업개시년도를 입력하세요"
@@ -298,10 +274,8 @@ onUpdated(() => formDataSetup())
             </CCol>
           </CRow>
 
-          <v-divider />
-
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"></CFormLabel>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"></CFormLabel>
             <CCol class="mb-md-3">
               <CFormSwitch
                 id="is_direct_manage"
@@ -316,7 +290,7 @@ onUpdated(() => formDataSetup())
           </CRow>
 
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"></CFormLabel>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"></CFormLabel>
             <CCol class="mb-md-3">
               <CFormSwitch
                 id="is_returned_area"
@@ -331,7 +305,7 @@ onUpdated(() => formDataSetup())
           </CRow>
 
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"></CFormLabel>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"></CFormLabel>
             <CCol class="mb-md-3">
               <CFormSwitch
                 id="is_unit_set"
@@ -359,8 +333,10 @@ onUpdated(() => formDataSetup())
           </CRow>
 
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label required">월별집계시작일</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required"
+              >월별집계시작일</CFormLabel
+            >
+            <CCol md="10" lg="2" class="mb-md-3">
               <DatePicker
                 v-model="form.monthly_aggr_start_date"
                 placeholder="월별집계시작일"
@@ -370,8 +346,8 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid>월별집계시작일을 입력하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label required">착공일</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">착공일</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <DatePicker
                 v-model="form.construction_start_date"
                 placeholder="착공일(예상)"
@@ -380,11 +356,9 @@ onUpdated(() => formDataSetup())
               <CFormText class="text-grey">이 날짜 포함월부터 공사기간을 계산합니다</CFormText>
               <CFormFeedback invalid>착공일을 입력하세요.</CFormFeedback>
             </CCol>
-          </CRow>
 
-          <CRow>
-            <CFormLabel class="col-md-2 col-form-label required">공사기간</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">공사기간</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.construction_period_months"
                 type="number"
@@ -400,58 +374,13 @@ onUpdated(() => formDataSetup())
           <v-divider />
 
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 우편번호</CFormLabel>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label">대지위치</CFormLabel>
             <CCol md="3" lg="2" class="mb-3">
-              <CInputGroup>
-                <CInputGroupText @click="refPostCode.initiate()"> 우편번호</CInputGroupText>
-                <CFormInput
-                  v-model="form.local_zipcode"
-                  type="text"
-                  maxlength="5"
-                  placeholder="우편번호"
-                  @focus="refPostCode.initiate()"
-                />
-                <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
-              </CInputGroup>
+              <CFormInput v-model="form.location" maxlength="255" placeholder="대지위치" />
+              <CFormFeedback invalid>대지위치를 입력하세요.</CFormFeedback>
             </CCol>
-
-            <CCol md="7" lg="4" class="mb-3">
-              <CFormInput
-                v-model="form.local_address1"
-                type="text"
-                maxlength="35"
-                placeholder="대표지번 주소를 입력하세요"
-                @focus="refPostCode.initiate()"
-              />
-              <CFormFeedback invalid>대표지번 주소를 입력하세요.</CFormFeedback>
-            </CCol>
-
-            <CCol md="2" class="d-none d-md-block d-lg-none"></CCol>
-
-            <CCol md="5" lg="2" class="mb-3">
-              <CFormInput
-                ref="address2"
-                v-model="form.local_address2"
-                type="text"
-                maxlength="50"
-                placeholder="상세주소를 입력하세요"
-              />
-              <CFormFeedback invalid>상세주소를 입력하세요.</CFormFeedback>
-            </CCol>
-            <CCol md="5" lg="2" class="mb-md-3">
-              <CFormInput
-                v-model="form.local_address3"
-                type="text"
-                maxlength="30"
-                placeholder="참고항목을 입력하세요"
-              />
-              <CFormFeedback invalid>참고항목을 입력하세요.</CFormFeedback>
-            </CCol>
-          </CRow>
-
-          <CRow>
-            <CFormLabel class="col-md-2 col-form-label required"> 용도지역지구</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required"> 용도지역지구</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model="form.area_usage"
                 type="text"
@@ -462,8 +391,8 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid>용도지역지구를 입력하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label required"> 건축규모</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required"> 건축규모</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model="form.build_size"
                 type="text"
@@ -473,11 +402,8 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid>건축규모를 입력하세요.</CFormFeedback>
             </CCol>
-          </CRow>
-
-          <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 세대(호/실)수</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 세대(호/실)수</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.num_unit"
                 type="number"
@@ -486,8 +412,11 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid>세대(호/실)수를 입력하세요.</CFormFeedback>
             </CCol>
-            <CFormLabel class="col-md-2 col-form-label"> 대지매입면적</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+          </CRow>
+
+          <CRow>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 대지매입면적</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.buy_land_extent"
                 type="number"
@@ -497,11 +426,8 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid> 대지매입면적을 소소점4자리 이하로 입력하세요.</CFormFeedback>
             </CCol>
-          </CRow>
-
-          <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 계획대지면적</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 계획대지면적</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.scheme_land_extent"
                 type="number"
@@ -512,8 +438,8 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid> 계획대지면적을 소소점4자리 이하로 입력하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label"> 기부채납면적</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 기부채납면적</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.donation_land_extent"
                 type="number"
@@ -526,8 +452,8 @@ onUpdated(() => formDataSetup())
           </CRow>
 
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 지상연면적</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 지상연면적</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.on_floor_area"
                 type="number"
@@ -537,9 +463,8 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid> 지상연면적을 소소점4자리 이하로 입력하세요.</CFormFeedback>
             </CCol>
-
-            <CFormLabel class="col-md-2 col-form-label"> 지하연면적</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 지하연면적</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.under_floor_area"
                 type="number"
@@ -549,11 +474,8 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid> 지하연면적을 소소점4자리 이하로 입력하세요.</CFormFeedback>
             </CCol>
-          </CRow>
-
-          <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 총 연면적</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 총 연면적</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.total_floor_area"
                 type="number"
@@ -564,8 +486,8 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid> 총 연면적을 소소점4자리 이하로 입력하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label"> 건축면적</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 건축면적</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.build_area"
                 type="number"
@@ -578,8 +500,8 @@ onUpdated(() => formDataSetup())
           </CRow>
 
           <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 용적율(%)</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 용적율(%)</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.floor_area_ratio"
                 type="number"
@@ -589,8 +511,8 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid> 용적율(%)을 소소점4자리 이하로 입력하세요.</CFormFeedback>
             </CCol>
-            <CFormLabel class="col-md-2 col-form-label"> 건폐율(%)</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 건폐율(%)</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.build_to_land_ratio"
                 type="number"
@@ -600,11 +522,8 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid> 건폐율(%)을 소소점4자리 이하로 입력하세요.</CFormFeedback>
             </CCol>
-          </CRow>
-
-          <CRow>
-            <CFormLabel class="col-md-2 col-form-label"> 법정주차대수</CFormLabel>
-            <CCol md="10" lg="4" class="mb-md-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 법정주차대수</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model.number="form.num_legal_parking"
                 type="number"
@@ -614,8 +533,8 @@ onUpdated(() => formDataSetup())
               <CFormFeedback invalid>법정주차대수를 입력하세요.</CFormFeedback>
             </CCol>
 
-            <CFormLabel class="col-md-2 col-form-label"> 계획주차대수</CFormLabel>
-            <CCol md="10" lg="4" class="mb-3">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 계획주차대수</CFormLabel>
+            <CCol md="10" lg="2" class="mb-3">
               <CFormInput
                 v-model.number="form.num_planed_parking"
                 type="number"
@@ -638,8 +557,6 @@ onUpdated(() => formDataSetup())
       </v-btn>
     </CCardFooter>
   </CForm>
-
-  <DaumPostcode ref="refPostCode" @address-callback="addressCallback" />
 
   <ConfirmModal ref="refDelModal">
     <template #header> 프로젝트정보 삭제</template>

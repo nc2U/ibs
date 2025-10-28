@@ -13,10 +13,7 @@ export interface Project {
   monthly_aggr_start_date: string
   construction_start_date: string
   construction_period_months: number | null
-  local_zipcode: string
-  local_address1: string
-  local_address2: string
-  local_address3: string
+  location: string
   area_usage: string
   build_size: string
   num_unit: number | null

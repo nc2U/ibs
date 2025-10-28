@@ -30,8 +30,8 @@ class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
             'fields': ('local_zipcode', 'local_address1', 'local_address2', 'local_address3'),
             'classes': ('collapse',)
         }),
-        ('사업 규모', {
-            'fields': ('area_usage', 'build_size', 'num_unit',
+        ('사업 개요', {
+            'fields': ('location', 'area_usage', 'build_size', 'num_unit',
                        'buy_land_extent', 'scheme_land_extent', 'donation_land_extent',
                        'on_floor_area', 'under_floor_area', 'total_floor_area', 'build_area',
                        'floor_area_ratio', 'build_to_land_ratio',

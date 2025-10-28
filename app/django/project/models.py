@@ -24,10 +24,7 @@ class Project(models.Model):
     construction_start_date = models.DateField('착공월(예상)', help_text='착공 예정일 또는 실제 착공일. 이 날짜부터 공사기간을 계산합니다.')
     construction_period_months = models.PositiveSmallIntegerField('공사기간(개월)',
                                                                   help_text='예상 공사기간 (개월 단위). 착공월부터 이 기간 + 5개월까지 월별 집계됩니다.')
-    local_zipcode = models.CharField('우편번호', max_length=5, blank=True, default='', null=True)
-    local_address1 = models.CharField('대표부지 주소', max_length=35, blank=True, default='', null=True)
-    local_address2 = models.CharField('상세주소', max_length=50, blank=True, default='', null=True)
-    local_address3 = models.CharField('참고항목', max_length=30, blank=True, default='', null=True)
+    location = models.CharField('대지위치', max_length=255, blank=True, default='')
     area_usage = models.CharField('용도지역지구', max_length=50, blank=True, default='', null=True)
     build_size = models.CharField('건축규모', max_length=50, blank=True, default='', null=True)
     num_unit = models.PositiveSmallIntegerField('세대(호/실)수', null=True, blank=True)
