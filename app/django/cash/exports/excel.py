@@ -8,6 +8,7 @@ import io
 
 import xlsxwriter
 import xlwt
+from dateutil.relativedelta import relativedelta
 from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 from django.views.generic import View
@@ -476,12 +477,36 @@ class ExportCashFlowForm(View):
         revised = request.GET.get('revised')
         is_revised = int(revised) if revised in ('0', '1') else 0
 
-        # 1. Generate month list (2024-02 ~ 2027-09)
-        months = []
-        current_year, current_month = 2024, 2
-        end_year, end_month = 2027, 9
+        # 프로젝트 일정 가져오기 (필수 필드)
+        approval_date = project.business_plan_approval_date
+        construction_start = project.construction_start_date
+        construction_months = project.construction_period_months
+        buffer_months = 5  # 상수
 
-        while (current_year, current_month) <= (end_year, end_month):
+        # 1. 동적 기간 계산
+        # 누계 종료일: 사업계획승인일
+        cumulative_end_date = approval_date
+
+        # 월별 시작: 사업계획승인일 다음 달 1일
+        monthly_start_date = approval_date + relativedelta(days=1)
+        # 다음 달 1일로 조정
+        if monthly_start_date.day != 1:
+            monthly_start_date = monthly_start_date.replace(day=1)
+            if monthly_start_date <= approval_date:
+                monthly_start_date = monthly_start_date + relativedelta(months=1)
+
+        monthly_start_year = monthly_start_date.year
+        monthly_start_month = monthly_start_date.month
+
+        # 월별 종료: 착공월 + 공사기간 + 여유기간(5개월)
+        end_date = construction_start + relativedelta(months=construction_months + buffer_months)
+        monthly_end_year = end_date.year
+        monthly_end_month = end_date.month
+
+        # 월 목록 생성
+        months = []
+        current_year, current_month = monthly_start_year, monthly_start_month
+        while (current_year, current_month) <= (monthly_end_year, monthly_end_month):
             months.append((current_year, current_month))
             current_month += 1
             if current_month > 12:
@@ -522,9 +547,10 @@ class ExportCashFlowForm(View):
         budget_str = '현황 예산' if is_revised else '기초 예산'
         worksheet.write(row_num, 3, budget_str, h_format)
 
-        # 누계 컬럼
+        # 누계 컬럼 (동적 헤더)
         worksheet.set_column(4, 4, 15)
-        worksheet.write(row_num, 4, '2024-01 이전 누계', h_format)
+        cumulative_label = f"{approval_date.strftime('%Y-%m')} 이전 누계"
+        worksheet.write(row_num, 4, cumulative_label, h_format)
 
         # 월별 컬럼 헤더
         for idx, (year, month) in enumerate(months):
@@ -544,21 +570,22 @@ class ExportCashFlowForm(View):
         budgets = ProjectOutBudget.objects.filter(project=project).order_by('order', 'id')
 
         # 6. Pre-fetch all transactions for optimization
-        # 2024-01-31 이전 누계
+        # 사업계획승인일 이전 누계 (동적)
         cumulative_data = ProjectCashBook.objects.filter(
             project=project,
             is_separate=False,
-            deal_date__lt='2024-02-01'
+            deal_date__lte=cumulative_end_date
         ).values('project_account_d3_id').annotate(total=Sum('outlay'))
 
         cumulative_dict = {item['project_account_d3_id']: item['total'] or 0 for item in cumulative_data}
 
-        # 월별 데이터 (2024-02 ~ 2027-09)
+        # 월별 데이터 (승인일 이후 ~ 종료일) (동적)
+        monthly_end_date_obj = datetime.date(monthly_end_year, monthly_end_month, 28)
         monthly_transactions = ProjectCashBook.objects.filter(
             project=project,
             is_separate=False,
-            deal_date__gte='2024-02-01',
-            deal_date__lte='2027-09-30'
+            deal_date__gt=cumulative_end_date,
+            deal_date__lte=monthly_end_date_obj
         ).annotate(
             year=F('deal_date__year'),
             month=F('deal_date__month')

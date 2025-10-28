@@ -46,23 +46,20 @@ class Project(models.Model):
     num_legal_parking = models.PositiveSmallIntegerField('법정주차대수', null=True, blank=True)
     num_planed_parking = models.PositiveSmallIntegerField('계획주차대수', null=True, blank=True)
 
-    # 사업 일정 필드 (캐시 플로우 동적 생성용)
+    # 사업 일정 필드 (캐시 플로우 동적 생성용) - 필수 입력
     business_plan_approval_date = models.DateField(
         '사업계획승인일(예상)',
-        null=True,
-        blank=True,
+        default='2024-01-31',
         help_text='사업계획승인 예정일 또는 실제 승인일. 이 날짜 이전은 누계로 집계됩니다.'
     )
     construction_start_date = models.DateField(
         '착공월(예상)',
-        null=True,
-        blank=True,
+        default='2025-06-01',
         help_text='착공 예정일 또는 실제 착공일. 이 날짜부터 공사기간을 계산합니다.'
     )
     construction_period_months = models.PositiveSmallIntegerField(
         '공사기간(개월)',
-        null=True,
-        blank=True,
+        default=35,
         help_text='예상 공사기간 (개월 단위). 착공월부터 이 기간 + 5개월까지 월별 집계됩니다.'
     )
 

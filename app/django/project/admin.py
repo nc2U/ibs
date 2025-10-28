@@ -11,9 +11,34 @@ from .models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfo
 @admin.register(Project)
 class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'issue_project', 'name', 'order', 'kind', 'num_unit',
-                    'build_size', 'area_usage')
+                    'build_size', 'area_usage', 'business_plan_approval_date',
+                    'construction_start_date', 'construction_period_months')
     list_display_links = ('name',)
     list_editable = ('issue_project', 'order', 'kind', 'num_unit', 'build_size', 'area_usage')
+
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('issue_project', 'name', 'order', 'kind', 'start_year',
+                      'is_direct_manage', 'is_returned_area', 'is_unit_set')
+        }),
+        ('사업 일정 (필수)', {
+            'fields': ('business_plan_approval_date', 'construction_start_date',
+                      'construction_period_months'),
+            'description': '캐시 플로우 생성에 필요한 필수 입력 항목. 예정일 입력 후 실제 일자로 업데이트하세요.'
+        }),
+        ('주소 정보', {
+            'fields': ('local_zipcode', 'local_address1', 'local_address2', 'local_address3'),
+            'classes': ('collapse',)
+        }),
+        ('사업 규모', {
+            'fields': ('area_usage', 'build_size', 'num_unit',
+                      'buy_land_extent', 'scheme_land_extent', 'donation_land_extent',
+                      'on_floor_area', 'under_floor_area', 'total_floor_area', 'build_area',
+                      'floor_area_ratio', 'build_to_land_ratio',
+                      'num_legal_parking', 'num_planed_parking'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(ProjectIncBudget)
