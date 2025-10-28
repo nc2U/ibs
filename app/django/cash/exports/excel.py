@@ -452,6 +452,171 @@ class ExportBudgetExecutionStatus(View):
             'account_d3').values_list()
 
 
+class ExportCashFlowForm(View):
+    """프로젝트 자금집행 내역 반영 캐시 플로우 폼"""
+
+    def get(self, request):
+        # Create an in-memory output file for the new workbook.
+        output = io.BytesIO()
+
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        workbook = xlsxwriter.Workbook(output)
+        worksheet = workbook.add_worksheet('예산집행 현황')
+
+        worksheet.set_default_row(20)  # 기본 행 높이
+
+        # data start --------------------------------------------- #
+
+        project = Project.objects.get(pk=request.GET.get('project'))
+        date = request.GET.get('date')
+        revised = request.GET.get('revised')
+        is_revised = int(revised) if revised in ('0', '1') else 0
+
+        # 1. Title
+        row_num = 0
+        title_format = workbook.add_format()
+        worksheet.set_row(row_num, 50)
+        title_format.set_font_size(18)
+        title_format.set_align('vcenter')
+        title_format.set_bold()
+        worksheet.write(row_num, 0, str(project) + ' 예산집행 현황', title_format)
+
+        # 2. Header
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, 8, date + ' 현재', workbook.add_format({'align': 'right'}))
+
+        # 3. Header
+        row_num = 2
+        h_format = workbook.add_format()
+        h_format.set_bold()
+        h_format.set_border()
+        h_format.set_align('center')
+        h_format.set_align('vcenter')
+        h_format.set_bg_color('#eeeeee')
+
+        worksheet.set_column(0, 0, 10)
+        worksheet.set_column(1, 1, 10)
+        worksheet.set_column(2, 2, 12)
+        worksheet.set_column(3, 3, 18)
+        worksheet.merge_range(row_num, 0, row_num, 3, '구분', h_format)
+        worksheet.set_column(4, 4, 20)
+        budget_str = '현황 예산' if is_revised else '기초 예산'
+        worksheet.write(row_num, 4, budget_str, h_format)
+        worksheet.set_column(5, 5, 20)
+        worksheet.write(row_num, 5, '전월 인출 금액 누계', h_format)
+        worksheet.set_column(6, 6, 20)
+        worksheet.write(row_num, 6, '당월 인출 금액', h_format)
+        worksheet.set_column(7, 7, 20)
+        worksheet.write(row_num, 7, '인출 금액 합계', h_format)
+        worksheet.set_column(8, 8, 20)
+        worksheet.write(row_num, 8, '가용 예산 합계', h_format)
+
+        # 4. Contents
+        b_format = workbook.add_format()
+        b_format.set_valign('vcenter')
+        b_format.set_border()
+        b_format.set_num_format(41)
+        b_format.set_align('left')
+
+        budgets = ProjectOutBudget.objects.filter(project=project)
+        budget_sum = budgets.aggregate(Sum('budget'))['budget__sum']
+        revised_budget_sum = budgets.aggregate(
+            revised_budget_sum=Sum(
+                Case(
+                    When(revised_budget__isnull=True, then=F('budget')),
+                    When(revised_budget=0, then=F('budget')),
+                    default=F('revised_budget'),
+                    output_field=PositiveBigIntegerField()  # budget 및 revised_budget의 필드 타입에 맞게 조정
+                )
+            )
+        )['revised_budget_sum']
+
+        calc_budget_sum = revised_budget_sum if is_revised else budget_sum
+
+        budget_month_sum = 0
+        budget_total_sum = 0
+
+        for row, budget in enumerate(budgets):
+            row_num += 1
+            co_budget = ProjectCashBook.objects.filter(project=project,
+                                                       project_account_d3=budget.account_d3,
+                                                       deal_date__lte=date)
+
+            co_budget_month = co_budget.filter(deal_date__gte=date[:8] + '01').aggregate(Sum('outlay'))['outlay__sum']
+            co_budget_month = co_budget_month if co_budget_month else 0
+            budget_month_sum += co_budget_month
+
+            calc_budget = budget.revised_budget or budget.budget if is_revised else budget.budget
+            co_budget_total = co_budget.aggregate(Sum('outlay'))['outlay__sum']
+            co_budget_total = co_budget_total if co_budget_total else 0
+            budget_total_sum += co_budget_total
+
+            opt_budgets = self.get_sub_title(project, budget.account_opt, budget.account_d2.pk)
+
+            for col in range(9):
+                if col == 0 and row == 0:
+                    worksheet.merge_range(row_num, col, budgets.count() + 2, col, '사업비', b_format)
+                if col == 1:
+                    if int(budget.account_d3.code) == int(budget.account_d2.code) + 1:
+                        worksheet.merge_range(row_num, col,
+                                              row_num + budget.account_d2.projectoutbudget_set.count() - 1,
+                                              col, budget.account_d2.name, b_format)
+                if col == 2:
+                    if budget.account_opt:
+                        if budget.account_d3.pk == opt_budgets[0][4]:
+                            worksheet.merge_range(row_num, col, row_num + len(opt_budgets) - 1,
+                                                  col, budget.account_opt, b_format)
+                    else:
+                        worksheet.merge_range(row_num, col, row_num, col + 1, budget.account_d3.name, b_format)
+                if col == 3:
+                    if budget.account_opt:
+                        worksheet.write(row_num, col, budget.account_d3.name, b_format)
+                if col == 4:
+                    worksheet.write(row_num, col, calc_budget, b_format)
+                if col == 5:
+                    worksheet.write(row_num, col, co_budget_total - co_budget_month, b_format)
+                if col == 6:
+                    worksheet.write(row_num, col, co_budget_month, b_format)
+                if col == 7:
+                    worksheet.write(row_num, col, co_budget_total, b_format)
+                if col == 8:
+                    worksheet.write(row_num, col, calc_budget - co_budget_total, b_format)
+
+        # 5. Sum row
+        row_num += 1
+        worksheet.merge_range(row_num, 0, row_num, 3, '합 계', b_format)
+        worksheet.write(row_num, 4, calc_budget_sum, b_format)
+        worksheet.write(row_num, 5, budget_total_sum - budget_month_sum, b_format)
+        worksheet.write(row_num, 6, budget_month_sum, b_format)
+        worksheet.write(row_num, 7, budget_total_sum, b_format)
+        worksheet.write(row_num, 8, calc_budget_sum - budget_total_sum, b_format)
+
+        # data end ----------------------------------------------- #
+
+        # Close the workbook before sending the data.
+        workbook.close()
+
+        # Rewind the buffer.
+        output.seek(0)
+
+        # Set up the Http response.
+        filename = f'{date}-cash-flow-form.xlsx'
+        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = HttpResponse(output, content_type=file_format)
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+
+        return response
+
+    @staticmethod
+    def get_sub_title(project, sub, d2):
+        return ProjectOutBudget.objects.filter(project=project, account_opt=sub, account_d2__id=d2).order_by(
+            'account_d3').values_list()
+
+
 def export_project_cash_xls(request):
     """프로젝트별 입출금 내역"""
     sdate = request.GET.get('sdate')

@@ -6,8 +6,8 @@ from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContract
 from contract.exports import ExportContracts, ExportApplicants, ExportSuccessions, ExportReleases, ExportUnitStatus
 from payment.exports import ExportPayments, ExportPaymentsByCont, ExportPaymentStatus, ExportOverallSummary
 from cash.exports import (ExportProjectBalance, ExportProjectDateCashbook, ExportBalanceByAcc,
-                          ExportBudgetExecutionStatus, ExportDateCashbook, export_cashbook_xls,
-                          export_project_cash_xls)
+                          ExportBudgetExecutionStatus, ExportCashFlowForm, ExportDateCashbook,
+                          export_cashbook_xls, export_project_cash_xls)
 
 from docs.exports import ExportSuitCases, ExportSuitCase
 
@@ -43,6 +43,7 @@ urlpatterns = [
     path('p-balance/', ExportProjectBalance.as_view(), name='project-balance'),
     path('p-daily-cash/', ExportProjectDateCashbook.as_view(), name='project-daily-cash'),
     path('p-budget/', ExportBudgetExecutionStatus.as_view(), name='budget'),
+    path('cash-flow-form/', ExportCashFlowForm.as_view(), name='cash-flow-form'),
     path('p-cashbook/', export_project_cash_xls, name='project-cash'),
     path('balance/', ExportBalanceByAcc.as_view(), name='balance'),
     path('daily-cash/', ExportDateCashbook.as_view(), name='daily-cash'),
