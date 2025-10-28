@@ -18,6 +18,7 @@ import StatusByAccount from '@/views/proCash/Status/components/StatusByAccount.v
 import CashListByDate from '@/views/proCash/Status/components/CashListByDate.vue'
 import SummaryForBudget from '@/views/proCash/Status/components/SummaryForBudget.vue'
 import Calculated from '@/views/comCash/Status/components/Calculated.vue'
+import { CCardBody } from '@coreui/vue'
 
 const date = ref(getToday())
 const direct = ref('0')
@@ -197,15 +198,17 @@ onBeforeMount(async () => {
             <v-btn
               v-if="compName === 'SummaryForBudget'"
               size="small"
+              color="primary"
+              variant="tonal"
               :href="'#'"
               flat
               width="120"
-              :disabled="true"
+              :disabled="false"
               class="mt-1 mx-1"
               style="text-decoration: none"
             >
               <v-icon icon="mdi-microsoft-excel" color="green" class="mr-2" />
-              캐시플로우
+              캐시플로우 폼
               <v-icon icon="mdi-download" color="grey" class="ml-2" />
             </v-btn>
           </template>
