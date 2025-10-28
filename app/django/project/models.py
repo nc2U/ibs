@@ -11,22 +11,19 @@ class Project(models.Model):
     issue_project = models.OneToOneField('work.IssueProject', on_delete=models.CASCADE, verbose_name="업무 프로젝트")
     name = models.CharField('프로젝트명', max_length=30, unique=True, db_index=True)
     order = models.PositiveSmallIntegerField('정렬순서', default=100)
-    KIND_CHOICES = (
-        ('1', '공동주택(아파트)'),
-        ('2', '공동주택(타운하우스)'),
-        ('3', '주상복합(아파트)'),
-        ('4', '주상복합(오피스텔)'),
-        ('5', '근린생활시설'),
-        ('6', '생활형숙박시설'),
-        ('7', '지식산업센터'),
-        ('8', '기타')
-    )
+    KIND_CHOICES = (('1', '공동주택(아파트)'), ('2', '공동주택(타운하우스)'), ('3', '주상복합(아파트)'), ('4', '주상복합(오피스텔)'),
+                    ('5', '근린생활시설'), ('6', '생활형숙박시설'), ('7', '지식산업센터'), ('8', '기타'))
     kind = models.CharField('프로젝트종류', max_length=1, choices=KIND_CHOICES)
     start_year = models.CharField('사업개시년도', max_length=4)
     is_direct_manage = models.BooleanField('직영운영여부', default=False,
                                            help_text='본사 직접 운영하는 프로젝트인 경우 체크, 즉 시행대행이나 업무대행이 아닌 경우')
     is_returned_area = models.BooleanField('토지환지여부', default=False, help_text='해당 사업부지가 환지방식 도시개발사업구역인 경우 체크')
     is_unit_set = models.BooleanField('동호지정여부', default=False, help_text='현재 동호수를 지정하지 않는 경우 체크하지 않음')
+    # 사업 일정 필드 (캐시 플로우 동적 생성용) - 필수 입력
+    business_plan_approval_date = models.DateField('사업계획승인일(예상)', help_text='사업계획승인 예정일 또는 실제 승인일. 이 날짜 이전은 누계로 집계됩니다.')
+    construction_start_date = models.DateField('착공월(예상)', help_text='착공 예정일 또는 실제 착공일. 이 날짜부터 공사기간을 계산합니다.')
+    construction_period_months = models.PositiveSmallIntegerField('공사기간(개월)',
+                                                                  help_text='예상 공사기간 (개월 단위). 착공월부터 이 기간 + 5개월까지 월별 집계됩니다.')
     local_zipcode = models.CharField('우편번호', max_length=5, blank=True, default='', null=True)
     local_address1 = models.CharField('대표부지 주소', max_length=35, blank=True, default='', null=True)
     local_address2 = models.CharField('상세주소', max_length=50, blank=True, default='', null=True)
@@ -45,23 +42,6 @@ class Project(models.Model):
     build_to_land_ratio = models.DecimalField('건폐율', max_digits=6, decimal_places=4, null=True, blank=True)
     num_legal_parking = models.PositiveSmallIntegerField('법정주차대수', null=True, blank=True)
     num_planed_parking = models.PositiveSmallIntegerField('계획주차대수', null=True, blank=True)
-
-    # 사업 일정 필드 (캐시 플로우 동적 생성용) - 필수 입력
-    business_plan_approval_date = models.DateField(
-        '사업계획승인일(예상)',
-        default='2024-01-31',
-        help_text='사업계획승인 예정일 또는 실제 승인일. 이 날짜 이전은 누계로 집계됩니다.'
-    )
-    construction_start_date = models.DateField(
-        '착공월(예상)',
-        default='2025-06-01',
-        help_text='착공 예정일 또는 실제 착공일. 이 날짜부터 공사기간을 계산합니다.'
-    )
-    construction_period_months = models.PositiveSmallIntegerField(
-        '공사기간(개월)',
-        default=35,
-        help_text='예상 공사기간 (개월 단위). 착공월부터 이 기간 + 5개월까지 월별 집계됩니다.'
-    )
 
     def __str__(self):
         return self.name

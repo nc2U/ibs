@@ -32,13 +32,13 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ('pk', 'company', 'issue_project', 'name', 'order', 'kind', 'kind_desc',
+        fields = ('pk', 'issue_project', 'name', 'order', 'kind', 'kind_desc',
                   'start_year', 'is_direct_manage', 'is_returned_area', 'is_unit_set',
-                  'local_zipcode', 'local_address1', 'local_address2', 'local_address3',
-                  'area_usage', 'build_size', 'num_unit', 'buy_land_extent', 'scheme_land_extent',
-                  'donation_land_extent', 'on_floor_area', 'under_floor_area', 'total_floor_area',
-                  'build_area', 'floor_area_ratio', 'build_to_land_ratio', 'num_legal_parking',
-                  'num_planed_parking', 'salesbillissue')
+                  'business_plan_approval_date', 'construction_start_date', 'construction_period_months',
+                  'local_zipcode', 'local_address1', 'local_address2', 'local_address3', 'area_usage',
+                  'build_size', 'num_unit', 'buy_land_extent', 'scheme_land_extent', 'donation_land_extent',
+                  'on_floor_area', 'under_floor_area', 'total_floor_area', 'build_area', 'floor_area_ratio',
+                  'build_to_land_ratio', 'num_legal_parking', 'num_planed_parking', 'salesbillissue')
 
     @staticmethod
     def get_company(obj):
@@ -93,10 +93,9 @@ class ProjectSerializer(serializers.ModelSerializer):
             doc_type = req_doc.document_type
             # DocumentType의 필드가 변경되었는지 확인
             if (req_doc.sort != doc_type.sort or
-                req_doc.quantity != doc_type.default_quantity or
-                req_doc.require_type != doc_type.require_type or
-                req_doc.description != doc_type.description):
-
+                    req_doc.quantity != doc_type.default_quantity or
+                    req_doc.require_type != doc_type.require_type or
+                    req_doc.description != doc_type.description):
                 req_doc.sort = doc_type.sort
                 req_doc.quantity = doc_type.default_quantity
                 req_doc.require_type = doc_type.require_type

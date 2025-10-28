@@ -1,10 +1,9 @@
 from datetime import datetime
 
 from django.db.models import Sum, F, Case, When
-from django_filters.rest_framework import FilterSet, BooleanFilter
+from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 
 from ..pagination import *
 from ..permission import *
