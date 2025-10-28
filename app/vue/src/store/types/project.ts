@@ -1,6 +1,6 @@
 export interface Project {
   pk?: number
-  company?: number
+  company: number | null
   issue_project: number | null
   name: string
   order: number | null
@@ -10,6 +10,9 @@ export interface Project {
   is_direct_manage: boolean
   is_returned_area: boolean
   is_unit_set: boolean
+  business_plan_approval_date: string
+  construction_start_date: string
+  construction_period_months: number | null
   local_zipcode: string
   local_address1: string
   local_address2: string

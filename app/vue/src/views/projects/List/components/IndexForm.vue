@@ -7,6 +7,7 @@ import { useProject } from '@/store/pinia/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import Datepicker from '@vuepic/vue-datepicker'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectForm from './IssueProjectForm.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
@@ -34,6 +35,7 @@ const refIssueForm = ref()
 
 const form = reactive<Project>({
   pk: undefined,
+  company: null,
   issue_project: null,
   name: '',
   order: null,
@@ -42,6 +44,10 @@ const form = reactive<Project>({
   is_direct_manage: false,
   is_returned_area: false,
   is_unit_set: false,
+  // 사업 일정 필드 (필수)
+  business_plan_approval_date: '',
+  construction_start_date: '',
+  construction_period_months: null,
   local_zipcode: '',
   local_address1: '',
   local_address2: '',
@@ -88,30 +94,34 @@ const formsCheck = computed(() => {
     const f = form.is_direct_manage === props.project.is_direct_manage
     const g = form.is_returned_area === props.project.is_returned_area
     const h = form.is_unit_set === props.project.is_unit_set
-    const i = form.local_zipcode === props.project.local_zipcode
-    const j = form.local_address1 === props.project.local_address1
-    const k = form.local_address2 === props.project.local_address2
-    const l = form.local_address3 === props.project.local_address3
-    const m = form.area_usage === props.project.area_usage
-    const n = form.build_size === props.project.build_size
-    const o = form.num_unit === props.project.num_unit
-    const p = form.buy_land_extent === props.project.buy_land_extent
-    const q = form.scheme_land_extent === props.project.scheme_land_extent
-    const r = form.donation_land_extent === props.project.donation_land_extent
-    const s = form.on_floor_area === props.project.on_floor_area
-    const t = form.under_floor_area === props.project.under_floor_area
-    const u = form.total_floor_area === props.project.total_floor_area
-    const v = form.build_area === props.project.build_area
-    const w = form.floor_area_ratio === props.project.floor_area_ratio
-    const x = form.build_to_land_ratio === props.project.build_to_land_ratio
-    const y = form.num_legal_parking === props.project.num_legal_parking
-    const z = form.num_planed_parking === props.project.num_planed_parking
+    const i = form.business_plan_approval_date === props.project.business_plan_approval_date
+    const j = form.construction_start_date === props.project.construction_start_date
+    const k = form.construction_period_months === props.project.construction_period_months
+    const l = form.local_zipcode === props.project.local_zipcode
+    const m = form.local_address1 === props.project.local_address1
+    const n = form.local_address2 === props.project.local_address2
+    const o = form.local_address3 === props.project.local_address3
+    const p = form.area_usage === props.project.area_usage
+    const q = form.build_size === props.project.build_size
+    const r = form.num_unit === props.project.num_unit
+    const s = form.buy_land_extent === props.project.buy_land_extent
+    const t = form.scheme_land_extent === props.project.scheme_land_extent
+    const u = form.donation_land_extent === props.project.donation_land_extent
+    const v = form.on_floor_area === props.project.on_floor_area
+    const w = form.under_floor_area === props.project.under_floor_area
+    const x = form.total_floor_area === props.project.total_floor_area
+    const y = form.build_area === props.project.build_area
+    const z = form.floor_area_ratio === props.project.floor_area_ratio
+    const aa = form.build_to_land_ratio === props.project.build_to_land_ratio
+    const bb = form.num_legal_parking === props.project.num_legal_parking
+    const cc = form.num_planed_parking === props.project.num_planed_parking
 
     const group1 = a && b && c && d && e && f && g && h && i
     const group2 = j && k && l && m && n && o && p && q && r
     const group3 = s && t && u && v && w && x && y && z
+    const group4 = aa && bb && cc
 
-    return group1 && group2 && group3
+    return group1 && group2 && group3 && group4
   } else return false
 })
 
@@ -172,6 +182,10 @@ const formDataSetup = () => {
     form.is_direct_manage = props.project.is_direct_manage
     form.is_returned_area = props.project.is_returned_area
     form.is_unit_set = props.project.is_unit_set
+    // 사업 일정 필드
+    form.business_plan_approval_date = props.project.business_plan_approval_date
+    form.construction_start_date = props.project.construction_start_date
+    form.construction_period_months = props.project.construction_period_months
     form.local_zipcode = props.project.local_zipcode
     form.local_address1 = props.project.local_address1
     form.local_address2 = props.project.local_address2
@@ -284,6 +298,8 @@ onUpdated(() => formDataSetup())
             </CCol>
           </CRow>
 
+          <v-divider />
+
           <CRow>
             <CFormLabel class="col-md-2 col-form-label"></CFormLabel>
             <CCol class="mb-md-3">
@@ -328,6 +344,61 @@ onUpdated(() => formDataSetup())
               </CFormText>
             </CCol>
           </CRow>
+
+          <v-divider />
+
+          <!-- 사업 일정 필드 (필수) -->
+          <CRow class="mt-3 mb-3">
+            <CCol>
+              <h6 class="text-primary">사업 일정 (필수)</h6>
+              <p class="text-muted small">
+                캐시 플로우 생성에 필요한 필수 항목입니다. 예정일 입력 후 실제 일자로
+                업데이트하세요.
+              </p>
+            </CCol>
+          </CRow>
+
+          <CRow>
+            <CFormLabel class="col-md-2 col-form-label required">월별집계시작일</CFormLabel>
+            <CCol md="10" lg="4" class="mb-md-3">
+              <DatePicker
+                v-model="form.business_plan_approval_date"
+                placeholder="월별집계시작일"
+                required
+              />
+              <CFormText class="text-grey">이 날짜 이전은 누계로 집계됩니다</CFormText>
+              <CFormFeedback invalid>월별집계시작일을 입력하세요.</CFormFeedback>
+            </CCol>
+
+            <CFormLabel class="col-md-2 col-form-label required">착공일</CFormLabel>
+            <CCol md="10" lg="4" class="mb-md-3">
+              <DatePicker
+                v-model="form.construction_start_date"
+                placeholder="착공일(예상)"
+                required
+              />
+              <CFormText class="text-grey">이 날짜 포함월부터 공사기간을 계산합니다</CFormText>
+              <CFormFeedback invalid>착공일을 입력하세요.</CFormFeedback>
+            </CCol>
+          </CRow>
+
+          <CRow>
+            <CFormLabel class="col-md-2 col-form-label required">공사기간</CFormLabel>
+            <CCol md="10" lg="4" class="mb-md-3">
+              <CFormInput
+                v-model.number="form.construction_period_months"
+                type="number"
+                min="1"
+                placeholder="공사기간(개월)"
+                required
+              />
+              <CFormText class="text-grey">착공월부터 공사기간 + 5개월까지 월별 집계</CFormText>
+              <CFormFeedback invalid>공사기간을 입력하세요.</CFormFeedback>
+            </CCol>
+          </CRow>
+
+          <v-divider />
+
           <CRow>
             <CFormLabel class="col-md-2 col-form-label"> 우편번호</CFormLabel>
             <CCol md="3" lg="2" class="mb-3">
