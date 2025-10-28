@@ -202,7 +202,7 @@ onBeforeMount(async () => {
               variant="tonal"
               :href="'#'"
               flat
-              width="120"
+              width="130"
               :disabled="false"
               class="mt-1 mx-1"
               style="text-decoration: none"
