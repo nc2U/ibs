@@ -12,15 +12,12 @@ from .excel import (
     ExportUnitStatus
 )
 
-from .pdf import (
-    PdfExportBill
-)
+# PDF exports removed - using notice.exports.pdf instead
 
 __all__ = [
     'ExportContracts',
     'ExportApplicants',
     'ExportSuccessions',
     'ExportReleases',
-    'ExportUnitStatus',
-    'PdfExportBill'
+    'ExportUnitStatus'
 ]
