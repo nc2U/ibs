@@ -1,14 +1,26 @@
 <script lang="ts" setup>
+import { useDownload } from '@/composables/useDownload'
+
 const props = defineProps({
   url: { type: String, default: '' },
   disabled: Boolean,
 })
+
+const { downloadPDF } = useDownload()
+
+const handleDownload = () => {
+  if (!props.disabled && props.url) {
+    // URL에서 파일명 추출 또는 기본값 사용
+    const fileName = `document_${Date.now()}.pdf`
+    downloadPDF(props.url, fileName)
+  }
+}
 </script>
 
 <template>
   <v-btn
     size="small"
-    :href="props.url as string"
+    @click="handleDownload"
     flat
     :disabled="props.disabled"
     class="mt-1 mx-3"
