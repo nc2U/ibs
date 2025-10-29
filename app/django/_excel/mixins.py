@@ -20,12 +20,12 @@ class ExcelExportMixin(View):
     """Excel 내보내기 공통 기능 믹스인"""
 
     @staticmethod
-    def create_workbook(sheet_name=None, in_memory=False):
+    def create_workbook(sheet_name=None, in_memory=False, default_row=20):
         """워크북과 워크시트 생성"""
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': in_memory})
         worksheet = workbook.add_worksheet(sheet_name or '데이터')
-        worksheet.set_default_row(20)
+        worksheet.set_default_row(default_row)
         return output, workbook, worksheet
 
     @staticmethod

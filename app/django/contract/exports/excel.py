@@ -500,19 +500,9 @@ class ExportReleases(ExcelExportMixin):
 class ExportUnitStatus(ExcelExportMixin):
     """동호수 현황표"""
 
-    @staticmethod
-    def get(request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
-
-        # Even though the final file will be in memory the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('동호수현황표')
-
-        worksheet.set_default_row(15)
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('동호수현황표', False, 15)
 
         # data start --------------------------------------------- #
         project = Project.objects.get(pk=request.GET.get('project'))
@@ -523,14 +513,32 @@ class ExportUnitStatus(ExcelExportMixin):
         dong_obj = BuildingUnit.objects.filter(project=project).values('name')
         is_contor = True if request.GET.get('iscontor') == 'true' else False
 
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        unit_format = {
+            'border': True,
+            'font_size': 8,
+            'align': 'center',
+            'valign': 'vcenter'
+        }
+        status_format = {
+            'border': True,
+            'font_size': 8,
+            'align': 'center',
+            'valign': 'vcenter'
+        }
+        dong_title_format = workbook.add_format()
+        dong_title_format.set_bold()
+        dong_title_format.set_border()
+        dong_title_format.set_font_size(11)
+        dong_title_format.set_align('center')
+        dong_title_format.set_align('vcenter')
+        dong_title_format.set_bg_color('#777777')
+        dong_title_format.set_font_color('#FFFFFF')
+
         # 1. Title
         row_num = 0
-        title_format = workbook.add_format()
         worksheet.set_row(row_num, 50)
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
-        title_format.set_bold()
-
         worksheet.write(row_num, 0, str(project) + ' 동호수 현황표', title_format)
 
         # 2. Sub Description
@@ -549,18 +557,7 @@ class ExportUnitStatus(ExcelExportMixin):
         # 3. Unit status board
         row_num = 3
         worksheet.set_column(0, max_col, 5.5)
-        unit_format = {
-            'border': True,
-            'font_size': 8,
-            'align': 'center',
-            'valign': 'vcenter'
-        }
-        status_format = {
-            'border': True,
-            'font_size': 8,
-            'align': 'center',
-            'valign': 'vcenter'
-        }
+
         # 최고층수 만큼 반복
         for mf in max_floor_range:
             row_num += 2
@@ -604,15 +601,6 @@ class ExportUnitStatus(ExcelExportMixin):
         row_num += 2
         col_num = 1
 
-        dong_title_format = workbook.add_format()
-        dong_title_format.set_bold()
-        dong_title_format.set_border()
-        dong_title_format.set_font_size(11)
-        dong_title_format.set_align('center')
-        dong_title_format.set_align('vcenter')
-        dong_title_format.set_bg_color('#777777')
-        dong_title_format.set_font_color('#FFFFFF')
-
         # 동 수 만큼 반복
         for dong in dong_obj:  # 호수 상태 표시 라인
             lines = unit_numbers.order_by('-bldg_line').values('bldg_line').filter(
@@ -622,7 +610,6 @@ class ExportUnitStatus(ExcelExportMixin):
                                   dong_title_format)
 
             col_num = col_num + lines.count() + 1
-
         # data end ----------------------------------------------- #
 
         # Close the workbook before sending the data.
@@ -632,9 +619,6 @@ class ExportUnitStatus(ExcelExportMixin):
         output.seek(0)
 
         # Set up the Http response.
-        filename = '{date}-unit-status-board.xlsx'.format(date=TODAY)
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = 'attachment; filename=%s' % filename
-
-        return response
+        filename = request.GET.get('filename') or 'unit-status-board'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
