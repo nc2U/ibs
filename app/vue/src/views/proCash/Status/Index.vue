@@ -7,6 +7,7 @@ import { getToday } from '@/utils/baseMixins'
 import { pageTitle, navMenu } from '@/views/proCash/_menu/headermixin'
 import type { Project } from '@/store/types/project.ts'
 import type { ProCalculated } from '@/store/types/proCash'
+import { useDownload } from '@/composables/useDownload'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -23,6 +24,11 @@ const date = ref(getToday())
 const direct = ref('0')
 const isBalance = ref<'' | 'true'>('true')
 const compName = ref('StatusByAccount')
+
+const { downloadExcel } = useDownload()
+const handleDownload = (url, fileName) => {
+  downloadExcel(url, fileName)
+}
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -204,7 +210,7 @@ onBeforeMount(async () => {
               size="small"
               color="primary"
               variant="tonal"
-              :href="cashFlowUrl"
+              @click="handleDownload(cashFlowUrl, '월별자금집행현황.xlsx')"
               flat
               :disabled="false"
               class="mt-1 mx-1"
