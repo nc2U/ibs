@@ -5,9 +5,11 @@ Excel Export Common Mixins
 """
 import datetime
 import io
+from urllib.parse import quote
+
+import xlsxwriter
 from django.http import HttpResponse
 from django.views.generic import View
-import xlsxwriter
 
 from project.models import Project
 
@@ -153,11 +155,12 @@ class ExcelExportMixin(View):
         workbook.close()
         output.seek(0)
 
-        response = HttpResponse(
-            output.read(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
+        response = HttpResponse(output.read(),
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # RFC 5987: filename*=UTF-8''encoded_filename for better browser compatibility
+        encoded_filename = quote(f'{filename}.xlsx')
+        response['Content-Disposition'] = \
+            f"attachment; filename=\"{filename}.xlsx\"; filename*=UTF-8''{encoded_filename}"
         return response
 
 
