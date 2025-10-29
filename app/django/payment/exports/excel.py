@@ -69,10 +69,10 @@ class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
 
         sd = request.GET.get('sd') or '1900-01-01'
         ed = request.GET.get('ed')
-        ed = TODAY if not ed or ed == 'null' else ed
+        ed = ed or TODAY
 
         # Create a workbook with performance optimization
-        output, workbook, worksheet = self.create_workbook('수납건별_납부내역', in_memory=False)
+        output, workbook, worksheet = self.create_workbook('수납건별_납부내역')
 
         # Create reusable format objects
         formats = self.create_format_objects(workbook)
@@ -118,7 +118,8 @@ class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
         self._write_payment_data(worksheet, workbook, row_num, data, formats, project, header_src)
 
         # Create response
-        filename = f'{ed}-payments'
+        filename = request.GET.get('filename') or 'payments'
+        filename = f'{filename}-{ed}'
         return self.create_response(output, workbook, filename)
 
     @staticmethod
@@ -962,7 +963,8 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         for i, order in enumerate(pay_orders):
             standardized_order_actual = get_standardized_payment_sum_by_order(project, date, order['pk'])
             order_contract_amount = order['contract_amount']
-            order_collection_rate = (standardized_order_actual / order_contract_amount * 100) if order_contract_amount > 0 else 0
+            order_collection_rate = (
+                    standardized_order_actual / order_contract_amount * 100) if order_contract_amount > 0 else 0
             worksheet.write(row_num, 2 + i, order_collection_rate / 100, percent_format)
         worksheet.write(row_num, col_count - 1, total_collection_rate / 100, percent_format)
 
@@ -1064,7 +1066,8 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         worksheet.write(row_num, 1, '미수율', center_format)
 
         # 전체 미수율 계산 (총 미수금 / 총 계약금액)
-        total_overall_unpaid_rate = (total_overall_unpaid / total_contract_amount * 100) if total_contract_amount > 0 else 0
+        total_overall_unpaid_rate = (
+                total_overall_unpaid / total_contract_amount * 100) if total_contract_amount > 0 else 0
 
         for i, order in enumerate(pay_orders):
             total_unpaid_rate = float(order['total_unpaid_rate'])
