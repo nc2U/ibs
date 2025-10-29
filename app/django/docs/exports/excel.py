@@ -183,8 +183,8 @@ class ExportSuitCase(ExcelExportMixin):
         # 포맷 생성
         title_format = self.create_title_format(workbook)
         h_format = self.create_header_format(workbook)
-        center_format = workbook.add_format({'align': 'center'})
-        num_format = workbook.add_format({'num_format': '#,##0'})
+        center_format = self.create_center_format(workbook)
+        num_format = self.create_number_format(workbook)
 
         # 1. Title
         row_num = 0
