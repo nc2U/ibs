@@ -155,7 +155,7 @@ class ExportProjectBalance(View):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename')
-        filename = f'{filename}-{date}' if filename else f'project-balance-{date}.xlsx'
+        filename = f'{filename}-{date}' if filename else f'project-balance-{date}'
 
         return ExcelExportMixin.create_response(output, workbook, filename)
 
@@ -268,7 +268,7 @@ class ExportProjectDateCashbook(View):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename')
-        filename = f'{filename}-{date}' if filename else f'project-date-cashbook-{date}.xlsx'
+        filename = f'{filename}-{date}' if filename else f'project-date-cashbook-{date}'
         return ExcelExportMixin.create_response(output, workbook, filename)
 
 
@@ -419,7 +419,7 @@ class ExportBudgetExecutionStatus(View):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename')
-        filename = f'{filename}-{date}' if filename else f'budget_status-{date}.xlsx'
+        filename = f'{filename}-{date}' if filename else f'budget_status-{date}'
         return ExcelExportMixin.create_response(output, workbook, filename)
 
     @staticmethod
@@ -672,7 +672,7 @@ class ExportCashFlowForm(View):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename')
-        filename = f'{filename}-{date}' if filename else f'{str(project)}-cash-flow-form-{date}.xlsx'
+        filename = f'{filename}-{date}' if filename else f'{str(project)}-cash-flow-form-{date}'
         return ExcelExportMixin.create_response(output, workbook, filename)
 
     @staticmethod
@@ -975,7 +975,7 @@ class ExportBalanceByAcc(View):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename')
-        filename = f'{filename}-{date}' if filename else f'balance-{date}.xlsx'
+        filename = f'{filename}-{date}' if filename else f'balance-{date}'
         return ExcelExportMixin.create_response(output, workbook, filename)
 
 
@@ -1092,7 +1092,7 @@ class ExportDateCashbook(View):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename')
-        filename = f'{filename}-{date}' if filename else f'date-cashbook-{date}.xlsx'
+        filename = f'{filename}-{date}' if filename else f'date-cashbook-{date}'
         return ExcelExportMixin.create_response(output, workbook, filename)
 
 
