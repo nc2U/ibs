@@ -26,7 +26,8 @@ class ExportContracts(ExcelExportMixin):
 
     def get(self, request):
         # 워크북 생성
-        t_name = '계약' if request.GET.get('status') == '2' else '청약'
+        status = request.GET.get('status')
+        t_name = '계약' if status == '2' else '청약'
         output, workbook, worksheet = self.create_workbook(f'{t_name}목록_정보')
 
         project = Project.objects.get(pk=request.GET.get('project'))
@@ -120,14 +121,14 @@ class ExportContracts(ExcelExportMixin):
         # Use select_related to optimize and ensure we get the current address
         queryset = Contract.objects.filter(project=project,
                                            activation=True,
-                                           contractor__status='2').select_related(
+                                           contractor__status=status).select_related(
             'contractor'
         ).prefetch_related(
             'contractor__addresses'
         ).order_by('contractor__contract_date')
         status = request.GET.get('status')
         group = request.GET.get('group')
-        type = request.GET.get('type')
+        unit_type = request.GET.get('type')
         dong = request.GET.get('dong')
         is_null = request.GET.get('is_null')
         quali = request.GET.get('quali')
@@ -138,7 +139,7 @@ class ExportContracts(ExcelExportMixin):
 
         queryset = queryset.filter(contractor__status=status) if status else queryset
         queryset = queryset.filter(order_group=group) if group else queryset
-        queryset = queryset.filter(unit_type=type) if type else queryset
+        queryset = queryset.filter(unit_type=unit_type) if unit_type else queryset
         queryset = queryset.filter(key_unit__houseunit__building_unit=dong) if dong else queryset
         null_qry = True if is_null == '1' else False
         queryset = queryset.filter(key_unit__houseunit__isnull=null_qry) if is_null else queryset
@@ -266,120 +267,6 @@ class ExportContracts(ExcelExportMixin):
 
         # Set up the Http response.
         filename = request.GET.get('filename') or 'contracts'
-        filename = f'{filename}-{TODAY}'
-        return self.create_response(output, workbook, filename)
-
-
-class ExportApplicants(ExcelExportMixin):
-    """청약자 리스트"""
-
-    def get(self, request):
-        # 워크북 생성
-        output, workbook, worksheet = self.create_workbook('청약목록_정보')
-
-        project = Project.objects.get(pk=request.GET.get('project'))
-
-        # 포맷 생성
-        title_format = self.create_title_format(workbook)
-        h_format = self.create_header_format(workbook)
-        body_format = {
-            'border': True,
-            'align': 'center',
-            'valign': 'vcenter',
-            'num_format': 'yyyy-mm-dd'
-        }
-
-        # title_list
-        header_src = [[],
-                      ['일련번호', 'serial_number', 10],
-                      ['차수', 'order_group__name', 10],
-                      ['타입', 'key_unit__unit_type__name', 7],
-                      ['청약자', 'contractor__name', 10],
-                      ['청약일자', 'contractor__reservation_date', 12],
-                      ['연락처[1]', 'contractor__contractorcontact__cell_phone', 14],
-                      ['연락처[2]', 'contractor__contractorcontact__home_phone', 14],
-                      ['연락처[3]', 'contractor__contractorcontact__other_phone', 14],
-                      ['이메일', 'contractor__contractorcontact__email', 15],
-                      ['비고', 'contractor__note', 45]]
-
-        if project.is_unit_set:
-            header_src.append(
-                ['동', 'key_unit__houseunit__building_unit', 7],
-                ['호수', 'key_unit__houseunit__name', 7]
-            )
-
-        # 1. Title
-        row_num = 0
-        worksheet.set_row(row_num, 50)
-        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, str(project) + ' 청약자 리스트', title_format)
-
-        # 2. Pre Header - Date
-        row_num = 1
-        worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
-
-        # 3. Header
-        row_num = 2
-        worksheet.set_row(row_num, 25, workbook.add_format({'bold': True}))
-
-        titles = ['No']  # header titles
-        params = []  # ORM 추출 field
-        widths = [7]  # No. 컬럼 넓이
-
-        for ds in header_src:
-            if ds:
-                titles.append(ds[0])
-                params.append(ds[1])
-                widths.append(ds[2])
-
-        # Adjust the column width.
-        for i, col_width in enumerate(widths):
-            worksheet.set_column(i, i, col_width)
-
-        # Write header
-        for col_num, col in enumerate(titles):
-            worksheet.write(row_num, col_num, titles[col_num], h_format)
-
-        # 4. Body
-        # Get some data to write to the spreadsheet.
-        data = Contract.objects.filter(project=project,
-                                       contractor__status='1')
-
-        data = data.values_list(*params)
-
-        is_left = []
-        # Write header
-        for col_num, col in enumerate(titles):
-            if col in ('비고'):
-                is_left.append(col_num)
-
-        # Write header
-        for i, row in enumerate(data):
-            row = list(row)
-            row_num += 1
-            row.insert(0, i + 1)
-            for col_num, cell_data in enumerate(row):
-                if col_num == 0:
-                    body_format['num_format'] = '#,##0'
-                else:
-                    body_format['num_format'] = 'yyyy-mm-dd'
-                if col_num in is_left:
-                    if 'align' in body_format:
-                        del body_format['align']
-                else:
-                    if 'align' not in body_format:
-                        body_format['align'] = 'center'
-                bformat = workbook.add_format(body_format)
-                worksheet.write(row_num, col_num, cell_data, bformat)
-
-        # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = request.GET.get('filename') or 'applicants'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 

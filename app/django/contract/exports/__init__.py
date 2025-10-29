@@ -6,7 +6,6 @@ Contract Exports Module
 
 from .excel import (
     ExportContracts,
-    ExportApplicants,
     ExportSuccessions,
     ExportReleases,
     ExportUnitStatus
@@ -16,7 +15,6 @@ from .excel import (
 
 __all__ = [
     'ExportContracts',
-    'ExportApplicants',
     'ExportSuccessions',
     'ExportReleases',
     'ExportUnitStatus'

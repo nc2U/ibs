@@ -3,7 +3,7 @@ from django.urls import path
 # 앱별 내보내기 모듈에서 가져오기
 from company.exports import ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades
 from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContracts
-from contract.exports import ExportContracts, ExportApplicants, ExportSuccessions, ExportReleases, ExportUnitStatus
+from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
 from payment.exports import ExportPayments, ExportPaymentsByCont, ExportPaymentStatus, ExportOverallSummary
 from cash.exports import (ExportProjectBalance, ExportProjectDateCashbook, ExportBalanceByAcc,
                           ExportBudgetExecutionStatus, ExportCashFlowForm, ExportDateCashbook,
@@ -28,7 +28,6 @@ urlpatterns = [
 
     # Contract 관련 (새 모듈)
     path('contracts/', ExportContracts.as_view(), name='contracts'),
-    path('reservations/', ExportApplicants.as_view(), name='reservations'),
     path('successions/', ExportSuccessions.as_view(), name='successions'),
     path('releases/', ExportReleases.as_view(), name='releases'),
     path('status/', ExportUnitStatus.as_view(), name='unit-status'),
