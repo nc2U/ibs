@@ -48,6 +48,34 @@ class ExcelExportMixin(View):
         h_format.set_bg_color('#eeeeee')
         return h_format
 
+    @staticmethod
+    def create_number_format(workbook):
+        number_format = workbook.workbook.add_format({
+            'valign': 'vcenter',
+            'border': True,
+            'num_format': 41,
+            'align': 'right'
+        })
+        return number_format
+
+    @staticmethod
+    def create_center_format(workbook):
+        center_format = workbook.workbook.add_format({
+            'valign': 'vcenter',
+            'border': True,
+            'align': 'center'
+        })
+        return center_format
+
+    @staticmethod
+    def create_left_format(workbook):
+        left_format = workbook.workbook.add_format({
+            'valign': 'vcenter',
+            'border': True,
+            'align': 'left'
+        })
+        return left_format
+
     def write_title(self, worksheet, workbook, row_num, col_count, title):
         """제목 작성"""
         title_format = self.create_title_format(workbook)

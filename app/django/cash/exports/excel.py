@@ -21,52 +21,36 @@ from project.models import Project, ProjectOutBudget
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
-class ExportProjectBalance(View):
+class ExportProjectBalance(ExcelExportMixin):
     """프로젝트 계좌별 잔고 내역"""
 
-    @staticmethod
-    def get(request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('계좌별_자금현황')
 
-        # Even though the final file will be in memory, the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example, the Google App Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('계좌별_자금현황')
-
-        worksheet.set_default_row(20)  # 기본 행 높이
-
-        # data start --------------------------------------------- #
-
+        # 데이터 조회
         project = Project.objects.get(pk=request.GET.get('project'))
-        date = request.GET.get('date')
-        date = TODAY if not date or date == 'null' else date
+        date = request.GET.get('date') or TODAY
 
-        # 1. Title
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        number_format = self.create_number_format(workbook)
+        center_format = self.create_center_format(workbook)
+        left_format = self.create_left_format(workbook)
+
+        # 1. 제목
         row_num = 0
-        title_format = workbook.add_format()
         worksheet.set_row(row_num, 50)
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
-        title_format.set_bold()
-        worksheet.write(row_num, 0, str(project) + ' 계좌별 자금현황', title_format)
+        worksheet.write(row_num, 0, f'{project} 계좌별 자금현황', title_format)
+        row_num += 1
 
-        # 2. Header
-        row_num = 1
+        # 2. 날짜
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, 6, date + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, 6, f'{date} 현재', workbook.add_format({'align': 'right'}))
+        row_num += 1
 
-        # 3. Header
-        row_num = 2
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
-
+        # 3. 헤더
         worksheet.set_column(0, 0, 10)
         worksheet.merge_range(row_num, 0, row_num, 2, '계좌 구분', h_format)
         worksheet.set_column(1, 1, 30)
@@ -79,85 +63,70 @@ class ExportProjectBalance(View):
         worksheet.write(row_num, 5, '금일출금(감소)', h_format)
         worksheet.set_column(6, 6, 20)
         worksheet.write(row_num, 6, '금일잔고', h_format)
+        row_num += 1
 
-        # 4. Contents
-        b_format = workbook.add_format()
-        b_format.set_valign('vcenter')
-        b_format.set_border()
-        b_format.set_num_format(41)
-        b_format.set_align('end')
-
-        qs = ProjectCashBook.objects.all() \
-            .order_by('bank_account') \
-            .filter(is_separate=False,
-                    bank_account__directpay=False,
-                    deal_date__lte=date)
-
-        balance_set = qs.annotate(bank_acc=F('bank_account__alias_name'),
-                                  bank_num=F('bank_account__number')) \
-            .values('bank_acc', 'bank_num') \
-            .annotate(inc_sum=Sum('income'),
-                      out_sum=Sum('outlay'),
-                      date_inc=Sum(Case(
-                          When(deal_date=date, then=F('income')),
-                          default=0
-                      )),
-                      date_out=Sum(Case(
-                          When(deal_date=date, then=F('outlay')),
-                          default=0
-                      )))
-
-        total_inc = 0
-        total_out = 0
-        total_inc_sum = 0
-        total_out_sum = 0
-
-        # Turn off the warnings:
+        # 4. 데이터 조회
+        balance_set = self._get_balance_data(date)
         worksheet.ignore_errors({'number_stored_as_text': 'B:C'})
 
-        for row, balance in enumerate(balance_set):
+        # 5. 데이터 작성
+        totals = {'inc': 0, 'out': 0, 'inc_sum': 0, 'out_sum': 0}
+        balance_list = list(balance_set)
+
+        for row_idx, balance in enumerate(balance_list):
+            inc_sum = balance['inc_sum'] or 0
+            out_sum = balance['out_sum'] or 0
+            date_inc = balance['date_inc'] or 0
+            date_out = balance['date_out'] or 0
+
+            totals['inc'] += date_inc
+            totals['out'] += date_out
+            totals['inc_sum'] += inc_sum
+            totals['out_sum'] += out_sum
+
+            # 첫 행에만 '보통예금' 병합
+            if row_idx == 0:
+                worksheet.merge_range(row_num, 0, row_num + len(balance_list) - 1, 0, '보통예금', center_format)
+
+            worksheet.write(row_num, 1, balance['bank_acc'], left_format)
+            worksheet.write(row_num, 2, balance['bank_num'], left_format)
+            worksheet.write(row_num, 3, inc_sum - out_sum - date_inc + date_out, number_format)
+            worksheet.write(row_num, 4, date_inc, number_format)
+            worksheet.write(row_num, 5, date_out, number_format)
+            worksheet.write(row_num, 6, inc_sum - out_sum, number_format)
             row_num += 1
-            inc_sum = balance['inc_sum'] if balance['inc_sum'] else 0
-            out_sum = balance['out_sum'] if balance['out_sum'] else 0
-            date_inc = balance['date_inc'] if balance['date_inc'] else 0
-            date_out = balance['date_out'] if balance['date_out'] else 0
 
-            total_inc += date_inc
-            total_out += date_out
-            total_inc_sum += inc_sum
-            total_out_sum += out_sum
+        # 6. 합계 행
+        worksheet.merge_range(row_num, 0, row_num, 2, '현금성 자산 계', center_format)
+        worksheet.write(row_num, 3, totals['inc_sum'] - totals['out_sum'] - totals['inc'] + totals['out'],
+                        number_format)
+        worksheet.write(row_num, 4, totals['inc'], number_format)
+        worksheet.write(row_num, 5, totals['out'], number_format)
+        worksheet.write(row_num, 6, totals['inc_sum'] - totals['out_sum'], number_format)
 
-            for col in range(7):
-                if col == 0 and row == 0:
-                    worksheet.merge_range(row_num, col, balance_set.count() + 2, col, '보통예금', b_format)
-                if col == 1:
-                    worksheet.write(row_num, col, balance['bank_acc'], b_format)
-                if col == 2:
-                    worksheet.write(row_num, col, balance['bank_num'], b_format)
-                if col == 3:
-                    worksheet.write(row_num, col, inc_sum - out_sum - date_inc + date_out, b_format)
-                if col == 4:
-                    worksheet.write(row_num, col, date_inc, b_format)
-                if col == 5:
-                    worksheet.write(row_num, col, date_out, b_format)
-                if col == 6:
-                    worksheet.write(row_num, col, inc_sum - out_sum, b_format)
+        # 응답 생성
+        filename = request.GET.get('filename') or 'project-balance'
+        filename = f'{filename}-{date}'
+        return self.create_response(output, workbook, filename)
 
-        # 5. Sum row
-        row_num += 1
-        worksheet.merge_range(row_num, 0, row_num, 2, '현금성 자산 계', b_format)
-        worksheet.write(row_num, 3, total_inc_sum - total_out_sum - total_inc + total_out, b_format)
-        worksheet.write(row_num, 4, total_inc, b_format)
-        worksheet.write(row_num, 5, total_out, b_format)
-        worksheet.write(row_num, 6, total_inc_sum - total_out_sum, b_format)
+    @staticmethod
+    def _get_balance_data(date):
+        """잔고 데이터 조회"""
+        qs = ProjectCashBook.objects.filter(
+            is_separate=False,
+            bank_account__directpay=False,
+            deal_date__lte=date
+        ).order_by('bank_account')
 
-        # data end ----------------------------------------------- #
-
-        # Close the workbook before sending the data.
-        filename = request.GET.get('filename')
-        filename = f'{filename}-{date}' if filename else f'project-balance-{date}'
-
-        return ExcelExportMixin.create_response(output, workbook, filename)
+        return qs.annotate(
+            bank_acc=F('bank_account__alias_name'),
+            bank_num=F('bank_account__number')
+        ).values('bank_acc', 'bank_num').annotate(
+            inc_sum=Sum('income'),
+            out_sum=Sum('outlay'),
+            date_inc=Sum(Case(When(deal_date=date, then=F('income')), default=0)),
+            date_out=Sum(Case(When(deal_date=date, then=F('outlay')), default=0))
+        )
 
 
 class ExportProjectDateCashbook(View):
