@@ -118,7 +118,7 @@ defineProps({
                 <CFormCheck/>
               </CTableDataCell>
               <CTableDataCell>
-                <a :href="`/pdf/bill/?project=${contract.project}&seq=${contract.pk}`" target="_blank">대금납부 고지서</a>
+                <a :href="`/pdf/bill/?project=${contract.project}&seq=${contract.pk}`">대금수납 고지서</a>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>
@@ -127,7 +127,7 @@ defineProps({
                 <CFormCheck/>
               </CTableDataCell>
               <CTableDataCell>
-                <a href="#">납부내역 확인서(확인)</a>
+                <a :href="`/pdf/payments/?project=${contract.project}&contract=${contract.pk}&is_calc=1`">납부내역 확인서(일반)</a>
               </CTableDataCell>
               <CTableDataCell>할인/가산 내역 포함</CTableDataCell>
             </CTableRow>
@@ -136,7 +136,7 @@ defineProps({
                 <CFormCheck/>
               </CTableDataCell>
               <CTableDataCell>
-                <a href="#">납부내역 확인서(일반)</a>
+                <a :href="`/pdf/payments/?project=${contract.project}&contract=${contract.pk}`">납부내역 확인서(확인)</a>
               </CTableDataCell>
               <CTableDataCell>대외 확인용</CTableDataCell>
             </CTableRow>
@@ -145,7 +145,7 @@ defineProps({
                 <CFormCheck/>
               </CTableDataCell>
               <CTableDataCell>
-                <a href="#">할인/가산금 내역서</a>
+                <a :href="`/pdf/calculation/?project=${contract.project}&contract=${contract.pk}`">할인/가산금 내역서</a>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>
@@ -154,7 +154,7 @@ defineProps({
                 <CFormCheck/>
               </CTableDataCell>
               <CTableDataCell>
-                <a href="#">주택 인도 증서</a>
+                <a :href="`#`">주택 인도 증서</a>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>
