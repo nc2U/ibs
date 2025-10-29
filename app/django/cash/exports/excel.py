@@ -4,15 +4,13 @@ Cash Excel Export Views
 현금 출납 관련 Excel 내보내기 뷰들
 """
 import datetime
-import io
 
-import xlsxwriter
 import xlwt
 from dateutil.relativedelta import relativedelta
 from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 
-from _excel.mixins import ExcelExportMixin
+from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
 from cash.models import CashBook, ProjectCashBook
 from company.models import Company
 from project.models import Project, ProjectOutBudget
@@ -594,10 +592,9 @@ class ExportCashFlowForm(ExcelExportMixin):
 def export_project_cash_xls(request):
     """프로젝트별 입출금 내역"""
     sdate = request.GET.get('sdate')
-    edate = request.GET.get('edate')
+    edate = request.GET.get('edate') or TODAY
 
     sdate = '1900-01-01' if not sdate or sdate == 'null' else sdate
-    edate = TODAY if not edate or edate == 'null' else edate
 
     is_imp = request.GET.get('imp')
     frontname = request.GET.get('filename')
@@ -696,26 +693,22 @@ def export_project_cash_xls(request):
     for col_num, col in enumerate(columns):
         ws.write(row_num, col_num, col, style)
 
-    # Sheet body, remaining rows
-    style = xlwt.XFStyle()
-    # 테두리 설정
-    style.borders.left = 1
-    style.borders.right = 1
-    style.borders.top = 1
-    style.borders.bottom = 1
-
-    style.alignment.vert = style.alignment.VERT_CENTER  # 수직정렬
-    # style.alignment.horz = style.alignment.HORZ_CENTER  # 수평정렬
+    # Sheet body, remaining rows - 재사용 가능한 스타일 생성
+    styles = XlwtStyleMixin.create_xlwt_styles()
 
     for row in rows:
         row_num += 1
         for col_num, col in enumerate(columns):
             row = list(row)
 
+            # 기본 스타일 선택
+            cell_style = styles['default']
+
             if col == '거래일자':
-                style.num_format_str = 'yyyy-mm-dd'
+                cell_style = styles['date']
                 ws.col(col_num).width = 110 * 30
             if col == '구분':
+                cell_style = styles['center']
                 if row[col_num] == '1':
                     row[col_num] = '입금'
                 if row[col_num] == '2':
@@ -731,12 +724,12 @@ def export_project_cash_xls(request):
             if col == '거래 계좌':
                 ws.col(col_num).width = 170 * 30
             if '금액' in col:
-                style.num_format_str = '#,##'
+                cell_style = styles['amount']
                 ws.col(col_num).width = 110 * 30
             if col == '비고':
                 ws.col(col_num).width = 256 * 30
 
-            ws.write(row_num, col_num, row[col_num], style)
+            ws.write(row_num, col_num, row[col_num], cell_style)
 
     wb.save(response)
     return response
@@ -979,7 +972,7 @@ def export_cashbook_xls(request):
     company = Company.objects.get(pk=request.GET.get('company'))
     com_name = company.name.replace('주식회사 ', '(주)')
     sd = '1900-01-01' if not s_date or s_date == 'null' else s_date
-    ed = TODAY if not e_date or e_date == 'null' else e_date
+    ed = e_date or TODAY
 
     obj_list = CashBook.objects.filter(company=company, is_separate=False,
                                        deal_date__range=(sd, ed)).order_by('deal_date', 'id')
@@ -1053,27 +1046,23 @@ def export_cashbook_xls(request):
     for col_num in range(len(columns)):
         ws.write(row_num, col_num, columns[col_num], style)
 
-    # Sheet body, remaining rows
-    style = xlwt.XFStyle()
-    # 테두리 설정
-    style.borders.left = 1
-    style.borders.right = 1
-    style.borders.top = 1
-    style.borders.bottom = 1
-
-    style.alignment.vert = style.alignment.VERT_CENTER  # 수직정렬
-    # style.alignment.horz = style.alignment.HORZ_CENTER  # 수평정렬
+    # Sheet body, remaining rows - 재사용 가능한 스타일 생성
+    styles = XlwtStyleMixin.create_xlwt_styles()
 
     for row in rows:
         row_num += 1
         for col_num, col in enumerate((columns)):
             row = list(row)
 
+            # 기본 스타일 선택
+            cell_style = styles['default']
+
             if col == '거래일자':
-                style.num_format_str = 'yyyy-mm-dd'
+                cell_style = styles['date']
                 ws.col(col_num).width = 110 * 30
 
-            if col == '구분':
+            elif col == '구분':
+                cell_style = styles['center']
                 if row[col_num] == '1':
                     row[col_num] = '입금'
                 if row[col_num] == '2':
@@ -1081,7 +1070,8 @@ def export_cashbook_xls(request):
                 if row[col_num] == '3':
                     row[col_num] = '대체'
 
-            if col == '계정':
+            elif col == '계정':
+                cell_style = styles['center']
                 if row[col_num] == '1':
                     row[col_num] = '자산'
                 if row[col_num] == '2':
@@ -1095,23 +1085,23 @@ def export_cashbook_xls(request):
                 if row[col_num] == '6':
                     row[col_num] = '대체'
 
-            if col == '현장 계정':
+            elif col == '현장 계정':
                 ws.col(col_num).width = 110 * 30
 
-            if col == '세부계정':
+            elif col == '세부계정':
                 ws.col(col_num).width = 160 * 30
 
-            if col == '적요' or col == '거래처':
+            elif col == '적요' or col == '거래처':
                 ws.col(col_num).width = 180 * 30
 
-            if col == '거래계좌':
+            elif col == '거래계좌':
                 ws.col(col_num).width = 170 * 30
 
-            if '금액' in col:
-                style.num_format_str = '#,##'
+            elif '금액' in col:
+                cell_style = styles['amount']
                 ws.col(col_num).width = 110 * 30
 
-            if col == '증빙자료':
+            elif col == '증빙자료':
                 if row[col_num] == '0':
                     row[col_num] = '증빙 없음'
                 if row[col_num] == '1':
@@ -1126,10 +1116,10 @@ def export_cashbook_xls(request):
                     row[col_num] = '간이영수증'
                 ws.col(col_num).width = 100 * 30
 
-            if col == '비고':
+            elif col == '비고':
                 ws.col(col_num).width = 256 * 30
 
-            ws.write(row_num, col_num, row[col_num], style)
+            ws.write(row_num, col_num, row[col_num], cell_style)
 
     wb.save(response)
     return response

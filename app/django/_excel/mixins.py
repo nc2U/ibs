@@ -361,3 +361,84 @@ class AdvancedExcelMixin:
         """컬럼 너비 일괄 설정"""
         for col_num, width in enumerate(widths):
             worksheet.set_column(col_num, col_num, width)
+
+
+class XlwtStyleMixin:
+    """xlwt 라이브러리용 스타일 생성 믹스인"""
+
+    @staticmethod
+    def create_xlwt_styles():
+        """
+        xlwt용 재사용 가능한 스타일 세트 생성
+        xlwt는 최대 4094개의 스타일만 지원하므로 미리 생성하여 재사용
+
+        Returns:
+            dict: 스타일 이름을 키로 하는 xlwt.XFStyle 객체 딕셔너리
+        """
+        import xlwt
+
+        # 기본 스타일 (왼쪽 정렬)
+        style_default = xlwt.XFStyle()
+        style_default.borders.left = 1
+        style_default.borders.right = 1
+        style_default.borders.top = 1
+        style_default.borders.bottom = 1
+        style_default.alignment.vert = style_default.alignment.VERT_CENTER
+
+        # 가운데 정렬 스타일
+        style_center = xlwt.XFStyle()
+        style_center.borders.left = 1
+        style_center.borders.right = 1
+        style_center.borders.top = 1
+        style_center.borders.bottom = 1
+        style_center.alignment.vert = style_center.alignment.VERT_CENTER
+        style_center.alignment.horz = style_center.alignment.HORZ_CENTER
+
+        # 오른쪽 정렬 스타일
+        style_right = xlwt.XFStyle()
+        style_right.borders.left = 1
+        style_right.borders.right = 1
+        style_right.borders.top = 1
+        style_right.borders.bottom = 1
+        style_right.alignment.vert = style_right.alignment.VERT_CENTER
+        style_right.alignment.horz = style_right.alignment.HORZ_RIGHT
+
+        # 날짜 스타일 (가운데 정렬 + 날짜 포맷)
+        style_date = xlwt.XFStyle()
+        style_date.borders.left = 1
+        style_date.borders.right = 1
+        style_date.borders.top = 1
+        style_date.borders.bottom = 1
+        style_date.alignment.vert = style_date.alignment.VERT_CENTER
+        style_date.alignment.horz = style_date.alignment.HORZ_CENTER
+        style_date.num_format_str = 'yyyy-mm-dd'
+
+        # 금액 스타일 (숫자 포맷)
+        style_amount = xlwt.XFStyle()
+        style_amount.borders.left = 1
+        style_amount.borders.right = 1
+        style_amount.borders.top = 1
+        style_amount.borders.bottom = 1
+        style_amount.alignment.vert = style_amount.alignment.VERT_CENTER
+        style_amount.num_format_str = '#,##'
+
+        # 헤더 스타일 (굵게 + 회색 배경 + 가운데 정렬)
+        style_header = xlwt.XFStyle()
+        style_header.font.bold = True
+        style_header.borders.left = 1
+        style_header.borders.right = 1
+        style_header.borders.top = 1
+        style_header.borders.bottom = 1
+        style_header.alignment.vert = style_header.alignment.VERT_CENTER
+        style_header.alignment.horz = style_header.alignment.HORZ_CENTER
+        style_header.pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+        style_header.pattern.pattern_fore_colour = 22  # 회색
+
+        return {
+            'default': style_default,
+            'center': style_center,
+            'right': style_right,
+            'date': style_date,
+            'amount': style_amount,
+            'header': style_header,
+        }
