@@ -35,7 +35,40 @@ class PdfExportCertOccupancy(View):
 
         # ----------------------------------------------------------------
 
-        html_string = render_to_string('pdf/payments_by_contractor.html', context)
+        html_string = render_to_string('pdf/certification-occupancy.html', context)
+
+        # 가로 방향 페이지 설정을 위한 CSS 추가
+        landscape_css = """
+        <style>
+        @page {
+            size: A4 landscape;
+            margin: 5mm;
+        }
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #page-container {
+            transform: scale(0.77);
+            transform-origin: 0 0;
+            width: 100%;
+            height: 100%;
+        }
+        .pf {
+            margin: 0 !important;
+            box-shadow: none !important;
+        }
+        </style>
+        """
+
+        # HTML 문서의 head 섹션에 CSS 추가
+        if '<head>' in html_string:
+            html_string = html_string.replace('<head>', f'<head>{landscape_css}', 1)
+        else:
+            html_string = f'<html><head>{landscape_css}</head><body>{html_string}</body></html>'
 
         html = HTML(string=html_string)
         html.write_pdf(target='/tmp/mypdf.pdf')
@@ -43,5 +76,5 @@ class PdfExportCertOccupancy(View):
         fs = FileSystemStorage('/tmp')
         with fs.open('mypdf.pdf') as pdf:
             response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="payments_contractor.pdf"'
+            response['Content-Disposition'] = f'attachment; filename="cert-occupancy.pdf"'
             return response

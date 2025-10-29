@@ -14,5 +14,5 @@ urlpatterns = [
     # Payment 관련
     path('payments/', PdfExportPayments.as_view(), name='payments'),
     path('calculation/', PdfExportCalculation.as_view(), name='calculation'),
-    path('cert-occupancy', PdfExportCertOccupancy.as_view(), name='cert-occupancy'),
+    path('cert-occupancy/', PdfExportCertOccupancy.as_view(), name='cert-occupancy'),
 ]
