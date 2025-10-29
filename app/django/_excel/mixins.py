@@ -50,7 +50,7 @@ class ExcelExportMixin(View):
 
     @staticmethod
     def create_number_format(workbook):
-        number_format = workbook.workbook.add_format({
+        number_format = workbook.add_format({
             'valign': 'vcenter',
             'border': True,
             'num_format': 41,
@@ -60,7 +60,7 @@ class ExcelExportMixin(View):
 
     @staticmethod
     def create_center_format(workbook):
-        center_format = workbook.workbook.add_format({
+        center_format = workbook.add_format({
             'valign': 'vcenter',
             'border': True,
             'align': 'center'
@@ -69,7 +69,7 @@ class ExcelExportMixin(View):
 
     @staticmethod
     def create_left_format(workbook):
-        left_format = workbook.workbook.add_format({
+        left_format = workbook.add_format({
             'valign': 'vcenter',
             'border': True,
             'align': 'left'
