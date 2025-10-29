@@ -207,22 +207,6 @@ const handleExcelDownload = (url: string, fileName: string) => {
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>
-            <!-- Excel 다운로드 예시 -->
-<!--            <CTableRow>-->
-<!--              <CTableDataCell class="text-center">-->
-<!--                <CFormCheck />-->
-<!--              </CTableDataCell>-->
-<!--              <CTableDataCell>-->
-<!--                <button-->
-<!--                  @click="handleExcelDownload(`/excel/payments/?project=${contract.project}&contract=${contract.pk}`, '납부내역_리스트.xlsx')"-->
-<!--                  class="btn btn-link p-0 text-start"-->
-<!--                  style="text-decoration: none;"-->
-<!--                >-->
-<!--                  납부내역 Excel-->
-<!--                </button>-->
-<!--              </CTableDataCell>-->
-<!--              <CTableDataCell>Excel 형식 다운로드</CTableDataCell>-->
-<!--            </CTableRow>-->
           </CTableBody>
         </CTable>
       </div>
