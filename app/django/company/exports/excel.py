@@ -13,6 +13,7 @@ from django.views.generic import View
 from rest_framework import serializers
 from rest_framework.utils import json
 
+from _excel.mixins import ExcelExportMixin
 from company.models import Company, Staff, Department, JobGrade, Position, DutyTitle
 from contract.models import Contract
 from project.models import Project
@@ -171,18 +172,9 @@ class ExportStaffs(View):
         # data finish -------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{TODAY}-staffs.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{TODAY}-staffs.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 class ExportDeparts(View):
@@ -301,18 +293,9 @@ class ExportDeparts(View):
         # data finish -------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{TODAY}-departs.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{TODAY}-departs.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 class ExportPositions(View):
@@ -437,18 +420,9 @@ class ExportPositions(View):
         # data finish -------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{TODAY}-positions.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{TODAY}-positions.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 class ExportDuties(View):
@@ -557,18 +531,9 @@ class ExportDuties(View):
         # data finish -------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{TODAY}-duties.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{TODAY}-duties.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 class ExportGrades(View):
@@ -709,18 +674,9 @@ class ExportGrades(View):
         # data finish -------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{TODAY}-grades.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{TODAY}-grades.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 class ExportExamples(View):
@@ -822,15 +778,7 @@ class ExportExamples(View):
         # data finish -------------------------------------------- #
 
         # Close the workbook before sending the data.
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{TODAY}-examples.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
         workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{TODAY}-file_title.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
