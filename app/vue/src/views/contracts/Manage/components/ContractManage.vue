@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useContract } from '@/store/pinia/contract'
 import type { Contract, Contractor } from '@/store/types/contract'
@@ -15,7 +15,6 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const isDark = inject('isDark')
 
 const contStore = useContract()
 const addressList = computed(() => contStore.contAddressList)

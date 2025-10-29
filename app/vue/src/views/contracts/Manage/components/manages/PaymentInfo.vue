@@ -2,9 +2,8 @@
 import { type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { Contract } from '@/store/types/contract'
-import { CCard, CCardBody, CFormCheck } from '@coreui/vue'
 
-const props = defineProps({
+defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
 })
 </script>
@@ -119,7 +118,7 @@ const props = defineProps({
                 <CFormCheck/>
               </CTableDataCell>
               <CTableDataCell>
-                <a href="#">대금납부 고지서</a>
+                <a :href="`/pdf/bill/?project=1&seq=${contract.pk}`" target="_blank">대금납부 고지서</a>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>

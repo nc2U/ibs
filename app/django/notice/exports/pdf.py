@@ -27,7 +27,8 @@ class PdfExportBill(View):
         :return:
         """
         project = request.GET.get('project')  # 프로젝트 ID
-        pub_date = datetime.strptime(request.GET.get('date'), '%Y-%m-%d').date()
+        pub_date = request.GET.get('date')
+        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
         bill_info = SalesBillIssue.objects.get(project=project)
         np = True if request.GET.get('np') else False
         nl = True if request.GET.get('nl') else False
