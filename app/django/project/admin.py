@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.contrib.humanize.templatetags.humanize import intcomma
-from django.utils.html import format_html
 from import_export.admin import ImportExportMixin
 
 from .models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
