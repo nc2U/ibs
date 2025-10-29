@@ -36,7 +36,7 @@ const formsCheck = computed(() => {
   const h = !from_date.value
   const i = !to_date.value
   const j = form.ordering === '-created'
-  const k = form.search?.trim() === ''
+  const k = (form.search as string)?.trim() === ''
   const groupA = a && b && c && d && e
   const groupB = f && g && h && i && j && k
   return groupA && groupB
