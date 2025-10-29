@@ -16,7 +16,7 @@ from _pdf.utils import get_contract
 TODAY = date.today()
 
 
-class PdfExportPayments(View):
+class PdfExportCertOccupancy(View):
 
     @staticmethod
     def get(request):
