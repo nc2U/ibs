@@ -4,29 +4,27 @@ import io
 import xlsxwriter
 from django.db.models import Q
 from django.http import HttpResponse
-from django.views.generic import View
 
+from _excel.mixins import ExcelExportMixin, AdvancedExcelMixin
 from project.models import Project, Site, SiteOwner, SiteContract
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
-class ExportSites(View):
+class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
     """프로젝트 지번별 토지목록"""
 
-    @staticmethod
-    def get(request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('지번별_토지목록')
 
-        # Even though the final file will be in memory the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('지번별_토지목록')
-
-        worksheet.set_default_row(20)  # 기본 행 높이
+        formats = self.create_format_objects(workbook)
+        body_format = {
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'num_format': '#,##0',
+        }
 
         # data start --------------------------------------------- #
 
@@ -50,11 +48,7 @@ class ExportSites(View):
         row_num = 0
         worksheet.set_row(row_num, 50)
 
-        title_format = workbook.add_format()
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
-        title_format.set_bold()
-        worksheet.merge_range(row_num, 0, row_num, rows_cnt, str(project) + ' 토지목록 조서', title_format)
+        worksheet.merge_range(row_num, 0, row_num, rows_cnt, str(project) + ' 토지목록 조서', formats['title'])
 
         # 2. Pre Header - Date
         row_num = 1
@@ -64,14 +58,6 @@ class ExportSites(View):
         # 3. Header
         row_num = 2
         worksheet.set_row(row_num, 23, workbook.add_format({'bold': True}))
-
-        header_format = workbook.add_format()
-        header_format.set_bold()
-        header_format.set_border()
-        header_format.set_align('center')
-        header_format.set_align('vcenter')
-        header_format.set_bg_color('#eeeeee')
-        header_format.set_num_format('#,##0')
 
         # Header_contents
         at = '소유면적'
@@ -115,9 +101,9 @@ class ExportSites(View):
 
         for col_num, title in enumerate(titles):  # 헤더 줄 제목 세팅
             if '면적' in title:
-                worksheet.merge_range(row_num, col_num, row_num, col_num + 1, title, header_format)
+                worksheet.merge_range(row_num, col_num, row_num, col_num + 1, title, formats['header'])
             elif int(col_num) not in area_col_num:
-                worksheet.merge_range(row_num, col_num, row_num + 1, col_num, title, header_format)
+                worksheet.merge_range(row_num, col_num, row_num + 1, col_num, title, formats['header'])
 
         row_num = 3
         worksheet.set_row(row_num, 23, workbook.add_format({'bold': True}))
@@ -126,20 +112,13 @@ class ExportSites(View):
         area_col2 = (5, 7) if project.is_returned_area else (5,)
         for col_num, title in enumerate(titles):
             if int(col_num) in area_col1:
-                worksheet.write(row_num, col_num, '㎡', header_format)
+                worksheet.write(row_num, col_num, '㎡', formats['header'])
             elif int(col_num) in area_col2:
-                worksheet.write(row_num, col_num, '평', header_format)
+                worksheet.write(row_num, col_num, '평', formats['header'])
 
         #################################################################
         # 4. Body
         # Get some data to write to the spreadsheet.
-
-        body_format = {
-            'border': True,
-            'align': 'center',
-            'valign': 'vcenter',
-            'num_format': '#,##0',
-        }
 
         while '' in params:
             params.remove('')
@@ -228,15 +207,12 @@ class ExportSites(View):
         output.seek(0)
 
         # Set up the Http response.
-        filename = f'{TODAY}-sites.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename', 'sites')
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
 
 
-class ExportSitesByOwner(View):
+class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
     """프로젝트 소유자별 토지목록"""
 
     def get(self, request):
@@ -289,13 +265,6 @@ class ExportSitesByOwner(View):
         # 3. Header
         row_num = 2
         worksheet.set_row(row_num, 25, workbook.add_format({'bold': True}))
-
-        header_format = workbook.add_format()
-        header_format.set_bold()
-        header_format.set_border()
-        header_format.set_align('center')
-        header_format.set_align('vcenter')
-        header_format.set_bg_color('#eeeeee')
 
         # Header_contents
         at = '소유면적'
@@ -455,7 +424,7 @@ class ExportSitesByOwner(View):
         return sort[int(code)]
 
 
-class ExportSitesContracts(View):
+class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
     """프로젝트 토지 계약현황"""
 
     def get(self, request):

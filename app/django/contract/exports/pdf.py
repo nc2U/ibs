@@ -13,7 +13,7 @@ from weasyprint import HTML
 
 from _pdf.utils import get_contract
 
-TODAY = date.today()
+TODAY = date.today().strftime('%Y-%m-%d')
 
 
 class PdfExportCertOccupancy(View):
@@ -27,8 +27,7 @@ class PdfExportCertOccupancy(View):
         context['is_calc'] = calc = True if request.GET.get('is_calc') else False  # 1 = 일반용(할인가산 포함) / '' = 확인용
 
         # 발행일자
-        pub_date = request.GET.get('date', None)
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
+        pub_date = request.GET.get('date', TODAY)
         context['pub_date'] = pub_date
 
         # 사용자정보
@@ -105,7 +104,7 @@ class PdfExportCertOccupancy(View):
         """이미지 위에 텍스트 오버레이 생성"""
         contract = context.get('contract')
         pub_date_obj = context.get('pub_date')
-        pub_date = pub_date_obj.strftime(f'%Y{"&nbsp;"*8}%m{"&nbsp;"*8}%d') if pub_date_obj else ""
+        pub_date = pub_date_obj.strftime(f'%Y{"&nbsp;" * 8}%m{"&nbsp;" * 8}%d') if pub_date_obj else ""
         user = context.get('user')
 
         if not contract:
