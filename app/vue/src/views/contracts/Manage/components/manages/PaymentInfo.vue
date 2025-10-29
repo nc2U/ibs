@@ -118,7 +118,7 @@ defineProps({
                 <CFormCheck/>
               </CTableDataCell>
               <CTableDataCell>
-                <a :href="`/pdf/bill/?project=1&seq=${contract.pk}`" target="_blank">대금납부 고지서</a>
+                <a :href="`/pdf/bill/?project=${contract.project}&seq=${contract.pk}`" target="_blank">대금납부 고지서</a>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>
