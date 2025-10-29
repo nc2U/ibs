@@ -12,6 +12,7 @@ from django.db.models import Q, Max, OuterRef, Subquery
 from django.http import HttpResponse
 from django.views.generic import View
 
+from _excel.mixins import ExcelExportMixin
 from cash.models import ProjectCashBook
 from contract.models import Contract, Succession, ContractorRelease
 from contract.models import ContractorAddress
@@ -21,36 +22,30 @@ from project.models import Project
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
-class ExportContracts(View):
+class ExportContracts(ExcelExportMixin):
     """계약자 리스트"""
 
-    @staticmethod
-    def get(request):
-
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
-
-        # Even though the final file will be in memory the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
+    def get(self, request):
+        # 워크북 생성
         t_name = '계약' if request.GET.get('status') == '2' else '청약'
-
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet(f'{t_name}목록_정보')
-
-        worksheet.set_default_row(20)
+        output, workbook, worksheet = self.create_workbook(f'{t_name}목록_정보')
 
         project = Project.objects.get(pk=request.GET.get('project'))
         cols = sorted(list(map(int, request.GET.get('col').split('-'))))
 
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        body_format = {
+            'border': True,
+            'valign': 'vcenter',
+            'num_format': '#,##0',
+            'align': 'center',
+        }
+
         # 1. Title
         row_num = 0
-        title_format = workbook.add_format()
         worksheet.set_row(row_num, 50)
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
-        title_format.set_bold()
         worksheet.merge_range(row_num, 0, row_num, len(cols), str(project) + f' {t_name}자 리스트', title_format)
 
         # 2. Pre Header - Date
@@ -61,13 +56,6 @@ class ExportContracts(View):
         # 3. Header
         row_num = 2
         worksheet.set_row(row_num, 23, workbook.add_format({'bold': True}))
-
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
 
         # title_list
         header_src = [[],
@@ -124,25 +112,13 @@ class ExportContracts(View):
                 worksheet.write(row_num, col_num, titles[col_num], h_format)
 
         # 4. Body
-        b_format = workbook.add_format()
-        b_format.set_border()
-        b_format.set_align('vcenter')
-        b_format.set_num_format('yyyy-mm-dd')
-        b_format.set_align('center')
 
-        body_format = {
-            'border': True,
-            'valign': 'vcenter',
-            'num_format': '#,##0',
-            'align': 'center',
-        }
-
-        # Turn off some of the warnings:
+        # Turn off some warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'B:Y'})
 
         # ----------------- get_queryset start ----------------- #
         # Get some data to write to the spreadsheet.
-        # Use select_related to optimize and ensure we get current address
+        # Use select_related to optimize and ensure we get the current address
         queryset = Contract.objects.filter(project=project,
                                            activation=True,
                                            contractor__status='2').select_related(
@@ -280,9 +256,7 @@ class ExportContracts(View):
 
                 # 인가 여부 데이터 치환
                 cell_value = quali_str.get(cell_data, '') if reg_col == col_num else cell_data
-
                 bf = workbook.add_format(body_format)
-
                 worksheet.write(row_num, col_num, cell_value, bf)
 
         # Close the workbook before sending the data.
@@ -292,15 +266,12 @@ class ExportContracts(View):
         output.seek(0)
 
         # Set up the Http response.
-        filename = '{date}-contracts.xlsx'.format(date=TODAY)
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = 'attachment; filename=%s' % filename
-
-        return response
+        filename = request.GET.get('filename') or 'contracts'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
 
 
-class ExportApplicants(View):
+class ExportApplicants(ExcelExportMixin):
     """청약자 리스트"""
 
     @staticmethod
@@ -443,7 +414,7 @@ class ExportApplicants(View):
         return response
 
 
-class ExportSuccessions(View):
+class ExportSuccessions(ExcelExportMixin):
     """권리의무승계 리스트"""
 
     @staticmethod
@@ -578,7 +549,7 @@ class ExportSuccessions(View):
         return response
 
 
-class ExportReleases(View):
+class ExportReleases(ExcelExportMixin):
     """해지자 리스트"""
 
     @staticmethod
@@ -725,7 +696,7 @@ class ExportReleases(View):
         return response
 
 
-class ExportUnitStatus(View):
+class ExportUnitStatus(ExcelExportMixin):
     """동호수 현황표"""
 
     @staticmethod
