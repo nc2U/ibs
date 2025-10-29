@@ -10,7 +10,6 @@ const props = defineProps({
     size="small"
     :href="props.url as string"
     flat
-    width="160"
     :disabled="props.disabled"
     class="mt-1 mx-3"
     style="text-decoration: none"
