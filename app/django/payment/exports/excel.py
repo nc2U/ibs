@@ -67,9 +67,8 @@ class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
         if not project:
             raise ValueError("Project ID is required")
 
-        sd = request.GET.get('sd') or '1900-01-01'
-        ed = request.GET.get('ed')
-        ed = ed or TODAY
+        sd = request.GET.get('sd', '1900-01-01')
+        ed = request.GET.get('ed', TODAY)
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('수납건별_납부내역')
@@ -235,8 +234,7 @@ class ExportPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         if not project:
             raise ValueError("Project ID is required")
 
-        date = request.GET.get('date')
-        date = TODAY if not date or date == 'null' else date
+        date = request.GET.get('date', TODAY)
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('계약자별_납부내역', in_memory=False)
@@ -472,8 +470,9 @@ class ExportPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
 
                 worksheet.write(row_num, col_num, cell_data, bf)
 
-        # Create response using mixin
-        filename = f'{date}-payment-by-cont'
+        # Create a response using mixin\
+        filename = request.GET.get('filename') or 'payment-by-cont'
+        filename = f'{filename}-{date}'
         return self.create_response(output, workbook, filename)
 
 
@@ -486,9 +485,9 @@ class ExportPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
         if not project:
             raise ValueError("Project ID is required")
 
-        date = request.GET.get('date')
+        date = request.GET.get('date', TODAY)
 
-        # Create workbook with performance optimization
+        # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('차수_타입별_수납집계', in_memory=False)
 
         # Create reusable format objects
@@ -511,7 +510,7 @@ class ExportPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
 
         # Use header format from mixin
         h_format = formats['header']
-        h1format = h_format  # h1format alias for compatibility
+        h1format = h_format  # format alias for compatibility
 
         # Header_contents - Vue 컴포넌트와 동일한 구조
         header_src = [['차수', 'order_group', 13],
@@ -698,7 +697,7 @@ class ExportPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
 
         # 합계 행 작성 - API 데이터 기반
         for col_num, col in enumerate(titles):
-            # Create new format for summary row
+            # Create a new format for summary row
             if col_num == 0:
                 h2format = workbook.add_format({
                     'bold': True,
@@ -744,8 +743,10 @@ class ExportPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
                 # 합계 (총 예산)
                 worksheet.write(row_num, col_num, totals['total_budget'], h2format)
 
-        # Create response using mixin
-        return self.create_response(output, workbook, f'{date}-payment-status')
+        # Create a response using mixin
+        filename = request.GET.get('filename')
+        filename = f'{filename}-{date}'
+        return self.create_response(output, workbook, filename)
 
 
 class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
@@ -758,7 +759,7 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
 
         # Get project using mixin
         project = self.get_project(request)
-        date = request.GET.get('date')
+        date = request.GET.get('date', TODAY)
 
         # ----------------- get_data_using_api start ----------------- #
         # OverallSummaryViewSet와 동일한 로직 사용
@@ -1075,4 +1076,6 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         worksheet.write(row_num, col_count - 1, total_overall_unpaid_rate / 100, percent_format)
 
         # Create a response using mixin
-        return self.create_response(output, workbook, f'{date}-overall-summary')
+        filename = request.GET.get('filename', 'overall-summary')
+        filename = f'{filename}-{date}'
+        return self.create_response(output, workbook, filename)
