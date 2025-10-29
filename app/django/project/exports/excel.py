@@ -413,17 +413,9 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
     """프로젝트 토지 계약현황"""
 
     def get(self, request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
-
-        # Even though the final file will be in memory the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('사업부지_계약현황')
-
-        worksheet.set_default_row(20)  # 기본 행 높이
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('사업부지_계약현황')
+        formats = self.create_format_objects(workbook)
 
         # data start --------------------------------------------- #
 
@@ -447,12 +439,7 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
         # 1. Title
         row_num = 0
         worksheet.set_row(row_num, 50)
-
-        title_format = workbook.add_format()
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
-        title_format.set_bold()
-        worksheet.merge_range(row_num, 0, row_num, rows_cnt, str(project) + ' 사업부지 계약현황', title_format)
+        worksheet.merge_range(row_num, 0, row_num, rows_cnt, str(project) + ' 사업부지 계약현황', formats['title'])
 
         # 2. Pre Header - Date
         row_num = 1
@@ -462,13 +449,6 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
         # 3. Header
         row_num = 2
         worksheet.set_row(row_num, 25, workbook.add_format({'bold': True}))
-
-        header_format = workbook.add_format()
-        header_format.set_bold()
-        header_format.set_border()
-        header_format.set_align('center')
-        header_format.set_align('vcenter')
-        header_format.set_bg_color('#eeeeee')
 
         # Header_contents
         header_src = [['소유구분', 'owner__own_sort', 8],
@@ -508,9 +488,9 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
         last_col = 0
         for col_num, col in enumerate(titles):  # 헤더 줄 제목 세팅
             if '면적' in col:
-                worksheet.merge_range(row_num, col_num, row_num, col_num + 1, titles[col_num], header_format)
+                worksheet.merge_range(row_num, col_num, row_num, col_num + 1, titles[col_num], formats['header'])
             elif int(col_num) not in (3, 4):
-                worksheet.merge_range(row_num, col_num, row_num + 1, col_num, titles[col_num], header_format)
+                worksheet.merge_range(row_num, col_num, row_num + 1, col_num, titles[col_num], formats['header'])
             if '비고' in col:
                 last_col = col_num
 
@@ -518,9 +498,9 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
 
         for col_num, col in enumerate(titles):
             if int(col_num) == 3:
-                worksheet.write(row_num, col_num, '㎡', header_format)
+                worksheet.write(row_num, col_num, '㎡', formats['header'])
             elif int(col_num) == 4:
-                worksheet.write(row_num, col_num, '평', header_format)
+                worksheet.write(row_num, col_num, '평', formats['header'])
 
         #################################################################
         # 4. Body
@@ -617,12 +597,9 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
         output.seek(0)
 
         # Set up the Http response.
-        filename = f'{TODAY}-sites-contracts.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename', 'sites-contracts')
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
 
     @staticmethod
     def get_sort(code):
