@@ -6,10 +6,10 @@ export const FILE_TYPES = {
   EXCEL: 'excel',
   WORD: 'word',
   IMAGE: 'image',
-  OTHER: 'other'
+  OTHER: 'other',
 } as const
 
-export type FileType = typeof FILE_TYPES[keyof typeof FILE_TYPES]
+export type FileType = (typeof FILE_TYPES)[keyof typeof FILE_TYPES]
 
 // MIME 타입 매핑
 const MIME_TYPES: Record<string, string> = {
@@ -19,7 +19,7 @@ const MIME_TYPES: Record<string, string> = {
   word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   doc: 'application/msword',
   jpg: 'image/jpeg',
-  png: 'image/png'
+  png: 'image/png',
 }
 
 // 다운로드 상태 타입
@@ -37,7 +37,7 @@ const downloadState = reactive<DownloadState>({
   downloadUrl: null,
   fileName: null,
   fileType: null,
-  progress: 0
+  progress: 0,
 })
 
 // useDownload 훅 반환 타입
@@ -109,23 +109,62 @@ export function useDownload(): UseDownloadReturn {
         downloadState.progress = Math.min(progress, 90)
       }, 200)
 
-      // 기존 프로젝트에서 사용하던 방식: location.href로 다운로드
-      window.location.href = finalUrl
+      try {
+        // fetch API를 사용하여 서버의 Content-Disposition 헤더를 존중
+        const response = await fetch(finalUrl, {
+          method: 'GET',
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        // Content-Disposition 헤더에서 파일명 추출
+        const disposition = response.headers.get('Content-Disposition')
+        let downloadFileName = fileName
+
+        if (disposition) {
+          // RFC 5987 형식 (filename*=UTF-8''encoded-name) 우선 처리
+          const filenameStarMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i)
+          if (filenameStarMatch) {
+            downloadFileName = decodeURIComponent(filenameStarMatch[1])
+          } else {
+            // 일반 filename 형식 처리
+            const filenameMatch = disposition.match(/filename="?([^";]+)"?/i)
+            if (filenameMatch) {
+              downloadFileName = filenameMatch[1]
+            }
+          }
+        }
+
+        // Blob으로 변환하여 다운로드
+        const blob = await response.blob()
+        const blobUrl = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = blobUrl
+        a.download = downloadFileName
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(blobUrl)
+      } catch (fetchError) {
+        console.warn('Fetch download failed, falling back to window.location.href', fetchError)
+        // 실패 시 기존 방식으로 fallback
+        window.location.href = finalUrl
+      }
 
       // 다운로드 완료 후 정리
+      clearInterval(progressInterval)
+      downloadState.progress = 100
+
       setTimeout(() => {
-        clearInterval(progressInterval)
-        downloadState.progress = 100
-
-        setTimeout(() => {
-          downloadState.isDownloading = false
-          downloadState.downloadUrl = null
-          downloadState.fileName = null
-          downloadState.fileType = null
-          downloadState.progress = 0
-        }, 500)
-      }, 2000) // 2초 후 완료로 간주
-
+        downloadState.isDownloading = false
+        downloadState.downloadUrl = null
+        downloadState.fileName = null
+        downloadState.fileType = null
+        downloadState.progress = 0
+      }, 500)
     } catch (error) {
       console.error('다운로드 오류:', error)
       downloadState.isDownloading = false
@@ -138,7 +177,10 @@ export function useDownload(): UseDownloadReturn {
    * @param url - 다운로드 URL
    * @param fileName - 파일명 (선택사항)
    */
-  const downloadWithProgress = async (url: string, fileName: string = 'document'): Promise<void> => {
+  const downloadWithProgress = async (
+    url: string,
+    fileName: string = 'document',
+  ): Promise<void> => {
     try {
       downloadState.isDownloading = true
       downloadState.downloadUrl = url
@@ -197,7 +239,6 @@ export function useDownload(): UseDownloadReturn {
         downloadState.fileType = null
         downloadState.progress = 0
       }, 500)
-
     } catch (error) {
       console.error('다운로드 오류:', error)
       downloadState.isDownloading = false
@@ -220,6 +261,6 @@ export function useDownload(): UseDownloadReturn {
     downloadPDF,
     downloadExcel,
     downloadWithProgress,
-    FILE_TYPES
+    FILE_TYPES,
   }
 }
