@@ -10,26 +10,47 @@
     >
       <div class="download-modal">
         <div class="download-content">
-          <!-- 로딩 아이콘 -->
-          <div class="loading-icon">
-            <svg class="animate-spin" width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-dasharray="32"
-                stroke-dashoffset="32"
-                class="spinner-circle"
-              />
-            </svg>
+          <!-- 파일 타입별 아이콘 -->
+          <div class="file-icon">
+            <!-- PDF 아이콘 -->
+            <div v-if="downloadState.fileType === 'pdf'" class="file-type-icon pdf-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <text x="12" y="18" font-size="6" text-anchor="middle" fill="currentColor">PDF</text>
+              </svg>
+            </div>
+
+            <!-- Excel 아이콘 -->
+            <div v-else-if="downloadState.fileType === 'excel'" class="file-type-icon excel-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <text x="12" y="18" font-size="5" text-anchor="middle" fill="currentColor">XLS</text>
+              </svg>
+            </div>
+
+            <!-- 기본 파일 아이콘 -->
+            <div v-else class="file-type-icon default-icon">
+              <svg class="animate-spin" width="48" height="48" viewBox="0 0 24 24" fill="none">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-dasharray="32"
+                  stroke-dashoffset="32"
+                  class="spinner-circle"
+                />
+              </svg>
+            </div>
           </div>
 
           <!-- 다운로드 메시지 -->
           <h3 id="download-title" class="download-title">
-            PDF 다운로드 중...
+            {{ getDownloadMessage() }}
           </h3>
 
           <p id="download-description" class="download-description">
@@ -60,7 +81,23 @@
 <script setup>
 import { useDownload } from '@/composables/useDownload'
 
-const { downloadState } = useDownload()
+const { downloadState, FILE_TYPES } = useDownload()
+
+// 파일 타입별 다운로드 메시지
+const getDownloadMessage = () => {
+  switch (downloadState.fileType) {
+    case FILE_TYPES.PDF:
+      return 'PDF 파일 다운로드 중...'
+    case FILE_TYPES.EXCEL:
+      return 'Excel 파일 다운로드 중...'
+    case FILE_TYPES.WORD:
+      return 'Word 파일 다운로드 중...'
+    case FILE_TYPES.IMAGE:
+      return '이미지 다운로드 중...'
+    default:
+      return '파일 다운로드 중...'
+  }
+}
 </script>
 
 <style scoped>
@@ -92,9 +129,28 @@ const { downloadState } = useDownload()
   text-align: center;
 }
 
-.loading-icon {
-  color: #3b82f6;
+.file-icon {
   margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.file-type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-icon {
+  color: #dc2626; /* 빨간색 - PDF */
+}
+
+.excel-icon {
+  color: #16a34a; /* 초록색 - Excel */
+}
+
+.default-icon {
+  color: #3b82f6; /* 파란색 - 기본 */
 }
 
 .animate-spin {

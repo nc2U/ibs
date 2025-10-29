@@ -3,17 +3,27 @@ import { type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { Contract } from '@/store/types/contract'
 import { useDownload } from '@/composables/useDownload'
+import { CCard } from '@coreui/vue'
 
 defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
 })
 
 // 다운로드 컴포저블 사용
-const { downloadPDF } = useDownload()
+const { downloadFile, downloadPDF, downloadExcel } = useDownload()
 
-// PDF 다운로드 핸들러
+// 통합 파일 다운로드 핸들러
+const handleFileDownload = (url: string, fileName: string) => {
+  downloadFile(url, fileName)
+}
+
+// 타입별 다운로드 핸들러 (호환성)
 const handlePDFDownload = (url: string, fileName: string) => {
   downloadPDF(url, fileName)
+}
+
+const handleExcelDownload = (url: string, fileName: string) => {
+  downloadExcel(url, fileName)
 }
 </script>
 
@@ -123,12 +133,12 @@ const handlePDFDownload = (url: string, fileName: string) => {
           </CTableHead>
           <CTableBody>
             <CTableRow>
-              <CTableDataCell>
+              <CTableDataCell class="text-center">
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handlePDFDownload(`/pdf/bill/?project=${contract.project}&seq=${contract.pk}`, '대금수납_고지서.pdf')"
+                  @click="handleFileDownload(`/pdf/bill/?project=${contract.project}&seq=${contract.pk}`, '대금수납_고지서.pdf')"
                   class="btn btn-link p-0 text-start"
                   style="text-decoration: none;"
                 >
@@ -138,12 +148,12 @@ const handlePDFDownload = (url: string, fileName: string) => {
               <CTableDataCell></CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableDataCell>
+              <CTableDataCell class="text-center">
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handlePDFDownload(`/pdf/payments/?project=${contract.project}&contract=${contract.pk}&is_calc=1`, '납부내역_확인서_일반.pdf')"
+                  @click="handleFileDownload(`/pdf/payments/?project=${contract.project}&contract=${contract.pk}&is_calc=1`, '납부내역_확인서_일반.pdf')"
                   class="btn btn-link p-0 text-start"
                   style="text-decoration: none;"
                 >
@@ -153,12 +163,12 @@ const handlePDFDownload = (url: string, fileName: string) => {
               <CTableDataCell>할인/가산 내역 포함</CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableDataCell>
+              <CTableDataCell class="text-center">
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handlePDFDownload(`/pdf/payments/?project=${contract.project}&contract=${contract.pk}`, '납부내역_확인서_확인.pdf')"
+                  @click="handleFileDownload(`/pdf/payments/?project=${contract.project}&contract=${contract.pk}`, '납부내역_확인서_확인.pdf')"
                   class="btn btn-link p-0 text-start"
                   style="text-decoration: none;"
                 >
@@ -168,12 +178,12 @@ const handlePDFDownload = (url: string, fileName: string) => {
               <CTableDataCell>대외 확인용</CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableDataCell>
+              <CTableDataCell class="text-center">
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handlePDFDownload(`/pdf/calculation/?project=${contract.project}&contract=${contract.pk}`, '할인_가산금 내역서.pdf')"
+                  @click="handleFileDownload(`/pdf/calculation/?project=${contract.project}&contract=${contract.pk}`, '할인_가산금 내역서.pdf')"
                   class="btn btn-link p-0 text-start"
                   style="text-decoration: none;"
                 >
@@ -183,12 +193,12 @@ const handlePDFDownload = (url: string, fileName: string) => {
               <CTableDataCell></CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableDataCell>
+              <CTableDataCell class="text-center">
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handlePDFDownload(`/pdf/cert-occupancy/?project=${contract.project}&contract=${contract.pk}`, '주택_인도_증서.pdf')"
+                  @click="handleFileDownload(`/pdf/cert-occupancy/?project=${contract.project}&contract=${contract.pk}`, '주택_인도_증서.pdf')"
                   class="btn btn-link p-0 text-start"
                   style="text-decoration: none;"
                 >
@@ -196,6 +206,37 @@ const handlePDFDownload = (url: string, fileName: string) => {
                 </button>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
+            </CTableRow>
+            <!-- Excel 다운로드 예시 -->
+            <CTableRow>
+              <CTableDataCell class="text-center">
+                <CFormCheck />
+              </CTableDataCell>
+              <CTableDataCell>
+                <button
+                  @click="handleExcelDownload(`/excel/payments/?project=${contract.project}&contract=${contract.pk}`, '납부내역_리스트.xlsx')"
+                  class="btn btn-link p-0 text-start"
+                  style="text-decoration: none;"
+                >
+                  납부내역 Excel
+                </button>
+              </CTableDataCell>
+              <CTableDataCell>Excel 형식 다운로드</CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableDataCell class="text-center">
+                <CFormCheck />
+              </CTableDataCell>
+              <CTableDataCell>
+                <button
+                  @click="handleExcelDownload(`/excel/contracts/?project=${contract.project}&contract=${contract.pk}`, '계약정보_리스트.xlsx')"
+                  class="btn btn-link p-0 text-start"
+                  style="text-decoration: none;"
+                >
+                  계약정보 Excel
+                </button>
+              </CTableDataCell>
+              <CTableDataCell>계약 세부정보 Excel</CTableDataCell>
             </CTableRow>
           </CTableBody>
         </CTable>
