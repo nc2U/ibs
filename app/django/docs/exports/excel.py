@@ -173,42 +173,27 @@ class ExportSuitCases(ExcelExportMixin):
 class ExportSuitCase(ExcelExportMixin):
     """PR 소송 사건 디테일"""
 
-    @staticmethod
-    def get(request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
-
-        # Even though the final file will be in memory the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('소송 사건')
-
-        worksheet.set_default_row(25)  # 기본 행 높이
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('소송_사건', False, 25)
 
         # data start --------------------------------------------- #
         obj = LawsuitCase.objects.get(pk=request.GET.get('pk'))
 
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        center_format = workbook.add_format({'align': 'center'})
+        num_format = workbook.add_format({'num_format': '#,##0'})
+
         # 1. Title
         row_num = 0
         worksheet.set_row(row_num, 50)
-        title_format = workbook.add_format()
-        title_format.set_bold()
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
         worksheet.merge_range(row_num, 0, row_num, 3, str(obj), title_format)
 
         # 3. Header - 1
         row_num = 1
         worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
-
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
 
         # Adjust the column width.
         worksheet.set_column(0, 0, 30)
@@ -217,22 +202,6 @@ class ExportSuitCase(ExcelExportMixin):
         worksheet.set_column(3, 3, 50)
 
         # 4. Body
-
-        h_format = workbook.add_format()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#EEEEEE')
-
-        b_format = workbook.add_format()
-        b_format.set_border()
-        b_format.set_align('vcenter')
-        b_format.set_num_format('yyyy-mm-dd')
-
-        c_format = workbook.add_format()
-        c_format.set_border()
-        c_format.set_align('vcenter')
-        c_format.set_num_format('#,##0')
 
         # Turn off the warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'B:D'})
@@ -244,70 +213,70 @@ class ExportSuitCase(ExcelExportMixin):
 
         row_num = 3
         worksheet.write(row_num, 0, '사건 번호', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.case_number), b_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.case_number), center_format)
 
         row_num = 4
         worksheet.write(row_num, 0, '사건명', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.case_name), b_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.case_name), center_format)
 
         row_num = 5
         worksheet.write(row_num, 0, '유형', h_format)
         worksheet.merge_range(row_num, 1, row_num, 3,
                               list(filter(lambda x: x[0] == obj.sort, LawsuitCase.SORT_CHOICES))[0][1],
-                              b_format)
+                              center_format)
 
         row_num = 6
         worksheet.write(row_num, 0, '심급', h_format)
         worksheet.merge_range(row_num, 1, row_num, 3,
                               list(filter(lambda x: x[0] == obj.level, LawsuitCase.LEVEL_CHOICES))[0][1],
-                              b_format)
+                              center_format)
 
         row_num = 7
         worksheet.write(row_num, 0, '관련 사건', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.related_case), b_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.related_case), center_format)
 
         row_num = 8
         worksheet.write(row_num, 0, '관할 법원', h_format)
         worksheet.merge_range(row_num, 1, row_num, 3,
                               list(filter(lambda x: x[0] == obj.court, LawsuitCase.COURT_CHOICES))[0][1] \
                                   if obj.court else '',
-                              b_format)
+                              center_format)
 
         row_num = 9
         worksheet.write(row_num, 0, '처리기관', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.other_agency), b_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.other_agency), center_format)
 
         row_num = 10
         worksheet.write(row_num, 0, '원고(채권자)', h_format)
-        worksheet.write(row_num, 1, str(obj.plaintiff), b_format)
+        worksheet.write(row_num, 1, str(obj.plaintiff), center_format)
         worksheet.write(row_num, 2, '피고(채무자)', h_format)
-        worksheet.write(row_num, 3, str(obj.defendant), b_format)
+        worksheet.write(row_num, 3, str(obj.defendant), center_format)
 
         row_num = 11
         worksheet.write(row_num, 0, '원고측 대리인', h_format)
-        worksheet.write(row_num, 1, str(obj.plaintiff_attorney), b_format)
+        worksheet.write(row_num, 1, str(obj.plaintiff_attorney), center_format)
         worksheet.write(row_num, 2, '피고측 대리인', h_format)
-        worksheet.write(row_num, 3, str(obj.defendant_attorney), b_format)
+        worksheet.write(row_num, 3, str(obj.defendant_attorney), center_format)
 
         row_num = 12
         worksheet.write(row_num, 0, '원고 소가', h_format)
-        worksheet.write(row_num, 1, obj.plaintiff_case_price, c_format)
+        worksheet.write(row_num, 1, obj.plaintiff_case_price, num_format)
         worksheet.write(row_num, 2, '피고 소가', h_format)
-        worksheet.write(row_num, 3, obj.defendant_case_price, c_format)
+        worksheet.write(row_num, 3, obj.defendant_case_price, num_format)
 
         row_num = 13
         worksheet.write(row_num, 0, '제3채무자', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.related_debtor), b_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.related_debtor), center_format)
 
         row_num = 14
         worksheet.write(row_num, 0, '사건개시일', h_format)
-        worksheet.write(row_num, 1, str(obj.case_start_date), b_format)
+        worksheet.write(row_num, 1, str(obj.case_start_date), center_format)
         worksheet.write(row_num, 2, '사건종결일', h_format)
-        worksheet.write(row_num, 3, str(obj.case_end_date) if obj.case_end_date else '', b_format)
+        worksheet.write(row_num, 3, str(obj.case_end_date) if obj.case_end_date else '', center_format)
 
         row_num = 15
         worksheet.write(row_num, 0, '개요 및 경과', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.summary), b_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.summary), center_format)
 
         # data finish -------------------------------------------- #
 
@@ -318,9 +287,6 @@ class ExportSuitCase(ExcelExportMixin):
         output.seek(0)
 
         # Set up the Http response.
-        filename = f'{TODAY}-suitcase.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename') or 'suitcase'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
