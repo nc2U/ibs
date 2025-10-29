@@ -76,6 +76,17 @@ class ExcelExportMixin(View):
         })
         return left_format
 
+    @staticmethod
+    def create_sum_format(workbook):
+        sum_format = workbook.add_format()
+        sum_format.set_bold()
+        sum_format.set_valign('vcenter')
+        sum_format.set_border()
+        sum_format.set_num_format(41)
+        sum_format.set_align('center')
+        sum_format.set_bg_color('#eeeeee')
+        return sum_format
+
     def write_title(self, worksheet, workbook, row_num, col_count, title):
         """제목 작성"""
         title_format = self.create_title_format(workbook)

@@ -360,23 +360,20 @@ class ExportCashFlowForm(ExcelExportMixin):
     """프로젝트 자금집행 내역 반영 캐시 플로우 폼"""
 
     def get(self, request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('캐시_플로우_폼')
 
-        # Even though the final file will be in memory, the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example, the Google App Engine set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('캐시 플로우 폼')
-
-        worksheet.set_default_row(20)  # 기본 행 높이
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        number_format = self.create_number_format(workbook)
+        center_format = self.create_center_format(workbook)
+        left_format = self.create_left_format(workbook)
+        sum_format = self.create_sum_format(workbook)
 
         # data start --------------------------------------------- #
-
         project = Project.objects.get(pk=request.GET.get('project'))
-        date = request.GET.get('date')
-        date = TODAY if not date or date == 'null' else date
+        date = request.GET.get('date') or TODAY
         revised = request.GET.get('revised')
         is_revised = int(revised) if revised in ('0', '1') else 0
 
@@ -414,27 +411,16 @@ class ExportCashFlowForm(ExcelExportMixin):
 
         # 2. Title
         row_num = 0
-        title_format = workbook.add_format()
         worksheet.set_row(row_num, 50)
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
-        title_format.set_bold()
         worksheet.write(row_num, 0, str(project) + ' 월별 자금집행 현황', title_format)
+        row_num += 1
 
         # 3. Header - 기준일자
-        row_num = 1
         worksheet.set_row(row_num, 18)
         worksheet.write(row_num, len(months) + 6, date + ' 현재', workbook.add_format({'align': 'right'}))
+        row_num += 1
 
         # 4. Column Headers
-        row_num = 2
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
-
         # 기본 컬럼 설정
         worksheet.set_column(0, 0, 10)
         worksheet.write(row_num, 0, '대분류', h_format)
@@ -495,13 +481,6 @@ class ExportCashFlowForm(ExcelExportMixin):
             key = (item['project_account_d3_id'], item['year'], item['month'])
             monthly_dict[key] = item['total'] or 0
 
-        # 7. Data rows
-        b_format = workbook.add_format()
-        b_format.set_valign('vcenter')
-        b_format.set_border()
-        b_format.set_num_format(41)
-        b_format.set_align('left')
-
         # 합계 계산을 위한 변수
         total_budget = 0
         total_cumulative = 0
@@ -529,26 +508,26 @@ class ExportCashFlowForm(ExcelExportMixin):
 
             # 대분류 (첫 행에만 병합)
             if row_idx == 0:
-                worksheet.merge_range(row_num, 0, row_num + budgets.count() - 1, 0, '사업비', b_format)
+                worksheet.merge_range(row_num, 0, row_num + budgets.count() - 1, 0, '사업비', center_format)
 
             # 중분류 (account_d2별 병합)
             if int(budget.account_d3.code) == int(budget.account_d2.code) + 1:
                 worksheet.merge_range(row_num, 1,
                                       row_num + budget.account_d2.projectoutbudget_set.count() - 1,
-                                      1, budget.account_d2.name, b_format)
+                                      1, budget.account_d2.name, center_format)
 
             # 소분류 (account_d3)
-            worksheet.write(row_num, 2, budget.account_d3.name, b_format)
+            worksheet.write(row_num, 2, budget.account_d3.name, left_format)
 
             # 예산액
-            worksheet.write(row_num, 3, calc_budget, b_format)
+            worksheet.write(row_num, 3, calc_budget, number_format)
 
             # 누계
-            worksheet.write(row_num, 4, cumulative_amount, b_format)
+            worksheet.write(row_num, 4, cumulative_amount, number_format)
 
             # 월별 금액
             for idx, amount in enumerate(monthly_amounts):
-                worksheet.write(row_num, 5 + idx, amount, b_format)
+                worksheet.write(row_num, 5 + idx, amount, number_format)
 
             # 집행금액 합계 (수식: 누계 + 월별 합계)
             total_col = 5 + len(months)
@@ -556,24 +535,17 @@ class ExportCashFlowForm(ExcelExportMixin):
             first_col = 'E'
             last_col = self.get_excel_column(total_col - 1)
             worksheet.write_formula(row_num, total_col, f'=SUM({first_col}{row_num + 1}:{last_col}{row_num + 1})',
-                                    b_format)
+                                    number_format)
 
             # 미집행금액 (수식: 예산 - 집행금액 합계)
             remaining_col = total_col + 1
             budget_col = 'D'
             total_col_letter = self.get_excel_column(total_col)
             worksheet.write_formula(row_num, remaining_col,
-                                    f'={budget_col}{row_num + 1}-{total_col_letter}{row_num + 1}', b_format)
+                                    f'={budget_col}{row_num + 1}-{total_col_letter}{row_num + 1}', number_format)
 
         # 8. Sum row
         row_num += 1
-        sum_format = workbook.add_format()
-        sum_format.set_bold()
-        sum_format.set_valign('vcenter')
-        sum_format.set_border()
-        sum_format.set_num_format(41)
-        sum_format.set_align('center')
-        sum_format.set_bg_color('#eeeeee')
 
         worksheet.merge_range(row_num, 0, row_num, 2, '합 계', sum_format)
         worksheet.write(row_num, 3, total_budget, sum_format)
@@ -587,12 +559,14 @@ class ExportCashFlowForm(ExcelExportMixin):
         remaining_col = total_col + 1
         first_col = 'E'
         last_col = self.get_excel_column(total_col - 1)
-        worksheet.write_formula(row_num, total_col, f'=SUM({first_col}{row_num + 1}:{last_col}{row_num + 1})',
+        worksheet.write_formula(row_num, total_col,
+                                f'=SUM({first_col}{row_num + 1}:{last_col}{row_num + 1})',
                                 sum_format)
 
         budget_col = 'D'
         total_col_letter = self.get_excel_column(total_col)
-        worksheet.write_formula(row_num, remaining_col, f'={budget_col}{row_num + 1}-{total_col_letter}{row_num + 1}',
+        worksheet.write_formula(row_num, remaining_col,
+                                f'={budget_col}{row_num + 1}-{total_col_letter}{row_num + 1}',
                                 sum_format)
 
         # data end ----------------------------------------------- #
