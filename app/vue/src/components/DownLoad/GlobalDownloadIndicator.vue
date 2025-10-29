@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-import { useDownload } from '@/composables/useDownload.ts'
+import { useDownload } from '@/utils/useDownload.ts'
 
 const { downloadState, FILE_TYPES } = useDownload()
 

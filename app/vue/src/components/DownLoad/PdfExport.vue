@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useDownload } from '@/composables/useDownload'
+import { useDownload } from '@/utils/useDownload.ts'
 
 const props = defineProps({
   url: { type: String, default: '' },

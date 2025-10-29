@@ -2,7 +2,7 @@
 import { type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { Contract } from '@/store/types/contract'
-import { useDownload } from '@/composables/useDownload'
+import { useDownload } from '@/utils/useDownload.ts'
 import { CCard } from '@coreui/vue'
 
 defineProps({
