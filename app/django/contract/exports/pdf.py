@@ -170,14 +170,14 @@ class PdfExportCertOccupancy(View):
         <div style="position: absolute; top: 600px; left: 530px; font-size: 12px; z-index: 10;">
             {project_name}
         </div>
-        <div style="position: absolute; top: 600px; left: 850px; font-size: 12px; z-index: 10;">
+        <div style="position: absolute; top: 604px; left: 855px; font-size: 12px; z-index: 10;">
             {project_name}
         </div>
         
         <div style="position: absolute; top: 642px; left: 530px; font-size: 12px; z-index: 10;">
             {user}
         </div>
-        <div style="position: absolute; top: 642px; left: 850px; font-size: 12px; z-index: 10;">
+        <div style="position: absolute; top: 642px; left: 855px; font-size: 12px; z-index: 10;">
             {user}
         </div>
         """
