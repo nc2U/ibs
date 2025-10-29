@@ -108,7 +108,7 @@ class ExcelExportMixin(View):
                 if header_name and field_name:  # 빈 헤더와 필드 제외
                     value = self.get_field_value(item, field_name)
 
-                    # Select appropriate format based on value type
+                    # Select the appropriate format based on a value type
                     if isinstance(value, (int, float)) and '금액' in header_name:
                         cell_format = number_format
                     elif '일자' in header_name or '날짜' in header_name:
