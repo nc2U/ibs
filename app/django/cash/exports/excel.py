@@ -29,9 +29,9 @@ class ExportProjectBalance(View):
         # Create an in-memory output file for the new workbook.
         output = io.BytesIO()
 
-        # Even though the final file will be in memory the module uses temp
+        # Even though the final file will be in memory, the module uses temp
         # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
+        # don't allow temp files, for example, the Google App Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
         workbook = xlsxwriter.Workbook(output)
         worksheet = workbook.add_worksheet('계좌별_자금현황')
@@ -168,9 +168,9 @@ class ExportProjectDateCashbook(View):
         # Create an in-memory output file for the new workbook.
         output = io.BytesIO()
 
-        # Even though the final file will be in memory the module uses temp
+        # Even though the final file will be in memory, the module uses temp
         # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
+        # don't allow temp files, for example, the Google App Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
         workbook = xlsxwriter.Workbook(output)
         worksheet = workbook.add_worksheet('당일_입출금내역')
@@ -849,9 +849,9 @@ class ExportBalanceByAcc(View):
         # Create an in-memory output file for the new workbook.
         output = io.BytesIO()
 
-        # Even though the final file will be in memory the module uses temp
+        # Even though the final file will be in memory, the module uses temp
         # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
+        # don't allow temp files, for example, the Google App Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
         workbook = xlsxwriter.Workbook(output)
         worksheet = workbook.add_worksheet('본사_계좌별_자금현황')
@@ -987,9 +987,9 @@ class ExportDateCashbook(View):
         # Create an in-memory output file for the new workbook.
         output = io.BytesIO()
 
-        # Even though the final file will be in memory the module uses temp
+        # Even though the final file will be in memory, the module uses temp
         # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
+        # don't allow temp files, for example, the Google App Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
         workbook = xlsxwriter.Workbook(output)
         worksheet = workbook.add_worksheet('당일_입출금내역')
