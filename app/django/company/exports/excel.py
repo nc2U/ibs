@@ -8,7 +8,6 @@ import io
 
 import xlsxwriter
 from django.db.models import Q
-from django.http import HttpResponse
 from django.views.generic import View
 from rest_framework import serializers
 from rest_framework.utils import json
@@ -21,26 +20,20 @@ from project.models import Project
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
-class ExportStaffs(View):
+class ExportStaffs(ExcelExportMixin):
     """직원 목록 정보"""
 
-    @staticmethod
-    def get(request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
-
-        # Even though the final file will be in memory the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('직원 정보')
-
-        worksheet.set_default_row(20)  # 기본 행 높이
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('직원_정보')
 
         # data start --------------------------------------------- #
         company = Company.objects.get(pk=request.GET.get('company'))
         com_name = company.name.replace('주식회사 ', '(주)')
+
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
 
         # title_list
         header_src = [[],
@@ -69,10 +62,6 @@ class ExportStaffs(View):
         # 1. Title
         row_num = 0
         worksheet.set_row(row_num, 50)
-        title_format = workbook.add_format()
-        title_format.set_bold()
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
         worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 직원 정보 목록', title_format)
 
         # 2. Pre Header - Date
@@ -83,13 +72,6 @@ class ExportStaffs(View):
         # 3. Header - 1
         row_num = 2
         worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
-
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
 
         # Adjust the column width.
         for i, col_width in enumerate(widths):
@@ -125,12 +107,6 @@ class ExportStaffs(View):
             Q(email__icontains=search)) if search else obj_list
 
         data = obj_list.values_list(*params)
-
-        b_format = workbook.add_format()
-        b_format.set_border()
-        b_format.set_align('center')
-        b_format.set_align('vcenter')
-        b_format.set_num_format('yyyy-mm-dd')
 
         body_format = {
             'border': True,
@@ -172,9 +148,9 @@ class ExportStaffs(View):
         # data finish -------------------------------------------- #
 
         # Close the workbook before sending the data.
-        filename = request.GET.get('filename')
-        filename = filename if filename else f'{TODAY}-staffs.xlsx'
-        return ExcelExportMixin.create_response(output, workbook, filename)
+        filename = request.GET.get('filename') or 'staffs'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
 
 
 class ExportDeparts(View):
