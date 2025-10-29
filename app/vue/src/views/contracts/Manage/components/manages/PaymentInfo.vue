@@ -138,9 +138,14 @@ const handleExcelDownload = (url: string, fileName: string) => {
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handleFileDownload(`/pdf/bill/?project=${contract.project}&seq=${contract.pk}`, '대금수납_고지서.pdf')"
+                  @click="
+                    handleFileDownload(
+                      `/pdf/bill/?project=${contract.project}&seq=${contract.pk}`,
+                      '대금수납_고지서.pdf',
+                    )
+                  "
                   class="btn btn-link p-0 text-start"
-                  style="text-decoration: none;"
+                  style="text-decoration: none"
                 >
                   대금수납 고지서
                 </button>
@@ -153,9 +158,14 @@ const handleExcelDownload = (url: string, fileName: string) => {
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handleFileDownload(`/pdf/payments/?project=${contract.project}&contract=${contract.pk}&is_calc=1`, '납부내역_확인서_일반.pdf')"
+                  @click="
+                    handleFileDownload(
+                      `/pdf/payments/?project=${contract.project}&contract=${contract.pk}&is_calc=1`,
+                      '납부내역_확인서_일반.pdf',
+                    )
+                  "
                   class="btn btn-link p-0 text-start"
-                  style="text-decoration: none;"
+                  style="text-decoration: none"
                 >
                   납부내역 확인서(일반)
                 </button>
@@ -168,9 +178,14 @@ const handleExcelDownload = (url: string, fileName: string) => {
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handleFileDownload(`/pdf/payments/?project=${contract.project}&contract=${contract.pk}`, '납부내역_확인서_확인.pdf')"
+                  @click="
+                    handleFileDownload(
+                      `/pdf/payments/?project=${contract.project}&contract=${contract.pk}`,
+                      '납부내역_확인서_확인.pdf',
+                    )
+                  "
                   class="btn btn-link p-0 text-start"
-                  style="text-decoration: none;"
+                  style="text-decoration: none"
                 >
                   납부내역 확인서(확인)
                 </button>
@@ -183,9 +198,14 @@ const handleExcelDownload = (url: string, fileName: string) => {
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handleFileDownload(`/pdf/calculation/?project=${contract.project}&contract=${contract.pk}`, '할인_가산금 내역서.pdf')"
+                  @click="
+                    handleFileDownload(
+                      `/pdf/calculation/?project=${contract.project}&contract=${contract.pk}`,
+                      '할인_가산금 내역서.pdf',
+                    )
+                  "
                   class="btn btn-link p-0 text-start"
-                  style="text-decoration: none;"
+                  style="text-decoration: none"
                 >
                   할인/가산금 내역서
                 </button>
@@ -198,9 +218,14 @@ const handleExcelDownload = (url: string, fileName: string) => {
               </CTableDataCell>
               <CTableDataCell>
                 <button
-                  @click="handleFileDownload(`/pdf/cert-occupancy/?project=${contract.project}&contract=${contract.pk}`, '주택_인도_증서.pdf')"
+                  @click="
+                    handleFileDownload(
+                      `/pdf/cert-occupancy/?project=${contract.project}&contract=${contract.pk}`,
+                      '주택_인도_증서.pdf',
+                    )
+                  "
                   class="btn btn-link p-0 text-start"
-                  style="text-decoration: none;"
+                  style="text-decoration: none"
                 >
                   주택 인도 증서
                 </button>
