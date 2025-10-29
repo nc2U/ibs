@@ -93,14 +93,14 @@ class ExportSuitCases(ExcelExportMixin):
         # Get some data to write to the spreadsheet.
         obj_list = LawsuitCase.objects.filter(issue_project__company=company)
 
-        is_com = request.GET.get('is_com')
+        is_real_dev = request.GET.get('is_real_dev')
         sort = request.GET.get('sort')
         level = request.GET.get('level')
         court = request.GET.get('court')
         in_progress = request.GET.get('in_progress')
 
-        obj_list = obj_list.filter(project__isnull=True) if is_com == 'true' else obj_list
-        obj_list = obj_list.filter(project=project) if project and is_com == 'false' else obj_list
+        obj_list = obj_list.filter(issue_project__project__isnull=True) if is_real_dev == 'false' else obj_list
+        obj_list = obj_list.filter(issue_project__project=project) if project and is_real_dev == 'true' else obj_list
         obj_list = obj_list.filter(case_end_date__isnull=True) if in_progress == 'true' else obj_list
         obj_list = obj_list.filter(case_end_date__isnull=False) if in_progress == 'false' else obj_list
         obj_list = obj_list.filter(sort=sort) if sort else obj_list
