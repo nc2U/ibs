@@ -274,22 +274,20 @@ class ExportContracts(ExcelExportMixin):
 class ExportSuccessions(ExcelExportMixin):
     """권리의무승계 리스트"""
 
-    @staticmethod
-    def get(request):
-
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
-
-        # Even though the final file will be in memory the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('권리의무승계_목록')
-
-        worksheet.set_default_row(20)
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('권리의무승계_목록')
 
         project = Project.objects.get(pk=request.GET.get('project'))
+
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        body_format = {
+            'border': True,
+            'valign': 'vcenter',
+            'num_format': 'yyyy-mm-dd'
+        }
 
         # title_list
         header_src = [[],
@@ -305,10 +303,6 @@ class ExportSuccessions(ExcelExportMixin):
         # 1. Title
         row_num = 0
         worksheet.set_row(row_num, 50)
-        title_format = workbook.add_format()
-        title_format.set_bold()
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
         worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, str(project) + ' 권리의무승계 목록', title_format)
 
         # 2. Pre Header - Date
@@ -330,13 +324,6 @@ class ExportSuccessions(ExcelExportMixin):
                 params.append(ds[1])
                 widths.append(ds[2])
 
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
-
         # Adjust the column width.
         for i, col_width in enumerate(widths):
             worksheet.set_column(i, i, col_width)
@@ -350,18 +337,6 @@ class ExportSuccessions(ExcelExportMixin):
         obj_list = Succession.objects.filter(contract__project=project)
 
         data = obj_list.values_list(*params)
-
-        b_format = workbook.add_format()
-        b_format.set_border()
-        b_format.set_align('center')
-        b_format.set_align('vcenter')
-        b_format.set_num_format('yyyy-mm-dd')
-
-        body_format = {
-            'border': True,
-            'valign': 'vcenter',
-            'num_format': 'yyyy-mm-dd'
-        }
 
         # Turn off some of the warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'F:G'})
@@ -398,12 +373,9 @@ class ExportSuccessions(ExcelExportMixin):
         output.seek(0)
 
         # Set up the Http response.
-        filename = '{date}-successions.xlsx'.format(date=TODAY)
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = 'attachment; filename=%s' % filename
-
-        return response
+        filename = request.GET.get('filename') or 'successions'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
 
 
 class ExportReleases(ExcelExportMixin):
