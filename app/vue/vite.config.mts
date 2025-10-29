@@ -143,6 +143,14 @@ export default defineConfig({
         target: 'http://localhost',
         changeOrigin: true,
       },
+      '/pdf': {
+        target: 'http://localhost',
+        changeOrigin: true,
+      },
+      '/excel': {
+        target: 'http://localhost',
+        changeOrigin: true,
+      },
     },
   },
   test: {
