@@ -745,50 +745,35 @@ def export_project_cash_xls(request):
 class ExportBalanceByAcc(ExcelExportMixin):
     """본사 계좌별 잔고 내역"""
 
-    @staticmethod
-    def get(request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('본사_계좌별_자금현황')
 
-        # Even though the final file will be in memory, the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example, the Google App Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('본사_계좌별_자금현황')
-
-        worksheet.set_default_row(20)  # 기본 행 높이
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        number_format = self.create_number_format(workbook)
+        center_format = self.create_center_format(workbook)
+        left_format = self.create_left_format(workbook)
+        sume_format = self.create_sum_format(workbook)
 
         # data start --------------------------------------------- #
-
         company = Company.objects.get(pk=request.GET.get('company'))
         com_name = company.name.replace('주식회사 ', '(주)')
-        date = request.GET.get('date')
-        date = TODAY if not date or date == 'null' else date
+        date = request.GET.get('date') or TODAY
 
         # 1. Title
         row_num = 0
-        title_format = workbook.add_format()
         worksheet.set_row(row_num, 50)
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
-        title_format.set_bold()
         worksheet.write(row_num, 0, com_name + ' 계좌별 자금현황', title_format)
+        row_num += 1
 
         # 2. Header
-        row_num = 1
         worksheet.set_row(row_num, 18)
         worksheet.write(row_num, 6, date + ' 현재', workbook.add_format({'align': 'right'}))
+        row_num += 1
 
         # 3. Header
-        row_num = 2
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
-
         worksheet.set_column(0, 0, 10)
         worksheet.merge_range(row_num, 0, row_num, 2, '계좌 구분', h_format)
         worksheet.set_column(1, 1, 30)
@@ -803,11 +788,6 @@ class ExportBalanceByAcc(ExcelExportMixin):
         worksheet.write(row_num, 6, '금일잔고', h_format)
 
         # 4. Contents
-        b_format = workbook.add_format()
-        b_format.set_valign('vcenter')
-        b_format.set_border()
-        b_format.set_num_format(41)
-
         qs = CashBook.objects.filter(company=company) \
             .order_by('bank_account') \
             .filter(is_separate=False, deal_date__lte=date)
@@ -848,29 +828,29 @@ class ExportBalanceByAcc(ExcelExportMixin):
 
             for col in range(7):
                 if col == 0 and row == 0:
-                    worksheet.write(row_num, col, '현금', b_format)
+                    worksheet.write(row_num, col, '현금', center_format)
                 if col == 0 and row == 1:
-                    worksheet.merge_range(row_num, col, balance_set.count() + 2, col, '보통예금', b_format)
+                    worksheet.merge_range(row_num, col, balance_set.count() + 2, col, '보통예금', center_format)
                 if col == 1:
-                    worksheet.write(row_num, col, balance['bank_acc'], b_format)
+                    worksheet.write(row_num, col, balance['bank_acc'], left_format)
                 if col == 2:
-                    worksheet.write(row_num, col, balance['bank_num'], b_format)
+                    worksheet.write(row_num, col, balance['bank_num'], left_format)
                 if col == 3:
-                    worksheet.write(row_num, col, inc_sum - out_sum - date_inc + date_out, b_format)
+                    worksheet.write(row_num, col, inc_sum - out_sum - date_inc + date_out, number_format)
                 if col == 4:
-                    worksheet.write(row_num, col, date_inc, b_format)
+                    worksheet.write(row_num, col, date_inc, number_format)
                 if col == 5:
-                    worksheet.write(row_num, col, date_out, b_format)
+                    worksheet.write(row_num, col, date_out, number_format)
                 if col == 6:
-                    worksheet.write(row_num, col, inc_sum - out_sum, b_format)
+                    worksheet.write(row_num, col, inc_sum - out_sum, number_format)
 
         # 5. Sum row
         row_num += 1
-        worksheet.merge_range(row_num, 0, row_num, 2, '현금성 자산 계', b_format)
-        worksheet.write(row_num, 3, total_inc_sum - total_out_sum - total_inc + total_out, b_format)
-        worksheet.write(row_num, 4, total_inc, b_format)
-        worksheet.write(row_num, 5, total_out, b_format)
-        worksheet.write(row_num, 6, total_inc_sum - total_out_sum, b_format)
+        worksheet.merge_range(row_num, 0, row_num, 2, '현금성 자산 계', sume_format)
+        worksheet.write(row_num, 3, total_inc_sum - total_out_sum - total_inc + total_out, sume_format)
+        worksheet.write(row_num, 4, total_inc, sume_format)
+        worksheet.write(row_num, 5, total_out, sume_format)
+        worksheet.write(row_num, 6, total_inc_sum - total_out_sum, sume_format)
 
         # data end ----------------------------------------------- #
 
