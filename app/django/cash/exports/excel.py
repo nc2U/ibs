@@ -13,6 +13,8 @@ from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 from django.views.generic import View
 
+from _excel.mixins import ExcelExportMixin
+
 from cash.models import CashBook, ProjectCashBook
 from company.models import Company
 from project.models import Project, ProjectOutBudget
@@ -153,18 +155,10 @@ class ExportProjectBalance(View):
         # data end ----------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{date}-project-balance.xlsx'
 
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{date}-project-balance.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 class ExportProjectDateCashbook(View):
@@ -274,18 +268,9 @@ class ExportProjectDateCashbook(View):
         # data end ----------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{date}-project-date-cashbook.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{date}-project-date-cashbook.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 class ExportBudgetExecutionStatus(View):
@@ -434,18 +419,10 @@ class ExportBudgetExecutionStatus(View):
         # data end ----------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{date}-budget_status.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{date}-budget_status.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
 
     @staticmethod
     def get_sub_title(project, sub, d2):
@@ -695,18 +672,9 @@ class ExportCashFlowForm(View):
         # data end ----------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{str(project)}-cash-flow-form.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{str(project)}-cash-flow-form.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
     @staticmethod
     def get_excel_column(col_num):
@@ -732,10 +700,13 @@ def export_project_cash_xls(request):
     edate = TODAY if not edate or edate == 'null' else edate
 
     is_imp = request.GET.get('imp')
+    frontname = request.GET.get('filename')
     filename = 'imprest' if is_imp == '1' else 'cashbook'
+    filename = f'filename={edate}-project-{filename}'
+    filename = frontname if filename else filename
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename={edate}-project-{filename}.xls'
+    response['Content-Disposition'] = f'attachment; filename={filename}.xls'
 
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('프로젝트_입출금_내역')  # 시트 이름
@@ -1004,18 +975,9 @@ class ExportBalanceByAcc(View):
         # data end ----------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{date}-balance.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{date}-balance.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 class ExportDateCashbook(View):
@@ -1130,24 +1092,17 @@ class ExportDateCashbook(View):
         # data end ----------------------------------------------- #
 
         # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
-        filename = f'{date}-date-cashbook.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename')
+        filename = filename if filename else f'{date}-date-cashbook.xlsx'
+        return ExcelExportMixin.create_response(output, workbook, filename)
 
 
 def export_cashbook_xls(request):
     """본사 입출금 내역"""
+    filename = request.GET.get('filename')
+    filename = filename if filename else f'{TODAY}-cashbook'
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename={date}-cashbook.xls'.format(date=TODAY)
+    response['Content-Disposition'] = f'attachment; filename={filename}.xls'
 
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('본사_입출금_내역')  # 시트 이름
