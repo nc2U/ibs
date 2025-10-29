@@ -4,37 +4,36 @@ import io
 import xlsxwriter
 from django.db.models import Q
 from django.http import HttpResponse
-from django.views.generic import View
 
+from _excel.mixins import ExcelExportMixin
 from company.models import Company
 from docs.models import LawsuitCase
-from project.models import Project, Site, SiteOwner, SiteContract
+from project.models import Project
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
-class ExportSuitCases(View):
+class ExportSuitCases(ExcelExportMixin):
     """PR 소송 사건 목록"""
 
-    @staticmethod
-    def get(request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
-
-        # Even though the final file will be in memory the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example the Google APP Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('소송 목록')
-
-        worksheet.set_default_row(20)  # 기본 행 높이
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('소송_목록')
 
         # data start --------------------------------------------- #
         com_id = request.GET.get('company')
         company = Company.objects.get(pk=com_id) if com_id else None
         proj_id = request.GET.get('project')
         project = Project.objects.get(pk=proj_id) if proj_id else None
+
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        body_format = {
+            'border': True,
+            'valign': 'vcenter',
+            'num_format': '#,##0'
+        }
 
         # title_list
         header_src = [[],
@@ -69,10 +68,6 @@ class ExportSuitCases(View):
         # 1. Title
         row_num = 0
         worksheet.set_row(row_num, 50)
-        title_format = workbook.add_format()
-        title_format.set_bold()
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
         worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1,
                               str(project if project else company) + ' 소송사건 목록',
                               title_format)
@@ -86,13 +81,6 @@ class ExportSuitCases(View):
         row_num = 2
         worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
 
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
-
         # Adjust the column width.
         for i, col_width in enumerate(widths):
             worksheet.set_column(i, i, col_width)
@@ -103,7 +91,7 @@ class ExportSuitCases(View):
 
         # 4. Body
         # Get some data to write to the spreadsheet.
-        obj_list = LawsuitCase.objects.filter(company=company)
+        obj_list = LawsuitCase.objects.filter(issue_project__company=company)
 
         is_com = request.GET.get('is_com')
         sort = request.GET.get('sort')
@@ -132,18 +120,6 @@ class ExportSuitCases(View):
                 Q(summary__icontains=search))
 
         data = obj_list.values_list(*params)
-
-        b_format = workbook.add_format()
-        b_format.set_border()
-        b_format.set_align('center')
-        b_format.set_align('vcenter')
-        b_format.set_num_format('yyyy-mm-dd')
-
-        body_format = {
-            'border': True,
-            'valign': 'vcenter',
-            'num_format': '#,##0'
-        }
 
         # Turn off some of the warnings:
         # worksheet.ignore_errors({'number_stored_as_text': 'F:G'})
@@ -189,15 +165,12 @@ class ExportSuitCases(View):
         output.seek(0)
 
         # Set up the Http response.
-        filename = f'{TODAY}-suitcases.xlsx'
-        file_format = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response = HttpResponse(output, content_type=file_format)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-
-        return response
+        filename = request.GET.get('filename') or 'successions'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
 
 
-class ExportSuitCase(View):
+class ExportSuitCase(ExcelExportMixin):
     """PR 소송 사건 디테일"""
 
     @staticmethod
