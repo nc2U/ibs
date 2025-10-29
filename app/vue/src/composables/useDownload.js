@@ -72,19 +72,23 @@ export function useDownload() {
       downloadState.fileType = detectFileType(fileName)
       downloadState.progress = 0
 
-      // iframe을 사용한 다운로드 (브라우저 호환성 좋음)
-      const iframe = document.createElement('iframe')
-      iframe.style.display = 'none'
-      iframe.src = url
+      // 실제 파일 다운로드를 위한 링크 생성
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      link.style.display = 'none'
 
-      document.body.appendChild(iframe)
+      document.body.appendChild(link)
 
-      // 다운로드 완료 감지 (타이머 기반)
+      // 진행률 시뮬레이션
       let progress = 0
       const progressInterval = setInterval(() => {
-        progress += 10
+        progress += 15
         downloadState.progress = Math.min(progress, 90)
-      }, 200)
+      }, 150)
+
+      // 다운로드 실행
+      link.click()
 
       // 다운로드 완료 후 정리
       setTimeout(() => {
@@ -97,9 +101,9 @@ export function useDownload() {
           downloadState.fileName = null
           downloadState.fileType = null
           downloadState.progress = 0
-          document.body.removeChild(iframe)
+          document.body.removeChild(link)
         }, 500)
-      }, 3000) // 3초 후 완료로 간주
+      }, 2000) // 2초 후 완료로 간주
 
     } catch (error) {
       console.error('다운로드 오류:', error)
