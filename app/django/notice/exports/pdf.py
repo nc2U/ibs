@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
@@ -8,11 +8,9 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
-from _pdf.utils import (get_contract, get_due_date_per_order, get_late_fee,
-                        get_due_orders, is_due)
+from _pdf.utils import (get_contract, get_due_date_per_order, get_late_fee)
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from cash.models import ProjectCashBook
-from contract.models import Contract
 from notice.models import SalesBillIssue
 from payment.models import InstallmentPaymentOrder
 

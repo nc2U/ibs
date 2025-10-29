@@ -1,9 +1,9 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from itertools import accumulate
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Sum, Q
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
@@ -13,7 +13,6 @@ from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order,
                         get_late_fee, is_due, get_paid)
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from cash.models import ProjectCashBook
-from contract.models import Contract
 from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
 
 TODAY = date.today()
