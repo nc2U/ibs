@@ -4,6 +4,7 @@ import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
+import GlobalDownloadIndicator from '@/components/GlobalDownloadIndicator.vue'
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -39,5 +40,8 @@ onMounted(async () => {
     <v-main>
       <router-view />
     </v-main>
+
+    <!-- 글로벌 다운로드 인디케이터 -->
+    <GlobalDownloadIndicator />
   </v-app>
 </template>

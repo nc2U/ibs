@@ -2,10 +2,19 @@
 import { type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { Contract } from '@/store/types/contract'
+import { useDownload } from '@/composables/useDownload'
 
 defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
 })
+
+// 다운로드 컴포저블 사용
+const { downloadPDF } = useDownload()
+
+// PDF 다운로드 핸들러
+const handlePDFDownload = (url: string, fileName: string) => {
+  downloadPDF(url, fileName)
+}
 </script>
 
 <template>
@@ -118,9 +127,13 @@ defineProps({
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
-                <a :href="`/pdf/bill/?project=${contract.project}&seq=${contract.pk}`">
+                <button
+                  @click="handlePDFDownload(`/pdf/bill/?project=${contract.project}&seq=${contract.pk}`, '대금수납_고지서.pdf')"
+                  class="btn btn-link p-0 text-start"
+                  style="text-decoration: none;"
+                >
                   대금수납 고지서
-                </a>
+                </button>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>
@@ -129,9 +142,13 @@ defineProps({
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
-                <a :href="`/pdf/payments/?project=${contract.project}&contract=${contract.pk}&is_calc=1`">
+                <button
+                  @click="handlePDFDownload(`/pdf/payments/?project=${contract.project}&contract=${contract.pk}&is_calc=1`, '납부내역_확인서_일반.pdf')"
+                  class="btn btn-link p-0 text-start"
+                  style="text-decoration: none;"
+                >
                   납부내역 확인서(일반)
-                </a>
+                </button>
               </CTableDataCell>
               <CTableDataCell>할인/가산 내역 포함</CTableDataCell>
             </CTableRow>
@@ -140,9 +157,13 @@ defineProps({
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
-                <a :href="`/pdf/payments/?project=${contract.project}&contract=${contract.pk}`">
+                <button
+                  @click="handlePDFDownload(`/pdf/payments/?project=${contract.project}&contract=${contract.pk}`, '납부내역_확인서_확인.pdf')"
+                  class="btn btn-link p-0 text-start"
+                  style="text-decoration: none;"
+                >
                   납부내역 확인서(확인)
-                </a>
+                </button>
               </CTableDataCell>
               <CTableDataCell>대외 확인용</CTableDataCell>
             </CTableRow>
@@ -151,9 +172,13 @@ defineProps({
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
-                <a :href="`/pdf/calculation/?project=${contract.project}&contract=${contract.pk}`">
+                <button
+                  @click="handlePDFDownload(`/pdf/calculation/?project=${contract.project}&contract=${contract.pk}`, '할인_가산금 내역서.pdf')"
+                  class="btn btn-link p-0 text-start"
+                  style="text-decoration: none;"
+                >
                   할인/가산금 내역서
-                </a>
+                </button>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>
@@ -162,9 +187,13 @@ defineProps({
                 <CFormCheck />
               </CTableDataCell>
               <CTableDataCell>
-                <a :href="`/pdf/cert-occupancy/?project=${contract.project}&contract=${contract.pk}`">
+                <button
+                  @click="handlePDFDownload(`/pdf/cert-occupancy/?project=${contract.project}&contract=${contract.pk}`, '주택_인도_증서.pdf')"
+                  class="btn btn-link p-0 text-start"
+                  style="text-decoration: none;"
+                >
                   주택 인도 증서
-                </a>
+                </button>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>
             </CTableRow>
