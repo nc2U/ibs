@@ -11,7 +11,6 @@ import xlwt
 from dateutil.relativedelta import relativedelta
 from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
-from django.views.generic import View
 
 from _excel.mixins import ExcelExportMixin
 from cash.models import CashBook, ProjectCashBook
@@ -220,52 +219,38 @@ class ExportProjectDateCashbook(ExcelExportMixin):
         return ExcelExportMixin.create_response(output, workbook, filename)
 
 
-class ExportBudgetExecutionStatus(View):
+class ExportBudgetExecutionStatus(ExcelExportMixin):
     """프로젝트 예산 대비 현황"""
 
     def get(self, request):
-        # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
-
-        # Even though the final file will be in memory, the module uses temp
-        # files during assembly for efficiency. To avoid this on servers that
-        # don't allow temp files, for example, the Google App Engine, set the
-        # 'in_memory' Workbook() constructor option as shown in the docs.
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('예산집행 현황')
-
-        worksheet.set_default_row(20)  # 기본 행 높이
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('예산집행_현황')
 
         # data start --------------------------------------------- #
-
         project = Project.objects.get(pk=request.GET.get('project'))
-        date = request.GET.get('date')
+        date = request.GET.get('date') or TODAY
         revised = request.GET.get('revised')
         is_revised = int(revised) if revised in ('0', '1') else 0
 
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        number_format = self.create_number_format(workbook)
+        center_format = self.create_center_format(workbook)
+        left_format = self.create_left_format(workbook)
+
         # 1. Title
         row_num = 0
-        title_format = workbook.add_format()
         worksheet.set_row(row_num, 50)
-        title_format.set_font_size(18)
-        title_format.set_align('vcenter')
-        title_format.set_bold()
         worksheet.write(row_num, 0, str(project) + ' 예산집행 현황', title_format)
+        row_num += 1
 
         # 2. Header
-        row_num = 1
         worksheet.set_row(row_num, 18)
         worksheet.write(row_num, 8, date + ' 현재', workbook.add_format({'align': 'right'}))
+        row_num += 1
 
         # 3. Header
-        row_num = 2
-        h_format = workbook.add_format()
-        h_format.set_bold()
-        h_format.set_border()
-        h_format.set_align('center')
-        h_format.set_align('vcenter')
-        h_format.set_bg_color('#eeeeee')
-
         worksheet.set_column(0, 0, 10)
         worksheet.set_column(1, 1, 10)
         worksheet.set_column(2, 2, 12)
@@ -284,12 +269,6 @@ class ExportBudgetExecutionStatus(View):
         worksheet.write(row_num, 8, '가용 예산 합계', h_format)
 
         # 4. Contents
-        b_format = workbook.add_format()
-        b_format.set_valign('vcenter')
-        b_format.set_border()
-        b_format.set_num_format(41)
-        b_format.set_align('left')
-
         budgets = ProjectOutBudget.objects.filter(project=project)
         budget_sum = budgets.aggregate(Sum('budget'))['budget__sum']
         revised_budget_sum = budgets.aggregate(
@@ -327,41 +306,41 @@ class ExportBudgetExecutionStatus(View):
 
             for col in range(9):
                 if col == 0 and row == 0:
-                    worksheet.merge_range(row_num, col, budgets.count() + 2, col, '사업비', b_format)
+                    worksheet.merge_range(row_num, col, budgets.count() + 2, col, '사업비', center_format)
                 if col == 1:
                     if int(budget.account_d3.code) == int(budget.account_d2.code) + 1:
                         worksheet.merge_range(row_num, col,
                                               row_num + budget.account_d2.projectoutbudget_set.count() - 1,
-                                              col, budget.account_d2.name, b_format)
+                                              col, budget.account_d2.name, center_format)
                 if col == 2:
                     if budget.account_opt:
                         if budget.account_d3.pk == opt_budgets[0][4]:
                             worksheet.merge_range(row_num, col, row_num + len(opt_budgets) - 1,
-                                                  col, budget.account_opt, b_format)
+                                                  col, budget.account_opt, left_format)
                     else:
-                        worksheet.merge_range(row_num, col, row_num, col + 1, budget.account_d3.name, b_format)
+                        worksheet.merge_range(row_num, col, row_num, col + 1, budget.account_d3.name, left_format)
                 if col == 3:
                     if budget.account_opt:
-                        worksheet.write(row_num, col, budget.account_d3.name, b_format)
+                        worksheet.write(row_num, col, budget.account_d3.name, left_format)
                 if col == 4:
-                    worksheet.write(row_num, col, calc_budget, b_format)
+                    worksheet.write(row_num, col, calc_budget, number_format)
                 if col == 5:
-                    worksheet.write(row_num, col, co_budget_total - co_budget_month, b_format)
+                    worksheet.write(row_num, col, co_budget_total - co_budget_month, number_format)
                 if col == 6:
-                    worksheet.write(row_num, col, co_budget_month, b_format)
+                    worksheet.write(row_num, col, co_budget_month, number_format)
                 if col == 7:
-                    worksheet.write(row_num, col, co_budget_total, b_format)
+                    worksheet.write(row_num, col, co_budget_total, number_format)
                 if col == 8:
-                    worksheet.write(row_num, col, calc_budget - co_budget_total, b_format)
+                    worksheet.write(row_num, col, calc_budget - co_budget_total, number_format)
 
         # 5. Sum row
         row_num += 1
-        worksheet.merge_range(row_num, 0, row_num, 3, '합 계', b_format)
-        worksheet.write(row_num, 4, calc_budget_sum, b_format)
-        worksheet.write(row_num, 5, budget_total_sum - budget_month_sum, b_format)
-        worksheet.write(row_num, 6, budget_month_sum, b_format)
-        worksheet.write(row_num, 7, budget_total_sum, b_format)
-        worksheet.write(row_num, 8, calc_budget_sum - budget_total_sum, b_format)
+        worksheet.merge_range(row_num, 0, row_num, 3, '합 계', center_format)
+        worksheet.write(row_num, 4, calc_budget_sum, number_format)
+        worksheet.write(row_num, 5, budget_total_sum - budget_month_sum, number_format)
+        worksheet.write(row_num, 6, budget_month_sum, number_format)
+        worksheet.write(row_num, 7, budget_total_sum, number_format)
+        worksheet.write(row_num, 8, calc_budget_sum - budget_total_sum, number_format)
 
         # data end ----------------------------------------------- #
 
@@ -377,7 +356,7 @@ class ExportBudgetExecutionStatus(View):
                                                account_d2__id=d2).order_by('account_d3').values_list()
 
 
-class ExportCashFlowForm(View):
+class ExportCashFlowForm(ExcelExportMixin):
     """프로젝트 자금집행 내역 반영 캐시 플로우 폼"""
 
     def get(self, request):
@@ -789,7 +768,7 @@ def export_project_cash_xls(request):
     return response
 
 
-class ExportBalanceByAcc(View):
+class ExportBalanceByAcc(ExcelExportMixin):
     """본사 계좌별 잔고 내역"""
 
     @staticmethod
@@ -927,7 +906,7 @@ class ExportBalanceByAcc(View):
         return ExcelExportMixin.create_response(output, workbook, filename)
 
 
-class ExportDateCashbook(View):
+class ExportDateCashbook(ExcelExportMixin):
     """본사 일별 입출금 내역"""
 
     @staticmethod
