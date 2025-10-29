@@ -2,7 +2,7 @@
 import { type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { Contract } from '@/store/types/contract'
-import { CCard } from '@coreui/vue'
+import { CCard, CCardBody, CFormCheck } from '@coreui/vue'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -95,6 +95,73 @@ const props = defineProps({
         </div>
       </div>
       <div v-else class="text-center text-muted py-3">납부 내역이 없습니다.</div>
+    </CCardBody>
+  </CCard>
+
+  <!-- 각종 증명 확인서 출력 -->
+  <CCard class="mb-3">
+    <CCardHeader>
+      <strong>고지 / 확인서 발급</strong>
+    </CCardHeader>
+    <CCardBody>
+      <div>
+        <CTable small striped hover>
+          <CTableHead>
+            <CTableRow class="text-center">
+              <CTableHeaderCell>구분</CTableHeaderCell>
+              <CTableHeaderCell>발급 문서</CTableHeaderCell>
+              <CTableHeaderCell>비고</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+          <CTableBody>
+            <CTableRow>
+              <CTableDataCell>
+                <CFormCheck/>
+              </CTableDataCell>
+              <CTableDataCell>
+                <a href="#">대금납부 고지서</a>
+              </CTableDataCell>
+              <CTableDataCell></CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableDataCell>
+                <CFormCheck/>
+              </CTableDataCell>
+              <CTableDataCell>
+                <a href="#">납부내역 확인서(확인)</a>
+              </CTableDataCell>
+              <CTableDataCell>할인/가산 내역 포함</CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableDataCell>
+                <CFormCheck/>
+              </CTableDataCell>
+              <CTableDataCell>
+                <a href="#">납부내역 확인서(일반)</a>
+              </CTableDataCell>
+              <CTableDataCell>대외 확인용</CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableDataCell>
+                <CFormCheck/>
+              </CTableDataCell>
+              <CTableDataCell>
+                <a href="#">할인/가산금 내역서</a>
+              </CTableDataCell>
+              <CTableDataCell></CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableDataCell>
+                <CFormCheck/>
+              </CTableDataCell>
+              <CTableDataCell>
+                <a href="#">주택 인도 증서</a>
+              </CTableDataCell>
+              <CTableDataCell></CTableDataCell>
+            </CTableRow>
+          </CTableBody>
+        </CTable>
+      </div>
     </CCardBody>
   </CCard>
 </template>
