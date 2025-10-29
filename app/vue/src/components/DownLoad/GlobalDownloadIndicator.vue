@@ -15,18 +15,46 @@
             <!-- PDF 아이콘 -->
             <div v-if="downloadState.fileType === 'pdf'" class="file-type-icon pdf-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <text x="12" y="18" font-size="6" text-anchor="middle" fill="currentColor">PDF</text>
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <polyline
+                  points="14,2 14,8 20,8"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <text x="12" y="18" font-size="6" text-anchor="middle" fill="currentColor">
+                  PDF
+                </text>
               </svg>
             </div>
 
             <!-- Excel 아이콘 -->
             <div v-else-if="downloadState.fileType === 'excel'" class="file-type-icon excel-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <text x="12" y="18" font-size="5" text-anchor="middle" fill="currentColor">XLS</text>
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <polyline
+                  points="14,2 14,8 20,8"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <text x="12" y="18" font-size="5" text-anchor="middle" fill="currentColor">
+                  XLS
+                </text>
               </svg>
             </div>
 
@@ -60,18 +88,13 @@
           <!-- 진행률 바 -->
           <div class="progress-container">
             <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{ width: downloadState.progress + '%' }"
-              ></div>
+              <div class="progress-fill" :style="{ width: downloadState.progress + '%' }"></div>
             </div>
             <span class="progress-text">{{ downloadState.progress }}%</span>
           </div>
 
           <!-- 힌트 텍스트 -->
-          <p class="download-hint">
-            잠시만 기다려주세요. 파일이 자동으로 다운로드됩니다.
-          </p>
+          <p class="download-hint">잠시만 기다려주세요. 파일이 자동으로 다운로드됩니다.</p>
         </div>
       </div>
     </div>
@@ -79,7 +102,7 @@
 </template>
 
 <script setup>
-import { useDownload } from '@/composables/useDownload'
+import { useDownload } from '@/composables/useDownload.ts'
 
 const { downloadState, FILE_TYPES } = useDownload()
 

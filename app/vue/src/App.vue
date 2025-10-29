@@ -4,7 +4,7 @@ import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
-import GlobalDownloadIndicator from '@/components/GlobalDownloadIndicator.vue'
+import GlobalDownloadIndicator from '@/components/DownLoad/GlobalDownloadIndicator.vue'
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
