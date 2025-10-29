@@ -8,6 +8,7 @@ defineProps({
   excel: Boolean,
   pdf: Boolean,
   url: { type: String, default: '' },
+  filename: { type: String, default: '' },
   disabled: Boolean,
 })
 </script>
@@ -29,8 +30,8 @@ defineProps({
 
     <slot />
 
-    <ExcelExport v-if="excel" :url="url" :disabled="disabled" />
-    <PdfExport v-if="pdf" :url="url" :disabled="disabled" />
+    <ExcelExport v-if="excel" :url="url" :filename="filename" :disabled="disabled" />
+    <PdfExport v-if="pdf" :url="url" :filename="filename" :disabled="disabled" />
 
     <slot name="tail" />
   </v-row>

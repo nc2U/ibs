@@ -75,6 +75,17 @@ const comp: { [key: number]: string } = {
   2: 'CashListByDate',
 }
 
+const filename = computed(() => {
+  switch (compName.value) {
+    case 'StatusByAccount':
+      return '계좌별-자금현황'
+    case 'CashListByDate':
+      return '일별-입출금내역'
+    default:
+      return ''
+  }
+})
+
 const showTab = (num: number) => (compName.value = comp[num])
 
 const setDate = (dt: string) => {
@@ -143,7 +154,7 @@ onBeforeMount(async () => {
 
         <TabSelect @tab-select="showTab" />
 
-        <TableTitleRow excel :url="excelUrl" :disabled="!company" />
+        <TableTitleRow excel :url="excelUrl" :filename="filename" :disabled="!company" />
 
         <StatusByAccount
           v-if="compName === 'StatusByAccount'"
