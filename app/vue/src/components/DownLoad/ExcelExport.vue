@@ -3,6 +3,7 @@ import { useDownload } from '@/composables/useDownload'
 
 const props = defineProps({
   url: { type: String, default: '' },
+  filename: { type: String, default: '' },
   disabled: Boolean,
 })
 
@@ -11,7 +12,7 @@ const { downloadExcel } = useDownload()
 const handleDownload = () => {
   if (!props.disabled && props.url) {
     // URL에서 파일명 추출 또는 기본값 사용
-    const fileName = `document_${Date.now()}.xlsx`
+    const fileName = props.filename ? props.filename : `document_${Date.now()}.xlsx`
     downloadExcel(props.url, fileName)
   }
 }
