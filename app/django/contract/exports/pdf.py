@@ -62,6 +62,17 @@ class PdfExportCertOccupancy(View):
             margin: 0 !important;
             box-shadow: none !important;
         }
+        /* PDF2htmlEX 로고 및 UI 요소 숨기기 */
+        .loading-indicator,
+        .loading-indicator.active,
+        #sidebar,
+        #outline,
+        .checked,
+        .bi[style*="background"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
         </style>
         """
 
