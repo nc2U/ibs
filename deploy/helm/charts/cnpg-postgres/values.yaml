@@ -15,16 +15,23 @@ image:
 # Authentication Configuration
 auth:
   # Superuser (postgres) password
-  # Set via --set auth.postgresPassword="..." during helm install
+  # Can be overridden by global.dbPassword from parent values
   postgresPassword: ""
 
   # Application user credentials
   username: "ibs"
-  password: ""  # Set via --set auth.password="..." during helm install
+  # Can be overridden by global.dbPassword from parent values
+  password: ""
   database: "ibs"
 
-  # Optional: Use existing secret instead
-  # existingSecret: "postgres-credentials"
+  # Optional: Use existing secret instead of creating new one
+  # Leave empty to create new secrets
+  existingSecret: ""
+
+  # Secret keys (only used if existingSecret is set)
+  secretKeys:
+    postgresPasswordKey: "postgres-password"
+    userPasswordKey: "password"
 
 # Replication Configuration
 replication:
