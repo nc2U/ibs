@@ -395,17 +395,3 @@ onMounted(() => {
     </v-card>
   </v-dialog>
 </template>
-
-<style scoped>
-.pointer {
-  cursor: pointer;
-}
-
-.table-danger {
-  background-color: #f8d7da !important;
-}
-
-.table-warning {
-  background-color: #fff3cd !important;
-}
-</style>
