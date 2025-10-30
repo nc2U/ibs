@@ -41,35 +41,35 @@ onBeforeMount(() => {
 
 <template>
   <CompanySettingsAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="CompanySelect"
-    @com-select="dataSet"
-  />
-
-  <ContentBody>
-    <CompanyDetail
-      v-if="compName === 'CompanyDetail'"
-      :company="company as Company"
-      @create-form="createForm"
-      @update-form="updateForm"
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="CompanySelect"
+      @com-select="dataSet"
     />
 
-    <CompanyForm v-if="compName === 'CreateForm'" @on-submit="onSubmit" @reset-form="resetForm" />
+    <ContentBody>
+      <CompanyDetail
+        v-if="compName === 'CompanyDetail'"
+        :company="company as Company"
+        @create-form="createForm"
+        @update-form="updateForm"
+      />
 
-    <CompanyForm
-      ref="RefCompanyForm"
-      v-if="compName === 'UpdateForm'"
-      :company="company as Company"
-      @on-submit="onSubmit"
-      @reset-form="resetForm"
-    />
+      <CompanyForm v-if="compName === 'CreateForm'" @on-submit="onSubmit" @reset-form="resetForm" />
 
-    <template #footer>
-      <div style="display: none"></div>
-    </template>
-  </ContentBody>
+      <CompanyForm
+        ref="RefCompanyForm"
+        v-if="compName === 'UpdateForm'"
+        :company="company as Company"
+        @on-submit="onSubmit"
+        @reset-form="resetForm"
+      />
+
+      <template #footer>
+        <div style="display: none"></div>
+      </template>
+    </ContentBody>
   </CompanySettingsAuthGuard>
 </template>

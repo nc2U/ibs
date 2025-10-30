@@ -45,19 +45,19 @@ onBeforeMount(async () => {
 
 <template>
   <ProjectAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <BuildingAddForm v-if="write_project" :disabled="!project" @on-submit="onCreateBuilding" />
-      <BuildingFormList @on-update="onUpdateBuilding" @on-delete="onDeleteBuilding" />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <BuildingAddForm v-if="write_project" :disabled="!project" @on-submit="onCreateBuilding" />
+        <BuildingFormList @on-update="onUpdateBuilding" @on-delete="onDeleteBuilding" />
+      </CCardBody>
+    </ContentBody>
   </ProjectAuthGuard>
 </template>

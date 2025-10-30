@@ -125,20 +125,20 @@ onMounted(async () => {
 
 <template>
   <HrAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="CompanySelect"
-    @com-select="comSelect"
-  />
-  <ContentBody>
-    <CCardBody>
-      <ListController ref="refListControl" @list-filtering="listFiltering" />
-      <AddStaff v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
-      <TableTitleRow title="직원 목록" excel :url="excelUrl" :disabled="!company" />
-      <StaffList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
-    </CCardBody>
-  </ContentBody>
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="CompanySelect"
+      @com-select="comSelect"
+    />
+    <ContentBody>
+      <CCardBody>
+        <ListController ref="refListControl" @list-filtering="listFiltering" />
+        <AddStaff v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
+        <TableTitleRow title="직원 목록" excel :url="excelUrl" :disabled="!company" />
+        <StaffList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
+      </CCardBody>
+    </ContentBody>
   </HrAuthGuard>
 </template>

@@ -104,7 +104,6 @@ export interface OverallSummary {
   aggregate: OverallSummaryAggregate
 }
 
-
 export interface PaymentStatusByUnitType {
   order_group_id: number
   order_group_name: string

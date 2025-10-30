@@ -241,7 +241,7 @@ export const useComCash = defineStore('comCash', () => {
     if (filters.is_return) url += `&is_return=${filters.is_return}`
     if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
     if (filters.search) url += `&search=${filters.search}`
-    
+
     try {
       const response = await api.get(url)
       return response.data.page

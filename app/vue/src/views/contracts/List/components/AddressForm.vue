@@ -364,11 +364,15 @@ onBeforeUnmount(() => {
 }
 
 .address-table-transition tbody tr {
-  transition: background-color 1.5s ease-in-out, border-color 1.5s ease-in-out;
+  transition:
+    background-color 1.5s ease-in-out,
+    border-color 1.5s ease-in-out;
 }
 
 .address-table-transition tbody tr th,
 .address-table-transition tbody tr td {
-  transition: background-color 1.5s ease-in-out, border-color 1.5s ease-in-out;
+  transition:
+    background-color 1.5s ease-in-out,
+    border-color 1.5s ease-in-out;
 }
 </style>

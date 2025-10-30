@@ -49,7 +49,7 @@ const siteStore = useSite()
 const getOwnersTotal = computed(() => siteStore.getOwnersTotal?.owned_area)
 
 // Store 함수들
-const findSiteOwnerPage = (highlightId: number, filters: OwnerFilter) => 
+const findSiteOwnerPage = (highlightId: number, filters: OwnerFilter) =>
   siteStore.findSiteOwnerPage(highlightId, filters)
 const fetchSiteOwnerList = (payload: OwnerFilter) => siteStore.fetchSiteOwnerList(payload)
 
@@ -166,14 +166,16 @@ const projSelect = (target: number | null) => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (route.query.page || route.query.highlight_id) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      // query를 빈 객체로 설정하여 모든 query string 제거
-      query: {}
-    }).catch(() => {
-      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
-    })
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
   }
 }
 
@@ -190,9 +192,9 @@ onBeforeMount(async () => {
     console.log(`Using project ${urlProjectId.value} from URL parameter`)
     projectId = urlProjectId.value
   }
-  
+
   siteStore.fetchAllSites(projectId)
-  
+
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage(projectId)
@@ -206,45 +208,45 @@ onBeforeMount(async () => {
 
 <template>
   <ProjectAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ListController
-        ref="listControl"
-        :project="project as number"
-        @list-filtering="listFiltering"
-      />
-      <AddSiteOwner
-        v-if="write_project_site"
-        :project="project as number"
-        @multi-submit="multiSubmit"
-      />
-      <TableTitleRow title="부지 소유자 목록" excel :url="excelUrl" :disabled="!project">
-        <span v-if="project" class="text-success" style="padding-top: 7px">
-          소유자 면적 :
-          {{ numFormat(getOwnersTotal as number, 2) }}m<sup>2</sup> ({{
-            numFormat((getOwnersTotal as number) * 0.3025, 2)
-          }}평) 등록
-        </span>
-      </TableTitleRow>
-      <SiteOwnerList
-        :is-returned="isReturned"
-        :limit="dataFilter.limit || 10"
-        :highlight-id="highlightId || undefined"
-        :current-page="dataFilter.page"
-        @page-select="pageSelect"
-        @relation-patch="relationPatch"
-        @multi-submit="multiSubmit"
-        @on-delete="onDelete"
-      />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ListController
+          ref="listControl"
+          :project="project as number"
+          @list-filtering="listFiltering"
+        />
+        <AddSiteOwner
+          v-if="write_project_site"
+          :project="project as number"
+          @multi-submit="multiSubmit"
+        />
+        <TableTitleRow title="부지 소유자 목록" excel :url="excelUrl" :disabled="!project">
+          <span v-if="project" class="text-success" style="padding-top: 7px">
+            소유자 면적 :
+            {{ numFormat(getOwnersTotal as number, 2) }}m<sup>2</sup> ({{
+              numFormat((getOwnersTotal as number) * 0.3025, 2)
+            }}평) 등록
+          </span>
+        </TableTitleRow>
+        <SiteOwnerList
+          :is-returned="isReturned"
+          :limit="dataFilter.limit || 10"
+          :highlight-id="highlightId || undefined"
+          :current-page="dataFilter.page"
+          @page-select="pageSelect"
+          @relation-patch="relationPatch"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+        />
+      </CCardBody>
+    </ContentBody>
   </ProjectAuthGuard>
 </template>

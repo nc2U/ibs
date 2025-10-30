@@ -279,14 +279,16 @@ const projSelect = (target: number | null) => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (route.query.highlight_id) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      // query를 빈 객체로 설정하여 모든 query string 제거
-      query: {}
-    }).catch(() => {
-      // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
-    })
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        // query를 빈 객체로 설정하여 모든 query string 제거
+        query: {},
+      })
+      .catch(() => {
+        // 같은 경로로의 이동에서 발생하는 NavigationDuplicated 에러 무시
+      })
   }
 }
 
@@ -347,7 +349,7 @@ onBeforeMount(async () => {
   await fetchProFormAccD3List()
   await fetchPayOrderList(projectId)
   await fetchAllContracts(projectId)
-  
+
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage()
@@ -367,55 +369,55 @@ onBeforeRouteLeave(() => {
 
 <template>
   <ProCashAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ListController ref="listControl" @list-filtering="listFiltering" />
-      <AddProCash
-        v-if="write_project_cash"
-        :project="project"
-        @multi-submit="multiSubmit"
-        @on-bank-create="onBankCreate"
-        @on-bank-update="onBankUpdate"
-      />
-      <TableTitleRow
-        title="프로젝트 입출금 내역"
-        color="indigo"
-        excel
-        :disabled="!project"
-        :url="excelUrl"
-      >
-        <v-tooltip activator="parent" location="top">
-          엑셀은 항상 전체(운영비용 포함) 내역 출력
-        </v-tooltip>
-        <div style="padding-top: 7px">
-          <CFormSwitch
-            v-model="imprest"
-            label="전체(운영비용 포함) 보기"
-            id="all-list-view"
-            @click="setImprest"
-            :disabled="!project"
-          ></CFormSwitch>
-        </div>
-      </TableTitleRow>
-      <ProCashList
-        :project="project as number"
-        :highlight-id="highlightId ?? undefined"
-        :current-page="dataFilter.page || 1"
-        @page-select="pageSelect"
-        @multi-submit="multiSubmit"
-        @on-delete="onDelete"
-        @on-bank-create="onBankCreate"
-        @on-bank-update="onBankUpdate"
-      />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ListController ref="listControl" @list-filtering="listFiltering" />
+        <AddProCash
+          v-if="write_project_cash"
+          :project="project"
+          @multi-submit="multiSubmit"
+          @on-bank-create="onBankCreate"
+          @on-bank-update="onBankUpdate"
+        />
+        <TableTitleRow
+          title="프로젝트 입출금 내역"
+          color="indigo"
+          excel
+          :disabled="!project"
+          :url="excelUrl"
+        >
+          <v-tooltip activator="parent" location="top">
+            엑셀은 항상 전체(운영비용 포함) 내역 출력
+          </v-tooltip>
+          <div style="padding-top: 7px">
+            <CFormSwitch
+              v-model="imprest"
+              label="전체(운영비용 포함) 보기"
+              id="all-list-view"
+              @click="setImprest"
+              :disabled="!project"
+            ></CFormSwitch>
+          </div>
+        </TableTitleRow>
+        <ProCashList
+          :project="project as number"
+          :highlight-id="highlightId ?? undefined"
+          :current-page="dataFilter.page || 1"
+          @page-select="pageSelect"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+          @on-bank-create="onBankCreate"
+          @on-bank-update="onBankUpdate"
+        />
+      </CCardBody>
+    </ContentBody>
   </ProCashAuthGuard>
 </template>

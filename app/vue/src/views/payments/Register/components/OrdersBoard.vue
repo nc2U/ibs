@@ -57,7 +57,6 @@ const thisPrice = computed(() => {
   return 0
 })
 
-
 const paidTotal = computed(() => {
   const paid = props.paymentList.map((p: AllPayment) => p.income)
   return paid.length === 0 ? 0 : paid.reduce((x: number, y: number) => x + y, 0)

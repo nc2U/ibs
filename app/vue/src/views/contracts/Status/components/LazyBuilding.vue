@@ -16,8 +16,8 @@ let observer: IntersectionObserver | null = null
 
 onMounted(() => {
   observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
+    entries => {
+      entries.forEach(entry => {
         if (entry.isIntersecting) {
           isVisible.value = true
           hasBeenVisible.value = true
@@ -46,12 +46,7 @@ onUnmounted(() => {
 
 <template>
   <div ref="container" class="lazy-building-wrapper">
-    <Building
-      v-if="hasBeenVisible"
-      :bldg="bldg"
-      :max-floor="maxFloor"
-      :units="units"
-    />
+    <Building v-if="hasBeenVisible" :bldg="bldg" :max-floor="maxFloor" :units="units" />
     <div v-else class="loading-placeholder">
       <CSpinner size="sm" color="primary" />
       <span class="ms-2 text-muted">로딩 중...</span>

@@ -124,22 +124,12 @@ onBeforeMount(() => {
 <template>
   <div>
     <!-- 필터 영역 -->
-    <HistoryFilter
-      @search="handleSearch"
-      @reset="handleReset"
-    />
+    <HistoryFilter @search="handleSearch" @reset="handleReset" />
 
     <!-- 테이블 영역 -->
-    <HistoryTable
-      :loading="loading"
-      @detail="handleDetail"
-      @page-change="handlePageChange"
-    />
+    <HistoryTable :loading="loading" @detail="handleDetail" @page-change="handlePageChange" />
 
     <!-- 상세보기 다이얼로그 -->
-    <HistoryDetail
-      v-model:visible="detailVisible"
-      :item="selectedItem"
-    />
+    <HistoryDetail v-model:visible="detailVisible" :item="selectedItem" />
   </div>
 </template>

@@ -78,7 +78,12 @@ const pageSelect = (page: number) => emit('page-select', page)
       />
     </CCol>
     <CCol lg="4" class="text-right pt-3">
-      <v-btn v-if="toHome" :color="btnLight" class="px-5" @click="router.push({ name: `대 시 보 드` })">
+      <v-btn
+        v-if="toHome"
+        :color="btnLight"
+        class="px-5"
+        @click="router.push({ name: `대 시 보 드` })"
+      >
         홈으로
       </v-btn>
       <v-btn

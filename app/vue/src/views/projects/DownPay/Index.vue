@@ -72,19 +72,19 @@ onBeforeMount(async () => {
 </script>
 <template>
   <ProjectAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <DownPayAddForm v-if="write_project" :disabled="!project" @on-submit="onCreateDownPay" />
-      <DownPayFormList @on-update="onUpdateDownPay" @on-delete="onDeleteDownPay" />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <DownPayAddForm v-if="write_project" :disabled="!project" @on-submit="onCreateDownPay" />
+        <DownPayFormList @on-update="onUpdateDownPay" @on-delete="onDeleteDownPay" />
+      </CCardBody>
+    </ContentBody>
   </ProjectAuthGuard>
 </template>

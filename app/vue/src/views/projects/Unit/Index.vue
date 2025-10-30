@@ -170,27 +170,27 @@ onBeforeRouteLeave(async () => {
 
 <template>
   <ProjectAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <UnitController
-        ref="refUnitController"
-        :project="project as number"
-        @bldg-select="bldgSelect"
-        @dong-register="dongRegister"
-        @unit-register="unitRegister"
-      />
-      <UnitTable :bldg-name="bldgName" @on-update="onUpdate" @on-delete="onDelete" />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <UnitController
+          ref="refUnitController"
+          :project="project as number"
+          @bldg-select="bldgSelect"
+          @dong-register="dongRegister"
+          @unit-register="unitRegister"
+        />
+        <UnitTable :bldg-name="bldgName" @on-update="onUpdate" @on-delete="onDelete" />
+      </CCardBody>
+    </ContentBody>
 
-  <AlertModal ref="alertModal" />
+    <AlertModal ref="alertModal" />
   </ProjectAuthGuard>
 </template>

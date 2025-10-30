@@ -24,7 +24,7 @@ describe('TableTitleRow Component Test', () => {
     expect(wrapper.find('.v-row').exists()).toBeTruthy()
     expect(wrapper.find('.v-col').exists()).toBeTruthy()
     expect(wrapper.find('h6').exists()).toBeTruthy()
-    expect(wrapper.find('.v-btn').attributes('href')).toBe('abc.com/1')
+    expect(wrapper.findComponent({ name: 'ExcelExport' }).props('url')).toBe('abc.com/1')
     expect(wrapper.find('.v-btn').classes()).not.toContain('v-btn--disabled')
     expect(wrapper.find('.v-btn').text()).toContain('Excel Export')
 

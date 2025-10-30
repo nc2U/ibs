@@ -54,11 +54,11 @@ const doneAlert = () => emit('done-alert')
         :color="props.highlightId === suc.pk ? 'warning' : ''"
         :data-succession-id="suc.pk"
       >
-        <Succession 
-          :succession="suc" 
+        <Succession
+          :succession="suc"
           :is-highlighted="props.highlightId === suc.pk"
-          @call-form="callForm" 
-          @done-alert="doneAlert" 
+          @call-form="callForm"
+          @done-alert="doneAlert"
         />
       </CTableRow>
     </CTableBody>

@@ -187,7 +187,7 @@ export const useProCash = defineStore('proCash', () => {
     const { project, is_imprest } = filters
     let url = `/project-cashbook/find_page/?highlight_id=${highlightId}&project=${project}&is_imprest=${is_imprest}`
     url += getUrl(filters)
-    
+
     try {
       const response = await api.get(url)
       return response.data.page

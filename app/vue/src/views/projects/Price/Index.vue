@@ -208,39 +208,39 @@ onBeforeMount(async () => {
 
 <template>
   <ProjectAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <PriceSelectForm
-        ref="selectForm"
-        :project="project as number"
-        :orders="orderGroupList"
-        :types="unitTypeList"
-        @on-sort-select="sortSelect"
-        @on-order-select="orderSelect"
-        @on-type-select="typeSelect"
-        @cont-price-view="contPriceView"
-        @cont-price-set="contPriceSet"
-      />
-      <PriceFormList
-        :msg="priceMessage"
-        :p-filters="pFilters"
-        :price-setting="priceSetting"
-        :pay-orders="payStore.payOrderList"
-        @on-create="onCreatePrice"
-        @on-update="onUpdatePrice"
-        @on-delete="onDeletePrice"
-      />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <PriceSelectForm
+          ref="selectForm"
+          :project="project as number"
+          :orders="orderGroupList"
+          :types="unitTypeList"
+          @on-sort-select="sortSelect"
+          @on-order-select="orderSelect"
+          @on-type-select="typeSelect"
+          @cont-price-view="contPriceView"
+          @cont-price-set="contPriceSet"
+        />
+        <PriceFormList
+          :msg="priceMessage"
+          :p-filters="pFilters"
+          :price-setting="priceSetting"
+          :pay-orders="payStore.payOrderList"
+          @on-create="onCreatePrice"
+          @on-update="onUpdatePrice"
+          @on-delete="onDeletePrice"
+        />
+      </CCardBody>
+    </ContentBody>
 
-  <AlertModal ref="RefAlertModal" />
+    <AlertModal ref="RefAlertModal" />
   </ProjectAuthGuard>
 </template>

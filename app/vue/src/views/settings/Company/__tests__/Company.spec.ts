@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { shallowMount, mount, flushPromises } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createVuetify } from 'vuetify'
-import { vMaska } from "maska/vue"
+import { vMaska } from 'maska/vue'
 import CoreuiVue from '@coreui/vue'
 import { createRouter, createWebHistory } from 'vue-router'
 

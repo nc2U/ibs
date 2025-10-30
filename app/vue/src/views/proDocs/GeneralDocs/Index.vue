@@ -198,78 +198,82 @@ onBeforeMount(async () => {
 
 <template>
   <ProDocsAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <div v-if="route.name === `${mainViewName}`" class="pt-3">
-        <ListController ref="fController" :docs-filter="docsFilter" @list-filter="listFiltering" />
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <div v-if="route.name === `${mainViewName}`" class="pt-3">
+          <ListController
+            ref="fController"
+            :docs-filter="docsFilter"
+            @list-filter="listFiltering"
+          />
 
-        <CategoryTabs
-          :category="docsFilter.category as number"
-          :category-list="categoryList"
-          @select-cate="selectCate"
-        />
+          <CategoryTabs
+            :category="docsFilter.category as number"
+            :category-list="categoryList"
+            @select-cate="selectCate"
+          />
 
-        <DocsList
-          :project="project as number"
-          :limit="docsFilter.limit || 10"
-          :page="docsFilter.page || 1"
-          :docs-list="docsList"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @page-select="pageSelect"
-        />
-      </div>
+          <DocsList
+            :project="project as number"
+            :limit="docsFilter.limit || 10"
+            :page="docsFilter.page || 1"
+            :docs-list="docsList"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @page-select="pageSelect"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('보기')">
-        <DocsView
-          :type-num="typeNumber"
-          :heated-page="heatedPage"
-          :re-order="docsFilter.ordering !== '-created'"
-          :category="docsFilter.category as number"
-          :docs="docs as Docs"
-          :view-route="mainViewName"
-          :curr-page="docsFilter.page ?? 1"
-          :write-auth="writeAuth"
-          :docs-filter="docsFilter"
-          @docs-hit="docsHit"
-          @link-hit="linkHit"
-          @file-hit="fileHit"
-          @docs-scrape="docsScrape"
-          @docss-renewal="docssRenewal"
-        />
-      </div>
+        <div v-else-if="route.name.includes('보기')">
+          <DocsView
+            :type-num="typeNumber"
+            :heated-page="heatedPage"
+            :re-order="docsFilter.ordering !== '-created'"
+            :category="docsFilter.category as number"
+            :docs="docs as Docs"
+            :view-route="mainViewName"
+            :curr-page="docsFilter.page ?? 1"
+            :write-auth="writeAuth"
+            :docs-filter="docsFilter"
+            @docs-hit="docsHit"
+            @link-hit="linkHit"
+            @file-hit="fileHit"
+            @docs-scrape="docsScrape"
+            @docss-renewal="docssRenewal"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('작성')">
-        <DocsForm
-          :sort-name="projName"
-          :type-num="typeNumber"
-          :category-list="categoryList"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @on-submit="onSubmit"
-        />
-      </div>
+        <div v-else-if="route.name.includes('작성')">
+          <DocsForm
+            :sort-name="projName"
+            :type-num="typeNumber"
+            :category-list="categoryList"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @on-submit="onSubmit"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('수정')">
-        <DocsForm
-          :sort-name="projName"
-          :type-num="typeNumber"
-          :category-list="categoryList"
-          :docs="docs as Docs"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @on-submit="onSubmit"
-        />
-      </div>
-    </CCardBody>
-  </ContentBody>
+        <div v-else-if="route.name.includes('수정')">
+          <DocsForm
+            :sort-name="projName"
+            :type-num="typeNumber"
+            :category-list="categoryList"
+            :docs="docs as Docs"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @on-submit="onSubmit"
+          />
+        </div>
+      </CCardBody>
+    </ContentBody>
   </ProDocsAuthGuard>
 </template>

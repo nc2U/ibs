@@ -59,7 +59,9 @@ onMounted(() => {
 
         <span class="mr-2 form-text">
           <v-icon icon="mdi-trash-can-outline" color="secondary" size="15" class="mr-1" />
-          <router-link to="#" @click.prevent="refConfirmModal.callModal()" class="ml-1">삭제</router-link>
+          <router-link to="#" @click.prevent="refConfirmModal.callModal()" class="ml-1"
+            >삭제</router-link
+          >
         </span>
       </CCol>
     </CRow>

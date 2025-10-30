@@ -9,10 +9,10 @@ import Pagination from '@/components/Pagination'
 
 import { type PropType } from 'vue'
 
-const props = defineProps({ 
+const props = defineProps({
   limit: { type: Number, default: 10 },
   highlightId: { type: Number, default: null },
-  currentPage: { type: Number, default: 1 }
+  currentPage: { type: Number, default: 1 },
 })
 const emit = defineEmits(['page-select', 'on-delete', 'multi-submit'])
 

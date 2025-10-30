@@ -9,11 +9,11 @@ import Pagination from '@/components/Pagination'
 
 import { type PropType } from 'vue'
 
-const props = defineProps({ 
-  isReturned: { type: Boolean }, 
+const props = defineProps({
+  isReturned: { type: Boolean },
   limit: { type: Number, default: 10 },
   highlightId: { type: Number, default: null },
-  currentPage: { type: Number, default: 1 }
+  currentPage: { type: Number, default: 1 },
 })
 const emit = defineEmits(['relation-patch', 'page-select', 'on-delete', 'multi-submit'])
 

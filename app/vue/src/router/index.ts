@@ -11,7 +11,7 @@ const router = createRouter({
 const contractPageMapping: Record<string, string> = {
   '계약 상세 관리': '계약 상세 보기',
   '권리 의무 승계': '권리 의무 승계 보기',
-  '계약 해지 관리': '계약 해지 보기'
+  '계약 해지 관리': '계약 해지 보기',
 }
 
 router.beforeEach((to, from, next) => {

@@ -21,7 +21,7 @@ describe('DownLoad Component Test', () => {
     })
 
     expect(wrapper.html()).toContain('Pdf Export')
-    expect(wrapper.find('.v-btn').attributes('href')).toBe('abc.com/content/1')
+    expect(wrapper.props('url')).toBe('abc.com/content/1')
     expect(wrapper.find('.v-btn').classes()).not.toContain('v-btn--disabled')
 
     await wrapper.setProps({ disabled: true })
@@ -41,7 +41,7 @@ describe('DownLoad Component Test', () => {
     })
 
     expect(wrapper.html()).toContain('Excel Export')
-    expect(wrapper.find('.v-btn').attributes('href')).toBe('abc.com/content/2')
+    expect(wrapper.props('url')).toBe('abc.com/content/2')
     expect(wrapper.find('.v-btn').classes()).not.toContain('v-btn--disabled')
 
     await wrapper.setProps({ disabled: true })

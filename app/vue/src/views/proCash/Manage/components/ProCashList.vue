@@ -9,7 +9,7 @@ import Pagination from '@/components/Pagination'
 import AccDepth from './AccDepth.vue'
 import BankAcc from './BankAcc.vue'
 
-const props = defineProps({ 
+const props = defineProps({
   project: { type: Number, default: null },
   highlightId: { type: Number, default: null },
   currentPage: { type: Number, default: 1 },

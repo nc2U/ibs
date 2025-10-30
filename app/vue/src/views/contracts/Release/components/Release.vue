@@ -3,9 +3,9 @@ import { computed, type PropType } from 'vue'
 import { type ContractRelease } from '@/store/types/contract'
 import { numFormat, cutString } from '@/utils/baseMixins'
 
-const props = defineProps({ 
+const props = defineProps({
   release: { type: Object as PropType<ContractRelease>, default: null },
-  highlightId: { type: Number, default: null }
+  highlightId: { type: Number, default: null },
 })
 const emit = defineEmits(['call-form'])
 

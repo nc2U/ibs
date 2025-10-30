@@ -49,38 +49,38 @@ onBeforeMount(async () => {
 
 <template>
   <ProjectAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
+    <Loading v-model:active="loading" />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
-  <ContentBody>
-    <IndexDetail
-      v-if="compName === 'IndexDetail'"
-      :project="project as Project"
-      @reset-form="resetForm"
-      @create-form="createForm"
-      @update-form="updateForm"
-    />
+    <ContentBody>
+      <IndexDetail
+        v-if="compName === 'IndexDetail'"
+        :project="project as Project"
+        @reset-form="resetForm"
+        @create-form="createForm"
+        @update-form="updateForm"
+      />
 
-    <IndexForm
-      v-if="compName === 'CreateForm'"
-      :get-projects="getAllProjPks"
-      @to-submit="toSubmit"
-      @reset-form="resetForm"
-      @get-project="getProjects"
-    />
+      <IndexForm
+        v-if="compName === 'CreateForm'"
+        :get-projects="getAllProjPks"
+        @to-submit="toSubmit"
+        @reset-form="resetForm"
+        @get-project="getProjects"
+      />
 
-    <IndexForm
-      v-if="compName === 'UpdateForm'"
-      :project="project as Project"
-      :get-projects="getAllProjPks"
-      @to-submit="toSubmit"
-      @reset-form="resetForm"
-      @get-project="getProjects"
-    />
+      <IndexForm
+        v-if="compName === 'UpdateForm'"
+        :project="project as Project"
+        :get-projects="getAllProjPks"
+        @to-submit="toSubmit"
+        @reset-form="resetForm"
+        @get-project="getProjects"
+      />
 
-    <template #footer>
-      <div style="display: none"></div>
-    </template>
-  </ContentBody>
+      <template #footer>
+        <div style="display: none"></div>
+      </template>
+    </ContentBody>
   </ProjectAuthGuard>
 </template>

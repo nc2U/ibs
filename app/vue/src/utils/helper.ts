@@ -57,7 +57,12 @@ export const errorHandle = (err: any) => {
       }
     } else {
       // Fallback for simple error messages
-      message('danger', '에러', String(errorData || err || '알 수 없는 오류가 발생했습니다.'), 10000)
+      message(
+        'danger',
+        '에러',
+        String(errorData || err || '알 수 없는 오류가 발생했습니다.'),
+        10000,
+      )
     }
   }
 }

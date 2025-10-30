@@ -179,69 +179,73 @@ onBeforeMount(async () => {
 
 <template>
   <ProDocsAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <div v-if="route.name === `${mainViewName}`" class="pt-3">
-        <ListController ref="fController" :case-filter="caseFilter" @list-filter="listFiltering" />
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <div v-if="route.name === `${mainViewName}`" class="pt-3">
+          <ListController
+            ref="fController"
+            :case-filter="caseFilter"
+            @list-filter="listFiltering"
+          />
 
-        <TableTitleRow title="PR 소송 사건 목록" excel :url="excelUrl" :disabled="!project" />
+          <TableTitleRow title="PR 소송 사건 목록" excel :url="excelUrl" :disabled="!project" />
 
-        <CaseList
-          :company="company || undefined"
-          :limit="caseFilter.limit || 10"
-          :page="caseFilter.page || 1"
-          :case-list="suitcaseList"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @page-select="pageSelect"
-          @agency-filter="agencyFilter"
-          @agency-search="agencySearch"
-          @related-filter="relatedFilter"
-        />
-      </div>
+          <CaseList
+            :company="company || undefined"
+            :limit="caseFilter.limit || 10"
+            :page="caseFilter.page || 1"
+            :case-list="suitcaseList"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @page-select="pageSelect"
+            @agency-filter="agencyFilter"
+            @agency-search="agencySearch"
+            @related-filter="relatedFilter"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('보기')">
-        <CaseView
-          :suitcase="suitcase as SuitCase"
-          :view-route="mainViewName"
-          :curr-page="caseFilter.page ?? 1"
-          :write-auth="writeAuth"
-          @link-hit="linkHit"
-          @file-hit="fileHit"
-          @cases-renewal="casesRenewal"
-        />
-      </div>
+        <div v-else-if="route.name.includes('보기')">
+          <CaseView
+            :suitcase="suitcase as SuitCase"
+            :view-route="mainViewName"
+            :curr-page="caseFilter.page ?? 1"
+            :write-auth="writeAuth"
+            @link-hit="linkHit"
+            @file-hit="fileHit"
+            @cases-renewal="casesRenewal"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('작성')">
-        <CaseForm
-          :sort-name="projName"
-          :get-suit-case="getSuitCase"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @on-submit="onSubmit"
-        />
-      </div>
+        <div v-else-if="route.name.includes('작성')">
+          <CaseForm
+            :sort-name="projName"
+            :get-suit-case="getSuitCase"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @on-submit="onSubmit"
+          />
+        </div>
 
-      <div v-else-if="route.name.includes('수정')">
-        <CaseForm
-          :sort-name="projName"
-          :get-suit-case="getSuitCase"
-          :suitcase="suitcase"
-          :view-route="mainViewName"
-          :write-auth="writeAuth"
-          @on-submit="onSubmit"
-          @on-delete="onDelete"
-        />
-      </div>
-    </CCardBody>
-  </ContentBody>
+        <div v-else-if="route.name.includes('수정')">
+          <CaseForm
+            :sort-name="projName"
+            :get-suit-case="getSuitCase"
+            :suitcase="suitcase"
+            :view-route="mainViewName"
+            :write-auth="writeAuth"
+            @on-submit="onSubmit"
+            @on-delete="onDelete"
+          />
+        </div>
+      </CCardBody>
+    </ContentBody>
   </ProDocsAuthGuard>
 </template>

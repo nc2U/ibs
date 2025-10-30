@@ -10,15 +10,15 @@ const paymentStore = usePayment()
 const paymentSummaryList = computed(() => paymentStore.paymentSummaryList)
 
 const getTotalBudget = computed(() =>
-  paymentSummaryList.value.reduce((sum, item) => sum + item.total_budget, 0)
+  paymentSummaryList.value.reduce((sum, item) => sum + item.total_budget, 0),
 )
 
 const getTotalCont = computed(() =>
-  paymentSummaryList.value.reduce((sum, item) => sum + item.total_contract_amount, 0)
+  paymentSummaryList.value.reduce((sum, item) => sum + item.total_contract_amount, 0),
 )
 
 const getTotalPaid = computed(() =>
-  paymentSummaryList.value.reduce((sum, item) => sum + item.total_paid_amount, 0)
+  paymentSummaryList.value.reduce((sum, item) => sum + item.total_paid_amount, 0),
 )
 </script>
 
@@ -38,7 +38,12 @@ const getTotalPaid = computed(() =>
     <CTableBody v-if="project">
       <CTableRow v-for="item in paymentSummaryList" :key="item.unit_type_id" class="text-right">
         <CTableHeaderCell class="text-left pl-5">
-          <CIcon name="cib-node-js" :style="{ color: item.unit_type_color }" size="sm" class="mr-1" />
+          <CIcon
+            name="cib-node-js"
+            :style="{ color: item.unit_type_color }"
+            size="sm"
+            class="mr-1"
+          />
           {{ item.unit_type_name }}
         </CTableHeaderCell>
         <CTableDataCell>

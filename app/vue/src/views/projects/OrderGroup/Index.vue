@@ -47,19 +47,19 @@ onBeforeMount(async () => {
 
 <template>
   <ProjectAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <OrderAddForm v-if="write_project" :disabled="!project" @on-submit="onSubmit" />
-      <OrderFormList @on-update="onUpdateOrder" @on-delete="onDeleteOrder" />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <OrderAddForm v-if="write_project" :disabled="!project" @on-submit="onSubmit" />
+        <OrderFormList @on-update="onUpdateOrder" @on-delete="onDeleteOrder" />
+      </CCardBody>
+    </ContentBody>
   </ProjectAuthGuard>
 </template>

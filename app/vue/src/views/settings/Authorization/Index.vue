@@ -228,56 +228,56 @@ onBeforeMount(async () => {
 
 <template>
   <AuthManageAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
-  <ContentBody>
-    <CCardBody>
-      <UserSelect
-        :sel-user="user?.pk"
-        :is-staff="comInfo.is_staff"
-        :is-project-staff="projectAuth.is_project_staff"
-        @change-staff="changeStaff"
-        @change-pro-staff="changeProStaff"
-        @select-user="selectUser"
-        @add-user-modal="refFormModal.callModal()"
-      />
+    <Loading v-model:active="loading" />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
+    <ContentBody>
+      <CCardBody>
+        <UserSelect
+          :sel-user="user?.pk"
+          :is-staff="comInfo.is_staff"
+          :is-project-staff="projectAuth.is_project_staff"
+          @change-staff="changeStaff"
+          @change-pro-staff="changeProStaff"
+          @select-user="selectUser"
+          @add-user-modal="refFormModal.callModal()"
+        />
 
-      <SideBarManageAuth
-        :user="user as User"
-        :allowed="projectAuth.allowed_projects"
-        @get-allowed="getAllowed"
-        @get-assigned="getAssigned"
-        @select-auth="selectAuth"
-      />
-    </CCardBody>
+        <SideBarManageAuth
+          :user="user as User"
+          :allowed="projectAuth.allowed_projects"
+          @get-allowed="getAllowed"
+          @get-assigned="getAssigned"
+          @select-auth="selectAuth"
+        />
+      </CCardBody>
 
-    <template #footer>
-      <CCardFooter class="text-right">
-        <v-btn
-          type="button"
-          :color="isStaffAuth ? 'success' : 'primary'"
-          :disabled="!comId || formsCheck"
-          @click="toSave"
-        >
-          <CIcon name="cil-check-circle" />
-          저장
-        </v-btn>
-      </CCardFooter>
-    </template>
-
-    <AddUserFormModal ref="refFormModal" @on-submit="onSubmit" />
-
-    <ConfirmModal ref="refConfirmModal">
-      <template #header>사용자 권한설정</template>
-      <template #default>사용자 권한설정 저장을 진행하시겠습니까?</template>
       <template #footer>
-        <v-btn size="small" :color="isStaffAuth ? 'success' : 'primary'" @click="modalAction">
-          저장
-        </v-btn>
+        <CCardFooter class="text-right">
+          <v-btn
+            type="button"
+            :color="isStaffAuth ? 'success' : 'primary'"
+            :disabled="!comId || formsCheck"
+            @click="toSave"
+          >
+            <CIcon name="cil-check-circle" />
+            저장
+          </v-btn>
+        </CCardFooter>
       </template>
-    </ConfirmModal>
 
-    <AlertModal ref="refAlertModal" />
-  </ContentBody>
+      <AddUserFormModal ref="refFormModal" @on-submit="onSubmit" />
+
+      <ConfirmModal ref="refConfirmModal">
+        <template #header>사용자 권한설정</template>
+        <template #default>사용자 권한설정 저장을 진행하시겠습니까?</template>
+        <template #footer>
+          <v-btn size="small" :color="isStaffAuth ? 'success' : 'primary'" @click="modalAction">
+            저장
+          </v-btn>
+        </template>
+      </ConfirmModal>
+
+      <AlertModal ref="refAlertModal" />
+    </ContentBody>
   </AuthManageAuthGuard>
 </template>

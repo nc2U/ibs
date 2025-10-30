@@ -92,39 +92,39 @@ onBeforeMount(async () => {
 
 <template>
   <PaymentAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <DateChoicer @set-date="setDate" class="mb-4" />
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <DateChoicer @set-date="setDate" class="mb-4" />
 
-      <v-tabs v-model="menu" density="compact">
-        <v-tab
-          v-for="m in ['수납요약', '총괄집계']"
-          :value="m"
-          :key="m"
-          variant="tonal"
-          :active="menu === m"
-        >
-          {{ m }}
-        </v-tab>
-      </v-tabs>
+        <v-tabs v-model="menu" density="compact">
+          <v-tab
+            v-for="m in ['수납요약', '총괄집계']"
+            :value="m"
+            :key="m"
+            variant="tonal"
+            :active="menu === m"
+          >
+            {{ m }}
+          </v-tab>
+        </v-tabs>
 
-      <template v-if="menu === '수납요약'">
-        <TableTitleRow excel :url="excelUrl1" :disabled="!project" />
-        <PaymentStatus :date="date" />
-      </template>
-      <template v-else>
-        <TableTitleRow excel :url="excelUrl2" :disabled="!project" />
-        <OverallSummary :date="date" />
-      </template>
-    </CCardBody>
-  </ContentBody>
+        <template v-if="menu === '수납요약'">
+          <TableTitleRow excel :url="excelUrl1" :disabled="!project" />
+          <PaymentStatus :date="date" />
+        </template>
+        <template v-else>
+          <TableTitleRow excel :url="excelUrl2" :disabled="!project" />
+          <OverallSummary :date="date" />
+        </template>
+      </CCardBody>
+    </ContentBody>
   </PaymentAuthGuard>
 </template>

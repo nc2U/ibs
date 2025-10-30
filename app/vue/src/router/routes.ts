@@ -27,11 +27,12 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'dashboard',
         name: '대 시 보 드',
-        component: () => import(
-          /* webpackChunkName: "dashboard" */
-          /* webpackPreload: true */
-          '@/views/_Dashboard/Index.vue'
-        ),
+        component: () =>
+          import(
+            /* webpackChunkName: "dashboard" */
+            /* webpackPreload: true */
+            '@/views/_Dashboard/Index.vue'
+          ),
         meta: { title: '대 시 보 드', auth: true, affix: true },
       },
       workProject as RouteRecordRaw,

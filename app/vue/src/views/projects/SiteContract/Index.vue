@@ -195,43 +195,43 @@ onBeforeMount(async () => {
 
 <template>
   <ProjectAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ListController
-        ref="listControl"
-        :project="project as number"
-        @list-filtering="listFiltering"
-      />
-      <AddSiteContract
-        v-if="write_project_site"
-        :project="project as number"
-        @multi-submit="multiSubmit"
-      />
-      <TableTitleRow title="부지 매입계약 목록" excel :url="excelUrl" :disabled="!project">
-        <span v-if="project" class="text-success" style="padding-top: 7px">
-          총 계약 면적 :
-          {{ numFormat(getContsTotal as number, 2) }}
-          m<sup>2</sup> ({{ numFormat((getContsTotal as number) * 0.3025, 2) }}
-          평) 등록
-        </span>
-      </TableTitleRow>
-      <SiteContractList
-        :limit="dataFilter.limit || 10"
-        :highlight-id="highlightId ?? undefined"
-        :current-page="dataFilter.page"
-        @page-select="pageSelect"
-        @multi-submit="multiSubmit"
-        @on-delete="onDelete"
-      />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ListController
+          ref="listControl"
+          :project="project as number"
+          @list-filtering="listFiltering"
+        />
+        <AddSiteContract
+          v-if="write_project_site"
+          :project="project as number"
+          @multi-submit="multiSubmit"
+        />
+        <TableTitleRow title="부지 매입계약 목록" excel :url="excelUrl" :disabled="!project">
+          <span v-if="project" class="text-success" style="padding-top: 7px">
+            총 계약 면적 :
+            {{ numFormat(getContsTotal as number, 2) }}
+            m<sup>2</sup> ({{ numFormat((getContsTotal as number) * 0.3025, 2) }}
+            평) 등록
+          </span>
+        </TableTitleRow>
+        <SiteContractList
+          :limit="dataFilter.limit || 10"
+          :highlight-id="highlightId ?? undefined"
+          :current-page="dataFilter.page"
+          @page-select="pageSelect"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+        />
+      </CCardBody>
+    </ContentBody>
   </ProjectAuthGuard>
 </template>

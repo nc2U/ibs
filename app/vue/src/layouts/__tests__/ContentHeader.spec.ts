@@ -4,8 +4,8 @@ import { createVuetify } from 'vuetify'
 import { createTestingPinia } from '@pinia/testing'
 
 // Mock Vue Router composables
-vi.mock('vue-router', async (importOriginal) => {
-  const actual = await importOriginal() as Record<string, any>
+vi.mock('vue-router', async importOriginal => {
+  const actual = (await importOriginal()) as Record<string, any>
   return {
     ...actual,
     useRoute: () => ({

@@ -24,7 +24,7 @@ const projClear = () => emit('proj-select', null)
 
 onBeforeMount(() => {
   projStore.fetchProjectList()
-  
+
   // URL에 project 파라미터가 있으면 해당 프로젝트로, 없으면 기본 프로젝트로
   const targetProjectId = urlProjectId.value || project.value || projStore.initProjId
   projStore.fetchProject(targetProjectId)

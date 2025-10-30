@@ -443,7 +443,9 @@ export const useContract = defineStore('contract', () => {
   // 서버에 ContractDocument 존재 여부 확인
   const checkContractDocumentExists = async (contractor: number, requiredDocument: number) => {
     try {
-      const response = await api.get(`/contract-docs/?contractor=${contractor}&required_document=${requiredDocument}`)
+      const response = await api.get(
+        `/contract-docs/?contractor=${contractor}&required_document=${requiredDocument}`,
+      )
       const existingDocs = response.data.results
       return existingDocs.length > 0 ? existingDocs[0] : null
     } catch (err: any) {

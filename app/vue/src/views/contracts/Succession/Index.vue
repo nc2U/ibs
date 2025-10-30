@@ -246,7 +246,7 @@ onBeforeRouteUpdate(async to => {
 })
 
 // 다른 라우트로 이동 시 query string 정리
-onBeforeRouteLeave((to) => {
+onBeforeRouteLeave(to => {
   // contracts 내부 이동이 아닌 경우에만 쿼리 정리
   if (!to.path.startsWith('/contracts')) {
     clearQueryString()

@@ -193,7 +193,8 @@ export const useNotice = defineStore('notice', () => {
 
       return response.data
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || err.response?.data?.message || '발송 중 오류가 발생했습니다.'
+      const errorMsg =
+        err.response?.data?.detail || err.response?.data?.message || '발송 중 오류가 발생했습니다.'
       message('danger', '발송 실패', errorMsg)
       errorHandle(err.response?.data || { message: errorMsg })
       throw err
@@ -469,7 +470,9 @@ export const useNotice = defineStore('notice', () => {
   }
 
   // 메시지 발송 기록 목록 조회
-  const fetchMessageSendHistory = async (params: HistoryListParams): Promise<HistoryListResponse> => {
+  const fetchMessageSendHistory = async (
+    params: HistoryListParams,
+  ): Promise<HistoryListResponse> => {
     loading.value = true
     try {
       const response = await api.get<HistoryListResponse>('/message-send-history/', { params })

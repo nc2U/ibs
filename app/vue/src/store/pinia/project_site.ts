@@ -183,7 +183,7 @@ export const useSite = defineStore('site', () => {
     if (filters.sort) url += `&own_sort=${filters.sort}`
     if (filters.is_use_consent) url += `&use_consent=${filters.is_use_consent}`
     if (filters.search) url += `&search=${filters.search}`
-    
+
     try {
       const response = await api.get(url)
       return response.data.page
@@ -271,7 +271,7 @@ export const useSite = defineStore('site', () => {
     url += `&project=${filters.project}`
     if (filters.own_sort) url += `&owner__own_sort=${filters.own_sort}`
     if (filters.search) url += `&search=${filters.search}`
-    
+
     try {
       const response = await api.get(url)
       return response.data.page

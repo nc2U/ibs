@@ -49,17 +49,17 @@ export const useCompany = defineStore('company', () => {
       company.value = res.data
     } catch (err: any) {
       console.warn(`Company with ID ${pk} not found, trying to fetch first available company`)
-      
+
       // If company fetch fails, try to get the first available company
       try {
         const companyListRes = await api.get('/company/')
         if (companyListRes.data.results && companyListRes.data.results.length > 0) {
           const firstCompany = companyListRes.data.results[0]
           company.value = firstCompany
-          
+
           // Update the cookie to prevent future errors
           Cookies.set('curr-company', firstCompany.pk.toString(), { expires: 365 })
-          
+
           console.log(`Switched to company: ${firstCompany.name} (ID: ${firstCompany.pk})`)
         } else {
           errorHandle(err.response?.data || { detail: 'No companies available' })

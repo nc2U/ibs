@@ -8,7 +8,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   order: { type: Object as PropType<OrderGroup>, required: true },
-  hasDefault: { type: Boolean, required: true }
+  hasDefault: { type: Boolean, required: true },
 })
 const emit = defineEmits(['on-update', 'on-delete'])
 

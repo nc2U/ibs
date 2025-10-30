@@ -140,45 +140,45 @@ onBeforeRouteLeave(async () => {
 
 <template>
   <PaymentAuthGuard>
-  <Loading v-model:active="loading" />
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  >
-    <PaymentSummary :project="project as number" />
-  </ContentHeader>
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    >
+      <PaymentSummary :project="project as number" />
+    </ContentHeader>
 
-  <ContentBody>
-    <CCardBody class="pb-5">
-      <ListController
-        ref="listControl"
-        :by-cont="paymentBy === '2'"
-        @payment-filtering="listFiltering"
-      />
-      <TableTitleRow excel :url="excelUrl" :disabled="!project">
-        <v-radio-group
-          v-model="paymentBy"
-          inline
-          size="sm"
-          density="compact"
-          color="success"
-          class="d-flex flex-row-reverse"
-          style="font-size: 0.8em"
-          :disabled="!project"
-        >
-          <v-radio label="수납건별" value="1" class="pt-1 pr-3" />
-          <v-radio label="계약자별" value="2" class="pt-1" />
-        </v-radio-group>
-      </TableTitleRow>
-      <PaymentList
-        :page="filterItems.page as number"
-        :project="project as number"
-        @pay-match="payMatch"
-        @page-select="pageSelect"
-      />
-    </CCardBody>
-  </ContentBody>
+    <ContentBody>
+      <CCardBody class="pb-5">
+        <ListController
+          ref="listControl"
+          :by-cont="paymentBy === '2'"
+          @payment-filtering="listFiltering"
+        />
+        <TableTitleRow excel :url="excelUrl" :disabled="!project">
+          <v-radio-group
+            v-model="paymentBy"
+            inline
+            size="sm"
+            density="compact"
+            color="success"
+            class="d-flex flex-row-reverse"
+            style="font-size: 0.8em"
+            :disabled="!project"
+          >
+            <v-radio label="수납건별" value="1" class="pt-1 pr-3" />
+            <v-radio label="계약자별" value="2" class="pt-1" />
+          </v-radio-group>
+        </TableTitleRow>
+        <PaymentList
+          :page="filterItems.page as number"
+          :project="project as number"
+          @pay-match="payMatch"
+          @page-select="pageSelect"
+        />
+      </CCardBody>
+    </ContentBody>
   </PaymentAuthGuard>
 </template>

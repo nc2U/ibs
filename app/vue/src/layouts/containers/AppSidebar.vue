@@ -24,6 +24,6 @@ const toggleUnfoldable = () => store.toggleUnfoldable()
 
     <AppSidebarNav />
 
-    <CSidebarToggler class="d-none d-lg-flex"  @click="toggleUnfoldable" />
+    <CSidebarToggler class="d-none d-lg-flex" @click="toggleUnfoldable" />
   </CSidebar>
 </template>

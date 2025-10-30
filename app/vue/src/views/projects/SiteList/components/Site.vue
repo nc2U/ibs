@@ -24,7 +24,7 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
 </script>
 
 <template>
-  <CTableRow 
+  <CTableRow
     class="text-center"
     :class="{ 'table-warning': props.isHighlight }"
     :data-site-id="site.pk"
