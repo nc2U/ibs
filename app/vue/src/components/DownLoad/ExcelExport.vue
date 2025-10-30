@@ -24,6 +24,7 @@ const handleDownload = () => {
     @click="handleDownload"
     flat
     :disabled="props.disabled"
+    variant="tonal"
     class="mt-1 mx-3"
     style="text-decoration: none"
   >
