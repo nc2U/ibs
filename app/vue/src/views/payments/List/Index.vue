@@ -158,7 +158,7 @@ onBeforeRouteLeave(async () => {
           :by-cont="paymentBy === '2'"
           @payment-filtering="listFiltering"
         />
-        <TableTitleRow title="대금 납부 현황" excel :url="excelUrl" :filename="filename" :disabled="!project">
+        <TableTitleRow title="대금 납부 현황" excel :url="excelUrl" :filename="`${filename}.xlsx`" :disabled="!project">
           <v-radio-group
             v-model="paymentBy"
             inline
