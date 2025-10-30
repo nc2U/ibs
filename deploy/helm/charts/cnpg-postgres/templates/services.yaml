@@ -1,9 +1,9 @@
 # Service for primary instance (read-write operations)
-# Named postgres-cnpg-primary to avoid conflict with existing postgres
+# Uses postgres-primary to match Django configuration (no -cnpg suffix)
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-cnpg-primary
+  name: {{ include "cnpg-postgres.fullname" . }}-primary
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg-postgres.labels" . | nindent 4 }}
@@ -26,11 +26,11 @@ spec:
 
 ---
 # Service for replica instances (read-only operations)
-# Named postgres-cnpg-read to avoid conflict with existing postgres
+# Uses postgres-read to match Django configuration (no -cnpg suffix)
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-cnpg-read
+  name: {{ include "cnpg-postgres.fullname" . }}-read
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg-postgres.labels" . | nindent 4 }}
@@ -57,7 +57,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-cnpg-rw
+  name: {{ include "cnpg-postgres.fullname" . }}-rw
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg-postgres.labels" . | nindent 4 }}
@@ -83,7 +83,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-cnpg-ro
+  name: {{ include "cnpg-postgres.fullname" . }}-ro
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg-postgres.labels" . | nindent 4 }}
