@@ -20,7 +20,7 @@ import ContractList from '@/views/contracts/List/components/ContractList.vue'
 
 const route = useRoute()
 const listControl = ref()
-const curr_status = ref('2')
+const curr_status = ref<'1' | '2'>('2')
 const limit = ref(10)
 
 const highlightId = computed(() => {
@@ -106,7 +106,7 @@ const onContFiltering = (payload: ContFilter) => {
   const is_unit = null_unit ? '1' : ''
   payload.limit = payload.limit || 10
   limit.value = payload.limit
-  curr_status.value = status
+  curr_status.value = status as '1' | '2'
   filteredStr.value = `&limit=${limit.value}&status=${status}&group=${order_group}&type=${unit_type}&dong=${building}&is_null=${is_unit}&quali=${qualification}&sup=${is_sup_cont}&sdate=${from_date}&edate=${to_date}&q=${search}`
 
   // 현재 필터 상태 저장
