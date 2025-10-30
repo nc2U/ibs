@@ -19,6 +19,10 @@ spec:
   imagePullPolicy: {{ . }}
   {{- end }}
 
+  # PostgreSQL user/group IDs (official postgres image uses 999:999)
+  postgresUID: 999
+  postgresGID: 999
+
   # Primary update strategy
   primaryUpdateStrategy: unsupervised
   primaryUpdateMethod: switchover
