@@ -20,14 +20,10 @@ class PdfExportCertOccupancy(View):
 
         # context
         context = dict()
-        # 계약 건 객체
-        cont_id = request.GET.get('contract')
-        context['contract'] = get_contract(cont_id)
+        context['contract'] = get_contract(request.GET.get('contract'))  # 계약 건 객체
         context['is_calc'] = True if request.GET.get('is_calc') else False  # 1 = 일반용(할인가산 포함) / '' = 확인용
-        # 발행일자
-        context['pub_date'] = date.today()
-        # 사용자정보
-        context['user'] = request.user.username
+        context['pub_date'] = date.today()  # 발행일자
+        context['user'] = request.user.username  # 사용자정보
 
         # ----------------------------------------------------------------
         template_name = 'pdf/certification-occupancy.html'
