@@ -463,6 +463,17 @@ label.required::after {
     --cui-table-border-color: rgba(115, 115, 115, 0.3) !important;
   }
 
+  // Success 색상 - 원래 녹색 톤 반영하여 어둡게 조정
+  .table-success,
+  .table-success > th,
+  .table-success > td {
+    --cui-table-bg: rgba(18, 43, 33, 0.9);
+    --cui-table-hover-bg: rgba(14, 34, 26, 0.95);
+    --cui-table-hover-color: #ffffff;
+    --cui-table-color: #ffffff;
+    --cui-table-border-color: rgba(115, 115, 115, 0.3) !important;
+  }
+
   // Info 색상 - 원래 info 계열 청록색으로 어둡게 조정
   .table-info,
   .table-info > th,
@@ -497,8 +508,19 @@ label.required::after {
   .table-warning,
   .table-warning > th,
   .table-warning > td {
-    --cui-table-bg: rgba(93, 78, 55, 0.9);
-    --cui-table-hover-bg: rgba(75, 62, 43, 0.95);
+    --cui-table-bg: rgba(72, 62, 48, 0.9);
+    --cui-table-hover-bg: rgba(54, 47, 36, 0.95);
+    --cui-table-hover-color: #ffffff;
+    --cui-table-color: #ffffff;
+    --cui-table-border-color: rgba(115, 115, 115, 0.3) !important;
+  }
+
+  // Danger 색상도 추가로 조정 (필요시)
+  .table-danger,
+  .table-danger > th,
+  .table-danger > td {
+    --cui-table-bg: rgba(57, 17, 27, 0.9);
+    --cui-table-hover-bg: rgba(38, 11, 18, 0.95);
     --cui-table-hover-color: #ffffff;
     --cui-table-color: #ffffff;
     --cui-table-border-color: rgba(115, 115, 115, 0.3) !important;
