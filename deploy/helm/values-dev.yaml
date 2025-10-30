@@ -29,7 +29,7 @@ mariadb:
     backupPvcStorage: 200Mi
 
 postgres:
-  enabled: false  # Bitnami PostgreSQL 비활성화
+  enabled: true
   readReplicas:
     replicaCount: 1
 
@@ -44,8 +44,7 @@ postgres:
 
 # CloudNativePG 설정
 cnpg-postgres:
-  enabled: true
-  # global.dbPassword를 사용하도록 이미 설정되어 있음
+  enabled: false
 
 nginx:
   image:
