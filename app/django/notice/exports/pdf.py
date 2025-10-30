@@ -43,9 +43,9 @@ class PdfExportBill(View):
         contractor_list = request.GET.get('seq').split('-')  # 계약 건 ID 리스트
 
         # 해당 계약건에 대한 데이터 정리 --------------------------------------- start
-
-        context['data_list'] = (self.get_bill_data(cont_id, payment_orders, now_due_order, pub_date, np, nl) \
-                                for cont_id in contractor_list)
+        context['data_list'] = (self.get_bill_data(cont_id,
+                                                   payment_orders,
+                                                   now_due_order, pub_date, np, nl) for cont_id in contractor_list)
 
         # 해당 계약건에 대한 데이터 정리 --------------------------------------- end
 
@@ -53,10 +53,13 @@ class PdfExportBill(View):
         html = HTML(string=html_string)
         html.write_pdf(target='/tmp/mypdf.pdf')
 
+        filename = request.GET.get('filename', 'payment_bill')
+        filename = f'{filename}({len(contractor_list)}건)' if contractor_list else filename
+
         fs = FileSystemStorage('/tmp')
         with fs.open('mypdf.pdf') as pdf:
             response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="payment_bill({len(contractor_list)}).pdf"'
+            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
             return response
 
     def get_bill_data(self, cont_id, payment_orders, now_due_order, pub_date, np, nl):
