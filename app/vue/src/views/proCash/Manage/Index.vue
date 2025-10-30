@@ -391,6 +391,7 @@ onBeforeRouteLeave(() => {
           title="프로젝트 입출금 내역"
           color="indigo"
           excel
+          filename="PR자금_입출금_내역.xls"
           :disabled="!project"
           :url="excelUrl"
         >

@@ -278,6 +278,7 @@ onBeforeMount(async () => {
           title="운영비용(전도금) 사용 내역"
           color="success"
           excel
+          filename="운영비_입출금_내역.xls"
           :url="excelUrl"
           :disabled="!project"
         />
