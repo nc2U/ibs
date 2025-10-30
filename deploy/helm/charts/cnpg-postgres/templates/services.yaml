@@ -1,0 +1,131 @@
+# Service for primary instance (read-write operations)
+# Compatible with existing Django configuration: postgres-primary
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cnpg-postgres.fullname" . }}-primary
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+    cnpg.io/role: primary
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  selector:
+    cnpg.io/cluster: {{ include "cnpg-postgres.clusterName" . }}
+    role: primary
+  ports:
+    - name: postgresql
+      port: {{ .Values.service.port | default 5432 }}
+      targetPort: 5432
+      protocol: TCP
+  sessionAffinity: None
+
+---
+# Service for replica instances (read-only operations)
+# Compatible with existing Django configuration: postgres-read
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cnpg-postgres.fullname" . }}-read
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+    cnpg.io/role: replica
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  selector:
+    cnpg.io/cluster: {{ include "cnpg-postgres.clusterName" . }}
+    role: replica
+  ports:
+    - name: postgresql
+      port: {{ .Values.service.port | default 5432 }}
+      targetPort: 5432
+      protocol: TCP
+  sessionAffinity: None
+
+---
+# Service for all instances (read-write, load balanced)
+# Alternative service for admin tasks
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cnpg-postgres.fullname" . }}-rw
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+    cnpg.io/role: cluster
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  selector:
+    cnpg.io/cluster: {{ include "cnpg-postgres.clusterName" . }}
+  ports:
+    - name: postgresql
+      port: {{ .Values.service.port | default 5432 }}
+      targetPort: 5432
+      protocol: TCP
+  sessionAffinity: None
+
+---
+# Service for read-only access to all instances
+# Alternative naming for compatibility
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cnpg-postgres.fullname" . }}-ro
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+    cnpg.io/role: readonly
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  selector:
+    cnpg.io/cluster: {{ include "cnpg-postgres.clusterName" . }}
+  ports:
+    - name: postgresql
+      port: {{ .Values.service.port | default 5432 }}
+      targetPort: 5432
+      protocol: TCP
+  sessionAffinity: None
+
+{{- if .Values.pgbouncer.enabled }}
+---
+# Service for PgBouncer pooler (read-write)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cnpg-postgres.fullname" . }}-pooler-rw
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+    cnpg.io/poolerRole: rw
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  selector:
+    cnpg.io/poolerName: {{ include "cnpg-postgres.fullname" . }}-pooler
+  ports:
+    - name: postgresql
+      port: {{ .Values.service.port | default 5432 }}
+      targetPort: 5432
+      protocol: TCP
+  sessionAffinity: None
+{{- end }}

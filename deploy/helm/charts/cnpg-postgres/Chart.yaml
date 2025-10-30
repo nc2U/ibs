@@ -1,0 +1,15 @@
+apiVersion: v2
+name: cnpg-postgres
+description: CloudNativePG PostgreSQL Cluster for IBS
+type: application
+version: 1.0.0
+appVersion: "17.2"
+keywords:
+  - postgresql
+  - database
+  - cloudnative-pg
+maintainers:
+  - name: IBS Team
+home: https://cloudnative-pg.io
+sources:
+  - https://github.com/cloudnative-pg/cloudnative-pg

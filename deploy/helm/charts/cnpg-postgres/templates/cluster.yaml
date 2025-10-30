@@ -1,0 +1,239 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "cnpg-postgres.clusterName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  # Number of instances (primary + replicas)
+  instances: {{ .Values.replication.instances | default 2 }}
+
+  # PostgreSQL image
+  imageName: {{ include "cnpg-postgres.image" . }}
+  {{- with .Values.image.pullPolicy }}
+  imagePullPolicy: {{ . }}
+  {{- end }}
+
+  # Primary update strategy
+  primaryUpdateStrategy: unsupervised
+  primaryUpdateMethod: switchover
+
+  # Bootstrap configuration
+  bootstrap:
+    initdb:
+      database: {{ include "cnpg-postgres.database" . }}
+      owner: {{ include "cnpg-postgres.username" . }}
+      secret:
+        name: {{ include "cnpg-postgres.fullname" . }}-app
+      {{- with .Values.bootstrap.initdb.encoding }}
+      encoding: {{ . }}
+      {{- end }}
+      {{- with .Values.bootstrap.initdb.localeCollate }}
+      localeCollate: {{ . }}
+      {{- end }}
+      {{- with .Values.bootstrap.initdb.localeCType }}
+      localeCType: {{ . }}
+      {{- end }}
+      {{- if .Values.bootstrap.initdb.postInitSQL }}
+      postInitSQL:
+        {{- toYaml .Values.bootstrap.initdb.postInitSQL | nindent 8 }}
+      {{- end }}
+
+  # Superuser secret
+  superuserSecret:
+    name: {{ include "cnpg-postgres.fullname" . }}-superuser
+
+  # Storage configuration
+  storage:
+    {{- with .Values.storage.storageClass }}
+    storageClass: {{ . }}
+    {{- end }}
+    size: {{ .Values.storage.size | default "1Gi" }}
+    {{- with .Values.storage.volumeMode }}
+    volumeMode: {{ . }}
+    {{- end }}
+
+  # Replication configuration
+  {{- if gt (int .Values.replication.instances) 1 }}
+  minSyncReplicas: {{ .Values.replication.minSyncReplicas | default 0 }}
+  maxSyncReplicas: {{ .Values.replication.maxSyncReplicas | default 0 }}
+  {{- end }}
+
+  # PostgreSQL configuration
+  postgresql:
+    parameters:
+      {{- if .Values.postgresql.parameters }}
+      {{- range $key, $value := .Values.postgresql.parameters }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.additionalConfig }}
+      {{- range $key, $value := .Values.additionalConfig }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- end }}
+    {{- if .Values.postgresql.pg_hba }}
+    pg_hba:
+      {{- toYaml .Values.postgresql.pg_hba | nindent 6 }}
+    {{- else }}
+    pg_hba:
+      # Allow all connections with SCRAM-SHA-256 authentication
+      - host all all all scram-sha-256
+    {{- end }}
+
+  # Resource limits
+  {{- with .Values.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  # Affinity configuration
+  {{- if .Values.affinity }}
+  affinity:
+    {{- if .Values.affinity.podAntiAffinityType }}
+    podAntiAffinityType: {{ .Values.affinity.podAntiAffinityType }}
+    {{- end }}
+    {{- with .Values.affinity.nodeAffinity }}
+    nodeAffinity:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  # Tolerations
+  {{- with .Values.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  # Node selector
+  {{- with .Values.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  # Backup configuration
+  {{- if .Values.backup.enabled }}
+  backup:
+    barmanObjectStore:
+      destinationPath: {{ include "cnpg-postgres.backupDestination" . }}
+      {{- if .Values.backup.s3.enabled }}
+      {{- with .Values.backup.s3.endpoint }}
+      endpointURL: {{ . }}
+      {{- end }}
+      s3Credentials:
+        accessKeyId:
+          name: {{ include "cnpg-postgres.fullname" . }}-backup-s3
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: {{ include "cnpg-postgres.fullname" . }}-backup-s3
+          key: ACCESS_SECRET_KEY
+      {{- end }}
+      wal:
+        compression: {{ .Values.backup.wal.compression | default "gzip" }}
+        {{- with .Values.backup.wal.maxParallel }}
+        maxParallel: {{ . }}
+        {{- end }}
+      data:
+        compression: {{ .Values.backup.data.compression | default "gzip" }}
+        {{- with .Values.backup.data.jobs }}
+        jobs: {{ . }}
+        {{- end }}
+    retentionPolicy: {{ .Values.backup.retentionPolicy | default "30d" | quote }}
+  {{- end }}
+
+  # Monitoring
+  {{- if .Values.monitoring.enabled }}
+  monitoring:
+    enablePodMonitor: true
+    {{- with .Values.monitoring.customQueries }}
+    customQueriesConfigMap:
+      - name: {{ include "cnpg-postgres.fullname" . }}-monitoring
+        key: custom-queries
+    {{- end }}
+  {{- end }}
+
+  # Service account
+  {{- if .Values.serviceAccount.create }}
+  serviceAccountTemplate:
+    metadata:
+      name: {{ include "cnpg-postgres.serviceAccountName" . }}
+      labels:
+        {{- include "cnpg-postgres.labels" . | nindent 8 }}
+  {{- end }}
+
+  # Node maintenance window
+  nodeMaintenanceWindow:
+    inProgress: false
+    reusePVC: true
+
+  # Certificates (if enabled)
+  {{- if .Values.certificates.enabled }}
+  certificates:
+    serverTLSSecret: {{ include "cnpg-postgres.fullname" . }}-server-cert
+    serverCASecret: {{ include "cnpg-postgres.fullname" . }}-server-ca
+    clientCASecret: {{ include "cnpg-postgres.fullname" . }}-client-ca
+    replicationTLSSecret: {{ include "cnpg-postgres.fullname" . }}-replication-cert
+  {{- end }}
+
+  # Managed roles (if any)
+  {{- with .Values.managedRoles }}
+  managed:
+    roles:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+
+{{- if and .Values.backup.enabled .Values.backup.schedule }}
+---
+# Scheduled Backup
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ include "cnpg-postgres.fullname" . }}-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  backupOwnerReference: self
+  cluster:
+    name: {{ include "cnpg-postgres.clusterName" . }}
+  immediate: false
+{{- end }}
+
+{{- if .Values.pgbouncer.enabled }}
+---
+# PgBouncer Pooler
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: {{ include "cnpg-postgres.fullname" . }}-pooler
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  cluster:
+    name: {{ include "cnpg-postgres.clusterName" . }}
+  instances: {{ .Values.pgbouncer.instances | default 2 }}
+  type: rw
+  pgbouncer:
+    poolMode: {{ .Values.pgbouncer.poolMode | default "transaction" }}
+    parameters:
+      {{- range $key, $value := .Values.pgbouncer.parameters }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+  monitoring:
+    enablePodMonitor: {{ .Values.monitoring.enabled }}
+{{- end }}
