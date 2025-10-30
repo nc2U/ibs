@@ -3,6 +3,7 @@ import Cookies from 'js-cookie'
 import { ref, watch } from 'vue'
 import { AlertSecondary } from '@/utils/cssMixins'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import { downloadFile } from '@/utils/helper.ts'
 
 const props = defineProps({
   printData: { type: Object, default: null },
@@ -39,7 +40,8 @@ const printBill = () => {
       const url = '/pdf/bill/'
       const np = noPrice.value || ''
       const nl = noLate.value || ''
-      location.href = `${url}?project=${project}&date=${pub_date}&seq=${seq}&np=${np}&nl=${nl}`
+      const lastUrl = `${url}?project=${project}&date=${pub_date}&seq=${seq}&np=${np}&nl=${nl}`
+      downloadFile(lastUrl, `대금납부_고지서(${props.contracts.length}건)`)
     }
   }
 }
