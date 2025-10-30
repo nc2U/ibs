@@ -467,8 +467,8 @@ label.required::after {
   .table-success,
   .table-success > th,
   .table-success > td {
-    --cui-table-bg: rgba(18, 43, 33, 0.9);
-    --cui-table-hover-bg: rgba(14, 34, 26, 0.95);
+    --cui-table-bg: rgba(38, 67, 48, 0.9);
+    --cui-table-hover-bg: rgba(28, 49, 35, 0.95);
     --cui-table-hover-color: #ffffff;
     --cui-table-color: #ffffff;
     --cui-table-border-color: rgba(115, 115, 115, 0.3) !important;
@@ -509,7 +509,7 @@ label.required::after {
   .table-warning > th,
   .table-warning > td {
     --cui-table-bg: rgba(69, 50, 15, 0.9);
-    --cui-table-hover-bg: rgba(48, 35, 10, 0.95);
+    --cui-table-hover-bg: rgba(61, 42, 14, 0.95);
     --cui-table-hover-color: #ffffff;
     --cui-table-color: #ffffff;
     --cui-table-border-color: rgba(115, 115, 115, 0.3) !important;
