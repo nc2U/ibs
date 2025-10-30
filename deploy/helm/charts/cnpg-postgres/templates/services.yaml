@@ -57,7 +57,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-rw
+  name: {{ include "cnpg-postgres.fullname" . }}-cnpg-rw
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg-postgres.labels" . | nindent 4 }}
@@ -83,7 +83,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-ro
+  name: {{ include "cnpg-postgres.fullname" . }}-cnpg-ro
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg-postgres.labels" . | nindent 4 }}

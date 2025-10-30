@@ -146,8 +146,8 @@ CloudNativePG 클러스터는 자동으로 다음 서비스를 생성합니다:
 |------------|------|-----------|
 | `postgres-cnpg-primary` | 쓰기 작업 (Primary) | `postgres-cnpg-primary.{NAMESPACE}.svc.cluster.local:5432` |
 | `postgres-cnpg-read` | 읽기 작업 (Replica) | `postgres-cnpg-read.{NAMESPACE}.svc.cluster.local:5432` |
-| `postgres-rw` | 모든 인스턴스 (읽기/쓰기) | `postgres-rw.{NAMESPACE}.svc.cluster.local:5432` |
-| `postgres-ro` | 모든 인스턴스 (읽기 전용) | `postgres-ro.{NAMESPACE}.svc.cluster.local:5432` |
+| `postgres-cnpg-rw` | 모든 인스턴스 (읽기/쓰기) | `postgres-cnpg-rw.{NAMESPACE}.svc.cluster.local:5432` |
+| `postgres-cnpg-ro` | 모든 인스턴스 (읽기 전용) | `postgres-cnpg-ro.{NAMESPACE}.svc.cluster.local:5432` |
 
 ### Django 설정 변경
 
