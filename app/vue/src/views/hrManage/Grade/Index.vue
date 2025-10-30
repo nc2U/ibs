@@ -102,7 +102,7 @@ onMounted(async () => {
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
         <AddGrade v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
-        <TableTitleRow title="직급 목록" excel :url="excelUrl" filename="직급_목록" :disabled="!company" />
+        <TableTitleRow title="직급 목록" excel :url="excelUrl" filename="직급_목록.xlsx" :disabled="!company" />
         <GradeList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
       </CCardBody>
     </ContentBody>

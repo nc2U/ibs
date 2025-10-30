@@ -89,7 +89,7 @@ onMounted(async () => {
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
         <AddDuty v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
-        <TableTitleRow title="직책 목록" excel :url="excelUrl" filename="직책_목록" :disabled="!company" />
+        <TableTitleRow title="직책 목록" excel :url="excelUrl" filename="직책_목록.xlsx" :disabled="!company" />
         <DutyList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
       </CCardBody>
     </ContentBody>
