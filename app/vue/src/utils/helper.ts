@@ -1,4 +1,5 @@
 import { createToast, type ToastType, type Position, type TransitionType } from 'mosha-vue-toastify'
+import { useDownload } from '@/utils/useDownload.ts'
 import DOMPurify from 'dompurify'
 import MarkdownIt from 'markdown-it'
 
@@ -22,13 +23,6 @@ export const message = (
       // toastBackgroundColor: '#4DC374',
     },
   )
-}
-
-type Error = {
-  [key: string]: string | undefined
-  name: string
-  message: string
-  stack?: string
 }
 
 export const errorHandle = (err: any) => {
@@ -124,10 +118,4 @@ export const setLocalStorage = (orderedList: Item[], key: string) => {
 }
 
 // 파일 다운로드
-export const downloadFile = (fileUrl: string, fileName: string) => {
-  const link = document.createElement('a')
-  link.href = fileUrl
-  link.download = fileName
-  link.target = '_blank'
-  link.click()
-}
+export const { downloadFile } = useDownload()

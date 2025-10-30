@@ -3,6 +3,7 @@ import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount, onMounted, onUpdated, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/payments/_menu/headermixin'
 import { dateFormat } from '@/utils/baseMixins'
+import { downloadFile } from '@/utils/helper.ts'
 import { write_payment } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
@@ -271,15 +272,15 @@ onBeforeRouteLeave(() => {
           @list-filtering="onContFiltering"
           @get-contract="getContract"
         />
-        <TableTitleRow :disabled="!project || !contract" pdf :url="paymentUrl">
+        <TableTitleRow :disabled="!project || !contract" pdf :url="paymentUrl" filename="납부_확인서">
           <v-radio-group
             v-model="isCalc"
             inline
             size="sm"
             density="compact"
             color="success"
-            class="d-flex flex-row-reverse"
             style="font-size: 0.8em"
+            class="d-flex flex-row-reverse"
             :disabled="!project || !contract"
           >
             <span v-show="project && contract" class="mr-3">
@@ -289,12 +290,12 @@ onBeforeRouteLeave(() => {
 
             <v-btn
               v-if="project === 1"
-              :href="calcUrl"
               flat
               :disabled="!project || !contract"
               color="light"
               size="small"
               class="mt-1 mr-2"
+              @click="downloadFile(calcUrl, '할인_가산금_내역')"
               style="text-decoration: none"
             >
               가산(할인) 내역
