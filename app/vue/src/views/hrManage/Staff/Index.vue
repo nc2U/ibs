@@ -136,7 +136,7 @@ onMounted(async () => {
       <CCardBody>
         <ListController ref="refListControl" @list-filtering="listFiltering" />
         <AddStaff v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
-        <TableTitleRow title="직원 목록" excel :url="excelUrl" :disabled="!company" />
+        <TableTitleRow title="직원 목록" excel :url="excelUrl" filename="직원_목록" :disabled="!company" />
         <StaffList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
       </CCardBody>
     </ContentBody>
