@@ -310,7 +310,13 @@ onBeforeRouteLeave(() => {
             @list-filter="listFiltering"
           />
 
-          <TableTitleRow title="본사 소송 사건 목록" excel :url="excelUrl" :disabled="!company" />
+          <TableTitleRow
+            title="본사 소송 사건 목록"
+            excel
+            :url="excelUrl"
+            filename="본사_소송사건"
+            :disabled="!company"
+          />
 
           <CaseList
             :company="company || undefined"
