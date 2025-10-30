@@ -19,6 +19,7 @@ TODAY = date.today()
 
 
 class PdfExportPayments(View):
+    """납부 확인서"""
 
     @staticmethod
     def get(request):
@@ -34,8 +35,6 @@ class PdfExportPayments(View):
         pub_date = request.GET.get('pub_date', None)
         pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
         context['pub_date'] = pub_date
-
-        payment_orders = InstallmentPaymentOrder.objects.filter(project=project)  # 전체 납부회차 컬렉션
 
         try:
             unit = contract.key_unit.houseunit
@@ -83,10 +82,12 @@ class PdfExportPayments(View):
         html = HTML(string=html_string)
         html.write_pdf(target='/tmp/mypdf.pdf')
 
+        filename = request.GET.get('filename', 'payments_contractor')
+
         fs = FileSystemStorage('/tmp')
         with fs.open('mypdf.pdf') as pdf:
             response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="payments_contractor.pdf"'
+            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
             return response
 
     @staticmethod
@@ -289,6 +290,7 @@ class PdfExportPayments(View):
 
 
 class PdfExportCalculation(View):
+    """선납할인/연체가산 내역서"""
 
     def get(self, request):
         context = dict()
@@ -344,10 +346,12 @@ class PdfExportCalculation(View):
         html = HTML(string=html_string)
         html.write_pdf(target='/tmp/mypdf.pdf')
 
+        filename = request.GET.get('filename', 'calculation_contractor')
+
         fs = FileSystemStorage('/tmp')
         with fs.open('mypdf.pdf') as pdf:
             response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="calculation_contractor.pdf"'
+            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
             return response
 
     @staticmethod
