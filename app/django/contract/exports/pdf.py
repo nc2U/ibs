@@ -13,29 +13,25 @@ from weasyprint import HTML
 
 from _pdf.utils import get_contract
 
-TODAY = date.today().strftime('%Y-%m-%d')
-
 
 class PdfExportCertOccupancy(View):
 
     def get(self, request):
-        context = dict()
 
+        # context
+        context = dict()
         # 계약 건 객체
         cont_id = request.GET.get('contract')
         context['contract'] = contract = get_contract(cont_id)
         context['is_calc'] = calc = True if request.GET.get('is_calc') else False  # 1 = 일반용(할인가산 포함) / '' = 확인용
-
         # 발행일자
-        pub_date = request.GET.get('date', TODAY)
-        context['pub_date'] = pub_date
-
+        context['pub_date'] = date.today()
         # 사용자정보
         context['user'] = request.user.username
 
         # ----------------------------------------------------------------
-
-        html_string = render_to_string('pdf/certification-occupancy.html', context)
+        template_name = 'pdf/certification-occupancy.html'
+        html_string = render_to_string(template_name, context)
 
         # 가로 방향 페이지 설정을 위한 CSS 추가
         landscape_css = """
@@ -93,10 +89,12 @@ class PdfExportCertOccupancy(View):
         html = HTML(string=html_string)
         html.write_pdf(target='/tmp/mypdf.pdf')
 
+        filename = request.GET.get('filename', 'cert-occupancy')
+
         fs = FileSystemStorage('/tmp')
         with fs.open('mypdf.pdf') as pdf:
             response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="cert-occupancy.pdf"'
+            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
             return response
 
     @staticmethod
