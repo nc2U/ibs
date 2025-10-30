@@ -42,17 +42,17 @@ const handleExcelDownload = (url: string, fileName: string) => {
       </div>
       <CRow class="mb-2">
         <CCol :cols="6">
-          <small class="text-muted">건물가:</small>
+          <small class="text-grey">건물가:</small>
           <div>{{ numFormat(contract.contractprice?.price_build || 0) }}</div>
         </CCol>
         <CCol :cols="6">
-          <small class="text-muted">토지가:</small>
+          <small class="text-grey">토지가:</small>
           <div>{{ numFormat(contract.contractprice?.price_land || 0) }}</div>
         </CCol>
       </CRow>
       <CRow class="mb-3">
         <CCol :cols="6">
-          <small class="text-muted">부가세:</small>
+          <small class="text-grey">부가세:</small>
           <div>{{ numFormat(contract.contractprice?.price_tax || 0) }}</div>
         </CCol>
       </CRow>
@@ -112,7 +112,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
           </router-link>
         </div>
       </div>
-      <div v-else class="text-center text-muted py-3">납부 내역이 없습니다.</div>
+      <div v-else class="text-center text-grey py-3">납부 내역이 없습니다.</div>
     </CCardBody>
   </CCard>
 

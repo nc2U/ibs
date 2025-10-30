@@ -210,7 +210,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
         <CRow class="mb-2">
           <CCol :sm="6">
             <strong>이름:</strong>
-            <span class="ml-2">{{ contractor.name }}</span>
+            <span class="ml-2 text-info strong">{{ contractor.name }}</span>
           </CCol>
           <CCol :sm="6">
             <strong>생년월일:</strong>
@@ -319,7 +319,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                 }}
               </div>
             </div>
-            <div v-else class="text-muted">주민등록 주소 정보가 없습니다.</div>
+            <div v-else class="text-grey">주민등록 주소 정보가 없습니다.</div>
           </div>
 
           <!-- 우편물 수령 주소 -->
@@ -351,7 +351,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                 }}
               </div>
             </div>
-            <div v-else class="text-muted">우편물 수령 주소 정보가 없습니다.</div>
+            <div v-else class="text-grey">우편물 수령 주소 정보가 없습니다.</div>
           </div>
         </transition>
       </div>
@@ -380,19 +380,19 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
               </div>
 
               <div v-if="address.id_address1" class="mb-2">
-                <div class="text-muted small">주민등록 주소</div>
+                <div class="text-grey small">주민등록 주소</div>
                 <div>({{ address.id_zipcode }}) {{ address.id_address1 }}</div>
                 <div>{{ address.id_address2 }} {{ address.id_address3 }}</div>
               </div>
 
               <div v-if="address.dm_address1">
-                <div class="text-muted small">우편물 수령 주소</div>
+                <div class="text-grey small">우편물 수령 주소</div>
                 <div>({{ address.dm_zipcode }}) {{ address.dm_address1 }}</div>
                 <div>{{ address.dm_address2 }} {{ address.dm_address3 }}</div>
               </div>
             </div>
           </div>
-          <div v-else class="text-center text-muted py-3">
+          <div v-else class="text-center text-grey py-3">
             <v-icon icon="mdi-history" size="large" class="mb-2" />
             <div>과거 주소 히스토리가 없습니다.</div>
           </div>
@@ -402,7 +402,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
       <!-- 메모 -->
       <div>
         <h6 class="mb-2">메모</h6>
-        <div class="text-muted">{{ contractor.note || '메모가 없습니다.' }}</div>
+        <div class="text-grey">{{ contractor.note || '메모가 없습니다.' }}</div>
       </div>
     </CCardBody>
   </CCard>
@@ -424,7 +424,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                   <v-icon icon="mdi-download" color="primary" />
                 </a>
               </div>
-              <small class="text-muted">
+              <small class="text-grey">
                 {{ (file.file_size / 1024).toFixed(2) }} KB
                 <span class="mx-1">|</span>
                 {{ file.created }}
@@ -456,7 +456,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
           <div v-if="editingFileId === file.pk" class="mt-2 p-3 border rounded bg-light">
             <div class="mb-2">
               <strong class="text-warning">파일 수정</strong>
-              <small class="text-muted ml-2">새 파일을 선택하여 기존 파일을 교체합니다.</small>
+              <small class="text-grey ml-2">새 파일을 선택하여 기존 파일을 교체합니다.</small>
             </div>
             <v-file-input
               v-model="editFile"
@@ -489,9 +489,9 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
           </div>
         </div>
       </div>
-      <div v-else class="text-muted">
+      <div v-else class="text-grey">
         <CRow>
-          <CCol class="p-3 text-center text-muted" :class="bgLight"> 등록된 파일이 없습니다. </CCol>
+          <CCol class="p-3 text-center text-grey" :class="bgLight"> 등록된 파일이 없습니다. </CCol>
         </CRow>
 
         <CRow class="text-right mt-3">

@@ -252,10 +252,10 @@ onMounted(() => {
     </div>
 
     <!-- 계약자 미선택 -->
-    <div v-else-if="!contractorId" class="text-center py-5 text-muted">계약자를 선택해주세요.</div>
+    <div v-else-if="!contractorId" class="text-center py-5 text-grey">계약자를 선택해주세요.</div>
 
     <!-- 서류 목록이 없음 -->
-    <div v-else-if="mergedDocuments.length === 0" class="text-center py-5 text-muted">
+    <div v-else-if="mergedDocuments.length === 0" class="text-center py-5 text-grey">
       등록된 필요 서류가 없습니다.<br />
       <v-icon icon="mdi-arrow-right" size="18" class="me-1" />
       <router-link :to="{ name: '구비 서류 등록' }">구비 서류 등록 바로가기</router-link>

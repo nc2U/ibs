@@ -134,10 +134,10 @@ onMounted(() => {
     </div>
 
     <!-- 계약자 미선택 -->
-    <div v-else-if="!contractorId" class="text-center py-5 text-muted">계약자를 선택해주세요.</div>
+    <div v-else-if="!contractorId" class="text-center py-5 text-grey">계약자를 선택해주세요.</div>
 
     <!-- 상담 내역이 없음 -->
-    <div v-else-if="filteredList.length === 0" class="text-center py-5 text-muted">
+    <div v-else-if="filteredList.length === 0" class="text-center py-5 text-grey">
       <v-icon icon="mdi-message-text-outline" size="large" class="mb-2" />
       <div>상담 내역이 없습니다.</div>
     </div>
