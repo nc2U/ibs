@@ -84,7 +84,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
     <ContentBody>
       <CCardBody class="pb-5">
         <ContSummary />
-        <TableTitleRow excel :url="excelUrl" filename="동호수현황표" :disabled="!project">
+        <TableTitleRow excel :url="excelUrl" filename="동호수현황표.xlsx" :disabled="!project">
           <div class="p-2">
             <CFormSwitch
               id="flexCheckDefault"

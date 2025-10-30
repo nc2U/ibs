@@ -324,7 +324,7 @@ onBeforeMount(async () => {
           @subscription-created="handleSubscription"
           @contract-converted="handleContract"
         />
-        <TableTitleRow :title="title" excel :url="excelUrl" :filename="title" :disabled="!project">
+        <TableTitleRow :title="title" excel :url="excelUrl" :filename="`${title}.xlsx`" :disabled="!project">
           <v-btn
             size="small"
             rounded="0"
