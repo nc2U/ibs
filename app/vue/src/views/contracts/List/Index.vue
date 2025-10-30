@@ -20,7 +20,7 @@ import ContractList from '@/views/contracts/List/components/ContractList.vue'
 
 const route = useRoute()
 const listControl = ref()
-const status = ref('2')
+const curr_status = ref('2')
 const limit = ref(10)
 
 const highlightId = computed(() => {
@@ -44,7 +44,7 @@ const currentFilters = ref<ContFilter>({ project: null })
 
 const visible = ref(false)
 
-const filteredStr = ref(`&status=${status.value}`)
+const filteredStr = ref(`&status=${curr_status.value}`)
 const printItems = ref(['1', '3', '4', '5', '8', '13', '14'])
 
 const excelUrl = computed(() => {
@@ -52,6 +52,8 @@ const excelUrl = computed(() => {
   const items = printItems.value.join('-')
   return `/excel/contracts/?project=${pk}${filteredStr.value}&col=${items}`
 })
+
+const title = computed(() => curr_status.value === '1' ? '청약현황':'계약현황')
 
 const projStore = useProject()
 const project = computed(() => projStore.project as Project)
@@ -104,6 +106,7 @@ const onContFiltering = (payload: ContFilter) => {
   const is_unit = null_unit ? '1' : ''
   payload.limit = payload.limit || 10
   limit.value = payload.limit
+  curr_status.value = status
   filteredStr.value = `&limit=${limit.value}&status=${status}&group=${order_group}&type=${unit_type}&dong=${building}&is_null=${is_unit}&quali=${qualification}&sup=${is_sup_cont}&sdate=${from_date}&edate=${to_date}&q=${search}`
 
   // 현재 필터 상태 저장
@@ -115,12 +118,12 @@ const setItems = (arr: string[]) => (printItems.value = arr)
 
 const handleSubscription = async () => {
   // 청약 목록으로 전환 (실제 목록은 pinia에서 이미 로드됨)
-  status.value = '1'
+  curr_status.value = '1'
 }
 
 const handleContract = async () => {
   // 계약 목록으로 전환 (청약을 계약으로 전환했을 때)
-  status.value = '2'
+  curr_status.value = '2'
 }
 
 const scrollToHighlight = async () => {
@@ -142,7 +145,7 @@ const loadHighlightPage = async (projectId: number) => {
         ...currentFilters.value,
         project: projectId,
         limit: limit.value,
-        status: status.value,
+        status: curr_status.value,
       }
 
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
@@ -169,7 +172,7 @@ const dataSetup = async (proj: number, initialPage?: number) => {
   currentFilters.value = {
     project: proj,
     limit: limit.value,
-    status: status.value,
+    status: curr_status.value,
     ...(initialPage && { page: initialPage }),
   }
 
@@ -219,7 +222,7 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
       await fetchOrderGroupList(target)
       await fetchTypeList(target)
       await fetchBuildingList(target)
-      currentFilters.value = { project: target, limit: limit.value, status: status.value }
+      currentFilters.value = { project: target, limit: limit.value, status: curr_status.value }
       await fetchContractList({ project: target })
       await fetchSubsSummaryList(target)
       await fetchContSummaryList(target)
@@ -280,7 +283,7 @@ const loading = ref(true)
 onBeforeMount(async () => {
   if (route.query?.status) {
     await router.replace({ name: '계약 내역 조회' })
-    status.value = '1'
+    curr_status.value = '1'
   }
 
   // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
@@ -314,14 +317,14 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <ListController ref="listControl" :status="status" @cont-filtering="onContFiltering" />
+        <ListController ref="listControl" :status="curr_status" @cont-filtering="onContFiltering" />
         <AddContract
           :project="project?.pk"
           :unit-set="unitSet"
           @subscription-created="handleSubscription"
           @contract-converted="handleContract"
         />
-        <TableTitleRow title="계약현황" excel :url="excelUrl" :disabled="!project">
+        <TableTitleRow :title="title" excel :url="excelUrl" :filename="title" :disabled="!project">
           <v-btn
             size="small"
             rounded="0"
