@@ -142,14 +142,38 @@ kubectl exec -n ibs-prod $PRIMARY_POD -- \
 
 CloudNativePG 클러스터는 자동으로 다음 서비스를 생성합니다:
 
-| 서비스 이름 | 용도 | Django 설정 |
-|------------|------|-------------|
-| `postgres-primary` | 쓰기 작업 (Primary) | `{DATABASE_TYPE}-primary.{NAMESPACE}.svc.cluster.local` |
-| `postgres-read` | 읽기 작업 (Replica) | `{DATABASE_TYPE}-read.{NAMESPACE}.svc.cluster.local` |
-| `postgres-rw` | 모든 인스턴스 (읽기/쓰기) | 관리 작업용 |
-| `postgres-ro` | 모든 인스턴스 (읽기 전용) | 대안 읽기 엔드포인트 |
+| 서비스 이름 | 용도 | 엔드포인트 |
+|------------|------|-----------|
+| `postgres-cnpg-primary` | 쓰기 작업 (Primary) | `postgres-cnpg-primary.{NAMESPACE}.svc.cluster.local:5432` |
+| `postgres-cnpg-read` | 읽기 작업 (Replica) | `postgres-cnpg-read.{NAMESPACE}.svc.cluster.local:5432` |
+| `postgres-rw` | 모든 인스턴스 (읽기/쓰기) | `postgres-rw.{NAMESPACE}.svc.cluster.local:5432` |
+| `postgres-ro` | 모든 인스턴스 (읽기 전용) | `postgres-ro.{NAMESPACE}.svc.cluster.local:5432` |
 
-**기존 Django 설정과 100% 호환**되므로 애플리케이션 코드 변경이 필요 없습니다.
+### Django 설정 변경
+
+기존 Bitnami PostgreSQL과 **병행 운영**하기 위해 서비스 이름이 변경되었습니다.
+
+**_config/settings.py 수정 필요:**
+
+```python
+# 기존
+MASTER_HOST = f'{DATABASE_TYPE}-primary.{NAMESPACE}.svc.cluster.local'
+# 변경
+MASTER_HOST = f'{DATABASE_TYPE}-cnpg-primary.{NAMESPACE}.svc.cluster.local'
+
+# 기존
+'HOST': f'{DATABASE_TYPE}-read.{NAMESPACE}.svc.cluster.local'
+# 변경
+'HOST': f'{DATABASE_TYPE}-cnpg-read.{NAMESPACE}.svc.cluster.local'
+```
+
+또는 환경 변수로 관리:
+
+```bash
+# ConfigMap에 추가
+DATABASE_PRIMARY_HOST: "postgres-cnpg-primary"
+DATABASE_READ_HOST: "postgres-cnpg-read"
+```
 
 ## 검증
 
@@ -215,15 +239,31 @@ pgbouncer:
 
 ### S3 백업 활성화
 
+**중요**: 백업 기능은 기본적으로 비활성화되어 있습니다. S3 자격증명 없이는 활성화할 수 없습니다.
+
 ```yaml
 # values.yaml
 backup:
+  enabled: true  # S3 자격증명과 함께 활성화 필요
   s3:
     enabled: true
     bucket: "ibs-postgres-backups"
     region: "ap-northeast-2"
+    endpoint: ""  # 선택사항: 커스텀 S3 엔드포인트
     accessKeyId: "YOUR_ACCESS_KEY"
     secretAccessKey: "YOUR_SECRET_KEY"
+```
+
+**수동 백업 대안** (S3 없이):
+
+```bash
+# pg_dump를 사용한 수동 백업
+kubectl exec -n ibs-prod postgres-1 -- \
+  pg_dump -U postgres ibs > backup-$(date +%Y%m%d).sql
+
+# 복원
+kubectl exec -n ibs-prod postgres-1 -- \
+  psql -U postgres -d ibs < backup-20251030.sql
 ```
 
 ### PostgreSQL 파라미터 튜닝

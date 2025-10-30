@@ -1,9 +1,9 @@
 # Service for primary instance (read-write operations)
-# Compatible with existing Django configuration: postgres-primary
+# Named postgres-cnpg-primary to avoid conflict with existing postgres
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-primary
+  name: {{ include "cnpg-postgres.fullname" . }}-cnpg-primary
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg-postgres.labels" . | nindent 4 }}
@@ -26,11 +26,11 @@ spec:
 
 ---
 # Service for replica instances (read-only operations)
-# Compatible with existing Django configuration: postgres-read
+# Named postgres-cnpg-read to avoid conflict with existing postgres
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-read
+  name: {{ include "cnpg-postgres.fullname" . }}-cnpg-read
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg-postgres.labels" . | nindent 4 }}

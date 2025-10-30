@@ -110,7 +110,9 @@ postgresql:
 
 # Backup Configuration
 backup:
-  enabled: true
+  # Disabled by default to avoid credential validation errors
+  # Enable only when S3 credentials are configured
+  enabled: false
 
   # Backup schedule (daily at 2 AM KST)
   schedule: "0 2 * * *"
@@ -118,17 +120,18 @@ backup:
   # Backup retention policy
   retentionPolicy: "30d"
 
-  # Backup destination
-  # Option 1: Local storage (NFS volume)
-  destinationPath: "file:///var/lib/postgresql/backup"
+  # Backup destination (only used if s3.enabled is true)
+  destinationPath: ""
 
-  # Option 2: S3-compatible storage (configure if needed)
+  # S3-compatible storage configuration
+  # IMPORTANT: backup.enabled and s3.enabled must both be true to enable backups
   s3:
     enabled: false
     bucket: ""
     region: "ap-northeast-2"
     endpoint: ""
-    # Credentials will be stored in a secret
+    accessKeyId: ""
+    secretAccessKey: ""
 
   # WAL archiving configuration
   wal:
