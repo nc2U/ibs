@@ -314,7 +314,7 @@ onBeforeRouteLeave(() => {
             title="본사 소송 사건 목록"
             excel
             :url="excelUrl"
-            filename="본사_소송사건"
+            filename="본사_소송사건.xlsx"
             :disabled="!company"
           />
 
