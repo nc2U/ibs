@@ -215,7 +215,7 @@ onBeforeMount(async () => {
           :project="project as number"
           @multi-submit="multiSubmit"
         />
-        <TableTitleRow title="부지 매입계약 목록" excel :url="excelUrl" :disabled="!project">
+        <TableTitleRow title="부지 매입계약 목록" excel :url="excelUrl" filename="부지매입_계약목록.xlsx" :disabled="!project">
           <span v-if="project" class="text-success" style="padding-top: 7px">
             총 계약 면적 :
             {{ numFormat(getContsTotal as number, 2) }}

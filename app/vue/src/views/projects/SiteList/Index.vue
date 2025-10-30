@@ -212,7 +212,7 @@ onBeforeMount(async () => {
           :project="project as number"
           @multi-submit="multiSubmit"
         />
-        <TableTitleRow title="사업 부지 목록" excel :url="excelUrl" :disabled="!project">
+        <TableTitleRow title="사업 부지 목록" excel :url="excelUrl" filename="사업_부지목록.xlsx" :disabled="!project">
           <span v-if="project" class="text-success" style="padding-top: 7px">
             총 면적 : {{ numFormat(totalArea as number, 2) }}m<sup>2</sup> ({{
               numFormat((totalArea as number) * 0.3025, 2)
