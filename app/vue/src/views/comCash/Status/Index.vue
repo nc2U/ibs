@@ -78,9 +78,9 @@ const comp: { [key: number]: string } = {
 const filename = computed(() => {
   switch (compName.value) {
     case 'StatusByAccount':
-      return '계좌별-자금현황'
+      return '계좌별-자금현황.xlsx'
     case 'CashListByDate':
-      return '일별-입출금내역'
+      return '일별-입출금내역.xlsx'
     default:
       return ''
   }

@@ -352,7 +352,7 @@ onBeforeRouteLeave(() => {
           color="indigo"
           excel
           :url="excelUrl"
-          filename="본사_출납내역"
+          filename="본사_출납내역.xls"
           :disabled="!company"
         />
         <CashList
