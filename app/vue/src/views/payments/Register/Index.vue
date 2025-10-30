@@ -272,7 +272,7 @@ onBeforeRouteLeave(() => {
           @list-filtering="onContFiltering"
           @get-contract="getContract"
         />
-        <TableTitleRow :disabled="!project || !contract" pdf :url="paymentUrl" filename="납부_확인서">
+        <TableTitleRow :disabled="!project || !contract" pdf :url="paymentUrl" filename="납부_확인서.pdf">
           <v-radio-group
             v-model="isCalc"
             inline
@@ -295,7 +295,7 @@ onBeforeRouteLeave(() => {
               color="light"
               size="small"
               class="mt-1 mr-2"
-              @click="downloadFile(calcUrl, '할인_가산금_내역')"
+              @click="downloadFile(calcUrl, '할인_가산금_내역.pdf')"
               style="text-decoration: none"
             >
               가산(할인) 내역
