@@ -222,6 +222,7 @@ watch(route, async newRoute => {
           color="grey"
           excel
           :url="downloadUrl"
+          filename="계약_해지현황"
           :disabled="!project"
         />
         <ReleaseList
