@@ -54,9 +54,6 @@ spec:
     storageClass: {{ . }}
     {{- end }}
     size: {{ .Values.storage.size | default "1Gi" }}
-    {{- with .Values.storage.volumeMode }}
-    volumeMode: {{ . }}
-    {{- end }}
 
   # Replication configuration
   {{- if gt (int .Values.replication.instances) 1 }}
@@ -162,6 +159,10 @@ spec:
       name: {{ include "cnpg-postgres.serviceAccountName" . }}
       labels:
         {{- include "cnpg-postgres.labels" . | nindent 8 }}
+      {{- with .Values.serviceAccount.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
   {{- end }}
 
   # Node maintenance window

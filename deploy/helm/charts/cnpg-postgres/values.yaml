@@ -228,6 +228,10 @@ managedRoles: []
 serviceAccount:
   create: true
   name: ""
+  # Annotations for service account
+  annotations: {}
+  # Automatically mount service account token
+  automountServiceAccountToken: true
 
 # Common labels
 commonLabels: {}
