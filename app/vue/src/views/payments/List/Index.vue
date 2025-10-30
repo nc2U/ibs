@@ -99,6 +99,7 @@ const paymentBy = ref(Cookies.get('paymentBy') ?? '1') // 다운로드할 파일
 watch(paymentBy, newVal => Cookies.set('paymentBy', newVal))
 
 const excelUrl = computed(() => (paymentBy.value === '1' ? byPayment.value : byContract.value))
+const filename = computed(() => paymentBy.value === '1' ? '수납건별_납부현황':'계약자별_납부현황')
 
 const dataSetup = (pk: number) => {
   fetchOrderGroupList(pk)
@@ -157,7 +158,7 @@ onBeforeRouteLeave(async () => {
           :by-cont="paymentBy === '2'"
           @payment-filtering="listFiltering"
         />
-        <TableTitleRow excel :url="excelUrl" :disabled="!project">
+        <TableTitleRow title="대금 납부 현황" excel :url="excelUrl" :filename="filename" :disabled="!project">
           <v-radio-group
             v-model="paymentBy"
             inline
