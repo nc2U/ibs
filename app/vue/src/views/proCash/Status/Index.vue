@@ -110,6 +110,15 @@ const comp: { [key: number]: string } = {
   3: 'SummaryForBudget',
 }
 
+const filename = computed(() => {
+  switch (compName.value) {
+    case 'StatusByAccount': return '계좌별_자금현황.xlsx'
+    case 'CashListByDate': return '당일_입출금내역.xlsx'
+    case 'SummaryForBudget': return '예산대비_집계.xlsx'
+    default: return ''
+  }
+})
+
 const showTab = (num: number) => (compName.value = comp[num])
 
 const setDate = (dt: string) => {
@@ -203,14 +212,14 @@ onBeforeMount(async () => {
 
         <TabSelect @tab-select="showTab" />
 
-        <TableTitleRow excel :url="excelUrl" :disabled="!project">
+        <TableTitleRow excel :url="excelUrl" :filename="filename" :disabled="!project">
           <template #tail>
             <v-btn
               v-if="compName === 'SummaryForBudget'"
               size="small"
               color="primary"
               variant="tonal"
-              @click="handleDownload(cashFlowUrl, '월별자금집행현황.xlsx')"
+              @click="handleDownload(cashFlowUrl, '월별_자금집행_현황.xlsx')"
               flat
               :disabled="false"
               class="mt-1 mx-1"
