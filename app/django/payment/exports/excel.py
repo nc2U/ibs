@@ -234,7 +234,7 @@ class ExportPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         if not project:
             raise ValueError("Project ID is required")
 
-        date = request.GET.get('date', TODAY)
+        date = request.GET.get('to_date', TODAY)
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('계약자별_납부내역', in_memory=False)
