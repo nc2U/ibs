@@ -215,15 +215,6 @@ bootstrap:
 
     # Post-init SQL (optional)
     postInitSQL:
-      - |
-        DO
-        $$
-        BEGIN
-           IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'ibs') THEN
-              ALTER USER ibs CREATEDB;
-           END IF;
-        END
-        $$;
       - CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;
       - GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;
       - GRANT ALL ON SCHEMA ibs TO ibs;
