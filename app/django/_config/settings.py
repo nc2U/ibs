@@ -128,7 +128,8 @@ DATABASE_PASSWORD = config('DATABASE_PASSWORD', default='')
 NAMESPACE = config('NAMESPACE', default='default')
 KUBERNETES_SERVICE_HOST = config('KUBERNETES_SERVICE_HOST', default=None)
 
-MASTER_HOST = f'{DATABASE_TYPE}-primary.{NAMESPACE}.svc.cluster.local' \
+# CloudNativePG uses -rw suffix for read-write service, Bitnami uses -primary
+MASTER_HOST = f'{DATABASE_TYPE}-rw.{NAMESPACE}.svc.cluster.local' \
     if KUBERNETES_SERVICE_HOST else DATABASE_TYPE
 DEFAULT_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
     if DATABASE_TYPE == 'postgres' else {
@@ -159,7 +160,8 @@ DATABASES = {
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
         "DEFAULT-CHARACTER-SET": 'utf8',
-        'HOST': f'{DATABASE_TYPE}-read.{NAMESPACE}.svc.cluster.local',
+        # CloudNativePG uses -ro suffix for read-only service, Bitnami uses -read
+        'HOST': f'{DATABASE_TYPE}-ro.{NAMESPACE}.svc.cluster.local',
         'PORT': config('POSTGRES_READ_SERVICE_PORT', default='5432') \
             if DATABASE_TYPE == 'postgres' \
             else config('MARIADB_READ_SERVICE_PORT_MYSQL', default='3306'),
