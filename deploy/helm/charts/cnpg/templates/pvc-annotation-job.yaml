@@ -1,0 +1,70 @@
+{{- if .Values.enabled }}
+# Job to add helm.sh/resource-policy: keep annotation to CNPG-managed PVCs
+# This ensures PVCs are not deleted when Helm release is uninstalled
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "cnpg.fullname" . }}-pvc-annotate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pvc-protection
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "5"
+    helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "cnpg.labels" . | nindent 8 }}
+        app.kubernetes.io/component: pvc-protection
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "cnpg.serviceAccountName" . }}
+      containers:
+      - name: annotate-pvcs
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/bash
+          - -c
+          - |
+            set -e
+
+            echo "Waiting for CNPG cluster to be ready..."
+            for i in {1..60}; do
+              if kubectl get cluster -n {{ .Release.Namespace }} {{ include "cnpg.clusterName" . }} &>/dev/null; then
+                echo "Cluster found, waiting for PVCs..."
+                sleep 5
+                break
+              fi
+              echo "Waiting for cluster... ($i/60)"
+              sleep 2
+            done
+
+            echo "Annotating PostgreSQL PVCs with helm.sh/resource-policy: keep"
+
+            # Get all PVCs managed by this cluster
+            for pvc in $(kubectl get pvc -n {{ .Release.Namespace }} -l "cnpg.io/cluster={{ include "cnpg.clusterName" . }}" -o name); do
+              echo "Processing $pvc..."
+
+              # Check if annotation already exists
+              if kubectl get -n {{ .Release.Namespace }} "$pvc" -o jsonpath='{.metadata.annotations.helm\.sh/resource-policy}' | grep -q "keep"; then
+                echo "  ✓ Already annotated: $pvc"
+              else
+                kubectl annotate -n {{ .Release.Namespace }} "$pvc" \
+                  "helm.sh/resource-policy=keep" --overwrite
+                echo "  ✓ Annotated: $pvc"
+              fi
+            done
+
+            echo ""
+            echo "✅ All PostgreSQL PVCs are now protected from Helm uninstall"
+            echo ""
+            echo "Protected PVCs:"
+            kubectl get pvc -n {{ .Release.Namespace }} -l "cnpg.io/cluster={{ include "cnpg.clusterName" . }}" \
+              -o custom-columns=NAME:.metadata.name,STATUS:.status.phase,PROTECTED:.metadata.annotations.helm\.sh/resource-policy
+{{- end }}
