@@ -59,6 +59,12 @@ storage:
   # Access mode
   accessMode: ReadWriteOnce
 
+# Environment Variables for PostgreSQL Pod
+env:
+  # Set default host to localhost for psql connections
+  - name: PGHOST
+    value: "localhost"
+
 # PostgreSQL Configuration Parameters
 postgresql:
   # PostgreSQL version-specific parameters
@@ -110,9 +116,6 @@ postgresql:
     autovacuum: "on"
     autovacuum_max_workers: "3"
     autovacuum_naptime: "1min"
-  pg_hba:
-    - local all all scram-sha-256
-    - host all all 0.0.0.0/0 scram-sha-256
 
 # Backup Configuration
 backup:
