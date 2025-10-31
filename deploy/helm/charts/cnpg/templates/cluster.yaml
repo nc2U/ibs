@@ -45,29 +45,11 @@ spec:
       localeCType: {{ . }}
       {{- end }}
       postInitApplicationSQL:
-        - |
-          DO $$
-          BEGIN
-            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '{{ include "cnpg.username" . }}') THEN
-              CREATE USER {{ include "cnpg.username" . }} WITH PASSWORD 'securepassword' CREATEDB;
-            END IF;
-          END
-          $$;
-
-        - |
-          DO $$
-          BEGIN
-            IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ include "cnpg.database" . }}') THEN
-              CREATE DATABASE {{ include "cnpg.database" . }} OWNER {{ include "cnpg.username" . }};
-            END IF;
-          END
-          $$;
-
-        - |
-          CREATE SCHEMA IF NOT EXISTS {{ include "cnpg.database" . }} AUTHORIZATION {{ include "cnpg.username" . }};
-          GRANT ALL PRIVILEGES ON DATABASE {{ include "cnpg.database" . }} TO {{ include "cnpg.username" . }};
-          GRANT ALL ON SCHEMA {{ include "cnpg.database" . }} TO {{ include "cnpg.username" . }};
-          ALTER DATABASE {{ include "cnpg.database" . }} SET search_path TO {{ include "cnpg.database" . }}, public;
+        - CREATE DATABASE {{ include "cnpg.database" . }} OWNER {{ include "cnpg.username" . }};
+        - CREATE SCHEMA IF NOT EXISTS {{ include "cnpg.database" . }} AUTHORIZATION {{ include "cnpg.username" . }};
+        - GRANT ALL PRIVILEGES ON DATABASE {{ include "cnpg.database" . }} TO {{ include "cnpg.username" . }};
+        - GRANT ALL ON SCHEMA {{ include "cnpg.database" . }} TO {{ include "cnpg.username" . }};
+        - ALTER DATABASE {{ include "cnpg.database" . }} SET search_path TO {{ include "cnpg.database" . }}, public;
 
   # Superuser secret
   superuserSecret:
