@@ -1,0 +1,22 @@
+{{- if .Values.enabled }}
+{{- if .Values.backup.nfs.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "cnpg.fullname" . }}-backup-pv
+  labels:
+    {{- include "cnpg.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ include "cnpg.fullname" . }}-backup
+  capacity:
+    storage: {{ .Values.backup.nfs.storage | default "1Gi" }}
+  accessModes:
+    - ReadWriteMany
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/volume/backups
+    server: {{ .Values.global.nfsServerHost }}
+{{- end }}
+{{- end }}

@@ -126,6 +126,12 @@ backup:
   # Backup destination (only used if s3.enabled is true)
   destinationPath: ""
 
+  # NFS backup volume configuration
+  # For manual backups using pg_dump/pg_restore scripts
+  nfs:
+    enabled: true
+    storage: "1Gi"  # PV/PVC size
+
   # S3-compatible storage configuration
   # IMPORTANT: backup.enabled and s3.enabled must both be true to enable backups
   s3:

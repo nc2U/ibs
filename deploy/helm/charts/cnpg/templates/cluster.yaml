@@ -64,6 +64,18 @@ spec:
     {{- end }}
     size: {{ .Values.storage.size | default "1Gi" }}
 
+  {{- if .Values.backup.nfs.enabled }}
+  # Additional volumes for backups
+  additionalVolumes:
+    - name: backup-volume
+      persistentVolumeClaim:
+        claimName: {{ include "cnpg.fullname" . }}-backup-pvc
+
+  additionalVolumeMounts:
+    - name: backup-volume
+      mountPath: /var/backups
+  {{- end }}
+
   # Replication configuration
   {{- if gt (int .Values.replication.instances) 1 }}
   minSyncReplicas: {{ .Values.replication.minSyncReplicas | default 0 }}
