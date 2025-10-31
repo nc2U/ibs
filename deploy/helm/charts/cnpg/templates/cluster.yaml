@@ -44,10 +44,38 @@ spec:
       {{- with .Values.bootstrap.initdb.localeCType }}
       localeCType: {{ . }}
       {{- end }}
-      {{- if .Values.bootstrap.initdb.postInitSQL }}
-      postInitSQL:
-        {{- toYaml .Values.bootstrap.initdb.postInitSQL | nindent 8 }}
-      {{- end }}
+      postInitApplicationSQL:
+        # 1️⃣ 사용자 생성 (이미 존재하면 건너뜀)
+        - |
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT FROM pg_catalog.pg_roles WHERE rolname = '{{ include "cnpg.username" . }}'
+            ) THEN
+              CREATE USER {{ include "cnpg.username" . }} WITH PASSWORD 'securepassword' CREATEDB;
+            END IF;
+          END
+          $$;
+
+        # 2️⃣ 데이터베이스 생성 (소유자를 cnpg.username로)
+        - |
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT FROM pg_database WHERE datname = '{{ include "cnpg.database" . }}'
+            ) THEN
+              CREATE DATABASE {{ include "cnpg.database" . }} OWNER {{ include "cnpg.username" . }};
+            END IF;
+          END
+          $$;
+
+        # 3️⃣ 스키마 생성 및 권한 설정
+        - "CREATE SCHEMA IF NOT EXISTS {{ include "cnpg.database" . }} AUTHORIZATION {{ include \"cnpg.username\" . }};"
+        - "GRANT ALL PRIVILEGES ON DATABASE {{ include \"cnpg.database\" . }} TO {{ include \"cnpg.username\" . }};"
+        - "GRANT ALL ON SCHEMA {{ include \"cnpg.database\" . }} TO {{ include \"cnpg.username\" . }};"
+
+        # 4️⃣ 기본 search_path 설정
+        - "ALTER DATABASE {{ include \"cnpg.database\" . }} SET search_path TO {{ include \"cnpg.database\" . }}, public;"
 
   # Superuser secret
   superuserSecret:
