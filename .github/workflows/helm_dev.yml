@@ -25,6 +25,26 @@ jobs:
         with:
           ref: 'develop'
 
+      # Backup values-dev-custom.yaml and clean helm directory
+      - name: Backup custom values and clean helm directory
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/dev/deploy
+
+            # Backup values-dev-custom.yaml if exists
+            if [ -f "./helm/values-dev-custom.yaml" ]; then
+              cp ./helm/values-dev-custom.yaml ../values-dev-custom.yaml.bak
+              echo "Backed up values-dev-custom.yaml"
+            fi
+
+            # Remove helm directory
+            rm -rf ./helm
+            echo "Cleaned helm directory"
+
       # Helm source to CI/CD server copy transfer
       - name: Copy helm, to CI/CD server
         uses: appleboy/scp-action@master
@@ -34,6 +54,30 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           source: 'deploy/helm,deploy/kubectl'
           target: ${{ secrets.CICD_PATH }}/dev/
+
+      # Restore values-dev-custom.yaml with symlink
+      - name: Restore custom values with symlink
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/dev/deploy
+
+            # Restore values-dev-custom.yaml if backup exists
+            if [ -f "../values-dev-custom.yaml.bak" ]; then
+              cp ../values-dev-custom.yaml.bak ../values-dev-custom.yaml
+              rm ../values-dev-custom.yaml.bak
+              echo "Restored values-dev-custom.yaml to parent directory"
+            fi
+
+            # Create symlink from helm to parent custom values
+            if [ -f "../values-dev-custom.yaml" ]; then
+              cd helm
+              ln -sf ../values-dev-custom.yaml ./values-dev-custom.yaml
+              echo "Created symlink: helm/values-dev-custom.yaml -> ../values-dev-custom.yaml"
+            fi
       
       # helm upgrade --> install
       - name: SSH Remote Commands from ci/cd server
