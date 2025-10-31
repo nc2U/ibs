@@ -48,6 +48,10 @@ spec:
       postInitSQL:
         {{- toYaml .Values.bootstrap.initdb.postInitSQL | nindent 8 }}
       {{- end }}
+      {{- if .Values.bootstrap.initdb.postInitApplicationSQL }}
+      postInitApplicationSQL:
+        {{- toYaml .Values.bootstrap.initdb.postInitApplicationSQL | nindent 8 }}
+      {{- end }}
 
   # Superuser secret
   superuserSecret:
