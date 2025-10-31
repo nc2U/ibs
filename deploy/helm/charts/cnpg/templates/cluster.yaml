@@ -45,11 +45,11 @@ spec:
       localeCType: {{ . }}
       {{- end }}
       postInitApplicationSQL:
-        - CREATE DATABASE {{ include "cnpg.database" . }} OWNER {{ include "cnpg.username" . }};
-        - CREATE SCHEMA IF NOT EXISTS {{ include "cnpg.database" . }} AUTHORIZATION {{ include "cnpg.username" . }};
-        - GRANT ALL PRIVILEGES ON DATABASE {{ include "cnpg.database" . }} TO {{ include "cnpg.username" . }};
-        - GRANT ALL ON SCHEMA {{ include "cnpg.database" . }} TO {{ include "cnpg.username" . }};
-        - ALTER DATABASE {{ include "cnpg.database" . }} SET search_path TO {{ include "cnpg.database" . }}, public;
+        - 'CREATE DATABASE {{ include "cnpg.database" . }} OWNER {{ include "cnpg.username" . }};'
+        - 'CREATE SCHEMA IF NOT EXISTS {{ include "cnpg.database" . }} AUTHORIZATION {{ include "cnpg.username" . }};'
+        - 'GRANT ALL PRIVILEGES ON DATABASE {{ include "cnpg.database" . }} TO {{ include "cnpg.username" . }};'
+        - 'GRANT ALL ON SCHEMA {{ include "cnpg.database" . }} TO {{ include "cnpg.username" . }};'
+        - 'ALTER DATABASE {{ include "cnpg.database" . }} SET search_path TO {{ include "cnpg.database" . }}, public;'
 
   # Superuser secret
   superuserSecret:
