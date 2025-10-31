@@ -214,37 +214,20 @@ bootstrap:
     localeCType: "en_US.UTF-8"
 
     # Post-init SQL (optional)
-    postInitSQL: |
-      -- 사용자 생성 및 CREATEDB (이미 존재 시 건너뜀)
-      DO
+    postInitSQL:
+      - |
+        DO
         $$
-      BEGIN
-        IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'ibs') THEN
-          ALTER USER ibs CREATEDB;
-        END IF;
-      END
-      $$;
-
-      -- 스키마 생성
-      CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;
-
-      -- 데이터베이스 권한 부여
-      GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;
-
-      -- 스키마 권한 부여 (ALL: USAGE, CREATE 등 포함)
-      GRANT ALL ON SCHEMA ibs TO ibs;
-
-      -- 기존/미래 테이블/시퀀스에 기본 권한 부여
-      GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA ibs TO ibs;
-      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA ibs TO ibs;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA ibs GRANT ALL ON TABLES TO ibs;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA ibs GRANT ALL ON SEQUENCES TO ibs;
-
-      -- search_path 설정
-      ALTER DATABASE ibs SET search_path TO ibs, public;
-
-      -- 확장 설치
-      CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+        BEGIN
+           IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'ibs') THEN
+              ALTER USER ibs CREATEDB;
+           END IF;
+        END
+        $$;
+        - CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;
+        - GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;
+        - GRANT ALL ON SCHEMA ibs TO ibs;
+        - ALTER DATABASE ibs SET search_path TO ibs, public;
 
 # Certificates (optional, for SSL)
 certificates:
