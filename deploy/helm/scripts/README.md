@@ -64,7 +64,7 @@ NAMESPACE=ibs-prod RELEASE=ibs ./manual-restore.sh
 
 ⚠️ **주의**: 복원은 모든 테이블을 TRUNCATE하므로 반드시 확인 후 실행하세요!
 
-### 3️⃣ kubectl로 직접 실행
+### 3️⃣ kubectl로 직접 실행 (고급)
 
 #### 수동 백업
 ```bash
@@ -101,6 +101,18 @@ kubectl run -n ibs-dev backup-list --image=postgres:17.2 --rm -i \
     }]
   }
 }'
+```
+
+#### 수동 복원 (kubectl)
+
+복원은 `manual-restore.sh` 스크립트 사용을 권장하지만, kubectl로 직접 실행하려면:
+
+```bash
+# 1. charts/cnpg/restore-job.yaml.example 파일 참조
+# 2. DUMP_FILE 환경변수를 복원할 백업 파일로 수정
+# 3. kubectl apply로 Job 생성
+
+# 예시는 charts/cnpg/restore-job.yaml.example 파일 참조
 ```
 
 ## 📦 자동 백업 설정
@@ -160,11 +172,12 @@ deploy/helm/
 │   ├── manual-backup.sh          # 수동 백업 스크립트
 │   ├── manual-restore.sh         # 수동 복원 스크립트
 │   └── README.md                 # 이 문서
-└── charts/cnpg/templates/
-    ├── backup-cronjob.yaml       # 자동 백업 CronJob
-    ├── backup-pv.yaml            # NFS PersistentVolume
-    ├── backup-pvc.yaml           # PersistentVolumeClaim
-    └── restore-job.yaml          # 복원 Job 템플릿 (Helm 전용)
+└── charts/cnpg/
+    ├── templates/
+    │   ├── backup-cronjob.yaml   # 자동 백업 CronJob
+    │   ├── backup-pv.yaml        # NFS PersistentVolume
+    │   └── backup-pvc.yaml       # PersistentVolumeClaim
+    └── restore-job.yaml.example  # 복원 Job 템플릿 예시 (참고용)
 ```
 
 ## 🔄 GitHub Actions 통합
