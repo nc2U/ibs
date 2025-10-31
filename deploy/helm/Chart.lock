@@ -1,0 +1,6 @@
+dependencies:
+- name: cnpg-postgres
+  repository: file://./charts/cnpg
+  version: 1.0.0
+digest: sha256:87436fed5083daf4375cbbe77d92bc36966def208d837e6c7d95472924305f9f
+generated: "2025-10-31T14:42:31.1299379+09:00"
