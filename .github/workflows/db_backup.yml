@@ -30,7 +30,7 @@ jobs:
           source: 'volume/backups/*'
           target: ${{ secrets.NFS_PATH }}/prod/
 
-      # mysql pod --> database bakcup
+      # database backup (supports both Bitnami and CloudNativePG)
       - name: database backup
         uses: garygrossgarten/github-action-ssh@release
         with:
@@ -38,11 +38,19 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
+            # MariaDB backup (Bitnami)
             if kubectl get pod -n ibs-prod mariadb-primary-0 >/dev/null 2>&1; then
-              kubectl exec -it -n ibs-prod mariadb-primary-0 -- sh /var/backups/dump_mariadb.sh
+              kubectl exec -n ibs-prod mariadb-primary-0 -- sh /var/backups/dump_mariadb.sh
             fi
+
+            # PostgreSQL backup (Bitnami - legacy)
             if kubectl get pod -n ibs-prod postgres-primary-0 >/dev/null 2>&1; then
-              kubectl exec -it -n ibs-prod postgres-primary-0 -- sh /var/backups/dump_postgres.sh
+              kubectl exec -n ibs-prod postgres-primary-0 -- sh /var/backups/dump_postgres.sh
+            fi
+
+            # PostgreSQL backup (CloudNativePG)
+            if kubectl get pod -n ibs-prod postgres-1 >/dev/null 2>&1; then
+              kubectl exec -n ibs-prod postgres-1 -- bash /var/backups/dump_postgres.sh
             fi
 
       # slack --> notification
