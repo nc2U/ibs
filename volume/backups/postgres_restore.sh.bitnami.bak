@@ -1,26 +1,14 @@
 #!/bin/bash
 set -eu
 
-# CloudNativePG 환경 변수 설정
-SCHEMA="${POSTGRES_SCHEMA:-ibs}"
+# 변수 설정
+SCHEMA="${POSTGRES_SCHEMA}"
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/ibs-backup-postgres-${DATE}.dump"
-LOG_FILE="/var/backups/restore-${DATE}.log"
-
-# CloudNativePG 비밀번호 처리 (Secret에서 마운트됨)
-if [ -f "/controller/run/postgres-password" ]; then
-    PGPASSWORD=$(cat /controller/run/postgres-password)
-elif [ -n "${POSTGRES_PASSWORD:-}" ]; then
-    PGPASSWORD="${POSTGRES_PASSWORD}"
-else
-    echo "Error: PostgreSQL password not found" >&2
-    exit 1
-fi
-
-POSTGRES_DATABASE="${POSTGRES_DATABASE:-ibs}"
+LOG_FILE="/var/backups/backup-${DATE}.log"
+PGPASSWORD="${POSTGRES_PASSWORD:-$( [ -f "$POSTGRES_PASSWORD_FILE" ] && cat "$POSTGRES_PASSWORD_FILE" || echo '')}"
+POSTGRES_DATABASE="${POSTGRES_DATABASE:-${POSTGRES_DB}}"
 SUPER_USER="postgres"
-# CloudNativePG는 localhost 연결 필요 (peer 인증 우회)
-PSQL_HOST="localhost"
 
 # 이전 백업 삭제 (예: 2일 이상된 파일)
 find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -ctime +2 -delete
@@ -42,7 +30,7 @@ echo "=== Restore Log: ${DATE} ===" > "$LOG_FILE"
 
 # 테이블 데이터 삭제(TRUNCATE) 및 복원을 트랜잭션 내에서 실행
 echo "=== 테이블 데이터 삭제 및 복원 시작 ===" | tee -a "$LOG_FILE"
-PGPASSWORD="$PGPASSWORD" psql -h "$PSQL_HOST" -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
+PGPASSWORD="$PGPASSWORD" psql -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
 BEGIN;
 SET CONSTRAINTS ALL DEFERRED;
 
@@ -94,7 +82,7 @@ fi
 
 # TRUNCATE 후 테이블 비어 있는지 확인
 echo "=== TRUNCATE 후 테이블 행 수 확인 ===" | tee -a "$LOG_FILE"
-PGPASSWORD="$PGPASSWORD" psql -h "$PSQL_HOST" -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
+PGPASSWORD="$PGPASSWORD" psql -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
 DO \$\$
 DECLARE
     r RECORD;
@@ -111,13 +99,13 @@ END \$\$;
 
 # 백업 파일 복원
 echo "=== 백업 파일 복원 중: $DUMP_FILE ===" | tee -a "$LOG_FILE"
-PGPASSWORD="$PGPASSWORD" pg_restore -h "$PSQL_HOST" -U "$SUPER_USER" -d "$POSTGRES_DATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
+PGPASSWORD="$PGPASSWORD" pg_restore -U "$SUPER_USER" -d "$POSTGRES_DATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
 
 # 복원 결과 확인
 if [ $? -eq 0 ]; then
     # 시퀀스 조정
     echo "=== 시퀀스 조정 (id 컬럼 기준) 시작 ===" | tee -a "$LOG_FILE"
-    PGPASSWORD="$PGPASSWORD" psql -h "$PSQL_HOST" -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
+    PGPASSWORD="$PGPASSWORD" psql -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
     DO \$\$
     DECLARE
         r RECORD;
