@@ -1,0 +1,208 @@
+{{- if .Values.enabled }}
+{{- if .Values.backup.nfs.enabled }}
+# This is a template for manual restore jobs
+# Deploy with: kubectl apply -f restore-job.yaml
+# NOTE: Edit DUMP_FILE variable to specify which backup to restore
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "cnpg.fullname" . }}-restore-{{ now | date "20060102-150405" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg.labels" . | nindent 4 }}
+    app.kubernetes.io/component: restore
+spec:
+  ttlSecondsAfterFinished: 86400  # Auto-delete after 24 hours
+  template:
+    metadata:
+      labels:
+        {{- include "cnpg.labels" . | nindent 8 }}
+        app.kubernetes.io/component: restore
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: postgres-restore
+        image: {{ include "cnpg.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+        command:
+          - /bin/bash
+          - -c
+          - |
+            set -eu
+
+            # ===== CONFIGURATION =====
+            # 복원할 백업 파일 지정 (수동으로 수정 필요)
+            DUMP_FILE="${DUMP_FILE:-/var/backups/ibs-backup-postgres-2025-01-15.dump}"
+
+            if [ ! -f "$DUMP_FILE" ]; then
+                echo "❌ Error: Backup file not found: $DUMP_FILE" >&2
+                echo "Available backups:" >&2
+                ls -lh /var/backups/*.dump 2>/dev/null || echo "No backup files found" >&2
+                exit 1
+            fi
+
+            # CloudNativePG 환경 변수 설정
+            SCHEMA="{{ .Values.auth.database }}"
+            DATE=$(date +"%Y-%m-%d-%H%M%S")
+            LOG_FILE="/var/backups/restore-${DATE}.log"
+            POSTGRES_DATABASE="{{ .Values.auth.database }}"
+            POSTGRES_USER="postgres"
+            POSTGRES_PASSWORD=$(cat /run/secrets/postgres-password)
+            PSQL_HOST="{{ include "cnpg.clusterName" . }}-rw"
+
+            echo "=== PostgreSQL Restore Started ===" | tee "$LOG_FILE"
+            echo "Backup file: $DUMP_FILE" | tee -a "$LOG_FILE"
+            echo "Database: $POSTGRES_DATABASE" | tee -a "$LOG_FILE"
+            echo "Schema: $SCHEMA" | tee -a "$LOG_FILE"
+            echo "Host: $PSQL_HOST" | tee -a "$LOG_FILE"
+            echo "" | tee -a "$LOG_FILE"
+
+            # 스키마 존재 확인
+            echo "=== Checking schema existence ===" | tee -a "$LOG_FILE"
+            PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$PSQL_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
+            DO \$\$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = '$SCHEMA') THEN
+                    RAISE EXCEPTION 'Schema $SCHEMA does not exist';
+                END IF;
+                RAISE NOTICE 'Schema $SCHEMA exists';
+            END \$\$;
+            " >> "$LOG_FILE" 2>&1
+
+            # 테이블 데이터 삭제 (django_migrations 제외)
+            echo "=== Truncating tables (excluding django_migrations) ===" | tee -a "$LOG_FILE"
+            PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$PSQL_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
+            BEGIN;
+            SET CONSTRAINTS ALL DEFERRED;
+
+            DO \$\$
+            DECLARE
+                r RECORD;
+                has_sequence BOOLEAN;
+            BEGIN
+                FOR r IN (SELECT c.relname AS tablename FROM pg_class c
+                         WHERE c.relkind = 'r'
+                         AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA')
+                         AND c.relname != 'django_migrations')
+                LOOP
+                    BEGIN
+                        SELECT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_schema = '$SCHEMA'
+                            AND table_name = r.tablename
+                            AND column_default LIKE 'nextval%'
+                        ) INTO has_sequence;
+
+                        IF has_sequence THEN
+                            EXECUTE format('TRUNCATE TABLE %I.%I CASCADE RESTART IDENTITY', '$SCHEMA', r.tablename);
+                            RAISE NOTICE 'Truncated table %.% with RESTART IDENTITY', '$SCHEMA', r.tablename;
+                        ELSE
+                            EXECUTE format('TRUNCATE TABLE %I.%I CASCADE', '$SCHEMA', r.tablename);
+                            RAISE NOTICE 'Truncated table %.%', '$SCHEMA', r.tablename;
+                        END IF;
+                    EXCEPTION WHEN OTHERS THEN
+                        RAISE WARNING 'Failed to truncate table %.%: %', '$SCHEMA', r.tablename, SQLERRM;
+                        CONTINUE;
+                    END;
+                END LOOP;
+                RAISE NOTICE 'Completed truncating tables in schema $SCHEMA';
+            END \$\$;
+
+            COMMIT;
+            " >> "$LOG_FILE" 2>&1
+
+            if [ $? -ne 0 ]; then
+                echo "❌ Truncate failed! Check log: $LOG_FILE" >&2
+                cat "$LOG_FILE" >&2
+                exit 1
+            fi
+
+            # TRUNCATE 후 확인
+            echo "=== Verifying tables are empty ===" | tee -a "$LOG_FILE"
+            PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$PSQL_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
+            DO \$\$
+            DECLARE
+                r RECORD;
+                row_count INTEGER;
+            BEGIN
+                FOR r IN (SELECT tablename FROM pg_tables
+                         WHERE schemaname = '$SCHEMA'
+                         AND tablename != 'django_migrations')
+                LOOP
+                    EXECUTE format('SELECT COUNT(*) FROM %I.%I', '$SCHEMA', r.tablename) INTO row_count;
+                    RAISE NOTICE 'Table %.%: % rows', '$SCHEMA', r.tablename, row_count;
+                END LOOP;
+            END \$\$;
+            " >> "$LOG_FILE" 2>&1
+
+            # 백업 파일 복원
+            echo "=== Restoring from backup file ===" | tee -a "$LOG_FILE"
+            PGPASSWORD="$POSTGRES_PASSWORD" pg_restore \
+              -h "$PSQL_HOST" \
+              -U "$POSTGRES_USER" \
+              -d "$POSTGRES_DATABASE" \
+              --data-only \
+              --no-owner \
+              --no-privileges \
+              --disable-triggers \
+              --jobs=4 \
+              "$DUMP_FILE" >> "$LOG_FILE" 2>&1
+
+            if [ $? -eq 0 ]; then
+                # 시퀀스 조정
+                echo "=== Adjusting sequences ===" | tee -a "$LOG_FILE"
+                PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$PSQL_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "
+                DO \$\$
+                DECLARE
+                    r RECORD;
+                BEGIN
+                    FOR r IN (
+                        SELECT c.relname AS tablename
+                        FROM pg_class c
+                        JOIN pg_depend d ON c.oid = d.objid
+                        JOIN pg_class s ON d.refobjid = s.oid
+                        WHERE c.relkind = 'r'
+                        AND s.relkind = 'S'
+                        AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '$SCHEMA')
+                    )
+                    LOOP
+                        EXECUTE 'SELECT setval(pg_get_serial_sequence(' || quote_literal('$SCHEMA.' || r.tablename) || ', ''id''),
+                                (SELECT COALESCE(MAX(id), 0) + 1 FROM ' || quote_ident('$SCHEMA') || '.' || quote_ident(r.tablename) || '))';
+                        RAISE NOTICE 'Reset sequence for table %.%', '$SCHEMA', r.tablename;
+                    END LOOP;
+                    RAISE NOTICE 'All sequences adjusted';
+                END \$\$;
+                " >> "$LOG_FILE" 2>&1
+
+                echo "" | tee -a "$LOG_FILE"
+                echo "🎉 PostgreSQL Restore completed successfully!" | tee -a "$LOG_FILE"
+                echo "Log file: $LOG_FILE" | tee -a "$LOG_FILE"
+                exit 0
+            else
+                echo "❌ Restore failed! Check log: $LOG_FILE" >&2
+                cat "$LOG_FILE" >&2
+                exit 1
+            fi
+        env:
+          # 복원할 백업 파일 지정 (수동 편집 가능)
+          # 예: ibs-backup-postgres-2025-01-15.dump
+          - name: DUMP_FILE
+            value: "/var/backups/ibs-backup-postgres-2025-01-15.dump"
+        volumeMounts:
+          - name: backup-volume
+            mountPath: /var/backups
+          - name: postgres-password
+            mountPath: /run/secrets
+            readOnly: true
+      volumes:
+        - name: backup-volume
+          persistentVolumeClaim:
+            claimName: {{ include "cnpg.fullname" . }}-backup-pvc
+        - name: postgres-password
+          secret:
+            secretName: {{ include "cnpg.fullname" . }}-superuser
+            items:
+              - key: password
+                path: postgres-password
+{{- end }}
+{{- end }}

@@ -1,0 +1,92 @@
+{{- if .Values.enabled }}
+{{- if .Values.backup.nfs.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "cnpg.fullname" . }}-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | default "0 2 * * *" | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "cnpg.labels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: postgres-backup
+            image: {{ include "cnpg.image" . }}
+            imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+            command:
+              - /bin/bash
+              - -c
+              - |
+                set -eu
+
+                # CloudNativePG 환경 변수 설정
+                DATE=$(date +"%Y-%m-%d")
+                DUMP_FILE=/var/backups/ibs-backup-postgres-${DATE}.dump
+                POSTGRES_SCHEMA="{{ .Values.auth.database }}"
+                POSTGRES_DATABASE="{{ .Values.auth.database }}"
+                POSTGRES_USER="postgres"
+                POSTGRES_PASSWORD=$(cat /run/secrets/postgres-password)
+                PSQL_HOST="{{ include "cnpg.clusterName" . }}-rw"
+
+                # 이전 백업 삭제 (2일 이상된 파일)
+                find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -mtime +2 -delete
+
+                if [ -f "$DUMP_FILE" ]; then
+                    rm "$DUMP_FILE"
+                fi
+
+                echo "Starting PostgreSQL backup: ${DUMP_FILE}"
+
+                # pg_dump로 백업 실행
+                PGPASSWORD="$POSTGRES_PASSWORD" pg_dump \
+                  -h "$PSQL_HOST" \
+                  -U "$POSTGRES_USER" \
+                  -d "$POSTGRES_DATABASE" \
+                  -n "$POSTGRES_SCHEMA" \
+                  --data-only \
+                  --exclude-table="${POSTGRES_SCHEMA}.django_migrations" \
+                  --column-inserts \
+                  -Fc \
+                  -f "$DUMP_FILE"
+
+                # 퍼미션 변경
+                chmod 644 ${DUMP_FILE}
+
+                # 백업 성공 확인
+                if [ $? -eq 0 ]; then
+                    echo "PostgreSQL Backup completed successfully: ${DUMP_FILE}"
+                    ls -lh "$DUMP_FILE"
+                else
+                    echo "PostgreSQL Backup failed." >&2
+                    exit 1
+                fi
+            volumeMounts:
+              - name: backup-volume
+                mountPath: /var/backups
+              - name: postgres-password
+                mountPath: /run/secrets
+                readOnly: true
+          volumes:
+            - name: backup-volume
+              persistentVolumeClaim:
+                claimName: {{ include "cnpg.fullname" . }}-backup-pvc
+            - name: postgres-password
+              secret:
+                secretName: {{ include "cnpg.fullname" . }}-superuser
+                items:
+                  - key: password
+                    path: postgres-password
+{{- end }}
+{{- end }}
