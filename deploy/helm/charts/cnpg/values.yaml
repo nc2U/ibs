@@ -211,10 +211,15 @@ bootstrap:
     localeCType: "en_US.UTF-8"
 
     # Post-init SQL (optional)
-    postInitSQL: []
-    # Example:
+    postInitSQL:
+      # Grant privileges to application user
+      - "GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;"
+      - "GRANT ALL ON SCHEMA public TO ibs;"
+      - "GRANT CREATE ON DATABASE ibs TO ibs;"
+      # Optional: Create commonly used extensions
+      - "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+    # Example of additional extensions:
     # postInitSQL:
-    #   - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
     #   - CREATE EXTENSION IF NOT EXISTS pgaudit;
 
 # Certificates (optional, for SSL)
