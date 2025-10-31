@@ -61,7 +61,7 @@ storage:
 
 # Environment Variables for PostgreSQL Pod
 env:
-  # Set default host to localhost for psql connections
+  # Set the default host to localhost for psql connections
   - name: PGHOST
     value: "localhost"
 
