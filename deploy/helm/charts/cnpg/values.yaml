@@ -218,7 +218,7 @@ bootstrap:
       - "CREATE DATABASE ibs OWNER ibs;"
 
     postInitApplicationSQL:
-      - "\connect ibs"
+      - "\\connect ibs"
       - "CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;"
       - "GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;"
       - "GRANT ALL ON SCHEMA ibs TO ibs;"
