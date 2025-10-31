@@ -2,10 +2,10 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: {{ include "cnpg-postgres.clusterName" . }}
+  name: {{ include "cnpg.clusterName" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+    {{- include "cnpg.labels" . | nindent 4 }}
   {{- with .Values.commonAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -15,7 +15,7 @@ spec:
   instances: {{ .Values.replication.instances | default 2 }}
 
   # PostgreSQL image
-  imageName: {{ include "cnpg-postgres.image" . }}
+  imageName: {{ include "cnpg.image" . }}
   {{- with .Values.image.pullPolicy }}
   imagePullPolicy: {{ . }}
   {{- end }}
@@ -31,10 +31,10 @@ spec:
   # Bootstrap configuration
   bootstrap:
     initdb:
-      database: {{ include "cnpg-postgres.database" . }}
-      owner: {{ include "cnpg-postgres.username" . }}
+      database: {{ include "cnpg.database" . }}
+      owner: {{ include "cnpg.username" . }}
       secret:
-        name: {{ include "cnpg-postgres.fullname" . }}-app
+        name: {{ include "cnpg.fullname" . }}-app
       {{- with .Values.bootstrap.initdb.encoding }}
       encoding: {{ . }}
       {{- end }}
@@ -51,7 +51,7 @@ spec:
 
   # Superuser secret
   superuserSecret:
-    name: {{ include "cnpg-postgres.fullname" . }}-superuser
+    name: {{ include "cnpg.fullname" . }}-superuser
 
   # Storage configuration
   storage:
@@ -122,16 +122,16 @@ spec:
   {{- if and .Values.backup.enabled .Values.backup.s3.enabled }}
   backup:
     barmanObjectStore:
-      destinationPath: {{ include "cnpg-postgres.backupDestination" . }}
+      destinationPath: {{ include "cnpg.backupDestination" . }}
       {{- with .Values.backup.s3.endpoint }}
       endpointURL: {{ . }}
       {{- end }}
       s3Credentials:
         accessKeyId:
-          name: {{ include "cnpg-postgres.fullname" . }}-backup-s3
+          name: {{ include "cnpg.fullname" . }}-backup-s3
           key: ACCESS_KEY_ID
         secretAccessKey:
-          name: {{ include "cnpg-postgres.fullname" . }}-backup-s3
+          name: {{ include "cnpg.fullname" . }}-backup-s3
           key: ACCESS_SECRET_KEY
       wal:
         compression: {{ .Values.backup.wal.compression | default "gzip" }}
@@ -152,7 +152,7 @@ spec:
     enablePodMonitor: true
     {{- with .Values.monitoring.customQueries }}
     customQueriesConfigMap:
-      - name: {{ include "cnpg-postgres.fullname" . }}-monitoring
+      - name: {{ include "cnpg.fullname" . }}-monitoring
         key: custom-queries
     {{- end }}
   {{- end }}
@@ -161,9 +161,9 @@ spec:
   {{- if .Values.serviceAccount.create }}
   serviceAccountTemplate:
     metadata:
-      name: {{ include "cnpg-postgres.serviceAccountName" . }}
+      name: {{ include "cnpg.serviceAccountName" . }}
       labels:
-        {{- include "cnpg-postgres.labels" . | nindent 8 }}
+        {{- include "cnpg.labels" . | nindent 8 }}
       {{- with .Values.serviceAccount.annotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
@@ -178,10 +178,10 @@ spec:
   # Certificates (if enabled)
   {{- if .Values.certificates.enabled }}
   certificates:
-    serverTLSSecret: {{ include "cnpg-postgres.fullname" . }}-server-cert
-    serverCASecret: {{ include "cnpg-postgres.fullname" . }}-server-ca
-    clientCASecret: {{ include "cnpg-postgres.fullname" . }}-client-ca
-    replicationTLSSecret: {{ include "cnpg-postgres.fullname" . }}-replication-cert
+    serverTLSSecret: {{ include "cnpg.fullname" . }}-server-cert
+    serverCASecret: {{ include "cnpg.fullname" . }}-server-ca
+    clientCASecret: {{ include "cnpg.fullname" . }}-client-ca
+    replicationTLSSecret: {{ include "cnpg.fullname" . }}-replication-cert
   {{- end }}
 
   # Managed roles (if any)
@@ -197,10 +197,10 @@ spec:
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-backup
+  name: {{ include "cnpg.fullname" . }}-backup
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+    {{- include "cnpg.labels" . | nindent 4 }}
   {{- with .Values.commonAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -209,7 +209,7 @@ spec:
   schedule: {{ .Values.backup.schedule | quote }}
   backupOwnerReference: self
   cluster:
-    name: {{ include "cnpg-postgres.clusterName" . }}
+    name: {{ include "cnpg.clusterName" . }}
   immediate: false
 {{- end }}
 
@@ -219,17 +219,17 @@ spec:
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
-  name: {{ include "cnpg-postgres.fullname" . }}-pooler
+  name: {{ include "cnpg.fullname" . }}-pooler
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "cnpg-postgres.labels" . | nindent 4 }}
+    {{- include "cnpg.labels" . | nindent 4 }}
   {{- with .Values.commonAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   cluster:
-    name: {{ include "cnpg-postgres.clusterName" . }}
+    name: {{ include "cnpg.clusterName" . }}
   instances: {{ .Values.pgbouncer.instances | default 2 }}
   type: rw
   pgbouncer:

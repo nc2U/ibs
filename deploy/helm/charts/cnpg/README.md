@@ -43,14 +43,14 @@ IBS 프로젝트의 `values-prod.yaml` 또는 `values-dev.yaml`에서 global 값
 
 ```bash
 # Production 환경
-helm install postgres-cnpg ./deploy/helm/charts/cnpg-postgres \
+helm install postgres-cnpg ./deploy/helm/charts/cnpg \
   --namespace ibs-prod \
   -f ./deploy/helm/values-prod.yaml \
   --wait \
   --timeout 10m
 
 # Development 환경
-helm install postgres-cnpg ./deploy/helm/charts/cnpg-postgres \
+helm install postgres-cnpg ./deploy/helm/charts/cnpg \
   --namespace ibs-dev \
   -f ./deploy/helm/values-dev.yaml \
   --wait \
@@ -58,12 +58,13 @@ helm install postgres-cnpg ./deploy/helm/charts/cnpg-postgres \
 ```
 
 **참조되는 값:**
+
 - `global.dbPassword` → `auth.postgresPassword` 및 `auth.password`
 
 ### 옵션 2: 직접 비밀번호 지정
 
 ```bash
-helm install postgres-cnpg ./deploy/helm/charts/cnpg-postgres \
+helm install postgres-cnpg ./deploy/helm/charts/cnpg \
   --namespace ibs-prod \
   --set auth.postgresPassword="your-postgres-password" \
   --set auth.password="your-user-password" \
@@ -86,7 +87,7 @@ replication:
 EOF
 
 # 설치
-helm install postgres-cnpg ./deploy/helm/charts/cnpg-postgres \
+helm install postgres-cnpg ./deploy/helm/charts/cnpg \
   --namespace ibs-prod \
   -f values-prod.yaml
 ```
@@ -124,7 +125,7 @@ kubectl exec -n ibs-prod postgres-primary-0 -- \
   pg_dumpall -U postgres > ibs-full-backup.sql
 
 # 2. CloudNativePG 설치
-helm install postgres-cnpg ./deploy/helm/charts/cnpg-postgres \
+helm install postgres-cnpg ./deploy/helm/charts/cnpg \
   --namespace ibs-prod \
   -f ./deploy/helm/values-prod.yaml
 
@@ -142,12 +143,12 @@ kubectl exec -n ibs-prod $PRIMARY_POD -- \
 
 CloudNativePG 클러스터는 자동으로 다음 서비스를 생성합니다:
 
-| 서비스 이름 | 용도 | 엔드포인트 |
-|------------|------|-----------|
+| 서비스 이름                  | 용도              | 엔드포인트                                                      |
+|-------------------------|-----------------|------------------------------------------------------------|
 | `postgres-cnpg-primary` | 쓰기 작업 (Primary) | `postgres-cnpg-primary.{NAMESPACE}.svc.cluster.local:5432` |
-| `postgres-cnpg-read` | 읽기 작업 (Replica) | `postgres-cnpg-read.{NAMESPACE}.svc.cluster.local:5432` |
-| `postgres-cnpg-rw` | 모든 인스턴스 (읽기/쓰기) | `postgres-cnpg-rw.{NAMESPACE}.svc.cluster.local:5432` |
-| `postgres-cnpg-ro` | 모든 인스턴스 (읽기 전용) | `postgres-cnpg-ro.{NAMESPACE}.svc.cluster.local:5432` |
+| `postgres-cnpg-read`    | 읽기 작업 (Replica) | `postgres-cnpg-read.{NAMESPACE}.svc.cluster.local:5432`    |
+| `postgres-cnpg-rw`      | 모든 인스턴스 (읽기/쓰기) | `postgres-cnpg-rw.{NAMESPACE}.svc.cluster.local:5432`      |
+| `postgres-cnpg-ro`      | 모든 인스턴스 (읽기 전용) | `postgres-cnpg-ro.{NAMESPACE}.svc.cluster.local:5432`      |
 
 ### Django 설정 변경
 
@@ -346,7 +347,7 @@ monitoring:
 
 ```bash
 # 차트 업그레이드
-helm upgrade postgres-cnpg ./deploy/helm/charts/cnpg-postgres \
+helm upgrade postgres-cnpg ./deploy/helm/charts/cnpg \
   --namespace ibs-prod \
   -f ./deploy/helm/values-prod.yaml
 

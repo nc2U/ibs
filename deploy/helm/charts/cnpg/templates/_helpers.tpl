@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "cnpg-postgres.name" -}}
+{{- define "cnpg.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "cnpg-postgres.fullname" -}}
+{{- define "cnpg.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,16 +24,16 @@ Create a default fully qualified app name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "cnpg-postgres.chart" -}}
+{{- define "cnpg.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "cnpg-postgres.labels" -}}
-helm.sh/chart: {{ include "cnpg-postgres.chart" . }}
-{{ include "cnpg-postgres.selectorLabels" . }}
+{{- define "cnpg.labels" -}}
+helm.sh/chart: {{ include "cnpg.chart" . }}
+{{ include "cnpg.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -46,17 +46,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "cnpg-postgres.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "cnpg-postgres.name" . }}
+{{- define "cnpg.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "cnpg.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "cnpg-postgres.serviceAccountName" -}}
+{{- define "cnpg.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "cnpg-postgres.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "cnpg.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -65,7 +65,7 @@ Create the name of the service account to use
 {{/*
 Return the proper PostgreSQL image name
 */}}
-{{- define "cnpg-postgres.image" -}}
+{{- define "cnpg.image" -}}
 {{- $registryName := .Values.image.registry -}}
 {{- $repositoryName := .Values.image.repository -}}
 {{- $tag := .Values.image.tag | toString -}}
@@ -79,14 +79,14 @@ Return the proper PostgreSQL image name
 {{/*
 Return the cluster name
 */}}
-{{- define "cnpg-postgres.clusterName" -}}
-{{- include "cnpg-postgres.fullname" . }}
+{{- define "cnpg.clusterName" -}}
+{{- include "cnpg.fullname" . }}
 {{- end }}
 
 {{/*
 Return true if a secret object should be created
 */}}
-{{- define "cnpg-postgres.createSecret" -}}
+{{- define "cnpg.createSecret" -}}
 {{- if not .Values.auth.existingSecret }}
     {{- true -}}
 {{- end }}
@@ -95,34 +95,34 @@ Return true if a secret object should be created
 {{/*
 Return the name of the secret containing PostgreSQL credentials
 */}}
-{{- define "cnpg-postgres.secretName" -}}
+{{- define "cnpg.secretName" -}}
 {{- if .Values.auth.existingSecret }}
     {{- .Values.auth.existingSecret }}
 {{- else }}
-    {{- include "cnpg-postgres.fullname" . }}
+    {{- include "cnpg.fullname" . }}
 {{- end }}
 {{- end }}
 
 {{/*
 Return PostgreSQL database name
 */}}
-{{- define "cnpg-postgres.database" -}}
+{{- define "cnpg.database" -}}
 {{- .Values.auth.database | default "app" }}
 {{- end }}
 
 {{/*
 Return PostgreSQL username
 */}}
-{{- define "cnpg-postgres.username" -}}
+{{- define "cnpg.username" -}}
 {{- .Values.auth.username | default "app" }}
 {{- end }}
 
 {{/*
 Return the backup destination path
 */}}
-{{- define "cnpg-postgres.backupDestination" -}}
+{{- define "cnpg.backupDestination" -}}
 {{- if .Values.backup.s3.enabled }}
-{{- printf "s3://%s/%s" .Values.backup.s3.bucket (include "cnpg-postgres.fullname" .) }}
+{{- printf "s3://%s/%s" .Values.backup.s3.bucket (include "cnpg.fullname" .) }}
 {{- else }}
 {{- .Values.backup.destinationPath | default "file:///var/lib/postgresql/backup" }}
 {{- end }}

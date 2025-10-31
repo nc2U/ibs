@@ -24,7 +24,7 @@ version: 0.1.0
 appVersion: "1"
 
 dependencies:
-  - name: cnpg-postgres
+  - name: cnpg
     version: "1.0.0"
-    condition: cnpg-postgres.enabled
+    condition: cnpg.enabled
     repository: "file://./charts/cnpg"
