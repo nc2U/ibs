@@ -45,7 +45,7 @@ spec:
       localeCType: {{ . }}
       {{- end }}
       {{- if .Values.bootstrap.initdb.postInitSQL }}
-      postInitSQL:
+      postInitApplicationSQL:
         {{- toYaml .Values.bootstrap.initdb.postInitSQL | nindent 8 }}
       {{- end }}
 
