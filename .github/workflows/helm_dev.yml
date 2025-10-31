@@ -46,8 +46,8 @@ jobs:
             cd ${{ secrets.CICD_PATH }}/dev/deploy/helm
             
             if [ -e "./values-dev-custom.yaml" ]; then
-              echo "Custom values-dev-custom.yaml found. Running dev-deploy.sh..."
-              sh dev-deploy.sh
+              echo "Custom values-dev-custom.yaml found. Running scripts/dev-deploy.sh..."
+              sh scripts/dev-deploy.sh
             
               if [ $? -ne 0 ]; then
                 echo "dev-deploy.sh failed. Falling back to inline Helm deployment."

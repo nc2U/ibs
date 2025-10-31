@@ -63,11 +63,11 @@ jobs:
             cd ${{ secrets.CICD_PATH }}/prod/deploy/helm
             
             if [ -e "./values-prod-custom.yaml" ]; then
-              echo "Custom values-prod-custom.yaml found. Running prod-deploy.sh..."
-              sh prod-deploy.sh
-            
+              echo "Custom values-prod-custom.yaml found. Running scripts/prod-deploy.sh..."
+              sh scripts/prod-deploy.sh
+
               if [ $? -ne 0 ]; then
-                echo "prod-deploy.sh failed. Falling back to inline Helm deployment."
+                echo "scripts/prod-deploy.sh failed. Falling back to inline Helm deployment."
                 run_inline_helm_deploy=true
               else
                 run_inline_helm_deploy=false
