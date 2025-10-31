@@ -9,7 +9,7 @@ fullnameOverride: "postgres"
 
 # PostgreSQL Image Configuration
 image:
-  # Using official PostgreSQL image from Docker Hub
+  # Using an official PostgreSQL image from Docker Hub
   registry: docker.io
   repository: postgres
   tag: "17.2"
@@ -27,11 +27,11 @@ auth:
   password: ""
   database: "ibs"
 
-  # Optional: Use existing secret instead of creating new one
+  # Optional: Use an existing secret instead of creating a new one
   # Leave empty to create new secrets
   existingSecret: ""
 
-  # Secret keys (only used if existingSecret is set)
+  # Secret keys (only used if an existingSecret is set)
   secretKeys:
     postgresPasswordKey: "postgres-password"
     userPasswordKey: "password"
@@ -218,7 +218,6 @@ bootstrap:
       - "CREATE DATABASE ibs OWNER ibs;"
 
     postInitApplicationSQL:
-      - "\\connect ibs"
       - "CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;"
       - "GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;"
       - "GRANT ALL ON SCHEMA ibs TO ibs;"
@@ -233,6 +232,8 @@ managedRoles:
   - name: ibs
     login: true
     createDB: true  # CREATEDB 등가
+    replication: false
+    superuser: false
 
 # Service Account
 serviceAccount:
