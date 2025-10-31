@@ -29,7 +29,7 @@ mariadb:
     backupPvcStorage: 200Mi
 
 postgres:
-  enabled: true
+  enabled: false
   readReplicas:
     replicaCount: 1
 
@@ -43,8 +43,8 @@ postgres:
     backupPvcStorage: 200Mi
 
 # CloudNativePG 설정
-cnpg:
-  enabled: false
+cnpg-postgres:
+  enabled: true
 
 nginx:
   image:

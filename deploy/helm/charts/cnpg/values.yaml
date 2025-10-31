@@ -1,5 +1,8 @@
 # CloudNativePG PostgreSQL Configuration for IBS
 
+# Enable/disable CNPG deployment
+enabled: true
+
 # Release name override
 nameOverride: "postgres"
 fullnameOverride: "postgres"
