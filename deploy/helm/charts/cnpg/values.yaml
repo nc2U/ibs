@@ -224,10 +224,10 @@ bootstrap:
            END IF;
         END
         $$;
-        - CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;
-        - GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;
-        - GRANT ALL ON SCHEMA ibs TO ibs;
-        - ALTER DATABASE ibs SET search_path TO ibs, public;
+      - CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;
+      - GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;
+      - GRANT ALL ON SCHEMA ibs TO ibs;
+      - ALTER DATABASE ibs SET search_path TO ibs, public;
 
 # Certificates (optional, for SSL)
 certificates:
