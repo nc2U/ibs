@@ -111,12 +111,8 @@ postgresql:
     autovacuum_max_workers: "3"
     autovacuum_naptime: "1min"
   pg_hba:
-    - host all all all scram-sha-256
     - local all all scram-sha-256
-  # ⚡ 추가: 환경 변수로 기본 host 설정
-  extraEnv:
-    - name: PGHOST
-      value: "127.0.0.1"
+    - host all all 0.0.0.0/0 scram-sha-256
 
 # Backup Configuration
 backup:
