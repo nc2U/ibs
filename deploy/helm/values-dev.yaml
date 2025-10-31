@@ -43,7 +43,7 @@ postgres:
     backupPvcStorage: 200Mi
 
 # CloudNativePG 설정
-cnpg-postgres:
+cnpg:
   enabled: true
 
 nginx:
