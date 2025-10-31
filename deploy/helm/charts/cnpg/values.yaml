@@ -110,6 +110,9 @@ postgresql:
     autovacuum: "on"
     autovacuum_max_workers: "3"
     autovacuum_naptime: "1min"
+  pg_hba:
+    - host all all all scram-sha-256
+    - local all all scram-sha-256
 
 # Backup Configuration
 backup:
