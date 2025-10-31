@@ -59,12 +59,6 @@ storage:
   # Access mode
   accessMode: ReadWriteOnce
 
-# Environment Variables for PostgreSQL Pod
-env:
-  # Set the default host to localhost for psql connections
-  - name: PGHOST
-    value: "localhost"
-
 # PostgreSQL Configuration Parameters
 postgresql:
   # PostgreSQL version-specific parameters
@@ -237,7 +231,7 @@ certificates:
 managedRoles:
   - name: ibs
     login: true
-    createDB: true  # CREATEDB 등가
+    createdb: true  # CREATEDB privilege
     replication: false
     superuser: false
 
