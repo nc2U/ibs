@@ -216,27 +216,51 @@ bootstrap:
     # Post-init SQL (optional)
     postInitSQL:
       # Grant privileges to application user
-      - "GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;"
-      - "GRANT ALL ON SCHEMA public TO ibs;"
-      - "GRANT CREATE ON DATABASE ibs TO ibs;"
-      # Optional: Create commonly used extensions
-      - "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
-    # Example of additional extensions:
-    # postInitSQL:
-    #   - CREATE EXTENSION IF NOT EXISTS pgaudit;
+      - |
+        DO
+        $$
+        BEGIN
+           IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'ibs') THEN
+              ALTER USER ibs CREATEDB;
+           END IF;
+        END
+        $$;
+        # 스키마 생성
+        - |
+        CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;
+        # 데이터베이스 권한 부여
+        - |
+        GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;
+        # 스키마 권한 부여 (ALL: USAGE, CREATE, ALL TABLES/SEQUENCES 포함)
+        - |
+        GRANT ALL ON SCHEMA ibs TO ibs;
+        -- 추가: 기존/미래 테이블/시퀀스에 기본 권한 (권장)
+        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA ibs TO ibs;
+        GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA ibs TO ibs;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA ibs GRANT ALL ON TABLES TO ibs;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA ibs GRANT ALL ON SEQUENCES TO ibs;
+        # search_path 설정
+        - |
+        ALTER DATABASE ibs SET search_path TO ibs, public;
+        # 기타 (이전 대화처럼 확장 설치)
+        - |
+        CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
 # Certificates (optional, for SSL)
 certificates:
   enabled: false
 
 # Managed Roles (optional)
-managedRoles: []
+managedRoles:
+  - name: ibs
+    login: true
+    createDB: true  # CREATEDB 등가
 
 # Service Account
 serviceAccount:
   create: true
   name: ""
-  # Annotations for service account
+  # Annotations for a service account
   annotations: {}
   # Automatically mount service account token
   automountServiceAccountToken: true
