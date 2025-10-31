@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 # .env 스크립트가 있는 디렉터리 경로 계산
-CURR_DIR="$(cd "$(dirname "$0")" && pwd)"
+# scripts/ -> helm/ 로 이동
+SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)"
+CURR_DIR="$(cd "$SCRIPT_PATH/.." && pwd)"
 SCRIPT_DIR="$(cd "$CURR_DIR/../../app/django" && pwd)"
 
 # .env 수동 로딩 (POSIX 호환)
@@ -18,11 +20,11 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     esac
   done < "$SCRIPT_DIR/.env"
 
-  # values-prod-custom.yaml 존재 여부 확인
-  if [ -e "$CURR_DIR/values-prod-custom.yaml" ]; then
+  # values-dev-custom.yaml 존재 여부 확인
+  if [ -e "$CURR_DIR/values-dev-custom.yaml" ]; then
     # Helm repo 등록 여부 확인 후 추가
     if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
-      helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+        helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
     fi
     # Helm nfs-provisioner 설치 여부 확인 후 설치
     if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
@@ -34,12 +36,13 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     fi
 
     # Role 적용 및 Helm 배포
-    kubectl apply -f ../kubectl/class-roles
-    helm upgrade ${DATABASE_USER} . -f ./values-prod-custom.yaml \
-      --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
+    kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
+    cd "$CURR_DIR"
+    helm upgrade ${DATABASE_USER} . -f ./values-dev-custom.yaml \
+      --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m \
       --atomic --cleanup-on-fail
   else
-    echo "values-prod-custom.yaml file not found in Current directory."
+    echo "values-dev-custom.yaml file not found in Current directory."
     exit 1
   fi
 else
