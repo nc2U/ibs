@@ -59,19 +59,6 @@ storage:
   # Access mode
   accessMode: ReadWriteOnce
 
-  # PVC Template - prevents PVC deletion on uninstall
-  pvcTemplate:
-    accessModes:
-      - ReadWriteOnce
-    resources:
-      requests:
-        storage: "1Gi"
-    storageClassName: "nfs-client"
-    # IMPORTANT: This annotation preserves PVC on Helm uninstallation
-    metadata:
-      annotations:
-        helm.sh/resource-policy: keep
-
 # PostgreSQL Configuration Parameters
 postgresql:
   # PostgreSQL version-specific parameters
@@ -267,4 +254,7 @@ serviceAccount:
 commonLabels: {}
 
 # Common annotations
-commonAnnotations: {}
+commonAnnotations:
+  # IMPORTANT: This annotation tells Helm to keep resources on uninstall
+  # However, CloudNativePG dynamically creates PVCs, so we need additional mechanisms
+  helm.sh/resource-policy: "keep"

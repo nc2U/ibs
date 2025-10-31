@@ -9,6 +9,43 @@ CloudNativePG 환경에서 PostgreSQL 데이터베이스의 수동 백업과 복
 - **수동 복원**: 백업 파일로부터 데이터베이스 복원
 - **저장소**: NFS 기반 영구 스토리지 (`/var/backups`)
 - **배포**: GitHub Actions를 통해 CI/CD 서버로 자동 복사
+- **PVC 보존**: Helm uninstall 시에도 PVC 보존 설정 적용
+
+## ⚠️ 중요: PVC 데이터 보존
+
+CloudNativePG는 Cluster 리소스가 PVC를 동적으로 생성하고 관리합니다.
+Helm uninstall 시 PVC가 삭제되지 않도록 하려면:
+
+### 방법 1: PVC Annotation 설정 (권장)
+```bash
+# PostgreSQL PVC에 보존 annotation 추가
+kubectl annotate pvc -n ibs-dev postgres-1 helm.sh/resource-policy=keep
+kubectl annotate pvc -n ibs-dev postgres-2 helm.sh/resource-policy=keep
+
+# 또는 한번에
+kubectl annotate pvc -n ibs-dev -l cnpg.io/cluster=postgres helm.sh/resource-policy=keep
+```
+
+### 방법 2: Uninstall 전 Label 제거
+```bash
+# Uninstall 전에 PVC label 제거하여 Helm 관리에서 제외
+kubectl label pvc -n ibs-dev postgres-1 app.kubernetes.io/instance-
+kubectl label pvc -n ibs-dev postgres-2 app.kubernetes.io/instance-
+```
+
+### 방법 3: 수동 PVC 관리
+```bash
+# Uninstall 전 중요 데이터 백업
+./manual-backup.sh
+
+# Uninstall 실행
+helm uninstall ibs -n ibs-dev
+
+# PVC 상태 확인 (보존되어야 함)
+kubectl get pvc -n ibs-dev
+
+# 재설치 시 기존 PVC 재사용됨
+```
 
 ## 🚀 사용 방법
 
