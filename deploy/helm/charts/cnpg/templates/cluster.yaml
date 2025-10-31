@@ -63,6 +63,10 @@ spec:
     storageClass: {{ . }}
     {{- end }}
     size: {{ .Values.storage.size | default "1Gi" }}
+    {{- with .Values.storage.pvcTemplate }}
+    pvcTemplate:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
 
   {{- if .Values.backup.nfs.enabled }}
   # Additional volumes for backups
