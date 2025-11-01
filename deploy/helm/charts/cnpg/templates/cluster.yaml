@@ -180,10 +180,6 @@ spec:
   {{- end }}
 
   enablePDB: true  # 쿠버네티스 PodDisruptionBudget 활성화
-  # Node maintenance window
-  nodeMaintenanceWindow:
-    inProgress: false
-    reusePVC: true
 
   # Certificates (if enabled)
   {{- if .Values.certificates.enabled }}
