@@ -3,11 +3,11 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ include "cnpg.fullname" . }}-{{ .Values.global.appMode }}-backup-pv
+  name: {{ include "cnpg.fullname" . }}-backup-{{ .Values.global.appMode }}-pv
   labels:
     {{- include "cnpg.labels" . | nindent 4 }}
 spec:
-  storageClassName: {{ include "cnpg.fullname" . }}-{{ .Values.global.appMode }}-backup
+  storageClassName: {{ include "cnpg.fullname" . }}-backup-{{ .Values.global.appMode }}
   capacity:
     storage: {{ .Values.backup.nfs.storage | default "200Mi" }}
   accessModes:
