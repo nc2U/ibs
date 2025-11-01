@@ -41,6 +41,8 @@ postgres:
 # CloudNativePG 설정
 cnpg:
   enabled: true
+  replication:
+    instances: 3
 
 nginx:
   service:
