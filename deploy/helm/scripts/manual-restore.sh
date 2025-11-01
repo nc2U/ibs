@@ -2,15 +2,33 @@
 # CloudNativePG 수동 복원 스크립트
 #
 # 사용법:
-#   sh manual-restore.sh [dev|prod]
-#   sh manual-restore.sh prod
-#   sh manual-restore.sh dev
-#   sh manual-restore.sh           # 기본값: dev
+#   sh manual-restore.sh [dev|prod] [--auto]
+#   sh manual-restore.sh prod         # 대화형 모드
+#   sh manual-restore.sh dev          # 대화형 모드
+#   sh manual-restore.sh dev --auto   # 자동 모드 (최신 백업 파일 사용)
+#   sh manual-restore.sh              # 기본값: dev, 대화형
 #
 set -e
 
-# 첫 번째 인자로 환경 설정
-ENV_ARG="${1:-}"
+# 인자 파싱
+ENV_ARG=""
+AUTO_MODE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --auto)
+      AUTO_MODE=true
+      ;;
+    dev|prod)
+      ENV_ARG="$arg"
+      ;;
+    *)
+      echo "❌ Error: Invalid argument '$arg'"
+      echo "Usage: $0 [dev|prod] [--auto]"
+      exit 1
+      ;;
+  esac
+done
 
 # 환경 인자 처리
 if [ -n "$ENV_ARG" ]; then
@@ -18,12 +36,6 @@ if [ -n "$ENV_ARG" ]; then
     NAMESPACE="ibs-prod"
   elif [ "$ENV_ARG" = "dev" ]; then
     NAMESPACE="ibs-dev"
-  else
-    echo "❌ Error: Invalid environment '$ENV_ARG'"
-    echo "Usage: $0 [dev|prod]"
-    echo "  dev  - Development environment (ibs-dev)"
-    echo "  prod - Production environment (ibs-prod)"
-    exit 1
   fi
 else
   # 환경 변수로 설정 (기존 방식 호환)
@@ -83,56 +95,100 @@ if [ -z "$BACKUP_FILES" ] || [ "$BACKUP_FILES" = "No backup files found" ]; then
     exit 1
 fi
 
-# 백업 파일 목록을 임시 파일에 저장 (POSIX 호환)
-TEMP_LIST=$(mktemp)
-echo "$BACKUP_FILES" > "$TEMP_LIST"
+# 백업 파일 선택 로직
+if [ "$AUTO_MODE" = true ]; then
+  # 자동 모드: 가장 최신 백업 파일 선택
+  echo ""
+  echo "🤖 Auto mode: Selecting latest backup file..."
 
-# 번호와 함께 파일 목록 출력
-echo ""
-echo "Select a backup file to restore:"
-i=1
-while IFS= read -r file; do
-    [ -n "$file" ] && printf "%2d) %s\n" "$i" "$file"
-    i=$((i+1))
-done < "$TEMP_LIST"
+  LATEST_BACKUP=$(kubectl run -n "$NAMESPACE" backup-find-latest \
+    --image=postgres:17.2 \
+    --restart=Never \
+    --rm -i --quiet \
+    --overrides='
+{
+  "spec": {
+    "containers": [{
+      "name": "backup-find",
+      "image": "postgres:17.2",
+      "command": ["/bin/bash", "-c", "ls -1t /var/backups/*.dump 2>/dev/null | head -1 | xargs -n1 basename || echo '\''No backup files found'\''"],
+      "volumeMounts": [{
+        "name": "backup-volume",
+        "mountPath": "/var/backups"
+      }]
+    }],
+    "volumes": [{
+      "name": "backup-volume",
+      "persistentVolumeClaim": {
+        "claimName": "'"$BACKUP_PVC"'"
+      }
+    }]
+  }
+}' -- /bin/bash -c "ls -1t /var/backups/*.dump 2>/dev/null | head -1 | xargs -n1 basename || echo 'No backup files found'")
 
-TOTAL_FILES=$((i-1))
-
-echo ""
-echo "=========================================="
-echo "⚠️  WARNING: This will TRUNCATE all tables!"
-echo "=========================================="
-echo ""
-read -p "Enter number (1-$TOTAL_FILES) or 'q' to quit: " SELECTION
-
-if [ "$SELECTION" = "q" ] || [ "$SELECTION" = "Q" ]; then
-    echo "Restore cancelled."
-    rm "$TEMP_LIST"
-    exit 0
-fi
-
-# 선택 검증
-if ! echo "$SELECTION" | grep -qE '^[0-9]+$' || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -gt "$TOTAL_FILES" ]; then
-    echo "❌ Error: Invalid selection"
-    rm "$TEMP_LIST"
+  if [ -z "$LATEST_BACKUP" ] || [ "$LATEST_BACKUP" = "No backup files found" ]; then
+    echo "❌ Error: No backup files found"
     exit 1
-fi
+  fi
 
-# 선택된 파일
-BACKUP_FILE="/var/backups/$(sed -n "${SELECTION}p" "$TEMP_LIST")"
-rm "$TEMP_LIST"
+  BACKUP_FILE="/var/backups/$LATEST_BACKUP"
+  echo "Selected: $BACKUP_FILE"
+  echo ""
+  echo "⚠️  WARNING: Auto mode will TRUNCATE all tables and restore!"
+  echo "Proceeding in 3 seconds... (Ctrl+C to cancel)"
+  sleep 3
+else
+  # 대화형 모드: 사용자가 파일 선택
+  TEMP_LIST=$(mktemp)
+  echo "$BACKUP_FILES" > "$TEMP_LIST"
 
-echo ""
-echo "Restore settings:"
-echo "  Backup file: $BACKUP_FILE"
-echo "  Namespace: $NAMESPACE"
-echo "  Release: $RELEASE"
-echo ""
-read -p "Are you sure you want to proceed? (yes/no): " CONFIRM
+  # 번호와 함께 파일 목록 출력
+  echo ""
+  echo "Select a backup file to restore:"
+  i=1
+  while IFS= read -r file; do
+      [ -n "$file" ] && printf "%2d) %s\n" "$i" "$file"
+      i=$((i+1))
+  done < "$TEMP_LIST"
 
-if [ "$CONFIRM" != "yes" ]; then
-    echo "Restore cancelled."
-    exit 0
+  TOTAL_FILES=$((i-1))
+
+  echo ""
+  echo "=========================================="
+  echo "⚠️  WARNING: This will TRUNCATE all tables!"
+  echo "=========================================="
+  echo ""
+  read -p "Enter number (1-$TOTAL_FILES) or 'q' to quit: " SELECTION
+
+  if [ "$SELECTION" = "q" ] || [ "$SELECTION" = "Q" ]; then
+      echo "Restore cancelled."
+      rm "$TEMP_LIST"
+      exit 0
+  fi
+
+  # 선택 검증
+  if ! echo "$SELECTION" | grep -qE '^[0-9]+$' || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -gt "$TOTAL_FILES" ]; then
+      echo "❌ Error: Invalid selection"
+      rm "$TEMP_LIST"
+      exit 1
+  fi
+
+  # 선택된 파일
+  BACKUP_FILE="/var/backups/$(sed -n "${SELECTION}p" "$TEMP_LIST")"
+  rm "$TEMP_LIST"
+
+  echo ""
+  echo "Restore settings:"
+  echo "  Backup file: $BACKUP_FILE"
+  echo "  Namespace: $NAMESPACE"
+  echo "  Release: $RELEASE"
+  echo ""
+  read -p "Are you sure you want to proceed? (yes/no): " CONFIRM
+
+  if [ "$CONFIRM" != "yes" ]; then
+      echo "Restore cancelled."
+      exit 0
+  fi
 fi
 
 # postgres 비밀번호 확인 및 설정
