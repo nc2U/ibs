@@ -110,7 +110,6 @@ services:
       - redis
       - mariadb  # 또는 postgres (사용하는 DB에 따라)
 
-
 volumes:
   postgres_data:
     driver: local

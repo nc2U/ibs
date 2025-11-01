@@ -1,9 +1,27 @@
 import os
+from django.db import connections
+from django.db.utils import OperationalError
 
 
 class MasterSlaveRouter:
     def __init__(self):
-        self.replica_enabled = 'KUBERNETES_SERVICE_HOST' in os.environ
+        self.replica_enabled = self._check_replica_available()
+
+    @staticmethod
+    def _check_replica_available():
+        """replica 데이터베이스 연결 가능 여부 확인"""
+        # Kubernetes 환경이 아니면 replica 사용 안함
+        if 'KUBERNETES_SERVICE_HOST' not in os.environ:
+            return False
+
+        # replica 연결 가능 여부 확인 (캐싱됨)
+        try:
+            connection = connections['replica']
+            connection.ensure_connection()
+            return True
+        except (OperationalError, KeyError):
+            # replica 연결 실패 시 default 사용
+            return False
 
     def db_for_read(self, model, **hints):
         return 'replica' if self.replica_enabled else 'default'
