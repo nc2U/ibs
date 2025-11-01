@@ -44,11 +44,11 @@ fi
 
 RELEASE="${RELEASE:-ibs}"
 
-# 환경별 PVC 이름 설정
+# 환경별 PVC 이름 설정 (Helm 템플릿 패턴 일치)
 if [ "$NAMESPACE" = "ibs-prod" ]; then
-  BACKUP_PVC="prod-postgres-backup-pvc"
+  BACKUP_PVC="postgres-backup-prod-pvc"
 else
-  BACKUP_PVC="dev-postgres-backup-pvc"
+  BACKUP_PVC="postgres-backup-dev-pvc"
 fi
 
 echo "=========================================="
