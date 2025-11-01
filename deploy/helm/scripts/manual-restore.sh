@@ -6,10 +6,18 @@ set -e
 NAMESPACE="${NAMESPACE:-ibs-dev}"
 RELEASE="${RELEASE:-ibs}"
 
+# 환경별 PVC 이름 설정
+if [[ "$NAMESPACE" == "ibs-prod" ]]; then
+  BACKUP_PVC="prod-postgres-backup-pvc"
+else
+  BACKUP_PVC="dev-postgres-backup-pvc"
+fi
+
 echo "=========================================="
 echo "CloudNativePG Manual Restore"
 echo "=========================================="
 echo "Namespace: $NAMESPACE"
+echo "Backup PVC: $BACKUP_PVC"
 echo "Release: $RELEASE"
 echo ""
 
@@ -38,7 +46,7 @@ BACKUP_FILES=$(kubectl run -n "$NAMESPACE" backup-list-tmp \
     "volumes": [{
       "name": "backup-volume",
       "persistentVolumeClaim": {
-        "claimName": "postgres-backup-pvc"
+        "claimName": "'"$BACKUP_PVC"'"
       }
     }]
   }
@@ -335,7 +343,7 @@ spec:
       volumes:
         - name: backup-volume
           persistentVolumeClaim:
-            claimName: postgres-backup-pvc
+            claimName: $BACKUP_PVC
         - name: postgres-password
           secret:
             secretName: postgres-superuser
