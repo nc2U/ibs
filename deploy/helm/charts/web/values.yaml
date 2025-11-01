@@ -80,9 +80,9 @@ ingress:
 volumes:
   djangoAccessModes:
     - ReadWriteMany
-  djangoPvStorageProd: 15Gi
+  djangoPvStorageProd: 1Gi
   djangoPvStorageDev: 400Mi
-  djangoPvcStorageProd: 15Gi
+  djangoPvcStorageProd: 1Gi
   djangoPvcStorageDev: 400Mi
 
 resources:
