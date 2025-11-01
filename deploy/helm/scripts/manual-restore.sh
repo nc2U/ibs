@@ -1,9 +1,35 @@
 #!/bin/bash
 # CloudNativePG 수동 복원 스크립트
+#
+# 사용법:
+#   sh manual-restore.sh [dev|prod]
+#   sh manual-restore.sh prod
+#   sh manual-restore.sh dev
+#   sh manual-restore.sh           # 기본값: dev
+#
 set -e
 
-# 기본 설정
-NAMESPACE="${NAMESPACE:-ibs-dev}"
+# 첫 번째 인자로 환경 설정
+ENV_ARG="${1:-}"
+
+# 환경 인자 처리
+if [ -n "$ENV_ARG" ]; then
+  if [ "$ENV_ARG" = "prod" ]; then
+    NAMESPACE="ibs-prod"
+  elif [ "$ENV_ARG" = "dev" ]; then
+    NAMESPACE="ibs-dev"
+  else
+    echo "❌ Error: Invalid environment '$ENV_ARG'"
+    echo "Usage: $0 [dev|prod]"
+    echo "  dev  - Development environment (ibs-dev)"
+    echo "  prod - Production environment (ibs-prod)"
+    exit 1
+  fi
+else
+  # 환경 변수로 설정 (기존 방식 호환)
+  NAMESPACE="${NAMESPACE:-ibs-dev}"
+fi
+
 RELEASE="${RELEASE:-ibs}"
 
 # 환경별 PVC 이름 설정

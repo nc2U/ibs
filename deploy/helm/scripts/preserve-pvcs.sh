@@ -5,14 +5,36 @@
 # PVC의 ownerReferences를 제거한 후 Helm uninstall을 실행하여 데이터를 보존합니다.
 #
 # 사용법:
-#   NAMESPACE=ibs-dev RELEASE=ibs ./preserve-pvcs.sh
+#   sh preserve-pvcs.sh [dev|prod]
+#   sh preserve-pvcs.sh prod
+#   sh preserve-pvcs.sh dev
+#   sh preserve-pvcs.sh           # 기본값: dev
 #
 # 참고: https://github.com/cloudnative-pg/cloudnative-pg/discussions/5253
 
 set -e
 
-# 환경 변수 설정
-NAMESPACE="${NAMESPACE:-ibs-dev}"
+# 첫 번째 인자로 환경 설정
+ENV_ARG="${1:-}"
+
+# 환경 인자 처리
+if [ -n "$ENV_ARG" ]; then
+  if [ "$ENV_ARG" = "prod" ]; then
+    NAMESPACE="ibs-prod"
+  elif [ "$ENV_ARG" = "dev" ]; then
+    NAMESPACE="ibs-dev"
+  else
+    echo "❌ Error: Invalid environment '$ENV_ARG'"
+    echo "Usage: $0 [dev|prod]"
+    echo "  dev  - Development environment (ibs-dev)"
+    echo "  prod - Production environment (ibs-prod)"
+    exit 1
+  fi
+else
+  # 환경 변수로 설정 (기존 방식 호환)
+  NAMESPACE="${NAMESPACE:-ibs-dev}"
+fi
+
 RELEASE="${RELEASE:-ibs}"
 CLUSTER_NAME="${CLUSTER_NAME:-postgres}"
 
