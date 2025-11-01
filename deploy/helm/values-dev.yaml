@@ -50,7 +50,7 @@ postgres:
 cnpg:
   enabled: true
   image:
-    tag: "17.2"
+    tag: "18.0"
   replication:
     instances: 1
 
