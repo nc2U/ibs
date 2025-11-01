@@ -16,6 +16,10 @@ global:
   emailHostPassword: "my-email-host-secret" # your-email-password
   defaultFromEmail: "email@example.com"
 
+web:
+  celery:
+    replicaCount: 1
+
 mariadb:
   enabled: false
   secondary:
