@@ -83,43 +83,44 @@ if [ -z "$BACKUP_FILES" ] || [ "$BACKUP_FILES" = "No backup files found" ]; then
     exit 1
 fi
 
-# 백업 파일 목록을 배열로 변환 (sh-compatible)
-FILES_ARRAY=()
-while IFS= read -r line; do
-    [ -n "$line" ] && FILES_ARRAY+=("$line")
-done <<EOF
-$BACKUP_FILES
-EOF
+# 백업 파일 목록을 임시 파일에 저장 (POSIX 호환)
+TEMP_LIST=$(mktemp)
+echo "$BACKUP_FILES" > "$TEMP_LIST"
 
 # 번호와 함께 파일 목록 출력
 echo ""
 echo "Select a backup file to restore:"
 i=1
-for file in "${FILES_ARRAY[@]}"; do
-    printf "%2d) %s\n" "$i" "$file"
+while IFS= read -r file; do
+    [ -n "$file" ] && printf "%2d) %s\n" "$i" "$file"
     i=$((i+1))
-done
+done < "$TEMP_LIST"
+
+TOTAL_FILES=$((i-1))
 
 echo ""
 echo "=========================================="
 echo "⚠️  WARNING: This will TRUNCATE all tables!"
 echo "=========================================="
 echo ""
-read -p "Enter number (1-${#FILES_ARRAY[@]}) or 'q' to quit: " SELECTION
+read -p "Enter number (1-$TOTAL_FILES) or 'q' to quit: " SELECTION
 
 if [ "$SELECTION" = "q" ] || [ "$SELECTION" = "Q" ]; then
     echo "Restore cancelled."
+    rm "$TEMP_LIST"
     exit 0
 fi
 
 # 선택 검증
-if ! echo "$SELECTION" | grep -qE '^[0-9]+$' || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -gt "${#FILES_ARRAY[@]}" ]; then
+if ! echo "$SELECTION" | grep -qE '^[0-9]+$' || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -gt "$TOTAL_FILES" ]; then
     echo "❌ Error: Invalid selection"
+    rm "$TEMP_LIST"
     exit 1
 fi
 
 # 선택된 파일
-BACKUP_FILE="/var/backups/${FILES_ARRAY[$((SELECTION-1))]}"
+BACKUP_FILE="/var/backups/$(sed -n "${SELECTION}p" "$TEMP_LIST")"
+rm "$TEMP_LIST"
 
 echo ""
 echo "Restore settings:"
