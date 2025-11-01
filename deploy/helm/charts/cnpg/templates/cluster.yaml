@@ -179,6 +179,7 @@ spec:
       {{- end }}
   {{- end }}
 
+  enablePDB: true  # 쿠버네티스 PodDisruptionBudget 활성화
   # Node maintenance window
   nodeMaintenanceWindow:
     inProgress: false
