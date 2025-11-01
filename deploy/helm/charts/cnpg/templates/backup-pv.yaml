@@ -1,5 +1,5 @@
 {{- if .Values.enabled }}
-{{- if .Values.backup.nfs.enabled }}
+{{/*{{- if .Values.backup.nfs.enabled }}*/}}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -18,5 +18,5 @@ spec:
   nfs:
     path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/volume/backups
     server: {{ .Values.global.nfsServerHost }}
-{{- end }}
+{{/*{{- end }}*/}}
 {{- end }}

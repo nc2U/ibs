@@ -1,5 +1,5 @@
 {{- if .Values.enabled }}
-{{- if .Values.backup.nfs.enabled }}
+{{/*{{- if .Values.backup.nfs.enabled }}*/}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -14,5 +14,5 @@ spec:
   resources:
     requests:
       storage: {{ .Values.backup.nfs.storage | default "1Gi" }}
-{{- end }}
+{{/*{{- end }}*/}}
 {{- end }}
