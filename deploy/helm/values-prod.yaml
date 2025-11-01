@@ -27,7 +27,7 @@ mariadb:
   enabled: false
 
 postgres:
-  enabled: true
+  enabled: false
 
   auth:
     postgresPassword: "my-secret"
@@ -37,6 +37,10 @@ postgres:
   volumes:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
+
+# CloudNativePG 설정
+cnpg:
+  enabled: true
 
 nginx:
   service:
