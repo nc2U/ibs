@@ -33,7 +33,7 @@ fi
 RELEASE="${RELEASE:-ibs}"
 
 # 환경별 PVC 이름 설정
-if [[ "$NAMESPACE" == "ibs-prod" ]]; then
+if [ "$NAMESPACE" = "ibs-prod" ]; then
   BACKUP_PVC="prod-postgres-backup-pvc"
 else
   BACKUP_PVC="dev-postgres-backup-pvc"
@@ -113,7 +113,7 @@ if [ "$SELECTION" = "q" ] || [ "$SELECTION" = "Q" ]; then
 fi
 
 # 선택 검증
-if ! [[ "$SELECTION" =~ ^[0-9]+$ ]] || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -gt "${#FILES_ARRAY[@]}" ]; then
+if ! echo "$SELECTION" | grep -qE '^[0-9]+$' || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -gt "${#FILES_ARRAY[@]}" ]; then
     echo "❌ Error: Invalid selection"
     exit 1
 fi
