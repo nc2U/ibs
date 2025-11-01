@@ -212,6 +212,11 @@ additionalConfig: {}
 
 # Bootstrap configuration
 bootstrap:
+  # Bootstrap method: initdb or pg_upgrade
+  # - initdb: Initialize a new cluster (default for fresh installations)
+  # - pg_upgrade: Upgrade from a previous PostgreSQL major version
+  method: "initdb"
+
   # Initialize a new cluster
   initdb:
     # Database encoding
@@ -228,6 +233,13 @@ bootstrap:
       - "GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;"
       - "GRANT ALL ON SCHEMA ibs TO ibs;"
       - "ALTER DATABASE ibs SET search_path TO ibs, public;"
+
+  # Major version upgrade configuration
+  pg_upgrade:
+    # Source PostgreSQL version (e.g., "17.2" when upgrading from PG 17 to PG 18)
+    sourceVersion: ""
+    # Source cluster name (name of the existing cluster to upgrade from)
+    sourceCluster: ""
 
 # Certificates (optional, for SSL)
 certificates:

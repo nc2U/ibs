@@ -30,6 +30,19 @@ spec:
 
   # Bootstrap configuration
   bootstrap:
+    {{- if eq .Values.bootstrap.method "pg_upgrade" }}
+    # Major version upgrade using pg_upgrade
+    pg_upgrade:
+      database: {{ include "cnpg.database" . }}
+      owner: {{ include "cnpg.username" . }}
+      secret:
+        name: {{ include "cnpg.fullname" . }}-app
+      {{- if .Values.bootstrap.pg_upgrade.sourceCluster }}
+      source:
+        clusterName: {{ .Values.bootstrap.pg_upgrade.sourceCluster }}
+      {{- end }}
+    {{- else }}
+    # Initialize a new cluster
     initdb:
       database: {{ include "cnpg.database" . }}
       owner: {{ include "cnpg.username" . }}
@@ -52,6 +65,7 @@ spec:
       postInitApplicationSQL:
         {{- toYaml .Values.bootstrap.initdb.postInitApplicationSQL | nindent 8 }}
       {{- end }}
+    {{- end }}
 
   # Superuser secret
   superuserSecret:
