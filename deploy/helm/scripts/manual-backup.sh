@@ -14,7 +14,7 @@ echo "Release: $RELEASE"
 echo ""
 
 # CronJob 존재 확인
-CRONJOB_NAME="${RELEASE}-postgres-backup"
+CRONJOB_NAME="postgres-backup"
 if ! kubectl get cronjob -n "$NAMESPACE" "$CRONJOB_NAME" &>/dev/null; then
     echo "❌ Error: CronJob '$CRONJOB_NAME' not found in namespace '$NAMESPACE'"
     echo "Please deploy the Helm chart first."

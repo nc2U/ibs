@@ -21,6 +21,7 @@ spec:
             app.kubernetes.io/component: backup
         spec:
           restartPolicy: OnFailure
+          automountServiceAccountToken: false
           containers:
           - name: postgres-backup
             image: {{ include "cnpg.image" . }}
@@ -32,7 +33,7 @@ spec:
                 set -eu
 
                 # CloudNativePG 환경 변수 설정
-                DATE=$(date +"%Y-%m-%d")
+                DATE=$(date +"%Y-%m-%d-%H%M%S")
                 DUMP_FILE=/var/backups/ibs-backup-postgres-${DATE}.dump
                 POSTGRES_SCHEMA="{{ .Values.auth.database }}"
                 POSTGRES_DATABASE="{{ .Values.auth.database }}"
