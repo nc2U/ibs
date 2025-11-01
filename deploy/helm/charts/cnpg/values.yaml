@@ -129,6 +129,7 @@ backup:
   # NFS backup volume configuration
   # For manual backups using pg_dump/pg_restore scripts
   nfs:
+    enabled: true
     storage: "200Mi"  # PV/PVC size
 
   # S3-compatible storage configuration

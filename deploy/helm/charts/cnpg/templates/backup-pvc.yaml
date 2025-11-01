@@ -1,16 +1,18 @@
 {{- if .Values.enabled }}
+{{- if .Values.backup.nfs.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.global.appMode }}-{{ include "cnpg.fullname" . }}-backup-pvc
+  name: {{ include "cnpg.fullname" . }}-{{ .Values.global.appMode }}-backup-pvc
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg.labels" . | nindent 4 }}
 spec:
-  storageClassName: {{ .Values.global.appMode }}-{{ include "cnpg.fullname" . }}-backup
+  storageClassName: {{ include "cnpg.fullname" . }}-{{ .Values.global.appMode }}-backup
   accessModes:
     - ReadWriteMany
   resources:
     requests:
       storage: {{ .Values.backup.nfs.storage | default "200Mi" }}
+{{- end }}
 {{- end }}
