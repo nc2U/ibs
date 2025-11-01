@@ -63,15 +63,9 @@ spec:
     storageClass: {{ . }}
     {{- end }}
     size: {{ .Values.storage.size | default "1Gi" }}
-{{/*    pvcTemplate:*/}}
-{{/*      accessModes:*/}}
-{{/*        - ReadWriteOnce*/}}
-{{/*      resources:*/}}
-{{/*        requests:*/}}
-{{/*          storage: {{ .Values.storage.size | default "1Gi" }}*/}}
-{{/*      {{- with .Values.storage.storageClass }}*/}}
-{{/*      storageClassName: {{ . }}*/}}
-{{/*      {{- end }}*/}}
+    pvcTemplate:
+      accessModes:
+        - ReadWriteOnce
     # NOTE: CNPG 1.27.1 doesn't support persistentVolumeClaimPolicy
     # Use preserve-pvcs.sh script before helm uninstallation to remove ownerReferences
 
