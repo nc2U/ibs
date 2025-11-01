@@ -40,8 +40,23 @@ done
 
 echo ""
 
-# 2. PVC 목록 확인
-echo "📋 Step 2: PVC 목록 확인..."
+# 2. 완료되지 않은 Job 삭제
+echo "🧹 Step 2: 완료되지 않은 백업/복원 Job 확인 및 삭제..."
+JOBS=$(kubectl get jobs -n "$NAMESPACE" -l "job-type in (backup,restore)" -o name 2>/dev/null || true)
+if [ -n "$JOBS" ]; then
+  echo "$JOBS" | while read -r job; do
+    echo "  - 삭제 중: $job"
+    kubectl delete "$job" -n "$NAMESPACE" 2>/dev/null || true
+  done
+  echo "  ✓ Job 정리 완료"
+else
+  echo "  ✓ 삭제할 Job이 없습니다"
+fi
+
+echo ""
+
+# 3. PVC 목록 확인
+echo "📋 Step 3: PVC 목록 확인..."
 kubectl get pvc -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME" -o name 2>/dev/null
 
 PVC_COUNT=$(kubectl get pvc -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME" --no-headers 2>/dev/null | wc -l)
@@ -53,8 +68,8 @@ if [ "$PVC_COUNT" -eq 0 ]; then
 else
   echo ""
 
-  # 3. PVC ownerReferences 제거
-  echo "🔓 Step 3: PVC ownerReferences 제거 중..."
+  # 4. PVC ownerReferences 제거
+  echo "🔓 Step 4: PVC ownerReferences 제거 중..."
   for pvc in $(kubectl get pvc -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME" -o name 2>/dev/null); do
     echo "  - $pvc"
     kubectl patch "$pvc" -n "$NAMESPACE" --type=json -p='[{"op": "remove", "path": "/metadata/ownerReferences"}]' 2>/dev/null || true
@@ -65,8 +80,8 @@ else
   echo ""
 fi
 
-# 4. Helm uninstall 확인
-echo "🗑️  Step 4: Helm Release Uninstall"
+# 5. Helm uninstall 확인
+echo "🗑️  Step 5: Helm Release Uninstall"
 echo ""
 read -p "정말로 '$RELEASE' 릴리즈를 삭제하시겠습니까? (yes/no): " CONFIRM
 
@@ -84,7 +99,7 @@ echo ""
 echo "✅ Uninstall 완료!"
 echo ""
 
-# 5. PVC 보존 확인
+# 6. PVC 보존 확인
 if [ "$PVC_COUNT" -gt 0 ]; then
   echo "📌 보존된 PVC 목록:"
   kubectl get pvc -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME" -o custom-columns=NAME:.metadata.name,CAPACITY:.spec.resources.requests.storage,STATUS:.status.phase 2>/dev/null || echo "  (PVC가 삭제되었습니다)"

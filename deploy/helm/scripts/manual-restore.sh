@@ -100,6 +100,57 @@ if [ "$CONFIRM" != "yes" ]; then
     exit 0
 fi
 
+# postgres 비밀번호 확인 및 설정
+echo ""
+echo "🔑 Verifying postgres password..."
+echo "----------------------------------------"
+
+# Primary pod 찾기
+PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=postgres,role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+
+if [ -z "$PRIMARY_POD" ]; then
+    echo "❌ Error: Cannot find primary postgres pod"
+    exit 1
+fi
+
+echo "Primary pod: $PRIMARY_POD"
+
+# Secret에서 비밀번호 읽기
+EXPECTED_PASSWORD=$(kubectl get secret -n "$NAMESPACE" postgres-superuser -o jsonpath='{.data.password}' 2>/dev/null | base64 -d)
+
+if [ -z "$EXPECTED_PASSWORD" ]; then
+    echo "❌ Error: Cannot read password from secret postgres-superuser"
+    exit 1
+fi
+
+echo "Testing postgres authentication..."
+
+# postgres 서비스로 연결 테스트
+if kubectl exec -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- bash -c "PGPASSWORD='$EXPECTED_PASSWORD' psql -h postgres-rw -U postgres -d ibs -c 'SELECT 1;'" > /dev/null 2>&1; then
+    echo "✅ postgres password is correct"
+else
+    echo "⚠️  postgres password mismatch detected"
+    echo "🔧 Setting postgres password to match secret..."
+
+    if kubectl exec -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- psql -U postgres -c "ALTER USER postgres WITH PASSWORD '$EXPECTED_PASSWORD';" > /dev/null 2>&1; then
+        echo "✅ postgres password updated successfully"
+
+        # 비밀번호 변경 후 재확인
+        sleep 2
+        if kubectl exec -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- bash -c "PGPASSWORD='$EXPECTED_PASSWORD' psql -h postgres-rw -U postgres -d ibs -c 'SELECT 1;'" > /dev/null 2>&1; then
+            echo "✅ Password verified after update"
+        else
+            echo "❌ Error: Password verification failed after update"
+            exit 1
+        fi
+    else
+        echo "❌ Error: Failed to update postgres password"
+        exit 1
+    fi
+fi
+
+echo ""
+
 # Helm template으로 Job manifest 생성
 echo ""
 echo "Generating restore job manifest..."
@@ -112,7 +163,7 @@ metadata:
   name: ${RELEASE}-postgres-restore-$(date +%Y%m%d-%H%M%S)
   namespace: ${NAMESPACE}
 spec:
-  ttlSecondsAfterFinished: 86400
+  ttlSecondsAfterFinished: 300
   template:
     spec:
       restartPolicy: Never
@@ -167,6 +218,12 @@ spec:
             ALTER DATABASE \$POSTGRES_DATABASE SET search_path TO \$SCHEMA, public;
             " 2>&1 | tee -a "\$LOG_FILE"
 
+            if [ \${PIPESTATUS[0]} -ne 0 ]; then
+                echo "❌ Schema check/creation failed!" >&2
+                cat "\$LOG_FILE" >&2
+                exit 1
+            fi
+
             # 테이블 데이터 삭제
             echo "=== Truncating tables (excluding django_migrations) ===" | tee -a "\$LOG_FILE"
             PGPASSWORD="\$POSTGRES_PASSWORD" psql -h "\$PSQL_HOST" -U "\$POSTGRES_USER" -d "\$POSTGRES_DATABASE" -c "
@@ -209,7 +266,7 @@ spec:
             COMMIT;
             " 2>&1 | tee -a "\$LOG_FILE"
 
-            if [ \$? -ne 0 ]; then
+            if [ \${PIPESTATUS[0]} -ne 0 ]; then
                 echo "❌ Truncate failed! Check log: \$LOG_FILE" >&2
                 cat "\$LOG_FILE" >&2
                 exit 1
@@ -230,7 +287,8 @@ spec:
               --verbose \
               "\$DUMP_FILE" 2>&1 | tee -a "\$LOG_FILE"
 
-            if [ \$? -eq 0 ]; then
+            RESTORE_EXIT_CODE=\${PIPESTATUS[0]}
+            if [ \$RESTORE_EXIT_CODE -eq 0 ]; then
                 # 시퀀스 조정
                 echo "=== Adjusting sequences ===" | tee -a "\$LOG_FILE"
                 PGPASSWORD="\$POSTGRES_PASSWORD" psql -h "\$PSQL_HOST" -U "\$POSTGRES_USER" -d "\$POSTGRES_DATABASE" -c "
