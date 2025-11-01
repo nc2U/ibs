@@ -219,15 +219,15 @@ bootstrap:
     localeCollate: "en_US.UTF-8"
     localeCType: "en_US.UTF-8"
 
-    # Post-init SQL (runs as superuser after database creation)
-    postInitSQL:
+    # Post-init SQL (runs as superuser before database creation)
+    postInitSQL: []
+
+    # Post-init Application SQL (runs as superuser after application database creation)
+    postInitApplicationSQL:
       - "CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;"
       - "GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;"
       - "GRANT ALL ON SCHEMA ibs TO ibs;"
       - "ALTER DATABASE ibs SET search_path TO ibs, public;"
-
-    # Post-init Application SQL (runs as application user)
-    postInitApplicationSQL: []
 
 # Certificates (optional, for SSL)
 certificates:
