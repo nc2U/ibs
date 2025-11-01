@@ -20,17 +20,7 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v4
 
-      # data to server copy transfer
-      - name: Copy backup script to NFS server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
-          source: 'volume/backups/*'
-          target: ${{ secrets.NFS_PATH }}/prod/
-
-      # database backup (supports both Bitnami and CloudNativePG)
+      # database backup (CloudNativePG via Kubernetes Job)
       - name: database backup
         uses: garygrossgarten/github-action-ssh@release
         with:
@@ -38,19 +28,18 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-            # MariaDB backup (Bitnami)
-            if kubectl get pod -n ibs-prod mariadb-primary-0 >/dev/null 2>&1; then
-              kubectl exec -n ibs-prod mariadb-primary-0 -- sh /var/backups/dump_mariadb.sh
-            fi
+            cd ${{ secrets.CICD_PATH }}/prod/deploy/helm/scripts
 
-            # PostgreSQL backup (Bitnami - legacy)
-            if kubectl get pod -n ibs-prod postgres-primary-0 >/dev/null 2>&1; then
-              kubectl exec -n ibs-prod postgres-primary-0 -- sh /var/backups/dump_postgres.sh
-            fi
+            # CloudNativePG 백업 실행 (manual-backup.sh 사용)
+            echo "Running CloudNativePG backup for production..."
+            sh manual-backup.sh prod
 
-            # PostgreSQL backup (CloudNativePG)
-            if kubectl get pod -n ibs-prod postgres-1 >/dev/null 2>&1; then
-              kubectl exec -n ibs-prod postgres-1 -- bash /var/backups/dump_postgres.sh
+            # 백업 결과 확인
+            if [ $? -eq 0 ]; then
+              echo "✅ PostgreSQL backup completed successfully"
+            else
+              echo "❌ PostgreSQL backup failed"
+              exit 1
             fi
 
       # slack --> notification

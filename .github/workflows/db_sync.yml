@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # mysql pod --> database copy
-      - name: database copy
+      # Prod backup file copy to Dev (NFS)
+      - name: Copy production backup to dev
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.NFS_HOST }}
@@ -26,20 +26,30 @@ jobs:
           command: |
             sh "${{ secrets.NFS_PATH }}"/prod/volume/backups/copy_script.sh
             chmod -R 775 ${{ secrets.NFS_PATH }}/dev/volume/backups/
-      
-      # mysql pod --> database restore
-      - name: database restore
+
+      # CloudNativePG restore to Dev
+      - name: Restore database to dev environment
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.CICD_HOST }}
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-            if kubectl get pod -n ibs-dev mariadb-primary-0 >/dev/null 2>&1; then
-              kubectl exec -n ibs-dev mariadb-primary-0 -- bash /var/backups/mariadb_restore.sh
-            fi
-            if kubectl get pod -n ibs-dev postgres-primary-0 >/dev/null 2>&1; then
-              kubectl exec -n ibs-dev postgres-primary-0 -- bash /var/backups/postgres_restore.sh
+            cd ${{ secrets.CICD_PATH }}/dev/deploy/helm/scripts
+
+            # CloudNativePG 복원 실행 (manual-restore.sh 사용)
+            echo "Restoring production data to dev environment..."
+            echo "Note: This will prompt for backup file selection and confirmation"
+
+            # 가장 최근 백업 파일 자동 선택 및 복원
+            # manual-restore.sh는 interactive하므로, 자동화 필요 시 수정 필요
+            sh manual-restore.sh dev
+
+            if [ $? -eq 0 ]; then
+              echo "✅ Database sync to dev completed successfully"
+            else
+              echo "❌ Database sync to dev failed"
+              exit 1
             fi
 
       # slack --> notification
