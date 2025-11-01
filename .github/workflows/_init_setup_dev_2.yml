@@ -21,7 +21,7 @@ jobs:
           ref: 'develop'
       
       # Django collectstatic & migrate
-      - name: Django collectstatic & migrate (ci/cd server) & fetch_commits
+      - name: Django collectstatic & migrate (ci/cd server)
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.CICD_HOST }}
@@ -31,7 +31,6 @@ jobs:
             web_pod=$(kubectl get pod -n ibs-dev | grep web | head -n 1 | cut -d ' ' -f1)
             kubectl exec -it -n ibs-dev $web_pod -- python manage.py collectstatic --no-input
             kubectl exec -it -n ibs-dev $web_pod -- sh migrate.sh
-            kubectl exec -it -n ibs-dev $web_pod -- python manage.py fetch_commits
       
       # Node.js 사용
       - name: Use Node.js

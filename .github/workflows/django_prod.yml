@@ -34,7 +34,7 @@ jobs:
           target: ${{ secrets.CICD_PATH }}/prod/
       
       # web pod --> django model migrations & collectstatic
-      - name: Django collectstatic & model migration & fetch_commits
+      - name: Django collectstatic & model migration
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.CICD_HOST }}
@@ -44,7 +44,6 @@ jobs:
             web_pod=$(kubectl get pod -n ibs-prod | grep web | head -n 1 | cut -d ' ' -f1)
             kubectl exec -n ibs-prod $web_pod -- python manage.py collectstatic --no-input
             kubectl exec -n ibs-prod $web_pod -- sh migrate.sh
-            kubectl exec -n ibs-prod $web_pod -- python manage.py fetch_commits
       
       # slack --> notification
       - name: Send slack when failed

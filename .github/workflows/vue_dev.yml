@@ -373,17 +373,6 @@ jobs:
 
             echo "✅ Pods restarted successfully"
 
-      # web pod --> fetch_commits
-      - name: Django fetch_commits
-        uses: garygrossgarten/github-action-ssh@release
-        with:
-          host: ${{ secrets.CICD_HOST }}
-          username: ${{ secrets.CICD_USER }}
-          password: ${{ secrets.CICD_PASS }}
-          command: |
-            web_pod=$(kubectl get pod -n ibs-dev | grep web | head -n 1 | cut -d ' ' -f1)
-            kubectl exec -it -n ibs-dev $web_pod -- python manage.py fetch_commits
-      
       # slack --> notification
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
