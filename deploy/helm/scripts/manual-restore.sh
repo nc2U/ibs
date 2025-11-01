@@ -13,19 +13,13 @@ echo "Namespace: $NAMESPACE"
 echo "Release: $RELEASE"
 echo ""
 
-# 사용 가능한 백업 파일 목록 조회
+# 사용 가능한 백업 파일 목록 조회 (임시 pod 사용)
 echo "📋 Available backup files:"
 echo "----------------------------------------"
-BACKUP_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=${RELEASE}-postgres,role=primary" -o jsonpath='{.items[0].metadata.name}')
-
-if [ -z "$BACKUP_POD" ]; then
-    echo "❌ Error: No PostgreSQL primary pod found"
-    exit 1
-fi
-
-# NFS 마운트된 백업 파일 확인 (임시 pod 사용)
 echo "Checking backup files via temporary pod..."
-kubectl run -n "$NAMESPACE" backup-list-tmp \
+
+# 백업 파일 목록을 배열로 가져오기
+BACKUP_FILES=$(kubectl run -n "$NAMESPACE" backup-list-tmp \
   --image=postgres:17.2 \
   --restart=Never \
   --rm -i --quiet \
@@ -35,7 +29,7 @@ kubectl run -n "$NAMESPACE" backup-list-tmp \
     "containers": [{
       "name": "backup-list",
       "image": "postgres:17.2",
-      "command": ["/bin/bash", "-c", "ls -lh /var/backups/*.dump 2>/dev/null || echo '\''No backup files found'\''"],
+      "command": ["/bin/bash", "-c", "ls -1 /var/backups/*.dump 2>/dev/null | xargs -n1 basename || echo '\''No backup files found'\''"],
       "volumeMounts": [{
         "name": "backup-volume",
         "mountPath": "/var/backups"
@@ -44,28 +38,54 @@ kubectl run -n "$NAMESPACE" backup-list-tmp \
     "volumes": [{
       "name": "backup-volume",
       "persistentVolumeClaim": {
-        "claimName": "'"${RELEASE}"'-postgres-backup-pvc"
+        "claimName": "postgres-backup-pvc"
       }
     }]
   }
-}' -- /bin/bash -c "ls -lh /var/backups/*.dump 2>/dev/null || echo 'No backup files found'"
+}' -- /bin/bash -c "ls -1 /var/backups/*.dump 2>/dev/null | xargs -n1 basename || echo 'No backup files found'")
+
+if [ -z "$BACKUP_FILES" ] || [ "$BACKUP_FILES" = "No backup files found" ]; then
+    echo "❌ Error: No backup files found in /var/backups/"
+    exit 1
+fi
+
+# 백업 파일 목록을 배열로 변환 (sh-compatible)
+FILES_ARRAY=()
+while IFS= read -r line; do
+    [ -n "$line" ] && FILES_ARRAY+=("$line")
+done <<EOF
+$BACKUP_FILES
+EOF
+
+# 번호와 함께 파일 목록 출력
+echo ""
+echo "Select a backup file to restore:"
+i=1
+for file in "${FILES_ARRAY[@]}"; do
+    printf "%2d) %s\n" "$i" "$file"
+    i=$((i+1))
+done
 
 echo ""
 echo "=========================================="
 echo "⚠️  WARNING: This will TRUNCATE all tables!"
 echo "=========================================="
 echo ""
-read -p "Enter the backup filename to restore (e.g., ibs-backup-postgres-2025-01-15.dump): " BACKUP_FILE
+read -p "Enter number (1-${#FILES_ARRAY[@]}) or 'q' to quit: " SELECTION
 
-if [ -z "$BACKUP_FILE" ]; then
-    echo "❌ Error: No backup file specified"
+if [ "$SELECTION" = "q" ] || [ "$SELECTION" = "Q" ]; then
+    echo "Restore cancelled."
+    exit 0
+fi
+
+# 선택 검증
+if ! [[ "$SELECTION" =~ ^[0-9]+$ ]] || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -gt "${#FILES_ARRAY[@]}" ]; then
+    echo "❌ Error: Invalid selection"
     exit 1
 fi
 
-# 전체 경로 생성
-if [[ ! "$BACKUP_FILE" =~ ^/ ]]; then
-    BACKUP_FILE="/var/backups/$BACKUP_FILE"
-fi
+# 선택된 파일
+BACKUP_FILE="/var/backups/${FILES_ARRAY[$((SELECTION-1))]}"
 
 echo ""
 echo "Restore settings:"
@@ -96,6 +116,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      automountServiceAccountToken: false
       containers:
       - name: postgres-restore
         image: postgres:17.2
@@ -120,7 +141,7 @@ spec:
             POSTGRES_DATABASE="ibs"
             POSTGRES_USER="postgres"
             POSTGRES_PASSWORD=\$(cat /run/secrets/postgres-password)
-            PSQL_HOST="${RELEASE}-postgres-rw"
+            PSQL_HOST="postgres-rw"
 
             echo "=== PostgreSQL Restore Started ===" | tee "\$LOG_FILE"
             echo "Backup file: \$DUMP_FILE" | tee -a "\$LOG_FILE"
@@ -129,17 +150,22 @@ spec:
             echo "Host: \$PSQL_HOST" | tee -a "\$LOG_FILE"
             echo "" | tee -a "\$LOG_FILE"
 
-            # 스키마 존재 확인
-            echo "=== Checking schema existence ===" | tee -a "\$LOG_FILE"
+            # 스키마 존재 확인 및 생성
+            echo "=== Checking/Creating schema ===" | tee -a "\$LOG_FILE"
             PGPASSWORD="\$POSTGRES_PASSWORD" psql -h "\$PSQL_HOST" -U "\$POSTGRES_USER" -d "\$POSTGRES_DATABASE" -c "
             DO \\\$\\\$
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = '\$SCHEMA') THEN
-                    RAISE EXCEPTION 'Schema \$SCHEMA does not exist';
+                    RAISE NOTICE 'Schema \$SCHEMA does not exist, creating...';
+                    EXECUTE format('CREATE SCHEMA %I AUTHORIZATION ibs', '\$SCHEMA');
+                    EXECUTE format('GRANT ALL ON SCHEMA %I TO ibs', '\$SCHEMA');
+                    RAISE NOTICE 'Schema \$SCHEMA created successfully';
+                ELSE
+                    RAISE NOTICE 'Schema \$SCHEMA already exists';
                 END IF;
-                RAISE NOTICE 'Schema \$SCHEMA exists';
             END \\\$\\\$;
-            " >> "\$LOG_FILE" 2>&1
+            ALTER DATABASE \$POSTGRES_DATABASE SET search_path TO \$SCHEMA, public;
+            " 2>&1 | tee -a "\$LOG_FILE"
 
             # 테이블 데이터 삭제
             echo "=== Truncating tables (excluding django_migrations) ===" | tee -a "\$LOG_FILE"
@@ -181,7 +207,7 @@ spec:
             END \\\$\\\$;
 
             COMMIT;
-            " >> "\$LOG_FILE" 2>&1
+            " 2>&1 | tee -a "\$LOG_FILE"
 
             if [ \$? -ne 0 ]; then
                 echo "❌ Truncate failed! Check log: \$LOG_FILE" >&2
@@ -191,6 +217,7 @@ spec:
 
             # 백업 파일 복원
             echo "=== Restoring from backup file ===" | tee -a "\$LOG_FILE"
+            echo "Progress will be displayed below..." | tee -a "\$LOG_FILE"
             PGPASSWORD="\$POSTGRES_PASSWORD" pg_restore \
               -h "\$PSQL_HOST" \
               -U "\$POSTGRES_USER" \
@@ -200,7 +227,8 @@ spec:
               --no-privileges \
               --disable-triggers \
               --jobs=4 \
-              "\$DUMP_FILE" >> "\$LOG_FILE" 2>&1
+              --verbose \
+              "\$DUMP_FILE" 2>&1 | tee -a "\$LOG_FILE"
 
             if [ \$? -eq 0 ]; then
                 # 시퀀스 조정
@@ -226,7 +254,7 @@ spec:
                     END LOOP;
                     RAISE NOTICE 'All sequences adjusted';
                 END \\\$\\\$;
-                " >> "\$LOG_FILE" 2>&1
+                " 2>&1 | tee -a "\$LOG_FILE"
 
                 echo "" | tee -a "\$LOG_FILE"
                 echo "🎉 PostgreSQL Restore completed successfully!" | tee -a "\$LOG_FILE"
@@ -249,10 +277,10 @@ spec:
       volumes:
         - name: backup-volume
           persistentVolumeClaim:
-            claimName: ${RELEASE}-postgres-backup-pvc
+            claimName: postgres-backup-pvc
         - name: postgres-password
           secret:
-            secretName: ${RELEASE}-postgres-superuser
+            secretName: postgres-superuser
             items:
               - key: password
                 path: postgres-password

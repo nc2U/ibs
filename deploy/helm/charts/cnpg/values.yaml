@@ -212,7 +212,7 @@ additionalConfig: {}
 
 # Bootstrap configuration
 bootstrap:
-  # Initialize new cluster
+  # Initialize a new cluster
   initdb:
     # Database encoding
     encoding: "UTF8"
