@@ -163,11 +163,11 @@ monitoring:
 # Resource Limits and Requests
 resources:
   requests:
+    memory: "256Mi"
+    cpu: "200m"
+  limits:
     memory: "512Mi"
     cpu: "500m"
-  limits:
-    memory: "1Gi"
-    cpu: "1000m"
 
 # Pod Disruption Budget
 podDisruptionBudget:
@@ -254,7 +254,4 @@ serviceAccount:
 commonLabels: {}
 
 # Common annotations
-commonAnnotations:
-  # IMPORTANT: This annotation tells Helm to keep resources on uninstall
-  # However, CloudNativePG dynamically creates PVCs, so we need additional mechanisms
-  helm.sh/resource-policy: "keep"
+commonAnnotations: {}

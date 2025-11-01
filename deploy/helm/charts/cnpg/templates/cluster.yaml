@@ -72,6 +72,8 @@ spec:
       {{- with .Values.storage.storageClass }}
       storageClassName: {{ . }}
       {{- end }}
+    # NOTE: CNPG 1.27.1 doesn't support persistentVolumeClaimPolicy
+    # Use preserve-pvcs.sh script before helm uninstall to remove ownerReferences
 
   {{- if .Values.backup.nfs.enabled }}
   # Additional volumes for backups

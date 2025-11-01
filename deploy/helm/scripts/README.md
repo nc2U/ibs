@@ -13,39 +13,73 @@ CloudNativePG 환경에서 PostgreSQL 데이터베이스의 수동 백업과 복
 
 ## ⚠️ 중요: PVC 데이터 보존
 
-CloudNativePG는 Cluster 리소스가 PVC를 동적으로 생성하고 관리합니다.
-Helm uninstall 시 PVC가 삭제되지 않도록 하려면:
+**CNPG 1.27.1 제한사항**: `persistentVolumeClaimPolicy` 기능이 없어 Cluster 삭제 시 PVC도 함께 삭제됩니다.
+Helm uninstall 전에 **반드시** PVC ownerReferences를 제거해야 합니다.
 
-### 방법 1: PVC Annotation 설정 (권장)
+참고: [CNPG GitHub Discussion #5253](https://github.com/cloudnative-pg/cloudnative-pg/discussions/5253)
+
+### 방법 1: preserve-pvcs.sh 스크립트 사용 (권장)
 ```bash
-# PostgreSQL PVC에 보존 annotation 추가
-kubectl annotate pvc -n ibs-dev postgres-1 helm.sh/resource-policy=keep
-kubectl annotate pvc -n ibs-dev postgres-2 helm.sh/resource-policy=keep
+# CI/CD 서버에서 실행
+cd $CICD_PATH/dev/deploy/helm/scripts
 
-# 또는 한번에
-kubectl annotate pvc -n ibs-dev -l cnpg.io/cluster=postgres helm.sh/resource-policy=keep
-```
+# PVC ownerReferences 제거
+./preserve-pvcs.sh
 
-### 방법 2: Uninstall 전 Label 제거
-```bash
-# Uninstall 전에 PVC label 제거하여 Helm 관리에서 제외
-kubectl label pvc -n ibs-dev postgres-1 app.kubernetes.io/instance-
-kubectl label pvc -n ibs-dev postgres-2 app.kubernetes.io/instance-
-```
+# 출력 예시:
+# 🔒 CloudNativePG PVC 보존 스크립트
+# ====================================
+# Namespace: ibs-dev
+# Cluster: postgres
+#
+# 📋 현재 PVC 목록:
+# persistentvolumeclaim/postgres-1
+# persistentvolumeclaim/postgres-2
+#
+# 🔓 PVC ownerReferences 제거 중...
+#   - persistentvolumeclaim/postgres-1
+#   - persistentvolumeclaim/postgres-2
+#
+# ✅ 완료! 이제 helm uninstall을 실행해도 PVC가 보존됩니다.
 
-### 방법 3: 수동 PVC 관리
-```bash
-# Uninstall 전 중요 데이터 백업
-./manual-backup.sh
-
-# Uninstall 실행
+# 이제 안전하게 uninstall
 helm uninstall ibs -n ibs-dev
 
-# PVC 상태 확인 (보존되어야 함)
-kubectl get pvc -n ibs-dev
+# PVC 확인 (보존되어 있어야 함)
+kubectl get pvc -n ibs-dev | grep postgres
 
-# 재설치 시 기존 PVC 재사용됨
+# 재설치 (기존 PVC 자동 재사용)
+helm upgrade ibs . -f values-dev.yaml --install -n ibs-dev
 ```
+
+### 방법 2: 수동으로 ownerReferences 제거
+```bash
+# 모든 CNPG PVC의 ownerReferences 제거
+kubectl patch pvc -n ibs-dev postgres-1 --type=json \
+  -p='[{"op": "remove", "path": "/metadata/ownerReferences"}]'
+kubectl patch pvc -n ibs-dev postgres-2 --type=json \
+  -p='[{"op": "remove", "path": "/metadata/ownerReferences"}]'
+
+# 또는 한번에
+for pvc in $(kubectl get pvc -n ibs-dev -l cnpg.io/cluster=postgres -o name); do
+  kubectl patch $pvc -n ibs-dev --type=json \
+    -p='[{"op": "remove", "path": "/metadata/ownerReferences"}]'
+done
+```
+
+### 방법 3: kubectl cnpg plugin 사용
+```bash
+# CNPG kubectl plugin 설치
+kubectl krew install cnpg
+
+# --keep-pvc 옵션으로 클러스터 삭제
+kubectl cnpg destroy postgres -n ibs-dev --keep-pvc
+```
+
+### 주의사항
+- ⚠️ **ownerReferences 제거 없이 helm uninstall하면 PVC도 삭제됩니다!**
+- 💡 재설치 시 CNPG는 기존 PVC 이름이 일치하면 자동으로 재사용합니다
+- 🔐 완전한 데이터 보존을 위해서는 **백업도 함께 실행**하세요: `./manual-backup.sh`
 
 ## 🚀 사용 방법
 
@@ -208,6 +242,7 @@ deploy/helm/
 │   ├── prod-deploy.sh            # Prod 환경 Helm 배포 스크립트
 │   ├── manual-backup.sh          # 수동 백업 스크립트
 │   ├── manual-restore.sh         # 수동 복원 스크립트
+│   ├── preserve-pvcs.sh          # PVC 보존 스크립트 (ownerReferences 제거)
 │   └── README.md                 # 이 문서
 └── charts/cnpg/
     ├── templates/
