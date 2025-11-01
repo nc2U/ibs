@@ -62,13 +62,18 @@ done
 
 echo ""
 
-# 2. 완료되지 않은 Job 삭제
-echo "🧹 Step 2: 완료되지 않은 백업/복원 Job 확인 및 삭제..."
-JOBS=$(kubectl get jobs -n "$NAMESPACE" -l "job-type in (backup,restore)" -o name 2>/dev/null || true)
+# 2. 백업/복원 Job 삭제 (Completed 포함)
+echo "🧹 Step 2: 백업/복원 Job 확인 및 삭제..."
+JOBS=$(kubectl get jobs -n "$NAMESPACE" -o name 2>/dev/null | grep -E "postgres-(backup|restore)" || true)
 if [ -n "$JOBS" ]; then
   echo "$JOBS" | while read -r job; do
-    echo "  - 삭제 중: $job"
-    kubectl delete "$job" -n "$NAMESPACE" 2>/dev/null || true
+    JOB_STATUS=$(kubectl get "$job" -n "$NAMESPACE" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "")
+    if [ "$JOB_STATUS" = "True" ]; then
+      echo "  - 삭제 중: $job (Completed)"
+    else
+      echo "  - 삭제 중: $job (Running/Failed)"
+    fi
+    kubectl delete "$job" -n "$NAMESPACE" --wait=false 2>/dev/null || true
   done
   echo "  ✓ Job 정리 완료"
 else
