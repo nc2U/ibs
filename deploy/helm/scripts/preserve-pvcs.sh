@@ -46,7 +46,7 @@ echo "Cluster: $CLUSTER_NAME"
 echo ""
 
 # 1. PV reclaimPolicy 확인 및 변경
-echo "🔧 Step 1: PV reclaimPolicy 확인 중..."
+echo "🔧 Step 1: PV reclaimPolicy 확인 및 변경 중..."
 for pvc in $(kubectl get pvc -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME" -o name 2>/dev/null); do
   PV_NAME=$(kubectl get "$pvc" -n "$NAMESPACE" -o jsonpath='{.spec.volumeName}' 2>/dev/null)
   if [ -n "$PV_NAME" ]; then

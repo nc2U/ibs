@@ -45,6 +45,10 @@ postgres:
 # CloudNativePG 설정
 cnpg:
   enabled: true
+  image:
+    tag: "latest"
+  replication:
+    instances: 1
 
 nginx:
   image:
