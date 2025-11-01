@@ -40,6 +40,27 @@ spec:
                   POSTGRES_PASSWORD=$(cat /run/secrets/postgres-password)
                   PSQL_HOST="{{ include "cnpg.clusterName" . }}-rw"
 
+                  # postgres 비밀번호 확인 및 동기화
+                  echo "🔑 Verifying postgres password..."
+                  if ! PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$PSQL_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "SELECT 1;" > /dev/null 2>&1; then
+                      echo "⚠️  Password mismatch detected, synchronizing..."
+                      # Pod 내부에서는 postgres 사용자로 직접 접근 가능
+                      if psql -U postgres -c "ALTER USER postgres WITH PASSWORD '$POSTGRES_PASSWORD';" > /dev/null 2>&1; then
+                          echo "✅ Password synchronized successfully"
+                          sleep 2
+                          # 재확인
+                          if ! PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$PSQL_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -c "SELECT 1;" > /dev/null 2>&1; then
+                              echo "❌ Password verification failed after update"
+                              exit 1
+                          fi
+                      else
+                          echo "❌ Failed to update postgres password"
+                          exit 1
+                      fi
+                  else
+                      echo "✅ Password verified"
+                  fi
+
                   # 이전 백업 삭제 (2일 이상된 파일)
                   find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -mtime +2 -delete
 
