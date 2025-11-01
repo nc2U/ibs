@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "cnpg.fullname" . }}-backup-pvc
+  name: {{ .Values.global.appMode }}-{{ include "cnpg.fullname" . }}-backup-pvc
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg.labels" . | nindent 4 }}
