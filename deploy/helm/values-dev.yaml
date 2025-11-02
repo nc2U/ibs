@@ -49,8 +49,6 @@ postgres:
 # CloudNativePG 설정
 cnpg:
   enabled: true
-  image:
-    tag: "18.0"
   replication:
     instances: 1
 
