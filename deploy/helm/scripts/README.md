@@ -10,6 +10,7 @@ CloudNativePG 환경에서 PostgreSQL 데이터베이스의 수동 백업과 복
 - **저장소**: NFS 기반 영구 스토리지 (`/var/backups`)
 - **배포**: GitHub Actions를 통해 CI/CD 서버로 자동 복사
 - **PVC 보존**: Helm uninstall 시에도 PVC 보존 설정 적용
+- **버전 업그레이드**: PostgreSQL 메이저 버전 업그레이드 가이드 제공
 
 ## ⚠️ 중요: PVC 데이터 보존
 
@@ -99,8 +100,8 @@ cd $CICD_PATH/dev/deploy/helm/scripts
 # 기본 실행 (ibs-dev 네임스페이스)
 ./manual-backup.sh
 
-# 다른 네임스페이스/릴리스
-NAMESPACE=ibs-prod RELEASE=ibs ./manual-backup.sh
+# 프로덕션 환경 백업
+./manual-backup.sh prod
 
 # 로그 자동 추적 비활성화
 FOLLOW_LOGS=false ./manual-backup.sh
@@ -121,8 +122,8 @@ cd $CICD_PATH/dev/deploy/helm/scripts
 # 기본 실행 (ibs-dev 네임스페이스)
 ./manual-restore.sh
 
-# 다른 네임스페이스/릴리스
-NAMESPACE=ibs-prod RELEASE=ibs ./manual-restore.sh
+# 프로덕션 환경 복원
+./manual-restore.sh prod
 ```
 
 **복원 프로세스**:
