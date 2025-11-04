@@ -1041,7 +1041,8 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
                 contract_price.contract = None
 
                 # house_unit이 있고 미계약용 기본 차수가 설정된 경우 SalesPriceByGT 기준 가격으로 업데이트
-                if unit and contract.project.default_uncontracted_order_group:
+                default_order_group = OrderGroup.get_default_for_project(contract.project)
+                if unit and default_order_group:
                     # 임시 계약 객체 생성 (미계약용 기본 차수와 프로젝트 정보로)
                     # get_sales_price_by_gt 함수에서 필요한 contract 속성들을 제공
                     class TempContract:
@@ -1052,7 +1053,7 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
 
                     temp_contract = TempContract(
                         contract.project,
-                        contract.project.default_uncontracted_order_group,
+                        default_order_group,
                         unit.unit_type
                     )
 
