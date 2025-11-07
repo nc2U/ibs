@@ -102,6 +102,101 @@ class ProjectBankAccount(models.Model):
         verbose_name_plural = "03. 프로젝트 관리계좌"
 
 
+class ProjectCashBookQuerySet(models.QuerySet):
+    """ProjectCashBook 전용 QuerySet - 납부내역 필터링 및 조정금액 조회"""
+
+    def payment_records(self):
+        """
+        납부내역만 필터링 (is_payment=True)
+
+        Returns:
+            QuerySet: 납부내역 (수납/환불)만 포함, 관련 정보 최적화 조회
+        """
+        return self.filter(
+            project_account_d3__is_payment=True
+        ).select_related(
+            'project_account_d3',
+            'project_account_d2',
+            'installment_order',
+            'contract',
+            'contract__project',
+            'contract__unit_type'
+        )
+
+    def for_contract(self, contract):
+        """
+        특정 계약의 납부내역
+
+        Args:
+            contract: Contract 인스턴스
+
+        Returns:
+            QuerySet: 해당 계약의 납부내역
+        """
+        return self.filter(contract=contract)
+
+    def for_installment(self, installment_order):
+        """
+        특정 회차의 납부내역
+
+        Args:
+            installment_order: InstallmentPaymentOrder 인스턴스
+
+        Returns:
+            QuerySet: 해당 회차의 납부내역
+        """
+        return self.filter(installment_order=installment_order)
+
+    def with_discount_eligible(self):
+        """
+        선납 할인 대상 납부내역만 조회
+
+        Returns:
+            QuerySet: is_prep_discount=True인 회차의 납부내역
+        """
+        return self.filter(
+            installment_order__is_prep_discount=True
+        )
+
+    def with_penalty_eligible(self):
+        """
+        연체 가산 대상 납부내역만 조회
+
+        Returns:
+            QuerySet: is_late_penalty=True인 회차의 납부내역
+        """
+        return self.filter(
+            installment_order__is_late_penalty=True
+        )
+
+    def with_income(self):
+        """입금 내역만 조회 (income이 있는 경우)"""
+        return self.filter(income__isnull=False, income__gt=0)
+
+    def with_outlay(self):
+        """출금 내역만 조회 (outlay이 있는 경우)"""
+        return self.filter(outlay__isnull=False, outlay__gt=0)
+
+
+class ProjectCashBookManager(models.Manager):
+    """ProjectCashBook 전용 Manager"""
+
+    def get_queryset(self):
+        return ProjectCashBookQuerySet(self.model, using=self._db)
+
+    def payment_records(self):
+        """납부내역만 조회"""
+        return self.get_queryset().payment_records()
+
+    def for_contract(self, contract):
+        """특정 계약의 전체 내역"""
+        return self.get_queryset().for_contract(contract)
+
+    def for_installment(self, installment_order):
+        """특정 회차의 전체 내역"""
+        return self.get_queryset().for_installment(installment_order)
+
+
 class ProjectCashBook(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.PROTECT, verbose_name='프로젝트')
     sort = models.ForeignKey('ibs.AccountSort', on_delete=models.PROTECT,
@@ -143,8 +238,47 @@ class ProjectCashBook(models.Model):
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
 
+    # Custom Manager 설정
+    objects = ProjectCashBookManager()
+
     def __str__(self):
         return f'{self.pk}. {self.sort}'
+
+    def get_late_penalty(self):
+        """
+        개별 납부건의 연체 가산금 조회
+
+        Returns:
+            dict or None: 연체 가산금 정보 또는 None (가산 대상이 아닌 경우)
+                {
+                    'penalty_amount': int,
+                    'late_days': int,
+                    'penalty_rate': Decimal,
+                    'payment_amount': int,
+                    'payment_date': date,
+                    'due_date': date
+                }
+        """
+        from _utils.payment_adjustment import calculate_late_penalty
+        return calculate_late_penalty(self)
+
+    def is_discount_eligible(self):
+        """선납 할인 대상 여부 (회차 기준)"""
+        return (
+                self.installment_order and
+                self.installment_order.is_prep_discount and
+                self.project_account_d3 and
+                self.project_account_d3.is_payment
+        )
+
+    def is_penalty_eligible(self):
+        """연체 가산 대상 여부 (회차 기준)"""
+        return (
+                self.installment_order and
+                self.installment_order.is_late_penalty and
+                self.project_account_d3 and
+                self.project_account_d3.is_payment
+        )
 
     class Meta:
         ordering = ['-deal_date', '-id']
@@ -176,24 +310,24 @@ class ImportJob(models.Model):
     PROCESSING = 'processing'
     COMPLETED = 'completed'
     FAILED = 'failed'
-    
+
     STATUS_CHOICES = [
         (PENDING, '대기 중'),
         (PROCESSING, '처리 중'),
         (COMPLETED, '완료'),
         (FAILED, '실패'),
     ]
-    
+
     JOB_TYPE_CHOICES = [
         ('import', '가져오기'),
         ('export', '내보내기'),
     ]
-    
+
     RESOURCE_TYPE_CHOICES = [
         ('cashbook', 'CashBook'),
         ('project_cashbook', 'ProjectCashBook'),
     ]
-    
+
     job_type = models.CharField('작업 유형', max_length=10, choices=JOB_TYPE_CHOICES)
     resource_type = models.CharField('리소스 유형', max_length=20, choices=RESOURCE_TYPE_CHOICES)
     file = models.FileField('파일', upload_to='import_jobs/', blank=True, null=True)
@@ -210,22 +344,22 @@ class ImportJob(models.Model):
     created_at = models.DateTimeField('생성일시', auto_now_add=True)
     started_at = models.DateTimeField('시작일시', blank=True, null=True)
     completed_at = models.DateTimeField('완료일시', blank=True, null=True)
-    
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = '가져오기/내보내기 작업'
         verbose_name_plural = '가져오기/내보내기 작업'
-    
+
     def __str__(self):
         return f'{self.get_job_type_display()} - {self.get_resource_type_display()} ({self.get_status_display()})'
-    
+
     @property
     def duration(self):
         """작업 소요 시간 계산"""
         if self.started_at and self.completed_at:
             return self.completed_at - self.started_at
         return None
-    
+
     def update_progress(self, processed: int, total: int, status: str = None):
         """진행률 업데이트"""
         self.processed_records = processed
