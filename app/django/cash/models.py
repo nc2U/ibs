@@ -107,10 +107,18 @@ class ProjectCashBookQuerySet(models.QuerySet):
 
     def payment_records(self):
         """
-        납부내역만 필터링 (is_payment=True)
+        유효 계약자의 납부내역 (선납 할인 및 연체 가산금 계산 대상)
+
+        is_payment=True는 현재 유효한 계약자가 납부한 입금만을 의미
+        - 포함: 111 (분담금), 811 (분양매출금)
+        - 제외: is_payment=False인 모든 계정 (해지 입금, 환불, 기타 60여개 출금 계정)
+
+        Note:
+            is_payment=True는 이미 입금만 포함하므로 income 필터 불필요
+            선납 할인 및 연체 가산금 계산의 기본 대상
 
         Returns:
-            QuerySet: 납부내역 (수납/환불)만 포함, 관련 정보 최적화 조회
+            QuerySet: 유효 계약자 납부 내역 (입금만), select_related 최적화 적용
         """
         return self.filter(
             project_account_d3__is_payment=True
@@ -124,58 +132,20 @@ class ProjectCashBookQuerySet(models.QuerySet):
         )
 
     def for_contract(self, contract):
-        """
-        특정 계약의 납부내역
-
-        Args:
-            contract: Contract 인스턴스
-
-        Returns:
-            QuerySet: 해당 계약의 납부내역
-        """
+        """특정 계약의 전체 내역"""
         return self.filter(contract=contract)
 
     def for_installment(self, installment_order):
-        """
-        특정 회차의 납부내역
-
-        Args:
-            installment_order: InstallmentPaymentOrder 인스턴스
-
-        Returns:
-            QuerySet: 해당 회차의 납부내역
-        """
+        """특정 회차의 전체 내역"""
         return self.filter(installment_order=installment_order)
 
     def with_discount_eligible(self):
-        """
-        선납 할인 대상 납부내역만 조회
-
-        Returns:
-            QuerySet: is_prep_discount=True인 회차의 납부내역
-        """
-        return self.filter(
-            installment_order__is_prep_discount=True
-        )
+        """선납 할인 대상 회차 필터"""
+        return self.filter(installment_order__is_prep_discount=True)
 
     def with_penalty_eligible(self):
-        """
-        연체 가산 대상 납부내역만 조회
-
-        Returns:
-            QuerySet: is_late_penalty=True인 회차의 납부내역
-        """
-        return self.filter(
-            installment_order__is_late_penalty=True
-        )
-
-    def with_income(self):
-        """입금 내역만 조회 (income이 있는 경우)"""
-        return self.filter(income__isnull=False, income__gt=0)
-
-    def with_outlay(self):
-        """출금 내역만 조회 (outlay이 있는 경우)"""
-        return self.filter(outlay__isnull=False, outlay__gt=0)
+        """연체 가산 대상 회차 필터"""
+        return self.filter(installment_order__is_late_penalty=True)
 
 
 class ProjectCashBookManager(models.Manager):
@@ -185,7 +155,7 @@ class ProjectCashBookManager(models.Manager):
         return ProjectCashBookQuerySet(self.model, using=self._db)
 
     def payment_records(self):
-        """납부내역만 조회"""
+        """유효 계약자 납부내역 (선납 할인 및 연체 가산금 계산 대상)"""
         return self.get_queryset().payment_records()
 
     def for_contract(self, contract):
@@ -263,7 +233,16 @@ class ProjectCashBook(models.Model):
         return calculate_late_penalty(self)
 
     def is_discount_eligible(self):
-        """선납 할인 대상 여부 (회차 기준)"""
+        """
+        선납 할인 대상 여부 (회차 및 계정 기준)
+
+        Note:
+            is_payment=True인 유효 계약자 납부만 할인 대상 (111, 811)
+            is_payment=False인 모든 계정은 제외
+
+        Returns:
+            bool: 선납 할인 대상 여부
+        """
         return (
                 self.installment_order and
                 self.installment_order.is_prep_discount and
@@ -272,7 +251,16 @@ class ProjectCashBook(models.Model):
         )
 
     def is_penalty_eligible(self):
-        """연체 가산 대상 여부 (회차 기준)"""
+        """
+        연체 가산 대상 여부 (회차 및 계정 기준)
+
+        Note:
+            is_payment=True인 유효 계약자 납부만 가산 대상 (111, 811)
+            is_payment=False인 모든 계정은 제외
+
+        Returns:
+            bool: 연체 가산 대상 여부
+        """
         return (
                 self.installment_order and
                 self.installment_order.is_late_penalty and

@@ -9,6 +9,11 @@
 - **선납 할인**: 완납 시점 기준 일괄 계산
 - **연체 가산금**: 각 납부건별 연체일수로 개별 계산
 
+### 계정 구조
+- **유효 계약자 납부** (is_payment=True): 111 (분담금), 811 (분양매출금) - **할인/가산 대상**
+- **기타 모든 계정** (is_payment=False): 유효 계약자 입금을 제외한 모든 계정
+  - 예: 해지 계약자 입금 (112, 812), 환불 출금 (113, 114, 813, 814), 기타 60여개 출금 계정
+
 ---
 
 ## 구현 구조
@@ -125,7 +130,7 @@ print(f"완납 회차: {contract_summary['fully_paid_count']}/{contract_summary[
 ```python
 from cash.models import ProjectCashBook
 
-# 특정 계약의 납부내역만 조회
+# 특정 계약의 유효 납부내역 조회 (is_payment=True)
 contract = Contract.objects.get(pk=1)
 payments = ProjectCashBook.objects.payment_records().for_contract(contract)
 
@@ -175,10 +180,9 @@ project = Project.objects.get(pk=1)
 
 discount_eligible_payments = (
     ProjectCashBook.objects
-    .payment_records()  # 납부내역만
+    .payment_records()  # 유효 계약자 납부내역 (is_payment=True, 이미 입금만 포함)
     .filter(project=project)  # 특정 프로젝트
     .with_discount_eligible()  # 선납 할인 대상만
-    .with_income()  # 입금 내역만
     .order_by('-deal_date')  # 최신순
 )
 
@@ -373,35 +377,33 @@ def contract_adjustment_detail(request, contract_id):
 
 ## Manager/QuerySet 메서드
 
-### QuerySet 메서드
+### QuerySet 메서드 (체이닝 가능)
 
 #### `payment_records()`
-납부내역만 필터링 (is_payment=True), 관련 정보 최적화 조회
+**유효 계약자의 납부내역 (선납 할인 및 연체 가산금 계산 대상)**
+- is_payment=True 필터링
+- 계정: 111 (분담금), 811 (분양매출금)
+- 이미 입금만 포함 (추가 income 필터 불필요)
+- select_related로 관련 정보 자동 조회 (N+1 쿼리 방지)
 
 #### `for_contract(contract)`
-특정 계약의 납부내역
+특정 계약의 전체 내역 필터
 
 #### `for_installment(installment_order)`
-특정 회차의 납부내역
+특정 회차의 전체 내역 필터
 
 #### `with_discount_eligible()`
-선납 할인 대상 납부내역만 조회
+선납 할인 대상 회차 필터 (is_prep_discount=True)
 
 #### `with_penalty_eligible()`
-연체 가산 대상 납부내역만 조회
-
-#### `with_income()`
-입금 내역만 조회
-
-#### `with_outlay()`
-출금 내역만 조회
+연체 가산 대상 회차 필터 (is_late_penalty=True)
 
 ---
 
-### Manager 메서드
+### Manager 메서드 (편의 메서드)
 
 #### `ProjectCashBook.objects.payment_records()`
-납부내역만 조회
+유효 계약자 납부내역 조회 (선납 할인 및 연체 가산금 계산 대상)
 
 #### `ProjectCashBook.objects.for_contract(contract)`
 특정 계약의 전체 내역
@@ -456,12 +458,15 @@ for contract in contracts:
 
 1. **약정금액 계산**: `_utils.contract_price.get_payment_amount()` 함수 사용
 2. **OverDueRule 모델**: 폐기 예정이므로 사용하지 않음
-3. **날짜 기준**:
+3. **계정 구조**:
+   - `is_payment=True`: 유효 계약자 입금만 (111, 811) - **할인/가산 대상**
+   - `is_payment=False`: 유효 계약자 입금을 제외한 모든 계정 (해지 입금, 환불 출금, 기타 출금 등 60여개)
+4. **날짜 기준**:
    - 선납 기준일: `prep_ref_date` 우선, 없으면 `pay_due_date`
    - 연체 기준일: `extra_due_date` 우선, 없으면 `pay_due_date`
-4. **완납 판단**: 약정금액 ≤ 실제 납부금액 합계
-5. **선납 할인**: 완납 시점 기준 일괄 계산
-6. **연체 가산**: 각 납부건별 연체일수로 개별 계산
+5. **완납 판단**: 약정금액 ≤ 실제 납부금액 합계
+6. **선납 할인**: 완납 시점 기준 일괄 계산
+7. **연체 가산**: 각 납부건별 연체일수로 개별 계산
 
 ---
 
@@ -480,7 +485,8 @@ for contract in contracts:
 
 ### Q3: 완납일이 None으로 나와요
 - 실제 납부금액이 약정금액 이상인지 확인
-- `project_account_d3.is_payment = True`인 납부내역만 집계됨
+- `project_account_d3.is_payment = True`인 납부내역만 집계됨 (111, 811 계정만)
+- is_payment=False인 모든 계정 (해지 입금, 환불, 기타 출금 등)은 집계에서 제외됨
 - `income` 필드 값 확인
 
 ---

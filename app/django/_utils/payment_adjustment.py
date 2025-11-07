@@ -7,11 +7,15 @@ Payment Adjustment Utilities
 - 완납 여부: 약정금액 ≤ 실제 납부금액 합계 (get_payment_amount 사용)
 - 선납 할인: 완납 시점 기준 일괄 계산
 - 연체 가산금: 각 납부건별 연체일수로 개별 계산
+
+계정 구조:
+    is_payment=True: 유효한 계약자의 납부만 (111, 811) - 할인/가산 대상
+    is_payment=False: 유효 계약자 입금을 제외한 모든 계정
+        예: 해지 입금 (112, 812), 환불 (113, 114, 813, 814), 기타 출금 등
 """
 
 from decimal import Decimal
-from datetime import date
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 
 
 def calculate_daily_interest(principal: int, annual_rate: Decimal, days: int) -> int:
@@ -37,9 +41,9 @@ def calculate_daily_interest(principal: int, annual_rate: Decimal, days: int) ->
 
 
 def calculate_installment_paid_status(
-    contract,
-    installment_order,
-    payments_qs=None
+        contract,
+        installment_order,
+        payments_qs=None
 ) -> Dict[str, Any]:
     """
     회차별 완납 여부 및 완납일 계산
@@ -112,9 +116,9 @@ def calculate_installment_paid_status(
 
 
 def calculate_prepayment_discount(
-    contract,
-    installment_order,
-    payments_qs=None
+        contract,
+        installment_order,
+        payments_qs=None
 ) -> Optional[Dict[str, Any]]:
     """
     선납 할인 계산 (완납 시점 기준 일괄)
@@ -270,8 +274,8 @@ def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
 
 
 def get_installment_adjustment_summary(
-    contract,
-    installment_order
+        contract,
+        installment_order
 ) -> Dict[str, Any]:
     """
     회차별 선납 할인 및 연체 가산금 종합 정보

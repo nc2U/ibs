@@ -87,8 +87,16 @@ class PaymentViewSet(ProjectCashBookViewSet):
     pagination_class = PageNumberPaginationTen
 
     def get_queryset(self):
-        return ProjectCashBook.objects.filter(income__isnull=False,
-                                              project_account_d3__is_payment=True)
+        """
+        유효 계약자 납부내역 조회 (ORM 최적화 적용)
+
+        payment_records(): is_payment=True (유효 계약자 입금만)
+        - 포함: 111 (분담금), 811 (분양매출금)
+        - 제외: is_payment=False인 모든 계정 (해지 입금, 환불, 기타 출금 등)
+        - select_related 자동 적용으로 N+1 쿼리 방지
+        - 선납 할인 및 연체 가산금 계산 대상
+        """
+        return ProjectCashBook.objects.payment_records()
 
 
 class AllPaymentViewSet(PaymentViewSet):
@@ -677,7 +685,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         )
 
         # 전체 미수율 계산
-        total_overall_unpaid_rate = (total_overall_unpaid / total_all_contract_amount * 100) if total_all_contract_amount > 0 else 0
+        total_overall_unpaid_rate = (
+                    total_overall_unpaid / total_all_contract_amount * 100) if total_all_contract_amount > 0 else 0
 
         # 마지막 회차에 전체 미수금 정보 추가 (표시용)
         if result_pay_orders:
