@@ -84,7 +84,7 @@ def get_contract_price(contract, houseunit=None, is_set=False):
         is_set: Write mode flag - if True, skips ContractPrice and uses reference pricing only
 
     Returns:
-        tuple: (price, price_build, price_land, price_tax) or (0, 0, 0, 0) if no price found
+        tuple: (price, price_build, price_land, price_tax) or (0, 0, 0, 0) if no price is found
 
     Read mode priority (is_set=False):
         1. ContractPrice (all fields if exists)
@@ -123,7 +123,7 @@ def get_contract_price(contract, houseunit=None, is_set=False):
 
     # Step 2: Check SalesPriceByGT (all fields)
     try:
-        # Use provided houseunit or get from contract
+        # Use provided houseunit or got from contract
         if houseunit is not None:
             # Use explicit houseunit parameter
             sales_price = get_sales_price_by_gt(contract, houseunit)
@@ -217,7 +217,7 @@ def get_down_payment(contract, installment_order):
     if installment_order.pay_sort != '1':  # Only for 계약금
         return None
 
-    # Step 1: Check a fixed amount (highest priority)
+    # Step 1: Check a fixed amount (the highest priority)
     fixed_amount = get_fixed_payment_amount(installment_order)
     if fixed_amount is not None:
         return fixed_amount
@@ -246,10 +246,10 @@ def get_down_payment(contract, installment_order):
                 return payment_per_installment.amount
 
             except SalesPriceByGT.DoesNotExist:
-                # No matching SalesPriceByGT record - proceed to next step
+                # No matching SalesPriceByGT record - proceed to the next step
                 pass
             except PaymentPerInstallment.DoesNotExist:
-                # SalesPriceByGT exists but no PaymentPerInstallment - proceed to next step
+                # SalesPriceByGT exists but no PaymentPerInstallment - proceed to the next step
                 pass
 
     except (AttributeError, TypeError, ValueError):
@@ -373,7 +373,7 @@ def get_down_payment_settlement(contract, installment_order):
 
 def calculate_remain_payment(contract, remain_installment_order):
     """
-    Calculate remain payment by subtracting all other installment amounts from total price.
+    Calculate remain payment by subtracting all other installment amounts from the total price.
 
     Args:
         contract: Contract instance
@@ -438,7 +438,7 @@ def get_payment_amount(contract, installment_order):
         2. For 계약금정산 (pay_sort='4'): Use get_down_payment_settlement function (right after 계약금)
         3. For fixed types: InstallmentPaymentOrder.pay_amt (fixed amount) - highest priority
         4. For 중도금 (pay_sort='2'): Always use pay_ratio (default 10%)
-        5. For 잔금 (pay_sort='3'): Total price minus sum of other installments
+        5. For 잔금 (pay_sort='3'): Total price minus a sum of other installments
         6. For remaining types: pay_amt/pay_ratio -> PaymentPerInstallment -> 0
     """
     if not contract or not installment_order:
@@ -533,8 +533,8 @@ def get_contract_payment_plan(contract):
         [
             {
                 'installment_order': InstallmentPaymentOrder instance,
-                'amount': 50000000,
-                'source': 'calculated'  # or 'payment_per_installment'
+                'amount': 50,000,000,
+                'source': 'calculated' # or 'payment_per_installment'
             },
             ...
         ]
@@ -605,7 +605,7 @@ def get_contract_payment_plan(contract):
                     'source': 'payment_per_installment'
                 })
             else:
-                # Calculate amount using priority logic
+                # Calculate the amount using priority logic
                 amount = get_payment_amount(contract, installment)
                 payment_plan.append({
                     'installment_order': installment,
@@ -646,7 +646,7 @@ def get_project_payment_summary(project, order_group=None, unit_type=None):
                     'contract_count': 100,
                     'average_amount': 50000000,
                     'source_breakdown': {
-                        'calculated': 4500000000,
+                        'calculated': 4,500,000,000,
                         'payment_per_installment': 500000000
                     }
                 }
