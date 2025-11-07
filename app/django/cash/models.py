@@ -1,6 +1,7 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
+from _utils.payment_adjustment import calculate_late_penalty
 from company.models import Company
 from project.models import Project
 
@@ -229,7 +230,6 @@ class ProjectCashBook(models.Model):
                     'due_date': date
                 }
         """
-        from _utils.payment_adjustment import calculate_late_penalty
         return calculate_late_penalty(self)
 
     def is_discount_eligible(self):
