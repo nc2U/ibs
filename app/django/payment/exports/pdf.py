@@ -1,16 +1,14 @@
 from datetime import date, datetime
-from itertools import accumulate
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Sum
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
 from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order,
-                        get_late_fee, is_due, get_paid)
+                        get_paid)
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from cash.models import ProjectCashBook
 from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
@@ -281,13 +279,18 @@ class PdfExportDailyLateFee(View):
         # 동호수
         context['unit'] = unit
 
-        # # 1. 이 계약 건 분양가격
-        # price, price_build, price_land, price_tax = get_contract_price(contract)
-        #
-        # context['price'] = price if unit else '동호 지정 후 고지'  # 이 건 분양가격
-        # context['price_build'] = price_build if unit else '-'  # 이 건 건물가
-        # context['price_land'] = price_land if unit else '-'  # 이 건 대지가
-        # context['price_tax'] = price_tax if unit else '-'  # 이 건 부가세
+        # 1. 미납 회차 및 미납금액 계산
+        unpaid_data = PdfExportDailyLateFee.get_unpaid_summary(contract, pub_date)
+        context['unpaid_amount'] = unpaid_data['total_unpaid']
+        context['unpaid_installments'] = unpaid_data['installments']
+
+        # 2. 일자별 연체료 계산 (1개월간)
+        daily_fees = PdfExportDailyLateFee.calculate_daily_late_fees(
+            unpaid_data['total_unpaid'],
+            unpaid_data['penalty_rate'],
+            pub_date
+        )
+        context['daily_fees'] = daily_fees
 
         # ----------------------------------------------------------------
 
@@ -303,6 +306,110 @@ class PdfExportDailyLateFee(View):
             response = HttpResponse(pdf, content_type='application/pdf')
             response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
             return response
+
+    @staticmethod
+    def get_unpaid_summary(contract, pub_date):
+        """
+        미납 회차 및 총 미납금액 계산
+
+        Args:
+            contract: Contract 인스턴스
+            pub_date: 기준일
+
+        Returns:
+            dict: {
+                'total_unpaid': int,           # 총 미납금액
+                'installments': list,          # 미납 회차 상세 정보
+                'penalty_rate': Decimal        # 연체료율 (가장 높은 값)
+            }
+        """
+        from _utils.payment_adjustment import get_unpaid_installments
+        from decimal import Decimal
+
+        unpaid_installments = get_unpaid_installments(contract, pub_date)
+
+        total_unpaid = 0
+        installment_details = []
+        max_penalty_rate = Decimal('0')
+
+        for unpaid_info in unpaid_installments:
+            installment = unpaid_info['installment_order']
+            remaining = unpaid_info['remaining_amount']
+            total_unpaid += remaining
+
+            # 연체료율 중 최대값 찾기
+            if installment.is_late_penalty and installment.late_penalty_ratio:
+                penalty_rate = Decimal(str(installment.late_penalty_ratio))
+                if penalty_rate > max_penalty_rate:
+                    max_penalty_rate = penalty_rate
+
+            installment_details.append({
+                'order_name': installment.pay_name,
+                'due_date': installment.pay_due_date,
+                'remaining_amount': remaining,
+                'late_days': unpaid_info['late_days'],
+                'penalty_rate': installment.late_penalty_ratio if installment.is_late_penalty else None
+            })
+
+        return {
+            'total_unpaid': total_unpaid,
+            'installments': installment_details,
+            'penalty_rate': max_penalty_rate
+        }
+
+    @staticmethod
+    def calculate_daily_late_fees(unpaid_amount, annual_rate, start_date):
+        """
+        일자별 연체료 계산 (1개월간)
+
+        Args:
+            unpaid_amount: 미납금액
+            annual_rate: 연이율 (%)
+            start_date: 시작일
+
+        Returns:
+            list: [{
+                'date': date,              # 날짜
+                'days': int,               # 경과 일수
+                'penalty_rate': str,       # 연체율 (표시용)
+                'daily_penalty': int,      # 당일 연체료
+                'cumulative_penalty': int, # 누적 연체료
+                'total_payment': int       # 납부금액 (미납금액 + 누적연체료)
+            }, ...]
+        """
+        from _utils.payment_adjustment import calculate_daily_interest
+        from datetime import timedelta
+
+        if unpaid_amount <= 0 or annual_rate <= 0:
+            return []
+
+        daily_fees = []
+        cumulative_penalty = 0
+
+        # 1개월(30일) 동안의 일자별 계산
+        for day in range(1, 31):
+            current_date = start_date + timedelta(days=day)
+
+            # 당일 연체료 계산
+            daily_penalty = calculate_daily_interest(
+                unpaid_amount,
+                annual_rate,
+                1  # 1일
+            )
+
+            cumulative_penalty += daily_penalty
+            total_payment = unpaid_amount + cumulative_penalty
+
+            daily_fees.append({
+                'date': current_date,
+                'days': day,
+                'penalty_rate': f"{annual_rate}%",
+                'daily_penalty': daily_penalty,
+                'cumulative_penalty': cumulative_penalty,
+                'total_payment': total_payment
+            })
+
+        return daily_fees
 
 
 class PdfExportCalculation(View):
