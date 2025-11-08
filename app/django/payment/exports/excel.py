@@ -20,42 +20,48 @@ TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
 def get_standardized_payment_sum(project, date=None, date_range=None):
-    """표준화된 납부액 집계 - ExportPaymentsByCont 방식 기준"""
-    filters = {
-        'project': project,
-        'income__isnull': False,
-        'project_account_d3__is_payment': True,
-        'contract__isnull': False,
-        'contract__activation': True
-    }
+    """
+    표준화된 납부액 집계 (유효 계약자 입금만)
+
+    payment_records() 사용으로 일관된 집계 기준 적용:
+    - is_payment=True (111, 811 계정만)
+    - 유효 계약만 (activation=True)
+    - select_related 최적화 포함
+    """
+    queryset = ProjectCashBook.objects.payment_records().filter(
+        project=project,
+        contract__isnull=False,
+        contract__activation=True
+    )
 
     if date_range:
         # ExportPayments용 날짜 범위
-        filters['deal_date__range'] = date_range
+        queryset = queryset.filter(deal_date__range=date_range)
     elif date:
         # ExportPaymentsByCont, ExportPaymentStatus용 특정 날짜까지
-        filters['deal_date__lte'] = date
+        queryset = queryset.filter(deal_date__lte=date)
 
-    return ProjectCashBook.objects.filter(**filters).aggregate(
-        total=Sum('income')
-    )['total'] or 0
+    return queryset.aggregate(total=Sum('income'))['total'] or 0
 
 
 def get_standardized_payment_sum_by_order(project, date, installment_order_id):
-    """회차별 표준화된 납부액 집계"""
-    filters = {
-        'project': project,
-        'installment_order_id': installment_order_id,
-        'income__isnull': False,
-        'project_account_d3__is_payment': True,
-        'contract__isnull': False,
-        'contract__activation': True,
-        'deal_date__lte': date
-    }
+    """
+    회차별 표준화된 납부액 집계 (유효 계약자 입금만)
 
-    return ProjectCashBook.objects.filter(**filters).aggregate(
-        total=Sum('income')
-    )['total'] or 0
+    payment_records() 사용으로 일관된 집계 기준 적용
+    """
+    return (
+        ProjectCashBook.objects
+        .payment_records()
+        .filter(
+            project=project,
+            installment_order_id=installment_order_id,
+            contract__isnull=False,
+            contract__activation=True,
+            deal_date__lte=date
+        )
+        .aggregate(total=Sum('income'))['total'] or 0
+    )
 
 
 class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
@@ -161,14 +167,18 @@ class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
         ni = request.GET.get('ni')
         q = request.GET.get('q')
 
-        obj_list = ProjectCashBook.objects.filter(
-            project=project,
-            income__isnull=False,
-            project_account_d3__is_payment=True,
-            deal_date__range=(sd, ed),
-            contract__isnull=False,
-            contract__activation=True
-        ).order_by('deal_date', 'created')
+        # 유효 계약자 납부내역 조회 (payment_records 사용)
+        obj_list = (
+            ProjectCashBook.objects
+            .payment_records()  # is_payment=True, select_related 최적화 포함
+            .filter(
+                project=project,
+                deal_date__range=(sd, ed),
+                contract__isnull=False,
+                contract__activation=True  # 유효 계약만
+            )
+            .order_by('deal_date', 'created')
+        )
 
         # Apply filters
         if og:
@@ -386,12 +396,16 @@ class ExportPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         # Write body
         # ----------------------------------------------------------------- #
         paid_params = ['contract', 'income', 'installment_order', 'deal_date']
-        paid_data = ProjectCashBook.objects.filter(project=project,
-                                                   income__isnull=False,
-                                                   project_account_d3__is_payment=True,
-                                                   deal_date__lte=date,
-                                                   contract__isnull=False,
-                                                   contract__activation=True)
+        paid_data = (
+            ProjectCashBook.objects
+            .payment_records()  # is_payment=True, select_related 최적화
+            .filter(
+                project=project,
+                deal_date__lte=date,
+                contract__isnull=False,
+                contract__activation=True
+            )
+        )
         paid_dict = paid_data.values_list(*paid_params)
 
         # 계약금 분납 횟수
@@ -602,24 +616,23 @@ class ExportPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
 
         # 개별 차수×타입별 실수납 금액을 표준화된 방식으로 재계산
         for item in api_data:
-            # 해당 차수×타입에 대한 표준화된 실수납 금액 계산
-            from cash.models import ProjectCashBook
-            from django.db.models import Sum
-
-            filters = {
-                'project': project,
-                'income__isnull': False,
-                'project_account_d3__is_payment': True,
-                'contract__isnull': False,
-                'contract__activation': True,
-                'contract__order_group_id': item['order_group_id'],
-                'contract__unit_type_id': item['unit_type_id']
-            }
+            # 해당 차수×타입에 대한 표준화된 실수납 금액 계산 (payment_records 사용)
+            queryset = (
+                ProjectCashBook.objects
+                .payment_records()  # is_payment=True, select_related 최적화
+                .filter(
+                    project=project,
+                    contract__isnull=False,
+                    contract__activation=True,
+                    contract__order_group_id=item['order_group_id'],
+                    contract__unit_type_id=item['unit_type_id']
+                )
+            )
 
             if date and date != 'null':
-                filters['deal_date__lte'] = date
+                queryset = queryset.filter(deal_date__lte=date)
 
-            standardized_item_paid = ProjectCashBook.objects.filter(**filters).aggregate(
+            standardized_item_paid = queryset.aggregate(
                 total=Sum('income')
             )['total'] or 0
 
