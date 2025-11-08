@@ -45,6 +45,12 @@ const calcUrl = computed(() => {
   return `${url}?project=${proj}&contract=${cont}&pub_date=${date.value ?? ''}`
 })
 
+const lateFeeUrl = computed(() => {
+  const url = '/pdf/daily-late-fee/'
+  const cont = contract.value?.pk ?? ''
+  return `${url}?contract=${cont}&pub_date=${date.value ?? ''}`
+})
+
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
 
@@ -212,8 +218,8 @@ onMounted(async () => {
         isLoadingPaymentList.value = true
         const order_group = contract.value.order_group
         const unit_type = contract.value.unit_type
-        fetchPriceList({ project: project.value, order_group, unit_type })
-        fetchDownPayList({ project: project.value, order_group, unit_type })
+        await fetchPriceList({ project: project.value, order_group, unit_type })
+        await fetchDownPayList({ project: project.value, order_group, unit_type })
         await fetchAllPaymentList({
           project: project.value,
           contract: contract.value.pk,
@@ -272,7 +278,12 @@ onBeforeRouteLeave(() => {
           @list-filtering="onContFiltering"
           @get-contract="getContract"
         />
-        <TableTitleRow :disabled="!project || !contract" pdf :url="paymentUrl" filename="납부_확인서.pdf">
+        <TableTitleRow
+          :disabled="!project || !contract"
+          pdf
+          :url="paymentUrl"
+          filename="납부_확인서.pdf"
+        >
           <v-radio-group
             v-model="isCalc"
             inline
@@ -298,7 +309,19 @@ onBeforeRouteLeave(() => {
               @click="downloadFile(calcUrl, '할인_가산금_내역.pdf')"
               style="text-decoration: none"
             >
-              가산(할인) 내역
+              동춘조합-공급계약 미체결 연체료(임시)
+            </v-btn>
+
+            <v-btn
+              flat
+              :disabled="!project || !contract"
+              color="light"
+              size="small"
+              class="mt-1 mr-2"
+              @click="downloadFile(lateFeeUrl, '일자별_연체료_내역.pdf')"
+              style="text-decoration: none"
+            >
+              일자별 연체료
             </v-btn>
 
             <span>
