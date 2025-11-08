@@ -192,7 +192,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
               </CTableDataCell>
               <CTableDataCell>대외 확인용</CTableDataCell>
             </CTableRow>
-            <CTableRow>
+            <CTableRow v-if="contract.project === 1">
               <CTableDataCell class="text-center">
                 <CFormCheck />
               </CTableDataCell>
@@ -207,7 +207,27 @@ const handleExcelDownload = (url: string, fileName: string) => {
                   class="btn btn-link p-0 text-start"
                   style="text-decoration: none"
                 >
-                  할인/가산금 내역서
+                  공급계약 미체결 연체료(동춘조합 한정)
+                </button>
+              </CTableDataCell>
+              <CTableDataCell></CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableDataCell class="text-center">
+                <CFormCheck />
+              </CTableDataCell>
+              <CTableDataCell>
+                <button
+                  @click="
+                    handleFileDownload(
+                      `/pdf/daily-late-fee/?contract=${contract.pk}`,
+                      '일자별_연체료_내역.pdf',
+                    )
+                  "
+                  class="btn btn-link p-0 text-start"
+                  style="text-decoration: none"
+                >
+                  일자별 연체료
                 </button>
               </CTableDataCell>
               <CTableDataCell></CTableDataCell>

@@ -41,7 +41,7 @@
 
 {% if unpaid_installments %}
 <div style="margin-top: 20px; font-size: 11px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ddd;">
-  <strong>미납 회차 상세:</strong>
+  <strong>{{ pub_date }} 기준 미납 회차 상세:</strong>
   <ul style="margin: 10px 0; padding-left: 20px;">
   {% for inst in unpaid_installments %}
     <li style="margin-top: 5px;">{{ inst.order_name }} (기한: {{ inst.due_date|date:"Y-m-d" }}) - 미납금액: {{ inst.remaining_amount|default:"-"|intcomma }}원, 연체일수: {{ inst.late_days|intcomma }}일</li>

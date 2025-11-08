@@ -309,7 +309,7 @@ onBeforeRouteLeave(() => {
               @click="downloadFile(calcUrl, '할인_가산금_내역.pdf')"
               style="text-decoration: none"
             >
-              동춘조합-공급계약 미체결 연체료(임시)
+              공급계약 미체결 연체료(동춘조합 한정)
             </v-btn>
 
             <v-btn
