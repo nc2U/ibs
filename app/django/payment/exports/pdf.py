@@ -129,15 +129,19 @@ class PdfExportPayments(View):
     @staticmethod
     def get_paid_from_plan(contract, simple_orders, pub_date, **kwargs):
         """
-        Calculate paid amounts using payment plan data structure
+        Calculate paid amounts using the payment plan data structure
+        유효 계약자 납부내역 (payment_records 사용)
         """
         calc_start_pay_code = simple_orders[0].get('calc_start')
-        paid_list = ProjectCashBook.objects.filter(
-            income__isnull=False,
-            project_account_d3__is_payment=True,
-            contract=contract,
-            deal_date__lte=pub_date
-        ).order_by('deal_date', 'id')
+        paid_list = (
+            ProjectCashBook.objects
+            .payment_records()  # is_payment=True, select_related 최적화 포함
+            .filter(
+                contract=contract,
+                deal_date__lte=pub_date
+            )
+            .order_by('deal_date', 'id')
+        )
 
         is_past = True if kwargs.get('is_past') else False
         paid_list = paid_list.filter(installment_order__pay_sort='1') if is_past else paid_list
