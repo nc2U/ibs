@@ -418,3 +418,81 @@ def get_contract_adjustment_summary(contract) -> Dict[str, Any]:
         'fully_paid_count': fully_paid_count,
         'total_installment_count': installments.count()
     }
+
+
+def get_due_installments(contract, pub_date):
+    """
+    기도래 회차 목록 반환 (pub_date 기준)
+
+    Args:
+        contract: Contract 인스턴스
+        pub_date: 기준일 (date 객체)
+
+    Returns:
+        QuerySet: 기도래 납부 회차 목록 (pay_due_date <= pub_date)
+
+    Logic:
+        - pay_due_date가 pub_date 이전인 회차만 반환
+        - pay_code 순으로 정렬
+    """
+    from payment.models import InstallmentPaymentOrder
+
+    return InstallmentPaymentOrder.objects.filter(
+        project=contract.project,
+        pay_due_date__lte=pub_date
+    ).order_by('pay_code')
+
+
+def get_unpaid_installments(contract, pub_date):
+    """
+    미납 회차 목록 반환 (pub_date 기준, 기도래 + 미완납)
+
+    Args:
+        contract: Contract 인스턴스
+        pub_date: 기준일 (date 객체)
+
+    Returns:
+        list: 미납 회차 정보 리스트
+        [
+            {
+                'installment_order': InstallmentPaymentOrder,
+                'promised_amount': int,
+                'paid_amount': int,
+                'remaining_amount': int,
+                'due_date': date,
+                'late_days': int,  # 연체일수 (pub_date - due_date)
+                'is_overdue': bool  # 연체 여부
+            },
+            ...
+        ]
+
+    Logic:
+        1. 기도래 회차 중 미완납 회차만 추출
+        2. 각 회차별 납부 상태 및 미납금액 계산
+        3. 연체일수 계산 (pub_date - due_date)
+    """
+    from datetime import date
+
+    due_installments = get_due_installments(contract, pub_date)
+    unpaid_list = []
+
+    for installment in due_installments:
+        # 완납 상태 확인
+        paid_status = calculate_installment_paid_status(contract, installment)
+
+        # 미완납인 경우만 포함
+        if not paid_status['is_fully_paid']:
+            due_date = installment.pay_due_date
+            late_days = (pub_date - due_date).days if due_date else 0
+
+            unpaid_list.append({
+                'installment_order': installment,
+                'promised_amount': paid_status['promised_amount'],
+                'paid_amount': paid_status['paid_amount'],
+                'remaining_amount': paid_status['remaining_amount'],
+                'due_date': due_date,
+                'late_days': late_days,
+                'is_overdue': late_days > 0
+            })
+
+    return unpaid_list

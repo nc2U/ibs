@@ -70,8 +70,9 @@ class PdfExportPayments(View):
         context['simple_orders'] = simple_orders = PdfExportPayments.get_simple_orders_from_plan(payment_plan, contract)
 
         # 4. 납부목록, 완납금액 구하기 (payment_plan 기반)
-        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_from_plan(contract, simple_orders, pub_date,
-                                                                                     is_calc=calc)
+        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract,
+                                                                                           pub_date,
+                                                                                           is_calc=calc)
         context['paid_dicts'] = paid_dicts
         context['paid_sum_total'] = paid_sum_total
         context['calc_sums'] = calc_sums
@@ -127,15 +128,37 @@ class PdfExportPayments(View):
         return simple_orders
 
     @staticmethod
-    def get_paid_from_plan(contract, simple_orders, pub_date, **kwargs):
+    def get_paid_with_adjustment(contract, pub_date, **kwargs):
         """
-        Calculate paid amounts using the payment plan data structure
-        유효 계약자 납부내역 (payment_records 사용)
+        payment_adjustment.py를 활용한 납부 내역 및 조정금액 계산
+
+        get_paid_from_plan의 대체 함수로, _utils/payment_adjustment.py의
+        표준화된 로직을 사용하여 선납 할인 및 연체 가산금을 계산합니다.
+
+        Args:
+            contract: Contract 인스턴스
+            pub_date: 발행일자 (기준일)
+            **kwargs:
+                - is_calc: True면 미납 회차 포함, False면 실제 납부만
+
+        Returns:
+            tuple: (paid_dict_list, paid_sum_total, calc_sums)
+            - paid_dict_list: 납부 및 미납 상세 내역
+            - paid_sum_total: 총 납부액
+            - calc_sums: (총 가산금, 총 할인금, 미납 회차 인덱스)
         """
-        calc_start_pay_code = simple_orders[0].get('calc_start')
+        from _utils.payment_adjustment import (
+            get_unpaid_installments,
+            get_installment_adjustment_summary
+        )
+        from itertools import accumulate
+
+        is_calc = kwargs.get('is_calc', False)
+
+        # 1. 실제 납부내역 조회
         paid_list = (
             ProjectCashBook.objects
-            .payment_records()  # is_payment=True, select_related 최적화 포함
+            .payment_records()
             .filter(
                 contract=contract,
                 deal_date__lte=pub_date
@@ -143,154 +166,103 @@ class PdfExportPayments(View):
             .order_by('deal_date', 'id')
         )
 
-        is_past = True if kwargs.get('is_past') else False
-        paid_list = paid_list.filter(installment_order__pay_sort='1') if is_past else paid_list
-
+        # 2. 납부 누적 금액 계산
         pay_list = [p.income for p in paid_list]
         paid_sum_list = list(accumulate(pay_list))
 
-        zip_pay_list = list(zip(paid_list, paid_sum_list))
-
-        def get_date(item):
-            return item[0].deal_date if isinstance(item, tuple) else item['due_date']
-
-        calc_orders = [item for item in simple_orders
-                       if item.get('pay_code', 0) >= calc_start_pay_code
-                       and is_due(get_due_date_per_order(contract, item, simple_orders))]
-
-        calc_orders = calc_orders if kwargs.get('is_calc', None) else []
-
-        combined = zip_pay_list + calc_orders
-        sorted_combined = sorted(combined, key=get_date)
-
-        ord_list = []
-        ord_i_list = []
+        # 3. 결과 데이터 구조 초기화
         paid_dict_list = []
-        first_date = None
-
-        curr_paid_total = 0
-        curr_pay_code = 0
-        is_first_pre = True
-        curr_amt_total = 0
         penalty_sum = 0
         discount_sum = 0
+        ord_i_list = []  # 미납 회차 인덱스
 
-        for i, paid in enumerate(sorted_combined):
-            if i == 0:
-                try:
-                    first_date = paid[0].deal_date
-                except (KeyError, AttributeError):
-                    pass
+        # 4. 실제 납부 내역 처리
+        for i, (payment, cumulative) in enumerate(zip(paid_list, paid_sum_list)):
+            # 회차 정보 가져오기
+            installment_order = payment.installment_order
+            order_name = installment_order.pay_name if installment_order else None
 
-            try:
-                pre_date = sorted_combined[i - 1][0].deal_date \
-                    if isinstance(sorted_combined[i - 1], tuple) \
-                    else sorted_combined[i - 1].get('due_date', None)
-                next_date = sorted_combined[i + 1][0].deal_date \
-                    if isinstance(sorted_combined[i + 1], tuple) \
-                    else sorted_combined[i + 1].get('due_date', None)
-            except IndexError:
-                pre_date = first_date
-                next_date = pub_date
+            # 연체 가산금 계산 (payment_adjustment 사용)
+            from _utils.payment_adjustment import calculate_late_penalty
+            penalty_info = calculate_late_penalty(payment)
 
-            if is_past and contract.sup_cont_date:
-                next_date = next_date if contract.sup_cont_date >= next_date else contract.sup_cont_date
+            penalty_amount = penalty_info['penalty_amount'] if penalty_info else 0
+            late_days = penalty_info['late_days'] if penalty_info else 0
+            penalty_sum += penalty_amount
 
-            if isinstance(paid, tuple):
-                curr_paid_total = paid[1]
+            paid_dict = {
+                'paid': payment,
+                'sum': cumulative,
+                'order': order_name,
+                'diff': 0,  # 실제 납부는 미납금액 0
+                'delay_days': late_days,
+                'penalty': penalty_amount,
+                'discount': 0  # 선납 할인은 회차 완납 시점에만 적용
+            }
+            paid_dict_list.append(paid_dict)
 
-                paid_ords = [o for o in list(filter(lambda o: o['amount_total'] <= curr_paid_total, simple_orders))]
+        # 5. 미납 회차 처리 (is_calc=True일 때만)
+        if is_calc:
+            unpaid_installments = get_unpaid_installments(contract, pub_date)
 
-                paid_pay_code = paid_ords[-1]['pay_code'] if paid_ords else 0
-                paid_ord_name = paid_ords[-1]['name'] if paid_ords else None
+            for unpaid_info in unpaid_installments:
+                installment = unpaid_info['installment_order']
 
-                paid_ord_name = paid_ord_name if paid_ord_name not in ord_list else None
-                ord_list.append(paid_ord_name)
+                # 회차별 조정금액 계산
+                adjustment_summary = get_installment_adjustment_summary(contract, installment)
 
-                if curr_amt_total == 0 and paid_pay_code >= calc_start_pay_code:
-                    curr_amt_total = paid_ords[-1]['amount_total'] if paid_ords else None
+                # 선납 할인 (완납된 경우에만)
+                discount_amount = adjustment_summary['total_discount']
+                discount_sum += discount_amount
 
-                if curr_paid_total > curr_amt_total:
-                    if is_first_pre:
-                        diff = curr_amt_total - curr_paid_total \
-                            if paid_pay_code and paid_pay_code >= calc_start_pay_code else 0
-                        diff = diff if paid[0].deal_date > contract.contractor.contract_date else 0
-                        if paid_pay_code >= calc_start_pay_code:
-                            is_first_pre = False
-                    else:
-                        diff = -paid[0].income
+                # 연체 가산금 (미납 회차)
+                penalty_amount = 0
+                if unpaid_info['is_overdue'] and installment.is_late_penalty:
+                    # 미납금액에 대한 연체료 계산
+                    penalty_rate = installment.late_penalty_ratio
+                    if penalty_rate and penalty_rate > 0:
+                        from _utils.payment_adjustment import calculate_daily_interest
+                        from decimal import Decimal
+                        penalty_amount = calculate_daily_interest(
+                            unpaid_info['remaining_amount'],
+                            Decimal(str(penalty_rate)),
+                            unpaid_info['late_days']
+                        )
+                        penalty_sum += penalty_amount
 
-                    try:
-                        code = calc_start_pay_code if curr_pay_code == 0 else curr_pay_code + 1
-                        next_due_date = [o['due_date'] for o in simple_orders if o.get('pay_code', 0) == code][0]
-                    except IndexError:
-                        next_due_date = simple_orders[-1]['due_date']
+                # 미납 회차 정보 저장
+                ord_i_list.append(len(paid_dict_list))
 
-                    prepay_days = (paid[0].deal_date - next_due_date).days
-
-                    buffer_days = 30
-                    diff = diff if prepay_days < -buffer_days else 0
-
-                    delay_days = (paid[0].deal_date - pre_date).days \
-                        if ord_i_list and ord_i_list[0] < i else 0
-                else:
-                    diff = curr_amt_total - curr_paid_total
-                    if paid_pay_code >= calc_start_pay_code:
-                        is_first_pre = True
-                    prepay_days = (pre_date - paid[0].deal_date).days \
-                        if ord_i_list and ord_i_list[0] < i and diff else 0
-                    delay_days = (next_date - paid[0].deal_date).days \
-                        if ord_i_list and ord_i_list[0] < i and diff else 0
-
-                days = prepay_days if diff < 0 else delay_days
-                days = days if diff else 0
-
-                calc = get_late_fee(contract.project, diff, days, is_past)
-
-                penalty = calc if diff > 0 else 0
-                discount = calc if diff < 0 else 0
-
-                penalty_sum += penalty
-                discount_sum += discount
-                paid_dict = {'paid': paid[0], 'sum': curr_paid_total, 'order': paid_ord_name, 'diff': diff,
-                             'delay_days': days,
-                             'penalty': penalty,
-                             'discount': discount}
-                paid_dict_list.append(paid_dict)
-            else:
-                ord_i_list.append(i)
-                curr_pay_code = paid['pay_code'] if paid else 0
-                curr_amt_total = paid['amount_total']
-
-                diff = curr_amt_total - curr_paid_total if is_first_pre else 0
-                is_first_pre = True
-
-                days = (next_date - paid['due_date']).days if diff else 0
-                days = days if diff > 0 else days * -1
-
-                calc = get_late_fee(contract.project, diff, days, is_past)
-
-                penalty = calc if diff > 0 else 0
-                discount = calc if diff < 0 else 0
-
-                penalty_sum += penalty
-                discount_sum += discount
                 paid_dict = {
-                    'paid': paid,
-                    'sum': 0,
-                    'order': paid['name'],
-                    'diff': diff,
-                    'delay_days': days,
-                    'penalty': penalty,
-                    'discount': discount,
+                    'paid': {
+                        'name': installment.pay_name,
+                        'pay_code': installment.pay_code,
+                        'due_date': installment.pay_due_date
+                    },
+                    'sum': 0,  # 미납이므로 0
+                    'order': installment.pay_name,
+                    'diff': unpaid_info['remaining_amount'],  # 미납금액
+                    'delay_days': unpaid_info['late_days'],  # 연체일수
+                    'penalty': penalty_amount,
+                    'discount': discount_amount
                 }
                 paid_dict_list.append(paid_dict)
 
-        paid_sum_total = paid_list.aggregate(Sum('income'))['income__sum']
-        paid_sum_total = paid_sum_total if paid_sum_total else 0
+        # 6. 총 납부액
+        paid_sum_total = sum(pay_list) if pay_list else 0
+
+        # 7. 결과 반환
         calc_sums = (penalty_sum, discount_sum, ord_i_list)
 
         return paid_dict_list, paid_sum_total, calc_sums
+
+
+class PdfExportDailyCalc(View):
+    """일자별 연체료"""
+
+    @staticmethod
+    def get(request):
+        context = dict()
 
 
 class PdfExportCalculation(View):
