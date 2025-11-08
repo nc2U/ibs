@@ -1,0 +1,35 @@
+<div style="text-align: right">출력일자 : {{ pub_date }}</div>
+
+<h2 style="text-align: center;">일 자 별 연 체 료</h2>
+
+<table>
+  <thead>
+  <tr>
+    <td>타입</td>
+    <td rowspan="2">111동 111호</td>
+    <td>미납금액</td>
+    <td style="text-align: right">80,000,000</td>
+    <td>계약자 : 홍길동</td>
+  </tr>
+  <tr>
+    <td>납부일자</td>
+    <td>일수</td>
+    <td>연체율</td>
+    <td>연체료</td>
+    <td>납부금액</td>
+    <td>비고</td>
+  </tr>
+  </thead>
+  <tbody>
+  {% for i in 30 %}
+    <tr>
+      <td>2025-08-12</td>
+      <td>{{ i }}</td>
+      <td>8%</td>
+      <td>111,111</td>
+      <td>12,111,111</td>
+      <td></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>

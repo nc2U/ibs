@@ -257,12 +257,52 @@ class PdfExportPayments(View):
         return paid_dict_list, paid_sum_total, calc_sums
 
 
-class PdfExportDailyCalc(View):
+class PdfExportDailyLateFee(View):
     """일자별 연체료"""
 
     @staticmethod
     def get(request):
         context = dict()
+
+        # 계약 건 객체
+        cont_id = request.GET.get('contract')
+        context['contract'] = contract = get_contract(cont_id)
+
+        # 발행일자
+        pub_date = request.GET.get('pub_date', None)
+        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
+        context['pub_date'] = pub_date
+
+        try:
+            unit = contract.key_unit.houseunit
+        except ObjectDoesNotExist:
+            unit = None
+
+        # 동호수
+        context['unit'] = unit
+
+        # # 1. 이 계약 건 분양가격
+        # price, price_build, price_land, price_tax = get_contract_price(contract)
+        #
+        # context['price'] = price if unit else '동호 지정 후 고지'  # 이 건 분양가격
+        # context['price_build'] = price_build if unit else '-'  # 이 건 건물가
+        # context['price_land'] = price_land if unit else '-'  # 이 건 대지가
+        # context['price_tax'] = price_tax if unit else '-'  # 이 건 부가세
+
+        # ----------------------------------------------------------------
+
+        html_string = render_to_string('pdf/daily_late_fee.html', context)
+
+        html = HTML(string=html_string)
+        html.write_pdf(target='/tmp/mypdf.pdf')
+
+        filename = request.GET.get('filename', 'daily_late_fee')
+
+        fs = FileSystemStorage('/tmp')
+        with fs.open('mypdf.pdf') as pdf:
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
+            return response
 
 
 class PdfExportCalculation(View):
