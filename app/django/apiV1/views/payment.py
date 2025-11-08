@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 from unittest.mock import Mock
 
@@ -7,8 +8,12 @@ from django_filters import CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
+from _utils.contract_price import get_contract_payment_plan
 from contract.models import ContractPrice
 from items.models import KeyUnit
+from items.models import UnitType, HouseUnit
+from project.models import Project
+from project.models import ProjectIncBudget
 from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
@@ -116,10 +121,7 @@ class PaymentSummaryViewSet(viewsets.ViewSet):
             return Response({'error': 'project parameter is required'}, status=400)
 
         try:
-            # PaymentStatusByUnitType API 데이터를 활용하여 정확한 계산
-            from collections import defaultdict
-
-            # PaymentStatusByUnitType ViewSet 사용
+            # PaymentStatusByUnitType ViewSet 사용하여 정확한 계산
             payment_status_viewset = PaymentStatusByUnitTypeViewSet()
             payment_status_request = type('MockRequest', (), {
                 'query_params': {'project': project_id}
@@ -242,10 +244,7 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
 
                     # 근린생활시설 특별 처리: HouseUnit이 있지만 SalesPriceByGT가 없을 때 fallback 적용
                     if total_budget == 0 and total_sales_amount > 0:
-                        # unit_type.sort == '5'이고 HouseUnit이 있는지 확인
-                        from items.models import UnitType, HouseUnit
-                        from payment.models import SalesPriceByGT
-                        try:
+                        try:  # unit_type.sort == '5'이고 HouseUnit이 있는지 확인
                             unit_type = UnitType.objects.get(pk=unit_type_id)
                             if unit_type.sort == '5':  # 근린생활시설
                                 # 해당 타입의 HouseUnit이 있는지 확인
@@ -292,8 +291,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
 
                     # 근린생활시설 특별 처리: total_amount가 0이고 unit_type.sort == '5'일 때 fallback 적용
                     if total_amount == 0:
-                        from items.models import UnitType, HouseUnit
-                        from payment.models import SalesPriceByGT
                         try:
                             unit_type = UnitType.objects.get(pk=unit_type_id)
                             if unit_type.sort == '5':  # 근린생활시설
@@ -343,9 +340,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
     def _get_sales_amount_by_unit_type(project_id, order_group_id, unit_type_id):
         """ContractPrice 테이블의 유효한 모든 가격정보 합계 (계약 있는 것 + 계약 없는 것)"""
         try:
-            from project.models import Project
-            from contract.models import OrderGroup
-
             with connection.cursor() as cursor:
                 # 프로젝트 인스턴스와 기본 order_group 가져오기
                 project = Project.objects.get(pk=project_id)
@@ -389,10 +383,7 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
 
                 # 근린생활시설 특별 처리: HouseUnit이 있지만 SalesPriceByGT가 없을 때 fallback 적용
                 if total_amount == 0:
-                    # unit_type.sort == '5'이고 HouseUnit이 있는지 확인
-                    from items.models import UnitType, HouseUnit
-                    from payment.models import SalesPriceByGT
-                    try:
+                    try:  # unit_type.sort == '5'이고 HouseUnit이 있는지 확인
                         unit_type = UnitType.objects.get(pk=unit_type_id)
                         if unit_type.sort == '5':  # 근린생활시설
                             # 해당 타입의 HouseUnit이 있는지 확인
@@ -425,11 +416,7 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
         2. UnitType 평균가 - 예산 데이터가 없을 경우에만 사용
         """
         try:
-            from project.models import ProjectIncBudget
-            from items.models import UnitType
-
-            # 1. ProjectIncBudget에서 예산 데이터 우선 조회
-            try:
+            try:  # 1. ProjectIncBudget에서 예산 데이터 우선 조회
                 budget = ProjectIncBudget.objects.get(
                     project_id=project_id,
                     order_group_id=order_group_id,
@@ -519,9 +506,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
     def _get_non_contract_amount_by_unit_type(project_id, order_group_id, unit_type_id):
         """order_group과 unit_type별 미계약 금액 계산 (get_default_for_project 활용)"""
         try:
-            from project.models import Project
-            from contract.models import OrderGroup
-
             # 프로젝트 인스턴스 가져오기
             project = Project.objects.get(pk=project_id)
 
@@ -558,9 +542,6 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
     def _get_non_contract_units_by_unit_type(project_id, order_group_id, unit_type_id):
         """order_group과 unit_type별 미계약 세대수 계산 (get_default_for_project 활용)"""
         try:
-            from project.models import Project
-            from contract.models import OrderGroup
-
             # 프로젝트 인스턴스 가져오기
             project = Project.objects.get(pk=project_id)
 
@@ -686,7 +667,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
         # 전체 미수율 계산
         total_overall_unpaid_rate = (
-                    total_overall_unpaid / total_all_contract_amount * 100) if total_all_contract_amount > 0 else 0
+                total_overall_unpaid / total_all_contract_amount * 100) if total_all_contract_amount > 0 else 0
 
         # 마지막 회차에 전체 미수금 정보 추가 (표시용)
         if result_pay_orders:
@@ -751,8 +732,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
     @staticmethod
     def _get_contract_amount_fallback(order, project_id):
         """캐시 실패 시 동적 계산 폴백"""
-        from _utils.contract_price import get_contract_payment_plan
-
         contracts = Contract.objects.filter(
             project_id=project_id,
             activation=True
@@ -892,11 +871,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         납부회차가 없으면 기본 납부회차(잔금 100%) 적용
         """
         try:
-            from project.models import Project
-            from contract.models import OrderGroup
-            from items.models import UnitType, HouseUnit
-            from payment.models import SalesPriceByGT, InstallmentPaymentOrder
-
             # 프로젝트의 기본 order_group 가져오기
             project = Project.objects.get(pk=project_id)
             default_og = OrderGroup.get_default_for_project(project)
