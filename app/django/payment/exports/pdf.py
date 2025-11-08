@@ -284,11 +284,19 @@ class PdfExportDailyLateFee(View):
         context['unpaid_amount'] = unpaid_data['total_unpaid']
         context['unpaid_installments'] = unpaid_data['installments']
 
-        # 2. 일자별 연체료 계산 (1개월간)
+        # 2. 금일 기준 누적 연체료 계산
+        current_penalty = PdfExportDailyLateFee.calculate_current_penalty(
+            unpaid_data['installments']
+        )
+        context['current_penalty'] = current_penalty
+        context['current_total_payment'] = unpaid_data['total_unpaid'] + current_penalty
+
+        # 3. 일자별 연체료 계산 (내일부터 1개월간)
         daily_fees = PdfExportDailyLateFee.calculate_daily_late_fees(
             unpaid_data['total_unpaid'],
             unpaid_data['penalty_rate'],
-            pub_date
+            pub_date,
+            current_penalty
         )
         context['daily_fees'] = daily_fees
 
@@ -358,14 +366,42 @@ class PdfExportDailyLateFee(View):
         }
 
     @staticmethod
-    def calculate_daily_late_fees(unpaid_amount, annual_rate, start_date):
+    def calculate_current_penalty(installment_details):
         """
-        일자별 연체료 계산 (1개월간)
+        금일 기준 누적 연체료 계산
+
+        Args:
+            installment_details: 미납 회차 상세 정보 리스트
+
+        Returns:
+            int: 금일 기준 총 누적 연체료
+        """
+        from _utils.payment_adjustment import calculate_daily_interest
+        from decimal import Decimal
+
+        total_penalty = 0
+
+        for inst in installment_details:
+            if inst['penalty_rate'] and inst['late_days'] > 0:
+                penalty = calculate_daily_interest(
+                    inst['remaining_amount'],
+                    Decimal(str(inst['penalty_rate'])),
+                    inst['late_days']
+                )
+                total_penalty += penalty
+
+        return total_penalty
+
+    @staticmethod
+    def calculate_daily_late_fees(unpaid_amount, annual_rate, start_date, current_penalty=0):
+        """
+        일자별 연체료 계산 (내일부터 1개월간)
 
         Args:
             unpaid_amount: 미납금액
             annual_rate: 연이율 (%)
-            start_date: 시작일
+            start_date: 시작일 (금일)
+            current_penalty: 금일 기준 누적 연체료
 
         Returns:
             list: [{
@@ -384,9 +420,9 @@ class PdfExportDailyLateFee(View):
             return []
 
         daily_fees = []
-        cumulative_penalty = 0
+        cumulative_penalty = current_penalty  # 금일 기준 누적 연체료부터 시작
 
-        # 1개월(30일) 동안의 일자별 계산
+        # 내일부터 1개월(30일) 동안의 일자별 계산
         for day in range(1, 31):
             current_date = start_date + timedelta(days=day)
 

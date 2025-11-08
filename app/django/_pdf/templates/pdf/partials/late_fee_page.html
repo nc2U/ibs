@@ -22,6 +22,16 @@
   </tr>
   </thead>
   <tbody>
+  {# 금일 기준 누적 연체료 행 #}
+  <tr class="center" style="font-weight: bold;">
+    <td>{{ pub_date|date:"Y-m-d" }}</td>
+    <td>0</td>
+    <td>-</td>
+    <td class="right">{{ current_penalty|default:"0"|intcomma }}</td>
+    <td class="right">{{ current_total_payment|default:unpaid_amount|intcomma }}</td>
+    <td style="font-size: 10px;">{{ pub_date }} 기준</td>
+  </tr>
+  {# 내일부터 일자별 연체료 #}
   {% for fee in daily_fees %}
   <tr class="center">
     <td>{{ fee.date|date:"Y-m-d" }}</td>
