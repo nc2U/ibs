@@ -1,8 +1,9 @@
 from datetime import date, datetime
+from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Max
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
@@ -175,20 +176,40 @@ class PdfExportBill(View):
     @staticmethod
     def get_paid(contract):
         """
-        :: ■ 기 납부금액 구하기
+        :: ■ 회차별 납부 내역 집계
         :param contract: 계약정보
-        :param pub_date: 발행일
-        :return list(paid_list: 납부 건 리스트), int(paid_sum_total: 납부 총액):
-        """
-        paid_list = ProjectCashBook.objects.filter(
-            income__isnull=False,
-            project_account_d3__is_payment=True,  # 분(부)담금 or 분양수입금
-            contract=contract,
-        ).order_by('deal_date', 'id')  # 해당 계약 건 납부 데이터
+        :return dict(payment_by_order: 회차별 납부 정보), int(paid_sum_total: 납부 총액):
 
-        paid_sum_total = paid_list.aggregate(Sum('income'))['income__sum']  # 완납 총금액
-        paid_sum_total = paid_sum_total if paid_sum_total else 0
-        return paid_list, paid_sum_total
+        회차별 납부 정보 구조:
+        {
+            order_id: {'paid_amt': 총납부금액, 'paid_date': 최종납부일},
+            ...
+        }
+        """
+
+        # 회차별 납부 내역 집계 (payment_records 사용)
+        payment_summary = ProjectCashBook.objects.payment_records().filter(
+            contract=contract,
+            income__isnull=False,
+            installment_order__isnull=False
+        ).values('installment_order').annotate(
+            total_paid=Sum('income'),
+            last_payment_date=Max('deal_date')
+        )
+
+        # 회차별 딕셔너리 생성 {order_id: {'paid_amt': amount, 'paid_date': date}}
+        payment_by_order = {
+            p['installment_order']: {
+                'paid_amt': p['total_paid'] or 0,
+                'paid_date': p['last_payment_date']
+            }
+            for p in payment_summary
+        }
+
+        # 전체 납부 총액
+        paid_sum_total = sum(p['paid_amt'] for p in payment_by_order.values())
+
+        return payment_by_order, paid_sum_total
 
     @staticmethod
     def get_orders_info(payment_orders, payment_plan, paid_sum_total):
@@ -375,39 +396,20 @@ class PdfExportBill(View):
                     # 같은 회차에 여러 납부건이 있을 수 있으므로 합산
                     paid_penalty_by_order[installment.pay_code]['unpaid_result'] += paid_penalty['penalty_amount']
 
-        # 해당 계약 건 전체 납부 목록 -> [(income, deal_date), ...]
-        paid_list = [(p.income, p.deal_date) for p in self.get_paid(contract)[0]]
-        paid_date = paid_list[0][1] if len(paid_list) > 0 else None
+        # 회차별 납부 내역 조회
+        payment_by_order, _ = self.get_paid(contract)
 
         # 전체 리턴 데이터 목록
         paid_amt_list = []
         due_orders = payment_orders.filter(pay_code__lte=now_due_order)  # 금 회차까지 납부 회차
-
-        excess = 0  # 회차별 초과 납부분
 
         for order in due_orders:
             due_date = get_due_date_per_order(contract, order, due_orders)  # 납부기한
             ord_info = list(filter(lambda o: o['order'] == order, orders_info))[0]  # 금 회차 orders_info
             amount = ord_info['pay_amount']  # 금 회차 납부 약정액
 
-            paid_amt = 0  # 금회 납부금액
-
-            while True:  # 납입회차별 납입금 구하기
-                try:
-                    paid = paid_list.pop(0)  # (income, deal_date) <- 첫번째 요소(가장 빠른 납부일자)
-                    paid_amt += paid[0]  # 납부액 += income (loop 동안 income 을 모두 더함)
-                    paid_date = paid[1]  # 납부일 = deal_date(loop 마지막 납부건 납부일)
-                    is_over_amt = (excess + paid_amt) >= amount  # (전회 초과 납부분 + 납부액) >= 약정액
-                    # 현재 회차 == 금회 직전 회차 (이 경우 루프 마지막까지 순회하기 위해서 루프탈출 조건에서 제외)
-
-                    is_last_ord = order.pay_code + 1 == now_due_order
-                    if is_over_amt and not is_last_ord:  # loop 탈출 조건
-                        excess += (paid_amt + excess - amount)  # 금회 초과 납부분 += (금회 납부액 + 전회 초과납부분 - 약정액)
-                        break
-                except IndexError:  # .pop(0) 에러 시 탈출
-                    break
-
-            paid_date = paid_date if paid_amt else ''  # 납부 금액이 있을 때만 납부일 저장
+            # 회차별 납부 정보 조회 (없으면 0, '')
+            payment_info = payment_by_order.get(order.id, {'paid_amt': 0, 'paid_date': ''})
 
             # 회차별 미납 연체료 정보 조회
             penalty_info = unpaid_penalty_by_order.get(order.pay_code, {})
@@ -419,8 +421,8 @@ class PdfExportBill(View):
             paid_dict['order'] = order.pay_name
             paid_dict['due_date'] = due_date
             paid_dict['amount'] = amount
-            paid_dict['paid_date'] = paid_date
-            paid_dict['paid_amt'] = paid_amt
+            paid_dict['paid_date'] = payment_info['paid_date']
+            paid_dict['paid_amt'] = payment_info['paid_amt']
 
             # 미납 연체료와 완납 회차 연체료 병합 (우선순위: 미납 > 완납)
             paid_dict['unpaid_amt'] = penalty_info.get('unpaid_amt', paid_penalty_info.get('unpaid_amt', 0))
@@ -452,7 +454,6 @@ class PdfExportBill(View):
                 'unpaid_penalty_count': int      # 미납 연체 건수
             }
         """
-        from decimal import Decimal
 
         total_late_fee = 0
         paid_penalties = []
@@ -482,7 +483,8 @@ class PdfExportBill(View):
             # now_due_order까지만 계산 (고지서 범위)
             if installment.pay_code <= now_due_order:
                 if installment.is_late_penalty and unpaid_info['is_overdue']:
-                    penalty_rate = Decimal(str(installment.late_penalty_ratio)) if installment.late_penalty_ratio else Decimal('0')
+                    penalty_rate = Decimal(
+                        str(installment.late_penalty_ratio)) if installment.late_penalty_ratio else Decimal('0')
 
                     if penalty_rate > 0:
                         penalty_amount = calculate_daily_interest(
