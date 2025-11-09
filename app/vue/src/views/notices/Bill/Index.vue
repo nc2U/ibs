@@ -29,7 +29,7 @@ const printData = reactive({
 })
 
 const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
+const project = computed(() => (projStore.project as any)?.pk)
 
 const noticeStore = useNotice()
 const billIssue = computed(() => noticeStore.billIssue)
@@ -39,7 +39,7 @@ const createSalesBillIssue = (payload: SalesBillIssue) => noticeStore.createSale
 const patchSalesBillIssue = (payload: SalesBillIssue) => noticeStore.patchSalesBillIssue(payload)
 
 const paymentStore = usePayment()
-const payOrder = computed(() => paymentStore.payOrder)
+const payOrder = computed(() => paymentStore.payOrder as PayOrder | null)
 
 const payOrderTime = computed(() => (payOrder.value ? payOrder.value.pay_time : 0))
 const payOrderName = computed(() => (payOrder.value ? payOrder.value.__str__ : ''))
@@ -60,7 +60,7 @@ const fetchSalePriceList = (payload: { project: number }) =>
   contractStore.fetchSalePriceList(payload)
 const fetchDownPayList = (payload: { project: number }) => contractStore.fetchDownPayList(payload)
 
-watch(billIssue, val => {
+watch(billIssue, (val: any) => {
   if (val) {
     printData.is_bill_issue = !!val
     printData.project = val.project

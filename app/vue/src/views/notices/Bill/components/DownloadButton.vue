@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { ref, watch } from 'vue'
+import { downloadFile } from '@/utils/helper.ts'
 import { AlertSecondary } from '@/utils/cssMixins'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import { downloadFile } from '@/utils/helper.ts'
 
 const props = defineProps({
   printData: { type: Object, default: null },
@@ -20,7 +20,7 @@ watch(noPrice, newVal => {
 })
 
 // const noLate = ref(Boolean(Cookies.get('noLate')) ?? true)
-const noLate = ref(true)
+const noLate = ref(false)
 
 watch(noLate, newVal => {
   const val = newVal ? '1' : ''
@@ -41,7 +41,7 @@ const printBill = () => {
       const np = noPrice.value || ''
       const nl = noLate.value || ''
       const lastUrl = `${url}?project=${project}&date=${pub_date}&seq=${seq}&np=${np}&nl=${nl}`
-      downloadFile(lastUrl, `대금납부_고지서(${props.contracts.length}건)`)
+      downloadFile(lastUrl, `대금납부_고지서(${props.contracts.length}건).pdf`)
     }
   }
 }
@@ -57,7 +57,7 @@ const printBill = () => {
       </CCol>
       <CCol sm="6" class="text-right">
         <v-checkbox-btn v-model="noPrice" color="success" label="가격정보 미표시" inline />
-        <v-checkbox-btn v-model="noLate" color="success" label="연체정보 미표시" inline disabled />
+        <v-checkbox-btn v-model="noLate" color="success" label="연체정보 미표시" inline />
       </CCol>
     </CRow>
   </CAlert>
