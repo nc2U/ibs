@@ -9,7 +9,7 @@
     <td>{{ contract.unit_type.name }} 타입</td>
     <td colspan="2">{{ unit|default:"동호 미지정" }}</td>
     <td>미납금액</td>
-    <td class="right">{{ unpaid_amount|floatformat:0|default:"-"|intcomma }}</td>
+    <td class="right">{{ unpaid_amount|default:"-"|intcomma }}</td>
     <td>계약자 : {{ contract.contractor }}</td>
   </tr>
   <tr class="center" style="background-color: #f5f5f5;">
@@ -25,10 +25,10 @@
   {# 금일 기준 누적 연체료 행 #}
   <tr class="center" style="font-weight: bold;">
     <td>{{ pub_date|date:"Y-m-d" }}</td>
-    <td>0</td>
     <td>-</td>
-    <td class="right">{{ current_penalty|default:"0"|intcomma }}</td>
-    <td class="right">{{ current_total_payment|default:unpaid_amount|intcomma }}</td>
+    <td>-</td>
+    <td class="right">{{ current_penalty|default:"-"|intcomma }}</td>
+    <td class="right">{{ current_total_payment|default:unpaid_amount|default:"-"|intcomma }}</td>
     <td style="font-size: 10px;">{{ pub_date }} 기준</td>
   </tr>
   {# 내일부터 일자별 연체료 #}
