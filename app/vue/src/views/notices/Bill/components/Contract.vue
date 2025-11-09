@@ -67,8 +67,8 @@ const contChk = (ctorPk: number) => {
     <CTableDataCell>
       <router-link
         :to="{
-          name: '계약 상세 관리',
-          query: { contractor: contract.contractor?.pk },
+          name: '계약 상세 보기',
+          params: { contractorId: contract.contractor?.pk },
         }"
       >
         {{ contract.contractor?.name }}
