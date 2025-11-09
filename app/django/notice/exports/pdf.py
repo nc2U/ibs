@@ -153,7 +153,8 @@ class PdfExportBill(View):
         bill_data['paid_sum_total'] = paid_sum_total  # 기 납부 총액
 
         # 연체료 정보를 bill_data에 추가
-        bill_data['late_fee_sum'] = late_fee_data['total_late_fee']
+        # 실제 청구 대상 회차의 연체료만 사용 (this_pay_info에 포함된 회차만)
+        bill_data['late_fee_sum'] = bill_data['this_pay_sum']['penalty_sum']
         bill_data['late_fee_details'] = late_fee_data
 
         # 표시 정보 제한 여부
