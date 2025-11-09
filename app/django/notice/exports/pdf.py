@@ -8,8 +8,13 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
-from _pdf.utils import (get_contract, get_due_date_per_order, get_late_fee)
+from _pdf.utils import (get_contract, get_due_date_per_order)
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
+from _utils.payment_adjustment import (
+    get_unpaid_installments,
+    calculate_late_penalty,
+    calculate_daily_interest
+)
 from cash.models import ProjectCashBook
 from notice.models import SalesBillIssue
 from payment.models import InstallmentPaymentOrder
@@ -110,12 +115,18 @@ class PdfExportBill(View):
         # ■ 계약 내용 -----------------------------------------------------
         bill_data['cont_content'] = self.get_cont_content(contract, unit)
 
+        # 연체료 계산 (payment_adjustment.py 사용 - 항상 계산, 템플릿에서 표시 제어)
+        late_fee_data = self.calculate_late_fees_standardized(
+            contract, payment_orders, now_due_order, pub_date
+        )
+
         # ■ 납부대금 안내 ----------------------------------------------
         bill_data['this_pay_info'] = self.get_this_pay_info(contract,
                                                             orders_info,
                                                             payment_orders,
                                                             now_due_order,
-                                                            paid_code)
+                                                            paid_code,
+                                                            late_fee_data)
 
         # 납부대금 합계
         bill_data['this_pay_sum'] = {
@@ -133,17 +144,17 @@ class PdfExportBill(View):
         # 기 도래한 약정 회차 내역
         bill_data['due_orders'] = self.get_due_orders(contract, orders_info,
                                                       payment_orders, now_due_order,
-                                                      paid_code, pub_date, is_late_fee=False)
+                                                      paid_code, pub_date, late_fee_data)
 
         # 미 도래한 약정 회차 내역
         bill_data['remain_orders'] = self.get_remain_orders(contract, orders_info,
                                                             payment_orders, now_due_order)
 
         bill_data['paid_sum_total'] = paid_sum_total  # 기 납부 총액
-        # 연체료 합계
-        bill_data['late_fee_sum'] = self.get_due_orders(contract, orders_info,
-                                                        payment_orders, now_due_order,
-                                                        paid_code, pub_date, is_late_fee=True)
+
+        # 연체료 정보를 bill_data에 추가
+        bill_data['late_fee_sum'] = late_fee_data['total_late_fee']
+        bill_data['late_fee_details'] = late_fee_data
 
         # 표시 정보 제한 여부
         bill_data['no_price'] = np
@@ -260,7 +271,7 @@ class PdfExportBill(View):
     @staticmethod
     def get_this_pay_info(contract,
                           orders_info, payment_orders,
-                          now_due_order, paid_code):
+                          now_due_order, paid_code, late_fee_details=None):
         """
         :: ■ 납부대금 안내
         :param contract: 계약 정보
@@ -268,17 +279,28 @@ class PdfExportBill(View):
         :param payment_orders: 회차 정보
         :param now_due_order: 당회 납부 회차
         :param paid_code: 완납 회차
+        :param late_fee_details: 연체료 상세 정보 (calculate_late_fees_standardized 결과)
         :return list(dict(order: 납부회차, due_date: 납부기한, amount: 약정금액, unpaid: 미납금액, penalty: 연체가산금, sum_amount: 납부금액)):
         """
         payment_list = []
         unpaid_orders = payment_orders.filter(pay_code__gt=paid_code,
                                               pay_code__lte=now_due_order)  # 최종 기납부회차 이후부터 납부지정회차 까지 회차그룹
+
+        # 회차별 연체료 매핑 생성 (late_fee_details가 있는 경우)
+        penalty_by_order = {}
+        if late_fee_details and late_fee_details.get('unpaid_penalties'):
+            for unpaid_penalty in late_fee_details['unpaid_penalties']:
+                installment = unpaid_penalty['installment']
+                penalty_by_order[installment.pay_code] = unpaid_penalty['penalty_amount']
+
         for order in unpaid_orders:
             ord_info = list(filter(lambda o: o['order'] == order, orders_info))[0]
 
             amount = ord_info['pay_amount']
             unpaid = ord_info['unpaid_amount']
-            penalty = 0
+
+            # 회차별 연체료 조회 (미납 회차만 해당)
+            penalty = penalty_by_order.get(order.pay_code, 0)
 
             payment_dict = {
                 'order': order,
@@ -294,7 +316,7 @@ class PdfExportBill(View):
 
     def get_due_orders(self, contract, orders_info,
                        payment_orders, now_due_order,
-                       paid_code, pub_date, is_late_fee=False):
+                       paid_code, pub_date, late_fee_details=None):
         """
         :: ■ 납부약정 및 납입내역 - 납입내역
         :param contract: 계약 건
@@ -303,9 +325,20 @@ class PdfExportBill(View):
         :param now_due_order: 금회 납부 회차
         :param paid_code: 완납회차
         :param pub_date: 발행일자
-        :param is_late_fee: 연체료 발행여부
-        :return list(paid_list: 왼납 회차 목록):
+        :param late_fee_details: 연체료 상세 정보
+        :return list(paid_list: 완납 회차 목록):
         """
+
+        # 회차별 미납 연체료 매핑 생성
+        unpaid_penalty_by_order = {}
+        if late_fee_details and late_fee_details.get('unpaid_penalties'):
+            for unpaid_penalty in late_fee_details['unpaid_penalties']:
+                installment = unpaid_penalty['installment']
+                unpaid_penalty_by_order[installment.pay_code] = {
+                    'unpaid_amt': unpaid_penalty['remaining_amount'],
+                    'unpaid_days': unpaid_penalty['late_days'],
+                    'unpaid_result': unpaid_penalty['penalty_amount']
+                }
 
         # 해당 계약 건 전체 납부 목록 -> [(income, deal_date), ...]
         paid_list = [(p.income, p.deal_date) for p in self.get_paid(contract)[0]]
@@ -316,14 +349,6 @@ class PdfExportBill(View):
         due_orders = payment_orders.filter(pay_code__lte=now_due_order)  # 금 회차까지 납부 회차
 
         excess = 0  # 회차별 초과 납부분
-        paid_amt_sum = 0  # 실 수납액 누계
-
-        late_fee_sum = 0
-
-        try:
-            calc_start_code = payment_orders.filter(Q(is_prep_discount=True) | Q(is_late_penalty=True))[0].pay_code
-        except IndexError:
-            calc_start_code = 2
 
         for order in due_orders:
             due_date = get_due_date_per_order(contract, order, due_orders)  # 납부기한
@@ -349,34 +374,8 @@ class PdfExportBill(View):
 
             paid_date = paid_date if paid_amt else ''  # 납부 금액이 있을 때만 납부일 저장
 
-            if paid_date:  # 당 회차 완납인 경우(지연 납부일 계산)
-                unpaid_amt = 0  # 당회 납부 지연 시 납부 전 지연금 계산
-                unpaid_days = 0  # 당회 납부 지연 시 납부 전 지연금 지연일 계산
-
-                paid_amt_sum += paid_amt  # 당 회차 납부액 누계
-
-                # 납부코드 2 회차 이상 and 납부 금액 and 납부 날짜 > 약정 날짜
-                if order.pay_code >= calc_start_code and paid_amt and paid_date > due_date:
-                    sum_p_amt = ord_info['sum_pay_amount']  # 금 회차 납부 약정액
-                    sum_p_paid = paid_amt_sum - paid_amt
-                    unpaid_amt = sum_p_amt - sum_p_paid if sum_p_amt - sum_p_paid > 0 else 0
-                    if unpaid_amt > 0:
-                        # unpaid_days = (datetime.strptime(paid_date, '%Y-%m-%d').date() - due_date).days
-                        unpaid_days = (paid_date - due_date).days
-            else:  # 당 회차 미납인 경우
-                # 납부 지연금
-                unpaid_amt = ord_info['unpaid_amount'] if order.pay_code >= calc_start_code else 0
-
-                if unpaid_amt == 0 or (order.pay_code == 1 and paid_code >= 1):  # 지연금 없거나 1회차 일때 완납코드가 1 이상이면,
-                    unpaid_days = 0
-                else:
-                    try:
-                        unpaid_days = (pub_date - due_date).days if pub_date >= due_date else 0
-                    except AttributeError:
-                        unpaid_days = 0
-
-            project = contract.project
-            late_fee_sum += get_late_fee(project, unpaid_amt, unpaid_days)
+            # 회차별 미납 연체료 정보 조회
+            penalty_info = unpaid_penalty_by_order.get(order.pay_code, {})
 
             paid_dict = dict()
             paid_dict['order'] = order.pay_name
@@ -384,18 +383,88 @@ class PdfExportBill(View):
             paid_dict['amount'] = amount
             paid_dict['paid_date'] = paid_date
             paid_dict['paid_amt'] = paid_amt
-
-            paid_dict['unpaid_amt'] = unpaid_amt
-            paid_dict['unpaid_days'] = unpaid_days
-            paid_dict['unpaid_result'] = get_late_fee(project, unpaid_amt, unpaid_days)
-
-            paid_dict['note'] = f'(+)' if unpaid_days else ''
+            paid_dict['unpaid_amt'] = penalty_info.get('unpaid_amt', 0)
+            paid_dict['unpaid_days'] = penalty_info.get('unpaid_days', 0)
+            paid_dict['unpaid_result'] = penalty_info.get('unpaid_result', 0)
+            paid_dict['note'] = ''
             paid_amt_list.append(paid_dict)
 
-        if is_late_fee:
-            return late_fee_sum
-        else:
-            return paid_amt_list
+        return paid_amt_list
+
+    @staticmethod
+    def calculate_late_fees_standardized(contract, payment_orders, now_due_order, pub_date):
+        """
+        :: 표준화된 연체료 계산 (payment_adjustment.py 사용)
+
+        Args:
+            contract: 계약 인스턴스
+            payment_orders: 전체 납부 회차
+            now_due_order: 금회 납부 회차 (고지서 기준)
+            pub_date: 발행일자
+
+        Returns:
+            dict: {
+                'total_late_fee': int,           # 총 연체료
+                'paid_penalties': list,          # 완납된 납부건의 연체료 목록
+                'unpaid_penalties': list,        # 미납 회차 연체료 목록
+                'paid_penalty_count': int,       # 납부 연체 건수
+                'unpaid_penalty_count': int      # 미납 연체 건수
+            }
+        """
+        from decimal import Decimal
+
+        total_late_fee = 0
+        paid_penalties = []
+        unpaid_penalties = []
+
+        # 1. 완납된 납부건의 연체료 계산 (과거 지연 납부)
+        paid_records = ProjectCashBook.objects.payment_records().filter(
+            contract=contract,
+            deal_date__lte=pub_date
+        ).order_by('deal_date', 'id')
+
+        for payment in paid_records:
+            if payment.installment_order and payment.installment_order.pay_code <= now_due_order:
+                penalty_info = calculate_late_penalty(payment)
+                if penalty_info and penalty_info['penalty_amount'] > 0:
+                    paid_penalties.append(penalty_info)
+                    total_late_fee += penalty_info['penalty_amount']
+
+        # 2. 미납 회차의 연체료 계산 (현재 기준)
+        unpaid_installments = get_unpaid_installments(contract, pub_date)
+
+        for unpaid_info in unpaid_installments:
+            installment = unpaid_info['installment_order']
+
+            # now_due_order까지만 계산 (고지서 범위)
+            if installment.pay_code <= now_due_order:
+                if installment.is_late_penalty and unpaid_info['is_overdue']:
+                    penalty_rate = Decimal(str(installment.late_penalty_ratio)) if installment.late_penalty_ratio else Decimal('0')
+
+                    if penalty_rate > 0:
+                        penalty_amount = calculate_daily_interest(
+                            unpaid_info['remaining_amount'],
+                            penalty_rate,
+                            unpaid_info['late_days']
+                        )
+
+                        unpaid_penalties.append({
+                            'installment': installment,
+                            'order_name': installment.pay_name,
+                            'remaining_amount': unpaid_info['remaining_amount'],
+                            'late_days': unpaid_info['late_days'],
+                            'penalty_rate': penalty_rate,
+                            'penalty_amount': penalty_amount
+                        })
+                        total_late_fee += penalty_amount
+
+        return {
+            'total_late_fee': total_late_fee,
+            'paid_penalties': paid_penalties,
+            'unpaid_penalties': unpaid_penalties,
+            'paid_penalty_count': len(paid_penalties),
+            'unpaid_penalty_count': len(unpaid_penalties)
+        }
 
     @staticmethod
     def get_blank_line(unpaid_count, pm, total_orders_count):

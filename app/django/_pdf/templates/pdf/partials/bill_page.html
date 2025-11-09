@@ -84,7 +84,7 @@
             <td style="padding: 3px 0; border:1px solid black; text-align:center;">{{ this_order.due_date|default:"" }}</td>
             <td style="padding: 3px 10px; border:1px solid black; text-align:right;">{{ this_order.amount|default:"-"|intcomma }}</td>
             <td style="padding: 3px 10px; border:1px solid black; text-align:right;">{{ this_order.unpaid|default:"-"|intcomma }}</td>
-            <td style="padding: 3px 10px; border:1px solid black; text-align:right;">-</td>
+            <td style="padding: 3px 10px; border:1px solid black; text-align:right;">{% if not data.no_late %}{{ this_order.penalty|default:"-"|intcomma }}{% else %}-{% endif %}</td>
             <td style="padding: 3px 10px; border:1px solid black; text-align:right;">{{ this_order.sum_amount|default:"-"|intcomma }}</td>
         </tr>
     {% endfor %}
@@ -92,8 +92,16 @@
         <td style="padding: 3px 0; border:1px solid black; text-align:center;" colspan="2">합 계</td>
         <td style="padding: 3px 10px; border:1px solid black; text-align:right;">{{ data.this_pay_sum.amount_sum|default:"-"|intcomma }}</td>
         <td style="padding: 3px 10px; border:1px solid black; text-align:right;">{{ data.this_pay_sum.unpaid_sum|default:"-"|intcomma }}</td>
-        <td style="padding: 3px 10px; border:1px solid black; text-align:{% if not data.no_late %}center{% else %}right{% endif %};">
-            {% if not data.no_late %}{{ data.late_fee_sum|default:"-"|intcomma }}{% else %}-{% endif %}
+        <td style="padding: 3px 10px; border:1px solid black; text-align:{% if not data.no_late %}right{% else %}right{% endif %};">
+            {% if not data.no_late %}
+                {{ data.late_fee_sum|default:"-"|intcomma }}
+{#                {% if data.late_fee_details %}#}
+{#                    <br/><small style="font-size: 9px; color: #666;">#}
+{#                        (납부지연: {{ data.late_fee_details.paid_penalty_count }}건,#}
+{#                         미납연체: {{ data.late_fee_details.unpaid_penalty_count }}건)#}
+{#                    </small>#}
+{#                {% endif %}#}
+            {% else %}-{% endif %}
         </td>
         <td style="padding: 3px 10px; border:1px solid black; text-align:right;">
           {% if not data.no_late %}
