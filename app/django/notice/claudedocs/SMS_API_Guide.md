@@ -843,5 +843,5 @@ export const useSMS = () => {
 
 API 사용 중 문제가 발생하면 개발팀에 문의하세요.
 
-- 프로젝트 이슈: [GitHub Issues](https://github.com/your-org/ibs/issues)
-- 이메일: dev@example.com
+- 프로젝트 이슈: [GitHub Issues](https://github.com/nc2u/ibs/issues)
+- 이메일: kori.susie@gmail.com
