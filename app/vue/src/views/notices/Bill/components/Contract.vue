@@ -62,7 +62,7 @@ const contChk = (ctorPk: number) => {
       {{ contract.serial_number }}
     </CTableDataCell>
     <CTableDataCell :class="contract.key_unit?.houseunit ? '' : 'text-danger'" class="text-left">
-      {{ contract.key_unit?.houseunit ? contract.key_unit.houseunit.__str__ : '미정' }}
+      {{ contract.key_unit?.houseunit ? contract.key_unit?.houseunit?.__str__ : '미정' }}
     </CTableDataCell>
     <CTableDataCell>
       <router-link
