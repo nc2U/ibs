@@ -14,9 +14,9 @@ Payment Adjustment Utilities
         예: 해지 입금 (112, 812), 환불 (113, 114, 813, 814), 기타 출금 등
 """
 
+from datetime import date
 from decimal import Decimal
 from typing import Dict, Optional, Any
-from datetime import date
 
 
 def get_effective_contract_date(contract) -> Optional[date]:
@@ -277,7 +277,7 @@ def get_first_due_date_after_contract(contract, current_date=None) -> Optional[d
     installments = InstallmentPaymentOrder.objects.filter(
         project=contract.project,
         pay_due_date__gte=contract_date,  # 계약일 이후
-        pay_due_date__lte=current_date    # 현재일까지 도래
+        pay_due_date__lte=current_date  # 현재일까지 도래
     ).order_by('pay_due_date')
 
     # 첫 번째 도래 회차의 납부기한일 반환
@@ -709,7 +709,6 @@ def get_unpaid_installments(contract, pub_date):
            - 첫 도래 회차 기준일 이전인 경우 연체일수 = 0
     """
     from payment.models import InstallmentPaymentOrder
-    from datetime import date
 
     # 계약일 확인
     contract_date = get_effective_contract_date(contract)

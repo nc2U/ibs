@@ -1,8 +1,7 @@
-import logging
-
 import requests
 from decouple import config
 from django.conf import settings
+from django.contrib.humanize.templatetags.humanize import intcomma
 from django.db.models import Q
 
 from cash.models import CashBook, ProjectCashBook
@@ -11,7 +10,6 @@ from docs.models import LawsuitCase, Document
 from project.models import Site, SiteOwner, SiteContract
 from work.models.project import IssueProject
 
-logger = logging.getLogger(__name__)
 SYSTEM_NAME = 'IBS 업무관리시스템'
 
 
@@ -31,7 +29,7 @@ def send_bulk_import_summary(summary_data, user=None, target_instance=None):
     if not webhook_url:
         webhook_url = config('SLACK_COMPANY_URL', default=None)
         if not webhook_url:
-            logger.warning("대량 가져오기 Slack 알림 - 웹훅 URL을 찾을 수 없음")
+            print("대량 가져오기 Slack 알림 - 웹훅 URL을 찾을 수 없음")
             return False
 
     # 메시지 구성
@@ -69,14 +67,14 @@ def send_bulk_import_summary(summary_data, user=None, target_instance=None):
 
     # Slack으로 메시지 전송
     try:
-        logger.info(f"[BULK_IMPORT] Slack 메시지 전송 시도: {model_name} {total_records}건")
+        print(f"[BULK_IMPORT] Slack 메시지 전송 시도: {model_name} {total_records}건")
 
         response = requests.post(webhook_url, json=message, timeout=10)
         response.raise_for_status()
-        logger.info(f"대량 가져오기 Slack 알림 전송 성공: {model_name} {total_records}건 처리 완료")
+        print(f"대량 가져오기 Slack 알림 전송 성공: {model_name} {total_records}건 처리 완료")
         return True
     except requests.RequestException as e:
-        logger.error(f"대량 가져오기 Slack 알림 전송 실패: {e}")
+        print(f"대량 가져오기 Slack 알림 전송 실패: {e}")
         return False
 
 
@@ -90,9 +88,9 @@ def get_slack_webhook_url(issue_project):
 
     webhook_url = config(key, default=None)
     if webhook_url:
-        logger.info(f"Slack 웹훅 URL 조회 성공: {key}")
+        print(f"Slack 웹훅 URL 조회 성공: {key}")
     else:
-        logger.warning(f"Slack 웹훅 URL 조회 실패 - 환경변수 '{key}'가 설정되지 않음")
+        print(f"Slack 웹훅 URL 조회 실패 - 환경변수 '{key}'가 설정되지 않음")
 
     return webhook_url
 
@@ -112,7 +110,7 @@ def get_contract_page_number(contract_instance):
 
         return page_number
     except Exception as e:
-        logger.error(f"Contract 페이지 계산 오류: {e}")
+        print(f"Contract 페이지 계산 오류: {e}")
         return 1  # 오류 시 첫 페이지로
 
 
@@ -138,7 +136,7 @@ def get_site_page_number(site_instance):
 
         return page_number
     except Exception as e:
-        logger.error(f"Site 페이지 계산 오류: {e}")
+        print(f"Site 페이지 계산 오류: {e}")
         return 1  # 오류 시 첫 페이지로
 
 
@@ -164,7 +162,7 @@ def get_succession_page_number(succession_instance):
 
         return page_number
     except Exception as e:
-        logger.error(f"Succession 페이지 계산 오류: {e}")
+        print(f"Succession 페이지 계산 오류: {e}")
         return 1  # 오류 시 첫 페이지로
 
 
@@ -189,7 +187,7 @@ def get_contractor_release_page_number(contractor_release_instance):
 
         return page_number
     except Exception as e:
-        logger.error(f"ContractorRelease 페이지 계산 오류: {e}")
+        print(f"ContractorRelease 페이지 계산 오류: {e}")
         return 1  # 오류 시 첫 페이지로
 
 
@@ -208,7 +206,7 @@ def get_site_owner_page_number(site_owner_instance):
 
         return page_number
     except Exception as e:
-        logger.error(f"SiteOwner 페이지 계산 오류: {e}")
+        print(f"SiteOwner 페이지 계산 오류: {e}")
         return 1  # 오류 시 첫 페이지로
 
 
@@ -227,7 +225,7 @@ def get_site_contract_page_number(site_contract_instance):
 
         return page_number
     except Exception as e:
-        logger.error(f"SiteContract 페이지 계산 오류: {e}")
+        print(f"SiteContract 페이지 계산 오류: {e}")
         return 1  # 오류 시 첫 페이지로
 
 
@@ -371,7 +369,7 @@ def get_site_owners_info(site_instance):
             first_owner = owners.first().owner
             return f" ({first_owner} 외{owner_count - 1})"
     except Exception as e:
-        logger.error(f"Site 소유자 정보 조회 오류: {e}")
+        print(f"Site 소유자 정보 조회 오류: {e}")
         return ""
 
 
@@ -700,7 +698,6 @@ class SlackMessageBuilder:
         color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 프로젝트명 + 토지계약 + 소유자명 + 매매대금
-        from django.contrib.humanize.templatetags.humanize import intcomma
         price_display = intcomma(instance.total_price) if instance.total_price else '미정'
         title = f"📋 [{instance.project.issue_project.name}]-[토지-계약] - {instance.owner.owner} - [{price_display}원]"
         contract_date_str = instance.contract_date.strftime('%Y-%m-%d') if instance.contract_date else '미정'
@@ -746,14 +743,14 @@ def send_slack_message(webhook_url, message_data):
         )
 
         if response.status_code == 200:
-            logger.info(f"Slack 메시지 전송 성공: {webhook_url}")
+            print(f"Slack 메시지 전송 성공: {webhook_url}")
             return True
         else:
-            logger.error(f"Slack 메시지 전송 실패 ({response.status_code}): {response.text}")
+            print(f"Slack 메시지 전송 실패 ({response.status_code}): {response.text}")
             return False
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Slack 메시지 전송 중 오류: {str(e)}")
+        print(f"Slack 메시지 전송 중 오류: {str(e)}")
         return False
 
 
@@ -767,7 +764,7 @@ def send_slack_notification(instance, action, user=None):
     # 대상 IssueProject 찾기
     issue_project = get_target_issue_project(instance)
     if not issue_project:
-        logger.info(f"Slack 알림 대상 프로젝트를 찾을 수 없음: {instance}")
+        print(f"Slack 알림 대상 프로젝트를 찾을 수 없음: {instance}")
         return
 
     # 메시지 등록
@@ -792,13 +789,13 @@ def send_slack_notification(instance, action, user=None):
         message_data = SlackMessageBuilder.build_site_contract_message(instance, action, user)
 
     if not message_data:
-        logger.warning(f"지원하지 않는 모델 타입: {type(instance)}")
+        print(f"지원하지 않는 모델 타입: {type(instance)}")
         return
 
     # 환경변수에서 Slack 웹훅 URL 조회
     slack_webhook_url = get_slack_webhook_url(issue_project)
     if not slack_webhook_url:
-        logger.warning(f"Slack 웹훅 URL을 찾을 수 없음: {issue_project.name} (slug: {issue_project.slug})")
+        print(f"Slack 웹훅 URL을 찾을 수 없음: {issue_project.name} (slug: {issue_project.slug})")
         return
 
     # Slack 메시지 전송
@@ -808,4 +805,4 @@ def send_slack_notification(instance, action, user=None):
         # 권한 있는 멤버들 로그 (선택적)
         members = get_authorized_members(issue_project)
         member_names = [member.user.username for member in members if member.user]
-        logger.info(f"Slack 알림 전송 완료 - 프로젝트: {issue_project.name}, 멤버: {', '.join(member_names)}")
+        print(f"Slack 알림 전송 완료 - 프로젝트: {issue_project.name}, 멤버: {', '.join(member_names)}")
