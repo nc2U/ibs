@@ -1,8 +1,12 @@
+from datetime import timedelta
+
 from django.contrib import admin
 from django.contrib.humanize.templatetags.humanize import intcomma
+from django.utils import timezone
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
+from _utils.slack_notifications import send_bulk_import_summary
 from .models import CompanyBankAccount, ProjectBankAccount, CashBook, ProjectCashBook
 from .resources import CashBookResource, ProjectCashBookResource
 
@@ -40,7 +44,7 @@ class CashBookAdmin(ImportExportMixin, admin.ModelAdmin):
 
         # Check if this is the final import (not dry run)
         if hasattr(form, 'cleaned_data') and not result.has_errors() and not result.has_validation_errors():
-            # Check if this is the actual import (has import_file_name from confirm form)
+            # Check if this is the actual import (has import_file_name from confirmation form)
             is_actual_import = 'import_file_name' in form.cleaned_data
 
             if is_actual_import:
@@ -55,12 +59,11 @@ class CashBookAdmin(ImportExportMixin, admin.ModelAdmin):
 
         return result
 
-    def _send_admin_import_summary_from_result(self, request, result):
+    @staticmethod
+    def _send_admin_import_summary_from_result(request, result):
         """Send Slack summary notification using import result data directly"""
         import logging
         logger = logging.getLogger(__name__)
-
-        from _utils.slack_notifications import send_bulk_import_summary
 
         # result.totals에서 직접 데이터 가져오기
         new_records = result.totals.get('new', 0)
@@ -122,7 +125,7 @@ class ProjectCashBookAdmin(ImportExportMixin, admin.ModelAdmin):
 
         # Check if this is the final import (not dry run)
         if hasattr(form, 'cleaned_data') and not result.has_errors() and not result.has_validation_errors():
-            # Check if this is the actual import (has import_file_name from confirm form)
+            # Check if this is the actual import (has import_file_name from confirmation form)
             is_actual_import = 'import_file_name' in form.cleaned_data
 
             if is_actual_import:
@@ -137,12 +140,11 @@ class ProjectCashBookAdmin(ImportExportMixin, admin.ModelAdmin):
 
         return result
 
-    def _send_admin_import_summary_from_result(self, request, result):
+    @staticmethod
+    def _send_admin_import_summary_from_result(request, result):
         """Send Slack summary notification using import result data directly"""
         import logging
         logger = logging.getLogger(__name__)
-
-        from _utils.slack_notifications import send_bulk_import_summary
 
         # result.totals에서 직접 데이터 가져오기
         new_records = result.totals.get('new', 0)
@@ -166,8 +168,6 @@ class ProjectCashBookAdmin(ImportExportMixin, admin.ModelAdmin):
             user = request.user if request.user.is_authenticated else None
 
             # ProjectCashBook은 프로젝트별 모델이므로 최근 레코드를 target_instance로 전달
-            from django.utils import timezone
-            from datetime import timedelta
             recent_time = timezone.now() - timedelta(minutes=5)
 
             recent_records = ProjectCashBook.objects.filter(
