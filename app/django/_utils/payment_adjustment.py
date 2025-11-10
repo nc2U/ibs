@@ -741,11 +741,19 @@ def get_unpaid_installments(contract, pub_date):
         if not paid_status['is_fully_paid']:
             due_date = installment.pay_due_date
 
-            # 연체일수 계산: 첫 도래 회차 기준일 이후부터만 계산
-            if first_due_date and pub_date > first_due_date:
-                late_days = (pub_date - first_due_date).days
+            # 연체일수 계산 로직
+            if contract_date and due_date and due_date < contract_date:
+                # 계약일 이전 회차: 첫 도래 회차 기준일 사용
+                if first_due_date and pub_date > first_due_date:
+                    late_days = (pub_date - first_due_date).days
+                else:
+                    late_days = 0
             else:
-                late_days = 0
+                # 계약일 이후 회차 또는 계약일 없음: 자신의 납부기일 기준
+                if due_date and pub_date > due_date:
+                    late_days = (pub_date - due_date).days
+                else:
+                    late_days = 0
 
             unpaid_list.append({
                 'installment_order': installment,
