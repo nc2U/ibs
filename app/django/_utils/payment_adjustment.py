@@ -16,6 +16,52 @@ Payment Adjustment Utilities
 
 from decimal import Decimal
 from typing import Dict, Optional, Any
+from datetime import date
+
+
+def get_effective_contract_date(contract) -> Optional[date]:
+    """
+    유효한 계약일 반환 (계약일 기준 할인/가산금 계산용)
+
+    Args:
+        contract: Contract 인스턴스
+
+    Returns:
+        date or None: 유효한 계약일
+        - Contract.sup_cont_date와 Contractor.contract_date 중 늦은 날
+        - 하나만 있으면 그 날짜 반환
+        - 둘 다 없으면 None 반환
+
+    Logic:
+        1. contract.sup_cont_date 확인
+        2. contract.contractor.contract_date 확인 (related_name이 없으므로 contractor로 접근)
+        3. 둘 중 늦은 날짜 반환 (max 사용)
+    """
+    try:
+        # Contract의 공급계약 체결일
+        sup_cont_date = getattr(contract, 'sup_cont_date', None)
+
+        # Contractor의 계약일자 (OneToOneField이므로 contractor로 직접 접근)
+        contractor_date = None
+        if hasattr(contract, 'contractor') and contract.contractor:
+            contractor_date = getattr(contract.contractor, 'contract_date', None)
+
+        # 둘 다 없으면 None 반환
+        if not sup_cont_date and not contractor_date:
+            return None
+
+        # 하나만 있으면 그것을 반환
+        if sup_cont_date and not contractor_date:
+            return sup_cont_date
+        if contractor_date and not sup_cont_date:
+            return contractor_date
+
+        # 둘 다 있으면 늦은 날짜 반환
+        return max(sup_cont_date, contractor_date)
+
+    except AttributeError:
+        # 모델 구조가 예상과 다른 경우
+        return None
 
 
 def calculate_daily_interest(principal: int, annual_rate: Decimal, days: int) -> int:
@@ -167,21 +213,28 @@ def calculate_prepayment_discount(
 
     fully_paid_date = paid_status['fully_paid_date']
 
-    # 4. 약정일/선납 기준일 결정
+    # 4. 계약일 확인 (계약일 이후 회차만 할인 대상)
+    contract_date = get_effective_contract_date(contract)
+
+    # 5. 약정일/선납 기준일 결정
     # prep_ref_date가 있으면 우선, 없으면 pay_due_date 사용
     due_date = installment_order.prep_ref_date or installment_order.pay_due_date
 
     if not due_date:
         return None
 
-    # 5. 선납 여부 확인 (완납일 < 약정일)
+    # 6. 계약일 이후 회차인지 확인 (계약일이 있는 경우만)
+    if contract_date and due_date < contract_date:
+        return None
+
+    # 7. 선납 여부 확인 (완납일 < 약정일)
     if fully_paid_date >= due_date:
         return None
 
-    # 6. 선납 일수 계산
+    # 8. 선납 일수 계산
     discount_days = (due_date - fully_paid_date).days
 
-    # 7. 할인 금액 계산
+    # 9. 할인 금액 계산
     base_amount = paid_status['promised_amount']
     discount_amount = calculate_daily_interest(base_amount, discount_rate, discount_days)
 
@@ -196,9 +249,47 @@ def calculate_prepayment_discount(
     }
 
 
+def get_first_due_date_after_contract(contract, current_date=None) -> Optional[date]:
+    """
+    계약일 이후 첫 번째 도래 회차의 납부기한일 반환
+
+    Args:
+        contract: Contract 인스턴스
+        current_date: 기준일 (None이면 오늘 날짜 사용)
+
+    Returns:
+        date or None: 계약일 이후 첫 번째 도래 회차의 납부기한일
+
+    Logic:
+        1. 계약일 이후 모든 회차 조회
+        2. 현재일 기준 도래한 회차들 중 가장 빠른 납부기한일 반환
+    """
+    from payment.models import InstallmentPaymentOrder
+    from datetime import date as date_class
+
+    if current_date is None:
+        current_date = date_class.today()
+
+    # 계약일 확인
+    contract_date = get_effective_contract_date(contract)
+    if not contract_date:
+        return None
+
+    # 계약일 이후 도래한 회차들 조회
+    installments = InstallmentPaymentOrder.objects.filter(
+        project=contract.project,
+        pay_due_date__gte=contract_date,  # 계약일 이후
+        pay_due_date__lte=current_date    # 현재일까지 도래
+    ).order_by('pay_due_date')
+
+    # 첫 번째 도래 회차의 납부기한일 반환
+    first_installment = installments.first()
+    return first_installment.pay_due_date if first_installment else None
+
+
 def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
     """
-    개별 납부건의 연체 가산금 계산 (각 납부건별 연체일수)
+    개별 납부건의 연체 가산금 계산 (계약일 이후 첫 도래 회차 기준 연체일수)
 
     Args:
         payment: ProjectCashBook 인스턴스
@@ -206,23 +297,26 @@ def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
     Returns:
         dict or None: {
             'penalty_amount': int,       # 가산 금액
-            'late_days': int,            # 연체 일수
+            'late_days': int,            # 연체 일수 (계약일 이후 첫 도래 회차 기준)
             'penalty_rate': Decimal,     # 가산율 (연이율 %)
             'payment_amount': int,       # 납부 금액
             'payment_date': date,        # 납부일
             'due_date': date,            # 약정일
-            'extra_due_date': date       # 연체 기준일 (있는 경우)
+            'extra_due_date': date,      # 연체 기준일 (있는 경우)
+            'first_due_date': date       # 계약일 이후 첫 도래 회차 기준일
         } or None (가산 대상이 아닌 경우)
 
     Logic:
         1. installment_order.is_late_penalty = True 확인
-        2. 납부일 > 약정일 확인
-        3. 가산금 계산: (납부일 - 약정일) × (가산율/365) × 납부금액
+        2. 계약일 이후 회차인지 확인
+        3. 계약일 이후 첫 도래 회차 기준일로 연체일수 계산
+        4. 가산금 계산: (현재일 - 첫도래기준일) × (가산율/365) × 납부금액
 
     Examples:
-        >>> # 납부금액 5,000,000원, 약정일 2025-01-31, 납부일 2025-03-01, 가산율 10%
-        >>> # (3월1일 - 1월31일) = 29일 연체
-        >>> # 가산금 = 5,000,000 × 10% ÷ 365 × 29 = 39,726원
+        >>> # 계약일: 2024-08-15, 첫 도래: 2024-09-30
+        >>> # 납부금액 5,000,000원, 현재일 2024-11-15, 가산율 10%
+        >>> # 연체일수 = (11월15일 - 9월30일) = 46일
+        >>> # 가산금 = 5,000,000 × 10% ÷ 365 × 46 = 62,945원
     """
     # 1. 연체 가산 적용 여부 확인
     if not payment or not payment.installment_order:
@@ -245,21 +339,38 @@ def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
     payment_date = payment.deal_date
     payment_amount = payment.income
 
-    # 4. 약정일/연체 기준일 결정
+    # 4. 계약일 확인 (계약일 이후 회차만 가산금 대상)
+    try:
+        contract = payment.contract
+        contract_date = get_effective_contract_date(contract)
+    except AttributeError:
+        # payment에서 contract를 찾을 수 없는 경우
+        contract_date = None
+
+    # 5. 약정일/연체 기준일 결정
     # extra_due_date가 있으면 우선, 없으면 pay_due_date 사용
     due_date = installment_order.extra_due_date or installment_order.pay_due_date
 
     if not due_date:
         return None
 
-    # 5. 연체 여부 확인 (납부일 > 약정일)
-    if payment_date <= due_date:
+    # 6. 계약일 이후 회차인지 확인 (계약일이 있는 경우만)
+    if contract_date and due_date < contract_date:
         return None
 
-    # 6. 연체 일수 계산
-    late_days = (payment_date - due_date).days
+    # 7. 계약일 이후 첫 번째 도래 회차 기준일 확인
+    first_due_date = get_first_due_date_after_contract(contract, payment_date)
+    if not first_due_date:
+        return None
 
-    # 7. 가산금 계산
+    # 8. 연체 여부 확인 (첫 도래 기준일 이후인지)
+    if payment_date <= first_due_date:
+        return None
+
+    # 9. 연체 일수 계산 (첫 도래 기준일부터)
+    late_days = (payment_date - first_due_date).days
+
+    # 10. 가산금 계산
     penalty_amount = calculate_daily_interest(payment_amount, penalty_rate, late_days)
 
     return {
@@ -269,8 +380,111 @@ def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
         'payment_amount': payment_amount,
         'payment_date': payment_date,
         'due_date': due_date,
-        'extra_due_date': installment_order.extra_due_date
+        'extra_due_date': installment_order.extra_due_date,
+        'first_due_date': first_due_date
     }
+
+
+def calculate_late_penalty_for_all_unpaid(contract, current_date=None) -> list:
+    """
+    기한 도과 시점부터 모든 미납 회차에 대한 연체 가산금 계산
+
+    Args:
+        contract: Contract 인스턴스
+        current_date: 기준일 (None이면 오늘 날짜 사용)
+
+    Returns:
+        list: 미납 회차별 연체 가산금 정보
+        [
+            {
+                'installment_order': InstallmentPaymentOrder,
+                'remaining_amount': int,     # 미납 금액
+                'penalty_amount': int,       # 연체 가산금
+                'late_days': int,           # 연체일수 (통일된 기준)
+                'penalty_rate': Decimal,     # 가산율
+                'due_date': date,           # 회차별 납부기한
+                'first_due_date': date      # 연체 계산 기준일
+            },
+            ...
+        ]
+
+    Logic:
+        1. 계약일 이후 첫 번째 도래 회차의 납부기한일을 연체 기준일로 설정
+        2. 기준일 이후 모든 미납 회차에 대해 연체 가산금 계산
+        3. 모든 회차가 동일한 연체일수 적용 (기준일부터 현재일까지)
+        4. 각 회차별 미납금액에 개별적으로 가산금 적용
+
+    Examples:
+        >>> # 계약일: 2024-08-15, 4차 중도금 기한: 2024-11-30, 현재일: 2024-12-15
+        >>> # 미납회차: 4차(500만), 5차(300만), 6차(200만)
+        >>> # 연체일수: 15일 (모든 회차 동일)
+        >>> # 4차 가산금: 500만 × 10% ÷ 365 × 15
+        >>> # 5차 가산금: 300만 × 10% ÷ 365 × 15
+        >>> # 6차 가산금: 200만 × 10% ÷ 365 × 15
+    """
+    from payment.models import InstallmentPaymentOrder
+    from datetime import date as date_class
+
+    if current_date is None:
+        current_date = date_class.today()
+
+    # 1. 계약일 이후 첫 번째 도래 회차의 납부기한일 확인
+    first_due_date = get_first_due_date_after_contract(contract, current_date)
+    if not first_due_date:
+        return []
+
+    # 2. 연체 여부 확인 (현재일이 첫 도래 기한일을 넘었는지)
+    if current_date <= first_due_date:
+        return []
+
+    # 3. 연체일수 계산 (모든 회차에 동일 적용)
+    late_days = (current_date - first_due_date).days
+
+    # 4. 계약일 확인
+    contract_date = get_effective_contract_date(contract)
+    if not contract_date:
+        return []
+
+    # 5. 모든 회차 조회 (계약일 이전/이후 모두 포함)
+    all_installments = InstallmentPaymentOrder.objects.filter(
+        project=contract.project,
+        type_sort=contract.unit_type.sort  # 계약 타입에 맞는 모든 회차
+    ).order_by('pay_code')
+
+    late_penalties = []
+
+    for installment in all_installments:
+        # 연체 가산 설정 확인
+        if not installment.is_late_penalty:
+            continue
+
+        # 가산율 확인
+        penalty_rate = installment.late_penalty_ratio
+        if not penalty_rate or penalty_rate <= 0:
+            continue
+
+        # 완납 상태 확인
+        paid_status = calculate_installment_paid_status(contract, installment)
+
+        # 미완납인 경우만 연체 가산금 적용
+        if not paid_status['is_fully_paid'] and paid_status['remaining_amount'] > 0:
+            remaining_amount = paid_status['remaining_amount']
+
+            # 연체 가산금 계산
+            penalty_amount = calculate_daily_interest(remaining_amount, penalty_rate, late_days)
+
+            late_penalties.append({
+                'installment_order': installment,
+                'remaining_amount': remaining_amount,
+                'penalty_amount': penalty_amount,
+                'late_days': late_days,
+                'penalty_rate': penalty_rate,
+                'due_date': installment.pay_due_date,
+                'first_due_date': first_due_date,
+                'is_before_contract': installment.pay_due_date < contract_date if contract_date else False
+            })
+
+    return late_penalties
 
 
 def get_installment_adjustment_summary(
@@ -389,7 +603,6 @@ def get_contract_adjustment_summary(contract) -> Dict[str, Any]:
     total_promised_amount = 0
     total_paid_amount = 0
     total_discount = 0
-    total_penalty = 0
     fully_paid_count = 0
 
     for installment in installments:
@@ -399,10 +612,13 @@ def get_contract_adjustment_summary(contract) -> Dict[str, Any]:
         total_promised_amount += summary['promised_amount']
         total_paid_amount += summary['paid_amount']
         total_discount += summary['total_discount']
-        total_penalty += summary['total_penalty']
 
         if summary['is_fully_paid']:
             fully_paid_count += 1
+
+    # 새로운 연체 가산금 계산 (모든 미납 회차에 대해 통일된 기준)
+    all_unpaid_penalties = calculate_late_penalty_for_all_unpaid(contract)
+    total_penalty = sum(penalty['penalty_amount'] for penalty in all_unpaid_penalties)
 
     # 순 조정 금액
     net_adjustment = total_discount - total_penalty
@@ -416,36 +632,46 @@ def get_contract_adjustment_summary(contract) -> Dict[str, Any]:
         'total_penalty': total_penalty,
         'net_adjustment': net_adjustment,
         'fully_paid_count': fully_paid_count,
-        'total_installment_count': installments.count()
+        'total_installment_count': installments.count(),
+        'all_unpaid_penalties': all_unpaid_penalties  # 새로운 연체 정보 추가
     }
 
 
 def get_due_installments(contract, pub_date):
     """
-    기도래 회차 목록 반환 (pub_date 기준)
+    기도래 회차 목록 반환 (pub_date 기준, 계약일 이후 회차만)
 
     Args:
         contract: Contract 인스턴스
         pub_date: 기준일 (date 객체)
 
     Returns:
-        QuerySet: 기도래 납부 회차 목록 (pay_due_date <= pub_date)
+        QuerySet: 기도래 납부 회차 목록 (pay_due_date <= pub_date AND pay_due_date >= contract_date)
 
     Logic:
         - pay_due_date가 pub_date 이전인 회차만 반환
+        - 계약일 이후 회차만 반환 (계약일이 있는 경우)
         - pay_code 순으로 정렬
     """
     from payment.models import InstallmentPaymentOrder
 
-    return InstallmentPaymentOrder.objects.filter(
+    # 기본 조건: pay_due_date <= pub_date
+    queryset = InstallmentPaymentOrder.objects.filter(
         project=contract.project,
         pay_due_date__lte=pub_date
-    ).order_by('pay_code')
+    )
+
+    # 계약일 이후 회차만 필터링 (계약일이 있는 경우)
+    contract_date = get_effective_contract_date(contract)
+    if contract_date:
+        queryset = queryset.filter(pay_due_date__gte=contract_date)
+
+    return queryset.order_by('pay_code')
 
 
 def get_unpaid_installments(contract, pub_date):
     """
-    미납 회차 목록 반환 (pub_date 기준, 기도래 + 미완납)
+    미납 회차 목록 반환 (pub_date 기준, 기도래 + 미완납 + 계약일 이후)
 
     Args:
         contract: Contract 인스턴스
@@ -467,12 +693,13 @@ def get_unpaid_installments(contract, pub_date):
         ]
 
     Logic:
-        1. 기도래 회차 중 미완납 회차만 추출
+        1. 기도래 회차 중 미완납 회차만 추출 (계약일 이후 회차만)
         2. 각 회차별 납부 상태 및 미납금액 계산
         3. 연체일수 계산 (pub_date - due_date)
     """
     from datetime import date
 
+    # get_due_installments는 이미 계약일 필터링이 적용됨
     due_installments = get_due_installments(contract, pub_date)
     unpaid_list = []
 
