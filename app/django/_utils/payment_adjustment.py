@@ -684,7 +684,7 @@ def get_due_installments(contract, pub_date):
 
 def get_unpaid_installments(contract, pub_date):
     """
-    미납 회차 목록 반환 (pub_date 기준, 기도래 + 미완납 + 계약일 이후)
+    미납 회차 목록 반환 (pub_date 기준, 기도래 + 미완납, 계약일 무관)
 
     Args:
         contract: Contract 인스턴스
@@ -699,21 +699,38 @@ def get_unpaid_installments(contract, pub_date):
                 'paid_amount': int,
                 'remaining_amount': int,
                 'due_date': date,
-                'late_days': int,  # 연체일수 (pub_date - due_date)
-                'is_overdue': bool  # 연체 여부
+                'late_days': int,  # 연체일수 (첫 도래 회차 기준일 이후부터 계산)
+                'is_overdue': bool,  # 연체 여부
+                'first_due_date': date  # 연체 기준일
             },
             ...
         ]
 
     Logic:
-        1. 기도래 회차 중 미완납 회차만 추출 (계약일 이후 회차만)
+        1. 기도래 회차 중 미완납 회차만 추출 (계약일 이전 회차도 포함)
         2. 각 회차별 납부 상태 및 미납금액 계산
-        3. 연체일수 계산 (pub_date - due_date)
+        3. 연체일수 계산: 계약일 이후 첫 도래 회차 기준일 이후부터만 계산
+           - 첫 도래 회차 기준일 이전인 경우 연체일수 = 0
     """
+    from payment.models import InstallmentPaymentOrder
     from datetime import date
 
-    # get_due_installments는 이미 계약일 필터링이 적용됨
-    due_installments = get_due_installments(contract, pub_date)
+    # 계약일 확인
+    contract_date = get_effective_contract_date(contract)
+
+    # 계약일 이후 첫 도래 회차 기준일 확인 (연체일수 계산용)
+    first_due_date = get_first_due_date_after_contract(contract, pub_date)
+
+    # 계약일 이후 도래 회차가 없는 경우 계약일을 기준일로 사용
+    if not first_due_date and contract_date:
+        first_due_date = contract_date
+
+    # 모든 기도래 회차 조회 (계약일 필터링 없이)
+    due_installments = InstallmentPaymentOrder.objects.filter(
+        project=contract.project,
+        pay_due_date__lte=pub_date
+    ).order_by('pay_code')
+
     unpaid_list = []
 
     for installment in due_installments:
@@ -723,7 +740,12 @@ def get_unpaid_installments(contract, pub_date):
         # 미완납인 경우만 포함
         if not paid_status['is_fully_paid']:
             due_date = installment.pay_due_date
-            late_days = (pub_date - due_date).days if due_date else 0
+
+            # 연체일수 계산: 첫 도래 회차 기준일 이후부터만 계산
+            if first_due_date and pub_date > first_due_date:
+                late_days = (pub_date - first_due_date).days
+            else:
+                late_days = 0
 
             unpaid_list.append({
                 'installment_order': installment,
@@ -732,7 +754,8 @@ def get_unpaid_installments(contract, pub_date):
                 'remaining_amount': paid_status['remaining_amount'],
                 'due_date': due_date,
                 'late_days': late_days,
-                'is_overdue': late_days > 0
+                'is_overdue': late_days > 0,
+                'first_due_date': first_due_date
             })
 
     return unpaid_list
