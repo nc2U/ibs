@@ -428,22 +428,35 @@ def calculate_late_penalty_for_all_unpaid(contract, current_date=None) -> list:
     if current_date is None:
         current_date = date_class.today()
 
-    # 1. 계약일 이후 첫 번째 도래 회차의 납부기한일 확인
-    first_due_date = get_first_due_date_after_contract(contract, current_date)
-    if not first_due_date:
-        return []
-
-    # 2. 연체 여부 확인 (현재일이 첫 도래 기한일을 넘었는지)
-    if current_date <= first_due_date:
-        return []
-
-    # 3. 연체일수 계산 (모든 회차에 동일 적용)
-    late_days = (current_date - first_due_date).days
-
-    # 4. 계약일 확인
+    # 1. 계약일 확인
     contract_date = get_effective_contract_date(contract)
     if not contract_date:
         return []
+
+    # 2. 계약일 이후 첫 번째 도래 회차의 납부기한일 확인
+    first_due_date = get_first_due_date_after_contract(contract, current_date)
+
+    # 계약일 이후 도래 회차가 없는 경우, 계약일을 연체 기준일로 사용
+    if not first_due_date:
+        # 계약일 이전 미납 회차가 있는지 확인
+        pre_contract_installments = InstallmentPaymentOrder.objects.filter(
+            project=contract.project,
+            type_sort=contract.unit_type.sort,
+            pay_due_date__lt=contract_date  # 계약일 이전
+        ).exists()
+
+        if not pre_contract_installments:
+            return []
+
+        # 계약일을 연체 기준일로 설정
+        first_due_date = contract_date
+
+    # 3. 연체 여부 확인 (현재일이 연체 기준일을 넘었는지)
+    if current_date <= first_due_date:
+        return []
+
+    # 4. 연체일수 계산 (모든 회차에 동일 적용)
+    late_days = (current_date - first_due_date).days
 
     # 5. 모든 회차 조회 (계약일 이전/이후 모두 포함)
     all_installments = InstallmentPaymentOrder.objects.filter(
