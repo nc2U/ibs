@@ -18,6 +18,9 @@ from datetime import date
 from decimal import Decimal
 from typing import Dict, Optional, Any
 
+from _utils.contract_price import get_payment_amount
+from payment.models import InstallmentPaymentOrder
+
 
 def get_effective_contract_date(contract) -> Optional[date]:
     """
@@ -114,7 +117,6 @@ def calculate_installment_paid_status(
         - 완납 여부: 약정금액 ≤ 실제 납부금액 합계
         - 완납일: 누적 납부금액이 약정금액 이상이 된 최초 날짜
     """
-    from _utils.contract_price import get_payment_amount
     from cash.models import ProjectCashBook
 
     # 약정금액 계산
@@ -262,11 +264,9 @@ def get_first_due_date_after_contract(contract, current_date=None) -> Optional[d
         1. 계약일 이후 모든 회차 조회
         2. 현재일 기준 도래한 회차들 중 가장 빠른 납부기한일 반환
     """
-    from payment.models import InstallmentPaymentOrder
-    from datetime import date as date_class
 
     if current_date is None:
-        current_date = date_class.today()
+        current_date = date.today()
 
     # 계약일 확인
     contract_date = get_effective_contract_date(contract)
@@ -420,11 +420,9 @@ def calculate_late_penalty_for_all_unpaid(contract, current_date=None) -> list:
         >>> # 5차 가산금: 300만 × 10% ÷ 365 × 15
         >>> # 6차 가산금: 200만 × 10% ÷ 365 × 15
     """
-    from payment.models import InstallmentPaymentOrder
-    from datetime import date as date_class
 
     if current_date is None:
-        current_date = date_class.today()
+        current_date = date.today()
 
     # 1. 계약일 확인
     contract_date = get_effective_contract_date(contract)
@@ -599,7 +597,6 @@ def get_contract_adjustment_summary(contract) -> Dict[str, Any]:
             'total_installment_count': int     # 전체 회차 수
         }
     """
-    from payment.models import InstallmentPaymentOrder
 
     # 해당 계약의 모든 회차 조회
     installments = InstallmentPaymentOrder.objects.filter(
@@ -662,7 +659,6 @@ def get_due_installments(contract, pub_date):
         - 계약일 이후 회차만 반환 (계약일이 있는 경우)
         - pay_code 순으로 정렬
     """
-    from payment.models import InstallmentPaymentOrder
 
     # 기본 조건: pay_due_date <= pub_date
     queryset = InstallmentPaymentOrder.objects.filter(
@@ -708,7 +704,6 @@ def get_unpaid_installments(contract, pub_date):
         3. 연체일수 계산: 계약일 이후 첫 도래 회차 기준일 이후부터만 계산
            - 첫 도래 회차 기준일 이전인 경우 연체일수 = 0
     """
-    from payment.models import InstallmentPaymentOrder
 
     # 계약일 확인
     contract_date = get_effective_contract_date(contract)
