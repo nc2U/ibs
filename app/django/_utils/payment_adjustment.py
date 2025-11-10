@@ -120,13 +120,11 @@ def calculate_installment_paid_status(
     # 약정금액 계산
     promised_amount = get_payment_amount(contract, installment_order)
 
-    # 납부내역 조회
+    # 납부내역 조회 (payment_records() 사용으로 최적화)
     if payments_qs is None:
-        payments_qs = ProjectCashBook.objects.filter(
-            project=contract.project,
+        payments_qs = ProjectCashBook.objects.payment_records().filter(
             contract=contract,
-            installment_order=installment_order,
-            project_account_d3__is_payment=True
+            installment_order=installment_order
         ).exclude(
             income__isnull=True
         ).order_by('deal_date', 'id')
@@ -534,12 +532,10 @@ def get_installment_adjustment_summary(
     """
     from cash.models import ProjectCashBook
 
-    # 납부내역 조회
-    payments_qs = ProjectCashBook.objects.filter(
-        project=contract.project,
+    # 납부내역 조회 (payment_records() 사용으로 최적화)
+    payments_qs = ProjectCashBook.objects.payment_records().filter(
         contract=contract,
-        installment_order=installment_order,
-        project_account_d3__is_payment=True
+        installment_order=installment_order
     ).exclude(
         income__isnull=True
     ).order_by('deal_date', 'id')

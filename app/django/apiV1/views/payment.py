@@ -966,21 +966,15 @@ class OverallSummaryViewSet(viewsets.ViewSet):
     def _get_all_collection_data(project_id, date, pay_orders):
         """표준화된 수납 데이터 배치 조회 (get_standardized_payment_sum 로직 기반)"""
 
-        # 표준화된 필터 조건 사용 (ExportOverallSummary와 일치)
-        base_filters = {
-            'project_id': project_id,
-            'income__isnull': False,
-            'project_account_d3__is_payment': True,
-            'contract__isnull': False,
-            'contract__activation': True,
-            'deal_date__lte': date
-        }
-
-        # 모든 납부 회차의 수납 데이터를 한 번에 조회 (표준화된 조건으로)
+        # 모든 납부 회차의 수납 데이터를 한 번에 조회 (payment_records() 사용으로 최적화)
         order_ids = [order.pk for order in pay_orders]
-        payments_data = ProjectCashBook.objects.filter(
+        payments_data = ProjectCashBook.objects.payment_records().filter(
+            project_id=project_id,
             installment_order__in=order_ids,
-            **base_filters
+            income__isnull=False,
+            contract__isnull=False,
+            contract__activation=True,
+            deal_date__lte=date
         ).values('installment_order').annotate(
             total_collected=Sum('income')
         )
@@ -1142,7 +1136,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
     def _get_collection_data(self, order, project_id, date):
         """수납 관련 데이터 집계 (레거시 메서드 - 사용하지 않음)"""
         # 이 메서드는 이제 사용하지 않지만 호환성을 위해 유지
-        payments = ProjectCashBook.objects.filter(
+        payments = ProjectCashBook.objects.payment_records().filter(
             project_id=project_id,
             installment_order=order,
             income__isnull=False,
@@ -1170,7 +1164,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 이 메서드는 이제 사용하지 않지만 호환성을 위해 유지
         contract_amount = self._get_contract_amount(order, project_id)
 
-        collected_amount = ProjectCashBook.objects.filter(
+        collected_amount = ProjectCashBook.objects.payment_records().filter(
             project_id=project_id,
             installment_order=order,
             income__isnull=False,
@@ -1228,7 +1222,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         contract_amount = OverallSummaryViewSet._get_contract_amount(order, project_id)
 
         # 수납금액 조회
-        collected_amount = ProjectCashBook.objects.filter(
+        collected_amount = ProjectCashBook.objects.payment_records().filter(
             project_id=project_id,
             installment_order=order,
             income__isnull=False,
