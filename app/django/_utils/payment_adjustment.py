@@ -361,12 +361,15 @@ def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
     if not first_due_date:
         return None
 
-    # 8. 연체 여부 확인 (첫 도래 기준일 이후인지)
-    if payment_date <= first_due_date:
+    # 8. 연체 기준일 계산: max(계약일 후 첫 도래 회차 납부기한, 당회차 납부기한)
+    base_due_date = max(first_due_date, due_date)
+
+    # 9. 연체 여부 확인 (기준일 이후인지)
+    if payment_date <= base_due_date:
         return None
 
-    # 9. 연체 일수 계산 (첫 도래 기준일부터)
-    late_days = (payment_date - first_due_date).days
+    # 10. 연체 일수 계산 (기준일부터)
+    late_days = (payment_date - base_due_date).days
 
     # 10. 가산금 계산
     penalty_amount = calculate_daily_interest(payment_amount, penalty_rate, late_days)
@@ -379,7 +382,8 @@ def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
         'payment_date': payment_date,
         'due_date': due_date,
         'extra_due_date': installment_order.extra_due_date,
-        'first_due_date': first_due_date
+        'first_due_date': first_due_date,
+        'base_due_date': base_due_date
     }
 
 
