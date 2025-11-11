@@ -4,6 +4,9 @@
 핵심 원리:
 1. 지연납부금액 = 약정금액 - 납부기일까지 납부액
 2. 지연일수 = 납부기일부터 실제납부일까지 (납부시마다 재계산)
+3. 납부기한 결정:
+   - 계약일 이후 회차: extra_due_date or pay_due_date
+   - 계약일 이전 회차: 계약일 이후 첫 도래 회차의 납부기한
 """
 
 from datetime import date
@@ -35,20 +38,15 @@ def calculate_simple_late_payment(contract, installment, as_of_date=None):
         as_of_date = date.today()
 
     # 1. 기본 정보
-    # 약정금액 계산 (pay_amt가 있으면 그대로, 없으면 pay_ratio로 계산)
+    # 약정금액 계산 (get_payment_amount가 이미 최종 금액을 반환함)
     try:
-        if installment.pay_amt:
-            promised_amount = installment.pay_amt
-        elif installment.pay_ratio:
-            from _utils.contract_price import get_payment_amount
-            total_payment = get_payment_amount(contract, installment)
-            promised_amount = int(total_payment * installment.pay_ratio / 100)
-        else:
-            promised_amount = 0
+        from _utils.contract_price import get_payment_amount
+        promised_amount = get_payment_amount(contract, installment)
     except (TypeError, ValueError, AttributeError):
         promised_amount = 0
 
-    due_date = installment.pay_due_date
+    # 납부기한 결정: extra_due_date 우선, 없으면 pay_due_date
+    due_date = installment.extra_due_date or installment.pay_due_date
 
     # 납부기일이 None인 경우에도 전체 납부액은 계산
     if not due_date:
@@ -94,17 +92,37 @@ def calculate_simple_late_payment(contract, installment, as_of_date=None):
 
     is_fully_paid = total_paid >= promised_amount
 
-    # 5. 지연일수 계산
+    # 5. 지연일수 계산 (계약일 기준 적용)
     late_days = 0
 
     if late_payment_amount > 0:  # 지연납부가 있는 경우만
-        if is_fully_paid:
-            # 완납된 경우: 납부기일 → 완납일
-            late_days = _calculate_late_days_to_completion(contract, installment, due_date)
+        # 계약일 이후 첫 도래 회차 기준일 확인
+        from _utils.payment_adjustment import (
+            get_effective_contract_date,
+            get_first_due_date_after_contract
+        )
+
+        contract_date = get_effective_contract_date(contract)
+
+        # 기준 납부기한 결정
+        if contract_date and due_date < contract_date:
+            # 계약일 이전 회차: 계약일 이후 첫 도래 회차 기준일 사용
+            first_due_date = get_first_due_date_after_contract(contract, as_of_date)
+            if first_due_date:
+                base_due_date = max(first_due_date, due_date)
+            else:
+                base_due_date = contract_date  # fallback
         else:
-            # 미완납: 납부기일 → 기준일(오늘)
-            if as_of_date > due_date:
-                late_days = (as_of_date - due_date).days
+            # 계약일 이후 회차 또는 계약일 없음: 자신의 납부기일 사용
+            base_due_date = due_date
+
+        if is_fully_paid:
+            # 완납된 경우: 기준납부기한 → 완납일
+            late_days = _calculate_late_days_to_completion(contract, installment, base_due_date)
+        else:
+            # 미완납: 기준납부기한 → 기준일(오늘)
+            if as_of_date > base_due_date:
+                late_days = (as_of_date - base_due_date).days
 
     return {
         'promised_amount': promised_amount,
@@ -117,21 +135,23 @@ def calculate_simple_late_payment(contract, installment, as_of_date=None):
     }
 
 
-def _calculate_late_days_to_completion(contract, installment, due_date):
+def _calculate_late_days_to_completion(contract, installment, base_due_date):
     """
     완납까지의 지연일수 계산
-    납부기일부터 실제 완납일까지
+    기준납부기한부터 실제 완납일까지
+
+    Args:
+        contract: Contract 인스턴스
+        installment: InstallmentPaymentOrder 인스턴스
+        base_due_date: 기준 납부기한 (계약일 고려된 납부기한)
+
+    Returns:
+        int: 지연일수 (완납일 - 기준납부기한)
     """
-    # 약정금액 계산 (main 함수와 동일한 로직)
+    # 약정금액 계산 (get_payment_amount가 이미 최종 금액을 반환함)
     try:
-        if installment.pay_amt:
-            promised_amount = installment.pay_amt
-        elif installment.pay_ratio:
-            from _utils.contract_price import get_payment_amount
-            total_payment = get_payment_amount(contract, installment)
-            promised_amount = int(total_payment * installment.pay_ratio / 100)
-        else:
-            promised_amount = 0
+        from _utils.contract_price import get_payment_amount
+        promised_amount = get_payment_amount(contract, installment)
     except (TypeError, ValueError, AttributeError):
         promised_amount = 0
 
@@ -150,10 +170,10 @@ def _calculate_late_days_to_completion(contract, installment, due_date):
         cumulative_paid += payment.income or 0
         if cumulative_paid >= promised_amount:
             # 이 납부로 완납됨
-            if payment.deal_date > due_date:
-                return (payment.deal_date - due_date).days
+            if payment.deal_date > base_due_date:
+                return (payment.deal_date - base_due_date).days
             else:
-                return 0  # 납부기일 내 완납
+                return 0  # 기준납부기한 내 완납
 
     return 0  # 완납되지 않음
 
