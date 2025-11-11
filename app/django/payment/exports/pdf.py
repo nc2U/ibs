@@ -166,15 +166,17 @@ class PdfExportPayments(View):
             deal_date__lte=pub_date
         ).order_by('deal_date', 'id')
 
-        # 3. 표시할 회차
+        # 3. 표시할 회차 (모든 도래한 회차 + 실제 납부된 회차)
         all_installments = InstallmentPaymentOrder.objects.filter(
             project=contract.project,
             type_sort=contract.unit_type.sort
         ).order_by('pay_code', 'pay_time')
 
+        # 도래한 회차 + 계약금(납부기한 없는 회차)
         paid_ids = paid_payments.values_list('installment_order_id', flat=True).distinct()
         display = all_installments.filter(
-            models.Q(pay_due_date__lte=pub_date) | models.Q(id__in=paid_ids)
+            models.Q(pay_due_date__lte=pub_date) |  # 도래한 회차
+            models.Q(pay_due_date__isnull=True, id__in=paid_ids)  # 계약금 (납부기한 없고 납부된 경우만)
         )
 
         # 4. 계약일 정보
@@ -200,102 +202,89 @@ class PdfExportPayments(View):
             paid = status['paid_amount']
             remaining = status['remaining_amount']
 
+            # Waterfall 기준 지연일수 사용 (이미 계산됨)
+            days = status.get('late_days', 0)
+            late_amount = status.get('late_payment_amount', 0)
+
+            # is_late_penalty가 False면 지연일수, 미납금액, 연체료 표시하지 않음
+            if not inst.is_late_penalty or not inst.late_penalty_ratio:
+                days = 0
+                late_amount = 0
+
             # 조정금액
             adj = get_installment_adjustment_summary(contract, inst)
 
-            # 기준 납부기한
-            due = inst.extra_due_date or inst.pay_due_date
-
-            # 납부기한이 없는 경우 (예: 1차 계약금) - 지연일수 계산 안함
-            if not due:
-                base_due = None
-                days = 0
+            # 연체료 계산
+            if days > 0 and late_amount > 0:
+                penalty = calculate_late_penalty(contract, inst, late_amount, days)
             else:
-                # 계약일보다 빠른 회차는 계약일 이후 첫 도래 회차 기준일 사용
-                if contract_date and due < contract_date:
-                    base_due = max(first_due, due) if first_due else contract_date
+                penalty = 0
+
+            # 실제 납부 내역 확인
+            payments = paid_payments.filter(installment_order=inst)
+
+            if payments.exists():
+                # 실제 납부 존재
+                # 미납금액: is_late_penalty가 False면 0, 지연 완납이면 지연금액, 정상 완납이면 0
+                if not inst.is_late_penalty or not inst.late_penalty_ratio:
+                    diff_amount = 0  # 연체료 미적용 회차
+                elif is_paid and days > 0:
+                    diff_amount = late_amount  # 지연 완납
+                elif is_paid:
+                    diff_amount = 0  # 정상 완납
                 else:
-                    base_due = due
+                    diff_amount = remaining  # 미완납
 
-                # 지연일수 계산
-                if is_paid and paid_date:
-                    days = (paid_date - base_due).days if paid_date > base_due else 0
-                else:
-                    days = (pub_date - base_due).days if pub_date > base_due else 0
-
-            # 연체료
-            penalty = calculate_late_penalty(contract, inst, promised if is_paid else remaining, days)
-
-            if is_paid:
-                # 완납
-                payments = paid_payments.filter(installment_order=inst)
-                if payments.exists():
-                    # 실제 납부 존재
-                    for p in payments:
-                        cumulative += (p.income or 0)
-                        result.append({
-                            'paid': p,
-                            'sum': cumulative,
-                            'order': inst.pay_name,
-                            'installment_order': inst,
-                            'paid_amount': p.income,
-                            'diff': 0,
-                            'delay_days': days,
-                            'penalty': penalty,
-                            'discount': adj['total_discount'],
-                            'is_fully_paid': True,
-                            'promised_amount': promised
-                        })
-                else:
-                    # 후납 충당
-                    if days > 0:  # 지연된 경우만 표시
-                        cumulative += promised
-                        result.append({
-                            'paid': {
-                                'name': f"{inst.pay_name} (후납충당)",
-                                'deal_date': paid_date or pub_date,
-                                'income': promised
-                            },
-                            'sum': cumulative,
-                            'order': f"{inst.pay_name} (후납충당)",
-                            'installment_order': inst,
-                            'paid_amount': promised,
-                            'diff': 0,
-                            'delay_days': days,
-                            'penalty': penalty,
-                            'discount': adj['total_discount'],
-                            'is_fully_paid': True,
-                            'promised_amount': promised,
-                            'is_allocated': True
-                        })
-
-                penalty_total += penalty
-                discount_total += adj['total_discount']
-
-            else:
-                # 미납
-                if is_calc:
-                    unpaid_indices.append(len(result))
-                    cumulative += paid
+                for p in payments:
+                    cumulative += (p.income or 0)
                     result.append({
-                        'paid': {
-                            'name': inst.pay_name,
-                            'pay_code': inst.pay_code,
-                            'due_date': inst.pay_due_date,
-                            'income': paid
-                        },
+                        'paid': p,
                         'sum': cumulative,
                         'order': inst.pay_name,
                         'installment_order': inst,
-                        'paid_amount': paid,
-                        'diff': remaining,
+                        'paid_amount': p.income,
+                        'diff': diff_amount,  # 지연 완납이면 지연금액
                         'delay_days': days,
                         'penalty': penalty,
-                        'discount': 0,
-                        'is_fully_paid': False,
+                        'discount': adj['total_discount'],
+                        'is_fully_paid': is_paid,
                         'promised_amount': promised
                     })
                     penalty_total += penalty
+                    discount_total += adj['total_discount']
+            else:
+                # 실제 납부 없음
+                if not is_paid:
+                    unpaid_indices.append(len(result))
+
+                # 미납금액 결정
+                # 0. is_late_penalty가 False면 0
+                # 1. 지연 완납: 지연 납부된 금액 (연체료 계산 기준)
+                # 2. 정상 완납: 0
+                # 3. 미완납: 약정금액 전체
+                if not inst.is_late_penalty or not inst.late_penalty_ratio:
+                    diff_amount = 0  # 연체료 미적용 회차
+                elif is_paid and days > 0:
+                    diff_amount = late_amount  # 지연 완납
+                elif is_paid:
+                    diff_amount = 0  # 정상 완납
+                else:
+                    diff_amount = promised  # 미완납
+
+                result.append({
+                    'paid': None,
+                    'sum': cumulative,
+                    'order': inst.pay_name,
+                    'installment_order': inst,
+                    'paid_amount': 0,  # 실납부액 0원
+                    'diff': diff_amount,  # 지연 완납이면 지연금액, 정상 완납이면 0, 미완납이면 약정금액
+                    'delay_days': days,
+                    'penalty': penalty,
+                    'discount': 0,
+                    'is_fully_paid': is_paid,
+                    'promised_amount': promised
+                })
+                penalty_total += penalty
 
         return result, cumulative, (penalty_total, discount_total, unpaid_indices)
 
