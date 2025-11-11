@@ -114,7 +114,6 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
         }
     """
     from cash.models import ProjectCashBook
-    from datetime import date as date_type
 
     # 모든 회차 조회 (순서대로)
     all_installments = InstallmentPaymentOrder.objects.filter(
@@ -233,7 +232,8 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
                         next_status['fully_paid_date'] = payment_date
 
     # 3. 각 회차별 지연 여부 및 지연일수 계산
-    today = date_type.today()
+    today = date.today()
+    contract_date = get_effective_contract_date(contract)
 
     for inst_id, status in installment_status.items():
         due_date = status['due_date']
@@ -241,17 +241,27 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
         if not due_date:
             continue
 
+        # 기준 납부기한 결정 (계약일 이전 회차 처리)
+        base_due_date = due_date
+        if contract_date and due_date < contract_date:
+            # 계약일 이전 회차: 계약일 이후 첫 도래 회차 기준일 사용
+            first_due_date = get_first_due_date_after_contract(contract, today)
+            if first_due_date:
+                base_due_date = max(first_due_date, due_date)
+            else:
+                base_due_date = contract_date  # fallback
+
         if status['is_fully_paid'] and status['fully_paid_date']:
-            # 완납: 완납일 > 납부기한이면 지연
-            if status['fully_paid_date'] > due_date:
+            # 완납: 완납일 > 기준납부기한이면 지연
+            if status['fully_paid_date'] > base_due_date:
                 status['is_late'] = True
-                status['late_days'] = (status['fully_paid_date'] - due_date).days
+                status['late_days'] = (status['fully_paid_date'] - base_due_date).days
                 status['late_payment_amount'] = status['promised_amount']
         else:
-            # 미완납: 오늘 > 납부기한이면 지연
-            if today > due_date:
+            # 미완납: 오늘 > 기준납부기한이면 지연
+            if today > base_due_date:
                 status['is_late'] = True
-                status['late_days'] = (today - due_date).days
+                status['late_days'] = (today - base_due_date).days
                 status['late_payment_amount'] = status['remaining_amount']
 
     return installment_status
@@ -293,10 +303,9 @@ def calculate_segmented_late_penalty(contract, installment, as_of_date=None) -> 
         >>> # 총 연체료: 구간1 + 구간2
     """
     from cash.models import ProjectCashBook
-    from datetime import date as date_type
 
     if as_of_date is None:
-        as_of_date = date_type.today()
+        as_of_date = date.today()
 
     # 연체 가산 설정 확인
     if not installment.is_late_penalty or not installment.late_penalty_ratio:

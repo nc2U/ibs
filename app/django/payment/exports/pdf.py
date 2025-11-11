@@ -1,7 +1,10 @@
 from datetime import date, datetime
+from datetime import timedelta
+from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
+from django.db import models
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
@@ -10,6 +13,13 @@ from weasyprint import HTML
 from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order,
                         get_paid)
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
+from _utils.payment_adjustment import (
+    calculate_all_installments_payment_allocation,
+    get_installment_adjustment_summary
+)
+from _utils.payment_adjustment import calculate_daily_interest
+from _utils.payment_adjustment import get_unpaid_installments
+from _utils.simple_late_payment import calculate_late_penalty
 from cash.models import ProjectCashBook
 from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
 
@@ -92,7 +102,7 @@ class PdfExportPayments(View):
     @staticmethod
     def get_simple_orders_from_plan(payment_plan, contract):
         """
-        Create simple orders data structure from payment plan
+        Create simple orders data structure from the payment plan
         """
         simple_orders = []
         amount_total = 0
@@ -126,11 +136,6 @@ class PdfExportPayments(View):
         return simple_orders
 
     @staticmethod
-    def get_paid_with_adjustment_OLD_BACKUP(contract, pub_date, **kwargs):
-        """OLD BACKUP - DO NOT USE"""
-        pass
-
-    @staticmethod
     def get_paid_with_adjustment(contract, pub_date, **kwargs):
         """
         회차순 납부 내역 및 조정금액 계산 (우선순위 충당 로직 적용)
@@ -145,15 +150,6 @@ class PdfExportPayments(View):
         Returns:
             tuple: (paid_dict_list, paid_sum_total, calc_sums)
         """
-        from _utils.payment_adjustment import (
-            calculate_all_installments_payment_allocation,
-            get_installment_adjustment_summary,
-            get_effective_contract_date,
-            get_first_due_date_after_contract
-        )
-        from _utils.simple_late_payment import calculate_late_penalty
-        from payment.models import InstallmentPaymentOrder
-        from django.db import models
 
         is_calc = kwargs.get('is_calc', False)
 
@@ -172,18 +168,20 @@ class PdfExportPayments(View):
             type_sort=contract.unit_type.sort
         ).order_by('pay_code', 'pay_time')
 
-        # 도래한 회차 + 계약금(납부기한 없는 회차)
+        # 도래한 회차 + 계약금(납부기한 없는 회차) + Waterfall로 충당된 회차
         paid_ids = paid_payments.values_list('installment_order_id', flat=True).distinct()
+
+        # Waterfall로 완납된 회차 ID 추출
+        waterfall_paid_ids = [inst_id for inst_id, status in all_status.items()
+                              if status.get('is_fully_paid', False)]
+
         display = all_installments.filter(
             models.Q(pay_due_date__lte=pub_date) |  # 도래한 회차
-            models.Q(pay_due_date__isnull=True, id__in=paid_ids)  # 계약금 (납부기한 없고 납부된 경우만)
+            models.Q(pay_due_date__isnull=True, id__in=paid_ids) |  # 계약금 (납부기한 없고 납부된 경우만)
+            models.Q(id__in=waterfall_paid_ids)  # Waterfall로 완납된 회차
         )
 
-        # 4. 계약일 정보
-        contract_date = get_effective_contract_date(contract)
-        first_due = get_first_due_date_after_contract(contract, pub_date)
-
-        # 5. 결과 초기화
+        # 4. 결과 초기화
         result = []
         penalty_total = 0
         discount_total = 0
@@ -206,16 +204,11 @@ class PdfExportPayments(View):
             days = status.get('late_days', 0)
             late_amount = status.get('late_payment_amount', 0)
 
-            # is_late_penalty가 False면 지연일수, 미납금액, 연체료 표시하지 않음
-            if not inst.is_late_penalty or not inst.late_penalty_ratio:
-                days = 0
-                late_amount = 0
-
             # 조정금액
             adj = get_installment_adjustment_summary(contract, inst)
 
-            # 연체료 계산
-            if days > 0 and late_amount > 0:
+            # 연체료 계산 (is_late_penalty 체크)
+            if inst.is_late_penalty and inst.late_penalty_ratio and days > 0 and late_amount > 0:
                 penalty = calculate_late_penalty(contract, inst, late_amount, days)
             else:
                 penalty = 0
@@ -235,6 +228,11 @@ class PdfExportPayments(View):
                 else:
                     diff_amount = remaining  # 미완납
 
+                # is_late_penalty가 False면 표시값 0으로
+                display_days = days if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
+                display_diff = diff_amount if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
+                display_penalty = penalty if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
+
                 for p in payments:
                     cumulative += (p.income or 0)
                     result.append({
@@ -243,14 +241,14 @@ class PdfExportPayments(View):
                         'order': inst.pay_name,
                         'installment_order': inst,
                         'paid_amount': p.income,
-                        'diff': diff_amount,  # 지연 완납이면 지연금액
-                        'delay_days': days,
-                        'penalty': penalty,
+                        'diff': display_diff,  # 표시용
+                        'delay_days': display_days,  # 표시용
+                        'penalty': display_penalty,  # 표시용
                         'discount': adj['total_discount'],
                         'is_fully_paid': is_paid,
                         'promised_amount': promised
                     })
-                    penalty_total += penalty
+                    penalty_total += display_penalty
                     discount_total += adj['total_discount']
             else:
                 # 실제 납부 없음
@@ -258,18 +256,20 @@ class PdfExportPayments(View):
                     unpaid_indices.append(len(result))
 
                 # 미납금액 결정
-                # 0. is_late_penalty가 False면 0
                 # 1. 지연 완납: 지연 납부된 금액 (연체료 계산 기준)
                 # 2. 정상 완납: 0
                 # 3. 미완납: 약정금액 전체
-                if not inst.is_late_penalty or not inst.late_penalty_ratio:
-                    diff_amount = 0  # 연체료 미적용 회차
-                elif is_paid and days > 0:
+                if is_paid and days > 0:
                     diff_amount = late_amount  # 지연 완납
                 elif is_paid:
                     diff_amount = 0  # 정상 완납
                 else:
                     diff_amount = promised  # 미완납
+
+                # is_late_penalty가 False면 표시값 0으로
+                display_days = days if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
+                display_diff = diff_amount if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
+                display_penalty = penalty if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
 
                 result.append({
                     'paid': None,
@@ -277,14 +277,14 @@ class PdfExportPayments(View):
                     'order': inst.pay_name,
                     'installment_order': inst,
                     'paid_amount': 0,  # 실납부액 0원
-                    'diff': diff_amount,  # 지연 완납이면 지연금액, 정상 완납이면 0, 미완납이면 약정금액
-                    'delay_days': days,
-                    'penalty': penalty,
+                    'diff': display_diff,  # 표시용
+                    'delay_days': display_days,  # 표시용
+                    'penalty': display_penalty,  # 표시용
                     'discount': 0,
                     'is_fully_paid': is_paid,
                     'promised_amount': promised
                 })
-                penalty_total += penalty
+                penalty_total += display_penalty
 
         return result, cumulative, (penalty_total, discount_total, unpaid_indices)
 
@@ -365,8 +365,6 @@ class PdfExportDailyLateFee(View):
                 'penalty_rate': Decimal        # 연체료율 (가장 높은 값)
             }
         """
-        from _utils.payment_adjustment import get_unpaid_installments
-        from decimal import Decimal
 
         unpaid_installments = get_unpaid_installments(contract, pub_date)
 
@@ -410,8 +408,6 @@ class PdfExportDailyLateFee(View):
         Returns:
             int: 금일 기준 총 누적 연체료
         """
-        from _utils.payment_adjustment import calculate_daily_interest
-        from decimal import Decimal
 
         total_penalty = 0
 
@@ -447,8 +443,6 @@ class PdfExportDailyLateFee(View):
                 'total_payment': int       # 납부금액 (미납금액 + 누적연체료)
             }, ...]
         """
-        from _utils.payment_adjustment import calculate_daily_interest
-        from datetime import timedelta
 
         if unpaid_amount <= 0 or annual_rate <= 0:
             return []
