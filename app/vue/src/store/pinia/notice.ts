@@ -17,6 +17,9 @@ import type {
   HistoryListParams,
   HistoryListResponse,
 } from '@/store/types/notice'
+import { usePayment } from '@/store/pinia/payment.ts'
+
+const payStore = usePayment()
 
 export const useNotice = defineStore('notice', () => {
   // state & getters
@@ -48,7 +51,10 @@ export const useNotice = defineStore('notice', () => {
   const patchSalesBillIssue = (payload: SalesBillIssue) =>
     api
       .patch(`/sales-bill-issue/${payload.pk}/`, payload)
-      .then(() => message())
+      .then(async res => {
+        await payStore.fetchPayOrder(res.data.now_payment_order || 3)
+        message()
+      })
       .catch(err => errorHandle(err.response.data))
 
   const updateSalesBillIssue = (payload: SalesBillIssue) =>
