@@ -17,6 +17,7 @@ Payment Adjustment Utilities
 from datetime import date
 from decimal import Decimal
 from typing import Dict, Optional, Any
+from django.db import models
 
 from _utils.contract_price import get_payment_amount
 from payment.models import InstallmentPaymentOrder
@@ -87,6 +88,157 @@ def calculate_daily_interest(principal: int, annual_rate: Decimal, days: int) ->
         return 0
 
     return int((annual_rate / Decimal('100') / Decimal('365')) * days * principal)
+
+
+def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[str, Any]]:
+    """
+    계약의 모든 회차에 대해 시간순 납부 충당을 계산
+
+    Returns:
+        dict: {
+            installment_id: {
+                'is_fully_paid': bool,
+                'fully_paid_date': date or None,
+                'paid_amount': int,
+                'promised_amount': int,
+                'remaining_amount': int,
+                'late_days': int,  # 완납일 기준 연체일수
+                'payment_sources': list  # 충당에 사용된 납부들
+            }
+        }
+    """
+    from cash.models import ProjectCashBook
+    from payment.models import InstallmentPaymentOrder
+
+    # 모든 회차 조회 (순서대로)
+    all_installments = InstallmentPaymentOrder.objects.filter(
+        project=contract.project,
+        type_sort=contract.unit_type.sort
+    ).order_by('pay_code')
+
+    # 모든 납부 내역 조회 (시간순)
+    all_payments = ProjectCashBook.objects.payment_records().filter(
+        contract=contract
+    ).exclude(
+        income__isnull=True
+    ).order_by('deal_date', 'id')
+
+    # 회차별 상태 초기화
+    installment_status = {}
+    for installment in all_installments:
+        promised_amount = get_payment_amount(contract, installment)
+        installment_status[installment.id] = {
+            'installment_order': installment,
+            'is_fully_paid': False,
+            'fully_paid_date': None,
+            'paid_amount': 0,
+            'promised_amount': promised_amount,
+            'remaining_amount': promised_amount,
+            'late_days': 0,
+            'payment_sources': []
+        }
+
+    # 시간순으로 납부 처리
+    for payment in all_payments:
+        payment_amount = payment.income
+        payment_date = payment.deal_date
+
+        # 해당 납부가 속한 회차부터 시작하여 이전 회차들 충당
+        target_installment = payment.installment_order
+        if not target_installment:
+            continue
+
+        # 타겟 회차 이전의 미납 회차들 충당
+        previous_installments = [inst for inst in all_installments
+                               if inst.pay_code < target_installment.pay_code]
+
+        remaining_payment = payment_amount
+
+        # 이전 회차들 우선 충당
+        for prev_inst in previous_installments:
+            if remaining_payment <= 0:
+                break
+
+            status = installment_status[prev_inst.id]
+            if not status['is_fully_paid']:
+                needed = status['remaining_amount']
+                allocated = min(remaining_payment, needed)
+
+                status['paid_amount'] += allocated
+                status['remaining_amount'] -= allocated
+                remaining_payment -= allocated
+
+                status['payment_sources'].append({
+                    'payment_id': payment.id,
+                    'payment_date': payment_date,
+                    'allocated_amount': allocated,
+                    'source_installment': target_installment.pay_name
+                })
+
+                # 완납 체크
+                if status['remaining_amount'] <= 0:
+                    status['is_fully_paid'] = True
+                    status['fully_paid_date'] = payment_date
+
+                    # 연체일수 계산 (완납일 - 납부기일)
+                    due_date = prev_inst.pay_due_date
+                    if due_date and payment_date > due_date:
+                        status['late_days'] = (payment_date - due_date).days
+
+        # 타겟 회차 충당
+        if remaining_payment > 0:
+            status = installment_status[target_installment.id]
+            needed = status['remaining_amount']
+            allocated = min(remaining_payment, needed)
+
+            status['paid_amount'] += allocated
+            status['remaining_amount'] -= allocated
+
+            status['payment_sources'].append({
+                'payment_id': payment.id,
+                'payment_date': payment_date,
+                'allocated_amount': allocated,
+                'source_installment': target_installment.pay_name
+            })
+
+            # 완납 체크
+            if status['remaining_amount'] <= 0:
+                status['is_fully_paid'] = True
+                status['fully_paid_date'] = payment_date
+
+                # 연체일수 계산
+                due_date = target_installment.pay_due_date
+                if due_date and payment_date > due_date:
+                    status['late_days'] = (payment_date - due_date).days
+
+    return installment_status
+
+
+def calculate_installment_paid_status_with_priority(
+        contract,
+        installment_order,
+        payments_qs=None
+) -> Dict[str, Any]:
+    """
+    우선순위 납부 충당을 고려한 회차별 완납 여부 계산
+
+    새로운 방식: 전체 납부 충당을 계산한 후 해당 회차 정보 반환
+    """
+    # 전체 회차의 납부 충당 계산
+    all_status = calculate_all_installments_payment_allocation(contract)
+
+    # 해당 회차의 상태 반환
+    installment_status = all_status.get(installment_order.id, {})
+
+    return {
+        'is_fully_paid': installment_status.get('is_fully_paid', False),
+        'paid_amount': installment_status.get('paid_amount', 0),
+        'promised_amount': installment_status.get('promised_amount', 0),
+        'fully_paid_date': installment_status.get('fully_paid_date', None),
+        'remaining_amount': installment_status.get('remaining_amount', 0),
+        'payment_count': len(installment_status.get('payment_sources', [])),
+        'late_days': installment_status.get('late_days', 0)
+    }
 
 
 def calculate_installment_paid_status(
@@ -364,21 +516,12 @@ def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
     # 8. 연체 기준일 계산: max(계약일 후 첫 도래 회차 납부기한, 당회차 납부기한)
     base_due_date = max(first_due_date, due_date)
 
-    # DEBUG: 실제 계산 값들 로깅
-    print(f"DEBUG calculate_late_penalty:")
-    print(f"  payment_date: {payment_date}")
-    print(f"  first_due_date: {first_due_date}")
-    print(f"  due_date: {due_date}")
-    print(f"  base_due_date: {base_due_date}")
-
     # 9. 연체 여부 확인 (기준일 이후인지)
     if payment_date <= base_due_date:
         return None
 
     # 10. 연체 일수 계산 (기준일부터)
     late_days = (payment_date - base_due_date).days
-    print(f"  late_days: {late_days}")
-    print(f"  payment_amount: {payment_amount}")
 
     # 10. 가산금 계산
     penalty_amount = calculate_daily_interest(payment_amount, penalty_rate, late_days)
@@ -509,6 +652,93 @@ def calculate_late_penalty_for_all_unpaid(contract, current_date=None) -> list:
     return late_penalties
 
 
+def calculate_completed_installment_penalty(
+        contract,
+        installment_order,
+        payments_qs=None
+) -> Optional[Dict[str, Any]]:
+    """
+    완납된 회차의 연체 가산금 계산 (완납일 기준)
+
+    Args:
+        contract: Contract 인스턴스
+        installment_order: InstallmentPaymentOrder 인스턴스
+        payments_qs: ProjectCashBook QuerySet (선택)
+
+    Returns:
+        dict or None: {
+            'penalty_amount': int,       # 가산 금액
+            'late_days': int,            # 연체 일수 (완납일 기준)
+            'penalty_rate': Decimal,     # 가산율 (연이율 %)
+            'payment_amount': int,       # 약정금액
+            'fully_paid_date': date,     # 완납일
+            'due_date': date,            # 약정일
+            'base_due_date': date        # 연체 기준일
+        } or None (연체 대상이 아닌 경우)
+
+    Logic:
+        완납된 회차의 경우 실제 완납일을 기준으로 연체일수를 계산
+        연체일수 = 완납일 - max(계약일 후 첫 도래 회차 기준일, 당회차 납부기일)
+    """
+    # 1. 완납 상태 확인
+    paid_status = calculate_installment_paid_status(contract, installment_order, payments_qs)
+
+    if not paid_status['is_fully_paid'] or not paid_status['fully_paid_date']:
+        return None
+
+    # 2. 연체 가산 적용 여부 확인
+    if not installment_order.is_late_penalty:
+        return None
+
+    # 3. 가산율 확인
+    penalty_rate = installment_order.late_penalty_ratio
+    if not penalty_rate or penalty_rate <= 0:
+        return None
+
+    fully_paid_date = paid_status['fully_paid_date']
+
+    # 4. 계약일 확인 (계약일 이후 회차만 가산금 대상)
+    contract_date = get_effective_contract_date(contract)
+
+    # 5. 약정일/연체 기준일 결정
+    due_date = installment_order.extra_due_date or installment_order.pay_due_date
+
+    if not due_date:
+        return None
+
+    # 6. 계약일 이후 회차인지 확인 (계약일이 있는 경우만)
+    if contract_date and due_date < contract_date:
+        return None
+
+    # 7. 계약일 이후 첫 번째 도래 회차 기준일 확인
+    first_due_date = get_first_due_date_after_contract(contract, fully_paid_date)
+    if not first_due_date:
+        return None
+
+    # 8. 연체 기준일 계산: max(계약일 후 첫 도래 회차 납부기한, 당회차 납부기한)
+    base_due_date = max(first_due_date, due_date)
+
+    # 9. 연체 여부 확인 (완납일이 기준일 이후인지)
+    if fully_paid_date <= base_due_date:
+        return None
+
+    # 10. 연체 일수 계산 (완납일 기준)
+    late_days = (fully_paid_date - base_due_date).days
+
+    # 11. 가산금 계산
+    penalty_amount = calculate_daily_interest(paid_status['promised_amount'], penalty_rate, late_days)
+
+    return {
+        'penalty_amount': penalty_amount,
+        'late_days': late_days,
+        'penalty_rate': penalty_rate,
+        'payment_amount': paid_status['promised_amount'],
+        'fully_paid_date': fully_paid_date,
+        'due_date': due_date,
+        'base_due_date': base_due_date
+    }
+
+
 def get_installment_adjustment_summary(
         contract,
         installment_order
@@ -558,19 +788,32 @@ def get_installment_adjustment_summary(
     prepayment_discount = calculate_prepayment_discount(contract, installment_order, payments_qs)
     total_discount = prepayment_discount['discount_amount'] if prepayment_discount else 0
 
-    # 3. 각 납부건별 연체 가산금 계산
+    # 3. 연체 가산금 계산
     late_penalties = []
     total_penalty = 0
 
-    for payment in payments_qs:
-        penalty_info = calculate_late_penalty(payment)
-        if penalty_info:
+    if paid_status['is_fully_paid']:
+        # 완납된 회차: 완납일 기준 연체료 계산
+        completed_penalty_info = calculate_completed_installment_penalty(contract, installment_order, payments_qs)
+
+        if completed_penalty_info:
             late_penalties.append({
-                'payment_id': payment.id,
-                'payment_date': payment.deal_date,
-                **penalty_info
+                'payment_id': 'completed',
+                'payment_date': completed_penalty_info['fully_paid_date'],
+                **completed_penalty_info
             })
-            total_penalty += penalty_info['penalty_amount']
+            total_penalty = completed_penalty_info['penalty_amount']
+    else:
+        # 미완납 회차: 각 납부건별 연체료 계산
+        for payment in payments_qs:
+            penalty_info = calculate_late_penalty(payment)
+            if penalty_info:
+                late_penalties.append({
+                    'payment_id': payment.id,
+                    'payment_date': payment.deal_date,
+                    **penalty_info
+                })
+                total_penalty += penalty_info['penalty_amount']
 
     # 4. 순 조정 금액 (할인 - 가산금)
     net_adjustment = total_discount - total_penalty

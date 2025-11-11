@@ -146,21 +146,15 @@ class PdfExportPayments(View):
         """
         from _utils.payment_adjustment import (
             get_installment_adjustment_summary,
-            calculate_installment_paid_status
+            calculate_installment_paid_status_with_priority
         )
         from payment.models import InstallmentPaymentOrder
         from itertools import accumulate
+        from django.db import models
 
         is_calc = kwargs.get('is_calc', False)
 
-        # 1. 기도래 회차 조회 (순서대로)
-        due_installments = InstallmentPaymentOrder.objects.filter(
-            project=contract.project,
-            type_sort=contract.unit_type.sort,
-            pay_due_date__lte=pub_date
-        ).order_by('pay_code', 'pay_time')
-
-        # 2. 실제 납부 내역 조회
+        # 1. 실제 납부 내역 조회
         paid_payments = (
             ProjectCashBook.objects
             .payment_records()
@@ -171,6 +165,21 @@ class PdfExportPayments(View):
             .order_by('deal_date', 'id')
         )
 
+        # 2. 모든 회차 조회 (납부내역이 있거나 기도래한 회차)
+        all_installments = InstallmentPaymentOrder.objects.filter(
+            project=contract.project,
+            type_sort=contract.unit_type.sort
+        ).order_by('pay_code', 'pay_time')
+
+        # 납부 내역이 있는 회차들 확인
+        paid_installment_ids = paid_payments.values_list('installment_order_id', flat=True).distinct()
+
+        # 표시할 회차: 기도래 OR 납부내역이 있는 회차
+        display_installments = all_installments.filter(
+            models.Q(pay_due_date__lte=pub_date) |
+            models.Q(id__in=paid_installment_ids)
+        )
+
         # 3. 결과 데이터 구조 초기화
         paid_dict_list = []
         penalty_sum = 0
@@ -178,78 +187,100 @@ class PdfExportPayments(View):
         ord_i_list = []  # 미납 회차 인덱스
         cumulative_paid = 0
 
-        # 4. 각 회차별 처리 (순서대로)
-        for installment in due_installments:
-            # 해당 회차의 완납 상태 확인
-            paid_status = calculate_installment_paid_status(contract, installment)
+        # 4. 각 회차별 처리 (순서대로) - 간단한 로직 사용
+        for installment in display_installments:
+            from _utils.simple_late_payment import calculate_simple_late_payment, calculate_late_penalty
+
+            # 간단한 지연납부 정보 계산
+            late_info = calculate_simple_late_payment(contract, installment)
 
             # 회차별 조정금액 계산
             adjustment_summary = get_installment_adjustment_summary(contract, installment)
 
-            if paid_status['is_fully_paid']:
+            if late_info['is_fully_paid']:
                 # === 완납된 회차 ===
+                late_days = late_info['late_days']
+                late_payment_amount = late_info['late_payment_amount']
+
+                # 연체료 계산
+                penalty_amount = calculate_late_penalty(
+                    contract, installment, late_payment_amount, late_days
+                )
+
                 # 해당 회차의 실제 납부 내역들 가져오기
                 installment_payments = paid_payments.filter(installment_order=installment)
 
-                for payment in installment_payments:
-                    cumulative_paid += payment.income
+                # 실제 납부 내역이 있는 경우
+                if installment_payments.exists():
+                    for payment in installment_payments:
+                        payment_income = payment.income or 0
+                        cumulative_paid += payment_income
 
-                    paid_dict = {
-                        'paid': payment,
-                        'sum': cumulative_paid,
-                        'order': installment.pay_name,
-                        'installment_order': installment,
-                        'paid_amount': payment.income,
-                        'diff': 0,  # 완납된 회차이므로 미납액 0
-                        'delay_days': adjustment_summary['late_penalties'][0]['late_days'] if adjustment_summary['late_penalties'] else 0,
-                        'penalty': adjustment_summary['total_penalty'],
-                        'discount': adjustment_summary['total_discount'],
-                        'is_fully_paid': True,
-                        'promised_amount': paid_status['promised_amount']
-                    }
-                    paid_dict_list.append(paid_dict)
+                        paid_dict = {
+                            'paid': payment,
+                            'sum': cumulative_paid,
+                            'order': installment.pay_name,
+                            'installment_order': installment,
+                            'paid_amount': late_payment_amount if late_payment_amount > 0 else payment_income,
+                            'diff': 0,  # 완납된 회차이므로 미납액 0
+                            'delay_days': late_days,
+                            'penalty': penalty_amount,
+                            'discount': adjustment_summary['total_discount'],
+                            'is_fully_paid': True,
+                            'promised_amount': late_info['promised_amount'],
+                            'is_late_payment': late_payment_amount > 0
+                        }
+                        paid_dict_list.append(paid_dict)
+                else:
+                    # 후납 충당으로만 완납된 회차 (실제 납부 없음)
+                    if late_payment_amount > 0:  # 지연납부가 있는 경우만
+                        cumulative_paid += late_info['promised_amount']
 
-                    # 가산금/할인금 누계
-                    penalty_sum += adjustment_summary['total_penalty']
-                    discount_sum += adjustment_summary['total_discount']
+                        paid_dict = {
+                            'paid': {
+                                'name': f"{installment.pay_name} (후납충당)",
+                                'deal_date': date.today(),  # 임시
+                                'income': late_payment_amount
+                            },
+                            'sum': cumulative_paid,
+                            'order': f"{installment.pay_name} (후납충당)",
+                            'installment_order': installment,
+                            'paid_amount': late_payment_amount,
+                            'diff': 0,
+                            'delay_days': late_days,
+                            'penalty': penalty_amount,
+                            'discount': adjustment_summary['total_discount'],
+                            'is_fully_paid': True,
+                            'promised_amount': late_info['promised_amount'],
+                            'is_late_payment': True,
+                            'is_allocated': True
+                        }
+                        paid_dict_list.append(paid_dict)
+
+                # 가산금/할인금 누계
+                penalty_sum += penalty_amount
+                discount_sum += adjustment_summary['total_discount']
 
             else:
                 # === 미납 회차 ===
                 if is_calc:  # is_calc=True일 때만 미납 회차 표시
                     ord_i_list.append(len(paid_dict_list))
 
+                    # 간단한 미납 정보 계산
+                    late_days = late_info['late_days']
+                    remaining_amount = late_info['promised_amount'] - late_info['total_paid']
+
                     # 해당 회차의 부분 납부가 있었는지 확인
                     installment_payments = paid_payments.filter(installment_order=installment)
-                    actual_paid = sum(p.income for p in installment_payments)
+                    actual_paid = late_info['total_paid']
 
                     if actual_paid > 0:
                         cumulative_paid += actual_paid
 
-                    # 연체 가산금 계산
-                    remaining_amount = paid_status['remaining_amount']
-                    penalty_amount = 0
-                    late_days = 0
-
-                    if installment.is_late_penalty and remaining_amount > 0:
-                        # 미납금액에 대한 연체료 계산
-                        from _utils.payment_adjustment import get_unpaid_installments
-                        unpaid_list = get_unpaid_installments(contract, pub_date)
-
-                        # 해당 회차의 연체 정보 찾기
-                        for unpaid_info in unpaid_list:
-                            if unpaid_info['installment_order'].id == installment.id:
-                                late_days = unpaid_info['late_days']
-                                if unpaid_info['is_overdue']:
-                                    penalty_rate = installment.late_penalty_ratio
-                                    if penalty_rate and penalty_rate > 0:
-                                        from _utils.payment_adjustment import calculate_daily_interest
-                                        from decimal import Decimal
-                                        penalty_amount = calculate_daily_interest(
-                                            remaining_amount,
-                                            Decimal(str(penalty_rate)),
-                                            late_days
-                                        )
-                                break
+                    # 연체료 계산
+                    penalty_amount = calculate_late_penalty(
+                        contract, installment, remaining_amount, late_days
+                    )
 
                     paid_dict = {
                         'paid': {
@@ -267,7 +298,7 @@ class PdfExportPayments(View):
                         'penalty': penalty_amount,
                         'discount': 0,  # 미납 회차는 할인 없음
                         'is_fully_paid': False,
-                        'promised_amount': paid_status['promised_amount']
+                        'promised_amount': late_info['promised_amount']
                     }
                     paid_dict_list.append(paid_dict)
 
