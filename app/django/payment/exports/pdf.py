@@ -168,17 +168,14 @@ class PdfExportPayments(View):
             type_sort=contract.unit_type.sort
         ).order_by('pay_code', 'pay_time')
 
-        # 도래한 회차 + 계약금(납부기한 없는 회차) + Waterfall로 충당된 회차
+        # 도래한 회차 + 계약금(납부기한 없는 회차)
         paid_ids = paid_payments.values_list('installment_order_id', flat=True).distinct()
 
-        # Waterfall로 완납된 회차 ID 추출
-        waterfall_paid_ids = [inst_id for inst_id, status in all_status.items()
-                              if status.get('is_fully_paid', False)]
-
+        # 도래한 회차 또는 납부기한 없는 납부된 회차
         display = all_installments.filter(
-            models.Q(pay_due_date__lte=pub_date) |  # 도래한 회차
-            models.Q(pay_due_date__isnull=True, id__in=paid_ids) |  # 계약금 (납부기한 없고 납부된 경우만)
-            models.Q(id__in=waterfall_paid_ids)  # Waterfall로 완납된 회차
+            models.Q(pay_due_date__lte=pub_date) |  # pay_due_date 기준 도래
+            models.Q(pay_due_date__isnull=True, extra_due_date__lte=pub_date) |  # extra_due_date 기준 도래
+            models.Q(pay_due_date__isnull=True, extra_due_date__isnull=True, id__in=paid_ids)  # 계약금
         )
 
         # 4. 결과 초기화
@@ -208,7 +205,9 @@ class PdfExportPayments(View):
             adj = get_installment_adjustment_summary(contract, inst)
 
             # 연체료 계산 (is_late_penalty 체크)
-            if inst.is_late_penalty and inst.late_penalty_ratio and days > 0 and late_amount > 0:
+            if not inst.is_late_penalty or not inst.late_penalty_ratio:
+                penalty = 0
+            elif days > 0 and late_amount > 0:
                 penalty = calculate_late_penalty(contract, inst, late_amount, days)
             else:
                 penalty = 0
@@ -218,10 +217,8 @@ class PdfExportPayments(View):
 
             if payments.exists():
                 # 실제 납부 존재
-                # 미납금액: is_late_penalty가 False면 0, 지연 완납이면 지연금액, 정상 완납이면 0
-                if not inst.is_late_penalty or not inst.late_penalty_ratio:
-                    diff_amount = 0  # 연체료 미적용 회차
-                elif is_paid and days > 0:
+                # 미납금액: 지연 완납이면 지연금액, 정상 완납이면 0, 미완납이면 잔액
+                if is_paid and days > 0:
                     diff_amount = late_amount  # 지연 완납
                 elif is_paid:
                     diff_amount = 0  # 정상 완납
@@ -229,9 +226,14 @@ class PdfExportPayments(View):
                     diff_amount = remaining  # 미완납
 
                 # is_late_penalty가 False면 표시값 0으로
-                display_days = days if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
-                display_diff = diff_amount if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
-                display_penalty = penalty if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
+                if not inst.is_late_penalty or not inst.late_penalty_ratio:
+                    display_days = 0
+                    display_diff = 0
+                    display_penalty = 0
+                else:
+                    display_days = days
+                    display_diff = diff_amount
+                    display_penalty = penalty
 
                 for p in payments:
                     cumulative += (p.income or 0)
@@ -267,9 +269,14 @@ class PdfExportPayments(View):
                     diff_amount = promised  # 미완납
 
                 # is_late_penalty가 False면 표시값 0으로
-                display_days = days if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
-                display_diff = diff_amount if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
-                display_penalty = penalty if (inst.is_late_penalty and inst.late_penalty_ratio) else 0
+                if not inst.is_late_penalty or not inst.late_penalty_ratio:
+                    display_days = 0
+                    display_diff = 0
+                    display_penalty = 0
+                else:
+                    display_days = days
+                    display_diff = diff_amount
+                    display_penalty = penalty
 
                 result.append({
                     'paid': None,
