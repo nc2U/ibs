@@ -17,7 +17,6 @@ Payment Adjustment Utilities
 from datetime import date
 from decimal import Decimal
 from typing import Dict, Optional, Any
-from django.db import models
 
 from _utils.contract_price import get_payment_amount
 from payment.models import InstallmentPaymentOrder
@@ -92,23 +91,25 @@ def calculate_daily_interest(principal: int, annual_rate: Decimal, days: int) ->
 
 def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[str, Any]]:
     """
-    계약의 모든 회차에 대해 시간순 납부 충당을 계산
+    계약의 모든 회차에 대해 실제 등록된 납부액을 순차적으로 매핑
+
+    각 회차에 installment_order로 등록된 실제 납부액만 집계합니다.
+    납부 내역이 없는 회차는 paid_amount=0으로 표시됩니다.
 
     Returns:
         dict: {
             installment_id: {
-                'is_fully_paid': bool,
-                'fully_paid_date': date or None,
-                'paid_amount': int,
+                'installment_order': InstallmentPaymentOrder,
                 'promised_amount': int,
+                'paid_amount': int,  # 해당 회차로 등록된 실제 납부액 합계
                 'remaining_amount': int,
-                'late_days': int,  # 완납일 기준 연체일수
-                'payment_sources': list  # 충당에 사용된 납부들
+                'is_fully_paid': bool,
+                'fully_paid_date': date or None,  # 완납된 경우 마지막 납부일
+                'payment_records': list  # 해당 회차로 등록된 납부 내역들
             }
         }
     """
     from cash.models import ProjectCashBook
-    from payment.models import InstallmentPaymentOrder
 
     # 모든 회차 조회 (순서대로)
     all_installments = InstallmentPaymentOrder.objects.filter(
@@ -116,102 +117,41 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
         type_sort=contract.unit_type.sort
     ).order_by('pay_code')
 
-    # 모든 납부 내역 조회 (시간순)
-    all_payments = ProjectCashBook.objects.payment_records().filter(
-        contract=contract
-    ).exclude(
-        income__isnull=True
-    ).order_by('deal_date', 'id')
+    result = {}
 
-    # 회차별 상태 초기화
-    installment_status = {}
-    for installment in all_installments:
-        promised_amount = get_payment_amount(contract, installment)
-        installment_status[installment.id] = {
-            'installment_order': installment,
-            'is_fully_paid': False,
-            'fully_paid_date': None,
-            'paid_amount': 0,
-            'promised_amount': promised_amount,
-            'remaining_amount': promised_amount,
-            'late_days': 0,
-            'payment_sources': []
+    # 각 회차별로 실제 등록된 납부만 집계
+    for inst in all_installments:
+        # 약정금액
+        promised = get_payment_amount(contract, inst)
+
+        # 해당 회차로 등록된 실제 납부 내역
+        payments = ProjectCashBook.objects.payment_records().filter(
+            contract=contract,
+            installment_order=inst
+        ).exclude(income__isnull=True).order_by('deal_date')
+
+        # 납부액 합계
+        paid = sum(p.income or 0 for p in payments)
+
+        # 완납 여부 및 완납일
+        is_fully_paid = paid >= promised
+        fully_paid_date = None
+
+        if is_fully_paid and payments.exists():
+            # 완납된 경우, 마지막 납부일을 완납일로 설정
+            fully_paid_date = payments.last().deal_date
+
+        result[inst.id] = {
+            'installment_order': inst,
+            'promised_amount': promised,
+            'paid_amount': paid,
+            'remaining_amount': max(0, promised - paid),
+            'is_fully_paid': is_fully_paid,
+            'fully_paid_date': fully_paid_date,
+            'payment_records': list(payments)
         }
 
-    # 시간순으로 납부 처리
-    for payment in all_payments:
-        payment_amount = payment.income
-        payment_date = payment.deal_date
-
-        # 해당 납부가 속한 회차부터 시작하여 이전 회차들 충당
-        target_installment = payment.installment_order
-        if not target_installment:
-            continue
-
-        # 타겟 회차 이전의 미납 회차들 충당
-        previous_installments = [inst for inst in all_installments
-                               if inst.pay_code < target_installment.pay_code]
-
-        remaining_payment = payment_amount
-
-        # 이전 회차들 우선 충당
-        for prev_inst in previous_installments:
-            if remaining_payment <= 0:
-                break
-
-            status = installment_status[prev_inst.id]
-            if not status['is_fully_paid']:
-                needed = status['remaining_amount']
-                allocated = min(remaining_payment, needed)
-
-                status['paid_amount'] += allocated
-                status['remaining_amount'] -= allocated
-                remaining_payment -= allocated
-
-                status['payment_sources'].append({
-                    'payment_id': payment.id,
-                    'payment_date': payment_date,
-                    'allocated_amount': allocated,
-                    'source_installment': target_installment.pay_name
-                })
-
-                # 완납 체크
-                if status['remaining_amount'] <= 0:
-                    status['is_fully_paid'] = True
-                    status['fully_paid_date'] = payment_date
-
-                    # 연체일수 계산 (완납일 - 납부기일)
-                    due_date = prev_inst.pay_due_date
-                    if due_date and payment_date > due_date:
-                        status['late_days'] = (payment_date - due_date).days
-
-        # 타겟 회차 충당
-        if remaining_payment > 0:
-            status = installment_status[target_installment.id]
-            needed = status['remaining_amount']
-            allocated = min(remaining_payment, needed)
-
-            status['paid_amount'] += allocated
-            status['remaining_amount'] -= allocated
-
-            status['payment_sources'].append({
-                'payment_id': payment.id,
-                'payment_date': payment_date,
-                'allocated_amount': allocated,
-                'source_installment': target_installment.pay_name
-            })
-
-            # 완납 체크
-            if status['remaining_amount'] <= 0:
-                status['is_fully_paid'] = True
-                status['fully_paid_date'] = payment_date
-
-                # 연체일수 계산
-                due_date = target_installment.pay_due_date
-                if due_date and payment_date > due_date:
-                    status['late_days'] = (payment_date - due_date).days
-
-    return installment_status
+    return result
 
 
 def calculate_installment_paid_status_with_priority(
