@@ -77,9 +77,7 @@ class PdfExportPayments(View):
         context['simple_orders'] = simple_orders = PdfExportPayments.get_simple_orders_from_plan(payment_plan, contract)
 
         # 4. 납부목록, 완납금액 구하기 (payment_plan 기반)
-        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract,
-                                                                                           pub_date,
-                                                                                           is_calc=calc)
+        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract, pub_date, is_calc=calc)
         context['paid_dicts'] = paid_dicts
         context['paid_sum_total'] = paid_sum_total
         context['calc_sums'] = calc_sums
