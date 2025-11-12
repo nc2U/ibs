@@ -123,6 +123,10 @@ backup:
   # Backup retention policy
   retentionPolicy: "30d"
 
+  # Backup job TTL (Time To Live) - delete completed jobs after 2 hours
+  # This controls how long completed backup Job resources remain in Kubernetes
+  jobTTL: "7200"  # 2 hours in seconds
+
   # Backup destination (only used if s3.enabled is true)
   destinationPath: ""
 
