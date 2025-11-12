@@ -59,8 +59,8 @@ const isHold = computed(() => props.unit?.is_hold || '')
         <span v-if="unit && unit.key_unit && unit.key_unit.contract">
           <router-link
             :to="{
-              name: '계약 상세 관리',
-              query: { contractor: contorPk },
+              name: '계약 상세 보기',
+              params: { contractorId: contorPk },
             }"
             class="dark-link"
           >
