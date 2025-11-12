@@ -1,5 +1,4 @@
 from datetime import date, datetime
-from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
@@ -9,13 +8,11 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
-from _pdf.utils import (get_contract, get_due_date_per_order)
+from _pdf.utils import get_contract, get_due_date_per_order
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
-from _utils.payment_adjustment import (
-    calculate_all_installments_payment_allocation,
-    get_installment_adjustment_summary
-)
-from _utils.simple_late_payment import calculate_late_penalty
+from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
+                                       get_installment_adjustment_summary,
+                                       calculate_segmented_late_penalty)
 from cash.models import ProjectCashBook
 from notice.models import SalesBillIssue
 from payment.models import InstallmentPaymentOrder
@@ -497,11 +494,14 @@ class PdfExportBill(View):
             late_days = status.get('late_days', 0)
             late_amount = status.get('late_payment_amount', 0)
 
-            # 연체료 계산 (simple_late_payment 방식)
+            # 연체료 계산 (납부 건별 정확한 계산)
             penalty = 0
             if inst.is_late_penalty and inst.late_penalty_ratio:
-                if late_days > 0 and late_amount > 0:
-                    penalty = calculate_late_penalty(contract, inst, late_amount, late_days)
+                # calculate_segmented_late_penalty 사용: 각 납부 건의 실제 지연일수 반영
+                segmented = calculate_segmented_late_penalty(contract, inst, pub_date)
+                penalty = segmented['total_penalty']
+                # Waterfall에서 계산한 late_amount는 참고용으로 유지
+                # 실제 연체료는 segmented 결과 사용
 
             # 선납 할인 계산
             adj = get_installment_adjustment_summary(contract, inst)

@@ -14,8 +14,8 @@ from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order,
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
                                        get_installment_adjustment_summary,
-                                       calculate_daily_interest, get_unpaid_installments)
-from _utils.simple_late_payment import calculate_late_penalty
+                                       calculate_daily_interest, get_unpaid_installments,
+                                       calculate_segmented_late_penalty)
 from cash.models import ProjectCashBook
 from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
 
@@ -73,7 +73,8 @@ class PdfExportPayments(View):
         context['simple_orders'] = simple_orders = PdfExportPayments.get_simple_orders_from_plan(payment_plan, contract)
 
         # 4. 납부목록, 완납금액 구하기 (payment_plan 기반)
-        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract, pub_date, is_calc=calc)
+        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract, pub_date,
+                                                                                           is_calc=calc)
         context['paid_dicts'] = paid_dicts
         context['paid_sum_total'] = paid_sum_total
         context['calc_sums'] = calc_sums
@@ -197,13 +198,14 @@ class PdfExportPayments(View):
             # 조정금액
             adj = get_installment_adjustment_summary(contract, inst)
 
-            # 연체료 계산 (is_late_penalty 체크)
+            # 연체료 계산 (납부 건별 정확한 계산)
             if not inst.is_late_penalty or not inst.late_penalty_ratio:
                 penalty = 0
-            elif days > 0 and late_amount > 0:
-                penalty = calculate_late_penalty(contract, inst, late_amount, days)
             else:
-                penalty = 0
+                # calculate_segmented_late_penalty 사용: 각 납부 건의 실제 지연일수 반영
+                segmented = calculate_segmented_late_penalty(contract, inst, pub_date)
+                penalty = segmented['total_penalty']
+                # 참고: segmented['segments']에 납부 건별 상세 내역 포함
 
             # 실제 납부 내역 확인
             payments = paid_payments.filter(installment_order=inst)
@@ -247,7 +249,7 @@ class PdfExportPayments(View):
                     discount_total += adj['total_discount']
             else:
                 # 실제 납부 없음
-                if not is_paid: # 미납 시
+                if not is_paid:  # 미납 시
                     unpaid_indices.append(len(result))
 
                 # 미납금액 결정
