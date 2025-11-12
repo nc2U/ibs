@@ -42,24 +42,24 @@ const handleExcelDownload = (url: string, fileName: string) => {
       </div>
       <CRow class="mb-2">
         <CCol :cols="6">
-          <small class="text-grey">건물가:</small>
+          <small class="text-grey">건물가 :</small>
           <div>{{ numFormat(contract.contractprice?.price_build || 0) }}</div>
         </CCol>
         <CCol :cols="6">
-          <small class="text-grey">토지가:</small>
+          <small class="text-grey">토지가 :</small>
           <div>{{ numFormat(contract.contractprice?.price_land || 0) }}</div>
         </CCol>
       </CRow>
       <CRow class="mb-3">
         <CCol :cols="6">
-          <small class="text-grey">부가세:</small>
+          <small class="text-grey">부가세 :</small>
           <div>{{ numFormat(contract.contractprice?.price_tax || 0) }}</div>
         </CCol>
       </CRow>
       <hr />
       <CRow class="mb-2">
         <CCol :cols="6">
-          <strong>총 납부액:</strong>
+          <strong>총 납부액 :</strong>
         </CCol>
         <CCol :cols="6" class="text-end">
           <strong class="text-success">{{ numFormat(contract.total_paid) }} 원</strong>
@@ -67,7 +67,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
       </CRow>
       <CRow>
         <CCol :cols="6">
-          <strong>마지막 납부:</strong>
+          <strong>완납 차수 :</strong>
         </CCol>
         <CCol :cols="6" class="text-end">
           <span>{{ contract.last_paid_order?.__str__ || '-' }}</span>

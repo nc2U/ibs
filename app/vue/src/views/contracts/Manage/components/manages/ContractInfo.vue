@@ -145,17 +145,17 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
     <CCardBody>
       <CRow class="mb-2">
         <CCol :sm="6">
-          <strong>계약번호:</strong>
+          <strong>계약번호 :</strong>
           <span class="ml-2">{{ contract.serial_number }}</span>
         </CCol>
         <CCol :sm="6">
-          <strong>분양차수:</strong>
+          <strong>분양차수 :</strong>
           <span class="ml-2">{{ contract.order_group_desc.name }}</span>
         </CCol>
       </CRow>
       <CRow class="mb-2">
         <CCol :sm="6">
-          <strong>타입:</strong>
+          <strong>타입 :</strong>
           <CIcon
             name="cibDiscover"
             :style="'color:' + contract.unit_type_desc.color"
@@ -165,7 +165,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
           <span>{{ contract.unit_type_desc.name }}</span>
         </CCol>
         <CCol :sm="6">
-          <strong>호수:</strong>
+          <strong>호수 :</strong>
           <span class="ml-2" :class="contract.key_unit?.houseunit ? 'text-success' : 'text-danger'">
             {{ contract.key_unit?.houseunit?.__str__ || '미정' }}
           </span>
@@ -173,23 +173,23 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
       </CRow>
       <CRow class="mb-2">
         <CCol :sm="6">
-          <strong>계약일:</strong>
+          <strong>계약일 :</strong>
           <span class="ml-2">{{ contractor.contract_date || '-' }}</span>
         </CCol>
         <CCol :sm="6">
-          <strong>공급계약일:</strong>
+          <strong>공급계약일 :</strong>
           <span class="ml-2">{{ contract.sup_cont_date || '-' }}</span>
         </CCol>
       </CRow>
       <CRow>
         <CCol :sm="6">
-          <strong>활성화:</strong>
+          <strong>활성화 :</strong>
           <CBadge :color="contract.activation ? 'success' : 'secondary'" class="ml-2">
             {{ contract.activation ? '활성' : '비활성' }}
           </CBadge>
         </CCol>
         <CCol :sm="6">
-          <strong>공급계약:</strong>
+          <strong>공급계약 :</strong>
           <CBadge :color="contract.is_sup_cont ? 'success' : 'secondary'" class="ml-2">
             {{ contract.is_sup_cont ? '완료' : '미완료' }}
           </CBadge>
@@ -209,21 +209,21 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
         <h6 class="mb-2">기본 정보</h6>
         <CRow class="mb-2">
           <CCol :sm="6">
-            <strong>이름:</strong>
+            <strong>이름 :</strong>
             <span class="ml-2 text-info strong">{{ contractor.name }}</span>
           </CCol>
           <CCol :sm="6">
-            <strong>생년월일:</strong>
+            <strong>생년월일 :</strong>
             <span class="ml-2">{{ contractor.birth_date }}</span>
           </CCol>
         </CRow>
         <CRow class="mb-2">
           <CCol :sm="6">
-            <strong>성별:</strong>
+            <strong>성별 :</strong>
             <span class="ml-2">{{ contractor.gender === 'M' ? '남성' : '여성' }}</span>
           </CCol>
           <CCol :sm="6">
-            <strong>자격구분:</strong>
+            <strong>자격구분 :</strong>
             <CBadge :color="getQualificationColor(contractor.qualification)" class="ml-2">
               {{ contractor.qualifi_display }}
             </CBadge>
@@ -231,11 +231,11 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
         </CRow>
         <CRow>
           <CCol :sm="6">
-            <strong>상태:</strong>
+            <strong>상태 :</strong>
             <span class="ml-2">{{ getStatusText(contractor.status) }}</span>
           </CCol>
           <CCol :sm="6">
-            <strong>청약일:</strong>
+            <strong>청약일 :</strong>
             <span class="ml-2">{{ contractor.reservation_date || '-' }}</span>
           </CCol>
         </CRow>
@@ -246,13 +246,13 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
         <h6 class="mb-2">연락처</h6>
         <CRow class="mb-2">
           <CCol :sm="6">
-            <strong>휴대폰:</strong>
+            <strong>휴대폰 :</strong>
             <span class="ml-2">
               {{ contract.contractor?.contractorcontact.cell_phone || '-' }}
             </span>
           </CCol>
           <CCol :sm="6">
-            <strong>집전화:</strong>
+            <strong>집전화 :</strong>
             <span class="ml-2">
               {{ contract.contractor?.contractorcontact.home_phone || '-' }}
             </span>
@@ -260,13 +260,13 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
         </CRow>
         <CRow class="mb-2">
           <CCol :sm="6">
-            <strong>기타전화:</strong>
+            <strong>기타전화 :</strong>
             <span class="ml-2">
               {{ contract.contractor?.contractorcontact.other_phone || '-' }}
             </span>
           </CCol>
           <CCol :sm="6">
-            <strong>이메일:</strong>
+            <strong>이메일 :</strong>
             <span class="ml-2">
               {{ contract.contractor?.contractorcontact.email || '-' }}
             </span>
