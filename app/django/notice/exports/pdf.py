@@ -266,7 +266,7 @@ class PdfExportBill(View):
         :return dict(contractor: 계약자명, cont_date: 계약일, cont_no: 계약번호, cont_type: 평형):
         """
         contractor = contract.contractor.name
-        cont_date = contract.contractor.contract_date
+        cont_date = contract.sup_cont_date or contract.contractor.contract_date
         cont_no = contract.key_unit.houseunit if unit else contract.serial_number
         cont_type = contract.unit_type or contract.key_unit.unit_type
 
@@ -383,11 +383,11 @@ class PdfExportBill(View):
             for detail in late_fee_details['installment_details']:
                 installment = detail['installment']
                 adjustment_by_order[installment.pay_code] = {
-                    'late_amount': detail.get('late_amount', 0),        # 지연 납부액
-                    'late_days': detail.get('late_days', 0),            # 지연일수 (연체)
-                    'prepay_days': detail.get('prepay_days', 0),        # 선납일수
+                    'late_amount': detail.get('late_amount', 0),  # 지연 납부액
+                    'late_days': detail.get('late_days', 0),  # 지연일수 (연체)
+                    'prepay_days': detail.get('prepay_days', 0),  # 선납일수
                     'penalty_amount': detail.get('penalty_amount', 0),  # 연체료
-                    'discount_amount': detail.get('discount_amount', 0) # 선납할인
+                    'discount_amount': detail.get('discount_amount', 0)  # 선납할인
                 }
 
         # 회차별 납부 내역 조회
@@ -416,11 +416,11 @@ class PdfExportBill(View):
             paid_dict['paid_amt'] = payment_info['paid_amt']
 
             # 조정금액 정보 (할인/연체)
-            paid_dict['unpaid_amt'] = adjustment.get('late_amount', 0)           # 지연 납부액 (미납액)
-            penalty = adjustment.get('penalty_amount', 0)                         # 연체료 (가산금)
-            discount = adjustment.get('discount_amount', 0)                       # 선납할인
-            late_days = adjustment.get('late_days', 0)                            # 연체일수
-            prepay_days = adjustment.get('prepay_days', 0)                        # 선납일수
+            paid_dict['unpaid_amt'] = adjustment.get('late_amount', 0)  # 지연 납부액 (미납액)
+            penalty = adjustment.get('penalty_amount', 0)  # 연체료 (가산금)
+            discount = adjustment.get('discount_amount', 0)  # 선납할인
+            late_days = adjustment.get('late_days', 0)  # 연체일수
+            prepay_days = adjustment.get('prepay_days', 0)  # 선납일수
 
             # 일수: 선납은 음수(-), 연체는 양수(+)
             if discount > 0 and penalty == 0:
@@ -476,9 +476,9 @@ class PdfExportBill(View):
         # 2. 도래한 회차 필터링 (pub_date 기준)
         display_installments = payment_orders.filter(
             Q(pay_code__lte=now_due_order) & (
-                Q(pay_due_date__lte=pub_date) |
-                Q(pay_due_date__isnull=True, extra_due_date__lte=pub_date) |
-                Q(pay_due_date__isnull=True, extra_due_date__isnull=True)
+                    Q(pay_due_date__lte=pub_date) |
+                    Q(pay_due_date__isnull=True, extra_due_date__lte=pub_date) |
+                    Q(pay_due_date__isnull=True, extra_due_date__isnull=True)
             )
         ).order_by('pay_code', 'pay_time')
 
