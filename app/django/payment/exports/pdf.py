@@ -33,7 +33,6 @@ class PdfExportPayments(View):
     def get(request):
         context = dict()
 
-        project = request.GET.get('project')  # 프로젝트 ID
         # 계약 건 객체
         cont_id = request.GET.get('contract')
         context['contract'] = contract = get_contract(cont_id)
