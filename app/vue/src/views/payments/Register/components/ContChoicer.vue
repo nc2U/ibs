@@ -99,7 +99,7 @@ onMounted(() => pageInit())
           [일련번호 :
           <router-link
             v-c-tooltip="'계약 상세 관리'"
-            :to="{ name: '계약 상세 관리', query: { contractor: contract.contractor?.pk } }"
+            :to="{ name: '계약 상세 보기', params: { contractorId: contract.contractor?.pk } }"
           >
             {{ contract.serial_number }}
           </router-link>
@@ -113,7 +113,7 @@ onMounted(() => pageInit())
           |
           <router-link
             v-c-tooltip="'계약 상세 관리'"
-            :to="{ name: '계약 상세 관리', query: { contractor: contract.contractor?.pk } }"
+            :to="{ name: '계약 상세 보기', params: { contractorId: contract.contractor?.pk } }"
           >
             계약자 : {{ contract.contractor?.name }})
           </router-link>

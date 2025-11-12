@@ -44,7 +44,9 @@
             <td class="title br2 bb" colspan="4">동호수</td>
             <td class="bb" colspan="7">{{ unit }}</td>
             <td class="title bl2 br2 bb" colspan="4">계약일</td>
-            <td class="bb" colspan="7">{{ contract.contractor.contract_date }}</td>
+            <td class="bb" colspan="7">
+                {{ contract.sup_cont_date|default:contract.contractor.contract_date }}
+            </td>
         </tr>
         <tr>
             <td class="title br2 bb" colspan="4">계약자</td>
