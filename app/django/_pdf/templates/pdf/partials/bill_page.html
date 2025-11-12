@@ -190,14 +190,14 @@
         <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 12%;" rowspan="2">납부기한</td>
         <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 12%;" rowspan="2">금 액</td>
         <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 24%;" colspan="2">실 수납금액</td>
-        <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 20%;" colspan="3">선납연체(할인가산)</td>
+        <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 20%;" colspan="3">선납할인 / 연체가산</td>
     </tr>
     <tr>
         <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 12%;">일자</td>
         <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 12%;">금액</td>
         <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 12%;">적용 금액</td>
         <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 8%;">일수</td>
-        <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 14%;">할인(-)/가산금</td>
+        <td style="padding: 3px 0; border:1px solid black; text-align:center; width: 14%;">할인(-)/가산(+)</td>
     </tr>
     <tr>
         <td colspan="9" style="padding-bottom: 5px; border-left: solid 1px; border-right: solid 1px;"></td>
@@ -246,8 +246,8 @@
         <td style="padding: 3px 0; border:1px solid black; text-align:center;">합 계</td>
         <td style="padding: 3px 5px; border:1px solid black; text-align:{% if data.unit %}right{% else %}center{% endif %};" colspan="2">{% if not data.no_price %}{{ data.price|intcomma }}{% else %}-{% endif %}</td>
         <td style="padding: 3px 5px; border:1px solid black; text-align:right;" colspan="2">{{ data.paid_sum_total|default:"-"|intcomma }}</td>
-        <td style="padding: 3px 5px; border:1px solid black; text-align:right;">{% if not data.no_late %}{{ 0|default:"-"|intcomma }}{% else %}-{% endif %}</td>
-        <td style="padding: 3px 5px; border:1px solid black; text-align:right;">{% if not data.no_late %}{{ 0|default:"-"|intcomma }}{% else %}-{% endif %}</td>
+        <td style="padding: 3px 5px; border:1px solid black; text-align:right;">{% if not data.no_late %}-{% else %}-{% endif %}</td>
+        <td style="padding: 3px 5px; border:1px solid black; text-align:right;">{% if not data.no_late %}-{% else %}-{% endif %}</td>
         <td style="padding: 3px 5px; border:1px solid black; text-align:right; ">{% if not data.no_late %}{{ data.late_fee_sum|default:"-"|intcomma }}{% else %}-{% endif %}</td>
         <td style="padding: 3px 0; border:1px solid black; text-align:center;"></td>
     </tr>
