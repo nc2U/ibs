@@ -94,7 +94,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
           <CTableBody>
             <CTableRow v-for="payment in contract.payments" :key="payment.pk">
               <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
-              <CTableDataCell>{{ payment.installment_order.__str__ }}</CTableDataCell>
+              <CTableDataCell>{{ payment.installment_order?.__str__ }}</CTableDataCell>
               <CTableDataCell class="text-end">
                 {{ numFormat(payment.income) }}
               </CTableDataCell>
