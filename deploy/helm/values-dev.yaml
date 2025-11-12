@@ -32,20 +32,6 @@ mariadb:
     backupPvStorage: 200Mi
     backupPvcStorage: 200Mi
 
-postgres:
-  enabled: false
-  readReplicas:
-    replicaCount: 1
-
-  auth:
-    postgresPassword: "my-secret"
-    password: "my-secret"
-    replicationPassword: "my-secret"
-
-  volumes:
-    backupPvStorage: 200Mi
-    backupPvcStorage: 200Mi
-
 # CloudNativePG 설정
 cnpg:
   enabled: true
