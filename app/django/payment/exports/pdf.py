@@ -10,15 +10,11 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
-from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order,
-                        get_paid)
+from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order, get_paid)
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
-from _utils.payment_adjustment import (
-    calculate_all_installments_payment_allocation,
-    get_installment_adjustment_summary
-)
-from _utils.payment_adjustment import calculate_daily_interest
-from _utils.payment_adjustment import get_unpaid_installments
+from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
+                                       get_installment_adjustment_summary,
+                                       calculate_daily_interest, get_unpaid_installments)
 from _utils.simple_late_payment import calculate_late_penalty
 from cash.models import ProjectCashBook
 from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
@@ -251,7 +247,7 @@ class PdfExportPayments(View):
                     discount_total += adj['total_discount']
             else:
                 # 실제 납부 없음
-                if not is_paid:
+                if not is_paid: # 미납 시
                     unpaid_indices.append(len(result))
 
                 # 미납금액 결정
