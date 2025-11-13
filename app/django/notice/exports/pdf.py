@@ -12,7 +12,7 @@ from _pdf.utils import get_contract, get_due_date_per_order
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
                                        get_installment_adjustment_summary,
-                                       calculate_segmented_late_penalty)
+                                       calculate_daily_interest)
 from cash.models import ProjectCashBook
 from notice.models import SalesBillIssue
 from payment.models import InstallmentPaymentOrder
@@ -306,15 +306,17 @@ class PdfExportBill(View):
         """
         payment_list = []
 
-        # 회차별 연체료와 할인 매핑 생성
+        # 회차별 연체료와 할인 매핑 생성 (미납 회차만 필터링)
         adjustment_by_order = {}
         if late_fee_details and late_fee_details.get('installment_details'):
             for detail in late_fee_details['installment_details']:
                 installment = detail['installment']
-                adjustment_by_order[installment.pay_code] = {
-                    'penalty': detail['penalty_amount'],
-                    'discount': detail['discount_amount']
-                }
+                # 미납 회차만 고지서에 포함 (pay_code > paid_code and <= now_due_order)
+                if installment.pay_code > paid_code and installment.pay_code <= now_due_order:
+                    adjustment_by_order[installment.pay_code] = {
+                        'penalty': detail['penalty_amount'],
+                        'discount': detail['discount_amount']
+                    }
 
         # 총 할인액 계산
         total_discount = late_fee_details.get('total_discount', 0) if late_fee_details else 0
@@ -494,14 +496,42 @@ class PdfExportBill(View):
             late_days = status.get('late_days', 0)
             late_amount = status.get('late_payment_amount', 0)
 
-            # 연체료 계산 (납부 건별 정확한 계산)
+            # 연체료 계산 (분할납부별 정확한 계산)
             penalty = 0
-            if inst.is_late_penalty and inst.late_penalty_ratio:
-                # calculate_segmented_late_penalty 사용: 각 납부 건의 실제 지연일수 반영
-                segmented = calculate_segmented_late_penalty(contract, inst, pub_date)
-                penalty = segmented['total_penalty']
-                # Waterfall에서 계산한 late_amount는 참고용으로 유지
-                # 실제 연체료는 segmented 결과 사용
+            if inst.is_late_penalty and inst.late_penalty_ratio and late_days > 0:
+                # 분할납부시 각 payment별 개별 지연일수로 연체료 계산
+                from cash.models import ProjectCashBook
+                payments = ProjectCashBook.objects.payment_records().filter(
+                    contract=contract,
+                    installment_order=inst,
+                    deal_date__lte=pub_date
+                ).exclude(income__isnull=True).order_by('deal_date')
+
+                total_penalty = 0
+                due_date = inst.extra_due_date or inst.pay_due_date
+
+                if payments.exists():
+                    # 실제 납부가 있는 경우: 각 payment별 개별 계산
+                    for p in payments:
+                        if due_date and p.deal_date > due_date:
+                            individual_days = (p.deal_date - due_date).days
+                            individual_penalty = calculate_daily_interest(
+                                p.income or 0,
+                                inst.late_penalty_ratio,
+                                individual_days
+                            )
+                            total_penalty += individual_penalty
+                else:
+                    # 미납인 경우: 미납금액 × 지연일수
+                    remaining_amount = status.get('remaining_amount', 0)
+                    if remaining_amount > 0:
+                        total_penalty = calculate_daily_interest(
+                            remaining_amount,
+                            inst.late_penalty_ratio,
+                            late_days
+                        )
+
+                penalty = total_penalty
 
             # 선납 할인 계산
             adj = get_installment_adjustment_summary(contract, inst)
