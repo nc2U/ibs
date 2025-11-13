@@ -192,34 +192,24 @@ class PdfExportPayments(View):
 
             # Waterfall 기준 지연일수 사용 (이미 계산됨)
             days = status.get('late_days', 0)
-            late_amount = status.get('late_payment_amount', 0)
 
-            # 조정금액
+            # 선납 할인 조회 (할인만 필요)
             adj = get_installment_adjustment_summary(contract, inst)
-
-            # 연체료 계산 (납부 건별 정확한 계산)
-            if not inst.is_late_penalty or not inst.late_penalty_ratio:
-                penalty = 0
-            else:
-                # calculate_segmented_late_penalty 사용: 각 납부 건의 실제 지연일수 반영
-                segmented = calculate_segmented_late_penalty(contract, inst, pub_date)
-                penalty = segmented['total_penalty']
-                # 참고: segmented['segments']에 납부 건별 상세 내역 포함
 
             # 실제 납부 내역 확인
             payments = paid_payments.filter(installment_order=inst)
 
             if payments.exists():
                 # 실제 납부 존재
-                # 미납금액: 지연 완납이면 지연금액, 정상 완납이면 0, 미완납이면 잔액
+                # 지연금액 계산: 지연 완납이면 완납금액, 미완납이면 미납금액
                 if is_paid and days > 0:
-                    diff_amount = late_amount  # 지연 완납
+                    diff_amount = paid  # 지연 완납된 금액
                 elif is_paid:
-                    diff_amount = 0  # 정상 완납
+                    diff_amount = 0    # 정상 완납
                 else:
-                    diff_amount = remaining  # 미완납
+                    diff_amount = remaining  # 미완납 금액
 
-                # is_late_penalty가 False면 표시값 0으로
+                # 연체료 설정이 없으면 0으로
                 if not inst.is_late_penalty or not inst.late_penalty_ratio:
                     display_days = 0
                     display_diff = 0
@@ -227,42 +217,35 @@ class PdfExportPayments(View):
                 else:
                     display_days = days
                     display_diff = diff_amount
-                    display_penalty = penalty
-
-                # 분할납부별 지연 정보 매핑
-                payment_penalty_map = {}
-                if 'late_payment_details' in status:
-                    for detail in status['late_payment_details']:
-                        # payment_date와 payment_amount로 매핑
-                        key = (detail['payment_date'], detail['payment_amount'])
-                        payment_penalty_map[key] = {
-                            'penalty': detail.get('late_penalty', 0),
-                            'late_days': detail.get('late_days', 0),
-                            'type': detail.get('type', 'paid_late')
-                        }
+                    # 연체료는 각 payment별로 개별 계산 (아래에서 수행)
 
                 total_penalty_added = 0
                 for p in payments:
                     cumulative += (p.income or 0)
 
-                    # 해당 payment의 개별 지연 정보 찾기
-                    payment_key = (p.deal_date, p.income)
-                    individual_penalty_info = payment_penalty_map.get(payment_key, {})
+                    # status에서 이미 계산된 정확한 지연일수 사용 (계약일 이후 첫 도래 회차 기준 적용됨)
+                    status_late_days = status.get('late_days', 0)
 
-                    individual_penalty = individual_penalty_info.get('penalty', 0)
-                    individual_days = individual_penalty_info.get('late_days', 0)
+                    # payment_adjustment.py에서 계산된 정확한 지연일수 적용
+                    if status_late_days > 0:
+                        individual_days = status_late_days
+                        individual_diff = p.income or 0
+                    else:
+                        individual_days = 0
+                        individual_diff = 0
 
                     # is_late_penalty가 False면 표시값 0으로
-                    if not inst.is_late_penalty or not inst.late_penalty_ratio:
+                    if not inst.is_late_penalty or not inst.late_penalty_ratio or individual_days <= 0:
                         individual_penalty = 0
                         individual_days = 0
                         individual_diff = 0
                     else:
-                        # 지연금액: 해당 payment의 실제 금액만
-                        if individual_days > 0:
-                            individual_diff = p.income or 0
-                        else:
-                            individual_diff = 0
+                        # 단순 직접 계산: diff × delay_days × 연이율 ÷ 365
+                        individual_penalty = calculate_daily_interest(
+                            individual_diff,
+                            inst.late_penalty_ratio,
+                            individual_days
+                        )
 
                     result.append({
                         'paid': p,
@@ -272,7 +255,7 @@ class PdfExportPayments(View):
                         'paid_amount': p.income,
                         'diff': individual_diff,  # 개별 payment의 지연금액
                         'delay_days': individual_days,  # 개별 지연일수
-                        'penalty': individual_penalty,  # 개별 지연가산금
+                        'penalty': individual_penalty,  # 개별 지연가산금: diff × days × rate ÷ 365
                         'discount': adj['total_discount'] if len(payments) == 1 else 0,  # 할인은 마지막에만
                         'is_fully_paid': is_paid,
                         'promised_amount': promised
@@ -283,22 +266,14 @@ class PdfExportPayments(View):
                 penalty_total += total_penalty_added
                 discount_total += adj['total_discount']
             else:
-                # 실제 납부 없음
-                if not is_paid:  # 미납 시
+                # 실제 납부 없음 (미납 회차)
+                if not is_paid:
                     unpaid_indices.append(len(result))
 
-                # 미납금액 결정
-                # 1. 지연 완납: 지연 납부된 금액 (연체료 계산 기준)
-                # 2. 정상 완납: 0
-                # 3. 미완납: 약정금액 전체
-                if is_paid and days > 0:
-                    diff_amount = late_amount  # 지연 완납
-                elif is_paid:
-                    diff_amount = 0  # 정상 완납
-                else:
-                    diff_amount = promised  # 미완납
+                # 미납 금액 = 실제 미납금액
+                diff_amount = remaining if not is_paid else 0
 
-                # is_late_penalty가 False면 표시값 0으로
+                # 연체료 설정이 없으면 0으로
                 if not inst.is_late_penalty or not inst.late_penalty_ratio:
                     display_days = 0
                     display_diff = 0
@@ -306,7 +281,15 @@ class PdfExportPayments(View):
                 else:
                     display_days = days
                     display_diff = diff_amount
-                    display_penalty = penalty
+                    # 미납 회차 연체료: 미납금액 × 지연일수 × 연이율
+                    if diff_amount > 0 and display_days > 0:
+                        display_penalty = calculate_daily_interest(
+                            diff_amount,
+                            inst.late_penalty_ratio,
+                            display_days
+                        )
+                    else:
+                        display_penalty = 0
 
                 result.append({
                     'paid': None,
