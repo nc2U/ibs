@@ -601,7 +601,7 @@ class PdfExportBill(View):
                 'paid_amt': 0,
                 # 'delayed_amt': 0,
                 'penalty_days': 0,
-                'panalty_amt': 0,
+                'penalty_amt': 0,
             }
             remain_amt_list.append(paid_dict)
 
