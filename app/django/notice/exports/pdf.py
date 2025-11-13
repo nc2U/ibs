@@ -114,9 +114,7 @@ class PdfExportBill(View):
         bill_data['cont_content'] = self.get_cont_content(contract, unit)
 
         # 연체료 계산 (payment_adjustment.py 사용 - 항상 계산, 템플릿에서 표시 제어)
-        late_fee_data = self.calculate_late_fees_standardized(
-            contract, payment_orders, now_due_order, pub_date
-        )
+        late_fee_data = self.calculate_late_fees_standardized(contract, payment_orders, now_due_order, pub_date)
 
         # ■ 납부대금 안내 ----------------------------------------------
         bill_data['this_pay_info'] = self.get_this_pay_info(contract,
@@ -290,8 +288,7 @@ class PdfExportBill(View):
         return paid_code
 
     @staticmethod
-    def get_this_pay_info(contract,
-                          orders_info, payment_orders,
+    def get_this_pay_info(contract, orders_info, payment_orders,
                           now_due_order, paid_code, late_fee_details=None):
         """
         :: ■ 납부대금 안내
@@ -301,22 +298,26 @@ class PdfExportBill(View):
         :param now_due_order: 당회 납부 회차
         :param paid_code: 완납 회차
         :param late_fee_details: 연체료 및 할인 상세 정보 (calculate_late_fees_standardized 결과)
-        :return list(dict(order: 납부회차, due_date: 납부기한, amount: 약정금액, unpaid: 미납금액,
-                         penalty: 연체가산금, discount: 선납할인, sum_amount: 납부금액)):
+        :return list(dict(
+            order: 납부회차,
+            due_date: 납부기한,
+            amount: 약정금액,
+            unpaid: 미납금액,
+            penalty: 연체가산금,
+            discount: 선납할인,
+            sum_amount: 납부금액)):
         """
         payment_list = []
 
-        # 회차별 연체료와 할인 매핑 생성 (미납 회차만 필터링)
+        # 회차별 연체료와 할인 매핑 생성
         adjustment_by_order = {}
         if late_fee_details and late_fee_details.get('installment_details'):
             for detail in late_fee_details['installment_details']:
                 installment = detail['installment']
-                # 미납 회차만 고지서에 포함 (pay_code > paid_code and <= now_due_order)
-                if installment.pay_code > paid_code and installment.pay_code <= now_due_order:
-                    adjustment_by_order[installment.pay_code] = {
-                        'penalty': detail['penalty_amount'],
-                        'discount': detail['discount_amount']
-                    }
+                adjustment_by_order[installment.pay_code] = {
+                    'penalty': detail['penalty_amount'],
+                    'discount': detail['discount_amount']
+                }
 
         # 총 할인액 계산
         total_discount = late_fee_details.get('total_discount', 0) if late_fee_details else 0
