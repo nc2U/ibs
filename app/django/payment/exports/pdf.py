@@ -70,11 +70,10 @@ class PdfExportPayments(View):
         context['due_amount'] = sum(plan_item['amount'] for plan_item in payment_plan)
 
         # 3. 간단 차수 정보 (payment_plan 기반으로 생성)
-        context['simple_orders'] = simple_orders = PdfExportPayments.get_simple_orders_from_plan(payment_plan, contract)
+        context['simple_orders'] = PdfExportPayments.get_simple_orders_from_plan(payment_plan, contract)
 
         # 4. 납부목록, 완납금액 구하기 (payment_plan 기반)
-        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract, pub_date,
-                                                                                           is_calc=calc)
+        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract, pub_date, is_calc=calc)
         context['paid_dicts'] = paid_dicts
         context['paid_sum_total'] = paid_sum_total
         context['calc_sums'] = calc_sums
@@ -230,23 +229,59 @@ class PdfExportPayments(View):
                     display_diff = diff_amount
                     display_penalty = penalty
 
+                # 분할납부별 지연 정보 매핑
+                payment_penalty_map = {}
+                if 'late_payment_details' in status:
+                    for detail in status['late_payment_details']:
+                        # payment_date와 payment_amount로 매핑
+                        key = (detail['payment_date'], detail['payment_amount'])
+                        payment_penalty_map[key] = {
+                            'penalty': detail.get('late_penalty', 0),
+                            'late_days': detail.get('late_days', 0),
+                            'type': detail.get('type', 'paid_late')
+                        }
+
+                total_penalty_added = 0
                 for p in payments:
                     cumulative += (p.income or 0)
+
+                    # 해당 payment의 개별 지연 정보 찾기
+                    payment_key = (p.deal_date, p.income)
+                    individual_penalty_info = payment_penalty_map.get(payment_key, {})
+
+                    individual_penalty = individual_penalty_info.get('penalty', 0)
+                    individual_days = individual_penalty_info.get('late_days', 0)
+
+                    # is_late_penalty가 False면 표시값 0으로
+                    if not inst.is_late_penalty or not inst.late_penalty_ratio:
+                        individual_penalty = 0
+                        individual_days = 0
+                        individual_diff = 0
+                    else:
+                        # 지연금액: 해당 payment의 실제 금액만
+                        if individual_days > 0:
+                            individual_diff = p.income or 0
+                        else:
+                            individual_diff = 0
+
                     result.append({
                         'paid': p,
                         'sum': cumulative,
                         'order': inst.pay_name,
                         'installment_order': inst,
                         'paid_amount': p.income,
-                        'diff': display_diff,  # 표시용
-                        'delay_days': display_days,  # 표시용
-                        'penalty': display_penalty,  # 표시용
-                        'discount': adj['total_discount'],
+                        'diff': individual_diff,  # 개별 payment의 지연금액
+                        'delay_days': individual_days,  # 개별 지연일수
+                        'penalty': individual_penalty,  # 개별 지연가산금
+                        'discount': adj['total_discount'] if len(payments) == 1 else 0,  # 할인은 마지막에만
                         'is_fully_paid': is_paid,
                         'promised_amount': promised
                     })
-                    penalty_total += display_penalty
-                    discount_total += adj['total_discount']
+
+                    total_penalty_added += individual_penalty
+
+                penalty_total += total_penalty_added
+                discount_total += adj['total_discount']
             else:
                 # 실제 납부 없음
                 if not is_paid:  # 미납 시

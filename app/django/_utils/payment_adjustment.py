@@ -141,6 +141,8 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
             'is_late': False,
             'late_days': 0,
             'late_payment_amount': 0,
+            'late_payment_details': [],  # 분할납부별 지연 상세 정보
+            'total_late_penalty': 0,     # 총 지연 가산금
             'payment_sources': []
         }
 
@@ -252,17 +254,107 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
                 base_due_date = contract_date  # fallback
 
         if status['is_fully_paid'] and status['fully_paid_date']:
-            # 완납: 완납일 > 기준납부기한이면 지연
-            if status['fully_paid_date'] > base_due_date:
-                status['is_late'] = True
-                status['late_days'] = (status['fully_paid_date'] - base_due_date).days
-                status['late_payment_amount'] = status['promised_amount']
+            # 완납: 분할납부별 지연 가산금 계산
+            status['is_late'] = False
+            total_late_penalty = 0
+            late_payment_details = []
+            max_late_days = 0
+
+            # 각 payment_source별로 개별 지연금액 계산
+            for payment_source in status['payment_sources']:
+                payment_date = payment_source['payment_date']
+                payment_amount = payment_source['allocated_amount']
+
+                # 해당 납부의 지연일수 계산
+                if payment_date > base_due_date:
+                    late_days = (payment_date - base_due_date).days
+
+                    # 연체 가산 설정이 있는 경우만 계산
+                    if hasattr(inst, 'is_late_penalty') and inst.is_late_penalty and inst.late_penalty_ratio:
+                        late_penalty = calculate_daily_interest(
+                            payment_amount,
+                            inst.late_penalty_ratio,
+                            late_days
+                        )
+
+                        late_payment_details.append({
+                            'payment_date': payment_date,
+                            'payment_amount': payment_amount,
+                            'late_days': late_days,
+                            'late_penalty': late_penalty
+                        })
+
+                        total_late_penalty += late_penalty
+                        max_late_days = max(max_late_days, late_days)
+                        status['is_late'] = True
+
+            status['late_days'] = max_late_days
+            status['late_payment_amount'] = total_late_penalty  # 총 지연 가산금
+            status['late_payment_details'] = late_payment_details
+            status['total_late_penalty'] = total_late_penalty
         else:
-            # 미완납: 오늘 > 기준납부기한이면 지연
-            if today > base_due_date:
-                status['is_late'] = True
-                status['late_days'] = (today - base_due_date).days
-                status['late_payment_amount'] = status['remaining_amount']
+            # 미완납: 기존 납부분에 대한 지연금 + 미납분에 대한 현재 지연금 계산
+            status['is_late'] = False
+            total_late_penalty = 0
+            late_payment_details = []
+            max_late_days = 0
+
+            # 1. 기존 납부분의 지연금액 계산
+            for payment_source in status['payment_sources']:
+                payment_date = payment_source['payment_date']
+                payment_amount = payment_source['allocated_amount']
+
+                if payment_date > base_due_date:
+                    late_days = (payment_date - base_due_date).days
+
+                    # 연체 가산 설정이 있는 경우만 계산
+                    if hasattr(inst, 'is_late_penalty') and inst.is_late_penalty and inst.late_penalty_ratio:
+                        late_penalty = calculate_daily_interest(
+                            payment_amount,
+                            inst.late_penalty_ratio,
+                            late_days
+                        )
+
+                        late_payment_details.append({
+                            'payment_date': payment_date,
+                            'payment_amount': payment_amount,
+                            'late_days': late_days,
+                            'late_penalty': late_penalty,
+                            'type': 'paid_late'  # 지연 납부분
+                        })
+
+                        total_late_penalty += late_penalty
+                        max_late_days = max(max_late_days, late_days)
+                        status['is_late'] = True
+
+            # 2. 현재 미납분에 대한 지연금액 계산
+            if today > base_due_date and status['remaining_amount'] > 0:
+                current_late_days = (today - base_due_date).days
+
+                # 연체 가산 설정이 있는 경우만 계산
+                if hasattr(inst, 'is_late_penalty') and inst.is_late_penalty and inst.late_penalty_ratio:
+                    current_late_penalty = calculate_daily_interest(
+                        status['remaining_amount'],
+                        inst.late_penalty_ratio,
+                        current_late_days
+                    )
+
+                    late_payment_details.append({
+                        'payment_date': today,
+                        'payment_amount': status['remaining_amount'],
+                        'late_days': current_late_days,
+                        'late_penalty': current_late_penalty,
+                        'type': 'unpaid'  # 현재 미납분
+                    })
+
+                    total_late_penalty += current_late_penalty
+                    max_late_days = max(max_late_days, current_late_days)
+                    status['is_late'] = True
+
+            status['late_days'] = max_late_days
+            status['late_payment_amount'] = total_late_penalty
+            status['late_payment_details'] = late_payment_details
+            status['total_late_penalty'] = total_late_penalty
 
     return installment_status
 
