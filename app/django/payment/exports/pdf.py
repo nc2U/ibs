@@ -14,8 +14,7 @@ from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order,
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
                                        get_installment_adjustment_summary,
-                                       calculate_daily_interest, get_unpaid_installments,
-                                       calculate_segmented_late_penalty)
+                                       calculate_daily_interest, get_unpaid_installments)
 from cash.models import ProjectCashBook
 from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
 
@@ -73,7 +72,8 @@ class PdfExportPayments(View):
         context['simple_orders'] = PdfExportPayments.get_simple_orders_from_plan(payment_plan, contract)
 
         # 4. 납부목록, 완납금액 구하기 (payment_plan 기반)
-        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract, pub_date, is_calc=calc)
+        paid_dicts, paid_sum_total, calc_sums = PdfExportPayments.get_paid_with_adjustment(contract, pub_date,
+                                                                                           is_calc=calc)
         context['paid_dicts'] = paid_dicts
         context['paid_sum_total'] = paid_sum_total
         context['calc_sums'] = calc_sums
@@ -205,7 +205,7 @@ class PdfExportPayments(View):
                 if is_paid and days > 0:
                     diff_amount = paid  # 지연 완납된 금액
                 elif is_paid:
-                    diff_amount = 0    # 정상 완납
+                    diff_amount = 0  # 정상 완납
                 else:
                     diff_amount = remaining  # 미완납 금액
 
