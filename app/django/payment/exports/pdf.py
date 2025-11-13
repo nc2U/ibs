@@ -223,12 +223,11 @@ class PdfExportPayments(View):
                 for p in payments:
                     cumulative += (p.income or 0)
 
-                    # status에서 이미 계산된 정확한 지연일수 사용 (계약일 이후 첫 도래 회차 기준 적용됨)
-                    status_late_days = status.get('late_days', 0)
+                    # 각 payment별 개별 지연일수 계산
+                    due_date = inst.extra_due_date or inst.pay_due_date
 
-                    # payment_adjustment.py에서 계산된 정확한 지연일수 적용
-                    if status_late_days > 0:
-                        individual_days = status_late_days
+                    if due_date and p.deal_date > due_date:
+                        individual_days = (p.deal_date - due_date).days
                         individual_diff = p.income or 0
                     else:
                         individual_days = 0
