@@ -264,6 +264,36 @@ class PdfExportPayments(View):
 
                 penalty_total += total_penalty_added
                 discount_total += adj['total_discount']
+
+                # 일부납부 시 미납 잔액 추가
+                if not is_paid and remaining > 0:
+                    unpaid_indices.append(len(result))
+
+                    # 미납 부분의 연체료 계산
+                    if inst.is_late_penalty and inst.late_penalty_ratio and days > 0:
+                        unpaid_penalty = calculate_daily_interest(
+                            remaining,
+                            inst.late_penalty_ratio,
+                            days
+                        )
+                    else:
+                        unpaid_penalty = 0
+
+                    result.append({
+                        'paid': None,
+                        'sum': cumulative,
+                        'order': inst.pay_name,
+                        'installment_order': inst,
+                        'paid_amount': 0,  # 미납이므로 0
+                        'diff': remaining,  # 미납 금액
+                        'delay_days': days,  # 지연일수
+                        'penalty': unpaid_penalty,  # 미납 부분 연체료
+                        'discount': 0,
+                        'is_fully_paid': False,
+                        'promised_amount': promised
+                    })
+
+                    penalty_total += unpaid_penalty
             else:
                 # 실제 납부 없음 (미납 회차)
                 if not is_paid:
