@@ -10,9 +10,7 @@ from weasyprint import HTML
 
 from _pdf.utils import get_contract, get_due_date_per_order
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
-from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
-                                       get_installment_adjustment_summary,
-                                       calculate_daily_interest)
+from _utils.payment_adjustment import aggregate_installment_adjustments
 from cash.models import ProjectCashBook
 from notice.models import SalesBillIssue
 from payment.models import InstallmentPaymentOrder
@@ -150,9 +148,10 @@ class PdfExportBill(View):
         bill_data['paid_sum_total'] = paid_sum_total  # 기 납부 총액
 
         # 연체료 정보를 bill_data에 추가
-        # 실제 청구 대상 회차의 연체료만 사용 (this_pay_info에 포함된 회차만)
-        bill_data['late_fee_sum'] = bill_data['this_pay_sum']['penalty_sum']
-        bill_data['discount_sum'] = bill_data['this_pay_sum']['discount_sum']
+        # late_fee_data에는 모든 도래한 회차(기납부 + 미납)의 연체료/할인이 포함됨
+        # this_pay_sum은 미납 회차만 포함하므로, 전체 연체료는 late_fee_data에서 가져와야 함
+        bill_data['late_fee_sum'] = late_fee_data.get('total_late_fee', 0)
+        bill_data['discount_sum'] = late_fee_data.get('total_discount', 0)
         bill_data['late_fee_details'] = late_fee_data
 
         # 표시 정보 제한 여부
@@ -447,12 +446,11 @@ class PdfExportBill(View):
     @staticmethod
     def calculate_late_fees_standardized(contract, payment_orders, now_due_order, pub_date):
         """
-        :: 표준화된 연체료 및 할인 계산 (waterfall + simple_late_payment 방식)
+        :: 표준화된 연체료 및 할인 계산 (waterfall 기반)
 
-        PdfExportPayments 방식과 동일한 계산 로직 사용:
-        - calculate_all_installments_payment_allocation(): waterfall 기반 완납 상태 및 지연일수 계산
-        - simple_late_payment.calculate_late_penalty(): 연체료 계산
-        - get_installment_adjustment_summary(): 선납 할인 계산
+        PdfExportPayments와 동일한 계산 로직 사용:
+        - aggregate_installment_adjustments(): waterfall 기반 개별 납부 연체료 집계
+        - 분할 납부 시에도 PdfExportPayments와 동일한 금액 보장
 
         Args:
             contract: 계약 인스턴스
@@ -470,98 +468,14 @@ class PdfExportBill(View):
             }
         """
 
-        # 1. Waterfall 기반 완납 상태 계산
-        all_status = calculate_all_installments_payment_allocation(contract)
-
-        # 2. 도래한 회차 필터링 (pub_date 기준)
-        display_installments = payment_orders.filter(
-            Q(pay_code__lte=now_due_order) & (
-                    Q(pay_due_date__lte=pub_date) |
-                    Q(pay_due_date__isnull=True, extra_due_date__lte=pub_date) |
-                    Q(pay_due_date__isnull=True, extra_due_date__isnull=True)
-            )
-        ).order_by('pay_code', 'pay_time')
-
-        # 3. 회차별 연체료 및 할인 계산
-        total_late_fee = 0
-        total_discount = 0
-        installment_details = []
-
-        for inst in display_installments:
-            status = all_status.get(inst.id, {})
-            if not status:
-                continue
-
-            # Waterfall에서 계산된 상태 정보
-            is_paid = status['is_fully_paid']
-            late_days = status.get('late_days', 0)
-            late_amount = status.get('late_payment_amount', 0)
-
-            # 연체료 계산 (분할납부별 정확한 계산)
-            penalty = 0
-            if inst.is_late_penalty and inst.late_penalty_ratio and late_days > 0:
-                # 분할납부시 각 payment별 개별 지연일수로 연체료 계산
-                from cash.models import ProjectCashBook
-                payments = ProjectCashBook.objects.payment_records().filter(
-                    contract=contract,
-                    installment_order=inst,
-                    deal_date__lte=pub_date
-                ).exclude(income__isnull=True).order_by('deal_date')
-
-                total_penalty = 0
-                due_date = inst.extra_due_date or inst.pay_due_date
-
-                if payments.exists():
-                    # 실제 납부가 있는 경우: 각 payment별 개별 계산
-                    for p in payments:
-                        if due_date and p.deal_date > due_date:
-                            individual_days = (p.deal_date - due_date).days
-                            individual_penalty = calculate_daily_interest(
-                                p.income or 0,
-                                inst.late_penalty_ratio,
-                                individual_days
-                            )
-                            total_penalty += individual_penalty
-                else:
-                    # 미납인 경우: 미납금액 × 지연일수
-                    remaining_amount = status.get('remaining_amount', 0)
-                    if remaining_amount > 0:
-                        total_penalty = calculate_daily_interest(
-                            remaining_amount,
-                            inst.late_penalty_ratio,
-                            late_days
-                        )
-
-                penalty = total_penalty
-
-            # 선납 할인 계산
-            adj = get_installment_adjustment_summary(contract, inst)
-            discount = adj.get('total_discount', 0)
-            prepay_days = adj.get('prepay_days', 0)  # 선납일수
-
-            # 연체료나 할인이 있는 경우만 기록
-            if penalty > 0 or discount > 0:
-                installment_details.append({
-                    'installment': inst,
-                    'order_name': inst.pay_name,
-                    'is_fully_paid': is_paid,
-                    'late_days': late_days,
-                    'prepay_days': prepay_days,  # 선납일수 추가
-                    'late_amount': late_amount,
-                    'penalty_amount': penalty,
-                    'discount_amount': discount,
-                })
-
-                total_late_fee += penalty
-                total_discount += discount
-
-        return {
-            'total_late_fee': total_late_fee,
-            'total_discount': total_discount,
-            'installment_details': installment_details,
-            'penalty_count': sum(1 for d in installment_details if d['penalty_amount'] > 0),
-            'discount_count': sum(1 for d in installment_details if d['discount_amount'] > 0)
-        }
+        # aggregate_installment_adjustments가 모든 계산을 처리
+        # waterfall 로직을 사용하여 개별 납부건의 연체료를 회차별로 집계
+        return aggregate_installment_adjustments(
+            contract,
+            payment_orders,
+            now_due_order,
+            pub_date
+        )
 
     @staticmethod
     def get_blank_line(unpaid_count, pm, total_orders_count):
