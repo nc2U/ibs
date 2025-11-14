@@ -386,7 +386,9 @@ class PdfExportBill(View):
                     'late_days': detail.get('late_days', 0),  # 지연일수 (연체)
                     'prepay_days': detail.get('prepay_days', 0),  # 선납일수
                     'penalty_amount': detail.get('penalty_amount', 0),  # 연체료
-                    'discount_amount': detail.get('discount_amount', 0)  # 선납할인
+                    'discount_amount': detail.get('discount_amount', 0),  # 선납할인
+                    'effective_late_amount': detail.get('effective_late_amount'),  # 가중평균 지연금액
+                    'effective_late_days': detail.get('effective_late_days')  # 가중평균 지연일수
                 }
 
         # 회차별 납부 내역 조회
@@ -415,22 +417,33 @@ class PdfExportBill(View):
             paid_dict['paid_amt'] = payment_info['paid_amt']
 
             # 조정금액 정보 (할인/연체)
-            paid_dict['unpaid_amt'] = adjustment.get('late_amount', 0)  # 지연 납부액 (미납액)
             penalty = adjustment.get('penalty_amount', 0)  # 연체료 (가산금)
             discount = adjustment.get('discount_amount', 0)  # 선납할인
-            late_days = adjustment.get('late_days', 0)  # 연체일수
-            prepay_days = adjustment.get('prepay_days', 0)  # 선납일수
 
-            # 일수: 선납은 음수(-), 연체는 양수(+)
-            if discount > 0 and penalty == 0:
-                # 선납할인이 있고 연체료가 없는 경우 - 선납일수를 음수로 표시
-                paid_dict['unpaid_days'] = -prepay_days if prepay_days > 0 else 0
-            elif penalty > 0:
-                # 연체인 경우 - 연체일수를 양수로 표시
-                paid_dict['unpaid_days'] = late_days
+            # 분할 납부인 경우 가중 평균 값 사용, 그렇지 않으면 기존 값 사용
+            effective_amount = adjustment.get('effective_late_amount')
+            effective_days = adjustment.get('effective_late_days')
+
+            if effective_amount is not None and effective_days is not None:
+                # 분할 납부: 가중 평균 값 사용
+                paid_dict['unpaid_amt'] = effective_amount
+                paid_dict['unpaid_days'] = effective_days
             else:
-                # 할인도 연체도 없는 경우
-                paid_dict['unpaid_days'] = 0
+                # 단일 납부 또는 지연 없음: 기존 로직 사용
+                paid_dict['unpaid_amt'] = adjustment.get('late_amount', 0)  # 지연 납부액 (미납액)
+                late_days = adjustment.get('late_days', 0)  # 연체일수
+                prepay_days = adjustment.get('prepay_days', 0)  # 선납일수
+
+                # 일수: 선납은 음수(-), 연체는 양수(+)
+                if discount > 0 and penalty == 0:
+                    # 선납할인이 있고 연체료가 없는 경우 - 선납일수를 음수로 표시
+                    paid_dict['unpaid_days'] = -prepay_days if prepay_days > 0 else 0
+                elif penalty > 0:
+                    # 연체인 경우 - 연체일수를 양수로 표시
+                    paid_dict['unpaid_days'] = late_days
+                else:
+                    # 할인도 연체도 없는 경우
+                    paid_dict['unpaid_days'] = 0
 
             paid_dict['penalty'] = penalty
             paid_dict['discount'] = discount

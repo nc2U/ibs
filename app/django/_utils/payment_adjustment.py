@@ -281,7 +281,8 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
                             'payment_date': payment_date,
                             'payment_amount': payment_amount,
                             'late_days': late_days,
-                            'late_penalty': late_penalty
+                            'late_penalty': late_penalty,
+                            'type': 'paid_late'  # 지연 납부분
                         })
 
                         total_late_penalty += late_penalty
@@ -1283,6 +1284,67 @@ def get_unpaid_installments(contract, pub_date):
     return unpaid_list
 
 
+def calculate_effective_late_metrics(late_payment_details):
+    """
+    분할 납부 시 가중 평균을 사용하여 효과적인 지연 금액 및 일수 계산
+
+    분할 납부된 경우 각 납부건의 금액과 지연일수가 다를 수 있으므로,
+    가중 평균을 사용하여 단일 값으로 표현합니다.
+
+    가중 평균 공식:
+        effective_days = round(Σ(amount × days) / Σ(amount))
+
+    주의:
+        - 일수는 정수로 반올림 (템플릿 표시 편의성)
+        - 반올림으로 인한 미세한 검증 오차 발생 가능
+        - 연체료(penalty)는 정확한 값 유지
+
+    Args:
+        late_payment_details: waterfall의 late_payment_details 리스트
+
+    Returns:
+        tuple: (effective_late_amount, effective_late_days) 또는 (None, None)
+        - effective_late_amount: int (지연 납부 총액)
+        - effective_late_days: int (가중 평균 일수, 반올림)
+
+    Example:
+        Payment 1: ₩3M × 9일 = 27,000,000
+        Payment 2: ₩4M × 14일 = 56,000,000
+        Payment 3: ₩3M × 0일 = 0
+        Sum: 83,000,000
+        Total amount: ₩10M
+        Weighted avg: 83,000,000 / 10,000,000 = 8.3일
+        Effective days: round(8.3) = 8일
+
+        Note: 반올림으로 인한 검증 오차
+        ₩10M × 10% × 8/365 = ₩21,917 (실제: ₩22,739)
+        그러나 표시되는 penalty는 ₩22,739 (정확)
+    """
+    # 지연 납부 건만 필터링
+    late_only = [d for d in late_payment_details if d.get('type') == 'paid_late']
+
+    if not late_only:
+        return None, None
+
+    # 총 지연 납부액
+    total_amount = sum(d.get('payment_amount', 0) for d in late_only)
+
+    if total_amount == 0:  # Guard: 0으로 나누기 방지
+        return None, None
+
+    # 가중 평균 계산: Σ(amount × days) / Σ(amount)
+    weighted_days_sum = sum(
+        d.get('payment_amount', 0) * d.get('late_days', 0)
+        for d in late_only
+    )
+    effective_days = weighted_days_sum / total_amount
+
+    # 소수점 일수를 정수로 반올림 (템플릿 표시용)
+    effective_days = round(effective_days)
+
+    return total_amount, effective_days
+
+
 def aggregate_installment_adjustments(
         contract,
         payment_orders,
@@ -1311,11 +1373,13 @@ def aggregate_installment_adjustments(
                     'installment': InstallmentPaymentOrder,
                     'order_name': str,
                     'is_fully_paid': bool,
-                    'late_amount': int,          # 지연 납부액
-                    'late_days': int,            # 최대 지연일수
-                    'prepay_days': int,          # 선납일수
-                    'penalty_amount': int,       # 개별 납부건 연체료 합계
-                    'discount_amount': int       # 선납 할인
+                    'late_amount': int,              # 지연 납부액
+                    'late_days': int,                # 최대 지연일수
+                    'prepay_days': int,              # 선납일수
+                    'penalty_amount': int,           # 개별 납부건 연체료 합계
+                    'discount_amount': int,          # 선납 할인
+                    'effective_late_amount': int,    # 가중 평균 지연 금액
+                    'effective_late_days': float     # 가중 평균 지연일수
                 },
                 ...
             ],
@@ -1331,6 +1395,7 @@ def aggregate_installment_adjustments(
         3. 각 회차의 late_payment_details에서 개별 납부 연체료 추출
         4. 회차별로 합산하여 반환
         5. 선납 할인은 get_installment_adjustment_summary 사용
+        6. 분할 납부 시 가중 평균으로 효과적인 지연 금액/일수 계산
     """
     from django.db.models import Q
 
@@ -1370,26 +1435,34 @@ def aggregate_installment_adjustments(
             # late_payment_details의 개별 연체료를 합산
             penalty = sum(detail.get('late_penalty', 0) for detail in late_payment_details)
 
+        # 분할 납부 시 가중 평균 계산 (연체가 있는 경우에만)
+        effective_amount = None
+        effective_days = None
+        if penalty > 0:
+            effective_amount, effective_days = calculate_effective_late_metrics(late_payment_details)
+
         # 선납 할인 계산
         adj = get_installment_adjustment_summary(contract, inst)
         discount = adj.get('total_discount', 0)
         prepay_days = adj.get('prepay_days', 0)
 
-        # 연체료나 할인이 있는 경우만 기록
-        if penalty > 0 or discount > 0:
-            installment_details.append({
-                'installment': inst,
-                'order_name': inst.pay_name,
-                'is_fully_paid': is_paid,
-                'late_days': late_days,
-                'prepay_days': prepay_days,
-                'late_amount': late_amount,
-                'penalty_amount': penalty,
-                'discount_amount': discount,
-            })
+        # 모든 도래한 회차를 기록 (연체료/할인 여부와 관계없이)
+        # 템플릿에서 모든 회차를 표시하므로 빈 조정금액도 포함해야 함
+        installment_details.append({
+            'installment': inst,
+            'order_name': inst.pay_name,
+            'is_fully_paid': is_paid,
+            'late_days': late_days,
+            'prepay_days': prepay_days,
+            'late_amount': late_amount,
+            'penalty_amount': penalty,
+            'discount_amount': discount,
+            'effective_late_amount': effective_amount,  # 가중 평균 금액
+            'effective_late_days': effective_days,      # 가중 평균 일수
+        })
 
-            total_late_fee += penalty
-            total_discount += discount
+        total_late_fee += penalty
+        total_discount += discount
 
     return {
         'total_late_fee': total_late_fee,
