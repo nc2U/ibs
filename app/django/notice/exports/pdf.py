@@ -308,31 +308,43 @@ class PdfExportBill(View):
         """
         payment_list = []
 
-        # 회차별 연체료와 할인 매핑 생성
+        # 완납했지만 연체료가 발생한 회차를 먼저 추가
+        # (선납 할인은 각 회차의 discount 필드에 포함되므로 별도 행 불필요)
+        paid_orders_with_penalty = []
+        if late_fee_details and late_fee_details.get('installment_details'):
+            for detail in late_fee_details['installment_details']:
+                installment = detail['installment']
+                penalty = detail['penalty_amount']
+
+                # 완납된 회차(paid_code 이하) 중 연체료가 있는 경우
+                if installment.pay_code <= paid_code and penalty > 0:
+                    ord_info = list(filter(lambda o: o['order'] == installment, orders_info))[0]
+
+                    payment_list.append({
+                        'order': installment,
+                        'due_date': get_due_date_per_order(contract, installment, payment_orders),
+                        'amount': 0,  # 완납되었으므로 약정금액은 0 (이미 납부됨)
+                        'unpaid': 0,  # 완납되었으므로 미납액 없음
+                        'penalty': penalty,
+                        'discount': detail['discount_amount'],
+                        'sum_amount': penalty - detail['discount_amount'],  # 연체료만 납부
+                        'is_paid_with_penalty': True  # 완납 + 연체료 표시용
+                    })
+                    paid_orders_with_penalty.append(installment.pay_code)
+
+        # 회차별 연체료와 할인 매핑 생성 (미납 회차용)
+        # 중요: 완납 회차는 이미 위에서 처리했으므로 제외
         adjustment_by_order = {}
         if late_fee_details and late_fee_details.get('installment_details'):
             for detail in late_fee_details['installment_details']:
                 installment = detail['installment']
+                # 완납 + 연체료로 이미 추가한 회차는 건너뛰기
+                if installment.pay_code in paid_orders_with_penalty:
+                    continue
                 adjustment_by_order[installment.pay_code] = {
                     'penalty': detail['penalty_amount'],
                     'discount': detail['discount_amount']
                 }
-
-        # 총 할인액 계산
-        total_discount = late_fee_details.get('total_discount', 0) if late_fee_details else 0
-
-        # 선납 할인이 있으면 첫 행에 추가 (할인은 납부금액에서 차감되므로 음수)
-        if total_discount > 0:
-            payment_list.append({
-                'order': '선납 할인',
-                'due_date': '',
-                'amount': 0,
-                'unpaid': 0,
-                'penalty': 0,
-                'discount': total_discount,
-                'sum_amount': -total_discount,  # 할인은 차감
-                'is_discount': True  # 선납 할인 표시용
-            })
 
         unpaid_orders = payment_orders.filter(pay_code__gt=paid_code,
                                               pay_code__lte=now_due_order)  # 최종 기납부회차 이후부터 납부지정회차 까지 회차그룹

@@ -104,11 +104,7 @@
             {% else %}-{% endif %}
         </td>
         <td style="padding: 3px 10px; border:1px solid black; text-align:right;">
-          {% if not data.no_late %}
-            {{ data.this_pay_sum.amount_total|add:data.late_fee_sum|default:"-"|intcomma }}
-          {% else %}
-            {{ data.this_pay_sum.amount_total|default:"-"|intcomma }}
-          {% endif %}
+          {{ data.this_pay_sum.amount_total|default:"-"|intcomma }}
         </td>
     </tr>
 </table>
@@ -135,14 +131,7 @@
                     <td style="padding: 3px 0; border:1px solid black; text-align:center; ">{{ bill_info.bank_account1 }}</td>
                     <td style="padding: 3px 0; border:1px solid black; text-align:center; ">{{ bill_info.bank_number1 }}</td>
                     <td style="padding: 3px 0; border:1px solid black; text-align:center; " colspan="2">{{ bill_info.bank_host1 }}</td>
-                    <td style="padding: 3px 10px; border:1px solid black; text-align:right;">
-
-                      {% if not data.no_late %}
-                        {{ data.pay_method.0|add:data.late_fee_sum|default:"-"|intcomma }}
-                      {% else %}
-                        {{ data.pay_method.0|default:"-"|intcomma }}
-                      {% endif %}
-                    </td>
+                    <td style="padding: 3px 10px; border:1px solid black; text-align:right;">{{ data.pay_method.0|default:"-"|intcomma }}</td>
                 </tr>
                 {% if data.pay_method.1 %}
                     <tr>
