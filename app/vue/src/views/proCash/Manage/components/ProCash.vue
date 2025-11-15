@@ -9,7 +9,7 @@ import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ProCashForm from '@/views/proCash/Manage/components/ProCashForm.vue'
 import Pagination from '@/components/Pagination'
-import { CTableDataCell, CTableRow } from '@coreui/vue'
+import { CTable, CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   proCash: { type: Object as PropType<ProjectCashBook>, required: true },
@@ -210,7 +210,12 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
               <col style="width: 6%" />
             </colgroup>
             <CTableBody>
-              <CTableRow v-for="child in children" :key="child.pk" class="text-center">
+              <CTableRow
+                v-for="child in children"
+                :key="child.pk"
+                class="text-center"
+                color="light"
+              >
                 <CTableDataCell>{{ child.deal_date }}</CTableDataCell>
                 <CTableDataCell
                   :class="['', 'text-primary', 'text-danger', 'text-info'][child?.sort || 0]"
@@ -250,6 +255,7 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
             :length="childrenTotalPages"
             :total-visible="7"
             density="compact"
+            rounded="2"
             class="mt-4"
             @update:model-value="onChildrenPageChange"
           />
