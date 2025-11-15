@@ -8,8 +8,6 @@ import { numFormat, cutString, diffDate } from '@/utils/baseMixins'
 import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ProCashForm from '@/views/proCash/Manage/components/ProCashForm.vue'
-import Pagination from '@/components/Pagination'
-import { CTable, CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   proCash: { type: Object as PropType<ProjectCashBook>, required: true },
