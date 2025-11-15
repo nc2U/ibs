@@ -86,6 +86,44 @@ class CashBookSerializer(serializers.ModelSerializer):
     def get_bank_account_desc(obj):
         return obj.bank_account.alias_name
 
+    def validate(self, attrs):
+        """
+        분리 항목 금액 합계 검증
+
+        sepData가 있는 경우, 자식 항목들의 금액 합계가 부모 금액과 일치하는지 검증
+        """
+        sep_data = self.initial_data.get('sepData')
+
+        if sep_data:
+            # sepData가 리스트인 경우 (다중 분리 항목)
+            if isinstance(sep_data, list):
+                children_income = sum(int(child.get('income', 0) or 0) for child in sep_data)
+                children_outlay = sum(int(child.get('outlay', 0) or 0) for child in sep_data)
+            # sepData가 단일 객체인 경우 (현재 구현)
+            else:
+                children_income = int(sep_data.get('income', 0) or 0)
+                children_outlay = int(sep_data.get('outlay', 0) or 0)
+
+            parent_income = attrs.get('income', 0) or 0
+            parent_outlay = attrs.get('outlay', 0) or 0
+
+            # 금액 불일치 검증
+            if children_income != parent_income or children_outlay != parent_outlay:
+                error_msg = []
+                if children_outlay != parent_outlay:
+                    error_msg.append(
+                        f'출금 합계 불일치: 자식(₩{children_outlay:,}) ≠ 부모(₩{parent_outlay:,})'
+                    )
+                if children_income != parent_income:
+                    error_msg.append(
+                        f'입금 합계 불일치: 자식(₩{children_income:,}) ≠ 부모(₩{parent_income:,})'
+                    )
+                raise serializers.ValidationError({
+                    'sepData': ' | '.join(error_msg)
+                })
+
+        return attrs
+
     @transaction.atomic
     def create(self, validated_data):
         # 1. 거래정보 입력
@@ -116,6 +154,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         account_d3=sep_cashbook_account_d3,
                                         project=sep_cashbook_project,
                                         is_return=sep_cashbook_is_return,
+                                        is_separate=True,  # 명시적으로 True 설정
                                         separated=cashbook,
                                         content=sep_cashbook_content,
                                         trader=sep_cashbook_trader,
@@ -135,6 +174,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.account_d3 = sep_cashbook_account_d3
                 sep_cashbook.project = sep_cashbook_project
                 sep_cashbook.is_return = sep_cashbook_is_return
+                sep_cashbook.is_separate = True  # 명시적으로 True 설정
                 sep_cashbook.separated = cashbook
                 sep_cashbook.content = sep_cashbook_content
                 sep_cashbook.trader = sep_cashbook_trader
@@ -189,6 +229,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         account_d3=sep_cashbook_account_d3,
                                         project=sep_cashbook_project,
                                         is_return=sep_cashbook_is_return,
+                                        is_separate=True,  # 명시적으로 True 설정
                                         separated=instance,
                                         content=sep_cashbook_content,
                                         trader=sep_cashbook_trader,
@@ -210,6 +251,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.account_d3 = sep_cashbook_account_d3
                 sep_cashbook.project = sep_cashbook_project
                 sep_cashbook.is_return = sep_cashbook_is_return
+                sep_cashbook.is_separate = True  # 명시적으로 True 설정
                 sep_cashbook.separated = instance
                 sep_cashbook.content = sep_cashbook_content
                 sep_cashbook.trader = sep_cashbook_trader
