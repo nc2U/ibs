@@ -155,13 +155,13 @@ class CashBookSerializer(serializers.ModelSerializer):
         instance.account_d3 = validated_data.get('account_d3', instance.account_d3)
         instance.project = validated_data.get('project', instance.project)
         instance.bank_account = validated_data.get('bank_account', instance.bank_account)
-        
+
         # updator 설정
         if 'updator' in self.context.get('request', {}).__dict__.get('_data', {}):
             instance.updator = self.context['request'].user
         elif hasattr(self.context.get('request'), 'user'):
             instance.updator = self.context['request'].user
-            
+
         instance.save()
 
         # 2. sep 정보 확인 후 저장
@@ -198,7 +198,8 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         evidence=sep_cashbook_evidence,
                                         note=sep_cashbook_note,
                                         deal_date=instance.deal_date,
-                                        creator=self.context['request'].user if hasattr(self.context.get('request'), 'user') else None)
+                                        creator=self.context['request'].user if hasattr(self.context.get('request'),
+                                                                                        'user') else None)
                 sep_cashbook.save()
             else:
                 sep_cashbook = CashBook.objects.get(pk=sep_data.get('pk'))
@@ -284,6 +285,44 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                   'refund_contractor', 'content', 'trader', 'bank_account', 'bank_account_desc',
                   'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date', 'updator')
 
+    def validate(self, attrs):
+        """
+        분리 항목 금액 합계 검증
+
+        sepData가 있는 경우, 자식 항목들의 금액 합계가 부모 금액과 일치하는지 검증
+        """
+        sep_data = self.initial_data.get('sepData')
+
+        if sep_data:
+            # sepData가 리스트인 경우 (다중 분리 항목)
+            if isinstance(sep_data, list):
+                children_income = sum(int(child.get('income', 0) or 0) for child in sep_data)
+                children_outlay = sum(int(child.get('outlay', 0) or 0) for child in sep_data)
+            # sepData가 단일 객체인 경우 (현재 구현)
+            else:
+                children_income = int(sep_data.get('income', 0) or 0)
+                children_outlay = int(sep_data.get('outlay', 0) or 0)
+
+            parent_income = attrs.get('income', 0) or 0
+            parent_outlay = attrs.get('outlay', 0) or 0
+
+            # 금액 불일치 검증
+            if children_income != parent_income or children_outlay != parent_outlay:
+                error_msg = []
+                if children_outlay != parent_outlay:
+                    error_msg.append(
+                        f'출금 합계 불일치: 자식(₩{children_outlay:,}) ≠ 부모(₩{parent_outlay:,})'
+                    )
+                if children_income != parent_income:
+                    error_msg.append(
+                        f'입금 합계 불일치: 자식(₩{children_income:,}) ≠ 부모(₩{parent_income:,})'
+                    )
+                raise serializers.ValidationError({
+                    'sepData': ' | '.join(error_msg)
+                })
+
+        return attrs
+
     @transaction.atomic
     def create(self, validated_data):
         pr_cashbook = ProjectCashBook.objects.create(**validated_data)
@@ -307,6 +346,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                                                   sort=pr_cashbook.sort,
                                                   project_account_d2_id=sep_pr_cashbook_project_account_d2,
                                                   project_account_d3_id=sep_pr_cashbook_project_account_d3,
+                                                  is_separate=True,  # 명시적으로 True 설정
                                                   separated=pr_cashbook,
                                                   is_imprest=sep_pr_cashbook_is_imprest,
                                                   contract_id=sep_pr_cashbook_contract,
@@ -326,6 +366,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                 sep_pr_cashbook.sort = pr_cashbook.sort
                 sep_pr_cashbook.project_account_d2_id = sep_pr_cashbook_project_account_d2
                 sep_pr_cashbook.project_account_d3_id = sep_pr_cashbook_project_account_d3
+                sep_pr_cashbook.is_separate = True  # 명시적으로 True 설정
                 sep_pr_cashbook.separated = pr_cashbook
                 sep_pr_cashbook.is_imprest = sep_pr_cashbook_is_imprest
                 sep_pr_cashbook.contract_id = sep_pr_cashbook_contract
@@ -350,11 +391,11 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
         instance.installment_order = validated_data.get('installment_order', instance.installment_order)
         instance.refund_contractor = validated_data.get('refund_contractor', instance.refund_contractor)
         instance.bank_account = validated_data.get('bank_account', instance.bank_account)
-        
+
         # updator 설정
         if hasattr(self.context.get('request'), 'user'):
             instance.updator = self.context['request'].user
-            
+
         instance.save()
 
         # 2. sep 정보 확인
@@ -376,6 +417,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                                                   sort=instance.sort,
                                                   project_account_d2_id=sep_pr_cashbook_project_account_d2,
                                                   project_account_d3_id=sep_pr_cashbook_project_account_d3,
+                                                  is_separate=True,  # 명시적으로 True 설정
                                                   separated=instance,
                                                   is_imprest=sep_pr_cashbook_is_imprest,
                                                   contract_id=sep_pr_cashbook_contract,
@@ -388,7 +430,8 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                                                   evidence=sep_pr_cashbook_evidence,
                                                   note=sep_pr_cashbook_note,
                                                   deal_date=instance.deal_date,
-                                                  creator=self.context['request'].user if hasattr(self.context.get('request'), 'user') else None)
+                                                  creator=self.context['request'].user if hasattr(
+                                                      self.context.get('request'), 'user') else None)
                 sep_pr_cashbook.save()
             else:
                 sep_pr_cashbook = ProjectCashBook.objects.get(pk=sep_data.get('pk'))
@@ -396,6 +439,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                 sep_pr_cashbook.sort = instance.sort
                 sep_pr_cashbook.project_account_d2_id = sep_pr_cashbook_project_account_d2
                 sep_pr_cashbook.project_account_d3_id = sep_pr_cashbook_project_account_d3
+                sep_pr_cashbook.is_separate = True  # 명시적으로 True 설정
                 sep_pr_cashbook.separated = instance
                 sep_pr_cashbook.is_imprest = sep_pr_cashbook_is_imprest
                 sep_pr_cashbook.contract_id = sep_pr_cashbook_contract

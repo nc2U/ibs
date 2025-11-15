@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Sum
 
 from _utils.payment_adjustment import calculate_late_penalty
 from company.models import Company
@@ -212,8 +214,99 @@ class ProjectCashBook(models.Model):
     # Custom Manager 설정
     objects = ProjectCashBookManager()
 
+    @property
+    def is_parent(self):
+        """
+        이 레코드가 실제 은행 거래(부모 레코드)인지 확인
+
+        Returns:
+            bool: 부모 레코드 여부
+        """
+        return not self.is_separate and self.separated is None
+
+    @property
+    def is_child(self):
+        """
+        이 레코드가 분리 항목(자식 레코드)인지 확인
+
+        Returns:
+            bool: 자식 레코드 여부
+        """
+        return self.is_separate and self.separated is not None
+
+    @property
+    def split_balance_valid(self):
+        """
+        분리 항목들의 금액 합계가 부모 금액과 일치하는지 검증
+
+        Returns:
+            bool: 금액 일치 여부 (자식 레코드인 경우 항상 True)
+        """
+        if not self.is_parent:
+            return True
+
+        children_sum = self.sepItems.aggregate(
+            total_outlay=Sum('outlay'),
+            total_income=Sum('income')
+        )
+
+        expected_outlay = self.outlay or 0
+        expected_income = self.income or 0
+        actual_outlay = children_sum['total_outlay'] or 0
+        actual_income = children_sum['total_income'] or 0
+
+        return (expected_outlay == actual_outlay and expected_income == actual_income)
+
     def __str__(self):
         return f'{self.pk}. {self.sort}'
+
+    def clean(self):
+        """
+        모델 레벨 데이터 검증
+
+        Raises:
+            ValidationError: 검증 실패 시
+        """
+
+        errors = {}
+
+        # 1. 자기 참조 방지
+        if self.separated and self.separated == self:
+            errors['separated'] = '자기 자신을 참조할 수 없습니다.'
+
+        # 2. 순환 참조 방지 (1단계만 체크 - 현재 요구사항에 충분)
+        if self.separated and self.separated.separated == self:
+            errors['separated'] = '순환 참조가 감지되었습니다.'
+
+        # 3. 분리 레코드는 반드시 부모 필요
+        if self.is_separate and not self.separated:
+            errors['separated'] = '분리 레코드는 부모 거래를 참조해야 합니다.'
+
+        # 4. 부모 레코드는 separated 필드가 NULL이어야 함
+        if not self.is_separate and self.separated:
+            errors['is_separate'] = '부모 거래는 is_separate가 False여야 합니다.'
+
+        # 5. 입금과 출금 중 하나만 있어야 함 (둘 다 양수인 경우만 체크)
+        if self.income and self.income > 0 and self.outlay and self.outlay > 0:
+            errors['__all__'] = '입금과 출금을 동시에 등록할 수 없습니다.'
+
+        # 6. 부모 레코드는 입금 또는 출금이 반드시 하나는 있어야 함
+        # 자식 레코드는 0원 항목이 있을 수 있으므로 제외
+        if not self.is_separate and not self.separated:  # 부모 레코드만
+            if (not self.income or self.income == 0) and (not self.outlay or self.outlay == 0):
+                errors['__all__'] = '입금 또는 출금 금액을 입력해야 합니다.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        """
+        저장 시 검증 수행
+        """
+        # skip_validation이 True인 경우 검증 건너뛰기 (마이그레이션 등에서 사용)
+        if not kwargs.pop('skip_validation', False):
+            self.full_clean()
+        super().save(*args, **kwargs)
 
     def get_late_penalty(self):
         """
@@ -272,6 +365,10 @@ class ProjectCashBook(models.Model):
         ordering = ['-deal_date', '-id']
         verbose_name = '04. 프로젝트 입출금거래'
         verbose_name_plural = '04. 프로젝트 입출금거래'
+        indexes = [
+            models.Index(fields=['separated'], name='idx_pcb_separated'),
+            models.Index(fields=['is_separate', 'deal_date'], name='idx_pcb_issep_date'),
+        ]
 
 
 class CompanyCashBookCalculation(models.Model):
