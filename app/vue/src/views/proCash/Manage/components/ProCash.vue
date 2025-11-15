@@ -9,6 +9,7 @@ import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ProCashForm from '@/views/proCash/Manage/components/ProCashForm.vue'
 import Pagination from '@/components/Pagination'
+import { CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   proCash: { type: Object as PropType<ProjectCashBook>, required: true },
@@ -133,7 +134,11 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
             @click="toggleChildren"
             class="mr-1"
           >
-            <CIcon :name="showChildren ? 'cilChevronBottom' : 'cilChevronRight'" size="sm" />
+            <v-btn
+              :icon="showChildren ? 'mdi-chevron-down' : 'mdi-chevron-right'"
+              variant="tonal"
+              size="sm"
+            />
           </v-btn>
           <span>{{ proCash.deal_date }}</span>
         </div>
@@ -180,9 +185,9 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
     </CTableRow>
 
     <!-- 자식 레코드 표시 영역 -->
-    <CTableRow v-if="showChildren && hasChildren" color="light">
+    <CTableRow v-if="showChildren && hasChildren">
       <CTableDataCell :colspan="write_project_cash ? 11 : 10" class="p-0">
-        <div class="p-3" style="background-color: #f8f9fa">
+        <div class="p-0">
           <!-- 로딩 중 -->
           <div v-if="loadingChildren && children.length === 0" class="text-center py-3">
             <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
@@ -191,19 +196,19 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
 
           <!-- 자식 레코드 테이블 -->
           <CTable v-else-if="children.length > 0" bordered small class="mb-0">
-            <CTableHead>
-              <CTableRow color="secondary" class="text-center">
-                <CTableHeaderCell style="width: 10%">거래일자</CTableHeaderCell>
-                <CTableHeaderCell style="width: 8%">구분</CTableHeaderCell>
-                <CTableHeaderCell style="width: 12%">거래처</CTableHeaderCell>
-                <CTableHeaderCell style="width: 15%">적요</CTableHeaderCell>
-                <CTableHeaderCell style="width: 12%">입금액</CTableHeaderCell>
-                <CTableHeaderCell style="width: 12%">출금액</CTableHeaderCell>
-                <CTableHeaderCell style="width: 10%">계정</CTableHeaderCell>
-                <CTableHeaderCell style="width: 11%">세부계정</CTableHeaderCell>
-                <CTableHeaderCell style="width: 10%">지출증빙</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
+            <colgroup>
+              <col style="width: 8%" />
+              <col style="width: 6%" />
+              <col style="width: 11%" />
+              <col style="width: 11%" />
+              <col style="width: 12%" />
+              <col style="width: 10%" />
+              <col style="width: 10%" />
+              <col style="width: 7%" />
+              <col style="width: 10%" />
+              <col style="width: 9%" />
+              <col style="width: 6%" />
+            </colgroup>
             <CTableBody>
               <CTableRow v-for="child in children" :key="child.pk" class="text-center">
                 <CTableDataCell>{{ child.deal_date }}</CTableDataCell>
@@ -212,11 +217,12 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
                 >
                   {{ child?.sort_desc }}
                 </CTableDataCell>
+                <CTableDataCell></CTableDataCell>
                 <CTableDataCell class="text-left">
-                  <span v-if="child.trader">{{ cutString(child.trader, 9) }}</span>
+                  <span>{{ cutString(child.trader, 9) }}</span>
                 </CTableDataCell>
                 <CTableDataCell class="text-left">
-                  <span v-if="child.content">{{ cutString(child.content, 12) }}</span>
+                  <span>{{ cutString(child.content, 12) }}</span>
                 </CTableDataCell>
                 <CTableDataCell class="text-right" :color="dark ? '' : 'success'">
                   {{ numFormat(child.income || 0) }}
@@ -238,13 +244,14 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
           </CTable>
 
           <!-- 페이지네이션 -->
-          <Pagination
+          <v-pagination
             v-if="children.length > 0 && childrenTotalPages > 1"
-            :active-page="childrenPage"
-            :limit="8"
-            :pages="childrenTotalPages"
-            class="mt-3"
-            @active-page-change="onChildrenPageChange"
+            v-model="childrenPage"
+            :length="childrenTotalPages"
+            :total-visible="7"
+            density="compact"
+            class="mt-4"
+            @update:model-value="onChildrenPageChange"
           />
 
           <!-- 자식 레코드가 없을 때 -->
