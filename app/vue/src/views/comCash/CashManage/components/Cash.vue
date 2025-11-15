@@ -95,15 +95,9 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
     <CTableDataCell :class="sortClass">
       {{ cash.sort_desc }}
     </CTableDataCell>
-    <CTableDataCell :class="d1Class">
-      {{ cash.account_d1_desc }}
-    </CTableDataCell>
-    <CTableDataCell class="text-left truncate">
-      {{ cash.account_d3_desc }}
-    </CTableDataCell>
-    <CTableDataCell class="text-left truncate">
-      <span v-if="cash.content">
-        {{ cutString(cash.content, 15) }}
+    <CTableDataCell class="text-left">
+      <span v-if="cash.bank_account_desc">
+        {{ cutString(cash.bank_account_desc, 10) }}
       </span>
     </CTableDataCell>
     <CTableDataCell class="text-left truncate">
@@ -111,9 +105,9 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
         {{ cutString(cash.trader, 8) }}
       </span>
     </CTableDataCell>
-    <CTableDataCell class="text-left">
-      <span v-if="cash.bank_account_desc">
-        {{ cutString(cash.bank_account_desc, 10) }}
+    <CTableDataCell class="text-left truncate">
+      <span v-if="cash.content">
+        {{ cutString(cash.content, 15) }}
       </span>
     </CTableDataCell>
     <CTableDataCell class="text-right" :color="dark ? '' : 'primary'">
@@ -121,6 +115,12 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
     </CTableDataCell>
     <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
       {{ numFormat(cash.outlay || 0) }}
+    </CTableDataCell>
+    <CTableDataCell :class="d1Class">
+      {{ cash.account_d1_desc }}
+    </CTableDataCell>
+    <CTableDataCell class="text-left truncate">
+      {{ cash.account_d3_desc }}
     </CTableDataCell>
     <CTableDataCell>{{ cash.evidence_desc }}</CTableDataCell>
     <CTableDataCell v-if="write_company_cash">

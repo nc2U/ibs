@@ -49,12 +49,12 @@ const accCallModal = () => {
     <colgroup>
       <col style="width: 8%" />
       <col style="width: 6%" />
-      <col style="width: 7%" />
-      <col style="width: 10%" />
+      <col style="width: 11%" />
+      <col style="width: 11%" />
       <col style="width: 12%" />
-      <col style="width: 11%" />
-      <col style="width: 11%" />
       <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 7%" />
       <col style="width: 10%" />
       <col style="width: 9%" />
       <col v-if="write_project_cash" style="width: 6%" />
@@ -64,6 +64,16 @@ const accCallModal = () => {
       <CTableRow :color="TableSecondary" class="text-center">
         <CTableHeaderCell scope="col">거래일자</CTableHeaderCell>
         <CTableHeaderCell scope="col">구분</CTableHeaderCell>
+        <CTableHeaderCell scope="col">
+          거래계좌
+          <a href="javascript:void(0)">
+            <CIcon name="cilCog" @click="accCallModal" />
+          </a>
+        </CTableHeaderCell>
+        <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
+        <CTableHeaderCell scope="col">적요</CTableHeaderCell>
+        <CTableHeaderCell scope="col">입금액</CTableHeaderCell>
+        <CTableHeaderCell scope="col">출금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">계정</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           세부계정
@@ -71,16 +81,7 @@ const accCallModal = () => {
             <CIcon name="cilCog" @click="refAccDepth.callModal()" />
           </a>
         </CTableHeaderCell>
-        <CTableHeaderCell scope="col">적요</CTableHeaderCell>
-        <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
-        <CTableHeaderCell scope="col">
-          거래계좌
-          <a href="javascript:void(0)">
-            <CIcon name="cilCog" @click="accCallModal" />
-          </a>
-        </CTableHeaderCell>
-        <CTableHeaderCell scope="col">입금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">출금액</CTableHeaderCell>
+
         <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
         <CTableHeaderCell v-if="write_project_cash" scope="col">비고</CTableHeaderCell>
       </CTableRow>

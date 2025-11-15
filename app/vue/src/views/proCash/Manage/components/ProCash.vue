@@ -66,16 +66,8 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
       {{ proCash?.sort_desc }}
     </CTableDataCell>
     <CTableDataCell class="text-left">
-      {{ proCash.project_account_d2_desc }}
-    </CTableDataCell>
-    <CTableDataCell class="text-left">
-      <span v-if="proCash.project_account_d3_desc">
-        {{ cutString(proCash.project_account_d3_desc, 9) }}
-      </span>
-    </CTableDataCell>
-    <CTableDataCell class="text-left">
-      <span v-if="proCash.content">
-        {{ cutString(proCash.content, 10) }}
+      <span v-if="proCash.bank_account_desc">
+        {{ cutString(proCash.bank_account_desc, 9) }}
       </span>
     </CTableDataCell>
     <CTableDataCell class="text-left">
@@ -84,8 +76,8 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
       </span>
     </CTableDataCell>
     <CTableDataCell class="text-left">
-      <span v-if="proCash.bank_account_desc">
-        {{ cutString(proCash.bank_account_desc, 9) }}
+      <span v-if="proCash.content">
+        {{ cutString(proCash.content, 10) }}
       </span>
     </CTableDataCell>
     <CTableDataCell class="text-right" :color="dark ? '' : 'success'">
@@ -94,6 +86,15 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
     <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
       {{ numFormat(proCash.outlay || 0) }}
     </CTableDataCell>
+    <CTableDataCell class="text-left">
+      {{ proCash.project_account_d2_desc }}
+    </CTableDataCell>
+    <CTableDataCell class="text-left">
+      <span v-if="proCash.project_account_d3_desc">
+        {{ cutString(proCash.project_account_d3_desc, 9) }}
+      </span>
+    </CTableDataCell>
+
     <CTableDataCell>{{ proCash.evidence_desc }}</CTableDataCell>
     <CTableDataCell v-if="write_project_cash">
       <v-btn color="info" size="x-small" @click="showDetail" :disabled="!allowedPeriod">확인</v-btn>

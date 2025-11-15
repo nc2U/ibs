@@ -63,16 +63,8 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
       {{ imprest.sort_desc }}
     </CTableDataCell>
     <CTableDataCell class="text-left">
-      {{ imprest.project_account_d2_desc }}
-    </CTableDataCell>
-    <CTableDataCell class="text-left">
-      <span v-if="imprest.project_account_d3_desc">
-        {{ cutString(imprest.project_account_d3_desc, 9) }}
-      </span>
-    </CTableDataCell>
-    <CTableDataCell class="text-left">
-      <span v-if="imprest.content">
-        {{ cutString(imprest.content, 10) }}
+      <span v-if="imprest.bank_account_desc">
+        {{ cutString(imprest.bank_account_desc, 9) }}
       </span>
     </CTableDataCell>
     <CTableDataCell class="text-left">
@@ -81,8 +73,8 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
       </span>
     </CTableDataCell>
     <CTableDataCell class="text-left">
-      <span v-if="imprest.bank_account_desc">
-        {{ cutString(imprest.bank_account_desc, 9) }}
+      <span v-if="imprest.content">
+        {{ cutString(imprest.content, 10) }}
       </span>
     </CTableDataCell>
     <CTableDataCell class="text-right" :color="dark ? '' : 'success'">
@@ -90,6 +82,14 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
     </CTableDataCell>
     <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
       {{ numFormat(imprest.outlay || 0) }}
+    </CTableDataCell>
+    <CTableDataCell class="text-left">
+      {{ imprest.project_account_d2_desc }}
+    </CTableDataCell>
+    <CTableDataCell class="text-left">
+      <span v-if="imprest.project_account_d3_desc">
+        {{ cutString(imprest.project_account_d3_desc, 9) }}
+      </span>
     </CTableDataCell>
     <CTableDataCell>{{ imprest.evidence_desc }}</CTableDataCell>
     <CTableDataCell v-if="write_project_cash">
