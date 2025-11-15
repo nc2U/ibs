@@ -1,16 +1,16 @@
 import api from '@/api'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { message, errorHandle } from '@/utils/helper'
-import { type AccountD1, type AccountSort } from '@/store/types/comCash'
+import { errorHandle, message } from '@/utils/helper'
+import { type AccountSort } from '@/store/types/comCash'
 import {
+  type BalanceByAccount,
+  type CashBookFilter,
+  type ProBankAcc,
+  type ProCalculated,
   type ProjectAccountD2,
   type ProjectAccountD3,
-  type ProBankAcc,
-  type BalanceByAccount,
   type ProjectCashBook,
-  type CashBookFilter,
-  type ProCalculated,
 } from '@/store/types/proCash'
 import { usePayment } from '@/store/pinia/payment'
 
@@ -289,7 +289,7 @@ export const useProCash = defineStore('proCash', () => {
         if (res.data.separated) {
           invalidateChildrenCache(res.data.separated)
         }
-        invalidateChildrenCache(pk)
+        invalidateChildrenCache(pk || undefined)
 
         if (isPayment) {
           await paymentStore.fetchAllPaymentList({
@@ -328,7 +328,7 @@ export const useProCash = defineStore('proCash', () => {
         if (res.data.separated) {
           invalidateChildrenCache(res.data.separated)
         }
-        invalidateChildrenCache(pk)
+        invalidateChildrenCache(pk || undefined)
 
         if (isPayment) {
           await paymentStore.fetchAllPaymentList({
