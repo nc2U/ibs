@@ -30,7 +30,7 @@ const totalChildren = ref(0)
 
 // 캐시된 자식 레코드 가져오기
 const children = computed(() =>
-  props.proCash.pk ? proCashStore.getCachedChildren(props.proCash.pk) : [],
+  props.proCash?.pk ? proCashStore.getCachedChildren(props.proCash.pk) : [],
 )
 
 const sortClass = computed(
@@ -69,7 +69,7 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
 
 // 자식 레코드 토글
 const toggleChildren = async () => {
-  if (!props.proCash.pk) return
+  if (!props.proCash?.pk) return
 
   if (!showChildren.value) {
     // 자식 레코드 열기
@@ -87,7 +87,7 @@ const toggleChildren = async () => {
 
 // 자식 레코드 로드
 const loadChildren = async (page: number = 1) => {
-  if (!props.proCash.pk || loadingChildren.value) return
+  if (!props.proCash?.pk || loadingChildren.value) return
 
   try {
     loadingChildren.value = true
