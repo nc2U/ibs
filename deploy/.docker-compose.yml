@@ -28,10 +28,10 @@ services:
       POSTGRES_PASSWORD: my-db-password # 실제 데이터로 수정
       TZ: Asia/Seoul
     volumes:
-      - postgres_data:/var/lib/postgresql/18/main
+      - postgres_data:/var/lib/postgresql/18/docker
       - ../volume/backups:/var/backups
       - ../volume/initdb/postgres:/docker-entrypoint-initdb.d
-  
+
   nginx:
     container_name: ibs-nginx
     image: nginx:latest
