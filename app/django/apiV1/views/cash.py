@@ -237,13 +237,30 @@ class ProjectCashBookFilterSet(FilterSet):
     to_deal_date = DateFilter(field_name='deal_date', lookup_expr='lte', label='납부일자까지')
     no_contract = BooleanFilter(field_name='contract', lookup_expr='isnull', label='계약 미등록')
     no_install = BooleanFilter(field_name='installment_order', lookup_expr='isnull', label='회차 미등록')
+    parents_only = BooleanFilter(method='filter_parents_only', label='부모 레코드만')
 
     class Meta:
         model = ProjectCashBook
         fields = ('project', 'sort', 'project_account_d2__d1', 'project_account_d2',
                   'project_account_d3', 'is_imprest', 'from_deal_date', 'to_deal_date',
                   'deal_date', 'installment_order', 'bank_account', 'contract',
-                  'contract__order_group', 'contract__unit_type', 'no_contract', 'no_install')
+                  'contract__order_group', 'contract__unit_type', 'no_contract', 'no_install',
+                  'parents_only')
+
+    @staticmethod
+    def filter_parents_only(queryset, name, value):
+        """
+        부모 레코드만 필터링 (은행 거래 내역만)
+        parents_only=true: separated가 NULL인 레코드만 (자식 레코드 제외)
+        parents_only=false: 모든 레코드 (기본 동작)
+
+        참고:
+        - 부모 레코드: separated=NULL (자식 유무와 관계없이)
+        - 자식 레코드: separated가 부모 PK를 참조
+        """
+        if value:
+            return queryset.filter(separated__isnull=True)
+        return queryset
 
 
 class ProjectCashBookViewSet(viewsets.ModelViewSet):
@@ -260,37 +277,65 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(updator=self.request.user)
 
+    @action(detail=True, methods=['get'])
+    def children(self, request, pk=None):
+        """
+        특정 부모 거래의 분리 항목 조회 (페이지네이션 적용)
+
+        사용법:
+            GET /api/v1/project-cashbook/{pk}/children/
+            GET /api/v1/project-cashbook/{pk}/children/?page=2
+
+        페이지네이션: 페이지당 15개 항목 (부모 목록과 동일)
+        """
+        parent = self.get_object()
+        children = ProjectCashBook.objects.filter(
+            separated=parent
+        ).select_related(
+            'project_account_d2', 'project_account_d3', 'updator'
+        ).order_by('id')
+
+        # 페이지네이션 적용 (부모와 동일한 15개)
+        page = self.paginate_queryset(children)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        # 페이지네이션이 없는 경우 (fallback)
+        serializer = self.get_serializer(children, many=True)
+        return Response(serializer.data)
+
     @action(detail=False, methods=['get'])
     def find_page(self, request):
         """특정 ID의 항목이 몇 번째 페이지에 있는지 찾기"""
         highlight_id = request.query_params.get('highlight_id')
         if not highlight_id:
             return Response({'error': 'highlight_id parameter required'}, status=400)
-        
+
         try:
             highlight_id = int(highlight_id)
         except ValueError:
             return Response({'error': 'highlight_id must be integer'}, status=400)
-            
+
         # 현재 필터 조건을 적용한 queryset 가져오기
         queryset = self.filter_queryset(self.get_queryset())
-        
+
         # 해당 ID가 존재하는지 확인
         try:
             target_item = queryset.get(pk=highlight_id)
         except ProjectCashBook.DoesNotExist:
             return Response({'error': 'Item not found'}, status=404)
-            
+
         # 해당 항목보다 앞에 있는 항목 개수 계산 (동일한 정렬 조건 적용)
         items_before = queryset.filter(
             Q(deal_date__gt=target_item.deal_date) |
             (Q(deal_date=target_item.deal_date) & Q(id__gt=target_item.id))
         ).count()
-        
+
         # 프론트엔드에서 사용하는 페이지 크기 (동적으로 가져오기)
         page_size = int(request.query_params.get('limit', '15'))
         page_number = (items_before // page_size) + 1
-        
+
         return Response({'page': page_number})
 
 

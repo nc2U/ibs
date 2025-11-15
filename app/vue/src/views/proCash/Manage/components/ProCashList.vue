@@ -94,6 +94,7 @@ const accCallModal = () => {
         :pro-cash="proCash"
         :calculated="proCalculated?.calculated"
         :is-highlighted="props.highlightId === proCash.pk"
+        :has-children="proCash.has_children || false"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @on-bank-create="onBankCreate"

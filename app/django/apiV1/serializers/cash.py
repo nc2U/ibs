@@ -316,16 +316,24 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
     project_account_d3_desc = serializers.SlugField(source='project_account_d3', read_only=True)
     bank_account_desc = serializers.SlugField(source='bank_account', read_only=True)
     evidence_desc = serializers.CharField(source='get_evidence_display', read_only=True)
-    sepItems = SepItemsInPrCashBookSerializer(many=True, read_only=True)
     updator = SimpleUserSerializer(read_only=True)
+    has_children = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProjectCashBook
         fields = ('pk', 'project', 'sort', 'sort_desc', 'project_account_d2',
                   'project_account_d2_desc', 'project_account_d3', 'project_account_d3_desc',
-                  'is_separate', 'separated', 'is_imprest', 'sepItems', 'contract', 'installment_order',
+                  'is_separate', 'separated', 'is_imprest', 'contract', 'installment_order',
                   'refund_contractor', 'content', 'trader', 'bank_account', 'bank_account_desc',
-                  'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date', 'updator')
+                  'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date', 'updator', 'has_children')
+
+    def get_has_children(self, obj):
+        """부모 레코드가 자식을 가지고 있는지 확인"""
+        # separated가 null인 레코드만 부모 레코드 (is_separate 값과 무관)
+        if obj.separated is not None:
+            return False
+        # sepItems의 개수를 확인
+        return obj.sepItems.count() > 0
 
     def validate(self, attrs):
         """

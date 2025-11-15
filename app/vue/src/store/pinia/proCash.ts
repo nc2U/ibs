@@ -151,6 +151,7 @@ export const useProCash = defineStore('proCash', () => {
 
   const proCashBookList = ref<ProjectCashBook[]>([])
   const proCashesCount = ref<number>(0)
+  const childrenCache = ref<Map<number, ProjectCashBook[]>>(new Map())
 
   const getUrl = (payload: CashBookFilter) => {
     let url = ''
@@ -171,7 +172,7 @@ export const useProCash = defineStore('proCash', () => {
 
   const fetchProjectCashList = async (payload: CashBookFilter) => {
     const { project, is_imprest } = payload
-    let url = `/project-cashbook/?project=${project}&is_imprest=${is_imprest}`
+    let url = `/project-cashbook/?project=${project}&is_imprest=${is_imprest}&parents_only=true`
     url += getUrl(payload)
 
     return await api
@@ -181,6 +182,42 @@ export const useProCash = defineStore('proCash', () => {
         proCashesCount.value = res.data.count
       })
       .catch(err => errorHandle(err.response.data))
+  }
+
+  // 특정 부모의 자식 레코드 조회 (페이지네이션)
+  const fetchChildrenRecords = async (parentPk: number, page: number = 1) => {
+    try {
+      const response = await api.get(`/project-cashbook/${parentPk}/children/?page=${page}`)
+      const children = response.data.results as ProjectCashBook[]
+      const count = response.data.count
+
+      // 페이지별 캐시 업데이트 (각 페이지를 독립적으로 저장)
+      childrenCache.value.set(parentPk, children)
+
+      return {
+        results: children,
+        count,
+        next: response.data.next,
+        previous: response.data.previous,
+      }
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
+  // 캐시에서 자식 레코드 가져오기
+  const getCachedChildren = (parentPk: number): ProjectCashBook[] => {
+    return childrenCache.value.get(parentPk) || []
+  }
+
+  // 캐시 무효화
+  const invalidateChildrenCache = (parentPk?: number) => {
+    if (parentPk !== undefined) {
+      childrenCache.value.delete(parentPk)
+    } else {
+      childrenCache.value.clear()
+    }
   }
 
   const findProjectCashBookPage = async (highlightId: number, filters: CashBookFilter) => {
@@ -210,6 +247,9 @@ export const useProCash = defineStore('proCash', () => {
     return await api
       .post(`/project-cashbook/`, formData)
       .then(async res => {
+        // 캐시 무효화 (부모가 생성되었을 수 있음)
+        invalidateChildrenCache()
+
         await fetchProjectCashList({
           project: res.data.project,
           ...filters,
@@ -245,6 +285,12 @@ export const useProCash = defineStore('proCash', () => {
     return await api
       .put(`/project-cashbook/${pk}/`, formData)
       .then(async res => {
+        // 캐시 무효화 (해당 부모의 자식이 수정되었을 수 있음)
+        if (res.data.separated) {
+          invalidateChildrenCache(res.data.separated)
+        }
+        invalidateChildrenCache(pk)
+
         if (isPayment) {
           await paymentStore.fetchAllPaymentList({
             project: res.data.project,
@@ -278,6 +324,12 @@ export const useProCash = defineStore('proCash', () => {
     return await api
       .patch(`/project-cashbook/${pk}/`, formData)
       .then(async res => {
+        // 캐시 무효화
+        if (res.data.separated) {
+          invalidateChildrenCache(res.data.separated)
+        }
+        invalidateChildrenCache(pk)
+
         if (isPayment) {
           await paymentStore.fetchAllPaymentList({
             project: res.data.project,
@@ -314,6 +366,9 @@ export const useProCash = defineStore('proCash', () => {
     return await api
       .delete(`/project-cashbook/${pk}/`)
       .then(async () => {
+        // 캐시 무효화 (전체 캐시 클리어)
+        invalidateChildrenCache()
+
         await fetchProjectCashList({
           project,
           ...filters,
@@ -508,6 +563,9 @@ export const useProCash = defineStore('proCash', () => {
     updatePrCashBook,
     patchPrCashBook,
     deletePrCashBook,
+    fetchChildrenRecords,
+    getCachedChildren,
+    invalidateChildrenCache,
 
     proImprestList,
     proImprestCount,

@@ -65,6 +65,7 @@ export interface ProjectCashBook extends ProSepItems {
   sort_desc?: string
   is_separate?: boolean
   sepItems: Array<ProSepItems>
+  has_children?: boolean
   rmCont?: boolean
   refund_contractor?: number | null
   bank_account: number | null
