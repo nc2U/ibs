@@ -21,6 +21,9 @@ const emit = defineEmits(['multi-submit', 'on-delete', 'on-bank-create', 'on-ban
 const updateFormModal = ref()
 const proCashStore = useProCash()
 
+// 선택된 거래 (부모 또는 자식)
+const selectedCash = ref<ProjectCashBook | null>(null)
+
 // 자식 레코드 토글 상태
 const showChildren = ref(false)
 const loadingChildren = ref(false)
@@ -57,7 +60,15 @@ const allowedPeriod = computed(
       diffDate(props.proCash.deal_date, new Date(props.calculated)) <= 10),
 )
 
-const showDetail = () => updateFormModal.value.callModal()
+const showDetail = () => {
+  selectedCash.value = props.proCash as ProjectCashBook
+  updateFormModal.value.callModal()
+}
+
+const showChildDetail = (child: ProjectCashBook) => {
+  selectedCash.value = child
+  updateFormModal.value.callModal()
+}
 
 const multiSubmit = (payload: { formData: ProjectCashBook; sepData: ProjectCashBook | null }) =>
   emit('multi-submit', payload)
@@ -208,23 +219,19 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
               <col style="width: 6%" />
             </colgroup>
             <CTableBody>
-              <CTableRow
-                v-for="child in children"
-                :key="child.pk"
-                class="text-center"
-                color="light"
-              >
-                <CTableDataCell>{{ child.deal_date }}</CTableDataCell>
+              <CTableRow v-for="child in children" :key="child.pk" class="text-center">
+                <CTableDataCell class="accent">{{ child.deal_date }}</CTableDataCell>
                 <CTableDataCell
                   :class="['', 'text-primary', 'text-danger', 'text-info'][child?.sort || 0]"
+                  class="accent"
                 >
                   {{ child?.sort_desc }}
                 </CTableDataCell>
-                <CTableDataCell></CTableDataCell>
-                <CTableDataCell class="text-left">
+                <CTableDataCell class="accent"></CTableDataCell>
+                <CTableDataCell class="text-left accent">
                   <span>{{ cutString(child.trader, 9) }}</span>
                 </CTableDataCell>
-                <CTableDataCell class="text-left">
+                <CTableDataCell class="text-left accent">
                   <span>{{ cutString(child.content, 12) }}</span>
                 </CTableDataCell>
                 <CTableDataCell class="text-right" :color="dark ? '' : 'success'">
@@ -233,15 +240,25 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
                 <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
                   {{ numFormat(child.outlay || 0) }}
                 </CTableDataCell>
-                <CTableDataCell class="text-left">
+                <CTableDataCell class="text-left accent">
                   {{ child.project_account_d2_desc }}
                 </CTableDataCell>
-                <CTableDataCell class="text-left">
+                <CTableDataCell class="text-left accent">
                   <span v-if="child.project_account_d3_desc">
                     {{ cutString(child.project_account_d3_desc, 9) }}
                   </span>
                 </CTableDataCell>
-                <CTableDataCell>{{ child.evidence_desc }}</CTableDataCell>
+                <CTableDataCell class="accent">{{ child.evidence_desc }}</CTableDataCell>
+                <CTableDataCell v-if="write_project_cash" class="accent">
+                  <v-btn
+                    color="info"
+                    size="x-small"
+                    @click="showChildDetail(child)"
+                    :disabled="!allowedPeriod"
+                  >
+                    확인
+                  </v-btn>
+                </CTableDataCell>
               </CTableRow>
             </CTableBody>
           </CTable>
@@ -271,7 +288,7 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
     <template #header>프로젝트 입출금 거래 건별 관리</template>
     <template #default>
       <ProCashForm
-        :pro-cash="proCash"
+        :pro-cash="selectedCash || proCash"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @close="updateFormModal.close()"

@@ -33,6 +33,9 @@ const refAlertModal = ref()
 const updateFormModal = ref()
 const comCashStore = useComCash()
 
+// 선택된 거래 (부모 또는 자식)
+const selectedCash = ref<CashBook | null>(null)
+
 // 자식 레코드 토글 상태
 const showChildren = ref(false)
 const loadingChildren = ref(false)
@@ -71,7 +74,15 @@ const allowedPeriod = computed(
     (props.cash?.deal_date && diffDate(props.cash.deal_date, new Date(props.calculated)) <= 10),
 )
 
-const showDetail = () => updateFormModal.value.callModal()
+const showDetail = () => {
+  selectedCash.value = props.cash
+  updateFormModal.value.callModal()
+}
+
+const showChildDetail = (child: CashBook) => {
+  selectedCash.value = child
+  updateFormModal.value.callModal()
+}
 
 const multiSubmit = (payload: { formData: CashBook; sepData: CashBook | null }) =>
   emit('multi-submit', payload)
@@ -171,37 +182,37 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
           <span>{{ cash.deal_date }}</span>
         </div>
       </CTableDataCell>
-    <CTableDataCell :class="sortClass">
-      {{ cash.sort_desc }}
-    </CTableDataCell>
-    <CTableDataCell class="text-left">
-      <span v-if="cash.bank_account_desc">
-        {{ cutString(cash.bank_account_desc, 10) }}
-      </span>
-    </CTableDataCell>
-    <CTableDataCell class="text-left truncate">
-      <span v-if="cash.trader">
-        {{ cutString(cash.trader, 8) }}
-      </span>
-    </CTableDataCell>
-    <CTableDataCell class="text-left truncate">
-      <span v-if="cash.content">
-        {{ cutString(cash.content, 15) }}
-      </span>
-    </CTableDataCell>
-    <CTableDataCell class="text-right" :color="dark ? '' : 'primary'">
-      {{ numFormat(cash.income || 0) }}
-    </CTableDataCell>
-    <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
-      {{ numFormat(cash.outlay || 0) }}
-    </CTableDataCell>
-    <CTableDataCell :class="d1Class">
-      {{ cash.account_d1_desc }}
-    </CTableDataCell>
-    <CTableDataCell class="text-left truncate">
-      {{ cash.account_d3_desc }}
-    </CTableDataCell>
-    <CTableDataCell>{{ cash.evidence_desc }}</CTableDataCell>
+      <CTableDataCell :class="sortClass">
+        {{ cash.sort_desc }}
+      </CTableDataCell>
+      <CTableDataCell class="text-left">
+        <span v-if="cash.bank_account_desc">
+          {{ cutString(cash.bank_account_desc, 10) }}
+        </span>
+      </CTableDataCell>
+      <CTableDataCell class="text-left truncate">
+        <span v-if="cash.trader">
+          {{ cutString(cash.trader, 8) }}
+        </span>
+      </CTableDataCell>
+      <CTableDataCell class="text-left truncate">
+        <span v-if="cash.content">
+          {{ cutString(cash.content, 15) }}
+        </span>
+      </CTableDataCell>
+      <CTableDataCell class="text-right" :color="dark ? '' : 'primary'">
+        {{ numFormat(cash.income || 0) }}
+      </CTableDataCell>
+      <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
+        {{ numFormat(cash.outlay || 0) }}
+      </CTableDataCell>
+      <CTableDataCell :class="d1Class">
+        {{ cash.account_d1_desc }}
+      </CTableDataCell>
+      <CTableDataCell class="text-left truncate">
+        {{ cash.account_d3_desc }}
+      </CTableDataCell>
+      <CTableDataCell>{{ cash.evidence_desc }}</CTableDataCell>
       <CTableDataCell v-if="write_company_cash">
         <v-btn color="info" size="x-small" @click="showDetail" :disabled="!allowedPeriod">
           확인
@@ -235,23 +246,19 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
               <col style="width: 6%" />
             </colgroup>
             <CTableBody>
-              <CTableRow
-                v-for="child in children"
-                :key="child.pk"
-                class="text-center"
-                color="light"
-              >
-                <CTableDataCell>{{ child.deal_date }}</CTableDataCell>
+              <CTableRow v-for="child in children" :key="child.pk" class="text-center">
+                <CTableDataCell class="accent">{{ child.deal_date }}</CTableDataCell>
                 <CTableDataCell
                   :class="['text-primary', 'text-danger', 'text-info'][(child?.sort ?? 1) - 1]"
+                  class="accent"
                 >
                   {{ child?.sort_desc }}
                 </CTableDataCell>
-                <CTableDataCell></CTableDataCell>
-                <CTableDataCell class="text-left">
+                <CTableDataCell class="accent"></CTableDataCell>
+                <CTableDataCell class="text-left accent">
                   <span>{{ cutString(child.trader, 8) }}</span>
                 </CTableDataCell>
-                <CTableDataCell class="text-left">
+                <CTableDataCell class="text-left accent">
                   <span>{{ cutString(child.content, 15) }}</span>
                 </CTableDataCell>
                 <CTableDataCell class="text-right" :color="dark ? '' : 'primary'">
@@ -261,16 +268,29 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
                   {{ numFormat(child.outlay || 0) }}
                 </CTableDataCell>
                 <CTableDataCell
-                  :class="['text-primary', 'text-danger', 'text-info'][((child?.account_d1 ?? 1) % 3) - 1]"
+                  :class="
+                    ['text-primary', 'text-danger', 'text-info'][((child?.account_d1 ?? 1) % 3) - 1]
+                  "
+                  class="accent"
                 >
                   {{ child.account_d1_desc }}
                 </CTableDataCell>
-                <CTableDataCell class="text-left">
+                <CTableDataCell class="text-left accent">
                   <span v-if="child.account_d3_desc">
                     {{ cutString(child.account_d3_desc, 9) }}
                   </span>
                 </CTableDataCell>
-                <CTableDataCell>{{ child.evidence_desc }}</CTableDataCell>
+                <CTableDataCell class="accent">{{ child.evidence_desc }}</CTableDataCell>
+                <CTableDataCell v-if="write_company_cash" class="accent">
+                  <v-btn
+                    color="info"
+                    size="x-small"
+                    @click="showChildDetail(child)"
+                    :disabled="!allowedPeriod"
+                  >
+                    확인
+                  </v-btn>
+                </CTableDataCell>
               </CTableRow>
             </CTableBody>
           </CTable>
@@ -300,7 +320,7 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
     <template #header>본사 입출금 거래 건별 수정</template>
     <template #default>
       <CashForm
-        :cash="cash"
+        :cash="selectedCash || cash"
         :projects="projects"
         @multi-submit="multiSubmit"
         @on-delete="deleteConfirm"
