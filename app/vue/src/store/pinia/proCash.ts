@@ -394,7 +394,7 @@ export const useProCash = defineStore('proCash', () => {
 
   const fetchProjectImprestList = async (payload: CashBookFilter) => {
     const { project } = payload
-    let url = `/project-imprest/?project=${project}`
+    let url = `/project-imprest/?project=${project}&parents_only=true`
     url += getUrl(payload)
 
     return await api

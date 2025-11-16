@@ -132,22 +132,18 @@ const requireItem = computed(() => !!form.project_account_d2 && !!form.project_a
 
 const sepDisabled = computed(() => {
   const disabled = !!form.project_account_d2 || !!form.project_account_d3
-  return props.imprest ? disabled || props.imprest.sepItems?.length : disabled
+  return props.imprest ? disabled || (props.imprest.sepItems?.length ?? 0) : disabled
 })
 
 const sepSummary = computed(() => {
-  const inc =
-    props.imprest?.sepItems.length !== 0
-      ? props.imprest?.sepItems
-          .map((s: ProSepItems) => s.income || 0)
-          .reduce((res: number, el: number) => res + el, 0)
-      : 0
-  const out =
-    props.imprest?.sepItems.length !== 0
-      ? props.imprest?.sepItems
-          .map((s: ProSepItems) => s.outlay || 0)
-          .reduce((res: number, el: number) => res + el, 0)
-      : 0
+  if (!props.imprest?.sepItems?.length) return [0, 0]
+
+  const inc = props.imprest.sepItems
+    .map((s: ProSepItems) => s.income || 0)
+    .reduce((res: number, el: number) => res + el, 0)
+  const out = props.imprest.sepItems
+    .map((s: ProSepItems) => s.outlay || 0)
+    .reduce((res: number, el: number) => res + el, 0)
   return [inc, out]
 })
 
@@ -657,8 +653,8 @@ onBeforeMount(() => formDataSetup())
       </div>
 
       <div v-if="form.is_separate">
-        <hr v-if="imprest && imprest.sepItems.length > 0" />
-        <CRow v-if="imprest && imprest.sepItems.length > 0" class="mb-3">
+        <hr v-if="imprest && imprest.sepItems && imprest.sepItems.length > 0" />
+        <CRow v-if="imprest && imprest.sepItems && imprest.sepItems.length > 0" class="mb-3">
           <CCol>
             <strong>
               <CIcon name="cilDescription" class="mr-2" />

@@ -131,23 +131,18 @@ const requireItem = computed(() => !!form.account_d1 && !!form.account_d2 && !!f
 
 const sepDisabled = computed(() => {
   const disabled = !!form.account_d1 || !!form.account_d2 || !!form.account_d3
-  return props.cash?.sepItems ? disabled && props.cash.sepItems.length === 0 : disabled
+  return props.cash?.sepItems ? disabled && (props.cash.sepItems?.length ?? 0) === 0 : disabled
 })
 
 const sepSummary = computed(() => {
-  const inc =
-    props.cash?.sepItems && !!props.cash.sepItems.length
-      ? props.cash.sepItems
-          .map((s: SepItems) => s.income)
-          .reduce((prev, curr) => (prev || 0) + (curr || 0))
-      : 0
+  if (!props.cash?.sepItems?.length) return [0, 0]
 
-  const out =
-    props.cash?.sepItems && !!props.cash.sepItems.length
-      ? props.cash.sepItems
-          .map((s: SepItems) => s.outlay)
-          .reduce((prev, curr) => (prev || 0) + (curr || 0))
-      : 0
+  const inc = props.cash.sepItems
+    .map((s: SepItems) => s.income)
+    .reduce((prev, curr) => (prev || 0) + (curr || 0))
+  const out = props.cash.sepItems
+    .map((s: SepItems) => s.outlay)
+    .reduce((prev, curr) => (prev || 0) + (curr || 0))
   return [inc, out]
 })
 

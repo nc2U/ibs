@@ -130,22 +130,18 @@ const requireItem = computed(() => !!form.project_account_d2 && !!form.project_a
 
 const sepDisabled = computed(() => {
   const disabled = !!form.project_account_d2 || !!form.project_account_d3
-  return props.proCash ? disabled || props.proCash.sepItems.length : disabled
+  return props.proCash ? disabled || (props.proCash.sepItems?.length ?? 0) : disabled
 })
 
 const sepSummary = computed(() => {
-  const inc =
-    props.proCash.sepItems.length !== 0
-      ? props.proCash.sepItems
-          .map((s: ProSepItems) => s.income)
-          .reduce((prev, curr) => (prev || 0) + (curr || 0))
-      : 0
-  const out =
-    props.proCash.sepItems.length !== 0
-      ? props.proCash.sepItems
-          .map((s: ProSepItems) => s.outlay)
-          .reduce((prev, curr) => (prev || 0) + (curr || 0))
-      : 0
+  if (!props.proCash?.sepItems?.length) return [0, 0]
+
+  const inc = props.proCash.sepItems
+    .map((s: ProSepItems) => s.income)
+    .reduce((prev, curr) => (prev || 0) + (curr || 0))
+  const out = props.proCash.sepItems
+    .map((s: ProSepItems) => s.outlay)
+    .reduce((prev, curr) => (prev || 0) + (curr || 0))
   return [inc, out]
 })
 
@@ -657,8 +653,8 @@ onBeforeMount(() => formDataSetup())
       </div>
 
       <div v-if="form.is_separate">
-        <hr v-if="proCash && proCash.sepItems.length > 0" />
-        <CRow v-if="proCash && proCash.sepItems.length > 0" class="mb-3">
+        <hr v-if="proCash && proCash.sepItems && proCash.sepItems.length > 0" />
+        <CRow v-if="proCash && proCash.sepItems && proCash.sepItems.length > 0" class="mb-3">
           <CCol>
             <strong>
               <CIcon name="cilDescription" class="mr-2" />
