@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { type PropType, ref, reactive, computed, watch, onBeforeMount, nextTick, inject } from 'vue'
+import { computed, inject, nextTick, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project_cash } from '@/utils/pageAuth'
-import { diffDate, getToday, cutString, numFormat } from '@/utils/baseMixins'
+import { cutString, diffDate, getToday, numFormat } from '@/utils/baseMixins'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
 import { useAccount } from '@/store/pinia/account'
@@ -12,7 +12,6 @@ import { type ProBankAcc, type ProjectCashBook, type ProSepItems } from '@/store
 import BankAcc from './BankAcc.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
-import ContChoicer from '@/components/ContChoicer/Index.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -281,9 +280,12 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    const payload = !form.is_separate
-      ? { formData: form, sepData: null }
-      : { formData: form, sepData: sepItem }
+    // 자식 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
+    const isChildRecord = props.proCash?.separated
+    const payload =
+      !form.is_separate || isChildRecord
+        ? { formData: form, sepData: null }
+        : { formData: form, sepData: sepItem }
 
     if (write_project_cash.value) {
       if (props.proCash) {
@@ -658,8 +660,8 @@ onBeforeMount(() => formDataSetup())
           <CCol>
             <strong>
               <CIcon name="cilDescription" class="mr-2" />
-              {{ sepSummary[0] ? `입금액 합계 : ${numFormat(sepSummary[0])}` : '' }}
-              {{ sepSummary[1] ? `출금액 합계 : ${numFormat(sepSummary[1])}` : '' }}
+              {{ sepSummary[0] ? `입금액 합계 : ${numFormat(sepSummary[0] || 0)}` : '' }}
+              {{ sepSummary[1] ? `출금액 합계 : ${numFormat(sepSummary[1] || 0)}` : '' }}
             </strong>
           </CCol>
         </CRow>

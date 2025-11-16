@@ -75,7 +75,7 @@ const allowedPeriod = computed(
 )
 
 const showDetail = () => {
-  selectedCash.value = props.cash
+  selectedCash.value = props.cash as CashBook
   updateFormModal.value.callModal()
 }
 

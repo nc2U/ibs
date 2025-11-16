@@ -283,7 +283,9 @@ const onSubmit = (event: Event) => {
     validated.value = true
   } else {
     form.ba_is_imprest = isImprest.value
-    const payload = !form.is_separate
+    // 자식 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
+    const isChildRecord = props.imprest?.separated
+    const payload = !form.is_separate || isChildRecord
       ? { formData: form, sepData: null }
       : { formData: form, sepData: sepItem }
 

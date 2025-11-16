@@ -39,8 +39,8 @@ class BalanceByAccountSerializer(serializers.ModelSerializer):
 class SepItemsInCashBookSerializer(serializers.ModelSerializer):
     class Meta:
         model = CashBook
-        fields = ('pk', 'account_d1', 'account_d2', 'account_d3', 'separated',
-                  'content', 'trader', 'income', 'outlay', 'evidence', 'note')
+        fields = ('pk', 'account_d1', 'account_d2', 'account_d3', 'project', 'is_return',
+                  'separated', 'content', 'trader', 'income', 'outlay', 'evidence', 'note')
 
 
 class CashBookSerializer(serializers.ModelSerializer):
@@ -92,43 +92,37 @@ class CashBookSerializer(serializers.ModelSerializer):
         """부모 레코드가 자식 레코드를 가지고 있는지 확인"""
         return CashBook.objects.filter(separated=obj).exists()
 
-    def validate(self, attrs):
+    def to_representation(self, instance):
         """
-        분리 항목 금액 합계 검증
-
-        sepData가 있는 경우, 자식 항목들의 금액 합계가 부모 금액과 일치하는지 검증
+        응답에 합계 검증 결과 포함
         """
-        sep_data = self.initial_data.get('sepData')
+        data = super().to_representation(instance)
 
-        if sep_data:
-            # sepData가 리스트인 경우 (다중 분리 항목)
-            if isinstance(sep_data, list):
-                children_income = sum(int(child.get('income', 0) or 0) for child in sep_data)
-                children_outlay = sum(int(child.get('outlay', 0) or 0) for child in sep_data)
-            # sepData가 단일 객체인 경우 (현재 구현)
+        # 부모 레코드이고 분리 항목이 있는 경우 합계 검증
+        if instance.is_separate and not instance.separated:
+            children = CashBook.objects.filter(separated=instance)
+            if children.exists():
+                children_income = sum(child.income or 0 for child in children)
+                children_outlay = sum(child.outlay or 0 for child in children)
+                parent_income = instance.income or 0
+                parent_outlay = instance.outlay or 0
+
+                data['is_balanced'] = (
+                    children_income == parent_income and
+                    children_outlay == parent_outlay
+                )
+                data['balance_info'] = {
+                    'parent_income': parent_income,
+                    'parent_outlay': parent_outlay,
+                    'children_income': children_income,
+                    'children_outlay': children_outlay,
+                }
             else:
-                children_income = int(sep_data.get('income', 0) or 0)
-                children_outlay = int(sep_data.get('outlay', 0) or 0)
+                data['is_balanced'] = True
+        else:
+            data['is_balanced'] = True
 
-            parent_income = attrs.get('income', 0) or 0
-            parent_outlay = attrs.get('outlay', 0) or 0
-
-            # 금액 불일치 검증
-            if children_income != parent_income or children_outlay != parent_outlay:
-                error_msg = []
-                if children_outlay != parent_outlay:
-                    error_msg.append(
-                        f'출금 합계 불일치: 자식(₩{children_outlay:,}) ≠ 부모(₩{parent_outlay:,})'
-                    )
-                if children_income != parent_income:
-                    error_msg.append(
-                        f'입금 합계 불일치: 자식(₩{children_income:,}) ≠ 부모(₩{parent_income:,})'
-                    )
-                raise serializers.ValidationError({
-                    'sepData': ' | '.join(error_msg)
-                })
-
-        return attrs
+        return data
 
     @transaction.atomic
     def create(self, validated_data):
@@ -160,7 +154,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         account_d3=sep_cashbook_account_d3,
                                         project=sep_cashbook_project,
                                         is_return=sep_cashbook_is_return,
-                                        is_separate=True,  # 명시적으로 True 설정
+                                        is_separate=False,  # 자식 레코드는 False
                                         separated=cashbook,
                                         content=sep_cashbook_content,
                                         trader=sep_cashbook_trader,
@@ -180,7 +174,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.account_d3 = sep_cashbook_account_d3
                 sep_cashbook.project = sep_cashbook_project
                 sep_cashbook.is_return = sep_cashbook_is_return
-                sep_cashbook.is_separate = True  # 명시적으로 True 설정
+                sep_cashbook.is_separate = False  # 자식 레코드는 False
                 sep_cashbook.separated = cashbook
                 sep_cashbook.content = sep_cashbook_content
                 sep_cashbook.trader = sep_cashbook_trader
@@ -195,17 +189,52 @@ class CashBookSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        instance.__dict__.update(**validated_data)
+        # creator는 수정 불가 필드이므로 validated_data에서 제거
+        validated_data.pop('creator', None)
+
+        # is_return이 None이면 제거 (BooleanField는 None을 허용하지 않음)
+        if validated_data.get('is_return') is None:
+            validated_data.pop('is_return', None)
+
+        # 각 필드를 개별적으로 업데이트 (creator는 보존)
+        instance.deal_date = validated_data.get('deal_date', instance.deal_date)
+        instance.sort = validated_data.get('sort', instance.sort)
         instance.account_d1 = validated_data.get('account_d1', instance.account_d1)
         instance.account_d2 = validated_data.get('account_d2', instance.account_d2)
         instance.account_d3 = validated_data.get('account_d3', instance.account_d3)
         instance.project = validated_data.get('project', instance.project)
+        instance.content = validated_data.get('content', instance.content)
+        instance.trader = validated_data.get('trader', instance.trader)
         instance.bank_account = validated_data.get('bank_account', instance.bank_account)
+        instance.income = validated_data.get('income', instance.income)
+        instance.outlay = validated_data.get('outlay', instance.outlay)
+        instance.evidence = validated_data.get('evidence', instance.evidence)
+        instance.note = validated_data.get('note', instance.note)
+
+        # is_separate와 separated 업데이트
+        # 자식 레코드(separated가 있는 경우)는 is_separate를 False로 강제
+        new_separated = validated_data.get('separated', instance.separated)
+        if new_separated is not None:
+            # 자식 레코드인 경우 is_separate는 항상 False
+            instance.is_separate = False
+            instance.separated = new_separated
+        else:
+            # 부모 레코드인 경우 is_separate 업데이트 허용
+            instance.is_separate = validated_data.get('is_separate', instance.is_separate)
+            instance.separated = None
+        if 'is_return' in validated_data:
+            instance.is_return = validated_data['is_return']
+
+        # is_return이 여전히 None이면 False로 설정 (BooleanField 기본값)
+        if instance.is_return is None:
+            instance.is_return = False
+
+        # creator가 None이면 현재 사용자로 설정 (데이터 무결성 보장)
+        if instance.creator is None and hasattr(self.context.get('request'), 'user'):
+            instance.creator = self.context['request'].user
 
         # updator 설정
-        if 'updator' in self.context.get('request', {}).__dict__.get('_data', {}):
-            instance.updator = self.context['request'].user
-        elif hasattr(self.context.get('request'), 'user'):
+        if hasattr(self.context.get('request'), 'user'):
             instance.updator = self.context['request'].user
 
         instance.save()
@@ -235,7 +264,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                                         account_d3=sep_cashbook_account_d3,
                                         project=sep_cashbook_project,
                                         is_return=sep_cashbook_is_return,
-                                        is_separate=True,  # 명시적으로 True 설정
+                                        is_separate=False,  # 자식 레코드는 False
                                         separated=instance,
                                         content=sep_cashbook_content,
                                         trader=sep_cashbook_trader,
@@ -257,7 +286,7 @@ class CashBookSerializer(serializers.ModelSerializer):
                 sep_cashbook.account_d3 = sep_cashbook_account_d3
                 sep_cashbook.project = sep_cashbook_project
                 sep_cashbook.is_return = sep_cashbook_is_return
-                sep_cashbook.is_separate = True  # 명시적으로 True 설정
+                sep_cashbook.is_separate = False  # 자식 레코드는 False
                 sep_cashbook.separated = instance
                 sep_cashbook.content = sep_cashbook_content
                 sep_cashbook.trader = sep_cashbook_trader
@@ -341,43 +370,37 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
         # sepItems의 개수를 확인
         return obj.sepItems.count() > 0
 
-    def validate(self, attrs):
+    def to_representation(self, instance):
         """
-        분리 항목 금액 합계 검증
-
-        sepData가 있는 경우, 자식 항목들의 금액 합계가 부모 금액과 일치하는지 검증
+        응답에 합계 검증 결과 포함
         """
-        sep_data = self.initial_data.get('sepData')
+        data = super().to_representation(instance)
 
-        if sep_data:
-            # sepData가 리스트인 경우 (다중 분리 항목)
-            if isinstance(sep_data, list):
-                children_income = sum(int(child.get('income', 0) or 0) for child in sep_data)
-                children_outlay = sum(int(child.get('outlay', 0) or 0) for child in sep_data)
-            # sepData가 단일 객체인 경우 (현재 구현)
+        # 부모 레코드이고 분리 항목이 있는 경우 합계 검증
+        if instance.is_separate and not instance.separated:
+            children = ProjectCashBook.objects.filter(separated=instance)
+            if children.exists():
+                children_income = sum(child.income or 0 for child in children)
+                children_outlay = sum(child.outlay or 0 for child in children)
+                parent_income = instance.income or 0
+                parent_outlay = instance.outlay or 0
+
+                data['is_balanced'] = (
+                    children_income == parent_income and
+                    children_outlay == parent_outlay
+                )
+                data['balance_info'] = {
+                    'parent_income': parent_income,
+                    'parent_outlay': parent_outlay,
+                    'children_income': children_income,
+                    'children_outlay': children_outlay,
+                }
             else:
-                children_income = int(sep_data.get('income', 0) or 0)
-                children_outlay = int(sep_data.get('outlay', 0) or 0)
+                data['is_balanced'] = True
+        else:
+            data['is_balanced'] = True
 
-            parent_income = attrs.get('income', 0) or 0
-            parent_outlay = attrs.get('outlay', 0) or 0
-
-            # 금액 불일치 검증
-            if children_income != parent_income or children_outlay != parent_outlay:
-                error_msg = []
-                if children_outlay != parent_outlay:
-                    error_msg.append(
-                        f'출금 합계 불일치: 자식(₩{children_outlay:,}) ≠ 부모(₩{parent_outlay:,})'
-                    )
-                if children_income != parent_income:
-                    error_msg.append(
-                        f'입금 합계 불일치: 자식(₩{children_income:,}) ≠ 부모(₩{parent_income:,})'
-                    )
-                raise serializers.ValidationError({
-                    'sepData': ' | '.join(error_msg)
-                })
-
-        return attrs
+        return data
 
     @transaction.atomic
     def create(self, validated_data):
@@ -402,7 +425,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                                                   sort=pr_cashbook.sort,
                                                   project_account_d2_id=sep_pr_cashbook_project_account_d2,
                                                   project_account_d3_id=sep_pr_cashbook_project_account_d3,
-                                                  is_separate=True,  # 명시적으로 True 설정
+                                                  is_separate=False,  # 자식 레코드는 False
                                                   separated=pr_cashbook,
                                                   is_imprest=sep_pr_cashbook_is_imprest,
                                                   contract_id=sep_pr_cashbook_contract,
@@ -422,7 +445,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                 sep_pr_cashbook.sort = pr_cashbook.sort
                 sep_pr_cashbook.project_account_d2_id = sep_pr_cashbook_project_account_d2
                 sep_pr_cashbook.project_account_d3_id = sep_pr_cashbook_project_account_d3
-                sep_pr_cashbook.is_separate = True  # 명시적으로 True 설정
+                sep_pr_cashbook.is_separate = False  # 자식 레코드는 False
                 sep_pr_cashbook.separated = pr_cashbook
                 sep_pr_cashbook.is_imprest = sep_pr_cashbook_is_imprest
                 sep_pr_cashbook.contract_id = sep_pr_cashbook_contract
@@ -440,13 +463,38 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        instance.__dict__.update(**validated_data)
+        # creator는 수정 불가 필드이므로 validated_data에서 제거
+        validated_data.pop('creator', None)
+
+        # 각 필드를 개별적으로 업데이트 (creator는 보존)
+        instance.deal_date = validated_data.get('deal_date', instance.deal_date)
+        instance.sort = validated_data.get('sort', instance.sort)
         instance.project_account_d2 = validated_data.get('project_account_d2', instance.project_account_d2)
         instance.project_account_d3 = validated_data.get('project_account_d3', instance.project_account_d3)
+
+        # is_separate와 separated 업데이트
+        # 자식 레코드(separated가 있는 경우)는 is_separate를 False로 강제
+        new_separated = validated_data.get('separated', instance.separated)
+        if new_separated is not None:
+            # 자식 레코드인 경우 is_separate는 항상 False
+            instance.is_separate = False
+            instance.separated = new_separated
+        else:
+            # 부모 레코드인 경우 is_separate 업데이트 허용
+            instance.is_separate = validated_data.get('is_separate', instance.is_separate)
+            instance.separated = None
+
+        instance.is_imprest = validated_data.get('is_imprest', instance.is_imprest)
         instance.contract = validated_data.get('contract', instance.contract)
         instance.installment_order = validated_data.get('installment_order', instance.installment_order)
         instance.refund_contractor = validated_data.get('refund_contractor', instance.refund_contractor)
+        instance.content = validated_data.get('content', instance.content)
+        instance.trader = validated_data.get('trader', instance.trader)
         instance.bank_account = validated_data.get('bank_account', instance.bank_account)
+        instance.income = validated_data.get('income', instance.income)
+        instance.outlay = validated_data.get('outlay', instance.outlay)
+        instance.evidence = validated_data.get('evidence', instance.evidence)
+        instance.note = validated_data.get('note', instance.note)
 
         # updator 설정
         if hasattr(self.context.get('request'), 'user'):
@@ -473,7 +521,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                                                   sort=instance.sort,
                                                   project_account_d2_id=sep_pr_cashbook_project_account_d2,
                                                   project_account_d3_id=sep_pr_cashbook_project_account_d3,
-                                                  is_separate=True,  # 명시적으로 True 설정
+                                                  is_separate=False,  # 자식 레코드는 False
                                                   separated=instance,
                                                   is_imprest=sep_pr_cashbook_is_imprest,
                                                   contract_id=sep_pr_cashbook_contract,
@@ -495,7 +543,7 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                 sep_pr_cashbook.sort = instance.sort
                 sep_pr_cashbook.project_account_d2_id = sep_pr_cashbook_project_account_d2
                 sep_pr_cashbook.project_account_d3_id = sep_pr_cashbook_project_account_d3
-                sep_pr_cashbook.is_separate = True  # 명시적으로 True 설정
+                sep_pr_cashbook.is_separate = False  # 자식 레코드는 False
                 sep_pr_cashbook.separated = instance
                 sep_pr_cashbook.is_imprest = sep_pr_cashbook_is_imprest
                 sep_pr_cashbook.contract_id = sep_pr_cashbook_contract

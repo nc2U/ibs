@@ -152,7 +152,7 @@ const sepUpdate = (sep: SepItems) => {
   sepItem.account_d2 = sep.account_d2
   sepItem.account_d3 = sep.account_d3
   sepItem.project = sep.project
-  sepItem.is_return = sep.is_return
+  sepItem.is_return = sep.is_return ?? false  // null/undefined면 false로 설정
   sepItem.content = sep.content
   sepItem.trader = sep.trader
   sepItem.evidence = sep.evidence
@@ -302,7 +302,9 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    const payload = !form.is_separate
+    // 자식 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
+    const isChildRecord = props.cash?.separated
+    const payload = !form.is_separate || isChildRecord
       ? { formData: form, sepData: null }
       : { formData: form, sepData: sepItem }
 

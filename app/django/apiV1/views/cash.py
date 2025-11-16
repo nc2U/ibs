@@ -103,10 +103,13 @@ class CashBookViewSet(viewsets.ModelViewSet):
     search_fields = ('content', 'trader', 'note')
 
     def get_queryset(self):
-        """부모 레코드만 반환 (separated가 null인 레코드)"""
+        """list action일 때만 부모 레코드만 반환"""
         queryset = super().get_queryset()
-        # separated가 null인 경우만 반환 (자식 레코드 제외)
-        return queryset.filter(separated__isnull=True)
+        # list action일 때만 부모 레코드만 반환 (자식 레코드는 제외)
+        # retrieve/update/delete 등 detail action에서는 자식 레코드도 접근 가능
+        if self.action == 'list':
+            return queryset.filter(separated__isnull=True)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

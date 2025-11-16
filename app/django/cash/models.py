@@ -91,7 +91,7 @@ class CashBook(models.Model):
         Returns:
             bool: 자식 레코드 여부
         """
-        return self.is_separate and self.separated is not None
+        return not self.is_separate and self.separated is not None
 
     @property
     def split_balance_valid(self):
@@ -137,13 +137,12 @@ class CashBook(models.Model):
         if self.separated and self.separated.separated == self:
             errors['separated'] = '순환 참조가 감지되었습니다.'
 
-        # 3. 분리 레코드는 반드시 부모 필요
-        if self.is_separate and not self.separated:
-            errors['separated'] = '분리 레코드는 부모 거래를 참조해야 합니다.'
+        # 3. is_separate=True이면서 separated가 None인 경우는 부모 레코드
+        #    (자식이 있을 예정이거나 있는 부모 레코드) - 이 경우는 허용
 
-        # 4. 부모 레코드는 separated 필드가 NULL이어야 함
-        if not self.is_separate and self.separated:
-            errors['is_separate'] = '부모 거래는 is_separate가 False여야 합니다.'
+        # 4. 자식 레코드(separated가 있는 경우)는 is_separate가 False여야 함
+        if self.separated and self.is_separate:
+            errors['is_separate'] = '자식 거래는 is_separate가 False여야 합니다.'
 
         # 5. 입금과 출금 중 하나만 있어야 함 (둘 다 양수인 경우만 체크)
         if self.income and self.income > 0 and self.outlay and self.outlay > 0:
@@ -327,7 +326,7 @@ class ProjectCashBook(models.Model):
         Returns:
             bool: 자식 레코드 여부
         """
-        return self.is_separate and self.separated is not None
+        return not self.is_separate and self.separated is not None
 
     @property
     def split_balance_valid(self):
@@ -373,13 +372,12 @@ class ProjectCashBook(models.Model):
         if self.separated and self.separated.separated == self:
             errors['separated'] = '순환 참조가 감지되었습니다.'
 
-        # 3. 분리 레코드는 반드시 부모 필요
-        if self.is_separate and not self.separated:
-            errors['separated'] = '분리 레코드는 부모 거래를 참조해야 합니다.'
+        # 3. is_separate=True이면서 separated가 None인 경우는 부모 레코드
+        #    (자식이 있을 예정이거나 있는 부모 레코드) - 이 경우는 허용
 
-        # 4. 부모 레코드는 separated 필드가 NULL이어야 함
-        if not self.is_separate and self.separated:
-            errors['is_separate'] = '부모 거래는 is_separate가 False여야 합니다.'
+        # 4. 자식 레코드(separated가 있는 경우)는 is_separate가 False여야 함
+        if self.separated and self.is_separate:
+            errors['is_separate'] = '자식 거래는 is_separate가 False여야 합니다.'
 
         # 5. 입금과 출금 중 하나만 있어야 함 (둘 다 양수인 경우만 체크)
         if self.income and self.income > 0 and self.outlay and self.outlay > 0:
