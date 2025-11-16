@@ -152,7 +152,7 @@ const sepUpdate = (sep: SepItems) => {
   sepItem.account_d2 = sep.account_d2
   sepItem.account_d3 = sep.account_d3
   sepItem.project = sep.project
-  sepItem.is_return = sep.is_return ?? false  // null/undefined면 false로 설정
+  sepItem.is_return = sep.is_return ?? false // null/undefined면 false로 설정
   sepItem.content = sep.content
   sepItem.trader = sep.trader
   sepItem.evidence = sep.evidence
@@ -304,9 +304,10 @@ const onSubmit = (event: Event) => {
   } else {
     // 자식 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
     const isChildRecord = props.cash?.separated
-    const payload = !form.is_separate || isChildRecord
-      ? { formData: form, sepData: null }
-      : { formData: form, sepData: sepItem }
+    const payload =
+      !form.is_separate || isChildRecord
+        ? { formData: form, sepData: null }
+        : { formData: form, sepData: sepItem }
 
     if (write_company_cash.value) {
       if (props.cash) {
@@ -692,8 +693,8 @@ onBeforeMount(async () => {
           <CCol>
             <strong>
               <CIcon name="cilDescription" class="mr-2" />
-              {{ sepSummary[0] ? `입금액 합계 : ${numFormat(sepSummary[0])}` : '' }}
-              {{ sepSummary[1] ? `출금액 합계 : ${numFormat(sepSummary[1])}` : '' }}
+              {{ sepSummary[0] ? `입금액 합계 : ${numFormat(sepSummary[0] || 0)}` : '' }}
+              {{ sepSummary[1] ? `출금액 합계 : ${numFormat(sepSummary[1] || 0)}` : '' }}
             </strong>
           </CCol>
         </CRow>

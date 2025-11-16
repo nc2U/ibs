@@ -288,6 +288,27 @@ export const useComCash = defineStore('comCash', () => {
     }
   }
 
+  // 캐시된 자식 레코드 업데이트
+  const updateCachedChild = (parentPk: number, updatedChild: CashBook) => {
+    const cachedChildren = childrenCache.value.get(parentPk)
+    if (cachedChildren) {
+      const index = cachedChildren.findIndex(child => child.pk === updatedChild.pk)
+      if (index !== -1) {
+        // 기존 자식 레코드를 업데이트된 데이터로 교체
+        cachedChildren[index] = updatedChild
+        childrenCache.value.set(parentPk, [...cachedChildren])
+      }
+    }
+  }
+
+  // 목록에서 부모 레코드 업데이트 (is_balanced 등 갱신)
+  const updateParentInList = (parentPk: number, updatedParent: CashBook) => {
+    const index = cashBookList.value.findIndex(item => item.pk === parentPk)
+    if (index !== -1) {
+      cashBookList.value[index] = updatedParent
+    }
+  }
+
   const createCashBook = async (payload: CashBook & { sepData: SepItems | null }) =>
     await api
       .post(`/cashbook/`, payload)
@@ -302,12 +323,29 @@ export const useComCash = defineStore('comCash', () => {
     const { filters, ...formData } = payload
     return await api
       .put(`/cashbook/${formData.pk}/`, formData)
-      .then(res =>
-        fetchCashBookList({
-          company: res.data.company,
-          ...filters,
-        }).then(() => message()),
-      )
+      .then(async res => {
+        // 자식 레코드를 수정한 경우
+        if (res.data.separated) {
+          const parentPk = res.data.separated
+          // 1. 캐시된 자식 레코드 업데이트
+          updateCachedChild(parentPk, res.data)
+
+          // 2. 부모 레코드도 다시 fetch해서 is_balanced 등 갱신
+          try {
+            const parentRes = await api.get(`/cashbook/${parentPk}/`)
+            updateParentInList(parentPk, parentRes.data)
+          } catch (err) {
+            console.error('부모 레코드 갱신 실패:', err)
+          }
+        } else {
+          // 부모 레코드를 수정한 경우 - 목록에서 업데이트
+          updateParentInList(formData.pk || 0, res.data)
+          // 자식 캐시 무효화 (다음 열 때 다시 로드)
+          invalidateChildrenCache(formData.pk || undefined)
+        }
+
+        return message()
+      })
       .catch(err => errorHandle(err.response.data))
   }
 
@@ -399,6 +437,8 @@ export const useComCash = defineStore('comCash', () => {
     fetchChildrenRecords,
     getCachedChildren,
     invalidateChildrenCache,
+    updateCachedChild,
+    updateParentInList,
     createCashBook,
     updateCashBook,
     deleteCashBook,

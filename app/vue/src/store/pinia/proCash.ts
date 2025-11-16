@@ -220,6 +220,27 @@ export const useProCash = defineStore('proCash', () => {
     }
   }
 
+  // 캐시된 자식 레코드 업데이트
+  const updateCachedChild = (parentPk: number, updatedChild: ProjectCashBook) => {
+    const cachedChildren = childrenCache.value.get(parentPk)
+    if (cachedChildren) {
+      const index = cachedChildren.findIndex(child => child.pk === updatedChild.pk)
+      if (index !== -1) {
+        // 기존 자식 레코드를 업데이트된 데이터로 교체
+        cachedChildren[index] = updatedChild
+        childrenCache.value.set(parentPk, [...cachedChildren])
+      }
+    }
+  }
+
+  // 목록에서 부모 레코드 업데이트 (is_balanced 등 갱신)
+  const updateParentInList = (parentPk: number, updatedParent: ProjectCashBook) => {
+    const index = proCashBookList.value.findIndex(item => item.pk === parentPk)
+    if (index !== -1) {
+      proCashBookList.value[index] = updatedParent
+    }
+  }
+
   const findProjectCashBookPage = async (highlightId: number, filters: CashBookFilter) => {
     const { project, is_imprest } = filters
     let url = `/project-cashbook/find_page/?highlight_id=${highlightId}&project=${project}&is_imprest=${is_imprest}`
@@ -285,11 +306,25 @@ export const useProCash = defineStore('proCash', () => {
     return await api
       .put(`/project-cashbook/${pk}/`, formData)
       .then(async res => {
-        // 캐시 무효화 (해당 부모의 자식이 수정되었을 수 있음)
+        // 자식 레코드를 수정한 경우
         if (res.data.separated) {
-          invalidateChildrenCache(res.data.separated)
+          const parentPk = res.data.separated
+          // 1. 캐시된 자식 레코드 업데이트
+          updateCachedChild(parentPk, res.data)
+
+          // 2. 부모 레코드도 다시 fetch해서 is_balanced 등 갱신
+          try {
+            const parentRes = await api.get(`/project-cashbook/${parentPk}/`)
+            updateParentInList(parentPk, parentRes.data)
+          } catch (err) {
+            console.error('부모 레코드 갱신 실패:', err)
+          }
+        } else {
+          // 부모 레코드를 수정한 경우 - 목록에서 업데이트
+          updateParentInList(pk || 0, res.data)
+          // 자식 캐시 무효화 (다음 열 때 다시 로드)
+          invalidateChildrenCache(pk || undefined)
         }
-        invalidateChildrenCache(pk || undefined)
 
         if (isPayment) {
           await paymentStore.fetchAllPaymentList({
@@ -423,10 +458,33 @@ export const useProCash = defineStore('proCash', () => {
     return await api
       .put(`/project-imprest/${pk}/`, formData)
       .then(async res => {
-        await fetchProjectImprestList({
-          project: res.data.project,
-          ...filters,
-        })
+        // 자식 레코드를 수정한 경우
+        if (res.data.separated) {
+          const parentPk = res.data.separated
+          // 1. 캐시된 자식 레코드 업데이트
+          updateCachedChild(parentPk, res.data)
+
+          // 2. 부모 레코드도 다시 fetch해서 is_balanced 등 갱신
+          try {
+            const parentRes = await api.get(`/project-imprest/${parentPk}/`)
+            // proImprestList에서 업데이트
+            const index = proImprestList.value.findIndex(item => item.pk === parentPk)
+            if (index !== -1) {
+              proImprestList.value[index] = parentRes.data
+            }
+          } catch (err) {
+            console.error('부모 레코드 갱신 실패:', err)
+          }
+        } else {
+          // 부모 레코드를 수정한 경우 - 목록에서 업데이트
+          const index = proImprestList.value.findIndex(item => item.pk === pk)
+          if (index !== -1) {
+            proImprestList.value[index] = res.data
+          }
+          // 자식 캐시 무효화
+          invalidateChildrenCache(pk || undefined)
+        }
+
         await paymentStore.fetchAllPaymentList({
           project: res.data.project,
           contract: res.data.contract,
@@ -566,6 +624,8 @@ export const useProCash = defineStore('proCash', () => {
     fetchChildrenRecords,
     getCachedChildren,
     invalidateChildrenCache,
+    updateCachedChild,
+    updateParentInList,
 
     proImprestList,
     proImprestCount,
