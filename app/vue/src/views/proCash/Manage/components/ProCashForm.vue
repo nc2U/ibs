@@ -319,8 +319,8 @@ const deleteConfirm = () => {
 
 const deleteObject = () => {
   emit('on-delete', {
-    project: props.proCash.project,
-    pk: props.proCash.pk,
+    project: props.proCash?.project,
+    pk: props.proCash?.pk,
   })
   refDelModal.value.close()
   emit('close')
