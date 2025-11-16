@@ -77,6 +77,7 @@ export interface CashBook {
   is_separate: boolean
   separated: number | null
   sepItems?: SepItems[]
+  has_children?: boolean
   content: string
   trader: string
   bank_account: number | null

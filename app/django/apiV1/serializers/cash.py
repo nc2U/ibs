@@ -52,6 +52,7 @@ class CashBookSerializer(serializers.ModelSerializer):
     sepItems = SepItemsInCashBookSerializer(many=True, read_only=True)
     bank_account_desc = serializers.SerializerMethodField(read_only=True)
     evidence_desc = serializers.CharField(source='get_evidence_display', read_only=True)
+    has_children = serializers.SerializerMethodField(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
 
     class Meta:
@@ -59,7 +60,7 @@ class CashBookSerializer(serializers.ModelSerializer):
         fields = (
             'pk', 'company', 'sort', 'sort_desc', 'account_d1', 'account_d1_desc', 'account_d2',
             'account_d2_desc', 'account_d3', 'account_d3_desc', 'project', 'project_desc'
-            , 'is_return', 'is_separate', 'separated', 'sepItems', 'content', 'trader', 'bank_account',
+            , 'is_return', 'is_separate', 'separated', 'sepItems', 'has_children', 'content', 'trader', 'bank_account',
             'bank_account_desc', 'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date', 'updator')
 
     @staticmethod
@@ -85,6 +86,11 @@ class CashBookSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_bank_account_desc(obj):
         return obj.bank_account.alias_name
+
+    @staticmethod
+    def get_has_children(obj):
+        """부모 레코드가 자식 레코드를 가지고 있는지 확인"""
+        return CashBook.objects.filter(separated=obj).exists()
 
     def validate(self, attrs):
         """

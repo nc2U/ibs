@@ -200,6 +200,7 @@ export const useComCash = defineStore('comCash', () => {
 
   const cashBookList = ref<CashBook[]>([])
   const cashBookCount = ref<number>(0)
+  const childrenCache = ref<Map<number, CashBook[]>>(new Map())
 
   const cashesPages = (itemsPerPage: number) => Math.ceil(cashBookCount.value / itemsPerPage)
 
@@ -248,6 +249,42 @@ export const useComCash = defineStore('comCash', () => {
     } catch (err: any) {
       errorHandle(err.response.data)
       return 1
+    }
+  }
+
+  // 특정 부모의 자식 레코드 조회 (페이지네이션)
+  const fetchChildrenRecords = async (parentPk: number, page: number = 1) => {
+    try {
+      const response = await api.get(`/cashbook/${parentPk}/children/?page=${page}`)
+      const children = response.data.results as CashBook[]
+      const count = response.data.count
+
+      // 페이지별 캐시 업데이트 (각 페이지를 독립적으로 저장)
+      childrenCache.value.set(parentPk, children)
+
+      return {
+        results: children,
+        count,
+        next: response.data.next,
+        previous: response.data.previous,
+      }
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
+  // 캐시에서 자식 레코드 가져오기
+  const getCachedChildren = (parentPk: number): CashBook[] => {
+    return childrenCache.value.get(parentPk) || []
+  }
+
+  // 캐시 무효화
+  const invalidateChildrenCache = (parentPk?: number) => {
+    if (parentPk !== undefined) {
+      childrenCache.value.delete(parentPk)
+    } else {
+      childrenCache.value.clear()
     }
   }
 
@@ -359,6 +396,9 @@ export const useComCash = defineStore('comCash', () => {
     cashesPages,
     fetchCashBookList,
     findCashBookPage,
+    fetchChildrenRecords,
+    getCachedChildren,
+    invalidateChildrenCache,
     createCashBook,
     updateCashBook,
     deleteCashBook,

@@ -101,6 +101,7 @@ const accCallModal = () => {
         :projects="projects"
         :calculated="comCalculated?.calculated"
         :is-highlighted="props.highlightId === cash.pk"
+        :has-children="cash.has_children || false"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @patch-d3-hide="patchD3Hide"

@@ -102,11 +102,46 @@ class CashBookViewSet(viewsets.ModelViewSet):
     filterset_class = CashBookFilterSet
     search_fields = ('content', 'trader', 'note')
 
+    def get_queryset(self):
+        """부모 레코드만 반환 (separated가 null인 레코드)"""
+        queryset = super().get_queryset()
+        # separated가 null인 경우만 반환 (자식 레코드 제외)
+        return queryset.filter(separated__isnull=True)
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
         serializer.save(updator=self.request.user)
+
+    @action(detail=True, methods=['get'])
+    def children(self, request, pk=None):
+        """
+        특정 부모 거래의 분리 항목 조회 (페이지네이션 적용)
+
+        사용법:
+            GET /api/v1/cashbook/{pk}/children/
+            GET /api/v1/cashbook/{pk}/children/?page=2
+
+        페이지네이션: 페이지당 15개 항목 (부모 목록과 동일)
+        """
+        parent = self.get_object()
+        children = CashBook.objects.filter(
+            separated=parent
+        ).select_related(
+            'account_d1', 'account_d2', 'account_d3', 'updator'
+        ).order_by('id')
+
+        # 페이지네이션 적용
+        paginator = PageNumberPaginationFifteen()
+        page = paginator.paginate_queryset(children, request)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(children, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def find_page(self, request):
@@ -114,31 +149,31 @@ class CashBookViewSet(viewsets.ModelViewSet):
         highlight_id = request.query_params.get('highlight_id')
         if not highlight_id:
             return Response({'error': 'highlight_id parameter required'}, status=400)
-        
+
         try:
             highlight_id = int(highlight_id)
         except ValueError:
             return Response({'error': 'highlight_id must be integer'}, status=400)
-            
+
         # 현재 필터 조건을 적용한 queryset 가져오기
         queryset = self.filter_queryset(self.get_queryset())
-        
+
         # 해당 ID가 존재하는지 확인
         try:
             target_item = queryset.get(pk=highlight_id)
         except CashBook.DoesNotExist:
             return Response({'error': 'Item not found'}, status=404)
-            
+
         # 해당 항목보다 앞에 있는 항목 개수 계산 (동일한 정렬 조건 적용)
         items_before = queryset.filter(
             Q(deal_date__gt=target_item.deal_date) |
             (Q(deal_date=target_item.deal_date) & Q(id__gt=target_item.id))
         ).count()
-        
+
         # 프론트엔드에서 사용하는 페이지 크기 (동적으로 가져오기)
         page_size = int(request.query_params.get('limit', '15'))
         page_number = (items_before // page_size) + 1
-        
+
         return Response({'page': page_number})
 
 
