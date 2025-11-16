@@ -2,6 +2,7 @@
 import { ref, computed, type PropType } from 'vue'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
+import { useProCash } from '@/store/pinia/proCash'
 import { write_project_cash } from '@/utils/pageAuth'
 import { numFormat, cutString, diffDate } from '@/utils/baseMixins'
 import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
@@ -11,11 +12,25 @@ import ProImprestForm from '@/views/proCash/Imprest/components/ProImprestForm.vu
 const props = defineProps({
   imprest: { type: Object as PropType<ProjectCashBook>, required: true },
   calculated: { type: String, default: '2000-01-01' },
+  hasChildren: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'on-bank-update'])
 
 const updateFormModal = ref()
+const proCashStore = useProCash()
+
+// 자식 레코드 토글 상태
+const showChildren = ref(false)
+const loadingChildren = ref(false)
+const childrenPage = ref(1)
+const hasMoreChildren = ref(false)
+const totalChildren = ref(0)
+
+// 캐시된 자식 레코드 가져오기
+const children = computed(() =>
+  props.imprest?.pk ? proCashStore.getCachedChildren(props.imprest.pk) : [],
+)
 
 const sortClass = computed(
   () => ['', 'text-primary', 'text-danger', 'text-info'][props.imprest?.sort || 0],
@@ -49,16 +64,80 @@ const multiSubmit = (payload: { formData: ProjectCashBook; sepData: ProjectCashB
 const onDelete = (payload: { project: number; pk: number }) => emit('on-delete', payload)
 
 const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
+
+// 자식 레코드 토글
+const toggleChildren = async () => {
+  if (!props.imprest?.pk) return
+
+  if (!showChildren.value) {
+    // 자식 레코드 열기
+    showChildren.value = true
+
+    // 캐시에 데이터가 없으면 로드
+    if (children.value.length === 0) {
+      await loadChildren(1)
+    }
+  } else {
+    // 자식 레코드 닫기
+    showChildren.value = false
+  }
+}
+
+// 자식 레코드 로드
+const loadChildren = async (page: number = 1) => {
+  if (!props.imprest?.pk || loadingChildren.value) return
+
+  try {
+    loadingChildren.value = true
+    const response = await proCashStore.fetchChildrenRecords(props.imprest.pk, page)
+
+    childrenPage.value = page
+    totalChildren.value = response.count
+    hasMoreChildren.value = !!response.next
+  } catch (error) {
+    console.error('자식 레코드 로드 실패:', error)
+  } finally {
+    loadingChildren.value = false
+  }
+}
+
+// 페이지 변경 핸들러
+const onChildrenPageChange = (page: number) => {
+  loadChildren(page)
+}
+
+// 총 페이지 수 계산
+const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
 </script>
 
 <template>
-  <CTableRow
-    v-if="imprest"
-    class="text-center"
-    :color="rowColor"
-    :style="imprest.is_separate ? 'font-weight: bold;' : ''"
-  >
-    <CTableDataCell>{{ imprest.deal_date }}</CTableDataCell>
+  <template v-if="imprest">
+    <!-- 부모 레코드 행 -->
+    <CTableRow
+      class="text-center"
+      :color="rowColor"
+      :style="imprest.is_separate ? 'font-weight: bold;' : ''"
+    >
+      <CTableDataCell>
+        <!-- 자식이 있으면 토글 버튼 표시 -->
+        <div class="d-flex align-items-center justify-content-center">
+          <v-btn
+            v-if="hasChildren"
+            size="x-small"
+            variant="text"
+            icon
+            @click="toggleChildren"
+            class="mr-1"
+          >
+            <v-btn
+              :icon="showChildren ? 'mdi-chevron-down' : 'mdi-chevron-right'"
+              variant="tonal"
+              size="sm"
+            />
+          </v-btn>
+          <span>{{ imprest.deal_date }}</span>
+        </div>
+      </CTableDataCell>
     <CTableDataCell :class="sortClass">
       {{ imprest.sort_desc }}
     </CTableDataCell>
@@ -92,10 +171,95 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
       </span>
     </CTableDataCell>
     <CTableDataCell>{{ imprest.evidence_desc }}</CTableDataCell>
-    <CTableDataCell v-if="write_project_cash">
-      <v-btn color="info" size="x-small" @click="showDetail" :disabled="!allowedPeriod">확인</v-btn>
-    </CTableDataCell>
-  </CTableRow>
+      <CTableDataCell v-if="write_project_cash">
+        <v-btn color="info" size="x-small" @click="showDetail" :disabled="!allowedPeriod">확인</v-btn>
+      </CTableDataCell>
+    </CTableRow>
+
+    <!-- 자식 레코드 표시 영역 -->
+    <CTableRow v-if="showChildren && hasChildren">
+      <CTableDataCell :colspan="write_project_cash ? 11 : 10" class="p-0">
+        <div class="p-0">
+          <!-- 로딩 중 -->
+          <div v-if="loadingChildren && children.length === 0" class="text-center py-3">
+            <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
+            <span class="ml-2">자식 레코드 로딩 중...</span>
+          </div>
+
+          <!-- 자식 레코드 테이블 -->
+          <CTable v-else-if="children.length > 0" bordered small class="mb-0">
+            <colgroup>
+              <col style="width: 8%" />
+              <col style="width: 6%" />
+              <col style="width: 11%" />
+              <col style="width: 11%" />
+              <col style="width: 12%" />
+              <col style="width: 10%" />
+              <col style="width: 10%" />
+              <col style="width: 7%" />
+              <col style="width: 10%" />
+              <col style="width: 9%" />
+              <col style="width: 6%" />
+            </colgroup>
+            <CTableBody>
+              <CTableRow
+                v-for="child in children"
+                :key="child.pk"
+                class="text-center"
+                color="light"
+              >
+                <CTableDataCell>{{ child.deal_date }}</CTableDataCell>
+                <CTableDataCell
+                  :class="['', 'text-primary', 'text-danger', 'text-info'][child?.sort || 0]"
+                >
+                  {{ child?.sort_desc }}
+                </CTableDataCell>
+                <CTableDataCell></CTableDataCell>
+                <CTableDataCell class="text-left">
+                  <span>{{ cutString(child.trader, 9) }}</span>
+                </CTableDataCell>
+                <CTableDataCell class="text-left">
+                  <span>{{ cutString(child.content, 12) }}</span>
+                </CTableDataCell>
+                <CTableDataCell class="text-right" :color="dark ? '' : 'success'">
+                  {{ numFormat(child.income || 0) }}
+                </CTableDataCell>
+                <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
+                  {{ numFormat(child.outlay || 0) }}
+                </CTableDataCell>
+                <CTableDataCell class="text-left">
+                  {{ child.project_account_d2_desc }}
+                </CTableDataCell>
+                <CTableDataCell class="text-left">
+                  <span v-if="child.project_account_d3_desc">
+                    {{ cutString(child.project_account_d3_desc, 9) }}
+                  </span>
+                </CTableDataCell>
+                <CTableDataCell>{{ child.evidence_desc }}</CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
+
+          <!-- 페이지네이션 -->
+          <v-pagination
+            v-if="children.length > 0 && childrenTotalPages > 1"
+            v-model="childrenPage"
+            :length="childrenTotalPages"
+            :total-visible="7"
+            density="compact"
+            rounded="2"
+            class="mt-4"
+            @update:model-value="onChildrenPageChange"
+          />
+
+          <!-- 자식 레코드가 없을 때 -->
+          <div v-if="!loadingChildren && children.length === 0" class="text-center py-3 text-muted">
+            분리 항목이 없습니다.
+          </div>
+        </div>
+      </CTableDataCell>
+    </CTableRow>
+  </template>
 
   <FormModal ref="updateFormModal" size="lg">
     <template #header>운영비(전도금) 거래 건별 관리</template>

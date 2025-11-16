@@ -88,6 +88,7 @@ const accCallModal = () => {
         :key="imprest.pk as number"
         :imprest="imprest"
         :calculated="proCalculated?.calculated"
+        :has-children="imprest.has_children || false"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @on-bank-update="onBankUpdate"
