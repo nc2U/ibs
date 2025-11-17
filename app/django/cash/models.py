@@ -148,9 +148,9 @@ class CashBook(models.Model):
         if self.income and self.income > 0 and self.outlay and self.outlay > 0:
             errors['__all__'] = '입금과 출금을 동시에 등록할 수 없습니다.'
 
-        # 6. 부모 레코드는 입금 또는 출금이 반드시 하나는 있어야 함
+        # 6. 부모 레코드와 분리된 원본 은행거래는 입금 또는 출금이 반드시 하나는 있어야 함
         # 자식 레코드는 0원 항목이 있을 수 있으므로 제외
-        if not self.is_separate and not self.separated:  # 부모 레코드만
+        if not self.separated:  # 부모 레코드(is_separate=False) 및 분리된 원본(is_separate=True)
             if (not self.income or self.income == 0) and (not self.outlay or self.outlay == 0):
                 errors['__all__'] = '입금 또는 출금 금액을 입력해야 합니다.'
 
@@ -383,9 +383,9 @@ class ProjectCashBook(models.Model):
         if self.income and self.income > 0 and self.outlay and self.outlay > 0:
             errors['__all__'] = '입금과 출금을 동시에 등록할 수 없습니다.'
 
-        # 6. 부모 레코드는 입금 또는 출금이 반드시 하나는 있어야 함
+        # 6. 부모 레코드와 분리된 원본 은행거래는 입금 또는 출금이 반드시 하나는 있어야 함
         # 자식 레코드는 0원 항목이 있을 수 있으므로 제외
-        if not self.is_separate and not self.separated:  # 부모 레코드만
+        if not self.separated:  # 부모 레코드(is_separate=False) 및 분리된 원본(is_separate=True)
             if (not self.income or self.income == 0) and (not self.outlay or self.outlay == 0):
                 errors['__all__'] = '입금 또는 출금 금액을 입력해야 합니다.'
 

@@ -112,7 +112,7 @@ class ProjectCashBookAdmin(ImportExportMixin, admin.ModelAdmin):
         'id', 'project', 'deal_date', 'sort', 'project_account_d2', 'project_account_d3',
         'content', 'trader', 'bank_account', 'formatted_income', 'formatted_outlay', 'evidence')
     list_editable = ('project_account_d2', 'project_account_d3', 'evidence')
-    search_fields = ('pk', 'content', 'trader', 'note')
+    search_fields = ('pk', 'contract__contractor__name', 'content', 'trader', 'note')
     list_display_links = ('project', 'deal_date')
     list_filter = (
         'project', 'sort', ('deal_date', DateRangeFilter), 'project_account_d2',
