@@ -284,7 +284,7 @@ const getContracts = computed(() => contStore.getContracts)
 
 const accountStore = useAccount()
 const allowedPeriod = computed(
-  () => accountStore.superAuth || diffDate(props.proCash.deal_date) <= 30,
+  () => accountStore.superAuth || diffDate(props.proCash?.deal_date as string) <= 30,
 )
 
 const onSubmit = (event: Event) => {
@@ -690,19 +690,27 @@ onBeforeMount(() => formDataSetup())
                 <strong>은행 거래와 분류 거래 합계가 일치하지 않습니다!</strong>
                 <div class="mt-1">
                   <span class="text-caption">
-                    은행 입금: {{ numFormat(proCash?.income || 0) }} /
-                    분류 합계: {{ numFormat(sepSummary[0] || 0) }}
-                    <span v-if="(proCash?.income || 0) !== (sepSummary[0] || 0)" class="text-error ml-1">
-                      (차액: {{ numFormat(Math.abs((proCash?.income ?? 0) - (sepSummary[0] || 0))) }})
+                    은행 입금: {{ numFormat(proCash?.income || 0) }} / 분류 합계:
+                    {{ numFormat(sepSummary[0] || 0) }}
+                    <span
+                      v-if="(proCash?.income || 0) !== (sepSummary[0] || 0)"
+                      class="text-error ml-1"
+                    >
+                      (차액:
+                      {{ numFormat(Math.abs((proCash?.income ?? 0) - (sepSummary[0] || 0))) }})
                     </span>
                   </span>
                 </div>
                 <div>
                   <span class="text-caption">
-                    은행 출금: {{ numFormat(proCash?.outlay || 0) }} /
-                    분류 합계: {{ numFormat(sepSummary[1] || 0) }}
-                    <span v-if="(proCash?.outlay || 0) !== (sepSummary[1] || 0)" class="text-error ml-1">
-                      (차액: {{ numFormat(Math.abs((proCash?.outlay ?? 0) - (sepSummary[1] || 0))) }})
+                    은행 출금: {{ numFormat(proCash?.outlay || 0) }} / 분류 합계:
+                    {{ numFormat(sepSummary[1] || 0) }}
+                    <span
+                      v-if="(proCash?.outlay || 0) !== (sepSummary[1] || 0)"
+                      class="text-error ml-1"
+                    >
+                      (차액:
+                      {{ numFormat(Math.abs((proCash?.outlay ?? 0) - (sepSummary[1] || 0))) }})
                     </span>
                   </span>
                 </div>
@@ -710,13 +718,7 @@ onBeforeMount(() => formDataSetup())
             </v-alert>
 
             <!-- 일치하는 경우 성공 표시 -->
-            <v-alert
-              v-else
-              type="success"
-              variant="tonal"
-              density="compact"
-              class="mt-2"
-            >
+            <v-alert v-else type="success" variant="tonal" density="compact" class="mt-2">
               <template #prepend>
                 <v-icon icon="mdi-check-circle" />
               </template>
