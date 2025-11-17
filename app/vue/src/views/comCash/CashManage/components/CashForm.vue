@@ -146,7 +146,7 @@ const sepSummary = computed(() => {
   return [inc, out]
 })
 
-// 부모 거래와 자식 거래 합계 일치 여부 검증
+// 은행 거래와 분류 거래 합계 일치 여부 검증
 const isBalanceMatched = computed(() => {
   if (!props.cash?.is_separate || !props.cash?.sepItems?.length) return true
 
@@ -313,7 +313,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    // 자식 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
+    // 분류 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
     const isChildRecord = props.cash?.separated
     const payload =
       !form.is_separate || isChildRecord
@@ -708,7 +708,7 @@ onBeforeMount(async () => {
               {{ sepSummary[1] ? `출금액 합계 : ${numFormat(sepSummary[1] || 0)}` : '' }}
             </strong>
 
-            <!-- 부모 거래와 자식 거래 합계 일치 여부 표시 -->
+            <!-- 은행 거래와 분류 거래 합계 일치 여부 표시 -->
             <v-alert
               v-if="!isBalanceMatched"
               type="warning"
@@ -720,11 +720,11 @@ onBeforeMount(async () => {
                 <v-icon icon="mdi-alert-circle" />
               </template>
               <div class="d-flex flex-column">
-                <strong>부모 거래와 자식 거래 합계가 일치하지 않습니다!</strong>
+                <strong>은행 거래와 분류 거래 합계가 일치하지 않습니다!</strong>
                 <div class="mt-1">
                   <span class="text-caption">
-                    부모 입금: {{ numFormat(cash?.income || 0) }} /
-                    자식 합계: {{ numFormat(sepSummary[0] || 0) }}
+                    은행 입금: {{ numFormat(cash?.income || 0) }} /
+                    분류 합계: {{ numFormat(sepSummary[0] || 0) }}
                     <span v-if="(cash?.income || 0) !== (sepSummary[0] || 0)" class="text-error ml-1">
                       (차액: {{ numFormat(Math.abs((cash?.income ?? 0) - (sepSummary[0] || 0))) }})
                     </span>
@@ -732,8 +732,8 @@ onBeforeMount(async () => {
                 </div>
                 <div>
                   <span class="text-caption">
-                    부모 출금: {{ numFormat(cash?.outlay || 0) }} /
-                    자식 합계: {{ numFormat(sepSummary[1] || 0) }}
+                    은행 출금: {{ numFormat(cash?.outlay || 0) }} /
+                    분류 합계: {{ numFormat(sepSummary[1] || 0) }}
                     <span v-if="(cash?.outlay || 0) !== (sepSummary[1] || 0)" class="text-error ml-1">
                       (차액: {{ numFormat(Math.abs((cash?.outlay ?? 0) - (sepSummary[1] || 0))) }})
                     </span>
@@ -753,7 +753,7 @@ onBeforeMount(async () => {
               <template #prepend>
                 <v-icon icon="mdi-check-circle" />
               </template>
-              <strong>부모 거래와 자식 거래 합계가 일치합니다.</strong>
+              <strong>은행 거래와 분류 거래 합계가 일치합니다.</strong>
             </v-alert>
           </CCol>
         </CRow>

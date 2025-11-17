@@ -147,6 +147,17 @@ const sepSummary = computed(() => {
   return [inc, out]
 })
 
+// 은행 거래와 분류 거래 합계 일치 여부 검증
+const isBalanceMatched = computed(() => {
+  if (!props.imprest?.is_separate || !props.imprest?.sepItems?.length) return true
+
+  const parentIncome = props.imprest.income || 0
+  const parentOutlay = props.imprest.outlay || 0
+  const [childrenIncome, childrenOutlay] = sepSummary.value
+
+  return parentIncome === childrenIncome && parentOutlay === childrenOutlay
+})
+
 const sepUpdate = (sep: ProjectCashBook) => {
   sepItem.pk = sep.pk
   sepItem.project_account_d2 = sep.project_account_d2
@@ -283,7 +294,7 @@ const onSubmit = (event: Event) => {
     validated.value = true
   } else {
     form.ba_is_imprest = isImprest.value
-    // 자식 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
+    // 분류 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
     const isChildRecord = props.imprest?.separated
     const payload = !form.is_separate || isChildRecord
       ? { formData: form, sepData: null }
@@ -663,6 +674,54 @@ onBeforeMount(() => formDataSetup())
               {{ sepSummary[0] ? `입금액 합계 : ${numFormat(sepSummary[0])}` : '' }}
               {{ sepSummary[1] ? `출금액 합계 : ${numFormat(sepSummary[1])}` : '' }}
             </strong>
+
+            <!-- 은행 거래와 분류 거래 합계 일치 여부 표시 -->
+            <v-alert
+              v-if="!isBalanceMatched"
+              type="warning"
+              variant="tonal"
+              density="compact"
+              class="mt-2"
+            >
+              <template #prepend>
+                <v-icon icon="mdi-alert-circle" />
+              </template>
+              <div class="d-flex flex-column">
+                <strong>은행 거래와 분류 거래 합계가 일치하지 않습니다!</strong>
+                <div class="mt-1">
+                  <span class="text-caption">
+                    은행 입금: {{ numFormat(imprest?.income || 0) }} /
+                    분류 합계: {{ numFormat(sepSummary[0] || 0) }}
+                    <span v-if="(imprest?.income || 0) !== (sepSummary[0] || 0)" class="text-error ml-1">
+                      (차액: {{ numFormat(Math.abs((imprest?.income ?? 0) - (sepSummary[0] || 0))) }})
+                    </span>
+                  </span>
+                </div>
+                <div>
+                  <span class="text-caption">
+                    은행 출금: {{ numFormat(imprest?.outlay || 0) }} /
+                    분류 합계: {{ numFormat(sepSummary[1] || 0) }}
+                    <span v-if="(imprest?.outlay || 0) !== (sepSummary[1] || 0)" class="text-error ml-1">
+                      (차액: {{ numFormat(Math.abs((imprest?.outlay ?? 0) - (sepSummary[1] || 0))) }})
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </v-alert>
+
+            <!-- 일치하는 경우 성공 표시 -->
+            <v-alert
+              v-else
+              type="success"
+              variant="tonal"
+              density="compact"
+              class="mt-2"
+            >
+              <template #prepend>
+                <v-icon icon="mdi-check-circle" />
+              </template>
+              <strong>은행 거래와 분류 거래 합계가 일치합니다.</strong>
+            </v-alert>
           </CCol>
         </CRow>
 
