@@ -308,6 +308,7 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
     filterset_class = ProjectCashBookFilterSet
     search_fields = ('contract__contractor__name', 'content', 'trader', 'note')
 
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
@@ -380,8 +381,8 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
         if not search_query:
             return Response({'error': 'search parameter required'}, status=400)
 
-        # 검색 조건에 맞는 부모 레코드들 찾기
-        parent_queryset = ProjectCashBook.objects.filter(
+        # 1. 일반 부모 레코드 검색 (계약자명, content, trader, note)
+        direct_parent_queryset = ProjectCashBook.objects.filter(
             project=project,
             separated__isnull=True
         ).filter(
@@ -391,8 +392,8 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
             Q(note__icontains=search_query)
         )
 
-        # 검색 조건에 맞는 자식 레코드의 부모들도 포함
-        child_parent_ids = ProjectCashBook.objects.filter(
+        # 2. 자식 레코드에서 검색어를 포함한 레코드들의 부모 ID 찾기 (역방향 검색)
+        matching_child_parent_ids = ProjectCashBook.objects.filter(
             project=project,
             separated__isnull=False
         ).filter(
@@ -401,15 +402,29 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
             Q(note__icontains=search_query)
         ).values_list('separated', flat=True).distinct()
 
-        # 부모 레코드와 관련 자식 레코드가 있는 부모들을 합치기
-        all_parent_ids = list(parent_queryset.values_list('pk', flat=True)) + list(child_parent_ids)
+        # 3. 자식의 부모 중에서 계약자명으로도 검색 (부모의 계약자명이 자식 검색어와 매칭)
+        parent_with_contractor_from_children = ProjectCashBook.objects.filter(
+            project=project,
+            separated__isnull=True,
+            pk__in=matching_child_parent_ids
+        ).filter(
+            contract__contractor__name__icontains=search_query
+        ).values_list('pk', flat=True)
+
+        # 4. 모든 부모 ID 합치기
+        all_parent_ids = (
+            list(direct_parent_queryset.values_list('pk', flat=True)) +
+            list(matching_child_parent_ids) +
+            list(parent_with_contractor_from_children)
+        )
         all_parent_ids = list(set(all_parent_ids))  # 중복 제거
 
+        # 5. 최종 부모 레코드들 조회
         final_parents = ProjectCashBook.objects.filter(
             pk__in=all_parent_ids
         ).select_related(
             'project_account_d2', 'project_account_d3', 'contract', 'contract__contractor'
-        )
+        ).order_by('-deal_date', '-id')
 
         results = []
         for parent in final_parents:

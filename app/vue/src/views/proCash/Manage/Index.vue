@@ -78,9 +78,12 @@ const fetchProject = (pk: number) => projStore.fetchProject(pk)
 
 const pageSelect = (page: number) => {
   dataFilter.value.page = page
+  const hasSearch = dataFilter.value.search && dataFilter.value.search.trim().length > 0
+
   fetchProjectCashList({
     ...{ project: project.value },
     ...dataFilter.value,
+    parents_only: !hasSearch, // 검색 시에는 false, 일반 페이징은 true
   })
 }
 
@@ -95,10 +98,16 @@ const listFiltering = (payload: CashBookFilter) => {
   fetchFormAccD1List(sort)
   fetchProFormAccD2List(d1, sort)
   fetchProFormAccD3List(d2, sort)
+
   if (project.value) {
+    // 검색어가 있으면 parents_only=false로 모든 레코드 검색
+    // 검색어가 없으면 parents_only=true로 부모 레코드만 표시
+    const hasSearch = payload.search && payload.search.trim().length > 0
+
     fetchProjectCashList({
       ...{ project: project.value },
       ...payload,
+      parents_only: !hasSearch, // 검색 시에는 false, 일반 목록은 true
     })
   }
 }
@@ -258,7 +267,11 @@ const onBankUpdate = (payload: ProBankAcc) => patchProBankAcc(payload)
 const dataSetup = (pk: number) => {
   fetchProBankAccList(pk)
   fetchAllProBankAccList(pk)
-  fetchProjectCashList({ project: pk, ...dataFilter.value })
+  fetchProjectCashList({
+    project: pk,
+    ...dataFilter.value,
+    parents_only: true // 초기 로딩 시에는 부모 레코드만
+  })
   fetchProCashCalc(pk)
 }
 

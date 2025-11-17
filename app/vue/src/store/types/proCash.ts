@@ -100,6 +100,7 @@ export type CashBookFilter = {
   no_install?: boolean
   ordering?: string
   search?: string
+  includeChildren?: boolean // 자식 레코드까지 포함한 통합 검색 모드
 }
 
 export interface PaymentPaid {
