@@ -7,7 +7,8 @@ CashBook 분리 거래 데이터 검증 관리 명령어
     python manage.py validate_company_cashbook_splits --company=1
 """
 from django.core.management.base import BaseCommand, CommandError
-from django.db.models import Sum, Q, F
+from django.db.models import Sum, F
+
 from cash.models import CashBook
 
 
