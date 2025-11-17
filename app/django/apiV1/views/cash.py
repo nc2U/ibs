@@ -280,10 +280,9 @@ class ProjectCashBookFilterSet(FilterSet):
     class Meta:
         model = ProjectCashBook
         fields = ('project', 'sort', 'project_account_d2__d1', 'project_account_d2',
-                  'project_account_d3', 'is_imprest', 'from_deal_date', 'to_deal_date',
-                  'deal_date', 'installment_order', 'bank_account', 'contract',
-                  'contract__order_group', 'contract__unit_type', 'no_contract', 'no_install',
-                  'parents_only')
+                  'project_account_d3', 'is_imprest', 'from_deal_date', 'to_deal_date', 'deal_date',
+                  'installment_order', 'bank_account', 'contract', 'contract__order_group',
+                  'contract__unit_type', 'no_contract', 'no_install', 'parents_only')
 
     @staticmethod
     def filter_parents_only(queryset, name, value):
@@ -323,8 +322,10 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
         사용법:
             GET /api/v1/project-cashbook/{pk}/children/
             GET /api/v1/project-cashbook/{pk}/children/?page=2
+            GET /api/v1/project-cashbook/{pk}/children/?search=검색어
 
         페이지네이션: 페이지당 15개 항목 (부모 목록과 동일)
+        검색 지원: content, trader, note 필드 검색
         """
         parent = self.get_object()
         children = ProjectCashBook.objects.filter(
@@ -332,6 +333,15 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
         ).select_related(
             'project_account_d2', 'project_account_d3', 'updator'
         ).order_by('id')
+
+        # 검색 필터링 적용
+        search_query = request.query_params.get('search')
+        if search_query:
+            children = children.filter(
+                Q(content__icontains=search_query) |
+                Q(trader__icontains=search_query) |
+                Q(note__icontains=search_query)
+            )
 
         # 페이지네이션 적용 (부모와 동일한 15개)
         page = self.paginate_queryset(children)
@@ -342,6 +352,87 @@ class ProjectCashBookViewSet(viewsets.ModelViewSet):
         # 페이지네이션이 없는 경우 (fallback)
         serializer = self.get_serializer(children, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def search_with_children(self, request):
+        """
+        계약자 이름으로 검색 시 자식 레코드까지 포함한 통합 검색
+
+        사용법:
+            GET /api/v1/project-cashbook/search_with_children/?project=1&search=홍길동
+
+        응답:
+            {
+                "parents_with_children": [
+                    {
+                        "parent": {...부모 레코드},
+                        "matching_children": [...검색에 해당하는 자식 레코드들]
+                    }
+                ]
+            }
+        """
+        project = request.query_params.get('project')
+        search_query = request.query_params.get('search')
+
+        if not project:
+            return Response({'error': 'project parameter required'}, status=400)
+
+        if not search_query:
+            return Response({'error': 'search parameter required'}, status=400)
+
+        # 검색 조건에 맞는 부모 레코드들 찾기
+        parent_queryset = ProjectCashBook.objects.filter(
+            project=project,
+            separated__isnull=True
+        ).filter(
+            Q(contract__contractor__name__icontains=search_query) |
+            Q(content__icontains=search_query) |
+            Q(trader__icontains=search_query) |
+            Q(note__icontains=search_query)
+        )
+
+        # 검색 조건에 맞는 자식 레코드의 부모들도 포함
+        child_parent_ids = ProjectCashBook.objects.filter(
+            project=project,
+            separated__isnull=False
+        ).filter(
+            Q(content__icontains=search_query) |
+            Q(trader__icontains=search_query) |
+            Q(note__icontains=search_query)
+        ).values_list('separated', flat=True).distinct()
+
+        # 부모 레코드와 관련 자식 레코드가 있는 부모들을 합치기
+        all_parent_ids = list(parent_queryset.values_list('pk', flat=True)) + list(child_parent_ids)
+        all_parent_ids = list(set(all_parent_ids))  # 중복 제거
+
+        final_parents = ProjectCashBook.objects.filter(
+            pk__in=all_parent_ids
+        ).select_related(
+            'project_account_d2', 'project_account_d3', 'contract', 'contract__contractor'
+        )
+
+        results = []
+        for parent in final_parents:
+            # 해당 부모의 자식들 중 검색 조건에 맞는 것들만
+            matching_children = ProjectCashBook.objects.filter(
+                separated=parent
+            ).filter(
+                Q(content__icontains=search_query) |
+                Q(trader__icontains=search_query) |
+                Q(note__icontains=search_query)
+            ).select_related(
+                'project_account_d2', 'project_account_d3'
+            )
+
+            parent_serializer = self.get_serializer(parent)
+            children_serializer = self.get_serializer(matching_children, many=True)
+
+            results.append({
+                'parent': parent_serializer.data,
+                'matching_children': children_serializer.data
+            })
+
+        return Response({'parents_with_children': results})
 
     @action(detail=False, methods=['get'])
     def find_page(self, request):

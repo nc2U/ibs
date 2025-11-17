@@ -185,14 +185,21 @@ export const useProCash = defineStore('proCash', () => {
   }
 
   // 특정 부모의 자식 레코드 조회 (페이지네이션)
-  const fetchChildrenRecords = async (parentPk: number, page: number = 1) => {
+  const fetchChildrenRecords = async (parentPk: number, page: number = 1, search?: string) => {
     try {
-      const response = await api.get(`/project-cashbook/${parentPk}/children/?page=${page}`)
+      let url = `/project-cashbook/${parentPk}/children/?page=${page}`
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`
+      }
+
+      const response = await api.get(url)
       const children = response.data.results as ProjectCashBook[]
       const count = response.data.count
 
-      // 페이지별 캐시 업데이트 (각 페이지를 독립적으로 저장)
-      childrenCache.value.set(parentPk, children)
+      // 검색이 있는 경우 캐시하지 않음 (검색 결과는 휘발성)
+      if (!search) {
+        childrenCache.value.set(parentPk, children)
+      }
 
       return {
         results: children,
@@ -200,6 +207,17 @@ export const useProCash = defineStore('proCash', () => {
         next: response.data.next,
         previous: response.data.previous,
       }
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
+  // 계약자 이름 검색 시 자식까지 포함한 통합 검색
+  const searchWithChildren = async (project: number, search: string) => {
+    try {
+      const response = await api.get(`/project-cashbook/search_with_children/?project=${project}&search=${encodeURIComponent(search)}`)
+      return response.data.parents_with_children
     } catch (err: any) {
       errorHandle(err.response?.data)
       throw err
@@ -657,6 +675,7 @@ export const useProCash = defineStore('proCash', () => {
     patchPrCashBook,
     deletePrCashBook,
     fetchChildrenRecords,
+    searchWithChildren,
     getCachedChildren,
     invalidateChildrenCache,
     updateCachedChild,
