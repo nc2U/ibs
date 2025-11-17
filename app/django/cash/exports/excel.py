@@ -156,58 +156,103 @@ class ExportProjectDateCashbook(ExcelExportMixin):
         # worksheet.write(row_num, 6, date + ' 현재', workbook.add_format({'align': 'right'}))
         row_num += 1
 
-        # 3. Header
+        # 3. Header - 열 구조 변경: 은행거래 내역(6열) + 분류 내역(4열)
         worksheet.set_column(0, 0, 15)
-        worksheet.write(row_num, 0, '항목', h_format)
-        worksheet.set_column(1, 1, 15)
-        worksheet.write(row_num, 1, '세부항목', h_format)
-        worksheet.set_column(2, 2, 20)
-        worksheet.write(row_num, 2, '입금 금액', h_format)
-        worksheet.set_column(3, 3, 20)
-        worksheet.write(row_num, 3, '출금 금액', h_format)
-        worksheet.set_column(4, 4, 25)
-        worksheet.write(row_num, 4, '거래 계좌', h_format)
-        worksheet.set_column(5, 5, 30)
-        worksheet.write(row_num, 5, '거래처', h_format)
-        worksheet.set_column(6, 6, 30)
-        worksheet.write(row_num, 6, '적요', h_format)
+        worksheet.write(row_num, 0, '일시', h_format)
+        worksheet.set_column(1, 1, 20)
+        worksheet.write(row_num, 1, '계좌', h_format)
+        worksheet.set_column(2, 2, 15)
+        worksheet.write(row_num, 2, '거래자', h_format)
+        worksheet.set_column(3, 3, 25)
+        worksheet.write(row_num, 3, '적요', h_format)
+        worksheet.set_column(4, 4, 20)
+        worksheet.write(row_num, 4, '입금액', h_format)
+        worksheet.set_column(5, 5, 20)
+        worksheet.write(row_num, 5, '출금액', h_format)
+        worksheet.set_column(6, 6, 20)
+        worksheet.write(row_num, 6, '계정', h_format)
+        worksheet.set_column(7, 7, 20)
+        worksheet.write(row_num, 7, '분류금액', h_format)
+        worksheet.set_column(8, 8, 15)
+        worksheet.write(row_num, 8, '증빙', h_format)
+        worksheet.set_column(9, 9, 15)
+        worksheet.write(row_num, 9, '메모', h_format)
 
         # 4. Contents
-        date_cashes = ProjectCashBook.objects.filter(is_separate=False, deal_date__exact=date).order_by(
-            'deal_date', 'created', 'id')
+        date_cashes = ProjectCashBook.objects.filter(
+            deal_date__exact=date
+        ).select_related(
+            'bank_account',
+            'project_account_d2',
+            'project_account_d3'
+        ).prefetch_related('sepItems').order_by('deal_date', 'created', 'id')
 
         inc_sum = 0
         out_sum = 0
-        for row, cash in enumerate(date_cashes):
-            row_num += 1
+        for cash in date_cashes:
             inc_sum += cash.income if cash.income else 0
             out_sum += cash.outlay if cash.outlay else 0
 
-            for col in range(7):
-                if col == 0:
-                    worksheet.write(row_num, col, cash.project_account_d2.name, center_format)
-                if col == 1:
-                    worksheet.write(row_num, col, cash.project_account_d3.name, center_format)
-                if col == 2:
-                    worksheet.write(row_num, col, cash.income, number_format)
-                if col == 3:
-                    worksheet.write(row_num, col, cash.outlay, number_format)
-                if col == 4:
-                    worksheet.write(row_num, col, cash.bank_account.alias_name, left_format)
-                if col == 5:
-                    worksheet.write(row_num, col, cash.trader, left_format)
-                if col == 6:
-                    worksheet.write(row_num, col, cash.content, left_format)
+            if cash.is_separate and cash.sepItems.exists():
+                # 분리된 거래: 부모 + 자식들
+                children = cash.sepItems.all().order_by('id')
+
+                for idx, child in enumerate(children):
+                    row_num += 1
+
+                    if idx == 0:
+                        # 첫 번째 자식: 은행거래(부모) + 분류내역(자식)
+                        worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
+                        worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', left_format)
+                        worksheet.write(row_num, 2, cash.trader or '', left_format)
+                        worksheet.write(row_num, 3, cash.content or '', left_format)
+                        worksheet.write(row_num, 4, cash.income, number_format)
+                        worksheet.write(row_num, 5, cash.outlay, number_format)
+                        # 분류 내역
+                        account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
+                        worksheet.write(row_num, 6, account_name, center_format)
+                        worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
+                        worksheet.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', center_format)
+                        worksheet.write(row_num, 9, cash.note or '', left_format)
+                    else:
+                        # 나머지 자식: 은행거래 비움 + 분류내역만
+                        worksheet.write(row_num, 0, '', center_format)
+                        worksheet.write(row_num, 1, '', left_format)
+                        worksheet.write(row_num, 2, '', left_format)
+                        worksheet.write(row_num, 3, '', left_format)
+                        worksheet.write(row_num, 4, '', number_format)
+                        worksheet.write(row_num, 5, '', number_format)
+                        # 분류 내역
+                        account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
+                        worksheet.write(row_num, 6, account_name, center_format)
+                        worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
+                        worksheet.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', center_format)
+                        worksheet.write(row_num, 9, '', left_format)
+            else:
+                # 일반 거래: 은행거래 + 분류내역 모두 채움
+                row_num += 1
+                worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
+                worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', left_format)
+                worksheet.write(row_num, 2, cash.trader or '', left_format)
+                worksheet.write(row_num, 3, cash.content or '', left_format)
+                worksheet.write(row_num, 4, cash.income, number_format)
+                worksheet.write(row_num, 5, cash.outlay, number_format)
+                # 분류 내역
+                account_name = f"{cash.project_account_d2.name if cash.project_account_d2 else ''}/{cash.project_account_d3.name if cash.project_account_d3 else ''}"
+                worksheet.write(row_num, 6, account_name, center_format)
+                worksheet.write(row_num, 7, cash.income or cash.outlay or 0, number_format)
+                worksheet.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '', center_format)
+                worksheet.write(row_num, 9, cash.note or '', left_format)
 
         # 5. Sum row
         row_num += 1
         h_format.set_num_format(41)
-        worksheet.merge_range(row_num, 0, row_num, 1, '합계', h_format)
-        worksheet.write(row_num, 2, inc_sum, h_format)
-        worksheet.write(row_num, 3, out_sum, h_format)
-        worksheet.write(row_num, 4, '', h_format)
-        worksheet.write(row_num, 5, '', h_format)
-        worksheet.write(row_num, 6, '', h_format)
+        worksheet.merge_range(row_num, 0, row_num, 4, '합계', h_format)
+        worksheet.write(row_num, 5, inc_sum, h_format)
+        worksheet.write(row_num, 6, out_sum, h_format)
+        worksheet.write(row_num, 7, '', h_format)
+        worksheet.write(row_num, 8, '', h_format)
+        worksheet.write(row_num, 9, '', h_format)
 
         # data end ----------------------------------------------- #
 
@@ -616,14 +661,29 @@ def export_project_cash_xls(request):
     bank_acc = request.GET.get('bank_acc')
     q = request.GET.get('q')
 
-    cash_list = ProjectCashBook.objects.filter(project=project,
-                                               is_separate=False,
-                                               deal_date__range=(sdate, edate)) \
-        .order_by('deal_date', 'created')
+    cash_list = ProjectCashBook.objects.filter(
+        project=project,
+        deal_date__range=(sdate, edate)
+    ).select_related(
+        'bank_account',
+        'project_account_d2',
+        'project_account_d3',
+        'sort'
+    ).prefetch_related('sepItems').order_by('deal_date', 'created')
 
-    imp_list = ProjectCashBook.objects.filter(project=project, is_imprest=True, is_separate=False,
-                                              deal_date__range=(sdate, edate)).exclude(project_account_d3=63,
-                                                                                       income__isnull=True)
+    imp_list = ProjectCashBook.objects.filter(
+        project=project,
+        is_imprest=True,
+        deal_date__range=(sdate, edate)
+    ).exclude(
+        project_account_d3=63,
+        income__isnull=True
+    ).select_related(
+        'bank_account',
+        'project_account_d2',
+        'project_account_d3',
+        'sort'
+    ).prefetch_related('sepItems')
     obj_list = imp_list if is_imp == '1' else cash_list
     obj_list = obj_list.filter(sort_id=sort) if sort else obj_list
     obj_list = obj_list.filter(project_account_d2_id=d1) if d1 else obj_list
@@ -647,28 +707,13 @@ def export_project_cash_xls(request):
     ws.row(0).height_mismatch = True
     ws.row(0).height = 38 * 20
 
-    # title_list
-
-    resources = [
-        ['거래일자', 'deal_date'],
-        ['구분', 'sort__name'],
-        ['현장 계정', 'project_account_d2__name'],
-        ['현장 세부계정', 'project_account_d3__name'],
-        ['적요', 'content'],
-        ['거래처', 'trader'],
-        ['거래 계좌', 'bank_account__alias_name'],
-        ['입금 금액', 'income'],
-        ['출금 금액', 'outlay'],
-        ['비고', 'note']]
-
-    columns = []
-    params = []
-
-    for rsc in resources:
-        columns.append(rsc[0])
-        params.append(rsc[1])
-
-    rows = obj_list.values_list(*params)
+    # title_list - 열 구조 변경: 은행거래 내역(6열) + 분류 내역(4열)
+    columns = [
+        # 은행거래 내역 (6열)
+        '일시', '계좌', '거래자', '적요', '입금액', '출금액',
+        # 분류 내역 (4열)
+        '계정', '분류금액', '증빙', '메모'
+    ]
 
     # Sheet header, second row
     row_num = 1
@@ -696,40 +741,76 @@ def export_project_cash_xls(request):
     # Sheet body, remaining rows - 재사용 가능한 스타일 생성
     styles = XlwtStyleMixin.create_xlwt_styles()
 
-    for row in rows:
-        row_num += 1
-        for col_num, col in enumerate(columns):
-            row = list(row)
+    # 열 너비 설정
+    ws.col(0).width = 110 * 30  # 일시
+    ws.col(1).width = 170 * 30  # 계좌
+    ws.col(2).width = 100 * 30  # 거래자
+    ws.col(3).width = 180 * 30  # 적요
+    ws.col(4).width = 110 * 30  # 입금액
+    ws.col(5).width = 110 * 30  # 출금액
+    ws.col(6).width = 160 * 30  # 계정
+    ws.col(7).width = 110 * 30  # 분류금액
+    ws.col(8).width = 100 * 30  # 증빙
+    ws.col(9).width = 100 * 30  # 메모
 
-            # 기본 스타일 선택
-            cell_style = styles['default']
+    for cash in obj_list:
+        if cash.is_separate and cash.sepItems.exists():
+            # ============================================
+            # 분리된 거래: 부모 + 자식들
+            # ============================================
+            children = cash.sepItems.all().order_by('id')
 
-            if col == '거래일자':
-                cell_style = styles['date']
-                ws.col(col_num).width = 110 * 30
-            if col == '구분':
-                cell_style = styles['center']
-                if row[col_num] == '1':
-                    row[col_num] = '입금'
-                if row[col_num] == '2':
-                    row[col_num] = '출금'
-                if row[col_num] == '3':
-                    row[col_num] = '대체'
-            if col == '현장 계정':
-                ws.col(col_num).width = 110 * 30
-            if col == '현장 세부계정':
-                ws.col(col_num).width = 160 * 30
-            if col == '적요' or col == '거래처':
-                ws.col(col_num).width = 180 * 30
-            if col == '거래 계좌':
-                ws.col(col_num).width = 170 * 30
-            if '금액' in col:
-                cell_style = styles['amount']
-                ws.col(col_num).width = 110 * 30
-            if col == '비고':
-                ws.col(col_num).width = 256 * 30
+            for idx, child in enumerate(children):
+                row_num += 1
 
-            ws.write(row_num, col_num, row[col_num], cell_style)
+                if idx == 0:
+                    # 첫 번째 자식: 은행거래(부모) + 분류내역(자식)
+                    # 은행거래 정보 (6열)
+                    ws.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), styles['date'])
+                    ws.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', styles['default'])
+                    ws.write(row_num, 2, cash.trader or '', styles['default'])
+                    ws.write(row_num, 3, cash.content or '', styles['default'])
+                    ws.write(row_num, 4, cash.income or 0, styles['amount'])
+                    ws.write(row_num, 5, cash.outlay or 0, styles['amount'])
+
+                    # 분류 내역 (4열) - 첫 번째 자식
+                    account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
+                    ws.write(row_num, 6, account_name, styles['default'])
+                    ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
+                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', styles['default'])
+                    ws.write(row_num, 9, cash.note or '', styles['default'])
+                else:
+                    # 나머지 자식: 은행거래 비움 + 분류내역만
+                    # 은행거래 6열 비움
+                    for col in range(6):
+                        ws.write(row_num, col, '', styles['default'])
+
+                    # 분류 내역 (4열)
+                    account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
+                    ws.write(row_num, 6, account_name, styles['default'])
+                    ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
+                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', styles['default'])
+                    ws.write(row_num, 9, '', styles['default'])
+        else:
+            # ============================================
+            # 일반 거래: 은행거래 + 분류내역 모두 채움
+            # ============================================
+            row_num += 1
+
+            # 은행거래 정보 (6열)
+            ws.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), styles['date'])
+            ws.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', styles['default'])
+            ws.write(row_num, 2, cash.trader or '', styles['default'])
+            ws.write(row_num, 3, cash.content or '', styles['default'])
+            ws.write(row_num, 4, cash.income or 0, styles['amount'])
+            ws.write(row_num, 5, cash.outlay or 0, styles['amount'])
+
+            # 분류 내역 (4열) - 자기 자신의 정보
+            account_name = f"{cash.project_account_d2.name if cash.project_account_d2 else ''}/{cash.project_account_d3.name if cash.project_account_d3 else ''}"
+            ws.write(row_num, 6, account_name, styles['default'])
+            ws.write(row_num, 7, cash.income or cash.outlay or 0, styles['amount'])
+            ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '', styles['default'])
+            ws.write(row_num, 9, cash.note or '', styles['default'])
 
     wb.save(response)
     return response
@@ -884,62 +965,105 @@ class ExportDateCashbook(ExcelExportMixin):
         # worksheet.write(row_num, 7, date + ' 현재', workbook.add_format({'align': 'right'}))
         row_num += 1
 
-        # 3. Header
-        worksheet.set_column(0, 0, 15)
-        worksheet.write(row_num, 0, '구분', h_format)
-        worksheet.set_column(1, 1, 15)
-        worksheet.write(row_num, 1, '항목', h_format)
+        # 3. Header - 10 columns: Bank Transaction (6) + Classification (4)
+        worksheet.set_column(0, 0, 12)
+        worksheet.write(row_num, 0, '일시', h_format)
+        worksheet.set_column(1, 1, 20)
+        worksheet.write(row_num, 1, '계좌', h_format)
         worksheet.set_column(2, 2, 15)
-        worksheet.write(row_num, 2, '세부항목', h_format)
-        worksheet.set_column(3, 3, 20)
-        worksheet.write(row_num, 3, '입금 금액', h_format)
-        worksheet.set_column(4, 4, 20)
-        worksheet.write(row_num, 4, '출금 금액', h_format)
-        worksheet.set_column(5, 5, 25)
-        worksheet.write(row_num, 5, '거래 계좌', h_format)
-        worksheet.set_column(6, 6, 30)
-        worksheet.write(row_num, 6, '거래처', h_format)
-        worksheet.set_column(7, 7, 30)
-        worksheet.write(row_num, 7, '적요', h_format)
+        worksheet.write(row_num, 2, '거래자', h_format)
+        worksheet.set_column(3, 3, 25)
+        worksheet.write(row_num, 3, '적요', h_format)
+        worksheet.set_column(4, 4, 15)
+        worksheet.write(row_num, 4, '입금액', h_format)
+        worksheet.set_column(5, 5, 15)
+        worksheet.write(row_num, 5, '출금액', h_format)
+        worksheet.set_column(6, 6, 25)
+        worksheet.write(row_num, 6, '계정', h_format)
+        worksheet.set_column(7, 7, 15)
+        worksheet.write(row_num, 7, '분류금액', h_format)
+        worksheet.set_column(8, 8, 15)
+        worksheet.write(row_num, 8, '증빙', h_format)
+        worksheet.set_column(9, 9, 15)
+        worksheet.write(row_num, 9, '메모', h_format)
 
         # 4. Contents
-        date_cashes = CashBook.objects.filter(company=company, is_separate=False,
-                                              deal_date__exact=date).order_by('deal_date', 'created', 'id')
+        date_cashes = CashBook.objects.filter(
+            company=company,
+            deal_date__exact=date
+        ).select_related(
+            'bank_account',
+            'account_d1',
+            'account_d2',
+            'account_d3'
+        ).prefetch_related('sepItems').order_by('deal_date', 'created', 'id')
 
         inc_sum = 0
         out_sum = 0
-        for row, cash in enumerate(date_cashes):
-            row_num += 1
-            inc_sum += cash.income if cash.income else 0
-            out_sum += cash.outlay if cash.outlay else 0
 
-            for col in range(8):
-                if col == 0:
-                    worksheet.write(row_num, col, cash.sort.name + '-' + cash.account_d1.name, center_format)
-                if col == 1:
-                    worksheet.write(row_num, col, cash.account_d2.name, center_format)
-                if col == 2:
-                    worksheet.write(row_num, col, cash.account_d3.name, center_format)
-                if col == 3:
-                    worksheet.write(row_num, col, cash.income, number_format)
-                if col == 4:
-                    worksheet.write(row_num, col, cash.outlay, number_format)
-                if col == 5:
-                    worksheet.write(row_num, col, cash.bank_account.alias_name, center_format)
-                if col == 6:
-                    worksheet.write(row_num, col, cash.trader, left_format)
-                if col == 7:
-                    worksheet.write(row_num, col, cash.content, left_format)
+        # Process data with parent-child relationship handling
+        for cash in date_cashes:
+            if cash.is_separate and cash.sepItems.exists():
+                # Parent record with children - display parent bank info + each child classification
+                children = cash.sepItems.all().order_by('id')
+                for idx, child in enumerate(children):
+                    row_num += 1
+                    if idx == 0:
+                        # First row: Bank transaction info from parent (6 columns) + Classification from first child (4 columns)
+                        # Bank transaction columns
+                        worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
+                        worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', center_format)
+                        worksheet.write(row_num, 2, cash.trader or '', left_format)
+                        worksheet.write(row_num, 3, cash.content or '', left_format)
+                        worksheet.write(row_num, 4, cash.income or 0, number_format)
+                        worksheet.write(row_num, 5, cash.outlay or 0, number_format)
+                        # Update sum from parent
+                        inc_sum += cash.income if cash.income else 0
+                        out_sum += cash.outlay if cash.outlay else 0
+                        # Classification info from first child
+                        account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
+                        worksheet.write(row_num, 6, account_name, left_format)
+                        worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
+                        worksheet.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', center_format)
+                        worksheet.write(row_num, 9, cash.note or '', left_format)
+                    else:
+                        # Subsequent rows: Empty bank columns (6) + Classification from child (4 columns)
+                        for col in range(6):
+                            worksheet.write(row_num, col, '', left_format)
+                        # Classification info from child
+                        account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
+                        worksheet.write(row_num, 6, account_name, left_format)
+                        worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
+                        worksheet.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', center_format)
+                        worksheet.write(row_num, 9, '', left_format)
+            else:
+                # Regular transaction - fill all columns from cash itself
+                row_num += 1
+                # Bank transaction columns (6)
+                worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
+                worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', center_format)
+                worksheet.write(row_num, 2, cash.trader or '', left_format)
+                worksheet.write(row_num, 3, cash.content or '', left_format)
+                worksheet.write(row_num, 4, cash.income or 0, number_format)
+                worksheet.write(row_num, 5, cash.outlay or 0, number_format)
+                # Update sum
+                inc_sum += cash.income if cash.income else 0
+                out_sum += cash.outlay if cash.outlay else 0
+                # Classification columns (4)
+                account_name = f"{cash.account_d1.name if cash.account_d1 else ''}/{cash.account_d2.name if cash.account_d2 else ''}/{cash.account_d3.name if cash.account_d3 else ''}"
+                worksheet.write(row_num, 6, account_name, left_format)
+                worksheet.write(row_num, 7, cash.income or cash.outlay or 0, number_format)
+                worksheet.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '', center_format)
+                worksheet.write(row_num, 9, cash.note or '', left_format)
 
         # 5. Sum row
         row_num += 1
-        worksheet.merge_range(row_num, 0, row_num, 1, '합계', sum_format)
-        worksheet.write(row_num, 2, '', sum_format)
-        worksheet.write(row_num, 3, inc_sum, sum_format)
-        worksheet.write(row_num, 4, out_sum, sum_format)
-        worksheet.write(row_num, 5, '', sum_format)
-        worksheet.write(row_num, 6, '', sum_format)
+        worksheet.merge_range(row_num, 0, row_num, 4, '합계', sum_format)
+        worksheet.write(row_num, 5, inc_sum, sum_format)
+        worksheet.write(row_num, 6, out_sum, sum_format)
         worksheet.write(row_num, 7, '', sum_format)
+        worksheet.write(row_num, 8, '', sum_format)
+        worksheet.write(row_num, 9, '', sum_format)
 
         # data end ----------------------------------------------- #
 
@@ -974,8 +1098,16 @@ def export_cashbook_xls(request):
     sd = '1900-01-01' if not s_date or s_date == 'null' else s_date
     ed = e_date or TODAY
 
-    obj_list = CashBook.objects.filter(company=company, is_separate=False,
-                                       deal_date__range=(sd, ed)).order_by('deal_date', 'id')
+    obj_list = CashBook.objects.filter(
+        company=company,
+        deal_date__range=(sd, ed)
+    ).select_related(
+        'bank_account',
+        'account_d1',
+        'account_d2',
+        'account_d3',
+        'sort'
+    ).prefetch_related('sepItems').order_by('deal_date', 'id')
 
     obj_list = obj_list.filter(sort_id=sort) if sort else obj_list
     obj_list = obj_list.filter(account_d1_id=account_d1) if account_d1 else obj_list
@@ -999,29 +1131,26 @@ def export_cashbook_xls(request):
     ws.row(0).height_mismatch = True
     ws.row(0).height = 38 * 20
 
-    # title_list
+    # Column definitions - 10 columns total
+    # 은행거래 내역 (6열) + 분류 내역 (4열)
+    columns = [
+        # 은행거래 내역 (6열)
+        '일시', '계좌', '거래자', '적요', '입금액', '출금액',
+        # 분류 내역 (4열)
+        '계정', '분류금액', '증빙', '메모'
+    ]
 
-    resources = [
-        ['거래일자', 'deal_date'],
-        ['구분', 'sort__name'],
-        ['계정', 'account_d1__name'],
-        ['중분류', 'account_d2__name'],
-        ['세부계정', 'account_d3__name'],
-        ['적요', 'content'],
-        ['거래처', 'trader'],
-        ['거래계좌', 'bank_account__alias_name'],
-        ['입금금액', 'income'],
-        ['출금금액', 'outlay'],
-        ['비고', 'note']]
-
-    columns = []
-    params = []
-
-    for rsc in resources:
-        columns.append(rsc[0])
-        params.append(rsc[1])
-
-    rows = obj_list.values_list(*params)
+    # Column width settings
+    ws.col(0).width = 110 * 30  # 일시
+    ws.col(1).width = 170 * 30  # 계좌
+    ws.col(2).width = 120 * 30  # 거래자
+    ws.col(3).width = 180 * 30  # 적요
+    ws.col(4).width = 110 * 30  # 입금액
+    ws.col(5).width = 110 * 30  # 출금액
+    ws.col(6).width = 160 * 30  # 계정
+    ws.col(7).width = 110 * 30  # 분류금액
+    ws.col(8).width = 100 * 30  # 증빙
+    ws.col(9).width = 100 * 30  # 메모
 
     # Sheet header, second row
     row_num = 1
@@ -1030,8 +1159,6 @@ def export_cashbook_xls(request):
     style.font.bold = True
 
     # 테두리 설정
-    # 가는 실선 : 1, 작은 굵은 실선 : 2,가는 파선 : 3, 중간가는 파선 : 4, 큰 굵은 실선 : 5, 이중선 : 6,가는 점선 : 7
-    # 큰 굵은 점선 : 8,가는 점선 : 9, 굵은 점선 : 10,가는 이중 점선 : 11, 굵은 이중 점선 : 12, 사선 점선 : 13
     style.borders.left = 1
     style.borders.right = 1
     style.borders.top = 1
@@ -1049,77 +1176,53 @@ def export_cashbook_xls(request):
     # Sheet body, remaining rows - 재사용 가능한 스타일 생성
     styles = XlwtStyleMixin.create_xlwt_styles()
 
-    for row in rows:
-        row_num += 1
-        for col_num, col in enumerate((columns)):
-            row = list(row)
-
-            # 기본 스타일 선택
-            cell_style = styles['default']
-
-            if col == '거래일자':
-                cell_style = styles['date']
-                ws.col(col_num).width = 110 * 30
-
-            elif col == '구분':
-                cell_style = styles['center']
-                if row[col_num] == '1':
-                    row[col_num] = '입금'
-                if row[col_num] == '2':
-                    row[col_num] = '출금'
-                if row[col_num] == '3':
-                    row[col_num] = '대체'
-
-            elif col == '계정':
-                cell_style = styles['center']
-                if row[col_num] == '1':
-                    row[col_num] = '자산'
-                if row[col_num] == '2':
-                    row[col_num] = '부채'
-                if row[col_num] == '3':
-                    row[col_num] = '자본'
-                if row[col_num] == '4':
-                    row[col_num] = '수익'
-                if row[col_num] == '5':
-                    row[col_num] = '비용'
-                if row[col_num] == '6':
-                    row[col_num] = '대체'
-
-            elif col == '현장 계정':
-                ws.col(col_num).width = 110 * 30
-
-            elif col == '세부계정':
-                ws.col(col_num).width = 160 * 30
-
-            elif col == '적요' or col == '거래처':
-                ws.col(col_num).width = 180 * 30
-
-            elif col == '거래계좌':
-                ws.col(col_num).width = 170 * 30
-
-            elif '금액' in col:
-                cell_style = styles['amount']
-                ws.col(col_num).width = 110 * 30
-
-            elif col == '증빙자료':
-                if row[col_num] == '0':
-                    row[col_num] = '증빙 없음'
-                if row[col_num] == '1':
-                    row[col_num] = '세금계산서'
-                if row[col_num] == '2':
-                    row[col_num] = '계산서(면세)'
-                if row[col_num] == '3':
-                    row[col_num] = '신용카드전표'
-                if row[col_num] == '4':
-                    row[col_num] = '현금영수증'
-                if row[col_num] == '5':
-                    row[col_num] = '간이영수증'
-                ws.col(col_num).width = 100 * 30
-
-            elif col == '비고':
-                ws.col(col_num).width = 256 * 30
-
-            ws.write(row_num, col_num, row[col_num], cell_style)
+    # Process data with parent-child relationship handling
+    for cash in obj_list:
+        if cash.is_separate and cash.sepItems.exists():
+            # Parent record with children - display parent bank info + each child classification
+            children = cash.sepItems.all().order_by('id')
+            for idx, child in enumerate(children):
+                row_num += 1
+                if idx == 0:
+                    # First row: Bank transaction info from parent (6 columns) + Classification from first child (4 columns)
+                    ws.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), styles['date'])
+                    ws.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', styles['default'])
+                    ws.write(row_num, 2, cash.trader or '', styles['default'])
+                    ws.write(row_num, 3, cash.content or '', styles['default'])
+                    ws.write(row_num, 4, cash.income or 0, styles['amount'])
+                    ws.write(row_num, 5, cash.outlay or 0, styles['amount'])
+                    # Classification info from first child
+                    account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
+                    ws.write(row_num, 6, account_name, styles['default'])
+                    ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
+                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', styles['default'])
+                    ws.write(row_num, 9, cash.note or '', styles['default'])
+                else:
+                    # Subsequent rows: Empty bank columns (6) + Classification from child (4 columns)
+                    for col in range(6):
+                        ws.write(row_num, col, '', styles['default'])
+                    # Classification info from child
+                    account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
+                    ws.write(row_num, 6, account_name, styles['default'])
+                    ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
+                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', styles['default'])
+                    ws.write(row_num, 9, '', styles['default'])
+        else:
+            # Regular transaction - fill all columns from cash itself
+            row_num += 1
+            # Bank transaction columns (6)
+            ws.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), styles['date'])
+            ws.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', styles['default'])
+            ws.write(row_num, 2, cash.trader or '', styles['default'])
+            ws.write(row_num, 3, cash.content or '', styles['default'])
+            ws.write(row_num, 4, cash.income or 0, styles['amount'])
+            ws.write(row_num, 5, cash.outlay or 0, styles['amount'])
+            # Classification columns (4)
+            account_name = f"{cash.account_d1.name if cash.account_d1 else ''}/{cash.account_d2.name if cash.account_d2 else ''}/{cash.account_d3.name if cash.account_d3 else ''}"
+            ws.write(row_num, 6, account_name, styles['default'])
+            ws.write(row_num, 7, cash.income or cash.outlay or 0, styles['amount'])
+            ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '', styles['default'])
+            ws.write(row_num, 9, cash.note or '', styles['default'])
 
     wb.save(response)
     return response
