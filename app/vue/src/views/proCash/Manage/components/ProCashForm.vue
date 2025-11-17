@@ -159,8 +159,8 @@ const sepUpdate = (sep: ProSepItems) => {
   sepItem.pk = sep.pk
   sepItem.project_account_d2 = sep.project_account_d2
   sepItem.project_account_d3 = sep.project_account_d3
+  sepItem.contract = sep.contract
   sepItem.installment_order = sep.installment_order
-  sepItem.content = sep.content
   sepItem.content = sep.content
   sepItem.trader = sep.trader
   sepItem.evidence = sep.evidence
