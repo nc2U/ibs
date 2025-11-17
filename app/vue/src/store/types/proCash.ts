@@ -101,6 +101,7 @@ export type CashBookFilter = {
   ordering?: string
   search?: string
   includeChildren?: boolean // 자식 레코드까지 포함한 통합 검색 모드
+  parents_only?: boolean // 부모 레코드만 조회 여부 (true: 부모만, false: 모든 레코드)
 }
 
 export interface PaymentPaid {
