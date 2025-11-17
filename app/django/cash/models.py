@@ -53,7 +53,7 @@ class CashBook(models.Model):
     is_return = models.BooleanField('반환 정산 여부', default=False, help_text='관계회사(프로젝트) 대여금 반환 정산 여부')
     is_separate = models.BooleanField('상세 분리기록 등록', default=False,
                                       help_text='각기 다른 계정 항목이 1회에 같이 출금된 경우 이 항목을 체크')
-    separated = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sepItems',
+    separated = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='sepItems',
                                   verbose_name='분할 계정')
     content = models.CharField('적요', max_length=50, blank=True, default='')
     trader = models.CharField('거래처', max_length=25, blank=True, default='')
@@ -274,7 +274,7 @@ class ProjectCashBook(models.Model):
                                            verbose_name='프로젝트 세부계정')
     is_separate = models.BooleanField('상세 분리기록 등록', default=False,
                                       help_text='각기 다른 계정 항목이 1회에 같이 출금된 경우 이 항목을 체크')
-    separated = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sepItems',
+    separated = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='sepItems',
                                   verbose_name='분할 계정')
     is_imprest = models.BooleanField('운영비 항목 여부', default=False, help_text='전도금 대체 후 해당 전도금(운영비) 항목을 상세 기록하는 경우 이 항목')
     contract = models.ForeignKey('contract.Contract', on_delete=models.SET_NULL, null=True, blank=True,
@@ -518,7 +518,7 @@ class ImportJob(models.Model):
     error_count = models.IntegerField('오류 건수', default=0)
     error_message = models.TextField('오류 메시지', blank=True)
     result_file = models.FileField('결과 파일', upload_to='export_results/', blank=True, null=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='생성자')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='생성자')
     created_at = models.DateTimeField('생성일시', auto_now_add=True)
     started_at = models.DateTimeField('시작일시', blank=True, null=True)
     completed_at = models.DateTimeField('완료일시', blank=True, null=True)

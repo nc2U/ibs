@@ -392,17 +392,32 @@ export const useProCash = defineStore('proCash', () => {
       pk: number
       project: number
       contract?: number | null
+      parentPk?: number | null  // 삭제할 레코드가 자식인 경우 부모 PK
     } & {
       filters?: CashBookFilter
     },
   ) => {
-    const { pk, project, filters, contract } = payload
+    const { pk, project, filters, contract, parentPk } = payload
 
     return await api
       .delete(`/project-cashbook/${pk}/`)
       .then(async () => {
-        // 캐시 무효화 (전체 캐시 클리어)
-        invalidateChildrenCache()
+        // 자식 레코드 삭제 시에만 특정 부모의 캐시 무효화
+        if (parentPk) {
+          // 자식 레코드 삭제: 해당 부모의 캐시만 무효화
+          invalidateChildrenCache(parentPk)
+
+          // 부모 레코드 갱신 (is_balanced 등 업데이트)
+          try {
+            const parentRes = await api.get(`/project-cashbook/${parentPk}/`)
+            updateParentInList(parentPk, parentRes.data)
+          } catch (err) {
+            console.error('부모 레코드 갱신 실패:', err)
+          }
+        } else {
+          // 부모 레코드 삭제: 전체 캐시 클리어 (기존 동작 유지)
+          invalidateChildrenCache()
+        }
 
         await fetchProjectCashList({
           project,
@@ -523,15 +538,35 @@ export const useProCash = defineStore('proCash', () => {
   }
 
   const deletePrImprestBook = async (
-    payload: { pk: number; project: number; contract?: number | null } & {
+    payload: { pk: number; project: number; contract?: number | null; parentPk?: number | null } & {
       filters?: CashBookFilter
     },
   ) => {
-    const { pk, project, filters, contract } = payload
+    const { pk, project, filters, contract, parentPk } = payload
 
     return await api
       .delete(`/project-imprest/${pk}/`)
       .then(async () => {
+        // 자식 레코드 삭제 시에만 특정 부모의 캐시 무효화
+        if (parentPk) {
+          // 자식 레코드 삭제: 해당 부모의 캐시만 무효화
+          invalidateChildrenCache(parentPk)
+
+          // 부모 레코드 갱신 (is_balanced 등 업데이트)
+          try {
+            const parentRes = await api.get(`/project-imprest/${parentPk}/`)
+            const index = proImprestList.value.findIndex(item => item.pk === parentPk)
+            if (index !== -1) {
+              proImprestList.value[index] = parentRes.data
+            }
+          } catch (err) {
+            console.error('부모 레코드 갱신 실패:', err)
+          }
+        } else {
+          // 부모 레코드 삭제: 전체 캐시 클리어 (기존 동작 유지)
+          invalidateChildrenCache()
+        }
+
         await fetchProjectImprestList({
           project,
           ...filters,
