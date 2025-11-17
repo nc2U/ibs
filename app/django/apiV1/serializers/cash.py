@@ -369,7 +369,8 @@ class ProjectCashBookSerializer(serializers.ModelSerializer):
                   'refund_contractor', 'content', 'trader', 'bank_account', 'bank_account_desc',
                   'income', 'outlay', 'evidence', 'evidence_desc', 'note', 'deal_date', 'updator', 'has_children')
 
-    def get_has_children(self, obj):
+    @staticmethod
+    def get_has_children(obj):
         """부모 레코드가 자식을 가지고 있는지 확인"""
         # separated가 null인 레코드만 부모 레코드 (is_separate 값과 무관)
         if obj.separated is not None:

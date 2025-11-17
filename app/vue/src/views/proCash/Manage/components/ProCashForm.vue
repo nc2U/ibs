@@ -733,8 +733,8 @@ onBeforeMount(() => formDataSetup())
             :class="sep.pk === sepItem.pk ? 'text-success text-decoration-underline' : ''"
           >
             <CCol sm="1">{{ i + 1 }}</CCol>
-            <CCol sm="2">{{ sep.trader }}</CCol>
-            <CCol sm="5">{{ cutString(sep.content, 20) }}</CCol>
+            <CCol sm="3">{{ cutString(sep.trader, 10) }}</CCol>
+            <CCol sm="4">{{ cutString(sep.content, 20) }}</CCol>
             <CCol sm="2" class="text-right">
               {{ sep.income ? numFormat(sep.income) : numFormat(sep.outlay || 0) }}
             </CCol>
