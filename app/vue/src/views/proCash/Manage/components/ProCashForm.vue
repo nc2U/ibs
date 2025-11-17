@@ -144,6 +144,17 @@ const sepSummary = computed(() => {
   return [inc, out]
 })
 
+// 부모 거래와 자식 거래 합계 일치 여부 검증
+const isBalanceMatched = computed(() => {
+  if (!props.proCash?.is_separate || !props.proCash?.sepItems?.length) return true
+
+  const parentIncome = props.proCash.income || 0
+  const parentOutlay = props.proCash.outlay || 0
+  const [childrenIncome, childrenOutlay] = sepSummary.value
+
+  return parentIncome === childrenIncome && parentOutlay === childrenOutlay
+})
+
 const sepUpdate = (sep: ProSepItems) => {
   sepItem.pk = sep.pk
   sepItem.project_account_d2 = sep.project_account_d2
@@ -663,6 +674,54 @@ onBeforeMount(() => formDataSetup())
               {{ sepSummary[0] ? `입금액 합계 : ${numFormat(sepSummary[0] || 0)}` : '' }}
               {{ sepSummary[1] ? `출금액 합계 : ${numFormat(sepSummary[1] || 0)}` : '' }}
             </strong>
+
+            <!-- 부모 거래와 자식 거래 합계 일치 여부 표시 -->
+            <v-alert
+              v-if="!isBalanceMatched"
+              type="warning"
+              variant="tonal"
+              density="compact"
+              class="mt-2"
+            >
+              <template #prepend>
+                <v-icon icon="mdi-alert-circle" />
+              </template>
+              <div class="d-flex flex-column">
+                <strong>부모 거래와 자식 거래 합계가 일치하지 않습니다!</strong>
+                <div class="mt-1">
+                  <span class="text-caption">
+                    부모 입금: {{ numFormat(proCash?.income || 0) }} /
+                    자식 합계: {{ numFormat(sepSummary[0] || 0) }}
+                    <span v-if="(proCash?.income || 0) !== (sepSummary[0] || 0)" class="text-error ml-1">
+                      (차액: {{ numFormat(Math.abs((proCash?.income ?? 0) - (sepSummary[0] || 0))) }})
+                    </span>
+                  </span>
+                </div>
+                <div>
+                  <span class="text-caption">
+                    부모 출금: {{ numFormat(proCash?.outlay || 0) }} /
+                    자식 합계: {{ numFormat(sepSummary[1] || 0) }}
+                    <span v-if="(proCash?.outlay || 0) !== (sepSummary[1] || 0)" class="text-error ml-1">
+                      (차액: {{ numFormat(Math.abs((proCash?.outlay ?? 0) - (sepSummary[1] || 0))) }})
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </v-alert>
+
+            <!-- 일치하는 경우 성공 표시 -->
+            <v-alert
+              v-else
+              type="success"
+              variant="tonal"
+              density="compact"
+              class="mt-2"
+            >
+              <template #prepend>
+                <v-icon icon="mdi-check-circle" />
+              </template>
+              <strong>부모 거래와 자식 거래 합계가 일치합니다.</strong>
+            </v-alert>
           </CCol>
         </CRow>
 

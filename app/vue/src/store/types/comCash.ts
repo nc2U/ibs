@@ -78,6 +78,13 @@ export interface CashBook {
   separated: number | null
   sepItems?: SepItems[]
   has_children?: boolean
+  is_balanced?: boolean
+  balance_info?: {
+    parent_income: number
+    parent_outlay: number
+    children_income: number
+    children_outlay: number
+  }
   content: string
   trader: string
   bank_account: number | null

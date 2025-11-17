@@ -66,6 +66,13 @@ export interface ProjectCashBook extends ProSepItems {
   is_separate?: boolean
   sepItems: Array<ProSepItems>
   has_children?: boolean
+  is_balanced?: boolean
+  balance_info?: {
+    parent_income: number
+    parent_outlay: number
+    children_income: number
+    children_outlay: number
+  }
   rmCont?: boolean
   refund_contractor?: number | null
   bank_account: number | null
