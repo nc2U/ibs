@@ -78,12 +78,24 @@ const fetchProject = (pk: number) => projStore.fetchProject(pk)
 
 const pageSelect = (page: number) => {
   dataFilter.value.page = page
-  const hasSearch = dataFilter.value.search && dataFilter.value.search.trim().length > 0
+
+  // 현재 필터링 상태 확인
+  const hasFiltering = !!(
+    dataFilter.value.search?.trim() ||      // 검색어
+    dataFilter.value.contract ||            // 계약정보
+    dataFilter.value.from_date ||           // 시작일
+    dataFilter.value.to_date ||             // 종료일
+    dataFilter.value.sort ||                // 거래구분
+    dataFilter.value.account_d1 ||          // 계정대분류
+    dataFilter.value.pro_acc_d2 ||          // 상위항목
+    dataFilter.value.pro_acc_d3 ||          // 하위항목
+    dataFilter.value.bank_account           // 거래계좌
+  )
 
   fetchProjectCashList({
     ...{ project: project.value },
     ...dataFilter.value,
-    parents_only: !hasSearch, // 검색 시에는 false, 일반 페이징은 true
+    parents_only: !hasFiltering, // 필터링이 있으면 false (자식 포함), 없으면 true (부모만)
   })
 }
 
@@ -100,14 +112,23 @@ const listFiltering = (payload: CashBookFilter) => {
   fetchProFormAccD3List(d2, sort)
 
   if (project.value) {
-    // 검색어가 있으면 parents_only=false로 모든 레코드 검색
-    // 검색어가 없으면 parents_only=true로 부모 레코드만 표시
-    const hasSearch = payload.search && payload.search.trim().length > 0
+    // 필터링 조건이 있는지 확인
+    const hasFiltering = !!(
+      payload.search?.trim() ||          // 검색어
+      payload.contract ||                // 계약정보
+      payload.from_date ||               // 시작일
+      payload.to_date ||                 // 종료일
+      payload.sort ||                    // 거래구분
+      payload.account_d1 ||              // 계정대분류
+      payload.pro_acc_d2 ||              // 상위항목
+      payload.pro_acc_d3 ||              // 하위항목
+      payload.bank_account               // 거래계좌
+    )
 
     fetchProjectCashList({
       ...{ project: project.value },
       ...payload,
-      parents_only: !hasSearch, // 검색 시에는 false, 일반 목록은 true
+      parents_only: !hasFiltering, // 필터링이 있으면 false (자식 포함), 없으면 true (부모만)
     })
   }
 }
