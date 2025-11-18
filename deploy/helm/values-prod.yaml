@@ -32,6 +32,26 @@ cnpg:
   replication:
     instances: 3
 
+# Web application resource configuration
+web:
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 3Gi
+
+  # Celery worker configuration
+  celery:
+    resources:
+      requests:
+        cpu: 300m
+        memory: 768Mi
+      limits:
+        cpu: 1500m
+        memory: 2Gi
+
 nginx:
   service:
     port: 8880
