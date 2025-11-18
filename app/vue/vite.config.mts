@@ -20,6 +20,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Application specific chunks - check before node_modules
+          if (id.includes('src/views/proCash') || id.includes('src/store/pinia/proCash')) {
+            return 'proCash'
+          }
+
           if (id.includes('node_modules')) {
             // Vuetify UI framework (large) - check first
             if (id.includes('vuetify') || id.includes('@mdi/font')) {
