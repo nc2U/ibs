@@ -250,7 +250,7 @@ class AccountingEntry(models.Model):
                                         verbose_name='거래 유형')
 
     # 회계 분류
-    sort = models.ForeignKey('items.AccountSort', on_delete=models.CASCADE, verbose_name='계정구분', help_text='수입/지출 구분')
+    sort = models.ForeignKey('ibs.AccountSort', on_delete=models.CASCADE, verbose_name='계정구분', help_text='수입/지출 구분')
     account_code = models.CharField(max_length=10, verbose_name='계정코드', help_text='회계 계정 코드')
 
     # 금액 (분할 거래 지원)
@@ -311,10 +311,10 @@ class CompanyAccountingEntry(AccountingEntry):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사')
 
     # 본사 계정 체계
-    account_d1 = models.ForeignKey('items.AccountSubD1', on_delete=models.CASCADE, verbose_name='계정 대분류')
-    account_d2 = models.ForeignKey('items.AccountSubD2', on_delete=models.SET_NULL,
+    account_d1 = models.ForeignKey('ibs.AccountSubD1', on_delete=models.CASCADE, verbose_name='계정 대분류')
+    account_d2 = models.ForeignKey('ibs.AccountSubD2', on_delete=models.SET_NULL,
                                    null=True, blank=True, verbose_name='계정 중분류')
-    account_d3 = models.ForeignKey('items.AccountSubD3', on_delete=models.SET_NULL,
+    account_d3 = models.ForeignKey('ibs.AccountSubD3', on_delete=models.SET_NULL,
                                    null=True, blank=True, verbose_name='계정 소분류')
 
     class Meta:
@@ -333,9 +333,9 @@ class ProjectAccountingEntry(AccountingEntry):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
 
     # 프로젝트 계정 체계
-    project_account_d2 = models.ForeignKey('items.ProjectAccountD2',
+    project_account_d2 = models.ForeignKey('ibs.ProjectAccountD2',
                                            on_delete=models.CASCADE, verbose_name='프로젝트 계정 중분류')
-    project_account_d3 = models.ForeignKey('items.ProjectAccountD3', on_delete=models.SET_NULL,
+    project_account_d3 = models.ForeignKey('ibs.ProjectAccountD3', on_delete=models.SET_NULL,
                                            null=True, blank=True, verbose_name='프로젝트 계정 소분류')
 
     class Meta:
