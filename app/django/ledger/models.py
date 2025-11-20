@@ -59,7 +59,7 @@ class CompanyBankAccount(BankAccount):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사정보',
                                 related_name='com_bank_accounts')
     depart = models.ForeignKey('company.Department', on_delete=models.SET_NULL,
-                               null=True, blank=True, verbose_name='관리부서')
+                               null=True, blank=True, verbose_name='관리부서', related_name='com_bank_accounts')
 
     class Meta:
         ordering = ['order', 'id']
