@@ -19,7 +19,6 @@ class BankCode(models.Model):
     name = models.CharField(max_length=20, db_index=True, verbose_name='은행명')
 
     class Meta:
-        db_table = 'ledger_bank_code'
         verbose_name = '은행 코드'
         verbose_name_plural = '은행 코드'
 
@@ -57,12 +56,12 @@ class CompanyBankAccount(BankAccount):
 
     회사 본사의 은행 계좌 정보를 관리합니다.
     """
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사정보')
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사정보',
+                                related_name='com_bank_accounts')
     depart = models.ForeignKey('company.Department', on_delete=models.SET_NULL,
                                null=True, blank=True, verbose_name='관리부서')
 
     class Meta:
-        db_table = 'ledger_company_bank_account'
         ordering = ['order', 'id']
         verbose_name = '본사 관리계좌'
         verbose_name_plural = '본사 관리계좌'
@@ -74,12 +73,12 @@ class ProjectBankAccount(BankAccount):
 
     프로젝트별 은행 계좌 정보를 관리합니다.
     """
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트',
+                                related_name='proj_bank_accounts')
     directpay = models.BooleanField('용역비 직불 여부', default=False)
     is_imprest = models.BooleanField('운영비 계좌 여부', default=False)
 
     class Meta:
-        db_table = 'ledger_project_bank_account'
         ordering = ['order', 'id']
         verbose_name = '프로젝트 관리계좌'
         verbose_name_plural = '프로젝트 관리계좌'
@@ -164,7 +163,6 @@ class CompanyBankTransaction(BankTransaction):
     bank_account = models.ForeignKey(CompanyBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
 
     class Meta:
-        db_table = 'ledger_company_bank_transaction'
         verbose_name = '본사 은행 거래'
         verbose_name_plural = '본사 은행 거래'
         ordering = ['-deal_date', '-created_at']
@@ -203,7 +201,6 @@ class ProjectBankTransaction(BankTransaction):
     is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부', help_text='프로젝트 운영비 계정 거래 여부')
 
     class Meta:
-        db_table = 'ledger_project_bank_transaction'
         verbose_name = '프로젝트 은행 거래'
         verbose_name_plural = '프로젝트 은행 거래'
         ordering = ['-deal_date', '-created_at']
@@ -321,7 +318,6 @@ class CompanyAccountingEntry(AccountingEntry):
                                    null=True, blank=True, verbose_name='계정 소분류')
 
     class Meta:
-        db_table = 'ledger_company_accounting_entry'
         verbose_name = '본사 회계 분개'
         verbose_name_plural = '본사 회계 분개'
         ordering = ['-created_at']
@@ -343,7 +339,6 @@ class ProjectAccountingEntry(AccountingEntry):
                                            null=True, blank=True, verbose_name='프로젝트 계정 소분류')
 
     class Meta:
-        db_table = 'ledger_project_accounting_entry'
         verbose_name = '프로젝트 회계 분개'
         verbose_name_plural = '프로젝트 회계 분개'
         ordering = ['-created_at']
@@ -398,7 +393,6 @@ class ContractPayment(models.Model):
     )
 
     class Meta:
-        db_table = 'ledger_contract_payment'
         verbose_name = '계약 결제'
         verbose_name_plural = '계약 결제'
         ordering = ['-created_at']
@@ -552,7 +546,6 @@ class TransactionSplit(models.Model):
     )
 
     class Meta:
-        db_table = 'ledger_transaction_split'
         verbose_name = '거래 분할'
         verbose_name_plural = '거래 분할'
         ordering = ['-created_at']
@@ -686,7 +679,6 @@ class TransactionSplitItem(models.Model):
     )
 
     class Meta:
-        db_table = 'ledger_transaction_split_item'
         verbose_name = '거래 분할 항목'
         verbose_name_plural = '거래 분할 항목'
         ordering = ['sequence']
