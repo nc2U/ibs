@@ -78,6 +78,7 @@ INSTALLED_APPS += [  # app
     'docs.apps.DocsConfig',
     'ibs.apps.IbsConfig',
     'items.apps.ItemsConfig',
+    'ledger.apps.LedgerConfig',
     'notice.apps.NoticeConfig',
     'payment.apps.PaymentConfig',
     'project.apps.ProjectConfig',
