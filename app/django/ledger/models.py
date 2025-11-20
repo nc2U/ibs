@@ -362,7 +362,7 @@ class ContractPayment(models.Model):
     # 계약 정보
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     contract = models.ForeignKey('contract.Contract', on_delete=models.CASCADE, verbose_name='계약', help_text='분양 계약')
-    installment_order = models.ForeignKey('contract.InstallmentPaymentOrder', on_delete=models.SET_NULL,
+    installment_order = models.ForeignKey('payment.InstallmentPaymentOrder', on_delete=models.SET_NULL,
                                           null=True, blank=True, verbose_name='납부회차', help_text='분할 납부 회차 정보')
 
     # 결제 유형
