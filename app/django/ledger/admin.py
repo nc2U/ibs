@@ -8,7 +8,6 @@ from ledger.models import (
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
-    ContractPayment,
 )
 
 
@@ -137,21 +136,3 @@ class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
         return format_html('{:,}원', obj.amount)
 
 
-# ============================================
-# Contract Payment Admin
-# ============================================
-
-@admin.register(ContractPayment)
-class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'transaction_id_short', 'project', 'contract', 'payment_type',
-                    'installment_order', 'is_special_purpose', 'special_purpose_type', 'creator', 'created_at')
-    list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'payment_type', 'is_special_purpose', 'special_purpose_type')
-    search_fields = ('transaction_id', 'contract__serial_number', 'refund_reason')
-    ordering = ('-created_at',)
-    readonly_fields = ('created_at', 'updated_at')
-    raw_id_fields = ('contract', 'installment_order', 'refund_contractor')
-
-    @admin.display(description='거래 ID')
-    def transaction_id_short(self, obj):
-        return str(obj.transaction_id)[:8] + '...'

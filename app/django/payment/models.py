@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from items.models import UnitType
@@ -186,3 +187,156 @@ class SpecialOverDueRule(models.Model):  # 가산금 / 할인액 계산을 위�
         ordering = ('-project', 'term_start', 'term_end')
         verbose_name = '08. 특별 선납할인/연체이율'
         verbose_name_plural = '08. 특별 선납할인/연체이율'
+
+
+# ============================================
+# Contract Payment - 계약 결제
+# ============================================
+
+class ContractPayment(models.Model):
+    """
+    계약 결제
+
+    프로젝트의 분양 계약에 대한 결제 정보를 관리합니다.
+    ledger.ProjectAccountingEntry와 1:1로 연결되어 계약자의 납부, 환불, 조정 등을 추적합니다.
+
+    생성 조건:
+        - ProjectAccountD3.is_payment=True인 회계 분개에 대해서만 생성
+
+    금액 조회:
+        - accounting_entry.amount를 통해 조회 (별도 amount 필드 불필요)
+
+    집계 전략:
+        - 전체/프로젝트 집계: ProjectAccountingEntry에서 직접 집계 (JOIN 없음)
+        - 계약별 상세 조회: ContractPayment.select_related('accounting_entry')
+
+    데이터 흐름:
+        ProjectBankTransaction (은행 거래 1건)
+            → ProjectAccountingEntry (회계 분개 N건, 회차별 분리)
+                → ContractPayment (계약 납부 정보, 1:1 연결)
+    """
+    # Accounting Domain 연결 (1:1)
+    accounting_entry = models.OneToOneField(
+        'ledger.ProjectAccountingEntry',
+        on_delete=models.CASCADE,
+        related_name='contract_payment',
+        verbose_name='회계 분개',
+        help_text='ProjectAccountingEntry와 1:1 연결 (is_payment=True인 분개)'
+    )
+
+    # 계약 정보
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    contract = models.ForeignKey('contract.Contract', on_delete=models.CASCADE, verbose_name='계약', help_text='분양 계약')
+    installment_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.SET_NULL,
+                                          null=True, blank=True, verbose_name='납부회차', help_text='분할 납부 회차 정보')
+
+    # 결제 유형
+    payment_type = models.CharField(max_length=10,
+                                    choices=[('PAYMENT', '납부'), ('REFUND', '환불'), ('ADJUSTMENT', '조정'), ],
+                                    verbose_name='결제 유형')
+
+    # 환불 정보
+    refund_contractor = models.ForeignKey('contract.Contractor', on_delete=models.SET_NULL,
+                                          null=True, blank=True, verbose_name='환불 계약자', help_text='환불 시 대상 계약자')
+    refund_reason = models.CharField(max_length=100, blank=True, verbose_name='환불 사유')
+
+    # 특수 목적
+    is_special_purpose = models.BooleanField(default=False, verbose_name='특수 목적 여부')
+    special_purpose_type = models.CharField(max_length=10, blank=True,
+                                            choices=[('IMPREST', '운영비'), ('LOAN', '대여금'), ('GUARANTEE', '보증금'),
+                                                     ('OTHERS', '기타')], verbose_name='특수 목적 유형')
+
+    # 감사 필드
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
+    creator = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='생성자'
+    )
+
+    class Meta:
+        verbose_name = '09. 계약 결제'
+        verbose_name_plural = '09. 계약 결제'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['contract', 'payment_type']),
+            models.Index(fields=['installment_order', 'created_at']),
+        ]
+
+    @property
+    def amount(self):
+        """결제 금액 (accounting_entry.amount 참조)"""
+        return self.accounting_entry.amount
+
+    @property
+    def related_transaction(self):
+        """연관된 ProjectBankTransaction 조회"""
+        return self.accounting_entry.related_transaction
+
+    def get_payment_amount(self):
+        """결제 금액 조회 (하위 호환용)"""
+        return self.amount
+
+    def calculate_late_penalty(self):
+        """
+        연체료 계산
+
+        납부 회차의 납부기한을 기준으로 연체료를 계산합니다.
+        실제 계산 로직은 _utils.payment_adjustment 모듈에서 처리합니다.
+        """
+        if self.payment_type != 'PAYMENT' or not self.installment_order:
+            return None
+
+        # TODO: Phase 2에서 실제 계산 로직 구현
+        # from _utils.payment_adjustment import calculate_late_penalty
+        # return calculate_late_penalty(self)
+        return {
+            'is_late': False,
+            'penalty_amount': 0,
+            'message': '연체료 계산 로직 구현 예정'
+        }
+
+    def is_prepayment_eligible(self):
+        """
+        선납 할인 대상 여부 확인
+
+        Returns:
+            bool: 선납 할인 대상이면 True
+        """
+        return (
+                self.payment_type == 'PAYMENT' and
+                self.installment_order and
+                hasattr(self.installment_order, 'is_prep_discount') and
+                self.installment_order.is_prep_discount
+        )
+
+    def clean(self):
+        """모델 유효성 검증"""
+        # 환불 시 환불계약자 필수
+        if self.payment_type == 'REFUND' and not self.refund_contractor:
+            raise ValidationError({
+                'refund_contractor': '환불 시 환불계약자를 지정해야 합니다.'
+            })
+
+        # 계약의 프로젝트와 일치 확인
+        if self.contract and self.contract.project_id != self.project_id:
+            raise ValidationError({
+                'contract': '계약의 프로젝트와 일치하지 않습니다.'
+            })
+
+        # 납부회차의 프로젝트와 일치 확인
+        if self.installment_order and self.installment_order.project_id != self.project_id:
+            raise ValidationError({
+                'installment_order': '납부회차의 프로젝트와 일치하지 않습니다.'
+            })
+
+    def save(self, *args, **kwargs):
+        """저장 전 유효성 검증"""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.contract} - {self.get_payment_type_display()} ({self.amount:,}원)"

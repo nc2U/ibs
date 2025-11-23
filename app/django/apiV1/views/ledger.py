@@ -12,7 +12,6 @@ from ledger.models import (
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
-    ContractPayment,
 )
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationOneHundred
 from ..permission import IsStaffOrReadOnly
@@ -21,7 +20,6 @@ from ..serializers.ledger import (
     LedgerCompanyBankAccountSerializer, LedgerProjectBankAccountSerializer,
     CompanyBankTransactionSerializer, ProjectBankTransactionSerializer,
     CompanyAccountingEntrySerializer, ProjectAccountingEntrySerializer,
-    ContractPaymentSerializer,
     CompanyTransactionCreateSerializer, ProjectTransactionCreateSerializer,
 )
 from rest_framework import permissions
@@ -244,36 +242,6 @@ class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
 
 
 # ============================================
-# Contract Payment ViewSet
-# ============================================
-
-class ContractPaymentFilterSet(FilterSet):
-    """계약 결제 필터셋"""
-    transaction_id = CharFilter(field_name='transaction_id', lookup_expr='exact')
-
-    class Meta:
-        model = ContractPayment
-        fields = ('project', 'contract', 'installment_order', 'payment_type',
-                  'is_special_purpose', 'special_purpose_type', 'transaction_id')
-
-
-class ContractPaymentViewSet(viewsets.ModelViewSet):
-    """계약 결제 ViewSet"""
-    queryset = ContractPayment.objects.select_related(
-        'project', 'contract', 'installment_order', 'refund_contractor', 'creator'
-    ).all()
-    serializer_class = ContractPaymentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    pagination_class = PageNumberPaginationFifteen
-    filterset_class = ContractPaymentFilterSet
-    search_fields = ('transaction_id', 'contract__serial_number', 'refund_reason')
-    ordering = ['-created_at']
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-
-
-# ============================================
 # Composite Transaction ViewSets
 # ============================================
 
@@ -320,7 +288,14 @@ class ProjectTransactionViewSet(viewsets.ViewSet):
                 'bank_transaction': ProjectBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entry': ProjectAccountingEntrySerializer(result['accounting_entry']).data,
             }
+            # 계약 결제 정보는 accounting_entry에 포함됨 (contract_payment 필드)
             if 'contract_payment' in result:
-                response_data['contract_payment'] = ContractPaymentSerializer(result['contract_payment']).data
+                response_data['contract_payment'] = {
+                    'pk': result['contract_payment'].pk,
+                    'contract': result['contract_payment'].contract_id,
+                    'installment_order': result['contract_payment'].installment_order_id,
+                    'payment_type': result['contract_payment'].payment_type,
+                    'amount': result['contract_payment'].amount,
+                }
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

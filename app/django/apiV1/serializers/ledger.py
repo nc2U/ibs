@@ -6,8 +6,8 @@ from ledger.models import (
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
-    ContractPayment,
 )
+from payment.models import ContractPayment
 
 
 # ============================================
@@ -88,7 +88,6 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
     creator_name = serializers.CharField(source='creator.username', read_only=True)
     is_balanced = serializers.SerializerMethodField(read_only=True)
     accounting_entries = serializers.SerializerMethodField(read_only=True)
-    contract_payment = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProjectBankTransaction
@@ -96,7 +95,7 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
                   'bank_account_name', 'deal_date', 'amount', 'transaction_type',
                   'transaction_type_display', 'content', 'note', 'is_imprest',
                   'creator', 'creator_name', 'created_at', 'updated_at',
-                  'is_balanced', 'accounting_entries', 'contract_payment')
+                  'is_balanced', 'accounting_entries')
         read_only_fields = ('transaction_id', 'created_at', 'updated_at')
 
     def get_is_balanced(self, obj):
@@ -105,17 +104,11 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
         return result['is_valid']
 
     def get_accounting_entries(self, obj):
-        """연관된 회계 분개 목록"""
-        entries = ProjectAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
+        """연관된 회계 분개 목록 (계약 결제 정보 포함)"""
+        entries = ProjectAccountingEntry.objects.filter(
+            transaction_id=obj.transaction_id
+        ).select_related('contract_payment')
         return ProjectAccountingEntrySerializer(entries, many=True).data
-
-    def get_contract_payment(self, obj):
-        """연관된 계약 결제 정보"""
-        try:
-            payment = ContractPayment.objects.get(transaction_id=obj.transaction_id)
-            return ContractPaymentSerializer(payment).data
-        except ContractPayment.DoesNotExist:
-            return None
 
 
 # ============================================
@@ -149,6 +142,7 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
     project_account_d2_name = serializers.CharField(source='project_account_d2.name', read_only=True)
     project_account_d3_name = serializers.CharField(source='project_account_d3.name', read_only=True)
     evidence_type_display = serializers.CharField(source='get_evidence_type_display', read_only=True)
+    contract_payment = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProjectAccountingEntry
@@ -157,37 +151,24 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
                   'project_account_d2', 'project_account_d2_name',
                   'project_account_d3', 'project_account_d3_name',
                   'amount', 'trader', 'evidence_type', 'evidence_type_display',
-                  'created_at', 'updated_at')
+                  'created_at', 'updated_at', 'contract_payment')
         read_only_fields = ('created_at', 'updated_at')
 
-
-# ============================================
-# Contract Payment Serializers
-# ============================================
-
-class ContractPaymentSerializer(serializers.ModelSerializer):
-    """계약 결제 시리얼라이저"""
-    project_name = serializers.CharField(source='project.name', read_only=True)
-    contract_serial = serializers.CharField(source='contract.serial_number', read_only=True)
-    payment_type_display = serializers.CharField(source='get_payment_type_display', read_only=True)
-    special_purpose_type_display = serializers.CharField(source='get_special_purpose_type_display', read_only=True)
-    creator_name = serializers.CharField(source='creator.username', read_only=True)
-    payment_amount = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = ContractPayment
-        fields = ('pk', 'transaction_id', 'project', 'project_name',
-                  'contract', 'contract_serial', 'installment_order',
-                  'payment_type', 'payment_type_display',
-                  'refund_contractor', 'refund_reason',
-                  'is_special_purpose', 'special_purpose_type', 'special_purpose_type_display',
-                  'creator', 'creator_name', 'created_at', 'updated_at',
-                  'payment_amount')
-        read_only_fields = ('created_at', 'updated_at')
-
-    def get_payment_amount(self, obj):
-        """결제 금액 조회"""
-        return obj.get_payment_amount()
+    def get_contract_payment(self, obj):
+        """연관된 계약 결제 정보 (있는 경우)"""
+        if hasattr(obj, 'contract_payment'):
+            cp = obj.contract_payment
+            return {
+                'pk': cp.pk,
+                'contract': cp.contract_id,
+                'contract_serial': cp.contract.serial_number if cp.contract else None,
+                'installment_order': cp.installment_order_id,
+                'payment_type': cp.payment_type,
+                'payment_type_display': cp.get_payment_type_display(),
+                'is_special_purpose': cp.is_special_purpose,
+                'special_purpose_type': cp.special_purpose_type,
+            }
+        return None
 
 
 # ============================================
@@ -332,9 +313,10 @@ class ProjectTransactionCreateSerializer(serializers.Serializer):
         }
 
         # 3. 계약 결제 생성 (계약 정보가 있는 경우)
+        # ContractPayment는 AccountingEntry와 1:1 연결
         if validated_data.get('contract'):
             contract_payment = ContractPayment.objects.create(
-                transaction_id=bank_tx.transaction_id,
+                accounting_entry=accounting_entry,  # AccountingEntry와 연결
                 project_id=validated_data['project'],
                 contract_id=validated_data['contract'],
                 installment_order_id=validated_data.get('installment_order'),

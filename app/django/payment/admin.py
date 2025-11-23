@@ -1,8 +1,10 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from import_export.admin import ImportExportMixin
 
 from .models import (InstallmentPaymentOrder, SalesPriceByGT, PaymentPerInstallment,
-                     DownPayment, OverDueRule, SpecialPaymentOrder, SpecialDownPay, SpecialOverDueRule)
+                     DownPayment, OverDueRule, SpecialPaymentOrder, SpecialDownPay, SpecialOverDueRule,
+                     ContractPayment)
 
 
 @admin.register(InstallmentPaymentOrder)
@@ -125,3 +127,28 @@ class SpecialOverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('__str__',)
     list_editable = ('term_start', 'term_end', 'rate_year')
     list_filter = ('project',)
+
+
+# ============================================
+# Contract Payment Admin
+# ============================================
+
+@admin.register(ContractPayment)
+class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'accounting_entry_short', 'project', 'contract', 'payment_type',
+                    'formatted_amount', 'installment_order', 'is_special_purpose', 'creator', 'created_at')
+    list_display_links = ('accounting_entry_short',)
+    list_filter = ('project', 'payment_type', 'is_special_purpose', 'special_purpose_type')
+    search_fields = ('contract__serial_number', 'refund_reason')
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('accounting_entry', 'contract', 'installment_order', 'refund_contractor')
+
+    @admin.display(description='회계 분개')
+    def accounting_entry_short(self, obj):
+        return f"Entry #{obj.accounting_entry_id}"
+
+    @admin.display(description='금액')
+    def formatted_amount(self, obj):
+        color = 'blue' if obj.payment_type == 'PAYMENT' else 'red'
+        return format_html('<span style="color: {};">{:,}원</span>', color, obj.amount)
