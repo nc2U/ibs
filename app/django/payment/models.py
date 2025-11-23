@@ -111,84 +111,6 @@ class DownPayment(models.Model):
         unique_together = (('project', 'order_group', 'unit_type'),)
 
 
-class OverDueRule(models.Model):
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    term_start = models.IntegerField('최소연체(선납)일', null=True, blank=True, help_text='비어 있을 경우 최대 음수')
-    term_end = models.IntegerField('최대연체(선납)일', null=True, blank=True, help_text='비어 있을 경우 최대 양수')
-    rate_year = models.DecimalField('연체(할인)이율', max_digits=4, decimal_places=2, help_text='연체일이 0 또는 음수 구간인 경우 할인 적용')
-
-    def __str__(self):
-        ts = str(self.term_start) + '일' if self.term_start is not None else 'Min'
-        te = str(self.term_end) + '일' if self.term_end is not None else 'Max'
-        return f'{ts} - {te}'
-
-    class Meta:
-        ordering = ('-project', 'term_start', 'term_end')
-        verbose_name = '05. 선납할인/연체이율 관리'
-        verbose_name_plural = '05. 선납할인/연체이율 관리'
-
-
-# 동춘프로젝트 공급계약 체결전 가산금 등 처리 로직 ---------------------------------------------------------------------------------
-class SpecialPaymentOrder(models.Model):  # 가산금 / 할인액 계산을 위한 별도 테이블
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    pay_sort = models.CharField('종류', max_length=1, choices=InstallmentPaymentOrder.PAY_SORT_CHOICES, default='1')
-    pay_code = models.PositiveSmallIntegerField('납입회차 코드', help_text='프로젝트 내에서 모든 납부회차를 고유 순서대로 숫자로 부여한다.')
-    pay_time = models.PositiveSmallIntegerField('납부순서',
-                                                help_text='''동일 납부회차에 2가지 항목을 별도로 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
-                                                하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.''')
-    pay_name = models.CharField('납부회차 명', max_length=20)
-    alias_name = models.CharField('회차 별칭', max_length=20, blank=True)
-    days_since_prev = models.PositiveSmallIntegerField('전회 기준 경과일수', null=True, blank=True,
-                                                       help_text="전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수")
-    is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
-    is_late_penalty = models.BooleanField('연체가산 적용 여부', default=False)
-    pay_due_date = models.DateField('지정 납부기한', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
-    extra_due_date = models.DateField('납부유예일', null=True, blank=True,
-                                      help_text='연체료 계산 기준은 지정 납부기한이 원칙이나 이 값이 있는 경우 납부유예일을 연체료 계산 기준으로 한다.')
-
-    def __str__(self):
-        return f'[{self.get_pay_sort_display()}] - {self.pay_name}'
-
-    class Meta:
-        ordering = ['-project', 'pay_code']
-        verbose_name = '06. 특별 납입회차'
-        verbose_name_plural = '06. 특별 납입회차'
-
-
-class SpecialDownPay(models.Model):
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    order_group = models.ForeignKey('contract.OrderGroup', on_delete=models.CASCADE, verbose_name='차수정보')
-    unit_type = models.ForeignKey('items.UnitType', on_delete=models.CASCADE, verbose_name='타입정보')
-    payment_amount = models.PositiveIntegerField('회차별 계약금액',
-                                                 help_text='차수 및 타입별 고정 납부 계약금액, 납부 회수는 납부 회차 모델에서 별도 등록/설정')
-    payment_remain = models.IntegerField('나머지 계약금액', default=0)
-
-    def __str__(self):
-        return f'{self.payment_amount}'
-
-    class Meta:
-        ordering = ('id',)
-        verbose_name = '07. 특별 회차별 납입금'
-        verbose_name_plural = '07. 특별 회차별 납입금'
-
-
-class SpecialOverDueRule(models.Model):  # 가산금 / 할인액 계산을 위한 별도 테이블
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    term_start = models.IntegerField('최소연체(선납)일', null=True, blank=True, help_text='비어 있을 경우 최대 음수')
-    term_end = models.IntegerField('최대연체(선납)일', null=True, blank=True, help_text='비어 있을 경우 최대 양수')
-    rate_year = models.DecimalField('연체(할인)이율', max_digits=4, decimal_places=2, help_text='연체일이 0 또는 음수 구간인 경우 할인 적용')
-
-    def __str__(self):
-        ts = str(self.term_start) + '일' if self.term_start is not None else 'Min'
-        te = str(self.term_end) + '일' if self.term_end is not None else 'Max'
-        return f'{ts} - {te}'
-
-    class Meta:
-        ordering = ('-project', 'term_start', 'term_end')
-        verbose_name = '08. 특별 선납할인/연체이율'
-        verbose_name_plural = '08. 특별 선납할인/연체이율'
-
-
 # ============================================
 # Contract Payment - 계약 결제
 # ============================================
@@ -258,8 +180,8 @@ class ContractPayment(models.Model):
     )
 
     class Meta:
-        verbose_name = '09. 계약 결제'
-        verbose_name_plural = '09. 계약 결제'
+        verbose_name = '05. 분양 대금 납부'
+        verbose_name_plural = '05. 분양 대금 납부'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['contract', 'payment_type']),
@@ -340,3 +262,81 @@ class ContractPayment(models.Model):
 
     def __str__(self):
         return f"{self.contract} - {self.get_payment_type_display()} ({self.amount:,}원)"
+
+
+class OverDueRule(models.Model):
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    term_start = models.IntegerField('최소연체(선납)일', null=True, blank=True, help_text='비어 있을 경우 최대 음수')
+    term_end = models.IntegerField('최대연체(선납)일', null=True, blank=True, help_text='비어 있을 경우 최대 양수')
+    rate_year = models.DecimalField('연체(할인)이율', max_digits=4, decimal_places=2, help_text='연체일이 0 또는 음수 구간인 경우 할인 적용')
+
+    def __str__(self):
+        ts = str(self.term_start) + '일' if self.term_start is not None else 'Min'
+        te = str(self.term_end) + '일' if self.term_end is not None else 'Max'
+        return f'{ts} - {te}'
+
+    class Meta:
+        ordering = ('-project', 'term_start', 'term_end')
+        verbose_name = '06. 선납할인/연체이율 관리'
+        verbose_name_plural = '06. 선납할인/연체이율 관리'
+
+
+# 동춘프로젝트 공급계약 체결전 가산금 등 처리 로직 ---------------------------------------------------------------------------------
+class SpecialPaymentOrder(models.Model):  # 가산금 / 할인액 계산을 위한 별도 테이블
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    pay_sort = models.CharField('종류', max_length=1, choices=InstallmentPaymentOrder.PAY_SORT_CHOICES, default='1')
+    pay_code = models.PositiveSmallIntegerField('납입회차 코드', help_text='프로젝트 내에서 모든 납부회차를 고유 순서대로 숫자로 부여한다.')
+    pay_time = models.PositiveSmallIntegerField('납부순서',
+                                                help_text='''동일 납부회차에 2가지 항목을 별도로 납부하여야 하는 경우(ex: 분담금 + 업무대행료)
+                                                하나의 납입회차 코드(ex: 1)에 2개의 납부순서(ex: 1, 2)를 등록한다.''')
+    pay_name = models.CharField('납부회차 명', max_length=20)
+    alias_name = models.CharField('회차 별칭', max_length=20, blank=True)
+    days_since_prev = models.PositiveSmallIntegerField('전회 기준 경과일수', null=True, blank=True,
+                                                       help_text="전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수")
+    is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
+    is_late_penalty = models.BooleanField('연체가산 적용 여부', default=False)
+    pay_due_date = models.DateField('지정 납부기한', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
+    extra_due_date = models.DateField('납부유예일', null=True, blank=True,
+                                      help_text='연체료 계산 기준은 지정 납부기한이 원칙이나 이 값이 있는 경우 납부유예일을 연체료 계산 기준으로 한다.')
+
+    def __str__(self):
+        return f'[{self.get_pay_sort_display()}] - {self.pay_name}'
+
+    class Meta:
+        ordering = ['-project', 'pay_code']
+        verbose_name = '07. 특별 납입회차'
+        verbose_name_plural = '07. 특별 납입회차'
+
+
+class SpecialDownPay(models.Model):
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    order_group = models.ForeignKey('contract.OrderGroup', on_delete=models.CASCADE, verbose_name='차수정보')
+    unit_type = models.ForeignKey('items.UnitType', on_delete=models.CASCADE, verbose_name='타입정보')
+    payment_amount = models.PositiveIntegerField('회차별 계약금액',
+                                                 help_text='차수 및 타입별 고정 납부 계약금액, 납부 회수는 납부 회차 모델에서 별도 등록/설정')
+    payment_remain = models.IntegerField('나머지 계약금액', default=0)
+
+    def __str__(self):
+        return f'{self.payment_amount}'
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = '08. 특별 회차별 납입금'
+        verbose_name_plural = '08. 특별 회차별 납입금'
+
+
+class SpecialOverDueRule(models.Model):  # 가산금 / 할인액 계산을 위한 별도 테이블
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    term_start = models.IntegerField('최소연체(선납)일', null=True, blank=True, help_text='비어 있을 경우 최대 음수')
+    term_end = models.IntegerField('최대연체(선납)일', null=True, blank=True, help_text='비어 있을 경우 최대 양수')
+    rate_year = models.DecimalField('연체(할인)이율', max_digits=4, decimal_places=2, help_text='연체일이 0 또는 음수 구간인 경우 할인 적용')
+
+    def __str__(self):
+        ts = str(self.term_start) + '일' if self.term_start is not None else 'Min'
+        te = str(self.term_end) + '일' if self.term_end is not None else 'Max'
+        return f'{ts} - {te}'
+
+    class Meta:
+        ordering = ('-project', 'term_start', 'term_end')
+        verbose_name = '09. 특별 선납할인/연체이율'
+        verbose_name_plural = '09. 특별 선납할인/연체이율'

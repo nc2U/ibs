@@ -12,17 +12,6 @@ from ledger.models import (
 
 
 # ============================================
-# Bank Code Admin
-# ============================================
-
-@admin.register(BankCode)
-class BankCodeAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('code', 'name')
-    search_fields = ('code', 'name')
-    ordering = ('code',)
-
-
-# ============================================
 # Bank Account Admin
 # ============================================
 
@@ -134,5 +123,3 @@ class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
     @admin.display(description='금액')
     def formatted_amount(self, obj):
         return format_html('{:,}원', obj.amount)
-
-

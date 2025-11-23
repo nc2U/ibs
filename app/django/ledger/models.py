@@ -50,40 +50,6 @@ class BankAccount(models.Model):
         return self.alias_name
 
 
-class CompanyBankAccount(BankAccount):
-    """
-    본사 은행 계좌
-
-    회사 본사의 은행 계좌 정보를 관리합니다.
-    """
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사정보',
-                                related_name='com_bank_accounts')
-    depart = models.ForeignKey('company.Department', on_delete=models.SET_NULL,
-                               null=True, blank=True, verbose_name='관리부서', related_name='com_bank_accounts')
-
-    class Meta:
-        ordering = ['order', 'id']
-        verbose_name = '본사 관리계좌'
-        verbose_name_plural = '본사 관리계좌'
-
-
-class ProjectBankAccount(BankAccount):
-    """
-    프로젝트 은행 계좌
-
-    프로젝트별 은행 계좌 정보를 관리합니다.
-    """
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트',
-                                related_name='proj_bank_accounts')
-    directpay = models.BooleanField('용역비 직불 여부', default=False)
-    is_imprest = models.BooleanField('운영비 계좌 여부', default=False)
-
-    class Meta:
-        ordering = ['order', 'id']
-        verbose_name = '프로젝트 관리계좌'
-        verbose_name_plural = '프로젝트 관리계좌'
-
-
 # ============================================
 # Banking Domain - 은행 거래 도메인
 # ============================================
@@ -151,81 +117,6 @@ class BankTransaction(models.Model):
 
     def __str__(self):
         return f"{self.get_transaction_type_display()} - {self.amount:,}원 ({self.deal_date})"
-
-
-class CompanyBankTransaction(BankTransaction):
-    """
-    본사 은행 거래
-
-    회사 본사의 은행 거래를 관리합니다.
-    """
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사')
-    bank_account = models.ForeignKey(CompanyBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
-
-    class Meta:
-        verbose_name = '본사 은행 거래'
-        verbose_name_plural = '본사 은행 거래'
-        ordering = ['-deal_date', '-created_at']
-        indexes = [
-            models.Index(fields=['bank_account', 'deal_date']),
-        ]
-
-    def validate_accounting_entries(self):
-        """
-        본사 회계 분개 금액 합계 검증
-
-        Returns:
-            dict: 검증 결과
-        """
-        entries = CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
-        accounting_total = sum(e.amount for e in entries) if entries.exists() else 0
-        difference = self.amount - accounting_total
-
-        return {
-            'is_valid': difference == 0,
-            'bank_amount': self.amount,
-            'accounting_total': accounting_total,
-            'difference': difference,
-            'entry_count': entries.count(),
-        }
-
-
-class ProjectBankTransaction(BankTransaction):
-    """
-    프로젝트 은행 거래
-
-    프로젝트별 은행 거래를 관리합니다.
-    """
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    bank_account = models.ForeignKey(ProjectBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
-    is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부', help_text='프로젝트 운영비 계정 거래 여부')
-
-    class Meta:
-        verbose_name = '프로젝트 은행 거래'
-        verbose_name_plural = '프로젝트 은행 거래'
-        ordering = ['-deal_date', '-created_at']
-        indexes = [
-            models.Index(fields=['bank_account', 'deal_date']),
-        ]
-
-    def validate_accounting_entries(self):
-        """
-        프로젝트 회계 분개 금액 합계 검증
-
-        Returns:
-            dict: 검증 결과
-        """
-        entries = ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
-        accounting_total = sum(e.amount for e in entries) if entries.exists() else 0
-        difference = self.amount - accounting_total
-
-        return {
-            'is_valid': difference == 0,
-            'bank_amount': self.amount,
-            'accounting_total': accounting_total,
-            'difference': difference,
-            'entry_count': entries.count(),
-        }
 
 
 # ============================================
@@ -301,6 +192,64 @@ class AccountingEntry(models.Model):
         return f"{self.content} - {self.trader}"
 
 
+# ============================================
+# Company Ledger - 본사 회계 원장
+# ============================================
+
+class CompanyBankAccount(BankAccount):
+    """
+    본사 은행 계좌
+
+    회사 본사의 은행 계좌 정보를 관리합니다.
+    """
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사정보',
+                                related_name='com_bank_accounts')
+    depart = models.ForeignKey('company.Department', on_delete=models.SET_NULL,
+                               null=True, blank=True, verbose_name='관리부서', related_name='com_bank_accounts')
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = '01. 본사 관리 계좌'
+        verbose_name_plural = '01. 본사 관리 계좌'
+
+
+class CompanyBankTransaction(BankTransaction):
+    """
+    본사 은행 거래
+
+    회사 본사의 은행 거래를 관리합니다.
+    """
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사')
+    bank_account = models.ForeignKey(CompanyBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
+
+    class Meta:
+        verbose_name = '02. 본사 은행 거래'
+        verbose_name_plural = '02. 본사 은행 거래'
+        ordering = ['-deal_date', '-created_at']
+        indexes = [
+            models.Index(fields=['bank_account', 'deal_date']),
+        ]
+
+    def validate_accounting_entries(self):
+        """
+        본사 회계 분개 금액 합계 검증
+
+        Returns:
+            dict: 검증 결과
+        """
+        entries = CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+        accounting_total = sum(e.amount for e in entries) if entries.exists() else 0
+        difference = self.amount - accounting_total
+
+        return {
+            'is_valid': difference == 0,
+            'bank_amount': self.amount,
+            'accounting_total': accounting_total,
+            'difference': difference,
+            'entry_count': entries.count(),
+        }
+
+
 class CompanyAccountingEntry(AccountingEntry):
     """
     본사 회계 분개
@@ -318,9 +267,68 @@ class CompanyAccountingEntry(AccountingEntry):
                                    null=True, blank=True, verbose_name='계정 소분류')
 
     class Meta:
-        verbose_name = '본사 회계 분개'
-        verbose_name_plural = '본사 회계 분개'
+        verbose_name = '03. 본사 회계 분개'
+        verbose_name_plural = '03. 본사 회계 분개'
         ordering = ['-created_at']
+
+
+# ============================================
+# Project Ledger - 현장 회계 원장
+# ============================================
+
+class ProjectBankAccount(BankAccount):
+    """
+    프로젝트 은행 계좌
+
+    프로젝트별 은행 계좌 정보를 관리합니다.
+    """
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트',
+                                related_name='proj_bank_accounts')
+    directpay = models.BooleanField('용역비 직불 여부', default=False)
+    is_imprest = models.BooleanField('운영비 계좌 여부', default=False)
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = '04. 프로젝트 관리 계좌'
+        verbose_name_plural = '04. 프로젝트 관리 계좌'
+
+
+class ProjectBankTransaction(BankTransaction):
+    """
+    프로젝트 은행 거래
+
+    프로젝트별 은행 거래를 관리합니다.
+    """
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
+    bank_account = models.ForeignKey(ProjectBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
+    is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부', help_text='프로젝트 운영비 계정 거래 여부')
+
+    class Meta:
+        verbose_name = '05. 프로젝트 은행 거래'
+        verbose_name_plural = '05. 프로젝트 은행 거래'
+        ordering = ['-deal_date', '-created_at']
+        indexes = [
+            models.Index(fields=['bank_account', 'deal_date']),
+        ]
+
+    def validate_accounting_entries(self):
+        """
+        프로젝트 회계 분개 금액 합계 검증
+
+        Returns:
+            dict: 검증 결과
+        """
+        entries = ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+        accounting_total = sum(e.amount for e in entries) if entries.exists() else 0
+        difference = self.amount - accounting_total
+
+        return {
+            'is_valid': difference == 0,
+            'bank_amount': self.amount,
+            'accounting_total': accounting_total,
+            'difference': difference,
+            'entry_count': entries.count(),
+        }
 
 
 class ProjectAccountingEntry(AccountingEntry):
@@ -339,8 +347,6 @@ class ProjectAccountingEntry(AccountingEntry):
                                            null=True, blank=True, verbose_name='프로젝트 계정 소분류')
 
     class Meta:
-        verbose_name = '프로젝트 회계 분개'
-        verbose_name_plural = '프로젝트 회계 분개'
+        verbose_name = '06. 프로젝트 회계 분개'
+        verbose_name_plural = '06. 프로젝트 회계 분개'
         ordering = ['-created_at']
-
-
