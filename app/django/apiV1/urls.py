@@ -13,6 +13,7 @@ from .views import contract
 from .views import notice
 from .views import board
 from .views import docs
+from .views import ledger
 
 app_name = 'api'
 
@@ -119,6 +120,18 @@ router.register(r'overall-summary', payment.OverallSummaryViewSet, basename='ove
 # cash
 router.register(r'bank-code', cash.BankCodeViewSet)
 router.register(r'company-bank-account', cash.ComBankAccountViewSet)
+
+# ledger (new architecture)
+router.register(r'ledger/bank-code', ledger.LedgerBankCodeViewSet, basename='ledger-bank-code')
+router.register(r'ledger/company-bank-account', ledger.LedgerCompanyBankAccountViewSet, basename='ledger-company-bank-account')
+router.register(r'ledger/project-bank-account', ledger.LedgerProjectBankAccountViewSet, basename='ledger-project-bank-account')
+router.register(r'ledger/company-transaction', ledger.CompanyBankTransactionViewSet, basename='ledger-company-transaction')
+router.register(r'ledger/project-transaction', ledger.ProjectBankTransactionViewSet, basename='ledger-project-transaction')
+router.register(r'ledger/company-accounting-entry', ledger.CompanyAccountingEntryViewSet, basename='ledger-company-accounting-entry')
+router.register(r'ledger/project-accounting-entry', ledger.ProjectAccountingEntryViewSet, basename='ledger-project-accounting-entry')
+router.register(r'ledger/contract-payment', ledger.ContractPaymentViewSet, basename='ledger-contract-payment')
+router.register(r'ledger/company-transaction-create', ledger.CompanyTransactionViewSet, basename='ledger-company-transaction-create')
+router.register(r'ledger/project-transaction-create', ledger.ProjectTransactionViewSet, basename='ledger-project-transaction-create')
 router.register(r'balance-by-acc', cash.BalanceByAccountViewSet, basename='balance-by-acc')  # only list
 router.register(r'cashbook', cash.CashBookViewSet)
 router.register(r'com-cash-calc', cash.CompanyCashCalcViewSet)

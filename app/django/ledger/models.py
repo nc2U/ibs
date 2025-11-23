@@ -1,8 +1,8 @@
 import uuid
-from django.db import models
+
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.utils import timezone
-from django.db.models import Sum
 
 
 # ============================================
@@ -353,11 +353,31 @@ class ContractPayment(models.Model):
     계약 결제
 
     프로젝트의 분양 계약에 대한 결제 정보를 관리합니다.
-    ProjectBankTransaction과 연결되어 계약자의 납부, 환불, 조정 등을 추적합니다.
+    ProjectAccountingEntry와 1:1로 연결되어 계약자의 납부, 환불, 조정 등을 추적합니다.
+
+    생성 조건:
+        - ProjectAccountD3.is_payment=True인 회계 분개에 대해서만 생성
+
+    금액 조회:
+        - accounting_entry.amount를 통해 조회 (별도 amount 필드 불필요)
+
+    집계 전략:
+        - 전체/프로젝트 집계: ProjectAccountingEntry에서 직접 집계 (JOIN 없음)
+        - 계약별 상세 조회: ContractPayment.select_related('accounting_entry')
+
+    데이터 흐름:
+        ProjectBankTransaction (은행 거래 1건)
+            → ProjectAccountingEntry (회계 분개 N건, 회차별 분리)
+                → ContractPayment (계약 납부 정보, 1:1 연결)
     """
-    # Banking Domain 연결
-    transaction_id = models.UUIDField(unique=True, db_index=True, verbose_name='거래 ID',
-                                      help_text='ProjectBankTransaction.transaction_id 참조')
+    # Accounting Domain 연결 (1:1)
+    accounting_entry = models.OneToOneField(
+        ProjectAccountingEntry,
+        on_delete=models.CASCADE,
+        related_name='contract_payment',
+        verbose_name='회계 분개',
+        help_text='ProjectAccountingEntry와 1:1 연결 (is_payment=True인 분개)'
+    )
 
     # 계약 정보
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
@@ -397,22 +417,23 @@ class ContractPayment(models.Model):
         verbose_name_plural = '계약 결제'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['transaction_id']),
             models.Index(fields=['contract', 'payment_type']),
             models.Index(fields=['installment_order', 'created_at']),
         ]
 
     @property
+    def amount(self):
+        """결제 금액 (accounting_entry.amount 참조)"""
+        return self.accounting_entry.amount
+
+    @property
     def related_transaction(self):
         """연관된 ProjectBankTransaction 조회"""
-        return ProjectBankTransaction.objects.filter(
-            transaction_id=self.transaction_id
-        ).first()
+        return self.accounting_entry.related_transaction
 
     def get_payment_amount(self):
-        """결제 금액 조회"""
-        tx = self.related_transaction
-        return tx.amount if tx else 0
+        """결제 금액 조회 (하위 호환용)"""
+        return self.amount
 
     def calculate_late_penalty(self):
         """
@@ -473,282 +494,4 @@ class ContractPayment(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.contract} - {self.get_payment_type_display()} ({self.get_payment_amount():,}원)"
-
-
-# ============================================
-# Split Domain - 거래 분할 도메인
-# ============================================
-
-class TransactionSplit(models.Model):
-    """
-    거래 분할
-
-    하나의 은행 거래를 여러 회계 계정으로 분할하여 관리합니다.
-    예: 100만원 입금을 50만원(매출), 30만원(선수금), 20만원(기타수입)으로 분할
-    """
-    # 원거래 참조
-    parent_transaction_id = models.UUIDField(
-        db_index=True,
-        verbose_name='원거래 ID',
-        help_text='분할 대상 BankTransaction의 transaction_id'
-    )
-
-    parent_transaction_type = models.CharField(
-        max_length=10,
-        choices=[
-            ('COMPANY', 'CompanyBankTransaction'),
-            ('PROJECT', 'ProjectBankTransaction'),
-        ],
-        verbose_name='원거래 유형'
-    )
-
-    # 분할 메타데이터
-    split_reason = models.CharField(
-        max_length=200,
-        verbose_name='분할 사유',
-        help_text='거래를 분할하는 이유'
-    )
-
-    total_amount = models.DecimalField(
-        max_digits=15,
-        decimal_places=0,
-        verbose_name='총 금액',
-        help_text='분할 항목의 합계 (원거래 금액과 일치해야 함)'
-    )
-
-    split_count = models.PositiveSmallIntegerField(
-        verbose_name='분할 개수',
-        help_text='분할 항목 개수 (최소 2개)'
-    )
-
-    # 분할 상태
-    status = models.CharField(
-        max_length=10,
-        default='DRAFT',
-        choices=[
-            ('DRAFT', '임시저장'),
-            ('CONFIRMED', '확정'),
-            ('CANCELLED', '취소'),
-        ],
-        verbose_name='분할 상태'
-    )
-
-    # 감사 필드
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
-    creator = models.ForeignKey(
-        'accounts.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name='생성자'
-    )
-
-    class Meta:
-        verbose_name = '거래 분할'
-        verbose_name_plural = '거래 분할'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['parent_transaction_id']),
-            models.Index(fields=['status']),
-        ]
-
-    @property
-    def parent_transaction(self):
-        """부모 거래 조회"""
-        if self.parent_transaction_type == 'COMPANY':
-            return CompanyBankTransaction.objects.filter(
-                transaction_id=self.parent_transaction_id
-            ).first()
-        else:
-            return ProjectBankTransaction.objects.filter(
-                transaction_id=self.parent_transaction_id
-            ).first()
-
-    def confirm_split(self):
-        """
-        분할 확정 및 회계 분개 생성
-
-        임시저장 상태의 분할을 확정하고, 각 분할 항목에 대해
-        AccountingEntry를 생성합니다.
-
-        Raises:
-            ValidationError: 임시저장 상태가 아니거나 분할 항목이 없는 경우
-        """
-        if self.status != 'DRAFT':
-            raise ValidationError('임시저장 상태에서만 확정할 수 있습니다.')
-
-        if not self.split_items.exists():
-            raise ValidationError('분할 항목이 없습니다.')
-
-        # 분할 상태를 확정으로 변경
-        self.status = 'CONFIRMED'
-        self.save()
-
-        # 각 분할 항목에 대해 회계 분개 생성
-        for item in self.split_items.all():
-            item.create_accounting_entry()
-
-    def clean(self):
-        """모델 유효성 검증"""
-        # 분할 개수 검증
-        if self.split_count is not None and self.split_count < 2:
-            raise ValidationError({
-                'split_count': '분할 개수는 최소 2개 이상이어야 합니다.'
-            })
-
-        # 분할 항목 합계 검증 (업데이트 시에만)
-        if self.pk:
-            split_total = self.split_items.aggregate(
-                total=Sum('amount')
-            )['total'] or 0
-
-            if split_total != self.total_amount:
-                raise ValidationError({
-                    'total_amount': f'분할 항목의 합계({split_total:,})가 총액({self.total_amount:,})과 일치하지 않습니다.'
-                })
-
-    def save(self, *args, **kwargs):
-        """저장 전 유효성 검증 (생성 시에만)"""
-        if not self.pk:  # 생성 시에만 검증 (업데이트는 clean에서)
-            if self.split_count is not None and self.split_count < 2:
-                raise ValidationError('분할 개수는 최소 2개 이상이어야 합니다.')
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"거래 분할 {self.id} - {self.split_count}개 항목 ({self.get_status_display()})"
-
-
-class TransactionSplitItem(models.Model):
-    """
-    거래 분할 항목
-
-    TransactionSplit의 개별 분할 항목을 표현합니다.
-    각 항목은 서로 다른 회계 계정에 배분됩니다.
-    """
-    split = models.ForeignKey(
-        TransactionSplit,
-        on_delete=models.CASCADE,
-        related_name='split_items',
-        verbose_name='거래 분할'
-    )
-
-    sequence = models.PositiveSmallIntegerField(
-        verbose_name='순서',
-        help_text='분할 항목의 표시 순서'
-    )
-
-    amount = models.DecimalField(
-        max_digits=15,
-        decimal_places=0,
-        verbose_name='금액',
-        help_text='이 분할 항목의 금액'
-    )
-
-    # 회계 정보
-    account_code = models.CharField(
-        max_length=10,
-        verbose_name='계정코드',
-        help_text='이 분할 항목의 회계 계정 코드'
-    )
-
-    content = models.CharField(
-        max_length=100,
-        verbose_name='적요',
-        help_text='이 분할 항목의 거래 내용'
-    )
-
-    trader = models.CharField(
-        max_length=50,
-        verbose_name='거래처',
-        help_text='이 분할 항목의 거래 상대방'
-    )
-
-    note = models.TextField(
-        blank=True,
-        verbose_name='비고'
-    )
-
-    # 생성된 회계 분개 참조
-    accounting_entry_id = models.UUIDField(
-        null=True,
-        blank=True,
-        verbose_name='회계 분개 ID',
-        help_text='생성된 AccountingEntry의 ID'
-    )
-
-    class Meta:
-        verbose_name = '거래 분할 항목'
-        verbose_name_plural = '거래 분할 항목'
-        ordering = ['sequence']
-        unique_together = [['split', 'sequence']]
-
-    def create_accounting_entry(self):
-        """
-        회계 분개 생성
-
-        이 분할 항목에 대한 AccountingEntry를 생성합니다.
-        부모 거래 유형(Company/Project)에 따라 적절한 모델을 선택합니다.
-
-        Returns:
-            AccountingEntry: 생성된 회계 분개 객체
-        """
-        parent_tx = self.split.parent_transaction
-
-        if not parent_tx:
-            raise ValidationError('부모 거래를 찾을 수 없습니다.')
-
-        if self.split.parent_transaction_type == 'COMPANY':
-            # 본사 회계 분개 생성
-            # TODO: Phase 2에서 실제 account_d1/d2/d3 매핑 로직 구현
-            entry = CompanyAccountingEntry.objects.create(
-                transaction_id=self.split.parent_transaction_id,
-                transaction_type='COMPANY',
-                company=parent_tx.company,
-                sort_id=1,  # TODO: 실제 sort 매핑
-                account_code=self.account_code,
-                amount=self.amount,  # ✅ 분할 항목의 금액
-                content=self.content,
-                trader=self.trader,
-                note=self.note,
-                evidence_type='0',  # TODO: 실제 증빙 유형 매핑
-                account_d1_id=1,  # TODO: 실제 계정 매핑
-            )
-        else:
-            # 프로젝트 회계 분개 생성
-            # TODO: Phase 2에서 실제 project_account_d2/d3 매핑 로직 구현
-            entry = ProjectAccountingEntry.objects.create(
-                transaction_id=self.split.parent_transaction_id,
-                transaction_type='PROJECT',
-                project=parent_tx.project,
-                sort_id=1,  # TODO: 실제 sort 매핑
-                account_code=self.account_code,
-                amount=self.amount,  # ✅ 분할 항목의 금액
-                content=self.content,
-                trader=self.trader,
-                note=self.note,
-                evidence_type='0',  # TODO: 실제 증빙 유형 매핑
-                project_account_d2_id=1,  # TODO: 실제 계정 매핑
-            )
-
-        # 생성된 회계 분개 ID 저장
-        self.accounting_entry_id = entry.pk
-        self.save(update_fields=['accounting_entry_id'])
-
-        return entry
-
-    def clean(self):
-        """모델 유효성 검증"""
-        if self.amount is not None and self.amount <= 0:
-            raise ValidationError({
-                'amount': '분할 항목의 금액은 0보다 커야 합니다.'
-            })
-
-    def save(self, *args, **kwargs):
-        """저장 전 유효성 검증"""
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.split.id}-{self.sequence}: {self.content} ({self.amount:,}원)"
+        return f"{self.contract} - {self.get_payment_type_display()} ({self.amount:,}원)"
