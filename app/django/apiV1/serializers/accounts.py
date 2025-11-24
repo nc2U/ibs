@@ -19,9 +19,9 @@ class SimpleUserSerializer(serializers.ModelSerializer):
 class StaffAuthInUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = StaffAuth
-        fields = ('pk', 'user', 'company', 'is_staff', 'is_project_staff',
-                  'allowed_projects', 'assigned_project', 'contract', 'payment', 'notice',
-                  'project_cash', 'project_docs', 'project', 'project_site', 'company_cash',
+        fields = ('pk', 'user', 'company', 'is_staff', 'is_project_staff', 'allowed_projects',
+                  'assigned_project', 'contract', 'payment', 'notice', 'project_cash', 'project_ledger',
+                  'project_docs', 'project', 'project_site', 'company_cash', 'company_ledger',
                   'company_docs', 'human_resource', 'company_settings', 'auth_manage')
 
     @transaction.atomic
