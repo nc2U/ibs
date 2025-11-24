@@ -4,7 +4,7 @@ import { ref, computed, onBeforeMount } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { useProCash } from '@/store/pinia/proCash'
 import { getToday } from '@/utils/baseMixins'
-import { pageTitle, navMenu } from '@/views/proCash/_menu/headermixin'
+import { pageTitle, navMenu } from '@/views/proLedger/_menu/headermixin'
 import type { Project } from '@/store/types/project.ts'
 import type { ProCalculated } from '@/store/types/proCash'
 import { useDownload } from '@/utils/useDownload.ts'
@@ -112,10 +112,14 @@ const comp: { [key: number]: string } = {
 
 const filename = computed(() => {
   switch (compName.value) {
-    case 'StatusByAccount': return '계좌별_자금현황.xlsx'
-    case 'CashListByDate': return '당일_입출금내역.xlsx'
-    case 'SummaryForBudget': return '예산대비_집계.xlsx'
-    default: return ''
+    case 'StatusByAccount':
+      return '계좌별_자금현황.xlsx'
+    case 'CashListByDate':
+      return '당일_입출금내역.xlsx'
+    case 'SummaryForBudget':
+      return '예산대비_집계.xlsx'
+    default:
+      return ''
   }
 })
 
