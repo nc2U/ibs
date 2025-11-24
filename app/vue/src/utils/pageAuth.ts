@@ -29,12 +29,12 @@ export const write_notice = computed(
 
 export const read_project_cash = computed(
   () =>
-    isSuperUser.value || (useAccount().staffAuth && useAccount().staffAuth?.project_cash !== '0'),
+    isSuperUser.value || (useAccount().staffAuth && useAccount().staffAuth?.project_ledger !== '0'),
 )
 
 export const write_project_cash = computed(
   () =>
-    isSuperUser.value || (useAccount().staffAuth && useAccount().staffAuth?.project_cash === '2'),
+    isSuperUser.value || (useAccount().staffAuth && useAccount().staffAuth?.project_ledger === '2'),
 )
 
 export const read_project_docs = computed(
@@ -67,12 +67,12 @@ export const write_project_site = computed(
 
 export const read_company_cash = computed(
   () =>
-    isSuperUser.value || (useAccount().staffAuth && useAccount().staffAuth?.company_cash !== '0'),
+    isSuperUser.value || (useAccount().staffAuth && useAccount().staffAuth?.company_ledger !== '0'),
 )
 
 export const write_company_cash = computed(
   () =>
-    isSuperUser.value || (useAccount().staffAuth && useAccount().staffAuth?.company_cash === '2'),
+    isSuperUser.value || (useAccount().staffAuth && useAccount().staffAuth?.company_ledger === '2'),
 )
 
 export const read_company_docs = computed(

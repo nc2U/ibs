@@ -35,12 +35,10 @@ export interface StaffAuth {
   contract: Auth
   payment: Auth
   notice: Auth
-  project_cash: Auth
   project_ledger: Auth
   project_docs: Auth
   project: Auth
   project_site: Auth
-  company_cash: Auth
   company_ledger: Auth
   company_docs: Auth
   human_resource: Auth

@@ -204,10 +204,12 @@ export const useAccount = defineStore('account', () => {
   const writeProDocs = computed(
     () => superAuth.value || writeComDocs.value || staffAuth.value?.project_docs == '2',
   )
-  const isComCash = computed(() => superAuth.value || Number(staffAuth.value?.company_cash || null))
-  const writeComCash = computed(() => superAuth.value || staffAuth.value?.company_cash == '2')
+  const isComCash = computed(
+    () => superAuth.value || Number(staffAuth.value?.company_ledger || null),
+  )
+  const writeComCash = computed(() => superAuth.value || staffAuth.value?.company_ledger == '2')
   const writeProCash = computed(
-    () => superAuth.value || writeComCash.value || staffAuth.value?.project_cash == '2',
+    () => superAuth.value || writeComCash.value || staffAuth.value?.project_ledger == '2',
   )
 
   // actions

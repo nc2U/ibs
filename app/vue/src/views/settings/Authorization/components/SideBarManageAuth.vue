@@ -4,7 +4,7 @@ import { type UserAuth } from '@/views/settings/Authorization/Index.vue'
 import type { User } from '@/store/types/accounts'
 import { write_auth_manage } from '@/utils/pageAuth'
 import { useStore } from '@/store'
-import ProjectManageAuth from '@/views/settings/Authorization/components/ProjectManageAuth.vue'
+import ProjectManageAuth from './ProjectManageAuth.vue'
 
 const props = defineProps({
   user: { type: Object as PropType<User | null>, default: null },
@@ -21,11 +21,11 @@ const authData = ref<UserAuth>({
   contract: '0',
   payment: '0',
   notice: '0',
-  project_cash: '0',
+  project_ledger: '0',
   project_docs: '0',
   project: '0',
   project_site: '0',
-  company_cash: '0',
+  company_ledger: '0',
   company_docs: '0',
   human_resource: '0',
   company_settings: '1',
@@ -65,11 +65,11 @@ const dataSetup = () => {
     authData.value.contract = props.user.staffauth.contract
     authData.value.payment = props.user.staffauth.payment
     authData.value.notice = props.user.staffauth.notice
-    authData.value.project_cash = props.user.staffauth.project_cash
+    authData.value.project_ledger = props.user.staffauth.project_ledger
     authData.value.project_docs = props.user.staffauth.project_docs
     authData.value.project = props.user.staffauth.project
     authData.value.project_site = props.user.staffauth.project_site
-    authData.value.company_cash = props.user.staffauth.company_cash
+    authData.value.company_ledger = props.user.staffauth.company_ledger
     authData.value.company_docs = props.user.staffauth.company_docs
     authData.value.human_resource = props.user.staffauth.human_resource
     authData.value.company_settings = props.user.staffauth.company_settings
@@ -79,11 +79,11 @@ const dataSetup = () => {
     authData.value.contract = '0'
     authData.value.payment = '0'
     authData.value.notice = '0'
-    authData.value.project_cash = '0'
+    authData.value.project_ledger = '0'
     authData.value.project_docs = '0'
     authData.value.project = '0'
     authData.value.project_site = '0'
-    authData.value.company_cash = '0'
+    authData.value.company_ledger = '0'
     authData.value.company_docs = '0'
     authData.value.human_resource = '0'
     authData.value.company_settings = '1'
@@ -113,17 +113,17 @@ onUpdated(() => dataSetup())
             <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
               <v-icon
                 icon="mdi mdi-account-arrow-left"
-                :color="getColor(authData.company_cash)[0]"
+                :color="getColor(authData.company_ledger)[0]"
               />
               본사 자금 관리
             </CFormLabel>
             <CCol>
               <CFormSelect
-                v-model="authData.company_cash"
+                v-model="authData.company_ledger"
                 :options="auths"
                 :disabled="isCoInActive || !write_auth_manage"
                 :style="{
-                  backgroundColor: isDark ? '' : getColor(authData.company_cash)[1],
+                  backgroundColor: isDark ? '' : getColor(authData.company_ledger)[1],
                 }"
                 @change="selectAuth"
               />
@@ -262,17 +262,17 @@ onUpdated(() => dataSetup())
               <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
                 <v-icon
                   icon="mdi mdi-account-arrow-left"
-                  :color="getColor(authData.project_cash)[0]"
+                  :color="getColor(authData.project_ledger)[0]"
                 />
                 PR 자금 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect
-                  v-model="authData.project_cash"
+                  v-model="authData.project_ledger"
                   :options="auths"
                   :disabled="isPrInActive || !write_auth_manage"
                   :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.project_cash)[1],
+                    backgroundColor: isDark ? '' : getColor(authData.project_ledger)[1],
                   }"
                   @change="selectAuth"
                 />

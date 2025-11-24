@@ -47,11 +47,11 @@ export type UserAuth = {
   notice: Auth
   project: Auth
   project_site: Auth
-  project_cash: Auth
+  project_ledger: Auth
   project_docs: Auth
   human_resource: Auth
   company_settings: Auth
-  company_cash: Auth
+  company_ledger: Auth
   company_docs: Auth
   auth_manage: Auth
 }
@@ -60,11 +60,11 @@ const menuAuth = ref<UserAuth>({
   contract: '0',
   payment: '0',
   notice: '0',
-  project_cash: '0',
+  project_ledger: '0',
   project_docs: '0',
   project: '0',
   project_site: '0',
-  company_cash: '0',
+  company_ledger: '0',
   company_docs: '0',
   human_resource: '0',
   company_settings: '0',
@@ -85,11 +85,11 @@ const formsCheck = computed(() => {
       const e = ma.contract === sa.contract
       const f = ma.payment === sa.payment
       const g = ma.notice === sa.notice
-      const h = ma.project_cash === sa.project_cash
+      const h = ma.project_ledger === sa.project_ledger
       const i = ma.project_docs === sa.project_docs
       const j = ma.project === sa.project
       const k = ma.project_site === sa.project_site
-      const l = ma.company_cash === sa.company_cash
+      const l = ma.company_ledger === sa.company_ledger
       const m = ma.company_docs === sa.company_docs
       const n = ma.human_resource === sa.human_resource
       const o = ma.company_settings === sa.company_settings
@@ -104,11 +104,11 @@ const formsCheck = computed(() => {
       const e = ma.contract === '0'
       const f = ma.payment === '0'
       const g = ma.notice === '0'
-      const h = ma.project_cash === '0'
+      const h = ma.project_ledger === '0'
       const i = ma.project_docs === '0'
       const j = ma.project === '0'
       const k = ma.project_site === '0'
-      const l = ma.company_cash === '0'
+      const l = ma.company_ledger === '0'
       const m = ma.company_docs === '0'
       const n = ma.human_resource === '0'
       const o = ma.company_settings === '0'
@@ -153,11 +153,11 @@ const authReset = () => {
   menuAuth.value.contract = '0'
   menuAuth.value.payment = '0'
   menuAuth.value.notice = '0'
-  menuAuth.value.project_cash = '0'
+  menuAuth.value.project_ledger = '0'
   menuAuth.value.project_docs = '0'
   menuAuth.value.project = '0'
   menuAuth.value.project_site = '0'
-  menuAuth.value.company_cash = '0'
+  menuAuth.value.company_ledger = '0'
   menuAuth.value.company_docs = '0'
   menuAuth.value.human_resource = '0'
   menuAuth.value.company_settings = '0'
@@ -195,11 +195,11 @@ watch(
       menuAuth.value.contract = nVal.contract
       menuAuth.value.payment = nVal.payment
       menuAuth.value.notice = nVal.notice
-      menuAuth.value.project_cash = nVal.project_cash
+      menuAuth.value.project_ledger = nVal.project_ledger
       menuAuth.value.project_docs = nVal.project_docs
       menuAuth.value.project = nVal.project
       menuAuth.value.project_site = nVal.project_site
-      menuAuth.value.company_cash = nVal.company_cash
+      menuAuth.value.company_ledger = nVal.company_ledger
       menuAuth.value.company_docs = nVal.company_docs
       menuAuth.value.human_resource = nVal.human_resource
       menuAuth.value.company_settings = nVal.company_settings
