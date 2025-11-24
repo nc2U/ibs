@@ -260,17 +260,17 @@ const project_ledger = {
   items: [
     {
       component: 'CNavItem',
-      name: 'PR 자금 현황',
+      name: 'PR 자금 현황1',
       to: '/project-ledger/status',
     },
     {
       component: 'CNavItem',
-      name: 'PR 출납 내역',
+      name: 'PR 출납 내역1',
       to: '/project-ledger/index',
     },
     {
       component: 'CNavItem',
-      name: '운영 비용 내역',
+      name: '운영 비용 내역1',
       to: '/project-ledger/imprest',
     },
   ],
