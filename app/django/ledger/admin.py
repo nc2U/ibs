@@ -4,7 +4,6 @@ from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
 from ledger.models import (
-    BankCode,
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
