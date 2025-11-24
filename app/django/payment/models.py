@@ -115,6 +115,47 @@ class DownPayment(models.Model):
 # Contract Payment - 계약 결제
 # ============================================
 
+class ContractPaymentQuerySet(models.QuerySet):
+    """ContractPayment 전용 QuerySet - 계약별/회차별 필터링"""
+
+    def for_contract(self, contract):
+        """특정 계약의 납부 내역"""
+        return self.filter(contract=contract)
+
+    def for_installment(self, installment_order):
+        """특정 회차의 납부 내역"""
+        return self.filter(installment_order=installment_order)
+
+    def with_discount_eligible(self):
+        """선납 할인 대상 필터"""
+        return self.filter(
+            payment_type='PAYMENT',
+            installment_order__is_prep_discount=True
+        )
+
+    def with_penalty_eligible(self):
+        """연체 가산 대상 필터"""
+        return self.filter(
+            payment_type='PAYMENT',
+            installment_order__is_late_penalty=True
+        )
+
+
+class ContractPaymentManager(models.Manager):
+    """ContractPayment 전용 Manager"""
+
+    def get_queryset(self):
+        return ContractPaymentQuerySet(self.model, using=self._db)
+
+    def for_contract(self, contract):
+        """특정 계약의 납부 내역"""
+        return self.get_queryset().for_contract(contract)
+
+    def for_installment(self, installment_order):
+        """특정 회차의 납부 내역"""
+        return self.get_queryset().for_installment(installment_order)
+
+
 class ContractPayment(models.Model):
     """
     계약 결제
@@ -171,13 +212,10 @@ class ContractPayment(models.Model):
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
-    creator = models.ForeignKey(
-        'accounts.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name='생성자'
-    )
+    creator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='생성자')
+
+    # Custom Manager 설정
+    objects = ContractPaymentManager()
 
     class Meta:
         verbose_name = '05. 분양 대금 납부'
@@ -233,6 +271,20 @@ class ContractPayment(models.Model):
                 self.installment_order and
                 hasattr(self.installment_order, 'is_prep_discount') and
                 self.installment_order.is_prep_discount
+        )
+
+    def is_penalty_eligible(self):
+        """
+        연체 가산 대상 여부 확인
+
+        Returns:
+            bool: 연체 가산 대상이면 True
+        """
+        return (
+                self.payment_type == 'PAYMENT' and
+                self.installment_order and
+                hasattr(self.installment_order, 'is_late_penalty') and
+                self.installment_order.is_late_penalty
         )
 
     def clean(self):
