@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, provide } from 'vue'
-import { pageTitle, navMenu } from '@/views/proCash/_menu/headermixin'
+import { pageTitle, navMenu } from '@/views/proLedger/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useProCash } from '@/store/pinia/proCash'
 import { useComCash } from '@/store/pinia/comCash'
