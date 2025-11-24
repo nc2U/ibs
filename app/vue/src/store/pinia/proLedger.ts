@@ -149,8 +149,8 @@ export const useProLedger = defineStore('proLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const proCashBookList = ref<ProjectCashBook[]>([])
-  const proCashesCount = ref<number>(0)
+  const proLedgerBookList = ref<ProjectCashBook[]>([])
+  const proLedgeresCount = ref<number>(0)
   const childrenCache = ref<Map<number, ProjectCashBook[]>>(new Map())
 
   const getUrl = (payload: CashBookFilter) => {
@@ -178,8 +178,8 @@ export const useProLedger = defineStore('proLedger', () => {
     return await api
       .get(url)
       .then(res => {
-        proCashBookList.value = res.data.results
-        proCashesCount.value = res.data.count
+        proLedgerBookList.value = res.data.results
+        proLedgeresCount.value = res.data.count
       })
       .catch(err => errorHandle(err.response.data))
   }
@@ -255,9 +255,9 @@ export const useProLedger = defineStore('proLedger', () => {
 
   // 목록에서 부모 레코드 업데이트 (is_balanced 등 갱신)
   const updateParentInList = (parentPk: number, updatedParent: ProjectCashBook) => {
-    const index = proCashBookList.value.findIndex(item => item.pk === parentPk)
+    const index = proLedgerBookList.value.findIndex(item => item.pk === parentPk)
     if (index !== -1) {
-      proCashBookList.value[index] = updatedParent
+      proLedgerBookList.value[index] = updatedParent
     }
   }
 
@@ -275,7 +275,7 @@ export const useProLedger = defineStore('proLedger', () => {
     }
   }
 
-  const proCashPages = (itemsPerPage: number) => Math.ceil(proCashesCount.value / itemsPerPage)
+  const proLedgerPages = (itemsPerPage: number) => Math.ceil(proLedgeresCount.value / itemsPerPage)
 
   const paymentStore = usePayment()
 
@@ -607,24 +607,24 @@ export const useProLedger = defineStore('proLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const proCashCalc = ref<ProCalculated[]>([])
+  const proLedgerCalc = ref<ProCalculated[]>([])
 
-  const fetchProCashCalc = async (com: number) =>
+  const fetchProLedgerCalc = async (com: number) =>
     await api
       .get(`/pro-cash-calc/?company=${com}`)
-      .then(res => (proCashCalc.value = res.data.results))
+      .then(res => (proLedgerCalc.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createProCashCalc = async (payload: ProCalculated) =>
+  const createProLedgerCalc = async (payload: ProCalculated) =>
     await api
       .post(`/pro-cash-calc/`, payload)
-      .then(res => fetchProCashCalc(res.data.project).then(() => message()))
+      .then(res => fetchProLedgerCalc(res.data.project).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
-  const patchProCashCalc = async (payload: ProCalculated) =>
+  const patchProLedgerCalc = async (payload: ProCalculated) =>
     await api
       .patch(`/pro-cash-calc/${payload.pk}/`, payload)
-      .then(res => fetchProCashCalc(res.data.project).then(() => message()))
+      .then(res => fetchProLedgerCalc(res.data.project).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
   const proLastDeal = ref<{ deal_date: string }[]>([])
@@ -635,7 +635,7 @@ export const useProLedger = defineStore('proLedger', () => {
       .then(res => (proLastDeal.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const proCalculated = computed(() => (proCashCalc.value.length ? proCashCalc.value[0] : null))
+  const proCalculated = computed(() => (proLedgerCalc.value.length ? proLedgerCalc.value[0] : null))
   const proLastDealDate = computed(() => (proLastDeal.value.length ? proLastDeal.value[0] : null))
 
   return {
@@ -667,11 +667,11 @@ export const useProLedger = defineStore('proLedger', () => {
     proDateCashBook,
     fetchDateCashBookList,
 
-    proCashBookList,
-    proCashesCount,
+    proLedgerBookList,
+    proLedgeresCount,
     fetchProjectCashList,
     findProjectCashBookPage,
-    proCashPages,
+    proLedgerPages,
     createPrCashBook,
     updatePrCashBook,
     patchPrCashBook,
@@ -693,11 +693,11 @@ export const useProLedger = defineStore('proLedger', () => {
     imprestBAccount,
     getImpBankAccs,
 
-    proCashCalc,
+    proLedgerCalc,
     proCalculated,
-    fetchProCashCalc,
-    createProCashCalc,
-    patchProCashCalc,
+    fetchProLedgerCalc,
+    createProLedgerCalc,
+    patchProLedgerCalc,
 
     proLastDeal,
     proLastDealDate,

@@ -2,22 +2,22 @@
 import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount } from 'vue'
 import { useProject } from '@/store/pinia/project'
-import { useProCash } from '@/store/pinia/proCash'
+import { useProLedger } from '@/store/pinia/proLedger'
 import { getToday } from '@/utils/baseMixins'
 import { pageTitle, navMenu } from '@/views/proLedger/_menu/headermixin'
 import type { Project } from '@/store/types/project.ts'
-import type { ProCalculated } from '@/store/types/proCash'
+import type { ProCalculated } from '@/store/types/proLedger'
 import { useDownload } from '@/utils/useDownload.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
-import ProCashAuthGuard from '@/components/AuthGuard/ProCashAuthGuard.vue'
-import DateChoicer from '@/views/proCash/Status/components/DateChoicer.vue'
-import TabSelect from '@/views/proCash/Status/components/TabSelect.vue'
+import ProLedgerAuthGuard from '@/components/AuthGuard/ProLedgerAuthGuard.vue'
+import DateChoicer from '@/views/proLedger/Status/components/DateChoicer.vue'
+import TabSelect from '@/views/proLedger/Status/components/TabSelect.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
-import StatusByAccount from '@/views/proCash/Status/components/StatusByAccount.vue'
-import CashListByDate from '@/views/proCash/Status/components/CashListByDate.vue'
-import SummaryForBudget from '@/views/proCash/Status/components/SummaryForBudget.vue'
+import StatusByAccount from '@/views/proLedger/Status/components/StatusByAccount.vue'
+import CashListByDate from '@/views/proLedger/Status/components/CashListByDate.vue'
+import SummaryForBudget from '@/views/proLedger/Status/components/SummaryForBudget.vue'
 import Calculated from '@/views/comCash/Status/components/Calculated.vue'
 
 const date = ref(getToday())
@@ -45,27 +45,27 @@ const patchStatusOutBudget = (payload: {
 const fetchExecAmountList = (project: number, date?: string) =>
   projStore.fetchExecAmountList(project, date)
 
-const pCashStore = useProCash()
-const fetchProAllAccD2List = () => pCashStore.fetchProAllAccD2List()
-const fetchProAllAccD3List = () => pCashStore.fetchProAllAccD3List()
-const fetchProBankAccList = (proj: number) => pCashStore.fetchProBankAccList(proj)
+const pLedgerStore = useProLedger()
+const fetchProAllAccD2List = () => pLedgerStore.fetchProAllAccD2List()
+const fetchProAllAccD3List = () => pLedgerStore.fetchProAllAccD3List()
+const fetchProBankAccList = (proj: number) => pLedgerStore.fetchProBankAccList(proj)
 
 const fetchBalanceByAccList = (payload: {
   project: number
   direct?: string
   date?: string
   is_balance?: '' | 'true'
-}) => pCashStore.fetchBalanceByAccList(payload)
+}) => pLedgerStore.fetchBalanceByAccList(payload)
 const fetchDateCashBookList = (payload: { project: number; date: string }) =>
-  pCashStore.fetchDateCashBookList(payload)
+  pLedgerStore.fetchDateCashBookList(payload)
 
-const createProCashCalc = (payload: ProCalculated) => pCashStore.createProCashCalc(payload)
-const patchProCashCalc = (payload: ProCalculated) => pCashStore.patchProCashCalc(payload)
-const fetchProCashCalc = (proj: number) => pCashStore.fetchProCashCalc(proj)
-const fetchProLastDeal = (proj: number) => pCashStore.fetchProLastDeal(proj)
+const createProLedgerCalc = (payload: ProCalculated) => pLedgerStore.createProLedgerCalc(payload)
+const patchProLedgerCalc = (payload: ProCalculated) => pLedgerStore.patchProLedgerCalc(payload)
+const fetchProLedgerCalc = (proj: number) => pLedgerStore.fetchProLedgerCalc(proj)
+const fetchProLastDeal = (proj: number) => pLedgerStore.fetchProLastDeal(proj)
 
-const proCalculated = computed(() => pCashStore.proCalculated) // 최종 정산 일자
-const proLastDealDate = computed(() => pCashStore.proLastDealDate) // 최종 거래 일자
+const proCalculated = computed(() => pLedgerStore.proCalculated) // 최종 정산 일자
+const proLastDealDate = computed(() => pLedgerStore.proLastDealDate) // 최종 거래 일자
 
 const isCalculated = computed(
   () =>
@@ -78,8 +78,8 @@ const checkBalance = () => {
     project: project.value as number,
     calculated: proLastDealDate.value?.deal_date as string,
   }
-  if (!!proCalculated.value) patchProCashCalc({ ...{ pk: proCalculated.value.pk }, ...payload })
-  else createProCashCalc(payload)
+  if (!!proCalculated.value) patchProLedgerCalc({ ...{ pk: proCalculated.value.pk }, ...payload })
+  else createProLedgerCalc(payload)
 }
 
 const revised = ref(1)
@@ -172,18 +172,18 @@ const dataSetup = (pk: number) => {
   fetchProBankAccList(pk)
   fetchBalanceByAccList({ project: pk, date: date.value, is_balance: 'true' })
   fetchDateCashBookList({ project: pk, date: date.value })
-  fetchProCashCalc(pk)
+  fetchProLedgerCalc(pk)
   fetchProLastDeal(pk)
 }
 
 const dataReset = () => {
   projStore.statusOutBudgetList = []
   projStore.execAmountList = []
-  pCashStore.proBankAccountList = []
-  pCashStore.balanceByAccList = []
-  pCashStore.proDateCashBook = []
-  pCashStore.proCashCalc = []
-  pCashStore.proLastDeal = []
+  pLedgerStore.proBankAccountList = []
+  pLedgerStore.balanceByAccList = []
+  pLedgerStore.proDateCashBook = []
+  pLedgerStore.proLedgerCalc = []
+  pLedgerStore.proLastDeal = []
 }
 
 const projSelect = (target: number | null) => {
@@ -196,13 +196,13 @@ onBeforeMount(async () => {
   await fetchProAllAccD2List()
   await fetchProAllAccD3List()
   dataSetup(project.value || projStore.initProjId)
-  compName.value = comp[Number(Cookies.get('proCashStatus') ?? 1)]
+  compName.value = comp[Number(Cookies.get('proLedgerStatus') ?? 1)]
   loading.value = false
 })
 </script>
 
 <template>
-  <ProCashAuthGuard>
+  <ProLedgerAuthGuard>
     <Loading v-model:active="loading" />
     <ContentHeader
       :page-title="pageTitle"
@@ -259,5 +259,5 @@ onBeforeMount(async () => {
         />
       </CCardBody>
     </ContentBody>
-  </ProCashAuthGuard>
+  </ProLedgerAuthGuard>
 </template>
