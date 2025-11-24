@@ -9,6 +9,7 @@ import contracts from '@/router/modules/contracts'
 import payments from '@/router/modules/payments'
 import notices from '@/router/modules/notices'
 import proCash from '@/router/modules/proCash'
+import proLedger from '@/router/modules/proLedger.ts'
 import proDocs from '@/router/modules/proDocs'
 import projects from '@/router/modules/projects'
 import comCash from '@/router/modules/comCash'
@@ -41,6 +42,7 @@ const routes: Array<RouteRecordRaw> = [
       payments,
       notices,
       proCash,
+      proLedger,
       proDocs as unknown as RouteRecordRaw,
       projects,
       comCash,

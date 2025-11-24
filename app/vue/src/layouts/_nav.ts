@@ -252,6 +252,30 @@ const project_cash = {
   ],
 }
 
+const project_ledger = {
+  component: 'CNavGroup',
+  name: 'PR 회계 관리',
+  to: '/project-ledger',
+  icon: 'cil-money',
+  items: [
+    {
+      component: 'CNavItem',
+      name: 'PR 자금 현황',
+      to: '/project-ledger/status',
+    },
+    {
+      component: 'CNavItem',
+      name: 'PR 출납 내역',
+      to: '/project-ledger/index',
+    },
+    {
+      component: 'CNavItem',
+      name: '운영 비용 내역',
+      to: '/project-ledger/imprest',
+    },
+  ],
+}
+
 const project_docs = {
   component: 'CNavGroup',
   name: 'PR 문서 관리',
@@ -438,6 +462,7 @@ const nav = [
   payment,
   notice,
   project_cash,
+  // project_ledger,
   project_docs,
   project,
   {

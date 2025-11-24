@@ -88,8 +88,7 @@ const AppSidebarNav = defineComponent({
     const openActiveMenu = (items: Item[]) => {
       items.forEach(item => {
         if (Array.isArray(item.items) && item.items.length > 0) {
-          const hasActiveChild = item.items.some(child => isActiveItem(route, child))
-          item.visible = hasActiveChild
+          item.visible = item.items.some(child => isActiveItem(route, child))
           item.manuallyToggled = false
           openActiveMenu(item.items)
         }
