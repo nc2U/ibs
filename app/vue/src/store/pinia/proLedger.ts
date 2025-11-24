@@ -11,10 +11,10 @@ import {
   type ProjectAccountD2,
   type ProjectAccountD3,
   type ProjectCashBook,
-} from '@/store/types/proCash'
+} from '@/store/types/proLedger'
 import { usePayment } from '@/store/pinia/payment'
 
-export const useProCash = defineStore('proCash', () => {
+export const useProLedger = defineStore('proLedger', () => {
   // state & getters
   const sortList = ref<AccountSort[]>([])
 

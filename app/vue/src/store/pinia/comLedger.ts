@@ -13,7 +13,7 @@ import {
   type CashBook,
   type SepItems,
   type ComCalculated,
-} from '@/store/types/comCash'
+} from '@/store/types/comLedger'
 
 export type DataFilter = {
   page?: number
@@ -31,7 +31,7 @@ export type DataFilter = {
   limit?: number
 }
 
-export const useComCash = defineStore('comCash', () => {
+export const useComLedger = defineStore('comLedger', () => {
   // state & getters
   const bankCodeList = ref<BankCode[]>([])
 
