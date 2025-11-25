@@ -136,17 +136,9 @@ class AccountingEntry(models.Model):
     # Banking Domain 연결 (UUID 참조)
     transaction_id = models.UUIDField(db_index=True, verbose_name='거래 ID',
                                       help_text='BankTransaction.transaction_id 참조')
-
-    # 회계 분류
     sort = models.ForeignKey('ibs.AccountSort', on_delete=models.CASCADE, verbose_name='계정구분', help_text='수입/지출 구분')
-
-    # 금액 (분할 거래 지원)
     amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='이 회계 분개의 금액 (분할 시 일부 금액)')
-
-    # 거래자
     trader = models.CharField(max_length=50, verbose_name='거래처', help_text='거래 상대방', null=True, blank=True)
-
-    # 증빙
     evidence_type = models.CharField(
         max_length=1,
         choices=[

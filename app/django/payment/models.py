@@ -187,15 +187,17 @@ class ContractPayment(models.Model):
         help_text='ProjectAccountingEntry와 1:1 연결 (is_payment=True인 분개)'
     )
 
-    # 계약 정보
+    # 계약 정보 (베이스 인스턴스에서는 선택사항)
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    contract = models.ForeignKey('contract.Contract', on_delete=models.CASCADE, verbose_name='계약', help_text='분양 계약')
+    contract = models.ForeignKey('contract.Contract', on_delete=models.CASCADE, verbose_name='계약',
+                                null=True, blank=True, help_text='분양 계약 (베이스 인스턴스 생성 시 선택사항)')
     installment_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.SET_NULL,
                                           null=True, blank=True, verbose_name='납부회차', help_text='분할 납부 회차 정보')
 
-    # 결제 유형
+    # 결제 유형 (베이스 인스턴스에서는 기본값)
     payment_type = models.CharField(max_length=10,
                                     choices=[('PAYMENT', '납부'), ('REFUND', '환불'), ('ADJUSTMENT', '조정'), ],
+                                    default='PAYMENT',
                                     verbose_name='결제 유형')
 
     # 환불 정보
@@ -208,6 +210,10 @@ class ContractPayment(models.Model):
     special_purpose_type = models.CharField(max_length=10, blank=True,
                                             choices=[('IMPREST', '운영비'), ('LOAN', '대여금'), ('GUARANTEE', '보증금'),
                                                      ('OTHERS', '기타')], verbose_name='특수 목적 유형')
+
+    # 계정 불일치 플래그
+    is_payment_mismatch = models.BooleanField(default=False, verbose_name='결제계정 불일치',
+                                              help_text='연결된 회계분개의 is_payment=False인 경우 True로 표시')
 
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
