@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount } from 'vue'
-import { pageTitle, navMenu } from '@/views/comCash/_menu/headermixin'
+import { pageTitle, navMenu } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
 import { useComCash } from '@/store/pinia/comCash'
 import { getToday } from '@/utils/baseMixins'

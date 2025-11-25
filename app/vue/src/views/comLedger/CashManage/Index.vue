@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
-import { navMenu, pageTitle } from '@/views/comCash/_menu/headermixin'
+import { navMenu, pageTitle } from '@/views/comLedger/_menu/headermixin'
 import { cutString } from '@/utils/baseMixins'
 import { useCompany } from '@/store/pinia/company'
 import { useProject } from '@/store/pinia/project'
