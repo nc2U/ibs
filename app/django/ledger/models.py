@@ -154,14 +154,15 @@ class AccountingEntry(models.Model):
     evidence_type = models.CharField(
         max_length=1,
         choices=[
-            ('0', '세금계산서'),
-            ('1', '계산서(면세)'),
-            ('2', '신용/체크카드 매출전표'),
-            ('3', '현금영수증'),
-            ('4', '원천징수영수증/지급명세서'),
-            ('5', '지로용지 및 청구서')
+            ('0', '증빙없음'),
+            ('1', '세금계산서'),
+            ('2', '계산서(면세)'),
+            ('3', '신용/체크카드 매출전표'),
+            ('4', '현금영수증'),
+            ('5', '원천징수영수증/지급명세서'),
+            ('6', '지로용지 및 청구서')
         ],
-        verbose_name='증빙종류')
+        verbose_name='증빙종류', null=True, blank=True)
 
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
