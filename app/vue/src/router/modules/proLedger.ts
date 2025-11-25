@@ -12,30 +12,30 @@ const proLedger = {
   children: [
     {
       path: 'status',
-      name: 'PR 자금 현황1',
+      name: 'PR 정산 현황',
       component: () => import('@/views/proLedger/Status/Index.vue'),
       meta: {
-        title: 'PR 자금 현황1',
+        title: 'PR 정산 현황',
         auth: true,
         requiresProjectCashAuth: true,
       },
     },
     {
       path: 'index',
-      name: 'PR 출납 내역1',
+      name: 'PR 거래 내역',
       component: () => import('@/views/proLedger/Manage/Index.vue'),
       meta: {
-        title: 'PR 출납 내역1',
+        title: 'PR 거래 내역',
         auth: true,
         requiresProjectCashAuth: true,
       },
     },
     {
       path: 'imprest',
-      name: '운영 비용 내역1',
+      name: '운영비 내역',
       component: () => import('@/views/proLedger/Imprest/Index.vue'),
       meta: {
-        title: '운영 비용 내역1',
+        title: '운영비 내역',
         auth: true,
         requiresProjectCashAuth: true,
       },

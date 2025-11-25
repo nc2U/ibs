@@ -50,12 +50,12 @@ const company_ledger = {
   items: [
     {
       component: 'CNavItem',
-      name: '본사 자금 현황1',
+      name: '본사 정산 현황',
       to: '/ledger/status',
     },
     {
       component: 'CNavItem',
-      name: '본사 출납 내역1',
+      name: '본사 거래 내역',
       to: '/ledger/index',
     },
   ],
@@ -279,17 +279,17 @@ const project_ledger = {
   items: [
     {
       component: 'CNavItem',
-      name: 'PR 자금 현황1',
+      name: 'PR 정산 현황',
       to: '/project-ledger/status',
     },
     {
       component: 'CNavItem',
-      name: 'PR 출납 내역1',
+      name: 'PR 거래 내역',
       to: '/project-ledger/index',
     },
     {
       component: 'CNavItem',
-      name: '운영 비용 내역1',
+      name: '운영비 내역',
       to: '/project-ledger/imprest',
     },
   ],

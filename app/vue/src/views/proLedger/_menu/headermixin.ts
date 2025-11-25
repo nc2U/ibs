@@ -1,2 +1,2 @@
 export const pageTitle = 'PR 회계 관리'
-export const navMenu = ['PR 자금 현황1', 'PR 출납 내역1', '운영 비용 내역1']
+export const navMenu = ['PR 정산 현황', 'PR 거래 내역', '운영비 내역']

@@ -12,20 +12,20 @@ const comLedger = {
   children: [
     {
       path: 'status',
-      name: '본사 자금 현황1',
+      name: '본사 정산 현황',
       component: () => import('@/views/comLedger/Status/Index.vue'),
       meta: {
-        title: '본사 자금 현황1',
+        title: '본사 정산 현황',
         auth: true,
         requiresCompanyCashAuth: true,
       },
     },
     {
       path: 'index',
-      name: '본사 출납 내역1',
+      name: '본사 거래 내역',
       component: () => import('@/views/comLedger/CashManage/Index.vue'),
       meta: {
-        title: '본사 출납 내역1',
+        title: '본사 거래 내역',
         auth: true,
         requiresCompanyCashAuth: true,
       },
