@@ -68,8 +68,8 @@ class BankTransaction(models.Model):
     # 거래 정보
     deal_date = models.DateField(verbose_name='거래일자')
     amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='거래 금액 (양수)')
-    transaction_type = models.CharField(max_length=10, choices=[('INCOME', '입금'), ('OUTLAY', '출금')],
-                                        verbose_name='거래 유형')
+    sort = models.ForeignKey('ibs.AccountSort', on_delete=models.PROTECT, verbose_name='거래구분',
+                             help_text='입금/출금 구분', db_index=True)
     content = models.CharField(max_length=100, verbose_name='적요', help_text='거래 기록 사항')
     note = models.TextField(blank=True, verbose_name='비고', help_text='추가 설명')
 
@@ -83,7 +83,7 @@ class BankTransaction(models.Model):
         indexes = [
             models.Index(fields=['transaction_id']),
             models.Index(fields=['deal_date']),
-            models.Index(fields=['deal_date', 'transaction_type']),
+            models.Index(fields=['deal_date', 'sort']),
         ]
 
     def clean(self):
@@ -116,7 +116,7 @@ class BankTransaction(models.Model):
         return result['is_valid']
 
     def __str__(self):
-        return f"{self.get_transaction_type_display()} - {self.amount:,}원 ({self.deal_date})"
+        return f"{self.sort.name} - {self.amount:,}원 ({self.deal_date})"
 
 
 # ============================================
@@ -163,7 +163,7 @@ class AccountingEntry(models.Model):
             models.Index(fields=['sort', 'created_at']),
             models.Index(fields=['sort', 'evidence_type']),
         ]
-
+    
     @property
     def related_transaction(self):
         """연관된 BankTransaction 조회"""

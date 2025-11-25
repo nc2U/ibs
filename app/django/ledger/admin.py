@@ -44,9 +44,9 @@ class ProjectBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(CompanyBankTransaction)
 class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'transaction_id_short', 'company', 'bank_account', 'deal_date',
-                    'transaction_type', 'formatted_amount', 'content', 'creator', 'created_at')
+                    'sort', 'formatted_amount', 'content', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('company', 'bank_account', 'transaction_type', ('deal_date', DateRangeFilter))
+    list_filter = ('company', 'bank_account', 'sort', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')
@@ -92,7 +92,7 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'blue' if obj.transaction_type == 'INCOME' else 'red'
+        color = 'blue' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{}원</span>', color, formatted_amount)
 
@@ -100,9 +100,9 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(ProjectBankTransaction)
 class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date',
-                    'transaction_type', 'formatted_amount', 'content', 'is_imprest', 'creator', 'created_at')
+                    'sort', 'formatted_amount', 'content', 'is_imprest', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'bank_account', 'transaction_type', 'is_imprest', ('deal_date', DateRangeFilter))
+    list_filter = ('project', 'bank_account', 'sort', 'is_imprest', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note', 'project__name')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')
@@ -114,7 +114,7 @@ class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'blue' if obj.transaction_type == 'INCOME' else 'red'
+        color = 'blue' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{}원</span>', color, formatted_amount)
 

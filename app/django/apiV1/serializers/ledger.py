@@ -57,7 +57,7 @@ class LedgerProjectBankAccountSerializer(serializers.ModelSerializer):
 class CompanyBankTransactionSerializer(serializers.ModelSerializer):
     """본사 은행 거래 시리얼라이저"""
     bank_account_name = serializers.CharField(source='bank_account.alias_name', read_only=True)
-    transaction_type_display = serializers.CharField(source='get_transaction_type_display', read_only=True)
+    sort_name = serializers.CharField(source='sort.name', read_only=True)
     creator_name = serializers.CharField(source='creator.username', read_only=True)
     is_balanced = serializers.SerializerMethodField(read_only=True)
     accounting_entries = serializers.SerializerMethodField(read_only=True)
@@ -65,7 +65,7 @@ class CompanyBankTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyBankTransaction
         fields = ('pk', 'transaction_id', 'company', 'bank_account', 'bank_account_name',
-                  'deal_date', 'amount', 'transaction_type', 'transaction_type_display',
+                  'deal_date', 'amount', 'sort', 'sort_name',
                   'content', 'note', 'creator', 'creator_name', 'created_at', 'updated_at',
                   'is_balanced', 'accounting_entries')
         read_only_fields = ('transaction_id', 'created_at', 'updated_at')
@@ -87,7 +87,7 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
     """프로젝트 은행 거래 시리얼라이저"""
     bank_account_name = serializers.CharField(source='bank_account.alias_name', read_only=True)
     project_name = serializers.CharField(source='project.name', read_only=True)
-    transaction_type_display = serializers.CharField(source='get_transaction_type_display', read_only=True)
+    sort_name = serializers.CharField(source='sort.name', read_only=True)
     creator_name = serializers.CharField(source='creator.username', read_only=True)
     is_balanced = serializers.SerializerMethodField(read_only=True)
     accounting_entries = serializers.SerializerMethodField(read_only=True)
@@ -95,8 +95,8 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectBankTransaction
         fields = ('pk', 'transaction_id', 'project', 'project_name', 'bank_account',
-                  'bank_account_name', 'deal_date', 'amount', 'transaction_type',
-                  'transaction_type_display', 'content', 'note', 'is_imprest',
+                  'bank_account_name', 'deal_date', 'amount', 'sort', 'sort_name',
+                  'content', 'note', 'is_imprest',
                   'creator', 'creator_name', 'created_at', 'updated_at',
                   'is_balanced', 'accounting_entries')
         read_only_fields = ('transaction_id', 'created_at', 'updated_at')
@@ -203,7 +203,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
     bank_account = serializers.IntegerField()
     deal_date = serializers.DateField()
     amount = serializers.IntegerField()
-    transaction_type = serializers.ChoiceField(choices=['INCOME', 'OUTLAY'])
+    sort = serializers.IntegerField(help_text='거래구분 ID (1=입금, 2=출금)')
     content = serializers.CharField(max_length=100)
     note = serializers.CharField(required=False, allow_blank=True, default='')
 
@@ -236,7 +236,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
             bank_account_id=validated_data['bank_account'],
             deal_date=validated_data['deal_date'],
             amount=validated_data['amount'],
-            transaction_type=validated_data['transaction_type'],
+            sort_id=validated_data['sort'],
             content=validated_data['content'],
             note=validated_data.get('note', ''),
             creator=self.context.get('request').user if self.context.get('request') else None,
@@ -391,7 +391,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
     bank_account = serializers.IntegerField()
     deal_date = serializers.DateField()
     amount = serializers.IntegerField()
-    transaction_type = serializers.ChoiceField(choices=['INCOME', 'OUTLAY'])
+    sort = serializers.IntegerField(help_text='거래구분 ID (1=입금, 2=출금)')
     content = serializers.CharField(max_length=100)
     note = serializers.CharField(required=False, allow_blank=True, default='')
     is_imprest = serializers.BooleanField(default=False)
@@ -425,7 +425,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             bank_account_id=validated_data['bank_account'],
             deal_date=validated_data['deal_date'],
             amount=validated_data['amount'],
-            transaction_type=validated_data['transaction_type'],
+            sort_id=validated_data['sort'],
             content=validated_data['content'],
             note=validated_data.get('note', ''),
             is_imprest=validated_data.get('is_imprest', False),

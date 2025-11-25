@@ -75,13 +75,13 @@ class CompanyBankTransactionFilterSet(FilterSet):
 
     class Meta:
         model = CompanyBankTransaction
-        fields = ('company', 'bank_account', 'transaction_type', 'from_deal_date', 'to_deal_date')
+        fields = ('company', 'bank_account', 'sort', 'from_deal_date', 'to_deal_date')
 
 
 class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     """본사 은행 거래 ViewSet"""
     queryset = CompanyBankTransaction.objects.select_related(
-        'company', 'bank_account', 'creator'
+        'company', 'bank_account', 'sort', 'creator'
     ).all()
     serializer_class = CompanyBankTransactionSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
@@ -115,11 +115,11 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
             bank_num=F('bank_account__number')
         ).annotate(
             income_sum=Sum(Case(
-                When(transaction_type='INCOME', then=F('amount')),
+                When(sort_id=1, then=F('amount')),  # 1 = 입금
                 default=0
             )),
             outlay_sum=Sum(Case(
-                When(transaction_type='OUTLAY', then=F('amount')),
+                When(sort_id=2, then=F('amount')),  # 2 = 출금
                 default=0
             )),
         ).annotate(
@@ -136,14 +136,14 @@ class ProjectBankTransactionFilterSet(FilterSet):
 
     class Meta:
         model = ProjectBankTransaction
-        fields = ('project', 'bank_account', 'transaction_type', 'is_imprest',
+        fields = ('project', 'bank_account', 'sort', 'is_imprest',
                   'from_deal_date', 'to_deal_date')
 
 
 class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
     """프로젝트 은행 거래 ViewSet"""
     queryset = ProjectBankTransaction.objects.select_related(
-        'project', 'bank_account', 'creator'
+        'project', 'bank_account', 'sort', 'creator'
     ).all()
     serializer_class = ProjectBankTransactionSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
@@ -177,11 +177,11 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
             bank_num=F('bank_account__number')
         ).annotate(
             income_sum=Sum(Case(
-                When(transaction_type='INCOME', then=F('amount')),
+                When(sort_id=1, then=F('amount')),  # 1 = 입금
                 default=0
             )),
             outlay_sum=Sum(Case(
-                When(transaction_type='OUTLAY', then=F('amount')),
+                When(sort_id=2, then=F('amount')),  # 2 = 출금
                 default=0
             )),
         ).annotate(
