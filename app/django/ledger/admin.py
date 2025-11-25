@@ -58,7 +58,8 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
     @admin.display(description='금액')
     def formatted_amount(self, obj):
         color = 'blue' if obj.transaction_type == 'INCOME' else 'red'
-        return format_html('<span style="color: {};">{:,}원</span>', color, obj.amount)
+        formatted_amount = f"{obj.amount:,}"
+        return format_html('<span style="color: {};">{}원</span>', color, formatted_amount)
 
 
 @admin.register(ProjectBankTransaction)
@@ -79,7 +80,8 @@ class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
     @admin.display(description='금액')
     def formatted_amount(self, obj):
         color = 'blue' if obj.transaction_type == 'INCOME' else 'red'
-        return format_html('<span style="color: {};">{:,}원</span>', color, obj.amount)
+        formatted_amount = f"{obj.amount:,}"
+        return format_html('<span style="color: {};">{}원</span>', color, formatted_amount)
 
 
 # ============================================
@@ -102,7 +104,8 @@ class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        return format_html('{:,}원', obj.amount)
+        formatted_amount = f"{obj.amount:,}"
+        return format_html('{}원', formatted_amount)
 
 
 @admin.register(ProjectAccountingEntry)
@@ -121,4 +124,5 @@ class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        return format_html('{:,}원', obj.amount)
+        formatted_amount = f"{obj.amount:,}"
+        return format_html('{}원', formatted_amount)
