@@ -129,7 +129,7 @@ class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
                     'account_d2', 'account_d3', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
     list_filter = ('company', 'sort', 'account_d1', 'evidence_type')
-    search_fields = ('transaction_id', 'account_code', 'trader')
+    search_fields = ('transaction_id', 'trader')
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at')
 
@@ -169,7 +169,7 @@ class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
                     'project_account_d3', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
     list_filter = ('project', 'sort', 'project_account_d2', 'evidence_type')
-    search_fields = ('transaction_id', 'account_code', 'trader', 'project__name')
+    search_fields = ('transaction_id', 'trader', 'project__name')
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at')
 

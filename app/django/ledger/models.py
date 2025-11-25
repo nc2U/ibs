@@ -142,13 +142,12 @@ class AccountingEntry(models.Model):
 
     # 회계 분류
     sort = models.ForeignKey('ibs.AccountSort', on_delete=models.CASCADE, verbose_name='계정구분', help_text='수입/지출 구분')
-    account_code = models.CharField(max_length=10, verbose_name='계정코드', help_text='회계 계정 코드')
 
     # 금액 (분할 거래 지원)
     amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='이 회계 분개의 금액 (분할 시 일부 금액)')
 
     # 거래자
-    trader = models.CharField(max_length=50, verbose_name='거래처', help_text='거래 상대방')
+    trader = models.CharField(max_length=50, verbose_name='거래처', help_text='거래 상대방', null=True, blank=True)
 
     # 증빙
     evidence_type = models.CharField(
@@ -172,9 +171,9 @@ class AccountingEntry(models.Model):
         abstract = True
         indexes = [
             models.Index(fields=['transaction_id']),
-            models.Index(fields=['account_code', 'created_at']),
+            models.Index(fields=['sort', 'created_at']),
             models.Index(fields=['sort', 'evidence_type']),
-            models.Index(fields=['transaction_type', 'account_code']),
+            models.Index(fields=['transaction_type', 'sort']),
         ]
 
     @property
@@ -190,7 +189,7 @@ class AccountingEntry(models.Model):
             ).first()
 
     def __str__(self):
-        return f"{self.content} - {self.trader}"
+        return f"{self.sort} - {self.trader or '거래처 미지정'}"
 
 
 # ============================================
