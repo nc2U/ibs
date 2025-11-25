@@ -70,7 +70,7 @@ class BankTransaction(models.Model):
     amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='거래 금액 (양수)')
     transaction_type = models.CharField(max_length=10, choices=[('INCOME', '입금'), ('OUTLAY', '출금')],
                                         verbose_name='거래 유형')
-    content = models.CharField(max_length=100, verbose_name='적요', help_text='거래 내용 요약')
+    content = models.CharField(max_length=100, verbose_name='적요', help_text='거래 기록 사항')
     note = models.TextField(blank=True, verbose_name='비고', help_text='추가 설명')
 
     # 감사 필드
