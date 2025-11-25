@@ -16,6 +16,7 @@ from payment.models import ContractPayment
 
 class LedgerBankCodeSerializer(serializers.ModelSerializer):
     """은행 코드 시리얼라이저"""
+
     class Meta:
         model = BankCode
         fields = ('pk', 'code', 'name')
@@ -69,12 +70,14 @@ class CompanyBankTransactionSerializer(serializers.ModelSerializer):
                   'is_balanced', 'accounting_entries')
         read_only_fields = ('transaction_id', 'created_at', 'updated_at')
 
-    def get_is_balanced(self, obj):
+    @staticmethod
+    def get_is_balanced(obj):
         """회계 분개 금액 균형 여부"""
         result = obj.validate_accounting_entries()
         return result['is_valid']
 
-    def get_accounting_entries(self, obj):
+    @staticmethod
+    def get_accounting_entries(obj):
         """연관된 회계 분개 목록"""
         entries = CompanyAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
         return CompanyAccountingEntrySerializer(entries, many=True).data
@@ -126,7 +129,7 @@ class CompanyAccountingEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyAccountingEntry
         fields = ('pk', 'transaction_id', 'transaction_type', 'company',
-                  'sort', 'sort_name', 'account_code',
+                  'sort', 'sort_name',
                   'account_d1', 'account_d1_name',
                   'account_d2', 'account_d2_name',
                   'account_d3', 'account_d3_name',
@@ -147,14 +150,15 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectAccountingEntry
         fields = ('pk', 'transaction_id', 'transaction_type', 'project', 'project_name',
-                  'sort', 'sort_name', 'account_code',
+                  'sort', 'sort_name',
                   'project_account_d2', 'project_account_d2_name',
                   'project_account_d3', 'project_account_d3_name',
                   'amount', 'trader', 'evidence_type', 'evidence_type_display',
                   'created_at', 'updated_at', 'contract_payment')
         read_only_fields = ('created_at', 'updated_at')
 
-    def get_contract_payment(self, obj):
+    @staticmethod
+    def get_contract_payment(obj):
         """연관된 계약 결제 정보 (있는 경우)"""
         if hasattr(obj, 'contract_payment'):
             cp = obj.contract_payment
@@ -175,11 +179,23 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
 # Composite Serializers for Transaction Creation
 # ============================================
 
+class CompanyAccountingEntryInputSerializer(serializers.Serializer):
+    """본사 회계분개 입력 시리얼라이저"""
+    sort = serializers.IntegerField()
+    account_d1 = serializers.IntegerField()
+    account_d2 = serializers.IntegerField(required=False, allow_null=True)
+    account_d3 = serializers.IntegerField(required=False, allow_null=True)
+    amount = serializers.IntegerField()
+    trader = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5', '6'], required=False,
+                                            allow_null=True)
+
+
 class CompanyTransactionCreateSerializer(serializers.Serializer):
     """
     본사 거래 생성 복합 시리얼라이저
 
-    은행 거래와 회계 분개를 한 번에 생성합니다.
+    은행 거래와 여러 회계 분개를 한 번에 생성합니다.
     """
     # Bank Transaction 필드
     company = serializers.IntegerField()
@@ -190,21 +206,30 @@ class CompanyTransactionCreateSerializer(serializers.Serializer):
     content = serializers.CharField(max_length=100)
     note = serializers.CharField(required=False, allow_blank=True, default='')
 
-    # Accounting Entry 필드
-    sort = serializers.IntegerField()
-    account_d1 = serializers.IntegerField()
-    account_d2 = serializers.IntegerField(required=False, allow_null=True)
-    account_d3 = serializers.IntegerField(required=False, allow_null=True)
-    account_code = serializers.CharField(max_length=10)
-    trader = serializers.CharField(max_length=50)
-    evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5'])
+    # Accounting Entries 필드 (배열)
+    accounting_entries = CompanyAccountingEntryInputSerializer(many=True)
+
+    def validate(self, attrs):
+        """회계 분개 금액 합계 검증"""
+        bank_amount = attrs['amount']
+        entries_data = attrs['accounting_entries']
+
+        # 회계 분개 금액 총합 계산
+        entries_total = sum(entry['amount'] for entry in entries_data)
+
+        if bank_amount != entries_total:
+            raise serializers.ValidationError({
+                'accounting_entries': f'회계 분개 금액 총합({entries_total:,}원)이 은행 거래 금액({bank_amount:,}원)과 일치하지 않습니다.'
+            })
+
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):
-        from company.models import Company
-        from ibs.models import AccountSort, AccountSubD1, AccountSubD2, AccountSubD3
+        # 1. 회계분개 데이터 추출
+        entries_data = validated_data.pop('accounting_entries')
 
-        # 1. 은행 거래 생성
+        # 2. 은행 거래 생성
         bank_tx = CompanyBankTransaction.objects.create(
             company_id=validated_data['company'],
             bank_account_id=validated_data['bank_account'],
@@ -216,24 +241,26 @@ class CompanyTransactionCreateSerializer(serializers.Serializer):
             creator=self.context.get('request').user if self.context.get('request') else None,
         )
 
-        # 2. 회계 분개 생성
-        accounting_entry = CompanyAccountingEntry.objects.create(
-            transaction_id=bank_tx.transaction_id,
-            transaction_type='COMPANY',
-            company_id=validated_data['company'],
-            sort_id=validated_data['sort'],
-            account_d1_id=validated_data['account_d1'],
-            account_d2_id=validated_data.get('account_d2'),
-            account_d3_id=validated_data.get('account_d3'),
-            account_code=validated_data['account_code'],
-            amount=validated_data['amount'],
-            trader=validated_data['trader'],
-            evidence_type=validated_data['evidence_type'],
-        )
+        # 3. 회계 분개 배열 생성
+        accounting_entries = []
+        for entry_data in entries_data:
+            accounting_entry = CompanyAccountingEntry.objects.create(
+                transaction_id=bank_tx.transaction_id,
+                transaction_type='COMPANY',
+                company_id=validated_data['company'],
+                sort_id=entry_data['sort'],
+                account_d1_id=entry_data['account_d1'],
+                account_d2_id=entry_data.get('account_d2'),
+                account_d3_id=entry_data.get('account_d3'),
+                amount=entry_data['amount'],
+                trader=entry_data.get('trader', ''),
+                evidence_type=entry_data.get('evidence_type'),
+            )
+            accounting_entries.append(accounting_entry)
 
         return {
             'bank_transaction': bank_tx,
-            'accounting_entry': accounting_entry,
+            'accounting_entries': accounting_entries,
         }
 
 
@@ -257,9 +284,9 @@ class ProjectTransactionCreateSerializer(serializers.Serializer):
     sort = serializers.IntegerField()
     project_account_d2 = serializers.IntegerField()
     project_account_d3 = serializers.IntegerField(required=False, allow_null=True)
-    account_code = serializers.CharField(max_length=10)
-    trader = serializers.CharField(max_length=50)
-    evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5'])
+    trader = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5', '6'], required=False,
+                                            allow_null=True)
 
     # Contract Payment 필드 (선택적)
     contract = serializers.IntegerField(required=False, allow_null=True)
@@ -301,10 +328,9 @@ class ProjectTransactionCreateSerializer(serializers.Serializer):
             sort_id=validated_data['sort'],
             project_account_d2_id=validated_data['project_account_d2'],
             project_account_d3_id=validated_data.get('project_account_d3'),
-            account_code=validated_data['account_code'],
             amount=validated_data['amount'],
-            trader=validated_data['trader'],
-            evidence_type=validated_data['evidence_type'],
+            trader=validated_data.get('trader', ''),
+            evidence_type=validated_data.get('evidence_type'),
         )
 
         result = {
