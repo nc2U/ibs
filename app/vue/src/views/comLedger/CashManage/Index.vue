@@ -6,16 +6,16 @@ import { cutString } from '@/utils/baseMixins'
 import { useCompany } from '@/store/pinia/company'
 import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
-import { useComCash, type DataFilter as Filter, type DataFilter } from '@/store/pinia/comCash'
-import type { CashBook, CompanyBank, SepItems } from '@/store/types/comCash'
+import { useComLedger, type DataFilter as Filter, type DataFilter } from '@/store/pinia/comLedger'
+import type { CashBook, CompanyBank, SepItems } from '@/store/types/comLedger'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
-import ComCashAuthGuard from '@/components/AuthGuard/ComCashAuthGuard.vue'
-import ListController from '@/views/comCash/CashManage/components/ListController.vue'
-import AddCash from '@/views/comCash/CashManage/components/AddCash.vue'
+import ComLedgerAuthGuard from '@/components/AuthGuard/ComLedgerAuthGuard.vue'
+import ListController from '@/views/comLedger/CashManage/components/ListController.vue'
+import AddCash from '@/views/comLedger/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
-import CashList from '@/views/comCash/CashManage/components/CashList.vue'
+import CashList from '@/views/comLedger/CashManage/components/CashList.vue'
 
 const listControl = ref()
 const route = useRoute()
@@ -72,7 +72,7 @@ const fetchProjectList = async () => proStore.fetchProjectList()
 const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
-const cashStore = useComCash()
+const cashStore = useComLedger()
 const fetchBankCodeList = () => cashStore.fetchBankCodeList()
 const fetchAccSortList = () => cashStore.fetchAccSortList()
 const fetchAllAccD1List = () => cashStore.fetchAllAccD1List()
@@ -100,7 +100,7 @@ const updateCashBook = (
 const deleteCashBook = (payload: CashBook & { filters: Filter }) =>
   cashStore.deleteCashBook(payload)
 const patchAccD3 = (payload: { pk: number; is_hide: boolean }) => cashStore.patchAccD3(payload)
-const fetchComCashCalc = (com: number) => cashStore.fetchComCashCalc(com)
+const fetchComLedgerCalc = (com: number) => cashStore.fetchComLedgerCalc(com)
 
 const pageSelect = (page: number) => listControl.value.listFiltering(page)
 
@@ -214,7 +214,7 @@ const dataSetup = async (pk: number) => {
   fetchComBankAccList(pk)
   fetchAllComBankAccList(pk)
   fetchCashBookList({ company: pk })
-  fetchComCashCalc(pk)
+  fetchComLedgerCalc(pk)
   dataFilter.value.company = pk
 }
 
@@ -327,7 +327,7 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <ComCashAuthGuard>
+  <ComLedgerAuthGuard>
     <Loading v-model:active="loading" />
     <ContentHeader
       :page-title="pageTitle"
@@ -369,5 +369,5 @@ onBeforeRouteLeave(() => {
         />
       </CCardBody>
     </ContentBody>
-  </ComCashAuthGuard>
+  </ComLedgerAuthGuard>
 </template>

@@ -361,24 +361,24 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const comCashCalc = ref<ComCalculated[]>([])
+  const comLedgerCalc = ref<ComCalculated[]>([])
 
-  const fetchComCashCalc = async (com: number) =>
+  const fetchComLedgerCalc = async (com: number) =>
     await api
       .get(`/com-cash-calc/?company=${com}`)
-      .then(res => (comCashCalc.value = res.data.results))
+      .then(res => (comLedgerCalc.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createComCashCalc = async (payload: ComCalculated) =>
+  const createComLedgerCalc = async (payload: ComCalculated) =>
     await api
       .post(`/com-cash-calc/`, payload)
-      .then(res => fetchComCashCalc(res.data.company).then(() => message()))
+      .then(res => fetchComLedgerCalc(res.data.company).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
-  const patchComCashCalc = async (payload: ComCalculated) =>
+  const patchComLedgerCalc = async (payload: ComCalculated) =>
     await api
       .patch(`/com-cash-calc/${payload.pk}/`, payload)
-      .then(res => fetchComCashCalc(res.data.company).then(() => message()))
+      .then(res => fetchComLedgerCalc(res.data.company).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
   const comLastDeal = ref<{ deal_date: string }[]>([])
@@ -388,7 +388,7 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(res => (comLastDeal.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const comCalculated = computed(() => (comCashCalc.value.length ? comCashCalc.value[0] : null))
+  const comCalculated = computed(() => (comLedgerCalc.value.length ? comLedgerCalc.value[0] : null))
   const comLastDealDate = computed(() => (comLastDeal.value.length ? comLastDeal.value[0] : null))
 
   return {
@@ -443,11 +443,11 @@ export const useComLedger = defineStore('comLedger', () => {
     updateCashBook,
     deleteCashBook,
 
-    comCashCalc,
+    comLedgerCalc,
     comCalculated,
-    fetchComCashCalc,
-    createComCashCalc,
-    patchComCashCalc,
+    fetchComLedgerCalc,
+    createComLedgerCalc,
+    patchComLedgerCalc,
 
     comLastDeal,
     comLastDealDate,
