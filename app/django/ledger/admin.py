@@ -71,9 +71,9 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
                 '<a href="/admin/ledger/companyaccountingentry/{}/change/" target="_blank">'
                 '{} - {}원 ({})</a>',
                 entry.pk,
-                entry.trader,
+                entry.sort,
                 f"{entry.amount:,}",
-                entry.get_evidence_type_display()
+                entry.account_d3
             ))
 
         add_link = format_html(
