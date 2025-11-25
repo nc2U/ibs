@@ -191,11 +191,12 @@ class CompanyAccountingEntryInputSerializer(serializers.Serializer):
                                             allow_null=True)
 
 
-class CompanyTransactionCreateSerializer(serializers.Serializer):
+class CompanyCompositeTransactionSerializer(serializers.Serializer):
     """
-    본사 거래 생성 복합 시리얼라이저
+    본사 복합 거래 시리얼라이저
 
-    은행 거래와 여러 회계 분개를 한 번에 생성합니다.
+    은행 거래와 여러 회계 분개를 한 번에 생성/수정합니다.
+    프론트엔드 거래 관리 UI에서 사용합니다.
     """
     # Bank Transaction 필드
     company = serializers.IntegerField()
@@ -262,6 +263,93 @@ class CompanyTransactionCreateSerializer(serializers.Serializer):
             'accounting_entries': accounting_entries,
         }
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """
+        기존 본사 거래 업데이트
+
+        회계분개 수정 방식:
+        1. entries_data에 'id' 포함: 기존 분개 수정
+        2. entries_data에 'id' 없음: 새 분개 생성
+        3. 기존에 있던 분개가 entries_data에 없으면: 삭제
+        """
+        # 1. 회계분개 데이터 추출
+        entries_data = validated_data.pop('accounting_entries', None)
+
+        # 2. 은행 거래 업데이트
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # 3. 회계분개 업데이트 (제공된 경우)
+        if entries_data is not None:
+            # 기존 회계분개 조회
+            existing_entries = CompanyAccountingEntry.objects.filter(
+                transaction_id=instance.transaction_id
+            )
+
+            # 업데이트할 분개 ID 추출
+            update_entry_ids = [entry_data.get('id') for entry_data in entries_data if entry_data.get('id')]
+
+            # 삭제할 분개들 (entries_data에 없는 기존 분개들)
+            entries_to_delete = existing_entries.exclude(id__in=update_entry_ids)
+            for entry in entries_to_delete:
+                entry.delete()
+
+            accounting_entries = []
+
+            for entry_data in entries_data:
+                entry_id = entry_data.get('id')
+
+                if entry_id:
+                    # 기존 회계분개 수정
+                    try:
+                        accounting_entry = CompanyAccountingEntry.objects.get(
+                            id=entry_id,
+                            transaction_id=instance.transaction_id
+                        )
+
+                        # 회계분개 필드 업데이트
+                        accounting_entry.sort_id = entry_data['sort']
+                        accounting_entry.account_d1_id = entry_data['account_d1']
+                        accounting_entry.account_d2_id = entry_data.get('account_d2')
+                        accounting_entry.account_d3_id = entry_data.get('account_d3')
+                        accounting_entry.amount = entry_data['amount']
+                        accounting_entry.trader = entry_data.get('trader', '')
+                        accounting_entry.evidence_type = entry_data.get('evidence_type')
+                        accounting_entry.save()
+
+                    except CompanyAccountingEntry.DoesNotExist:
+                        # ID가 잘못된 경우 새로 생성
+                        accounting_entry = self._create_accounting_entry(instance, entry_data)
+                else:
+                    # 새 회계분개 생성
+                    accounting_entry = self._create_accounting_entry(instance, entry_data)
+
+                accounting_entries.append(accounting_entry)
+
+        result = {
+            'bank_transaction': instance,
+            'accounting_entries': accounting_entries if entries_data else [],
+        }
+
+        return result
+
+    @staticmethod
+    def _create_accounting_entry(instance, entry_data):
+        """회계분개 생성 헬퍼 메서드"""
+        return CompanyAccountingEntry.objects.create(
+            transaction_id=instance.transaction_id,
+            company_id=instance.company_id,
+            sort_id=entry_data['sort'],
+            account_d1_id=entry_data['account_d1'],
+            account_d2_id=entry_data.get('account_d2'),
+            account_d3_id=entry_data.get('account_d3'),
+            amount=entry_data['amount'],
+            trader=entry_data.get('trader', ''),
+            evidence_type=entry_data.get('evidence_type'),
+        )
+
 
 class ProjectAccountingEntryInputSerializer(serializers.Serializer):
     """프로젝트 회계분개 입력 시리얼라이저"""
@@ -291,11 +379,12 @@ class ProjectAccountingEntryInputSerializer(serializers.Serializer):
     )
 
 
-class ProjectTransactionCreateSerializer(serializers.Serializer):
+class ProjectCompositeTransactionSerializer(serializers.Serializer):
     """
-    프로젝트 거래 생성 복합 시리얼라이저
+    프로젝트 복합 거래 시리얼라이저
 
-    은행 거래, 여러 회계 분개, 계약 결제를 한 번에 생성합니다.
+    은행 거래, 여러 회계 분개, 계약 결제를 한 번에 생성/수정합니다.
+    프론트엔드 거래 관리 UI에서 사용합니다.
     """
     # Bank Transaction 필드
     project = serializers.IntegerField()

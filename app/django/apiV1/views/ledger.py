@@ -20,7 +20,7 @@ from ..serializers.ledger import (
     LedgerCompanyBankAccountSerializer, LedgerProjectBankAccountSerializer,
     CompanyBankTransactionSerializer, ProjectBankTransactionSerializer,
     CompanyAccountingEntrySerializer, ProjectAccountingEntrySerializer,
-    CompanyTransactionCreateSerializer, ProjectTransactionCreateSerializer,
+    CompanyCompositeTransactionSerializer, ProjectCompositeTransactionSerializer,
 )
 from rest_framework import permissions
 
@@ -245,17 +245,18 @@ class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
 # Composite Transaction ViewSets
 # ============================================
 
-class CompanyTransactionViewSet(viewsets.ViewSet):
+class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
     """
-    본사 거래 통합 ViewSet
+    본사 복합 거래 ViewSet
 
-    은행 거래와 회계 분개를 한 번에 생성/관리합니다.
+    은행 거래와 회계 분개를 한 번에 생성/수정/관리합니다.
+    프론트엔드 거래 관리 UI에서 사용합니다.
     """
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
 
     def create(self, request):
         """본사 거래 생성 (은행거래 + 회계분개)"""
-        serializer = CompanyTransactionCreateSerializer(
+        serializer = CompanyCompositeTransactionSerializer(
             data=request.data,
             context={'request': request}
         )
@@ -263,22 +264,64 @@ class CompanyTransactionViewSet(viewsets.ViewSet):
             result = serializer.save()
             return Response({
                 'bank_transaction': CompanyBankTransactionSerializer(result['bank_transaction']).data,
-                'accounting_entry': CompanyAccountingEntrySerializer(result['accounting_entry']).data,
+                'accounting_entries': CompanyAccountingEntrySerializer(result['accounting_entries'], many=True).data,
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def update(self, request, pk=None):
+        """본사 거래 수정 (은행거래 + 회계분개)"""
+        try:
+            bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
+        except CompanyBankTransaction.DoesNotExist:
+            return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
-class ProjectTransactionViewSet(viewsets.ViewSet):
+        serializer = CompanyCompositeTransactionSerializer(
+            instance=bank_transaction,
+            data=request.data,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            result = serializer.save()
+            return Response({
+                'bank_transaction': CompanyBankTransactionSerializer(result['bank_transaction']).data,
+                'accounting_entries': CompanyAccountingEntrySerializer(result['accounting_entries'], many=True).data,
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def partial_update(self, request, pk=None):
+        """본사 거래 부분 수정 (은행거래 + 회계분개)"""
+        try:
+            bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
+        except CompanyBankTransaction.DoesNotExist:
+            return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CompanyCompositeTransactionSerializer(
+            instance=bank_transaction,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            result = serializer.save()
+            return Response({
+                'bank_transaction': CompanyBankTransactionSerializer(result['bank_transaction']).data,
+                'accounting_entries': CompanyAccountingEntrySerializer(result['accounting_entries'], many=True).data,
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
     """
-    프로젝트 거래 통합 ViewSet
+    프로젝트 복합 거래 ViewSet
 
-    은행 거래, 회계 분개, 계약 결제를 한 번에 생성/관리합니다.
+    은행 거래, 회계 분개, 계약 결제를 한 번에 생성/수정/관리합니다.
+    프론트엔드 거래 관리 UI에서 사용합니다.
     """
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
 
     def create(self, request):
         """프로젝트 거래 생성 (은행거래 + 회계분개 + 계약결제)"""
-        serializer = ProjectTransactionCreateSerializer(
+        serializer = ProjectCompositeTransactionSerializer(
             data=request.data,
             context={'request': request}
         )
@@ -286,16 +329,83 @@ class ProjectTransactionViewSet(viewsets.ViewSet):
             result = serializer.save()
             response_data = {
                 'bank_transaction': ProjectBankTransactionSerializer(result['bank_transaction']).data,
-                'accounting_entry': ProjectAccountingEntrySerializer(result['accounting_entry']).data,
+                'accounting_entries': ProjectAccountingEntrySerializer(result['accounting_entries'], many=True).data,
             }
-            # 계약 결제 정보는 accounting_entry에 포함됨 (contract_payment 필드)
-            if 'contract_payment' in result:
-                response_data['contract_payment'] = {
-                    'pk': result['contract_payment'].pk,
-                    'contract': result['contract_payment'].contract_id,
-                    'installment_order': result['contract_payment'].installment_order_id,
-                    'payment_type': result['contract_payment'].payment_type,
-                    'amount': result['contract_payment'].amount,
-                }
+            # 계약 결제 정보가 있는 경우 포함
+            if 'contract_payments' in result:
+                response_data['contract_payments'] = [
+                    {
+                        'pk': cp.pk,
+                        'contract': cp.contract_id,
+                        'installment_order': cp.installment_order_id,
+                        'payment_type': cp.payment_type,
+                    }
+                    for cp in result['contract_payments']
+                ]
             return Response(response_data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None):
+        """프로젝트 거래 수정 (은행거래 + 회계분개 + 계약결제)"""
+        try:
+            bank_transaction = ProjectBankTransaction.objects.get(pk=pk)
+        except ProjectBankTransaction.DoesNotExist:
+            return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProjectCompositeTransactionSerializer(
+            instance=bank_transaction,
+            data=request.data,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            result = serializer.save()
+            response_data = {
+                'bank_transaction': ProjectBankTransactionSerializer(result['bank_transaction']).data,
+                'accounting_entries': ProjectAccountingEntrySerializer(result['accounting_entries'], many=True).data,
+            }
+            # 계약 결제 정보가 있는 경우 포함
+            if 'contract_payments' in result:
+                response_data['contract_payments'] = [
+                    {
+                        'pk': cp.pk,
+                        'contract': cp.contract_id,
+                        'installment_order': cp.installment_order_id,
+                        'payment_type': cp.payment_type,
+                    }
+                    for cp in result['contract_payments']
+                ]
+            return Response(response_data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def partial_update(self, request, pk=None):
+        """프로젝트 거래 부분 수정 (은행거래 + 회계분개 + 계약결제)"""
+        try:
+            bank_transaction = ProjectBankTransaction.objects.get(pk=pk)
+        except ProjectBankTransaction.DoesNotExist:
+            return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProjectCompositeTransactionSerializer(
+            instance=bank_transaction,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            result = serializer.save()
+            response_data = {
+                'bank_transaction': ProjectBankTransactionSerializer(result['bank_transaction']).data,
+                'accounting_entries': ProjectAccountingEntrySerializer(result['accounting_entries'], many=True).data,
+            }
+            # 계약 결제 정보가 있는 경우 포함
+            if 'contract_payments' in result:
+                response_data['contract_payments'] = [
+                    {
+                        'pk': cp.pk,
+                        'contract': cp.contract_id,
+                        'installment_order': cp.installment_order_id,
+                        'payment_type': cp.payment_type,
+                    }
+                    for cp in result['contract_payments']
+                ]
+            return Response(response_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
