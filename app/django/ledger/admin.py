@@ -93,8 +93,9 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
     @admin.display(description='금액')
     def formatted_amount(self, obj):
         color = 'blue' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
+        sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
-        return format_html('<span style="color: {};">{}원</span>', color, formatted_amount)
+        return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
     @admin.display(description='분개 일치', ordering='id', boolean=True)
     def balance_status(self, obj):
@@ -198,8 +199,9 @@ class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
     @admin.display(description='금액')
     def formatted_amount(self, obj):
         color = 'blue' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
+        sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
-        return format_html('<span style="color: {};">{}원</span>', color, formatted_amount)
+        return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
     @admin.display(description='분개 일치', ordering='id', boolean=True)
     def balance_status(self, obj):
