@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.forms.models import BaseInlineFormSet
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
@@ -92,7 +91,7 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'blue' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
+        color = 'green' if obj.sort_id == 1 else ''  # 1=입금, 2=출금
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
@@ -198,7 +197,7 @@ class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'blue' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
+        color = 'green' if obj.sort_id == 1 else ''  # 1=입금, 2=출금
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
@@ -292,8 +291,10 @@ class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
+        color = 'green' if obj.sort_id == 1 else ''  # 1=입금, 2=출금
+        sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
-        return format_html('{}원', formatted_amount)
+        return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
 
 @admin.register(ProjectAccountingEntry)
@@ -312,5 +313,7 @@ class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
+        color = 'green' if obj.sort_id == 1 else ''  # 1=입금, 2=출금
+        sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
-        return format_html('{}원', formatted_amount)
+        return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
