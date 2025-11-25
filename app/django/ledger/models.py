@@ -67,11 +67,11 @@ class BankTransaction(models.Model):
 
     # 거래 정보
     deal_date = models.DateField(verbose_name='거래일자')
-    amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='거래 금액 (양수)')
     sort = models.ForeignKey('ibs.AccountSort', on_delete=models.PROTECT, verbose_name='거래구분',
                              help_text='입금/출금 구분', db_index=True)
+    amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='거래 금액 (양수)')
     content = models.CharField(max_length=100, verbose_name='적요', help_text='거래 기록 사항')
-    note = models.TextField(blank=True, verbose_name='비고', help_text='추가 설명')
+    note = models.TextField(blank=True, default='', verbose_name='비고', help_text='추가 설명')
 
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
@@ -163,7 +163,7 @@ class AccountingEntry(models.Model):
             models.Index(fields=['sort', 'created_at']),
             models.Index(fields=['sort', 'evidence_type']),
         ]
-    
+
     @property
     def related_transaction(self):
         """연관된 BankTransaction 조회"""
