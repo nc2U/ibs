@@ -209,12 +209,12 @@ const onBankUpdate = (payload: CompanyBank) => patchComBankAcc(payload)
 
 const dataSetup = async (pk: number) => {
   await fetchCompany(pk)
-  fetchProjectList()
-  fetchAllDepartList(pk)
-  fetchComBankAccList(pk)
-  fetchAllComBankAccList(pk)
-  fetchCashBookList({ company: pk })
-  fetchComLedgerCalc(pk)
+  await fetchProjectList()
+  await fetchAllDepartList(pk)
+  await fetchComBankAccList(pk)
+  await fetchAllComBankAccList(pk)
+  await fetchCashBookList({ company: pk })
+  await fetchComLedgerCalc(pk)
   dataFilter.value.company = pk
 }
 
@@ -337,24 +337,24 @@ onBeforeRouteLeave(() => {
     />
     <ContentBody>
       <CCardBody class="pb-5">
-        <ListController ref="listControl" :projects="projectList" @list-filtering="listFiltering" />
-        <AddCash
-          v-if="write_company_cash"
-          :company="company as number"
-          :projects="projectList"
-          @multi-submit="multiSubmit"
-          @patch-d3-hide="patchD3Hide"
-          @on-bank-create="onBankCreate"
-          @on-bank-update="onBankUpdate"
-        />
-        <TableTitleRow
-          title="본사 입출금 관리"
-          color="indigo"
-          excel
-          :url="excelUrl"
-          filename="본사_출납내역.xls"
-          :disabled="!company"
-        />
+        <!--        <ListController ref="listControl" :projects="projectList" @list-filtering="listFiltering" />-->
+        <!--        <AddCash-->
+        <!--          v-if="write_company_cash"-->
+        <!--          :company="company as number"-->
+        <!--          :projects="projectList"-->
+        <!--          @multi-submit="multiSubmit"-->
+        <!--          @patch-d3-hide="patchD3Hide"-->
+        <!--          @on-bank-create="onBankCreate"-->
+        <!--          @on-bank-update="onBankUpdate"-->
+        <!--        />-->
+        <!--        <TableTitleRow-->
+        <!--          title="본사 입출금 관리"-->
+        <!--          color="indigo"-->
+        <!--          excel-->
+        <!--          :url="excelUrl"-->
+        <!--          filename="본사_출납내역.xls"-->
+        <!--          :disabled="!company"-->
+        <!--        />-->
         <CashList
           :company="company as number"
           :projects="projectList"
