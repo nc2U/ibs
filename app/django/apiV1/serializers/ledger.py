@@ -128,7 +128,7 @@ class CompanyAccountingEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CompanyAccountingEntry
-        fields = ('pk', 'transaction_id', 'transaction_type', 'company',
+        fields = ('pk', 'transaction_id', 'company',
                   'sort', 'sort_name',
                   'account_d1', 'account_d1_name',
                   'account_d2', 'account_d2_name',
@@ -149,7 +149,7 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('pk', 'transaction_id', 'transaction_type', 'project', 'project_name',
+        fields = ('pk', 'transaction_id', 'project', 'project_name',
                   'sort', 'sort_name',
                   'project_account_d2', 'project_account_d2_name',
                   'project_account_d3', 'project_account_d3_name',
@@ -246,7 +246,6 @@ class CompanyTransactionCreateSerializer(serializers.Serializer):
         for entry_data in entries_data:
             accounting_entry = CompanyAccountingEntry.objects.create(
                 transaction_id=bank_tx.transaction_id,
-                transaction_type='COMPANY',
                 company_id=validated_data['company'],
                 sort_id=entry_data['sort'],
                 account_d1_id=entry_data['account_d1'],
@@ -352,7 +351,6 @@ class ProjectTransactionCreateSerializer(serializers.Serializer):
             # 회계 분개 생성
             accounting_entry = ProjectAccountingEntry.objects.create(
                 transaction_id=bank_tx.transaction_id,
-                transaction_type='PROJECT',
                 project_id=validated_data['project'],
                 sort_id=entry_data['sort'],
                 project_account_d2_id=entry_data['project_account_d2'],

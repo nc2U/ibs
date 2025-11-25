@@ -140,7 +140,6 @@ class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
         # transaction_id 파라미터가 있으면 초기값으로 설정
         if 'transaction_id' in request.GET:
             initial['transaction_id'] = request.GET['transaction_id']
-            initial['transaction_type'] = 'COMPANY'
 
             # CompanyBankTransaction에서 company 정보 가져오기
             try:

@@ -136,9 +136,6 @@ class AccountingEntry(models.Model):
     # Banking Domain 연결 (UUID 참조)
     transaction_id = models.UUIDField(db_index=True, verbose_name='거래 ID',
                                       help_text='BankTransaction.transaction_id 참조')
-    transaction_type = models.CharField(max_length=10, choices=[('COMPANY', 'CompanyBankTransaction'),
-                                                                ('PROJECT', 'ProjectBankTransaction')],
-                                        verbose_name='거래 유형')
 
     # 회계 분류
     sort = models.ForeignKey('ibs.AccountSort', on_delete=models.CASCADE, verbose_name='계정구분', help_text='수입/지출 구분')
@@ -173,20 +170,21 @@ class AccountingEntry(models.Model):
             models.Index(fields=['transaction_id']),
             models.Index(fields=['sort', 'created_at']),
             models.Index(fields=['sort', 'evidence_type']),
-            models.Index(fields=['transaction_type', 'sort']),
         ]
 
     @property
     def related_transaction(self):
         """연관된 BankTransaction 조회"""
-        if self.transaction_type == 'COMPANY':
+        # 클래스 타입으로 구분하여 적절한 BankTransaction 모델 조회
+        if isinstance(self, CompanyAccountingEntry):
             return CompanyBankTransaction.objects.filter(
                 transaction_id=self.transaction_id
             ).first()
-        else:
+        elif isinstance(self, ProjectAccountingEntry):
             return ProjectBankTransaction.objects.filter(
                 transaction_id=self.transaction_id
             ).first()
+        return None
 
     def __str__(self):
         return f"{self.sort} - {self.amount:,} ({self.trader or '거래처 미지정'})"
