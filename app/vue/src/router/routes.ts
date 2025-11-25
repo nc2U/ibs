@@ -13,6 +13,7 @@ import proLedger from '@/router/modules/proLedger.ts'
 import proDocs from '@/router/modules/proDocs'
 import projects from '@/router/modules/projects'
 import comCash from '@/router/modules/comCash'
+import comLedger from '@/router/modules/comLedger.ts'
 import comDocs from '@/router/modules/comDocs'
 import hrManage from '@/router/modules/hrManage'
 import settings from '@/router/modules/settings'
@@ -46,6 +47,7 @@ const routes: Array<RouteRecordRaw> = [
       proDocs as unknown as RouteRecordRaw,
       projects,
       comCash,
+      comLedger,
       comDocs as unknown as RouteRecordRaw,
       hrManage,
       settings,

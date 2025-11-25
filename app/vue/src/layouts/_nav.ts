@@ -42,6 +42,25 @@ const company_cash = {
   ],
 }
 
+const company_ledger = {
+  component: 'CNavGroup',
+  name: '본사 회계 관리',
+  to: '/ledger',
+  icon: 'cil-laptop',
+  items: [
+    {
+      component: 'CNavItem',
+      name: '본사 자금 현황1',
+      to: '/ledger/status',
+    },
+    {
+      component: 'CNavItem',
+      name: '본사 출납 내역1',
+      to: '/ledger/index',
+    },
+  ],
+}
+
 const company_docs = {
   component: 'CNavGroup',
   name: '본사 문서 관리',
@@ -452,6 +471,7 @@ const nav = [
     name: '본사 관리',
   },
   company_cash,
+  company_ledger,
   company_docs,
   human_resource,
   {
