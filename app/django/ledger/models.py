@@ -189,7 +189,7 @@ class AccountingEntry(models.Model):
             ).first()
 
     def __str__(self):
-        return f"{self.sort} - {self.trader or '거래처 미지정'}"
+        return f"{self.sort} - {self.amount:,} ({self.trader or '거래처 미지정'})"
 
 
 # ============================================
