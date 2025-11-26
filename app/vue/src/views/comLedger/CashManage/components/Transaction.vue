@@ -3,7 +3,7 @@ import { ref, computed, type PropType } from 'vue'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import { useComCash } from '@/store/pinia/comCash'
-import type { CompanyBank, CashBook } from '@/store/types/comCash'
+import type { CompanyBank, BankTransaction } from '@/store/types/comLedger'
 import type { Project } from '@/store/types/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import { numFormat, cutString, diffDate } from '@/utils/baseMixins'
@@ -11,10 +11,11 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import CashForm from '@/views/comCash/CashManage/components/CashForm.vue'
+import { CTable, CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   projects: { type: Array as PropType<Project[]>, default: () => [] },
-  cash: { type: Object as PropType<CashBook>, required: true },
+  transaction: { type: Object as PropType<BankTransaction>, required: true },
   calculated: { type: String, default: '2000-01-01' },
   isHighlighted: { type: Boolean, default: false },
   hasChildren: { type: Boolean, default: false },
@@ -34,7 +35,7 @@ const updateFormModal = ref()
 const comCashStore = useComCash()
 
 // 선택된 거래 (부모 또는 자식)
-const selectedCash = ref<CashBook | null>(null)
+const selectedCash = ref<BankTransaction | null>(null)
 
 // 자식 레코드 토글 상태
 const showChildren = ref(false)
@@ -45,12 +46,14 @@ const totalChildren = ref(0)
 
 // 캐시된 자식 레코드 가져오기
 const children = computed(() =>
-  props.cash?.pk ? comCashStore.getCachedChildren(props.cash.pk) : [],
+  props.transaction?.pk ? comCashStore.getCachedChildren(props.transaction.pk) : [],
 )
 
 const cls = ref(['text-primary', 'text-danger', 'text-info'])
-const sortClass = computed(() => cls.value[(props.cash?.sort as number) - 1])
-const d1Class = computed(() => cls.value[((props.cash?.account_d1 as number) % 3) - 1])
+const sortClass = computed(() => cls.value[(props.transaction?.sort as number) - 1])
+const d1Class = computed(
+  () => cls.value[((props.transaction?.accounting_entries[0].account_d1 as number) % 3) - 1],
+)
 
 const store = useStore()
 const dark = computed(() => store.theme === 'dark')
@@ -61,8 +64,8 @@ const rowColor = computed(() => {
   if (props.isHighlighted) {
     color = 'warning'
   } else {
-    color = props.cash?.is_separate ? 'primary' : color
-    color = props.cash?.separated ? 'secondary' : color
+    color = '' // props.transaction?.accounting_entries.length > 1 ? 'primary' : color
+    color = '' // props.transaction?.separated ? 'secondary' : color
   }
   return color
 })
@@ -71,20 +74,21 @@ const accountStore = useAccount()
 const allowedPeriod = computed(
   () =>
     accountStore.superAuth ||
-    (props.cash?.deal_date && diffDate(props.cash.deal_date, new Date(props.calculated)) <= 10),
+    (props.transaction?.deal_date &&
+      diffDate(props.transaction.deal_date, new Date(props.calculated)) <= 10),
 )
 
 const showDetail = () => {
-  selectedCash.value = props.cash as CashBook
+  selectedCash.value = props.transaction as BankTransaction
   updateFormModal.value.callModal()
 }
 
-const showChildDetail = (child: CashBook) => {
+const showChildDetail = (child: BankTransaction) => {
   selectedCash.value = child
   updateFormModal.value.callModal()
 }
 
-const multiSubmit = (payload: { formData: CashBook; sepData: CashBook | null }) =>
+const multiSubmit = (payload: { formData: BankTransaction; sepData: BankTransaction | null }) =>
   emit('multi-submit', payload)
 
 const deleteConfirm = () => {
@@ -99,7 +103,7 @@ const deleteConfirm = () => {
 }
 
 const deleteObject = () => {
-  emit('on-delete', { company: props.cash?.company, pk: props.cash?.pk })
+  emit('on-delete', { company: props.transaction?.company, pk: props.transaction?.pk })
   refDelModal.value.close()
 }
 
@@ -110,7 +114,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 
 // 자식 레코드 토글
 const toggleChildren = async () => {
-  if (!props.cash?.pk) return
+  if (!props.transaction?.pk) return
 
   if (!showChildren.value) {
     // 자식 레코드 열기
@@ -128,11 +132,11 @@ const toggleChildren = async () => {
 
 // 자식 레코드 로드
 const loadChildren = async (page: number = 1) => {
-  if (!props.cash?.pk || loadingChildren.value) return
+  if (!props.transaction?.pk || loadingChildren.value) return
 
   try {
     loadingChildren.value = true
-    const response = await comCashStore.fetchChildrenRecords(props.cash.pk, page)
+    const response = await comCashStore.fetchChildrenRecords(props.transaction.pk, page)
 
     childrenPage.value = page
     totalChildren.value = response.count
@@ -154,173 +158,196 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
 </script>
 
 <template>
-  <template v-if="cash">
+  <template v-if="transaction">
     <!-- 부모 레코드 행 -->
     <CTableRow
       class="text-center"
       :color="rowColor"
-      :style="cash.is_separate ? 'font-weight: bold;' : ''"
-      :data-cash-id="cash.pk"
+      :style="transaction.accounting_entries.length > 1 ? 'font-weight: bold;' : ''"
+      :data-cash-id="transaction.pk"
     >
       <CTableDataCell>
-        <!-- 자식이 있으면 토글 버튼 표시 -->
-        <div class="d-flex align-items-center justify-content-center">
-          <v-btn
-            v-if="hasChildren"
-            size="x-small"
-            variant="text"
-            icon
-            @click="toggleChildren"
-            class="mr-1"
-          >
-            <v-btn
-              :icon="showChildren ? 'mdi-chevron-down' : 'mdi-chevron-right'"
-              variant="tonal"
-              size="sm"
-            />
-          </v-btn>
-          <span>{{ cash.deal_date }}</span>
-        </div>
-      </CTableDataCell>
-      <CTableDataCell :class="sortClass">
-        {{ cash.sort_desc }}
+        <!--        &lt;!&ndash; 자식이 있으면 토글 버튼 표시 &ndash;&gt;-->
+        <!--        <div class="d-flex align-items-center justify-content-center">-->
+        <!--          <v-btn-->
+        <!--            v-if="hasChildren"-->
+        <!--            size="x-small"-->
+        <!--            variant="text"-->
+        <!--            icon-->
+        <!--            @click="toggleChildren"-->
+        <!--            class="mr-1"-->
+        <!--          >-->
+        <!--            <v-btn-->
+        <!--              :icon="showChildren ? 'mdi-chevron-down' : 'mdi-chevron-right'"-->
+        <!--              variant="tonal"-->
+        <!--              size="sm"-->
+        <!--            />-->
+        <!--          </v-btn>-->
+        <span class="text-primary">{{ transaction.deal_date }}</span>
+        <!--        </div>-->
       </CTableDataCell>
       <CTableDataCell class="text-left">
-        <span v-if="cash.bank_account_desc">
-          {{ cutString(cash.bank_account_desc, 10) }}
+        {{ transaction.note }}
+      </CTableDataCell>
+      <CTableDataCell class="text-left">
+        <span v-if="transaction.bank_account_name">
+          {{ cutString(transaction.bank_account_name, 10) }}
         </span>
       </CTableDataCell>
+      <!--      <CTableDataCell :class="sortClass">-->
+      <!--        {{ transaction.sort_name }}-->
+      <!--      </CTableDataCell>-->
       <CTableDataCell class="text-left truncate">
-        <span v-if="cash.trader">
-          {{ cutString(cash.trader, 8) }}
+        <span v-if="transaction.content">
+          {{ cutString(transaction.content, 15) }}
         </span>
       </CTableDataCell>
-      <CTableDataCell class="text-left truncate">
-        <span v-if="cash.content">
-          {{ cutString(cash.content, 15) }}
-        </span>
+      <CTableDataCell
+        class="text-right"
+        :class="transaction.sort === 1 ? 'text-success strong' : ''"
+      >
+        {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(transaction.amount || 0) }}
       </CTableDataCell>
-      <CTableDataCell class="text-right" :color="dark ? '' : 'primary'">
-        {{ numFormat(cash.income || 0) }}
-      </CTableDataCell>
-      <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
-        {{ numFormat(cash.outlay || 0) }}
-      </CTableDataCell>
-      <CTableDataCell :class="d1Class">
-        {{ cash.account_d1_desc }}
-      </CTableDataCell>
-      <CTableDataCell class="text-left truncate">
-        {{ cash.account_d3_desc }}
-      </CTableDataCell>
-      <CTableDataCell>{{ cash.evidence_desc }}</CTableDataCell>
-      <CTableDataCell v-if="write_company_cash">
-        <v-btn color="info" size="x-small" @click="showDetail" :disabled="!allowedPeriod">
-          확인
-        </v-btn>
+      <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
+        <CTable small class="m-0 p-0">
+          <colgroup>
+            <col style="width: 20%" />
+            <col style="width: 20%" />
+            <col style="width: 20%" />
+            <col style="width: 20%" />
+            <col style="width: 20%" />
+            <col style="width: 20%" />
+          </colgroup>
+          <CTableRow
+            v-for="entry in transaction.accounting_entries"
+            :key="entry.pk"
+            class="text-center"
+          >
+            <CTableDataCell :class="d1Class">
+              {{ entry.account_d1_name }}
+            </CTableDataCell>
+            <CTableDataCell>
+              {{ entry.account_d2_name }}
+            </CTableDataCell>
+            <CTableDataCell class="text-left"> {{ entry.trader }} </CTableDataCell>
+            <CTableDataCell
+              class="text-right"
+              :class="transaction.sort === 1 ? 'text-success strong' : ''"
+            >
+              {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(entry.amount) }}
+            </CTableDataCell>
+            <CTableDataCell> {{ entry.evidence_type_display }} </CTableDataCell>
+            <CTableDataCell v-if="write_company_cash">
+              <v-btn color="info" size="x-small" @click="showDetail" :disabled="!allowedPeriod">
+                확인
+              </v-btn>
+            </CTableDataCell>
+          </CTableRow>
+        </CTable>
       </CTableDataCell>
     </CTableRow>
 
-    <!-- 자식 레코드 표시 영역 -->
-    <CTableRow v-if="showChildren && hasChildren">
-      <CTableDataCell :colspan="write_company_cash ? 11 : 10" class="p-0">
-        <div class="p-0">
-          <!-- 로딩 중 -->
-          <div v-if="loadingChildren && children.length === 0" class="text-center py-3">
-            <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
-            <span class="ml-2">자식 레코드 로딩 중...</span>
-          </div>
+    <!--    &lt;!&ndash; 자식 레코드 표시 영역 &ndash;&gt;-->
+    <!--    <CTableRow v-if="showChildren && hasChildren">-->
+    <!--      <CTableDataCell :colspan="write_company_cash ? 11 : 10" class="p-0">-->
+    <!--        <div class="p-0">-->
+    <!--          &lt;!&ndash; 로딩 중 &ndash;&gt;-->
+    <!--          <div v-if="loadingChildren && children.length === 0" class="text-center py-3">-->
+    <!--            <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>-->
+    <!--            <span class="ml-2">자식 레코드 로딩 중...</span>-->
+    <!--          </div>-->
 
-          <!-- 자식 레코드 테이블 -->
-          <CTable v-else-if="children.length > 0" bordered small class="mb-0">
-            <colgroup>
-              <col style="width: 8%" />
-              <col style="width: 5%" />
-              <col style="width: 10%" />
-              <col style="width: 11%" />
-              <col style="width: 15%" />
-              <col style="width: 10%" />
-              <col style="width: 10%" />
-              <col style="width: 5%" />
-              <col style="width: 9%" />
-              <col style="width: 11%" />
-              <col style="width: 6%" />
-            </colgroup>
-            <CTableBody>
-              <CTableRow v-for="child in children" :key="child.pk" class="text-center">
-                <CTableDataCell class="accent">{{ child.deal_date }}</CTableDataCell>
-                <CTableDataCell
-                  :class="['text-primary', 'text-danger', 'text-info'][(child?.sort ?? 1) - 1]"
-                  class="accent"
-                >
-                  {{ child?.sort_desc }}
-                </CTableDataCell>
-                <CTableDataCell class="accent"></CTableDataCell>
-                <CTableDataCell class="text-left accent">
-                  <span>{{ cutString(child.trader, 8) }}</span>
-                </CTableDataCell>
-                <CTableDataCell class="text-left accent">
-                  <span>{{ cutString(child.content, 15) }}</span>
-                </CTableDataCell>
-                <CTableDataCell class="text-right" :color="dark ? '' : 'primary'">
-                  {{ numFormat(child.income || 0) }}
-                </CTableDataCell>
-                <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">
-                  {{ numFormat(child.outlay || 0) }}
-                </CTableDataCell>
-                <CTableDataCell
-                  :class="
-                    ['text-primary', 'text-danger', 'text-info'][((child?.account_d1 ?? 1) % 3) - 1]
-                  "
-                  class="accent"
-                >
-                  {{ child.account_d1_desc }}
-                </CTableDataCell>
-                <CTableDataCell class="text-left accent">
-                  <span v-if="child.account_d3_desc">
-                    {{ cutString(child.account_d3_desc, 9) }}
-                  </span>
-                </CTableDataCell>
-                <CTableDataCell class="accent">{{ child.evidence_desc }}</CTableDataCell>
-                <CTableDataCell v-if="write_company_cash" class="accent">
-                  <v-btn
-                    color="info"
-                    size="x-small"
-                    @click="showChildDetail(child)"
-                    :disabled="!allowedPeriod"
-                  >
-                    확인
-                  </v-btn>
-                </CTableDataCell>
-              </CTableRow>
-            </CTableBody>
-          </CTable>
+    <!--          &lt;!&ndash; 자식 레코드 테이블 &ndash;&gt;-->
+    <!--          <CTable v-else-if="children.length > 0" bordered small class="mb-0">-->
+    <!--            <colgroup>-->
+    <!--              <col style="width: 8%" />-->
+    <!--              <col style="width: 5%" />-->
+    <!--              <col style="width: 10%" />-->
+    <!--              <col style="width: 11%" />-->
+    <!--              <col style="width: 15%" />-->
+    <!--              <col style="width: 10%" />-->
+    <!--              <col style="width: 10%" />-->
+    <!--              <col style="width: 5%" />-->
+    <!--              <col style="width: 9%" />-->
+    <!--              <col style="width: 11%" />-->
+    <!--              <col style="width: 6%" />-->
+    <!--            </colgroup>-->
+    <!--            <CTableBody>-->
+    <!--              <CTableRow v-for="child in children" :key="child.pk" class="text-center">-->
+    <!--                <CTableDataCell class="accent">{{ child.deal_date }}</CTableDataCell>-->
+    <!--                <CTableDataCell-->
+    <!--                  :class="['text-primary', 'text-danger', 'text-info'][(child?.sort ?? 1) - 1]"-->
+    <!--                  class="accent"-->
+    <!--                >-->
+    <!--                  {{ child?.sort_desc }}-->
+    <!--                </CTableDataCell>-->
+    <!--                <CTableDataCell class="accent"></CTableDataCell>-->
+    <!--                <CTableDataCell class="text-left accent">-->
+    <!--                  <span>{{ cutString(child.trader, 8) }}</span>-->
+    <!--                </CTableDataCell>-->
+    <!--                <CTableDataCell class="text-left accent">-->
+    <!--                  <span>{{ cutString(child.content, 15) }}</span>-->
+    <!--                </CTableDataCell>-->
+    <!--                <CTableDataCell class="text-right" :color="dark ? '' : 'primary'">-->
+    <!--                  {{ numFormat(child.income || 0) }}-->
+    <!--                </CTableDataCell>-->
+    <!--                <CTableDataCell class="text-right" :color="dark ? '' : 'danger'">-->
+    <!--                  {{ numFormat(child.outlay || 0) }}-->
+    <!--                </CTableDataCell>-->
+    <!--                <CTableDataCell-->
+    <!--                  :class="-->
+    <!--                    ['text-primary', 'text-danger', 'text-info'][((child?.account_d1 ?? 1) % 3) - 1]-->
+    <!--                  "-->
+    <!--                  class="accent"-->
+    <!--                >-->
+    <!--                  {{ child.account_d1_desc }}-->
+    <!--                </CTableDataCell>-->
+    <!--                <CTableDataCell class="text-left accent">-->
+    <!--                  <span v-if="child.account_d3_desc">-->
+    <!--                    {{ cutString(child.account_d3_desc, 9) }}-->
+    <!--                  </span>-->
+    <!--                </CTableDataCell>-->
+    <!--                <CTableDataCell class="accent">{{ child.evidence_desc }}</CTableDataCell>-->
+    <!--                <CTableDataCell v-if="write_company_cash" class="accent">-->
+    <!--                  <v-btn-->
+    <!--                    color="info"-->
+    <!--                    size="x-small"-->
+    <!--                    @click="showChildDetail(child)"-->
+    <!--                    :disabled="!allowedPeriod"-->
+    <!--                  >-->
+    <!--                    확인-->
+    <!--                  </v-btn>-->
+    <!--                </CTableDataCell>-->
+    <!--              </CTableRow>-->
+    <!--            </CTableBody>-->
+    <!--          </CTable>-->
 
-          <!-- 페이지네이션 -->
-          <v-pagination
-            v-if="children.length > 0 && childrenTotalPages > 1"
-            v-model="childrenPage"
-            :length="childrenTotalPages"
-            :total-visible="7"
-            density="compact"
-            rounded="2"
-            class="mt-4"
-            @update:model-value="onChildrenPageChange"
-          />
+    <!--          &lt;!&ndash; 페이지네이션 &ndash;&gt;-->
+    <!--          <v-pagination-->
+    <!--            v-if="children.length > 0 && childrenTotalPages > 1"-->
+    <!--            v-model="childrenPage"-->
+    <!--            :length="childrenTotalPages"-->
+    <!--            :total-visible="7"-->
+    <!--            density="compact"-->
+    <!--            rounded="2"-->
+    <!--            class="mt-4"-->
+    <!--            @update:model-value="onChildrenPageChange"-->
+    <!--          />-->
 
-          <!-- 자식 레코드가 없을 때 -->
-          <div v-if="!loadingChildren && children.length === 0" class="text-center py-3 text-muted">
-            분리 항목이 없습니다.
-          </div>
-        </div>
-      </CTableDataCell>
-    </CTableRow>
+    <!--          &lt;!&ndash; 자식 레코드가 없을 때 &ndash;&gt;-->
+    <!--          <div v-if="!loadingChildren && children.length === 0" class="text-center py-3 text-muted">-->
+    <!--            분리 항목이 없습니다.-->
+    <!--          </div>-->
+    <!--        </div>-->
+    <!--      </CTableDataCell>-->
+    <!--    </CTableRow>-->
   </template>
 
   <FormModal ref="updateFormModal" size="lg">
     <template #header>본사 입출금 거래 건별 수정</template>
     <template #default>
       <CashForm
-        :cash="selectedCash || cash"
+        :transaction="selectedCash || transaction"
         :projects="projects"
         @multi-submit="multiSubmit"
         @on-delete="deleteConfirm"

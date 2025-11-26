@@ -19,10 +19,10 @@ import AddCash from '@/views/comLedger/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import TransactionList from './components/TransactionList.vue'
 
-// const listControl = ref()
+const listControl = ref()
 const route = useRoute()
-// const router = useRouter()
-//
+const router = useRouter()
+
 const highlightId = computed(() => {
   const id = route.query.highlight_id
   return id ? parseInt(id as string, 10) : null

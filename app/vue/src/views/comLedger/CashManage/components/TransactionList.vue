@@ -16,6 +16,7 @@ const props = defineProps({
   highlightId: { type: Number, default: null },
   currentPage: { type: Number, default: 1 },
 })
+
 const emit = defineEmits([
   'page-select',
   'multi-submit',
@@ -54,33 +55,41 @@ const accCallModal = () => {
 <template>
   <CTable hover responsive align="middle">
     <colgroup>
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 6%" />
+      <col style="width: 12%" />
       <col style="width: 8%" />
-      <col style="width: 5%" />
+      <col style="width: 6%" />
       <col style="width: 10%" />
-      <col style="width: 11%" />
-      <col style="width: 15%" />
-      <col style="width: 10%" />
-      <col style="width: 10%" />
-      <col style="width: 5%" />
+      <col style="width: 12%" />
+      <col style="width: 8%" />
       <col style="width: 9%" />
-      <col style="width: 11%" />
-      <col v-if="write_company_cash" style="width: 6%" />
+      <col v-if="write_company_cash" style="width: 7%" />
     </colgroup>
 
     <CTableHead>
       <CTableRow :color="TableSecondary" class="text-center">
+        <CTableHeaderCell class="text-left pl-3" colspan="5">은행거래내역</CTableHeaderCell>
+        <CTableHeaderCell class="text-left pl-0" :colspan="write_company_cash ? 6 : 5">
+          <span class="text-grey mr-3">|</span> 분류 내역
+        </CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+
+    <CTableHead>
+      <CTableRow :color="TableSecondary" class="text-center">
         <CTableHeaderCell scope="col">거래일자</CTableHeaderCell>
-        <CTableHeaderCell scope="col">구분</CTableHeaderCell>
+        <CTableHeaderCell scope="col">메모</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           거래계좌
           <a href="javascript:void(0)">
             <CIcon name="cilCog" @click="accCallModal" />
           </a>
         </CTableHeaderCell>
-        <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
+        <!--        <CTableHeaderCell scope="col">구분</CTableHeaderCell>-->
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
-        <CTableHeaderCell scope="col">입금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">출금액</CTableHeaderCell>
+        <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">계정</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           세부계정
@@ -88,26 +97,28 @@ const accCallModal = () => {
             <CIcon name="cilCog" @click="refAccDepth.callModal()" />
           </a>
         </CTableHeaderCell>
+        <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
+        <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_company_cash" scope="col">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="write_company_cash" scope="col">확인</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
     <CTableBody>
       <Transaction
-        v-for="cash in bankTransactionList"
-        :key="cash.pk as number"
-        :cash="cash"
+        v-for="transaction in bankTransactionList"
+        :key="transaction.pk as number"
+        :transaction="transaction"
         :projects="projects"
         :calculated="comCalculated?.calculated"
-        :is-highlighted="props.highlightId === cash.pk"
-        :has-children="cash.has_children || false"
+        :is-highlighted="props.highlightId === transaction.pk"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
         @patch-d3-hide="patchD3Hide"
         @on-bank-create="onBankCreate"
         @on-bank-update="onBankUpdate"
       />
+      <!--        :has-children="transaction.has_children || false"-->
     </CTableBody>
   </CTable>
 
