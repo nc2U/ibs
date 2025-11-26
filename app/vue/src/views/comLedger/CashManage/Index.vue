@@ -17,12 +17,12 @@ import ComLedgerAuthGuard from '@/components/AuthGuard/ComLedgerAuthGuard.vue'
 import ListController from '@/views/comLedger/CashManage/components/ListController.vue'
 import AddCash from '@/views/comLedger/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
-import CashList from '@/views/comLedger/CashManage/components/CashList.vue'
+import TransactionList from './components/TransactionList.vue'
 
-const listControl = ref()
+// const listControl = ref()
 const route = useRoute()
-const router = useRouter()
-
+// const router = useRouter()
+//
 const highlightId = computed(() => {
   const id = route.query.highlight_id
   return id ? parseInt(id as string, 10) : null
@@ -49,20 +49,20 @@ const dataFilter = ref<Filter>({
   search: '',
 })
 
-const excelUrl = computed(() => {
-  const sd = dataFilter.value.from_date
-  const ed = dataFilter.value.to_date
-  const st = dataFilter.value.sort || ''
-  const d1 = dataFilter.value.account_d1 || ''
-  const d2 = dataFilter.value.account_d2 || ''
-  const d3 = dataFilter.value.account_d3 || ''
-  const pr = dataFilter.value.project || ''
-  const re = dataFilter.value.is_return || ''
-  const ba = dataFilter.value.bank_account || ''
-  const q = dataFilter.value.search
-  const url = `/excel/cashbook/?company=${company.value}`
-  return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account_d1=${d1}&account_d2=${d2}&account_d3=${d3}&project=${pr}&is_return=${re}&bank_account=${ba}&search_word=${q}`
-})
+// const excelUrl = computed(() => {
+//   const sd = dataFilter.value.from_date
+//   const ed = dataFilter.value.to_date
+//   const st = dataFilter.value.sort || ''
+//   const d1 = dataFilter.value.account_d1 || ''
+//   const d2 = dataFilter.value.account_d2 || ''
+//   const d3 = dataFilter.value.account_d3 || ''
+//   const pr = dataFilter.value.project || ''
+//   const re = dataFilter.value.is_return || ''
+//   const ba = dataFilter.value.bank_account || ''
+//   const q = dataFilter.value.search
+//   const url = `/excel/cashbook/?company=${company.value}`
+//   return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account_d1=${d1}&account_d2=${d2}&account_d3=${d3}&project=${pr}&is_return=${re}&bank_account=${ba}&search_word=${q}`
+// })
 
 const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
@@ -109,19 +109,19 @@ const patchAccD3 = (payload: { pk: number; is_hide: boolean }) => ibsStore.patch
 
 const pageSelect = (page: number) => listControl.value.listFiltering(page)
 
-const listFiltering = (payload: Filter) => {
-  // 필터링 시 query string 정리
-  clearQueryString()
-  if (company.value) payload.company = company.value
-  dataFilter.value = payload
-  const sort = payload.sort || null
-  const d1 = payload.account_d1 || null
-  const d2 = payload.account_d2 || null
-  fetchFormAccD1List(sort)
-  fetchFormAccD2List(sort, d1)
-  fetchFormAccD3List(sort, d1, d2)
-  if (company.value) fetchBankTransactionList(payload)
-}
+// const listFiltering = (payload: Filter) => {
+//   // 필터링 시 query string 정리
+//   clearQueryString()
+//   if (company.value) payload.company = company.value
+//   dataFilter.value = payload
+//   const sort = payload.sort || null
+//   const d1 = payload.account_d1 || null
+//   const d2 = payload.account_d2 || null
+//   fetchFormAccD1List(sort)
+//   fetchFormAccD2List(sort, d1)
+//   fetchFormAccD3List(sort, d1, d2)
+//   if (company.value) fetchBankTransactionList(payload)
+// }
 
 // const chargeCreate = (
 //   payload: BankTransaction & { accData: AccountingEntry | null },
@@ -362,7 +362,7 @@ onBeforeRouteLeave(() => {
         <!--          filename="본사_출납내역.xls"-->
         <!--          :disabled="!company"-->
         <!--        />-->
-        <CashList
+        <TransactionList
           :company="company as number"
           :projects="projectList"
           :highlight-id="highlightId ?? undefined"

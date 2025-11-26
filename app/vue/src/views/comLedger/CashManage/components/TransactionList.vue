@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
-import { useComCash } from '@/store/pinia/comCash'
-import type { CompanyBank, CashBook } from '@/store/types/comCash'
+import { useComLedger } from '@/store/pinia/comLedger'
+import type { CompanyBank, BankTransaction, AccountingEntry } from '@/store/types/comLedger'
 import type { Project } from '@/store/types/project'
 import { TableSecondary } from '@/utils/cssMixins'
 import { write_company_cash } from '@/utils/pageAuth'
@@ -9,7 +9,6 @@ import Pagination from '@/components/Pagination'
 import BankAcc from './BankAcc.vue'
 import AccDepth from './AccDepth.vue'
 import Transaction from './Transaction.vue'
-import { useComLedger } from '@/store/pinia/comLedger.ts'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -37,7 +36,7 @@ const comCalculated = computed(() => comLedgerStore.comCalculated) // 최종 정
 
 const pageSelect = (page: number) => emit('page-select', page)
 
-const multiSubmit = (payload: { formData: CashBook; sepData: CashBook | null }) =>
+const multiSubmit = (payload: { formData: BankTransaction; sepData: AccountingEntry | null }) =>
   emit('multi-submit', payload)
 
 const onDelete = (pk: number) => emit('on-delete', pk)
