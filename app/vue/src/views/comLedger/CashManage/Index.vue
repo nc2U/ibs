@@ -3,11 +3,12 @@ import { ref, computed, onBeforeMount, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/comLedger/_menu/headermixin'
 import { cutString } from '@/utils/baseMixins'
+import { useIbs } from '@/store/pinia/ibs.ts'
 import { useCompany } from '@/store/pinia/company'
 import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import type { Company } from '@/store/types/settings.ts'
-import type { CashBook, CompanyBank, SepItems } from '@/store/types/comLedger'
+import type { BankTransaction, CompanyBank, AccountingEntry } from '@/store/types/comLedger'
 import { useComLedger, type DataFilter as Filter, type DataFilter } from '@/store/pinia/comLedger'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -17,7 +18,6 @@ import ListController from '@/views/comLedger/CashManage/components/ListControll
 import AddCash from '@/views/comLedger/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import CashList from '@/views/comLedger/CashManage/components/CashList.vue'
-import { useIbs } from '@/store/pinia/ibs.ts'
 
 const listControl = ref()
 const route = useRoute()
@@ -74,25 +74,25 @@ const fetchProjectList = async () => proStore.fetchProjectList()
 const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
-const cashStore = useComLedger()
-const fetchBankCodeList = () => cashStore.fetchBankCodeList()
-const fetchComBankAccList = (pk: number) => cashStore.fetchComBankAccList(pk)
-const fetchAllComBankAccList = (pk: number) => cashStore.fetchAllComBankAccList(pk)
+const ledgerStore = useComLedger()
+const fetchBankCodeList = () => ledgerStore.fetchBankCodeList()
+const fetchComBankAccList = (pk: number) => ledgerStore.fetchComBankAccList(pk)
+const fetchAllComBankAccList = (pk: number) => ledgerStore.fetchAllComBankAccList(pk)
 
-const createComBankAcc = (payload: CompanyBank) => cashStore.createComBankAcc(payload)
-const patchComBankAcc = (payload: CompanyBank) => cashStore.patchComBankAcc(payload)
+const createComBankAcc = (payload: CompanyBank) => ledgerStore.createComBankAcc(payload)
+const patchComBankAcc = (payload: CompanyBank) => ledgerStore.patchComBankAcc(payload)
 
-const fetchCashBookList = (payload: Filter) => cashStore.fetchCashBookList(payload)
-const findCashBookPage = (highlightId: number, filters: Filter) =>
-  cashStore.findCashBookPage(highlightId, filters)
-const createCashBook = (payload: CashBook & { sepData: SepItems | null }) =>
-  cashStore.createCashBook(payload)
-const updateCashBook = (
-  payload: CashBook & { sepData: SepItems | null } & { filters: DataFilter },
-) => cashStore.updateCashBook(payload)
-const deleteCashBook = (payload: CashBook & { filters: Filter }) =>
-  cashStore.deleteCashBook(payload)
-const fetchComLedgerCalc = (com: number) => cashStore.fetchComLedgerCalc(com)
+const fetchBankTransactionList = (payload: Filter) => ledgerStore.fetchBankTransactionList(payload)
+// const findBankTransactionPage = (highlightId: number, filters: Filter) =>
+//   ledgerStore.findBankTransactionPage(highlightId, filters)
+const createBankTransaction = (payload: BankTransaction & { accData: AccountingEntry | null }) =>
+  ledgerStore.createBankTransaction(payload)
+const updateBankTransaction = (
+  payload: BankTransaction & { accData: AccountingEntry | null } & { filters: DataFilter },
+) => ledgerStore.updateBankTransaction(payload)
+const deleteBankTransaction = (payload: BankTransaction & { filters: Filter }) =>
+  ledgerStore.deleteBankTransaction(payload)
+const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalc(com)
 
 const ibsStore = useIbs()
 const fetchAccSortList = () => ibsStore.fetchAccSortList()
@@ -120,89 +120,92 @@ const listFiltering = (payload: Filter) => {
   fetchFormAccD1List(sort)
   fetchFormAccD2List(sort, d1)
   fetchFormAccD3List(sort, d1, d2)
-  console.log(payload)
-  if (company.value) fetchCashBookList(payload)
+  if (company.value) fetchBankTransactionList(payload)
 }
 
-const chargeCreate = (payload: CashBook & { sepData: SepItems | null }, charge: number) => {
-  payload.sort = 2
-  payload.account_d1 = 5
-  payload.account_d2 = 17
-  payload.account_d3 = 118
-  payload.content = cutString(payload.content, 8) + ' - 이체수수료'
-  payload.trader = '지급수수료'
-  payload.outlay = charge
-  payload.income = null
-  payload.evidence = '0'
-  payload.note = ''
+// const chargeCreate = (
+//   payload: BankTransaction & { accData: AccountingEntry | null },
+//   charge: number,
+// ) => {
+//   payload.sort = 2
+//   payload.account_d1 = 5
+//   payload.account_d2 = 17
+//   payload.account_d3 = 118
+//   payload.content = cutString(payload.content, 8) + ' - 이체수수료'
+//   payload.trader = '지급수수료'
+//   payload.outlay = charge
+//   payload.income = null
+//   payload.evidence = '0'
+//   payload.note = ''
+//
+//   createBankTransaction(payload)
+// }
 
-  createCashBook(payload)
-}
+// const onCreate = (
+//   payload: BankTransaction & { accData: AccountingEntry | null } & {
+//     bank_account_to: null | number
+//     charge: null | number
+//   },
+// ) => {
+//   payload.company = company.value || null
+//   if (payload.sort === 3 && payload.bank_account_to) {
+//     // 대체 거래일 때
+//     const { bank_account_to, charge, ...inputData } = payload
+//
+//     inputData.sort = 2
+//     inputData.trader = '내부대체'
+//     inputData.account_d3 = 131
+//     createBankTransaction(inputData)
+//
+//     inputData.sort = 1
+//     inputData.account_d3 = 132
+//     inputData.income = inputData.outlay
+//     inputData.outlay = null
+//     inputData.bank_account = bank_account_to
+//
+//     setTimeout(() => createBankTransaction({ ...inputData }), 300)
+//     if (!!charge) {
+//       setTimeout(() => chargeCreate({ ...inputData }, charge), 600)
+//     }
+//   } else if (payload.sort === 4) {
+//     // 취소 거래일 때
+//     payload.sort = 2
+//     payload.account_d3 = 133
+//     payload.evidence = '0'
+//     createBankTransaction(payload)
+//     payload.sort = 1
+//     payload.account_d3 = 134
+//     payload.income = payload.outlay
+//     payload.outlay = null
+//     payload.evidence = ''
+//     setTimeout(() => createBankTransaction(payload), 300)
+//   } else {
+//     const { charge, ...inputData } = payload
+//     createBankTransaction(inputData)
+//     if (!!charge) chargeCreate(inputData, charge)
+//   }
+// }
 
-const onCreate = (
-  payload: CashBook & { sepData: SepItems | null } & {
-    bank_account_to: null | number
-    charge: null | number
-  },
-) => {
-  payload.company = company.value || null
-  if (payload.sort === 3 && payload.bank_account_to) {
-    // 대체 거래일 때
-    const { bank_account_to, charge, ...inputData } = payload
-
-    inputData.sort = 2
-    inputData.trader = '내부대체'
-    inputData.account_d3 = 131
-    createCashBook(inputData)
-
-    inputData.sort = 1
-    inputData.account_d3 = 132
-    inputData.income = inputData.outlay
-    inputData.outlay = null
-    inputData.bank_account = bank_account_to
-
-    setTimeout(() => createCashBook({ ...inputData }), 300)
-    if (!!charge) {
-      setTimeout(() => chargeCreate({ ...inputData }, charge), 600)
-    }
-  } else if (payload.sort === 4) {
-    // 취소 거래일 때
-    payload.sort = 2
-    payload.account_d3 = 133
-    payload.evidence = '0'
-    createCashBook(payload)
-    payload.sort = 1
-    payload.account_d3 = 134
-    payload.income = payload.outlay
-    payload.outlay = null
-    payload.evidence = ''
-    setTimeout(() => createCashBook(payload), 300)
-  } else {
-    const { charge, ...inputData } = payload
-    createCashBook(inputData)
-    if (!!charge) chargeCreate(inputData, charge)
-  }
-}
-
-const onUpdate = (payload: CashBook & { sepData: SepItems | null } & { filters: Filter }) =>
-  updateCashBook(payload)
+const onUpdate = (
+  payload: BankTransaction & { accData: AccountingEntry | null } & { filters: Filter },
+) => updateBankTransaction(payload)
 
 const multiSubmit = (payload: {
-  formData: CashBook
-  sepData: SepItems | null
+  formData: BankTransaction
+  accData: AccountingEntry | null
   bank_account_to: null | number
   charge: null | number
 }) => {
-  const { formData, ...sepData } = payload
-  const createData = { ...formData, ...sepData }
+  const { formData, ...accData } = payload
+  const createData = { ...formData, ...accData }
   const updateData = { ...{ filters: dataFilter.value }, ...createData }
 
-  if (formData.pk) onUpdate(updateData)
-  else onCreate(createData)
+  // if (formData.pk) onUpdate(updateData)
+  // else onCreate(createData)
 }
 
-const onDelete = (payload: CashBook) =>
-  deleteCashBook({ ...{ filters: dataFilter.value }, ...payload })
+const onDelete = (payload: BankTransaction) =>
+  deleteBankTransaction({ ...{ filters: dataFilter.value }, ...payload })
 
 const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => patchAccD3(payload)
 
@@ -218,7 +221,7 @@ const dataSetup = async (pk: number) => {
   await fetchAllDepartList(pk)
   await fetchComBankAccList(pk)
   await fetchAllComBankAccList(pk)
-  await fetchCashBookList({ company: pk })
+  await fetchBankTransactionList({ company: pk })
   await fetchComLedgerCalc(pk)
   dataFilter.value.company = pk
 }
@@ -226,10 +229,10 @@ const dataSetup = async (pk: number) => {
 const dataReset = () => {
   comStore.allDepartList = []
   comStore.removeCompany()
-  cashStore.comBankList = []
-  cashStore.allComBankList = []
-  cashStore.cashBookList = []
-  cashStore.cashBookCount = 0
+  ledgerStore.comBankList = []
+  ledgerStore.allComBankList = []
+  ledgerStore.bankTransactionList = []
+  ledgerStore.bankTransactionCount = 0
   dataFilter.value.company = null
 }
 
@@ -276,20 +279,19 @@ const loadHighlightPage = async () => {
   if (highlightId.value && company.value) {
     try {
       // 현재 필터 조건으로 해당 항목이 몇 번째 페이지에 있는지 찾기
-      const targetPage = await findCashBookPage(highlightId.value, {
-        ...dataFilter.value,
-        company: company.value,
-        limit: 15, // Django에서 사용하는 페이지 크기와 동일하게 설정
-      })
-
-      // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
-      dataFilter.value.page = targetPage
-      await fetchCashBookList({
-        ...dataFilter.value,
-        company: company.value,
-      })
+      // const targetPage = await findBankTransactionPage(highlightId.value, {
+      //   ...dataFilter.value,
+      //   company: company.value,
+      //   limit: 15, // Django에서 사용하는 페이지 크기와 동일하게 설정
+      // })
+      // // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
+      // dataFilter.value.page = targetPage
+      // await fetchBankTransactionList({
+      //   ...dataFilter.value,
+      //   company: company.value,
+      // })
     } catch (error) {
-      console.error('Error finding highlight page:', error)
+      // console.error('Error finding highlight page:', error)
     }
   }
 }

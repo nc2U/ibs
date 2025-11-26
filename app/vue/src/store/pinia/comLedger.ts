@@ -5,10 +5,10 @@ import { errorHandle, message } from '@/utils/helper'
 import {
   type BalanceByAccount,
   type BankCode,
-  type CashBook,
+  type BankTransaction,
   type ComCalculated,
   type CompanyBank,
-  type SepItems,
+  type AccountingEntry,
 } from '@/store/types/comLedger'
 
 export type DataFilter = {
@@ -45,19 +45,19 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const fetchComBankAccList = async (company: number) =>
     await api
-      .get(`/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
+      .get(`/ledger/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
       .then(res => (comBankList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   const fetchAllComBankAccList = async (company: number) =>
     await api
-      .get(`/company-bank-account/?company=${company}`)
+      .get(`/ledger/company-bank-account/?company=${company}`)
       .then(res => (allComBankList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   const createComBankAcc = async (payload: CompanyBank) =>
     await api
-      .post(`/company-bank-account/`, payload)
+      .post(`/ledger/company-bank-account/`, payload)
       .then(async res => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
@@ -66,7 +66,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const updateComBankAcc = async (payload: CompanyBank) =>
     await api
-      .put(`/company-bank-account/${payload.pk}/`, payload)
+      .put(`/ledger/company-bank-account/${payload.pk}/`, payload)
       .then(async res => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
@@ -75,7 +75,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const patchComBankAcc = async (payload: CompanyBank) =>
     await api
-      .patch(`company-bank-account/${payload.pk}/`, payload)
+      .patch(`/ledger/company-bank-account/${payload.pk}/`, payload)
       .then(async res => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
@@ -84,7 +84,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const deleteComBankAcc = async (pk: number, company: number) =>
     await api
-      .delete(`/company-bank-account/${pk}/`)
+      .delete(`/ledger/company-bank-account/${pk}/`)
       .then(async () => {
         await fetchAllComBankAccList(company)
         await fetchComBankAccList(company)
@@ -108,7 +108,7 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const dateCashBook = ref<CashBook[]>([])
+  const dateCashBook = ref<BankTransaction[]>([])
 
   const fetchDateCashBookList = async (payload: { company: number; date: string }) => {
     const { company, date } = payload
@@ -118,15 +118,15 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const cashBookList = ref<CashBook[]>([])
-  const cashBookCount = ref<number>(0)
-  const childrenCache = ref<Map<number, CashBook[]>>(new Map())
+  const bankTransactionList = ref<BankTransaction[]>([])
+  const bankTransactionCount = ref<number>(0)
+  // const childrenCache = ref<Map<number, BankTransaction[]>>(new Map())
 
-  const cashesPages = (itemsPerPage: number) => Math.ceil(cashBookCount.value / itemsPerPage)
+  const cashesPages = (itemsPerPage: number) => Math.ceil(bankTransactionCount.value / itemsPerPage)
 
-  const fetchCashBookList = async (payload: DataFilter) => {
+  const fetchBankTransactionList = async (payload: DataFilter) => {
     const { company } = payload
-    let url = `/cashbook/?company=${company}`
+    let url = `/ledger/company-transaction/?company=${company}`
     if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
     if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
     if (payload.sort) url += `&sort=${payload.sort}`
@@ -143,138 +143,140 @@ export const useComLedger = defineStore('comLedger', () => {
     return await api
       .get(url)
       .then(res => {
-        cashBookList.value = res.data.results
-        cashBookCount.value = res.data.count
+        bankTransactionList.value = res.data.results
+        bankTransactionCount.value = res.data.count
       })
       .catch(err => errorHandle(err.response.data))
   }
 
-  const findCashBookPage = async (highlightId: number, filters: DataFilter) => {
-    const { company } = filters
-    let url = `/cashbook/find_page/?highlight_id=${highlightId}&company=${company}`
-    if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
-    if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
-    if (filters.sort) url += `&sort=${filters.sort}`
-    if (filters.account_d1) url += `&account_d1=${filters.account_d1}`
-    if (filters.account_d2) url += `&account_d2=${filters.account_d2}`
-    if (filters.account_d3) url += `&account_d3=${filters.account_d3}`
-    if (filters.project) url += `&project=${filters.project}`
-    if (filters.is_return) url += `&is_return=${filters.is_return}`
-    if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
-    if (filters.search) url += `&search=${filters.search}`
+  // const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
+  //   const { company } = filters
+  //   let url = `/ledger/company-transaction/find_page/?highlight_id=${highlightId}&company=${company}`
+  //   if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
+  //   if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
+  //   if (filters.sort) url += `&sort=${filters.sort}`
+  //   if (filters.account_d1) url += `&account_d1=${filters.account_d1}`
+  //   if (filters.account_d2) url += `&account_d2=${filters.account_d2}`
+  //   if (filters.account_d3) url += `&account_d3=${filters.account_d3}`
+  //   if (filters.project) url += `&project=${filters.project}`
+  //   if (filters.is_return) url += `&is_return=${filters.is_return}`
+  //   if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
+  //   if (filters.search) url += `&search=${filters.search}`
+  //
+  //   try {
+  //     const response = await api.get(url)
+  //     return response.data.page
+  //   } catch (err: any) {
+  //     errorHandle(err.response.data)
+  //     return 1
+  //   }
+  // }
 
-    try {
-      const response = await api.get(url)
-      return response.data.page
-    } catch (err: any) {
-      errorHandle(err.response.data)
-      return 1
-    }
-  }
+  // // 특정 부모의 자식 레코드 조회 (페이지네이션)
+  // const fetchChildrenRecords = async (parentPk: number, page: number = 1) => {
+  //   try {
+  //     const response = await api.get(`/bank-transaction/${parentPk}/children/?page=${page}`)
+  //     const children = response.data.results as BankTransaction[]
+  //     const count = response.data.count
+  //
+  //     // 페이지별 캐시 업데이트 (각 페이지를 독립적으로 저장)
+  //     childrenCache.value.set(parentPk, children)
+  //
+  //     return {
+  //       results: children,
+  //       count,
+  //       next: response.data.next,
+  //       previous: response.data.previous,
+  //     }
+  //   } catch (err: any) {
+  //     errorHandle(err.response?.data)
+  //     throw err
+  //   }
+  // }
+  //
+  // // 캐시에서 자식 레코드 가져오기
+  // const getCachedChildren = (parentPk: number): BankTransaction[] => {
+  //   return childrenCache.value.get(parentPk) || []
+  // }
+  //
+  // // 캐시 무효화
+  // const invalidateChildrenCache = (parentPk?: number) => {
+  //   if (parentPk !== undefined) {
+  //     childrenCache.value.delete(parentPk)
+  //   } else {
+  //     childrenCache.value.clear()
+  //   }
+  // }
+  //
+  // // 캐시된 자식 레코드 업데이트
+  // const updateCachedChild = (parentPk: number, updatedChild: BankTransaction) => {
+  //   const cachedChildren = childrenCache.value.get(parentPk)
+  //   if (cachedChildren) {
+  //     const index = cachedChildren.findIndex(child => child.pk === updatedChild.pk)
+  //     if (index !== -1) {
+  //       // 기존 자식 레코드를 업데이트된 데이터로 교체
+  //       cachedChildren[index] = updatedChild
+  //       childrenCache.value.set(parentPk, [...cachedChildren])
+  //     }
+  //   }
+  // }
+  //
+  // // 목록에서 부모 레코드 업데이트 (is_balanced 등 갱신)
+  // const updateParentInList = (parentPk: number, updatedParent: BankTransaction) => {
+  //   const index = bankTransactionList.value.findIndex(item => item.pk === parentPk)
+  //   if (index !== -1) {
+  //     bankTransactionList.value[index] = updatedParent
+  //   }
+  // }
 
-  // 특정 부모의 자식 레코드 조회 (페이지네이션)
-  const fetchChildrenRecords = async (parentPk: number, page: number = 1) => {
-    try {
-      const response = await api.get(`/cashbook/${parentPk}/children/?page=${page}`)
-      const children = response.data.results as CashBook[]
-      const count = response.data.count
-
-      // 페이지별 캐시 업데이트 (각 페이지를 독립적으로 저장)
-      childrenCache.value.set(parentPk, children)
-
-      return {
-        results: children,
-        count,
-        next: response.data.next,
-        previous: response.data.previous,
-      }
-    } catch (err: any) {
-      errorHandle(err.response?.data)
-      throw err
-    }
-  }
-
-  // 캐시에서 자식 레코드 가져오기
-  const getCachedChildren = (parentPk: number): CashBook[] => {
-    return childrenCache.value.get(parentPk) || []
-  }
-
-  // 캐시 무효화
-  const invalidateChildrenCache = (parentPk?: number) => {
-    if (parentPk !== undefined) {
-      childrenCache.value.delete(parentPk)
-    } else {
-      childrenCache.value.clear()
-    }
-  }
-
-  // 캐시된 자식 레코드 업데이트
-  const updateCachedChild = (parentPk: number, updatedChild: CashBook) => {
-    const cachedChildren = childrenCache.value.get(parentPk)
-    if (cachedChildren) {
-      const index = cachedChildren.findIndex(child => child.pk === updatedChild.pk)
-      if (index !== -1) {
-        // 기존 자식 레코드를 업데이트된 데이터로 교체
-        cachedChildren[index] = updatedChild
-        childrenCache.value.set(parentPk, [...cachedChildren])
-      }
-    }
-  }
-
-  // 목록에서 부모 레코드 업데이트 (is_balanced 등 갱신)
-  const updateParentInList = (parentPk: number, updatedParent: CashBook) => {
-    const index = cashBookList.value.findIndex(item => item.pk === parentPk)
-    if (index !== -1) {
-      cashBookList.value[index] = updatedParent
-    }
-  }
-
-  const createCashBook = async (payload: CashBook & { sepData: SepItems | null }) =>
+  const createBankTransaction = async (
+    payload: BankTransaction & { accData: AccountingEntry | null },
+  ) =>
     await api
-      .post(`/cashbook/`, payload)
+      .post(`/company-transaction/`, payload)
       .then(async res => {
-        return await fetchCashBookList({ company: res.data.company }).then(() => message())
+        return await fetchBankTransactionList({ company: res.data.company }).then(() => message())
       })
       .catch(err => errorHandle(err.response.data))
 
-  const updateCashBook = async (
-    payload: CashBook & { sepData: SepItems | null } & { filters: DataFilter },
+  const updateBankTransaction = async (
+    payload: BankTransaction & { accData: AccountingEntry | null } & { filters: DataFilter },
   ) => {
     const { filters, ...formData } = payload
     return await api
-      .put(`/cashbook/${formData.pk}/`, formData)
+      .put(`/company-transaction/${formData.pk}/`, formData)
       .then(async res => {
         // 자식 레코드를 수정한 경우
-        if (res.data.separated) {
-          const parentPk = res.data.separated
-          // 1. 캐시된 자식 레코드 업데이트
-          updateCachedChild(parentPk, res.data)
-
-          // 2. 부모 레코드도 다시 fetch해서 is_balanced 등 갱신
-          try {
-            const parentRes = await api.get(`/cashbook/${parentPk}/`)
-            updateParentInList(parentPk, parentRes.data)
-          } catch (err) {
-            console.error('부모 레코드 갱신 실패:', err)
-          }
-        } else {
-          // 부모 레코드를 수정한 경우 - 목록에서 업데이트
-          updateParentInList(formData.pk || 0, res.data)
-          // 자식 캐시 무효화 (다음 열 때 다시 로드)
-          invalidateChildrenCache(formData.pk || undefined)
-        }
+        // if (res.data.separated) {
+        //   const parentPk = res.data.separated
+        //   // 1. 캐시된 자식 레코드 업데이트
+        //   updateCachedChild(parentPk, res.data)
+        //
+        //   // 2. 부모 레코드도 다시 fetch해서 is_balanced 등 갱신
+        //   try {
+        //     const parentRes = await api.get(`/company-transaction/${parentPk}/`)
+        //     updateParentInList(parentPk, parentRes.data)
+        //   } catch (err) {
+        //     console.error('부모 레코드 갱신 실패:', err)
+        //   }
+        // } else {
+        //   // 부모 레코드를 수정한 경우 - 목록에서 업데이트
+        //   updateParentInList(formData.pk || 0, res.data)
+        //   // 자식 캐시 무효화 (다음 열 때 다시 로드)
+        //   invalidateChildrenCache(formData.pk || undefined)
+        // }
 
         return message()
       })
       .catch(err => errorHandle(err.response.data))
   }
 
-  const deleteCashBook = async (payload: CashBook & { filters: DataFilter }) => {
+  const deleteBankTransaction = async (payload: BankTransaction & { filters: DataFilter }) => {
     const { pk, filters, company } = payload
     return await api
-      .delete(`/cashbook/${pk}/`)
+      .delete(`//ledger/company-transaction/${pk}/`)
       .then(() =>
-        fetchCashBookList({ company, ...filters }).then(() =>
+        fetchBankTransactionList({ company, ...filters }).then(() =>
           message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
@@ -331,19 +333,19 @@ export const useComLedger = defineStore('comLedger', () => {
     dateCashBook,
     fetchDateCashBookList,
 
-    cashBookList,
-    cashBookCount,
+    bankTransactionList,
+    bankTransactionCount,
     cashesPages,
-    fetchCashBookList,
-    findCashBookPage,
-    fetchChildrenRecords,
-    getCachedChildren,
-    invalidateChildrenCache,
-    updateCachedChild,
-    updateParentInList,
-    createCashBook,
-    updateCashBook,
-    deleteCashBook,
+    fetchBankTransactionList,
+    // findBankTransactionPage,
+    // fetchChildrenRecords,
+    // getCachedChildren,
+    // invalidateChildrenCache,
+    // updateCachedChild,
+    // updateParentInList,
+    createBankTransaction,
+    updateBankTransaction,
+    deleteBankTransaction,
 
     comLedgerCalc,
     comCalculated,

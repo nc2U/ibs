@@ -5,10 +5,11 @@ import type { CompanyBank, CashBook } from '@/store/types/comCash'
 import type { Project } from '@/store/types/project'
 import { TableSecondary } from '@/utils/cssMixins'
 import { write_company_cash } from '@/utils/pageAuth'
-import Cash from '@/views/comCash/CashManage/components/Cash.vue'
 import Pagination from '@/components/Pagination'
-import AccDepth from './AccDepth.vue'
 import BankAcc from './BankAcc.vue'
+import AccDepth from './AccDepth.vue'
+import Transaction from './Transaction.vue'
+import { useComLedger } from '@/store/pinia/comLedger.ts'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -29,10 +30,10 @@ const emit = defineEmits([
 const refAccDepth = ref()
 const refBankAcc = ref()
 
-const comCashStore = useComCash()
-const cashesPages = computed(() => comCashStore.cashesPages)
-const cashBookList = computed(() => comCashStore.cashBookList)
-const comCalculated = computed(() => comCashStore.comCalculated) // 최종 정산 일자
+const comLedgerStore = useComLedger()
+const cashesPages = computed(() => comLedgerStore.cashesPages)
+const bankTransactionList = computed(() => comLedgerStore.bankTransactionList)
+const comCalculated = computed(() => comLedgerStore.comCalculated) // 최종 정산 일자
 
 const pageSelect = (page: number) => emit('page-select', page)
 
@@ -94,8 +95,8 @@ const accCallModal = () => {
     </CTableHead>
 
     <CTableBody>
-      <Cash
-        v-for="cash in cashBookList"
+      <Transaction
+        v-for="cash in bankTransactionList"
         :key="cash.pk as number"
         :cash="cash"
         :projects="projects"
