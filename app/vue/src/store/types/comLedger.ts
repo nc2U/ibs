@@ -4,38 +4,6 @@ export interface BankCode {
   name: string
 }
 
-export interface AccountSort {
-  pk: number
-  name: string
-  accounts: number[]
-}
-
-export interface AccountD1 {
-  pk: number
-  sorts: number[]
-  code: string
-  name: string
-  description: string
-}
-
-export interface AccountD2 {
-  pk: number
-  d1: number
-  code: string
-  name: string
-  description: string
-}
-
-export interface AccountD3 {
-  pk: number
-  d2: number
-  code: string
-  name: string
-  description: string
-  is_hide: boolean
-  is_special: boolean
-}
-
 export interface CompanyBank {
   pk?: number
   company?: number

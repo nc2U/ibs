@@ -6,8 +6,9 @@ import { cutString } from '@/utils/baseMixins'
 import { useCompany } from '@/store/pinia/company'
 import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
-import { useComLedger, type DataFilter as Filter, type DataFilter } from '@/store/pinia/comLedger'
+import type { Company } from '@/store/types/settings.ts'
 import type { CashBook, CompanyBank, SepItems } from '@/store/types/comLedger'
+import { useComLedger, type DataFilter as Filter, type DataFilter } from '@/store/pinia/comLedger'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -16,6 +17,7 @@ import ListController from '@/views/comLedger/CashManage/components/ListControll
 import AddCash from '@/views/comLedger/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import CashList from '@/views/comLedger/CashManage/components/CashList.vue'
+import { useIbs } from '@/store/pinia/ibs.ts'
 
 const listControl = ref()
 const route = useRoute()
@@ -63,7 +65,7 @@ const excelUrl = computed(() => {
 })
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+const company = computed(() => (comStore.company as Company)?.pk)
 
 const proStore = useProject()
 const projectList = computed(() => proStore.projectList)
@@ -74,15 +76,6 @@ const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
 const cashStore = useComLedger()
 const fetchBankCodeList = () => cashStore.fetchBankCodeList()
-const fetchAccSortList = () => cashStore.fetchAccSortList()
-const fetchAllAccD1List = () => cashStore.fetchAllAccD1List()
-const fetchAllAccD2List = () => cashStore.fetchAllAccD2List()
-const fetchAllAccD3List = () => cashStore.fetchAllAccD3List()
-const fetchFormAccD1List = (sort: number | null) => cashStore.fetchFormAccD1List(sort)
-const fetchFormAccD2List = (sort: number | null, d1: number | null) =>
-  cashStore.fetchFormAccD2List(sort, d1)
-const fetchFormAccD3List = (sort: number | null, d1: number | null, d2: number | null) =>
-  cashStore.fetchFormAccD3List(sort, d1, d2)
 const fetchComBankAccList = (pk: number) => cashStore.fetchComBankAccList(pk)
 const fetchAllComBankAccList = (pk: number) => cashStore.fetchAllComBankAccList(pk)
 
@@ -99,8 +92,20 @@ const updateCashBook = (
 ) => cashStore.updateCashBook(payload)
 const deleteCashBook = (payload: CashBook & { filters: Filter }) =>
   cashStore.deleteCashBook(payload)
-const patchAccD3 = (payload: { pk: number; is_hide: boolean }) => cashStore.patchAccD3(payload)
 const fetchComLedgerCalc = (com: number) => cashStore.fetchComLedgerCalc(com)
+
+const ibsStore = useIbs()
+const fetchAccSortList = () => ibsStore.fetchAccSortList()
+const fetchAllAccD1List = () => ibsStore.fetchAllAccD1List()
+const fetchAllAccD2List = () => ibsStore.fetchAllAccD2List()
+const fetchAllAccD3List = () => ibsStore.fetchAllAccD3List()
+const fetchFormAccD1List = (sort: number | null) => ibsStore.fetchFormAccD1List(sort)
+const fetchFormAccD2List = (sort: number | null, d1: number | null) =>
+  ibsStore.fetchFormAccD2List(sort, d1)
+const fetchFormAccD3List = (sort: number | null, d1: number | null, d2: number | null) =>
+  ibsStore.fetchFormAccD3List(sort, d1, d2)
+
+const patchAccD3 = (payload: { pk: number; is_hide: boolean }) => ibsStore.patchAccD3(payload)
 
 const pageSelect = (page: number) => listControl.value.listFiltering(page)
 

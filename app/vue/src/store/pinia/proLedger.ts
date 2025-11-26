@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
-import { type AccountSort } from '@/store/types/comLedger'
+import { type AccountSort } from '@/store/types/ibs'
 import {
   type BalanceByAccount,
   type CashBookFilter,
