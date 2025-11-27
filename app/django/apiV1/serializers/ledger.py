@@ -101,12 +101,14 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
                   'is_balanced', 'accounting_entries')
         read_only_fields = ('transaction_id', 'created_at', 'updated_at')
 
-    def get_is_balanced(self, obj):
+    @staticmethod
+    def get_is_balanced(obj):
         """회계 분개 금액 균형 여부"""
         result = obj.validate_accounting_entries()
         return result['is_valid']
 
-    def get_accounting_entries(self, obj):
+    @staticmethod
+    def get_accounting_entries(obj):
         """연관된 회계 분개 목록 (계약 결제 정보 포함)"""
         entries = ProjectAccountingEntry.objects.filter(
             transaction_id=obj.transaction_id
