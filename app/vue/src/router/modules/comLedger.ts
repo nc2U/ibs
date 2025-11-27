@@ -29,6 +29,17 @@ const comLedger = {
         auth: true,
         requiresCompanyCashAuth: true,
       },
+      children: [
+        {
+          path: ':transId(\\d+)/update',
+          name: '본사 거래 내역 - 수정',
+          meta: {
+            title: '본사 거래 내역',
+            auth: true,
+            requiresCompanyCashAuth: true,
+          },
+        },
+      ],
     },
   ],
 }
