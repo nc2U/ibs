@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
+import { useRouter } from 'vue-router'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import { useComCash } from '@/store/pinia/comCash'
@@ -11,7 +12,6 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import CashForm from '@/views/comCash/CashManage/components/CashForm.vue'
-import { CTable, CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   projects: { type: Array as PropType<Project[]>, default: () => [] },
@@ -33,6 +33,8 @@ const refDelModal = ref()
 const refAlertModal = ref()
 const updateFormModal = ref()
 const comCashStore = useComCash()
+
+const router = useRouter()
 
 // 선택된 거래 (부모 또는 자식)
 const selectedCash = ref<BankTransaction | null>(null)
@@ -238,9 +240,17 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
             </CTableDataCell>
             <CTableDataCell> {{ entry.evidence_type_display }} </CTableDataCell>
             <CTableDataCell v-if="write_company_cash">
-              <v-btn color="info" size="x-small" @click="showDetail" :disabled="!allowedPeriod">
-                확인
-              </v-btn>
+              <v-icon
+                icon="mdi-pencil"
+                size="18"
+                @click="
+                  router.push({
+                    name: '본사 거래 내역 - 수정',
+                    params: { transId: transaction.pk },
+                  })
+                "
+                class="pointer edit-icon-hover"
+              />
             </CTableDataCell>
           </CTableRow>
         </CTable>
@@ -371,3 +381,16 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
 
   <AlertModal ref="refAlertModal" />
 </template>
+
+<style scoped>
+/* 기본적으로 수정 아이콘 숨김 */
+.edit-icon-hover {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* 내부 테이블 행에 hover 시 아이콘 표시 */
+.table tbody tr:hover .edit-icon-hover {
+  opacity: 1;
+}
+</style>

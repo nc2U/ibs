@@ -1,15 +1,19 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount, nextTick } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { computed, nextTick, onBeforeMount, ref } from 'vue'
+import {
+  onBeforeRouteLeave,
+  type RouteLocationNormalizedLoaded as Loaded,
+  useRoute,
+  useRouter,
+} from 'vue-router'
 import { navMenu, pageTitle } from '@/views/comLedger/_menu/headermixin'
-import { cutString } from '@/utils/baseMixins'
 import { useIbs } from '@/store/pinia/ibs.ts'
 import { useCompany } from '@/store/pinia/company'
 import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import type { Company } from '@/store/types/settings.ts'
-import type { BankTransaction, CompanyBank, AccountingEntry } from '@/store/types/comLedger'
-import { useComLedger, type DataFilter as Filter, type DataFilter } from '@/store/pinia/comLedger'
+import type { AccountingEntry, BankTransaction, CompanyBank } from '@/store/types/comLedger'
+import { type DataFilter as Filter, type DataFilter, useComLedger } from '@/store/pinia/comLedger'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -20,8 +24,7 @@ import TableTitleRow from '@/components/TableTitleRow.vue'
 import TransactionList from './components/TransactionList.vue'
 
 const listControl = ref()
-const route = useRoute()
-const router = useRouter()
+const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
 const highlightId = computed(() => {
   const id = route.query.highlight_id
@@ -344,36 +347,44 @@ onBeforeRouteLeave(() => {
     />
     <ContentBody>
       <CCardBody class="pb-5">
-        <ListController ref="listControl" :projects="projectList" @list-filtering="listFiltering" />
-        <!--        <AddCash-->
-        <!--          v-if="write_company_cash"-->
-        <!--          :company="company as number"-->
-        <!--          :projects="projectList"-->
-        <!--          @multi-submit="multiSubmit"-->
-        <!--          @patch-d3-hide="patchD3Hide"-->
-        <!--          @on-bank-create="onBankCreate"-->
-        <!--          @on-bank-update="onBankUpdate"-->
-        <!--        />-->
-        <TableTitleRow
-          title="본사 입출금 관리"
-          color="indigo"
-          excel
-          :url="excelUrl"
-          filename="본사_출납내역.xls"
-          :disabled="!company"
-        />
-        <TransactionList
-          :company="company as number"
-          :projects="projectList"
-          :highlight-id="highlightId ?? undefined"
-          :current-page="dataFilter.page || 1"
-          @page-select="pageSelect"
-          @multi-submit="multiSubmit"
-          @on-delete="onDelete"
-          @patch-d3-hide="patchD3Hide"
-          @on-bank-create="onBankCreate"
-          @on-bank-update="onBankUpdate"
-        />
+        <div v-if="route.name === '본사 거래 내역'">
+          <ListController
+            ref="listControl"
+            :projects="projectList"
+            @list-filtering="listFiltering"
+          />
+          <AddCash
+            v-if="write_company_cash"
+            :company="company as number"
+            :projects="projectList"
+            @multi-submit="multiSubmit"
+            @patch-d3-hide="patchD3Hide"
+            @on-bank-create="onBankCreate"
+            @on-bank-update="onBankUpdate"
+          />
+          <TableTitleRow
+            title="본사 입출금 관리"
+            color="indigo"
+            excel
+            :url="excelUrl"
+            filename="본사_출납내역.xls"
+            :disabled="!company"
+          />
+          <TransactionList
+            :company="company as number"
+            :projects="projectList"
+            :highlight-id="highlightId ?? undefined"
+            :current-page="dataFilter.page || 1"
+            @page-select="pageSelect"
+            @multi-submit="multiSubmit"
+            @on-delete="onDelete"
+            @patch-d3-hide="patchD3Hide"
+            @on-bank-create="onBankCreate"
+            @on-bank-update="onBankUpdate"
+          />
+        </div>
+
+        <div v-else-if="route.name.includes('수정')">수정</div>
       </CCardBody>
     </ContentBody>
   </ComLedgerAuthGuard>

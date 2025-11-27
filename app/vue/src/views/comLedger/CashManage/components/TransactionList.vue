@@ -60,7 +60,6 @@ const accCallModal = () => {
       <col style="width: 6%" />
       <col style="width: 12%" />
       <col style="width: 8%" />
-
       <col style="width: 6%" />
       <col style="width: 10%" />
       <col style="width: 12%" />
@@ -76,9 +75,7 @@ const accCallModal = () => {
           <span class="text-grey mr-3">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
-    </CTableHead>
 
-    <CTableHead>
       <CTableRow :color="TableSecondary" class="text-center">
         <CTableHeaderCell scope="col">거래일자</CTableHeaderCell>
         <CTableHeaderCell scope="col">메모</CTableHeaderCell>
@@ -88,10 +85,11 @@ const accCallModal = () => {
             <CIcon name="cilCog" @click="accCallModal" />
           </a>
         </CTableHeaderCell>
-        <!--        <CTableHeaderCell scope="col">구분</CTableHeaderCell>-->
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">계정</CTableHeaderCell>
+        <CTableHeaderCell class="text-left pl-0" scope="col">
+          <span class="text-grey mr-4">|</span> 계정
+        </CTableHeaderCell>
         <CTableHeaderCell scope="col">
           세부계정
           <a href="javascript:void(0)">
