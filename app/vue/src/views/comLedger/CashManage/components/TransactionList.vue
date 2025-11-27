@@ -61,11 +61,11 @@ const accCallModal = () => {
       <col style="width: 12%" />
       <col style="width: 8%" />
       <col style="width: 6%" />
-      <col style="width: 10%" />
+      <col style="width: 13%" />
       <col style="width: 12%" />
+      <col style="width: 10%" />
       <col style="width: 8%" />
-      <col style="width: 9%" />
-      <col v-if="write_company_cash" style="width: 7%" />
+      <col v-if="write_company_cash" style="width: 6%" />
     </colgroup>
 
     <CTableHead>
@@ -99,7 +99,7 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
         <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_company_cash" scope="col">확인</CTableHeaderCell>
+        <CTableHeaderCell v-if="write_company_cash" scope="col"></CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 

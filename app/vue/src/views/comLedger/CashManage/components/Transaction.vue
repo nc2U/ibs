@@ -214,11 +214,11 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
         <CTable small class="m-0 p-0">
           <colgroup>
             <col style="width: 10%" />
-            <col style="width: 18%" />
-            <col style="width: 22%" />
             <col style="width: 20%" />
+            <col style="width: 24%" />
             <col style="width: 18%" />
-            <col style="width: 12%" />
+            <col style="width: 18%" />
+            <col v-if="write_company_cash" style="width: 6%" />
           </colgroup>
           <CTableRow
             v-for="entry in transaction.accounting_entries"
@@ -239,7 +239,7 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
               {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(entry.amount) }}
             </CTableDataCell>
             <CTableDataCell> {{ entry.evidence_type_display }} </CTableDataCell>
-            <CTableDataCell v-if="write_company_cash">
+            <CTableDataCell v-if="write_company_cash" class="text-right pr-3">
               <v-icon
                 icon="mdi-pencil"
                 size="18"
@@ -387,10 +387,16 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
 .edit-icon-hover {
   opacity: 0;
   transition: opacity 0.2s ease;
+  background-color: transparent !important;
 }
 
 /* 내부 테이블 행에 hover 시 아이콘 표시 */
 .table tbody tr:hover .edit-icon-hover {
   opacity: 1;
+}
+
+.dark-theme .bg-yellow-lighten-5 {
+  background-color: #49473a !important;
+  color: #fff !important;
 }
 </style>
