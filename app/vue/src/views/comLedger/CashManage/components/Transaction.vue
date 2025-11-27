@@ -211,12 +211,12 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
       <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
         <CTable small class="m-0 p-0">
           <colgroup>
+            <col style="width: 10%" />
+            <col style="width: 18%" />
+            <col style="width: 22%" />
             <col style="width: 20%" />
-            <col style="width: 20%" />
-            <col style="width: 20%" />
-            <col style="width: 20%" />
-            <col style="width: 20%" />
-            <col style="width: 20%" />
+            <col style="width: 18%" />
+            <col style="width: 12%" />
           </colgroup>
           <CTableRow
             v-for="entry in transaction.accounting_entries"
