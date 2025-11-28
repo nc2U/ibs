@@ -1,10 +1,13 @@
 <script lang="ts" setup>
-import { write_company_cash } from '@/utils/pageAuth.ts'
-import { TableSecondary } from '@/utils/cssMixins.ts'
+import { computed, onBeforeMount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { computed, onBeforeMount } from 'vue'
+import { numFormat } from '@/utils/baseMixins.ts'
+import { TableSecondary } from '@/utils/cssMixins.ts'
+import { write_company_cash } from '@/utils/pageAuth.ts'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import { CTableDataCell } from '@coreui/vue'
+import { CTable } from '@coreui/vue'
+
+const is_balanced = ref(true)
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -15,17 +18,20 @@ const transaction = computed(() => ledgerStore.bankTransaction)
 
 onBeforeMount(() => {
   if (transId.value) ledgerStore.fetchBankTransaction(transId.value)
+  if (transaction.value) {
+    is_balanced.value = transaction.value.is_balanced
+  }
 })
 </script>
 
 <template>
-  {{ transaction }}
   <CRow class="text-right py-1 mb-1 bg-light-green-lighten-5">
     <CCol class="text-left">25-10-15 12:40 ∙ 대영[농협] ∙ 농협 4953 ∙ ∙ 찬혜원 분할 중...</CCol>
     <CCol col="2">
-      <span>거래내역 금액: 출금 41,000</span> ∙ <span>분류 금액 합계: 출금 41,000</span> ∙
-      <span>차액: 출금 0</span>
-      <v-btn size="x-small" class="ml-3">증빙으로 분할</v-btn>
+      <span>거래내역 금액: {{ transaction?.sort_name }} {{ transaction?.amount }}</span> ∙
+      <span>분류 금액 합계: 출금 41,000</span> ∙
+      <span class="strong" :class="{ 'text-danger': !is_balanced }">차액: 출금 0</span>
+      <v-btn size="x-small" class="ml-3" disabled>증빙으로 분할</v-btn>
       <v-btn size="x-small" @click="router.push({ name: '본사 거래 내역' })">취소</v-btn>
       <v-btn color="success" size="x-small">저장</v-btn>
     </CCol>
@@ -83,25 +89,30 @@ onBeforeMount(() => {
     <CTableBody>
       <CTableRow>
         <CTableDataCell>{{ transaction?.deal_date ?? '' }}</CTableDataCell>
-        <CTableDataCell></CTableDataCell>
-        <CTableDataCell></CTableDataCell>
-        <CTableDataCell></CTableDataCell>
-        <CTableDataCell></CTableDataCell>
+        <CTableDataCell>{{ transaction?.note }}</CTableDataCell>
+        <CTableDataCell>{{ transaction?.bank_account_name }}</CTableDataCell>
+        <CTableDataCell>{{ transaction?.content }}</CTableDataCell>
+        <CTableDataCell class="text-right">
+          {{ numFormat(transaction?.amount ?? 0) }}
+          <v-btn icon="mdi-plus" density="compact" rounded="1" size="22" class="ml-2 pointer" />
+        </CTableDataCell>
         <CTableDataCell colspan="6">
-          <CTable>
+          <CTable class="m-0">
             <col style="width: 9%" />
             <col style="width: 20%" />
             <col style="width: 24%" />
             <col style="width: 18%" />
             <col style="width: 18%" />
             <col v-if="write_company_cash" style="width: 6%" />
-            <CTableRow>
-              <CTableDataCell></CTableDataCell>
-              <CTableDataCell></CTableDataCell>
-              <CTableDataCell></CTableDataCell>
-              <CTableDataCell></CTableDataCell>
-              <CTableDataCell></CTableDataCell>
-              <CTableDataCell> </CTableDataCell>
+            <CTableRow v-for="entry in transaction?.accounting_entries" :key="entry.pk">
+              <CTableDataCell class="pl-2">{{ entry.account_d1_name }}</CTableDataCell>
+              <CTableDataCell>{{ entry.account_d3_name }}</CTableDataCell>
+              <CTableDataCell>{{ entry.trader }}</CTableDataCell>
+              <CTableDataCell>{{ numFormat(entry.amount) }}</CTableDataCell>
+              <CTableDataCell>{{ entry.evidence_type_display }}</CTableDataCell>
+              <CTableDataCell class="text-right pr-2">
+                <v-icon icon="mdi-close" size="small" class="ml-2 pointer" />
+              </CTableDataCell>
             </CTableRow>
           </CTable>
         </CTableDataCell>
