@@ -60,23 +60,23 @@ const accCallModal = () => {
       <col style="width: 6%" />
       <col style="width: 12%" />
       <col style="width: 8%" />
-      <col style="width: 6%" />
+      <col style="width: 5%" />
+      <col style="width: 11%" />
       <col style="width: 13%" />
-      <col style="width: 12%" />
-      <col style="width: 10%" />
+      <col style="width: 11%" />
       <col style="width: 8%" />
-      <col v-if="write_company_cash" style="width: 6%" />
+      <col v-if="write_company_cash" style="width: 5%" />
     </colgroup>
 
     <CTableHead>
-      <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell class="text-left pl-3" colspan="5">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="text-left pl-0" :colspan="write_company_cash ? 6 : 5">
-          <span class="text-grey mr-3">|</span> 분류 내역
+      <CTableRow :color="TableSecondary">
+        <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
+        <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 6 : 5">
+          <span class="text-grey mr-2">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
 
-      <CTableRow :color="TableSecondary" class="text-center">
+      <CTableRow :color="TableSecondary">
         <CTableHeaderCell scope="col">거래일자</CTableHeaderCell>
         <CTableHeaderCell scope="col">메모</CTableHeaderCell>
         <CTableHeaderCell scope="col">
@@ -88,7 +88,7 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
         <CTableHeaderCell class="text-left pl-0" scope="col">
-          <span class="text-grey mr-4">|</span> 계정
+          <span class="text-grey mr-2">|</span> 계정
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">
           세부계정

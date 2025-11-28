@@ -22,6 +22,7 @@ import ListController from '@/views/comLedger/CashManage/components/ListControll
 import AddCash from '@/views/comLedger/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import TransactionList from './components/TransactionList.vue'
+import TransModify from './components/TransModify.vue'
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
@@ -384,7 +385,9 @@ onBeforeRouteLeave(() => {
           />
         </div>
 
-        <div v-else-if="route.name.includes('수정')">수정</div>
+        <div v-else-if="route.name.includes('수정')">
+          <TransModify />
+        </div>
       </CCardBody>
     </ContentBody>
   </ComLedgerAuthGuard>

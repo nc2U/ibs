@@ -118,11 +118,20 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const bankTransaction = ref<BankTransaction | null>(null)
   const bankTransactionList = ref<BankTransaction[]>([])
   const bankTransactionCount = ref<number>(0)
   // const childrenCache = ref<Map<number, BankTransaction[]>>(new Map())
 
   const cashesPages = (itemsPerPage: number) => Math.ceil(bankTransactionCount.value / itemsPerPage)
+
+  const fetchBankTransaction = async (pk: number) =>
+    await api
+      .get(`/ledger/company-transaction/${pk}/`)
+      .then(res => {
+        bankTransaction.value = res.data
+      })
+      .catch(err => errorHandle(err.response.data))
 
   const fetchBankTransactionList = async (payload: DataFilter) => {
     const { company } = payload
@@ -333,9 +342,11 @@ export const useComLedger = defineStore('comLedger', () => {
     dateCashBook,
     fetchDateCashBookList,
 
+    bankTransaction,
     bankTransactionList,
     bankTransactionCount,
     cashesPages,
+    fetchBankTransaction,
     fetchBankTransactionList,
     // findBankTransactionPage,
     // fetchChildrenRecords,

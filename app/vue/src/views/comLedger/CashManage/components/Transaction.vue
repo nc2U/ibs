@@ -161,9 +161,7 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
 
 <template>
   <template v-if="transaction">
-    <!-- 부모 레코드 행 -->
     <CTableRow
-      class="text-center"
       :color="rowColor"
       :style="transaction.accounting_entries.length > 1 ? 'font-weight: bold;' : ''"
       :data-cash-id="transaction.pk"
@@ -188,10 +186,10 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
         <span class="text-primary">{{ transaction.deal_date }}</span>
         <!--        </div>-->
       </CTableDataCell>
-      <CTableDataCell class="text-left">
+      <CTableDataCell>
         {{ transaction.note }}
       </CTableDataCell>
-      <CTableDataCell class="text-left">
+      <CTableDataCell>
         <span v-if="transaction.bank_account_name">
           {{ cutString(transaction.bank_account_name, 10) }}
         </span>
@@ -199,7 +197,7 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
       <!--      <CTableDataCell :class="sortClass">-->
       <!--        {{ transaction.sort_name }}-->
       <!--      </CTableDataCell>-->
-      <CTableDataCell class="text-left truncate">
+      <CTableDataCell class="truncate">
         <span v-if="transaction.content">
           {{ cutString(transaction.content, 15) }}
         </span>
@@ -213,33 +211,29 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
       <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
         <CTable small class="m-0 p-0">
           <colgroup>
-            <col style="width: 10%" />
+            <col style="width: 9%" />
             <col style="width: 20%" />
             <col style="width: 24%" />
             <col style="width: 18%" />
             <col style="width: 18%" />
             <col v-if="write_company_cash" style="width: 6%" />
           </colgroup>
-          <CTableRow
-            v-for="entry in transaction.accounting_entries"
-            :key="entry.pk"
-            class="text-center"
-          >
-            <CTableDataCell :class="d1Class">
+          <CTableRow v-for="entry in transaction.accounting_entries" :key="entry.pk">
+            <CTableDataCell :class="d1Class" class="pl-2">
               {{ entry.account_d1_name }}
             </CTableDataCell>
             <CTableDataCell>
               {{ entry.account_d2_name }}
             </CTableDataCell>
-            <CTableDataCell class="text-left"> {{ entry.trader }} </CTableDataCell>
+            <CTableDataCell> {{ entry.trader }} </CTableDataCell>
             <CTableDataCell
               class="text-right"
               :class="transaction.sort === 1 ? 'text-success strong' : ''"
             >
               {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(entry.amount) }}
             </CTableDataCell>
-            <CTableDataCell> {{ entry.evidence_type_display }} </CTableDataCell>
-            <CTableDataCell v-if="write_company_cash" class="text-right pr-3">
+            <CTableDataCell class="pl-3"> {{ entry.evidence_type_display }} </CTableDataCell>
+            <CTableDataCell v-if="write_company_cash" class="text-right pr-2">
               <v-icon
                 icon="mdi-pencil"
                 size="18"
