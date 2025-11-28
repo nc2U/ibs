@@ -2,10 +2,10 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins.ts'
+import type { BankTransaction } from '@/store/types/comLedger'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import { CTable } from '@coreui/vue'
 
 const is_balanced = ref(true)
 
@@ -14,7 +14,11 @@ const [route, router] = [useRoute(), useRouter()]
 const transId = computed(() => Number(route.params.transId) || null)
 
 const ledgerStore = useComLedger()
-const transaction = computed(() => ledgerStore.bankTransaction)
+const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
+
+const entryLength = computed(() => transaction.value?.accounting_entries.length ?? 0)
+
+const closeEntry = (index: number) => 1
 
 onBeforeMount(() => {
   if (transId.value) ledgerStore.fetchBankTransaction(transId.value)
@@ -34,13 +38,14 @@ onBeforeMount(() => {
     <CCol col="2">
       <span>거래내역 금액: {{ transaction?.sort_name }} {{ transaction?.amount }}</span> ∙
       <span>분류 금액 합계: 출금 41,000</span> ∙
-      <span class="strong" :class="{ 'text-danger': !is_balanced }">차액: 출금 0</span>
-      <v-btn size="x-small" class="ml-3" disabled>증빙으로 분할</v-btn>
+      <span class="strong mr-3" :class="{ 'text-danger': !is_balanced }">차액: 출금 0</span>
+      <!--      <v-btn size="x-small" disabled>증빙으로 분할</v-btn>-->
       <v-btn size="x-small" @click="router.push({ name: '본사 거래 내역' })">취소</v-btn>
       <v-btn color="success" size="x-small">저장</v-btn>
     </CCol>
   </CRow>
-  <CTable hover responsive align="middle">
+  <hr class="mb-0" />
+  <CTable hover responsive align="middle" class="mb-5">
     <colgroup>
       <col style="width: 10%" />
       <col style="width: 10%" />
