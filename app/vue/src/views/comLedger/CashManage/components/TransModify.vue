@@ -25,8 +25,12 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <CRow class="text-right py-1 mb-1 bg-light-green-lighten-5">
-    <CCol class="text-left">25-10-15 12:40 ∙ 대영[농협] ∙ 농협 4953 ∙ ∙ 찬혜원 분할 중...</CCol>
+  <CRow class="text-right py-2 mb-1 bg-light-green-lighten-5 mx-1">
+    <CCol class="text-left">
+      {{ transaction?.deal_date }} ∙ {{ transaction?.bank_account_name }} ∙
+      {{ transaction?.content }}
+      <span class="ml-2 text-success strong">분할 중...</span>
+    </CCol>
     <CCol col="2">
       <span>거래내역 금액: {{ transaction?.sort_name }} {{ transaction?.amount }}</span> ∙
       <span>분류 금액 합계: 출금 41,000</span> ∙
