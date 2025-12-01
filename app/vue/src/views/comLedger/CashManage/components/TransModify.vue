@@ -20,8 +20,8 @@ const transaction = computed(() => ledgerStore.bankTransaction as BankTransactio
 // 입력 폼 데이터
 interface NewEntryForm {
   pk?: number
-  account_d1?: number
-  account_d3?: number
+  account_d1?: number | null
+  account_d3?: number | null
   trader?: string
   amount?: number
   evidence_type?: string | number | null

@@ -3,8 +3,8 @@ import { write_company_cash } from '@/utils/pageAuth.ts'
 
 interface NewEntryForm {
   pk?: number
-  account_d1?: number
-  account_d3?: number
+  account_d1?: number | null
+  account_d3?: number | null
   trader?: string
   amount?: number
   evidence_type?: string | number | null
