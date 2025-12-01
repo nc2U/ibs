@@ -51,10 +51,10 @@ const removeEntry = (index: number) => {
         <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormInput v-model="row.amount" size="sm" type="number" placeholder="금액" />
+        <CFormInput v-model="row.amount" size="sm" type="number" min="0" placeholder="금액" />
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.evidence_type" placeholder="증빙">
+        <CFormSelect v-model="row.evidence_type" size="sm" placeholder="증빙">
           <option value="">---------</option>
         </CFormSelect>
       </CTableDataCell>
@@ -64,3 +64,13 @@ const removeEntry = (index: number) => {
     </CTableRow>
   </CTable>
 </template>
+
+<style lang="scss" scoped>
+:deep(.form-control-sm),
+:deep(.form-select-sm) {
+  padding: 0.25rem 0.5rem !important;
+}
+:deep(input) {
+  margin: 2px !important;
+}
+</style>
