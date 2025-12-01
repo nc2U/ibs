@@ -226,6 +226,7 @@ onBeforeMount(async () => {
         <div v-if="route.name === `${mainViewName}`" class="pt-3">
           <ListController
             ref="fController"
+            :project="project"
             :get-suit-case="getSuitCase"
             :docs-filter="docsFilter"
             @list-filter="listFiltering"

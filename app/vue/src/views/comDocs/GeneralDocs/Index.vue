@@ -369,6 +369,7 @@ onBeforeRouteLeave(() => {
           <ListController
             ref="fController"
             :com-from="true"
+            :company="company"
             :projects="getAllProjPks"
             :docs-filter="docsFilter"
             @list-filter="listFiltering"

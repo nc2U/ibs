@@ -4,16 +4,18 @@ import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
+import { CCallout } from '@coreui/vue'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
+  company: { type: Number, default: null },
+  project: { type: Number, default: null },
   projects: { type: Array as PropType<{ label: string; value: number }[]>, default: () => [] },
   getSuitCase: { type: Object, default: null },
   docsFilter: { type: Object as PropType<DocsFilter>, required: true },
 })
-const emit = defineEmits(['list-filter'])
 
-const company = inject('company', null)
+const emit = defineEmits(['list-filter'])
 
 const form = ref<DocsFilter>({
   limit: '',
@@ -36,6 +38,8 @@ const formsCheck = computed(() => {
 
 const docsStore = useDocs()
 const docsCount = computed(() => docsStore.docsCount)
+
+const disabled = computed(() => (props.comFrom ? !props.company : !props.project))
 
 const listFiltering = (page = 1) => {
   nextTick(() => {
@@ -84,7 +88,11 @@ onBeforeMount(async () => {
       <CCol lg="6">
         <CRow>
           <CCol md="6" lg="4" xl="3" class="mb-3">
-            <CFormSelect v-model.number="form.limit" @change="listFiltering(1)">
+            <CFormSelect
+              v-model.number="form.limit"
+              @change="listFiltering(1)"
+              :disabled="disabled"
+            >
               <option value="">표시 개수</option>
               <option :value="10" :disabled="form.limit === '' || form.limit === 10">10 개</option>
               <option :value="30" :disabled="form.limit === 30">30 개</option>
@@ -92,7 +100,11 @@ onBeforeMount(async () => {
             </CFormSelect>
           </CCol>
           <CCol v-if="comFrom" md="6" lg="4" xl="3" class="mb-3">
-            <CFormSelect v-model.number="form.issue_project" @change="firstSorting">
+            <CFormSelect
+              v-model.number="form.issue_project"
+              @change="firstSorting"
+              :disabled="disabled"
+            >
               <option value="">본사</option>
               <option v-for="proj in projects" :key="proj.value" :value="proj.value">
                 {{ proj.label }}
@@ -101,7 +113,7 @@ onBeforeMount(async () => {
           </CCol>
 
           <CCol md="6" lg="4" xl="3" class="mb-3">
-            <CFormSelect v-model="form.ordering" @change="listFiltering(1)">
+            <CFormSelect v-model="form.ordering" @change="listFiltering(1)" :disabled="disabled">
               <option value="created">작성일자 오름차순</option>
               <option value="-created">작성일자 내림차순</option>
               <option value="execution_date">발행일자 오름차순</option>
@@ -125,6 +137,7 @@ onBeforeMount(async () => {
               :add-option-on="['enter', 'tab']"
               searchable
               @change="listFiltering(1)"
+              :disabled="disabled"
             />
           </CCol>
           <CCol md="6" lg="5" xl="4" class="mb-3">
@@ -135,6 +148,7 @@ onBeforeMount(async () => {
                   getSuitCase ? ', 사건번호(명)' : ''
                 }`"
                 @keydown.enter="listFiltering(1)"
+                :disabled="disabled"
               />
               <CInputGroupText @click="listFiltering(1)">검색</CInputGroupText>
             </CInputGroup>
