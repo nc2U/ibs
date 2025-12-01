@@ -2,12 +2,23 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins.ts'
-import type { BankTransaction } from '@/store/types/comLedger'
+import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
-import { useComLedger } from '@/store/pinia/comLedger.ts'
+import type { CompanyBank } from '@/store/types/comLedger'
+import type { BankTransaction } from '@/store/types/comLedger'
 import Devided from './Devided.vue'
+import BankAcc from './BankAcc.vue'
+import AccDepth from './AccDepth.vue'
 
+const props = defineProps({
+  company: { type: Number, default: null },
+})
+
+const emit = defineEmits(['patch-d3-hide', 'on-bank-create', 'on-bank-update'])
+
+const refAccDepth = ref()
+const refBankAcc = ref()
 const rowCount = ref(0)
 
 const [route, router] = [useRoute(), useRouter()]
@@ -86,6 +97,14 @@ const removeEntry = (index: number) => {
     rowCount.value--
   }
 }
+const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
+const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
+
+const accCallModal = () => {
+  if (props.company) refBankAcc.value.callModal()
+}
+
+const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => emit('patch-d3-hide', payload)
 
 onBeforeMount(async () => {
   if (transId.value) await ledgerStore.fetchBankTransaction(transId.value)
@@ -144,9 +163,9 @@ onBeforeMount(async () => {
         <CTableHeaderCell scope="col">메모</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           거래계좌
-          <!--          <a href="javascript:void(0)">-->
-          <!--            <CIcon name="cilCog" @click="accCallModal" />-->
-          <!--          </a>-->
+          <a href="javascript:void(0)">
+            <CIcon name="cilCog" @click="accCallModal" />
+          </a>
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
@@ -155,9 +174,9 @@ onBeforeMount(async () => {
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">
           세부계정
-          <!--          <a href="javascript:void(0)">-->
-          <!--            <CIcon name="cilCog" @click="refAccDepth.callModal()" />-->
-          <!--          </a>-->
+          <a href="javascript:void(0)">
+            <CIcon name="cilCog" @click="refAccDepth.callModal()" />
+          </a>
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
         <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
@@ -189,6 +208,10 @@ onBeforeMount(async () => {
       </CTableRow>
     </CTableBody>
   </CTable>
+
+  <AccDepth ref="refAccDepth" @patch-d3-hide="patchD3Hide" />
+
+  <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
 </template>
 
 <style scoped>

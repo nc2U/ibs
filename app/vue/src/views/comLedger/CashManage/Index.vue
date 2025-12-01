@@ -87,8 +87,8 @@ const createComBankAcc = (payload: CompanyBank) => ledgerStore.createComBankAcc(
 const patchComBankAcc = (payload: CompanyBank) => ledgerStore.patchComBankAcc(payload)
 
 const fetchBankTransactionList = (payload: Filter) => ledgerStore.fetchBankTransactionList(payload)
-// const findBankTransactionPage = (highlightId: number, filters: Filter) =>
-//   ledgerStore.findBankTransactionPage(highlightId, filters)
+const findBankTransactionPage = (highlightId: number, filters: Filter) =>
+  ledgerStore.findBankTransactionPage(highlightId, filters)
 const createBankTransaction = (payload: BankTransaction & { accData: AccountingEntry | null }) =>
   ledgerStore.createBankTransaction(payload)
 const updateBankTransaction = (
@@ -145,50 +145,50 @@ const listFiltering = (payload: Filter) => {
 //   createBankTransaction(payload)
 // }
 
-// const onCreate = (
-//   payload: BankTransaction & { accData: AccountingEntry | null } & {
-//     bank_account_to: null | number
-//     charge: null | number
-//   },
-// ) => {
-//   payload.company = company.value || null
-//   if (payload.sort === 3 && payload.bank_account_to) {
-//     // 대체 거래일 때
-//     const { bank_account_to, charge, ...inputData } = payload
-//
-//     inputData.sort = 2
-//     inputData.trader = '내부대체'
-//     inputData.account_d3 = 131
-//     createBankTransaction(inputData)
-//
-//     inputData.sort = 1
-//     inputData.account_d3 = 132
-//     inputData.income = inputData.outlay
-//     inputData.outlay = null
-//     inputData.bank_account = bank_account_to
-//
-//     setTimeout(() => createBankTransaction({ ...inputData }), 300)
-//     if (!!charge) {
-//       setTimeout(() => chargeCreate({ ...inputData }, charge), 600)
-//     }
-//   } else if (payload.sort === 4) {
-//     // 취소 거래일 때
-//     payload.sort = 2
-//     payload.account_d3 = 133
-//     payload.evidence = '0'
-//     createBankTransaction(payload)
-//     payload.sort = 1
-//     payload.account_d3 = 134
-//     payload.income = payload.outlay
-//     payload.outlay = null
-//     payload.evidence = ''
-//     setTimeout(() => createBankTransaction(payload), 300)
-//   } else {
-//     const { charge, ...inputData } = payload
-//     createBankTransaction(inputData)
-//     if (!!charge) chargeCreate(inputData, charge)
-//   }
-// }
+const onCreate = (
+  payload: BankTransaction & { accData: AccountingEntry | null } & {
+    bank_account_to: null | number
+    charge: null | number
+  },
+) => {
+  payload.company = company.value as number
+  // if (payload.sort === 3 && payload.bank_account_to) {
+  //   // 대체 거래일 때
+  //   const { bank_account_to, charge, ...inputData } = payload
+  //
+  //   inputData.sort = 2
+  //   inputData.trader = '내부대체'
+  //   inputData.account_d3 = 131
+  //   createBankTransaction(inputData)
+  //
+  //   inputData.sort = 1
+  //   inputData.account_d3 = 132
+  //   inputData.income = inputData.outlay
+  //   inputData.outlay = null
+  //   inputData.bank_account = bank_account_to
+  //
+  //   setTimeout(() => createBankTransaction({ ...inputData }), 300)
+  //   if (!!charge) {
+  //     // setTimeout(() => chargeCreate({ ...inputData }, charge), 600)
+  //   }
+  // } else if (payload.sort === 4) {
+  //   // 취소 거래일 때
+  //   payload.sort = 2
+  //   payload.account_d3 = 133
+  //   payload.evidence = '0'
+  //   createBankTransaction(payload)
+  //   payload.sort = 1
+  //   payload.account_d3 = 134
+  //   payload.income = payload.outlay
+  //   payload.outlay = null
+  //   payload.evidence = ''
+  //   setTimeout(() => createBankTransaction(payload), 300)
+  // } else {
+  //   const { charge, ...inputData } = payload
+  //   createBankTransaction(inputData)
+  //   if (!!charge) chargeCreate(inputData, charge)
+  // }
+}
 
 const onUpdate = (
   payload: BankTransaction & { accData: AccountingEntry | null } & { filters: Filter },
@@ -283,19 +283,19 @@ const loadHighlightPage = async () => {
   if (highlightId.value && company.value) {
     try {
       // 현재 필터 조건으로 해당 항목이 몇 번째 페이지에 있는지 찾기
-      // const targetPage = await findBankTransactionPage(highlightId.value, {
-      //   ...dataFilter.value,
-      //   company: company.value,
-      //   limit: 15, // Django에서 사용하는 페이지 크기와 동일하게 설정
-      // })
-      // // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
-      // dataFilter.value.page = targetPage
-      // await fetchBankTransactionList({
-      //   ...dataFilter.value,
-      //   company: company.value,
-      // })
+      const targetPage = await findBankTransactionPage(highlightId.value, {
+        ...dataFilter.value,
+        company: company.value,
+        limit: 15, // Django에서 사용하는 페이지 크기와 동일하게 설정
+      })
+      // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
+      dataFilter.value.page = targetPage
+      await fetchBankTransactionList({
+        ...dataFilter.value,
+        company: company.value,
+      })
     } catch (error) {
-      // console.error('Error finding highlight page:', error)
+      console.error('Error finding highlight page:', error)
     }
   }
 }
@@ -386,7 +386,12 @@ onBeforeRouteLeave(() => {
         </div>
 
         <div v-else-if="route.name.includes('수정')">
-          <TransModify />
+          <TransModify
+            :company="company as number"
+            @patch-d3-hide="patchD3Hide"
+            @on-bank-create="onBankCreate"
+            @on-bank-update="onBankUpdate"
+          />
         </div>
       </CCardBody>
     </ContentBody>
