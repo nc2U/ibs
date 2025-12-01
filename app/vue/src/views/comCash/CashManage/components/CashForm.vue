@@ -2,7 +2,7 @@
 import { ref, reactive, computed, nextTick, onBeforeMount, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { useComCash } from '@/store/pinia/comCash'
-import type { BankTransaction, CompanyBank, AccountingEntry } from '@/store/types/comLedger'
+import type { CashBook, CompanyBank, SepItems } from '@/store/types/comCash'
 import type { Project } from '@/store/types/project'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth'
@@ -15,7 +15,7 @@ import AccDepth from './AccDepth.vue'
 import BankAcc from './BankAcc.vue'
 
 const props = defineProps({
-  transaction: { type: Object as PropType<BankTransaction>, default: null },
+  cash: { type: Object as PropType<CashBook>, default: null },
   projects: { type: Array as PropType<Project[]>, default: () => [] },
 })
 
@@ -36,7 +36,7 @@ const refBankAcc = ref()
 const showProjects = ref(false)
 const showSepProjects = ref(false)
 
-const sepItem = reactive<AccountingEntry>({
+const sepItem = reactive<SepItems>({
   pk: null,
   account_d1: null,
   account_d2: null,
@@ -53,7 +53,7 @@ const sepItem = reactive<AccountingEntry>({
 
 const validated = ref(false)
 
-const form = reactive<BankTransaction & { bank_account_to: null | number; charge: null | number }>({
+const form = reactive<CashBook & { bank_account_to: null | number; charge: null | number }>({
   pk: null,
   company: null,
   sort: null,
@@ -79,22 +79,22 @@ const form = reactive<BankTransaction & { bank_account_to: null | number; charge
 })
 
 const formsCheck = computed(() => {
-  if (props.transaction) {
-    const a = form.company === props.transaction.company
-    const b = form.sort === props.transaction.sort
-    const c = form.account_d1 === props.transaction.account_d1
-    const d = form.account_d2 === props.transaction.account_d2
-    const e = form.account_d3 === props.transaction.account_d3
-    const f = form.project === props.transaction.project
-    const g = form.is_return === props.transaction.is_return
-    const h = form.content === props.transaction.content
-    const i = form.trader === props.transaction.trader
-    const j = form.bank_account === props.transaction.bank_account
-    const k = form.income === props.transaction.income
-    const l = form.outlay === props.transaction.outlay
-    const m = form.evidence === props.transaction.evidence
-    const n = form.note === props.transaction.note
-    const o = form.deal_date === props.transaction.deal_date
+  if (props.cash) {
+    const a = form.company === props.cash.company
+    const b = form.sort === props.cash.sort
+    const c = form.account_d1 === props.cash.account_d1
+    const d = form.account_d2 === props.cash.account_d2
+    const e = form.account_d3 === props.cash.account_d3
+    const f = form.project === props.cash.project
+    const g = form.is_return === props.cash.is_return
+    const h = form.content === props.cash.content
+    const i = form.trader === props.cash.trader
+    const j = form.bank_account === props.cash.bank_account
+    const k = form.income === props.cash.income
+    const l = form.outlay === props.cash.outlay
+    const m = form.evidence === props.cash.evidence
+    const n = form.note === props.cash.note
+    const o = form.deal_date === props.cash.deal_date
 
     return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o
   } else return false
@@ -108,7 +108,7 @@ const allComBankList = computed(() => comCashStore.allComBankList)
 const getComBanks = computed(() => comCashStore.getComBanks)
 
 const comBankAccs = computed(() => {
-  const ba = props.transaction ? props.transaction.bank_account : 0
+  const ba = props.cash ? props.cash.bank_account : 0
   const isExist = !!getComBanks.value.filter(b => b.value === ba).length
 
   return !ba || isExist
@@ -131,35 +131,33 @@ const requireItem = computed(() => !!form.account_d1 && !!form.account_d2 && !!f
 
 const sepDisabled = computed(() => {
   const disabled = !!form.account_d1 || !!form.account_d2 || !!form.account_d3
-  return props.transaction?.AccountingEntry
-    ? disabled && (props.transaction.AccountingEntry?.length ?? 0) === 0
-    : disabled
+  return props.cash?.sepItems ? disabled && (props.cash.sepItems?.length ?? 0) === 0 : disabled
 })
 
 const sepSummary = computed(() => {
-  if (!props.transaction?.AccountingEntry?.length) return [0, 0]
+  if (!props.cash?.sepItems?.length) return [0, 0]
 
-  const inc = props.transaction.AccountingEntry.map((s: AccountingEntry) => s.income).reduce(
-    (prev, curr) => (prev || 0) + (curr || 0),
-  )
-  const out = props.transaction.AccountingEntry.map((s: AccountingEntry) => s.outlay).reduce(
-    (prev, curr) => (prev || 0) + (curr || 0),
-  )
+  const inc = props.cash.sepItems
+    .map((s: SepItems) => s.income)
+    .reduce((prev, curr) => (prev || 0) + (curr || 0))
+  const out = props.cash.sepItems
+    .map((s: SepItems) => s.outlay)
+    .reduce((prev, curr) => (prev || 0) + (curr || 0))
   return [inc, out]
 })
 
 // 은행 거래와 분류 거래 합계 일치 여부 검증
 const isBalanceMatched = computed(() => {
-  if (!props.transaction?.is_separate || !props.transaction?.AccountingEntry?.length) return true
+  if (!props.cash?.is_separate || !props.cash?.sepItems?.length) return true
 
-  const parentIncome = props.transaction.income || 0
-  const parentOutlay = props.transaction.outlay || 0
+  const parentIncome = props.cash.income || 0
+  const parentOutlay = props.cash.outlay || 0
   const [childrenIncome, childrenOutlay] = sepSummary.value
 
   return parentIncome === childrenIncome && parentOutlay === childrenOutlay
 })
 
-const sepUpdate = (sep: AccountingEntry) => {
+const sepUpdate = (sep: SepItems) => {
   sepItem.pk = sep.pk
   sepItem.account_d1 = sep.account_d1
   sepItem.account_d2 = sep.account_d2
@@ -190,7 +188,7 @@ const sepRemove = () => {
 }
 
 const isModify = computed(() => {
-  if (!form.is_separate) return !!props.transaction
+  if (!form.is_separate) return !!props.cash
   else return !!sepItem.pk
 })
 
@@ -308,9 +306,7 @@ const sepD3_change = (event: Event) => {
 
 const accountStore = useAccount()
 const allowedPeriod = computed(
-  () =>
-    accountStore.superAuth ||
-    (props.transaction?.deal_date && diffDate(props.transaction.deal_date) <= 30),
+  () => accountStore.superAuth || (props.cash?.deal_date && diffDate(props.cash.deal_date) <= 30),
 )
 
 const onSubmit = (event: Event) => {
@@ -318,14 +314,14 @@ const onSubmit = (event: Event) => {
     validated.value = true
   } else {
     // 분류 레코드(separated가 있는 경우)는 sepData를 전송하지 않음
-    const isChildRecord = props.transaction?.separated
+    const isChildRecord = props.cash?.separated
     const payload =
       !form.is_separate || isChildRecord
         ? { formData: form, sepData: null }
         : { formData: form, sepData: sepItem }
 
     if (write_company_cash.value) {
-      if (props.transaction) {
+      if (props.cash) {
         if (allowedPeriod.value) {
           emit('multi-submit', payload)
           emit('close')
@@ -355,8 +351,8 @@ const deleteConfirm = () => {
 
 const deleteObject = () => {
   emit('on-delete', {
-    company: props.transaction?.company,
-    pk: props.transaction?.pk,
+    company: props.cash?.company,
+    pk: props.cash?.pk,
   })
   refDelModal.value.close()
   emit('close')
@@ -368,25 +364,25 @@ const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
 const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 
 const dataSetup = () => {
-  if (props.transaction) {
-    form.pk = props.transaction.pk
-    form.company = props.transaction.company
-    form.sort = props.transaction.sort
-    form.account_d1 = props.transaction.account_d1
-    form.account_d2 = props.transaction.account_d2
-    form.account_d3 = props.transaction.account_d3
-    form.project = props.transaction.project
-    form.is_return = props.transaction.is_return
-    form.is_separate = props.transaction.is_separate
-    form.separated = props.transaction.separated
-    form.content = props.transaction.content
-    form.trader = props.transaction.trader
-    form.bank_account = props.transaction.bank_account
-    form.income = props.transaction.income
-    form.outlay = props.transaction.outlay
-    form.evidence = props.transaction.evidence
-    form.note = props.transaction.note
-    form.deal_date = props.transaction.deal_date
+  if (props.cash) {
+    form.pk = props.cash.pk
+    form.company = props.cash.company
+    form.sort = props.cash.sort
+    form.account_d1 = props.cash.account_d1
+    form.account_d2 = props.cash.account_d2
+    form.account_d3 = props.cash.account_d3
+    form.project = props.cash.project
+    form.is_return = props.cash.is_return
+    form.is_separate = props.cash.is_separate
+    form.separated = props.cash.separated
+    form.content = props.cash.content
+    form.trader = props.cash.trader
+    form.bank_account = props.cash.bank_account
+    form.income = props.cash.income
+    form.outlay = props.cash.outlay
+    form.evidence = props.cash.evidence
+    form.note = props.cash.note
+    form.deal_date = props.cash.deal_date
   }
   callAccount()
 }
@@ -425,7 +421,7 @@ onBeforeMount(async () => {
                 <CFormSelect
                   v-model.number="form.sort"
                   required
-                  :disabled="transaction && !!transaction.sort"
+                  :disabled="cash && !!cash.sort"
                   @change="sort_change"
                 >
                   <option value="">---------</option>
@@ -524,7 +520,7 @@ onBeforeMount(async () => {
           </CCol>
 
           <CCol sm="6">
-            <CRow v-show="transaction && transaction.project">
+            <CRow v-show="cash && cash.project">
               <CFormLabel class="col-sm-4 col-form-label"> 반환 정산 여부</CFormLabel>
               <CCol sm="8" class="pt-2">
                 <CFormSwitch
@@ -572,7 +568,7 @@ onBeforeMount(async () => {
           <CCol sm="6">
             <CRow>
               <CFormLabel class="col-sm-4 col-form-label required">
-                {{ !transaction && form.sort === 3 ? '출금' : '거래' }}계좌
+                {{ !cash && form.sort === 3 ? '출금' : '거래' }}계좌
                 <a href="javascript:void(0)">
                   <CIcon name="cilCog" @click="refBankAcc.callModal()" />
                 </a>
@@ -612,7 +608,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <CRow v-if="!transaction && form.sort === 3">
+            <CRow v-if="!cash && form.sort === 3">
               <CFormLabel class="col-sm-4 col-form-label required">입금계좌</CFormLabel>
               <CCol sm="8">
                 <CFormSelect v-model="form.bank_account_to" required :disabled="form.sort !== 3">
@@ -639,13 +635,13 @@ onBeforeMount(async () => {
                   min="0"
                   placeholder="출금 금액"
                   :required="form.sort !== 1"
-                  :disabled="form.sort === 1 || !form.sort || (transaction && !transaction.outlay)"
+                  :disabled="form.sort === 1 || !form.sort || (cash && !cash.outlay)"
                 />
               </CCol>
             </CRow>
           </CCol>
           <CCol sm="6">
-            <CRow v-if="form.sort === 1 || transaction">
+            <CRow v-if="form.sort === 1 || cash">
               <CFormLabel class="col-sm-4 col-form-label" :class="{ required: form.sort === 1 }">
                 입금액
               </CFormLabel>
@@ -656,7 +652,7 @@ onBeforeMount(async () => {
                   min="0"
                   placeholder="입금 금액"
                   :required="form.sort === 1"
-                  :disabled="form.sort === 2 || !form.sort || (transaction && !transaction.income)"
+                  :disabled="form.sort === 2 || !form.sort || (cash && !cash.income)"
                 />
               </CCol>
             </CRow>
@@ -703,11 +699,8 @@ onBeforeMount(async () => {
       </div>
 
       <div v-if="form.is_separate">
-        <hr v-if="transaction?.AccountingEntry && transaction.AccountingEntry.length" />
-        <CRow
-          v-if="transaction?.AccountingEntry && transaction.AccountingEntry.length"
-          class="mb-3"
-        >
+        <hr v-if="cash?.sepItems && cash.sepItems.length" />
+        <CRow v-if="cash?.sepItems && cash.sepItems.length" class="mb-3">
           <CCol>
             <strong>
               <CIcon name="cilDescription" class="mr-2" />
@@ -730,27 +723,19 @@ onBeforeMount(async () => {
                 <strong>은행 거래와 분류 거래 합계가 일치하지 않습니다!</strong>
                 <div class="mt-1">
                   <span class="text-caption">
-                    은행 입금: {{ numFormat(transaction?.income || 0) }} / 분류 합계:
-                    {{ numFormat(sepSummary[0] || 0) }}
-                    <span
-                      v-if="(transaction?.income || 0) !== (sepSummary[0] || 0)"
-                      class="text-error ml-1"
-                    >
-                      (차액:
-                      {{ numFormat(Math.abs((transaction?.income ?? 0) - (sepSummary[0] || 0))) }})
+                    은행 입금: {{ numFormat(cash?.income || 0) }} /
+                    분류 합계: {{ numFormat(sepSummary[0] || 0) }}
+                    <span v-if="(cash?.income || 0) !== (sepSummary[0] || 0)" class="text-error ml-1">
+                      (차액: {{ numFormat(Math.abs((cash?.income ?? 0) - (sepSummary[0] || 0))) }})
                     </span>
                   </span>
                 </div>
                 <div>
                   <span class="text-caption">
-                    은행 출금: {{ numFormat(transaction?.outlay || 0) }} / 분류 합계:
-                    {{ numFormat(sepSummary[1] || 0) }}
-                    <span
-                      v-if="(transaction?.outlay || 0) !== (sepSummary[1] || 0)"
-                      class="text-error ml-1"
-                    >
-                      (차액:
-                      {{ numFormat(Math.abs((transaction?.outlay ?? 0) - (sepSummary[1] || 0))) }})
+                    은행 출금: {{ numFormat(cash?.outlay || 0) }} /
+                    분류 합계: {{ numFormat(sepSummary[1] || 0) }}
+                    <span v-if="(cash?.outlay || 0) !== (sepSummary[1] || 0)" class="text-error ml-1">
+                      (차액: {{ numFormat(Math.abs((cash?.outlay ?? 0) - (sepSummary[1] || 0))) }})
                     </span>
                   </span>
                 </div>
@@ -758,7 +743,13 @@ onBeforeMount(async () => {
             </v-alert>
 
             <!-- 일치하는 경우 성공 표시 -->
-            <v-alert v-else type="success" variant="tonal" density="compact" class="mt-2">
+            <v-alert
+              v-else
+              type="success"
+              variant="tonal"
+              density="compact"
+              class="mt-2"
+            >
               <template #prepend>
                 <v-icon icon="mdi-check-circle" />
               </template>
@@ -767,9 +758,9 @@ onBeforeMount(async () => {
           </CCol>
         </CRow>
 
-        <div v-if="transaction">
+        <div v-if="cash">
           <CRow
-            v-for="(sep, i) in transaction.AccountingEntry"
+            v-for="(sep, i) in cash.sepItems"
             :key="sep.pk"
             class="mb-1"
             :class="sep.pk === sepItem.pk ? 'text-success text-decoration-underline' : ''"

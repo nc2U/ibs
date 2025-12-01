@@ -49,16 +49,16 @@ export interface BankTransaction {
 }
 
 export interface AccountingEntry {
-  pk: number
+  pk?: number
   transaction_id: string
   company: number
   sort: number
   sort_name: string
-  account_d1: number
+  account_d1: number | null
   account_d1_name: string
-  account_d2: number
+  account_d2: number | null
   account_d2_name: string
-  account_d3: number
+  account_d3: number | null
   account_d3_name: string
   amount: number
   trader: string
