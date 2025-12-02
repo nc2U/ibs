@@ -2,6 +2,12 @@
 import { computed } from 'vue'
 import { useIbs } from '@/store/pinia/ibs.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
+import {
+  AccountSelector,
+  AccountD1Select,
+  AccountD2Select,
+  AccountD3Select,
+} from '@/components/ComAccounts'
 
 interface NewEntryForm {
   pk?: number
@@ -28,12 +34,32 @@ const ibsStore = useIbs()
 const formAccD1List = computed(() => ibsStore.formAccD1List)
 const formAccD2List = computed(() => ibsStore.formAccD2List)
 const formAccD3List = computed(() => ibsStore.formAccD3List)
+const listAccD3List = computed(() => ibsStore.listAccD3List)
 
-const fetchFormAccD1List = (sort: number | null) => ibsStore.fetchFormAccD1List(sort)
-const fetchFormAccD2List = (sort: number | null, d1: number | null) =>
-  ibsStore.fetchFormAccD2List(sort, d1)
-const fetchFormAccD3List = (sort: number | null, d1: number | null, d2: number | null) =>
-  ibsStore.fetchFormAccD3List(sort, d1, d2)
+// AccountSelector용 wrapper 함수 (sort는 기본값 1 사용)
+const fetchD1List = async (sort: number) => {
+  await ibsStore.fetchFormAccD1List(sort)
+}
+
+const fetchD2List = async (d1: number) => {
+  await ibsStore.fetchFormAccD2List(1, d1)
+}
+
+const fetchD3List = async (d2: number) => {
+  await ibsStore.fetchFormAccD3List(1, null, d2)
+}
+
+// 검색 모드용: 전체 D3 목록 로드
+const getAllD3List = async () => {
+  await ibsStore.fetchAllAccD3List()
+}
+
+const getD1List = () => formAccD1List.value
+const getD2List = () => formAccD2List.value
+const getD3List = () => {
+  // 검색 모드에서는 전체 목록, 계층 모드에서는 필터링된 목록
+  return listAccD3List.value.length > 0 ? listAccD3List.value : formAccD3List.value
+}
 
 const removeEntry = (index: number) => {
   emit('removeEntry', index)
@@ -52,23 +78,36 @@ const removeEntry = (index: number) => {
 
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
-      <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.account_d1" size="sm" placeholder="계정[대분류]">
-          <option value="">---------</option>
-          <option v-for="d1 in formAccD1List" :value="d1.pk" :key="d1.pk">{{ d1.name }}</option>
-        </CFormSelect>
-      </CTableDataCell>
-      <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.account_d2" size="sm" placeholder="계정[중분류]">
-          <option value="">---------</option>
-          <option v-for="d2 in formAccD2List" :value="d2.pk" :key="d2.pk">{{ d2.name }}</option>
-        </CFormSelect>
-      </CTableDataCell>
-      <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.account_d3" size="sm" placeholder="계정[소분류]">
-          <option value="">---------</option>
-          <option v-for="d3 in formAccD3List" :value="d3.pk" :key="d3.pk">{{ d3.name }}</option>
-        </CFormSelect>
+      <CTableDataCell class="px-1" colspan="3">
+        <AccountSelector
+          :sort="1"
+          :account_d1="row.account_d1"
+          :account_d2="row.account_d2"
+          :account_d3="row.account_d3"
+          :fetchD1List="fetchD1List"
+          :fetchD2List="fetchD2List"
+          :fetchD3List="fetchD3List"
+          :getD1List="getD1List"
+          :getD2List="getD2List"
+          :getD3List="getD3List"
+          :getAllD3List="getAllD3List"
+          :autoInitialize="false"
+          defaultMode="search"
+          @update:accountD1="val => (row.account_d1 = val)"
+          @update:accountD2="val => (row.account_d2 = val)"
+          @update:accountD3="val => (row.account_d3 = val)"
+        >
+          <!-- 계층 모드일 때 표시될 셀렉트들 -->
+          <CTableDataCell class="px-1">
+            <AccountD1Select size="sm" placeholder="---------" />
+          </CTableDataCell>
+          <CTableDataCell class="px-1">
+            <AccountD2Select size="sm" placeholder="---------" />
+          </CTableDataCell>
+          <CTableDataCell class="px-1">
+            <AccountD3Select size="sm" placeholder="---------" />
+          </CTableDataCell>
+        </AccountSelector>
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />
