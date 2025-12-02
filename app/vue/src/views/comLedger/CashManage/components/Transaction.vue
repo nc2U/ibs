@@ -8,6 +8,7 @@ import { write_company_cash } from '@/utils/pageAuth'
 import type { Project } from '@/store/types/project'
 import type { CompanyBank, BankTransaction } from '@/store/types/comLedger'
 import { numFormat, cutString, diffDate } from '@/utils/baseMixins'
+import { CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   projects: { type: Array as PropType<Project[]>, default: () => [] },
@@ -144,6 +145,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
               <v-icon
                 icon="mdi-pencil"
                 size="18"
+                color="grey"
                 @click="
                   router.push({
                     name: '본사 거래 내역 - 수정',

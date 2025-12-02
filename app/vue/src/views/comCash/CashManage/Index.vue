@@ -16,6 +16,7 @@ import ListController from '@/views/comCash/CashManage/components/ListController
 import AddCash from '@/views/comCash/CashManage/components/AddCash.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import CashList from '@/views/comCash/CashManage/components/CashList.vue'
+import { afterAll } from 'vitest'
 
 const listControl = ref()
 const route = useRoute()
@@ -209,12 +210,12 @@ const onBankUpdate = (payload: CompanyBank) => patchComBankAcc(payload)
 
 const dataSetup = async (pk: number) => {
   await fetchCompany(pk)
-  fetchProjectList()
-  fetchAllDepartList(pk)
-  fetchComBankAccList(pk)
-  fetchAllComBankAccList(pk)
-  fetchCashBookList({ company: pk })
-  fetchComCashCalc(pk)
+  await fetchProjectList()
+  await fetchAllDepartList(pk)
+  await fetchComBankAccList(pk)
+  await fetchAllComBankAccList(pk)
+  await fetchCashBookList({ company: pk })
+  await fetchComCashCalc(pk)
   dataFilter.value.company = pk
 }
 

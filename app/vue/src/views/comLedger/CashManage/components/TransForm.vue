@@ -201,13 +201,13 @@ const saveTransaction = async () => {
 
     if (isCreateMode.value) {
       const payload = buildCreatePayload()
-      await ledgerStore.createBankTransaction(payload)
+      await ledgerStore.createBankTransaction(payload as any)
     } else {
       const payload = buildUpdatePayload()
-      await ledgerStore.updateBankTransaction(payload)
+      await ledgerStore.updateBankTransaction(payload as any)
     }
 
-    router.push({ name: '본사 거래 내역' })
+    await router.push({ name: '본사 거래 내역' })
   } catch (error: any) {
     console.error('Save failed:', error)
     alert(error.message || '저장 중 오류가 발생했습니다.')
@@ -275,7 +275,7 @@ onBeforeRouteLeave((to, from, next) => {
       ∙
       <span>분류 금액 합계: {{ sortName }} {{ numFormat(totalEntryAmount) }}</span> ∙
       <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
-        차액: {{ sortName }} {{ numFormat(Math.abs(difference)) }}
+        차액: {{ sortName }} {{ (numFormat(Math.abs(difference)), '0') }}
       </span>
       <v-btn size="x-small" @click="router.push({ name: '본사 거래 내역' })">취소</v-btn>
       <v-btn
@@ -292,10 +292,10 @@ onBeforeRouteLeave((to, from, next) => {
   <hr class="mb-0" />
   <CTable hover responsive class="mb-5">
     <colgroup>
+      <col style="width: 9%" />
       <col style="width: 10%" />
-      <col style="width: 10%" />
-      <col style="width: 6%" />
-      <col style="width: 12%" />
+      <col style="width: 8%" />
+      <col style="width: 11%" />
       <col style="width: 8%" />
       <col style="width: 5%" />
       <col style="width: 11%" />
@@ -325,10 +325,11 @@ onBeforeRouteLeave((to, from, next) => {
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
         <CTableHeaderCell class="text-left pl-0" scope="col">
-          <span class="text-grey mr-2">|</span> 계정
+          <span class="text-grey mr-2">|</span> 계정[대분류]
         </CTableHeaderCell>
+        <CTableHeaderCell class="text-left pl-0" scope="col"> 계정[중분류] </CTableHeaderCell>
         <CTableHeaderCell scope="col">
-          세부계정
+          계정[소분류]
           <a href="javascript:void(0)">
             <CIcon name="cilCog" @click="refAccDepth.callModal()" />
           </a>
@@ -380,9 +381,9 @@ onBeforeRouteLeave((to, from, next) => {
             </option>
           </CFormSelect>
           <span v-else>{{ transaction?.bank_account_name }}</span>
-          <a href="javascript:void(0)" class="ml-2">
-            <CIcon name="cilCog" @click="accCallModal" />
-          </a>
+          <!--          <a href="javascript:void(0)" class="ml-2">-->
+          <!--            <CIcon name="cilCog" @click="accCallModal" />-->
+          <!--          </a>-->
         </CTableDataCell>
 
         <!-- 적요 -->
@@ -401,16 +402,16 @@ onBeforeRouteLeave((to, from, next) => {
         <!-- 입출금액 -->
         <CTableDataCell class="text-right">
           <div v-if="isCreateMode" class="d-flex align-items-center justify-content-end">
-            <CFormSelect
-              v-model.number="bankForm.sort"
-              size="sm"
-              style="width: 70px"
-              required
-              class="mr-2"
-            >
-              <option :value="1">입금</option>
-              <option :value="2">출금</option>
-            </CFormSelect>
+            <!--            <CFormSelect-->
+            <!--              v-model.number="bankForm.sort"-->
+            <!--              size="sm"-->
+            <!--              style="width: 70px"-->
+            <!--              required-->
+            <!--              class="mr-2"-->
+            <!--            >-->
+            <!--              <option :value="1">입금</option>-->
+            <!--              <option :value="2">출금</option>-->
+            <!--            </CFormSelect>-->
             <CFormInput
               v-model.number="bankForm.amount"
               type="number"
@@ -430,8 +431,8 @@ onBeforeRouteLeave((to, from, next) => {
               @click="addRow"
             />
           </div>
-          <div v-else>
-            {{ numFormat(transaction?.amount ?? 0) }}
+          <div v-else :class="transaction?.sort === 1 ? 'text-success strong' : ''">
+            {{ transaction?.sort === 1 ? '+' : '-' }}{{ numFormat(transaction?.amount ?? 0) }}
             <v-btn
               icon="mdi-plus"
               density="compact"

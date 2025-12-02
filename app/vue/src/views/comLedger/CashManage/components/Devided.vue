@@ -4,6 +4,7 @@ import { write_company_cash } from '@/utils/pageAuth.ts'
 interface NewEntryForm {
   pk?: number
   account_d1?: number | null
+  account_d2?: number | null
   account_d3?: number | null
   trader?: string
   amount?: number
@@ -30,6 +31,7 @@ const removeEntry = (index: number) => {
   <CTable class="m-0">
     <col style="width: 9%" />
     <col style="width: 20%" />
+    <col style="width: 20%" />
     <col style="width: 24%" />
     <col style="width: 18%" />
     <col style="width: 18%" />
@@ -39,6 +41,11 @@ const removeEntry = (index: number) => {
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell class="px-1">
         <CFormSelect v-model="row.account_d1" size="sm" placeholder="계정">
+          <option value="">---------</option>
+        </CFormSelect>
+      </CTableDataCell>
+      <CTableDataCell class="px-1">
+        <CFormSelect v-model="row.account_d2" size="sm" placeholder="계정">
           <option value="">---------</option>
         </CFormSelect>
       </CTableDataCell>
