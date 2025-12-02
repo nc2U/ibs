@@ -18,11 +18,11 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ComLedgerAuthGuard from '@/components/AuthGuard/ComLedgerAuthGuard.vue'
-import ListController from '@/views/comLedger/CashManage/components/ListController.vue'
-import AddCash from '@/views/comLedger/CashManage/components/AddCash.vue'
+import ListController from './components/ListController.vue'
+import AddTransaction from './components/AddTransaction.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import TransactionList from './components/TransactionList.vue'
-import TransModify from './components/TransModify.vue'
+import TransForm from './components/TransForm.vue'
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
@@ -354,7 +354,8 @@ onBeforeRouteLeave(() => {
             :projects="projectList"
             @list-filtering="listFiltering"
           />
-          <AddCash
+
+          <AddTransaction
             v-if="write_company_cash"
             :company="company as number"
             :projects="projectList"
@@ -385,8 +386,12 @@ onBeforeRouteLeave(() => {
           />
         </div>
 
-        <div v-else-if="route.name.includes('수정')">
-          <TransModify
+        <div
+          v-else-if="
+            route.name === '본사 거래 내역 - 수정' || route.name === '본사 거래 내역 - 생성'
+          "
+        >
+          <TransForm
             :company="company as number"
             @patch-d3-hide="patchD3Hide"
             @on-bank-create="onBankCreate"
