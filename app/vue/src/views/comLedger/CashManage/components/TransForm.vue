@@ -262,7 +262,7 @@ onBeforeRouteLeave((to, from, next) => {
   >
     <CCol class="text-left">
       <template v-if="isCreateMode">
-        <span class="text-primary strong">새 거래 등록 중...</span>
+        <span class="text-primary strong">신규 거래 등록 중...</span>
       </template>
       <template v-else>
         {{ transaction?.deal_date }} ∙ {{ transaction?.bank_account_name }} ∙
@@ -273,7 +273,7 @@ onBeforeRouteLeave((to, from, next) => {
     <CCol col="2">
       <span> 거래내역 금액: {{ sortName }} {{ numFormat(bankAmount) }} </span>
       ∙
-      <span>분류 금액 합계: {{ sortName }} {{ numFormat(totalEntryAmount) }}</span> ∙
+      <span>분류 금액 합계: {{ sortName }} {{ (numFormat(totalEntryAmount), '0') }}</span> ∙
       <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
         차액: {{ sortName }} {{ (numFormat(Math.abs(difference)), '0') }}
       </span>
@@ -297,10 +297,11 @@ onBeforeRouteLeave((to, from, next) => {
       <col style="width: 8%" />
       <col style="width: 11%" />
       <col style="width: 8%" />
-      <col style="width: 5%" />
-      <col style="width: 11%" />
-      <col style="width: 13%" />
-      <col style="width: 11%" />
+      <col style="width: 8%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 12%" />
+      <col style="width: 8%" />
       <col style="width: 8%" />
       <col v-if="write_company_cash" style="width: 5%" />
     </colgroup>
@@ -308,7 +309,7 @@ onBeforeRouteLeave((to, from, next) => {
     <CTableHead class="sticky-table-head">
       <CTableRow :color="TableSecondary" class="sticky-header-row-1">
         <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 6 : 5">
+        <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 7 : 6">
           <span class="text-grey mr-2">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
@@ -402,16 +403,16 @@ onBeforeRouteLeave((to, from, next) => {
         <!-- 입출금액 -->
         <CTableDataCell class="text-right">
           <div v-if="isCreateMode" class="d-flex align-items-center justify-content-end">
-            <!--            <CFormSelect-->
-            <!--              v-model.number="bankForm.sort"-->
-            <!--              size="sm"-->
-            <!--              style="width: 70px"-->
-            <!--              required-->
-            <!--              class="mr-2"-->
-            <!--            >-->
-            <!--              <option :value="1">입금</option>-->
-            <!--              <option :value="2">출금</option>-->
-            <!--            </CFormSelect>-->
+            <CFormSelect
+              v-model.number="bankForm.sort"
+              size="sm"
+              style="width: 70px"
+              required
+              class="mr-2"
+            >
+              <option :value="1">입금</option>
+              <option :value="2">출금</option>
+            </CFormSelect>
             <CFormInput
               v-model.number="bankForm.amount"
               type="number"
@@ -444,7 +445,7 @@ onBeforeRouteLeave((to, from, next) => {
           </div>
         </CTableDataCell>
 
-        <CTableDataCell colspan="6">
+        <CTableDataCell colspan="7">
           <Devided :display-rows="displayRows" @remove-entry="removeEntry" />
         </CTableDataCell>
       </CTableRow>

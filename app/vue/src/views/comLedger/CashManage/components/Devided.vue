@@ -29,28 +29,28 @@ const removeEntry = (index: number) => {
 
 <template>
   <CTable class="m-0">
-    <col style="width: 9%" />
-    <col style="width: 20%" />
-    <col style="width: 20%" />
-    <col style="width: 24%" />
-    <col style="width: 18%" />
-    <col style="width: 18%" />
+    <col style="width: 13%" />
+    <col style="width: 14%" />
+    <col style="width: 14%" />
+    <col style="width: 23%" />
+    <col style="width: 15%" />
+    <col style="width: 15%" />
     <col v-if="write_company_cash" style="width: 6%" />
 
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.account_d1" size="sm" placeholder="계정">
+        <CFormSelect v-model="row.account_d1" size="sm" placeholder="계정[대분류]">
           <option value="">---------</option>
         </CFormSelect>
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.account_d2" size="sm" placeholder="계정">
+        <CFormSelect v-model="row.account_d2" size="sm" placeholder="계정[중분류]">
           <option value="">---------</option>
         </CFormSelect>
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.account_d3" size="sm" placeholder="세부계정">
+        <CFormSelect v-model="row.account_d3" size="sm" placeholder="계정[소분류]">
           <option value="">---------</option>
         </CFormSelect>
       </CTableDataCell>
@@ -58,10 +58,10 @@ const removeEntry = (index: number) => {
         <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormInput v-model="row.amount" size="sm" type="number" min="0" placeholder="금액" />
+        <CFormInput v-model="row.amount" size="sm" type="number" min="0" placeholder="분류 금액" />
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.evidence_type" size="sm" placeholder="증빙">
+        <CFormSelect v-model="row.evidence_type" size="sm" placeholder="지출 증빙">
           <option value="">---------</option>
         </CFormSelect>
       </CTableDataCell>
