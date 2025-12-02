@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
+import { useIbs } from '@/store/pinia/ibs.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 
 interface NewEntryForm {
@@ -22,6 +24,17 @@ interface Emits {
 defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const ibsStore = useIbs()
+const formAccD1List = computed(() => ibsStore.formAccD1List)
+const formAccD2List = computed(() => ibsStore.formAccD2List)
+const formAccD3List = computed(() => ibsStore.formAccD3List)
+
+const fetchFormAccD1List = (sort: number | null) => ibsStore.fetchFormAccD1List(sort)
+const fetchFormAccD2List = (sort: number | null, d1: number | null) =>
+  ibsStore.fetchFormAccD2List(sort, d1)
+const fetchFormAccD3List = (sort: number | null, d1: number | null, d2: number | null) =>
+  ibsStore.fetchFormAccD3List(sort, d1, d2)
+
 const removeEntry = (index: number) => {
   emit('removeEntry', index)
 }
@@ -42,16 +55,19 @@ const removeEntry = (index: number) => {
       <CTableDataCell class="px-1">
         <CFormSelect v-model="row.account_d1" size="sm" placeholder="계정[대분류]">
           <option value="">---------</option>
+          <option v-for="d1 in formAccD1List" :value="d1.pk" :key="d1.pk">{{ d1.name }}</option>
         </CFormSelect>
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormSelect v-model="row.account_d2" size="sm" placeholder="계정[중분류]">
           <option value="">---------</option>
+          <option v-for="d2 in formAccD2List" :value="d2.pk" :key="d2.pk">{{ d2.name }}</option>
         </CFormSelect>
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormSelect v-model="row.account_d3" size="sm" placeholder="계정[소분류]">
           <option value="">---------</option>
+          <option v-for="d3 in formAccD3List" :value="d3.pk" :key="d3.pk">{{ d3.name }}</option>
         </CFormSelect>
       </CTableDataCell>
       <CTableDataCell class="px-1">
