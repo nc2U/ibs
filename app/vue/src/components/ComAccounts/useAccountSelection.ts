@@ -81,7 +81,7 @@ export function useAccountSelection(
     }
   }
 
-  const handleD3Change = () => {
+  const handleD3Change = async () => {
     // D3 selection completed
   }
 
