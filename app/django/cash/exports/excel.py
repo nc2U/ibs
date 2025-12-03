@@ -190,8 +190,10 @@ class ExportProjectDateCashbook(ExcelExportMixin):
         inc_sum = 0
         out_sum = 0
         for cash in date_cashes:
-            inc_sum += cash.income if cash.income else 0
-            out_sum += cash.outlay if cash.outlay else 0
+            # 합계 계산: 분리된 부모거래만 포함, 자식거래(separated가 있는 경우)는 제외
+            if not cash.separated:  # 부모거래이거나 일반거래인 경우만 합계에 포함
+                inc_sum += cash.income if cash.income else 0
+                out_sum += cash.outlay if cash.outlay else 0
 
             if cash.is_separate and cash.sepItems.exists():
                 # 분리된 거래: 부모 + 자식들
@@ -203,7 +205,8 @@ class ExportProjectDateCashbook(ExcelExportMixin):
                     if idx == 0:
                         # 첫 번째 자식: 은행거래(부모) + 분류내역(자식)
                         worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
-                        worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', left_format)
+                        worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '',
+                                        left_format)
                         worksheet.write(row_num, 2, cash.trader or '', left_format)
                         worksheet.write(row_num, 3, cash.content or '', left_format)
                         worksheet.write(row_num, 4, cash.income, number_format)
@@ -212,7 +215,9 @@ class ExportProjectDateCashbook(ExcelExportMixin):
                         account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
                         worksheet.write(row_num, 6, account_name, center_format)
                         worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
-                        worksheet.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', center_format)
+                        worksheet.write(row_num, 8,
+                                        child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                                        center_format)
                         worksheet.write(row_num, 9, cash.note or '', left_format)
                     else:
                         # 나머지 자식: 은행거래 비움 + 분류내역만
@@ -226,7 +231,9 @@ class ExportProjectDateCashbook(ExcelExportMixin):
                         account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
                         worksheet.write(row_num, 6, account_name, center_format)
                         worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
-                        worksheet.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', center_format)
+                        worksheet.write(row_num, 8,
+                                        child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                                        center_format)
                         worksheet.write(row_num, 9, '', left_format)
             else:
                 # 일반 거래: 은행거래 + 분류내역 모두 채움
@@ -241,15 +248,17 @@ class ExportProjectDateCashbook(ExcelExportMixin):
                 account_name = f"{cash.project_account_d2.name if cash.project_account_d2 else ''}/{cash.project_account_d3.name if cash.project_account_d3 else ''}"
                 worksheet.write(row_num, 6, account_name, center_format)
                 worksheet.write(row_num, 7, cash.income or cash.outlay or 0, number_format)
-                worksheet.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '', center_format)
+                worksheet.write(row_num, 8,
+                                cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
+                                center_format)
                 worksheet.write(row_num, 9, cash.note or '', left_format)
 
         # 5. Sum row
         row_num += 1
         h_format.set_num_format(41)
-        worksheet.merge_range(row_num, 0, row_num, 4, '합계', h_format)
-        worksheet.write(row_num, 5, inc_sum, h_format)
-        worksheet.write(row_num, 6, out_sum, h_format)
+        worksheet.merge_range(row_num, 0, row_num, 3, '합계', h_format)
+        worksheet.write(row_num, 4, inc_sum, h_format)
+        worksheet.write(row_num, 5, out_sum, h_format)
         worksheet.write(row_num, 7, '', h_format)
         worksheet.write(row_num, 8, '', h_format)
         worksheet.write(row_num, 9, '', h_format)
@@ -754,6 +763,10 @@ def export_project_cash_xls(request):
     ws.col(9).width = 100 * 30  # 메모
 
     for cash in obj_list:
+        # 자식 거래는 건너뛰기 (이미 부모 거래에서 처리됨)
+        if cash.separated:
+            continue
+
         if cash.is_separate and cash.sepItems.exists():
             # ============================================
             # 분리된 거래: 부모 + 자식들
@@ -777,7 +790,8 @@ def export_project_cash_xls(request):
                     account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
                     ws.write(row_num, 6, account_name, styles['default'])
                     ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
-                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', styles['default'])
+                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                             styles['default'])
                     ws.write(row_num, 9, cash.note or '', styles['default'])
                 else:
                     # 나머지 자식: 은행거래 비움 + 분류내역만
@@ -789,7 +803,8 @@ def export_project_cash_xls(request):
                     account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
                     ws.write(row_num, 6, account_name, styles['default'])
                     ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
-                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', styles['default'])
+                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                             styles['default'])
                     ws.write(row_num, 9, '', styles['default'])
         else:
             # ============================================
@@ -809,7 +824,8 @@ def export_project_cash_xls(request):
             account_name = f"{cash.project_account_d2.name if cash.project_account_d2 else ''}/{cash.project_account_d3.name if cash.project_account_d3 else ''}"
             ws.write(row_num, 6, account_name, styles['default'])
             ws.write(row_num, 7, cash.income or cash.outlay or 0, styles['amount'])
-            ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '', styles['default'])
+            ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
+                     styles['default'])
             ws.write(row_num, 9, cash.note or '', styles['default'])
 
     wb.save(response)
@@ -1003,6 +1019,11 @@ class ExportDateCashbook(ExcelExportMixin):
 
         # Process data with parent-child relationship handling
         for cash in date_cashes:
+            # 합계 계산: 분리된 부모거래만 포함, 자식거래(separated가 있는 경우)는 제외
+            if not cash.separated:  # 부모거래이거나 일반거래인 경우만 합계에 포함
+                inc_sum += cash.income if cash.income else 0
+                out_sum += cash.outlay if cash.outlay else 0
+
             if cash.is_separate and cash.sepItems.exists():
                 # Parent record with children - display parent bank info + each child classification
                 children = cash.sepItems.all().order_by('id')
@@ -1012,19 +1033,20 @@ class ExportDateCashbook(ExcelExportMixin):
                         # First row: Bank transaction info from parent (6 columns) + Classification from first child (4 columns)
                         # Bank transaction columns
                         worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
-                        worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', center_format)
+                        worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '',
+                                        center_format)
                         worksheet.write(row_num, 2, cash.trader or '', left_format)
                         worksheet.write(row_num, 3, cash.content or '', left_format)
                         worksheet.write(row_num, 4, cash.income or 0, number_format)
                         worksheet.write(row_num, 5, cash.outlay or 0, number_format)
-                        # Update sum from parent
-                        inc_sum += cash.income if cash.income else 0
-                        out_sum += cash.outlay if cash.outlay else 0
+                        # 대사 일별 입출금 내역에서는 여기서 합계를 계산하지 않음 (위에서 이미 처리됨)
                         # Classification info from first child
                         account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
                         worksheet.write(row_num, 6, account_name, left_format)
                         worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
-                        worksheet.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', center_format)
+                        worksheet.write(row_num, 8,
+                                        child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                                        center_format)
                         worksheet.write(row_num, 9, cash.note or '', left_format)
                     else:
                         # Subsequent rows: Empty bank columns (6) + Classification from child (4 columns)
@@ -1034,7 +1056,9 @@ class ExportDateCashbook(ExcelExportMixin):
                         account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
                         worksheet.write(row_num, 6, account_name, left_format)
                         worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
-                        worksheet.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', center_format)
+                        worksheet.write(row_num, 8,
+                                        child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                                        center_format)
                         worksheet.write(row_num, 9, '', left_format)
             else:
                 # Regular transaction - fill all columns from cash itself
@@ -1046,21 +1070,21 @@ class ExportDateCashbook(ExcelExportMixin):
                 worksheet.write(row_num, 3, cash.content or '', left_format)
                 worksheet.write(row_num, 4, cash.income or 0, number_format)
                 worksheet.write(row_num, 5, cash.outlay or 0, number_format)
-                # Update sum
-                inc_sum += cash.income if cash.income else 0
-                out_sum += cash.outlay if cash.outlay else 0
+                # 일반 거래의 합계는 위에서 이미 계산됨
                 # Classification columns (4)
                 account_name = f"{cash.account_d1.name if cash.account_d1 else ''}/{cash.account_d2.name if cash.account_d2 else ''}/{cash.account_d3.name if cash.account_d3 else ''}"
                 worksheet.write(row_num, 6, account_name, left_format)
                 worksheet.write(row_num, 7, cash.income or cash.outlay or 0, number_format)
-                worksheet.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '', center_format)
+                worksheet.write(row_num, 8,
+                                cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
+                                center_format)
                 worksheet.write(row_num, 9, cash.note or '', left_format)
 
         # 5. Sum row
         row_num += 1
-        worksheet.merge_range(row_num, 0, row_num, 4, '합계', sum_format)
-        worksheet.write(row_num, 5, inc_sum, sum_format)
-        worksheet.write(row_num, 6, out_sum, sum_format)
+        worksheet.merge_range(row_num, 0, row_num, 3, '합계', sum_format)
+        worksheet.write(row_num, 4, inc_sum, sum_format)
+        worksheet.write(row_num, 5, out_sum, sum_format)
         worksheet.write(row_num, 7, '', sum_format)
         worksheet.write(row_num, 8, '', sum_format)
         worksheet.write(row_num, 9, '', sum_format)
@@ -1178,6 +1202,10 @@ def export_cashbook_xls(request):
 
     # Process data with parent-child relationship handling
     for cash in obj_list:
+        # 자식 거래는 건너뛰기 (이미 부모 거래에서 처리됨)
+        if cash.separated:
+            continue
+
         if cash.is_separate and cash.sepItems.exists():
             # Parent record with children - display parent bank info + each child classification
             children = cash.sepItems.all().order_by('id')
@@ -1195,7 +1223,8 @@ def export_cashbook_xls(request):
                     account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
                     ws.write(row_num, 6, account_name, styles['default'])
                     ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
-                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', styles['default'])
+                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                             styles['default'])
                     ws.write(row_num, 9, cash.note or '', styles['default'])
                 else:
                     # Subsequent rows: Empty bank columns (6) + Classification from child (4 columns)
@@ -1205,7 +1234,8 @@ def export_cashbook_xls(request):
                     account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
                     ws.write(row_num, 6, account_name, styles['default'])
                     ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
-                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '', styles['default'])
+                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                             styles['default'])
                     ws.write(row_num, 9, '', styles['default'])
         else:
             # Regular transaction - fill all columns from cash itself
@@ -1221,7 +1251,8 @@ def export_cashbook_xls(request):
             account_name = f"{cash.account_d1.name if cash.account_d1 else ''}/{cash.account_d2.name if cash.account_d2 else ''}/{cash.account_d3.name if cash.account_d3 else ''}"
             ws.write(row_num, 6, account_name, styles['default'])
             ws.write(row_num, 7, cash.income or cash.outlay or 0, styles['amount'])
-            ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '', styles['default'])
+            ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
+                     styles['default'])
             ws.write(row_num, 9, cash.note or '', styles['default'])
 
     wb.save(response)
