@@ -7,6 +7,123 @@ from django.utils import timezone
 
 # ============================================
 # Bank Account Models - 은행 계좌 모델
+# ============================================\
+
+class Account(models.Model):
+    """
+    계정 과목 모델 (가변 깊이 계층 구조)
+
+    회계 계정 체계를 트리 구조로 관리합니다.
+    예: 수익 > 매출 > 분양매출 > ... (깊이 제한 없음)
+    """
+    # 기본 정보
+    code = models.CharField(max_length=50, unique=True, verbose_name='계정코드', help_text='계정 고유 코드 (예: 4110, 5110-01)')
+    name = models.CharField(max_length=255, verbose_name='계정명')
+    description = models.TextField(blank=True, verbose_name='설명', help_text='계정 용도 및 사용 지침')
+
+    # 계층 구조
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.PROTECT,
+                               related_name='children', verbose_name='상위 계정')
+    depth = models.PositiveIntegerField(default=1, editable=False, verbose_name='계층 깊이')
+
+    # 회계 분류
+    category = models.CharField(
+        max_length=20,
+        choices=[
+            ('asset', '자산'),
+            ('liability', '부채'),
+            ('equity', '자본'),
+            ('revenue', '수익'),
+            ('expense', '비용'),
+            ('transfer', '대체'),
+        ],
+        verbose_name='계정구분',
+        help_text='회계 계정의 대분류'
+    )
+    # 분류 전용 계정 (거래 사용 불가)
+    is_category_only = models.BooleanField(default=False, verbose_name='분류 전용',
+                                           help_text='체크 시: 이 계정은 분류 목적으로만 사용되며 직접 거래에 사용 불가. '
+                                                     '대분류/중분류 등 상위 계정에 주로 사용')
+
+    # 거래 방향
+    direction = models.CharField(max_length=10, choices=[('deposit', '입금'), ('withdraw', '출금')],
+                                 verbose_name='거래방향', help_text='이 계정이 사용되는 기본 거래 방향')
+
+    # 취소 거래 지원
+    allow_cancellation = models.BooleanField(default=False, verbose_name='취소 거래 허용',
+                                             help_text='체크 시: 입금→출금(취소) 또는 출금→입금(취소) 변환 가능')
+
+    # 활성화 상태
+    is_active = models.BooleanField(default=True, verbose_name='활성 여부', help_text='비활성화 시 신규 거래에 사용 불가')
+
+    # 정렬 순서
+    order = models.PositiveIntegerField(default=0, verbose_name='정렬순서', help_text='같은 레벨 내 표시 순서')
+
+    class Meta:
+        ordering = ['code', 'order']
+        verbose_name = '계정 과목'
+        verbose_name_plural = '계정 과목'
+        indexes = [
+            models.Index(fields=['parent', 'order']),
+            models.Index(fields=['category', 'is_active']),
+        ]
+
+    def save(self, *args, **kwargs):
+        # 깊이 자동 계산
+        if self.parent:
+            self.depth = self.parent.depth + 1
+            # 상위 계정의 category와 direction 상속 (선택적)
+            if not self.pk:  # 신규 생성 시에만
+                if not self.category:
+                    self.category = self.parent.category
+                if not self.direction:
+                    self.direction = self.parent.direction
+        else:
+            self.depth = 1
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        """유효성 검증"""
+        # 대체 계정은 취소 불가
+        if self.category == 'transfer' and self.allow_cancellation:
+            raise ValidationError({
+                'allow_cancellation': '대체 거래는 취소를 허용할 수 없습니다.'
+            })
+
+        # 순환 참조 방지
+        if self.parent:
+            parent = self.parent
+            while parent:
+                if parent == self:
+                    raise ValidationError({'parent': '순환 참조가 발생했습니다.'})
+                parent = parent.parent
+
+    def get_full_path(self):
+        """전체 경로 반환 (예: '수익 > 매출 > 분양매출')"""
+        path = [self.name]
+        parent = self.parent
+        while parent:
+            path.insert(0, parent.name)
+            parent = parent.parent
+        return ' > '.join(path)
+
+    def get_descendants(self, include_self=False):
+        """모든 하위 계정 조회 (재귀)"""
+        descendants = []
+        if include_self:
+            descendants.append(self)
+
+        for child in self.children.all():
+            descendants.extend(child.get_descendants(include_self=True))
+
+        return descendants
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+
+# ============================================
+# Bank Account Models - 은행 계좌 모델
 # ============================================
 
 class BankCode(models.Model):
