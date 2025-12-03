@@ -214,6 +214,13 @@ additionalConfig: {}
 # additionalConfig:
 #   shared_preload_libraries: "pg_stat_statements"
 
+# Pod environment variables
+env:
+  - name: TZ
+    value: "Asia/Seoul"
+  - name: PGTZ
+    value: "Asia/Seoul"
+
 # Bootstrap configuration
 bootstrap:
   # Bootstrap method: initdb or pg_upgrade

@@ -117,6 +117,12 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  # Environment variables (e.g., TZ for timezone)
+  {{- with .Values.env }}
+  env:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   # Affinity configuration
   {{- if .Values.affinity }}
   affinity:
