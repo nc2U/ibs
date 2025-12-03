@@ -6,7 +6,7 @@ from django.utils import timezone
 
 
 # ============================================
-# Bank Account Models - 은행 계좌 모델
+# Account Models - 회계 계정 모델
 # ============================================\
 
 class Account(models.Model):
@@ -41,7 +41,7 @@ class Account(models.Model):
 
     # 기본 정보
     code = models.CharField(max_length=50, unique=True, blank=True, verbose_name='계정코드',
-                           help_text='자동 생성됨. 수동 입력 시 규칙 무시')
+                            help_text='자동 생성됨. 수동 입력 시 규칙 무시')
     name = models.CharField(max_length=255, verbose_name='계정명')
     description = models.TextField(blank=True, verbose_name='설명', help_text='계정 용도 및 사용 지침')
 
