@@ -15,9 +15,33 @@ class Account(models.Model):
 
     회계 계정 체계를 트리 구조로 관리합니다.
     예: 수익 > 매출 > 분양매출 > ... (깊이 제한 없음)
+
+    코드 체계:
+    - 자산(1000), 부채(2000), 자본(3000), 수익(4000), 비용(5000), 대체(6000)
+    - Depth별 간격: 1000 → 100 → 10 → 1
     """
+
+    # Category별 시작 코드
+    CATEGORY_BASE_CODES = {
+        'asset': 1000,
+        'liability': 2000,
+        'equity': 3000,
+        'revenue': 4000,
+        'expense': 5000,
+        'transfer': 6000,
+    }
+
+    # Depth별 코드 간격
+    DEPTH_STEPS = {
+        1: 1000,
+        2: 100,
+        3: 10,
+        4: 1,
+    }
+
     # 기본 정보
-    code = models.CharField(max_length=50, unique=True, verbose_name='계정코드', help_text='계정 고유 코드 (예: 4110, 5110-01)')
+    code = models.CharField(max_length=50, unique=True, blank=True, verbose_name='계정코드',
+                           help_text='자동 생성됨. 수동 입력 시 규칙 무시')
     name = models.CharField(max_length=255, verbose_name='계정명')
     description = models.TextField(blank=True, verbose_name='설명', help_text='계정 용도 및 사용 지침')
 
@@ -68,6 +92,29 @@ class Account(models.Model):
             models.Index(fields=['category', 'is_active']),
         ]
 
+    def _generate_code(self):
+        """계정 코드 자동 생성"""
+        if self.depth == 1:
+            # 최상위 계정: category별 기본 코드
+            return str(self.CATEGORY_BASE_CODES[self.category])
+
+        # 하위 계정: 부모 코드 + (순서 * 깊이별 간격)
+        parent_code = int(self.parent.code)
+
+        # 같은 parent를 가진 형제 계정 수 확인 (자신 제외)
+        siblings_count = Account.objects.filter(parent=self.parent).count()
+        if self.pk:  # 업데이트인 경우 자신 제외
+            siblings_count -= 1
+
+        # 순서 계산 (1부터 시작)
+        sibling_order = siblings_count + 1
+
+        # 깊이별 간격 (depth 4 이상은 1로 고정)
+        step = self.DEPTH_STEPS.get(self.depth, 1)
+
+        new_code = parent_code + (sibling_order * step)
+        return str(new_code)
+
     def save(self, *args, **kwargs):
         # 깊이 자동 계산
         if self.parent:
@@ -80,6 +127,11 @@ class Account(models.Model):
                     self.direction = self.parent.direction
         else:
             self.depth = 1
+
+        # 코드 자동 생성 (비어있을 경우에만)
+        if not self.code:
+            self.code = self._generate_code()
+
         super().save(*args, **kwargs)
 
     def clean(self):

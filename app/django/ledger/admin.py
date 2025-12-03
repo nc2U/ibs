@@ -4,10 +4,134 @@ from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
 from ledger.models import (
+    Account,
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
 )
+
+
+# ============================================
+# Account Admin - 계정 과목
+# ============================================
+
+@admin.register(Account)
+class AccountAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = (
+        'code', 'indented_name', 'category_display', 'direction_display',
+        'depth', 'is_category_only', 'allow_cancellation', 'is_active', 'order'
+    )
+    list_display_links = ('indented_name',)
+    list_editable = ('order', 'is_category_only', 'is_active')
+    list_filter = ('category', 'direction', 'is_category_only', 'allow_cancellation', 'is_active')
+    search_fields = ('code', 'name', 'description')
+    ordering = ('code', 'order')
+    readonly_fields = ('depth', 'full_path_display', 'children_display')
+
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('code', 'name', 'description', 'parent', 'full_path_display')
+        }),
+        ('회계 속성', {
+            'fields': ('category', 'direction', 'allow_cancellation')
+        }),
+        ('사용 제한', {
+            'fields': ('is_active', 'is_category_only'),
+            'description': '분류 전용: 체크 시 하위 계정만 거래에 사용 가능'
+        }),
+        ('정렬 및 계층', {
+            'fields': ('order', 'depth', 'children_display')
+        }),
+    )
+
+    @admin.display(description='계정명', ordering='name')
+    def indented_name(self, obj):
+        """계층 구조를 들여쓰기로 표시"""
+        indent = '&nbsp;&nbsp;&nbsp;&nbsp;' * (obj.depth - 1)
+        icon = '📁' if obj.is_category_only else '📄'
+
+        # 분류 전용인 경우 굵게 표시
+        if obj.is_category_only:
+            return format_html('{}{} <strong>{}</strong>', indent, icon, obj.name)
+        return format_html('{}{} {}', indent, icon, obj.name)
+
+    @admin.display(description='계정구분')
+    def category_display(self, obj):
+        """계정구분을 색상과 함께 표시"""
+        colors = {
+            'asset': '#2196F3',      # 파랑 - 자산
+            'liability': '#F44336',  # 빨강 - 부채
+            'equity': '#4CAF50',     # 초록 - 자본
+            'revenue': '#FF9800',    # 주황 - 수익
+            'expense': '#9C27B0',    # 보라 - 비용
+            'transfer': '#607D8B',   # 회색 - 대체
+        }
+        color = colors.get(obj.category, '#000000')
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">●</span> {}',
+            color, obj.get_category_display()
+        )
+
+    @admin.display(description='거래방향')
+    def direction_display(self, obj):
+        """거래 방향을 아이콘과 함께 표시"""
+        if obj.direction == 'deposit':
+            return format_html('<span style="color: green;">⬇ 입금</span>')
+        else:
+            return format_html('<span style="color: red;">⬆ 출금</span>')
+
+    @admin.display(description='전체 경로')
+    def full_path_display(self, obj):
+        """전체 계층 경로 표시"""
+        if obj.pk:
+            return format_html('<code>{}</code>', obj.get_full_path())
+        return '-'
+
+    @admin.display(description='하위 계정')
+    def children_display(self, obj):
+        """하위 계정 목록 표시"""
+        if not obj.pk:
+            return "저장 후 하위 계정을 확인할 수 있습니다."
+
+        children = obj.children.all()
+        if not children.exists():
+            return format_html(
+                '<em>하위 계정 없음</em><br>'
+                '<a href="/admin/ledger/account/add/?parent={}" target="_blank">+ 하위 계정 추가</a>',
+                obj.pk
+            )
+
+        links = []
+        for child in children:
+            icon = '📁' if child.is_category_only else '📄'
+            links.append(format_html(
+                '{} <a href="/admin/ledger/account/{}/change/" target="_blank">{}</a>',
+                icon, child.pk, child.name
+            ))
+
+        add_link = format_html(
+            '<a href="/admin/ledger/account/add/?parent={}" target="_blank">+ 하위 계정 추가</a>',
+            obj.pk
+        )
+
+        return format_html('<br>'.join(links) + '<br><br>' + add_link)
+
+    def get_changeform_initial_data(self, request):
+        """URL 파라미터에서 초기값 설정"""
+        initial = super().get_changeform_initial_data(request)
+
+        # parent 파라미터가 있으면 상위 계정 설정
+        if 'parent' in request.GET:
+            try:
+                parent = Account.objects.get(pk=request.GET['parent'])
+                initial['parent'] = parent
+                # 상위 계정의 속성 상속
+                initial['category'] = parent.category
+                initial['direction'] = parent.direction
+            except Account.DoesNotExist:
+                pass
+
+        return initial
 
 
 # ============================================
