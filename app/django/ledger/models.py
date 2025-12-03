@@ -85,8 +85,8 @@ class Account(models.Model):
 
     class Meta:
         ordering = ['code', 'order']
-        verbose_name = '계정 과목'
-        verbose_name_plural = '계정 과목'
+        verbose_name = '01. 회계 계정 과목'
+        verbose_name_plural = '01. 회계 계정 과목'
         indexes = [
             models.Index(fields=['parent', 'order']),
             models.Index(fields=['category', 'is_active']),
@@ -368,8 +368,8 @@ class CompanyBankAccount(BankAccount):
 
     class Meta:
         ordering = ['order', 'id']
-        verbose_name = '01. 본사 관리 계좌'
-        verbose_name_plural = '01. 본사 관리 계좌'
+        verbose_name = '02. 본사 관리 계좌'
+        verbose_name_plural = '02. 본사 관리 계좌'
 
 
 class CompanyBankTransaction(BankTransaction):
@@ -382,8 +382,8 @@ class CompanyBankTransaction(BankTransaction):
     bank_account = models.ForeignKey(CompanyBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
 
     class Meta:
-        verbose_name = '02. 본사 은행 거래'
-        verbose_name_plural = '02. 본사 은행 거래'
+        verbose_name = '03. 본사 은행 거래'
+        verbose_name_plural = '03. 본사 은행 거래'
         ordering = ['-deal_date', '-created_at']
         indexes = [
             models.Index(fields=['bank_account', 'deal_date']),
@@ -426,8 +426,8 @@ class CompanyAccountingEntry(AccountingEntry):
                                    null=True, blank=True, verbose_name='계정 소분류')
 
     class Meta:
-        verbose_name = '03. 본사 회계 분개'
-        verbose_name_plural = '03. 본사 회계 분개'
+        verbose_name = '04. 본사 회계 분개'
+        verbose_name_plural = '04. 본사 회계 분개'
         ordering = ['-created_at']
 
 
@@ -448,8 +448,8 @@ class ProjectBankAccount(BankAccount):
 
     class Meta:
         ordering = ['order', 'id']
-        verbose_name = '04. 프로젝트 관리 계좌'
-        verbose_name_plural = '04. 프로젝트 관리 계좌'
+        verbose_name = '05. 프로젝트 관리 계좌'
+        verbose_name_plural = '05. 프로젝트 관리 계좌'
 
 
 class ProjectBankTransaction(BankTransaction):
@@ -463,8 +463,8 @@ class ProjectBankTransaction(BankTransaction):
     is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부', help_text='프로젝트 운영비 계정 거래 여부')
 
     class Meta:
-        verbose_name = '05. 프로젝트 은행 거래'
-        verbose_name_plural = '05. 프로젝트 은행 거래'
+        verbose_name = '06. 프로젝트 은행 거래'
+        verbose_name_plural = '06. 프로젝트 은행 거래'
         ordering = ['-deal_date', '-created_at']
         indexes = [
             models.Index(fields=['bank_account', 'deal_date']),
@@ -506,6 +506,6 @@ class ProjectAccountingEntry(AccountingEntry):
                                            null=True, blank=True, verbose_name='프로젝트 계정 소분류')
 
     class Meta:
-        verbose_name = '06. 프로젝트 회계 분개'
-        verbose_name_plural = '06. 프로젝트 회계 분개'
+        verbose_name = '07. 프로젝트 회계 분개'
+        verbose_name_plural = '07. 프로젝트 회계 분개'
         ordering = ['-created_at']
