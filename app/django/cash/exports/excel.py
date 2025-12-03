@@ -716,12 +716,12 @@ def export_project_cash_xls(request):
     ws.row(0).height_mismatch = True
     ws.row(0).height = 38 * 20
 
-    # title_list - 열 구조 변경: 은행거래 내역(6열) + 분류 내역(4열)
+    # title_list - 열 구조 변경: 은행거래 내역(6열) + 분류 내역(5열)
     columns = [
         # 은행거래 내역 (6열)
         '일시', '계좌', '거래자', '적요', '입금액', '출금액',
-        # 분류 내역 (4열)
-        '계정', '분류금액', '증빙', '메모'
+        # 분류 내역 (5열)
+        '계정', '입금분류액', '출금분류액', '증빙', '메모'
     ]
 
     # Sheet header, second row
@@ -758,9 +758,10 @@ def export_project_cash_xls(request):
     ws.col(4).width = 110 * 30  # 입금액
     ws.col(5).width = 110 * 30  # 출금액
     ws.col(6).width = 160 * 30  # 계정
-    ws.col(7).width = 110 * 30  # 분류금액
-    ws.col(8).width = 100 * 30  # 증빙
-    ws.col(9).width = 100 * 30  # 메모
+    ws.col(7).width = 110 * 30  # 입금분류액
+    ws.col(8).width = 110 * 30  # 출금분류액
+    ws.col(9).width = 100 * 30  # 증빙
+    ws.col(10).width = 100 * 30  # 메모
 
     for cash in obj_list:
         # 자식 거래는 건너뛰기 (이미 부모 거래에서 처리됨)
@@ -786,26 +787,28 @@ def export_project_cash_xls(request):
                     ws.write(row_num, 4, cash.income or 0, styles['amount'])
                     ws.write(row_num, 5, cash.outlay or 0, styles['amount'])
 
-                    # 분류 내역 (4열) - 첫 번째 자식
+                    # 분류 내역 (5열) - 첫 번째 자식
                     account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
                     ws.write(row_num, 6, account_name, styles['default'])
-                    ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
-                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                    ws.write(row_num, 7, child.income or 0, styles['amount'])  # 입금분류액
+                    ws.write(row_num, 8, child.outlay or 0, styles['amount'])  # 출금분류액
+                    ws.write(row_num, 9, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
                              styles['default'])
-                    ws.write(row_num, 9, cash.note or '', styles['default'])
+                    ws.write(row_num, 10, cash.note or '', styles['default'])
                 else:
                     # 나머지 자식: 은행거래 비움 + 분류내역만
                     # 은행거래 6열 비움
                     for col in range(6):
                         ws.write(row_num, col, '', styles['default'])
 
-                    # 분류 내역 (4열)
+                    # 분류 내역 (5열)
                     account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
                     ws.write(row_num, 6, account_name, styles['default'])
-                    ws.write(row_num, 7, child.income or child.outlay or 0, styles['amount'])
-                    ws.write(row_num, 8, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
+                    ws.write(row_num, 7, child.income or 0, styles['amount'])  # 입금분류액
+                    ws.write(row_num, 8, child.outlay or 0, styles['amount'])  # 출금분류액
+                    ws.write(row_num, 9, child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
                              styles['default'])
-                    ws.write(row_num, 9, '', styles['default'])
+                    ws.write(row_num, 10, '', styles['default'])
         else:
             # ============================================
             # 일반 거래: 은행거래 + 분류내역 모두 채움
@@ -820,13 +823,14 @@ def export_project_cash_xls(request):
             ws.write(row_num, 4, cash.income or 0, styles['amount'])
             ws.write(row_num, 5, cash.outlay or 0, styles['amount'])
 
-            # 분류 내역 (4열) - 자기 자신의 정보
+            # 분류 내역 (5열) - 자기 자신의 정보
             account_name = f"{cash.project_account_d2.name if cash.project_account_d2 else ''}/{cash.project_account_d3.name if cash.project_account_d3 else ''}"
             ws.write(row_num, 6, account_name, styles['default'])
-            ws.write(row_num, 7, cash.income or cash.outlay or 0, styles['amount'])
-            ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
+            ws.write(row_num, 7, cash.income or 0, styles['amount'])  # 입금분류액
+            ws.write(row_num, 8, cash.outlay or 0, styles['amount'])  # 출금분류액
+            ws.write(row_num, 9, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
                      styles['default'])
-            ws.write(row_num, 9, cash.note or '', styles['default'])
+            ws.write(row_num, 10, cash.note or '', styles['default'])
 
     wb.save(response)
     return response
