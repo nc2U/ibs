@@ -38,15 +38,15 @@ class Account(models.Model):
 
     # Depth별 코드 간격
     DEPTH_STEPS = {
-        2: 10,   # 2단계: 10 단위
-        3: 1,    # 3단계 이상: 1 단위
+        2: 10,  # 2단계: 10 단위
+        3: 1,  # 3단계 이상: 1 단위
     }
 
     # 기본 정보
     code = models.CharField(max_length=50, unique=True, blank=True, verbose_name='계정코드',
                             help_text='자동 생성됨. 수동 입력 시 규칙 무시')
     name = models.CharField(max_length=255, verbose_name='계정명')
-    description = models.TextField(blank=True, verbose_name='설명', help_text='계정 용도 및 사용 지침')
+    description = models.TextField(blank=True, default='', verbose_name='설명', help_text='계정 용도 및 사용 지침')
 
     # 계층 구조
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.PROTECT,
