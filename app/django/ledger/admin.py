@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
@@ -47,7 +48,7 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     @admin.display(description='계정명', ordering='name')
     def indented_name(self, obj):
         """계층 구조를 들여쓰기로 표시"""
-        indent = '&nbsp;&nbsp;&nbsp;&nbsp;' * (obj.depth - 1)
+        indent = '\u00A0\u00A0\u00A0\u00A0' * (obj.depth - 1)  # 유니코드 공백 문자 사용
         icon = '📁' if obj.is_category_only else '📄'
 
         # 분류 전용인 경우 굵게 표시
@@ -76,15 +77,18 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     def direction_display(self, obj):
         """거래 방향을 아이콘과 함께 표시"""
         if obj.direction == 'deposit':
-            return format_html('<span style="color: green;">⬇ 입금</span>')
+            return format_html('<span style="color: green;">{}</span>', '⬇ 입금')
         else:
-            return format_html('<span style="color: red;">⬆ 출금</span>')
+            return format_html('<span style="color: red;">{}</span>', '⬆ 출금')
 
     @admin.display(description='전체 경로')
     def full_path_display(self, obj):
         """전체 계층 경로 표시"""
         if obj.pk:
-            return format_html('<code>{}</code>', obj.get_full_path())
+            full_path = obj.get_full_path()
+            if full_path:
+                return format_html('<code>{}</code>', full_path)
+            return '-'
         return '-'
 
     @admin.display(description='하위 계정')
@@ -107,9 +111,10 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
         links = []
         for child in children:
             icon = '📁' if child.is_category_only else '📄'
+            child_name = child.name or '이름 없음'
             links.append(format_html(
                 '{} <a href="/admin/ledger/{}/{}/change/" target="_blank">{}</a>',
-                icon, model_name, child.pk, child.name
+                icon, model_name, child.pk, child_name
             ))
 
         add_link = format_html(
@@ -117,7 +122,11 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
             model_name, obj.pk
         )
 
-        return format_html('<br>'.join(links) + '<br><br>' + add_link)
+        if links:
+            result = '<br>'.join(links) + '<br><br>' + add_link
+            return mark_safe(result)
+        else:
+            return mark_safe(add_link)
 
     def get_changeform_initial_data(self, request):
         """URL 파라미터에서 초기값 설정"""
@@ -232,7 +241,7 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'green' if obj.sort_id == 1 else ''  # 1=입금, 2=출금
+        color = 'green' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
@@ -338,7 +347,7 @@ class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'green' if obj.sort_id == 1 else ''  # 1=입금, 2=출금
+        color = 'green' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
@@ -432,7 +441,7 @@ class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'green' if obj.sort_id == 1 else ''  # 1=입금, 2=출금
+        color = 'green' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
@@ -454,7 +463,7 @@ class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'green' if obj.sort_id == 1 else ''  # 1=입금, 2=출금
+        color = 'green' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)

@@ -18,7 +18,9 @@ class Account(models.Model):
 
     코드 체계:
     - 자산(1000), 부채(2000), 자본(3000), 수익(4000), 비용(5000), 대체(6000)
-    - Depth별 간격: 1000 → 100 → 10 → 1
+    - 1단계: 100 단위 (5000 → 5100 → 5200...)
+    - 2단계: 10 단위 (5000 → 5010 → 5020...)
+    - 3단계+: 1 단위 (5010 → 5011 → 5012...)
 
     이 모델은 추상 모델로, CompanyAccount와 ProjectAccount로 상속됩니다.
     구조는 동일하지만 계정 데이터는 완전히 분리되어 관리됩니다.
@@ -36,10 +38,8 @@ class Account(models.Model):
 
     # Depth별 코드 간격
     DEPTH_STEPS = {
-        1: 1000,
-        2: 100,
-        3: 10,
-        4: 1,
+        2: 10,   # 2단계: 10 단위
+        3: 1,    # 3단계 이상: 1 단위
     }
 
     # 기본 정보
@@ -97,8 +97,21 @@ class Account(models.Model):
     def _generate_code(self):
         """계정 코드 자동 생성"""
         if self.depth == 1:
-            # 최상위 계정: category별 기본 코드
-            return str(self.CATEGORY_BASE_CODES[self.category])
+            # 최상위 계정: category별 기본 코드에서 시작하여 100 단위로 증가
+            base_code = self.CATEGORY_BASE_CODES[self.category]
+            code_candidate = base_code
+            increment = 0
+
+            while True:
+                test_code = str(code_candidate + (increment * 100))
+                # 자신을 제외하고 중복 검사
+                existing = self.__class__.objects.filter(code=test_code)
+                if self.pk:  # 업데이트인 경우 자신 제외
+                    existing = existing.exclude(pk=self.pk)
+
+                if not existing.exists():
+                    return test_code
+                increment += 1
 
         # 하위 계정: 부모 코드 + (순서 * 깊이별 간격)
         parent_code = int(self.parent.code)
