@@ -188,8 +188,8 @@ class CompanyAccount(Account):
 
     class Meta:
         ordering = ['code', 'order']
-        verbose_name = '01-1. 본사 계정 과목'
-        verbose_name_plural = '01-1. 본사 계정 과목'
+        verbose_name = '01. 본사 계정 과목'
+        verbose_name_plural = '01. 본사 계정 과목'
         indexes = [
             models.Index(fields=['parent', 'order']),
             models.Index(fields=['category', 'is_active']),
@@ -207,8 +207,8 @@ class ProjectAccount(Account):
 
     class Meta:
         ordering = ['code', 'order']
-        verbose_name = '01-2. 프로젝트 계정 과목'
-        verbose_name_plural = '01-2. 프로젝트 계정 과목'
+        verbose_name = '05. 프로젝트 계정 과목'
+        verbose_name_plural = '05. 프로젝트 계정 과목'
         indexes = [
             models.Index(fields=['parent', 'order']),
             models.Index(fields=['category', 'is_active']),
@@ -489,8 +489,8 @@ class ProjectBankAccount(BankAccount):
 
     class Meta:
         ordering = ['order', 'id']
-        verbose_name = '05. 프로젝트 관리 계좌'
-        verbose_name_plural = '05. 프로젝트 관리 계좌'
+        verbose_name = '06. 프로젝트 관리 계좌'
+        verbose_name_plural = '06. 프로젝트 관리 계좌'
 
 
 class ProjectBankTransaction(BankTransaction):
@@ -504,8 +504,8 @@ class ProjectBankTransaction(BankTransaction):
     is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부', help_text='프로젝트 운영비 계정 거래 여부')
 
     class Meta:
-        verbose_name = '06. 프로젝트 은행 거래'
-        verbose_name_plural = '06. 프로젝트 은행 거래'
+        verbose_name = '07. 프로젝트 은행 거래'
+        verbose_name_plural = '07. 프로젝트 은행 거래'
         ordering = ['-deal_date', '-created_at']
         indexes = [
             models.Index(fields=['bank_account', 'deal_date']),
@@ -547,6 +547,6 @@ class ProjectAccountingEntry(AccountingEntry):
                                            null=True, blank=True, verbose_name='프로젝트 계정 소분류')
 
     class Meta:
-        verbose_name = '07. 프로젝트 회계 분개'
-        verbose_name_plural = '07. 프로젝트 회계 분개'
+        verbose_name = '08. 프로젝트 회계 분개'
+        verbose_name_plural = '08. 프로젝트 회계 분개'
         ordering = ['-created_at']
