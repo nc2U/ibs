@@ -4,7 +4,7 @@ from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
 from ledger.models import (
-    Account,
+    CompanyAccount, ProjectAccount,
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
@@ -15,8 +15,8 @@ from ledger.models import (
 # Account Admin - 계정 과목
 # ============================================
 
-@admin.register(Account)
-class AccountAdmin(ImportExportMixin, admin.ModelAdmin):
+class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
+    """Account Admin 공통 기능 (CompanyAccount, ProjectAccount에서 상속)"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
         'depth', 'is_category_only', 'allow_cancellation', 'is_active', 'order'
@@ -93,25 +93,28 @@ class AccountAdmin(ImportExportMixin, admin.ModelAdmin):
         if not obj.pk:
             return "저장 후 하위 계정을 확인할 수 있습니다."
 
+        # 동적으로 모델명 가져오기
+        model_name = obj._meta.model_name
+
         children = obj.children.all()
         if not children.exists():
             return format_html(
                 '<em>하위 계정 없음</em><br>'
-                '<a href="/admin/ledger/account/add/?parent={}" target="_blank">+ 하위 계정 추가</a>',
-                obj.pk
+                '<a href="/admin/ledger/{}/add/?parent={}" target="_blank">+ 하위 계정 추가</a>',
+                model_name, obj.pk
             )
 
         links = []
         for child in children:
             icon = '📁' if child.is_category_only else '📄'
             links.append(format_html(
-                '{} <a href="/admin/ledger/account/{}/change/" target="_blank">{}</a>',
-                icon, child.pk, child.name
+                '{} <a href="/admin/ledger/{}/{}/change/" target="_blank">{}</a>',
+                icon, model_name, child.pk, child.name
             ))
 
         add_link = format_html(
-            '<a href="/admin/ledger/account/add/?parent={}" target="_blank">+ 하위 계정 추가</a>',
-            obj.pk
+            '<a href="/admin/ledger/{}/add/?parent={}" target="_blank">+ 하위 계정 추가</a>',
+            model_name, obj.pk
         )
 
         return format_html('<br>'.join(links) + '<br><br>' + add_link)
@@ -123,15 +126,29 @@ class AccountAdmin(ImportExportMixin, admin.ModelAdmin):
         # parent 파라미터가 있으면 상위 계정 설정
         if 'parent' in request.GET:
             try:
-                parent = Account.objects.get(pk=request.GET['parent'])
+                # 동적으로 현재 모델 클래스 가져오기
+                ModelClass = self.model
+                parent = ModelClass.objects.get(pk=request.GET['parent'])
                 initial['parent'] = parent
                 # 상위 계정의 속성 상속
                 initial['category'] = parent.category
                 initial['direction'] = parent.direction
-            except Account.DoesNotExist:
+            except ModelClass.DoesNotExist:
                 pass
 
         return initial
+
+
+@admin.register(CompanyAccount)
+class CompanyAccountAdmin(BaseAccountAdmin):
+    """본사 계정 과목 Admin"""
+    pass
+
+
+@admin.register(ProjectAccount)
+class ProjectAccountAdmin(BaseAccountAdmin):
+    """프로젝트 계정 과목 Admin"""
+    pass
 
 
 # ============================================

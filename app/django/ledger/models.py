@@ -11,7 +11,7 @@ from django.utils import timezone
 
 class Account(models.Model):
     """
-    계정 과목 모델 (가변 깊이 계층 구조)
+    계정 과목 추상 모델 (가변 깊이 계층 구조)
 
     회계 계정 체계를 트리 구조로 관리합니다.
     예: 수익 > 매출 > 분양매출 > ... (깊이 제한 없음)
@@ -19,6 +19,9 @@ class Account(models.Model):
     코드 체계:
     - 자산(1000), 부채(2000), 자본(3000), 수익(4000), 비용(5000), 대체(6000)
     - Depth별 간격: 1000 → 100 → 10 → 1
+
+    이 모델은 추상 모델로, CompanyAccount와 ProjectAccount로 상속됩니다.
+    구조는 동일하지만 계정 데이터는 완전히 분리되어 관리됩니다.
     """
 
     # Category별 시작 코드
@@ -84,9 +87,8 @@ class Account(models.Model):
     order = models.PositiveIntegerField(default=0, verbose_name='정렬순서', help_text='같은 레벨 내 표시 순서')
 
     class Meta:
+        abstract = True
         ordering = ['code', 'order']
-        verbose_name = '01. 회계 계정 과목'
-        verbose_name_plural = '01. 회계 계정 과목'
         indexes = [
             models.Index(fields=['parent', 'order']),
             models.Index(fields=['category', 'is_active']),
@@ -102,7 +104,8 @@ class Account(models.Model):
         parent_code = int(self.parent.code)
 
         # 같은 parent를 가진 형제 계정 수 확인 (자신 제외)
-        siblings_count = Account.objects.filter(parent=self.parent).count()
+        # 추상 클래스이므로 self.__class__를 사용하여 실제 모델 클래스의 매니저 접근
+        siblings_count = self.__class__.objects.filter(parent=self.parent).count()
         if self.pk:  # 업데이트인 경우 자신 제외
             siblings_count -= 1
 
@@ -172,6 +175,44 @@ class Account(models.Model):
 
     def __str__(self):
         return f"{self.code} {self.name}"
+
+
+class CompanyAccount(Account):
+    """
+    본사 계정 과목
+
+    본사의 회계 계정 체계를 관리합니다.
+    Account 추상 모델의 모든 필드와 메서드를 상속받으며,
+    본사만의 독립적인 계정 데이터를 관리합니다.
+    """
+
+    class Meta:
+        ordering = ['code', 'order']
+        verbose_name = '01-1. 본사 계정 과목'
+        verbose_name_plural = '01-1. 본사 계정 과목'
+        indexes = [
+            models.Index(fields=['parent', 'order']),
+            models.Index(fields=['category', 'is_active']),
+        ]
+
+
+class ProjectAccount(Account):
+    """
+    프로젝트 계정 과목
+
+    프로젝트의 회계 계정 체계를 관리합니다.
+    Account 추상 모델의 모든 필드와 메서드를 상속받으며,
+    프로젝트만의 독립적인 계정 데이터를 관리합니다.
+    """
+
+    class Meta:
+        ordering = ['code', 'order']
+        verbose_name = '01-2. 프로젝트 계정 과목'
+        verbose_name_plural = '01-2. 프로젝트 계정 과목'
+        indexes = [
+            models.Index(fields=['parent', 'order']),
+            models.Index(fields=['category', 'is_active']),
+        ]
 
 
 # ============================================
