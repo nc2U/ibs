@@ -157,7 +157,32 @@ class CompanyAccountAdmin(BaseAccountAdmin):
 @admin.register(ProjectAccount)
 class ProjectAccountAdmin(BaseAccountAdmin):
     """프로젝트 계정 과목 Admin"""
-    pass
+    list_display = (
+        'code', 'indented_name', 'category_display', 'direction_display',
+        'depth', 'is_category_only', 'is_active', 'is_payment', 'is_related_contract', 'order'
+    )
+    list_editable = ('order', 'is_category_only', 'is_active', 'is_payment', 'is_related_contract')
+    list_filter = ('category', 'direction', 'is_category_only', 'is_active', 'is_payment', 'is_related_contract')
+
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('code', 'name', 'description', 'parent', 'full_path_display')
+        }),
+        ('회계 속성', {
+            'fields': ('category', 'direction')
+        }),
+        ('프로젝트 특수 속성', {
+            'fields': ('is_payment', 'is_related_contract'),
+            'description': 'is_payment: 분양대금 항목 여부 / is_related_contract: 공급계약 관련 항목 여부'
+        }),
+        ('사용 제한', {
+            'fields': ('is_active', 'is_category_only'),
+            'description': '분류 전용: 체크 시 하위 계정만 거래에 사용 가능'
+        }),
+        ('정렬 및 계층', {
+            'fields': ('order', 'depth', 'children_display')
+        }),
+    )
 
 
 # ============================================

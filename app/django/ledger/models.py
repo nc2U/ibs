@@ -209,6 +209,8 @@ class ProjectAccount(Account):
     Account 추상 모델의 모든 필드와 메서드를 상속받으며,
     프로젝트만의 독립적인 계정 데이터를 관리합니다.
     """
+    is_payment = models.BooleanField(default=False)
+    is_related_contract = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['code', 'order']
@@ -217,6 +219,9 @@ class ProjectAccount(Account):
         indexes = [
             models.Index(fields=['parent', 'order']),
             models.Index(fields=['category', 'is_active']),
+            models.Index(fields=['is_payment']),
+            models.Index(fields=['is_related_contract']),
+            models.Index(fields=['is_payment', 'is_related_contract']),
         ]
 
 
