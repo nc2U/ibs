@@ -39,6 +39,13 @@ spec:
                 name: {{ include "web.fullname" . }}-config
             - secretRef:
                 name: {{ include "web.fullname" . }}-db-auth
+          env:
+            - name: REDIS_URL
+              value: "redis://redis:6379/1"
+            - name: CELERY_BROKER_URL
+              value: "redis://redis:6379/0"
+            - name: CELERY_RESULT_BACKEND
+              value: "redis://redis:6379/0"
           ports:
             - name: web
               containerPort: 8000

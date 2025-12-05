@@ -320,10 +320,23 @@ MDEDITOR_CONFIGS = {
     }
 }
 
+# Redis Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('REDIS_URL', default='redis://localhost:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'ibs',
+        'TIMEOUT': 3600,  # 1시간
+    }
+}
+
 # Import-Export Optimization Settings
 IMPORT_EXPORT_USE_TRANSACTIONS = True
 IMPORT_EXPORT_CHUNK_SIZE = 1000
-IMPORT_EXPORT_TMP_STORAGE_CLASS = 'import_export.tmp_storages.TempFolderStorage'
+IMPORT_EXPORT_TMP_STORAGE_CLASS = 'import_export.tmp_storages.CacheStorage'
 IMPORT_EXPORT_IMPORT_PERMISSION_CODE = 'add'
 IMPORT_EXPORT_EXPORT_PERMISSION_CODE = 'change'
 
