@@ -20,11 +20,11 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     """Account Admin 공통 기능 (CompanyAccount, ProjectAccount에서 상속)"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
-        'depth', 'is_category_only', 'allow_cancellation', 'is_active', 'order'
+        'depth', 'is_category_only', 'is_active', 'order'
     )
     list_display_links = ('indented_name',)
     list_editable = ('order', 'is_category_only', 'is_active')
-    list_filter = ('category', 'direction', 'is_category_only', 'allow_cancellation', 'is_active')
+    list_filter = ('category', 'direction', 'is_category_only', 'is_active')
     search_fields = ('code', 'name', 'description')
     ordering = ('code', 'order')
     readonly_fields = ('depth', 'full_path_display', 'children_display')
@@ -34,7 +34,7 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
             'fields': ('code', 'name', 'description', 'parent', 'full_path_display')
         }),
         ('회계 속성', {
-            'fields': ('category', 'direction', 'allow_cancellation')
+            'fields': ('category', 'direction')
         }),
         ('사용 제한', {
             'fields': ('is_active', 'is_category_only'),
@@ -60,12 +60,12 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     def category_display(self, obj):
         """계정구분을 색상과 함께 표시"""
         colors = {
-            'asset': '#2196F3',      # 파랑 - 자산
+            'asset': '#2196F3',  # 파랑 - 자산
             'liability': '#F44336',  # 빨강 - 부채
-            'equity': '#4CAF50',     # 초록 - 자본
-            'revenue': '#FF9800',    # 주황 - 수익
-            'expense': '#9C27B0',    # 보라 - 비용
-            'transfer': '#607D8B',   # 회색 - 대체
+            'equity': '#4CAF50',  # 초록 - 자본
+            'revenue': '#FF9800',  # 주황 - 수익
+            'expense': '#9C27B0',  # 보라 - 비용
+            'transfer': '#607D8B',  # 회색 - 대체
         }
         color = colors.get(obj.category, '#000000')
         return format_html(

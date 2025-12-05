@@ -34,6 +34,7 @@ class Account(models.Model):
         'revenue': 4000,
         'expense': 5000,
         'transfer': 6000,
+        'cancel': 7000,
     }
 
     # Depth별 코드 간격
@@ -63,6 +64,7 @@ class Account(models.Model):
             ('revenue', '수익'),
             ('expense', '비용'),
             ('transfer', '대체'),
+            ('cancel', '취소'),
         ],
         verbose_name='계정구분',
         help_text='회계 계정의 대분류'
@@ -75,10 +77,6 @@ class Account(models.Model):
     # 거래 방향
     direction = models.CharField(max_length=10, choices=[('deposit', '입금'), ('withdraw', '출금')],
                                  verbose_name='거래방향', help_text='이 계정이 사용되는 기본 거래 방향')
-
-    # 취소 거래 지원
-    allow_cancellation = models.BooleanField(default=False, verbose_name='취소 거래 허용',
-                                             help_text='체크 시: 입금→출금(취소) 또는 출금→입금(취소) 변환 가능')
 
     # 활성화 상태
     is_active = models.BooleanField(default=True, verbose_name='활성 여부', help_text='비활성화 시 신규 거래에 사용 불가')
@@ -152,12 +150,6 @@ class Account(models.Model):
 
     def clean(self):
         """유효성 검증"""
-        # 대체 계정은 취소 불가
-        if self.category == 'transfer' and self.allow_cancellation:
-            raise ValidationError({
-                'allow_cancellation': '대체 거래는 취소를 허용할 수 없습니다.'
-            })
-
         # 순환 참조 방지
         if self.parent:
             parent = self.parent
