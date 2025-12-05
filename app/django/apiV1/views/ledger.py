@@ -483,14 +483,14 @@ class CompanyAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = CompanyAccountingEntry
-        fields = ('company', 'sort', 'account_d1', 'account_d2', 'account_d3',
+        fields = ('company', 'sort', 'account', 'affiliated',
                   'evidence_type', 'transaction_id')
 
 
 class CompanyAccountingEntryViewSet(viewsets.ModelViewSet):
     """본사 회계 분개 ViewSet"""
     queryset = CompanyAccountingEntry.objects.select_related(
-        'company', 'sort', 'account_d1', 'account_d2', 'account_d3'
+        'company', 'sort', 'account', 'affiliated', 'affiliated__company', 'affiliated__project'
     ).all()
     serializer_class = CompanyAccountingEntrySerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
@@ -506,14 +506,14 @@ class ProjectAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('project', 'sort', 'project_account_d2', 'project_account_d3',
+        fields = ('project', 'sort', 'account', 'affiliated',
                   'evidence_type', 'transaction_id')
 
 
 class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     """프로젝트 회계 분개 ViewSet"""
     queryset = ProjectAccountingEntry.objects.select_related(
-        'project', 'sort', 'project_account_d2', 'project_account_d3'
+        'project', 'sort', 'account', 'affiliated', 'affiliated__company', 'affiliated__project'
     ).all()
     serializer_class = ProjectAccountingEntrySerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)

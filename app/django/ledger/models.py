@@ -82,6 +82,11 @@ class Account(models.Model):
     # 활성화 상태
     is_active = models.BooleanField(default=True, verbose_name='활성 여부', help_text='비활성화 시 신규 거래에 사용 불가')
 
+    # 관계회사/프로젝트 추적 필수 여부
+    requires_affiliated = models.BooleanField(default=False, verbose_name='관계회사/프로젝트 필수',
+                                             help_text='체크 시: 회계분개 입력 시 관계회사 또는 프로젝트 선택 필수<br>'
+                                                      '용도: 관계회사 대여금, 투자금 등 집계가 필요한 계정')
+
     # 정렬 순서
     order = models.PositiveIntegerField(default=0, verbose_name='정렬순서', help_text='같은 레벨 내 표시 순서')
 
@@ -398,6 +403,65 @@ class BankTransaction(models.Model):
 # Accounting Domain - 회계 분개 도메인
 # ============================================
 
+class Affiliated(models.Model):
+    """
+    관계회사/프로젝트 참조 모델
+
+    회계 분개에서 관계회사 대여금, 투자금 등을 추적하기 위한 모델입니다.
+    """
+    sort = models.CharField('구분', max_length=20,
+                           choices=(('company', '관계 회사'), ('project', '관련 프로젝트')),
+                           db_index=True,
+                           help_text='관계회사 또는 관련 프로젝트 구분')
+    company = models.ForeignKey('company.Company', on_delete=models.PROTECT,
+                                null=True, blank=True, verbose_name='관계 회사',
+                                help_text='대여금/투자금 등이 발생한 관계회사')
+    project = models.ForeignKey('project.Project', on_delete=models.PROTECT,
+                                null=True, blank=True, verbose_name='관련 프로젝트',
+                                help_text='대여금/투자금 등이 발생한 관련 프로젝트')
+    description = models.CharField(max_length=200, blank=True, default='', verbose_name='설명',
+                                   help_text='대여 목적, 조건 등 추가 설명')
+
+    # 감사 필드
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
+
+    class Meta:
+        verbose_name = '관계회사/프로젝트'
+        verbose_name_plural = '관계회사/프로젝트'
+        ordering = ['sort', '-created_at']
+        indexes = [
+            models.Index(fields=['sort', 'company']),
+            models.Index(fields=['sort', 'project']),
+        ]
+
+    def clean(self):
+        """유효성 검증"""
+        # company와 project 중 정확히 하나만 입력되어야 함
+        if self.sort == 'company':
+            if not self.company:
+                raise ValidationError({'company': '관계 회사 구분일 경우 회사를 선택해야 합니다.'})
+            if self.project:
+                raise ValidationError({'project': '관계 회사 구분일 경우 프로젝트를 선택할 수 없습니다.'})
+        elif self.sort == 'project':
+            if not self.project:
+                raise ValidationError({'project': '관련 프로젝트 구분일 경우 프로젝트를 선택해야 합니다.'})
+            if self.company:
+                raise ValidationError({'company': '관련 프로젝트 구분일 경우 회사를 선택할 수 없습니다.'})
+
+    def save(self, *args, **kwargs):
+        """저장 전 유효성 검증"""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        if self.sort == 'company' and self.company:
+            return f"회사: {self.company.name}"
+        elif self.sort == 'project' and self.project:
+            return f"프로젝트: {self.project.name}"
+        return f"{self.get_sort_display()}"
+
+
 class AccountingEntry(models.Model):
     """
     회계 분개 추상 모델
@@ -427,6 +491,11 @@ class AccountingEntry(models.Model):
         ],
         verbose_name='증빙종류', null=True, blank=True)
 
+    # 관계회사/프로젝트 추적
+    affiliated = models.ForeignKey(Affiliated, on_delete=models.PROTECT,
+                                   null=True, blank=True, verbose_name='관계회사/프로젝트',
+                                   help_text='관계회사 대여금, 투자금 등의 경우 필수 입력')
+
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
@@ -437,6 +506,7 @@ class AccountingEntry(models.Model):
             models.Index(fields=['transaction_id']),
             models.Index(fields=['sort', 'created_at']),
             models.Index(fields=['sort', 'evidence_type']),
+            models.Index(fields=['affiliated']),
         ]
 
     @property
@@ -520,21 +590,49 @@ class CompanyAccountingEntry(AccountingEntry):
     본사 회계 분개
 
     본사 거래에 대한 회계 분개 정보를 관리합니다.
-    본사 계정 체계(d1/d2/d3)를 사용합니다.
+    CompanyAccount 계정 체계를 사용합니다.
     """
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사')
 
-    # 본사 계정 체계
-    account_d1 = models.ForeignKey('ibs.AccountSubD1', on_delete=models.CASCADE, verbose_name='계정 대분류')
-    account_d2 = models.ForeignKey('ibs.AccountSubD2', on_delete=models.SET_NULL,
-                                   null=True, blank=True, verbose_name='계정 중분류')
-    account_d3 = models.ForeignKey('ibs.AccountSubD3', on_delete=models.SET_NULL,
-                                   null=True, blank=True, verbose_name='계정 소분류')
+    # 본사 계정 체계 (CompanyAccount 참조)
+    account = models.ForeignKey(CompanyAccount, on_delete=models.PROTECT, verbose_name='계정 과목',
+                                help_text='회계 분개에 사용할 계정 과목',
+                                limit_choices_to={'is_active': True, 'is_category_only': False})
 
     class Meta:
         verbose_name = '04. 본사 회계 분개'
         verbose_name_plural = '04. 본사 회계 분개'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['account', 'created_at']),
+        ]
+
+    def clean(self):
+        """유효성 검증"""
+        super().clean()
+
+        # 계정이 분류 전용인지 확인
+        if self.account and self.account.is_category_only:
+            raise ValidationError({
+                'account': f'"{self.account.name}"는 분류 전용 계정이므로 거래에 사용할 수 없습니다. 하위 계정을 선택해주세요.'
+            })
+
+        # 계정이 비활성화 상태인지 확인
+        if self.account and not self.account.is_active:
+            raise ValidationError({
+                'account': f'"{self.account.name}"는 비활성 계정이므로 사용할 수 없습니다.'
+            })
+
+        # requires_affiliated 검증
+        if self.account and self.account.requires_affiliated and not self.affiliated:
+            raise ValidationError({
+                'affiliated': f'"{self.account.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
+            })
+
+    def save(self, *args, **kwargs):
+        """저장 전 유효성 검증"""
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 # ============================================
@@ -601,17 +699,46 @@ class ProjectAccountingEntry(AccountingEntry):
     프로젝트 회계 분개
 
     프로젝트 거래에 대한 회계 분개 정보를 관리합니다.
-    프로젝트 계정 체계(d2/d3)를 사용합니다.
+    ProjectAccount 계정 체계를 사용합니다.
     """
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
 
-    # 프로젝트 계정 체계
-    project_account_d2 = models.ForeignKey('ibs.ProjectAccountD2',
-                                           on_delete=models.CASCADE, verbose_name='프로젝트 계정 중분류')
-    project_account_d3 = models.ForeignKey('ibs.ProjectAccountD3', on_delete=models.SET_NULL,
-                                           null=True, blank=True, verbose_name='프로젝트 계정 소분류')
+    # 프로젝트 계정 체계 (ProjectAccount 참조)
+    account = models.ForeignKey(ProjectAccount, on_delete=models.PROTECT, verbose_name='계정 과목',
+                                help_text='회계 분개에 사용할 계정 과목',
+                                limit_choices_to={'is_active': True, 'is_category_only': False})
 
     class Meta:
         verbose_name = '08. 프로젝트 회계 분개'
         verbose_name_plural = '08. 프로젝트 회계 분개'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['account', 'created_at']),
+        ]
+
+    def clean(self):
+        """유효성 검증"""
+        super().clean()
+
+        # 계정이 분류 전용인지 확인
+        if self.account and self.account.is_category_only:
+            raise ValidationError({
+                'account': f'"{self.account.name}"는 분류 전용 계정이므로 거래에 사용할 수 없습니다. 하위 계정을 선택해주세요.'
+            })
+
+        # 계정이 비활성화 상태인지 확인
+        if self.account and not self.account.is_active:
+            raise ValidationError({
+                'account': f'"{self.account.name}"는 비활성 계정이므로 사용할 수 없습니다.'
+            })
+
+        # requires_affiliated 검증
+        if self.account and self.account.requires_affiliated and not self.affiliated:
+            raise ValidationError({
+                'affiliated': f'"{self.account.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
+            })
+
+    def save(self, *args, **kwargs):
+        """저장 전 유효성 검증"""
+        self.full_clean()
+        super().save(*args, **kwargs)

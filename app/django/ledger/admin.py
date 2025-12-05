@@ -9,6 +9,7 @@ from ledger.models import (
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
+    Affiliated,
 )
 
 
@@ -37,8 +38,11 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
             'fields': ('category', 'direction')
         }),
         ('사용 제한', {
-            'fields': ('is_active', 'is_category_only'),
-            'description': '분류 전용: 체크 시 하위 계정만 거래에 사용 가능'
+            'fields': ('is_active', 'is_category_only', 'requires_affiliated'),
+            'description': '<br>'.join([
+                '<strong>분류 전용</strong>: 체크 시 하위 계정만 거래에 사용 가능',
+                '<strong>관계회사/프로젝트 필수</strong>: 체크 시 회계분개 시 관계회사 또는 프로젝트 선택 필수 (대여금, 투자금 등)'
+            ])
         }),
         ('정렬 및 계층', {
             'fields': ('order', 'depth', 'children_display')
@@ -456,13 +460,30 @@ class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(CompanyAccountingEntry)
 class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'transaction_id_short', 'company', 'sort', 'account_d1',
-                    'account_d2', 'account_d3', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
+    list_display = ('id', 'transaction_id_short', 'company', 'sort', 'account_display',
+                    'affiliated_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('company', 'sort', 'account_d1', 'evidence_type')
-    search_fields = ('transaction_id', 'trader')
+    list_filter = ('company', 'sort', 'account__category', 'evidence_type', 'affiliated__sort')
+    search_fields = ('transaction_id', 'trader', 'account__name', 'account__code')
     ordering = ('-created_at',)
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('transaction_id', 'created_at', 'updated_at')
+    autocomplete_fields = ['account', 'affiliated']
+
+    fieldsets = (
+        ('거래 정보', {
+            'fields': ('transaction_id', 'company', 'sort', 'amount', 'trader')
+        }),
+        ('계정 정보', {
+            'fields': ('account', 'affiliated')
+        }),
+        ('증빙 정보', {
+            'fields': ('evidence_type',)
+        }),
+        ('감사 정보', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
     def get_changeform_initial_data(self, request):
         """URL 파라미터에서 초기값 설정"""
@@ -494,16 +515,45 @@ class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
+    @admin.display(description='계정 과목')
+    def account_display(self, obj):
+        if obj.account:
+            return f"{obj.account.code} {obj.account.name}"
+        return '-'
+
+    @admin.display(description='관계회사/프로젝트')
+    def affiliated_display(self, obj):
+        if obj.affiliated:
+            return str(obj.affiliated)
+        return '-'
+
 
 @admin.register(ProjectAccountingEntry)
 class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'transaction_id_short', 'project', 'sort', 'project_account_d2',
-                    'project_account_d3', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
+    list_display = ('id', 'transaction_id_short', 'project', 'sort', 'account_display',
+                    'affiliated_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'sort', 'project_account_d2', 'evidence_type')
-    search_fields = ('transaction_id', 'trader', 'project__name')
+    list_filter = ('project', 'sort', 'account__category', 'evidence_type', 'affiliated__sort')
+    search_fields = ('transaction_id', 'trader', 'project__name', 'account__name', 'account__code')
     ordering = ('-created_at',)
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('transaction_id', 'created_at', 'updated_at')
+    autocomplete_fields = ['account', 'affiliated']
+
+    fieldsets = (
+        ('거래 정보', {
+            'fields': ('transaction_id', 'project', 'sort', 'amount', 'trader')
+        }),
+        ('계정 정보', {
+            'fields': ('account', 'affiliated')
+        }),
+        ('증빙 정보', {
+            'fields': ('evidence_type',)
+        }),
+        ('감사 정보', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
     @admin.display(description='거래 ID')
     def transaction_id_short(self, obj):
@@ -515,3 +565,66 @@ class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
+
+    @admin.display(description='계정 과목')
+    def account_display(self, obj):
+        if obj.account:
+            return f"{obj.account.code} {obj.account.name}"
+        return '-'
+
+    @admin.display(description='관계회사/프로젝트')
+    def affiliated_display(self, obj):
+        if obj.affiliated:
+            return str(obj.affiliated)
+        return '-'
+
+
+
+# ============================================
+# Affiliated Admin - 관계회사/프로젝트
+# ============================================
+
+@admin.register(Affiliated)
+class AffiliatedAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'sort_display', 'company', 'project', 'description_short', 'created_at')
+    list_display_links = ('id',)
+    list_filter = ('sort', 'company', 'project')
+    search_fields = ('company__name', 'project__name', 'description')
+    ordering = ('sort', '-created_at')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('sort',)
+        }),
+        ('대상 선택', {
+            'fields': ('company', 'project'),
+            'description': '관계 회사 또는 관련 프로젝트 중 하나를 선택해주세요.'
+        }),
+        ('상세 정보', {
+            'fields': ('description',)
+        }),
+        ('감사 정보', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    @admin.display(description='구분')
+    def sort_display(self, obj):
+        colors = {
+            'company': '#2196F3',  # 파랑
+            'project': '#4CAF50',  # 초록
+        }
+        color = colors.get(obj.sort, '#000000')
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">●</span> {}',
+            color, obj.get_sort_display()
+        )
+    
+    @admin.display(description='설명')
+    def description_short(self, obj):
+        if obj.description:
+            return obj.description[:50] + '...' if len(obj.description) > 50 else obj.description
+        return '-'
+
