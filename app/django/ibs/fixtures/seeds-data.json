@@ -432,7 +432,6 @@
       "category": "revenue",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -449,7 +448,6 @@
       "category": "revenue",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -466,7 +464,6 @@
       "category": "expense",
       "is_category_only": true,
       "direction": "withdraw",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -483,7 +480,6 @@
       "category": "expense",
       "is_category_only": true,
       "direction": "withdraw",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -500,7 +496,6 @@
       "category": "expense",
       "is_category_only": true,
       "direction": "withdraw",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -517,7 +512,6 @@
       "category": "liability",
       "is_category_only": true,
       "direction": "withdraw",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -534,7 +528,6 @@
       "category": "liability",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -551,7 +544,6 @@
       "category": "equity",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -568,7 +560,6 @@
       "category": "revenue",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -585,7 +576,6 @@
       "category": "asset",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -602,7 +592,6 @@
       "category": "asset",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -619,7 +608,6 @@
       "category": "liability",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -636,7 +624,6 @@
       "category": "asset",
       "is_category_only": true,
       "direction": "withdraw",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -653,7 +640,6 @@
       "category": "transfer",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -670,7 +656,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -687,7 +672,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -704,7 +688,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -721,7 +704,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -738,7 +720,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -755,7 +736,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -772,7 +752,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -789,7 +768,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -806,7 +784,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -823,7 +800,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -840,7 +816,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -857,7 +832,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -874,7 +848,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -891,7 +864,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -908,7 +880,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -925,7 +896,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -942,7 +912,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -959,7 +928,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -976,7 +944,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -993,7 +960,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1010,7 +976,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1027,7 +992,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1044,7 +1008,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1061,7 +1024,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1078,7 +1040,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1095,7 +1056,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1112,7 +1072,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1129,7 +1088,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1146,7 +1104,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1163,7 +1120,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1180,7 +1136,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1197,7 +1152,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1214,7 +1168,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1231,7 +1184,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1248,7 +1200,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1265,7 +1216,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1282,7 +1232,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1299,7 +1248,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1316,7 +1264,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1333,7 +1280,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1350,7 +1296,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1367,7 +1312,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1384,7 +1328,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1401,7 +1344,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1418,7 +1360,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1429,13 +1370,12 @@
     "fields": {
       "code": "5580",
       "name": "금융자산처분손실",
-      "description": "예/적금, 단기투자상품 등의 금융자산을 처분하면서 발생한 손실\n상위 계정",
+      "description": "예/적금, 단기투자상품 등의 금융자산을 처분하면서 발생한 손실\r\n상위 계정",
       "parent": 7,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1452,7 +1392,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -1469,7 +1408,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1486,7 +1424,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1503,7 +1440,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1520,7 +1456,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1537,7 +1472,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1554,7 +1488,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1571,7 +1504,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1588,7 +1520,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1605,7 +1536,6 @@
       "category": "equity",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1622,7 +1552,6 @@
       "category": "equity",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1639,7 +1568,6 @@
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1656,7 +1584,6 @@
       "category": "equity",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1673,7 +1600,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1690,7 +1616,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1707,7 +1632,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1724,7 +1648,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1741,7 +1664,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1758,7 +1680,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1775,7 +1696,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1792,7 +1712,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1809,7 +1728,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1826,7 +1744,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1843,7 +1760,6 @@
       "category": "transfer",
       "is_category_only": true,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -1860,7 +1776,6 @@
       "category": "transfer",
       "is_category_only": true,
       "direction": "withdraw",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -1877,7 +1792,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1894,7 +1808,6 @@
       "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1911,7 +1824,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1928,7 +1840,6 @@
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1945,7 +1856,6 @@
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": true,
       "is_active": true,
       "order": 0
     }
@@ -1962,7 +1872,6 @@
       "category": "transfer",
       "is_category_only": false,
       "direction": "deposit",
-      "allow_cancellation": false,
       "is_active": true,
       "order": 0
     }
@@ -1979,7 +1888,86 @@
       "category": "transfer",
       "is_category_only": false,
       "direction": "withdraw",
-      "allow_cancellation": false,
+      "is_active": true,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 96,
+    "fields": {
+      "code": "7000",
+      "name": "거래 취소",
+      "description": "",
+      "parent": null,
+      "depth": 1,
+      "category": "cancel",
+      "is_category_only": true,
+      "direction": "withdraw",
+      "is_active": true,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 97,
+    "fields": {
+      "code": "7100",
+      "name": "취소된 출금",
+      "description": "",
+      "parent": 96,
+      "depth": 2,
+      "category": "cancel",
+      "is_category_only": true,
+      "direction": "withdraw",
+      "is_active": true,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 98,
+    "fields": {
+      "code": "7200",
+      "name": "취소된 입금",
+      "description": "",
+      "parent": 96,
+      "depth": 2,
+      "category": "cancel",
+      "is_category_only": true,
+      "direction": "deposit",
+      "is_active": true,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 99,
+    "fields": {
+      "code": "7101",
+      "name": "거래취소 (출금)",
+      "description": "취소된 출금거래",
+      "parent": 97,
+      "depth": 3,
+      "category": "cancel",
+      "is_category_only": false,
+      "direction": "withdraw",
+      "is_active": true,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 100,
+    "fields": {
+      "code": "7201",
+      "name": "거래취소(입금)",
+      "description": "취소된 입금거래",
+      "parent": 98,
+      "depth": 3,
+      "category": "cancel",
+      "is_category_only": false,
+      "direction": "deposit",
       "is_active": true,
       "order": 0
     }
