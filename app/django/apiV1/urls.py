@@ -122,6 +122,8 @@ router.register(r'bank-code', cash.BankCodeViewSet)
 router.register(r'company-bank-account', cash.ComBankAccountViewSet)
 
 # ledger (new architecture)
+router.register(r'ledger/company-account', ledger.CompanyAccountViewSet, basename='ledger-company-account')
+router.register(r'ledger/project-account', ledger.ProjectAccountViewSet, basename='ledger-project-account')
 router.register(r'ledger/bank-code', ledger.LedgerBankCodeViewSet, basename='ledger-bank-code')
 router.register(r'ledger/company-bank-account', ledger.LedgerCompanyBankAccountViewSet, basename='ledger-company-bank-account')
 router.register(r'ledger/project-bank-account', ledger.LedgerProjectBankAccountViewSet, basename='ledger-project-bank-account')

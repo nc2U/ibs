@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from ledger.models import (
     BankCode,
+    CompanyAccount, ProjectAccount,
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
@@ -17,6 +18,7 @@ from ledger.models import (
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty
 from ..permission import IsStaffOrReadOnly
 from ..serializers.ledger import (
+    CompanyAccountSerializer, ProjectAccountSerializer, AccountSearchResultSerializer,
     LedgerBankCodeSerializer,
     LedgerCompanyBankAccountSerializer, LedgerProjectBankAccountSerializer,
     CompanyBankTransactionSerializer, ProjectBankTransactionSerializer,
@@ -25,6 +27,286 @@ from ..serializers.ledger import (
 )
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
+
+
+# ============================================
+# Account ViewSets
+# ============================================
+
+class CompanyAccountFilter(FilterSet):
+    """본사 계정 과목 필터"""
+    category = CharFilter(field_name='category', lookup_expr='exact')
+    direction = CharFilter(field_name='direction', lookup_expr='exact')
+    parent = CharFilter(field_name='parent_id', lookup_expr='exact')
+
+    class Meta:
+        model = CompanyAccount
+        fields = ['category', 'direction', 'parent', 'is_category_only', 'is_active']
+
+
+class CompanyAccountViewSet(viewsets.ModelViewSet):
+    """본사 계정 과목 ViewSet"""
+    queryset = CompanyAccount.objects.select_related('parent').all()
+    serializer_class = CompanyAccountSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    pagination_class = PageNumberPaginationFifty
+    filterset_class = CompanyAccountFilter
+    search_fields = ('code', 'name', 'description')
+    ordering_fields = ('code', 'name', 'order', 'created_at')
+    ordering = ('code', 'order')
+
+    @action(detail=False, methods=['get'])
+    def search_with_parents(self, request):
+        """
+        계정 검색 (부모 계정 포함)
+
+        하위 계정이 검색 결과에 포함되면 해당 부모 계정들도 결과에 포함시킵니다.
+        분류 전용 계정의 경우 동적으로 computed_direction을 계산하여 표시합니다.
+        """
+        query = request.query_params.get('q', '')
+        direction = request.query_params.get('direction', '')
+
+        if not query:
+            return Response({'results': []})
+
+        # 1. 직접 매치되는 계정들 검색
+        matched_accounts = CompanyAccount.objects.filter(
+            name__icontains=query,
+            is_active=True
+        ).select_related('parent')
+
+        # 2. direction 필터링 (computed_direction 기반)
+        if direction:
+            filtered_accounts = []
+            for account in matched_accounts:
+                computed = account.get_computed_direction()
+                if direction == 'both' or computed == direction or computed == 'both':
+                    filtered_accounts.append(account)
+            matched_accounts = filtered_accounts
+
+        # 3. 매치된 계정들의 모든 부모 계정들 수집
+        parent_accounts = set()
+        for account in matched_accounts:
+            parents = account.get_ancestors()
+            parent_accounts.update(parents)
+
+        # 4. 결과 조합 및 직렬화
+        results = []
+
+        # 직접 매치된 계정들
+        for account in matched_accounts:
+            results.append({
+                'pk': account.pk,
+                'code': account.code,
+                'name': account.name,
+                'full_path': account.get_full_path(),
+                'computed_direction': account.get_computed_direction(),
+                'computed_direction_display': account.get_direction_display_computed(),
+                'is_category_only': account.is_category_only,
+                'is_parent_of_matches': False,
+                'match_reason': '직접 매치'
+            })
+
+        # 부모 계정들
+        for parent in parent_accounts:
+            # direction 필터링 적용
+            if direction:
+                computed = parent.get_computed_direction()
+                if not (direction == 'both' or computed == direction or computed == 'both'):
+                    continue
+
+            results.append({
+                'pk': parent.pk,
+                'code': parent.code,
+                'name': parent.name,
+                'full_path': parent.get_full_path(),
+                'computed_direction': parent.get_computed_direction(),
+                'computed_direction_display': parent.get_direction_display_computed(),
+                'is_category_only': parent.is_category_only,
+                'is_parent_of_matches': True,
+                'match_reason': '상위 계정'
+            })
+
+        # 중복 제거 (pk 기준)
+        unique_results = {}
+        for result in results:
+            unique_results[result['pk']] = result
+
+        # code 순으로 정렬
+        final_results = sorted(unique_results.values(), key=lambda x: x['code'])
+
+        return Response({
+            'results': AccountSearchResultSerializer(final_results, many=True).data,
+            'count': len(final_results)
+        })
+
+    @action(detail=False, methods=['get'])
+    def tree(self, request):
+        """계정 트리 구조 조회"""
+        category = request.query_params.get('category')
+
+        queryset = CompanyAccount.objects.select_related('parent').filter(is_active=True)
+        if category:
+            queryset = queryset.filter(category=category)
+
+        accounts = queryset.order_by('code', 'order')
+        return Response(self.get_serializer(accounts, many=True).data)
+
+
+class ProjectAccountFilter(FilterSet):
+    """프로젝트 계정 과목 필터"""
+    category = CharFilter(field_name='category', lookup_expr='exact')
+    direction = CharFilter(field_name='direction', lookup_expr='exact')
+    parent = CharFilter(field_name='parent_id', lookup_expr='exact')
+
+    class Meta:
+        model = ProjectAccount
+        fields = ['category', 'direction', 'parent', 'is_category_only', 'is_active',
+                  'is_payment', 'is_related_contract']
+
+
+class ProjectAccountViewSet(viewsets.ModelViewSet):
+    """프로젝트 계정 과목 ViewSet"""
+    queryset = ProjectAccount.objects.select_related('parent').all()
+    serializer_class = ProjectAccountSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    pagination_class = PageNumberPaginationFifty
+    filterset_class = ProjectAccountFilter
+    search_fields = ('code', 'name', 'description')
+    ordering_fields = ('code', 'name', 'order', 'created_at')
+    ordering = ('code', 'order')
+
+    @action(detail=False, methods=['get'])
+    def search_with_parents(self, request):
+        """
+        계정 검색 (부모 계정 포함)
+
+        하위 계정이 검색 결과에 포함되면 해당 부모 계정들도 결과에 포함시킵니다.
+        분류 전용 계정의 경우 동적으로 computed_direction을 계산하여 표시합니다.
+        """
+        query = request.query_params.get('q', '')
+        direction = request.query_params.get('direction', '')
+        is_payment = request.query_params.get('is_payment')
+        is_related_contract = request.query_params.get('is_related_contract')
+
+        if not query:
+            return Response({'results': []})
+
+        # 1. 직접 매치되는 계정들 검색
+        matched_accounts = ProjectAccount.objects.filter(
+            name__icontains=query,
+            is_active=True
+        ).select_related('parent')
+
+        # 2. 프로젝트 특수 필터링
+        if is_payment is not None:
+            is_payment_bool = is_payment.lower() in ('true', '1', 'yes')
+            matched_accounts = matched_accounts.filter(is_payment=is_payment_bool)
+
+        if is_related_contract is not None:
+            is_related_contract_bool = is_related_contract.lower() in ('true', '1', 'yes')
+            matched_accounts = matched_accounts.filter(is_related_contract=is_related_contract_bool)
+
+        # 3. direction 필터링 (computed_direction 기반)
+        if direction:
+            filtered_accounts = []
+            for account in matched_accounts:
+                computed = account.get_computed_direction()
+                if direction == 'both' or computed == direction or computed == 'both':
+                    filtered_accounts.append(account)
+            matched_accounts = filtered_accounts
+
+        # 4. 매치된 계정들의 모든 부모 계정들 수집
+        parent_accounts = set()
+        for account in matched_accounts:
+            parents = account.get_ancestors()
+            parent_accounts.update(parents)
+
+        # 5. 결과 조합 및 직렬화
+        results = []
+
+        # 직접 매치된 계정들
+        for account in matched_accounts:
+            results.append({
+                'pk': account.pk,
+                'code': account.code,
+                'name': account.name,
+                'full_path': account.get_full_path(),
+                'computed_direction': account.get_computed_direction(),
+                'computed_direction_display': account.get_direction_display_computed(),
+                'is_category_only': account.is_category_only,
+                'is_parent_of_matches': False,
+                'match_reason': '직접 매치',
+                'is_payment': account.is_payment,
+                'is_related_contract': account.is_related_contract,
+            })
+
+        # 부모 계정들
+        for parent in parent_accounts:
+            # direction 필터링 적용
+            if direction:
+                computed = parent.get_computed_direction()
+                if not (direction == 'both' or computed == direction or computed == 'both'):
+                    continue
+
+            results.append({
+                'pk': parent.pk,
+                'code': parent.code,
+                'name': parent.name,
+                'full_path': parent.get_full_path(),
+                'computed_direction': parent.get_computed_direction(),
+                'computed_direction_display': parent.get_direction_display_computed(),
+                'is_category_only': parent.is_category_only,
+                'is_parent_of_matches': True,
+                'match_reason': '상위 계정',
+                'is_payment': parent.is_payment,
+                'is_related_contract': parent.is_related_contract,
+            })
+
+        # 중복 제거 (pk 기준)
+        unique_results = {}
+        for result in results:
+            unique_results[result['pk']] = result
+
+        # code 순으로 정렬
+        final_results = sorted(unique_results.values(), key=lambda x: x['code'])
+
+        return Response({
+            'results': AccountSearchResultSerializer(final_results, many=True).data,
+            'count': len(final_results)
+        })
+
+    @action(detail=False, methods=['get'])
+    def tree(self, request):
+        """계정 트리 구조 조회"""
+        category = request.query_params.get('category')
+
+        queryset = ProjectAccount.objects.select_related('parent').filter(is_active=True)
+        if category:
+            queryset = queryset.filter(category=category)
+
+        accounts = queryset.order_by('code', 'order')
+        return Response(self.get_serializer(accounts, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def payment_accounts(self, request):
+        """분양대금 관련 계정만 조회"""
+        accounts = ProjectAccount.objects.filter(
+            is_payment=True,
+            is_active=True
+        ).select_related('parent').order_by('code', 'order')
+
+        return Response(self.get_serializer(accounts, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def contract_accounts(self, request):
+        """공급계약 관련 계정만 조회"""
+        accounts = ProjectAccount.objects.filter(
+            is_related_contract=True,
+            is_active=True
+        ).select_related('parent').order_by('code', 'order')
+
+        return Response(self.get_serializer(accounts, many=True).data)
 
 
 # ============================================

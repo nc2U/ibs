@@ -3,11 +3,101 @@ from rest_framework import serializers
 
 from ledger.models import (
     BankCode,
+    CompanyAccount, ProjectAccount,
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
 )
 from payment.models import ContractPayment
+
+
+# ============================================
+# Account Serializers
+# ============================================
+
+class CompanyAccountSerializer(serializers.ModelSerializer):
+    """본사 계정 과목 시리얼라이저"""
+    parent_name = serializers.CharField(source='parent.name', read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    direction_display = serializers.CharField(source='get_direction_display', read_only=True)
+    computed_direction = serializers.SerializerMethodField(read_only=True)
+    computed_direction_display = serializers.SerializerMethodField(read_only=True)
+    full_path = serializers.CharField(source='get_full_path', read_only=True)
+    children_count = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = CompanyAccount
+        fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name',
+                  'depth', 'category', 'category_display', 'direction', 'direction_display',
+                  'computed_direction', 'computed_direction_display',
+                  'is_category_only', 'is_active', 'order',
+                  'full_path', 'children_count')
+        read_only_fields = ('depth',)
+
+    @staticmethod
+    def get_computed_direction(obj):
+        """동적으로 계산된 거래 방향"""
+        return obj.get_computed_direction()
+
+    @staticmethod
+    def get_computed_direction_display(obj):
+        """동적으로 계산된 거래 방향의 표시 텍스트"""
+        return obj.get_direction_display_computed()
+
+    @staticmethod
+    def get_children_count(obj):
+        """하위 계정 수"""
+        return obj.children.filter(is_active=True).count()
+
+
+class ProjectAccountSerializer(serializers.ModelSerializer):
+    """프로젝트 계정 과목 시리얼라이저"""
+    parent_name = serializers.CharField(source='parent.name', read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    direction_display = serializers.CharField(source='get_direction_display', read_only=True)
+    computed_direction = serializers.SerializerMethodField(read_only=True)
+    computed_direction_display = serializers.SerializerMethodField(read_only=True)
+    full_path = serializers.CharField(source='get_full_path', read_only=True)
+    children_count = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ProjectAccount
+        fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name',
+                  'depth', 'category', 'category_display', 'direction', 'direction_display',
+                  'computed_direction', 'computed_direction_display',
+                  'is_category_only', 'is_active', 'order',
+                  'is_payment', 'is_related_contract',
+                  'full_path', 'children_count')
+        read_only_fields = ('depth',)
+
+    def get_computed_direction(self, obj):
+        """동적으로 계산된 거래 방향"""
+        return obj.get_computed_direction()
+
+    def get_computed_direction_display(self, obj):
+        """동적으로 계산된 거래 방향의 표시 텍스트"""
+        return obj.get_direction_display_computed()
+
+    def get_children_count(self, obj):
+        """하위 계정 수"""
+        return obj.children.filter(is_active=True).count()
+
+
+class AccountSearchResultSerializer(serializers.Serializer):
+    """계정 검색 결과 시리얼라이저"""
+    pk = serializers.IntegerField()
+    code = serializers.CharField()
+    name = serializers.CharField()
+    full_path = serializers.CharField()
+    computed_direction = serializers.CharField()
+    computed_direction_display = serializers.CharField()
+    is_category_only = serializers.BooleanField()
+    is_parent_of_matches = serializers.BooleanField(default=False)
+    match_reason = serializers.CharField(default='직접 매치')
+
+    # ProjectAccount 전용 필드
+    is_payment = serializers.BooleanField(required=False)
+    is_related_contract = serializers.BooleanField(required=False)
 
 
 # ============================================
