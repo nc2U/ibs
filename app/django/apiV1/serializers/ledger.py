@@ -70,15 +70,18 @@ class ProjectAccountSerializer(serializers.ModelSerializer):
                   'full_path', 'children_count')
         read_only_fields = ('depth',)
 
-    def get_computed_direction(self, obj):
+    @staticmethod
+    def get_computed_direction(obj):
         """동적으로 계산된 거래 방향"""
         return obj.get_computed_direction()
 
-    def get_computed_direction_display(self, obj):
+    @staticmethod
+    def get_computed_direction_display(obj):
         """동적으로 계산된 거래 방향의 표시 텍스트"""
         return obj.get_direction_display_computed()
 
-    def get_children_count(self, obj):
+    @staticmethod
+    def get_children_count(obj):
         """하위 계정 수"""
         return obj.children.filter(is_active=True).count()
 

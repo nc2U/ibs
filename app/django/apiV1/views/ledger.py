@@ -536,7 +536,8 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
     """
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
 
-    def create(self, request):
+    @staticmethod
+    def create(request):
         """본사 거래 생성 (은행거래 + 회계분개)"""
         serializer = CompanyCompositeTransactionSerializer(
             data=request.data,
@@ -550,7 +551,8 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, pk=None):
+    @staticmethod
+    def update(request, pk=None):
         """본사 거래 수정 (은행거래 + 회계분개)"""
         try:
             bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
@@ -570,7 +572,8 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def partial_update(self, request, pk=None):
+    @staticmethod
+    def partial_update(request, pk=None):
         """본사 거래 부분 수정 (은행거래 + 회계분개)"""
         try:
             bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
@@ -601,7 +604,8 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
     """
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
 
-    def create(self, request):
+    @staticmethod
+    def create(request):
         """프로젝트 거래 생성 (은행거래 + 회계분개 + 계약결제)"""
         serializer = ProjectCompositeTransactionSerializer(
             data=request.data,
@@ -627,7 +631,8 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, pk=None):
+    @staticmethod
+    def update(request, pk=None):
         """프로젝트 거래 수정 (은행거래 + 회계분개 + 계약결제)"""
         try:
             bank_transaction = ProjectBankTransaction.objects.get(pk=pk)
@@ -659,7 +664,8 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             return Response(response_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def partial_update(self, request, pk=None):
+    @staticmethod
+    def partial_update(request, pk=None):
         """프로젝트 거래 부분 수정 (은행거래 + 회계분개 + 계약결제)"""
         try:
             bank_transaction = ProjectBankTransaction.objects.get(pk=pk)
