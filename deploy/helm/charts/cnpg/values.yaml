@@ -218,8 +218,6 @@ additionalConfig: {}
 env:
   - name: TZ
     value: "Asia/Seoul"
-  - name: PGTZ
-    value: "Asia/Seoul"
 
 # Bootstrap configuration
 bootstrap:
