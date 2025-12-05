@@ -6,7 +6,7 @@
 ![Stars](https://img.shields.io/github/stars/nc2U/ibs)
 ![Forks](https://img.shields.io/github/forks/nc2U/ibs)
 
-# Django 5.2 + Vue3 using Nginx + MariaDB or PostgreSQL (deploy as Docker or Kubernetes)
+# Django 6.x + Vue3 using Nginx + MariaDB or PostgreSQL (deploy as Docker or Kubernetes)
 
 ## Deploy Using Docker
 
