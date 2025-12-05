@@ -76,7 +76,8 @@ class Account(models.Model):
 
     # 거래 방향
     direction = models.CharField(max_length=10, choices=[('deposit', '입금'), ('withdraw', '출금')],
-                                 verbose_name='거래방향', help_text='이 계정이 사용되는 기본 거래 방향')
+                                 null=True, blank=True, verbose_name='거래방향',
+                                 help_text='이 계정이 사용되는 기본 거래 방향 (분류 전용 계정은 비워둠)')
 
     # 활성화 상태
     is_active = models.BooleanField(default=True, verbose_name='활성 여부', help_text='비활성화 시 신규 거래에 사용 불가')
@@ -177,6 +178,60 @@ class Account(models.Model):
             descendants.extend(child.get_descendants(include_self=True))
 
         return descendants
+
+    def get_ancestors(self, include_self=False):
+        """모든 상위 계정 조회 (루트까지)"""
+        ancestors = []
+        if include_self:
+            ancestors.append(self)
+
+        parent = self.parent
+        while parent:
+            ancestors.append(parent)
+            parent = parent.parent
+
+        return ancestors
+
+    def get_computed_direction(self):
+        """
+        분류 전용 계정의 거래 방향을 하위 계정들을 기반으로 계산
+
+        Returns:
+            str: 'deposit', 'withdraw', 'both', None
+        """
+        if not self.is_category_only:
+            # 거래 계정인 경우 실제 direction 반환
+            return self.direction
+
+        # 분류 전용 계정인 경우 하위 계정들의 direction 분석
+        child_directions = set()
+        for child in self.children.filter(is_active=True):
+            child_direction = child.get_computed_direction()
+            if child_direction == 'both':
+                # 하위에 'both'가 있으면 즉시 'both' 반환
+                return 'both'
+            elif child_direction:
+                child_directions.add(child_direction)
+
+        if len(child_directions) == 0:
+            return None
+        elif len(child_directions) == 1:
+            return list(child_directions)[0]
+        else:
+            # 입금과 출금이 모두 있는 경우
+            return 'both'
+
+    def get_direction_display_computed(self):
+        """computed_direction의 표시용 텍스트"""
+        computed = self.get_computed_direction()
+        if computed == 'deposit':
+            return '입금'
+        elif computed == 'withdraw':
+            return '출금'
+        elif computed == 'both':
+            return '입금/출금'
+        else:
+            return '-'
 
     def __str__(self):
         return f"{self.code} {self.name}"

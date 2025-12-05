@@ -75,11 +75,34 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='거래방향')
     def direction_display(self, obj):
-        """거래 방향을 아이콘과 함께 표시"""
-        if obj.direction == 'deposit':
-            return format_html('<span style="color: green;">{}</span>', '⬇ 입금')
+        """거래 방향을 아이콘과 함께 표시 (computed direction 포함)"""
+        computed = obj.get_computed_direction()
+
+        if computed == 'deposit':
+            color = 'green'
+            icon = '⬇'
+            text = '입금'
+        elif computed == 'withdraw':
+            color = 'red'
+            icon = '⬆'
+            text = '출금'
+        elif computed == 'both':
+            color = 'purple'
+            icon = '⬍'
+            text = '입금/출금'
         else:
-            return format_html('<span style="color: red;">{}</span>', '⬆ 출금')
+            color = 'gray'
+            icon = '—'
+            text = '미지정'
+
+        # 분류 전용 계정인 경우 computed 표시임을 알 수 있도록 처리
+        if obj.is_category_only and computed and obj.direction != computed:
+            return format_html(
+                '<span style="color: {};">{} {} <small>(자동)</small></span>',
+                color, icon, text
+            )
+        else:
+            return format_html('<span style="color: {};">{} {}</span>', color, icon, text)
 
     @admin.display(description='전체 경로')
     def full_path_display(self, obj):
