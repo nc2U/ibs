@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch, inject } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useComCash } from '@/store/pinia/comCash'
 import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
@@ -13,10 +13,8 @@ const dateIncSum = ref(0)
 const dateOutSum = ref(0)
 const dateBalance = ref(0)
 
-// inject를 통해 전달된 store가 있으면 사용, 없으면 기본 useComCash 사용
-const injectedStore = inject<any>('cashStore', null)
-const comCashStore = injectedStore || useComCash()
-const comBalanceByAccList = computed(() => comCashStore.comBalanceByAccList || comCashStore.comLedgerBalanceByAccList)
+const comCashStore = useComCash()
+const comBalanceByAccList = computed(() => comCashStore.comBalanceByAccList)
 
 const getSumTotal = () => {
   const _dateIncSum =
