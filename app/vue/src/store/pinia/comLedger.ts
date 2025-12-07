@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
 import {
-  type BalanceByAccount,
   type BankCode,
+  type BalanceByAccount,
   type BankTransaction,
   type ComCalculated,
   type CompanyBank,
@@ -351,15 +351,15 @@ export const useComLedger = defineStore('comLedger', () => {
       outlay: tx.sort === 2 ? tx.amount : null,
       deal_date: tx.deal_date,
       note: tx.note,
-    }))
+    })),
   )
 
   const comLedgerCalculated = computed(() =>
-    comLedgerCalculation.value.length ? comLedgerCalculation.value[0] : null
+    comLedgerCalculation.value.length ? comLedgerCalculation.value[0] : null,
   )
 
   const comLedgerLastDealDate = computed(() =>
-    comLedgerLastDealList.value.length ? comLedgerLastDealList.value[0] : null
+    comLedgerLastDealList.value.length ? comLedgerLastDealList.value[0] : null,
   )
 
   const fetchComLedgerBankAccList = async (company: number) =>
@@ -375,18 +375,17 @@ export const useComLedger = defineStore('comLedger', () => {
   }) => {
     const { company, date, is_balance = '' } = payload
     return await api
-      .get(`/company-bank-transaction/balance_by_account/?company=${company}&date=${date}&is_balance=${is_balance}`)
+      .get(
+        `/ledger/company-transaction/balance_by_account/?company=${company}&date=${date}&is_balance=${is_balance}`,
+      )
       .then(res => (comLedgerBalanceByAccList.value = res.data))
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchDateLedgerTransactionList = async (payload: {
-    company: number
-    date: string
-  }) => {
+  const fetchDateLedgerTransactionList = async (payload: { company: number; date: string }) => {
     const { company, date } = payload
     return await api
-      .get(`/company-bank-transaction/daily_transactions/?company=${company}&date=${date}`)
+      .get(`/ledger/company-transaction/daily_transactions/?company=${company}&date=${date}`)
       .then(res => (dateLedgerTransactions.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
@@ -411,7 +410,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const fetchComLedgerLastDealDate = async (com: number) =>
     await api
-      .get(`/company-bank-transaction/last_deal/?company=${com}`)
+      .get(`/ledger/company-transaction/last_deal/?company=${com}`)
       .then(res => (comLedgerLastDealList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 

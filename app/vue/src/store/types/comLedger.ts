@@ -1,5 +1,17 @@
-// comCash에서 재사용
-export type { BankCode, BalanceByAccount, ComCalculated } from './comCash'
+export interface BankCode {
+  pk: number
+  code: string
+  name: string
+}
+
+export interface BalanceByAccount {
+  bank_acc: string
+  bank_num: string
+  date_inc: number
+  date_out: number
+  inc_sum: number | null
+  out_sum: number | null
+}
 
 // 기존 comLedger 타입 (CashManage 페이지에서 사용)
 export interface CompanyBank {
@@ -91,7 +103,7 @@ export interface CompanyBankTransaction {
   bank_account_name?: string
   deal_date: string
   amount: number
-  sort: number  // 1=입금, 2=출금
+  sort: number // 1=입금, 2=출금
   sort_name?: string
   content: string
   note: string
@@ -133,4 +145,11 @@ export interface LedgerTransactionForDisplay {
   outlay: number | null
   deal_date: string
   note: string
+}
+
+export interface ComCalculated {
+  pk?: number
+  company: number
+  calculated: string
+  creator?: { pk: number; username: string }
 }
