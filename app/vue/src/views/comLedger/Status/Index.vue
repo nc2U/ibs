@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { ref, computed, onBeforeMount } from 'vue'
+import { ref, computed, onBeforeMount, provide } from 'vue'
 import { pageTitle, navMenu } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
-import { useComCash } from '@/store/pinia/comCash'
+import { useComLedger } from '@/store/pinia/comLedger'
 import { getToday } from '@/utils/baseMixins'
 import type { Company } from '@/store/types/settings.ts'
-import type { ComCalculated } from '@/store/types/comCash'
+import type { ComCalculated } from '@/store/types/comLedger'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -24,49 +24,49 @@ const compName = ref('StatusByAccount')
 const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
-const cashStore = useComCash()
-const fetchAccSortList = () => cashStore.fetchAccSortList()
-const fetchAllAccD1List = () => cashStore.fetchAllAccD1List()
-const fetchAllAccD2List = () => cashStore.fetchAllAccD2List()
-const fetchAllAccD3List = () => cashStore.fetchAllAccD3List()
+const ledgerStore = useComLedger()
 
-const fetchComBankAccList = (com: number) => cashStore.fetchComBankAccList(com)
-const fetchComBalanceByAccList = (com: {
+// provide/inject 패턴으로 자식 컴포넌트에 ledgerStore를 'cashStore'로 전달
+// 이를 통해 기존 comCash 컴포넌트를 수정 없이 재사용
+provide('cashStore', ledgerStore)
+
+const fetchComLedgerBankAccList = (com: number) => ledgerStore.fetchComLedgerBankAccList(com)
+const fetchComLedgerBalanceByAccList = (com: {
   company: number
   date: string
   is_balance?: 'true' | ''
-}) => cashStore.fetchComBalanceByAccList(com)
-const fetchDateCashBookList = (payload: { company: number; date: string }) =>
-  cashStore.fetchDateCashBookList(payload)
+}) => ledgerStore.fetchComLedgerBalanceByAccList(com)
+const fetchDateLedgerTransactionList = (payload: { company: number; date: string }) =>
+  ledgerStore.fetchDateLedgerTransactionList(payload)
 
-const createComCashCalc = (payload: ComCalculated) => cashStore.createComCashCalc(payload)
-const patchComCashCalc = (payload: ComCalculated) => cashStore.patchComCashCalc(payload)
-const fetchComCashCalc = (com: number) => cashStore.fetchComCashCalc(com)
-const fetchComLastDeal = (com: number) => cashStore.fetchComLastDeal(com)
+const createComLedgerCalc = (payload: ComCalculated) => ledgerStore.createComLedgerCalc(payload)
+const patchComLedgerCalc = (payload: ComCalculated) => ledgerStore.patchComLedgerCalc(payload)
+const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalc(com)
+const fetchComLedgerLastDeal = (com: number) => ledgerStore.fetchComLedgerLastDealDate(com)
 
-const comCalculated = computed(() => cashStore.comCalculated) // 최종 정산 일자
-const comLastDealDate = computed(() => cashStore.comLastDealDate) // 최종 거래 일자
+const comLedgerCalculated = computed(() => ledgerStore.comLedgerCalculated) // 최종 정산 일자
+const comLedgerLastDealDate = computed(() => ledgerStore.comLedgerLastDealDate) // 최종 거래 일자
 
 const isCalculated = computed(
   () =>
-    !!comCalculated.value &&
-    comCalculated.value.calculated >= (comLastDealDate.value?.deal_date ?? ''),
+    !!comLedgerCalculated.value &&
+    comLedgerCalculated.value.calculated >= (comLedgerLastDealDate.value?.deal_date ?? ''),
 ) // 최종 정산 일자 이후에 거래 기록이 없음 === true
 
 const checkBalance = () => {
   const payload = {
     company: company.value as number,
-    calculated: comLastDealDate.value?.deal_date as string,
+    calculated: comLedgerLastDealDate.value?.deal_date as string,
   }
-  if (!!comCalculated.value) patchComCashCalc({ ...{ pk: comCalculated.value.pk }, ...payload })
-  else createComCashCalc(payload)
+  if (!!comLedgerCalculated.value) patchComLedgerCalc({ ...{ pk: comLedgerCalculated.value.pk }, ...payload })
+  else createComLedgerCalc(payload)
 }
 
 const excelUrl = computed(() => {
   const comp = compName.value
   let url = ''
-  if (comp === 'StatusByAccount') url = `/excel/balance/?company=${company.value}`
-  else if (comp === 'CashListByDate') url = `/excel/daily-cash/?company=${company.value}`
+  if (comp === 'StatusByAccount') url = `/excel/ledger-balance/?company=${company.value}`
+  else if (comp === 'CashListByDate') url = `/excel/ledger-daily/?company=${company.value}`
   return `${url}&date=${date.value}`
 })
 
@@ -78,9 +78,9 @@ const comp: { [key: number]: string } = {
 const filename = computed(() => {
   switch (compName.value) {
     case 'StatusByAccount':
-      return '계좌별-자금현황.xlsx'
+      return '계좌별-원장현황.xlsx'
     case 'CashListByDate':
-      return '일별-입출금내역.xlsx'
+      return '일별-원장내역.xlsx'
     default:
       return ''
   }
@@ -91,14 +91,14 @@ const showTab = (num: number) => (compName.value = comp[num])
 const setDate = (dt: string) => {
   date.value = dt
   if (company.value) {
-    fetchComBalanceByAccList({ company: company.value, date: dt })
-    fetchDateCashBookList({ company: company.value, date: dt })
+    fetchComLedgerBalanceByAccList({ company: company.value, date: dt })
+    fetchDateLedgerTransactionList({ company: company.value, date: dt })
   }
 }
 
 const isExistBalance = (val: 'true' | '') => {
   if (company.value) {
-    fetchComBalanceByAccList({
+    fetchComLedgerBalanceByAccList({
       company: company.value as number,
       is_balance: val,
       date: date.value,
@@ -107,19 +107,19 @@ const isExistBalance = (val: 'true' | '') => {
 }
 
 const dataSetup = (pk: number) => {
-  fetchComBankAccList(pk)
-  fetchComBalanceByAccList({ company: pk, date: date.value, is_balance: 'true' })
-  fetchDateCashBookList({ company: pk, date: date.value })
-  fetchComCashCalc(pk)
-  fetchComLastDeal(pk)
+  fetchComLedgerBankAccList(pk)
+  fetchComLedgerBalanceByAccList({ company: pk, date: date.value, is_balance: 'true' })
+  fetchDateLedgerTransactionList({ company: pk, date: date.value })
+  fetchComLedgerCalc(pk)
+  fetchComLedgerLastDeal(pk)
 }
 
 const dataReset = () => {
-  cashStore.comBankList = []
-  cashStore.comBalanceByAccList = []
-  cashStore.dateCashBook = []
-  cashStore.comCashCalc = []
-  cashStore.comLastDeal = []
+  ledgerStore.comLedgerBankList = []
+  ledgerStore.comLedgerBalanceByAccList = []
+  ledgerStore.dateLedgerTransactions = []
+  ledgerStore.comLedgerCalc = []
+  ledgerStore.comLedgerLastDealList = []
 }
 
 const comSelect = (target: number | null) => {
@@ -129,12 +129,8 @@ const comSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await fetchAccSortList()
-  await fetchAllAccD1List()
-  await fetchAllAccD2List()
-  await fetchAllAccD3List()
   dataSetup(company.value || comStore.initComId)
-  compName.value = comp[Number(Cookies.get('comCashStatus') ?? 1)]
+  compName.value = comp[Number(Cookies.get('comLedgerStatus') ?? 1)]
   loading.value = false
 })
 </script>
@@ -165,7 +161,7 @@ onBeforeMount(async () => {
         <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />
 
         <Calculated
-          :calc-date="comCalculated?.calculated"
+          :calc-date="comLedgerCalculated?.calculated"
           :is-calculated="isCalculated"
           @to-calculate="checkBalance"
         />

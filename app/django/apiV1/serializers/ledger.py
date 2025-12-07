@@ -7,6 +7,7 @@ from ledger.models import (
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
+    CompanyLedgerCalculation,
 )
 from payment.models import ContractPayment
 
@@ -284,6 +285,17 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
                 'special_purpose_type': cp.special_purpose_type,
             }
         return None
+
+
+class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
+    """본사 원장 정산 시리얼라이저"""
+    creator_name = serializers.CharField(source='creator.username', read_only=True)
+
+    class Meta:
+        model = CompanyLedgerCalculation
+        fields = ('pk', 'company', 'calculated', 'creator', 'creator_name',
+                 'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
 
 
 # ============================================

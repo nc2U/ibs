@@ -133,6 +133,7 @@ router.register(r'ledger/company-accounting-entry', ledger.CompanyAccountingEntr
 router.register(r'ledger/project-accounting-entry', ledger.ProjectAccountingEntryViewSet, basename='ledger-project-accounting-entry')
 router.register(r'ledger/company-composite-transaction', ledger.CompanyCompositeTransactionViewSet, basename='ledger-company-composite-transaction')
 router.register(r'ledger/project-composite-transaction', ledger.ProjectCompositeTransactionViewSet, basename='ledger-project-composite-transaction')
+router.register(r'company-ledger-calculation', ledger.CompanyLedgerCalculationViewSet)
 router.register(r'balance-by-acc', cash.BalanceByAccountViewSet, basename='balance-by-acc')  # only list
 router.register(r'cashbook', cash.CashBookViewSet)
 router.register(r'com-cash-calc', cash.CompanyCashCalcViewSet)

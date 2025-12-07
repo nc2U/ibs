@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch, inject } from 'vue'
 import { useComCash } from '@/store/pinia/comCash'
 import { type CashBook } from '@/store/types/comCash'
 import { numFormat } from '@/utils/baseMixins'
@@ -12,13 +12,15 @@ const dateOutSet = ref<Array<CashBook> | null>(null)
 const dateIncTotal = ref(0)
 const dateOutTotal = ref(0)
 
-const comCashStore = useComCash()
-const listAccD1List = computed(() => comCashStore.listAccD1List)
-const listAccD2List = computed(() => comCashStore.listAccD2List)
-const listAccD3List = computed(() => comCashStore.listAccD3List)
+// inject를 통해 전달된 store가 있으면 사용, 없으면 기본 useComCash 사용
+const injectedStore = inject<any>('cashStore', null)
+const comCashStore = injectedStore || useComCash()
+const listAccD1List = computed(() => comCashStore.listAccD1List || [])
+const listAccD2List = computed(() => comCashStore.listAccD2List || [])
+const listAccD3List = computed(() => comCashStore.listAccD3List || [])
 
-const comBankList = computed(() => comCashStore.comBankList)
-const dateCashBook = computed(() => comCashStore.dateCashBook)
+const comBankList = computed(() => comCashStore.comBankList || comCashStore.comLedgerBankList || [])
+const dateCashBook = computed(() => comCashStore.dateCashBook || comCashStore.dateLedgerForDisplay || [])
 
 const getDAccText = <T extends { pk: number; name: string }>(num: number | null, acc: T[]) =>
   num ? acc.filter((d: T) => d.pk === num).map((d: T) => d.name)[0] : ''

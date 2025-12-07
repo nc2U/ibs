@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.db.models import Sum, F, Case, When
+from django.db.models import Sum, F, Case, When, Prefetch
 from django_filters import DateFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import permissions
@@ -14,6 +14,7 @@ from ledger.models import (
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
+    CompanyLedgerCalculation,
 )
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty
 from ..permission import IsStaffOrReadOnly
@@ -24,6 +25,7 @@ from ..serializers.ledger import (
     CompanyBankTransactionSerializer, ProjectBankTransactionSerializer,
     CompanyAccountingEntrySerializer, ProjectAccountingEntrySerializer,
     CompanyCompositeTransactionSerializer, ProjectCompositeTransactionSerializer,
+    CompanyLedgerCalculationSerializer,
 )
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
@@ -384,9 +386,10 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def balance_by_account(self, request):
-        """계좌별 잔액 조회"""
+        """계좌별 잔액 조회 (누적 + 당일 입출금)"""
         date = request.query_params.get('date', TODAY)
         company = request.query_params.get('company')
+        is_balance = request.query_params.get('is_balance', '')
 
         queryset = CompanyBankTransaction.objects.filter(deal_date__lte=date)
         if company:
@@ -396,19 +399,78 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
             bank_acc=F('bank_account__alias_name'),
             bank_num=F('bank_account__number')
         ).annotate(
-            income_sum=Sum(Case(
+            # 누적 합계
+            inc_sum=Sum(Case(
                 When(sort_id=1, then=F('amount')),  # 1 = 입금
                 default=0
             )),
-            outlay_sum=Sum(Case(
+            out_sum=Sum(Case(
                 When(sort_id=2, then=F('amount')),  # 2 = 출금
                 default=0
             )),
+            # 당일 합계
+            date_inc=Sum(Case(
+                When(sort_id=1, deal_date=date, then=F('amount')),
+                default=0
+            )),
+            date_out=Sum(Case(
+                When(sort_id=2, deal_date=date, then=F('amount')),
+                default=0
+            ))
         ).annotate(
-            balance=F('income_sum') - F('outlay_sum')
+            balance=F('inc_sum') - F('out_sum')
         )
 
+        if is_balance == 'true':
+            result = result.exclude(balance=0)
+
         return Response(list(result))
+
+    @action(detail=False, methods=['get'])
+    def daily_transactions(self, request):
+        """특정일 거래 내역 조회"""
+        date = request.query_params.get('date', TODAY)
+        company = request.query_params.get('company')
+
+        if not company:
+            return Response(
+                {'error': 'company parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        transactions = CompanyBankTransaction.objects.filter(
+            company_id=company,
+            deal_date=date
+        ).select_related(
+            'bank_account', 'sort', 'creator'
+        ).prefetch_related(
+            Prefetch(
+                'companyaccountingentry_set',
+                queryset=CompanyAccountingEntry.objects.select_related('account', 'sort')
+            )
+        ).order_by('sort_id', 'created_at')
+
+        serializer = CompanyBankTransactionSerializer(transactions, many=True)
+        return Response({'results': serializer.data})
+
+    @action(detail=False, methods=['get'])
+    def last_deal(self, request):
+        """최종 거래 일자 조회"""
+        company = request.query_params.get('company')
+
+        if not company:
+            return Response(
+                {'error': 'company parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        last_transaction = CompanyBankTransaction.objects.filter(
+            company_id=company
+        ).order_by('-deal_date', '-created_at').first()
+
+        if last_transaction:
+            return Response({'results': [{'deal_date': last_transaction.deal_date}]})
+        return Response({'results': []})
 
 
 class ProjectBankTransactionFilterSet(FilterSet):
@@ -521,6 +583,17 @@ class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     filterset_class = ProjectAccountingEntryFilterSet
     search_fields = ('transaction_id', 'account_code', 'trader', 'project__name')
     ordering = ['-created_at']
+
+
+class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
+    """본사 원장 정산 ViewSet"""
+    queryset = CompanyLedgerCalculation.objects.select_related('company', 'creator')
+    serializer_class = CompanyLedgerCalculationSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    filterset_fields = ('company',)
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
 
 
 # ============================================

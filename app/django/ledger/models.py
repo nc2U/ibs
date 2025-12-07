@@ -84,8 +84,8 @@ class Account(models.Model):
 
     # 관계회사/프로젝트 추적 필수 여부
     requires_affiliated = models.BooleanField(default=False, verbose_name='관계회사/프로젝트 필수',
-                                             help_text='체크 시: 회계분개 입력 시 관계회사 또는 프로젝트 선택 필수<br>'
-                                                      '용도: 관계회사 대여금, 투자금 등 집계가 필요한 계정')
+                                              help_text='체크 시: 회계분개 입력 시 관계회사 또는 프로젝트 선택 필수<br>'
+                                                        '용도: 관계회사 대여금, 투자금 등 집계가 필요한 계정')
 
     # 정렬 순서
     order = models.PositiveIntegerField(default=0, verbose_name='정렬순서', help_text='같은 레벨 내 표시 순서')
@@ -410,9 +410,9 @@ class Affiliated(models.Model):
     회계 분개에서 관계회사 대여금, 투자금 등을 추적하기 위한 모델입니다.
     """
     sort = models.CharField('구분', max_length=20,
-                           choices=(('company', '관계 회사'), ('project', '관련 프로젝트')),
-                           db_index=True,
-                           help_text='관계회사 또는 관련 프로젝트 구분')
+                            choices=(('company', '관계 회사'), ('project', '관련 프로젝트')),
+                            db_index=True,
+                            help_text='관계회사 또는 관련 프로젝트 구분')
     company = models.ForeignKey('company.Company', on_delete=models.PROTECT,
                                 null=True, blank=True, verbose_name='관계 회사',
                                 help_text='대여금/투자금 등이 발생한 관계회사')
@@ -742,3 +742,29 @@ class ProjectAccountingEntry(AccountingEntry):
         """저장 전 유효성 검증"""
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class CompanyLedgerCalculation(models.Model):
+    """본사 원장 정산 기록"""
+    company = models.OneToOneField(
+        'company.Company',
+        on_delete=models.CASCADE,
+        unique=True,
+        verbose_name='회사'
+    )
+    calculated = models.DateField('정산일', null=True, blank=True)
+    creator = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name='등록자'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '05. 본사 원장 정산'
+        verbose_name_plural = '05. 본사 원장 정산'
+
+    def __str__(self):
+        return f'{self.company} 정산일: {self.calculated}'

@@ -9,6 +9,8 @@ import {
   type ComCalculated,
   type CompanyBank,
   type AccountingEntry,
+  type CompanyBankTransaction,
+  type LedgerTransactionForDisplay,
 } from '@/store/types/comLedger'
 
 export type DataFilter = {
@@ -322,6 +324,97 @@ export const useComLedger = defineStore('comLedger', () => {
   const comCalculated = computed(() => (comLedgerCalc.value.length ? comLedgerCalc.value[0] : null))
   const comLastDealDate = computed(() => (comLastDeal.value.length ? comLastDeal.value[0] : null))
 
+  // ============================================
+  // Status 페이지용 Ledger API (신규 추가)
+  // ============================================
+  const comLedgerBankList = ref<CompanyBank[]>([])
+  const comLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
+  const dateLedgerTransactions = ref<CompanyBankTransaction[]>([])
+  const comLedgerCalculation = ref<ComCalculated[]>([])
+  const comLedgerLastDealList = ref<{ deal_date: string }[]>([])
+
+  // Computed - UI 호환성을 위한 어댑터
+  const dateLedgerForDisplay = computed<LedgerTransactionForDisplay[]>(() =>
+    dateLedgerTransactions.value.map(tx => ({
+      pk: tx.pk,
+      company: tx.company,
+      sort: tx.sort,
+      sort_desc: tx.sort_name,
+      account_d1: null,
+      account_d2: null,
+      account_d3: null,
+      content: tx.content,
+      trader: tx.accounting_entries?.[0]?.trader || '',
+      bank_account: tx.bank_account,
+      bank_account_desc: tx.bank_account_name,
+      income: tx.sort === 1 ? tx.amount : null,
+      outlay: tx.sort === 2 ? tx.amount : null,
+      deal_date: tx.deal_date,
+      note: tx.note,
+    }))
+  )
+
+  const comLedgerCalculated = computed(() =>
+    comLedgerCalculation.value.length ? comLedgerCalculation.value[0] : null
+  )
+
+  const comLedgerLastDealDate = computed(() =>
+    comLedgerLastDealList.value.length ? comLedgerLastDealList.value[0] : null
+  )
+
+  const fetchComLedgerBankAccList = async (company: number) =>
+    await api
+      .get(`/ledger/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
+      .then(res => (comLedgerBankList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchComLedgerBalanceByAccList = async (payload: {
+    company: number
+    date: string
+    is_balance?: '' | 'true'
+  }) => {
+    const { company, date, is_balance = '' } = payload
+    return await api
+      .get(`/company-bank-transaction/balance_by_account/?company=${company}&date=${date}&is_balance=${is_balance}`)
+      .then(res => (comLedgerBalanceByAccList.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchDateLedgerTransactionList = async (payload: {
+    company: number
+    date: string
+  }) => {
+    const { company, date } = payload
+    return await api
+      .get(`/company-bank-transaction/daily_transactions/?company=${company}&date=${date}`)
+      .then(res => (dateLedgerTransactions.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchComLedgerCalculation = async (com: number) =>
+    await api
+      .get(`/company-ledger-calculation/?company=${com}`)
+      .then(res => (comLedgerCalculation.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createComLedgerCalculation = async (payload: ComCalculated) =>
+    await api
+      .post(`/company-ledger-calculation/`, payload)
+      .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+
+  const patchComLedgerCalculation = async (payload: ComCalculated) =>
+    await api
+      .patch(`/company-ledger-calculation/${payload.pk}/`, payload)
+      .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchComLedgerLastDealDate = async (com: number) =>
+    await api
+      .get(`/company-bank-transaction/last_deal/?company=${com}`)
+      .then(res => (comLedgerLastDealList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
   return {
     bankCodeList,
     fetchBankCodeList,
@@ -367,5 +460,22 @@ export const useComLedger = defineStore('comLedger', () => {
     comLastDeal,
     comLastDealDate,
     fetchComLastDeal,
+
+    // Status 페이지용 (신규)
+    comLedgerBankList,
+    comLedgerBalanceByAccList,
+    dateLedgerTransactions,
+    dateLedgerForDisplay,
+    comLedgerCalculation,
+    comLedgerLastDealList,
+    comLedgerCalculated,
+    comLedgerLastDealDate,
+    fetchComLedgerBankAccList,
+    fetchComLedgerBalanceByAccList,
+    fetchDateLedgerTransactionList,
+    fetchComLedgerCalculation,
+    createComLedgerCalculation,
+    patchComLedgerCalculation,
+    fetchComLedgerLastDealDate,
   }
 })

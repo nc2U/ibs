@@ -10,6 +10,7 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     Affiliated,
+    CompanyLedgerCalculation,
 )
 
 
@@ -579,7 +580,6 @@ class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
         return '-'
 
 
-
 # ============================================
 # Affiliated Admin - 관계회사/프로젝트
 # ============================================
@@ -592,7 +592,7 @@ class AffiliatedAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('company__name', 'project__name', 'description')
     ordering = ('sort', '-created_at')
     readonly_fields = ('created_at', 'updated_at')
-    
+
     fieldsets = (
         ('기본 정보', {
             'fields': ('sort',)
@@ -609,7 +609,7 @@ class AffiliatedAdmin(ImportExportMixin, admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
+
     @admin.display(description='구분')
     def sort_display(self, obj):
         colors = {
@@ -621,10 +621,26 @@ class AffiliatedAdmin(ImportExportMixin, admin.ModelAdmin):
             '<span style="color: {}; font-weight: bold;">●</span> {}',
             color, obj.get_sort_display()
         )
-    
+
     @admin.display(description='설명')
     def description_short(self, obj):
         if obj.description:
             return obj.description[:50] + '...' if len(obj.description) > 50 else obj.description
         return '-'
 
+
+@admin.register(CompanyLedgerCalculation)
+class CompanyLedgerCalculationAdmin(admin.ModelAdmin):
+    """본사 원장 정산 Admin"""
+    list_display = ('company', 'calculated', 'creator', 'created_at', 'updated_at')
+    list_filter = ('company', 'calculated')
+    readonly_fields = ('created_at', 'updated_at')
+
+    fieldsets = (
+        ('정산 정보', {
+            'fields': ('company', 'calculated')
+        }),
+        ('시스템 정보', {
+            'fields': ('creator', 'created_at', 'updated_at')
+        }),
+    )
