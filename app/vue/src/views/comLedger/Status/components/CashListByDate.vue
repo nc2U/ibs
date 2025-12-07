@@ -1,27 +1,20 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useComCash } from '@/store/pinia/comCash'
-import { type CashBook } from '@/store/types/comCash'
+import { useComLedger } from '@/store/pinia/comLedger'
+import { type LedgerTransactionForDisplay } from '@/store/types/comLedger'
 import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 
 defineProps({ date: { type: String, default: '' } })
 
-const dateIncSet = ref<Array<CashBook> | null>(null)
-const dateOutSet = ref<Array<CashBook> | null>(null)
+const dateIncSet = ref<Array<LedgerTransactionForDisplay> | null>(null)
+const dateOutSet = ref<Array<LedgerTransactionForDisplay> | null>(null)
 const dateIncTotal = ref(0)
 const dateOutTotal = ref(0)
 
-const comCashStore = useComCash()
-const listAccD1List = computed(() => comCashStore.listAccD1List)
-const listAccD2List = computed(() => comCashStore.listAccD2List)
-const listAccD3List = computed(() => comCashStore.listAccD3List)
-
-const comBankList = computed(() => comCashStore.comBankList)
-const dateCashBook = computed(() => comCashStore.dateCashBook)
-
-const getDAccText = <T extends { pk: number; name: string }>(num: number | null, acc: T[]) =>
-  num ? acc.filter((d: T) => d.pk === num).map((d: T) => d.name)[0] : ''
+const ledgerStore = useComLedger()
+const comBankList = computed(() => ledgerStore.comLedgerBankList)
+const dateCashBook = computed(() => ledgerStore.dateLedgerForDisplay)
 
 const getBankAcc = (num: number) => {
   return comBankList.value
@@ -29,16 +22,16 @@ const getBankAcc = (num: number) => {
     .map((b: { alias_name: string }) => b.alias_name)[0]
 }
 const setData = () => {
-  dateIncSet.value = dateCashBook.value.filter((i: CashBook) => !!i.income)
-  dateOutSet.value = dateCashBook.value.filter((o: CashBook) => !!o.outlay)
+  dateIncSet.value = dateCashBook.value.filter((i: LedgerTransactionForDisplay) => !!i.income)
+  dateOutSet.value = dateCashBook.value.filter((o: LedgerTransactionForDisplay) => !!o.outlay)
   dateIncTotal.value = dateIncSet.value
     ? dateIncSet.value
-        .map((i: CashBook) => i.income || 0)
+        .map((i: LedgerTransactionForDisplay) => i.income || 0)
         .reduce((x: number, y: number) => x + y, 0)
     : 0
   dateOutTotal.value = dateOutSet.value
     ? dateOutSet.value
-        .map((o: CashBook) => o.outlay || 0)
+        .map((o: LedgerTransactionForDisplay) => o.outlay || 0)
         .reduce((x: number, y: number) => x + y, 0)
     : 0
 }
@@ -82,15 +75,9 @@ onBeforeMount(() => setData())
 
     <CTableBody>
       <CTableRow v-for="inc in dateIncSet" :key="inc.pk" class="text-center">
-        <CTableDataCell>
-          {{ getDAccText(inc.account_d1, listAccD1List) }}
-        </CTableDataCell>
-        <CTableDataCell>
-          {{ getDAccText(inc.account_d2, listAccD2List) }}
-        </CTableDataCell>
-        <CTableDataCell>
-          {{ getDAccText(inc.account_d3, listAccD3List) }}
-        </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
+        <CTableDataCell></CTableDataCell>
+        <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-right" color="success">
           {{ numFormat(inc.income || 0) }}
         </CTableDataCell>
@@ -155,15 +142,9 @@ onBeforeMount(() => setData())
 
     <CTableBody>
       <CTableRow v-for="out in dateOutSet" :key="out.pk" class="text-center">
-        <CTableDataCell>
-          {{ getDAccText(out.account_d1, listAccD1List) }}
-        </CTableDataCell>
-        <CTableDataCell>
-          {{ getDAccText(out.account_d2, listAccD2List) }}
-        </CTableDataCell>
-        <CTableDataCell>
-          {{ getDAccText(out.account_d3, listAccD3List) }}
-        </CTableDataCell>
+        <CTableDataCell></CTableDataCell>
+        <CTableDataCell></CTableDataCell>
+        <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-right" color="danger">
           {{ numFormat(out.outlay || 0) }}
         </CTableDataCell>

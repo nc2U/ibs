@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { ref, computed, onBeforeMount, provide } from 'vue'
+import { ref, computed, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
 import { useComLedger } from '@/store/pinia/comLedger'
@@ -11,12 +11,12 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ComCashAuthGuard from '@/components/AuthGuard/ComCashAuthGuard.vue'
-import DateChoicer from '@/views/comCash/Status/components/DateChoicer.vue'
-import TabSelect from '@/views/comCash/Status/components/TabSelect.vue'
+import DateChoicer from './components/DateChoicer.vue'
+import TabSelect from './components/TabSelect.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
-import StatusByAccount from '@/views/comCash/Status/components/StatusByAccount.vue'
-import CashListByDate from '@/views/comCash/Status/components/CashListByDate.vue'
-import Calculated from '@/views/comCash/Status/components/Calculated.vue'
+import StatusByAccount from './components/StatusByAccount.vue'
+import CashListByDate from './components/CashListByDate.vue'
+import Calculated from './components/Calculated.vue'
 
 const date = ref(getToday())
 const compName = ref('StatusByAccount')
@@ -25,10 +25,6 @@ const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
 const ledgerStore = useComLedger()
-
-// provide/inject 패턴으로 자식 컴포넌트에 ledgerStore를 'cashStore'로 전달
-// 이를 통해 기존 comCash 컴포넌트를 수정 없이 재사용
-provide('cashStore', ledgerStore)
 
 const fetchComLedgerBankAccList = (com: number) => ledgerStore.fetchComLedgerBankAccList(com)
 const fetchComLedgerBalanceByAccList = (com: {
@@ -58,7 +54,8 @@ const checkBalance = () => {
     company: company.value as number,
     calculated: comLedgerLastDealDate.value?.deal_date as string,
   }
-  if (!!comLedgerCalculated.value) patchComLedgerCalc({ ...{ pk: comLedgerCalculated.value.pk }, ...payload })
+  if (!!comLedgerCalculated.value)
+    patchComLedgerCalc({ ...{ pk: comLedgerCalculated.value.pk }, ...payload })
   else createComLedgerCalc(payload)
 }
 

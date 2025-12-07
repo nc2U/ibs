@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useComCash } from '@/store/pinia/comCash'
+import { useComLedger } from '@/store/pinia/comLedger'
 import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 
@@ -13,8 +13,8 @@ const dateIncSum = ref(0)
 const dateOutSum = ref(0)
 const dateBalance = ref(0)
 
-const comCashStore = useComCash()
-const comBalanceByAccList = computed(() => comCashStore.comBalanceByAccList)
+const ledgerStore = useComLedger()
+const comBalanceByAccList = computed(() => ledgerStore.comLedgerBalanceByAccList)
 
 const getSumTotal = () => {
   const _dateIncSum =
