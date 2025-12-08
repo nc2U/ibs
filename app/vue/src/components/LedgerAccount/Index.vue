@@ -27,6 +27,7 @@ const emit = defineEmits<Emits>()
 
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const dropdownRef = ref<any>(null)
+const menuRef = ref<HTMLElement | null>(null)
 
 // 드롭다운 상태
 const dropdownVisible = ref(false)
@@ -184,11 +185,21 @@ const clearSearch = () => {
 
 const onDropdownShow = () => {
   clearSearch()
-  // nextTick과 setTimeout을 함께 사용하여 확실하게 포커스
+  // nextTick과 setTimeout을 함께 사용하여 DOM 렌더링 및 포커스 타이밍 보장
   nextTick(() => {
     setTimeout(() => {
+      // 1. 검색창에 포커스
       if (searchInputRef.value) {
         ;(searchInputRef.value as any).focus()
+      }
+
+      // 2. 선택된 항목으로 스크롤
+      const menuEl = (menuRef.value as any)?.$el // 컴포넌트의 실제 DOM 엘리먼트 접근
+      if (menuEl) {
+        const selectedEl = menuEl.querySelector('.selected-item') as HTMLElement
+        if (selectedEl) {
+          selectedEl.scrollIntoView({ block: 'nearest' })
+        }
       }
     }, 100)
   })
@@ -238,7 +249,7 @@ onUnmounted(() => {
       {{ selectedLabel || placeholder }}
     </CDropdownToggle>
 
-    <CDropdownMenu class="w-100" style="max-height: 300px; overflow-y: auto">
+    <CDropdownMenu ref="menuRef" class="w-100" style="max-height: 300px; overflow-y: auto">
       <!-- 검색 입력 -->
       <div class="p-2 border-bottom" @click.stop @mousedown.stop>
         <input
