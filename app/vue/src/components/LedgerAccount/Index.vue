@@ -261,6 +261,7 @@ onUnmounted(() => {
           'text-muted fw-semibold': option.is_cate_only,
           'bg-light': option.is_cate_only,
           'category-only': option.is_cate_only,
+          'selected-item': option.value === modelValue,
         }"
         :disabled="option.is_cate_only"
         @click="selectOption(option)"
@@ -337,5 +338,14 @@ onUnmounted(() => {
   background-color: #2d3748;
   border-color: #86b7fe;
   color: #e2e8f0;
+}
+
+.selected-item > span {
+  color: #20c997 !important;
+  font-weight: 600;
+}
+
+:global(body.dark-theme) .selected-item > span {
+  color: #63e6be !important;
 }
 </style>
