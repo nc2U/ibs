@@ -31,6 +31,11 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 const dropdownVisible = ref(false)
 const searchQuery = ref('')
 
+// 한글 IME 입력 중에도 즉시 반영
+const handleInput = (event: Event) => {
+  searchQuery.value = (event.target as HTMLInputElement).value
+}
+
 
 
 // 필터링된 옵션 생성
@@ -177,10 +182,11 @@ const toggleDropdown = () => {
       <div class="p-2 border-bottom" @click.stop @mousedown.stop>
         <input
           ref="searchInputRef"
-          v-model="searchQuery"
+          :value="searchQuery"
           type="text"
           class="form-control form-control-sm"
           placeholder="검색..."
+          @input="handleInput"
           @click.stop
           @mousedown.stop
         />
