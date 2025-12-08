@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 interface Props {
   options: Array<{
@@ -26,17 +26,18 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const searchInputRef = ref<HTMLInputElement | null>(null)
+const dropdownRef = ref<any>(null)
 
 // 드롭다운 상태
 const dropdownVisible = ref(false)
 const searchQuery = ref('')
+const selectedIndex = ref(-1)
 
 // 한글 IME 입력 중에도 즉시 반영
 const handleInput = (event: Event) => {
   searchQuery.value = (event.target as HTMLInputElement).value
+  selectedIndex.value = -1 // 검색 시 선택 초기화
 }
-
-
 
 // 필터링된 옵션 생성
 const filteredOptions = computed(() => {
@@ -133,13 +134,52 @@ const selectedLabel = computed(() => {
 const selectOption = (option: any) => {
   if (!option.is_cate_only) {
     emit('update:modelValue', option.value)
-    // Auto-close가 이제 닫기를 처리하므로 수동 설정 불필요
+    dropdownVisible.value = false
+  }
+}
+
+// 선택 가능한 옵션들 (is_cate_only 제외)
+const selectableOptions = computed(() => {
+  return searchFilteredOptions.value.filter(opt => !opt.is_cate_only)
+})
+
+// 키보드 네비게이션 처리
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (!dropdownVisible.value) return
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      if (selectableOptions.value.length > 0) {
+        selectedIndex.value = Math.min(
+          selectedIndex.value + 1,
+          selectableOptions.value.length - 1,
+        )
+      }
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      if (selectableOptions.value.length > 0) {
+        selectedIndex.value = Math.max(selectedIndex.value - 1, 0)
+      }
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (selectedIndex.value >= 0 && selectableOptions.value[selectedIndex.value]) {
+        selectOption(selectableOptions.value[selectedIndex.value])
+      }
+      break
+    case 'Escape':
+      event.preventDefault()
+      dropdownVisible.value = false
+      break
   }
 }
 
 // 검색 초기화
 const clearSearch = () => {
   searchQuery.value = ''
+  selectedIndex.value = -1
 }
 
 const onDropdownShow = () => {
@@ -148,7 +188,7 @@ const onDropdownShow = () => {
   nextTick(() => {
     setTimeout(() => {
       if (searchInputRef.value) {
-        searchInputRef.value.focus()
+        ;(searchInputRef.value as any).focus()
       }
     }, 100)
   })
@@ -163,13 +203,34 @@ const toggleDropdown = () => {
     })
   }
 }
+
+// 외부 클릭 감지
+const handleClickOutside = (event: MouseEvent) => {
+  if (
+    dropdownVisible.value &&
+    dropdownRef.value &&
+    !dropdownRef.value.contains(event.target as Node)
+  ) {
+    dropdownVisible.value = false
+  }
+}
+
+// 라이프사이클 훅
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
   <CDropdown
+    ref="dropdownRef"
     v-model="dropdownVisible"
     variant="btn-group"
-    :auto-close="'outside'"
+    :auto-close="true"
     @show="onDropdownShow"
     style="width: 100%"
   >
