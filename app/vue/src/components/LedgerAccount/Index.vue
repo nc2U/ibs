@@ -1,6 +1,14 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
-import Multiselect from '@vueform/multiselect'
+import { computed, ref, nextTick } from 'vue'
+import {
+  CFormSelect,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
+  CInputGroup,
+  CFormInput,
+} from '@coreui/vue'
 
 interface Props {
   options: Array<{
@@ -25,6 +33,10 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+// 드롭다운 상태
+const dropdownVisible = ref(false)
+const searchQuery = ref('')
 
 // 필터링된 옵션 생성
 const filteredOptions = computed(() => {
@@ -68,56 +80,168 @@ const filteredOptions = computed(() => {
   return filtered
 })
 
-// Tree 구조로 변환된 옵션 생성
-const treeOptions = computed(() => {
-  return filteredOptions.value.map(option => ({
-    value: option.value,
-    label: '　'.repeat((option.depth || 0) - 1) + option.label, // 들여쓰기
-    disabled: option.is_cate, // 카테고리는 disabled
-    $isLabel: option.is_cate, // 카테고리 표시용
-  }))
+// 검색 결과 필터링 (부모-자식 관계 포함)
+const searchFilteredOptions = computed(() => {
+  if (!searchQuery.value.trim()) return filteredOptions.value
+
+  const query = searchQuery.value.toLowerCase()
+  const matchingOptions = new Set<number>()
+
+  // 1. 검색어에 직접 매치되는 옵션들 찾기
+  filteredOptions.value.forEach(option => {
+    if (option.label.toLowerCase().includes(query)) {
+      matchingOptions.add(option.value)
+
+      // 매치된 옵션의 모든 부모들 추가
+      if (option.parent) {
+        let currentParent = option.parent
+        let parentOption = filteredOptions.value.find(opt => opt.value === currentParent)
+
+        while (parentOption) {
+          matchingOptions.add(parentOption.value)
+          if (parentOption.parent === null) break
+          currentParent = parentOption.parent
+          parentOption = filteredOptions.value.find(opt => opt.value === currentParent)
+        }
+      }
+    }
+  })
+
+  // 2. 자식이 매치된 경우 부모도 표시
+  filteredOptions.value.forEach(option => {
+    if (option.is_cate) {
+      const hasMatchingChildren = filteredOptions.value.some(
+        child => child.parent === option.value && matchingOptions.has(child.value),
+      )
+      if (hasMatchingChildren) {
+        matchingOptions.add(option.value)
+      }
+    }
+  })
+
+  return filteredOptions.value.filter(option => matchingOptions.has(option.value))
 })
 
-const value = computed({
-  get: () => props.modelValue,
-  set: val => emit('update:modelValue', val ?? null),
+// 현재 선택된 옵션의 표시 텍스트
+const selectedLabel = computed(() => {
+  if (!props.modelValue) return ''
+  const selected = props.options.find(opt => opt.value === props.modelValue)
+  return selected ? selected.label : ''
 })
+
+// 옵션 선택 처리
+const selectOption = (option: any) => {
+  if (!option.is_cate) {
+    emit('update:modelValue', option.value)
+    dropdownVisible.value = false
+    searchQuery.value = ''
+  }
+}
+
+// 검색 초기화
+const clearSearch = () => {
+  searchQuery.value = ''
+}
+
+// 드롭다운 토글
+const toggleDropdown = () => {
+  dropdownVisible.value = !dropdownVisible.value
+  if (dropdownVisible.value) {
+    nextTick(() => {
+      clearSearch()
+    })
+  }
+}
 </script>
 
 <template>
-  <Multiselect
-    v-model="value"
-    mode="single"
-    :placeholder="placeholder"
-    :options="treeOptions"
-    :classes="{
-      option: 'multiselect-option',
-      optionDisabled: 'multiselect-option-disabled',
-      search: 'form-control multiselect-search',
-    }"
-    searchable
-  />
+  <CDropdown
+    v-model="dropdownVisible"
+    variant="btn-group"
+    :auto-close="'outside'"
+    @show="clearSearch"
+  >
+    <CDropdownToggle
+      class="form-select text-start"
+      :class="{ 'text-muted': !selectedLabel }"
+      style="border: 1px solid #b0b8c1; background: white"
+    >
+      {{ selectedLabel || placeholder }}
+    </CDropdownToggle>
+
+    <CDropdownMenu class="w-100" style="max-height: 300px; overflow-y: auto">
+      <!-- 검색 입력 -->
+      <div class="p-2 border-bottom" @click.stop>
+        <CFormInput
+          v-model="searchQuery"
+          placeholder="검색..."
+          size="sm"
+          @click.stop
+          @mousedown.stop
+          @focus.stop
+        />
+      </div>
+
+      <!-- 옵션 리스트 -->
+      <CDropdownItem
+        v-for="option in searchFilteredOptions"
+        :key="option.value"
+        :class="{
+          'text-muted fw-semibold': option.is_cate,
+          'bg-light': option.is_cate,
+          'dropdown-item-disabled': option.is_cate,
+        }"
+        :style="option.is_cate ? 'cursor: default; background-color: #f8f9fa !important;' : ''"
+        @click="selectOption(option)"
+      >
+        <span :style="`padding-left: ${(option.depth || 0) * 12}px`">
+          {{ option.label }}
+        </span>
+      </CDropdownItem>
+
+      <!-- 검색 결과가 없을 때 -->
+      <CDropdownItem v-if="searchFilteredOptions.length === 0" disabled>
+        검색 결과가 없습니다
+      </CDropdownItem>
+    </CDropdownMenu>
+  </CDropdown>
 </template>
 
 <style scoped>
-:deep(.multiselect-option-disabled) {
-  color: #6c757d;
-  font-weight: 500;
-  cursor: auto;
-  background-color: #f8f9fa;
+.dropdown-item-disabled {
+  pointer-events: none;
 }
 
-:deep(.multiselect-option-disabled:hover) {
-  background-color: #f8f9fa;
+:deep(.dropdown-toggle) {
+  border: 1px solid #b0b8c1;
+}
+
+:deep(.dropdown-toggle:focus) {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
 /* Dark theme support */
-:global(body.dark-theme) :deep(.multiselect-option-disabled) {
-  color: #adb5bd;
-  background-color: #343a40 !important;
+:global(body.dark-theme) :deep(.dropdown-toggle) {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
 }
 
-:global(body.dark-theme) :deep(.multiselect-option-disabled:hover) {
-  background-color: #343a40 !important;
+:global(body.dark-theme) :deep(.dropdown-menu) {
+  background-color: #2d3748;
+  border-color: #4a5568;
+}
+
+:global(body.dark-theme) :deep(.dropdown-item) {
+  color: #e2e8f0;
+}
+
+:global(body.dark-theme) .bg-light {
+  background-color: #4a5568 !important;
+}
+
+:global(body.dark-theme) :deep(.dropdown-item:hover) {
+  background-color: #4a5568;
 }
 </style>
