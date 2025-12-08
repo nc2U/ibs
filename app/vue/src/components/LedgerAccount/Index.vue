@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 interface Props {
   options: Array<{
@@ -31,13 +31,7 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 const dropdownVisible = ref(false)
 const searchQuery = ref('')
 
-watch(dropdownVisible, isVisible => {
-  if (isVisible) {
-    nextTick(() => {
-      searchInputRef.value?.focus()
-    })
-  }
-})
+
 
 // 필터링된 옵션 생성
 const filteredOptions = computed(() => {
@@ -143,6 +137,18 @@ const clearSearch = () => {
   searchQuery.value = ''
 }
 
+const onDropdownShow = () => {
+  clearSearch()
+  // nextTick과 setTimeout을 함께 사용하여 확실하게 포커스
+  nextTick(() => {
+    setTimeout(() => {
+      if (searchInputRef.value) {
+        searchInputRef.value.focus()
+      }
+    }, 100)
+  })
+}
+
 // 드롭다운 토글
 const toggleDropdown = () => {
   dropdownVisible.value = !dropdownVisible.value
@@ -158,8 +164,8 @@ const toggleDropdown = () => {
   <CDropdown
     v-model="dropdownVisible"
     variant="btn-group"
-    :auto-close="'inside'"
-    @show="clearSearch"
+    :auto-close="'outside'"
+    @show="onDropdownShow"
     style="width: 100%"
   >
     <CDropdownToggle class="form-select text-start" :class="{ 'text-muted': !selectedLabel }">
@@ -168,15 +174,15 @@ const toggleDropdown = () => {
 
     <CDropdownMenu class="w-100" style="max-height: 300px; overflow-y: auto">
       <!-- 검색 입력 -->
-      <div class="p-2 border-bottom" @click.stop>
-        <CFormInput
+      <div class="p-2 border-bottom" @click.stop @mousedown.stop>
+        <input
           ref="searchInputRef"
           v-model="searchQuery"
+          type="text"
+          class="form-control form-control-sm"
           placeholder="검색..."
-          size="sm"
           @click.stop
           @mousedown.stop
-          @focus.stop
         />
       </div>
 
@@ -247,5 +253,22 @@ const toggleDropdown = () => {
 
 :global(body.dark-theme) :deep(.dropdown-item:hover) {
   background-color: #4a5568;
+}
+
+/* 검색 input 스타일 */
+:global(body.dark-theme) input.form-control {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+:global(body.dark-theme) input.form-control::placeholder {
+  color: #a0aec0;
+}
+
+:global(body.dark-theme) input.form-control:focus {
+  background-color: #2d3748;
+  border-color: #86b7fe;
+  color: #e2e8f0;
 }
 </style>
