@@ -61,7 +61,7 @@
     "vue-loading-overlay": "^6.0.6",
     "vue-router": "^4.6.3",
     "vuedraggable": "^4.1.0",
-    "vuetify": "^3.11.0",
+    "vuetify": "^3.11.2",
     "webfontloader": "^1.6.28"
   },
   "devDependencies": {
@@ -87,7 +87,7 @@
     "jsdom": "^26.1.0",
     "json5": "^2.2.3",
     "npm-run-all": "^4.1.5",
-    "prettier": "^3.7.3",
+    "prettier": "^3.7.4",
     "sass": "^1.94.2",
     "sass-loader": "^16.0.6",
     "start-server-and-test": "^2.1.3",
