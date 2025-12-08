@@ -391,7 +391,7 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         company = request.query_params.get('company')
         is_balance = request.query_params.get('is_balance', '')
 
-        queryset = CompanyBankTransaction.objects.filter(deal_date__lte=date)
+        queryset = CompanyBankTransaction.objects.filter(deal_date__lte=date).order_by('bank_account')
         if company:
             queryset = queryset.filter(company_id=company)
 
