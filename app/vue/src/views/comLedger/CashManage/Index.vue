@@ -44,11 +44,8 @@ const dataFilter = ref<Filter>({
   from_date: '',
   to_date: '',
   sort: null,
-  account_d1: null,
-  account_d2: null,
-  account_d3: null,
-  project: null,
-  is_return: false,
+  account: null,
+  affiliated: null,
   bank_account: null,
   search: '',
 })
@@ -57,15 +54,12 @@ const excelUrl = computed(() => {
   const sd = dataFilter.value.from_date
   const ed = dataFilter.value.to_date
   const st = dataFilter.value.sort || ''
-  const d1 = dataFilter.value.account_d1 || ''
-  const d2 = dataFilter.value.account_d2 || ''
-  const d3 = dataFilter.value.account_d3 || ''
-  const pr = dataFilter.value.project || ''
-  const re = dataFilter.value.is_return || ''
+  const ac = dataFilter.value.account || ''
+  const af = dataFilter.value.affiliated || ''
   const ba = dataFilter.value.bank_account || ''
   const q = dataFilter.value.search
   const url = `/excel/cashbook/?company=${company.value}`
-  return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account_d1=${d1}&account_d2=${d2}&account_d3=${d3}&project=${pr}&is_return=${re}&bank_account=${ba}&search_word=${q}`
+  return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account=${ac}&affiliated=${af}&bank_account=${ba}&search_word=${q}`
 })
 
 const comStore = useCompany()
@@ -107,8 +101,7 @@ const listFiltering = (payload: Filter) => {
   if (company.value) payload.company = company.value
   dataFilter.value = payload
   const sort = payload.sort || null
-  const d1 = payload.account_d1 || null
-  const d2 = payload.account_d2 || null
+  const ac = payload.account || null
   fetchCompanyAccounts()
   if (company.value) fetchBankTransactionList(payload)
 }
@@ -197,7 +190,7 @@ const multiSubmit = (payload: {
 const onDelete = (payload: BankTransaction) =>
   deleteBankTransaction({ ...{ filters: dataFilter.value }, ...payload })
 
-const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => patchAccD3(payload)
+const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => 1 // patchAccD3(payload)
 
 const onBankCreate = (payload: CompanyBank) => {
   payload.company = company.value as number
@@ -341,10 +334,11 @@ onBeforeRouteLeave(() => {
             :company="company as number"
             :projects="projectList"
             @multi-submit="multiSubmit"
-            @patch-d3-hide="patchD3Hide"
             @on-bank-create="onBankCreate"
             @on-bank-update="onBankUpdate"
           />
+          <!--          @patch-d3-hide="patchD3Hide"-->
+
           <TableTitleRow
             title="본사 입출금 관리"
             color="indigo"
@@ -361,10 +355,10 @@ onBeforeRouteLeave(() => {
             @page-select="pageSelect"
             @multi-submit="multiSubmit"
             @on-delete="onDelete"
-            @patch-d3-hide="patchD3Hide"
             @on-bank-create="onBankCreate"
             @on-bank-update="onBankUpdate"
           />
+          <!--          @patch-d3-hide="patchD3Hide"-->
         </div>
 
         <div
@@ -374,10 +368,10 @@ onBeforeRouteLeave(() => {
         >
           <TransForm
             :company="company as number"
-            @patch-d3-hide="patchD3Hide"
             @on-bank-create="onBankCreate"
             @on-bank-update="onBankUpdate"
           />
+          <!--          @patch-d3-hide="patchD3Hide"-->
         </div>
       </CCardBody>
     </ContentBody>
