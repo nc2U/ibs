@@ -74,9 +74,9 @@ services:
       EMAIL_HOST_PASSWORD: your-email-password # 실제 데이터로 수정
       DEFAULT_FROM_EMAIL: sender name <your@djangoapp.com> # 실제 데이터로 수정
       REDIS_URL: redis://redis:6379/1
-      DJANGO_SETTINGS_MODULE: _config.settings # Django settings 모드 지정
       CELERY_BROKER_URL: redis://redis:6379/0 # Celery 브로커 URL 추가
       CELERY_RESULT_BACKEND: redis://redis:6379/0 # Celery 결과 백엔드 추가
+      DJANGO_SETTINGS_MODULE: _config.settings # Django settings 모드 지정
     volumes:
       - ../app/django:/app/django
       - ../app/repos:/app/repos
@@ -101,10 +101,10 @@ services:
       EMAIL_HOST_USER: your-access-id-or-email # 실제 데이터로 수정
       EMAIL_HOST_PASSWORD: your-email-password # 실제 데이터로 수정
       DEFAULT_FROM_EMAIL: sender name <your@djangoapp.com> # 실제 데이터로 수정
-      DJANGO_SETTINGS_MODULE: _config.settings
       REDIS_URL: redis://redis:6379/1
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: _config.settings
     volumes:
       - ../app/django:/app/django
       - ../app/repos:/app/repos
