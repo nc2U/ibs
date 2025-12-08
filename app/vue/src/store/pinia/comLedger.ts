@@ -5,6 +5,7 @@ import { errorHandle, message } from '@/utils/helper'
 import {
   type BankCode,
   type BalanceByAccount,
+  type CompanyAccount,
   type BankTransaction,
   type ComCalculated,
   type CompanyBank,
@@ -37,12 +38,24 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
 
   // state & getters - Accounts
-  const comAccounts = ref<any[]>([])
+  const comAccountList = ref<CompanyAccount[]>([])
+  const comAccounts = computed(() =>
+    comAccountList.value
+      .filter(acc => acc.is_active)
+      .map(acc => ({
+        value: acc.pk,
+        label: acc.name,
+        parent: acc.parent,
+        depth: acc.depth,
+        direction: acc.direction_display,
+        is_cate: acc.is_category_only,
+      })),
+  )
 
   const fetchCompanyAccounts = async () =>
     await api
       .get('/ledger/company-account/')
-      .then(res => (comAccounts.value = res.data.results))
+      .then(res => (comAccountList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   // state & getters - comBankList
@@ -419,6 +432,7 @@ export const useComLedger = defineStore('comLedger', () => {
     bankCodeList,
     fetchBankCodeList,
 
+    comAccountList,
     comAccounts,
     fetchCompanyAccounts,
 

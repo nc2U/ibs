@@ -29,6 +29,26 @@ export interface CompanyBank {
   balance?: number
 }
 
+export interface CompanyAccount {
+  pk?: number
+  code: string
+  name: string
+  description: string
+  parent: number | null
+  depth: number
+  category: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel'
+  category_display: '자산' | '부채' | '자본' | '수익' | '비용' | '대체' | '취소'
+  direction: 'deposit' | 'withdraw'
+  direction_display: '입금' | '출금'
+  computed_direction: 'deposit' | 'withdraw'
+  computed_direction_display: '입금' | '출금'
+  is_category_only: boolean
+  is_active: boolean
+  order: number
+  full_path: string
+  children_count: number
+}
+
 export interface BankTransaction {
   pk?: number
   transaction_id?: string

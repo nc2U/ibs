@@ -5,6 +5,7 @@ import { useComLedger, type DataFilter } from '@/store/pinia/comLedger.ts'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
 defineProps({ projects: { type: Array as PropType<Project[]>, default: () => [] } })
 const emit = defineEmits(['list-filtering'])
@@ -37,24 +38,19 @@ const comAccounts = computed(() => ledgerStore.comAccounts)
 const allComBankList = computed(() => ledgerStore.allComBankList)
 const bankTransactionCount = computed(() => ledgerStore.bankTransactionCount)
 
+const accountFilterType = computed(() => {
+  if (form.value.sort === '1') return 'deposit' // 입금
+  if (form.value.sort === '2') return 'withdraw' // 출금
+  return null // 전체
+})
+
 watch(from_date, () => listFiltering(1))
 watch(to_date, () => listFiltering(1))
 
 //   methods: {
 const sortSelect = () => {
   listFiltering(1)
-  // form.value.account_d1 = null
-  // form.value.account_d2 = null
-  // form.value.account_d3 = null
-}
-const accountD1Select = () => {
-  listFiltering(1)
-  // form.value.account_d2 = null
-  // form.value.account_d3 = null
-}
-const accountD2Select = () => {
-  listFiltering(1)
-  // form.value.account_d3 = null
+  form.value.account = null
 }
 
 const listFiltering = (page = 1) => {
@@ -84,9 +80,9 @@ const resetForm = () => {
 <template>
   <CCallout color="primary" class="pb-0 mb-4" :class="bgLight">
     <CRow>
-      <CCol lg="9">
+      <CCol lg="8">
         <CRow>
-          <CCol lg="3">
+          <CCol lg="5">
             <CRow>
               <CCol md="6" class="mb-3">
                 <DatePicker
@@ -105,9 +101,9 @@ const resetForm = () => {
             </CRow>
           </CCol>
 
-          <CCol lg="9">
+          <CCol lg="7">
             <CRow>
-              <CCol md="6" lg="2" class="mb-3">
+              <CCol md="6" lg="3" class="mb-3">
                 <CFormSelect v-model="form.sort" @change="sortSelect">
                   <option value="">구분</option>
                   <option value="1">입금</option>
@@ -115,33 +111,33 @@ const resetForm = () => {
                 </CFormSelect>
               </CCol>
 
-              <CCol md="6" lg="2" class="mb-3">
-                <CFormSelect v-model="form.account" @change="accountD1Select">
-                  <option value="">계정</option>
-                  <option v-for="acc in comAccounts" :key="acc.pk" :value="acc.pk">
-                    {{ acc.name }}
+              <CCol md="6" lg="5" class="mb-3">
+                <LedgerAccount
+                  v-model="form.account"
+                  :options="comAccounts"
+                  :filter-type="accountFilterType"
+                  @update:modelValue="listFiltering(1)"
+                />
+              </CCol>
+
+              <CCol md="6" lg="4" class="mb-3">
+                <CFormSelect
+                  v-model.number="form.affiliated"
+                  :disabled="!form.account"
+                  @change="listFiltering(1)"
+                >
+                  <option value="">투입 관계회사(프로젝트)</option>
+                  <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
+                    {{ proj.name }}
                   </option>
                 </CFormSelect>
               </CCol>
-
-              <!--              <CCol md="6" lg="2" class="mb-3">-->
-              <!--                <CFormSelect-->
-              <!--                  v-model.number="form.affiliated"-->
-              <!--                  :disabled="!form.account"-->
-              <!--                  @change="listFiltering(1)"-->
-              <!--                >-->
-              <!--                  <option value="">투입 관계회사(프로젝트)</option>-->
-              <!--                  <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">-->
-              <!--                    {{ proj.name }}-->
-              <!--                  </option>-->
-              <!--                </CFormSelect>-->
-              <!--              </CCol>-->
             </CRow>
           </CCol>
         </CRow>
       </CCol>
 
-      <CCol lg="3">
+      <CCol lg="4">
         <CRow>
           <CCol md="6" lg="5" class="mb-3">
             <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">
