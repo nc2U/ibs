@@ -41,9 +41,9 @@ export const useComLedger = defineStore('comLedger', () => {
   const comAccountList = ref<CompanyAccount[]>([])
   const comAccounts = computed(() =>
     comAccountList.value
-      .filter(acc => acc.is_active)
+      .filter(acc => acc.is_active && acc.pk !== undefined)
       .map(acc => ({
-        value: acc.pk,
+        value: acc.pk!,
         label: acc.name,
         parent: acc.parent,
         depth: acc.depth,

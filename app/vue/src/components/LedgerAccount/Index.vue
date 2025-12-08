@@ -11,13 +11,13 @@ interface Props {
     depth?: number
     direction?: string
   }>
-  modelValue?: number
+  modelValue?: number | null
   placeholder?: string
   filterType?: 'deposit' | 'withdraw' | null
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: number): void
+  (e: 'update:modelValue', value: number | null): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -49,6 +49,7 @@ const filteredOptions = computed(() => {
 
         while (currentOption) {
           neededParents.add(currentOption.value)
+          if (currentOption.parent === null) break
           currentParent = currentOption.parent
           currentOption = filtered.find(opt => opt.value === currentParent)
         }
@@ -79,7 +80,7 @@ const treeOptions = computed(() => {
 
 const value = computed({
   get: () => props.modelValue,
-  set: val => emit('update:modelValue', val),
+  set: val => emit('update:modelValue', val ?? null),
 })
 </script>
 
