@@ -16,7 +16,7 @@ from ledger.models import (
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation,
 )
-from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty
+from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
 from ..permission import IsStaffOrReadOnly
 from ..serializers.ledger import (
     CompanyAccountSerializer, ProjectAccountSerializer, AccountSearchResultSerializer,
@@ -51,7 +51,7 @@ class CompanyAccountViewSet(viewsets.ModelViewSet):
     queryset = CompanyAccount.objects.select_related('parent').all()
     serializer_class = CompanyAccountSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    pagination_class = PageNumberPaginationFifty
+    pagination_class = PageNumberPaginationThreeHundred
     filterset_class = CompanyAccountFilter
     search_fields = ('code', 'name', 'description')
     ordering_fields = ('code', 'name', 'order', 'created_at')
@@ -172,7 +172,7 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
     queryset = ProjectAccount.objects.select_related('parent').all()
     serializer_class = ProjectAccountSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    pagination_class = PageNumberPaginationFifty
+    pagination_class = PageNumberPaginationThreeHundred
     filterset_class = ProjectAccountFilter
     search_fields = ('code', 'name', 'description')
     ordering_fields = ('code', 'name', 'order', 'created_at')
