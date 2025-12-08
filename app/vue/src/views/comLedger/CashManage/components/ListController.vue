@@ -29,7 +29,7 @@ const formsCheck = computed(() => {
   const c = !form.value.sort
   const d = !form.value.account
   const e = !form.value.bank_account
-  const f = !form.value.search?.trim()
+  const f = !(form.value.search ?? '')?.trim()
   return a && b && c && d && e && f
 })
 
@@ -39,8 +39,8 @@ const allComBankList = computed(() => ledgerStore.allComBankList)
 const bankTransactionCount = computed(() => ledgerStore.bankTransactionCount)
 
 const accountFilterType = computed(() => {
-  if (form.value.sort === '1') return 'deposit' // 입금
-  if (form.value.sort === '2') return 'withdraw' // 출금
+  if (form.value.sort === 1) return 'deposit' // 입금
+  if (form.value.sort === 2) return 'withdraw' // 출금
   return null // 전체
 })
 
@@ -55,7 +55,7 @@ const sortSelect = () => {
 
 const listFiltering = (page = 1) => {
   form.value.page = page
-  form.value.search = form.value.search?.trim()
+  form.value.search = (form.value.search ?? '')?.trim()
   form.value.from_date = from_date.value
   form.value.to_date = to_date.value
   nextTick(() => {
@@ -104,10 +104,10 @@ const resetForm = () => {
           <CCol lg="7">
             <CRow>
               <CCol md="6" lg="3" class="mb-3">
-                <CFormSelect v-model="form.sort" @change="sortSelect">
+                <CFormSelect v-model.number="form.sort" @change="sortSelect">
                   <option value="">구분</option>
-                  <option value="1">입금</option>
-                  <option value="2">출금</option>
+                  <option :value="1">입금</option>
+                  <option :value="2">출금</option>
                 </CFormSelect>
               </CCol>
 

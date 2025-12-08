@@ -19,7 +19,7 @@ export type DataFilter = {
   company?: number | null
   from_date?: string
   to_date?: string
-  sort?: number | null
+  sort?: 1 | 2 | null
   account?: number | null
   affiliated?: number | null
   bank_account?: number | null
