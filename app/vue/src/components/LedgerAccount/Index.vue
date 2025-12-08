@@ -135,9 +135,16 @@ const selectedLabel = computed(() => {
 const selectOption = (option: any) => {
   if (!option.is_cate_only) {
     emit('update:modelValue', option.value)
-    dropdownVisible.value = false // v-model을 통해 닫히지 않을 경우를 대비
-    // CDropdown 컴포넌트 자체의 hide 메소드를 직접 호출 시도 (있을 경우)
-    ;(dropdownRef.value as any)?.hide?.()
+
+    // v-model, hide()가 모두 동작하지 않는 비정상적인 상황이므로,
+    // 최후의 수단으로 토글 버튼을 직접 찾아 클릭 이벤트를 발생시켜 팝업을 닫습니다.
+    const dropdownEl = (dropdownRef.value as any)?.$el
+    if (dropdownEl) {
+      const toggleButton = dropdownEl.querySelector('.dropdown-toggle') as HTMLElement
+      if (toggleButton) {
+        toggleButton.click()
+      }
+    }
   }
 }
 
