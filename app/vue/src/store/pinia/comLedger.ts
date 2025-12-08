@@ -48,7 +48,7 @@ export const useComLedger = defineStore('comLedger', () => {
         parent: acc.parent,
         depth: acc.depth,
         direction: acc.direction_display,
-        is_cate: acc.is_category_only,
+        is_cate_only: acc.is_category_only,
       })),
   )
 

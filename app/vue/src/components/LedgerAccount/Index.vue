@@ -1,21 +1,12 @@
 <script lang="ts" setup>
-import { computed, ref, nextTick } from 'vue'
-import {
-  CFormSelect,
-  CDropdown,
-  CDropdownToggle,
-  CDropdownMenu,
-  CDropdownItem,
-  CInputGroup,
-  CFormInput,
-} from '@coreui/vue'
+import { computed, nextTick, ref } from 'vue'
 
 interface Props {
   options: Array<{
     value: number
     label: string
     parent: number | null
-    is_cate: boolean
+    is_cate_only: boolean
     depth?: number
     direction?: string
   }>
@@ -48,7 +39,7 @@ const filteredOptions = computed(() => {
 
     // 1. 조건에 맞는 실제 계정들만 필터링
     const matchingAccounts = filtered.filter(
-      option => !option.is_cate && option.direction === targetDirection,
+      option => !option.is_cate_only && option.direction === targetDirection,
     )
 
     // 2. 매칭된 계정들의 부모 계정들 수집
@@ -72,8 +63,8 @@ const filteredOptions = computed(() => {
     filtered = filtered.filter(
       option =>
         !props.filterType || // 필터 없으면 전체
-        (!option.is_cate && option.direction === targetDirection) || // 조건 맞는 실제 계정
-        (option.is_cate && neededParents.has(option.value)), // 필요한 부모 카테고리만
+        (!option.is_cate_only && option.direction === targetDirection) || // 조건 맞는 실제 계정
+        (option.is_cate_only && neededParents.has(option.value)), // 필요한 부모 카테고리만
     )
   }
 
@@ -109,7 +100,7 @@ const searchFilteredOptions = computed(() => {
 
   // 2. 자식이 매치된 경우 부모도 표시
   filteredOptions.value.forEach(option => {
-    if (option.is_cate) {
+    if (option.is_cate_only) {
       const hasMatchingChildren = filteredOptions.value.some(
         child => child.parent === option.value && matchingOptions.has(child.value),
       )
@@ -131,10 +122,9 @@ const selectedLabel = computed(() => {
 
 // 옵션 선택 처리
 const selectOption = (option: any) => {
-  if (!option.is_cate) {
+  if (!option.is_cate_only) {
     emit('update:modelValue', option.value)
-    dropdownVisible.value = false
-    searchQuery.value = ''
+    // Auto-close가 이제 닫기를 처리하므로 수동 설정 불필요
   }
 }
 
@@ -158,14 +148,12 @@ const toggleDropdown = () => {
   <CDropdown
     v-model="dropdownVisible"
     variant="btn-group"
-    :auto-close="'outside'"
+    :auto-close="'inside'"
     @show="clearSearch"
+    style="width: 100%"
   >
-    <CDropdownToggle
-      class="form-select text-start"
-      :class="{ 'text-muted': !selectedLabel }"
-      style="border: 1px solid #b0b8c1; background: white"
-    >
+    <CDropdownToggle class="form-select text-start" :class="{ 'text-muted': !selectedLabel }">
+      <!--      style="border: 1px solid #b0b8c1; background: white"-->
       {{ selectedLabel || placeholder }}
     </CDropdownToggle>
 
@@ -187,11 +175,15 @@ const toggleDropdown = () => {
         v-for="option in searchFilteredOptions"
         :key="option.value"
         :class="{
-          'text-muted fw-semibold': option.is_cate,
-          'bg-light': option.is_cate,
-          'dropdown-item-disabled': option.is_cate,
+          'text-muted fw-semibold': option.is_cate_only,
+          'bg-light': option.is_cate_only,
+          disabled: option.is_cate_only,
         }"
-        :style="option.is_cate ? 'cursor: default; background-color: #f8f9fa !important;' : ''"
+        :style="
+          option.is_cate_only
+            ? 'pointer-events: none; cursor: default; background-color: #f8f9fa !important;'
+            : ''
+        "
         @click="selectOption(option)"
       >
         <span :style="`padding-left: ${(option.depth || 0) * 12}px`">
@@ -207,13 +199,14 @@ const toggleDropdown = () => {
   </CDropdown>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .dropdown-item-disabled {
   pointer-events: none;
 }
 
 :deep(.dropdown-toggle) {
-  border: 1px solid #b0b8c1;
+  border: 1px solid #d8dbe0;
+  background-color: white;
 }
 
 :deep(.dropdown-toggle:focus) {
@@ -223,7 +216,7 @@ const toggleDropdown = () => {
 
 /* Dark theme support */
 :global(body.dark-theme) :deep(.dropdown-toggle) {
-  background-color: #2d3748;
+  background-color: #000;
   border-color: #4a5568;
   color: #e2e8f0;
 }
