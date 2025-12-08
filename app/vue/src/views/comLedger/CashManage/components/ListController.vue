@@ -39,8 +39,8 @@ const allComBankList = computed(() => ledgerStore.allComBankList)
 const bankTransactionCount = computed(() => ledgerStore.bankTransactionCount)
 
 const accountFilterType = computed(() => {
-  if (form.value.sort === 1) return 'deposit' // 입금
-  if (form.value.sort === 2) return 'withdraw' // 출금
+  if (form.value.sort === '1') return 'deposit' // 입금
+  if (form.value.sort === '2') return 'withdraw' // 출금
   return null // 전체
 })
 

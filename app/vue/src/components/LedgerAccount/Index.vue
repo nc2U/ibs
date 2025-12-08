@@ -114,10 +114,10 @@ const value = computed({
 /* Dark theme support */
 :global(body.dark-theme) :deep(.multiselect-option-disabled) {
   color: #adb5bd;
-  background-color: #343a40;
+  background-color: #343a40 !important;
 }
 
 :global(body.dark-theme) :deep(.multiselect-option-disabled:hover) {
-  background-color: #343a40;
+  background-color: #343a40 !important;
 }
 </style>
