@@ -19,18 +19,15 @@ export type DataFilter = {
   from_date?: string
   to_date?: string
   sort?: number | null
-  account_d1?: number | null
-  account_d2?: number | null
-  account_d3?: number | null
-  project?: number | null
-  is_return?: boolean
+  account?: number | null
+  affiliated?: number | null
   bank_account?: number | null
   search?: string
   limit?: number
 }
 
 export const useComLedger = defineStore('comLedger', () => {
-  // state & getters
+  // state & getters - bankCode
   const bankCodeList = ref<BankCode[]>([])
 
   const fetchBankCodeList = async () =>
@@ -39,6 +36,16 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(res => (bankCodeList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  // state & getters - Accounts
+  const comAccounts = ref<any[]>([])
+
+  const fetchCompanyAccounts = async () =>
+    await api
+      .get('/ledger/company-account/')
+      .then(res => (comAccounts.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  // state & getters - comBankList
   const comBankList = ref<CompanyBank[]>([])
   const getComBanks = computed(() =>
     comBankList.value.map(bk => ({ value: bk.pk, label: bk.alias_name })),
@@ -141,11 +148,8 @@ export const useComLedger = defineStore('comLedger', () => {
     if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
     if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
     if (payload.sort) url += `&sort=${payload.sort}`
-    if (payload.account_d1) url += `&account_d1=${payload.account_d1}`
-    if (payload.account_d2) url += `&account_d2=${payload.account_d2}`
-    if (payload.account_d3) url += `&account_d3=${payload.account_d3}`
-    if (payload.project) url += `&project=${payload.project}`
-    if (payload.is_return) url += `&is_return=${payload.is_return}`
+    if (payload.account) url += `&account=${payload.account}`
+    if (payload.affiliated) url += `&affiliated=${payload.affiliated}`
     if (payload.bank_account) url += `&bank_account=${payload.bank_account}`
     if (payload.search) url += `&search=${payload.search}`
     const page = payload.page ? payload.page : 1
@@ -166,11 +170,8 @@ export const useComLedger = defineStore('comLedger', () => {
     if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
     if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
     if (filters.sort) url += `&sort=${filters.sort}`
-    if (filters.account_d1) url += `&account_d1=${filters.account_d1}`
-    if (filters.account_d2) url += `&account_d2=${filters.account_d2}`
-    if (filters.account_d3) url += `&account_d3=${filters.account_d3}`
-    if (filters.project) url += `&project=${filters.project}`
-    if (filters.is_return) url += `&is_return=${filters.is_return}`
+    if (filters.account) url += `&account=${filters.account}`
+    if (filters.affiliated) url += `&affiliated=${filters.affiliated}`
     if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
     if (filters.search) url += `&search=${filters.search}`
 
@@ -417,6 +418,9 @@ export const useComLedger = defineStore('comLedger', () => {
   return {
     bankCodeList,
     fetchBankCodeList,
+
+    comAccounts,
+    fetchCompanyAccounts,
 
     comBankList,
     getComBanks,

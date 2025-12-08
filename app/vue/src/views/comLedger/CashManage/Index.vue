@@ -80,6 +80,7 @@ const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
 const ledgerStore = useComLedger()
 const fetchBankCodeList = () => ledgerStore.fetchBankCodeList()
+const fetchCompanyAccounts = () => ledgerStore.fetchCompanyAccounts()
 const fetchComBankAccList = (pk: number) => ledgerStore.fetchComBankAccList(pk)
 const fetchAllComBankAccList = (pk: number) => ledgerStore.fetchAllComBankAccList(pk)
 
@@ -98,19 +99,6 @@ const deleteBankTransaction = (payload: BankTransaction & { filters: Filter }) =
   ledgerStore.deleteBankTransaction(payload)
 const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalc(com)
 
-const ibsStore = useIbs()
-const fetchAccSortList = () => ibsStore.fetchAccSortList()
-const fetchAllAccD1List = () => ibsStore.fetchAllAccD1List()
-const fetchAllAccD2List = () => ibsStore.fetchAllAccD2List()
-const fetchAllAccD3List = () => ibsStore.fetchAllAccD3List()
-const fetchFormAccD1List = (sort: number | null) => ibsStore.fetchFormAccD1List(sort)
-const fetchFormAccD2List = (sort: number | null, d1: number | null) =>
-  ibsStore.fetchFormAccD2List(sort, d1)
-const fetchFormAccD3List = (sort: number | null, d1: number | null, d2: number | null) =>
-  ibsStore.fetchFormAccD3List(sort, d1, d2)
-
-const patchAccD3 = (payload: { pk: number; is_hide: boolean }) => ibsStore.patchAccD3(payload)
-
 const pageSelect = (page: number) => listControl.value.listFiltering(page)
 
 const listFiltering = (payload: Filter) => {
@@ -121,9 +109,7 @@ const listFiltering = (payload: Filter) => {
   const sort = payload.sort || null
   const d1 = payload.account_d1 || null
   const d2 = payload.account_d2 || null
-  fetchFormAccD1List(sort)
-  fetchFormAccD2List(sort, d1)
-  fetchFormAccD3List(sort, d1, d2)
+  fetchCompanyAccounts()
   if (company.value) fetchBankTransactionList(payload)
 }
 
@@ -224,6 +210,7 @@ const dataSetup = async (pk: number) => {
   await fetchProjectList()
   await fetchAllDepartList(pk)
   await fetchComBankAccList(pk)
+  await fetchCompanyAccounts()
   await fetchAllComBankAccList(pk)
   await fetchBankTransactionList({ company: pk })
   await fetchComLedgerCalc(pk)
@@ -312,13 +299,7 @@ onBeforeMount(async () => {
   }
 
   await fetchBankCodeList()
-  await fetchAccSortList()
-  await fetchAllAccD1List()
-  await fetchAllAccD2List()
-  await fetchAllAccD3List()
-  await fetchFormAccD1List(null)
-  await fetchFormAccD2List(null, null)
-  await fetchFormAccD3List(null, null, null)
+  await fetchCompanyAccounts()
 
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
