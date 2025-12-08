@@ -242,49 +242,6 @@ class Account(models.Model):
         return f"{self.code} {self.name}"
 
 
-class CompanyAccount(Account):
-    """
-    본사 계정 과목
-
-    본사의 회계 계정 체계를 관리합니다.
-    Account 추상 모델의 모든 필드와 메서드를 상속받으며,
-    본사만의 독립적인 계정 데이터를 관리합니다.
-    """
-
-    class Meta:
-        ordering = ['code', 'order']
-        verbose_name = '01. 본사 계정 과목'
-        verbose_name_plural = '01. 본사 계정 과목'
-        indexes = [
-            models.Index(fields=['parent', 'order']),
-            models.Index(fields=['category', 'is_active']),
-        ]
-
-
-class ProjectAccount(Account):
-    """
-    프로젝트 계정 과목
-
-    프로젝트의 회계 계정 체계를 관리합니다.
-    Account 추상 모델의 모든 필드와 메서드를 상속받으며,
-    프로젝트만의 독립적인 계정 데이터를 관리합니다.
-    """
-    is_payment = models.BooleanField(default=False)
-    is_related_contract = models.BooleanField(default=False)
-
-    class Meta:
-        ordering = ['code', 'order']
-        verbose_name = '05. 프로젝트 계정 과목'
-        verbose_name_plural = '05. 프로젝트 계정 과목'
-        indexes = [
-            models.Index(fields=['parent', 'order']),
-            models.Index(fields=['category', 'is_active']),
-            models.Index(fields=['is_payment']),
-            models.Index(fields=['is_related_contract']),
-            models.Index(fields=['is_payment', 'is_related_contract']),
-        ]
-
-
 # ============================================
 # Bank Account Models - 은행 계좌 모델
 # ============================================
@@ -403,65 +360,6 @@ class BankTransaction(models.Model):
 # Accounting Domain - 회계 분개 도메인
 # ============================================
 
-class Affiliated(models.Model):
-    """
-    관계회사/프로젝트 참조 모델
-
-    회계 분개에서 관계회사 대여금, 투자금 등을 추적하기 위한 모델입니다.
-    """
-    sort = models.CharField('구분', max_length=20,
-                            choices=(('company', '관계 회사'), ('project', '관련 프로젝트')),
-                            db_index=True,
-                            help_text='관계회사 또는 관련 프로젝트 구분')
-    company = models.ForeignKey('company.Company', on_delete=models.PROTECT,
-                                null=True, blank=True, verbose_name='관계 회사',
-                                help_text='대여금/투자금 등이 발생한 관계회사')
-    project = models.ForeignKey('project.Project', on_delete=models.PROTECT,
-                                null=True, blank=True, verbose_name='관련 프로젝트',
-                                help_text='대여금/투자금 등이 발생한 관련 프로젝트')
-    description = models.CharField(max_length=200, blank=True, default='', verbose_name='설명',
-                                   help_text='대여 목적, 조건 등 추가 설명')
-
-    # 감사 필드
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
-
-    class Meta:
-        verbose_name = '관계회사/프로젝트'
-        verbose_name_plural = '관계회사/프로젝트'
-        ordering = ['sort', '-created_at']
-        indexes = [
-            models.Index(fields=['sort', 'company']),
-            models.Index(fields=['sort', 'project']),
-        ]
-
-    def clean(self):
-        """유효성 검증"""
-        # company와 project 중 정확히 하나만 입력되어야 함
-        if self.sort == 'company':
-            if not self.company:
-                raise ValidationError({'company': '관계 회사 구분일 경우 회사를 선택해야 합니다.'})
-            if self.project:
-                raise ValidationError({'project': '관계 회사 구분일 경우 프로젝트를 선택할 수 없습니다.'})
-        elif self.sort == 'project':
-            if not self.project:
-                raise ValidationError({'project': '관련 프로젝트 구분일 경우 프로젝트를 선택해야 합니다.'})
-            if self.company:
-                raise ValidationError({'company': '관련 프로젝트 구분일 경우 회사를 선택할 수 없습니다.'})
-
-    def save(self, *args, **kwargs):
-        """저장 전 유효성 검증"""
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        if self.sort == 'company' and self.company:
-            return f"회사: {self.company.name}"
-        elif self.sort == 'project' and self.project:
-            return f"프로젝트: {self.project.name}"
-        return f"{self.get_sort_display()}"
-
-
 class AccountingEntry(models.Model):
     """
     회계 분개 추상 모델
@@ -492,7 +390,7 @@ class AccountingEntry(models.Model):
         verbose_name='증빙종류', null=True, blank=True)
 
     # 관계회사/프로젝트 추적
-    affiliated = models.ForeignKey(Affiliated, on_delete=models.PROTECT,
+    affiliated = models.ForeignKey('Affiliated', on_delete=models.PROTECT,
                                    null=True, blank=True, verbose_name='관계회사/프로젝트',
                                    help_text='관계회사 대여금, 투자금 등의 경우 필수 입력')
 
@@ -530,6 +428,25 @@ class AccountingEntry(models.Model):
 # ============================================
 # Company Ledger - 본사 회계 원장
 # ============================================
+
+class CompanyAccount(Account):
+    """
+    본사 계정 과목
+
+    본사의 회계 계정 체계를 관리합니다.
+    Account 추상 모델의 모든 필드와 메서드를 상속받으며,
+    본사만의 독립적인 계정 데이터를 관리합니다.
+    """
+
+    class Meta:
+        ordering = ['code', 'order']
+        verbose_name = '01. 본사 계정 과목'
+        verbose_name_plural = '01. 본사 계정 과목'
+        indexes = [
+            models.Index(fields=['parent', 'order']),
+            models.Index(fields=['category', 'is_active']),
+        ]
+
 
 class CompanyBankAccount(BankAccount):
     """
@@ -639,6 +556,30 @@ class CompanyAccountingEntry(AccountingEntry):
 # Project Ledger - 현장 회계 원장
 # ============================================
 
+class ProjectAccount(Account):
+    """
+    프로젝트 계정 과목
+
+    프로젝트의 회계 계정 체계를 관리합니다.
+    Account 추상 모델의 모든 필드와 메서드를 상속받으며,
+    프로젝트만의 독립적인 계정 데이터를 관리합니다.
+    """
+    is_payment = models.BooleanField(default=False)
+    is_related_contract = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['code', 'order']
+        verbose_name = '06. 프로젝트 계정 과목'
+        verbose_name_plural = '06. 프로젝트 계정 과목'
+        indexes = [
+            models.Index(fields=['parent', 'order']),
+            models.Index(fields=['category', 'is_active']),
+            models.Index(fields=['is_payment']),
+            models.Index(fields=['is_related_contract']),
+            models.Index(fields=['is_payment', 'is_related_contract']),
+        ]
+
+
 class ProjectBankAccount(BankAccount):
     """
     프로젝트 은행 계좌
@@ -652,8 +593,8 @@ class ProjectBankAccount(BankAccount):
 
     class Meta:
         ordering = ['order', 'id']
-        verbose_name = '06. 프로젝트 관리 계좌'
-        verbose_name_plural = '06. 프로젝트 관리 계좌'
+        verbose_name = '07. 프로젝트 관리 계좌'
+        verbose_name_plural = '07. 프로젝트 관리 계좌'
 
 
 class ProjectBankTransaction(BankTransaction):
@@ -667,8 +608,8 @@ class ProjectBankTransaction(BankTransaction):
     is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부', help_text='프로젝트 운영비 계정 거래 여부')
 
     class Meta:
-        verbose_name = '07. 프로젝트 은행 거래'
-        verbose_name_plural = '07. 프로젝트 은행 거래'
+        verbose_name = '08. 프로젝트 은행 거래'
+        verbose_name_plural = '08. 프로젝트 은행 거래'
         ordering = ['-deal_date', '-created_at']
         indexes = [
             models.Index(fields=['bank_account', 'deal_date']),
@@ -709,8 +650,8 @@ class ProjectAccountingEntry(AccountingEntry):
                                 limit_choices_to={'is_active': True, 'is_category_only': False})
 
     class Meta:
-        verbose_name = '08. 프로젝트 회계 분개'
-        verbose_name_plural = '08. 프로젝트 회계 분개'
+        verbose_name = '09. 프로젝트 회계 분개'
+        verbose_name_plural = '09. 프로젝트 회계 분개'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['account', 'created_at']),
@@ -768,3 +709,62 @@ class CompanyLedgerCalculation(models.Model):
 
     def __str__(self):
         return f'{self.company} 정산일: {self.calculated}'
+
+
+class Affiliated(models.Model):
+    """
+    관계회사/프로젝트 참조 모델
+
+    회계 분개에서 관계회사 대여금, 투자금 등을 추적하기 위한 모델입니다.
+    """
+    sort = models.CharField('구분', max_length=20,
+                            choices=(('company', '관계 회사'), ('project', '관련 프로젝트')),
+                            db_index=True,
+                            help_text='관계회사 또는 관련 프로젝트 구분')
+    company = models.ForeignKey('company.Company', on_delete=models.PROTECT,
+                                null=True, blank=True, verbose_name='관계 회사',
+                                help_text='대여금/투자금 등이 발생한 관계회사')
+    project = models.ForeignKey('project.Project', on_delete=models.PROTECT,
+                                null=True, blank=True, verbose_name='관련 프로젝트',
+                                help_text='대여금/투자금 등이 발생한 관련 프로젝트')
+    description = models.CharField(max_length=200, blank=True, default='', verbose_name='설명',
+                                   help_text='대여 목적, 조건 등 추가 설명')
+
+    # 감사 필드
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
+
+    class Meta:
+        verbose_name = '11. 관계회사/프로젝트'
+        verbose_name_plural = '11. 관계회사/프로젝트'
+        ordering = ['sort', '-created_at']
+        indexes = [
+            models.Index(fields=['sort', 'company']),
+            models.Index(fields=['sort', 'project']),
+        ]
+
+    def clean(self):
+        """유효성 검증"""
+        # company와 project 중 정확히 하나만 입력되어야 함
+        if self.sort == 'company':
+            if not self.company:
+                raise ValidationError({'company': '관계 회사 구분일 경우 회사를 선택해야 합니다.'})
+            if self.project:
+                raise ValidationError({'project': '관계 회사 구분일 경우 프로젝트를 선택할 수 없습니다.'})
+        elif self.sort == 'project':
+            if not self.project:
+                raise ValidationError({'project': '관련 프로젝트 구분일 경우 프로젝트를 선택해야 합니다.'})
+            if self.company:
+                raise ValidationError({'company': '관련 프로젝트 구분일 경우 회사를 선택할 수 없습니다.'})
+
+    def save(self, *args, **kwargs):
+        """저장 전 유효성 검증"""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        if self.sort == 'company' and self.company:
+            return f"회사: {self.company.name}"
+        elif self.sort == 'project' and self.project:
+            return f"프로젝트: {self.project.name}"
+        return f"{self.get_sort_display()}"
