@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 interface Props {
   options: Array<{
@@ -25,9 +25,19 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+const searchInputRef = ref<HTMLInputElement | null>(null)
+
 // 드롭다운 상태
 const dropdownVisible = ref(false)
 const searchQuery = ref('')
+
+watch(dropdownVisible, isVisible => {
+  if (isVisible) {
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
+  }
+})
 
 // 필터링된 옵션 생성
 const filteredOptions = computed(() => {
@@ -153,7 +163,6 @@ const toggleDropdown = () => {
     style="width: 100%"
   >
     <CDropdownToggle class="form-select text-start" :class="{ 'text-muted': !selectedLabel }">
-      <!--      style="border: 1px solid #b0b8c1; background: white"-->
       {{ selectedLabel || placeholder }}
     </CDropdownToggle>
 
@@ -161,6 +170,7 @@ const toggleDropdown = () => {
       <!-- 검색 입력 -->
       <div class="p-2 border-bottom" @click.stop>
         <CFormInput
+          ref="searchInputRef"
           v-model="searchQuery"
           placeholder="검색..."
           size="sm"
@@ -177,13 +187,9 @@ const toggleDropdown = () => {
         :class="{
           'text-muted fw-semibold': option.is_cate_only,
           'bg-light': option.is_cate_only,
-          disabled: option.is_cate_only,
+          'category-only': option.is_cate_only,
         }"
-        :style="
-          option.is_cate_only
-            ? 'pointer-events: none; cursor: default; background-color: #f8f9fa !important;'
-            : ''
-        "
+        :disabled="option.is_cate_only"
         @click="selectOption(option)"
       >
         <span :style="`padding-left: ${(option.depth || 0) * 12}px`">
@@ -200,6 +206,11 @@ const toggleDropdown = () => {
 </template>
 
 <style lang="scss" scoped>
+.category-only {
+  pointer-events: none;
+  cursor: text;
+  background-color: #f8f9fa !important;
+}
 .dropdown-item-disabled {
   pointer-events: none;
 }
