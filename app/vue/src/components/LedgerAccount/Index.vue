@@ -135,7 +135,9 @@ const selectedLabel = computed(() => {
 const selectOption = (option: any) => {
   if (!option.is_cate_only) {
     emit('update:modelValue', option.value)
-    dropdownVisible.value = false
+    dropdownVisible.value = false // v-model을 통해 닫히지 않을 경우를 대비
+    // CDropdown 컴포넌트 자체의 hide 메소드를 직접 호출 시도 (있을 경우)
+    ;(dropdownRef.value as any)?.hide?.()
   }
 }
 
@@ -146,7 +148,19 @@ const selectableOptions = computed(() => {
 
 // 키보드 네비게이션 처리
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (!dropdownVisible.value) return
+  // dropdownVisible 상태가 v-model을 통해 동기화되지 않는 것으로 보여 이 가드를 제거합니다.
+  // if (!dropdownVisible.value) return
+
+  const scrollIntoView = () => {
+    nextTick(() => {
+      const menuEl = (menuRef.value as any)?.$el
+      if (!menuEl) return
+      const activeEl = menuEl.querySelector('.keyboard-active') as HTMLElement
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest' })
+      }
+    })
+  }
 
   switch (event.key) {
     case 'ArrowDown':
@@ -156,12 +170,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
           selectedIndex.value + 1,
           selectableOptions.value.length - 1,
         )
+        scrollIntoView()
       }
       break
     case 'ArrowUp':
       event.preventDefault()
       if (selectableOptions.value.length > 0) {
         selectedIndex.value = Math.max(selectedIndex.value - 1, 0)
+        scrollIntoView()
       }
       break
     case 'Enter':
@@ -259,6 +275,7 @@ onUnmounted(() => {
           class="form-control form-control-sm"
           placeholder="검색..."
           @input="handleInput"
+          @keydown="handleKeyDown"
           @click.stop
           @mousedown.stop
         />
@@ -273,6 +290,7 @@ onUnmounted(() => {
           'bg-light': option.is_cate_only,
           'category-only': option.is_cate_only,
           'selected-item': option.value === modelValue,
+          'keyboard-active': selectableOptions[selectedIndex]?.value === option.value,
         }"
         :disabled="option.is_cate_only"
         @click="selectOption(option)"
@@ -358,5 +376,9 @@ onUnmounted(() => {
 
 :global(body.dark-theme) .selected-item > span {
   color: #63e6be !important;
+}
+
+:deep(.keyboard-active) {
+  background-color: rgba(13, 110, 253, 0.25) !important;
 }
 </style>
