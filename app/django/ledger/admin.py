@@ -181,12 +181,14 @@ class BaseAccountAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 @admin.register(CompanyAccount)
 class CompanyAccountAdmin(BaseAccountAdmin):
     """본사 계정 과목 Admin"""
-    pass
+    resource_class = CompanyAccountResource
 
 
 @admin.register(ProjectAccount)
 class ProjectAccountAdmin(BaseAccountAdmin):
     """프로젝트 계정 과목 Admin"""
+    resource_class = ProjectAccountResource
+
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
         'depth', 'is_category_only', 'is_active', 'is_payment', 'is_related_contract', 'order'
@@ -271,13 +273,14 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
         links = []
         for entry in entries:
+            account_name = f"{entry.account.code} {entry.account.name}" if entry.account else "계정 없음"
             links.append(format_html(
                 '<a href="/admin/ledger/companyaccountingentry/{}/change/" target="_blank">'
                 '{} - {}원 ({})</a>',
                 entry.pk,
                 entry.sort,
                 f"{entry.amount:,}",
-                entry.account_d3
+                account_name
             ))
 
         add_link = format_html(
@@ -377,13 +380,14 @@ class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
         links = []
         for entry in entries:
+            account_name = f"{entry.account.code} {entry.account.name}" if entry.account else "계정 없음"
             links.append(format_html(
                 '<a href="/admin/ledger/projectaccountingentry/{}/change/" target="_blank">'
                 '{} - {}원 ({})</a>',
                 entry.pk,
                 entry.sort,
                 f"{entry.amount:,}",
-                entry.project_account_d3
+                account_name
             ))
 
         add_link = format_html(

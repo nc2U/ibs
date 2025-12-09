@@ -21,8 +21,15 @@ class AsyncImportExportMixin(ImportExportMixin):
     async_import_template = 'admin/ledger/async_import.html'
     async_status_template = 'admin/ledger/async_status.html'
 
-    # 파일 크기 임계값 (바이트) - 5MB 이상이면 비동기 처리
-    async_threshold_size = 5 * 1024 * 1024
+    # 파일 크기 임계값 (바이트) - 0으로 설정하여 모든 파일을 비동기 처리
+    async_threshold_size = 0
+
+    def import_action(self, request, *args, **kwargs):
+        """기존 import 버튼을 async-import로 리다이렉트"""
+        return redirect('admin:%s_%s_async_import' % (
+            self.model._meta.app_label,
+            self.model._meta.model_name
+        ))
 
     def get_urls(self):
         urls = super().get_urls()
