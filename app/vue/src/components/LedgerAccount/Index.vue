@@ -328,7 +328,7 @@ onUnmounted(() => {
 
 :deep(.dropdown-toggle) {
   border: 1px solid var(--border-color, #d8dbe0);
-  background-color: var(--background-color, #ffffff);
+  background-color: var(--background-color, white);
   color: var(--text-color, inherit);
 }
 
