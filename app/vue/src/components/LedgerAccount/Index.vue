@@ -173,10 +173,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
     case 'ArrowDown':
       event.preventDefault()
       if (selectableOptions.value.length > 0) {
-        selectedIndex.value = Math.min(
-          selectedIndex.value + 1,
-          selectableOptions.value.length - 1,
-        )
+        selectedIndex.value = Math.min(selectedIndex.value + 1, selectableOptions.value.length - 1)
         scrollIntoView()
       }
       break
@@ -316,13 +313,17 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.category-only {
-  pointer-events: none;
-  cursor: text;
-  background-color: #f8f9fa !important;
-}
+.category-only,
 .dropdown-item-disabled {
   pointer-events: none;
+  cursor: text;
+  color: #8c8c8c !important;
+  background-color: #dddddd !important;
+}
+
+.selected-item > span {
+  color: #20c997 !important;
+  font-weight: 600;
 }
 
 :deep(.dropdown-toggle) {
@@ -332,60 +333,49 @@ onUnmounted(() => {
 
 :deep(.dropdown-toggle:focus) {
   border-color: #86b7fe;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  box-shadow: 0 0 0 0.25rem rgba(114, 114, 114, 0.25);
+}
+:deep(.keyboard-active) {
+  background-color: rgba(114, 114, 114, 0.25) !important;
 }
 
 /* Dark theme support */
-:global(body.dark-theme) :deep(.dropdown-toggle) {
-  background-color: #000;
-  border-color: #4a5568;
-  color: #e2e8f0;
-}
+:global(body.dark-theme) {
+  .bg-light {
+    background-color: #4a5568 !important;
+  }
+  /* 검색 input 스타일 */
+  input.form-control {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+  input.form-control::placeholder {
+    color: #a0aec0;
+  }
+  input.form-control:focus {
+    background-color: #2d3748;
+    border-color: #86b7fe;
+    color: #e2e8f0;
+  }
+  .selected-item > span {
+    color: #63e6be !important;
+  }
 
-:global(body.dark-theme) :deep(.dropdown-menu) {
-  background-color: #2d3748;
-  border-color: #4a5568;
-}
-
-:global(body.dark-theme) :deep(.dropdown-item) {
-  color: #e2e8f0;
-}
-
-:global(body.dark-theme) .bg-light {
-  background-color: #4a5568 !important;
-}
-
-:global(body.dark-theme) :deep(.dropdown-item:hover) {
-  background-color: #4a5568;
-}
-
-/* 검색 input 스타일 */
-:global(body.dark-theme) input.form-control {
-  background-color: #2d3748;
-  border-color: #4a5568;
-  color: #e2e8f0;
-}
-
-:global(body.dark-theme) input.form-control::placeholder {
-  color: #a0aec0;
-}
-
-:global(body.dark-theme) input.form-control:focus {
-  background-color: #2d3748;
-  border-color: #86b7fe;
-  color: #e2e8f0;
-}
-
-.selected-item > span {
-  color: #20c997 !important;
-  font-weight: 600;
-}
-
-:global(body.dark-theme) .selected-item > span {
-  color: #63e6be !important;
-}
-
-:deep(.keyboard-active) {
-  background-color: rgba(13, 110, 253, 0.25) !important;
+  :deep(.dropdown-toggle) {
+    background-color: #000;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+  :deep(.dropdown-menu) {
+    background-color: #2d3748;
+    border-color: #4a5568;
+  }
+  :deep(.dropdown-item) {
+    color: #e2e8f0;
+  }
+  :deep(.dropdown-item:hover) {
+    background-color: #4a5568;
+  }
 }
 </style>
