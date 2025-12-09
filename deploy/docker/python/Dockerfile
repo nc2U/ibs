@@ -30,7 +30,7 @@ CMD ["--socket", ":8000", \
      "--logto", "/tmp/mylog.log", \
      "--post-buffering", "8388608", \
      "--buffer-size", "65535", \
-     "--harakiri", "300", \
-     "--http-timeout", "300", \
-     "--socket-timeout", "300", \
+     "--harakiri", "900", \
+     "--http-timeout", "900", \
+     "--socket-timeout", "900", \
      "--max-requests", "5000"]
