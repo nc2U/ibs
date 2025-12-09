@@ -156,26 +156,35 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
 
   const fetchBankTransactionList = async (payload: DataFilter) => {
-    const { company } = payload
-    let url = `/ledger/company-transaction/?company=${company}`
-    if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
-    if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
-    if (payload.sort) url += `&sort=${payload.sort}`
-    if (payload.account) url += `&account=${payload.account}`
-    if (payload.affiliated) url += `&affiliated=${payload.affiliated}`
-    if (payload.bank_account) url += `&bank_account=${payload.bank_account}`
-    if (payload.search) url += `&search=${payload.search}`
-    const page = payload.page ? payload.page : 1
-    if (payload.page) url += `&page=${page}`
-
-    return await api
-      .get(url)
-      .then(res => {
-        bankTransactionList.value = res.data.results
-        bankTransactionCount.value = res.data.count
-      })
-      .catch(err => errorHandle(err.response.data))
+  // payload 객체를 API 요청에 사용할 params 객체로 변환
+  const params: Record<string, any> = {
+    company: payload.company,
+    from_deal_date: payload.from_date,
+    to_deal_date: payload.to_date,
+    sort: payload.sort,
+    account: payload.account,
+    affiliated: payload.affiliated,
+    bank_account: payload.bank_account,
+    search: payload.search,
+    page: payload.page || 1,
   }
+
+  // params 객체에서 값이 없는 (null, undefined, '') 속성들을 제거
+  Object.keys(params).forEach(key => {
+    if (params[key] === undefined || params[key] === null || params[key] === '') {
+      delete params[key]
+    }
+  })
+
+  // api 호출 시 params 옵션 사용
+  return await api
+    .get('/ledger/company-transaction/', { params })
+    .then(res => {
+      bankTransactionList.value = res.data.results
+      bankTransactionCount.value = res.data.count
+    })
+    .catch(err => errorHandle(err.response.data))
+}
 
   const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
     const { company } = filters
