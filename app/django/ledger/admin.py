@@ -12,13 +12,15 @@ from ledger.models import (
     Affiliated,
     CompanyLedgerCalculation,
 )
+from ledger.admin_async import AsyncImportExportMixin
+from ledger.resources import CompanyAccountResource, ProjectAccountResource
 
 
 # ============================================
 # Account Admin - 계정 과목
 # ============================================
 
-class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
+class BaseAccountAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     """Account Admin 공통 기능 (CompanyAccount, ProjectAccount에서 상속)"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',

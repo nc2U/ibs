@@ -768,3 +768,74 @@ class Affiliated(models.Model):
         elif self.sort == 'project' and self.project:
             return f"프로젝트: {self.project.name}"
         return f"{self.get_sort_display()}"
+
+
+# ============================================
+# Import/Export Job - 비동기 가져오기/내보내기
+# ============================================
+
+class ImportJob(models.Model):
+    """비동기 가져오기/내보내기 작업 추적"""
+    PENDING = 'pending'
+    PROCESSING = 'processing'
+    COMPLETED = 'completed'
+    FAILED = 'failed'
+
+    STATUS_CHOICES = [
+        (PENDING, '대기 중'),
+        (PROCESSING, '처리 중'),
+        (COMPLETED, '완료'),
+        (FAILED, '실패'),
+    ]
+
+    JOB_TYPE_CHOICES = [
+        ('import', '가져오기'),
+        ('export', '내보내기'),
+    ]
+
+    RESOURCE_TYPE_CHOICES = [
+        ('company_account', 'CompanyAccount'),
+        ('project_account', 'ProjectAccount'),
+    ]
+
+    job_type = models.CharField('작업 유형', max_length=10, choices=JOB_TYPE_CHOICES)
+    resource_type = models.CharField('리소스 유형', max_length=30, choices=RESOURCE_TYPE_CHOICES)
+    file = models.FileField('파일', upload_to='ledger_import_jobs/', blank=True, null=True)
+    task_id = models.CharField('태스크 ID', max_length=255, blank=True)
+    status = models.CharField('상태', max_length=20, choices=STATUS_CHOICES, default=PENDING)
+    progress = models.IntegerField('진행률', default=0)
+    total_records = models.IntegerField('전체 레코드', default=0)
+    processed_records = models.IntegerField('처리된 레코드', default=0)
+    success_count = models.IntegerField('성공 건수', default=0)
+    error_count = models.IntegerField('오류 건수', default=0)
+    error_message = models.TextField('오류 메시지', blank=True)
+    result_file = models.FileField('결과 파일', upload_to='ledger_export_results/', blank=True, null=True)
+    creator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, verbose_name='생성자', related_name='ledger_import_jobs')
+    created_at = models.DateTimeField('생성일시', auto_now_add=True)
+    started_at = models.DateTimeField('시작일시', blank=True, null=True)
+    completed_at = models.DateTimeField('완료일시', blank=True, null=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '12. 가져오기/내보내기 작업'
+        verbose_name_plural = '12. 가져오기/내보내기 작업'
+
+    def __str__(self):
+        return f'{self.get_job_type_display()} - {self.get_resource_type_display()} ({self.get_status_display()})'
+
+    @property
+    def duration(self):
+        """작업 소요 시간 계산"""
+        if self.started_at and self.completed_at:
+            return self.completed_at - self.started_at
+        return None
+
+    def update_progress(self, processed: int, total: int, status: str = None):
+        """진행률 업데이트"""
+        self.processed_records = processed
+        self.total_records = total
+        if total > 0:
+            self.progress = int((processed / total) * 100)
+        if status:
+            self.status = status
+        self.save()

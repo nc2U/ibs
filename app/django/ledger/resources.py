@@ -1,0 +1,289 @@
+import threading
+
+from django.db import transaction
+from import_export import resources
+
+from .models import CompanyAccount, ProjectAccount
+
+# Thread-local storage for bulk import flags
+_thread_locals = threading.local()
+
+
+def is_bulk_import_active():
+    """Check if bulk import is currently active in this thread"""
+    return getattr(_thread_locals, 'bulk_import_active', False)
+
+
+def set_bulk_import_active(active=True):
+    """Set bulk import flag for current thread"""
+    _thread_locals.bulk_import_active = active
+
+
+class CompanyAccountResource(resources.ModelResource):
+    """
+    Optimized resource for CompanyAccount with bulk operations and performance improvements
+    """
+
+    class Meta:
+        model = CompanyAccount
+        batch_size = 1000
+        use_transactions = True
+        chunk_size = 1000
+        import_id_fields = ('id',)
+        fields = (
+            'id', 'code', 'name', 'description', 'parent', 'depth',
+            'category', 'is_category_only', 'direction', 'is_active',
+            'requires_affiliated', 'order'
+        )
+        export_order = (
+            'id', 'code', 'name', 'description', 'parent', 'depth',
+            'category', 'is_category_only', 'direction', 'is_active',
+            'requires_affiliated', 'order'
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Use cached instance loader for better performance
+        self._cached_instances = {}
+        self._bulk_import_active = False
+
+    def before_import(self, dataset, **kwargs):
+        """Set bulk import flag before starting import"""
+        # Set thread-local flag for both dry_run and actual import to prevent notifications
+        set_bulk_import_active(True)
+        return super().before_import(dataset, **kwargs)
+
+    def after_import(self, dataset, result, **kwargs):
+        """Clear bulk import flag after import"""
+        # Clear thread-local flag after both dry_run and actual import
+        set_bulk_import_active(False)
+        return super().after_import(dataset, result, **kwargs)
+
+    def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, collect_failed_rows=False,
+                    **kwargs):
+        """
+        Override to use batch processing for better performance
+        """
+        if use_transactions is None:
+            use_transactions = getattr(self.Meta, 'use_transactions', True)
+
+        # Use batch processing for large datasets
+        batch_size = getattr(self.Meta, 'batch_size', 1000)
+
+        if not dry_run and len(dataset) > batch_size:
+            return self._batch_import_data(dataset, raise_errors, use_transactions, collect_failed_rows, **kwargs)
+        else:
+            return super().import_data(dataset, dry_run=dry_run, raise_errors=raise_errors,
+                                       use_transactions=use_transactions, collect_failed_rows=collect_failed_rows,
+                                       **kwargs)
+
+    def _batch_import_data(self, dataset, raise_errors, use_transactions, collect_failed_rows, **kwargs):
+        """
+        Process large datasets in batches for better performance
+        """
+        from import_export.results import Result
+
+        batch_size = getattr(self.Meta, 'batch_size', 1000)
+        total_result = Result()
+
+        # Process in batches
+        for i in range(0, len(dataset), batch_size):
+            batch = dataset[i:i + batch_size]
+
+            if use_transactions:
+                with transaction.atomic():
+                    batch_result = super().import_data(
+                        batch, dry_run=False, raise_errors=raise_errors,
+                        use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
+                    )
+            else:
+                batch_result = super().import_data(
+                    batch, dry_run=False, raise_errors=raise_errors,
+                    use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
+                )
+
+            # Merge results
+            total_result.totals['new'] += batch_result.totals.get('new', 0)
+            total_result.totals['update'] += batch_result.totals.get('update', 0)
+            total_result.totals['delete'] += batch_result.totals.get('delete', 0)
+            total_result.totals['skip'] += batch_result.totals.get('skip', 0)
+            total_result.totals['error'] += batch_result.totals.get('error', 0)
+
+            if batch_result.base_errors:
+                total_result.base_errors.extend(batch_result.base_errors)
+            if batch_result.row_errors:
+                total_result.row_errors.extend(batch_result.row_errors)
+            if batch_result.invalid_rows:
+                total_result.invalid_rows.extend(batch_result.invalid_rows)
+
+        return total_result
+
+    def before_import_row(self, row, **kwargs):
+        """
+        Pre-process row data before import
+        """
+        # Robust ID handling - clean up various empty/invalid ID values
+        if 'id' in row:
+            id_value = str(row['id']).strip() if row['id'] is not None else ''
+            # Check for various empty states
+            if (not id_value or
+                id_value == '0' or
+                id_value.lower() in ['none', 'null', 'nan'] or
+                id_value == '-' or
+                all(c in ' \t\n\r\xa0' for c in id_value)):  # various whitespace chars
+                row['id'] = None
+
+        # Convert empty code to None for auto-generation
+        if 'code' in row and (row['code'] == '' or row['code'] is None):
+            row['code'] = None
+
+        return super().before_import_row(row, **kwargs)
+
+    def skip_row(self, instance, original, row, import_validation_errors=None):
+        """
+        Skip rows with validation errors or duplicates
+        """
+        # Skip if name is missing
+        if not instance.name:
+            return True
+
+        # Skip if category is missing
+        if not instance.category:
+            return True
+
+        return super().skip_row(instance, original, row, import_validation_errors)
+
+
+class ProjectAccountResource(resources.ModelResource):
+    """
+    Optimized resource for ProjectAccount with bulk operations and performance improvements
+    """
+
+    class Meta:
+        model = ProjectAccount
+        batch_size = 1000
+        use_transactions = True
+        chunk_size = 1000
+        import_id_fields = ('id',)
+        fields = (
+            'id', 'code', 'name', 'description', 'parent', 'depth',
+            'category', 'is_category_only', 'direction', 'is_active',
+            'requires_affiliated', 'is_payment', 'is_related_contract', 'order'
+        )
+        export_order = (
+            'id', 'code', 'name', 'description', 'parent', 'depth',
+            'category', 'is_category_only', 'direction', 'is_active',
+            'requires_affiliated', 'is_payment', 'is_related_contract', 'order'
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Use cached instance loader for better performance
+        self._cached_instances = {}
+        self._bulk_import_active = False
+
+    def before_import(self, dataset, **kwargs):
+        """Set bulk import flag before starting import"""
+        # Set thread-local flag for both dry_run and actual import to prevent notifications
+        set_bulk_import_active(True)
+        return super().before_import(dataset, **kwargs)
+
+    def after_import(self, dataset, result, **kwargs):
+        """Clear bulk import flag after import"""
+        # Clear thread-local flag after both dry_run and actual import
+        set_bulk_import_active(False)
+        return super().after_import(dataset, result, **kwargs)
+
+    def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, collect_failed_rows=False,
+                    **kwargs):
+        """
+        Override to use batch processing for better performance
+        """
+        if use_transactions is None:
+            use_transactions = getattr(self.Meta, 'use_transactions', True)
+
+        # Use batch processing for large datasets
+        batch_size = getattr(self.Meta, 'batch_size', 1000)
+
+        if not dry_run and len(dataset) > batch_size:
+            return self._batch_import_data(dataset, raise_errors, use_transactions, collect_failed_rows, **kwargs)
+        else:
+            return super().import_data(dataset, dry_run=dry_run, raise_errors=raise_errors,
+                                       use_transactions=use_transactions, collect_failed_rows=collect_failed_rows,
+                                       **kwargs)
+
+    def _batch_import_data(self, dataset, raise_errors, use_transactions, collect_failed_rows, **kwargs):
+        """
+        Process large datasets in batches for better performance
+        """
+        from import_export.results import Result
+
+        batch_size = getattr(self.Meta, 'batch_size', 1000)
+        total_result = Result()
+
+        # Process in batches
+        for i in range(0, len(dataset), batch_size):
+            batch = dataset[i:i + batch_size]
+
+            if use_transactions:
+                with transaction.atomic():
+                    batch_result = super().import_data(
+                        batch, dry_run=False, raise_errors=raise_errors,
+                        use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
+                    )
+            else:
+                batch_result = super().import_data(
+                    batch, dry_run=False, raise_errors=raise_errors,
+                    use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
+                )
+
+            # Merge results
+            total_result.totals['new'] += batch_result.totals.get('new', 0)
+            total_result.totals['update'] += batch_result.totals.get('update', 0)
+            total_result.totals['delete'] += batch_result.totals.get('delete', 0)
+            total_result.totals['skip'] += batch_result.totals.get('skip', 0)
+            total_result.totals['error'] += batch_result.totals.get('error', 0)
+
+            if batch_result.base_errors:
+                total_result.base_errors.extend(batch_result.base_errors)
+            if batch_result.row_errors:
+                total_result.row_errors.extend(batch_result.row_errors)
+            if batch_result.invalid_rows:
+                total_result.invalid_rows.extend(batch_result.invalid_rows)
+
+        return total_result
+
+    def before_import_row(self, row, **kwargs):
+        """
+        Pre-process row data before import
+        """
+        # Robust ID handling - clean up various empty/invalid ID values
+        if 'id' in row:
+            id_value = str(row['id']).strip() if row['id'] is not None else ''
+            # Check for various empty states
+            if (not id_value or
+                id_value == '0' or
+                id_value.lower() in ['none', 'null', 'nan'] or
+                id_value == '-' or
+                all(c in ' \t\n\r\xa0' for c in id_value)):  # various whitespace chars
+                row['id'] = None
+
+        # Convert empty code to None for auto-generation
+        if 'code' in row and (row['code'] == '' or row['code'] is None):
+            row['code'] = None
+
+        return super().before_import_row(row, **kwargs)
+
+    def skip_row(self, instance, original, row, import_validation_errors=None):
+        """
+        Skip rows with validation errors or duplicates
+        """
+        # Skip if name is missing
+        if not instance.name:
+            return True
+
+        # Skip if category is missing
+        if not instance.category:
+            return True
+
+        return super().skip_row(instance, original, row, import_validation_errors)

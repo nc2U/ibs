@@ -1,0 +1,116 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<div class="module aligned">
+    <h2>파일 업로드 및 가져오기</h2>
+
+    <div class="form-row">
+        <div class="help">
+            <p><strong>안내사항:</strong></p>
+            <ul>
+                <li>Excel 파일(.xlsx, .xls) 또는 CSV 파일을 지원합니다.</li>
+                <li>파일 크기가 {{ async_threshold_mb }}MB 이상인 경우 자동으로 백그라운드에서 처리됩니다.</li>
+                <li>대용량 파일의 경우 처리가 완료되면 이메일로 알림을 받을 수 있습니다.</li>
+                <li>처리 중에는 브라우저를 닫아도 작업이 계속 진행됩니다.</li>
+            </ul>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="aligned">
+        {% csrf_token %}
+
+        <div class="form-row">
+            <div>
+                <label class="required" for="id_import_file">가져올 파일:</label>
+                <input type="file" name="import_file" id="id_import_file" accept=".xlsx,.xls,.csv" required>
+                <p class="help">Excel(.xlsx, .xls) 또는 CSV 파일을 선택하세요.</p>
+            </div>
+        </div>
+
+        <div class="submit-row">
+            <input type="submit" value="파일 업로드 및 가져오기" class="default" />
+            <a href="{% url opts|admin_urlname:'changelist' %}" class="button cancel-link">취소</a>
+        </div>
+    </form>
+</div>
+
+<div class="module">
+    <h2>성능 최적화 정보</h2>
+
+    <div class="form-row">
+        <div class="help">
+            <h3>처리 방식</h3>
+            <ul>
+                <li><strong>소용량 파일 ({{ async_threshold_mb }}MB 미만):</strong> 즉시 처리</li>
+                <li><strong>대용량 파일 ({{ async_threshold_mb }}MB 이상):</strong> 백그라운드 비동기 처리</li>
+            </ul>
+
+            <h3>최적화 기법</h3>
+            <ul>
+                <li><strong>Bulk Operations:</strong> 대량 데이터 삽입/업데이트 최적화</li>
+                <li><strong>배치 처리:</strong> 1,000개 단위로 청크 처리</li>
+                <li><strong>트랜잭션 최적화:</strong> 데이터 무결성 보장</li>
+                <li><strong>메모리 관리:</strong> 캐시된 인스턴스 로더 사용</li>
+            </ul>
+
+            <h3>예상 처리 성능</h3>
+            <ul>
+                <li><strong>1,000행:</strong> ~1초</li>
+                <li><strong>10,000행:</strong> ~5초</li>
+                <li><strong>50,000행:</strong> ~20초</li>
+                <li><strong>100,000행 이상:</strong> 비동기 처리 권장</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('id_import_file');
+    const form = document.querySelector('form');
+
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const sizeInMB = file.size / (1024 * 1024);
+            const threshold = {{ async_threshold_mb }};
+
+            if (sizeInMB >= threshold) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'help';
+                warningDiv.style.backgroundColor = '#ffc107';
+                warningDiv.style.padding = '10px';
+                warningDiv.style.marginTop = '10px';
+                warningDiv.style.borderRadius = '4px';
+                warningDiv.innerHTML = `
+                    <strong>주의:</strong> 파일 크기가 ${sizeInMB.toFixed(1)}MB입니다.
+                    이 파일은 백그라운드에서 비동기로 처리되며, 처리 완료 시 이메일로 알림을 받게 됩니다.
+                `;
+
+                // Remove existing warning
+                const existingWarning = form.querySelector('.help[style*="background-color: #ffc107"]');
+                if (existingWarning) {
+                    existingWarning.remove();
+                }
+
+                form.appendChild(warningDiv);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
