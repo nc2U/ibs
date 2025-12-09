@@ -337,7 +337,9 @@ onUnmounted(() => {
   box-shadow: 0 0 0 0.25rem rgba(114, 114, 114, 0.25);
 }
 :deep(.keyboard-active) {
-  background-color: rgba(114, 114, 114, 0.25) !important;
+  background-color: rgba(27, 107, 100, 0.85) !important;
+  font-weight: bold;
+  color: white !important;
 }
 
 /* Dark theme support */
