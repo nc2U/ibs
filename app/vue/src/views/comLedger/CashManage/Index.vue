@@ -58,7 +58,7 @@ const excelUrl = computed(() => {
   const af = dataFilter.value.affiliated || ''
   const ba = dataFilter.value.bank_account || ''
   const q = dataFilter.value.search
-  const url = `/excel/cashbook/?company=${company.value}`
+  const url = `/excel/com-transaction/?company=${company.value}`
   return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account=${ac}&affiliated=${af}&bank_account=${ba}&search_word=${q}`
 })
 
