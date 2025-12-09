@@ -327,8 +327,9 @@ onUnmounted(() => {
 }
 
 :deep(.dropdown-toggle) {
-  border: 1px solid #d8dbe0;
-  background-color: white;
+  border: 1px solid var(--border-color, #d8dbe0);
+  background-color: var(--background-color, #ffffff);
+  color: var(--text-color, inherit);
 }
 
 :deep(.dropdown-toggle:focus) {
@@ -363,9 +364,9 @@ onUnmounted(() => {
   }
 
   :deep(.dropdown-toggle) {
-    background-color: #000;
-    border-color: #4a5568;
-    color: #e2e8f0;
+    --background-color: #474850 !important;
+    --border-color: #4a5568;
+    --color: #cdcdcf;
   }
   :deep(.dropdown-menu) {
     background-color: #2d3748;
