@@ -1,7 +1,7 @@
 import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { errorHandle, message } from '@/utils/helper'
+import { cleanupParams, errorHandle, message } from '@/utils/helper'
 import {
   type BankCode,
   type BalanceByAccount,
@@ -27,6 +27,15 @@ export type DataFilter = {
   limit?: number
 }
 
+export type ComAccountFilter = {
+  category?: string
+  direction?: string
+  parent?: number | null
+  is_category_only?: boolean | ''
+  is_active?: boolean | ''
+  search?: string
+}
+
 export const useComLedger = defineStore('comLedger', () => {
   // state & getters - bankCode
   const bankCodeList = ref<BankCode[]>([])
@@ -39,6 +48,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   // state & getters - Accounts
   const comAccountList = ref<CompanyAccount[]>([])
+  const comAccountFilter = ref<ComAccountFilter>({})
   const comAccounts = computed(() =>
     comAccountList.value
       .filter(acc => acc.is_active && acc.pk !== undefined)
@@ -52,11 +62,24 @@ export const useComLedger = defineStore('comLedger', () => {
       })),
   )
 
-  const fetchCompanyAccounts = async () =>
-    await api
-      .get('/ledger/company-account/')
-      .then(res => (comAccountList.value = res.data.results))
+  const fetchCompanyAccounts = async (payload: ComAccountFilter = {}) => {
+    comAccountFilter.value = payload
+    const params = cleanupParams({
+      category: payload.category,
+      direction: payload.direction,
+      parent: payload.parent,
+      is_category_only: payload.is_category_only,
+      is_active: payload.is_active,
+      search: payload.search,
+    })
+
+    return await api
+      .get('/ledger/company-account/', { params })
+      .then(res => {
+        comAccountList.value = res.data.results
+      })
       .catch(err => errorHandle(err.response.data))
+  }
 
   // state & getters - comBankList
   const comBankList = ref<CompanyBank[]>([])
@@ -155,37 +178,27 @@ export const useComLedger = defineStore('comLedger', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const fetchBankTransactionList = async (payload: DataFilter) => {
-  // payload 객체를 API 요청에 사용할 params 객체로 변환
-  const params: Record<string, any> = {
-    company: payload.company,
-    from_deal_date: payload.from_date,
-    to_deal_date: payload.to_date,
-    sort: payload.sort,
-    account: payload.account,
-    affiliated: payload.affiliated,
-    bank_account: payload.bank_account,
-    search: payload.search,
-    page: payload.page || 1,
-  }
-
-  // params 객체에서 값이 없는 (null, undefined, '') 속성들을 제거
-  Object.keys(params).forEach(key => {
-    if (params[key] === undefined || params[key] === null || params[key] === '') {
-      delete params[key]
-    }
-  })
-
-  // api 호출 시 params 옵션 사용
-  return await api
-    .get('/ledger/company-transaction/', { params })
-    .then(res => {
-      bankTransactionList.value = res.data.results
-      bankTransactionCount.value = res.data.count
+  const fetchBankTransactionList = async (payload: DataFilter = {}) => {
+    const params = cleanupParams({
+      company: payload.company,
+      from_deal_date: payload.from_date,
+      to_deal_date: payload.to_date,
+      sort: payload.sort,
+      account: payload.account,
+      affiliated: payload.affiliated,
+      bank_account: payload.bank_account,
+      search: payload.search,
+      page: payload.page || 1,
     })
-    .catch(err => errorHandle(err.response.data))
-}
 
+    return await api
+      .get('/ledger/company-transaction/', { params })
+      .then(res => {
+        bankTransactionList.value = res.data.results
+        bankTransactionCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
   const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
     const { company } = filters
     let url = `/ledger/company-transaction/find_page/?highlight_id=${highlightId}&company=${company}`
@@ -442,6 +455,7 @@ export const useComLedger = defineStore('comLedger', () => {
     fetchBankCodeList,
 
     comAccountList,
+    comAccountFilter,
     comAccounts,
     fetchCompanyAccounts,
 
