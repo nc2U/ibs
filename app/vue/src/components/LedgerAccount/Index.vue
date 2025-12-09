@@ -261,7 +261,7 @@ onUnmounted(() => {
     ref="dropdownRef"
     v-model="dropdownVisible"
     variant="btn-group"
-    :auto-close="true"
+    :auto-close="false"
     @show="onDropdownShow"
     style="width: 100%"
   >
