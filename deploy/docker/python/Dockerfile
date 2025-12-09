@@ -1,5 +1,5 @@
 # base image
-FROM python:3.12
+FROM python:3.14
 ENV PYTHONUNBUFFERED=1
 
 # set working directory
@@ -24,4 +24,13 @@ EXPOSE 8000
 
 # startup commands
 ENTRYPOINT ["uwsgi"]
-CMD ["--socket", ":8000", "--module", "_config.wsgi", "--py-autoreload", "1", "--logto", "/tmp/mylog.log", "--processes", "4", "--threads", "2", "--max-requests", "1000", "--harakiri", "60", "--buffer-size", "32768", "--vacuum", "--die-on-term"]
+CMD ["--socket", ":8000", \
+     "--module", "_config.wsgi", \
+     "--py-autoreload", "1", \
+     "--logto", "/tmp/mylog.log", \
+     "--post-buffering", "8388608", \
+     "--buffer-size", "65535", \
+     "--harakiri", "300", \
+     "--http-timeout", "300", \
+     "--socket-timeout", "300", \
+     "--max-requests", "5000"]
