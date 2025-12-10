@@ -1513,13 +1513,13 @@
     "pk": 65,
     "fields": {
       "code": "2120",
-      "name": "사채",
-      "description": "회사채 발행으로 조달한 대출성 자금",
+      "name": "차입금 상환",
+      "description": "외부 출처로부터 빌린 돈을 상환한 자금",
       "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
-      "direction": "deposit",
+      "direction": "withdraw",
       "is_active": true,
       "requires_affiliated": false,
       "order": 0
@@ -1530,8 +1530,8 @@
     "pk": 66,
     "fields": {
       "code": "2130",
-      "name": "주주/임원/직원 차입금",
-      "description": "대표 혹은 특수관계 주주나 임직원 등이 회사에 빌려준 자금",
+      "name": "사채",
+      "description": "회사채 발행으로 조달한 대출성 자금",
       "parent": 7,
       "depth": 2,
       "category": "liability",
@@ -1547,25 +1547,8 @@
     "pk": 67,
     "fields": {
       "code": "2140",
-      "name": "회전대출/팩토링",
-      "description": "외상매출챔권담보대출, 선정산 서비스, 팩토링과 같은 단기 회전형 대출",
-      "parent": 7,
-      "depth": 2,
-      "category": "liability",
-      "is_category_only": false,
-      "direction": "deposit",
-      "is_active": true,
-      "requires_affiliated": false,
-      "order": 0
-    }
-  },
-  {
-    "model": "ledger.companyaccount",
-    "pk": 68,
-    "fields": {
-      "code": "2150",
-      "name": "차입금 상환",
-      "description": "외부 출처로부터 빌린 돈을 상환한 자금",
+      "name": "사채 상환",
+      "description": "회사채를 상환하기 위해 사용된 자금",
       "parent": 7,
       "depth": 2,
       "category": "liability",
@@ -1578,11 +1561,28 @@
   },
   {
     "model": "ledger.companyaccount",
+    "pk": 68,
+    "fields": {
+      "code": "2150",
+      "name": "주주/임원/직원 차입금",
+      "description": "대표 혹은 특수관계 주주나 임직원 등이 회사에 빌려준 자금",
+      "parent": 7,
+      "depth": 2,
+      "category": "liability",
+      "is_category_only": false,
+      "direction": "deposit",
+      "is_active": true,
+      "requires_affiliated": false,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
     "pk": 69,
     "fields": {
       "code": "2160",
-      "name": "사채 상환",
-      "description": "회사채를 상환하기 위해 사용된 자금",
+      "name": "주주/임원/직원 차입금 상환",
+      "description": "대표 혹은 특수관계 주주나 임직원 등이 회사에 빌려준 자금을 상환한 내역",
       "parent": 7,
       "depth": 2,
       "category": "liability",
@@ -1598,13 +1598,13 @@
     "pk": 70,
     "fields": {
       "code": "2170",
-      "name": "주주/임원/직원 차입금 상환",
-      "description": "대표 혹은 특수관계 주주나 임직원 등이 회사에 빌려준 자금을 상환한 내역",
+      "name": "회전대출/팩토링",
+      "description": "외상매출챔권담보대출, 선정산 서비스, 팩토링과 같은 단기 회전형 대출",
       "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
-      "direction": "withdraw",
+      "direction": "deposit",
       "is_active": true,
       "requires_affiliated": false,
       "order": 0
@@ -2039,6 +2039,23 @@
     "model": "ledger.companyaccount",
     "pk": 96,
     "fields": {
+      "code": "5231",
+      "name": "건물관리비",
+      "description": "사무실, 매장, 등의 부동산 관리비로 지불한 비용",
+      "parent": 39,
+      "depth": 3,
+      "category": "expense",
+      "is_category_only": false,
+      "direction": "withdraw",
+      "is_active": true,
+      "requires_affiliated": false,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 97,
+    "fields": {
       "code": "2111",
       "name": "관계회사 차입금",
       "description": "",
@@ -2054,12 +2071,12 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 97,
+    "pk": 98,
     "fields": {
-      "code": "2151",
+      "code": "2121",
       "name": "관계회사 차입금 상환",
       "description": "",
-      "parent": 68,
+      "parent": 65,
       "depth": 3,
       "category": "liability",
       "is_category_only": false,
@@ -2071,7 +2088,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 98,
+    "pk": 99,
     "fields": {
       "code": "1111",
       "name": "관계회사 대여금",
@@ -2088,7 +2105,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 99,
+    "pk": 100,
     "fields": {
       "code": "1121",
       "name": "관계회사 대여금 회수",
@@ -2105,7 +2122,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 100,
+    "pk": 101,
     "fields": {
       "code": "6011",
       "name": "대체(입금)",
@@ -2122,7 +2139,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 101,
+    "pk": 102,
     "fields": {
       "code": "6021",
       "name": "대체(출금)",
@@ -2139,7 +2156,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 102,
+    "pk": 103,
     "fields": {
       "code": "7101",
       "name": "거래취소 (출금)",
@@ -2156,7 +2173,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 103,
+    "pk": 104,
     "fields": {
       "code": "7201",
       "name": "거래취소(입금)",
