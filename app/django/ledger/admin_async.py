@@ -30,8 +30,8 @@ class AsyncImportExportMixin(ImportExportMixin):
     async_import_template = 'admin/ledger/async_import.html'
     async_status_template = 'admin/ledger/async_status.html'
 
-    # 파일 크기 임계값 (바이트) - 10MB 이상의 파일을 비동기 처리
-    async_threshold_size = 10 * 1024 * 1024  # 10MB
+    # 파일 크기 임계값 (바이트) - 1MB 이상의 파일을 비동기 처리
+    async_threshold_size = 1 * 1024 * 1024  # 1MB
 
     def import_action(self, request, *args, **kwargs):
         """기존 import 버튼을 async-import로 리다이렉트"""
