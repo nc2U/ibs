@@ -13,14 +13,18 @@ from ledger.models import (
     CompanyLedgerCalculation,
 )
 from ledger.admin_async import AsyncImportExportMixin
-from ledger.resources import CompanyAccountResource, ProjectAccountResource
+from ledger.resources import (
+    CompanyAccountResource, ProjectAccountResource,
+    CompanyBankTransactionResource, ProjectBankTransactionResource,
+    CompanyAccountingEntryResource, ProjectAccountingEntryResource
+)
 
 
 # ============================================
 # Account Admin - 계정 과목
 # ============================================
 
-class BaseAccountAdmin(AsyncImportExportMixin, admin.ModelAdmin):
+class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     """Account Admin 공통 기능 (CompanyAccount, ProjectAccount에서 상속)"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
@@ -248,7 +252,8 @@ class ProjectBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 # ============================================
 
 @admin.register(CompanyBankTransaction)
-class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
+class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
+    resource_class = CompanyBankTransactionResource
     list_display = ('id', 'transaction_id_short', 'company', 'bank_account', 'deal_date',
                     'sort', 'formatted_amount', 'content', 'balance_status', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
@@ -355,7 +360,8 @@ class CompanyBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 @admin.register(ProjectBankTransaction)
-class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
+class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
+    resource_class = ProjectBankTransactionResource
     list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date',
                     'sort', 'formatted_amount', 'content', 'balance_status', 'is_imprest', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
@@ -466,7 +472,8 @@ class ProjectBankTransactionAdmin(ImportExportMixin, admin.ModelAdmin):
 # ============================================
 
 @admin.register(CompanyAccountingEntry)
-class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
+class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
+    resource_class = CompanyAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'company', 'sort', 'account_display',
                     'affiliated_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
@@ -536,7 +543,8 @@ class CompanyAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 @admin.register(ProjectAccountingEntry)
-class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
+class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
+    resource_class = ProjectAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'project', 'sort', 'account_display',
                     'affiliated_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)

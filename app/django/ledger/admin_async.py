@@ -9,8 +9,17 @@ from django.utils import timezone
 from django.utils.html import format_html
 from import_export.admin import ImportExportMixin
 
-from .models import CompanyAccount, ProjectAccount, ImportJob
-from .resources import CompanyAccountResource, ProjectAccountResource
+from .models import (
+    CompanyAccount, ProjectAccount,
+    CompanyBankTransaction, ProjectBankTransaction,
+    CompanyAccountingEntry, ProjectAccountingEntry,
+    ImportJob
+)
+from .resources import (
+    CompanyAccountResource, ProjectAccountResource,
+    CompanyBankTransactionResource, ProjectBankTransactionResource,
+    CompanyAccountingEntryResource, ProjectAccountingEntryResource
+)
 from .tasks import async_import_ledger_account, async_export_ledger_account
 
 
@@ -21,8 +30,8 @@ class AsyncImportExportMixin(ImportExportMixin):
     async_import_template = 'admin/ledger/async_import.html'
     async_status_template = 'admin/ledger/async_status.html'
 
-    # 파일 크기 임계값 (바이트) - 0으로 설정하여 모든 파일을 비동기 처리
-    async_threshold_size = 0
+    # 파일 크기 임계값 (바이트) - 10MB 이상의 파일을 비동기 처리
+    async_threshold_size = 10 * 1024 * 1024  # 10MB
 
     def import_action(self, request, *args, **kwargs):
         """기존 import 버튼을 async-import로 리다이렉트"""
@@ -87,8 +96,16 @@ class AsyncImportExportMixin(ImportExportMixin):
 
     def _handle_async_import(self, request, import_file):
         """비동기 가져오기 처리"""
-        # ImportJob 생성
-        resource_type = 'project_account' if self.model == ProjectAccount else 'company_account'
+        # 모델에 따른 resource_type 매핑
+        resource_type_mapping = {
+            CompanyAccount: 'company_account',
+            ProjectAccount: 'project_account',
+            CompanyBankTransaction: 'company_bank_transaction',
+            ProjectBankTransaction: 'project_bank_transaction',
+            CompanyAccountingEntry: 'company_accounting_entry',
+            ProjectAccountingEntry: 'project_accounting_entry',
+        }
+        resource_type = resource_type_mapping.get(self.model, 'unknown')
 
         job = ImportJob.objects.create(
             job_type='import',
@@ -192,8 +209,16 @@ class AsyncImportExportMixin(ImportExportMixin):
 
         # 대용량 내보내기인지 확인 (1000개 이상)
         if len(selected_ids) >= 1000:
-            # 비동기 처리
-            resource_type = 'project_account' if self.model == ProjectAccount else 'company_account'
+            # 모델에 따른 resource_type 매핑
+            resource_type_mapping = {
+                CompanyAccount: 'company_account',
+                ProjectAccount: 'project_account',
+                CompanyBankTransaction: 'company_bank_transaction',
+                ProjectBankTransaction: 'project_bank_transaction',
+                CompanyAccountingEntry: 'company_accounting_entry',
+                ProjectAccountingEntry: 'project_accounting_entry',
+            }
+            resource_type = resource_type_mapping.get(self.model, 'unknown')
 
             job = ImportJob.objects.create(
                 job_type='export',
