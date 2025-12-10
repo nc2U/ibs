@@ -25,10 +25,6 @@ class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
                        'construction_period_months'),
             'description': '캐시 플로우 생성에 필요한 필수 입력 항목. 예정일 입력 후 실제 일자로 업데이트하세요.'
         }),
-        ('주소 정보', {
-            'fields': ('local_zipcode', 'local_address1', 'local_address2', 'local_address3'),
-            'classes': ('collapse',)
-        }),
         ('사업 개요', {
             'fields': ('location', 'area_usage', 'build_size', 'num_unit',
                        'buy_land_extent', 'scheme_land_extent', 'donation_land_extent',
