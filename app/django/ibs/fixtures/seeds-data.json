@@ -433,6 +433,7 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -449,6 +450,7 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -465,12 +467,13 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 6,
+    "pk": 4,
     "fields": {
       "code": "5100",
       "name": "판매비와관리비",
@@ -481,12 +484,13 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 7,
+    "pk": 5,
     "fields": {
       "code": "5500",
       "name": "영업외비용",
@@ -497,12 +501,13 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 8,
+    "pk": 6,
     "fields": {
       "code": "2000",
       "name": "법인카드 대금",
@@ -513,12 +518,13 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 9,
+    "pk": 7,
     "fields": {
       "code": "2100",
       "name": "대출",
@@ -529,12 +535,13 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 10,
+    "pk": 8,
     "fields": {
       "code": "3000",
       "name": "투자",
@@ -545,12 +552,13 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 11,
+    "pk": 9,
     "fields": {
       "code": "4200",
       "name": "배당금",
@@ -561,12 +569,13 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 12,
+    "pk": 10,
     "fields": {
       "code": "1000",
       "name": "자산 처분",
@@ -577,12 +586,13 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 13,
+    "pk": 11,
     "fields": {
       "code": "1100",
       "name": "대여금",
@@ -593,12 +603,13 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 14,
+    "pk": 12,
     "fields": {
       "code": "2200",
       "name": "보증금",
@@ -609,12 +620,13 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 15,
+    "pk": 13,
     "fields": {
       "code": "1200",
       "name": "자산 취득",
@@ -625,12 +637,13 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 16,
+    "pk": 14,
     "fields": {
       "code": "6000",
       "name": "내부 자금이동",
@@ -641,12 +654,30 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 17,
+    "pk": 15,
+    "fields": {
+      "code": "7000",
+      "name": "거래 취소",
+      "description": "",
+      "parent": null,
+      "depth": 1,
+      "category": "cancel",
+      "is_category_only": true,
+      "direction": "withdraw",
+      "is_active": true,
+      "requires_affiliated": false,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 16,
     "fields": {
       "code": "4010",
       "name": "매출",
@@ -657,12 +688,13 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 18,
+    "pk": 17,
     "fields": {
       "code": "4110",
       "name": "이자수익",
@@ -673,6 +705,24 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 18,
+    "fields": {
+      "code": "4120",
+      "name": "임대료수익",
+      "description": "부동산 등을 임대하고 받은 임대료(임차료) 수익",
+      "parent": 2,
+      "depth": 2,
+      "category": "revenue",
+      "is_category_only": false,
+      "direction": "deposit",
+      "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -680,7 +730,7 @@
     "model": "ledger.companyaccount",
     "pk": 19,
     "fields": {
-      "code": "4120",
+      "code": "4130",
       "name": "정부지원금",
       "description": "TIPS, 내일채움 등의 정부지원금을 받으신 내역",
       "parent": 2,
@@ -689,6 +739,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -696,7 +747,7 @@
     "model": "ledger.companyaccount",
     "pk": 20,
     "fields": {
-      "code": "4130",
+      "code": "4140",
       "name": "세금 환급",
       "description": "선납된 세금을 환급받은 내역",
       "parent": 2,
@@ -705,6 +756,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -712,7 +764,7 @@
     "model": "ledger.companyaccount",
     "pk": 21,
     "fields": {
-      "code": "4140",
+      "code": "4150",
       "name": "잡이익",
       "description": "영업활동과 무관하게 발생한 이익으로 발생한 내역",
       "parent": 2,
@@ -721,6 +773,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -728,7 +781,7 @@
     "model": "ledger.companyaccount",
     "pk": 22,
     "fields": {
-      "code": "4150",
+      "code": "4160",
       "name": "외환차익",
       "description": "외환 거래로 발생한 이익",
       "parent": 2,
@@ -737,6 +790,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -744,7 +798,7 @@
     "model": "ledger.companyaccount",
     "pk": 23,
     "fields": {
-      "code": "4160",
+      "code": "4170",
       "name": "유형자산처분이익",
       "description": "건물, 설비 등의 유형자산을 처분하면서 발생한 수익",
       "parent": 2,
@@ -753,6 +807,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -760,7 +815,7 @@
     "model": "ledger.companyaccount",
     "pk": 24,
     "fields": {
-      "code": "4170",
+      "code": "4180",
       "name": "무형자산처분이익",
       "description": "특허권, 상표권 등의 무형자산을 처분하면서 발생한 수익",
       "parent": 2,
@@ -769,6 +824,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -776,7 +832,7 @@
     "model": "ledger.companyaccount",
     "pk": 25,
     "fields": {
-      "code": "4180",
+      "code": "4190",
       "name": "금융자산처분이익",
       "description": "예/적금, 단기투자상품 등의 금융자산을 처분하면서 발생한 수익",
       "parent": 2,
@@ -785,6 +841,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -801,6 +858,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -811,12 +869,13 @@
       "code": "5110",
       "name": "급여",
       "description": "정규 및 계약 직원들의 임금",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -827,12 +886,13 @@
       "code": "5120",
       "name": "상여",
       "description": "성과, 목표 달성, 연말 등의 특별한 이벤트에 직원들에게 지급되는 추가적인 보상",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -843,12 +903,13 @@
       "code": "5130",
       "name": "퇴직급여",
       "description": "직원이 퇴사할 때 지급하는 급여",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -859,12 +920,13 @@
       "code": "5140",
       "name": "잡급",
       "description": "일용근로자에게 근로의 대가로 지급한 금전적 보상",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -875,12 +937,13 @@
       "code": "5150",
       "name": "복리후생비",
       "description": "직원의 복지 향상을 위해 회사가 제공하는 비금전적 보상과 서비스에 발생한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -891,12 +954,13 @@
       "code": "5160",
       "name": "보험료",
       "description": "보험 계약에 따라 보험사에 지불한 금액",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -907,12 +971,13 @@
       "code": "5170",
       "name": "지급수수료",
       "description": "용역 및 서비스를 제공받은 대가로 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -923,12 +988,13 @@
       "code": "5180",
       "name": "광고선전비",
       "description": "제품이나 서비스를 홍보하기 위해 지출한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -939,12 +1005,13 @@
       "code": "5190",
       "name": "교육훈련비",
       "description": "직원의 전문성 개발을 위해 회사가 지출하는 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -955,12 +1022,13 @@
       "code": "5200",
       "name": "차량유지비",
       "description": "회사 소유의 또는 임차한 차량의 운영 및 유지 관리에 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -971,12 +1039,13 @@
       "code": "5210",
       "name": "도서인쇄비",
       "description": "도서 구매나 인쇄에 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -987,12 +1056,13 @@
       "code": "5220",
       "name": "업무추진비",
       "description": "업무와 관련하여 접대, 교제, 사례 등의 명목 하에 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1003,12 +1073,13 @@
       "code": "5230",
       "name": "임차료",
       "description": "사무실, 매장, 차량 등의 부동산 또는 장비 임차에 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1019,12 +1090,13 @@
       "code": "5240",
       "name": "통신비",
       "description": "전화, 인터넷, 팩스 등의 통신 서비스 이용에 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1035,12 +1107,13 @@
       "code": "5250",
       "name": "운반비",
       "description": "상품, 원자재, 기타 물품을 운송하는데 발생한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1051,12 +1124,13 @@
       "code": "5260",
       "name": "세금과공과",
       "description": "정부 또는 지자체에 지불한 세금 및 기타 공적 부담금",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1067,12 +1141,13 @@
       "code": "5270",
       "name": "소모품비",
       "description": "일상적으로 사용되는 소모성 물품 구입에 대한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1083,12 +1158,13 @@
       "code": "5280",
       "name": "수도광열비",
       "description": "수도, 전기, 가스 등의 에너지 사용에 대한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1099,12 +1175,13 @@
       "code": "5290",
       "name": "수선비",
       "description": "기계, 설비, 건물 등의 유지보수 및 수리에 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1115,12 +1192,13 @@
       "code": "5300",
       "name": "경상개발비",
       "description": "기존 제품이나 서비스의 개선, 프로세스 효율성 증가 등을 위해 발생한 연구개발 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1131,12 +1209,13 @@
       "code": "5310",
       "name": "여비교통비",
       "description": "업무 상의 목적으로 발생하는 여행 및 교통에 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1147,12 +1226,13 @@
       "code": "5320",
       "name": "견본품비",
       "description": "제품이나 서비스의 프로모션, 테스트 등을 위해 제작 또는 구입하는 샘플에 대한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1163,12 +1243,13 @@
       "code": "5330",
       "name": "판매수수료",
       "description": "제품이나 서비스를 판매하는 과정에서 대리점, 중개인, 플랫폼 등에 지급한 수수료 성격의 지출",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1179,12 +1260,13 @@
       "code": "5340",
       "name": "외주용역비",
       "description": "제품이나 서비스의 개발, 제조 및 판매에 직접적으로 관련된 용역 서비스에 지불한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1195,12 +1277,13 @@
       "code": "5350",
       "name": "전력비",
       "description": "제품이나 서비스의 제조 및 판매 과정에서 사용한 전력 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1211,12 +1294,13 @@
       "code": "5360",
       "name": "보관료",
       "description": "제품, 원자재, 또는 기타 자산을 창고나 저장 시설에 보관하기 위해 지출한 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1227,12 +1311,13 @@
       "code": "5370",
       "name": "수출제비용",
       "description": "제품을 수출하는 과정에서 발생한 부대 비용",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1243,12 +1328,13 @@
       "code": "5380",
       "name": "기타판매비와관리비",
       "description": "특정한 주요 범주에 속하지 않는 다양한 경비들이 여기에 포함",
-      "parent": 6,
+      "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1259,12 +1345,13 @@
       "code": "5510",
       "name": "기부금",
       "description": "자선단체, 비영리 기구, 교육기관 등에 자발적으로 지원한 금전적 또는 물질적 지원에 지불한 비용",
-      "parent": 7,
+      "parent": 5,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1275,12 +1362,13 @@
       "code": "5520",
       "name": "정부지원금 지출",
       "description": "정부지원금을 수령하기 위해 지출한 자부담금",
-      "parent": 7,
+      "parent": 5,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1291,12 +1379,13 @@
       "code": "5530",
       "name": "잡손실",
       "description": "영업활동과 무관하게 발생한 손해로 인한 비용",
-      "parent": 7,
+      "parent": 5,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1307,12 +1396,13 @@
       "code": "5540",
       "name": "이자비용",
       "description": "금융 부채에 대한 이자로 납입한 비용",
-      "parent": 7,
+      "parent": 5,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1323,12 +1413,13 @@
       "code": "5550",
       "name": "외환차손",
       "description": "외환 거래로 발생한 손실",
-      "parent": 7,
+      "parent": 5,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1339,12 +1430,13 @@
       "code": "5560",
       "name": "유형자산처분손실",
       "description": "건물, 설비 등의 유형자산을 처분하면서 발생한 손실",
-      "parent": 7,
+      "parent": 5,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1355,12 +1447,13 @@
       "code": "5570",
       "name": "무형자산처분손실",
       "description": "특허권, 상표권 등의 무형자산을 처분하면서 발생한 손실",
-      "parent": 7,
+      "parent": 5,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1370,13 +1463,14 @@
     "fields": {
       "code": "5580",
       "name": "금융자산처분손실",
-      "description": "예/적금, 단기투자상품 등의 금융자산을 처분하면서 발생한 손실\r\n상위 계정",
-      "parent": 7,
+      "description": "예/적금, 단기투자상품 등의 금융자산을 처분하면서 발생한 손실 상위 계정",
+      "parent": 5,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1387,12 +1481,13 @@
       "code": "2010",
       "name": "신용카드 대금",
       "description": "법인명의 신용카드의 결제 대금",
-      "parent": 8,
+      "parent": 6,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1403,12 +1498,13 @@
       "code": "2110",
       "name": "차입금",
       "description": "외부 출처로부터 빌려온 자금",
-      "parent": 9,
+      "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1419,12 +1515,13 @@
       "code": "2120",
       "name": "사채",
       "description": "회사채 발행으로 조달한 대출성 자금",
-      "parent": 9,
+      "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1435,12 +1532,13 @@
       "code": "2130",
       "name": "주주/임원/직원 차입금",
       "description": "대표 혹은 특수관계 주주나 임직원 등이 회사에 빌려준 자금",
-      "parent": 9,
+      "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1451,12 +1549,13 @@
       "code": "2140",
       "name": "회전대출/팩토링",
       "description": "외상매출챔권담보대출, 선정산 서비스, 팩토링과 같은 단기 회전형 대출",
-      "parent": 9,
+      "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1467,12 +1566,13 @@
       "code": "2150",
       "name": "차입금 상환",
       "description": "외부 출처로부터 빌린 돈을 상환한 자금",
-      "parent": 9,
+      "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1483,12 +1583,13 @@
       "code": "2160",
       "name": "사채 상환",
       "description": "회사채를 상환하기 위해 사용된 자금",
-      "parent": 9,
+      "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1499,12 +1600,13 @@
       "code": "2170",
       "name": "주주/임원/직원 차입금 상환",
       "description": "대표 혹은 특수관계 주주나 임직원 등이 회사에 빌려준 자금을 상환한 내역",
-      "parent": 9,
+      "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1515,12 +1617,13 @@
       "code": "2180",
       "name": "회전대출/팩토링 상환",
       "description": "외상매출챔권담보대출, 선정산 서비스, 팩토링과 같은 단기 회전형 대출을 상환한 자금",
-      "parent": 9,
+      "parent": 7,
       "depth": 2,
       "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1531,12 +1634,13 @@
       "code": "3010",
       "name": "투자금",
       "description": "외부 출처로부터 회사의 주식을 대가로 조달한 투자성 자금",
-      "parent": 10,
+      "parent": 8,
       "depth": 2,
       "category": "equity",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1547,12 +1651,13 @@
       "code": "3020",
       "name": "투자금 반환",
       "description": "외부 출처로부터 회사의 주식을 대가로 조달한 투자성 자금의 반환",
-      "parent": 10,
+      "parent": 8,
       "depth": 2,
       "category": "equity",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1563,12 +1668,13 @@
       "code": "4210",
       "name": "배당금 수취",
       "description": "회사가 소유한 타사의 주식에 대해서 지급받은 이익분배금",
-      "parent": 11,
+      "parent": 9,
       "depth": 2,
       "category": "revenue",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1579,12 +1685,13 @@
       "code": "4220",
       "name": "배당금 지급",
       "description": "주주들에게 지급한 이익분배금",
-      "parent": 11,
+      "parent": 9,
       "depth": 2,
       "category": "equity",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1595,12 +1702,13 @@
       "code": "1010",
       "name": "유형자산 처분",
       "description": "장비, 시설 등의 유형자산을 매각하고 받은 금액",
-      "parent": 12,
+      "parent": 10,
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1611,12 +1719,13 @@
       "code": "1020",
       "name": "무형자산 처분",
       "description": "브랜드, 특허권 등의 무형자산을 매각하고 받은 금액",
-      "parent": 12,
+      "parent": 10,
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1627,12 +1736,13 @@
       "code": "1030",
       "name": "금융자산 처분",
       "description": "MMF, 적금, 정기예금 등의 금융자산을 매각하고 정산받은 금액",
-      "parent": 12,
+      "parent": 10,
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1641,14 +1751,15 @@
     "pk": 79,
     "fields": {
       "code": "1110",
-      "name": "대여금 회수",
-      "description": "개인이나 관계사에 대여해준 돈을 돌려받은 금액",
-      "parent": 13,
+      "name": "대여금 지급",
+      "description": "개인이나 관계사에 대여해준 금액",
+      "parent": 11,
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
-      "direction": "deposit",
+      "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1657,14 +1768,15 @@
     "pk": 80,
     "fields": {
       "code": "1120",
-      "name": "대여금 지급",
-      "description": "개인이나 관계사에 대여해준 금액",
-      "parent": 13,
+      "name": "대여금 회수",
+      "description": "개인이나 관계사에 대여해준 돈을 돌려받은 금액",
+      "parent": 11,
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
-      "direction": "withdraw",
+      "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1672,15 +1784,16 @@
     "model": "ledger.companyaccount",
     "pk": 81,
     "fields": {
-      "code": "2210",
-      "name": "보증금 수취",
-      "description": "유/무형자산의 임차 혹은 사용권을 대가로 수령한 보증금",
-      "parent": 14,
+      "code": "1130",
+      "name": "주주/임원/직원 대여금 지급",
+      "description": "대표 혹은 특수관계 주주나 임직원 등에게 회사가 빌려준 자금 내역",
+      "parent": 11,
       "depth": 2,
-      "category": "liability",
+      "category": "asset",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1688,15 +1801,16 @@
     "model": "ledger.companyaccount",
     "pk": 82,
     "fields": {
-      "code": "2220",
-      "name": "보증금 지급",
-      "description": "유/무형자산의 임차 혹은 사용을 위해 지급한 보증금",
-      "parent": 14,
+      "code": "1140",
+      "name": "주주/임원/직원 대여금 회수",
+      "description": "대표 혹은 특수관계 주주나 임직원 등에게 회사가 빌려준 자금을 회수한 내역",
+      "parent": 11,
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
-      "direction": "withdraw",
+      "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1704,15 +1818,16 @@
     "model": "ledger.companyaccount",
     "pk": 83,
     "fields": {
-      "code": "1210",
-      "name": "유형자산 취득",
-      "description": "장비, 시설 등의 유형자산을 구매하는 데 쓰인 금액",
-      "parent": 15,
+      "code": "2210",
+      "name": "보증금 수취",
+      "description": "유/무형자산의 임차 혹은 사용권을 대가로 수령한 보증금",
+      "parent": 12,
       "depth": 2,
-      "category": "asset",
+      "category": "liability",
       "is_category_only": false,
-      "direction": "withdraw",
+      "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1720,15 +1835,16 @@
     "model": "ledger.companyaccount",
     "pk": 84,
     "fields": {
-      "code": "1220",
-      "name": "무형자산 취득",
-      "description": "브랜드, 특허권 등의 무형자산을 구매하는 데 쓰인 금액",
-      "parent": 15,
+      "code": "2220",
+      "name": "보증금 지급",
+      "description": "유/무형자산의 임차 혹은 사용을 위해 지급한 보증금",
+      "parent": 12,
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1736,15 +1852,16 @@
     "model": "ledger.companyaccount",
     "pk": 85,
     "fields": {
-      "code": "1230",
-      "name": "금융자산 취득",
-      "description": "MMF, 적금, 정기예금 등의 금융자산으로 옮긴 금액",
-      "parent": 15,
+      "code": "1210",
+      "name": "유형자산 취득",
+      "description": "장비, 시설 등의 유형자산을 구매하는 데 쓰인 금액",
+      "parent": 13,
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1752,15 +1869,16 @@
     "model": "ledger.companyaccount",
     "pk": 86,
     "fields": {
-      "code": "6010",
-      "name": "계좌간 입금",
-      "description": "회사의 내부 계좌간 이동한 금액",
-      "parent": 16,
+      "code": "1220",
+      "name": "무형자산 취득",
+      "description": "브랜드, 특허권 등의 무형자산을 구매하는 데 쓰인 금액",
+      "parent": 13,
       "depth": 2,
-      "category": "transfer",
-      "is_category_only": true,
-      "direction": "deposit",
+      "category": "asset",
+      "is_category_only": false,
+      "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1768,15 +1886,16 @@
     "model": "ledger.companyaccount",
     "pk": 87,
     "fields": {
-      "code": "6020",
-      "name": "계좌간 출금",
-      "description": "회사의 내부 계좌간 이동한 금액",
-      "parent": 16,
+      "code": "1230",
+      "name": "금융자산 취득",
+      "description": "MMF, 적금, 정기예금 등의 금융자산으로 옮긴 금액",
+      "parent": 13,
       "depth": 2,
-      "category": "transfer",
-      "is_category_only": true,
+      "category": "asset",
+      "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1784,15 +1903,16 @@
     "model": "ledger.companyaccount",
     "pk": 88,
     "fields": {
-      "code": "2151",
-      "name": "관계회사 차입금 상환",
-      "description": "",
-      "parent": 68,
-      "depth": 3,
-      "category": "liability",
-      "is_category_only": false,
-      "direction": "withdraw",
+      "code": "6010",
+      "name": "계좌간 입금",
+      "description": "회사의 내부 계좌간 이동한 금액",
+      "parent": 14,
+      "depth": 2,
+      "category": "transfer",
+      "is_category_only": true,
+      "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1800,21 +1920,56 @@
     "model": "ledger.companyaccount",
     "pk": 89,
     "fields": {
-      "code": "1111",
-      "name": "관계회사 대여금 회수",
-      "description": "",
-      "parent": 79,
-      "depth": 3,
-      "category": "asset",
-      "is_category_only": false,
-      "direction": "deposit",
+      "code": "6020",
+      "name": "계좌간 출금",
+      "description": "회사의 내부 계좌간 이동한 금액",
+      "parent": 14,
+      "depth": 2,
+      "category": "transfer",
+      "is_category_only": true,
+      "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
     "pk": 90,
+    "fields": {
+      "code": "7100",
+      "name": "취소된 출금",
+      "description": "",
+      "parent": 15,
+      "depth": 2,
+      "category": "cancel",
+      "is_category_only": true,
+      "direction": "withdraw",
+      "is_active": true,
+      "requires_affiliated": false,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 91,
+    "fields": {
+      "code": "7200",
+      "name": "취소된 입금",
+      "description": "",
+      "parent": 15,
+      "depth": 2,
+      "category": "cancel",
+      "is_category_only": true,
+      "direction": "deposit",
+      "is_active": true,
+      "requires_affiliated": false,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 92,
     "fields": {
       "code": "5201",
       "name": "유류비",
@@ -1825,12 +1980,13 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 91,
+    "pk": 93,
     "fields": {
       "code": "5202",
       "name": "주차비",
@@ -1841,12 +1997,13 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 92,
+    "pk": 94,
     "fields": {
       "code": "2111",
       "name": "관계회사 차입금",
@@ -1857,22 +2014,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "order": 0
-    }
-  },
-  {
-    "model": "ledger.companyaccount",
-    "pk": 93,
-    "fields": {
-      "code": "6011",
-      "name": "대체(입금)",
-      "description": "",
-      "parent": 86,
-      "depth": 3,
-      "category": "transfer",
-      "is_category_only": false,
-      "direction": "deposit",
-      "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1880,15 +2022,16 @@
     "model": "ledger.companyaccount",
     "pk": 95,
     "fields": {
-      "code": "6021",
-      "name": "대체(출금)",
+      "code": "2151",
+      "name": "관계회사 차입금 상환",
       "description": "",
-      "parent": 87,
+      "parent": 68,
       "depth": 3,
-      "category": "transfer",
+      "category": "liability",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1896,15 +2039,16 @@
     "model": "ledger.companyaccount",
     "pk": 96,
     "fields": {
-      "code": "7000",
-      "name": "거래 취소",
+      "code": "1111",
+      "name": "관계회사 대여금 회수",
       "description": "",
-      "parent": null,
-      "depth": 1,
-      "category": "cancel",
-      "is_category_only": true,
-      "direction": "withdraw",
+      "parent": 80,
+      "depth": 3,
+      "category": "asset",
+      "is_category_only": false,
+      "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1912,15 +2056,16 @@
     "model": "ledger.companyaccount",
     "pk": 97,
     "fields": {
-      "code": "7100",
-      "name": "취소된 출금",
+      "code": "6011",
+      "name": "대체(입금)",
       "description": "",
-      "parent": 96,
-      "depth": 2,
-      "category": "cancel",
-      "is_category_only": true,
-      "direction": "withdraw",
+      "parent": 88,
+      "depth": 3,
+      "category": "transfer",
+      "is_category_only": false,
+      "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1928,15 +2073,16 @@
     "model": "ledger.companyaccount",
     "pk": 98,
     "fields": {
-      "code": "7200",
-      "name": "취소된 입금",
+      "code": "6021",
+      "name": "대체(출금)",
       "description": "",
-      "parent": 96,
-      "depth": 2,
-      "category": "cancel",
-      "is_category_only": true,
-      "direction": "deposit",
+      "parent": 89,
+      "depth": 3,
+      "category": "transfer",
+      "is_category_only": false,
+      "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1947,12 +2093,13 @@
       "code": "7101",
       "name": "거래취소 (출금)",
       "description": "취소된 출금거래",
-      "parent": 97,
+      "parent": 90,
       "depth": 3,
       "category": "cancel",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1963,12 +2110,13 @@
       "code": "7201",
       "name": "거래취소(입금)",
       "description": "취소된 입금거래",
-      "parent": 98,
+      "parent": 91,
       "depth": 3,
       "category": "cancel",
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0
     }
   },
@@ -1985,6 +2133,7 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2003,6 +2152,7 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2021,6 +2171,7 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2039,6 +2190,7 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2057,6 +2209,7 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2075,6 +2228,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2093,6 +2247,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2111,6 +2266,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2129,6 +2285,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2147,6 +2304,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2165,6 +2323,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2183,6 +2342,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2201,6 +2361,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2219,6 +2380,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2237,6 +2399,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2255,6 +2418,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2273,6 +2437,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2291,6 +2456,7 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2309,6 +2475,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": true,
       "is_related_contract": true
@@ -2327,6 +2494,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2345,6 +2513,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2363,6 +2532,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2381,6 +2551,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": true,
       "is_related_contract": true
@@ -2399,6 +2570,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2417,6 +2589,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2435,6 +2608,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2453,6 +2627,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2471,6 +2646,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2489,6 +2665,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2507,6 +2684,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2525,6 +2703,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2543,6 +2722,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2561,6 +2741,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2579,6 +2760,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2597,6 +2779,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2615,6 +2798,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2633,6 +2817,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2651,6 +2836,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2669,6 +2855,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2687,6 +2874,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2705,6 +2893,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2723,6 +2912,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2741,6 +2931,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2759,6 +2950,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2777,6 +2969,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2795,6 +2988,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2813,6 +3007,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2831,6 +3026,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2849,6 +3045,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2867,6 +3064,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2885,6 +3083,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2903,6 +3102,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2921,6 +3121,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2939,6 +3140,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2957,6 +3159,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2975,6 +3178,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2993,6 +3197,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3011,6 +3216,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3029,6 +3235,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3047,6 +3254,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3065,6 +3273,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3083,6 +3292,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3101,6 +3311,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3119,6 +3330,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3137,6 +3349,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3155,6 +3368,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3173,6 +3387,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3191,6 +3406,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3209,6 +3425,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3227,6 +3444,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3245,6 +3463,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3263,6 +3482,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3281,6 +3501,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3299,6 +3520,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3317,6 +3539,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3335,6 +3558,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3353,6 +3577,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3371,6 +3596,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3389,6 +3615,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3407,6 +3634,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3425,6 +3653,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3443,6 +3672,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3461,6 +3691,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3479,6 +3710,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3497,6 +3729,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3515,6 +3748,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3533,6 +3767,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3551,6 +3786,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3569,6 +3805,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3587,6 +3824,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3605,6 +3843,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3623,6 +3862,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3641,6 +3881,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
+      "requires_affiliated": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
