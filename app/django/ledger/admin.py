@@ -28,10 +28,10 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     """Account Admin 공통 기능 (CompanyAccount, ProjectAccount에서 상속)"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
-        'depth', 'is_category_only', 'is_active', 'order'
+        'depth', 'is_category_only', 'is_active', 'requires_affiliated', 'order'
     )
     list_display_links = ('indented_name',)
-    list_editable = ('order', 'is_category_only', 'is_active')
+    list_editable = ('order', 'is_category_only', 'is_active', 'requires_affiliated')
     list_filter = ('category', 'direction', 'is_category_only', 'is_active')
     search_fields = ('code', 'name', 'description')
     ordering = ('code', 'order')
