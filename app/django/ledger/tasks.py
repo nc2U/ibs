@@ -98,8 +98,8 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
             'new_records': result.totals.get('new', 0),
             'updated_records': result.totals.get('update', 0),
             'skipped_records': result.totals.get('skip', 0),
-            'error_count': len(result.base_errors) + len(result.row_errors),
-            'errors': [str(error.error) for error in result.base_errors + result.row_errors],
+            'error_count': len(result.base_errors) + len(result.error_rows),
+            'errors': [str(e) for e in result.base_errors] + [', '.join([str(e) for e in err_row.errors]) for err_row in result.error_rows],
             'user_email': user.email,
         }
 

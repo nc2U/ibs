@@ -1,13 +1,19 @@
 import threading
 
 from django.db import transaction
-from import_export import resources
+from import_export import resources, fields, widgets
+
+from django.contrib.auth import get_user_model
+from company.models import Company
+from ibs.models import AccountSort
 
 from .models import (
     CompanyAccount, ProjectAccount,
     CompanyBankTransaction, ProjectBankTransaction,
-    CompanyAccountingEntry, ProjectAccountingEntry
+    CompanyAccountingEntry, ProjectAccountingEntry, CompanyBankAccount
 )
+
+User = get_user_model()
 
 # Thread-local storage for bulk import flags
 _thread_locals = threading.local()
@@ -86,23 +92,28 @@ class CompanyAccountResource(resources.ModelResource):
         Process large datasets in batches for better performance
         """
         from import_export.results import Result
+        from tablib import Dataset
 
         batch_size = getattr(self.Meta, 'batch_size', 1000)
         total_result = Result()
 
         # Process in batches
         for i in range(0, len(dataset), batch_size):
-            batch = dataset[i:i + batch_size]
+            # Create new Dataset object for batch to preserve headers
+            batch_data = Dataset()
+            batch_data.headers = dataset.headers
+            for row in dataset[i:i + batch_size]:
+                batch_data.append(row)
 
             if use_transactions:
                 with transaction.atomic():
                     batch_result = super().import_data(
-                        batch, dry_run=False, raise_errors=raise_errors,
+                        batch_data, dry_run=False, raise_errors=raise_errors,
                         use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
                     )
             else:
                 batch_result = super().import_data(
-                    batch, dry_run=False, raise_errors=raise_errors,
+                    batch_data, dry_run=False, raise_errors=raise_errors,
                     use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
                 )
 
@@ -115,9 +126,11 @@ class CompanyAccountResource(resources.ModelResource):
 
             if batch_result.base_errors:
                 total_result.base_errors.extend(batch_result.base_errors)
-            if batch_result.row_errors:
-                total_result.row_errors.extend(batch_result.row_errors)
-            if batch_result.invalid_rows:
+
+            if batch_result.has_errors():
+                total_result.error_rows.extend(batch_result.error_rows)
+
+            if batch_result.has_validation_errors():
                 total_result.invalid_rows.extend(batch_result.invalid_rows)
 
         return total_result
@@ -221,23 +234,28 @@ class ProjectAccountResource(resources.ModelResource):
         Process large datasets in batches for better performance
         """
         from import_export.results import Result
+        from tablib import Dataset
 
         batch_size = getattr(self.Meta, 'batch_size', 1000)
         total_result = Result()
 
         # Process in batches
         for i in range(0, len(dataset), batch_size):
-            batch = dataset[i:i + batch_size]
+            # Create new Dataset object for batch to preserve headers
+            batch_data = Dataset()
+            batch_data.headers = dataset.headers
+            for row in dataset[i:i + batch_size]:
+                batch_data.append(row)
 
             if use_transactions:
                 with transaction.atomic():
                     batch_result = super().import_data(
-                        batch, dry_run=False, raise_errors=raise_errors,
+                        batch_data, dry_run=False, raise_errors=raise_errors,
                         use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
                     )
             else:
                 batch_result = super().import_data(
-                    batch, dry_run=False, raise_errors=raise_errors,
+                    batch_data, dry_run=False, raise_errors=raise_errors,
                     use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
                 )
 
@@ -250,9 +268,11 @@ class ProjectAccountResource(resources.ModelResource):
 
             if batch_result.base_errors:
                 total_result.base_errors.extend(batch_result.base_errors)
-            if batch_result.row_errors:
-                total_result.row_errors.extend(batch_result.row_errors)
-            if batch_result.invalid_rows:
+
+            if batch_result.has_errors():
+                total_result.error_rows.extend(batch_result.error_rows)
+
+            if batch_result.has_validation_errors():
                 total_result.invalid_rows.extend(batch_result.invalid_rows)
 
         return total_result
@@ -328,22 +348,27 @@ class BaseTransactionResource(resources.ModelResource):
     def _batch_import_data(self, dataset, raise_errors, use_transactions, collect_failed_rows, **kwargs):
         """Process large datasets in batches for better performance"""
         from import_export.results import Result
+        from tablib import Dataset
 
         batch_size = getattr(self.Meta, 'batch_size', 1000)
         total_result = Result()
 
         for i in range(0, len(dataset), batch_size):
-            batch = dataset[i:i + batch_size]
+            # Create new Dataset object for batch to preserve headers
+            batch_data = Dataset()
+            batch_data.headers = dataset.headers
+            for row in dataset[i:i + batch_size]:
+                batch_data.append(row)
 
             if use_transactions:
                 with transaction.atomic():
                     batch_result = super().import_data(
-                        batch, dry_run=False, raise_errors=raise_errors,
+                        batch_data, dry_run=False, raise_errors=raise_errors,
                         use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
                     )
             else:
                 batch_result = super().import_data(
-                    batch, dry_run=False, raise_errors=raise_errors,
+                    batch_data, dry_run=False, raise_errors=raise_errors,
                     use_transactions=False, collect_failed_rows=collect_failed_rows, **kwargs
                 )
 
@@ -356,9 +381,11 @@ class BaseTransactionResource(resources.ModelResource):
 
             if batch_result.base_errors:
                 total_result.base_errors.extend(batch_result.base_errors)
-            if batch_result.row_errors:
-                total_result.row_errors.extend(batch_result.row_errors)
-            if batch_result.invalid_rows:
+
+            if batch_result.has_errors():
+                total_result.error_rows.extend(batch_result.error_rows)
+
+            if batch_result.has_validation_errors():
                 total_result.invalid_rows.extend(batch_result.invalid_rows)
 
         return total_result
@@ -381,19 +408,43 @@ class BaseTransactionResource(resources.ModelResource):
 class CompanyBankTransactionResource(BaseTransactionResource):
     """Resource for CompanyBankTransaction with bulk operations"""
 
+    # 외래키 필드 정의 - ID로 매핑
+    company = fields.Field(
+        column_name='company',
+        attribute='company',
+        widget=widgets.ForeignKeyWidget(model=Company, field='id')
+    )
+    bank_account = fields.Field(
+        column_name='bank_account',
+        attribute='bank_account',
+        widget=widgets.ForeignKeyWidget(model=CompanyBankAccount, field='id')
+    )
+    sort = fields.Field(
+        column_name='sort',
+        attribute='sort',
+        widget=widgets.ForeignKeyWidget(model=AccountSort, field='id')
+    )
+    creator = fields.Field(
+        column_name='creator',
+        attribute='creator',
+        widget=widgets.ForeignKeyWidget(model=User, field='id')
+    )
+
     class Meta:
         model = CompanyBankTransaction
         batch_size = 1000
         use_transactions = True
         chunk_size = 1000
         import_id_fields = ('id',)
+        skip_unchanged = True
+        report_skipped = True
         fields = (
             'id', 'transaction_id', 'company', 'bank_account', 'deal_date',
-            'sort', 'amount', 'balance', 'content', 'note', 'creator'
+            'sort', 'amount', 'content', 'note', 'creator'
         )
         export_order = (
             'id', 'transaction_id', 'company', 'bank_account', 'deal_date',
-            'sort', 'amount', 'balance', 'content', 'note', 'creator'
+            'sort', 'amount', 'content', 'note', 'creator'
         )
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
