@@ -2074,6 +2074,23 @@
     "pk": 98,
     "fields": {
       "code": "1111",
+      "name": "관계회사 대여금",
+      "description": "",
+      "parent": 79,
+      "depth": 3,
+      "category": "asset",
+      "is_category_only": false,
+      "direction": "deposit",
+      "is_active": true,
+      "requires_affiliated": true,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 99,
+    "fields": {
+      "code": "1121",
       "name": "관계회사 대여금 회수",
       "description": "",
       "parent": 80,
@@ -2082,13 +2099,13 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliated": false,
+      "requires_affiliated": true,
       "order": 0
     }
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 99,
+    "pk": 100,
     "fields": {
       "code": "6011",
       "name": "대체(입금)",
@@ -2105,7 +2122,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 100,
+    "pk": 101,
     "fields": {
       "code": "6021",
       "name": "대체(출금)",
@@ -2122,7 +2139,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 101,
+    "pk": 102,
     "fields": {
       "code": "7101",
       "name": "거래취소 (출금)",
@@ -2139,7 +2156,7 @@
   },
   {
     "model": "ledger.companyaccount",
-    "pk": 102,
+    "pk": 103,
     "fields": {
       "code": "7201",
       "name": "거래취소(입금)",
