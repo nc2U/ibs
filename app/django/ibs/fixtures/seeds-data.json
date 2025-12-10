@@ -2048,7 +2048,7 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliated": false,
+      "requires_affiliated": true,
       "order": 0
     }
   },
@@ -2065,7 +2065,7 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliated": false,
+      "requires_affiliated": true,
       "order": 0
     }
   },
