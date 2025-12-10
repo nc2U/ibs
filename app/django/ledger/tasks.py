@@ -10,8 +10,16 @@ from django.core.mail import send_mail
 from django.conf import settings
 import logging
 
-from .models import CompanyAccount, ProjectAccount
-from .resources import CompanyAccountResource, ProjectAccountResource
+from .models import (
+    CompanyAccount, ProjectAccount,
+    CompanyBankTransaction, ProjectBankTransaction,
+    CompanyAccountingEntry, ProjectAccountingEntry
+)
+from .resources import (
+    CompanyAccountResource, ProjectAccountResource,
+    CompanyBankTransactionResource, ProjectBankTransactionResource,
+    CompanyAccountingEntryResource, ProjectAccountingEntryResource
+)
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -27,12 +35,18 @@ User = get_user_model()
 )
 def async_import_ledger_account(self, file_path: str, user_id: int, resource_type: str = 'company_account') -> dict:
     """
-    CompanyAccount 또는 ProjectAccount 데이터를 비동기로 가져오기
+    Ledger 관련 데이터를 비동기로 가져오기
 
     Args:
         file_path: 업로드된 파일 경로
         user_id: 사용자 ID
-        resource_type: 'company_account' 또는 'project_account'
+        resource_type: 리소스 타입
+            - 'company_account': 본사 계정 과목
+            - 'project_account': 프로젝트 계정 과목
+            - 'company_bank_transaction': 본사 은행 거래
+            - 'project_bank_transaction': 프로젝트 은행 거래
+            - 'company_accounting_entry': 본사 회계 분개
+            - 'project_accounting_entry': 프로젝트 회계 분개
 
     Returns:
         dict: 가져오기 결과
@@ -50,12 +64,19 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
             tmp_file_path = tmp_file.name
 
         # 리소스 클래스 선택
-        if resource_type == 'project_account':
-            resource_class = ProjectAccountResource
-            model_name = 'ProjectAccount'
-        else:
-            resource_class = CompanyAccountResource
-            model_name = 'CompanyAccount'
+        resource_mapping = {
+            'company_account': (CompanyAccountResource, 'CompanyAccount'),
+            'project_account': (ProjectAccountResource, 'ProjectAccount'),
+            'company_bank_transaction': (CompanyBankTransactionResource, 'CompanyBankTransaction'),
+            'project_bank_transaction': (ProjectBankTransactionResource, 'ProjectBankTransaction'),
+            'company_accounting_entry': (CompanyAccountingEntryResource, 'CompanyAccountingEntry'),
+            'project_accounting_entry': (ProjectAccountingEntryResource, 'ProjectAccountingEntry'),
+        }
+
+        if resource_type not in resource_mapping:
+            raise ValueError(f"Unknown resource_type: {resource_type}")
+
+        resource_class, model_name = resource_mapping[resource_type]
 
         # 데이터 가져오기 실행
         resource = resource_class()
@@ -126,12 +147,18 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
 @shared_task(bind=True)
 def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource_type: str = 'company_account') -> dict:
     """
-    CompanyAccount 또는 ProjectAccount 데이터를 비동기로 내보내기
+    Ledger 관련 데이터를 비동기로 내보내기
 
     Args:
         queryset_ids: 내보낼 객체의 ID 목록
         user_id: 사용자 ID
-        resource_type: 'company_account' 또는 'project_account'
+        resource_type: 리소스 타입
+            - 'company_account': 본사 계정 과목
+            - 'project_account': 프로젝트 계정 과목
+            - 'company_bank_transaction': 본사 은행 거래
+            - 'project_bank_transaction': 프로젝트 은행 거래
+            - 'company_accounting_entry': 본사 회계 분개
+            - 'project_accounting_entry': 프로젝트 회계 분개
 
     Returns:
         dict: 내보내기 결과
@@ -139,15 +166,20 @@ def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource
     try:
         user = User.objects.get(id=user_id)
 
-        # 리소스 클래스 선택
-        if resource_type == 'project_account':
-            resource_class = ProjectAccountResource
-            model_class = ProjectAccount
-            model_name = 'ProjectAccount'
-        else:
-            resource_class = CompanyAccountResource
-            model_class = CompanyAccount
-            model_name = 'CompanyAccount'
+        # 리소스 클래스 및 모델 선택
+        resource_model_mapping = {
+            'company_account': (CompanyAccountResource, CompanyAccount, 'CompanyAccount'),
+            'project_account': (ProjectAccountResource, ProjectAccount, 'ProjectAccount'),
+            'company_bank_transaction': (CompanyBankTransactionResource, CompanyBankTransaction, 'CompanyBankTransaction'),
+            'project_bank_transaction': (ProjectBankTransactionResource, ProjectBankTransaction, 'ProjectBankTransaction'),
+            'company_accounting_entry': (CompanyAccountingEntryResource, CompanyAccountingEntry, 'CompanyAccountingEntry'),
+            'project_accounting_entry': (ProjectAccountingEntryResource, ProjectAccountingEntry, 'ProjectAccountingEntry'),
+        }
+
+        if resource_type not in resource_model_mapping:
+            raise ValueError(f"Unknown resource_type: {resource_type}")
+
+        resource_class, model_class, model_name = resource_model_mapping[resource_type]
 
         # 쿼리셋 생성
         queryset = model_class.objects.filter(id__in=queryset_ids)
