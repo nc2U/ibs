@@ -321,9 +321,10 @@ onUnmounted(() => {
         left: `${menuPosition.left}px`,
         width: `${menuPosition.width}px`,
       }"
+      class="pt-0"
     >
       <!-- 검색 입력 -->
-      <div class="search-container pt-0 px-2 border-bottom" @click.stop @mousedown.stop>
+      <div class="search-container p-2 border-bottom" @click.stop @mousedown.stop>
         <input
           ref="searchInputRef"
           :value="searchQuery"
