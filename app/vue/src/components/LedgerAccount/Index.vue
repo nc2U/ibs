@@ -28,7 +28,7 @@ const emit = defineEmits<Emits>()
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const dropdownRef = ref<any>(null)
 const menuRef = ref<HTMLElement | null>(null)
-const toggleRef = ref<HTMLElement | null>(null)
+const toggleRef = ref<any>(null)
 
 // 드롭다운 상태
 const dropdownVisible = ref(false)
@@ -175,7 +175,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
         // 활성 요소가 메뉴 상단(검색창 아래) 밖에 있으면
         // 검색창 높이를 고려하여 완전히 보이도록 스크롤
         if (activeRect.top < menuRect.top + searchHeight) {
-          menuEl.scrollTop -= (menuRect.top + searchHeight) - activeRect.top
+          menuEl.scrollTop -= menuRect.top + searchHeight - activeRect.top
         }
         // 활성 요소가 메뉴 하단 밖에 있으면
         else if (activeRect.bottom > menuRect.bottom) {
@@ -220,6 +220,7 @@ const clearSearch = () => {
 }
 
 const onDropdownShow = () => {
+  dropdownVisible.value = true
   clearSearch()
 
   // nextTick과 setTimeout을 함께 사용하여 DOM 렌더링 및 포커스 타이밍 보장
@@ -244,17 +245,31 @@ const onDropdownShow = () => {
   })
 }
 
+const onDropdownHide = () => {
+  dropdownVisible.value = false
+}
+
 // 외부 클릭 감지
 const handleClickOutside = (event: MouseEvent) => {
   if (!dropdownVisible.value) return
 
-  const menuEl = (menuRef.value as any)?.$el
-  const dropdownEl = (dropdownRef.value as any)?.$el
   const target = event.target as Node
+  const menuEl = (menuRef.value as any)?.$el
+  const toggleEl = (toggleRef.value as any)?.$el
 
-  // 드롭다운 토글 버튼 또는 메뉴 내부 클릭이 아닌 경우에만 닫기
-  if (dropdownEl && !dropdownEl.contains(target) && menuEl && !menuEl.contains(target)) {
-    dropdownVisible.value = false
+  // If the click is on the toggle, let the component handle it.
+  if (toggleEl && toggleEl.contains(target)) {
+    return
+  }
+
+  // If the click is inside the menu, do nothing.
+  if (menuEl && menuEl.contains(target)) {
+    return
+  }
+
+  // Otherwise, the click is outside. Close the dropdown.
+  if (toggleEl) {
+    toggleEl.click()
   }
 }
 
@@ -275,9 +290,14 @@ onUnmounted(() => {
     variant="btn-group"
     :auto-close="false"
     @show="onDropdownShow"
+    @hide="onDropdownHide"
     style="width: 100%"
   >
-    <CDropdownToggle class="form-select text-start" :class="{ 'text-muted': !selectedLabel }">
+    <CDropdownToggle
+      ref="toggleRef"
+      class="form-select text-start"
+      :class="{ 'text-muted': !selectedLabel }"
+    >
       {{ selectedLabel || placeholder }}
     </CDropdownToggle>
 
