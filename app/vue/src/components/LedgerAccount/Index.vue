@@ -328,7 +328,7 @@ onUnmounted(() => {
       }"
     >
       <!-- 검색 입력 -->
-      <div class="p-2 border-bottom" @click.stop @mousedown.stop>
+      <div class="search-container p-2 border-bottom" @click.stop @mousedown.stop>
         <input
           ref="searchInputRef"
           :value="searchQuery"
@@ -370,6 +370,14 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
+/* 검색창 고정 */
+.search-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: white;
+}
+
 .category-only,
 .dropdown-item-disabled {
   pointer-events: none;
@@ -401,6 +409,10 @@ onUnmounted(() => {
 
 /* Dark theme support */
 :global(body.dark-theme) {
+  .search-container {
+    background-color: #2d3748;
+  }
+
   .bg-light {
     background-color: #4a5568 !important;
   }
