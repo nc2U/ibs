@@ -475,4 +475,21 @@ onBeforeRouteLeave((to, from, next) => {
   background-color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* 드롭다운이 테이블 외부로 렌더링되도록 설정 */
+:deep(table),
+:deep(tbody),
+:deep(tr),
+:deep(td),
+:deep(.table-responsive) {
+  overflow: visible !important;
+}
+
+/* 상위 컨테이너들도 overflow visible 설정 */
+:deep(.row),
+:deep(.col),
+:deep(.container),
+:deep(.container-fluid) {
+  overflow: visible !important;
+}
 </style>

@@ -95,6 +95,10 @@ const removeEntry = (index: number) => {
   overflow: visible !important;
 }
 
+:deep(.dropdown) {
+  overflow: visible !important;
+}
+
 :deep(.dropdown-menu) {
   position: absolute !important;
   z-index: 1050 !important;

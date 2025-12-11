@@ -346,8 +346,15 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+:deep(.dropdown),
+:deep(.btn-group) {
+  overflow: visible !important;
+}
+
 :deep(.dropdown-menu) {
   width: 100% !important;
+  position: absolute !important;
+  z-index: 1050 !important;
 }
 
 :deep(.dropdown-toggle) {
