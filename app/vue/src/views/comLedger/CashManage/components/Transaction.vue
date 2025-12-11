@@ -135,7 +135,6 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
               <v-icon
                 icon="mdi-pencil"
                 size="18"
-                color="grey"
                 @click="
                   router.push({
                     name: '본사 거래 내역 - 수정',
