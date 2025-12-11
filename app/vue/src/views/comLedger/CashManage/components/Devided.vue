@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject } from 'vue'
+import { type ComputedRef, inject } from 'vue'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 

@@ -292,7 +292,7 @@ onBeforeRouteLeave((to, from, next) => {
   </CRow>
 
   <hr class="mb-0" />
-  <CTable hover responsive class="mb-5">
+  <CTable hover class="mb-5">
     <colgroup>
       <col style="width: 8%" />
       <col style="width: 12%" />
@@ -480,16 +480,7 @@ onBeforeRouteLeave((to, from, next) => {
 :deep(table),
 :deep(tbody),
 :deep(tr),
-:deep(td),
-:deep(.table-responsive) {
-  overflow: visible !important;
-}
-
-/* 상위 컨테이너들도 overflow visible 설정 */
-:deep(.row),
-:deep(.col),
-:deep(.container),
-:deep(.container-fluid) {
+:deep(td) {
   overflow: visible !important;
 }
 </style>
