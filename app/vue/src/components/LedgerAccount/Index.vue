@@ -266,12 +266,7 @@ const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as Node
 
   // 드롭다운 토글 버튼 또는 메뉴 내부 클릭이 아닌 경우에만 닫기
-  if (
-    dropdownEl &&
-    !dropdownEl.contains(target) &&
-    menuEl &&
-    !menuEl.contains(target)
-  ) {
+  if (dropdownEl && !dropdownEl.contains(target) && menuEl && !menuEl.contains(target)) {
     dropdownVisible.value = false
   }
 }
@@ -328,7 +323,7 @@ onUnmounted(() => {
       }"
     >
       <!-- 검색 입력 -->
-      <div class="search-container p-2 border-bottom" @click.stop @mousedown.stop>
+      <div class="search-container pt-0 px-2 border-bottom" @click.stop @mousedown.stop>
         <input
           ref="searchInputRef"
           :value="searchQuery"

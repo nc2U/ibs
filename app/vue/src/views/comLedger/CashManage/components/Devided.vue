@@ -8,7 +8,7 @@ interface NewEntryForm {
   account?: number | null
   trader?: string
   amount?: number
-  affiliated?: number
+  affiliated?: number | null
   evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
 }
 
