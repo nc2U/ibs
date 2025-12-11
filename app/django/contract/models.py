@@ -7,6 +7,7 @@ from django.db import models
 
 from _utils.contract_price import get_contract_payment_plan
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_upload import get_contract_file_path, get_upload_path
 from payment.models import InstallmentPaymentOrder
 
 
@@ -423,10 +424,7 @@ class Contractor(models.Model):
 
 
 def get_contract_file_name(instance, filename):
-    slug = instance.contractor.contract.project.issue_project.slug
-    unit_type = instance.contractor.contract.unit_type.name
-    ord_group = f'ord_grp_{instance.contractor.contract.order_group.order_number}'
-    return os.path.join('contract', f'{slug}', unit_type, ord_group, filename)
+    return get_contract_file_path(instance, filename)
 
 
 class ContractFile(models.Model):
@@ -445,7 +443,13 @@ class ContractFile(models.Model):
 
     def save(self, *args, **kwargs):
         if self.file:
-            self.file_name = self.file.name.split('/')[-1]
+            # Preserve original filename before upload_to function changes it
+            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
+            if original_name:
+                self.file_name = os.path.basename(original_name)
+            else:
+                self.file_name = self.file.name.split('/')[-1]
+
             mime = magic.Magic(mime=True)
             file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
             self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
@@ -510,12 +514,7 @@ class ContractDocument(models.Model):
 
 def get_contract_document_file_name(instance, filename):
     """계약자 제출 서류 파일 업로드 경로"""
-    contractor = instance.contract_document.contractor
-    contract = contractor.contract
-    slug = contract.project.issue_project.slug
-    contractor_name = contractor.name
-    doc_sort = instance.contract_document.required_document.sort
-    return os.path.join('contract_documents', f'{slug}', contractor_name, doc_sort, filename)
+    return get_upload_path(instance, filename, 'contract_documents', 'files')
 
 
 class ContractDocumentFile(models.Model):

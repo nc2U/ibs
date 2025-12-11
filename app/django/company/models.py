@@ -28,9 +28,8 @@ class Company(models.Model):
 
 
 def get_image_filename(instance, filename):
-    company = instance.company.pk
-    hash_value = hashlib.md5().hexdigest()
-    return f"company/{company}_{hash_value}_{filename}"
+    from _utils.file_upload import get_company_image_path
+    return get_company_image_path(instance, filename)
 
 
 class Logo(models.Model):

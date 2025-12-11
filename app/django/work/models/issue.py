@@ -70,9 +70,8 @@ class IssueRelation(models.Model):
 
 
 def get_issue_file_path(instance, filename):
-    today = datetime.today()
-    date_path = today.strftime('%Y/%m/%d')
-    return os.path.join('work', f'{instance.issue.project.slug}/issue/{date_path}/', filename)
+    from _utils.file_upload import get_work_file_path
+    return get_work_file_path(instance, filename)
 
 
 class IssueFile(models.Model):

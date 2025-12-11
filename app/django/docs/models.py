@@ -1,5 +1,4 @@
 import os
-import uuid
 from datetime import datetime, timedelta
 
 import magic
@@ -8,6 +7,7 @@ from django.db import models
 from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_upload import get_docs_file_path, get_docs_image_path
 
 
 class DocType(models.Model):
@@ -378,18 +378,9 @@ class Link(models.Model):
         return self.link
 
 
+# 공통 유틸리티 사용 (기존 함수명 유지하여 호환성 보장)
 def get_post_file_path(instance, filename):
-    slug = instance.docs.issue_project.slug
-    date_path = timezone.now().strftime('%Y/%m')
-
-    # Extract file extension
-    name, ext = os.path.splitext(filename)
-
-    # Generate a unique filename using UUID to avoid any encoding issues
-    # The original filename will be preserved in the file_name field
-    safe_filename = f"{uuid.uuid4().hex}{ext}"
-
-    return os.path.join('docs', f'{slug}', date_path, safe_filename)
+    return get_docs_file_path(instance, filename)
 
 
 class File(models.Model):
@@ -429,17 +420,7 @@ related_file_cleanup(Document, related_name='files', file_field_name='file')  # 
 
 
 def get_post_img_path(instance, filename):
-    slug = instance.docs.issue_project.slug
-    date_path = timezone.now().strftime('%Y/%m')
-
-    # Extract file extension
-    name, ext = os.path.splitext(filename)
-
-    # Generate a unique filename using UUID to avoid any encoding issues
-    # The original filename will be preserved in the file_name field if available
-    safe_filename = f"{uuid.uuid4().hex}{ext}"
-
-    return os.path.join('docs', f'{slug}', 'images', date_path, safe_filename)
+    return get_docs_image_path(instance, filename)
 
 
 class Image(models.Model):

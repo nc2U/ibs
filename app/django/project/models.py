@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_upload import get_project_file_path
 
 
 class Project(models.Model):
@@ -124,8 +125,7 @@ class Site(models.Model):
 
 
 def get_info_file(instance, filename):
-    slug = instance.site.project.issue_project.slug
-    return os.path.join('sites', f'{slug}', 'reg_info', filename)
+    return get_project_file_path(instance, filename)
 
 
 class SiteInfoFile(models.Model):
@@ -144,7 +144,13 @@ class SiteInfoFile(models.Model):
 
     def save(self, *args, **kwargs):
         if self.file:
-            self.file_name = self.file.name.split('/')[-1]
+            # Preserve original filename before upload_to function changes it
+            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
+            if original_name:
+                self.file_name = os.path.basename(original_name)
+            else:
+                self.file_name = self.file.name.split('/')[-1]
+
             mime = magic.Magic(mime=True)
             file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
             self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
@@ -283,8 +289,7 @@ class SiteContract(models.Model):
 
 
 def get_cont_file(instance, filename):
-    slug = instance.site_contract.project.issue_project.slug
-    return os.path.join('sites', f'{slug}', 'contract', filename)
+    return get_project_file_path(instance, filename)
 
 
 class SiteContractFile(models.Model):
@@ -303,7 +308,13 @@ class SiteContractFile(models.Model):
 
     def save(self, *args, **kwargs):
         if self.file:
-            self.file_name = self.file.name.split('/')[-1]
+            # Preserve original filename before upload_to function changes it
+            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
+            if original_name:
+                self.file_name = os.path.basename(original_name)
+            else:
+                self.file_name = self.file.name.split('/')[-1]
+
             mime = magic.Magic(mime=True)
             file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
             self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분

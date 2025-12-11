@@ -7,6 +7,7 @@ from django.db import models
 from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_upload import get_board_file_path, get_board_image_path
 
 
 class Board(models.Model):
@@ -95,9 +96,7 @@ class PostLink(models.Model):
 
 
 def get_post_file_path(instance, filename):
-    slug = instance.post.issue_project.slug
-    date_path = timezone.now().strftime('%Y/%m')
-    return os.path.join('post', f'{slug}', date_path, filename)
+    return get_board_file_path(instance, filename)
 
 
 class PostFile(models.Model):
@@ -114,7 +113,13 @@ class PostFile(models.Model):
 
     def save(self, *args, **kwargs):
         if self.file and not self.file_name:
-            self.file_name = self.file.name.split('/')[-1]
+            # Preserve original filename before upload_to function changes it
+            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
+            if original_name:
+                self.file_name = os.path.basename(original_name)
+            else:
+                self.file_name = self.file.name.split('/')[-1]
+
             mime = magic.Magic(mime=True)
             file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
             self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
@@ -128,9 +133,7 @@ related_file_cleanup(Post, related_name='files', file_field_name='file')  # 연�
 
 
 def get_post_img_path(instance, filename):
-    slug = instance.post.issue_project.slug
-    date_path = timezone.now().strftime('%Y/%m')
-    return os.path.join('post', f'{slug}', 'images', date_path, filename)
+    return get_board_image_path(instance, filename)
 
 
 class PostImage(models.Model):
