@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime, timedelta
 
 import magic
@@ -380,7 +381,15 @@ class Link(models.Model):
 def get_post_file_path(instance, filename):
     slug = instance.docs.issue_project.slug
     date_path = timezone.now().strftime('%Y/%m')
-    return os.path.join('docs', f'{slug}', date_path, filename)
+
+    # Extract file extension
+    name, ext = os.path.splitext(filename)
+
+    # Generate a unique filename using UUID to avoid any encoding issues
+    # The original filename will be preserved in the file_name field
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
+
+    return os.path.join('docs', f'{slug}', date_path, safe_filename)
 
 
 class File(models.Model):
@@ -400,7 +409,13 @@ class File(models.Model):
 
     def save(self, *args, **kwargs):
         if self.file and not self.file_name:
-            self.file_name = self.file.name.split('/')[-1]
+            # Preserve original filename before upload_to function changes it
+            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
+            if original_name:
+                self.file_name = os.path.basename(original_name)
+            else:
+                self.file_name = self.file.name.split('/')[-1]
+
             mime = magic.Magic(mime=True)
             file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
             self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
@@ -416,7 +431,15 @@ related_file_cleanup(Document, related_name='files', file_field_name='file')  # 
 def get_post_img_path(instance, filename):
     slug = instance.docs.issue_project.slug
     date_path = timezone.now().strftime('%Y/%m')
-    return os.path.join('docs', f'{slug}', 'images', date_path, filename)
+
+    # Extract file extension
+    name, ext = os.path.splitext(filename)
+
+    # Generate a unique filename using UUID to avoid any encoding issues
+    # The original filename will be preserved in the file_name field if available
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
+
+    return os.path.join('docs', f'{slug}', 'images', date_path, safe_filename)
 
 
 class Image(models.Model):
