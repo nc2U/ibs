@@ -35,9 +35,6 @@ const dropdownVisible = ref(false)
 const searchQuery = ref('')
 const selectedIndex = ref(-1)
 
-// 드롭다운 메뉴 위치
-const menuPosition = ref({ top: 0, left: 0, width: 0 })
-
 // 한글 IME 입력 중에도 즉시 반영
 const handleInput = (event: Event) => {
   searchQuery.value = (event.target as HTMLInputElement).value
@@ -167,8 +164,23 @@ const handleKeyDown = (event: KeyboardEvent) => {
       const menuEl = (menuRef.value as any)?.$el
       if (!menuEl) return
       const activeEl = menuEl.querySelector('.keyboard-active') as HTMLElement
+      const searchContainer = menuEl.querySelector('.search-container') as HTMLElement
+
       if (activeEl) {
-        activeEl.scrollIntoView({ block: 'nearest' })
+        // 메뉴 컨테이너 내부에서만 스크롤, 페이지 전체 스크롤 방지
+        const menuRect = menuEl.getBoundingClientRect()
+        const activeRect = activeEl.getBoundingClientRect()
+        const searchHeight = searchContainer ? searchContainer.offsetHeight : 0
+
+        // 활성 요소가 메뉴 상단(검색창 아래) 밖에 있으면
+        // 검색창 높이를 고려하여 완전히 보이도록 스크롤
+        if (activeRect.top < menuRect.top + searchHeight) {
+          menuEl.scrollTop -= (menuRect.top + searchHeight) - activeRect.top
+        }
+        // 활성 요소가 메뉴 하단 밖에 있으면
+        else if (activeRect.bottom > menuRect.bottom) {
+          menuEl.scrollTop += activeRect.bottom - menuRect.bottom
+        }
       }
     })
   }
@@ -207,25 +219,8 @@ const clearSearch = () => {
   selectedIndex.value = -1
 }
 
-// 드롭다운 메뉴 위치 계산
-const updateMenuPosition = () => {
-  const dropdownEl = (dropdownRef.value as any)?.$el
-  if (!dropdownEl) return
-
-  const toggleButton = dropdownEl.querySelector('.dropdown-toggle') as HTMLElement
-  if (!toggleButton) return
-
-  const rect = toggleButton.getBoundingClientRect()
-  menuPosition.value = {
-    top: rect.bottom + window.scrollY,
-    left: rect.left + window.scrollX,
-    width: rect.width,
-  }
-}
-
 const onDropdownShow = () => {
   clearSearch()
-  updateMenuPosition()
 
   // nextTick과 setTimeout을 함께 사용하여 DOM 렌더링 및 포커스 타이밍 보장
   nextTick(() => {
@@ -235,26 +230,18 @@ const onDropdownShow = () => {
         ;(searchInputRef.value as any).focus()
       }
 
-      // 2. 선택된 항목으로 스크롤
-      const menuEl = (menuRef.value as any)?.$el // 컴포넌트의 실제 DOM 엘리먼트 접근
+      // 2. 선택된 항목으로 스크롤 (메뉴 내부에서만)
+      const menuEl = (menuRef.value as any)?.$el
       if (menuEl) {
         const selectedEl = menuEl.querySelector('.selected-item') as HTMLElement
         if (selectedEl) {
-          selectedEl.scrollIntoView({ block: 'nearest' })
+          // 메뉴 컨테이너 내부에서만 스크롤
+          menuEl.scrollTop =
+            selectedEl.offsetTop - menuEl.clientHeight / 2 + selectedEl.clientHeight / 2
         }
       }
     }, 100)
   })
-}
-
-// 드롭다운 토글
-const toggleDropdown = () => {
-  dropdownVisible.value = !dropdownVisible.value
-  if (dropdownVisible.value) {
-    nextTick(() => {
-      clearSearch()
-    })
-  }
 }
 
 // 외부 클릭 감지
@@ -271,31 +258,13 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-// 스크롤 시 메뉴 위치 업데이트
-const handleScroll = () => {
-  if (dropdownVisible.value) {
-    updateMenuPosition()
-  }
-}
-
-// 리사이즈 시 메뉴 위치 업데이트
-const handleResize = () => {
-  if (dropdownVisible.value) {
-    updateMenuPosition()
-  }
-}
-
 // 라이프사이클 훅
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-  window.addEventListener('scroll', handleScroll, true)
-  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-  window.removeEventListener('scroll', handleScroll, true)
-  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -312,17 +281,7 @@ onUnmounted(() => {
       {{ selectedLabel || placeholder }}
     </CDropdownToggle>
 
-    <CDropdownMenu
-      ref="menuRef"
-      :style="{
-        maxHeight: '300px',
-        overflowY: 'auto',
-        top: `${menuPosition.top}px`,
-        left: `${menuPosition.left}px`,
-        width: `${menuPosition.width}px`,
-      }"
-      class="pt-0"
-    >
+    <CDropdownMenu ref="menuRef" class="pt-0" style="max-height: 300px; overflow-y: auto">
       <!-- 검색 입력 -->
       <div class="search-container p-2 border-bottom" @click.stop @mousedown.stop>
         <input
@@ -385,6 +344,10 @@ onUnmounted(() => {
 .selected-item > span {
   color: #20c997 !important;
   font-weight: 600;
+}
+
+:deep(.dropdown-menu) {
+  width: 100% !important;
 }
 
 :deep(.dropdown-toggle) {

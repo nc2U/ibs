@@ -96,7 +96,7 @@ const removeEntry = (index: number) => {
 }
 
 :deep(.dropdown-menu) {
-  position: fixed !important;
+  position: absolute !important;
   z-index: 1050 !important;
 }
 </style>
