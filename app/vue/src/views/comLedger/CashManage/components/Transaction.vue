@@ -1,14 +1,13 @@
 <script lang="ts" setup>
-import { ref, computed, type PropType } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import { useComCash } from '@/store/pinia/comCash'
 import { write_company_cash } from '@/utils/pageAuth'
+import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import type { Project } from '@/store/types/project'
-import type { CompanyBank, BankTransaction } from '@/store/types/comLedger'
-import { numFormat, cutString, diffDate } from '@/utils/baseMixins'
-import { CTableRow } from '@coreui/vue'
+import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
 
 const props = defineProps({
   projects: { type: Array as PropType<Project[]>, default: () => [] },
@@ -28,15 +27,8 @@ const emit = defineEmits([
 
 const refDelModal = ref()
 const refAlertModal = ref()
-const updateFormModal = ref()
-const comCashStore = useComCash()
 
 const router = useRouter()
-
-const cls = ref(['text-primary', 'text-danger', 'text-info'])
-const d1Class = computed(
-  () => cls.value[((props.transaction?.accounting_entries[0].account_d1 as number) % 3) - 1],
-)
 
 const store = useStore()
 const dark = computed(() => store.theme === 'dark')
@@ -95,10 +87,9 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
     >
       <CTableDataCell>
         <span class="text-primary">{{ transaction.deal_date }}</span>
-        <!--        </div>-->
       </CTableDataCell>
       <CTableDataCell>
-        {{ transaction.note }}
+        {{ cutString(transaction.note, 20) }}
       </CTableDataCell>
       <CTableDataCell>
         <span v-if="transaction.bank_account_name">
@@ -116,31 +107,30 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
       >
         {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(transaction.amount || 0) }}
       </CTableDataCell>
+
       <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
         <CTable small class="m-0 p-0">
           <colgroup>
-            <col style="width: 9%" />
             <col style="width: 20%" />
-            <col style="width: 24%" />
-            <col style="width: 18%" />
-            <col style="width: 18%" />
+            <col style="width: 32%" />
+            <col style="width: 16%" />
+            <col style="width: 26%" />
             <col v-if="write_company_cash" style="width: 6%" />
           </colgroup>
           <CTableRow v-for="entry in transaction.accounting_entries" :key="entry.pk">
-            <CTableDataCell :class="d1Class" class="pl-2">
-              {{ entry.account_d1_name }}
-            </CTableDataCell>
             <CTableDataCell>
-              {{ entry.account_d2_name }}
+              {{ entry.account_name }}
             </CTableDataCell>
-            <CTableDataCell> {{ entry.trader }} </CTableDataCell>
+            <CTableDataCell> {{ cutString(entry.trader, 20) }} </CTableDataCell>
             <CTableDataCell
               class="text-right"
               :class="transaction.sort === 1 ? 'text-success strong' : ''"
             >
               {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(entry.amount) }}
             </CTableDataCell>
-            <CTableDataCell class="pl-3"> {{ entry.evidence_type_display }} </CTableDataCell>
+            <CTableDataCell class="pl-3">
+              {{ cutString(entry.evidence_type_display, 10) }}
+            </CTableDataCell>
             <CTableDataCell v-if="write_company_cash" class="text-right pr-2">
               <v-icon
                 icon="mdi-pencil"

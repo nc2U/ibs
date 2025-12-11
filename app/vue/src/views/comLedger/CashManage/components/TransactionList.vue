@@ -9,6 +9,7 @@ import Pagination from '@/components/Pagination'
 import BankAcc from './BankAcc.vue'
 import AccDepth from './AccDepth.vue'
 import Transaction from './Transaction.vue'
+import { CTable } from '@coreui/vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -56,17 +57,17 @@ const accCallModal = () => {
   <hr class="mb-0" />
   <CTable hover responsive align="middle">
     <colgroup>
-      <col style="width: 10%" />
-      <col style="width: 10%" />
-      <col style="width: 6%" />
+      <col style="width: 8%" />
       <col style="width: 12%" />
       <col style="width: 8%" />
-      <col style="width: 5%" />
-      <col style="width: 11%" />
-      <col style="width: 13%" />
-      <col style="width: 11%" />
+      <col style="width: 12%" />
+      <col style="width: 10%" />
+
+      <col style="width: 10%" />
+      <col style="width: 16%" />
       <col style="width: 8%" />
-      <col v-if="write_company_cash" style="width: 5%" />
+      <col style="width: 13%" />
+      <col v-if="write_company_cash" style="width: 3%" />
     </colgroup>
 
     <CTableHead>
@@ -82,18 +83,15 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">메모</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           거래계좌
-          <a href="javascript:void(0)">
+          <a href="javascript:void(0)" class="ml-1">
             <CIcon name="cilCog" @click="accCallModal" />
           </a>
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
-        <CTableHeaderCell class="text-left pl-0" scope="col">
-          <span class="text-grey mr-2">|</span> 계정
-        </CTableHeaderCell>
         <CTableHeaderCell scope="col">
-          세부계정
-          <a href="javascript:void(0)">
+          <span class="text-grey mr-2">|</span> 계정
+          <a href="javascript:void(0)" class="ml-1">
             <CIcon name="cilCog" @click="refAccDepth.callModal()" />
           </a>
         </CTableHeaderCell>
