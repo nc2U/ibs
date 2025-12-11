@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeMount, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, provide, ref } from 'vue'
 import {
   onBeforeRouteLeave,
   type RouteLocationNormalizedLoaded as Loaded,
@@ -7,7 +7,6 @@ import {
   useRouter,
 } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/comLedger/_menu/headermixin'
-import { useIbs } from '@/store/pinia/ibs.ts'
 import { useCompany } from '@/store/pinia/company'
 import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
@@ -73,6 +72,14 @@ const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
 const ledgerStore = useComLedger()
+const comAccounts = computed(() => ledgerStore.comAccounts)
+const allComBankList = computed(() => ledgerStore.allComBankList)
+const bankTransactionCount = computed(() => ledgerStore.bankTransactionCount)
+
+provide('comAccounts', comAccounts)
+provide('allComBankList', allComBankList)
+provide('bankTransactionCount', bankTransactionCount)
+
 const fetchBankCodeList = () => ledgerStore.fetchBankCodeList()
 const fetchCompanyAccounts = () => ledgerStore.fetchCompanyAccounts()
 const fetchComBankAccList = (pk: number) => ledgerStore.fetchComBankAccList(pk)

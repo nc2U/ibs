@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive, ref } from 'vue'
+import { computed, inject, onBeforeMount, reactive, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import Devided from './Devided.vue'
 import BankAcc from './BankAcc.vue'
 import AccDepth from './AccDepth.vue'
@@ -27,15 +28,16 @@ const isCreateMode = computed(() => !transId.value)
 
 const ledgerStore = useComLedger()
 const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
+const allComBankList = inject('allComBankList')
 
 // 입력 폼 데이터
 interface NewEntryForm {
   pk?: number
-  account_d1?: number | null
-  account_d3?: number | null
+  account?: number | null
   trader?: string
   amount?: number
-  evidence_type?: string | number | null
+  affiliated?: null
+  evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
 }
 
 // 수정 가능한 폼 데이터 (기존 데이터 + 새로운 데이터)
@@ -44,11 +46,11 @@ const editableEntries = ref<NewEntryForm[]>([])
 // 은행 거래 폼 데이터 (생성 모드용)
 interface BankTransactionForm {
   deal_date: string
-  bank_account: number | null
-  amount: number | null
-  sort: 1 | 2
-  content: string
   note: string
+  bank_account: number | null
+  content: string
+  sort: 1 | 2
+  amount: number | null
 }
 
 const bankForm = reactive<BankTransactionForm>({
@@ -63,11 +65,11 @@ const bankForm = reactive<BankTransactionForm>({
 const initializeBankForm = () => {
   if (!transaction.value) return
   bankForm.deal_date = transaction.value.deal_date
-  bankForm.bank_account = transaction.value.bank_account
-  bankForm.amount = transaction.value.amount
-  bankForm.sort = transaction.value.sort
-  bankForm.content = transaction.value.content
   bankForm.note = transaction.value.note
+  bankForm.bank_account = transaction.value.bank_account
+  bankForm.content = transaction.value.content
+  bankForm.sort = transaction.value.sort
+  bankForm.amount = transaction.value.amount
 }
 
 // 기존 데이터를 편집 가능한 폼 데이터로 변환
@@ -76,10 +78,10 @@ const initializeEditableEntries = () => {
 
   editableEntries.value = transaction.value.accounting_entries.map(entry => ({
     pk: entry.pk,
-    account_d1: entry.account_d1,
-    account_d3: entry.account_d3,
+    account: entry.account,
     trader: entry.trader,
     amount: entry.amount,
+    affiliated: entry.affiliated,
     evidence_type: entry.evidence_type,
   }))
 }
@@ -292,24 +294,23 @@ onBeforeRouteLeave((to, from, next) => {
   <hr class="mb-0" />
   <CTable hover responsive class="mb-5">
     <colgroup>
-      <col style="width: 9%" />
-      <col style="width: 10%" />
       <col style="width: 8%" />
-      <col style="width: 11%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
-      <col style="width: 7%" />
-      <col style="width: 7%" />
       <col style="width: 12%" />
       <col style="width: 8%" />
+      <col style="width: 12%" />
+      <col style="width: 10%" />
+
+      <col style="width: 10%" />
+      <col style="width: 16%" />
       <col style="width: 8%" />
-      <col v-if="write_company_cash" style="width: 5%" />
+      <col style="width: 13%" />
+      <col v-if="write_company_cash" style="width: 3%" />
     </colgroup>
 
     <CTableHead class="sticky-table-head">
       <CTableRow :color="TableSecondary" class="sticky-header-row-1">
         <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 7 : 6">
+        <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 5 : 4">
           <span class="text-grey mr-2">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
@@ -325,12 +326,8 @@ onBeforeRouteLeave((to, from, next) => {
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
-        <CTableHeaderCell class="text-left pl-0" scope="col">
-          <span class="text-grey mr-2">|</span> 계정[대분류]
-        </CTableHeaderCell>
-        <CTableHeaderCell class="text-left pl-0" scope="col"> 계정[중분류] </CTableHeaderCell>
         <CTableHeaderCell scope="col">
-          계정[소분류]
+          계정
           <a href="javascript:void(0)">
             <CIcon name="cilCog" @click="refAccDepth.callModal()" />
           </a>
@@ -346,13 +343,7 @@ onBeforeRouteLeave((to, from, next) => {
       <CTableRow class="sticky-bank-row">
         <!-- 거래일자 -->
         <CTableDataCell>
-          <CFormInput
-            v-if="isCreateMode"
-            v-model="bankForm.deal_date"
-            type="date"
-            size="sm"
-            required
-          />
+          <DatePicker v-if="isCreateMode" v-model="bankForm.deal_date" required />
           <span v-else>{{ transaction?.deal_date ?? '' }}</span>
         </CTableDataCell>
 

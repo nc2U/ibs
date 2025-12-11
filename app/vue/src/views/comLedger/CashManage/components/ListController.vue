@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick, type PropType } from 'vue'
+import { computed, inject, nextTick, type PropType, ref, watch } from 'vue'
 import type { Project } from '@/store/types/project'
-import { useComLedger, type DataFilter } from '@/store/pinia/comLedger.ts'
+import { type DataFilter } from '@/store/pinia/comLedger.ts'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -33,10 +33,9 @@ const formsCheck = computed(() => {
   return a && b && c && d && e && f
 })
 
-const ledgerStore = useComLedger()
-const comAccounts = computed(() => ledgerStore.comAccounts)
-const allComBankList = computed(() => ledgerStore.allComBankList)
-const bankTransactionCount = computed(() => ledgerStore.bankTransactionCount)
+const comAccounts = inject<any[]>('comAccounts')
+const allComBankList = inject<any[]>('allComBankList')
+const bankTransactionCount = inject<any>('bankTransactionCount')
 
 const accountFilterType = computed(() => {
   if (form.value.sort === 1) return 'deposit' // 입금
@@ -114,7 +113,7 @@ const resetForm = () => {
               <CCol md="6" lg="5" class="mb-3">
                 <LedgerAccount
                   v-model="form.account"
-                  :options="comAccounts"
+                  :options="comAccounts ?? []"
                   :filter-type="accountFilterType"
                   @update:modelValue="listFiltering(1)"
                 />
@@ -166,7 +165,7 @@ const resetForm = () => {
 
     <CRow>
       <CCol color="warning" class="p-2 pl-3">
-        <strong> 거래 건수 조회 결과 : {{ numFormat(bankTransactionCount, 0, 0) }} 건 </strong>
+        <strong> 거래 건수 조회 결과 : {{ numFormat(bankTransactionCount ?? 0, 0, 0) }} 건 </strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-right mb-0">
         <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>

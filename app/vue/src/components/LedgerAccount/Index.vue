@@ -28,11 +28,15 @@ const emit = defineEmits<Emits>()
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const dropdownRef = ref<any>(null)
 const menuRef = ref<HTMLElement | null>(null)
+const toggleRef = ref<HTMLElement | null>(null)
 
 // 드롭다운 상태
 const dropdownVisible = ref(false)
 const searchQuery = ref('')
 const selectedIndex = ref(-1)
+
+// 드롭다운 메뉴 위치
+const menuPosition = ref({ top: 0, left: 0, width: 0 })
 
 // 한글 IME 입력 중에도 즉시 반영
 const handleInput = (event: Event) => {
@@ -203,8 +207,26 @@ const clearSearch = () => {
   selectedIndex.value = -1
 }
 
+// 드롭다운 메뉴 위치 계산
+const updateMenuPosition = () => {
+  const dropdownEl = (dropdownRef.value as any)?.$el
+  if (!dropdownEl) return
+
+  const toggleButton = dropdownEl.querySelector('.dropdown-toggle') as HTMLElement
+  if (!toggleButton) return
+
+  const rect = toggleButton.getBoundingClientRect()
+  menuPosition.value = {
+    top: rect.bottom + window.scrollY,
+    left: rect.left + window.scrollX,
+    width: rect.width,
+  }
+}
+
 const onDropdownShow = () => {
   clearSearch()
+  updateMenuPosition()
+
   // nextTick과 setTimeout을 함께 사용하여 DOM 렌더링 및 포커스 타이밍 보장
   nextTick(() => {
     setTimeout(() => {
@@ -237,22 +259,48 @@ const toggleDropdown = () => {
 
 // 외부 클릭 감지
 const handleClickOutside = (event: MouseEvent) => {
+  if (!dropdownVisible.value) return
+
+  const menuEl = (menuRef.value as any)?.$el
+  const dropdownEl = (dropdownRef.value as any)?.$el
+  const target = event.target as Node
+
+  // 드롭다운 토글 버튼 또는 메뉴 내부 클릭이 아닌 경우에만 닫기
   if (
-    dropdownVisible.value &&
-    dropdownRef.value &&
-    !dropdownRef.value.contains(event.target as Node)
+    dropdownEl &&
+    !dropdownEl.contains(target) &&
+    menuEl &&
+    !menuEl.contains(target)
   ) {
     dropdownVisible.value = false
+  }
+}
+
+// 스크롤 시 메뉴 위치 업데이트
+const handleScroll = () => {
+  if (dropdownVisible.value) {
+    updateMenuPosition()
+  }
+}
+
+// 리사이즈 시 메뉴 위치 업데이트
+const handleResize = () => {
+  if (dropdownVisible.value) {
+    updateMenuPosition()
   }
 }
 
 // 라이프사이클 훅
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('scroll', handleScroll, true)
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('scroll', handleScroll, true)
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -269,7 +317,16 @@ onUnmounted(() => {
       {{ selectedLabel || placeholder }}
     </CDropdownToggle>
 
-    <CDropdownMenu ref="menuRef" class="w-100" style="max-height: 300px; overflow-y: auto">
+    <CDropdownMenu
+      ref="menuRef"
+      :style="{
+        maxHeight: '300px',
+        overflowY: 'auto',
+        top: `${menuPosition.top}px`,
+        left: `${menuPosition.left}px`,
+        width: `${menuPosition.width}px`,
+      }"
+    >
       <!-- 검색 입력 -->
       <div class="p-2 border-bottom" @click.stop @mousedown.stop>
         <input

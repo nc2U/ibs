@@ -1,22 +1,15 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
-import { useIbs } from '@/store/pinia/ibs.ts'
+import { computed, type ComputedRef, inject } from 'vue'
 import { write_company_cash } from '@/utils/pageAuth.ts'
-import {
-  AccountSelector,
-  AccountD1Select,
-  AccountD2Select,
-  AccountD3Select,
-} from '@/components/ComAccounts'
+import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
 interface NewEntryForm {
   pk?: number
-  account_d1?: number | null
-  account_d2?: number | null
-  account_d3?: number | null
+  account?: number | null
   trader?: string
   amount?: number
-  evidence_type?: string | number | null
+  affiliated?: number
+  evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
 }
 
 interface Props {
@@ -30,36 +23,21 @@ interface Emits {
 defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const ibsStore = useIbs()
-const formAccD1List = computed(() => ibsStore.formAccD1List)
-const formAccD2List = computed(() => ibsStore.formAccD2List)
-const formAccD3List = computed(() => ibsStore.formAccD3List)
-const listAccD3List = computed(() => ibsStore.listAccD3List)
-
-// AccountSelector용 wrapper 함수 (sort는 기본값 1 사용)
-const fetchD1List = async (sort: number) => {
-  await ibsStore.fetchFormAccD1List(sort)
+interface Account {
+  value: number
+  label: string
+  parent: number | null
+  is_cate_only: boolean
+  depth?: number
+  direction?: string
 }
 
-const fetchD2List = async (d1: number) => {
-  await ibsStore.fetchFormAccD2List(1, d1)
-}
-
-const fetchD3List = async (d2: number) => {
-  await ibsStore.fetchFormAccD3List(1, null, d2)
-}
-
-// 검색 모드용: 전체 D3 목록 로드
-const getAllD3List = async () => {
-  await ibsStore.fetchAllAccD3List()
-}
-
-const getD1List = () => formAccD1List.value
-const getD2List = () => formAccD2List.value
-const getD3List = () => {
-  // 검색 모드에서는 전체 목록, 계층 모드에서는 필터링된 목록
-  return listAccD3List.value.length > 0 ? listAccD3List.value : formAccD3List.value
-}
+const comAccounts = inject<ComputedRef<Account[]>>('comAccounts')
+// const accountFilterType = computed(() => {
+//   if (form.value.sort === 1) return 'deposit' // 입금
+//   if (form.value.sort === 2) return 'withdraw' // 출금
+//   return null // 전체
+// })
 
 const removeEntry = (index: number) => {
   emit('removeEntry', index)
@@ -68,46 +46,19 @@ const removeEntry = (index: number) => {
 
 <template>
   <CTable class="m-0">
-    <col style="width: 13%" />
-    <col style="width: 14%" />
-    <col style="width: 14%" />
-    <col style="width: 23%" />
-    <col style="width: 15%" />
-    <col style="width: 15%" />
-    <col v-if="write_company_cash" style="width: 6%" />
+    <colgroup>
+      <col style="width: 20%" />
+      <col style="width: 32%" />
+      <col style="width: 16%" />
+      <col style="width: 26%" />
+      <col v-if="write_company_cash" style="width: 6%" />
+    </colgroup>
 
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
-      <CTableDataCell class="px-1" colspan="3">
-        <AccountSelector
-          :sort="1"
-          :account_d1="row.account_d1"
-          :account_d2="row.account_d2"
-          :account_d3="row.account_d3"
-          :fetchD1List="fetchD1List"
-          :fetchD2List="fetchD2List"
-          :fetchD3List="fetchD3List"
-          :getD1List="getD1List"
-          :getD2List="getD2List"
-          :getD3List="getD3List"
-          :getAllD3List="getAllD3List"
-          :autoInitialize="false"
-          defaultMode="search"
-          @update:accountD1="val => (row.account_d1 = val)"
-          @update:accountD2="val => (row.account_d2 = val)"
-          @update:accountD3="val => (row.account_d3 = val)"
-        >
-          <!-- 계층 모드일 때 표시될 셀렉트들 -->
-          <CTableDataCell class="px-1">
-            <AccountD1Select size="sm" placeholder="---------" />
-          </CTableDataCell>
-          <CTableDataCell class="px-1">
-            <AccountD2Select size="sm" placeholder="---------" />
-          </CTableDataCell>
-          <CTableDataCell class="px-1">
-            <AccountD3Select size="sm" placeholder="---------" />
-          </CTableDataCell>
-        </AccountSelector>
+      <CTableDataCell class="px-1">
+        <LedgerAccount v-model="row.account" :options="comAccounts ?? []" />
+        <!--          :filter-type="accountFilterType"-->
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />
@@ -134,5 +85,18 @@ const removeEntry = (index: number) => {
 }
 :deep(input) {
   margin: 2px !important;
+}
+
+/* 드롭다운이 td 외부에도 렌더링되도록 설정 */
+:deep(table),
+:deep(tbody),
+:deep(tr),
+:deep(td) {
+  overflow: visible !important;
+}
+
+:deep(.dropdown-menu) {
+  position: fixed !important;
+  z-index: 1050 !important;
 }
 </style>
