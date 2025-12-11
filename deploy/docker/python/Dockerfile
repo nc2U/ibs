@@ -26,14 +26,4 @@ EXPOSE 8000
 
 # ENTRYPOINT + CMD
 ENTRYPOINT ["uwsgi"]
-CMD ["--socket", ":8000",\
-     "--module", "_config.wsgi",\
-     "--py-autoreload", "1",\
-     "--logto", "/tmp/mylog.log",\
-     "--post-buffering", "8388608",\
-     "--buffer-size", "65535",\
-     "--harakiri", "900",\
-     "--http-timeout", "900",\
-     "--socket-timeout", "900",\
-     "--max-requests", "5000"
-]
+CMD ["--socket", ":8000", "--module", "_config.wsgi", "--py-autoreload", "1", "--logto", "/tmp/mylog.log", "--processes", "4", "--threads", "2", "--max-requests", "1000", "--harakiri", "60", "--buffer-size", "32768", "--vacuum", "--die-on-term"]
