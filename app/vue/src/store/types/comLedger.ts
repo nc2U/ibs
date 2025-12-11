@@ -58,11 +58,11 @@ export interface BankTransaction {
   deal_date: string
   amount: number
   sort: 1 | 2
-  sort_name: string
+  sort_name: '입금' | '출금'
   content: string
   note: string
-  creator: number
-  creator_name: string
+  creator: number | null
+  creator_name: string | null
   created_at: string
   updated_at: string
   is_balanced: boolean
@@ -70,22 +70,22 @@ export interface BankTransaction {
 }
 
 export interface AccountingEntry {
-  pk?: number
+  pk: number
   transaction_id: string
   company: number
-  sort: number
-  sort_name: string
-  account_d1: number | null
-  account_d1_name: string
-  account_d2: number | null
-  account_d2_name: string
-  account_d3: number | null
-  account_d3_name: string
+  sort: 1 | 2
+  sort_name: '입금' | '출금'
+  account: number
+  account_name: string
+  account_code: string
+  account_full_path: string
+  affiliated: number | null
+  affiliated_display: string | null
   amount: number
   trader: string
-  evidence_type: null | '0' | '1' | '2' | '3' | '4' | '5' | '6'
+  evidence_type: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
   evidence_type_display:
-    | null
+    | ''
     | '증빙없음'
     | '세금계산서'
     | '계산서(면세)'
