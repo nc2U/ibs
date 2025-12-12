@@ -198,17 +198,17 @@ const buildCreatePayload = () => {
   const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
 
   return {
-    company: props.company,
+    company: props.company!,
     deal_date: bankForm.deal_date,
-    bank_account: bankForm.bank_account,
-    amount: bankForm.amount,
+    bank_account: bankForm.bank_account!,
+    amount: bankForm.amount!,
     sort: bankForm.sort,
     content: bankForm.content,
     note: bankForm.note,
     accData: {
       entries: validEntries,
     },
-  }
+  } as any // API 요청 타입과 BankTransaction 타입이 다르므로 any 처리
 }
 
 // 수정 거래 데이터 생성
@@ -223,10 +223,10 @@ const buildUpdatePayload = () => {
 
   return {
     pk: transaction.value.pk,
-    company: props.company,
+    company: props.company!,
     deal_date: bankForm.deal_date,
-    bank_account: bankForm.bank_account,
-    amount: bankForm.amount,
+    bank_account: bankForm.bank_account!,
+    amount: bankForm.amount!,
     sort: bankForm.sort,
     content: bankForm.content,
     note: bankForm.note,
@@ -234,7 +234,7 @@ const buildUpdatePayload = () => {
       entries: validEntries,
     },
     filters: {},
-  }
+  } as any // API 요청 타입과 BankTransaction 타입이 다르므로 any 처리
 }
 
 // 저장 처리
@@ -275,7 +275,7 @@ onBeforeMount(async () => {
   if (isCreateMode.value) {
     // 신규 모드: 기본 폼으로 초기화
     initializeCreateForm()
-  } else {
+  } else if (transId.value) {
     // 수정 모드: 기존 거래 데이터 로드 후 폼 초기화
     await ledgerStore.fetchBankTransaction(transId.value)
     initializeEditForm()
