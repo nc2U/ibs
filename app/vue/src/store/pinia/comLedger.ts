@@ -292,28 +292,8 @@ export const useComLedger = defineStore('comLedger', () => {
     const { filters, ...formData } = payload
     return await api
       .put(`/ledger/company-composite-transaction/${formData.pk}/`, formData)
-      .then(async () => {
-        // 자식 레코드를 수정한 경우
-        // if (res.data.separated) {
-        //   const parentPk = res.data.separated
-        //   // 1. 캐시된 자식 레코드 업데이트
-        //   updateCachedChild(parentPk, res.data)
-        //
-        //   // 2. 부모 레코드도 다시 fetch해서 is_balanced 등 갱신
-        //   try {
-        //     const parentRes = await api.get(`/company-transaction/${parentPk}/`)
-        //     updateParentInList(parentPk, parentRes.data)
-        //   } catch (err) {
-        //     console.error('부모 레코드 갱신 실패:', err)
-        //   }
-        // } else {
-        //   // 부모 레코드를 수정한 경우 - 목록에서 업데이트
-        //   updateParentInList(formData.pk || 0, res.data)
-        //   // 자식 캐시 무효화 (다음 열 때 다시 로드)
-        //   invalidateChildrenCache(formData.pk || undefined)
-        // }
-
-        return message()
+      .then(async res => {
+        return await fetchBankTransactionList({ company: res.data.company }).then(() => message())
       })
       .catch(err => errorHandle(err.response.data))
   }
