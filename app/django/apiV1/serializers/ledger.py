@@ -13,6 +13,46 @@ from payment.models import ContractPayment
 
 
 # ============================================
+# Bank Code Serializers
+# ============================================
+
+class LedgerBankCodeSerializer(serializers.ModelSerializer):
+    """은행 코드 시리얼라이저"""
+
+    class Meta:
+        model = BankCode
+        fields = ('pk', 'code', 'name')
+
+
+# ============================================
+# Bank Account Serializers
+# ============================================
+
+class LedgerCompanyBankAccountSerializer(serializers.ModelSerializer):
+    """본사 은행 계좌 시리얼라이저"""
+    bankcode_name = serializers.CharField(source='bankcode.name', read_only=True)
+    depart_name = serializers.CharField(source='depart.name', read_only=True)
+
+    class Meta:
+        model = CompanyBankAccount
+        fields = ('pk', 'company', 'depart', 'depart_name', 'bankcode', 'bankcode_name',
+                  'order', 'alias_name', 'number', 'holder', 'open_date', 'note',
+                  'is_hide', 'inactive')
+
+
+class LedgerProjectBankAccountSerializer(serializers.ModelSerializer):
+    """프로젝트 은행 계좌 시리얼라이저"""
+    bankcode_name = serializers.CharField(source='bankcode.name', read_only=True)
+    project_name = serializers.CharField(source='project.name', read_only=True)
+
+    class Meta:
+        model = ProjectBankAccount
+        fields = ('pk', 'project', 'project_name', 'bankcode', 'bankcode_name',
+                  'order', 'alias_name', 'number', 'holder', 'open_date', 'note',
+                  'is_hide', 'inactive', 'directpay', 'is_imprest')
+
+
+# ============================================
 # Account Serializers
 # ============================================
 
@@ -105,46 +145,6 @@ class AccountSearchResultSerializer(serializers.Serializer):
 
 
 # ============================================
-# Bank Code Serializers
-# ============================================
-
-class LedgerBankCodeSerializer(serializers.ModelSerializer):
-    """은행 코드 시리얼라이저"""
-
-    class Meta:
-        model = BankCode
-        fields = ('pk', 'code', 'name')
-
-
-# ============================================
-# Bank Account Serializers
-# ============================================
-
-class LedgerCompanyBankAccountSerializer(serializers.ModelSerializer):
-    """본사 은행 계좌 시리얼라이저"""
-    bankcode_name = serializers.CharField(source='bankcode.name', read_only=True)
-    depart_name = serializers.CharField(source='depart.name', read_only=True)
-
-    class Meta:
-        model = CompanyBankAccount
-        fields = ('pk', 'company', 'depart', 'depart_name', 'bankcode', 'bankcode_name',
-                  'order', 'alias_name', 'number', 'holder', 'open_date', 'note',
-                  'is_hide', 'inactive')
-
-
-class LedgerProjectBankAccountSerializer(serializers.ModelSerializer):
-    """프로젝트 은행 계좌 시리얼라이저"""
-    bankcode_name = serializers.CharField(source='bankcode.name', read_only=True)
-    project_name = serializers.CharField(source='project.name', read_only=True)
-
-    class Meta:
-        model = ProjectBankAccount
-        fields = ('pk', 'project', 'project_name', 'bankcode', 'bankcode_name',
-                  'order', 'alias_name', 'number', 'holder', 'open_date', 'note',
-                  'is_hide', 'inactive', 'directpay', 'is_imprest')
-
-
-# ============================================
 # Bank Transaction Serializers
 # ============================================
 
@@ -175,6 +175,17 @@ class CompanyBankTransactionSerializer(serializers.ModelSerializer):
         """연관된 회계 분개 목록"""
         entries = CompanyAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
         return CompanyAccountingEntrySerializer(entries, many=True).data
+
+
+class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
+    """본사 원장 정산 시리얼라이저"""
+    creator_name = serializers.CharField(source='creator.username', read_only=True)
+
+    class Meta:
+        model = CompanyLedgerCalculation
+        fields = ('pk', 'company', 'calculated', 'creator', 'creator_name',
+                  'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
 
 
 class ProjectBankTransactionSerializer(serializers.ModelSerializer):
@@ -216,6 +227,7 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
 
 class CompanyAccountingEntrySerializer(serializers.ModelSerializer):
     """본사 회계 분개 시리얼라이저"""
+    sort = serializers.SerializerMethodField(read_only=True)
     sort_name = serializers.CharField(source='sort.name', read_only=True)
     account_name = serializers.CharField(source='account.name', read_only=True)
     account_code = serializers.CharField(source='account.code', read_only=True)
@@ -234,6 +246,12 @@ class CompanyAccountingEntrySerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'updated_at')
 
     @staticmethod
+    def get_sort(obj):
+        """BankTransaction의 sort ID 반환"""
+        transaction = obj.related_transaction
+        return transaction.sort_id if transaction else None
+
+    @staticmethod
     def get_affiliated_display(obj):
         """관계회사/프로젝트 표시"""
         if obj.affiliated:
@@ -243,6 +261,7 @@ class CompanyAccountingEntrySerializer(serializers.ModelSerializer):
 
 class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
     """프로젝트 회계 분개 시리얼라이저"""
+    sort = serializers.SerializerMethodField(read_only=True)
     sort_name = serializers.CharField(source='sort.name', read_only=True)
     project_name = serializers.CharField(source='project.name', read_only=True)
     account_name = serializers.CharField(source='account.name', read_only=True)
@@ -261,6 +280,12 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
                   'amount', 'trader', 'evidence_type', 'evidence_type_display',
                   'created_at', 'updated_at', 'contract_payment')
         read_only_fields = ('created_at', 'updated_at')
+
+    @staticmethod
+    def get_sort(obj):
+        """BankTransaction의 sort ID 반환"""
+        transaction = obj.related_transaction
+        return transaction.sort_id if transaction else None
 
     @staticmethod
     def get_affiliated_display(obj):
@@ -285,17 +310,6 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
                 'special_purpose_type': cp.special_purpose_type,
             }
         return None
-
-
-class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
-    """본사 원장 정산 시리얼라이저"""
-    creator_name = serializers.CharField(source='creator.username', read_only=True)
-
-    class Meta:
-        model = CompanyLedgerCalculation
-        fields = ('pk', 'company', 'calculated', 'creator', 'creator_name',
-                  'created_at', 'updated_at')
-        read_only_fields = ('created_at', 'updated_at')
 
 
 # ============================================

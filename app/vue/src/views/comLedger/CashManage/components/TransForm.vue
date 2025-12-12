@@ -37,6 +37,25 @@ const isSaving = ref(false)
 const ledgerStore = useComLedger()
 const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
 
+// 은행 거래 폼 데이터 (생성 모드용)
+interface BankTransactionForm {
+  deal_date: string
+  note: string
+  bank_account: number | null
+  content: string
+  sort: 1 | 2
+  amount: number | null
+}
+
+const bankForm = reactive<BankTransactionForm>({
+  deal_date: getToday(),
+  sort: 1,
+  amount: null,
+  content: '',
+  note: '',
+  bank_account: null,
+})
+
 // 입력 폼 데이터
 interface NewEntryForm {
   pk?: number
@@ -58,25 +77,6 @@ watch(
   },
   { deep: true },
 )
-
-// 은행 거래 폼 데이터 (생성 모드용)
-interface BankTransactionForm {
-  deal_date: string
-  note: string
-  bank_account: number | null
-  content: string
-  sort: 1 | 2
-  amount: number | null
-}
-
-const bankForm = reactive<BankTransactionForm>({
-  deal_date: getToday(),
-  bank_account: null,
-  amount: null,
-  sort: 1,
-  content: '',
-  note: '',
-})
 
 // 폼 초기화 함수들
 const initializeCreateForm = () => {
