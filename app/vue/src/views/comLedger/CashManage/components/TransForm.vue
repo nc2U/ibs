@@ -20,13 +20,12 @@ const emit = defineEmits(['patch-d3-hide', 'on-bank-create', 'on-bank-update'])
 
 const refAccDepth = ref()
 const refBankAcc = ref()
-const rowCount = ref(0)
 
 const [route, router] = [useRoute(), useRouter()]
 
 const transId = computed(() => Number(route.params.transId) || null)
 const isCreateMode = computed(() => !transId.value)
-const amountEditMode = ref(false)
+const isSaving = ref(false)
 
 const ledgerStore = useComLedger()
 const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
@@ -64,28 +63,46 @@ const bankForm = reactive<BankTransactionForm>({
   note: '',
 })
 
-const initializeBankForm = () => {
-  if (!transaction.value) return
-  bankForm.deal_date = transaction.value.deal_date
-  bankForm.note = transaction.value.note
-  bankForm.bank_account = transaction.value.bank_account
-  bankForm.content = transaction.value.content
-  bankForm.sort = transaction.value.sort
-  bankForm.amount = transaction.value.amount
+// 폼 초기화 함수들
+const initializeCreateForm = () => {
+  // 신규 모드: 기본값으로 초기화
+  Object.assign(bankForm, {
+    deal_date: getToday(),
+    bank_account: null,
+    amount: null,
+    sort: 1,
+    content: '',
+    note: '',
+  })
+  editableEntries.value = [{}]
 }
 
-// 기존 데이터를 편집 가능한 폼 데이터로 변환
-const initializeEditableEntries = () => {
-  if (!transaction.value?.accounting_entries) return
+const initializeEditForm = () => {
+  if (!transaction.value) return
 
-  editableEntries.value = transaction.value.accounting_entries.map(entry => ({
-    pk: entry.pk,
-    account: entry.account,
-    trader: entry.trader,
-    amount: entry.amount,
-    affiliated: entry.affiliated,
-    evidence_type: entry.evidence_type,
-  }))
+  // 수정 모드: 기존 데이터로 초기화
+  Object.assign(bankForm, {
+    deal_date: transaction.value.deal_date,
+    note: transaction.value.note,
+    bank_account: transaction.value.bank_account,
+    content: transaction.value.content,
+    sort: transaction.value.sort,
+    amount: transaction.value.amount,
+  })
+
+  // 기존 회계 항목들로 초기화
+  if (transaction.value.accounting_entries) {
+    editableEntries.value = transaction.value.accounting_entries.map(entry => ({
+      pk: entry.pk,
+      account: entry.account,
+      trader: entry.trader,
+      amount: entry.amount,
+      affiliated: entry.affiliated,
+      evidence_type: entry.evidence_type,
+    }))
+  } else {
+    editableEntries.value = [{}]
+  }
 }
 
 // 표시할 행 목록 - 이제 editableEntries를 직접 반환
@@ -126,36 +143,38 @@ const isBalanced = computed(() => {
 const getComBanks = computed(() => ledgerStore.getComBanks)
 
 const addRow = () => {
-  // 새로운 빈 객체를 editableEntries에 직접 추가
   editableEntries.value.push({})
-  rowCount.value++
 }
 
 const removeEntry = (index: number) => {
-  // 기존 entry인 경우 (pk가 있는 경우)
   if (index < editableEntries.value.length && editableEntries.value[index].pk) {
-    // amount만 0으로 변경 (삭제하지 않음)
+    // 기존 entry는 amount를 0으로 설정 (삭제 처리)
     editableEntries.value[index].amount = 0
   } else {
-    // 새로 추가된 행인 경우
-    if (index < editableEntries.value.length) {
-      // editableEntries에서 제거
-      editableEntries.value.splice(index, 1)
-    }
-    // rowCount 감소
-    rowCount.value--
+    // 새로 추가된 행은 배열에서 제거
+    editableEntries.value.splice(index, 1)
   }
 }
 
-// 저장 로직
-const buildCreatePayload = () => {
+// 유효성 검사
+const validateForm = () => {
   if (!isBalanced.value) {
     throw new Error('거래 금액과 분류 금액이 일치하지 않습니다.')
   }
 
   if (!bankForm.deal_date || !bankForm.bank_account || !bankForm.amount || !bankForm.content) {
-    throw new Error('필수 입력 항목을 확인해주세요.')
+    throw new Error('거래일자, 거래계좌, 금액, 적요는 필수 입력 항목입니다.')
   }
+
+  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
+  if (validEntries.length === 0) {
+    throw new Error('최소 하나 이상의 분류 항목이 필요합니다.')
+  }
+}
+
+// 신규 거래 데이터 생성
+const buildCreatePayload = () => {
+  validateForm()
 
   const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
 
@@ -173,22 +192,25 @@ const buildCreatePayload = () => {
   }
 }
 
+// 수정 거래 데이터 생성
 const buildUpdatePayload = () => {
-  if (!transaction.value || !isBalanced.value) {
-    throw new Error('유효하지 않은 데이터입니다.')
+  if (!transaction.value) {
+    throw new Error('수정할 거래 데이터가 없습니다.')
   }
+
+  validateForm()
 
   const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
 
   return {
     pk: transaction.value.pk,
-    company: transaction.value.company,
-    deal_date: transaction.value.deal_date,
-    bank_account: transaction.value.bank_account,
-    amount: transaction.value.amount,
-    sort: transaction.value.sort,
-    content: transaction.value.content,
-    note: transaction.value.note,
+    company: props.company,
+    deal_date: bankForm.deal_date,
+    bank_account: bankForm.bank_account,
+    amount: bankForm.amount,
+    sort: bankForm.sort,
+    content: bankForm.content,
+    note: bankForm.note,
     accData: {
       entries: validEntries,
     },
@@ -196,25 +218,28 @@ const buildUpdatePayload = () => {
   }
 }
 
+// 저장 처리
 const saveTransaction = async () => {
+  if (isSaving.value) return
+
   try {
-    if (!isBalanced.value) {
-      alert('거래 금액과 분류 금액이 일치하지 않습니다.')
-      return
-    }
+    isSaving.value = true
 
     if (isCreateMode.value) {
       const payload = buildCreatePayload()
-      await ledgerStore.createBankTransaction(payload as any)
+      await ledgerStore.createBankTransaction(payload)
     } else {
       const payload = buildUpdatePayload()
-      await ledgerStore.updateBankTransaction(payload as any)
+      await ledgerStore.updateBankTransaction(payload)
     }
 
+    // 성공 시 거래 목록 페이지로 이동
     await router.push({ name: '본사 거래 내역' })
   } catch (error: any) {
-    console.error('Save failed:', error)
+    console.error('저장 실패:', error)
     alert(error.message || '저장 중 오류가 발생했습니다.')
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -228,16 +253,33 @@ const accCallModal = () => {
 const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => emit('patch-d3-hide', payload)
 
 onBeforeMount(async () => {
-  if (transId.value) {
-    // 수정 모드: 기존 거래 로드
-    await ledgerStore.fetchBankTransaction(transId.value)
-    initializeBankForm()
-    initializeEditableEntries()
+  if (isCreateMode.value) {
+    // 신규 모드: 기본 폼으로 초기화
+    initializeCreateForm()
   } else {
-    // 생성 모드: 빈 폼 시작
-    editableEntries.value = [{}]
+    // 수정 모드: 기존 거래 데이터 로드 후 폼 초기화
+    await ledgerStore.fetchBankTransaction(transId.value)
+    initializeEditForm()
   }
-  rowCount.value = editableEntries.value.length
+})
+
+// 폼 유효성 검사 상태
+const isFormValid = computed(() => {
+  const hasRequiredFields = !!(
+    bankForm.deal_date &&
+    bankForm.bank_account &&
+    bankForm.amount &&
+    bankForm.content
+  )
+
+  const hasValidEntries = editableEntries.value.some(e => (e.amount || 0) > 0)
+
+  return hasRequiredFields && hasValidEntries && isBalanced.value
+})
+
+// 저장 버튼 비활성화 상태
+const isSaveDisabled = computed(() => {
+  return isSaving.value || !isFormValid.value
 })
 
 // 네비게이션 가드
@@ -281,14 +323,22 @@ onBeforeRouteLeave((to, from, next) => {
       <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
         차액: {{ sortName }} {{ (numFormat(Math.abs(difference)), '0') }}
       </span>
-      <v-btn size="x-small" @click="router.push({ name: '본사 거래 내역' })">취소</v-btn>
+      <v-btn
+        size="x-small"
+        variant="outlined"
+        :disabled="isSaving"
+        @click="router.push({ name: '본사 거래 내역' })"
+      >
+        취소
+      </v-btn>
       <v-btn
         :color="isCreateMode ? 'primary' : 'success'"
         size="x-small"
-        :disabled="!isBalanced"
+        :disabled="isSaveDisabled"
+        :loading="isSaving"
         @click="saveTransaction"
       >
-        {{ isCreateMode ? '생성' : '저장' }}
+        {{ isSaving ? (isCreateMode ? '생성 중...' : '저장 중...') : (isCreateMode ? '생성' : '저장') }}
       </v-btn>
     </CCol>
   </CRow>
@@ -379,10 +429,7 @@ onBeforeRouteLeave((to, from, next) => {
 
         <!-- 입출금액 -->
         <CTableDataCell class="text-right">
-          <div
-            v-if="isCreateMode || amountEditMode"
-            class="d-flex align-items-center justify-content-end"
-          >
+          <div class="d-flex align-items-center justify-content-end">
             <CFormSelect
               v-model.number="bankForm.sort"
               size="sm"
@@ -402,21 +449,7 @@ onBeforeRouteLeave((to, from, next) => {
               required
               style="width: 120px"
               class="text-right"
-              @blur="amountEditMode = false"
             />
-            <v-btn
-              icon="mdi-plus"
-              density="compact"
-              rounded="1"
-              size="22"
-              class="ml-2 pointer"
-              @click="addRow"
-            />
-          </div>
-          <div v-else :class="transaction?.sort === 1 ? 'text-success strong' : ''">
-            <span class="pointer" @click="amountEditMode = true">
-              {{ transaction?.sort === 1 ? '+' : '-' }}{{ numFormat(transaction?.amount ?? 0) }}
-            </span>
             <v-btn
               icon="mdi-plus"
               density="compact"
