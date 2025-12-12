@@ -10,6 +10,7 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import Devided from './Devided.vue'
 import BankAcc from './BankAcc.vue'
 import AccDepth from './AccDepth.vue'
+import { CTable } from '@coreui/vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -25,6 +26,7 @@ const [route, router] = [useRoute(), useRouter()]
 
 const transId = computed(() => Number(route.params.transId) || null)
 const isCreateMode = computed(() => !transId.value)
+const amountEditMode = ref(false)
 
 const ledgerStore = useComLedger()
 const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
@@ -343,36 +345,22 @@ onBeforeRouteLeave((to, from, next) => {
       <CTableRow class="sticky-bank-row">
         <!-- 거래일자 -->
         <CTableDataCell>
-          <DatePicker v-if="isCreateMode" v-model="bankForm.deal_date" required />
-          <span v-else>{{ transaction?.deal_date ?? '' }}</span>
+          <DatePicker v-model="bankForm.deal_date" required />
         </CTableDataCell>
 
         <!-- 메모 -->
         <CTableDataCell>
-          <CFormInput
-            v-if="isCreateMode"
-            v-model="bankForm.note"
-            size="sm"
-            placeholder="메모"
-            maxlength="50"
-          />
-          <span v-else>{{ transaction?.note }}</span>
+          <CFormInput v-model="bankForm.note" size="sm" placeholder="메모" maxlength="50" />
         </CTableDataCell>
 
         <!-- 거래계좌 -->
         <CTableDataCell>
-          <CFormSelect
-            v-if="isCreateMode"
-            v-model.number="bankForm.bank_account"
-            size="sm"
-            required
-          >
+          <CFormSelect v-model.number="bankForm.bank_account" size="sm" required>
             <option :value="null">---------</option>
             <option v-for="ba in getComBanks" :key="ba.value" :value="ba.value">
               {{ ba.label }}
             </option>
           </CFormSelect>
-          <span v-else>{{ transaction?.bank_account_name }}</span>
           <!--          <a href="javascript:void(0)" class="ml-2">-->
           <!--            <CIcon name="cilCog" @click="accCallModal" />-->
           <!--          </a>-->
@@ -381,19 +369,20 @@ onBeforeRouteLeave((to, from, next) => {
         <!-- 적요 -->
         <CTableDataCell>
           <CFormInput
-            v-if="isCreateMode"
             v-model="bankForm.content"
             size="sm"
             placeholder="적요"
             maxlength="100"
             required
           />
-          <span v-else>{{ transaction?.content }}</span>
         </CTableDataCell>
 
         <!-- 입출금액 -->
         <CTableDataCell class="text-right">
-          <div v-if="isCreateMode" class="d-flex align-items-center justify-content-end">
+          <div
+            v-if="isCreateMode || amountEditMode"
+            class="d-flex align-items-center justify-content-end"
+          >
             <CFormSelect
               v-model.number="bankForm.sort"
               size="sm"
@@ -413,6 +402,7 @@ onBeforeRouteLeave((to, from, next) => {
               required
               style="width: 120px"
               class="text-right"
+              @blur="amountEditMode = false"
             />
             <v-btn
               icon="mdi-plus"
@@ -424,7 +414,9 @@ onBeforeRouteLeave((to, from, next) => {
             />
           </div>
           <div v-else :class="transaction?.sort === 1 ? 'text-success strong' : ''">
-            {{ transaction?.sort === 1 ? '+' : '-' }}{{ numFormat(transaction?.amount ?? 0) }}
+            <span class="pointer" @click="amountEditMode = true">
+              {{ transaction?.sort === 1 ? '+' : '-' }}{{ numFormat(transaction?.amount ?? 0) }}
+            </span>
             <v-btn
               icon="mdi-plus"
               density="compact"
