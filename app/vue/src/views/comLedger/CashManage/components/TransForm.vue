@@ -495,25 +495,25 @@ onBeforeRouteLeave((to, from, next) => {
 </template>
 
 <style scoped>
-/* 헤더 첫 번째 행 고정 */
+/* 헤더 sticky 속성 제거 - 드롭다운 문제 해결을 위해 */
 .sticky-header-row-1 {
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  position: static !important; /* sticky 무력화 */
+  /* top: 0; */
+  /* z-index: 10; */
 }
 
 /* 헤더 두 번째 행 고정 */
 .sticky-header-row-2 {
-  position: sticky;
-  top: 38px; /* 첫 번째 헤더 행 높이만큼 */
-  z-index: 30;
+  position: static !important; /* sticky 무력화 */
+  /* top: 38px; */
+  /* z-index: 10; */
 }
 
 /* 은행거래내역 행 고정 */
 .sticky-bank-row {
-  position: sticky;
-  top: 76px; /* 두 헤더 행 높이의 합 */
-  z-index: 20;
+  position: static !important; /* sticky 무력화 */
+  /* top: 76px; */
+  /* z-index: 5; */
 }
 
 .sticky-bank-row td {
@@ -522,11 +522,20 @@ onBeforeRouteLeave((to, from, next) => {
 
 /* 드롭다운이 테이블 외부로 렌더링되도록 설정 */
 :deep(table),
-:deep(thead),
 :deep(tbody),
 :deep(tr),
-:deep(th),
 :deep(td) {
   overflow: visible !important;
+}
+
+/* sticky 속성 강제 제거 - 모든 테이블 헤더 요소 */
+:deep(thead tr),
+:deep(thead th),
+:deep(.sticky-table-head),
+:deep(.sticky-table-head tr),
+:deep(.sticky-table-head th) {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
 }
 </style>
