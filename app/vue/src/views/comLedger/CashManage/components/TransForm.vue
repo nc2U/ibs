@@ -69,15 +69,6 @@ interface NewEntryForm {
 // 수정 가능한 폼 데이터 (기존 데이터 + 새로운 데이터)
 const editableEntries = ref<NewEntryForm[]>([])
 
-// 디버깅을 위한 watch
-watch(
-  editableEntries,
-  newEntries => {
-    console.log('editableEntries 변경됨:', newEntries)
-  },
-  { deep: true },
-)
-
 // 폼 초기화 함수들
 const initializeCreateForm = () => {
   // 신규 모드: 기본값으로 초기화
@@ -139,19 +130,10 @@ const sortName = computed(() => {
 
 // 분류 금액 합계 계산
 const totalEntryAmount = computed(() => {
-  const total = editableEntries.value.reduce((sum, row) => {
+  return editableEntries.value.reduce((sum, row) => {
     const amount = Number(row.amount) || 0
     return sum + amount
   }, 0)
-  console.log('totalEntryAmount 계산:', {
-    entries: editableEntries.value,
-    amounts: editableEntries.value.map(row => ({
-      amount: row.amount,
-      converted: Number(row.amount) || 0,
-    })),
-    total,
-  })
-  return total
 })
 
 // 차액 계산 - bankAmount 사용
@@ -338,11 +320,11 @@ onBeforeRouteLeave((to, from, next) => {
       </template>
     </CCol>
     <CCol col="2">
-      <span> 거래내역 금액: {{ sortName }} {{ numFormat(bankAmount) }} </span>
+      <span> 거래내역 금액: {{ sortName }} {{ numFormat(bankAmount, 0, '0') }} </span>
       ∙
-      <span>분류 금액 합계: {{ sortName }} {{ (numFormat(totalEntryAmount), '0') }}</span> ∙
+      <span>분류 금액 합계: {{ sortName }} {{ numFormat(totalEntryAmount, 0, '0') }}</span> ∙
       <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
-        차액: {{ sortName }} {{ (numFormat(Math.abs(difference)), '0') }}
+        차액: {{ sortName }} {{ numFormat(Math.abs(difference), 0, '0') }}
       </span>
       <v-btn
         color="light"
