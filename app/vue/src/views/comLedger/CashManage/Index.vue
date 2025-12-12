@@ -375,6 +375,7 @@ onBeforeRouteLeave(() => {
         >
           <TransForm
             :company="company as number"
+            @patch-d3-hide="patchD3Hide"
             @on-bank-create="onBankCreate"
             @on-bank-update="onBankUpdate"
           />
