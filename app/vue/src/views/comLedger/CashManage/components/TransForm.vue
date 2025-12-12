@@ -7,10 +7,9 @@ import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import Devided from './Devided.vue'
+import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
 import AccDepth from './AccDepth.vue'
-import { CTable } from '@coreui/vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -42,7 +41,7 @@ interface NewEntryForm {
 }
 
 // 수정 가능한 폼 데이터 (기존 데이터 + 새로운 데이터)
-const editableEntries = ref<NewEntryForm[]>([])
+const editableEntries = reactive<NewEntryForm[]>([])
 
 // 은행 거래 폼 데이터 (생성 모드용)
 interface BankTransactionForm {
@@ -74,7 +73,7 @@ const initializeCreateForm = () => {
     content: '',
     note: '',
   })
-  editableEntries.value = [{}]
+  editableEntries.splice(0, editableEntries.length, {})
 }
 
 const initializeEditForm = () => {
@@ -92,7 +91,7 @@ const initializeEditForm = () => {
 
   // 기존 회계 항목들로 초기화
   if (transaction.value.accounting_entries) {
-    editableEntries.value = transaction.value.accounting_entries.map(entry => ({
+    const newEntries = transaction.value.accounting_entries.map(entry => ({
       pk: entry.pk,
       account: entry.account,
       trader: entry.trader,
@@ -100,13 +99,14 @@ const initializeEditForm = () => {
       affiliated: entry.affiliated,
       evidence_type: entry.evidence_type,
     }))
+    editableEntries.splice(0, editableEntries.length, ...newEntries)
   } else {
-    editableEntries.value = [{}]
+    editableEntries.splice(0, editableEntries.length, {})
   }
 }
 
-// 표시할 행 목록 - 이제 editableEntries를 직접 반환
-const displayRows = computed(() => editableEntries.value)
+// 표시할 행 목록
+const displayRows = computed(() => editableEntries)
 
 // 은행 거래 금액 - 생성/수정 모드에 따라 다른 소스
 const bankAmount = computed(() => {
@@ -124,12 +124,22 @@ const sortName = computed(() => {
 
 // 분류 금액 합계 계산
 const totalEntryAmount = computed(() => {
-  return displayRows.value.reduce((sum, row) => {
-    return sum + (Number(row.amount) || 0)
+  const total = editableEntries.reduce((sum, row) => {
+    const amount = Number(row.amount) || 0
+    return sum + amount
   }, 0)
+  console.log('totalEntryAmount 계산:', {
+    entries: editableEntries,
+    amounts: editableEntries.map(row => ({
+      amount: row.amount,
+      converted: Number(row.amount) || 0,
+    })),
+    total,
+  })
+  return total
 })
 
-// 차액 계산 - bankAmount 사용하도록 수정
+// 차액 계산 - bankAmount 사용
 const difference = computed(() => {
   return bankAmount.value - totalEntryAmount.value
 })
@@ -143,16 +153,16 @@ const isBalanced = computed(() => {
 const getComBanks = computed(() => ledgerStore.getComBanks)
 
 const addRow = () => {
-  editableEntries.value.push({})
+  editableEntries.push({})
 }
 
 const removeEntry = (index: number) => {
-  if (index < editableEntries.value.length && editableEntries.value[index].pk) {
+  if (index < editableEntries.length && editableEntries[index].pk) {
     // 기존 entry는 amount를 0으로 설정 (삭제 처리)
-    editableEntries.value[index].amount = 0
+    editableEntries[index].amount = 0
   } else {
     // 새로 추가된 행은 배열에서 제거
-    editableEntries.value.splice(index, 1)
+    editableEntries.splice(index, 1)
   }
 }
 
@@ -166,7 +176,7 @@ const validateForm = () => {
     throw new Error('거래일자, 거래계좌, 금액, 적요는 필수 입력 항목입니다.')
   }
 
-  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
+  const validEntries = editableEntries.filter(e => (e.amount || 0) > 0)
   if (validEntries.length === 0) {
     throw new Error('최소 하나 이상의 분류 항목이 필요합니다.')
   }
@@ -176,7 +186,7 @@ const validateForm = () => {
 const buildCreatePayload = () => {
   validateForm()
 
-  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
+  const validEntries = editableEntries.filter(e => (e.amount || 0) > 0)
 
   return {
     company: props.company,
@@ -200,7 +210,7 @@ const buildUpdatePayload = () => {
 
   validateForm()
 
-  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
+  const validEntries = editableEntries.filter(e => (e.amount || 0) > 0)
 
   return {
     pk: transaction.value.pk,
@@ -272,7 +282,7 @@ const isFormValid = computed(() => {
     bankForm.content
   )
 
-  const hasValidEntries = editableEntries.value.some(e => (e.amount || 0) > 0)
+  const hasValidEntries = editableEntries.some(e => (e.amount || 0) > 0)
 
   return hasRequiredFields && hasValidEntries && isBalanced.value
 })
@@ -286,9 +296,7 @@ const isSaveDisabled = computed(() => {
 const hasUnsavedChanges = computed(() => {
   if (!isCreateMode.value) return false
 
-  return (
-    bankForm.amount !== null || bankForm.content !== '' || editableEntries.value.some(e => e.amount)
-  )
+  return bankForm.amount !== null || bankForm.content !== '' || editableEntries.some(e => e.amount)
 })
 
 onBeforeRouteLeave((to, from, next) => {
@@ -338,7 +346,9 @@ onBeforeRouteLeave((to, from, next) => {
         :loading="isSaving"
         @click="saveTransaction"
       >
-        {{ isSaving ? (isCreateMode ? '생성 중...' : '저장 중...') : (isCreateMode ? '생성' : '저장') }}
+        {{
+          isSaving ? (isCreateMode ? '생성 중...' : '저장 중...') : isCreateMode ? '생성' : '저장'
+        }}
       </v-btn>
     </CCol>
   </CRow>
@@ -462,7 +472,7 @@ onBeforeRouteLeave((to, from, next) => {
         </CTableDataCell>
 
         <CTableDataCell colspan="7">
-          <Devided :display-rows="displayRows" @remove-entry="removeEntry" />
+          <JournalRow :display-rows="editableEntries" @remove-entry="removeEntry" />
         </CTableDataCell>
       </CTableRow>
     </CTableBody>
