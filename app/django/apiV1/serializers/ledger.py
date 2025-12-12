@@ -384,8 +384,8 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                 transaction_id=bank_tx.transaction_id,
                 company_id=validated_data['company'],
                 account_id=entry_data['account'],
-                amount=entry_data['amount'],
                 trader=entry_data.get('trader', ''),
+                amount=entry_data['amount'],
                 evidence_type=entry_data.get('evidence_type'),
                 affiliated_id=entry_data.get('affiliated'),
             )
@@ -445,8 +445,8 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                         # 회계분개 필드 업데이트
                         accounting_entry.company_id = instance.company_id  # 부모 거래의 company 정보와 동기화
                         accounting_entry.account_id = entry_data['account']
-                        accounting_entry.amount = entry_data['amount']
                         accounting_entry.trader = entry_data.get('trader', '')
+                        accounting_entry.amount = entry_data['amount']
                         accounting_entry.evidence_type = entry_data.get('evidence_type')
                         accounting_entry.affiliated_id = entry_data.get('affiliated')
                         accounting_entry.save()
@@ -474,8 +474,8 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
             transaction_id=instance.transaction_id,
             company_id=instance.company_id,
             account_id=entry_data['account'],
-            amount=entry_data['amount'],
             trader=entry_data.get('trader', ''),
+            amount=entry_data['amount'],
             evidence_type=entry_data.get('evidence_type'),
             affiliated_id=entry_data.get('affiliated'),
         )
