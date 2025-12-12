@@ -468,11 +468,9 @@ onBeforeRouteLeave((to, from, next) => {
   position: sticky;
   top: 76px; /* 두 헤더 행 높이의 합 */
   z-index: 20;
-  background-color: white;
 }
 
 .sticky-bank-row td {
-  background-color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
