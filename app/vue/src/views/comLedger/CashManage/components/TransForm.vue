@@ -522,8 +522,10 @@ onBeforeRouteLeave((to, from, next) => {
 
 /* 드롭다운이 테이블 외부로 렌더링되도록 설정 */
 :deep(table),
+:deep(thead),
 :deep(tbody),
 :deep(tr),
+:deep(th),
 :deep(td) {
   overflow: visible !important;
 }

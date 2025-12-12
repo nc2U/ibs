@@ -56,7 +56,7 @@ const removeEntry = (index: number) => {
 
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
-      <CTableDataCell class="px-1">
+      <CTableDataCell>
         <LedgerAccount v-model="row.account" :options="comAccounts ?? []" />
         <!--          :filter-type="accountFilterType"-->
       </CTableDataCell>
