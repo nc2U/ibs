@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, reactive, ref, toRef, watch } from 'vue'
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import { bgLight, TableSecondary } from '@/utils/cssMixins.ts'
+import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -14,6 +14,14 @@ import AccDepth from './AccDepth.vue'
 const props = defineProps({
   company: { type: Number, default: null },
 })
+
+watch(
+  () => props.company,
+  val => {
+    if (isCreateMode.value) initializeCreateForm()
+    else router.push({ name: '본사 거래 내역' })
+  },
+)
 
 const emit = defineEmits(['patch-d3-hide', 'on-bank-create', 'on-bank-update'])
 
@@ -28,7 +36,6 @@ const isSaving = ref(false)
 
 const ledgerStore = useComLedger()
 const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
-const allComBankList = inject('allComBankList')
 
 // 입력 폼 데이터
 interface NewEntryForm {
@@ -432,9 +439,6 @@ onBeforeRouteLeave((to, from, next) => {
               {{ ba.label }}
             </option>
           </CFormSelect>
-          <!--          <a href="javascript:void(0)" class="ml-2">-->
-          <!--            <CIcon name="cilCog" @click="accCallModal" />-->
-          <!--          </a>-->
         </CTableDataCell>
 
         <!-- 적요 -->
