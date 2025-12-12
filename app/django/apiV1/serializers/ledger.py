@@ -319,11 +319,11 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
 class CompanyAccountingEntryInputSerializer(serializers.Serializer):
     """본사 회계분개 입력 시리얼라이저 (sort는 BankTransaction의 sort를 자동 사용)"""
     account = serializers.IntegerField()
-    affiliated = serializers.IntegerField(required=False, allow_null=True)
     amount = serializers.IntegerField()
     trader = serializers.CharField(max_length=50, required=False, allow_blank=True)
     evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5', '6'], required=False,
                                             allow_null=True)
+    affiliated = serializers.IntegerField(required=False, allow_null=True)
 
 
 class CompanyCompositeTransactionSerializer(serializers.Serializer):
@@ -337,8 +337,8 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     bank_account = serializers.IntegerField()
     deal_date = serializers.DateField()
-    amount = serializers.IntegerField()
     sort = serializers.IntegerField(help_text='거래구분 ID (1=입금, 2=출금)')
+    amount = serializers.IntegerField()
     content = serializers.CharField(max_length=100)
     note = serializers.CharField(required=False, allow_blank=True, default='')
 
@@ -410,8 +410,13 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
         entries_data = validated_data.pop('accounting_entries', None)
 
         # 2. 은행 거래 업데이트
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+        instance.company_id = validated_data.get('company', instance.company_id)
+        instance.bank_account_id = validated_data.get('bank_account', instance.bank_account_id)
+        instance.deal_date = validated_data.get('deal_date', instance.deal_date)
+        instance.sort_id = validated_data.get('sort', instance.sort_id)
+        instance.amount = validated_data.get('amount', instance.amount)
+        instance.content = validated_data.get('content', instance.content)
+        instance.note = validated_data.get('note', instance.note)
         instance.save()
 
         # 3. 회계분개 업데이트 (제공된 경우)

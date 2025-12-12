@@ -183,7 +183,12 @@ const validateForm = () => {
 const buildCreatePayload = () => {
   validateForm()
 
-  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
+  const validEntries = editableEntries.value
+    .filter(e => (e.amount || 0) > 0)
+    .map(entry => ({
+      ...entry,
+      evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
+    }))
 
   return {
     company: props.company!,
@@ -205,7 +210,12 @@ const buildUpdatePayload = () => {
 
   validateForm()
 
-  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
+  const validEntries = editableEntries.value
+    .filter(e => (e.amount || 0) > 0)
+    .map(entry => ({
+      ...entry,
+      evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
+    }))
 
   return {
     pk: transaction.value.pk,
