@@ -90,30 +90,3 @@ const removeEntry = (index: number) => {
     </CTableRow>
   </CTable>
 </template>
-
-<style lang="scss" scoped>
-:deep(.form-control-sm),
-:deep(.form-select-sm) {
-  padding: 0.25rem 0.5rem !important;
-}
-:deep(input) {
-  margin: 2px !important;
-}
-
-/* 드롭다운이 td 외부에도 렌더링되도록 설정 */
-:deep(table),
-:deep(tbody),
-:deep(tr),
-:deep(td) {
-  overflow: visible !important;
-}
-
-:deep(.dropdown) {
-  overflow: visible !important;
-}
-
-:deep(.dropdown-menu) {
-  position: absolute !important;
-  z-index: 1050 !important;
-}
-</style>

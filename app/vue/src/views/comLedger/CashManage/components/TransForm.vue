@@ -365,7 +365,7 @@ onBeforeRouteLeave((to, from, next) => {
   </CRow>
 
   <hr class="mb-0" />
-  <CTable hover class="mb-5">
+  <CTable class="mb-5">
     <colgroup>
       <col style="width: 8%" />
       <col style="width: 12%" />
@@ -493,49 +493,3 @@ onBeforeRouteLeave((to, from, next) => {
 
   <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
 </template>
-
-<style scoped>
-/* 헤더 sticky 속성 제거 - 드롭다운 문제 해결을 위해 */
-.sticky-header-row-1 {
-  position: static !important; /* sticky 무력화 */
-  /* top: 0; */
-  /* z-index: 10; */
-}
-
-/* 헤더 두 번째 행 고정 */
-.sticky-header-row-2 {
-  position: static !important; /* sticky 무력화 */
-  /* top: 38px; */
-  /* z-index: 10; */
-}
-
-/* 은행거래내역 행 고정 */
-.sticky-bank-row {
-  position: static !important; /* sticky 무력화 */
-  /* top: 76px; */
-  /* z-index: 5; */
-}
-
-.sticky-bank-row td {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* 드롭다운이 테이블 외부로 렌더링되도록 설정 */
-:deep(table),
-:deep(tbody),
-:deep(tr),
-:deep(td) {
-  overflow: visible !important;
-}
-
-/* sticky 속성 강제 제거 - 모든 테이블 헤더 요소 */
-:deep(thead tr),
-:deep(thead th),
-:deep(.sticky-table-head),
-:deep(.sticky-table-head tr),
-:deep(.sticky-table-head th) {
-  position: static !important;
-  top: auto !important;
-  z-index: auto !important;
-}
-</style>
