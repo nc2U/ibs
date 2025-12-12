@@ -361,7 +361,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
         return attrs
 
     @transaction.atomic
-    def create(self, validated_data):
+    def create(self, validated_data, **kwargs):
         # 1. 회계분개 데이터 추출
         entries_data = validated_data.pop('accounting_entries')
 
@@ -374,7 +374,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
             amount=validated_data['amount'],
             content=validated_data['content'],
             note=validated_data.get('note', ''),
-            creator=self.context.get('request').user if self.context.get('request') else None,
+            creator=kwargs.get('creator'),  # creator를 kwargs에서 가져옴
         )
 
         # 3. 회계 분개 배열 생성

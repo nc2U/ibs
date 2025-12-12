@@ -617,7 +617,7 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             context={'request': request}
         )
         if serializer.is_valid():
-            result = serializer.save()
+            result = serializer.save(creator=request.user) # creator를 serializer.save()로 전달
             return Response({
                 'bank_transaction': CompanyBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': CompanyAccountingEntrySerializer(result['accounting_entries'], many=True).data,
