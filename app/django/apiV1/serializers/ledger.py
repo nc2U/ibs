@@ -409,24 +409,24 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                 transaction_id=instance.transaction_id
             )
 
-            # 업데이트할 분개 ID 추출
-            update_entry_ids = [entry_data.get('id') for entry_data in entries_data if entry_data.get('id')]
+            # 업데이트할 분개 pk 추출
+            update_entry_pks = [entry_data.get('pk') for entry_data in entries_data if entry_data.get('pk')]
 
             # 삭제할 분개들 (entries_data에 없는 기존 분개들)
-            entries_to_delete = existing_entries.exclude(id__in=update_entry_ids)
+            entries_to_delete = existing_entries.exclude(pk__in=update_entry_pks)
             for entry in entries_to_delete:
                 entry.delete()
 
             accounting_entries = []
 
             for entry_data in entries_data:
-                entry_id = entry_data.get('id')
+                entry_pk = entry_data.get('pk')
 
-                if entry_id:
+                if entry_pk:
                     # 기존 회계분개 수정
                     try:
                         accounting_entry = CompanyAccountingEntry.objects.get(
-                            id=entry_id,
+                            pk=entry_pk,
                             transaction_id=instance.transaction_id
                         )
 

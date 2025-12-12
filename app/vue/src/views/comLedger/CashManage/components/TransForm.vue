@@ -40,6 +40,7 @@ const transaction = computed(() => ledgerStore.bankTransaction as BankTransactio
 // 입력 폼 데이터
 interface NewEntryForm {
   pk?: number
+  sort?: number
   account?: number | null
   trader?: string
   amount?: number
@@ -107,15 +108,15 @@ const initializeEditForm = () => {
 
   // 기존 회계 항목들로 초기화
   if (transaction.value.accounting_entries) {
-    const newEntries = transaction.value.accounting_entries.map(entry => ({
+    editableEntries.value = transaction.value.accounting_entries.map(entry => ({
       pk: entry.pk,
+      sort: entry.sort,
       account: entry.account,
       trader: entry.trader,
       amount: entry.amount,
       affiliated: entry.affiliated,
       evidence_type: entry.evidence_type,
     }))
-    editableEntries.value = newEntries
   } else {
     editableEntries.value = [{}]
   }
@@ -202,7 +203,12 @@ const validateForm = () => {
 const buildCreatePayload = () => {
   validateForm()
 
-  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
+  const validEntries = editableEntries.value
+    .filter(e => (e.amount || 0) > 0)
+    .map(e => ({
+      ...e,
+      sort: e.sort || bankForm.sort, // entry에 sort가 없으면 bankForm.sort 사용
+    }))
 
   return {
     company: props.company!,
@@ -212,9 +218,7 @@ const buildCreatePayload = () => {
     sort: bankForm.sort,
     content: bankForm.content,
     note: bankForm.note,
-    accData: {
-      entries: validEntries,
-    },
+    accounting_entries: validEntries,
   } as any // API 요청 타입과 BankTransaction 타입이 다르므로 any 처리
 }
 
@@ -226,7 +230,12 @@ const buildUpdatePayload = () => {
 
   validateForm()
 
-  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
+  const validEntries = editableEntries.value
+    .filter(e => (e.amount || 0) > 0)
+    .map(e => ({
+      ...e,
+      sort: e.sort || bankForm.sort, // entry에 sort가 없으면 bankForm.sort 사용
+    }))
 
   return {
     pk: transaction.value.pk,
@@ -237,9 +246,7 @@ const buildUpdatePayload = () => {
     sort: bankForm.sort,
     content: bankForm.content,
     note: bankForm.note,
-    accData: {
-      entries: validEntries,
-    },
+    accounting_entries: validEntries,
     filters: {},
   } as any // API 요청 타입과 BankTransaction 타입이 다르므로 any 처리
 }

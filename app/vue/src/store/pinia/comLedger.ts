@@ -280,7 +280,7 @@ export const useComLedger = defineStore('comLedger', () => {
     payload: BankTransaction & { accData: AccountingEntry | null },
   ) =>
     await api
-      .post(`/company-transaction/`, payload)
+      .post(`/ledger/company-composite-transaction/`, payload)
       .then(async res => {
         return await fetchBankTransactionList({ company: res.data.company }).then(() => message())
       })
@@ -291,8 +291,8 @@ export const useComLedger = defineStore('comLedger', () => {
   ) => {
     const { filters, ...formData } = payload
     return await api
-      .put(`/company-transaction/${formData.pk}/`, formData)
-      .then(async res => {
+      .put(`/ledger/company-composite-transaction/${formData.pk}/`, formData)
+      .then(async () => {
         // 자식 레코드를 수정한 경우
         // if (res.data.separated) {
         //   const parentPk = res.data.separated
