@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type ComputedRef, inject } from 'vue'
+import { computed, type ComputedRef, inject } from 'vue'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
@@ -8,19 +8,19 @@ interface NewEntryForm {
   account?: number | null
   trader?: string
   amount?: number
-  affiliated?: number | null
   evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
+  affiliated?: number | null
 }
 
 interface Props {
+  sort: 1 | 2
   displayRows: NewEntryForm[]
 }
+const props = defineProps<Props>() // Assign defineProps to a variable
 
 interface Emits {
   (e: 'removeEntry', index: number): void
 }
-
-defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 interface Account {
@@ -33,11 +33,11 @@ interface Account {
 }
 
 const comAccounts = inject<ComputedRef<Account[]>>('comAccounts')
-// const accountFilterType = computed(() => {
-//   if (form.value.sort === 1) return 'deposit' // 입금
-//   if (form.value.sort === 2) return 'withdraw' // 출금
-//   return null // 전체
-// })
+const accountFilterType = computed(() => {
+  if (props.sort === 1) return 'deposit' // 입금
+  if (props.sort === 2) return 'withdraw' // 출금
+  return null // 전체
+})
 
 const removeEntry = (index: number) => {
   emit('removeEntry', index)
@@ -57,8 +57,11 @@ const removeEntry = (index: number) => {
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell>
-        <LedgerAccount v-model="row.account" :options="comAccounts ?? []" />
-        <!--          :filter-type="accountFilterType"-->
+        <LedgerAccount
+          v-model="row.account"
+          :options="comAccounts ?? []"
+          :filter-type="accountFilterType"
+        />
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />

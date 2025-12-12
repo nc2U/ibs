@@ -446,7 +446,11 @@ onBeforeRouteLeave((to, from, next) => {
         </CTableDataCell>
 
         <CTableDataCell colspan="7" class="p-0">
-          <JournalRow :display-rows="displayRows" @remove-entry="removeEntry" />
+          <JournalRow
+            :sort="bankForm.sort"
+            :display-rows="displayRows"
+            @remove-entry="removeEntry"
+          />
         </CTableDataCell>
       </CTableRow>
     </CTableBody>
