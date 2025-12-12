@@ -47,10 +47,10 @@ const removeEntry = (index: number) => {
 <template>
   <CTable class="m-0">
     <colgroup>
-      <col style="width: 20%" />
-      <col style="width: 32%" />
-      <col style="width: 16%" />
       <col style="width: 26%" />
+      <col style="width: 26%" />
+      <col style="width: 20%" />
+      <col style="width: 22%" />
       <col v-if="write_company_cash" style="width: 6%" />
     </colgroup>
 
@@ -75,6 +75,13 @@ const removeEntry = (index: number) => {
       <CTableDataCell class="px-1">
         <CFormSelect v-model="row.evidence_type" size="sm" placeholder="지출 증빙">
           <option value="">---------</option>
+          <option value="0">증빙없음</option>
+          <option value="1">세금계산서</option>
+          <option value="2">계산서(면세)</option>
+          <option value="3">신용/체크카드 매출전표</option>
+          <option value="4">현금영수증</option>
+          <option value="5">원천징수영수증/지급명세서</option>
+          <option value="6">지로용지 및 청구서</option>
         </CFormSelect>
       </CTableDataCell>
       <CTableDataCell v-if="write_company_cash" class="text-right pr-2">
