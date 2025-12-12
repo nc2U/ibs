@@ -3,7 +3,7 @@ import { computed, inject, onBeforeMount, reactive, ref, toRef, watch } from 'vu
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import { TableSecondary } from '@/utils/cssMixins.ts'
+import { bgLight, TableSecondary } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -343,8 +343,8 @@ onBeforeRouteLeave((to, from, next) => {
         차액: {{ sortName }} {{ (numFormat(Math.abs(difference)), '0') }}
       </span>
       <v-btn
-        size="x-small"
-        variant="outlined"
+        color="light"
+        size="small"
         :disabled="isSaving"
         @click="router.push({ name: '본사 거래 내역' })"
       >
@@ -352,7 +352,7 @@ onBeforeRouteLeave((to, from, next) => {
       </v-btn>
       <v-btn
         :color="isCreateMode ? 'primary' : 'success'"
-        size="x-small"
+        size="small"
         :disabled="isSaveDisabled"
         :loading="isSaving"
         @click="saveTransaction"
@@ -421,12 +421,12 @@ onBeforeRouteLeave((to, from, next) => {
 
         <!-- 메모 -->
         <CTableDataCell>
-          <CFormInput v-model="bankForm.note" size="sm" placeholder="메모" maxlength="50" />
+          <CFormInput v-model="bankForm.note" placeholder="메모" maxlength="50" />
         </CTableDataCell>
 
         <!-- 거래계좌 -->
         <CTableDataCell>
-          <CFormSelect v-model.number="bankForm.bank_account" size="sm" required>
+          <CFormSelect v-model.number="bankForm.bank_account" required>
             <option :value="null">---------</option>
             <option v-for="ba in getComBanks" :key="ba.value" :value="ba.value">
               {{ ba.label }}
@@ -439,46 +439,28 @@ onBeforeRouteLeave((to, from, next) => {
 
         <!-- 적요 -->
         <CTableDataCell>
-          <CFormInput
-            v-model="bankForm.content"
-            size="sm"
-            placeholder="적요"
-            maxlength="100"
-            required
-          />
+          <CFormInput v-model="bankForm.content" placeholder="적요" maxlength="100" required />
         </CTableDataCell>
 
         <!-- 입출금액 -->
         <CTableDataCell class="text-right">
           <div class="d-flex align-items-center justify-content-end">
-            <CFormSelect
-              v-model.number="bankForm.sort"
-              size="sm"
-              style="width: 70px"
-              required
-              class="mr-2"
-            >
+            <CFormSelect v-model.number="bankForm.sort" style="width: 70px" required class="mr-2">
               <option :value="1">입금</option>
               <option :value="2">출금</option>
             </CFormSelect>
             <CFormInput
               v-model.number="bankForm.amount"
               type="number"
-              size="sm"
               min="0"
               placeholder="금액"
               required
               style="width: 120px"
               class="text-right"
             />
-            <v-btn
-              icon="mdi-plus"
-              density="compact"
-              rounded="1"
-              size="22"
-              class="ml-2 pointer"
-              @click="addRow"
-            />
+            <v-btn density="compact" rounded="1" size="22" class="ml-2 pointer" @click="addRow">
+              <v-icon icon="mdi-plus" color="success" />
+            </v-btn>
           </div>
         </CTableDataCell>
 
