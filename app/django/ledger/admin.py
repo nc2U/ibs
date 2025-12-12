@@ -474,10 +474,10 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 @admin.register(CompanyAccountingEntry)
 class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = CompanyAccountingEntryResource
-    list_display = ('id', 'transaction_id_short', 'company', 'sort', 'account_display',
+    list_display = ('id', 'transaction_id_short', 'company', 'account_display',
                     'affiliated_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('company', 'sort', 'account__category', 'evidence_type', 'affiliated__sort')
+    list_filter = ('company', 'account__category', 'evidence_type', 'affiliated__sort')
     search_fields = ('transaction_id', 'trader', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')
@@ -485,7 +485,7 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
     fieldsets = (
         ('거래 정보', {
-            'fields': ('transaction_id', 'company', 'sort', 'amount', 'trader')
+            'fields': ('transaction_id', 'company', 'amount', 'trader')
         }),
         ('계정 정보', {
             'fields': ('account', 'affiliated')
@@ -545,10 +545,10 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 @admin.register(ProjectAccountingEntry)
 class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectAccountingEntryResource
-    list_display = ('id', 'transaction_id_short', 'project', 'sort', 'account_display',
+    list_display = ('id', 'transaction_id_short', 'project', 'account_display',
                     'affiliated_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'sort', 'account__category', 'evidence_type', 'affiliated__sort')
+    list_filter = ('project', 'account__category', 'evidence_type', 'affiliated__sort')
     search_fields = ('transaction_id', 'trader', 'project__name', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')
@@ -556,7 +556,7 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
     fieldsets = (
         ('거래 정보', {
-            'fields': ('transaction_id', 'project', 'sort', 'amount', 'trader')
+            'fields': ('transaction_id', 'project', 'amount', 'trader')
         }),
         ('계정 정보', {
             'fields': ('account', 'affiliated')

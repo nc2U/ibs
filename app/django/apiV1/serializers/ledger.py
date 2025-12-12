@@ -294,7 +294,7 @@ class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyLedgerCalculation
         fields = ('pk', 'company', 'calculated', 'creator', 'creator_name',
-                 'created_at', 'updated_at')
+                  'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
 
 
@@ -303,8 +303,7 @@ class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
 # ============================================
 
 class CompanyAccountingEntryInputSerializer(serializers.Serializer):
-    """본사 회계분개 입력 시리얼라이저"""
-    sort = serializers.IntegerField()
+    """본사 회계분개 입력 시리얼라이저 (sort는 BankTransaction의 sort를 자동 사용)"""
     account = serializers.IntegerField()
     affiliated = serializers.IntegerField(required=False, allow_null=True)
     amount = serializers.IntegerField()
@@ -370,7 +369,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
             accounting_entry = CompanyAccountingEntry.objects.create(
                 transaction_id=bank_tx.transaction_id,
                 company_id=validated_data['company'],
-                sort_id=entry_data['sort'],
+                sort_id=validated_data['sort'],  # BankTransaction의 sort 사용
                 account_id=entry_data['account'],
                 affiliated_id=entry_data.get('affiliated'),
                 amount=entry_data['amount'],
@@ -430,8 +429,8 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                             transaction_id=instance.transaction_id
                         )
 
-                        # 회계분개 필드 업데이트
-                        accounting_entry.sort_id = entry_data['sort']
+                        # 회계분개 필드 업데이트 (sort는 BankTransaction과 동기화)
+                        accounting_entry.sort_id = instance.sort_id
                         accounting_entry.account_id = entry_data['account']
                         accounting_entry.affiliated_id = entry_data.get('affiliated')
                         accounting_entry.amount = entry_data['amount']
@@ -457,11 +456,11 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
 
     @staticmethod
     def _create_accounting_entry(instance, entry_data):
-        """회계분개 생성 헬퍼 메서드"""
+        """회계분개 생성 헬퍼 메서드 (sort는 BankTransaction과 동기화)"""
         return CompanyAccountingEntry.objects.create(
             transaction_id=instance.transaction_id,
             company_id=instance.company_id,
-            sort_id=entry_data['sort'],
+            sort_id=instance.sort_id,
             account_id=entry_data['account'],
             affiliated_id=entry_data.get('affiliated'),
             amount=entry_data['amount'],
@@ -663,8 +662,8 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                                 accounting_entry.account.is_payment
                         )
 
-                        # 회계분개 필드 업데이트
-                        accounting_entry.sort_id = entry_data['sort']
+                        # 회계분개 필드 업데이트 (sort는 BankTransaction과 동기화)
+                        accounting_entry.sort_id = instance.sort_id
                         accounting_entry.account_id = entry_data['account']
                         accounting_entry.affiliated_id = entry_data.get('affiliated')
                         accounting_entry.amount = entry_data['amount']

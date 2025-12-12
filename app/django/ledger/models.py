@@ -369,11 +369,13 @@ class AccountingEntry(models.Model):
 
     일반 거래: BankTransaction 1개 → AccountingEntry 1개 (금액 동일)
     분할 거래: BankTransaction 1개 → AccountingEntry N개 (금액 합계 일치)
+
+    Note: sort(계정구분)는 BankTransaction에만 존재하며, AccountingEntry는
+          related_transaction.sort를 통해 접근합니다.
     """
     # Banking Domain 연결 (UUID 참조)
     transaction_id = models.UUIDField(db_index=True, verbose_name='거래 ID',
                                       help_text='BankTransaction.transaction_id 참조')
-    sort = models.ForeignKey('ibs.AccountSort', on_delete=models.CASCADE, verbose_name='계정구분', help_text='수입/지출 구분')
     amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='이 회계 분개의 금액 (분할 시 일부 금액)')
     trader = models.CharField(max_length=50, verbose_name='거래처', help_text='거래 상대방', null=True, blank=True)
     evidence_type = models.CharField(
@@ -402,8 +404,8 @@ class AccountingEntry(models.Model):
         abstract = True
         indexes = [
             models.Index(fields=['transaction_id']),
-            models.Index(fields=['sort', 'created_at']),
-            models.Index(fields=['sort', 'evidence_type']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['evidence_type']),
             models.Index(fields=['affiliated']),
         ]
 
@@ -421,8 +423,16 @@ class AccountingEntry(models.Model):
             ).first()
         return None
 
+    @property
+    def sort(self):
+        """BankTransaction의 sort 접근 (하위 호환성)"""
+        transaction = self.related_transaction
+        return transaction.sort if transaction else None
+
     def __str__(self):
-        return f"{self.sort} - {self.amount:,} ({self.trader or '거래처 미지정'})"
+        transaction = self.related_transaction
+        sort_name = transaction.sort.name if transaction and transaction.sort else '미분류'
+        return f"{sort_name} - {self.amount:,} ({self.trader or '거래처 미지정'})"
 
 
 # ============================================

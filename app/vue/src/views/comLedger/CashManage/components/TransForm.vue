@@ -40,7 +40,6 @@ const transaction = computed(() => ledgerStore.bankTransaction as BankTransactio
 // 입력 폼 데이터
 interface NewEntryForm {
   pk?: number
-  sort?: number
   account?: number | null
   trader?: string
   amount?: number
@@ -110,7 +109,6 @@ const initializeEditForm = () => {
   if (transaction.value.accounting_entries) {
     editableEntries.value = transaction.value.accounting_entries.map(entry => ({
       pk: entry.pk,
-      sort: entry.sort,
       account: entry.account,
       trader: entry.trader,
       amount: entry.amount,
@@ -203,12 +201,7 @@ const validateForm = () => {
 const buildCreatePayload = () => {
   validateForm()
 
-  const validEntries = editableEntries.value
-    .filter(e => (e.amount || 0) > 0)
-    .map(e => ({
-      ...e,
-      sort: e.sort || bankForm.sort, // entry에 sort가 없으면 bankForm.sort 사용
-    }))
+  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
 
   return {
     company: props.company!,
@@ -230,12 +223,7 @@ const buildUpdatePayload = () => {
 
   validateForm()
 
-  const validEntries = editableEntries.value
-    .filter(e => (e.amount || 0) > 0)
-    .map(e => ({
-      ...e,
-      sort: e.sort || bankForm.sort, // entry에 sort가 없으면 bankForm.sort 사용
-    }))
+  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
 
   return {
     pk: transaction.value.pk,

@@ -446,7 +446,7 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             Prefetch(
                 'companyaccountingentry_set',
-                queryset=CompanyAccountingEntry.objects.select_related('account', 'sort')
+                queryset=CompanyAccountingEntry.objects.select_related('account')
             )
         ).order_by('sort_id', 'created_at')
 
@@ -545,14 +545,14 @@ class CompanyAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = CompanyAccountingEntry
-        fields = ('company', 'sort', 'account', 'affiliated',
+        fields = ('company', 'account', 'affiliated',
                   'evidence_type', 'transaction_id')
 
 
 class CompanyAccountingEntryViewSet(viewsets.ModelViewSet):
     """본사 회계 분개 ViewSet"""
     queryset = CompanyAccountingEntry.objects.select_related(
-        'company', 'sort', 'account', 'affiliated', 'affiliated__company', 'affiliated__project'
+        'company', 'account', 'affiliated', 'affiliated__company', 'affiliated__project'
     ).all()
     serializer_class = CompanyAccountingEntrySerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
@@ -568,14 +568,14 @@ class ProjectAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('project', 'sort', 'account', 'affiliated',
+        fields = ('project', 'account', 'affiliated',
                   'evidence_type', 'transaction_id')
 
 
 class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     """프로젝트 회계 분개 ViewSet"""
     queryset = ProjectAccountingEntry.objects.select_related(
-        'project', 'sort', 'account', 'affiliated', 'affiliated__company', 'affiliated__project'
+        'project', 'account', 'affiliated', 'affiliated__company', 'affiliated__project'
     ).all()
     serializer_class = ProjectAccountingEntrySerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
