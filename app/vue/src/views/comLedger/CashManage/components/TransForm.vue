@@ -482,7 +482,7 @@ onBeforeRouteLeave((to, from, next) => {
           </div>
         </CTableDataCell>
 
-        <CTableDataCell colspan="7">
+        <CTableDataCell colspan="7" class="p-0">
           <JournalRow :display-rows="displayRows" @remove-entry="removeEntry" />
         </CTableDataCell>
       </CTableRow>
