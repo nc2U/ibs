@@ -79,12 +79,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 
 <template>
   <template v-if="transaction">
-    <CTableRow
-      class="align-top"
-      :color="rowColor"
-      :style="transaction.accounting_entries.length > 1 ? 'font-weight: bold;' : ''"
-      :data-cash-id="transaction.pk"
-    >
+    <CTableRow class="align-top" :color="rowColor" :data-cash-id="transaction.pk">
       <CTableDataCell style="padding-top: 12px">
         <span class="text-primary">{{ transaction.deal_date }}</span>
       </CTableDataCell>
