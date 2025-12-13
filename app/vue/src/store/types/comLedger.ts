@@ -44,6 +44,7 @@ export interface CompanyAccount {
   computed_direction_display: '입금' | '출금'
   is_category_only: boolean
   is_active: boolean
+  requires_affiliated: boolean
   order: number
   full_path: string
   children_count: number

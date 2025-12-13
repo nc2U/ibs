@@ -70,9 +70,8 @@ class CompanyAccountSerializer(serializers.ModelSerializer):
         model = CompanyAccount
         fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name',
                   'depth', 'category', 'category_display', 'direction', 'direction_display',
-                  'computed_direction', 'computed_direction_display',
-                  'is_category_only', 'is_active', 'order',
-                  'full_path', 'children_count')
+                  'computed_direction', 'computed_direction_display', 'is_category_only',
+                  'is_active', 'requires_affiliated', 'order', 'full_path', 'children_count')
         read_only_fields = ('depth',)
 
     @staticmethod

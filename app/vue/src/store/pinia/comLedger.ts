@@ -59,6 +59,7 @@ export const useComLedger = defineStore('comLedger', () => {
         depth: acc.depth,
         direction: acc.direction_display,
         is_cate_only: acc.is_category_only,
+        req_affiliated: acc.requires_affiliated,
       })),
   )
 

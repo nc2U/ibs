@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject } from 'vue'
+import { computed, type ComputedRef, inject, watch } from 'vue'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
@@ -30,6 +30,7 @@ interface Account {
   is_cate_only: boolean
   depth?: number
   direction?: string
+  req_affiliated?: boolean
 }
 
 const comAccounts = inject<ComputedRef<Account[]>>('comAccounts')
@@ -38,6 +39,30 @@ const accountFilterType = computed(() => {
   if (props.sort === 2) return 'withdraw' // 출금
   return null // 전체
 })
+
+// 선택된 account가 affiliated를 요구하는지 확인
+const getAccountById = (accountId: number | null | undefined): Account | undefined => {
+  if (!accountId || !comAccounts?.value) return undefined
+  return comAccounts.value.find(acc => acc.value === accountId)
+}
+
+// account 변경 시 req_affiliated가 false면 affiliated를 null로 초기화
+watch(
+  () => props.displayRows.map(row => row.account),
+  (newAccounts, oldAccounts) => {
+    props.displayRows.forEach((row, index) => {
+      // account가 변경된 경우에만 처리
+      if (newAccounts[index] !== oldAccounts?.[index]) {
+        const account = getAccountById(row.account)
+        // account가 없거나 req_affiliated가 false인 경우 affiliated를 null로 초기화
+        if (!account || !account.req_affiliated) {
+          row.affiliated = null
+        }
+      }
+    })
+  },
+  { deep: true },
+)
 
 const removeEntry = (index: number) => {
   emit('removeEntry', index)
@@ -62,6 +87,13 @@ const removeEntry = (index: number) => {
           :options="comAccounts ?? []"
           :filter-type="accountFilterType"
         />
+        <!-- affiliated 필드가 필요한 경우 추가 드롭다운 표시 -->
+        <div v-if="row.account && getAccountById(row.account)?.req_affiliated" class="pt-0 px-2">
+          <CFormSelect v-model.number="row.affiliated" class="" placeholder="소속 선택">
+            <option :value="null">관계회사를 선택하세요</option>
+            <!-- TODO: API 연동 후 실제 affiliated 옵션 추가 -->
+          </CFormSelect>
+        </div>
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />
