@@ -118,7 +118,24 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
           </colgroup>
           <CTableRow v-for="entry in transaction.accounting_entries" :key="entry.pk">
             <CTableDataCell>
-              {{ entry.account_name }}
+              <div class="d-flex align-items-center bg-transparent">
+                <span>{{ entry.account_name }}</span>
+                <v-tooltip v-if="entry.affiliate" location="top">
+                  <template v-slot:activator="{ props: tooltipProps }">
+                    <v-icon
+                      v-bind="tooltipProps"
+                      icon="mdi-link-variant"
+                      color="primary"
+                      size="16"
+                      class="ml-1"
+                    />
+                  </template>
+                  <div class="pa-2">
+                    <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
+                    <div>{{ entry.affiliate_display }}</div>
+                  </div>
+                </v-tooltip>
+              </div>
             </CTableDataCell>
             <CTableDataCell> {{ cutString(entry.trader, 20) }} </CTableDataCell>
             <CTableDataCell
