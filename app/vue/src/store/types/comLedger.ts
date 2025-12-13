@@ -4,6 +4,19 @@ export interface BankCode {
   name: string
 }
 
+export interface Affiliate {
+  pk: number
+  sort: 'company' | 'project'
+  sort_display: string
+  company: number | null
+  company_name: string | null
+  project: number | null
+  project_name: string | null
+  description: string
+  created_at: string
+  updated_at: string
+}
+
 export interface BalanceByAccount {
   bank_acc: string
   bank_num: string
@@ -44,7 +57,7 @@ export interface CompanyAccount {
   computed_direction_display: '입금' | '출금'
   is_category_only: boolean
   is_active: boolean
-  requires_affiliated: boolean
+  requires_affiliate: boolean
   order: number
   full_path: string
   children_count: number
@@ -80,8 +93,8 @@ export interface AccountingEntry {
   account_name: string
   account_code: string
   account_full_path: string
-  affiliated: number | null
-  affiliated_display: string | null
+  affiliate: number | null
+  affiliate_display: string | null
   amount: number
   trader: string
   evidence_type: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'

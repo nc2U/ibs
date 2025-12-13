@@ -9,7 +9,7 @@ interface NewEntryForm {
   trader?: string
   amount?: number
   evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
-  affiliated?: number | null
+  affiliate?: number | null
 }
 
 interface Props {
@@ -30,7 +30,7 @@ interface Account {
   is_cate_only: boolean
   depth?: number
   direction?: string
-  req_affiliated?: boolean
+  req_affiliate?: boolean
 }
 
 const comAccounts = inject<ComputedRef<Account[]>>('comAccounts')
@@ -40,13 +40,13 @@ const accountFilterType = computed(() => {
   return null // 전체
 })
 
-// 선택된 account가 affiliated를 요구하는지 확인
+// 선택된 account가 affiliate를 요구하는지 확인
 const getAccountById = (accountId: number | null | undefined): Account | undefined => {
   if (!accountId || !comAccounts?.value) return undefined
   return comAccounts.value.find(acc => acc.value === accountId)
 }
 
-// account 변경 시 req_affiliated가 false면 affiliated를 null로 초기화
+// account 변경 시 req_affiliate가 false면 affiliate를 null로 초기화
 watch(
   () => props.displayRows.map(row => row.account),
   (newAccounts, oldAccounts) => {
@@ -54,9 +54,9 @@ watch(
       // account가 변경된 경우에만 처리
       if (newAccounts[index] !== oldAccounts?.[index]) {
         const account = getAccountById(row.account)
-        // account가 없거나 req_affiliated가 false인 경우 affiliated를 null로 초기화
-        if (!account || !account.req_affiliated) {
-          row.affiliated = null
+        // account가 없거나 req_affiliate가 false인 경우 affiliate를 null로 초기화
+        if (!account || !account.req_affiliate) {
+          row.affiliate = null
         }
       }
     })
@@ -87,11 +87,11 @@ const removeEntry = (index: number) => {
           :options="comAccounts ?? []"
           :filter-type="accountFilterType"
         />
-        <!-- affiliated 필드가 필요한 경우 추가 드롭다운 표시 -->
-        <div v-if="row.account && getAccountById(row.account)?.req_affiliated" class="pt-0 px-2">
-          <CFormSelect v-model.number="row.affiliated" class="" placeholder="소속 선택">
+        <!-- affiliate 필드가 필요한 경우 추가 드롭다운 표시 -->
+        <div v-if="row.account && getAccountById(row.account)?.req_affiliate" class="pt-0 px-2">
+          <CFormSelect v-model.number="row.affiliate" class="" placeholder="소속 선택">
             <option :value="null">관계회사를 선택하세요</option>
-            <!-- TODO: API 연동 후 실제 affiliated 옵션 추가 -->
+            <!-- TODO: API 연동 후 실제 affiliate 옵션 추가 -->
           </CFormSelect>
         </div>
       </CTableDataCell>

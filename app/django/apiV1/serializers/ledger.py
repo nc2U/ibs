@@ -8,7 +8,7 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation,
-    Affiliated,
+    Affiliate,
 )
 from payment.models import ContractPayment
 
@@ -72,7 +72,7 @@ class CompanyAccountSerializer(serializers.ModelSerializer):
         fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name',
                   'depth', 'category', 'category_display', 'direction', 'direction_display',
                   'computed_direction', 'computed_direction_display', 'is_category_only',
-                  'is_active', 'requires_affiliated', 'order', 'full_path', 'children_count')
+                  'is_active', 'requires_affiliate', 'order', 'full_path', 'children_count')
         read_only_fields = ('depth',)
 
     @staticmethod
@@ -145,17 +145,17 @@ class AccountSearchResultSerializer(serializers.Serializer):
 
 
 # ============================================
-# Affiliated Serializers
+# Affiliate Serializers
 # ============================================
 
-class AffiliatedSerializer(serializers.ModelSerializer):
+class AffiliateSerializer(serializers.ModelSerializer):
     """관계회사/프로젝트 시리얼라이저"""
     sort_display = serializers.CharField(source='get_sort_display', read_only=True)
     company_name = serializers.CharField(source='company.name', read_only=True)
     project_name = serializers.CharField(source='project.name', read_only=True)
 
     class Meta:
-        model = Affiliated
+        model = Affiliate
         fields = ('pk', 'sort', 'sort_display',
                   'company', 'company_name',
                   'project', 'project_name',
@@ -252,7 +252,7 @@ class CompanyAccountingEntrySerializer(serializers.ModelSerializer):
     account_name = serializers.CharField(source='account.name', read_only=True)
     account_code = serializers.CharField(source='account.code', read_only=True)
     account_full_path = serializers.CharField(source='account.get_full_path', read_only=True)
-    affiliated_display = serializers.SerializerMethodField(read_only=True)
+    affiliate_display = serializers.SerializerMethodField(read_only=True)
     evidence_type_display = serializers.CharField(source='get_evidence_type_display', read_only=True)
 
     class Meta:
@@ -260,7 +260,7 @@ class CompanyAccountingEntrySerializer(serializers.ModelSerializer):
         fields = ('pk', 'transaction_id', 'company',
                   'sort', 'sort_name',
                   'account', 'account_name', 'account_code', 'account_full_path',
-                  'affiliated', 'affiliated_display',
+                  'affiliate', 'affiliate_display',
                   'amount', 'trader', 'evidence_type', 'evidence_type_display',
                   'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
@@ -272,10 +272,10 @@ class CompanyAccountingEntrySerializer(serializers.ModelSerializer):
         return transaction.sort_id if transaction else None
 
     @staticmethod
-    def get_affiliated_display(obj):
+    def get_affiliate_display(obj):
         """관계회사/프로젝트 표시"""
-        if obj.affiliated:
-            return str(obj.affiliated)
+        if obj.affiliate:
+            return str(obj.affiliate)
         return None
 
 
@@ -287,7 +287,7 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
     account_name = serializers.CharField(source='account.name', read_only=True)
     account_code = serializers.CharField(source='account.code', read_only=True)
     account_full_path = serializers.CharField(source='account.get_full_path', read_only=True)
-    affiliated_display = serializers.SerializerMethodField(read_only=True)
+    affiliate_display = serializers.SerializerMethodField(read_only=True)
     evidence_type_display = serializers.CharField(source='get_evidence_type_display', read_only=True)
     contract_payment = serializers.SerializerMethodField(read_only=True)
 
@@ -296,7 +296,7 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
         fields = ('pk', 'transaction_id', 'project', 'project_name',
                   'sort', 'sort_name',
                   'account', 'account_name', 'account_code', 'account_full_path',
-                  'affiliated', 'affiliated_display',
+                  'affiliate', 'affiliate_display',
                   'amount', 'trader', 'evidence_type', 'evidence_type_display',
                   'created_at', 'updated_at', 'contract_payment')
         read_only_fields = ('created_at', 'updated_at')
@@ -308,10 +308,10 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
         return transaction.sort_id if transaction else None
 
     @staticmethod
-    def get_affiliated_display(obj):
+    def get_affiliate_display(obj):
         """관계회사/프로젝트 표시"""
-        if obj.affiliated:
-            return str(obj.affiliated)
+        if obj.affiliate:
+            return str(obj.affiliate)
         return None
 
     @staticmethod
@@ -343,7 +343,7 @@ class CompanyAccountingEntryInputSerializer(serializers.Serializer):
     trader = serializers.CharField(max_length=50, required=False, allow_blank=True)
     evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5', '6'], required=False,
                                             allow_null=True)
-    affiliated = serializers.IntegerField(required=False, allow_null=True)
+    affiliate = serializers.IntegerField(required=False, allow_null=True)
 
 
 class CompanyCompositeTransactionSerializer(serializers.Serializer):
@@ -407,7 +407,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                 trader=entry_data.get('trader', ''),
                 amount=entry_data['amount'],
                 evidence_type=entry_data.get('evidence_type'),
-                affiliated_id=entry_data.get('affiliated'),
+                affiliate_id=entry_data.get('affiliate'),
             )
             accounting_entries.append(accounting_entry)
 
@@ -473,7 +473,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                         accounting_entry.trader = entry_data.get('trader', '')
                         accounting_entry.amount = entry_data['amount']
                         accounting_entry.evidence_type = entry_data.get('evidence_type')
-                        accounting_entry.affiliated_id = entry_data.get('affiliated')
+                        accounting_entry.affiliate_id = entry_data.get('affiliate')
                         accounting_entry.save()
 
                     except CompanyAccountingEntry.DoesNotExist:
@@ -502,7 +502,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
             trader=entry_data.get('trader', ''),
             amount=entry_data['amount'],
             evidence_type=entry_data.get('evidence_type'),
-            affiliated_id=entry_data.get('affiliated'),
+            affiliate_id=entry_data.get('affiliate'),
         )
 
 
@@ -510,7 +510,7 @@ class ProjectAccountingEntryInputSerializer(serializers.Serializer):
     """프로젝트 회계분개 입력 시리얼라이저"""
     sort = serializers.IntegerField()
     account = serializers.IntegerField()
-    affiliated = serializers.IntegerField(required=False, allow_null=True)
+    affiliate = serializers.IntegerField(required=False, allow_null=True)
     amount = serializers.IntegerField()
     trader = serializers.CharField(max_length=50, required=False, allow_blank=True)
     evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5', '6'], required=False,
@@ -598,7 +598,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 project_id=validated_data['project'],
                 sort_id=entry_data['sort'],
                 account_id=entry_data['account'],
-                affiliated_id=entry_data.get('affiliated'),
+                affiliate_id=entry_data.get('affiliate'),
                 amount=entry_data['amount'],
                 trader=entry_data.get('trader', ''),
                 evidence_type=entry_data.get('evidence_type'),
@@ -702,7 +702,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                         # 회계분개 필드 업데이트
                         # accounting_entry.sort_id = instance.sort_id # CompanyAccountingEntry 모델에 sort_id 필드가 없어 불필요함
                         accounting_entry.account_id = entry_data['account']
-                        accounting_entry.affiliated_id = entry_data.get('affiliated')
+                        accounting_entry.affiliate_id = entry_data.get('affiliate')
                         accounting_entry.amount = entry_data['amount']
                         accounting_entry.trader = entry_data.get('trader', '')
                         accounting_entry.evidence_type = entry_data.get('evidence_type')
@@ -781,7 +781,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             project_id=instance.project_id,
             sort_id=entry_data['sort'],
             account_id=entry_data['account'],
-            affiliated_id=entry_data.get('affiliated'),
+            affiliate_id=entry_data.get('affiliate'),
             amount=entry_data['amount'],
             trader=entry_data.get('trader', ''),
             evidence_type=entry_data.get('evidence_type'),

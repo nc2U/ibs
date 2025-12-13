@@ -62,7 +62,7 @@ interface NewEntryForm {
   account?: number | null
   trader?: string
   amount?: number
-  affiliated?: number | null
+  affiliate?: number | null
   evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
 }
 
@@ -103,7 +103,7 @@ const initializeEditForm = () => {
       account: entry.account,
       trader: entry.trader,
       amount: entry.amount,
-      affiliated: entry.affiliated,
+      affiliate: entry.affiliate,
       evidence_type: entry.evidence_type,
     }))
   } else {

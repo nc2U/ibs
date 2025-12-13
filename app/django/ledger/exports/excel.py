@@ -1117,7 +1117,7 @@ def export_com_transaction_xls(request):
     e_date = request.GET.get('e_date')
     sort = request.GET.get('sort')
     # account = request.GET.get('account')
-    # affiliated = request.GET.get('affiliated')
+    # affiliate = request.GET.get('affiliate')
     bank_account = request.GET.get('bank_account')
     search_word = request.GET.get('search_word')
 

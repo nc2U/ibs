@@ -15,7 +15,7 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation,
-    Affiliated,
+    Affiliate
 )
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
 from ..permission import IsStaffOrReadOnly
@@ -27,7 +27,7 @@ from ..serializers.ledger import (
     CompanyAccountingEntrySerializer, ProjectAccountingEntrySerializer,
     CompanyCompositeTransactionSerializer, ProjectCompositeTransactionSerializer,
     CompanyLedgerCalculationSerializer,
-    AffiliatedSerializer,
+    AffiliateSerializer,
 )
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
@@ -327,25 +327,25 @@ class LedgerBankCodeViewSet(viewsets.ModelViewSet):
 
 
 # ============================================
-# Affiliated ViewSet
+# Affiliate ViewSet
 # ============================================
 
-class AffiliatedFilter(FilterSet):
+class AffiliateFilter(FilterSet):
     """관계회사/프로젝트 필터"""
     sort = CharFilter(field_name='sort', lookup_expr='exact')
 
     class Meta:
-        model = Affiliated
+        model = Affiliate
         fields = ['sort', 'company', 'project']
 
 
-class AffiliatedViewSet(viewsets.ModelViewSet):
+class AffiliateViewSet(viewsets.ModelViewSet):
     """관계회사/프로젝트 ViewSet"""
-    queryset = Affiliated.objects.select_related('company', 'project').all()
-    serializer_class = AffiliatedSerializer
+    queryset = Affiliate.objects.select_related('company', 'project').all()
+    serializer_class = AffiliateSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationThreeHundred
-    filterset_class = AffiliatedFilter
+    filterset_class = AffiliateFilter
     search_fields = ('description', 'company__name', 'project__name')
     ordering = ['-created_at']
 
@@ -571,14 +571,14 @@ class CompanyAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = CompanyAccountingEntry
-        fields = ('company', 'account', 'affiliated',
+        fields = ('company', 'account', 'affiliate',
                   'evidence_type', 'transaction_id')
 
 
 class CompanyAccountingEntryViewSet(viewsets.ModelViewSet):
     """본사 회계 분개 ViewSet"""
     queryset = CompanyAccountingEntry.objects.select_related(
-        'company', 'account', 'affiliated', 'affiliated__company', 'affiliated__project'
+        'company', 'account', 'affiliate', 'affiliate__company', 'affiliate__project'
     ).all()
     serializer_class = CompanyAccountingEntrySerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
@@ -594,14 +594,14 @@ class ProjectAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('project', 'account', 'affiliated',
+        fields = ('project', 'account', 'affiliate',
                   'evidence_type', 'transaction_id')
 
 
 class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     """프로젝트 회계 분개 ViewSet"""
     queryset = ProjectAccountingEntry.objects.select_related(
-        'project', 'account', 'affiliated', 'affiliated__company', 'affiliated__project'
+        'project', 'account', 'affiliate', 'affiliate__company', 'affiliate__project'
     ).all()
     serializer_class = ProjectAccountingEntrySerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
@@ -643,7 +643,7 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             context={'request': request}
         )
         if serializer.is_valid():
-            result = serializer.save(creator=request.user) # creator를 serializer.save()로 전달
+            result = serializer.save(creator=request.user)  # creator를 serializer.save()로 전달
             return Response({
                 'bank_transaction': CompanyBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': CompanyAccountingEntrySerializer(result['accounting_entries'], many=True).data,

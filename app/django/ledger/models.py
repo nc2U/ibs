@@ -162,9 +162,9 @@ class Account(models.Model):
     is_active = models.BooleanField(default=True, verbose_name='활성 여부', help_text='비활성화 시 신규 거래에 사용 불가')
 
     # 관계회사/프로젝트 추적 필수 여부
-    requires_affiliated = models.BooleanField(default=False, verbose_name='관계회사/프로젝트 필수',
-                                              help_text='체크 시: 회계분개 입력 시 관계회사 또는 프로젝트 선택 필수<br>'
-                                                        '용도: 관계회사 대여금, 투자금 등 집계가 필요한 계정')
+    requires_affiliate = models.BooleanField(default=False, verbose_name='관계회사/프로젝트 필수',
+                                             help_text='체크 시: 회계분개 입력 시 관계회사 또는 프로젝트 선택 필수<br>'
+                                                       '용도: 관계회사 대여금, 투자금 등 집계가 필요한 계정')
 
     # 정렬 순서
     order = models.PositiveIntegerField(default=0, verbose_name='정렬순서', help_text='같은 레벨 내 표시 순서')
@@ -470,7 +470,7 @@ class CompanyBankTransaction(BankTransaction):
         }
 
 
-class Affiliated(models.Model):
+class Affiliate(models.Model):
     """
     관계회사/프로젝트 참조 모델
 
@@ -629,9 +629,9 @@ class AccountingEntry(models.Model):
         verbose_name='증빙종류', null=True, blank=True)
 
     # 관계회사/프로젝트 추적
-    affiliated = models.ForeignKey('Affiliated', on_delete=models.PROTECT,
-                                   null=True, blank=True, verbose_name='관계회사/프로젝트',
-                                   help_text='관계회사 대여금, 투자금 등의 경우 필수 입력')
+    affiliate = models.ForeignKey('Affiliate', on_delete=models.PROTECT,
+                                  null=True, blank=True, verbose_name='관계회사/프로젝트',
+                                  help_text='관계회사 대여금, 투자금 등의 경우 필수 입력')
 
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
@@ -643,7 +643,7 @@ class AccountingEntry(models.Model):
             models.Index(fields=['transaction_id']),
             models.Index(fields=['created_at']),
             models.Index(fields=['evidence_type']),
-            models.Index(fields=['affiliated']),
+            models.Index(fields=['affiliate']),
         ]
 
     @property
@@ -710,10 +710,10 @@ class CompanyAccountingEntry(AccountingEntry):
                 'account': f'"{self.account.name}"는 비활성 계정이므로 사용할 수 없습니다.'
             })
 
-        # requires_affiliated 검증
-        if self.account and self.account.requires_affiliated and not self.affiliated:
+        # requires_affiliate 검증
+        if self.account and self.account.requires_affiliat and not self.affiliate:
             raise ValidationError({
-                'affiliated': f'"{self.account.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
+                'affiliate': f'"{self.account.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
             })
 
     def save(self, *args, **kwargs):
@@ -760,10 +760,10 @@ class ProjectAccountingEntry(AccountingEntry):
                 'account': f'"{self.account.name}"는 비활성 계정이므로 사용할 수 없습니다.'
             })
 
-        # requires_affiliated 검증
-        if self.account and self.account.requires_affiliated and not self.affiliated:
+        # requires_affiliate 검증
+        if self.account and self.account.requires_affiliate and not self.affiliate:
             raise ValidationError({
-                'affiliated': f'"{self.account.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
+                'affiliate': f'"{self.account.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
             })
 
     def save(self, *args, **kwargs):

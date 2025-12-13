@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { cleanupParams, errorHandle, message } from '@/utils/helper'
 import {
   type BankCode,
+  type Affiliate,
   type BalanceByAccount,
   type CompanyAccount,
   type BankTransaction,
@@ -21,7 +22,7 @@ export type DataFilter = {
   to_date?: string
   sort?: 1 | 2 | null
   account?: number | null
-  affiliated?: number | null
+  affiliate?: number | null
   bank_account?: number | null
   search?: string
   limit?: number
@@ -46,6 +47,17 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(res => (bankCodeList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  // state & getters - Affiliate
+  const affiliateList = ref<Affiliate[]>([])
+
+  const fetchAffiliateList = async (payload?: { sort?: 'company' | 'project' }) => {
+    const params = payload?.sort ? { sort: payload.sort } : {}
+    return await api
+      .get('/ledger/affiliate/', { params })
+      .then(res => (affiliateList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
   // state & getters - Accounts
   const comAccountList = ref<CompanyAccount[]>([])
   const comAccountFilter = ref<ComAccountFilter>({})
@@ -59,7 +71,7 @@ export const useComLedger = defineStore('comLedger', () => {
         depth: acc.depth,
         direction: acc.direction_display,
         is_cate_only: acc.is_category_only,
-        req_affiliated: acc.requires_affiliated,
+        req_affiliate: acc.requires_affiliate,
       })),
   )
 
@@ -186,7 +198,7 @@ export const useComLedger = defineStore('comLedger', () => {
       to_deal_date: payload.to_date,
       sort: payload.sort,
       account: payload.account,
-      affiliated: payload.affiliated,
+      affiliate: payload.affiliate,
       bank_account: payload.bank_account,
       search: payload.search,
       page: payload.page || 1,
@@ -207,7 +219,7 @@ export const useComLedger = defineStore('comLedger', () => {
     if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
     if (filters.sort) url += `&sort=${filters.sort}`
     if (filters.account) url += `&account=${filters.account}`
-    if (filters.affiliated) url += `&affiliated=${filters.affiliated}`
+    if (filters.affiliate) url += `&affiliate=${filters.affiliate}`
     if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
     if (filters.search) url += `&search=${filters.search}`
 
@@ -434,6 +446,9 @@ export const useComLedger = defineStore('comLedger', () => {
   return {
     bankCodeList,
     fetchBankCodeList,
+
+    affiliateList,
+    fetchAffiliateList,
 
     comAccountList,
     comAccountFilter,

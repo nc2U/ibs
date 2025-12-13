@@ -44,7 +44,7 @@ const dataFilter = ref<Filter>({
   to_date: '',
   sort: null,
   account: null,
-  affiliated: null,
+  affiliate: null,
   bank_account: null,
   search: '',
 })
@@ -54,11 +54,11 @@ const excelUrl = computed(() => {
   const ed = dataFilter.value.to_date
   const st = dataFilter.value.sort || ''
   const ac = dataFilter.value.account || ''
-  const af = dataFilter.value.affiliated || ''
+  const af = dataFilter.value.affiliate || ''
   const ba = dataFilter.value.bank_account || ''
   const q = dataFilter.value.search
   const url = `/excel/com-transaction/?company=${company.value}`
-  return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account=${ac}&affiliated=${af}&bank_account=${ba}&search_word=${q}`
+  return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account=${ac}&affiliate=${af}&bank_account=${ba}&search_word=${q}`
 })
 
 const comStore = useCompany()

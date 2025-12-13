@@ -9,7 +9,7 @@ from ledger.models import (
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
-    Affiliated,
+    Affiliate,
     CompanyLedgerCalculation,
 )
 from ledger.admin_async import AsyncImportExportMixin
@@ -28,10 +28,10 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     """Account Admin 공통 기능 (CompanyAccount, ProjectAccount에서 상속)"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
-        'depth', 'is_category_only', 'is_active', 'requires_affiliated', 'order'
+        'depth', 'is_category_only', 'is_active', 'requires_affiliate', 'order'
     )
     list_display_links = ('indented_name',)
-    list_editable = ('order', 'is_category_only', 'is_active', 'requires_affiliated')
+    list_editable = ('order', 'is_category_only', 'is_active', 'requires_affiliate')
     list_filter = ('category', 'direction', 'is_category_only', 'is_active')
     search_fields = ('code', 'name', 'description')
     ordering = ('code', 'order')
@@ -45,7 +45,7 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
             'fields': ('category', 'direction')
         }),
         ('사용 제한', {
-            'fields': ('is_active', 'is_category_only', 'requires_affiliated'),
+            'fields': ('is_active', 'is_category_only', 'requires_affiliate'),
             'description': '<br>'.join([
                 '<strong>분류 전용</strong>: 체크 시 하위 계정만 거래에 사용 가능',
                 '<strong>관계회사/프로젝트 필수</strong>: 체크 시 회계분개 시 관계회사 또는 프로젝트 선택 필수 (대여금, 투자금 등)'
@@ -475,20 +475,20 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = CompanyAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'company', 'account_display',
-                    'affiliated_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
+                    'affiliate_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('company', 'account__category', 'evidence_type', 'affiliated__sort')
+    list_filter = ('company', 'account__category', 'evidence_type', 'affiliate__sort')
     search_fields = ('transaction_id', 'trader', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')
-    autocomplete_fields = ['account', 'affiliated']
+    autocomplete_fields = ['account', 'affiliate']
 
     fieldsets = (
         ('거래 정보', {
             'fields': ('transaction_id', 'company', 'amount', 'trader')
         }),
         ('계정 정보', {
-            'fields': ('account', 'affiliated')
+            'fields': ('account', 'affiliate')
         }),
         ('증빙 정보', {
             'fields': ('evidence_type',)
@@ -536,9 +536,9 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
         return '-'
 
     @admin.display(description='관계회사/프로젝트')
-    def affiliated_display(self, obj):
-        if obj.affiliated:
-            return str(obj.affiliated)
+    def affiliate_display(self, obj):
+        if obj.affiliate:
+            return str(obj.affiliate)
         return '-'
 
 
@@ -546,20 +546,20 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'project', 'account_display',
-                    'affiliated_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
+                    'affiliate_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'account__category', 'evidence_type', 'affiliated__sort')
+    list_filter = ('project', 'account__category', 'evidence_type', 'affiliate__sort')
     search_fields = ('transaction_id', 'trader', 'project__name', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')
-    autocomplete_fields = ['account', 'affiliated']
+    autocomplete_fields = ['account', 'affiliate']
 
     fieldsets = (
         ('거래 정보', {
             'fields': ('transaction_id', 'project', 'amount', 'trader')
         }),
         ('계정 정보', {
-            'fields': ('account', 'affiliated')
+            'fields': ('account', 'affiliate')
         }),
         ('증빙 정보', {
             'fields': ('evidence_type',)
@@ -588,18 +588,18 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
         return '-'
 
     @admin.display(description='관계회사/프로젝트')
-    def affiliated_display(self, obj):
-        if obj.affiliated:
-            return str(obj.affiliated)
+    def affiliate_display(self, obj):
+        if obj.affiliate:
+            return str(obj.affiliate)
         return '-'
 
 
 # ============================================
-# Affiliated Admin - 관계회사/프로젝트
+# Affiliate Admin - 관계회사/프로젝트
 # ============================================
 
-@admin.register(Affiliated)
-class AffiliatedAdmin(ImportExportMixin, admin.ModelAdmin):
+@admin.register(Affiliate)
+class AffiliateAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'sort_display', 'company', 'project', 'description_short', 'created_at')
     list_display_links = ('id',)
     list_filter = ('sort', 'company', 'project')

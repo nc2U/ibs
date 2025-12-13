@@ -18,7 +18,7 @@ const form = ref<DataFilter>({
   company: null,
   sort: null,
   account: null,
-  affiliated: null,
+  affiliate: null,
   bank_account: null,
   search: '',
 })
@@ -69,7 +69,7 @@ const resetForm = () => {
   to_date.value = ''
   form.value.sort = null
   form.value.account = null
-  form.value.affiliated = null
+  form.value.affiliate = null
   form.value.bank_account = null
   form.value.search = ''
   listFiltering(1)
@@ -121,7 +121,7 @@ const resetForm = () => {
 
               <CCol md="6" lg="4" class="mb-3">
                 <CFormSelect
-                  v-model.number="form.affiliated"
+                  v-model.number="form.affiliate"
                   :disabled="!form.account"
                   @change="listFiltering(1)"
                 >
