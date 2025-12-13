@@ -711,7 +711,7 @@ class CompanyAccountingEntry(AccountingEntry):
             })
 
         # requires_affiliate 검증
-        if self.account and self.account.requires_affiliat and not self.affiliate:
+        if self.account and self.account.requires_affiliate and not self.affiliate:
             raise ValidationError({
                 'affiliate': f'"{self.account.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
             })
