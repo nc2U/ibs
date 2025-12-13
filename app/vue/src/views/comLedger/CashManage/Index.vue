@@ -72,15 +72,18 @@ const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
 const ledgerStore = useComLedger()
+const affiliates = computed(() => ledgerStore.affiliates)
 const comAccounts = computed(() => ledgerStore.comAccounts)
 const allComBankList = computed(() => ledgerStore.allComBankList)
 const bankTransactionCount = computed(() => ledgerStore.bankTransactionCount)
 
+provide('affiliates', affiliates)
 provide('comAccounts', comAccounts)
 provide('allComBankList', allComBankList)
 provide('bankTransactionCount', bankTransactionCount)
 
 const fetchBankCodeList = () => ledgerStore.fetchBankCodeList()
+const fetchAffiliateList = () => ledgerStore.fetchAffiliateList()
 const fetchCompanyAccounts = () => ledgerStore.fetchCompanyAccounts()
 const fetchComBankAccList = (pk: number) => ledgerStore.fetchComBankAccList(pk)
 const fetchAllComBankAccList = (pk: number) => ledgerStore.fetchAllComBankAccList(pk)
@@ -299,6 +302,7 @@ onBeforeMount(async () => {
   }
 
   await fetchBankCodeList()
+  await fetchAffiliateList()
   await fetchCompanyAccounts()
 
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤

@@ -49,6 +49,12 @@ export const useComLedger = defineStore('comLedger', () => {
 
   // state & getters - Affiliate
   const affiliateList = ref<Affiliate[]>([])
+  const affiliates = computed(() =>
+    affiliateList.value.map(aff => ({
+      value: aff.pk,
+      label: `[${aff.sort === 'company' ? 'CO' : 'PR'}]${aff.company_name ?? aff.project_name}`,
+    })),
+  )
 
   const fetchAffiliateList = async (payload?: { sort?: 'company' | 'project' }) => {
     const params = payload?.sort ? { sort: payload.sort } : {}
@@ -448,6 +454,7 @@ export const useComLedger = defineStore('comLedger', () => {
     fetchBankCodeList,
 
     affiliateList,
+    affiliates,
     fetchAffiliateList,
 
     comAccountList,
