@@ -80,22 +80,23 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 <template>
   <template v-if="transaction">
     <CTableRow
+      class="align-top"
       :color="rowColor"
       :style="transaction.accounting_entries.length > 1 ? 'font-weight: bold;' : ''"
       :data-cash-id="transaction.pk"
     >
-      <CTableDataCell>
+      <CTableDataCell style="padding-top: 12px">
         <span class="text-primary">{{ transaction.deal_date }}</span>
       </CTableDataCell>
-      <CTableDataCell>
+      <CTableDataCell style="padding-top: 12px">
         {{ cutString(transaction.note, 20) }}
       </CTableDataCell>
-      <CTableDataCell>
+      <CTableDataCell style="padding-top: 12px">
         <span v-if="transaction.bank_account_name">
           {{ cutString(transaction.bank_account_name, 10) }}
         </span>
       </CTableDataCell>
-      <CTableDataCell class="truncate">
+      <CTableDataCell class="truncate" style="padding-top: 12px">
         <span v-if="transaction.content">
           {{ cutString(transaction.content, 15) }}
         </span>
@@ -103,6 +104,7 @@ const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
       <CTableDataCell
         class="text-right"
         :class="transaction.sort === 1 ? 'text-success strong' : ''"
+        style="padding-top: 12px"
       >
         {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(transaction.amount || 0) }}
       </CTableDataCell>
