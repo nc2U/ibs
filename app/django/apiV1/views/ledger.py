@@ -15,6 +15,7 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation,
+    Affiliated,
 )
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
 from ..permission import IsStaffOrReadOnly
@@ -26,6 +27,7 @@ from ..serializers.ledger import (
     CompanyAccountingEntrySerializer, ProjectAccountingEntrySerializer,
     CompanyCompositeTransactionSerializer, ProjectCompositeTransactionSerializer,
     CompanyLedgerCalculationSerializer,
+    AffiliatedSerializer,
 )
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
@@ -322,6 +324,30 @@ class LedgerBankCodeViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationFifty
     search_fields = ('code', 'name')
+
+
+# ============================================
+# Affiliated ViewSet
+# ============================================
+
+class AffiliatedFilter(FilterSet):
+    """관계회사/프로젝트 필터"""
+    sort = CharFilter(field_name='sort', lookup_expr='exact')
+
+    class Meta:
+        model = Affiliated
+        fields = ['sort', 'company', 'project']
+
+
+class AffiliatedViewSet(viewsets.ModelViewSet):
+    """관계회사/프로젝트 ViewSet"""
+    queryset = Affiliated.objects.select_related('company', 'project').all()
+    serializer_class = AffiliatedSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    pagination_class = PageNumberPaginationThreeHundred
+    filterset_class = AffiliatedFilter
+    search_fields = ('description', 'company__name', 'project__name')
+    ordering = ['-created_at']
 
 
 # ============================================

@@ -8,6 +8,7 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation,
+    Affiliated,
 )
 from payment.models import ContractPayment
 
@@ -141,6 +142,26 @@ class AccountSearchResultSerializer(serializers.Serializer):
     # ProjectAccount 전용 필드
     is_payment = serializers.BooleanField(required=False)
     is_related_contract = serializers.BooleanField(required=False)
+
+
+# ============================================
+# Affiliated Serializers
+# ============================================
+
+class AffiliatedSerializer(serializers.ModelSerializer):
+    """관계회사/프로젝트 시리얼라이저"""
+    sort_display = serializers.CharField(source='get_sort_display', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    project_name = serializers.CharField(source='project.name', read_only=True)
+
+    class Meta:
+        model = Affiliated
+        fields = ('pk', 'sort', 'sort_display',
+                  'company', 'company_name',
+                  'project', 'project_name',
+                  'description',
+                  'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
 
 
 # ============================================
