@@ -43,12 +43,12 @@ class CompanyAccountResource(resources.ModelResource):
         fields = (
             'id', 'code', 'name', 'description', 'parent', 'depth',
             'category', 'is_category_only', 'direction', 'is_active',
-            'requires_affiliated', 'order'
+            'requires_affiliate', 'order'
         )
         export_order = (
             'id', 'code', 'name', 'description', 'parent', 'depth',
             'category', 'is_category_only', 'direction', 'is_active',
-            'requires_affiliated', 'order'
+            'requires_affiliate', 'order'
         )
 
     def __init__(self, *args, **kwargs):
@@ -144,10 +144,10 @@ class CompanyAccountResource(resources.ModelResource):
             id_value = str(row['id']).strip() if row['id'] is not None else ''
             # Check for various empty states
             if (not id_value or
-                id_value == '0' or
-                id_value.lower() in ['none', 'null', 'nan'] or
-                id_value == '-' or
-                all(c in ' \t\n\r\xa0' for c in id_value)):  # various whitespace chars
+                    id_value == '0' or
+                    id_value.lower() in ['none', 'null', 'nan'] or
+                    id_value == '-' or
+                    all(c in ' \t\n\r\xa0' for c in id_value)):  # various whitespace chars
                 row['id'] = None
 
         # Convert empty code to None for auto-generation
@@ -185,12 +185,12 @@ class ProjectAccountResource(resources.ModelResource):
         fields = (
             'id', 'code', 'name', 'description', 'parent', 'depth',
             'category', 'is_category_only', 'direction', 'is_active',
-            'requires_affiliated', 'is_payment', 'is_related_contract', 'order'
+            'requires_affiliate', 'is_payment', 'is_related_contract', 'order'
         )
         export_order = (
             'id', 'code', 'name', 'description', 'parent', 'depth',
             'category', 'is_category_only', 'direction', 'is_active',
-            'requires_affiliated', 'is_payment', 'is_related_contract', 'order'
+            'requires_affiliate', 'is_payment', 'is_related_contract', 'order'
         )
 
     def __init__(self, *args, **kwargs):
@@ -286,10 +286,10 @@ class ProjectAccountResource(resources.ModelResource):
             id_value = str(row['id']).strip() if row['id'] is not None else ''
             # Check for various empty states
             if (not id_value or
-                id_value == '0' or
-                id_value.lower() in ['none', 'null', 'nan'] or
-                id_value == '-' or
-                all(c in ' \t\n\r\xa0' for c in id_value)):  # various whitespace chars
+                    id_value == '0' or
+                    id_value.lower() in ['none', 'null', 'nan'] or
+                    id_value == '-' or
+                    all(c in ' \t\n\r\xa0' for c in id_value)):  # various whitespace chars
                 row['id'] = None
 
         # Convert empty code to None for auto-generation
@@ -311,6 +311,8 @@ class ProjectAccountResource(resources.ModelResource):
             return True
 
         return super().skip_row(instance, original, row, import_validation_errors)
+
+
 class BaseTransactionResource(resources.ModelResource):
     """
     Base resource class for transaction models with optimized bulk operations
@@ -396,10 +398,10 @@ class BaseTransactionResource(resources.ModelResource):
         if 'id' in row:
             id_value = str(row['id']).strip() if row['id'] is not None else ''
             if (not id_value or
-                id_value == '0' or
-                id_value.lower() in ['none', 'null', 'nan'] or
-                id_value == '-' or
-                all(c in ' \t\n\r\xa0' for c in id_value)):
+                    id_value == '0' or
+                    id_value.lower() in ['none', 'null', 'nan'] or
+                    id_value == '-' or
+                    all(c in ' \t\n\r\xa0' for c in id_value)):
                 row['id'] = None
 
         return super().before_import_row(row, **kwargs)
@@ -491,11 +493,11 @@ class CompanyAccountingEntryResource(BaseTransactionResource):
         chunk_size = 1000
         import_id_fields = ('id',)
         fields = (
-            'id', 'transaction_id', 'company', 'sort', 'account', 'affiliated',
+            'id', 'transaction_id', 'company', 'sort', 'account', 'affiliate',
             'amount', 'trader', 'evidence_type'
         )
         export_order = (
-            'id', 'transaction_id', 'company', 'sort', 'account', 'affiliated',
+            'id', 'transaction_id', 'company', 'sort', 'account', 'affiliate',
             'amount', 'trader', 'evidence_type'
         )
 
@@ -517,11 +519,11 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
         chunk_size = 1000
         import_id_fields = ('id',)
         fields = (
-            'id', 'transaction_id', 'project', 'sort', 'account', 'affiliated',
+            'id', 'transaction_id', 'project', 'sort', 'account', 'affiliate',
             'amount', 'trader', 'evidence_type'
         )
         export_order = (
-            'id', 'transaction_id', 'project', 'sort', 'account', 'affiliated',
+            'id', 'transaction_id', 'project', 'sort', 'account', 'affiliate',
             'amount', 'trader', 'evidence_type'
         )
 
