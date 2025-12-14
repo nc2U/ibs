@@ -8,6 +8,7 @@ interface Props {
     parent: number | null
     is_cate_only: boolean
     depth?: number
+    category?: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel'
     direction?: string
   }>
   modelValue?: number | null
@@ -47,6 +48,39 @@ const handleInput = (event: Event) => {
 // 필터링된 옵션 생성
 const filteredOptions = computed(() => {
   let filtered = props.options
+
+  // cateType에 따른 필터링
+  if (props.cateType) {
+    // 1. 조건에 맞는 실제 계정들만 필터링
+    const matchingAccounts = filtered.filter(
+      option => !option.is_cate_only && option.category === props.cateType,
+    )
+
+    // 2. 매칭된 계정들의 부모 계정들 수집
+    const neededParents = new Set<number>()
+    matchingAccounts.forEach(account => {
+      if (account.parent) {
+        // 부모 체인을 따라 올라가며 모든 부모 수집
+        let currentParent = account.parent
+        let currentOption = filtered.find(opt => opt.value === currentParent)
+
+        while (currentOption) {
+          neededParents.add(currentOption.value)
+          if (currentOption.parent === null) break
+          currentParent = currentOption.parent
+          currentOption = filtered.find(opt => opt.value === currentParent)
+        }
+      }
+    })
+
+    // 3. 매칭된 계정들 + 필요한 부모들만 포함
+    filtered = filtered.filter(
+      option =>
+        !props.cateType || // 필터 없으면 전체
+        (!option.is_cate_only && option.category === props.cateType) || // 조건 맞는 실제 계정
+        (option.is_cate_only && neededParents.has(option.value)), // 필요한 부모 카테고리만
+    )
+  }
 
   // sortType에 따른 필터링
   if (props.sortType) {

@@ -137,6 +137,7 @@ const resetForm = () => {
                   v-model="form.account"
                   :options="comAccounts ?? []"
                   :is-search="true"
+                  :cate-type="form.account_category || undefined"
                   :sort-type="sortType"
                   @update:modelValue="listFiltering(1)"
                 />
