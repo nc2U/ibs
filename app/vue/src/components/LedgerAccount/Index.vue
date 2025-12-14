@@ -29,6 +29,10 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
+const clearSelection = () => {
+  emit('update:modelValue', null)
+}
+
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const dropdownRef = ref<any>(null)
 const menuRef = ref<HTMLElement | null>(null)
@@ -203,7 +207,7 @@ const closeDropdown = () => {
 
 // 키보드 네비게이션 처리
 const handleKeyDown = (event: KeyboardEvent) => {
-  // dropdownVisible 상태가 v-model을 통해 동기화되지 않는 것으로 보여 이 가드를 제거합니다. 
+  // dropdownVisible 상태가 v-model을 통해 동기화되지 않는 것으로 보여 이 가드를 제거합니다.
   // if (!dropdownVisible.value) return
 
   const scrollIntoView = () => {
@@ -331,67 +335,109 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <CDropdown
-    ref="dropdownRef"
-    v-model="dropdownVisible"
-    variant="btn-group"
-    :auto-close="false"
-    @show="onDropdownShow"
-    @hide="onDropdownHide"
-    style="width: 100%"
-  >
-    <CDropdownToggle
-      ref="toggleRef"
-      class="form-select text-start"
-      :class="{ 'text-muted': !selectedLabel }"
+  <div style="position: relative; width: 100%">
+    <CDropdown
+      ref="dropdownRef"
+      v-model="dropdownVisible"
+      variant="btn-group"
+      :auto-close="false"
+      @show="onDropdownShow"
+      @hide="onDropdownHide"
+      style="width: 100%"
     >
-      {{ selectedLabel || placeholder }}
-    </CDropdownToggle>
-
-    <CDropdownMenu ref="menuRef" class="pt-0" style="max-height: 300px; overflow-y: auto">
-      <!-- 검색 입력 -->
-      <div class="search-container p-2 border-bottom" @click.stop @mousedown.stop>
-        <input
-          ref="searchInputRef"
-          :value="searchQuery"
-          type="text"
-          class="form-control form-control-sm"
-          placeholder="검색..."
-          @input="handleInput"
-          @keydown="handleKeyDown"
-          @click.stop
-          @mousedown.stop
-        />
-      </div>
-
-      <!-- 옵션 리스트 -->
-      <CDropdownItem
-        v-for="option in searchFilteredOptions"
-        :key="option.value"
-        :class="{
-          'text-muted fw-semibold': option.is_cate_only,
-          'bg-light': option.is_cate_only,
-          'category-only': !isSearch && option.is_cate_only,
-          'selected-item': option.value === modelValue,
-          'keyboard-active': selectableOptions[selectedIndex]?.value === option.value,
-        }"
-        :disabled="!isSearch && option.is_cate_only"
-        @click="selectOption(option)"
+      <CDropdownToggle
+        ref="toggleRef"
+        class="form-select text-start"
+        :class="{ 'text-muted': !selectedLabel }"
       >
-        <span :style="`padding-left: ${(option.depth || 0) * 12}px`">
-          {{ option.label }}
-        </span>
-      </CDropdownItem>
+        {{ selectedLabel || placeholder }}
+      </CDropdownToggle>
 
-      <!-- 검색 결과가 없을 때 -->
-      <CDropdownItem v-if="searchFilteredOptions.length === 0" disabled>
-        검색 결과가 없습니다
-      </CDropdownItem>
-    </CDropdownMenu>
-  </CDropdown>
+      <CDropdownMenu ref="menuRef" class="pt-0" style="max-height: 300px; overflow-y: auto">
+        <!-- 검색 입력 -->
+        <div class="search-container p-2 border-bottom" @click.stop @mousedown.stop>
+          <input
+            ref="searchInputRef"
+            :value="searchQuery"
+            type="text"
+            class="form-control form-control-sm"
+            placeholder="검색..."
+            @input="handleInput"
+            @keydown="handleKeyDown"
+            @click.stop
+            @mousedown.stop
+          />
+        </div>
+
+        <!-- 옵션 리스트 -->
+        <CDropdownItem
+          v-for="option in searchFilteredOptions"
+          :key="option.value"
+          :class="{
+            'text-muted fw-semibold': option.is_cate_only,
+            'bg-light': option.is_cate_only,
+            'category-only': !isSearch && option.is_cate_only,
+            'selected-item': option.value === modelValue,
+            'keyboard-active': selectableOptions[selectedIndex]?.value === option.value,
+          }"
+          :disabled="!isSearch && option.is_cate_only"
+          @click="selectOption(option)"
+        >
+          <span :style="`padding-left: ${(option.depth || 0) * 12}px`">
+            {{ option.label }}
+          </span>
+        </CDropdownItem>
+
+        <!-- 검색 결과가 없을 때 -->
+        <CDropdownItem v-if="searchFilteredOptions.length === 0" disabled>
+          검색 결과가 없습니다
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+
+    <!-- 초기화(x) 버튼 추가 -->
+    <button
+      v-if="props.modelValue"
+      type="button"
+      class="clear-button"
+      aria-label="Clear selection"
+      @click.stop="clearSelection"
+    >
+      &times;
+    </button>
+  </div>
 </template>
 
 <style lang="scss" scoped>
+/* 초기화 버튼 스타일 */
+.clear-button {
+  position: absolute;
+  top: 46%;
+  right: 35px; /* 드롭다운 화살표와 겹치지 않도록 조정 */
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  padding: 0 0.5rem;
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #888;
+  z-index: 10; /* 드롭다운 토글 위에 위치하도록 */
+}
+
+.clear-button:hover {
+  color: #333;
+}
+
+/* 다크 모드일 때 초기화 버튼 색상 */
+:global(body.dark-theme) .clear-button {
+  color: #bbb;
+}
+:global(body.dark-theme) .clear-button:hover {
+  color: #fff;
+}
+
 /* 검색창 고정 */
 .search-container {
   position: sticky;
