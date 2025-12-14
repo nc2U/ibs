@@ -17,6 +17,7 @@ const form = ref<DataFilter>({
   page: 1,
   company: null,
   sort: null,
+  account_category: '',
   account: null,
   bank_account: null,
   affiliate: null,
@@ -27,11 +28,12 @@ const formsCheck = computed(() => {
   const a = !from_date.value
   const b = !to_date.value
   const c = !form.value.sort
-  const d = !form.value.account
-  const e = !form.value.bank_account
-  const f = !form.value.affiliate
-  const g = !(form.value.search ?? '')?.trim()
-  return a && b && c && d && e && f && g
+  const d = !form.value.account_category
+  const e = !form.value.account
+  const f = !form.value.bank_account
+  const g = !form.value.affiliate
+  const h = !(form.value.search ?? '')?.trim()
+  return a && b && c && d && e && f && g && h
 })
 
 const comAccounts = inject<any[]>('comAccounts')
@@ -49,6 +51,12 @@ watch(to_date, () => listFiltering(1))
 
 //   methods: {
 const sortSelect = () => {
+  listFiltering(1)
+  form.value.account_category = ''
+  form.value.account = null
+}
+
+const cateSelect = () => {
   listFiltering(1)
   form.value.account = null
 }
@@ -108,6 +116,19 @@ const resetForm = () => {
                   <option value="">구분</option>
                   <option :value="1">입금</option>
                   <option :value="2">출금</option>
+                </CFormSelect>
+              </CCol>
+
+              <CCol md="6" lg="3" class="mb-3">
+                <CFormSelect v-model.number="form.account_category" @change="cateSelect">
+                  <option value="">계정분류</option>
+                  <option value="asset">자산</option>
+                  <option value="liability">부채</option>
+                  <option value="equity">자본</option>
+                  <option value="revenue">수익</option>
+                  <option value="expense">비용</option>
+                  <option value="transfer">대체</option>
+                  <option value="cancel">취소</option>
                 </CFormSelect>
               </CCol>
 

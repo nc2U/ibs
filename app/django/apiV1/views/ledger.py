@@ -384,14 +384,12 @@ class CompanyBankTransactionFilterSet(FilterSet):
     to_deal_date = DateFilter(field_name='deal_date', lookup_expr='lte', label='거래일자까지')
     account = NumberFilter(method='filter_by_account', label='계정 과목')
     account_category = CharFilter(method='filter_by_category', label='계정 카테고리')
-    account_name = CharFilter(method='filter_by_name', label='계정 이름')
     affiliate = NumberFilter(method='filter_by_affiliate', label='관계회사/프로젝트')
 
     class Meta:
         model = CompanyBankTransaction
         fields = ('company', 'from_deal_date', 'to_deal_date', 'sort',
-                  'account', 'account_category', 'account_name',
-                  'bank_account', 'affiliate')
+                  'account_category', 'account', 'bank_account', 'affiliate')
 
     @staticmethod
     def filter_by_account(queryset, name, value):
@@ -430,32 +428,6 @@ class CompanyBankTransactionFilterSet(FilterSet):
         ).values_list('transaction_id', flat=True)
 
         # 3. 필터링
-        return queryset.filter(transaction_id__in=transaction_ids)
-
-    @staticmethod
-    def filter_by_name(queryset, name, value):
-        """계정 이름으로 부분 일치 검색"""
-        # 1. 이름에 검색어 포함된 활성 계정 조회
-        accounts = CompanyAccount.objects.filter(
-            name__icontains=value,
-            is_active=True
-        )
-
-        # 2. 각 계정의 하위 계정도 모두 포함
-        all_account_ids = []
-        for account in accounts:
-            descendants = account.get_descendants(include_self=True)
-            active_descendants = [acc.pk for acc in descendants if acc.is_active]
-            all_account_ids.extend(active_descendants)
-
-        # 중복 제거
-        account_ids = list(set(all_account_ids))
-
-        # 3. transaction_id 조회 및 필터링
-        transaction_ids = CompanyAccountingEntry.objects.filter(
-            account_id__in=account_ids
-        ).values_list('transaction_id', flat=True)
-
         return queryset.filter(transaction_id__in=transaction_ids)
 
     @staticmethod

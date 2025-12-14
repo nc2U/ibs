@@ -21,6 +21,15 @@ export type DataFilter = {
   from_date?: string
   to_date?: string
   sort?: 1 | 2 | null
+  account_category?:
+    | 'asset'
+    | 'liability'
+    | 'equity'
+    | 'revenue'
+    | 'expense'
+    | 'transfer'
+    | 'cancel'
+    | ''
   account?: number | null
   affiliate?: number | null
   bank_account?: number | null
@@ -203,6 +212,7 @@ export const useComLedger = defineStore('comLedger', () => {
       from_deal_date: payload.from_date,
       to_deal_date: payload.to_date,
       sort: payload.sort,
+      account_category: payload.account_category,
       account: payload.account,
       bank_account: payload.bank_account,
       affiliate: payload.affiliate,
