@@ -174,16 +174,7 @@ const selectOption = (option: any) => {
   // 검색 모드가 아닐 때만 카테고리 전용 항목 선택 차단
   if (!option.is_cate_only || props.isSearch) {
     emit('update:modelValue', option.value)
-
-    // v-model, hide()가 모두 동작하지 않는 비정상적인 상황이므로,
-    // 최후의 수단으로 토글 버튼을 직접 찾아 클릭 이벤트를 발생시켜 팝업을 닫습니다.
-    const dropdownEl = (dropdownRef.value as any)?.$el
-    if (dropdownEl) {
-      const toggleButton = dropdownEl.querySelector('.dropdown-toggle') as HTMLElement
-      if (toggleButton) {
-        toggleButton.click()
-      }
-    }
+    closeDropdown()
   }
 }
 
@@ -197,9 +188,22 @@ const selectableOptions = computed(() => {
   return searchFilteredOptions.value.filter(opt => !opt.is_cate_only)
 })
 
+// 드롭다운 닫기 함수
+const closeDropdown = () => {
+  // v-model, hide()가 모두 동작하지 않는 비정상적인 상황이므로,
+  // 최후의 수단으로 토글 버튼을 직접 찾아 클릭 이벤트를 발생시켜 팝업을 닫습니다.
+  const dropdownEl = (dropdownRef.value as any)?.$el
+  if (dropdownEl) {
+    const toggleButton = dropdownEl.querySelector('.dropdown-toggle') as HTMLElement
+    if (toggleButton) {
+      toggleButton.click()
+    }
+  }
+}
+
 // 키보드 네비게이션 처리
 const handleKeyDown = (event: KeyboardEvent) => {
-  // dropdownVisible 상태가 v-model을 통해 동기화되지 않는 것으로 보여 이 가드를 제거합니다.
+  // dropdownVisible 상태가 v-model을 통해 동기화되지 않는 것으로 보여 이 가드를 제거합니다. 
   // if (!dropdownVisible.value) return
 
   const scrollIntoView = () => {
@@ -251,7 +255,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       break
     case 'Escape':
       event.preventDefault()
-      dropdownVisible.value = false
+      closeDropdown()
       break
   }
 }
