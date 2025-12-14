@@ -12,6 +12,7 @@ interface Props {
   }>
   modelValue?: number | null
   placeholder?: string
+  cateType?: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel' | null
   sortType?: 'deposit' | 'withdraw' | null
   isSearch?: boolean
 }
