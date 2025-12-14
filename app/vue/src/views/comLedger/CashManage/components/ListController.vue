@@ -40,7 +40,7 @@ const comAccounts = inject<any[]>('comAccounts')
 const allComBankList = inject<any[]>('allComBankList')
 const bankTransactionCount = inject<any>('bankTransactionCount')
 
-const accountFilterType = computed(() => {
+const sortType = computed(() => {
   if (form.value.sort === 1) return 'deposit' // 입금
   if (form.value.sort === 2) return 'withdraw' // 출금
   return null // 전체
@@ -137,7 +137,7 @@ const resetForm = () => {
                   v-model="form.account"
                   :options="comAccounts ?? []"
                   :is-search="true"
-                  :filter-type="accountFilterType"
+                  :sort-type="sortType"
                   @update:modelValue="listFiltering(1)"
                 />
               </CCol>

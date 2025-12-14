@@ -12,7 +12,7 @@ interface Props {
   }>
   modelValue?: number | null
   placeholder?: string
-  filterType?: 'deposit' | 'withdraw' | null
+  sortType?: 'deposit' | 'withdraw' | null
   isSearch?: boolean
 }
 
@@ -47,9 +47,9 @@ const handleInput = (event: Event) => {
 const filteredOptions = computed(() => {
   let filtered = props.options
 
-  // filterType에 따른 필터링
-  if (props.filterType) {
-    const targetDirection = props.filterType === 'deposit' ? '입금' : '출금'
+  // sortType에 따른 필터링
+  if (props.sortType) {
+    const targetDirection = props.sortType === 'deposit' ? '입금' : '출금'
 
     // 1. 조건에 맞는 실제 계정들만 필터링
     const matchingAccounts = filtered.filter(
@@ -76,7 +76,7 @@ const filteredOptions = computed(() => {
     // 3. 매칭된 계정들 + 필요한 부모들만 포함
     filtered = filtered.filter(
       option =>
-        !props.filterType || // 필터 없으면 전체
+        !props.sortType || // 필터 없으면 전체
         (!option.is_cate_only && option.direction === targetDirection) || // 조건 맞는 실제 계정
         (option.is_cate_only && neededParents.has(option.value)), // 필요한 부모 카테고리만
     )
