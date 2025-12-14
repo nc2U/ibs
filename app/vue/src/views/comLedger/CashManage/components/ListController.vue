@@ -92,9 +92,9 @@ const resetForm = () => {
 <template>
   <CCallout color="primary" class="pb-0 mb-4" :class="bgLight">
     <CRow>
-      <CCol lg="8">
+      <CCol lg="9">
         <CRow>
-          <CCol lg="5">
+          <CCol lg="4">
             <CRow>
               <CCol md="6" class="mb-3">
                 <DatePicker
@@ -113,9 +113,9 @@ const resetForm = () => {
             </CRow>
           </CCol>
 
-          <CCol lg="7">
+          <CCol lg="8">
             <CRow>
-              <CCol md="6" lg="3" class="mb-3">
+              <CCol md="6" lg="2" class="mb-3">
                 <CFormSelect v-model.number="form.sort" @change="sortSelect">
                   <option value="">구분</option>
                   <option :value="1">입금</option>
@@ -136,7 +136,7 @@ const resetForm = () => {
                 </CFormSelect>
               </CCol>
 
-              <CCol md="6" lg="5" class="mb-3">
+              <CCol md="6" lg="4" class="mb-3">
                 <LedgerAccount
                   v-model="form.account"
                   :options="comAccounts ?? []"
@@ -147,7 +147,7 @@ const resetForm = () => {
                 />
               </CCol>
 
-              <CCol md="6" lg="4" class="mb-3">
+              <CCol md="6" lg="3" class="mb-3">
                 <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">
                   <option value="">거래계좌</option>
                   <option v-for="acc in allComBankList" :key="acc.pk" :value="acc.pk">
@@ -160,7 +160,7 @@ const resetForm = () => {
         </CRow>
       </CCol>
 
-      <CCol lg="4">
+      <CCol lg="3">
         <CRow>
           <CCol md="6" lg="5" class="mb-3">
             <CFormSelect v-model.number="form.affiliate" @change="listFiltering(1)">
