@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.db.models import Sum, F, Case, When, Prefetch
-from django_filters import DateFilter, CharFilter
+from django_filters import DateFilter, CharFilter, NumberFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import permissions
 from rest_framework import viewsets, status
@@ -382,10 +382,32 @@ class CompanyBankTransactionFilterSet(FilterSet):
     """본사 은행 거래 필터셋"""
     from_deal_date = DateFilter(field_name='deal_date', lookup_expr='gte', label='거래일자부터')
     to_deal_date = DateFilter(field_name='deal_date', lookup_expr='lte', label='거래일자까지')
+    account = NumberFilter(method='filter_by_account', label='계정 과목')
+    affiliate = NumberFilter(method='filter_by_affiliate', label='관계회사/프로젝트')
 
     class Meta:
         model = CompanyBankTransaction
-        fields = ('company', 'bank_account', 'sort', 'from_deal_date', 'to_deal_date')
+        fields = ('company', 'from_deal_date', 'to_deal_date', 'sort', 'account', 'bank_account', 'affiliate')
+
+    @staticmethod
+    def filter_by_account(queryset, name, value):
+        """계정 과목으로 필터링"""
+        # 해당 계정을 사용하는 회계분개의 transaction_id 조회
+        transaction_ids = CompanyAccountingEntry.objects.filter(
+            account_id=value
+        ).values_list('transaction_id', flat=True)
+
+        return queryset.filter(transaction_id__in=transaction_ids)
+
+    @staticmethod
+    def filter_by_affiliate(queryset, name, value):
+        """관계회사/프로젝트로 필터링"""
+        # 해당 affiliate를 사용하는 회계분개의 transaction_id 조회
+        transaction_ids = CompanyAccountingEntry.objects.filter(
+            affiliate_id=value
+        ).values_list('transaction_id', flat=True)
+
+        return queryset.filter(transaction_id__in=transaction_ids)
 
 
 class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
@@ -503,11 +525,33 @@ class ProjectBankTransactionFilterSet(FilterSet):
     """프로젝트 은행 거래 필터셋"""
     from_deal_date = DateFilter(field_name='deal_date', lookup_expr='gte', label='거래일자부터')
     to_deal_date = DateFilter(field_name='deal_date', lookup_expr='lte', label='거래일자까지')
+    account = NumberFilter(method='filter_by_account', label='계정 과목')
+    affiliate = NumberFilter(method='filter_by_affiliate', label='관계회사/프로젝트')
 
     class Meta:
         model = ProjectBankTransaction
         fields = ('project', 'bank_account', 'sort', 'is_imprest',
-                  'from_deal_date', 'to_deal_date')
+                  'from_deal_date', 'to_deal_date', 'account', 'affiliate')
+
+    @staticmethod
+    def filter_by_account(queryset, name, value):
+        """계정 과목으로 필터링"""
+        # 해당 계정을 사용하는 회계분개의 transaction_id 조회
+        transaction_ids = ProjectAccountingEntry.objects.filter(
+            account_id=value
+        ).values_list('transaction_id', flat=True)
+
+        return queryset.filter(transaction_id__in=transaction_ids)
+
+    @staticmethod
+    def filter_by_affiliate(queryset, name, value):
+        """관계회사/프로젝트로 필터링"""
+        # 해당 affiliate를 사용하는 회계분개의 transaction_id 조회
+        transaction_ids = ProjectAccountingEntry.objects.filter(
+            affiliate_id=value
+        ).values_list('transaction_id', flat=True)
+
+        return queryset.filter(transaction_id__in=transaction_ids)
 
 
 class ProjectBankTransactionViewSet(viewsets.ModelViewSet):

@@ -18,8 +18,8 @@ const form = ref<DataFilter>({
   company: null,
   sort: null,
   account: null,
-  affiliate: null,
   bank_account: null,
+  affiliate: null,
   search: '',
 })
 
@@ -29,8 +29,9 @@ const formsCheck = computed(() => {
   const c = !form.value.sort
   const d = !form.value.account
   const e = !form.value.bank_account
-  const f = !(form.value.search ?? '')?.trim()
-  return a && b && c && d && e && f
+  const f = !form.value.affiliate
+  const g = !(form.value.search ?? '')?.trim()
+  return a && b && c && d && e && f && g
 })
 
 const comAccounts = inject<any[]>('comAccounts')
@@ -69,8 +70,8 @@ const resetForm = () => {
   to_date.value = ''
   form.value.sort = null
   form.value.account = null
-  form.value.affiliate = null
   form.value.bank_account = null
+  form.value.affiliate = null
   form.value.search = ''
   listFiltering(1)
 }
@@ -120,14 +121,10 @@ const resetForm = () => {
               </CCol>
 
               <CCol md="6" lg="4" class="mb-3">
-                <CFormSelect
-                  v-model.number="form.affiliate"
-                  :disabled="!form.account"
-                  @change="listFiltering(1)"
-                >
-                  <option value="">투입 관계회사(프로젝트)</option>
-                  <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
-                    {{ proj.name }}
+                <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">
+                  <option value="">거래계좌</option>
+                  <option v-for="acc in allComBankList" :key="acc.pk" :value="acc.pk">
+                    {{ acc.alias_name }}
                   </option>
                 </CFormSelect>
               </CCol>
@@ -139,10 +136,10 @@ const resetForm = () => {
       <CCol lg="4">
         <CRow>
           <CCol md="6" lg="5" class="mb-3">
-            <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">
-              <option value="">거래계좌</option>
-              <option v-for="acc in allComBankList" :key="acc.pk" :value="acc.pk">
-                {{ acc.alias_name }}
+            <CFormSelect v-model.number="form.affiliate" @change="listFiltering(1)">
+              <option value="">투입 관계회사(프로젝트)</option>
+              <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
+                {{ proj.name }}
               </option>
             </CFormSelect>
           </CCol>

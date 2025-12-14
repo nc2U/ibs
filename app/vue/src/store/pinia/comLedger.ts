@@ -204,8 +204,8 @@ export const useComLedger = defineStore('comLedger', () => {
       to_deal_date: payload.to_date,
       sort: payload.sort,
       account: payload.account,
-      affiliate: payload.affiliate,
       bank_account: payload.bank_account,
+      affiliate: payload.affiliate,
       search: payload.search,
       page: payload.page || 1,
     })
