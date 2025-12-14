@@ -10,12 +10,11 @@ import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 defineProps({ projects: { type: Array as PropType<Project[]>, default: () => [] } })
 const emit = defineEmits(['list-filtering'])
 
-const from_date = ref('')
-const to_date = ref('')
-
 const form = ref<DataFilter>({
   page: 1,
   company: null,
+  from_date: '',
+  to_date: '',
   sort: null,
   account_category: '',
   account: null,
@@ -25,8 +24,8 @@ const form = ref<DataFilter>({
 })
 
 const formsCheck = computed(() => {
-  const a = !from_date.value
-  const b = !to_date.value
+  const a = !form.value.from_date
+  const b = !form.value.to_date
   const c = !form.value.sort
   const d = !form.value.account_category
   const e = !form.value.account
@@ -46,8 +45,14 @@ const sortType = computed(() => {
   return null // 전체
 })
 
-watch(from_date, () => listFiltering(1))
-watch(to_date, () => listFiltering(1))
+watch(
+  () => form.value.from_date,
+  () => listFiltering(1),
+)
+watch(
+  () => form.value.to_date,
+  () => listFiltering(1),
+)
 
 //   methods: {
 const sortSelect = () => {
@@ -64,8 +69,6 @@ const cateSelect = () => {
 const listFiltering = (page = 1) => {
   form.value.page = page
   form.value.search = (form.value.search ?? '')?.trim()
-  form.value.from_date = from_date.value
-  form.value.to_date = to_date.value
   nextTick(() => {
     emit('list-filtering', { ...form.value })
   })
@@ -74,9 +77,10 @@ const listFiltering = (page = 1) => {
 defineExpose({ listFiltering })
 
 const resetForm = () => {
-  from_date.value = ''
-  to_date.value = ''
+  form.value.from_date = ''
+  form.value.to_date = ''
   form.value.sort = null
+  form.value.account_category = ''
   form.value.account = null
   form.value.bank_account = null
   form.value.affiliate = null
@@ -94,14 +98,14 @@ const resetForm = () => {
             <CRow>
               <CCol md="6" class="mb-3">
                 <DatePicker
-                  v-model="from_date"
+                  v-model="form.from_date"
                   placeholder="시작일 (From)"
                   @keydown.enter="listFiltering(1)"
                 />
               </CCol>
               <CCol md="6" class="mb-3">
                 <DatePicker
-                  v-model="to_date"
+                  v-model="form.to_date"
                   placeholder="종료일 (To)"
                   @keydown.enter="listFiltering(1)"
                 />
