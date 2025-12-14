@@ -13,15 +13,17 @@ interface Props {
   modelValue?: number | null
   placeholder?: string
   filterType?: 'deposit' | 'withdraw' | null
-}
-
-interface Emits {
-  (e: 'update:modelValue', value: number | null): void
+  isSearch?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '회계 계정',
+  isSearch: false,
 })
+
+interface Emits {
+  (e: 'update:modelValue', value: number | null): void
+}
 
 const emit = defineEmits<Emits>()
 
@@ -134,7 +136,8 @@ const selectedLabel = computed(() => {
 
 // 옵션 선택 처리
 const selectOption = (option: any) => {
-  if (!option.is_cate_only) {
+  // 검색 모드가 아닐 때만 카테고리 전용 항목 선택 차단
+  if (!option.is_cate_only || props.isSearch) {
     emit('update:modelValue', option.value)
 
     // v-model, hide()가 모두 동작하지 않는 비정상적인 상황이므로,
@@ -149,8 +152,13 @@ const selectOption = (option: any) => {
   }
 }
 
-// 선택 가능한 옵션들 (is_cate_only 제외)
+// 선택 가능한 옵션들 (검색 모드가 아닐 때만 is_cate_only 제외)
 const selectableOptions = computed(() => {
+  if (props.isSearch) {
+    // 검색 모드: 모든 항목 선택 가능
+    return searchFilteredOptions.value
+  }
+  // 일반 모드: 카테고리 전용 항목 제외
   return searchFilteredOptions.value.filter(opt => !opt.is_cate_only)
 })
 
@@ -324,11 +332,11 @@ onUnmounted(() => {
         :class="{
           'text-muted fw-semibold': option.is_cate_only,
           'bg-light': option.is_cate_only,
-          'category-only': option.is_cate_only,
+          'category-only': !isSearch && option.is_cate_only,
           'selected-item': option.value === modelValue,
           'keyboard-active': selectableOptions[selectedIndex]?.value === option.value,
         }"
-        :disabled="option.is_cate_only"
+        :disabled="!isSearch && option.is_cate_only"
         @click="selectOption(option)"
       >
         <span :style="`padding-left: ${(option.depth || 0) * 12}px`">

@@ -115,6 +115,7 @@ const resetForm = () => {
                 <LedgerAccount
                   v-model="form.account"
                   :options="comAccounts ?? []"
+                  :is-search="true"
                   :filter-type="accountFilterType"
                   @update:modelValue="listFiltering(1)"
                 />
