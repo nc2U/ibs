@@ -1,13 +1,17 @@
 <script lang="ts" setup>
-import { computed, inject, nextTick, type PropType, ref, watch } from 'vue'
-import type { Project } from '@/store/types/project'
+import { computed, inject, nextTick, ref, watch } from 'vue'
 import { type DataFilter } from '@/store/pinia/comLedger.ts'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
-defineProps({ projects: { type: Array as PropType<Project[]>, default: () => [] } })
+const props = defineProps({ company: { type: Number, default: null } })
+watch(
+  () => props.company,
+  () => resetForm(),
+)
+
 const emit = defineEmits(['list-filtering'])
 
 const form = ref<DataFilter>({
@@ -19,7 +23,7 @@ const form = ref<DataFilter>({
   account_category: '',
   account: null,
   bank_account: null,
-  affiliate: null,
+  affiliate: '',
   search: '',
 })
 
@@ -36,8 +40,15 @@ const formsCheck = computed(() => {
 })
 
 const comAccounts = inject<any[]>('comAccounts')
+const affiliates = inject<any[]>('affiliates')
 const allComBankList = inject<any[]>('allComBankList')
 const bankTransactionCount = inject<any>('bankTransactionCount')
+
+const affiliateList = computed(() =>
+  ((affiliates as any).value as any[])?.filter(
+    it => !((it as any).sort === 'company' && (it as any).id === props.company),
+  ),
+)
 
 const sortType = computed(() => {
   if (form.value.sort === 1) return 'deposit' // 입금
@@ -83,7 +94,7 @@ const resetForm = () => {
   form.value.account_category = ''
   form.value.account = null
   form.value.bank_account = null
-  form.value.affiliate = null
+  form.value.affiliate = ''
   form.value.search = ''
   listFiltering(1)
 }
@@ -165,8 +176,8 @@ const resetForm = () => {
           <CCol md="6" lg="5" class="mb-3">
             <CFormSelect v-model.number="form.affiliate" @change="listFiltering(1)">
               <option value="">투입 관계회사(프로젝트)</option>
-              <option v-for="proj in projects" :key="proj.pk" :value="proj.pk">
-                {{ proj.name }}
+              <option v-for="aff in affiliateList" :key="aff.value" :value="aff.value">
+                {{ aff.label }}
               </option>
             </CFormSelect>
           </CCol>

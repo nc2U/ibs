@@ -44,7 +44,7 @@ const dataFilter = ref<Filter>({
   to_date: '',
   sort: null,
   account: null,
-  affiliate: null,
+  affiliate: '',
   bank_account: null,
   search: '',
 })
@@ -336,7 +336,7 @@ onBeforeRouteLeave(() => {
         <div v-if="route.name === '본사 거래 내역'">
           <ListController
             ref="listControl"
-            :projects="projectList"
+            :company="company as number"
             @list-filtering="listFiltering"
           />
 

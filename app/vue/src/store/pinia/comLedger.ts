@@ -31,7 +31,7 @@ export type DataFilter = {
     | 'cancel'
     | ''
   account?: number | null
-  affiliate?: number | null
+  affiliate?: number | null | ''
   bank_account?: number | null
   search?: string
   limit?: number
@@ -62,6 +62,8 @@ export const useComLedger = defineStore('comLedger', () => {
     affiliateList.value.map(aff => ({
       value: aff.pk,
       label: `[${aff.sort === 'company' ? 'CO' : 'PR'}]${aff.company_name ?? aff.project_name}`,
+      sort: aff.sort,
+      id: aff.company ?? aff.project,
     })),
   )
 
