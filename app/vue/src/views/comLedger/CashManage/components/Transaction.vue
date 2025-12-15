@@ -1,79 +1,26 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
-import { useStore } from '@/store'
-import { useAccount } from '@/store/pinia/account'
 import { write_company_cash } from '@/utils/pageAuth'
-import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
+import { cutString, numFormat } from '@/utils/baseMixins'
 import type { Project } from '@/store/types/project'
-import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
+import type { BankTransaction } from '@/store/types/comLedger'
+import { useComLedger } from '@/store/pinia/comLedger.ts'
 
 const props = defineProps({
+  projects: { type: Array as PropType<Project[]>, default: () => [] },
   transaction: { type: Object as PropType<BankTransaction>, required: true },
   calculated: { type: String, default: '2000-01-01' },
   isHighlighted: { type: Boolean, default: false },
   hasChildren: { type: Boolean, default: false },
 })
 
-const emit = defineEmits([
-  'multi-submit',
-  'on-delete',
-  'patch-d3-hide',
-  'on-bank-create',
-  'on-bank-update',
-])
-
-const refDelModal = ref()
-const refAlertModal = ref()
-
 const router = useRouter()
 
-const store = useStore()
-const dark = computed(() => store.theme === 'dark')
-const rowColor = computed(() => {
-  let color = ''
-  color = dark.value ? '' : color
-  // 하이라이트가 우선순위가 가장 높음
-  if (props.isHighlighted) {
-    color = 'warning'
-  } else {
-    color = '' // props.transaction?.accounting_entries.length > 1 ? 'primary' : color
-    color = '' // props.transaction?.separated ? 'secondary' : color
-  }
-  return color
-})
+const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
 
-const accountStore = useAccount()
-const allowedPeriod = computed(
-  () =>
-    accountStore.superAuth ||
-    (props.transaction?.deal_date &&
-      diffDate(props.transaction.deal_date, new Date(props.calculated)) <= 10),
-)
-
-const multiSubmit = (payload: { formData: BankTransaction; sepData: BankTransaction | null }) =>
-  emit('multi-submit', payload)
-
-const deleteConfirm = () => {
-  if (write_company_cash.value)
-    if (allowedPeriod.value) refDelModal.value.callModal()
-    else
-      refAlertModal.value.callModal(
-        null,
-        '거래일로부터 30일이 경과한 건은 삭제할 수 없습니다. 관리자에게 문의바랍니다.',
-      )
-  else refAlertModal.value.callModal()
-}
-
-const deleteObject = () => {
-  emit('on-delete', { company: props.transaction?.company, pk: props.transaction?.pk })
-  refDelModal.value.close()
-}
-
-const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => emit('patch-d3-hide', payload)
-
-const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
-const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
+const ledgerStore = useComLedger()
+const patchBankTransaction = (payload: any) => ledgerStore.patchBankTransaction(payload)
 </script>
 
 <template>
