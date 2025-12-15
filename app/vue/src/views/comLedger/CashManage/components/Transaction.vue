@@ -270,6 +270,7 @@ const handleUpdate = async () => {
                 'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_affiliate'),
                 pointer: !isEditing('entry', entry.pk!, 'account_affiliate'),
               }"
+              :style="isEditing('entry', entry.pk!, 'account_affiliate') ? { overflow: 'visible' } : {}"
               @dblclick="
                 setEditing('entry', entry.pk!, 'account_affiliate', {
                   account: entry.account, // Using entry.account as LedgerAccount v-model expects an account ID
