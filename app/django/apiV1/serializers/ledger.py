@@ -372,11 +372,19 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         """회계 분개 금액 합계 검증"""
-        bank_amount = attrs['amount']
-        entries_data = attrs['accounting_entries']
+        # PATCH 요청 시 'amount'나 'accounting_entries'가 없을 수 있으므로 .get()으로 안전하게 접근
+        # 'amount'가 없으면 기존 인스턴스의 값을 사용
+        bank_amount = attrs.get('amount', getattr(self.instance, 'amount', None))
+        entries_data = attrs.get('accounting_entries')
+
+        # 금액 합계 검증은 'accounting_entries'가 전달된 경우에만 의미가 있음
+        # 'note' 등 다른 필드만 수정하는 경우를 위해 entries_data가 없으면 검증을 건너뜀
+        if not entries_data or bank_amount is None:
+            return attrs
 
         # 회계 분개 금액 총합 계산
-        entries_total = sum(entry['amount'] for entry in entries_data)
+        # PATCH 시 분개 데이터에 amount가 없을 수 있으므로 .get()으로 안전하게 접근
+        entries_total = sum(entry.get('amount', 0) for entry in entries_data)
 
         if bank_amount != entries_total:
             raise serializers.ValidationError({
