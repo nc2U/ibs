@@ -524,8 +524,8 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'green' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
-        sign = '+' if obj.sort_id == 1 else '-'
+        color = 'green' if obj.sort == 1 else 'red'  # 1=입금, 2=출금
+        sign = '+' if obj.sort == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
