@@ -1,3 +1,14 @@
+export interface Account {
+  value: number
+  label: string
+  parent: number | null
+  depth: number
+  category: number
+  direction: string
+  is_cate_only: boolean
+  req_affiliate: boolean
+}
+
 export interface BankCode {
   pk: number
   code: string

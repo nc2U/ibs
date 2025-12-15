@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { computed, inject, ref, nextTick, type PropType } from 'vue'
+import { computed, inject, ref, nextTick, type PropType, type ComputedRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import type { BankTransaction, AccountingEntry } from '@/store/types/comLedger'
-import { CTableDataCell, CTableRow } from '@coreui/vue'
+import type { BankTransaction, AccountingEntry, Account } from '@/store/types/comLedger'
+import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
 const props = defineProps({
   transaction: { type: Object as PropType<BankTransaction>, required: true },
@@ -24,6 +24,21 @@ const allowedPeriod = computed(
     (superAuth as any).value ||
     (write_company_cash && diffDate(props.transaction.deal_date, new Date(props.calculated)) <= 10),
 )
+
+const comAccounts = inject<ComputedRef<Account[]>>('comAccounts')
+const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
+
+// 선택된 account가 affiliate를 요구하는지 확인
+const getAccountById = (accountId: number | null | undefined): Account | undefined => {
+  if (!accountId || !comAccounts?.value) return undefined
+  return comAccounts.value.find(acc => acc.value === accountId)
+}
+
+const accountFilterType = computed(() => {
+  if (props.transaction.sort === 1) return 'deposit' // 입금
+  if (props.transaction.sort === 2) return 'withdraw' // 출금
+  return null // 전체
+})
 
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
 const editingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)
@@ -72,7 +87,33 @@ const handleUpdate = async () => {
     }
   } else {
     const entry = props.transaction.accounting_entries?.find(e => e.pk === pk)
-    if (entry) {
+    if (!entry) {
+      editingState.value = null // No entry found, cancel editing
+      return
+    }
+
+    if (field === 'sort_amount') {
+      const originalSort = props.transaction.sort
+      const originalAmount = props.transaction.amount || 0
+      const newSort = editValue.value.sort
+      const newAmount = Number(editValue.value.amount) || 0
+
+      if (newSort === originalSort && newAmount === originalAmount) {
+        editingState.value = null
+        return
+      }
+    } else if (field === 'account_affiliate') {
+      const originalAccount = entry.account
+      const originalAffiliate = entry.affiliate
+      const newAccount = editValue.value.account
+      const newAffiliate = editValue.value.affiliate
+
+      if (newAccount === originalAccount && newAffiliate === originalAffiliate) {
+        editingState.value = null
+        return
+      }
+    } else {
+      // For other single entry fields
       const originalValue = entry[field as keyof AccountingEntry]
       if (editValue.value === originalValue) {
         editingState.value = null
@@ -91,7 +132,14 @@ const handleUpdate = async () => {
       payload[field] = editValue.value
     }
   } else {
-    payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
+    // type === 'entry'
+    if (field === 'account_affiliate') {
+      payload.accounting_entries = [
+        { pk: pk, account: editValue.value.account, affiliate: editValue.value.affiliate },
+      ]
+    } else {
+      payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
+    }
   }
 
   try {
@@ -217,8 +265,45 @@ const handleUpdate = async () => {
             <col v-if="write_company_cash" style="width: 6%" />
           </colgroup>
           <CTableRow v-for="entry in transaction.accounting_entries" :key="entry.pk">
-            <CTableDataCell>
-              <div class="d-flex align-items-center bg-transparent">
+            <CTableDataCell
+              :class="{
+                'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_affiliate'),
+                pointer: !isEditing('entry', entry.pk!, 'account_affiliate'),
+              }"
+              @dblclick="
+                setEditing('entry', entry.pk!, 'account_affiliate', {
+                  account: entry.account, // Using entry.account as LedgerAccount v-model expects an account ID
+                  affiliate: entry.affiliate,
+                })
+              "
+            >
+              <div v-if="isEditing('entry', entry.pk!, 'account_affiliate')">
+                <LedgerAccount
+                  v-model="editValue.account"
+                  :options="comAccounts ?? []"
+                  :filter-type="accountFilterType"
+                  @blur="handleUpdate"
+                  @keydown.enter="handleUpdate"
+                />
+                <div
+                  v-if="editValue.account && getAccountById(editValue.account)?.req_affiliate"
+                  class="pt-0 px-2"
+                >
+                  <CFormSelect
+                    v-model.number="editValue.affiliate"
+                    class=""
+                    placeholder="관계회사 선택"
+                    @blur="handleUpdate"
+                    @keydown.enter="handleUpdate"
+                  >
+                    <option :value="null">관계회사를 선택하세요</option>
+                    <option v-for="aff in affiliates" :value="aff.value" :key="aff.value">
+                      {{ aff.label }}
+                    </option>
+                  </CFormSelect>
+                </div>
+              </div>
+              <div v-else class="d-flex align-items-center bg-transparent">
                 <span>{{ entry.account_name }}</span>
                 <v-tooltip v-if="entry.affiliate" location="top">
                   <template v-slot:activator="{ props: tooltipProps }">
@@ -235,6 +320,12 @@ const handleUpdate = async () => {
                     <div>{{ entry.affiliate_display }}</div>
                   </div>
                 </v-tooltip>
+                <v-icon
+                  icon="mdi-pencil-outline"
+                  size="14"
+                  color="success"
+                  class="inline-edit-icon"
+                />
               </div>
             </CTableDataCell>
             <CTableDataCell> {{ cutString(entry.trader, 20) }} </CTableDataCell>
