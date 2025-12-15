@@ -5,7 +5,7 @@ import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { BankTransaction, AccountingEntry } from '@/store/types/comLedger'
-import { CTableRow } from '@coreui/vue'
+import { CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   transaction: { type: Object as PropType<BankTransaction>, required: true },
@@ -51,24 +51,45 @@ const handleUpdate = async () => {
   if (!editingState.value) return
 
   const { type, pk, field } = editingState.value
-  let originalValue: any
 
   if (type === 'tran') {
-    originalValue = props.transaction[field as keyof BankTransaction]
+    if (field === 'sort_amount') {
+      const originalSort = props.transaction.sort
+      const originalAmount = props.transaction.amount || 0
+      const newSort = editValue.value.sort
+      const newAmount = Number(editValue.value.amount) || 0
+
+      if (newSort === originalSort && newAmount === originalAmount) {
+        editingState.value = null
+        return
+      }
+    } else {
+      const originalValue = props.transaction[field as keyof BankTransaction]
+      if (editValue.value === originalValue) {
+        editingState.value = null
+        return
+      }
+    }
   } else {
     const entry = props.transaction.accounting_entries?.find(e => e.pk === pk)
-    if (entry) originalValue = entry[field as keyof AccountingEntry]
+    if (entry) {
+      const originalValue = entry[field as keyof AccountingEntry]
+      if (editValue.value === originalValue) {
+        editingState.value = null
+        return
+      }
+    }
   }
 
-  if (editValue.value === originalValue) {
-    editingState.value = null
-    return
-  }
-
-  const payload: { pk: number; [key: string]: any } = { pk: props.transaction.pk }
+  const payload: { pk: number; [key: string]: any } = { pk: props.transaction.pk! }
 
   if (type === 'tran') {
-    payload[field] = editValue.value
+    if (field === 'sort_amount') {
+      payload.sort = editValue.value.sort
+      payload.amount = Number(editValue.value.amount) || 0
+    } else {
+      payload[field] = editValue.value
+    }
   } else {
     payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
   }
@@ -103,7 +124,6 @@ const handleUpdate = async () => {
           @blur="handleUpdate"
           @keydown.enter="handleUpdate"
           type="text"
-          size="sm"
         />
         <span v-else>
           {{ cutString(transaction.note, 20) }}
@@ -136,7 +156,6 @@ const handleUpdate = async () => {
           @blur="handleUpdate"
           @keydown.enter="handleUpdate"
           type="text"
-          size="sm"
         />
         <span v-else>
           {{ cutString(transaction.content, 15) }}
@@ -146,10 +165,46 @@ const handleUpdate = async () => {
 
       <CTableDataCell
         class="text-right"
-        :class="transaction.sort === 1 ? 'text-success strong' : ''"
-        style="padding-top: 12px"
+        :class="{
+          'editable-cell-hint': !isEditing('tran', transaction.pk!, 'sort_amount'),
+          pointer: !isEditing('tran', transaction.pk!, 'sort_amount'),
+        }"
+        :style="
+          isEditing('tran', transaction.pk!, 'sort_amount')
+            ? 'padding-top: 10px'
+            : 'padding-top: 12px'
+        "
+        @dblclick="
+          setEditing('tran', transaction.pk!, 'sort_amount', {
+            sort: transaction.sort,
+            amount: transaction.amount || 0,
+          })
+        "
       >
-        {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(transaction.amount || 0) }}
+        <div
+          v-if="isEditing('tran', transaction.pk!, 'sort_amount')"
+          class="d-flex align-items-center justify-content-end"
+        >
+          <v-btn-toggle v-model="editValue.sort" variant="outlined" density="compact" divided>
+            <v-btn :value="1" size="x-small">입금</v-btn>
+            <v-btn :value="2" size="x-small">출금</v-btn>
+          </v-btn-toggle>
+
+          <CFormInput
+            ref="inputRef"
+            v-model.number="editValue.amount"
+            type="number"
+            style="width: 120px; margin-left: 8px"
+            @blur="handleUpdate"
+            @keydown.enter="handleUpdate"
+          />
+        </div>
+        <div v-else>
+          <span :class="transaction.sort === 1 ? 'text-success strong' : ''">
+            {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(transaction.amount || 0) }}
+          </span>
+          <v-icon icon="mdi-pencil-outline" size="14" color="success" class="inline-edit-icon" />
+        </div>
       </CTableDataCell>
 
       <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
