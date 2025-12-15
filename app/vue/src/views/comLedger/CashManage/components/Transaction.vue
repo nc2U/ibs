@@ -5,6 +5,7 @@ import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { BankTransaction, AccountingEntry } from '@/store/types/comLedger'
+import { CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   transaction: { type: Object as PropType<BankTransaction>, required: true },
@@ -64,7 +65,7 @@ const handleUpdate = async () => {
     return
   }
 
-  const payload: { pk: number; [key: string]: any } = { pk: props.transaction.pk! }
+  const payload: { pk: number; [key: string]: any } = { pk: props.transaction.pk }
 
   if (type === 'tran') {
     payload[field] = editValue.value
@@ -89,6 +90,7 @@ const handleUpdate = async () => {
 
       <!-- 비고 인라인 편집 -->
       <CTableDataCell
+        :class="['editable-cell-hint', isEditing('tran', transaction.pk!, 'note') ? '' : 'pointer']"
         :style="
           isEditing('tran', transaction.pk!, 'note') ? 'padding-top: 10px' : 'padding-top: 12px'
         "
@@ -103,9 +105,9 @@ const handleUpdate = async () => {
           type="text"
           size="sm"
         />
-        <span v-else class="cursor-pointer editable-cell-hint">
+        <span v-else>
           {{ cutString(transaction.note, 20) }}
-          <v-icon icon="mdi-pencil-outline" size="14" class="inline-edit-icon" />
+          <v-icon icon="mdi-pencil-outline" size="14" color="success" class="inline-edit-icon" />
         </span>
       </CTableDataCell>
 
@@ -114,11 +116,34 @@ const handleUpdate = async () => {
           {{ cutString(transaction.bank_account_name, 10) }}
         </span>
       </CTableDataCell>
-      <CTableDataCell class="truncate" style="padding-top: 12px">
-        <span v-if="transaction.content">
+
+      <!-- Content 인라인 편집 -->
+      <CTableDataCell
+        :class="[
+          'truncate',
+          'editable-cell-hint',
+          isEditing('tran', transaction.pk!, 'content') ? '' : 'pointer',
+        ]"
+        :style="
+          isEditing('tran', transaction.pk!, 'content') ? 'padding-top: 10px' : 'padding-top: 12px'
+        "
+        @dblclick="setEditing('tran', transaction.pk!, 'content', transaction.content)"
+      >
+        <CFormInput
+          v-if="isEditing('tran', transaction.pk!, 'content')"
+          ref="inputRef"
+          v-model="editValue"
+          @blur="handleUpdate"
+          @keydown.enter="handleUpdate"
+          type="text"
+          size="sm"
+        />
+        <span v-else>
           {{ cutString(transaction.content, 15) }}
+          <v-icon icon="mdi-pencil-outline" size="14" color="success" class="inline-edit-icon" />
         </span>
       </CTableDataCell>
+
       <CTableDataCell
         class="text-right"
         :class="transaction.sort === 1 ? 'text-success strong' : ''"
@@ -189,27 +214,20 @@ const handleUpdate = async () => {
 </template>
 
 <style scoped>
-.cursor-pointer {
-  cursor: pointer;
-}
 .editable-cell-hint {
   position: relative;
-  display: inline-flex;
   align-items: center;
 }
 .inline-edit-icon {
-  opacity: 0;
+  opacity: 0; /* Default hidden */
   margin-left: 4px;
   transition: opacity 0.2s ease;
 }
-.editable-cell-hint:hover .inline-edit-icon,
+.editable-cell-hint:hover .inline-edit-icon, /* Show on hover of the td with editable-cell-hint */
 .inline-datepicker:hover .inline-edit-icon {
   opacity: 1;
 }
-.inline-datepicker {
-  width: 120px;
-  display: inline-block;
-}
+
 /* 기본적으로 수정 아이콘 숨김 */
 .edit-icon-hover {
   opacity: 0;
