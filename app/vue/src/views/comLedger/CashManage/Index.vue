@@ -11,8 +11,8 @@ import { useCompany } from '@/store/pinia/company'
 import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import type { Company } from '@/store/types/settings.ts'
-import type { AccountingEntry, BankTransaction, CompanyBank } from '@/store/types/comLedger'
-import { type DataFilter as Filter, type DataFilter, useComLedger } from '@/store/pinia/comLedger'
+import type { CompanyBank } from '@/store/types/comLedger'
+import { type DataFilter as Filter, useComLedger } from '@/store/pinia/comLedger'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -35,18 +35,6 @@ const highlightId = computed(() => {
 const urlCompanyId = computed(() => {
   const id = route.query.company
   return id ? parseInt(id as string, 10) : null
-})
-
-const dataFilter = ref<Filter>({
-  page: 1,
-  company: null,
-  from_date: '',
-  to_date: '',
-  sort: null,
-  account: null,
-  affiliate: '',
-  bank_account: null,
-  search: '',
 })
 
 const excelUrl = computed(() => {
@@ -75,6 +63,7 @@ const ledgerStore = useComLedger()
 const affiliates = computed(() => ledgerStore.affiliates)
 const comAccounts = computed(() => ledgerStore.comAccounts)
 const allComBankList = computed(() => ledgerStore.allComBankList)
+const dataFilter = computed(() => ledgerStore.bankTransactionFilter)
 const bankTransactionCount = computed(() => ledgerStore.bankTransactionCount)
 
 provide('affiliates', affiliates)
@@ -94,13 +83,6 @@ const patchComBankAcc = (payload: CompanyBank) => ledgerStore.patchComBankAcc(pa
 const fetchBankTransactionList = (payload: Filter) => ledgerStore.fetchBankTransactionList(payload)
 const findBankTransactionPage = (highlightId: number, filters: Filter) =>
   ledgerStore.findBankTransactionPage(highlightId, filters)
-const createBankTransaction = (payload: BankTransaction & { accData: AccountingEntry | null }) =>
-  ledgerStore.createBankTransaction(payload)
-const updateBankTransaction = (
-  payload: BankTransaction & { accData: AccountingEntry | null } & { filters: DataFilter },
-) => ledgerStore.updateBankTransaction(payload)
-const deleteBankTransaction = (payload: BankTransaction & { filters: Filter }) =>
-  ledgerStore.deleteBankTransaction(payload)
 const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalc(com)
 
 const pageSelect = (page: number) => listControl.value.listFiltering(page)
@@ -109,96 +91,9 @@ const listFiltering = (payload: Filter) => {
   // 필터링 시 query string 정리
   clearQueryString()
   if (company.value) payload.company = company.value
-  dataFilter.value = payload
-  const sort = payload.sort || null
-  const ac = payload.account || null
   fetchCompanyAccounts()
   if (company.value) fetchBankTransactionList(payload)
 }
-
-// const chargeCreate = (
-//   payload: BankTransaction & { accData: AccountingEntry | null },
-//   charge: number,
-// ) => {
-//   payload.sort = 2
-//   payload.account_d1 = 5
-//   payload.account_d2 = 17
-//   payload.account_d3 = 118
-//   payload.content = cutString(payload.content, 8) + ' - 이체수수료'
-//   payload.trader = '지급수수료'
-//   payload.outlay = charge
-//   payload.income = null
-//   payload.evidence = '0'
-//   payload.note = ''
-//
-//   createBankTransaction(payload)
-// }
-
-const onCreate = (
-  payload: BankTransaction & { accData: AccountingEntry | null } & {
-    bank_account_to: null | number
-    charge: null | number
-  },
-) => {
-  payload.company = company.value as number
-  // if (payload.sort === 3 && payload.bank_account_to) {
-  //   // 대체 거래일 때
-  //   const { bank_account_to, charge, ...inputData } = payload
-  //
-  //   inputData.sort = 2
-  //   inputData.trader = '내부대체'
-  //   inputData.account_d3 = 131
-  //   createBankTransaction(inputData)
-  //
-  //   inputData.sort = 1
-  //   inputData.account_d3 = 132
-  //   inputData.income = inputData.outlay
-  //   inputData.outlay = null
-  //   inputData.bank_account = bank_account_to
-  //
-  //   setTimeout(() => createBankTransaction({ ...inputData }), 300)
-  //   if (!!charge) {
-  //     // setTimeout(() => chargeCreate({ ...inputData }, charge), 600)
-  //   }
-  // } else if (payload.sort === 4) {
-  //   // 취소 거래일 때
-  //   payload.sort = 2
-  //   payload.account_d3 = 133
-  //   payload.evidence = '0'
-  //   createBankTransaction(payload)
-  //   payload.sort = 1
-  //   payload.account_d3 = 134
-  //   payload.income = payload.outlay
-  //   payload.outlay = null
-  //   payload.evidence = ''
-  //   setTimeout(() => createBankTransaction(payload), 300)
-  // } else {
-  //   const { charge, ...inputData } = payload
-  //   createBankTransaction(inputData)
-  //   if (!!charge) chargeCreate(inputData, charge)
-  // }
-}
-
-const onUpdate = (
-  payload: BankTransaction & { accData: AccountingEntry | null } & { filters: Filter },
-) => updateBankTransaction(payload)
-
-const multiSubmit = (payload: {
-  formData: BankTransaction
-  accData: AccountingEntry | null
-  bank_account_to: null | number
-  charge: null | number
-}) => {
-  const { formData, ...accData } = payload
-  const createData = { ...formData, ...accData }
-  const updateData = { ...{ filters: dataFilter.value }, ...createData }
-
-  // if (formData.pk) onUpdate(updateData)
-  // else onCreate(createData)
-}
-
-const onDelete = (payload: BankTransaction) =>
-  deleteBankTransaction({ ...{ filters: dataFilter.value }, ...payload })
 
 const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => 1 // patchAccD3(payload)
 
@@ -217,7 +112,7 @@ const dataSetup = async (pk: number) => {
   await fetchAllComBankAccList(pk)
   await fetchBankTransactionList({ company: pk })
   await fetchComLedgerCalc(pk)
-  dataFilter.value.company = pk
+  ledgerStore.bankTransactionFilter.company = pk
 }
 
 const dataReset = () => {
@@ -227,7 +122,7 @@ const dataReset = () => {
   ledgerStore.allComBankList = []
   ledgerStore.bankTransactionList = []
   ledgerStore.bankTransactionCount = 0
-  dataFilter.value.company = null
+  ledgerStore.bankTransactionFilter.company = null
 }
 
 const comSelect = async (target: number | null, skipClearQuery = false) => {
@@ -279,7 +174,7 @@ const loadHighlightPage = async () => {
         limit: 15, // Django에서 사용하는 페이지 크기와 동일하게 설정
       })
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
-      dataFilter.value.page = targetPage
+      ledgerStore.bankTransactionFilter.page = targetPage
       await fetchBankTransactionList({
         ...dataFilter.value,
         company: company.value,
@@ -344,7 +239,6 @@ onBeforeRouteLeave(() => {
             v-if="write_company_cash"
             :company="company as number"
             :projects="projectList"
-            @multi-submit="multiSubmit"
             @on-bank-create="onBankCreate"
             @on-bank-update="onBankUpdate"
           />
@@ -364,8 +258,6 @@ onBeforeRouteLeave(() => {
             :highlight-id="highlightId ?? undefined"
             :current-page="dataFilter.page || 1"
             @page-select="pageSelect"
-            @multi-submit="multiSubmit"
-            @on-delete="onDelete"
             @on-bank-create="onBankCreate"
             @on-bank-update="onBankUpdate"
           />

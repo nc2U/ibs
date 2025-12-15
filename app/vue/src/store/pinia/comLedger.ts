@@ -194,6 +194,7 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const bankTransactionFilter = ref<DataFilter>({})
   const bankTransaction = ref<BankTransaction | null>(null)
   const bankTransactionList = ref<BankTransaction[]>([])
   const bankTransactionCount = ref<number>(0)
@@ -226,11 +227,13 @@ export const useComLedger = defineStore('comLedger', () => {
     return await api
       .get('/ledger/company-transaction/', { params })
       .then(res => {
+        bankTransactionFilter.value = payload
         bankTransactionList.value = res.data.results
         bankTransactionCount.value = res.data.count
       })
       .catch(err => errorHandle(err.response.data))
   }
+
   const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
     const { company } = filters
     let url = `/ledger/company-transaction/find_page/?highlight_id=${highlightId}&company=${company}`
@@ -251,70 +254,13 @@ export const useComLedger = defineStore('comLedger', () => {
     }
   }
 
-  // // 특정 부모의 자식 레코드 조회 (페이지네이션)
-  // const fetchChildrenRecords = async (parentPk: number, page: number = 1) => {
-  //   try {
-  //     const response = await api.get(`/bank-transaction/${parentPk}/children/?page=${page}`)
-  //     const children = response.data.results as BankTransaction[]
-  //     const count = response.data.count
-  //
-  //     // 페이지별 캐시 업데이트 (각 페이지를 독립적으로 저장)
-  //     childrenCache.value.set(parentPk, children)
-  //
-  //     return {
-  //       results: children,
-  //       count,
-  //       next: response.data.next,
-  //       previous: response.data.previous,
-  //     }
-  //   } catch (err: any) {
-  //     errorHandle(err.response?.data)
-  //     throw err
-  //   }
-  // }
-  //
-  // // 캐시에서 자식 레코드 가져오기
-  // const getCachedChildren = (parentPk: number): BankTransaction[] => {
-  //   return childrenCache.value.get(parentPk) || []
-  // }
-  //
-  // // 캐시 무효화
-  // const invalidateChildrenCache = (parentPk?: number) => {
-  //   if (parentPk !== undefined) {
-  //     childrenCache.value.delete(parentPk)
-  //   } else {
-  //     childrenCache.value.clear()
-  //   }
-  // }
-  //
-  // // 캐시된 자식 레코드 업데이트
-  // const updateCachedChild = (parentPk: number, updatedChild: BankTransaction) => {
-  //   const cachedChildren = childrenCache.value.get(parentPk)
-  //   if (cachedChildren) {
-  //     const index = cachedChildren.findIndex(child => child.pk === updatedChild.pk)
-  //     if (index !== -1) {
-  //       // 기존 자식 레코드를 업데이트된 데이터로 교체
-  //       cachedChildren[index] = updatedChild
-  //       childrenCache.value.set(parentPk, [...cachedChildren])
-  //     }
-  //   }
-  // }
-  //
-  // // 목록에서 부모 레코드 업데이트 (is_balanced 등 갱신)
-  // const updateParentInList = (parentPk: number, updatedParent: BankTransaction) => {
-  //   const index = bankTransactionList.value.findIndex(item => item.pk === parentPk)
-  //   if (index !== -1) {
-  //     bankTransactionList.value[index] = updatedParent
-  //   }
-  // }
-
   const createBankTransaction = async (
     payload: BankTransaction & { accData: AccountingEntry | null },
   ) =>
     await api
       .post(`/ledger/company-composite-transaction/`, payload)
       .then(async res => {
-        return await fetchBankTransactionList({ company: res.data.company }).then(() => message())
+        return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -325,7 +271,7 @@ export const useComLedger = defineStore('comLedger', () => {
     return await api
       .put(`/ledger/company-composite-transaction/${formData.pk}/`, formData)
       .then(async res => {
-        return await fetchBankTransactionList({ company: res.data.company }).then(() => message())
+        return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
       })
       .catch(err => errorHandle(err.response.data))
   }
@@ -492,6 +438,7 @@ export const useComLedger = defineStore('comLedger', () => {
     fetchDateCashBookList,
 
     bankTransaction,
+    bankTransactionFilter,
     bankTransactionList,
     bankTransactionCount,
     cashesPages,
