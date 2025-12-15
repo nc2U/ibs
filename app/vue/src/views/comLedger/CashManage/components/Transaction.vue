@@ -1,14 +1,12 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { computed, inject, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
+import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_company_cash } from '@/utils/pageAuth'
-import { cutString, numFormat } from '@/utils/baseMixins'
-import type { Project } from '@/store/types/project'
-import type { BankTransaction } from '@/store/types/comLedger'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
+import type { BankTransaction } from '@/store/types/comLedger'
 
 const props = defineProps({
-  projects: { type: Array as PropType<Project[]>, default: () => [] },
   transaction: { type: Object as PropType<BankTransaction>, required: true },
   calculated: { type: String, default: '2000-01-01' },
   isHighlighted: { type: Boolean, default: false },
@@ -18,6 +16,13 @@ const props = defineProps({
 const router = useRouter()
 
 const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
+
+const superAuth = inject('superAuth')
+const allowedPeriod = computed(
+  () =>
+    (superAuth as any).value ||
+    (write_company_cash && diffDate(props.transaction.deal_date, new Date(props.calculated)) <= 10),
+) // 최고관리자가 아닌 경우 수정/편집 허용 기간 내인지 여부(일정기간 후 수정 금지)
 
 const ledgerStore = useComLedger()
 const patchBankTransaction = (payload: any) => ledgerStore.patchBankTransaction(payload)
@@ -92,6 +97,7 @@ const patchBankTransaction = (payload: any) => ledgerStore.patchBankTransaction(
             </CTableDataCell>
             <CTableDataCell v-if="write_company_cash" class="text-right pr-2">
               <v-icon
+                v-if="allowedPeriod"
                 icon="mdi-pencil"
                 size="18"
                 @click="
