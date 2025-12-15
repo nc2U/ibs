@@ -1,5 +1,5 @@
 # base image
-FROM python:3.14
+FROM python:3.12
 ENV PYTHONUNBUFFERED=1
 ENV LANG=ko_KR.UTF-8
 ENV LC_ALL=ko_KR.UTF-8
@@ -25,5 +25,5 @@ RUN git config --global --add safe.directory '*'
 EXPOSE 8000
 
 # ENTRYPOINT + CMD
-ENTRYPOINT ["uwsgi"]
-CMD ["--socket", ":8000", "--module", "_config.wsgi", "--py-autoreload", "1", "--logto", "/tmp/mylog.log", "--processes", "4", "--threads", "2", "--max-requests", "1000", "--harakiri", "60", "--buffer-size", "32768", "--vacuum", "--die-on-term"]
+ENTRYPOINT ["gunicorn"]
+CMD ["_config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "2", "--timeout", "180", "--graceful-timeout", "30", "--max-requests", "1000", "--max-requests-jitter", "100", "--access-logfile", "-", "--error-logfile", "-" ]
