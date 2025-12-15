@@ -1,19 +1,19 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType } from 'vue'
+import { computed, inject, ref, nextTick, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import type { BankTransaction } from '@/store/types/comLedger'
+import type { BankTransaction, AccountingEntry } from '@/store/types/comLedger'
 
 const props = defineProps({
   transaction: { type: Object as PropType<BankTransaction>, required: true },
   calculated: { type: String, default: '2000-01-01' },
   isHighlighted: { type: Boolean, default: false },
-  hasChildren: { type: Boolean, default: false },
 })
 
 const router = useRouter()
+const ledgerStore = useComLedger()
 
 const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
 
@@ -22,10 +22,62 @@ const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||
     (write_company_cash && diffDate(props.transaction.deal_date, new Date(props.calculated)) <= 10),
-) // 최고관리자가 아닌 경우 수정/편집 허용 기간 내인지 여부(일정기간 후 수정 금지)
+)
 
-const ledgerStore = useComLedger()
-const patchBankTransaction = (payload: any) => ledgerStore.patchBankTransaction(payload)
+// --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
+const editingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)
+const editValue = ref<any>(null)
+const inputRef = ref<HTMLInputElement | null>(null)
+
+const setEditing = (type: 'tran' | 'entry', pk: number, field: string, value: any) => {
+  if (!allowedPeriod.value) return
+  editingState.value = { type, pk, field }
+  editValue.value = value
+  nextTick(() => {
+    inputRef.value?.focus()
+  })
+}
+
+const isEditing = (type: 'tran' | 'entry', pk: number, field: string) => {
+  return (
+    editingState.value?.type === type &&
+    editingState.value?.pk === pk &&
+    editingState.value?.field === field
+  )
+}
+
+const handleUpdate = async () => {
+  if (!editingState.value) return
+
+  const { type, pk, field } = editingState.value
+  let originalValue: any
+
+  if (type === 'tran') {
+    originalValue = props.transaction[field as keyof BankTransaction]
+  } else {
+    const entry = props.transaction.accounting_entries?.find(e => e.pk === pk)
+    if (entry) originalValue = entry[field as keyof AccountingEntry]
+  }
+
+  if (editValue.value === originalValue) {
+    editingState.value = null
+    return
+  }
+
+  const payload: { pk: number; [key: string]: any } = { pk: props.transaction.pk! }
+
+  if (type === 'tran') {
+    payload[field] = editValue.value
+  } else {
+    payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
+  }
+
+  try {
+    await ledgerStore.patchBankTransaction(payload)
+  } finally {
+    editingState.value = null
+  }
+}
 </script>
 
 <template>
@@ -34,9 +86,29 @@ const patchBankTransaction = (payload: any) => ledgerStore.patchBankTransaction(
       <CTableDataCell style="padding-top: 12px">
         <span class="text-primary">{{ transaction.deal_date }}</span>
       </CTableDataCell>
-      <CTableDataCell style="padding-top: 12px">
-        {{ cutString(transaction.note, 20) }}
+
+      <!-- 비고 인라인 편집 -->
+      <CTableDataCell
+        :style="
+          isEditing('tran', transaction.pk!, 'note') ? 'padding-top: 10px' : 'padding-top: 12px'
+        "
+        @dblclick="setEditing('tran', transaction.pk!, 'note', transaction.note)"
+      >
+        <CFormInput
+          v-if="isEditing('tran', transaction.pk!, 'note')"
+          ref="inputRef"
+          v-model="editValue"
+          @blur="handleUpdate"
+          @keydown.enter="handleUpdate"
+          type="text"
+          size="sm"
+        />
+        <span v-else class="cursor-pointer editable-cell-hint">
+          {{ cutString(transaction.note, 20) }}
+          <v-icon icon="mdi-pencil-outline" size="14" class="inline-edit-icon" />
+        </span>
       </CTableDataCell>
+
       <CTableDataCell style="padding-top: 12px">
         <span v-if="transaction.bank_account_name">
           {{ cutString(transaction.bank_account_name, 10) }}
@@ -117,6 +189,27 @@ const patchBankTransaction = (payload: any) => ledgerStore.patchBankTransaction(
 </template>
 
 <style scoped>
+.cursor-pointer {
+  cursor: pointer;
+}
+.editable-cell-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.inline-edit-icon {
+  opacity: 0;
+  margin-left: 4px;
+  transition: opacity 0.2s ease;
+}
+.editable-cell-hint:hover .inline-edit-icon,
+.inline-datepicker:hover .inline-edit-icon {
+  opacity: 1;
+}
+.inline-datepicker {
+  width: 120px;
+  display: inline-block;
+}
 /* 기본적으로 수정 아이콘 숨김 */
 .edit-icon-hover {
   opacity: 0;

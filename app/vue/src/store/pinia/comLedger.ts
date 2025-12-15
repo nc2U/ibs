@@ -61,7 +61,7 @@ export const useComLedger = defineStore('comLedger', () => {
   const affiliates = computed(() =>
     affiliateList.value.map(aff => ({
       value: aff.pk,
-      label: `[${ aff.sort === 'company' ? 'CO' : 'PR' }]${ aff.company_name ?? aff.project_name }`,
+      label: `[${aff.sort === 'company' ? 'CO' : 'PR'}]${aff.company_name ?? aff.project_name}`,
       sort: aff.sort,
       id: aff.company ?? aff.project,
     })),
@@ -121,13 +121,13 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const fetchComBankAccList = async (company: number) =>
     await api
-      .get(`/ledger/company-bank-account/?company=${ company }&is_hide=false&inactive=false`)
+      .get(`/ledger/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
       .then(res => (comBankList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   const fetchAllComBankAccList = async (company: number) =>
     await api
-      .get(`/ledger/company-bank-account/?company=${ company }`)
+      .get(`/ledger/company-bank-account/?company=${company}`)
       .then(res => (allComBankList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -142,7 +142,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const updateComBankAcc = async (payload: CompanyBank) =>
     await api
-      .put(`/ledger/company-bank-account/${ payload.pk }/`, payload)
+      .put(`/ledger/company-bank-account/${payload.pk}/`, payload)
       .then(async res => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
@@ -151,7 +151,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const patchComBankAcc = async (payload: CompanyBank) =>
     await api
-      .patch(`/ledger/company-bank-account/${ payload.pk }/`, payload)
+      .patch(`/ledger/company-bank-account/${payload.pk}/`, payload)
       .then(async res => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
@@ -160,7 +160,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const deleteComBankAcc = async (pk: number, company: number) =>
     await api
-      .delete(`/ledger/company-bank-account/${ pk }/`)
+      .delete(`/ledger/company-bank-account/${pk}/`)
       .then(async () => {
         await fetchAllComBankAccList(company)
         await fetchComBankAccList(company)
@@ -177,9 +177,9 @@ export const useComLedger = defineStore('comLedger', () => {
   }) => {
     const { company, date } = payload
     const is_balance = payload.is_balance ?? ''
-    const dateUri = date ? `&is_balance=${ is_balance }&date=${ date }` : ''
+    const dateUri = date ? `&is_balance=${is_balance}&date=${date}` : ''
     return await api
-      .get(`/balance-by-acc/?company=${ company }${ dateUri }`)
+      .get(`/balance-by-acc/?company=${company}${dateUri}`)
       .then(res => (comBalanceByAccList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
@@ -189,7 +189,7 @@ export const useComLedger = defineStore('comLedger', () => {
   const fetchDateCashBookList = async (payload: { company: number; date: string }) => {
     const { company, date } = payload
     return await api
-      .get(`/date-cashbook/?company=${ company }&date=${ date }`)
+      .get(`/date-cashbook/?company=${company}&date=${date}`)
       .then(res => (dateCashBook.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
@@ -204,7 +204,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const fetchBankTransaction = async (pk: number) =>
     await api
-      .get(`/ledger/company-transaction/${ pk }/`)
+      .get(`/ledger/company-transaction/${pk}/`)
       .then(res => {
         bankTransaction.value = res.data
       })
@@ -236,14 +236,14 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
     const { company } = filters
-    let url = `/ledger/company-transaction/find_page/?highlight_id=${ highlightId }&company=${ company }`
-    if (filters.from_date) url += `&from_deal_date=${ filters.from_date }`
-    if (filters.to_date) url += `&to_deal_date=${ filters.to_date }`
-    if (filters.sort) url += `&sort=${ filters.sort }`
-    if (filters.account) url += `&account=${ filters.account }`
-    if (filters.affiliate) url += `&affiliate=${ filters.affiliate }`
-    if (filters.bank_account) url += `&bank_account=${ filters.bank_account }`
-    if (filters.search) url += `&search=${ filters.search }`
+    let url = `/ledger/company-transaction/find_page/?highlight_id=${highlightId}&company=${company}`
+    if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
+    if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
+    if (filters.sort) url += `&sort=${filters.sort}`
+    if (filters.account) url += `&account=${filters.account}`
+    if (filters.affiliate) url += `&affiliate=${filters.affiliate}`
+    if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
+    if (filters.search) url += `&search=${filters.search}`
 
     try {
       const response = await api.get(url)
@@ -269,7 +269,7 @@ export const useComLedger = defineStore('comLedger', () => {
   ) => {
     const { pk, ...formData } = payload
     return await api
-      .put(`/ledger/company-composite-transaction/${ pk }/`, formData)
+      .put(`/ledger/company-composite-transaction/${pk}/`, formData)
       .then(async res => {
         return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
       })
@@ -281,9 +281,9 @@ export const useComLedger = defineStore('comLedger', () => {
   ) => {
     const { pk, ...formData } = payload
     return await api
-      .patch(`/ledger/company-composite-transaction/${ pk }/`, formData)
+      .patch(`/ledger/company-composite-transaction/${pk}/`, formData)
       .then(async res => {
-        return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
+        return await fetchBankTransactionList(bankTransactionFilter.value)
       })
       .catch(err => errorHandle(err.response.data))
   }
@@ -291,7 +291,7 @@ export const useComLedger = defineStore('comLedger', () => {
   const deleteBankTransaction = async (payload: BankTransaction & { filters: DataFilter }) => {
     const { pk, filters, company } = payload
     return await api
-      .delete(`//ledger/company-transaction/${ pk }/`)
+      .delete(`//ledger/company-transaction/${pk}/`)
       .then(() =>
         fetchBankTransactionList({ company, ...filters }).then(() =>
           message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.'),
@@ -304,7 +304,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const fetchComLedgerCalc = async (com: number) =>
     await api
-      .get(`/com-cash-calc/?company=${ com }`)
+      .get(`/com-cash-calc/?company=${com}`)
       .then(res => (comLedgerCalc.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -316,14 +316,14 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const patchComLedgerCalc = async (payload: ComCalculated) =>
     await api
-      .patch(`/com-cash-calc/${ payload.pk }/`, payload)
+      .patch(`/com-cash-calc/${payload.pk}/`, payload)
       .then(res => fetchComLedgerCalc(res.data.company).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
   const comLastDeal = ref<{ deal_date: string }[]>([])
   const fetchComLastDeal = async (com: number) =>
     await api
-      .get(`/com-last-deal/?company=${ com }`)
+      .get(`/com-last-deal/?company=${com}`)
       .then(res => (comLastDeal.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -370,7 +370,7 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const fetchComLedgerBankAccList = async (company: number) =>
     await api
-      .get(`/ledger/company-bank-account/?company=${ company }&is_hide=false&inactive=false`)
+      .get(`/ledger/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
       .then(res => (comLedgerBankList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -382,7 +382,7 @@ export const useComLedger = defineStore('comLedger', () => {
     const { company, date, is_balance = '' } = payload
     return await api
       .get(
-        `/ledger/company-transaction/balance_by_account/?company=${ company }&date=${ date }&is_balance=${ is_balance }`,
+        `/ledger/company-transaction/balance_by_account/?company=${company}&date=${date}&is_balance=${is_balance}`,
       )
       .then(res => (comLedgerBalanceByAccList.value = res.data))
       .catch(err => errorHandle(err.response.data))
@@ -391,14 +391,14 @@ export const useComLedger = defineStore('comLedger', () => {
   const fetchDateLedgerTransactionList = async (payload: { company: number; date: string }) => {
     const { company, date } = payload
     return await api
-      .get(`/ledger/company-transaction/daily_transactions/?company=${ company }&date=${ date }`)
+      .get(`/ledger/company-transaction/daily_transactions/?company=${company}&date=${date}`)
       .then(res => (dateLedgerTransactions.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
 
   const fetchComLedgerCalculation = async (com: number) =>
     await api
-      .get(`/company-ledger-calculation/?company=${ com }`)
+      .get(`/company-ledger-calculation/?company=${com}`)
       .then(res => (comLedgerCalculation.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -410,13 +410,13 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const patchComLedgerCalculation = async (payload: ComCalculated) =>
     await api
-      .patch(`/company-ledger-calculation/${ payload.pk }/`, payload)
+      .patch(`/company-ledger-calculation/${payload.pk}/`, payload)
       .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
   const fetchComLedgerLastDealDate = async (com: number) =>
     await api
-      .get(`/ledger/company-transaction/last_deal/?company=${ com }`)
+      .get(`/ledger/company-transaction/last_deal/?company=${com}`)
       .then(res => (comLedgerLastDealList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
