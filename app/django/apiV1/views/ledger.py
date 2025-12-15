@@ -550,6 +550,8 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def daily_transactions(self, request):
         """특정일 거래 내역 조회"""
+        from collections import defaultdict
+
         date = request.query_params.get('date', TODAY)
         company = request.query_params.get('company')
 
@@ -559,17 +561,34 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        transactions = CompanyBankTransaction.objects.filter(
+        # 1. 기본 쿼리셋 (잘못된 prefetch 제거)
+        transactions = self.get_queryset().filter(
             company_id=company,
             deal_date=date
         ).select_related(
             'bank_account', 'sort', 'creator'
-        ).prefetch_related(
-            Prefetch(
-                'companyaccountingentry_set',
-                queryset=CompanyAccountingEntry.objects.select_related('account')
-            )
         ).order_by('sort_id', 'created_at')
+
+        # 2. 수동으로 prefetch 하기
+        transaction_ids = [t.transaction_id for t in transactions]
+
+        if transaction_ids:
+            # 관련된 모든 회계 분개를 한 번의 쿼리로 가져오기
+            accounting_entries = CompanyAccountingEntry.objects.filter(
+                transaction_id__in=transaction_ids
+            ).select_related('account')
+
+            # transaction_id를 키로 하는 딕셔너리 생성
+            entries_map = defaultdict(list)
+            for entry in accounting_entries:
+                entries_map[entry.transaction_id].append(entry)
+
+            # 각 거래 객체에 미리 가져온 분개 리스트를 할당
+            for transaction in transactions:
+                transaction.prefetched_accounting_entries = entries_map.get(transaction.transaction_id, [])
+        else:
+            for transaction in transactions:
+                transaction.prefetched_accounting_entries = []
 
         serializer = CompanyBankTransactionSerializer(transactions, many=True)
         return Response({'results': serializer.data})

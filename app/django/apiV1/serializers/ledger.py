@@ -193,7 +193,13 @@ class CompanyBankTransactionSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_accounting_entries(obj):
         """연관된 회계 분개 목록"""
-        return CompanyAccountingEntrySerializer(obj.accounting_entries, many=True).data
+        # 뷰에서 수동으로 prefetch한 데이터가 있는지 확인
+        if hasattr(obj, 'prefetched_accounting_entries'):
+            entries = obj.prefetched_accounting_entries
+        else:
+            # prefetch되지 않은 경우를 위한 폴백(fallback)
+            entries = CompanyAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
+        return CompanyAccountingEntrySerializer(entries, many=True).data
 
 
 class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
