@@ -8,7 +8,6 @@ import {
 } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
-import { useProject } from '@/store/pinia/project'
 import { write_company_cash } from '@/utils/pageAuth'
 import type { Company } from '@/store/types/settings.ts'
 import type { CompanyBank } from '@/store/types/comLedger'
@@ -52,10 +51,6 @@ const excelUrl = computed(() => {
 const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
-const proStore = useProject()
-const projectList = computed(() => proStore.projectList)
-const fetchProjectList = async () => proStore.fetchProjectList()
-
 const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
@@ -91,7 +86,6 @@ const listFiltering = (payload: Filter) => {
   // 필터링 시 query string 정리
   clearQueryString()
   if (company.value) payload.company = company.value
-  fetchCompanyAccounts()
   if (company.value) fetchBankTransactionList(payload)
 }
 
@@ -105,10 +99,8 @@ const onBankUpdate = (payload: CompanyBank) => patchComBankAcc(payload)
 
 const dataSetup = async (pk: number) => {
   await fetchCompany(pk)
-  await fetchProjectList()
   await fetchAllDepartList(pk)
   await fetchComBankAccList(pk)
-  await fetchCompanyAccounts()
   await fetchAllComBankAccList(pk)
   await fetchBankTransactionList({ company: pk })
   await fetchComLedgerCalc(pk)
@@ -238,7 +230,6 @@ onBeforeRouteLeave(() => {
           <AddTransaction
             v-if="write_company_cash"
             :company="company as number"
-            :projects="projectList"
             @on-bank-create="onBankCreate"
             @on-bank-update="onBankUpdate"
           />
@@ -254,7 +245,6 @@ onBeforeRouteLeave(() => {
           />
           <TransactionList
             :company="company as number"
-            :projects="projectList"
             :highlight-id="highlightId ?? undefined"
             :current-page="dataFilter.page || 1"
             @page-select="pageSelect"

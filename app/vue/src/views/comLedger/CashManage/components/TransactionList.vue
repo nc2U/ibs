@@ -13,7 +13,6 @@ import { CTable } from '@coreui/vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
-  projects: { type: Array as PropType<Project[]>, default: () => [] },
   highlightId: { type: Number, default: null },
   currentPage: { type: Number, default: 1 },
 })
@@ -107,7 +106,6 @@ const accCallModal = () => {
         v-for="transaction in bankTransactionList"
         :key="transaction.pk as number"
         :transaction="transaction"
-        :projects="projects"
         :calculated="comCalculated?.calculated"
         :is-highlighted="props.highlightId === transaction.pk"
         @multi-submit="multiSubmit"

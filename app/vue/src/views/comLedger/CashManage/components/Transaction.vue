@@ -9,7 +9,6 @@ import type { Project } from '@/store/types/project'
 import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
 
 const props = defineProps({
-  projects: { type: Array as PropType<Project[]>, default: () => [] },
   transaction: { type: Object as PropType<BankTransaction>, required: true },
   calculated: { type: String, default: '2000-01-01' },
   isHighlighted: { type: Boolean, default: false },
