@@ -193,8 +193,7 @@ class CompanyBankTransactionSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_accounting_entries(obj):
         """연관된 회계 분개 목록"""
-        entries = CompanyAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
-        return CompanyAccountingEntrySerializer(entries, many=True).data
+        return CompanyAccountingEntrySerializer(obj.accounting_entries, many=True).data
 
 
 class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):

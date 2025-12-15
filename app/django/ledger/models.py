@@ -450,6 +450,11 @@ class CompanyBankTransaction(BankTransaction):
             models.Index(fields=['bank_account', 'deal_date']),
         ]
 
+    @property
+    def accounting_entries(self):
+        """이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다."""
+        return CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+
     def validate_accounting_entries(self):
         """
         본사 회계 분개 금액 합계 검증
