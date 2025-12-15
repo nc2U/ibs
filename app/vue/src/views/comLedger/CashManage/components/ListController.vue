@@ -1,12 +1,15 @@
 <script lang="ts" setup>
-import { computed, inject, nextTick, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { type DataFilter } from '@/store/pinia/comLedger.ts'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
-const props = defineProps({ company: { type: Number, default: null } })
+const props = defineProps({
+  company: { type: Number, default: null },
+  dataFilter: { type: Object as PropType<DataFilter>, default: () => {} },
+})
 watch(
   () => props.company,
   () => resetForm(),
@@ -98,6 +101,19 @@ const resetForm = () => {
   form.value.search = ''
   listFiltering(1)
 }
+
+onBeforeMount(() => {
+  if (props.dataFilter) {
+    form.value.from_date = props.dataFilter.from_date
+    form.value.to_date = props.dataFilter.to_date
+    form.value.sort = props.dataFilter.sort
+    form.value.account_category = props.dataFilter.account_category
+    form.value.account = props.dataFilter.account
+    form.value.bank_account = props.dataFilter.bank_account
+    form.value.affiliate = props.dataFilter.affiliate
+    form.value.search = props.dataFilter.search
+  }
+})
 </script>
 
 <template>
