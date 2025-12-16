@@ -336,11 +336,11 @@ const handleUpdate = async () => {
                 v-if="isEditing('entry', entry.pk!, 'trader')"
                 ref="inputRef"
                 v-model="editValue"
+                class="bg-yellow-lighten-5"
                 @blur="handleUpdate"
                 @keydown.enter="handleUpdate"
-                type="text"
               />
-              <span v-else>
+              <span v-else class="bg-yellow-lighten-5">
                 {{ cutString(entry.trader, 20) }}
                 <v-icon
                   icon="mdi-pencil-outline"
