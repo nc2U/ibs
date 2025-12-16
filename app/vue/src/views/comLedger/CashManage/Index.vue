@@ -21,7 +21,6 @@ import AddTransaction from './components/AddTransaction.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import TransactionList from './components/TransactionList.vue'
 import TransForm from './components/TransForm.vue'
-import { CCardBody } from '@coreui/vue'
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
