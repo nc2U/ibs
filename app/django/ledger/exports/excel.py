@@ -1132,7 +1132,7 @@ def export_com_transaction_xls(request):
     ).select_related(
         'bank_account',
         'sort'
-    ).order_by('deal_date', 'id')
+    ).order_by('deal_date', 'created_at')
 
     obj_list = obj_list.filter(sort_id=sort) if sort else obj_list
     # obj_list = obj_list.filter(account_id=account) if account else obj_list
@@ -1199,40 +1199,36 @@ def export_com_transaction_xls(request):
     styles = XlwtStyleMixin.create_xlwt_styles()
 
     # Process data with parent-child relationship handling
-    for cash in obj_list:
-        if len(cash.accounting_entries) > 1:
-            for acc in cash.accounting_entries:
+    for trans in obj_list:
+        if len(trans.accounting_entries) == 1:
+            row_num += 1
+            # Bank transaction columns (6)
+            ws.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), styles['date'])
+            ws.write(row_num, 1, trans.note or '', styles['default'])
+            ws.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', styles['default'])
+            ws.write(row_num, 3, trans.content or '', styles['default'])
+            ws.write(row_num, 4, trans.amount if trans.sort.pk == 1 else 0, styles['amount'])
+            ws.write(row_num, 5, trans.amount if trans.sort.pk == 2 else 0, styles['amount'])
+            # Classification columns (4)
+            ws.write(row_num, 6, trans.accounting_entries[0].name, styles['default'])
+            ws.write(row_num, 2, trans.accounting_entries[0].trader or '', styles['default'])
+            ws.write(row_num, 7, trans.accounting_entries[0].amount or 0, styles['amount'])
+            ws.write(row_num, 8, trans.accounting_entries[0].get_evidence_display() or '', styles['default'])
+        else:
+            for acc in trans.accounting_entries:
                 row_num += 1
                 # Bank transaction columns (6)
-                ws.write(row_num, 0, '', styles['date'])
-                ws.write(row_num, 1, '', styles['default'])
+                ws.write(row_num, 0, 'aa', styles['date'])
+                ws.write(row_num, 1, 'bb', styles['default'])
                 ws.write(row_num, 2, '', styles['default'])
                 ws.write(row_num, 3, '', styles['default'])
                 ws.write(row_num, 4, '', styles['amount'])
                 ws.write(row_num, 5, '', styles['amount'])
                 # Classification columns (4)
-                # account_name = f"{acc.name if acc.name else ''}/{cash.account_d2.name if cash.account_d2 else ''}/{cash.account_d3.name if cash.account_d3 else ''}"
-                # ws.write(row_num, 6, account_name, styles['default'])
-                # ws.write(row_num, 2, cash.trader or '', styles['default'])
-                # ws.write(row_num, 7, cash.income or cash.outlay or 0, styles['amount'])
-                # ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
-                #          styles['default'])
-        else:
-            row_num += 1
-            # Bank transaction columns (6)
-            ws.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), styles['date'])
-            ws.write(row_num, 1, cash.note or '', styles['default'])
-            ws.write(row_num, 2, cash.bank_account.alias_name if cash.bank_account else '', styles['default'])
-            ws.write(row_num, 3, cash.content or '', styles['default'])
-            ws.write(row_num, 4, cash.amount if cash.sort.pk == 1 else 0, styles['amount'])
-            ws.write(row_num, 5, cash.amount if cash.sort.pk == 2 else 0, styles['amount'])
-            # Classification columns (4)
-            # account_name = f"{cash.account_d1.name if cash.account_d1 else ''}/{cash.account_d2.name if cash.account_d2 else ''}/{cash.account_d3.name if cash.account_d3 else ''}"
-            # ws.write(row_num, 6, account_name, styles['default'])
-            # ws.write(row_num, 2, cash.trader or '', styles['default'])
-            # ws.write(row_num, 7, cash.income or cash.outlay or 0, styles['amount'])
-            # ws.write(row_num, 8, cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
-            #          styles['default'])
+                ws.write(row_num, 6, acc.name or '', styles['default'])
+                ws.write(row_num, 2, acc.trader or '', styles['default'])
+                ws.write(row_num, 7, acc.amount or 0, styles['amount'])
+                ws.write(row_num, 8, acc.get_evidence_display() or '', styles['default'])
 
     wb.save(response)
     return response

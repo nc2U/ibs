@@ -38,8 +38,8 @@ const urlCompanyId = computed(() => {
 })
 
 const excelUrl = computed(() => {
-  const sd = dataFilter.value.from_date
-  const ed = dataFilter.value.to_date
+  const sd = dataFilter.value.from_date || ''
+  const ed = dataFilter.value.to_date || ''
   const st = dataFilter.value.sort || ''
   const ac = dataFilter.value.account || ''
   const af = dataFilter.value.affiliate || ''
