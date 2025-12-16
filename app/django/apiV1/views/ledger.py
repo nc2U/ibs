@@ -34,6 +34,39 @@ TODAY = datetime.today().strftime('%Y-%m-%d')
 
 
 # ============================================
+# Bank Account ViewSets
+# ============================================
+
+class LedgerBankCodeViewSet(viewsets.ModelViewSet):
+    """은행 코드 ViewSet"""
+    queryset = BankCode.objects.all()
+    serializer_class = LedgerBankCodeSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    pagination_class = PageNumberPaginationFifty
+    search_fields = ('code', 'name')
+
+
+class LedgerCompanyBankAccountViewSet(viewsets.ModelViewSet):
+    """본사 은행 계좌 ViewSet"""
+    queryset = CompanyBankAccount.objects.select_related('bankcode', 'company', 'depart').all()
+    serializer_class = LedgerCompanyBankAccountSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    pagination_class = PageNumberPaginationFifty
+    filterset_fields = ('company', 'depart', 'bankcode', 'is_hide', 'inactive')
+    search_fields = ('alias_name', 'number', 'holder')
+
+
+class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
+    """프로젝트 은행 계좌 ViewSet"""
+    queryset = ProjectBankAccount.objects.select_related('bankcode', 'project').all()
+    serializer_class = LedgerProjectBankAccountSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    pagination_class = PageNumberPaginationFifty
+    filterset_fields = ('project', 'bankcode', 'is_hide', 'inactive', 'directpay', 'is_imprest')
+    search_fields = ('alias_name', 'number', 'holder', 'project__name')
+
+
+# ============================================
 # Account ViewSets
 # ============================================
 
@@ -314,19 +347,6 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
 
 
 # ============================================
-# Bank Code ViewSet
-# ============================================
-
-class LedgerBankCodeViewSet(viewsets.ModelViewSet):
-    """은행 코드 ViewSet"""
-    queryset = BankCode.objects.all()
-    serializer_class = LedgerBankCodeSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    pagination_class = PageNumberPaginationFifty
-    search_fields = ('code', 'name')
-
-
-# ============================================
 # Affiliate ViewSet
 # ============================================
 
@@ -351,30 +371,6 @@ class AffiliateViewSet(viewsets.ModelViewSet):
 
 
 # ============================================
-# Bank Account ViewSets
-# ============================================
-
-class LedgerCompanyBankAccountViewSet(viewsets.ModelViewSet):
-    """본사 은행 계좌 ViewSet"""
-    queryset = CompanyBankAccount.objects.select_related('bankcode', 'company', 'depart').all()
-    serializer_class = LedgerCompanyBankAccountSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    pagination_class = PageNumberPaginationFifty
-    filterset_fields = ('company', 'depart', 'bankcode', 'is_hide', 'inactive')
-    search_fields = ('alias_name', 'number', 'holder')
-
-
-class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
-    """프로젝트 은행 계좌 ViewSet"""
-    queryset = ProjectBankAccount.objects.select_related('bankcode', 'project').all()
-    serializer_class = LedgerProjectBankAccountSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
-    pagination_class = PageNumberPaginationFifty
-    filterset_fields = ('project', 'bankcode', 'is_hide', 'inactive', 'directpay', 'is_imprest')
-    search_fields = ('alias_name', 'number', 'holder', 'project__name')
-
-
-# ============================================
 # Bank Transaction ViewSets
 # ============================================
 
@@ -386,8 +382,9 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     serializer_class = CompanyBankTransactionSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationFifteen
+
     # filterset_class 와 search_fields, ordering 은 get_queryset에서 모두 처리
-    
+
     def get_queryset(self):
         """
         공용 서비스 함수를 호출하여 쿼리셋을 반환합니다.
@@ -510,6 +507,17 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         if last_transaction:
             return Response({'results': [{'deal_date': last_transaction.deal_date}]})
         return Response({'results': []})
+
+
+class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
+    """본사 원장 정산 ViewSet"""
+    queryset = CompanyLedgerCalculation.objects.select_related('company', 'creator')
+    serializer_class = CompanyLedgerCalculationSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    filterset_fields = ('company',)
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
 
 
 class ProjectBankTransactionFilterSet(FilterSet):
@@ -745,17 +753,6 @@ class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     filterset_class = ProjectAccountingEntryFilterSet
     search_fields = ('transaction_id', 'account_code', 'trader', 'project__name')
     ordering = ['-created_at']
-
-
-class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
-    """본사 원장 정산 ViewSet"""
-    queryset = CompanyLedgerCalculation.objects.select_related('company', 'creator')
-    serializer_class = CompanyLedgerCalculationSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    filterset_fields = ('company',)
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
 
 
 # ============================================

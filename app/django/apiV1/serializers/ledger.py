@@ -14,7 +14,7 @@ from payment.models import ContractPayment
 
 
 # ============================================
-# Bank Code Serializers
+# Bank Account Serializers
 # ============================================
 
 class LedgerBankCodeSerializer(serializers.ModelSerializer):
@@ -24,10 +24,6 @@ class LedgerBankCodeSerializer(serializers.ModelSerializer):
         model = BankCode
         fields = ('pk', 'code', 'name')
 
-
-# ============================================
-# Bank Account Serializers
-# ============================================
 
 class LedgerCompanyBankAccountSerializer(serializers.ModelSerializer):
     """본사 은행 계좌 시리얼라이저"""

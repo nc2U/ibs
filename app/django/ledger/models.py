@@ -365,6 +365,69 @@ class ProjectAccount(Account):
 
 
 # ============================================
+# Affiliate Model
+# ============================================
+
+class Affiliate(models.Model):
+    """
+    관계회사/프로젝트 참조 모델
+
+    회계 분개에서 관계회사 대여금, 투자금 등을 추적하기 위한 모델입니다.
+    """
+    sort = models.CharField('구분', max_length=20,
+                            choices=(('company', '관계 회사'), ('project', '관련 프로젝트')),
+                            db_index=True,
+                            help_text='관계회사 또는 관련 프로젝트 구분')
+    company = models.ForeignKey('company.Company', on_delete=models.PROTECT,
+                                null=True, blank=True, verbose_name='관계 회사',
+                                help_text='대여금/투자금 등이 발생한 관계회사')
+    project = models.ForeignKey('project.Project', on_delete=models.PROTECT,
+                                null=True, blank=True, verbose_name='관련 프로젝트',
+                                help_text='대여금/투자금 등이 발생한 관련 프로젝트')
+    description = models.CharField(max_length=200, blank=True, default='', verbose_name='설명',
+                                   help_text='대여 목적, 조건 등 추가 설명')
+
+    # 감사 필드
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
+
+    class Meta:
+        verbose_name = '11. 관계회사/프로젝트'
+        verbose_name_plural = '11. 관계회사/프로젝트'
+        ordering = ['sort', '-created_at']
+        indexes = [
+            models.Index(fields=['sort', 'company']),
+            models.Index(fields=['sort', 'project']),
+        ]
+
+    def clean(self):
+        """유효성 검증"""
+        # company와 project 중 정확히 하나만 입력되어야 함
+        if self.sort == 'company':
+            if not self.company:
+                raise ValidationError({'company': '관계 회사 구분일 경우 회사를 선택해야 합니다.'})
+            if self.project:
+                raise ValidationError({'project': '관계 회사 구분일 경우 프로젝트를 선택할 수 없습니다.'})
+        elif self.sort == 'project':
+            if not self.project:
+                raise ValidationError({'project': '관련 프로젝트 구분일 경우 프로젝트를 선택해야 합니다.'})
+            if self.company:
+                raise ValidationError({'company': '관련 프로젝트 구분일 경우 회사를 선택할 수 없습니다.'})
+
+    def save(self, *args, **kwargs):
+        """저장 전 유효성 검증"""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        if self.sort == 'company' and self.company:
+            return f"회사: {self.company.name}"
+        elif self.sort == 'project' and self.project:
+            return f"프로젝트: {self.project.name}"
+        return f"{self.get_sort_display()}"
+
+
+# ============================================
 # Banking Domain - 본사 / 현장 은행 거래 도메인
 # ============================================
 
@@ -473,65 +536,6 @@ class CompanyBankTransaction(BankTransaction):
             'difference': difference,
             'entry_count': entries.count(),
         }
-
-
-class Affiliate(models.Model):
-    """
-    관계회사/프로젝트 참조 모델
-
-    회계 분개에서 관계회사 대여금, 투자금 등을 추적하기 위한 모델입니다.
-    """
-    sort = models.CharField('구분', max_length=20,
-                            choices=(('company', '관계 회사'), ('project', '관련 프로젝트')),
-                            db_index=True,
-                            help_text='관계회사 또는 관련 프로젝트 구분')
-    company = models.ForeignKey('company.Company', on_delete=models.PROTECT,
-                                null=True, blank=True, verbose_name='관계 회사',
-                                help_text='대여금/투자금 등이 발생한 관계회사')
-    project = models.ForeignKey('project.Project', on_delete=models.PROTECT,
-                                null=True, blank=True, verbose_name='관련 프로젝트',
-                                help_text='대여금/투자금 등이 발생한 관련 프로젝트')
-    description = models.CharField(max_length=200, blank=True, default='', verbose_name='설명',
-                                   help_text='대여 목적, 조건 등 추가 설명')
-
-    # 감사 필드
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
-
-    class Meta:
-        verbose_name = '11. 관계회사/프로젝트'
-        verbose_name_plural = '11. 관계회사/프로젝트'
-        ordering = ['sort', '-created_at']
-        indexes = [
-            models.Index(fields=['sort', 'company']),
-            models.Index(fields=['sort', 'project']),
-        ]
-
-    def clean(self):
-        """유효성 검증"""
-        # company와 project 중 정확히 하나만 입력되어야 함
-        if self.sort == 'company':
-            if not self.company:
-                raise ValidationError({'company': '관계 회사 구분일 경우 회사를 선택해야 합니다.'})
-            if self.project:
-                raise ValidationError({'project': '관계 회사 구분일 경우 프로젝트를 선택할 수 없습니다.'})
-        elif self.sort == 'project':
-            if not self.project:
-                raise ValidationError({'project': '관련 프로젝트 구분일 경우 프로젝트를 선택해야 합니다.'})
-            if self.company:
-                raise ValidationError({'company': '관련 프로젝트 구분일 경우 회사를 선택할 수 없습니다.'})
-
-    def save(self, *args, **kwargs):
-        """저장 전 유효성 검증"""
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        if self.sort == 'company' and self.company:
-            return f"회사: {self.company.name}"
-        elif self.sort == 'project' and self.project:
-            return f"프로젝트: {self.project.name}"
-        return f"{self.get_sort_display()}"
 
 
 class CompanyLedgerCalculation(models.Model):
