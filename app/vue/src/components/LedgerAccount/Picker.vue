@@ -189,8 +189,13 @@ watch(
     if (newVal) {
       searchQuery.value = ''
       selectedIndex.value = -1
+      // Teleport와 position fixed 렌더링 대기 후 focus
       nextTick(() => {
-        searchInputRef.value?.focus()
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            searchInputRef.value?.focus()
+          })
+        })
       })
     }
   },
@@ -208,6 +213,17 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+
+  // 마운트 시에도 visible이면 focus
+  if (props.visible) {
+    nextTick(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          searchInputRef.value?.focus()
+        })
+      })
+    })
+  }
 })
 
 onUnmounted(() => {
