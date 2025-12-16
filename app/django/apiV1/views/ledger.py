@@ -378,122 +378,21 @@ class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
 # Bank Transaction ViewSets
 # ============================================
 
-class CompanyBankTransactionFilterSet(FilterSet):
-    """본사 은행 거래 필터셋"""
-    from_deal_date = DateFilter(field_name='deal_date', lookup_expr='gte', label='거래일자부터')
-    to_deal_date = DateFilter(field_name='deal_date', lookup_expr='lte', label='거래일자까지')
-    account = NumberFilter(method='filter_by_account', label='계정 과목')
-    account_category = CharFilter(method='filter_by_category', label='계정 카테고리')
-    affiliate = NumberFilter(method='filter_by_affiliate', label='관계회사/프로젝트')
-
-    class Meta:
-        model = CompanyBankTransaction
-        fields = ('company', 'from_deal_date', 'to_deal_date', 'sort',
-                  'account_category', 'account', 'bank_account', 'affiliate')
-
-    @staticmethod
-    def filter_by_account(queryset, name, value):
-        """계정 및 모든 하위 계정으로 필터링"""
-        try:
-            # 1. 요청된 계정 조회
-            account = CompanyAccount.objects.get(pk=value)
-
-            # 2. 계정 + 모든 하위 계정 추출 (활성 계정만)
-            descendants = account.get_descendants(include_self=True)
-            active_accounts = [acc for acc in descendants if acc.is_active]
-            account_ids = [acc.pk for acc in active_accounts]
-
-            # 3. 해당 계정들을 사용하는 회계분개의 transaction_id
-            transaction_ids = CompanyAccountingEntry.objects.filter(
-                account_id__in=account_ids
-            ).values_list('transaction_id', flat=True)
-
-            # 4. BankTransaction 필터링
-            return queryset.filter(transaction_id__in=transaction_ids)
-        except CompanyAccount.DoesNotExist:
-            return queryset.none()
-
-    @staticmethod
-    def filter_by_category(queryset, name, value):
-        """카테고리별 필터링 (asset, liability, equity, revenue, expense, transfer, cancel)"""
-        # 1. 해당 카테고리의 활성 계정 조회
-        account_ids = CompanyAccount.objects.filter(
-            category=value,
-            is_active=True
-        ).values_list('pk', flat=True)
-
-        # 2. 해당 계정들의 transaction_id
-        transaction_ids = CompanyAccountingEntry.objects.filter(
-            account_id__in=account_ids
-        ).values_list('transaction_id', flat=True)
-
-        # 3. 필터링
-        return queryset.filter(transaction_id__in=transaction_ids)
-
-    @staticmethod
-    def filter_by_affiliate(queryset, name, value):
-        """관계회사/프로젝트로 필터링"""
-        # 해당 affiliate를 사용하는 회계분개의 transaction_id 조회
-        transaction_ids = CompanyAccountingEntry.objects.filter(
-            affiliate_id=value
-        ).values_list('transaction_id', flat=True)
-
-        return queryset.filter(transaction_id__in=transaction_ids)
+from ledger.services.company_transaction import get_company_transactions
 
 
 class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     """본사 은행 거래 ViewSet"""
-    queryset = CompanyBankTransaction.objects.select_related(
-        'company', 'bank_account', 'sort', 'creator'
-    ).all()
     serializer_class = CompanyBankTransactionSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationFifteen
-    filterset_class = CompanyBankTransactionFilterSet
-    search_fields = ('transaction_id', 'content', 'note')
-    ordering = ['-deal_date', '-created_at']
-
+    # filterset_class 와 search_fields, ordering 은 get_queryset에서 모두 처리
+    
     def get_queryset(self):
         """
-        검색 쿼리셋 반환
-
-        search 파라미터가 있으면 거래 내용, 메모, 계정 이름을 모두 검색
+        공용 서비스 함수를 호출하여 쿼리셋을 반환합니다.
         """
-        queryset = super().get_queryset()
-        search = self.request.query_params.get('search')
-
-        if search:
-            # 1. 계정 이름에 검색어가 포함된 활성 계정 조회
-            accounts = CompanyAccount.objects.filter(
-                name__icontains=search,
-                is_active=True
-            )
-
-            # 2. 각 계정의 하위 계정도 모두 포함
-            all_account_ids = []
-            for account in accounts:
-                descendants = account.get_descendants(include_self=True)
-                active_descendants = [acc.pk for acc in descendants if acc.is_active]
-                all_account_ids.extend(active_descendants)
-
-            # 중복 제거
-            account_ids = list(set(all_account_ids))
-
-            # 3. 해당 계정들의 transaction_id
-            transaction_ids = CompanyAccountingEntry.objects.filter(
-                account_id__in=account_ids
-            ).values_list('transaction_id', flat=True)
-
-            # 4. 기본 search_fields 검색 결과와 계정 검색 결과를 OR로 결합
-            from django.db.models import Q
-            queryset = queryset.filter(
-                Q(transaction_id__icontains=search) |
-                Q(content__icontains=search) |
-                Q(note__icontains=search) |
-                Q(transaction_id__in=transaction_ids)
-            )
-
-        return queryset
+        return get_company_transactions(self.request.query_params)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

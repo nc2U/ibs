@@ -1,5 +1,4 @@
-"""
-Cash Excel Export Views
+"""Cash Excel Export Views
 
 현금 출납 관련 Excel 내보내기 뷰들
 """
@@ -16,6 +15,7 @@ from apiV1.views.ledger import CompanyBankTransactionViewSet
 from cash.models import CashBook, ProjectCashBook
 from company.models import Company
 from ledger.models import CompanyAccountingEntry
+from ledger.services.company_transaction import get_company_transactions
 from project.models import Project, ProjectOutBudget
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
@@ -1106,6 +1106,9 @@ class ExportDateCashbook(ExcelExportMixin):
 
 def export_com_transaction_xls(request):
     """본사 입출금 내역 (ViewSet과 로직 공유)"""
+    from copy import copy
+    from rest_framework.request import Request
+
     filename = request.GET.get('filename')
     filename = f'{filename}-{TODAY}' if filename else f'cashbook-{TODAY}'
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -1115,8 +1118,11 @@ def export_com_transaction_xls(request):
     ws = wb.add_sheet('본사_입출금_내역')
 
     # --- 데이터 조회 로직 (ViewSet 재사용) ---
+    # Django의 HttpRequest를 DRF의 Request로 래핑
+    drf_request = Request(request)
+
     view = CompanyBankTransactionViewSet()
-    view.request = request
+    view.request = drf_request  # 래핑된 drf_request 객체를 사용
     queryset = view.get_queryset()
     filtered_transactions = view.filter_queryset(queryset)
 
@@ -1149,29 +1155,29 @@ def export_com_transaction_xls(request):
     style = xlwt.XFStyle()
     style.font.bold = True
     style.font.height = 300
-    style.alignment.vert = style.alignment.VERT_CENTER  # 수직정렬
+    style.alignment.vert = style.alignment.VERT_CENTER
 
     ws.write(row_num, 0, com_name + ' 입출금 내역', style)
     ws.row(0).height_mismatch = True
     ws.row(0).height = 38 * 20
 
-    # Column definitions - 10 columns total
+    # Column definitions
     columns = [
         '일시', '메모', '계좌', '적요', '입금액', '출금액',
         '계정', '거래처', '분류금액', '증빙'
     ]
 
     # Column width settings
-    ws.col(0).width = 110 * 30  # 일시
-    ws.col(1).width = 100 * 30  # 메모
-    ws.col(2).width = 170 * 30  # 계좌
-    ws.col(3).width = 180 * 30  # 적요
-    ws.col(4).width = 110 * 30  # 입금액
-    ws.col(5).width = 110 * 30  # 출금액
-    ws.col(6).width = 160 * 30  # 계정
-    ws.col(7).width = 120 * 30  # 거래처
-    ws.col(8).width = 110 * 30  # 분류금액
-    ws.col(9).width = 100 * 30  # 증빙
+    ws.col(0).width = 110 * 30
+    ws.col(1).width = 100 * 30
+    ws.col(2).width = 170 * 30
+    ws.col(3).width = 180 * 30
+    ws.col(4).width = 110 * 30
+    ws.col(5).width = 110 * 30
+    ws.col(6).width = 160 * 30
+    ws.col(7).width = 120 * 30
+    ws.col(8).width = 110 * 30
+    ws.col(9).width = 100 * 30
 
     # Sheet header, second row
     row_num = 1
@@ -1194,7 +1200,7 @@ def export_com_transaction_xls(request):
     styles = XlwtStyleMixin.create_xlwt_styles()
 
     for trans in obj_list:
-        entries = trans.accounting_entries
+        entries = getattr(trans, 'prefetched_entries', [])
         if len(entries) == 1:
             entry = entries[0]
             row_num += 1
