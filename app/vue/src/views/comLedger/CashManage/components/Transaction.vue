@@ -93,16 +93,21 @@ const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
 }
 
 const handlePickerClose = () => {
-  // 스크롤 복원
+  // 스크롤 복원 - 순서 중요!
   const scrollY = document.body.style.top
-  document.documentElement.style.overflow = ''
-  document.body.style.overflow = ''
+  const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
+
+  // 1. position을 해제하기 전에 스크롤 위치를 먼저 저장
   document.body.style.position = ''
   document.body.style.top = ''
+
+  // 2. 스크롤 복원
+  window.scrollTo(0, scrollValue)
+
+  // 3. 나머지 스타일 복원
+  document.documentElement.style.overflow = ''
+  document.body.style.overflow = ''
   document.body.style.width = ''
-  if (scrollY) {
-    window.scrollTo(0, parseInt(scrollY || '0') * -1)
-  }
 
   pickerPosition.value = null
   handleUpdate()
