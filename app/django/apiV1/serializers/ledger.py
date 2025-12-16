@@ -338,12 +338,13 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
 # ============================================
 
 class CompanyAccountingEntryInputSerializer(serializers.Serializer):
-    """본사 회계분개 입력 시리얼라이저 (sort는 BankTransaction의 sort를 자동 사용)"""
-    account = serializers.IntegerField()
-    amount = serializers.IntegerField()
+    """본사 회계분개 입력 시리얼라이저 (PATCH 지원을 위해 모든 필드를 optional로 변경)"""
+    pk = serializers.IntegerField(required=False, allow_null=True)
+    account = serializers.IntegerField(required=False)
+    amount = serializers.IntegerField(required=False)
     trader = serializers.CharField(max_length=50, required=False, allow_blank=True)
     evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5', '6'], required=False,
-                                            allow_null=True)
+                                            allow_null=True, allow_blank=True)
     affiliate = serializers.IntegerField(required=False, allow_null=True)
 
 
@@ -367,20 +368,58 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
     accounting_entries = CompanyAccountingEntryInputSerializer(many=True)
 
     def validate(self, attrs):
-        """회계 분개 금액 합계 검증"""
-        # PATCH 요청 시 'amount'나 'accounting_entries'가 없을 수 있으므로 .get()으로 안전하게 접근
-        # 'amount'가 없으면 기존 인스턴스의 값을 사용
-        bank_amount = attrs.get('amount', getattr(self.instance, 'amount', None))
-        entries_data = attrs.get('accounting_entries')
+        """
+        회계 분개 금액 합계 검증.
+        - 생성 시: 항상 합계 검증 수행
+        - 수정 시: amount 필드가 변경될 때만 합계 검증 수행
+        """
+        instance = self.instance
+        is_update = instance is not None
 
-        # 금액 합계 검증은 'accounting_entries'가 전달된 경우에만 의미가 있음
-        # 'note' 등 다른 필드만 수정하는 경우를 위해 entries_data가 없으면 검증을 건너뜀
-        if not entries_data or bank_amount is None:
+        # 수정 요청일 경우, amount 관련 필드가 없으면 검증 불필요
+        if is_update:
+            is_bank_amount_in_data = 'amount' in attrs
+            entries_data = attrs.get('accounting_entries')
+
+            is_entry_amount_in_data = False
+            if entries_data:
+                is_entry_amount_in_data = any('amount' in entry for entry in entries_data)
+
+            # 은행 거래 금액과 분개 금액 모두 변경되지 않으면 합계 검증을 건너뜀
+            if not is_bank_amount_in_data and not is_entry_amount_in_data:
+                return attrs
+
+        # --- 합계 검증 로직 ---
+        bank_amount = attrs.get('amount', instance.amount if is_update else None)
+        if bank_amount is None:
+            # 생성 시 amount가 없으면 DRF의 required=True에서 처리됨
             return attrs
 
-        # 회계 분개 금액 총합 계산
-        # PATCH 시 분개 데이터에 amount가 없을 수 있으므로 .get()으로 안전하게 접근
-        entries_total = sum(entry.get('amount', 0) for entry in entries_data)
+        # 최종 분개 금액 목록 계산
+        final_entry_amounts = {}
+        if is_update:
+            # 수정 시: 기존 분개 목록을 가져와 {pk: amount} 맵으로 만듦
+            for entry in instance.accounting_entries.all():
+                final_entry_amounts[entry.pk] = entry.amount
+
+        # 들어온 데이터로 final_entry_amounts를 업데이트
+        incoming_entries = attrs.get('accounting_entries', [])
+        new_entry_total = 0
+        for entry_data in incoming_entries:
+            pk = entry_data.get('pk')
+            amount = entry_data.get('amount')
+
+            if pk is not None:
+                # 기존 분개 금액 수정 (요청에 amount가 없으면 기존 금액 유지)
+                if amount is not None:
+                    final_entry_amounts[pk] = amount
+            else:
+                # 신규 분개 추가 (수정 모드에서)
+                if amount is not None:
+                    new_entry_total += amount
+        
+        # 최종 합계 계산
+        entries_total = sum(final_entry_amounts.values()) + new_entry_total
 
         if bank_amount != entries_total:
             raise serializers.ValidationError({
@@ -428,12 +467,10 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         """
-        기존 본사 거래 업데이트
-
-        회계분개 수정 방식:
-        1. entries_data에 'id' 포함: 기존 분개 수정
-        2. entries_data에 'id' 없음: 새 분개 생성
-        3. 기존에 있던 분개가 entries_data에 없으면: 삭제
+        기존 본사 거래 업데이트 (PATCH 지원 강화)
+        - entries_data에 'pk' 포함: 기존 분개 수정 (요청에 있는 필드만)
+        - entries_data에 'pk' 없음: 새 분개 생성
+        - 기존 분개가 entries_data에 없으면: 삭제
         """
         # 1. 회계분개 데이터 추출
         entries_data = validated_data.pop('accounting_entries', None)
@@ -448,22 +485,15 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
         instance.note = validated_data.get('note', instance.note)
         instance.save()
 
-        # 3. 회계분개 업데이트 (제공된 경우)
+        accounting_entries = []
         if entries_data is not None:
-            # 기존 회계분개 조회
-            existing_entries = CompanyAccountingEntry.objects.filter(
-                transaction_id=instance.transaction_id
-            )
+            existing_pks = [entry.pk for entry in instance.accounting_entries.all()]
+            incoming_pks = {entry_data.get('pk') for entry_data in entries_data if entry_data.get('pk')}
 
-            # 업데이트할 분개 pk 추출
-            update_entry_pks = [entry_data.get('pk') for entry_data in entries_data if entry_data.get('pk')]
-
-            # 삭제할 분개들 (entries_data에 없는 기존 분개들)
-            entries_to_delete = existing_entries.exclude(pk__in=update_entry_pks)
-            for entry in entries_to_delete:
-                entry.delete()
-
-            accounting_entries = []
+            # 삭제할 분개 처리
+            pks_to_delete = set(existing_pks) - incoming_pks
+            if pks_to_delete:
+                CompanyAccountingEntry.objects.filter(pk__in=pks_to_delete).delete()
 
             for entry_data in entries_data:
                 entry_pk = entry_data.get('pk')
@@ -472,34 +502,38 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                     # 기존 회계분개 수정
                     try:
                         accounting_entry = CompanyAccountingEntry.objects.get(
-                            pk=entry_pk,
-                            transaction_id=instance.transaction_id
+                            pk=entry_pk, transaction_id=instance.transaction_id
                         )
-
-                        # 회계분개 필드 업데이트
-                        accounting_entry.company_id = instance.company_id  # 부모 거래의 company 정보와 동기화
-                        accounting_entry.account_id = entry_data['account']
-                        accounting_entry.trader = entry_data.get('trader', '')
-                        accounting_entry.amount = entry_data['amount']
-                        accounting_entry.evidence_type = entry_data.get('evidence_type')
-                        accounting_entry.affiliate_id = entry_data.get('affiliate')
+                        # 요청에 포함된 필드만 업데이트
+                        if 'account' in entry_data:
+                            accounting_entry.account_id = entry_data['account']
+                        if 'trader' in entry_data:
+                            accounting_entry.trader = entry_data['trader']
+                        if 'amount' in entry_data:
+                            accounting_entry.amount = entry_data['amount']
+                        if 'evidence_type' in entry_data:
+                            accounting_entry.evidence_type = entry_data['evidence_type']
+                        if 'affiliate' in entry_data:
+                            accounting_entry.affiliate_id = entry_data['affiliate']
+                        
+                        accounting_entry.full_clean()
                         accounting_entry.save()
+                        accounting_entries.append(accounting_entry)
 
                     except CompanyAccountingEntry.DoesNotExist:
-                        # ID가 잘못된 경우 새로 생성
-                        accounting_entry = self._create_accounting_entry(instance, entry_data)
+                        # ID가 잘못되었거나 다른 거래에 속한 경우, 이 요청에서는 무시
+                        continue
                 else:
                     # 새 회계분개 생성
                     accounting_entry = self._create_accounting_entry(instance, entry_data)
+                    accounting_entries.append(accounting_entry)
+        else:
+            accounting_entries = instance.accounting_entries.all()
 
-                accounting_entries.append(accounting_entry)
-
-        result = {
+        return {
             'bank_transaction': instance,
-            'accounting_entries': accounting_entries if entries_data else [],
+            'accounting_entries': accounting_entries,
         }
-
-        return result
 
     @staticmethod
     def _create_accounting_entry(instance, entry_data):
@@ -564,12 +598,57 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
     accounting_entries = ProjectAccountingEntryInputSerializer(many=True)
 
     def validate(self, attrs):
-        """회계 분개 금액 합계 검증"""
-        bank_amount = attrs['amount']
-        entries_data = attrs['accounting_entries']
+        """
+        회계 분개 금액 합계 검증.
+        - 생성 시: 항상 합계 검증 수행
+        - 수정 시: amount 필드가 변경될 때만 합계 검증 수행
+        """
+        instance = self.instance
+        is_update = instance is not None
 
-        # 회계 분개 금액 총합 계산
-        entries_total = sum(entry['amount'] for entry in entries_data)
+        # 수정 요청일 경우, amount 관련 필드가 없으면 검증 불필요
+        if is_update:
+            is_bank_amount_in_data = 'amount' in attrs
+            entries_data = attrs.get('accounting_entries')
+
+            is_entry_amount_in_data = False
+            if entries_data:
+                is_entry_amount_in_data = any('amount' in entry for entry in entries_data)
+
+            # 은행 거래 금액과 분개 금액 모두 변경되지 않으면 합계 검증을 건너뜀
+            if not is_bank_amount_in_data and not is_entry_amount_in_data:
+                return attrs
+
+        # --- 합계 검증 로직 ---
+        bank_amount = attrs.get('amount', instance.amount if is_update else None)
+        if bank_amount is None:
+            return attrs  # 생성 시 amount가 없으면 다른 유효성 검사(required=True)에서 처리됨
+
+        # 최종 분개 금액 목록을 계산
+        final_entry_amounts = {}
+        if is_update:
+            # 수정 시: 기존 분개 목록을 가져와 {pk: amount} 맵으로 만듦
+            for entry in instance.accounting_entries.all():
+                final_entry_amounts[entry.pk] = entry.amount
+
+        # 들어온 데이터로 final_entry_amounts를 업데이트
+        incoming_entries = attrs.get('accounting_entries', [])
+        new_entry_total = 0
+        for entry_data in incoming_entries:
+            pk = entry_data.get('pk')
+            amount = entry_data.get('amount')
+
+            if pk is not None:
+                # 기존 분개 금액 수정 (요청에 amount가 없으면 기존 금액 유지)
+                if amount is not None:
+                    final_entry_amounts[pk] = amount
+            else:
+                # 신규 분개 추가 (수정 모드에서)
+                if amount is not None:
+                    new_entry_total += amount
+
+        # 최종 합계 계산
+        entries_total = sum(final_entry_amounts.values()) + new_entry_total
 
         if bank_amount != entries_total:
             raise serializers.ValidationError({
