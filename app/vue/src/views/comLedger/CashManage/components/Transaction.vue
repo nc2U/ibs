@@ -34,7 +34,7 @@ const getAccountById = (accountId: number | null | undefined): Account | undefin
   return comAccounts.value.find(acc => acc.value === accountId)
 }
 
-const accountFilterType = computed(() => {
+const sortType = computed(() => {
   if (props.transaction.sort === 1) return 'deposit' // 입금
   if (props.transaction.sort === 2) return 'withdraw' // 출금
   return null // 전체
@@ -277,7 +277,7 @@ const handleUpdate = async () => {
                 <LedgerAccount
                   v-model="editValue.account"
                   :options="comAccounts ?? []"
-                  :filter-type="accountFilterType"
+                  :sort-type="sortType"
                   @blur="handleUpdate"
                   @keydown.enter="handleUpdate"
                 />
