@@ -11,7 +11,6 @@ from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
-from apiV1.views.ledger import CompanyBankTransactionViewSet
 from cash.models import CashBook, ProjectCashBook
 from company.models import Company
 from ledger.models import CompanyAccountingEntry
@@ -1105,9 +1104,8 @@ class ExportDateCashbook(ExcelExportMixin):
 
 
 def export_com_transaction_xls(request):
-    """본사 입출금 내역 (ViewSet과 로직 공유)"""
-    from copy import copy
-    from rest_framework.request import Request
+    """본사 입출금 내역 (공용 서비스 함수 사용)"""
+    # 서비스 함수를 직접 호출하므로 ViewSet 관련 import는 더 이상 필요 없음
 
     filename = request.GET.get('filename')
     filename = f'{filename}-{TODAY}' if filename else f'cashbook-{TODAY}'
@@ -1117,33 +1115,24 @@ def export_com_transaction_xls(request):
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('본사_입출금_내역')
 
-    # --- 데이터 조회 로직 (ViewSet 재사용) ---
-    # Django의 HttpRequest를 DRF의 Request로 래핑
-    drf_request = Request(request)
-
-    view = CompanyBankTransactionViewSet()
-    view.request = drf_request  # 래핑된 drf_request 객체를 사용
-    queryset = view.get_queryset()
-    filtered_transactions = view.filter_queryset(queryset)
+    # --- 데이터 조회 로직 (공용 서비스 함수 직접 호출) ---
+    # request.GET을 직접 전달하여 모든 필터 파라미터를 서비스 함수가 처리하도록 함
+    obj_list = get_company_transactions(request.GET)
+    # -----------------------------------------
 
     # --- N+1 문제 해결을 위한 수동 Prefetch ---
-    transaction_ids = [t.transaction_id for t in filtered_transactions]
+    transaction_ids = [t.transaction_id for t in obj_list]
     if transaction_ids:
         accounting_entries = CompanyAccountingEntry.objects.filter(
             transaction_id__in=transaction_ids
-        ).select_related('account')  # account 정보도 미리 가져옴
+        ).select_related('account')
 
         entries_map = defaultdict(list)
         for entry in accounting_entries:
             entries_map[entry.transaction_id].append(entry)
 
-        for transaction in filtered_transactions:
+        for transaction in obj_list:
             transaction.prefetched_entries = entries_map.get(transaction.transaction_id, [])
-    else:
-        for transaction in filtered_transactions:
-            transaction.prefetched_entries = []
-
-    obj_list = filtered_transactions
     # ------------------------------------
 
     company = Company.objects.get(pk=request.GET.get('company'))
@@ -1182,26 +1171,36 @@ def export_com_transaction_xls(request):
     # Sheet header, second row
     row_num = 1
 
-    style = xlwt.XFStyle()
-    style.font.bold = True
-    style.borders.left = 1
-    style.borders.right = 1
-    style.borders.top = 1
-    style.borders.bottom = 1
-    style.pattern.pattern = xlwt.Pattern.SOLID_PATTERN
-    style.pattern.pattern_fore_colour = xlwt.Style.colour_map['silver_ega']
-    style.alignment.vert = style.alignment.VERT_CENTER
-    style.alignment.horz = style.alignment.HORZ_CENTER
+    header_style = xlwt.XFStyle()
+    header_style.font.bold = True
+    header_style.borders.left = 1
+    header_style.borders.right = 1
+    header_style.borders.top = 1
+    header_style.borders.bottom = 1
+    header_style.pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    header_style.pattern.pattern_fore_colour = xlwt.Style.colour_map['silver_ega']
+    header_style.alignment.vert = header_style.alignment.VERT_CENTER
+    header_style.alignment.horz = header_style.alignment.HORZ_CENTER
 
     for col_num, col_name in enumerate(columns):
-        ws.write(row_num, col_num, col_name, style)
+        ws.write(row_num, col_num, col_name, header_style)
 
     # Sheet body, remaining rows
     styles = XlwtStyleMixin.create_xlwt_styles()
 
     for trans in obj_list:
         entries = getattr(trans, 'prefetched_entries', [])
-        if len(entries) == 1:
+        if not entries:  # 거래는 있으나 분개가 없는 경우
+            row_num += 1
+            ws.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), styles['date'])
+            ws.write(row_num, 1, trans.note or '', styles['default'])
+            ws.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', styles['default'])
+            ws.write(row_num, 3, trans.content or '', styles['default'])
+            ws.write(row_num, 4, trans.amount if trans.sort.pk == 1 else 0, styles['amount'])
+            ws.write(row_num, 5, trans.amount if trans.sort.pk == 2 else 0, styles['amount'])
+            for i in range(6, 10):
+                ws.write(row_num, i, '', styles['default'])
+        elif len(entries) == 1:
             entry = entries[0]
             row_num += 1
             # Bank transaction columns
@@ -1227,12 +1226,8 @@ def export_com_transaction_xls(request):
                     ws.write(row_num, 3, trans.content or '', styles['default'])
                     ws.write(row_num, 4, trans.amount if trans.sort.pk == 1 else 0, styles['amount'])
                     ws.write(row_num, 5, trans.amount if trans.sort.pk == 2 else 0, styles['amount'])
-                else:
-                    # Leave bank columns blank for subsequent entries
-                    for col_idx in range(6):
-                        ws.write(row_num, col_idx, '', styles['default'])
 
-                # Classification columns
+                # Classification columns are always written
                 ws.write(row_num, 6, acc_entry.account.name if acc_entry.account else '', styles['default'])
                 ws.write(row_num, 7, acc_entry.trader or '', styles['default'])
                 ws.write(row_num, 8, acc_entry.amount or 0, styles['amount'])
