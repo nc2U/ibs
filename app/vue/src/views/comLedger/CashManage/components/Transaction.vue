@@ -245,7 +245,7 @@ const handleUpdate = async () => {
       </CTableDataCell>
 
       <CTableDataCell colspan="6" class="p-0">
-        <CTable small class="m-0 p-0">
+        <CTable class="m-0 p-0">
           <colgroup>
             <col style="width: 20%" />
             <col style="width: 32%" />
