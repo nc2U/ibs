@@ -1,16 +1,9 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import type { Account } from '@/store/types/comLedger.ts'
 
 interface Props {
-  options: Array<{
-    value: number
-    label: string
-    parent: number | null
-    is_cate_only: boolean
-    depth?: number
-    category?: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel'
-    direction?: string
-  }>
+  options: Array<Account>
   modelValue?: number | null
   placeholder?: string
   cateType?: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel' | null

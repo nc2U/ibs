@@ -2,10 +2,10 @@ export interface Account {
   value: number
   label: string
   parent: number | null
-  depth: number
-  category: number
-  direction: string
   is_cate_only: boolean
+  depth: number
+  category: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel'
+  direction: '입금' | '출금'
   req_affiliate: boolean
 }
 

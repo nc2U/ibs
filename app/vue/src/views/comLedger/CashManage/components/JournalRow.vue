@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, watch } from 'vue'
 import { write_company_cash } from '@/utils/pageAuth.ts'
+import type { Account } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
 interface NewEntryForm {
@@ -22,16 +23,6 @@ interface Emits {
   (e: 'removeEntry', index: number): void
 }
 const emit = defineEmits<Emits>()
-
-interface Account {
-  value: number
-  label: string
-  parent: number | null
-  is_cate_only: boolean
-  depth?: number
-  direction?: string
-  req_affiliate?: boolean
-}
 
 const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
 const comAccounts = inject<ComputedRef<Account[]>>('comAccounts')
