@@ -206,7 +206,11 @@ const handleUpdate = async () => {
 
       <!-- 비고 인라인 편집 -->
       <CTableDataCell
-        :class="['editable-cell-hint', isEditing('tran', transaction.pk!, 'note') ? '' : 'pointer']"
+        :class="{
+          'editable-cell-hint': !isEditing('tran', transaction.pk!, 'note'),
+          pointer: !isEditing('tran', transaction.pk!, 'note'),
+          'p-0': isEditing('tran', transaction.pk!, 'note'),
+        }"
         @dblclick="setEditing('tran', transaction.pk!, 'note', transaction.note)"
       >
         <CFormInput
@@ -230,11 +234,12 @@ const handleUpdate = async () => {
 
       <!-- Content 인라인 편집 -->
       <CTableDataCell
-        :class="[
-          'truncate',
-          'editable-cell-hint',
-          isEditing('tran', transaction.pk!, 'content') ? '' : 'pointer',
-        ]"
+        :class="{
+          truncate: true,
+          'editable-cell-hint': !isEditing('tran', transaction.pk!, 'content'),
+          pointer: !isEditing('tran', transaction.pk!, 'content'),
+          'p-0': isEditing('tran', transaction.pk!, 'content'),
+        }"
         @dblclick="setEditing('tran', transaction.pk!, 'content', transaction.content)"
       >
         <CFormInput
@@ -255,6 +260,7 @@ const handleUpdate = async () => {
         :class="{
           'editable-cell-hint': !isEditing('tran', transaction.pk!, 'sort_amount'),
           pointer: !isEditing('tran', transaction.pk!, 'sort_amount'),
+          'p-0': isEditing('tran', transaction.pk!, 'sort_amount'),
         }"
         @dblclick="
           setEditing('tran', transaction.pk!, 'sort_amount', {
@@ -398,7 +404,7 @@ const handleUpdate = async () => {
                 @blur="handleUpdate"
                 @keydown.enter="handleUpdate"
               />
-              <span v-else class="bg-yellow-lighten-5">
+              <span v-else class="bg-transparent">
                 {{ cutString(entry.trader, 20) }}
                 <v-icon
                   icon="mdi-pencil-outline"
