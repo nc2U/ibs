@@ -84,6 +84,11 @@ const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
     document.documentElement.style.overflow = ''
     document.body.style.overflow = ''
     document.body.style.width = ''
+
+    // 상태 리셋
+    pickerPosition.value = null
+    editingState.value = null
+
     return
   }
 
