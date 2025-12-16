@@ -215,7 +215,6 @@ const handleUpdate = async () => {
           v-model="editValue"
           @blur="handleUpdate"
           @keydown.enter="handleUpdate"
-          type="text"
         />
         <span v-else>
           {{ cutString(transaction.note, 20) }}
@@ -244,7 +243,6 @@ const handleUpdate = async () => {
           v-model="editValue"
           @blur="handleUpdate"
           @keydown.enter="handleUpdate"
-          type="text"
         />
         <span v-else>
           {{ cutString(transaction.content, 15) }}
