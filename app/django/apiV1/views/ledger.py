@@ -367,7 +367,6 @@ class AffiliateViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationThreeHundred
     filterset_class = AffiliateFilter
     search_fields = ('description', 'company__name', 'project__name')
-    ordering = ['-created_at']
 
 
 # ============================================

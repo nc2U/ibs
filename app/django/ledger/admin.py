@@ -604,7 +604,6 @@ class AffiliateAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('id',)
     list_filter = ('sort', 'company', 'project')
     search_fields = ('company__name', 'project__name', 'description')
-    ordering = ('sort', '-created_at')
     readonly_fields = ('created_at', 'updated_at')
 
     fieldsets = (
