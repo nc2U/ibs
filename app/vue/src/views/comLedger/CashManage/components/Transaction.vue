@@ -5,7 +5,7 @@ import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { BankTransaction, AccountingEntry, Account } from '@/store/types/comLedger'
-import LedgerAccount from '@/components/LedgerAccount/Index.vue'
+import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
 
 const props = defineProps({
   transaction: { type: Object as PropType<BankTransaction>, required: true },
@@ -44,6 +44,7 @@ const sortType = computed(() => {
 const editingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)
 const editValue = ref<any>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
+const pickerPosition = ref<{ top: number; left: number; width: number } | null>(null)
 
 const setEditing = (type: 'tran' | 'entry', pk: number, field: string, value: any) => {
   if (!allowedPeriod.value) return
@@ -62,7 +63,53 @@ const isEditing = (type: 'tran' | 'entry', pk: number, field: string) => {
   )
 }
 
+const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
+  event.stopPropagation()
+
+  if (!isEditing('entry', entry.pk!, 'account_affiliate')) {
+    // td 요소의 위치와 크기 계산
+    const target = event.currentTarget as HTMLElement
+    const rect = target.getBoundingClientRect()
+
+    pickerPosition.value = {
+      top: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+    }
+
+    setEditing('entry', entry.pk!, 'account_affiliate', {
+      account: entry.account,
+      affiliate: entry.affiliate,
+    })
+
+    // 스크롤 제한 - body와 html 모두 제어
+    const scrollY = window.scrollY
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+  }
+}
+
+const handlePickerClose = () => {
+  // 스크롤 복원
+  const scrollY = document.body.style.top
+  document.documentElement.style.overflow = ''
+  document.body.style.overflow = ''
+  document.body.style.position = ''
+  document.body.style.top = ''
+  document.body.style.width = ''
+  if (scrollY) {
+    window.scrollTo(0, parseInt(scrollY || '0') * -1)
+  }
+
+  pickerPosition.value = null
+  handleUpdate()
+}
+
 const handleUpdate = async () => {
+  console.log('handleUpdate called, editingState:', editingState.value)
   if (!editingState.value) return
 
   const { type, pk, field } = editingState.value
@@ -260,68 +307,81 @@ const handleUpdate = async () => {
           >
             <CTableDataCell
               :class="{
+                'account-cell': true,
                 'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_affiliate'),
                 pointer: !isEditing('entry', entry.pk!, 'account_affiliate'),
               }"
-              :style="
-                isEditing('entry', entry.pk!, 'account_affiliate') ? { overflow: 'visible' } : {}
-              "
-              @dblclick="
-                setEditing('entry', entry.pk!, 'account_affiliate', {
-                  account: entry.account, // Using entry.account as LedgerAccount v-model expects an account ID
-                  affiliate: entry.affiliate,
-                })
-              "
+              style="position: relative"
             >
-              <div v-if="isEditing('entry', entry.pk!, 'account_affiliate')">
-                <LedgerAccount
+              <div
+                class="d-flex align-items-center justify-content-between bg-transparent"
+                :class="{ pointer: !isEditing('entry', entry.pk!, 'account_affiliate') }"
+                @click="handleAccountClick(entry, $event)"
+              >
+                <div class="d-flex align-items-center">
+                  <span>{{ entry.account_name }}</span>
+                  <v-tooltip v-if="entry.affiliate" location="top">
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-link-variant"
+                        color="primary"
+                        size="16"
+                        class="ml-1"
+                      />
+                    </template>
+                    <div class="pa-2">
+                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
+                      <div>{{ entry.affiliate_display }}</div>
+                    </div>
+                  </v-tooltip>
+                </div>
+                <v-icon
+                  v-if="!isEditing('entry', entry.pk!, 'account_affiliate')"
+                  icon="mdi-chevron-down"
+                  size="16"
+                  color="grey"
+                />
+              </div>
+
+              <!-- 계정 선택 Picker (Teleport to body) -->
+              <Teleport to="body">
+                <LedgerAccountPicker
+                  v-if="
+                    isEditing('entry', entry.pk!, 'account_affiliate') &&
+                    editValue &&
+                    pickerPosition
+                  "
                   v-model="editValue.account"
                   :options="comAccounts ?? []"
                   :sort-type="sortType"
-                  @blur="handleUpdate"
-                  @keydown.enter="handleUpdate"
+                  :visible="true"
+                  :position="pickerPosition"
+                  @close="handlePickerClose"
                 />
-                <div
-                  v-if="editValue.account && getAccountById(editValue.account)?.req_affiliate"
-                  class="pt-0 px-2"
+              </Teleport>
+
+              <!-- 관계회사 선택 (필요 시) -->
+              <div
+                v-if="
+                  isEditing('entry', entry.pk!, 'account_affiliate') &&
+                  editValue &&
+                  editValue.account &&
+                  getAccountById(editValue.account)?.req_affiliate
+                "
+                class="affiliate-select mt-1"
+              >
+                <CFormSelect
+                  v-model.number="editValue.affiliate"
+                  size="sm"
+                  placeholder="관계회사 선택"
+                  @change="handleUpdate"
                 >
-                  <CFormSelect
-                    v-model.number="editValue.affiliate"
-                    class=""
-                    placeholder="관계회사 선택"
-                    @blur="handleUpdate"
-                    @keydown.enter="handleUpdate"
-                  >
-                    <option :value="null">관계회사를 선택하세요</option>
-                    <option v-for="aff in affiliates" :value="aff.value" :key="aff.value">
-                      {{ aff.label }}
-                    </option>
-                  </CFormSelect>
-                </div>
-              </div>
-              <div v-else class="d-flex align-items-center bg-transparent">
-                <span>{{ entry.account_name }}</span>
-                <v-tooltip v-if="entry.affiliate" location="top">
-                  <template v-slot:activator="{ props: tooltipProps }">
-                    <v-icon
-                      v-bind="tooltipProps"
-                      icon="mdi-link-variant"
-                      color="primary"
-                      size="16"
-                      class="ml-1"
-                    />
-                  </template>
-                  <div class="pa-2">
-                    <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
-                    <div>{{ entry.affiliate_display }}</div>
-                  </div>
-                </v-tooltip>
-                <v-icon
-                  icon="mdi-pencil-outline"
-                  size="14"
-                  color="success"
-                  class="inline-edit-icon"
-                />
+                  <option :value="null">관계회사를 선택하세요</option>
+                  <option v-for="aff in affiliates" :value="aff.value" :key="aff.value">
+                    {{ aff.label }}
+                  </option>
+                </CFormSelect>
               </div>
             </CTableDataCell>
             <!-- Trader 인라인 편집 -->
@@ -380,17 +440,40 @@ const handleUpdate = async () => {
   </template>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .editable-cell-hint {
   position: relative;
   align-items: center;
 }
+
+.account-cell {
+  overflow: visible !important;
+}
+
+/* 상위 테이블 요소들도 overflow visible로 설정 */
+:deep(.table) {
+  overflow: visible !important;
+}
+
+:deep(.table tbody) {
+  overflow: visible !important;
+}
+
+:deep(.table tbody tr) {
+  overflow: visible !important;
+}
+
+:deep(.table tbody tr td) {
+  overflow: visible !important;
+}
+
 .inline-edit-icon {
   opacity: 0; /* Default hidden */
   margin-left: 4px;
   transition: opacity 0.2s ease;
 }
-.editable-cell-hint:hover .inline-edit-icon, /* Show on hover of the td with editable-cell-hint */
+
+.editable-cell-hint:hover .inline-edit-icon,
 .inline-datepicker:hover .inline-edit-icon {
   opacity: 1;
 }
@@ -405,6 +488,11 @@ const handleUpdate = async () => {
 /* 내부 테이블 행에 hover 시 아이콘 표시 */
 .table tbody tr:hover .edit-icon-hover {
   opacity: 1;
+}
+
+.affiliate-select {
+  position: relative;
+  z-index: 1;
 }
 
 .dark-theme .bg-yellow-lighten-5 {
