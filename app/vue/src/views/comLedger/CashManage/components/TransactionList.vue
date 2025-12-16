@@ -1,15 +1,13 @@
 <script lang="ts" setup>
-import { ref, computed, type PropType } from 'vue'
+import { computed, ref } from 'vue'
 import { useComLedger } from '@/store/pinia/comLedger'
-import type { CompanyBank, BankTransaction, AccountingEntry } from '@/store/types/comLedger'
-import type { Project } from '@/store/types/project'
+import type { AccountingEntry, BankTransaction, CompanyBank } from '@/store/types/comLedger'
 import { TableSecondary } from '@/utils/cssMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import Pagination from '@/components/Pagination'
 import BankAcc from './BankAcc.vue'
 import AccDepth from './AccDepth.vue'
 import Transaction from './Transaction.vue'
-import { CTable } from '@coreui/vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
