@@ -4,6 +4,7 @@ Cash Excel Export Views
 현금 출납 관련 Excel 내보내기 뷰들
 """
 import datetime
+from collections import defaultdict
 
 import xlwt
 from dateutil.relativedelta import relativedelta
@@ -11,9 +12,10 @@ from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
+from apiV1.views.ledger import CompanyBankTransactionViewSet
 from cash.models import CashBook, ProjectCashBook
-from ledger.models import CompanyBankTransaction, ProjectBankTransaction
 from company.models import Company
+from ledger.models import CompanyAccountingEntry
 from project.models import Project, ProjectOutBudget
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
@@ -1103,43 +1105,43 @@ class ExportDateCashbook(ExcelExportMixin):
 
 
 def export_com_transaction_xls(request):
-    """본사 입출금 내역"""
+    """본사 입출금 내역 (ViewSet과 로직 공유)"""
     filename = request.GET.get('filename')
     filename = f'{filename}-{TODAY}' if filename else f'cashbook-{TODAY}'
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename={filename}.xls'
 
     wb = xlwt.Workbook(encoding='utf-8')
-    ws = wb.add_sheet('본사_입출금_내역')  # 시트 이름
+    ws = wb.add_sheet('본사_입출금_내역')
 
-    # get_data: ?s_date=2018-06-30&e_date=&category1=&category2=&bank_account=&search_word=
-    s_date = request.GET.get('s_date')
-    e_date = request.GET.get('e_date')
-    sort = request.GET.get('sort')
-    # account = request.GET.get('account')
-    # affiliate = request.GET.get('affiliate')
-    bank_account = request.GET.get('bank_account')
-    search_word = request.GET.get('search_word')
+    # --- 데이터 조회 로직 (ViewSet 재사용) ---
+    view = CompanyBankTransactionViewSet()
+    view.request = request
+    queryset = view.get_queryset()
+    filtered_transactions = view.filter_queryset(queryset)
+
+    # --- N+1 문제 해결을 위한 수동 Prefetch ---
+    transaction_ids = [t.transaction_id for t in filtered_transactions]
+    if transaction_ids:
+        accounting_entries = CompanyAccountingEntry.objects.filter(
+            transaction_id__in=transaction_ids
+        ).select_related('account')  # account 정보도 미리 가져옴
+
+        entries_map = defaultdict(list)
+        for entry in accounting_entries:
+            entries_map[entry.transaction_id].append(entry)
+
+        for transaction in filtered_transactions:
+            transaction.prefetched_entries = entries_map.get(transaction.transaction_id, [])
+    else:
+        for transaction in filtered_transactions:
+            transaction.prefetched_entries = []
+
+    obj_list = filtered_transactions
+    # ------------------------------------
 
     company = Company.objects.get(pk=request.GET.get('company'))
     com_name = company.name.replace('주식회사 ', '(주)')
-    sd = '1900-01-01' if not s_date or s_date == 'null' else s_date
-    ed = e_date or TODAY
-
-    obj_list = CompanyBankTransaction.objects.filter(
-        company=company,
-        deal_date__range=(sd, ed)
-    ).select_related(
-        'bank_account',
-        'sort'
-    ).order_by('deal_date', 'created_at')
-
-    obj_list = obj_list.filter(sort_id=sort) if sort else obj_list
-    # obj_list = obj_list.filter(account_id=account) if account else obj_list
-    obj_list = obj_list.filter(bank_account_id=bank_account) if bank_account else obj_list
-    obj_list = obj_list.filter(
-        Q(content__icontains=search_word) |
-        Q(note__icontains=search_word)) if search_word else obj_list
 
     # Sheet Title, first row
     row_num = 0
@@ -1154,81 +1156,81 @@ def export_com_transaction_xls(request):
     ws.row(0).height = 38 * 20
 
     # Column definitions - 10 columns total
-    # 은행거래 내역 (6열) + 분류 내역 (4열)
     columns = [
-        # 은행거래 내역 (6열)
         '일시', '메모', '계좌', '적요', '입금액', '출금액',
-        # 분류 내역 (4열)
         '계정', '거래처', '분류금액', '증빙'
     ]
 
     # Column width settings
     ws.col(0).width = 110 * 30  # 일시
-    ws.col(9).width = 100 * 30  # 메모
-    ws.col(1).width = 170 * 30  # 계좌
+    ws.col(1).width = 100 * 30  # 메모
+    ws.col(2).width = 170 * 30  # 계좌
     ws.col(3).width = 180 * 30  # 적요
     ws.col(4).width = 110 * 30  # 입금액
     ws.col(5).width = 110 * 30  # 출금액
     ws.col(6).width = 160 * 30  # 계정
-    ws.col(2).width = 120 * 30  # 거래자
-    ws.col(7).width = 110 * 30  # 분류금액
-    ws.col(8).width = 100 * 30  # 증빙
+    ws.col(7).width = 120 * 30  # 거래처
+    ws.col(8).width = 110 * 30  # 분류금액
+    ws.col(9).width = 100 * 30  # 증빙
 
     # Sheet header, second row
     row_num = 1
 
     style = xlwt.XFStyle()
     style.font.bold = True
-
-    # 테두리 설정
     style.borders.left = 1
     style.borders.right = 1
     style.borders.top = 1
     style.borders.bottom = 1
-
     style.pattern.pattern = xlwt.Pattern.SOLID_PATTERN
     style.pattern.pattern_fore_colour = xlwt.Style.colour_map['silver_ega']
+    style.alignment.vert = style.alignment.VERT_CENTER
+    style.alignment.horz = style.alignment.HORZ_CENTER
 
-    style.alignment.vert = style.alignment.VERT_CENTER  # 수직정렬
-    style.alignment.horz = style.alignment.HORZ_CENTER  # 수평정렬
+    for col_num, col_name in enumerate(columns):
+        ws.write(row_num, col_num, col_name, style)
 
-    for col_num in range(len(columns)):
-        ws.write(row_num, col_num, columns[col_num], style)
-
-    # Sheet body, remaining rows - 재사용 가능한 스타일 생성
+    # Sheet body, remaining rows
     styles = XlwtStyleMixin.create_xlwt_styles()
 
-    # Process data with parent-child relationship handling
     for trans in obj_list:
-        if len(trans.accounting_entries) == 1:
+        entries = trans.prefetched_entries
+        if len(entries) == 1:
+            entry = entries[0]
             row_num += 1
-            # Bank transaction columns (6)
+            # Bank transaction columns
             ws.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), styles['date'])
             ws.write(row_num, 1, trans.note or '', styles['default'])
             ws.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', styles['default'])
             ws.write(row_num, 3, trans.content or '', styles['default'])
             ws.write(row_num, 4, trans.amount if trans.sort.pk == 1 else 0, styles['amount'])
             ws.write(row_num, 5, trans.amount if trans.sort.pk == 2 else 0, styles['amount'])
-            # Classification columns (4)
-            ws.write(row_num, 6, trans.accounting_entries[0].name, styles['default'])
-            ws.write(row_num, 2, trans.accounting_entries[0].trader or '', styles['default'])
-            ws.write(row_num, 7, trans.accounting_entries[0].amount or 0, styles['amount'])
-            ws.write(row_num, 8, trans.accounting_entries[0].get_evidence_display() or '', styles['default'])
+            # Classification columns
+            ws.write(row_num, 6, entry.account.name if entry.account else '', styles['default'])
+            ws.write(row_num, 7, entry.trader or '', styles['default'])
+            ws.write(row_num, 8, entry.amount or 0, styles['amount'])
+            ws.write(row_num, 9, entry.get_evidence_type_display() or '', styles['default'])
         else:
-            for acc in trans.accounting_entries:
+            for i, acc_entry in enumerate(entries):
                 row_num += 1
-                # Bank transaction columns (6)
-                ws.write(row_num, 0, 'aa', styles['date'])
-                ws.write(row_num, 1, 'bb', styles['default'])
-                ws.write(row_num, 2, '', styles['default'])
-                ws.write(row_num, 3, '', styles['default'])
-                ws.write(row_num, 4, '', styles['amount'])
-                ws.write(row_num, 5, '', styles['amount'])
-                # Classification columns (4)
-                ws.write(row_num, 6, acc.name or '', styles['default'])
-                ws.write(row_num, 2, acc.trader or '', styles['default'])
-                ws.write(row_num, 7, acc.amount or 0, styles['amount'])
-                ws.write(row_num, 8, acc.get_evidence_display() or '', styles['default'])
+                if i == 0:
+                    # Bank transaction columns - only on the first row
+                    ws.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), styles['date'])
+                    ws.write(row_num, 1, trans.note or '', styles['default'])
+                    ws.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', styles['default'])
+                    ws.write(row_num, 3, trans.content or '', styles['default'])
+                    ws.write(row_num, 4, trans.amount if trans.sort.pk == 1 else 0, styles['amount'])
+                    ws.write(row_num, 5, trans.amount if trans.sort.pk == 2 else 0, styles['amount'])
+                else:
+                    # Leave bank columns blank for subsequent entries
+                    for col_idx in range(6):
+                        ws.write(row_num, col_idx, '', styles['default'])
+
+                # Classification columns
+                ws.write(row_num, 6, acc_entry.account.name if acc_entry.account else '', styles['default'])
+                ws.write(row_num, 7, acc_entry.trader or '', styles['default'])
+                ws.write(row_num, 8, acc_entry.amount or 0, styles['amount'])
+                ws.write(row_num, 9, acc_entry.get_evidence_type_display() or '', styles['default'])
 
     wb.save(response)
     return response
