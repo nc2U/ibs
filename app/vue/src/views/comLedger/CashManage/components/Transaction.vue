@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { computed, inject, ref, nextTick, type PropType, type ComputedRef } from 'vue'
+import { computed, type ComputedRef, inject, nextTick, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import type { BankTransaction, AccountingEntry, Account } from '@/store/types/comLedger'
+import type { Account, AccountingEntry, BankTransaction } from '@/store/types/comLedger'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
 
 const props = defineProps({
@@ -66,30 +66,49 @@ const isEditing = (type: 'tran' | 'entry', pk: number, field: string) => {
 const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
   event.stopPropagation()
 
-  if (!isEditing('entry', entry.pk!, 'account_affiliate')) {
-    // td 요소의 위치와 크기 계산
-    const target = event.currentTarget as HTMLElement
-    const rect = target.getBoundingClientRect()
-
-    pickerPosition.value = {
-      top: rect.bottom,
-      left: rect.left,
-      width: rect.width,
-    }
-
-    setEditing('entry', entry.pk!, 'account_affiliate', {
-      account: entry.account,
-      affiliate: entry.affiliate,
-    })
-
-    // 스크롤 제한 - body와 html 모두 제어
-    const scrollY = window.scrollY
-    document.documentElement.style.overflow = 'hidden'
-    document.body.style.overflow = 'hidden'
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.width = '100%'
+  // 같은 항목 클릭 → 토글
+  if (isEditing('entry', entry.pk!, 'account_affiliate')) {
+    handlePickerClose()
+    return
   }
+
+  // body의 position이 fixed면 다른 Picker가 열려있음 → 닫고 return
+  if (document.body.style.position === 'fixed') {
+    // 다른 Picker 닫기 (스크롤 복원)
+    const scrollY = document.body.style.top
+    const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
+
+    document.body.style.position = ''
+    document.body.style.top = ''
+    window.scrollTo(0, scrollValue)
+    document.documentElement.style.overflow = ''
+    document.body.style.overflow = ''
+    document.body.style.width = ''
+    return
+  }
+
+  // 열려있는 창이 없으면 → 열기
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+
+  pickerPosition.value = {
+    top: rect.bottom,
+    left: rect.left,
+    width: rect.width,
+  }
+
+  setEditing('entry', entry.pk!, 'account_affiliate', {
+    account: entry.account,
+    affiliate: entry.affiliate,
+  })
+
+  // 스크롤 제한 - body와 html 모두 제어
+  const scrollY = window.scrollY
+  document.documentElement.style.overflow = 'hidden'
+  document.body.style.overflow = 'hidden'
+  document.body.style.position = 'fixed'
+  document.body.style.top = `-${scrollY}px`
+  document.body.style.width = '100%'
 }
 
 const handlePickerClose = () => {
