@@ -394,7 +394,7 @@ const handleUpdate = async () => {
                 v-if="isEditing('entry', entry.pk!, 'trader')"
                 ref="inputRef"
                 v-model="editValue"
-                class="bg-yellow-lighten-5"
+                class="bg-transparent"
                 @blur="handleUpdate"
                 @keydown.enter="handleUpdate"
               />
