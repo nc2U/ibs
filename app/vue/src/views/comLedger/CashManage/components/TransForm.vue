@@ -147,7 +147,39 @@ const isBalanced = computed(() => {
 })
 
 // 은행 계좌 목록
-const getComBanks = computed(() => ledgerStore.getComBanks)
+const formBankAccounts = computed(() => {
+  const activeBanks = ledgerStore.getComBanks
+
+  if (isCreateMode.value) {
+    // 신규 등록 시에는 활성 계좌만 표시
+    return activeBanks
+  }
+
+  // 수정 모드일 때
+  const currentBankId = transaction.value?.bank_account
+  if (!currentBankId) {
+    return activeBanks // 거래에 계좌 정보가 없는 경우
+  }
+
+  const isBankInActiveList = activeBanks.some(b => b.value === currentBankId)
+  if (isBankInActiveList) {
+    return activeBanks // 현재 거래 계좌가 활성 목록에 이미 있으면 그대로 반환
+  }
+
+  // 현재 거래 계좌가 활성 목록에 없는 경우 (비활성/숨김 상태)
+  // 전체 계좌 목록에서 찾아서 추가
+  const currentBank = ledgerStore.allComBankList.find(b => b.pk === currentBankId)
+  if (currentBank) {
+    const currentBankOption = {
+      value: currentBank.pk,
+      label: `${currentBank.alias_name} (비활성/숨김)`,
+    }
+    // 비활성 계좌를 목록 맨 위에 추가하고, 나머지는 활성 계좌 목록
+    return [currentBankOption, ...activeBanks]
+  }
+
+  return activeBanks // 혹시 전체 목록에도 없으면 활성 목록만 반환
+})
 
 const addRow = () => {
   editableEntries.value.push({})
@@ -422,7 +454,7 @@ onBeforeRouteLeave((to, from, next) => {
         <CTableDataCell>
           <CFormSelect v-model.number="bankForm.bank_account" required>
             <option :value="null">---------</option>
-            <option v-for="ba in getComBanks" :key="ba.value" :value="ba.value">
+            <option v-for="ba in formBankAccounts" :key="ba.value" :value="ba.value">
               {{ ba.label }}
             </option>
           </CFormSelect>
