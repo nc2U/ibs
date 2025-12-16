@@ -394,7 +394,7 @@ class Affiliate(models.Model):
     class Meta:
         verbose_name = '11. 관계회사/프로젝트'
         verbose_name_plural = '11. 관계회사/프로젝트'
-        ordering = ['sort', '-created_at']
+        ordering = ['id', ]
         indexes = [
             models.Index(fields=['sort', 'company']),
             models.Index(fields=['sort', 'project']),
