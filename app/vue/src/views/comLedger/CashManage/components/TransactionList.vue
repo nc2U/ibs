@@ -30,10 +30,10 @@ const emit = defineEmits([
 const refAccDepth = ref()
 const refBankAcc = ref()
 
-const comLedgerStore = useComLedger()
-const cashesPages = computed(() => comLedgerStore.cashesPages)
-const bankTransactionList = computed(() => comLedgerStore.bankTransactionList)
-const comCalculated = computed(() => comLedgerStore.comCalculated) // 최종 정산 일자
+const ledgerStore = useComLedger()
+const cashesPages = computed(() => ledgerStore.cashesPages)
+const bankTransactionList = computed(() => ledgerStore.bankTransactionList)
+const comCalculated = computed(() => ledgerStore.comCalculated) // 최종 정산 일자
 
 const pageSelect = (page: number) => emit('page-select', page)
 
