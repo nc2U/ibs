@@ -41,14 +41,14 @@ const sortType = computed(() => {
 })
 
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
-const editingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)
+const editingState = computed(() => ledgerStore.sharedEditingState) // Use computed for reactivity
 const editValue = ref<any>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
-const pickerPosition = ref<{ top: number; left: number; width: number } | null>(null)
+const pickerPosition = computed(() => ledgerStore.sharedPickerPosition) // Use computed for reactivity
 
 const setEditing = (type: 'tran' | 'entry', pk: number, field: string, value: any) => {
   if (!allowedPeriod.value) return
-  editingState.value = { type, pk, field }
+  ledgerStore.sharedEditingState = { type, pk, field } // Update shared state
   editValue.value = value
   nextTick(() => {
     inputRef.value?.focus()
@@ -66,15 +66,19 @@ const isEditing = (type: 'tran' | 'entry', pk: number, field: string) => {
 const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
   event.stopPropagation()
 
-  // 같은 항목 클릭 → 토글
+  // 현재 항목이 이미 편집 중이라면 → 닫기 (토글)
+  // 이 경우 handlePickerClose()는 상태 초기화와 동시에 handleUpdate()를 호출하여 저장 시도
   if (isEditing('entry', entry.pk!, 'account_affiliate')) {
     handlePickerClose()
     return
   }
 
-  // body의 position이 fixed면 다른 Picker가 열려있음 → 닫고 return
-  if (document.body.style.position === 'fixed') {
-    // 다른 Picker 닫기 (스크롤 복원)
+  // 다른 Picker가 열려있는 상태라면 → 다른 Picker 닫기 (저장 없이)
+  if (ledgerStore.sharedEditingState) {
+    // sharedEditingState를 통해 다른 Picker가 열려있는지 확인
+    // 다른 Picker의 스크롤 제어 해제 및 상태 초기화
+    // (handlePickerClose()를 호출하면 이전 Picker의 내용이 저장될 수 있으므로,
+    // 여기서는 저장 없이 상태만 정리해야 함)
     const scrollY = document.body.style.top
     const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
 
@@ -85,23 +89,24 @@ const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
     document.body.style.overflow = ''
     document.body.style.width = ''
 
-    // 상태 리셋
-    pickerPosition.value = null
-    editingState.value = null
+    ledgerStore.clearSharedPickerState() // 공유 상태를 즉시 클리어
 
+    // 다른 Picker를 닫고 함수를 종료. 새 Picker는 다음 클릭에 열림.
     return
   }
 
-  // 열려있는 창이 없으면 → 열기
+  // 열려있는 Picker가 없으면 → 새 Picker 열기
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
 
-  pickerPosition.value = {
+  // 공유 pickerPosition 업데이트
+  ledgerStore.sharedPickerPosition = {
     top: rect.bottom,
     left: rect.left,
     width: rect.width,
   }
 
+  // setEditing 함수를 통해 공유 editingState 업데이트
   setEditing('entry', entry.pk!, 'account_affiliate', {
     account: entry.account,
     affiliate: entry.affiliate,
@@ -133,8 +138,8 @@ const handlePickerClose = () => {
   document.body.style.overflow = ''
   document.body.style.width = ''
 
-  pickerPosition.value = null
-  handleUpdate()
+  ledgerStore.clearSharedPickerState() // 공유 상태 초기화
+  handleUpdate() // 변경 사항 저장 시도 (handleUpdate 내부에서 editingState.value가 null이면 저장 안 함)
 }
 
 const handleUpdate = async () => {
@@ -151,20 +156,20 @@ const handleUpdate = async () => {
       const newAmount = Number(editValue.value.amount) || 0
 
       if (newSort === originalSort && newAmount === originalAmount) {
-        editingState.value = null
+        ledgerStore.sharedEditingState = null
         return
       }
     } else {
       const originalValue = props.transaction[field as keyof BankTransaction]
       if (editValue.value === originalValue) {
-        editingState.value = null
+        ledgerStore.sharedEditingState = null
         return
       }
     }
   } else {
     const entry = props.transaction.accounting_entries?.find(e => e.pk === pk)
     if (!entry) {
-      editingState.value = null // No entry found, cancel editing
+      ledgerStore.sharedEditingState = null // No entry found, cancel editing
       return
     }
 
@@ -175,7 +180,7 @@ const handleUpdate = async () => {
       const newAmount = Number(editValue.value.amount) || 0
 
       if (newSort === originalSort && newAmount === originalAmount) {
-        editingState.value = null
+        ledgerStore.sharedEditingState = null
         return
       }
     } else if (field === 'account_affiliate') {
@@ -185,14 +190,14 @@ const handleUpdate = async () => {
       const newAffiliate = editValue.value.affiliate
 
       if (newAccount === originalAccount && newAffiliate === originalAffiliate) {
-        editingState.value = null
+        ledgerStore.sharedEditingState = null
         return
       }
     } else {
       // For other single entry fields
       const originalValue = entry[field as keyof AccountingEntry]
       if (editValue.value === originalValue) {
-        editingState.value = null
+        ledgerStore.sharedEditingState = null
         return
       }
     }
@@ -221,7 +226,7 @@ const handleUpdate = async () => {
   try {
     await ledgerStore.patchBankTransaction(payload)
   } finally {
-    editingState.value = null
+    ledgerStore.sharedEditingState = null
   }
 }
 </script>

@@ -300,7 +300,18 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // state & getters - comLedgerCalc
   const comLedgerCalc = ref<ComCalculated[]>([])
+
+  // --- Picker 공유 상태 및 로직 ---
+  const sharedEditingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)
+  const sharedPickerPosition = ref<{ top: number; left: number; width: number } | null>(null)
+
+  const clearSharedPickerState = () => {
+    sharedEditingState.value = null
+    sharedPickerPosition.value = null
+  }
+
 
   const fetchComLedgerCalc = async (com: number) =>
     await api
@@ -471,6 +482,11 @@ export const useComLedger = defineStore('comLedger', () => {
     comLastDeal,
     comLastDealDate,
     fetchComLastDeal,
+
+    // Shared Picker State
+    sharedEditingState,
+    sharedPickerPosition,
+    clearSharedPickerState,
 
     // Status 페이지용 (신규)
     comLedgerBankList,
