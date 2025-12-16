@@ -153,16 +153,13 @@ const handleUpdate = async () => {
 <template>
   <template v-if="transaction">
     <CTableRow class="align-top" :color="rowColor" :data-cash-id="transaction.pk">
-      <CTableDataCell style="padding-top: 12px">
+      <CTableDataCell>
         <span class="text-primary">{{ transaction.deal_date }}</span>
       </CTableDataCell>
 
       <!-- 비고 인라인 편집 -->
       <CTableDataCell
         :class="['editable-cell-hint', isEditing('tran', transaction.pk!, 'note') ? '' : 'pointer']"
-        :style="
-          isEditing('tran', transaction.pk!, 'note') ? 'padding-top: 10px' : 'padding-top: 12px'
-        "
         @dblclick="setEditing('tran', transaction.pk!, 'note', transaction.note)"
       >
         <CFormInput
@@ -179,7 +176,7 @@ const handleUpdate = async () => {
         </span>
       </CTableDataCell>
 
-      <CTableDataCell style="padding-top: 12px">
+      <CTableDataCell>
         <span v-if="transaction.bank_account_name">
           {{ cutString(transaction.bank_account_name, 10) }}
         </span>
@@ -192,9 +189,6 @@ const handleUpdate = async () => {
           'editable-cell-hint',
           isEditing('tran', transaction.pk!, 'content') ? '' : 'pointer',
         ]"
-        :style="
-          isEditing('tran', transaction.pk!, 'content') ? 'padding-top: 10px' : 'padding-top: 12px'
-        "
         @dblclick="setEditing('tran', transaction.pk!, 'content', transaction.content)"
       >
         <CFormInput
@@ -217,11 +211,6 @@ const handleUpdate = async () => {
           'editable-cell-hint': !isEditing('tran', transaction.pk!, 'sort_amount'),
           pointer: !isEditing('tran', transaction.pk!, 'sort_amount'),
         }"
-        :style="
-          isEditing('tran', transaction.pk!, 'sort_amount')
-            ? 'padding-top: 10px'
-            : 'padding-top: 12px'
-        "
         @dblclick="
           setEditing('tran', transaction.pk!, 'sort_amount', {
             sort: transaction.sort,
@@ -255,7 +244,7 @@ const handleUpdate = async () => {
         </div>
       </CTableDataCell>
 
-      <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
+      <CTableDataCell colspan="6" class="p-0">
         <CTable small class="m-0 p-0">
           <colgroup>
             <col style="width: 20%" />
@@ -264,13 +253,19 @@ const handleUpdate = async () => {
             <col style="width: 26%" />
             <col v-if="write_company_cash" style="width: 6%" />
           </colgroup>
-          <CTableRow v-for="entry in transaction.accounting_entries" :key="entry.pk">
+          <CTableRow
+            v-for="entry in transaction.accounting_entries"
+            :key="entry.pk"
+            class="bg-yellow-lighten-5"
+          >
             <CTableDataCell
               :class="{
                 'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_affiliate'),
                 pointer: !isEditing('entry', entry.pk!, 'account_affiliate'),
               }"
-              :style="isEditing('entry', entry.pk!, 'account_affiliate') ? { overflow: 'visible' } : {}"
+              :style="
+                isEditing('entry', entry.pk!, 'account_affiliate') ? { overflow: 'visible' } : {}
+              "
               @dblclick="
                 setEditing('entry', entry.pk!, 'account_affiliate', {
                   account: entry.account, // Using entry.account as LedgerAccount v-model expects an account ID
@@ -329,7 +324,32 @@ const handleUpdate = async () => {
                 />
               </div>
             </CTableDataCell>
-            <CTableDataCell> {{ cutString(entry.trader, 20) }} </CTableDataCell>
+            <!-- Trader 인라인 편집 -->
+            <CTableDataCell
+              :class="[
+                'editable-cell-hint',
+                isEditing('entry', entry.pk!, 'trader') ? '' : 'pointer',
+              ]"
+              @dblclick="setEditing('entry', entry.pk!, 'trader', entry.trader)"
+            >
+              <CFormInput
+                v-if="isEditing('entry', entry.pk!, 'trader')"
+                ref="inputRef"
+                v-model="editValue"
+                @blur="handleUpdate"
+                @keydown.enter="handleUpdate"
+                type="text"
+              />
+              <span v-else>
+                {{ cutString(entry.trader, 20) }}
+                <v-icon
+                  icon="mdi-pencil-outline"
+                  size="14"
+                  color="success"
+                  class="inline-edit-icon"
+                />
+              </span>
+            </CTableDataCell>
             <CTableDataCell
               class="text-right"
               :class="transaction.sort === 1 ? 'text-success strong' : ''"
