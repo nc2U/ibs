@@ -38,15 +38,15 @@ const urlCompanyId = computed(() => {
 })
 
 const excelUrl = computed(() => {
-  const sd = dataFilter.value.from_date || ''
-  const ed = dataFilter.value.to_date || ''
-  const st = dataFilter.value.sort || ''
-  const ac = dataFilter.value.account || ''
-  const af = dataFilter.value.affiliate || ''
-  const ba = dataFilter.value.bank_account || ''
-  const q = dataFilter.value.search
+  const from_deal_date = dataFilter.value.from_date || ''
+  const to_deal_date = dataFilter.value.to_date || ''
+  const sort = dataFilter.value.sort || ''
+  const account = dataFilter.value.account || ''
+  const affiliate = dataFilter.value.affiliate || ''
+  const bank_account = dataFilter.value.bank_account || ''
+  const search = dataFilter.value.search || ''
   const url = `/excel/com-transaction/?company=${company.value}`
-  return `${url}&s_date=${sd}&e_date=${ed}&sort=${st}&account=${ac}&affiliate=${af}&bank_account=${ba}&search_word=${q}`
+  return `${url}&from_deal_date=${from_deal_date}&to_deal_date=${to_deal_date}&sort=${sort}&account=${account}&affiliate=${affiliate}&bank_account=${bank_account}&search=${search}`
 })
 
 const comStore = useCompany()
