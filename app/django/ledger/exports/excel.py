@@ -1194,7 +1194,7 @@ def export_com_transaction_xls(request):
     styles = XlwtStyleMixin.create_xlwt_styles()
 
     for trans in obj_list:
-        entries = trans.prefetched_entries
+        entries = trans.accounting_entries
         if len(entries) == 1:
             entry = entries[0]
             row_num += 1
