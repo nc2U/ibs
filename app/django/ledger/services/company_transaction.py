@@ -9,11 +9,11 @@ def get_company_transactions(params):
     :param params: request.GET 또는 request.query_params (dict-like object)
     :return: 필터링되고 정렬된 CompanyBankTransaction 쿼리셋
     """
-    company_id = params.get('company')
-    if not company_id:
-        return CompanyBankTransaction.objects.none()
+    qs = CompanyBankTransaction.objects.all()
 
-    qs = CompanyBankTransaction.objects.filter(company_id=company_id)
+    company_id = params.get('company')
+    if company_id:
+        qs = qs.filter(company_id=company_id)
 
     # 기본 필터링
     from_deal_date = params.get('from_deal_date')

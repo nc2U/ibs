@@ -379,17 +379,23 @@ from ledger.services.company_transaction import get_company_transactions
 
 class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     """본사 은행 거래 ViewSet"""
+    queryset = CompanyBankTransaction.objects.all()
     serializer_class = CompanyBankTransactionSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationFifteen
 
-    # filterset_class 와 search_fields, ordering 은 get_queryset에서 모두 처리
-
     def get_queryset(self):
         """
-        공용 서비스 함수를 호출하여 쿼리셋을 반환합니다.
+        요청 action에 따라 쿼리셋을 분기합니다.
+        - list: 서비스 함수를 통해 필터링된 쿼리셋 반환
+        - retrieve, update 등: 기본 쿼리셋 반환
         """
-        return get_company_transactions(self.request.query_params)
+        if self.action == 'list':
+            return get_company_transactions(self.request.query_params)
+        # 상세 조회 등에서는 필터링 없이 전체에서 pk로 조회
+        return super().get_queryset().select_related(
+            'company', 'bank_account', 'sort', 'creator'
+        )
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
