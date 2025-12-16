@@ -189,13 +189,26 @@ watch(
     if (newVal) {
       searchQuery.value = ''
       selectedIndex.value = -1
-      // Teleport와 position fixed 렌더링 대기 후 focus
+      // Teleport와 position fixed 렌더링 대기 후 focus 및 스크롤
       nextTick(() => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            searchInputRef.value?.focus()
-          })
-        })
+        setTimeout(() => {
+          // 1. 검색창에 포커스
+          searchInputRef.value?.focus()
+
+          // 2. 선택된 항목으로 스크롤
+          if (props.modelValue && containerRef.value) {
+            const listEl = containerRef.value.querySelector('.account-list') as HTMLElement
+            if (listEl) {
+              const selectedEl = listEl.querySelector('.selected-item') as HTMLElement
+              if (selectedEl) {
+                const targetScrollTop =
+                  selectedEl.offsetTop - listEl.clientHeight / 2 + selectedEl.clientHeight / 2
+                // 선택된 항목이 중앙에 오도록 scrollTop 직접 조작
+                listEl.scrollTop = targetScrollTop
+              }
+            }
+          }
+        }, 100)
       })
     }
   },
@@ -214,14 +227,26 @@ const handleClickOutside = (event: MouseEvent) => {
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 
-  // 마운트 시에도 visible이면 focus
+  // 마운트 시 focus 및 스크롤
   if (props.visible) {
     nextTick(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          searchInputRef.value?.focus()
-        })
-      })
+      setTimeout(() => {
+        // 1. 검색창에 포커스
+        searchInputRef.value?.focus()
+
+        // 2. 선택된 항목으로 스크롤
+        if (props.modelValue && containerRef.value) {
+          const listEl = containerRef.value.querySelector('.account-list') as HTMLElement
+          if (listEl) {
+            const selectedEl = listEl.querySelector('.selected-item') as HTMLElement
+            if (selectedEl) {
+              const targetScrollTop =
+                selectedEl.offsetTop - listEl.clientHeight / 2 + selectedEl.clientHeight / 2
+              listEl.scrollTop = targetScrollTop
+            }
+          }
+        }
+      }, 100)
     })
   }
 })
