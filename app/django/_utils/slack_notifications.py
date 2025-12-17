@@ -7,6 +7,7 @@ from django.db.models import Q
 from cash.models import CashBook, ProjectCashBook
 from contract.models import Contract, Succession, ContractorRelease
 from docs.models import LawsuitCase, Document
+from ledger.models import CompanyBankTransaction, ProjectBankTransaction
 from project.models import Site, SiteOwner, SiteContract
 from work.models.project import IssueProject
 
@@ -377,6 +378,56 @@ class SlackMessageBuilder:
     """Slack 메시지 포맷팅 클래스"""
 
     @staticmethod
+    def build_bank_transaction_message(instance, action, user):
+        """bank_transaction 또는 Project_bank_transaction 간소화된 메시지 등록"""
+        service_url = get_service_url(instance)
+        sort_name = instance.sort.name
+        amount = instance.amount
+        main_content = f'[{sort_name}][{amount:,}]'
+
+        if isinstance(instance, CompanyBankTransaction):
+            # 본사 입출금
+            com_name = instance.company.name
+            title = f"💵 [{com_name}]-{main_content} - {instance.content or '------'}"
+        elif isinstance(instance, ProjectBankTransaction):
+            # 프로젝트 입출금
+            proj_name = instance.project.name
+            title = f"🏗️ [{proj_name}]-{main_content} - {instance.content or '------'}"
+        else:
+            return None
+
+        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
+        # 거래일 정보 포맷팅 (YYYY-MM-DD -> MM/DD 형식으로 변환)
+        deal_date_str = instance.deal_date.strftime('%Y-%m-%d') if instance.deal_date else '미정'
+
+        # 편집 시 updator와 creator 정보 표시
+        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
+            user_text = f"편집자: {instance.updator.username}"
+            if hasattr(instance, 'creator') and instance.creator:
+                user_text += f" (등록자: {instance.creator.username})"
+        else:
+            # 등록 시나 updator가 없는 경우 기존 방식
+            user_text = f"등록자: {user.username if user else '시스템'}"
+        user_text = f"""거래일: {deal_date_str} {user_text}"""
+
+        return {
+            'attachments': [{
+                'color': color,
+                'title': f"{title} ({action})",
+                'title_link': service_url,
+                'text': user_text,
+                'actions': [{
+                    'type': 'button',
+                    'text': '상세보기',
+                    'url': service_url,
+                    'style': 'primary'
+                }],
+                'footer': f'{SYSTEM_NAME}',
+                'ts': int(instance.updated.timestamp())
+            }]
+        }
+
+    @staticmethod
     def build_cashbook_message(instance, action, user):
         """CashBook 또는 ProjectCashBook 간소화된 메시지 등록"""
         service_url = get_service_url(instance)
@@ -407,8 +458,7 @@ class SlackMessageBuilder:
         else:
             # 등록 시나 updator가 없는 경우 기존 방식
             user_text = f"등록자: {user.username if user else '시스템'}"
-        user_text = f"""거래일: {deal_date_str}
-{user_text}"""
+        user_text = f"""거래일: {deal_date_str} {user_text}"""
 
         return {
             'attachments': [{
@@ -771,6 +821,8 @@ def send_slack_notification(instance, action, user=None):
     message_data = None
     if isinstance(instance, (CashBook, ProjectCashBook)):
         message_data = SlackMessageBuilder.build_cashbook_message(instance, action, user)
+    elif isinstance(instance, (CompanyBankTransaction, ProjectBankTransaction)):
+        message_data = SlackMessageBuilder.build_bank_transaction_message(instance, action, user)
     elif isinstance(instance, LawsuitCase):
         message_data = SlackMessageBuilder.build_lawsuitcase_message(instance, action, user)
     elif isinstance(instance, Document):

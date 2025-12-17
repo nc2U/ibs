@@ -534,6 +534,8 @@ class CompanyBankTransaction(BankTransaction):
     """
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사')
     bank_account = models.ForeignKey(CompanyBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
+    updator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='편집자',
+                                related_name='updated_transactions')
 
     class Meta:
         verbose_name = '03. 본사 은행 거래'
@@ -584,6 +586,8 @@ class ProjectBankTransaction(BankTransaction):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     bank_account = models.ForeignKey(ProjectBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
     is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부', help_text='프로젝트 운영비 계정 거래 여부')
+    updator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='편집자',
+                                related_name='updated_project_transactions')
 
     class Meta:
         verbose_name = '08. 프로젝트 은행 거래'

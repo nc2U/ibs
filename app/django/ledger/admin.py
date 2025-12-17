@@ -4,6 +4,7 @@ from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
+from ledger.admin_async import AsyncImportExportMixin
 from ledger.models import (
     CompanyAccount, ProjectAccount,
     CompanyBankAccount, ProjectBankAccount,
@@ -12,7 +13,6 @@ from ledger.models import (
     Affiliate,
     CompanyLedgerCalculation,
 )
-from ledger.admin_async import AsyncImportExportMixin
 from ledger.resources import (
     CompanyAccountResource, ProjectAccountResource,
     CompanyBankTransactionResource, ProjectBankTransactionResource,
