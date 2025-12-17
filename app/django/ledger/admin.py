@@ -255,9 +255,9 @@ class ProjectBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = CompanyBankTransactionResource
     list_display = ('id', 'transaction_id_short', 'company', 'bank_account', 'deal_date',
-                    'sort', 'formatted_amount', 'content', 'balance_status', 'creator', 'created_at')
+                    'sort', 'formatted_amount', 'content', 'is_balanced', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('company', 'bank_account', 'sort', ('deal_date', DateRangeFilter))
+    list_filter = ('company', 'bank_account', 'sort', 'is_balanced', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')
@@ -309,13 +309,6 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
-    @admin.display(description='분개 일치', ordering='id', boolean=True)
-    def balance_status(self, obj):
-        """회계 분개 금액 일치 여부 (리스트용)"""
-        if not obj.pk:
-            return None
-        result = obj.validate_accounting_entries()
-        return result['is_valid']
 
     def validation_detail(self, obj):
         """회계 분개 검증 상세 정보 (상세 페이지용)"""
@@ -363,9 +356,9 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectBankTransactionResource
     list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date',
-                    'sort', 'formatted_amount', 'content', 'balance_status', 'is_imprest', 'creator', 'created_at')
+                    'sort', 'formatted_amount', 'content', 'is_balanced', 'is_imprest', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'bank_account', 'sort', 'is_imprest', ('deal_date', DateRangeFilter))
+    list_filter = ('project', 'bank_account', 'sort', 'is_balanced', 'is_imprest', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note', 'project__name')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')
@@ -417,13 +410,6 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
-    @admin.display(description='분개 일치', ordering='id', boolean=True)
-    def balance_status(self, obj):
-        """회계 분개 금액 일치 여부 (리스트용)"""
-        if not obj.pk:
-            return None
-        result = obj.validate_accounting_entries()
-        return result['is_valid']
 
     def validation_detail(self, obj):
         """회계 분개 검증 상세 정보 (상세 페이지용)"""
