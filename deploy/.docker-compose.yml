@@ -22,10 +22,12 @@ services:
     restart: always
     command: [ "postgres", "-c", "timezone=Asia/Seoul" ]
     environment:
-      POSTGRES_DB: my-db-name # 실제 데이터로 수정
-      POSTGRES_USER: my-db-super-user # 실제 데이터로 수정
-      POSTGRES_SCHEMA: my-db-schema # 실제 데이터로 수정
-      POSTGRES_PASSWORD: my-db-password # 실제 데이터로 수정
+      POSTGRES_DB: my-db-name # postgres 공식 이미지 생성자
+      POSTGRES_USER: my-db-super-user # postgres 공식 이미지 생성자
+      POSTGRES_PASSWORD: my-db-secret # postgres 공식 이미지 생성자
+      PGDATABASE: my-db-name # (postgres 클라이언트 라이브러리 - 실제 데이터로 수정)
+      PGUSER: my-db-super-user # (postgres 클라이언트 라이브러리 - 실제 데이터로 수정)
+      PGPASSWORD: my-db-secret # (postgres 클라이언트 라이브러리 - 실제 데이터로 수정)
       TZ: Asia/Seoul
     volumes:
       - postgres_data:/var/lib/postgresql/18/docker

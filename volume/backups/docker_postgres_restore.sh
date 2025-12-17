@@ -2,20 +2,17 @@
 set -eu
 
 # 변수 설정
-SCHEMA="${POSTGRES_SCHEMA}"
+SCHEMA="${PGDATABASE}"
 DATE=$(date +"%Y-%m-%d")
 DUMP_FILE="/var/backups/ibs-backup-postgres-${DATE}.dump"
 LOG_FILE="/var/backups/backup-${DATE}.log"
-PGPASSWORD="${POSTGRES_PASSWORD:-$( [ -f "$POSTGRES_PASSWORD_FILE" ] && cat "$POSTGRES_PASSWORD_FILE" || echo '')}"
-POSTGRES_DATABASE="${POSTGRES_DATABASE:-${POSTGRES_DB}}"
-SUPER_USER="postgres"
 
 # 이전 백업 삭제 (예: 2일 이상된 파일)
 find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -ctime +2 -delete
 
 # 환경 변수 확인
-if [ -z "$POSTGRES_DATABASE" ] || [ -z "$DUMP_FILE" ]; then
-    echo "Error: POSTGRES_DATABASE, or DUMP_FILE is not set" >&2
+if [ -z "$PGDATABASE" ] || [ -z "$DUMP_FILE" ]; then
+    echo "Error: PGDATABASE, or DUMP_FILE is not set" >&2
     exit 1
 fi
 
@@ -30,7 +27,7 @@ echo "=== Restore Log: ${DATE} ===" > "$LOG_FILE"
 
 # 테이블 데이터 삭제(TRUNCATE) 및 복원을 트랜잭션 내에서 실행
 echo "=== 테이블 데이터 삭제 및 복원 시작 ===" | tee -a "$LOG_FILE"
-PGPASSWORD="$PGPASSWORD" psql -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
+PGPASSWORD="$PGPASSWORD" psql -U "$PGUSER" -d "$PGDATABASE" -c "
 BEGIN;
 SET CONSTRAINTS ALL DEFERRED;
 
@@ -82,7 +79,7 @@ fi
 
 # TRUNCATE 후 테이블 비어 있는지 확인
 echo "=== TRUNCATE 후 테이블 행 수 확인 ===" | tee -a "$LOG_FILE"
-PGPASSWORD="$PGPASSWORD" psql -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
+PGPASSWORD="$PGPASSWORD" psql -U "$PGUSER" -d "$PGDATABASE" -c "
 DO \$\$
 DECLARE
     r RECORD;
@@ -99,13 +96,13 @@ END \$\$;
 
 # 백업 파일 복원
 echo "=== 백업 파일 복원 중: $DUMP_FILE ===" | tee -a "$LOG_FILE"
-PGPASSWORD="$PGPASSWORD" pg_restore -U "$SUPER_USER" -d "$POSTGRES_DATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
+PGPASSWORD="$PGPASSWORD" pg_restore -U "$PGUSER" -d "$PGDATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
 
 # 복원 결과 확인
 if [ $? -eq 0 ]; then
     # 시퀀스 조정
     echo "=== 시퀀스 조정 (id 컬럼 기준) 시작 ===" | tee -a "$LOG_FILE"
-    PGPASSWORD="$PGPASSWORD" psql -U "$SUPER_USER" -d "$POSTGRES_DATABASE" -c "
+    PGPASSWORD="$PGPASSWORD" psql -U "$PGUSER" -d "$PGDATABASE" -c "
     DO \$\$
     DECLARE
         r RECORD;
