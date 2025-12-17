@@ -451,7 +451,7 @@ class BankTransaction(models.Model):
     note = models.TextField(blank=True, default='', verbose_name='비고', help_text='추가 설명')
 
     # 균형 여부
-    is_balanced = models.BooleanField(default=False, verbose_name='균형여부',
+    is_balanced = models.BooleanField(default=False, verbose_name='분개일치',
                                       help_text='은행거래 금액과 회계분개 금액 합계가 일치하는지 여부')
 
     # 감사 필드
