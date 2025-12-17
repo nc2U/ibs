@@ -25,7 +25,8 @@ class RegisteredSenderNumberSerializer(serializers.ModelSerializer):
         fields = ('id', 'phone_number', 'label', 'is_active', 'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
 
-    def validate_phone_number(self, value):
+    @staticmethod
+    def validate_phone_number(value):
         """전화번호 유효성 검사"""
         # 하이픈 제거 후 숫자만 추출
         clean_number = value.replace('-', '').replace(' ', '')
@@ -51,7 +52,8 @@ class MessageTemplateSerializer(serializers.ModelSerializer):
                   'created_by', 'created_at', 'updated_at')
         read_only_fields = ('created_by', 'created_at', 'updated_at')
 
-    def validate_message_type(self, value):
+    @staticmethod
+    def validate_message_type(value):
         """메시지 타입 유효성 검사"""
         valid_types = ['SMS', 'LMS', 'MMS']
         if value not in valid_types:

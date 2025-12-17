@@ -423,7 +423,7 @@ class SlackMessageBuilder:
                     'style': 'primary'
                 }],
                 'footer': f'{SYSTEM_NAME}',
-                'ts': int(instance.updated.timestamp())
+                'ts': int(instance.updated_at.timestamp())
             }]
         }
 
