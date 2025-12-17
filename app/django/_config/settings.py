@@ -33,8 +33,17 @@ CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS',
                               default='http://localhost:8000',
                               cast=lambda v: [s.strip() for s in v.split(",") if s.strip()], )
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
+
+if DEBUG:
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+else:
+    CSRF_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
 
 SITE_ID = 1
 
