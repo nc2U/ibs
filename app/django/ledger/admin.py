@@ -294,7 +294,7 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
             obj.transaction_id
         )
 
-        return format_html('<br>'.join(links) + '<br>' + add_link)
+        return mark_safe('<br>'.join(links) + '<br>' + add_link)
 
     related_accounting_entries.short_description = '연관 회계분개'
 
@@ -308,7 +308,6 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
-
 
     def validation_detail(self, obj):
         """회계 분개 검증 상세 정보 (상세 페이지용)"""
@@ -409,7 +408,6 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
         sign = '+' if obj.sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
-
 
     def validation_detail(self, obj):
         """회계 분개 검증 상세 정보 (상세 페이지용)"""
