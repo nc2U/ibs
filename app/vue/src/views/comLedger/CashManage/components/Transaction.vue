@@ -6,6 +6,7 @@ import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { Account, AccountingEntry, BankTransaction } from '@/store/types/comLedger'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
+import { CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   transaction: { type: Object as PropType<BankTransaction>, required: true },
@@ -327,6 +328,11 @@ const handleUpdate = async () => {
           </span>
           <v-icon icon="mdi-pencil-outline" size="14" color="success" class="inline-edit-icon" />
         </div>
+      </CTableDataCell>
+
+      <CTableDataCell class="text-center">
+        <v-icon v-if="transaction.is_balanced" icon="mdi-check-circle" color="success" size="sm" />
+        <v-icon v-else icon="mdi-minus-circle" color="danger" size="sm" />
       </CTableDataCell>
 
       <CTableDataCell colspan="6" class="p-0">

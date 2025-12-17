@@ -54,11 +54,12 @@ const accCallModal = () => {
   <hr class="mb-0" />
   <CTable hover responsive align="middle">
     <colgroup>
-      <col style="width: 8%" />
+      <col style="width: 7%" />
       <col style="width: 12%" />
       <col style="width: 8%" />
       <col style="width: 12%" />
-      <col style="width: 10%" />
+      <col style="width: 9%" />
+      <col style="width: 2%" />
 
       <col style="width: 10%" />
       <col style="width: 16%" />
@@ -69,7 +70,7 @@ const accCallModal = () => {
 
     <CTableHead>
       <CTableRow :color="TableSecondary">
-        <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
+        <CTableHeaderCell class="pl-3" colspan="6">은행거래내역</CTableHeaderCell>
         <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 6 : 5">
           <span class="text-grey mr-2">|</span> 분류 내역
         </CTableHeaderCell>
@@ -86,6 +87,7 @@ const accCallModal = () => {
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
+        <CTableHeaderCell scope="col">분개일치</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           <span class="text-grey mr-2">|</span> 계정
           <a href="javascript:void(0)" class="ml-1">
