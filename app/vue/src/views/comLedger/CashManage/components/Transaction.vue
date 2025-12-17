@@ -6,6 +6,7 @@ import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { Account, AccountingEntry, BankTransaction } from '@/store/types/comLedger'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
+import AffiliateSelectModal from './AffiliateSelectModal.vue'
 import { CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
@@ -40,6 +41,32 @@ const sortType = computed(() => {
   if (props.transaction.sort === 2) return 'withdraw' // 출금
   return null // 전체
 })
+
+// --- 관계회사 선택 모달 ---
+const affiliateModalVisible = ref(false)
+const selectedEntryForAffiliate = ref<AccountingEntry | null>(null)
+
+const openAffiliateModal = (entry: AccountingEntry) => {
+  if (!allowedPeriod.value) return
+  selectedEntryForAffiliate.value = entry
+  affiliateModalVisible.value = true
+}
+
+const handleAffiliateSelect = async (affiliateId: number | null) => {
+  if (!selectedEntryForAffiliate.value) return
+
+  const entry = selectedEntryForAffiliate.value
+  const payload = {
+    pk: props.transaction.pk!,
+    accounting_entries: [{ pk: entry.pk, affiliate: affiliateId }],
+  }
+
+  try {
+    await ledgerStore.patchBankTransaction(payload)
+  } finally {
+    selectedEntryForAffiliate.value = null
+  }
+}
 
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
 const editingState = computed(() => ledgerStore.sharedEditingState) // Use computed for reactivity
@@ -364,7 +391,29 @@ const handleUpdate = async () => {
               >
                 <div class="d-flex align-items-center">
                   <span>{{ entry.account_name }}</span>
-                  <v-tooltip v-if="entry.affiliate" location="top">
+                  <!-- 관계회사 정보 표시 (이미 설정된 경우) - 클릭 가능 -->
+                  <v-tooltip v-if="entry.affiliate && allowedPeriod" location="top">
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-link-variant"
+                        color="primary"
+                        size="16"
+                        class="ml-1 pointer"
+                        @click.stop="openAffiliateModal(entry)"
+                      />
+                    </template>
+                    <div class="pa-2">
+                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
+                      <div class="mb-2">{{ entry.affiliate_display }}</div>
+                      <div class="d-flex align-items-center text-primary font-weight-medium">
+                        <v-icon icon="mdi-pencil" size="14" class="mr-1" />
+                        클릭하여 변경
+                      </div>
+                    </div>
+                  </v-tooltip>
+                  <!-- 관계회사 정보 표시 (읽기 전용) -->
+                  <v-tooltip v-else-if="entry.affiliate && !allowedPeriod" location="top">
                     <template v-slot:activator="{ props: tooltipProps }">
                       <v-icon
                         v-bind="tooltipProps"
@@ -378,6 +427,23 @@ const handleUpdate = async () => {
                       <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
                       <div>{{ entry.affiliate_display }}</div>
                     </div>
+                  </v-tooltip>
+                  <!-- 관계회사 설정 필요 아이콘 (설정 필요하지만 없는 경우) -->
+                  <v-tooltip
+                    v-else-if="getAccountById(entry.account)?.req_affiliate && allowedPeriod"
+                    location="top"
+                  >
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-link-variant-plus"
+                        color="warning"
+                        size="16"
+                        class="ml-1 pointer"
+                        @click.stop="openAffiliateModal(entry)"
+                      />
+                    </template>
+                    <span>관계회사를 선택하세요</span>
                   </v-tooltip>
                 </div>
                 <v-icon
@@ -404,29 +470,6 @@ const handleUpdate = async () => {
                   @close="handlePickerClose"
                 />
               </Teleport>
-
-              <!-- 관계회사 선택 (필요 시) -->
-              <div
-                v-if="
-                  isEditing('entry', entry.pk!, 'account_affiliate') &&
-                  editValue &&
-                  editValue.account &&
-                  getAccountById(editValue.account)?.req_affiliate
-                "
-                class="affiliate-select mt-1"
-              >
-                <CFormSelect
-                  v-model.number="editValue.affiliate"
-                  size="sm"
-                  placeholder="관계회사 선택"
-                  @change="handleUpdate"
-                >
-                  <option :value="null">관계회사를 선택하세요</option>
-                  <option v-for="aff in affiliates" :value="aff.value" :key="aff.value">
-                    {{ aff.label }}
-                  </option>
-                </CFormSelect>
-              </div>
             </CTableDataCell>
             <!-- Trader 인라인 편집 -->
             <CTableDataCell
@@ -481,6 +524,14 @@ const handleUpdate = async () => {
         </CTable>
       </CTableDataCell>
     </CTableRow>
+
+    <!-- 관계회사 선택 모달 -->
+    <AffiliateSelectModal
+      v-model="affiliateModalVisible"
+      :affiliate="selectedEntryForAffiliate?.affiliate"
+      :account-name="selectedEntryForAffiliate?.account_name"
+      @select="handleAffiliateSelect"
+    />
   </template>
 </template>
 
