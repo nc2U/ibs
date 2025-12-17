@@ -106,7 +106,8 @@ JOB_NAME="postgres-backup-manual-$(date +%Y%m%d-%H%M%S)"
 # CronJob 존재 확인
 CRONJOB_NAME="postgres-backup"
 # kubectl alias 우회를 위해 출력 결과를 직접 체크
-CRONJOB_CHECK=$(kubectl get cronjob -n "$NAMESPACE" "$CRONJOB_NAME" 2>&1)
+# set -e 우회: || true로 에러 무시
+CRONJOB_CHECK=$(kubectl get cronjob -n "$NAMESPACE" "$CRONJOB_NAME" 2>&1 || true)
 if echo "$CRONJOB_CHECK" | grep -q "NotFound"; then
     echo "⚠️  CronJob not found, creating standalone backup job..."
     echo "This is normal for dev environment (manual backup only)"
@@ -116,10 +117,9 @@ elif [ -z "$CRONJOB_CHECK" ]; then
     echo ""
 else
     echo "✅ CronJob '$CRONJOB_NAME' found, creating job from CronJob..."
-    kubectl create job -n "$NAMESPACE" "$JOB_NAME" --from="cronjob/$CRONJOB_NAME"
 
-    # Job 생성 성공 확인
-    if [ $? -eq 0 ]; then
+    # Job 생성 및 성공 확인 (ShellCheck 권장 방식)
+    if kubectl create job -n "$NAMESPACE" "$JOB_NAME" --from="cronjob/$CRONJOB_NAME"; then
         echo ""
         echo "✅ Backup job created successfully!"
         echo ""
