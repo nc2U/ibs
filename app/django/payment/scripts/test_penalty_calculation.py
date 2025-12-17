@@ -2,10 +2,10 @@
 연체료 계산 버그 수정 검증 스크립트
 
 사용법:
-    docker compose -f deploy/docker-compose.yml exec web python manage.py shell < scripts/test_penalty_calculation.py
+    docker compose -f deploy/docker-compose.yml exec web python manage.py shell < payment/scripts/test_penalty_calculation.py
 
 또는 shell에서:
-    exec(open('scripts/test_penalty_calculation.py').read())
+    exec(open('payment/scripts/test_penalty_calculation.py').read())
 """
 
 from datetime import date
