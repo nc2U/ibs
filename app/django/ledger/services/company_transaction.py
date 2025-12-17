@@ -32,6 +32,12 @@ def get_company_transactions(params):
     if bank_account:
         qs = qs.filter(bank_account_id=bank_account)
 
+    # is_balanced 필터링
+    is_balanced = params.get('is_balanced')
+    if is_balanced is not None:
+        is_balanced_bool = is_balanced.lower() in ('true', '1', 'yes') if isinstance(is_balanced, str) else bool(is_balanced)
+        qs = qs.filter(is_balanced=is_balanced_bool)
+
     # 회계분개 모델을 참조해야 하는 복합 필터링
     account_id = params.get('account')
     account_category = params.get('account_category')
