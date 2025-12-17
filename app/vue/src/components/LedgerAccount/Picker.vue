@@ -5,7 +5,7 @@ import type { Account } from '@/store/types/comLedger.ts'
 interface Props {
   options: Array<Account>
   modelValue?: number | null
-  sortType?: '입금' | '출금' | null
+  sortType?: 'deposit' | 'withdraw' | null
   visible?: boolean
   position?: { top: number; left: number; width: number } | null
 }
@@ -39,9 +39,11 @@ const filteredOptions = computed(() => {
 
   // sortType에 따른 필터링
   if (props.sortType) {
+    const targetDirection = props.sortType === 'deposit' ? '입금' : '출금'
+
     // 1. 조건에 맞는 실제 계정들만 필터링
     const matchingAccounts = filtered.filter(
-      option => !option.is_cate_only && option.direction === props.sortType,
+      option => !option.is_cate_only && option.direction === targetDirection,
     )
 
     // 2. 매칭된 계정들의 부모 계정들 수집
@@ -65,7 +67,7 @@ const filteredOptions = computed(() => {
     filtered = filtered.filter(
       option =>
         !props.sortType || // 필터 없으면 전체
-        (!option.is_cate_only && option.direction === props.sortType) || // 조건 맞는 실제 계정
+        (!option.is_cate_only && option.direction === targetDirection) || // 조건 맞는 실제 계정
         (option.is_cate_only && neededParents.has(option.value)), // 필요한 부모 카테고리만
     )
   }

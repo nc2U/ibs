@@ -37,8 +37,8 @@ const getAccountById = (accountId: number | null | undefined): Account | undefin
 }
 
 const sortType = computed(() => {
-  if (props.transaction.sort === 1) return '입금' // 입금
-  if (props.transaction.sort === 2) return '출금' // 출금
+  if (props.transaction.sort === 1) return 'deposit' // 입금
+  if (props.transaction.sort === 2) return 'withdraw' // 출금
   return null // 전체
 })
 
