@@ -2,6 +2,7 @@
 SECRET_KEY=                   # required, Set random characters of at least 50 characters.
 DEBUG=                        # default=False
 ALLOWED_HOSTS=                # default=*, set the like this -> host1,host2,host3...
+CSRF_TRUSTED_ORIGINS=         # default='http://localhost:8000'
 
 DATABASE_TYPE=                # default=postgres, set the helm chart values.global.dbType
 DATABASE_USER=                # required, This name is referenced when releasing helm.

@@ -93,7 +93,8 @@ data:
             proxy_connect_timeout 300s;
 
             # CORS (에러 응답에도 적용)
-            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Origin $http_origin always;
+            add_header Access-Control-Allow-Credentials true always;
         }
 
         location /nginx-healthz/ {
