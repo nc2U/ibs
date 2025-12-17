@@ -2,7 +2,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from _utils.slack_notifications import send_slack_notification
-from .models import CompanyBankTransaction, ProjectBankTransaction
+from .models import CompanyBankTransaction, ProjectBankTransaction, CompanyAccountingEntry, ProjectAccountingEntry
 from .resources import is_bulk_import_active
 
 
@@ -54,3 +54,35 @@ def notify_project_bank_transaction_delete(sender, instance, **kwargs):
         return
 
     send_slack_notification(instance, "삭제", getattr(instance, 'creator', None))
+
+
+# --- is_balanced 자동 업데이트를 위한 시그널 ---
+
+def _update_bank_transaction_balance(entry_instance):
+    """
+    AccountingEntry 인스턴스에 연결된 BankTransaction의 is_balanced를 업데이트합니다.
+    """
+    # Skip updates during bulk import to avoid performance issues
+    if is_bulk_import_active():
+        return
+
+    transaction = entry_instance.related_transaction
+    if transaction:
+        # BankTransaction의 save 메서드를 호출하여 is_balanced를 재계산하고 저장
+        transaction.save()
+
+
+@receiver(post_save, sender=CompanyAccountingEntry)
+@receiver(post_save, sender=ProjectAccountingEntry)
+def on_accounting_entry_save(sender, instance, created, raw=False, **kwargs):
+    """CompanyAccountingEntry 또는 ProjectAccountingEntry 저장 후 호출됩니다."""
+    if raw:
+        return
+    _update_bank_transaction_balance(instance)
+
+
+@receiver(post_delete, sender=CompanyAccountingEntry)
+@receiver(post_delete, sender=ProjectAccountingEntry)
+def on_accounting_entry_delete(sender, instance, **kwargs):
+    """CompanyAccountingEntry 또는 ProjectAccountingEntry 삭제 후 호출됩니다."""
+    _update_bank_transaction_balance(instance)
