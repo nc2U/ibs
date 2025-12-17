@@ -66,7 +66,7 @@ echo "Checking backup files via temporary pod..."
 
 # 백업 파일 목록을 배열로 가져오기
 BACKUP_FILES=$(kubectl run -n "$NAMESPACE" backup-list-tmp \
-  --image=postgres:17.2 \
+  --image=postgres:18.0 \
   --restart=Never \
   --rm -i --quiet \
   --overrides='
@@ -74,7 +74,7 @@ BACKUP_FILES=$(kubectl run -n "$NAMESPACE" backup-list-tmp \
   "spec": {
     "containers": [{
       "name": "backup-list",
-      "image": "postgres:17.2",
+      "image": "postgres:18.0",
       "command": ["/bin/bash", "-c", "ls -1 /var/backups/*.dump 2>/dev/null | xargs -n1 basename || echo '\''No backup files found'\''"],
       "volumeMounts": [{
         "name": "backup-volume",
@@ -102,7 +102,7 @@ if [ "$AUTO_MODE" = true ]; then
   echo "🤖 Auto mode: Selecting latest backup file..."
 
   LATEST_BACKUP=$(kubectl run -n "$NAMESPACE" backup-find-latest \
-    --image=postgres:17.2 \
+    --image=postgres:18.0 \
     --restart=Never \
     --rm -i --quiet \
     --overrides='
@@ -110,7 +110,7 @@ if [ "$AUTO_MODE" = true ]; then
   "spec": {
     "containers": [{
       "name": "backup-find",
-      "image": "postgres:17.2",
+      "image": "postgres:18.0",
       "command": ["/bin/bash", "-c", "ls -1t /var/backups/*.dump 2>/dev/null | head -1 | xargs -n1 basename || echo '\''No backup files found'\''"],
       "volumeMounts": [{
         "name": "backup-volume",
@@ -261,7 +261,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: postgres-restore
-        image: postgres:17.2
+        image: postgres:18.0
         command:
           - /bin/bash
           - -c

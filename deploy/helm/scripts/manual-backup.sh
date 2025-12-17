@@ -134,7 +134,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: postgres-backup
-          image: postgres:17.2
+          image: postgres:18.0
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash

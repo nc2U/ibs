@@ -152,13 +152,13 @@ kubectl logs -n ibs-dev job/postgres-backup-manual-XXXXXX -f
 #### 백업 파일 확인
 ```bash
 # 임시 pod로 백업 파일 목록 조회
-kubectl run -n ibs-dev backup-list --image=postgres:17.2 --rm -i \
+kubectl run -n ibs-dev backup-list --image=postgres:18.0 --rm -i \
   --overrides='
 {
   "spec": {
     "containers": [{
       "name": "backup-list",
-      "image": "postgres:17.2",
+      "image": "postgres:18.0",
       "command": ["ls", "-lh", "/var/backups/"],
       "volumeMounts": [{
         "name": "backup-volume",
@@ -365,7 +365,7 @@ kubectl create job -n ibs-dev test-backup --from=cronjob/ibs-postgres-backup
 kubectl logs -n ibs-dev job/ibs-postgres-restore-XXXXXX
 
 # 백업 파일 무결성 확인
-kubectl run -n ibs-dev backup-check --image=postgres:17.2 --rm -i \
+kubectl run -n ibs-dev backup-check --image=postgres:18.0 --rm -i \
   --overrides='...' \
   -- pg_restore --list /var/backups/ibs-backup-postgres-2025-01-15.dump
 ```
@@ -373,13 +373,13 @@ kubectl run -n ibs-dev backup-check --image=postgres:17.2 --rm -i \
 ### 디스크 공간 부족
 ```bash
 # 오래된 백업 수동 삭제
-kubectl run -n ibs-dev cleanup --image=postgres:17.2 --rm -i \
+kubectl run -n ibs-dev cleanup --image=postgres:18.0 --rm -i \
   --overrides='
 {
   "spec": {
     "containers": [{
       "name": "cleanup",
-      "image": "postgres:17.2",
+      "image": "postgres:18.0",
       "command": ["/bin/bash", "-c", "find /var/backups -name \"*.dump\" -mtime +7 -delete"],
       "volumeMounts": [{
         "name": "backup-volume",
@@ -464,7 +464,7 @@ cd $CICD_PATH/dev/deploy/helm/scripts
 ./manual-backup.sh
 
 # 4. 백업 파일 확인
-kubectl run -n ibs-dev check-backup --image=postgres:17.2 --rm -i \
+kubectl run -n ibs-dev check-backup --image=postgres:18.0 --rm -i \
   --overrides='...' -- ls -lh /var/backups/
 ```
 
