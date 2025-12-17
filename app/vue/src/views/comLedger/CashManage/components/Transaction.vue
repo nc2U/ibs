@@ -7,7 +7,6 @@ import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { Account, AccountingEntry, BankTransaction } from '@/store/types/comLedger'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
 import AffiliateSelectModal from './AffiliateSelectModal.vue'
-import { CTableDataCell, CTableRow } from '@coreui/vue'
 
 const props = defineProps({
   transaction: { type: Object as PropType<BankTransaction>, required: true },
