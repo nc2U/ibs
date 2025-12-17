@@ -37,8 +37,8 @@ const getAccountById = (accountId: number | null | undefined): Account | undefin
 }
 
 const sortType = computed(() => {
-  if (props.transaction.sort === 1) return 'deposit' // 입금
-  if (props.transaction.sort === 2) return 'withdraw' // 출금
+  if (props.transaction.sort === 1) return '입금' // 입금
+  if (props.transaction.sort === 2) return '출금' // 출금
   return null // 전체
 })
 
@@ -66,8 +66,8 @@ const handleAffiliateSelect = async (affiliateId: number | null) => {
       {
         pk: entry.pk,
         account: accountToSave,
-        affiliate: affiliateId
-      }
+        affiliate: affiliateId,
+      },
     ],
   }
 
@@ -187,9 +187,7 @@ const handlePickerClose = async () => {
       document.body.style.width = ''
 
       // 현재 편집 중인 entry 찾기
-      const entry = props.transaction.accounting_entries?.find(
-        e => e.pk === editingState.value?.pk
-      )
+      const entry = props.transaction.accounting_entries?.find(e => e.pk === editingState.value?.pk)
 
       if (entry) {
         // 관계회사 모달 열기 (상태는 유지)
