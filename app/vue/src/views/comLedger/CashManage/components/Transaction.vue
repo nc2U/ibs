@@ -56,13 +56,28 @@ const handleAffiliateSelect = async (affiliateId: number | null) => {
   if (!selectedEntryForAffiliate.value) return
 
   const entry = selectedEntryForAffiliate.value
-  const payload = {
+
+  // 계정 피커에서 관계회사 모달로 넘어온 경우, 계정도 함께 저장
+  const accountToSave = editValue.value?.account || entry.account
+
+  const payload: any = {
     pk: props.transaction.pk!,
-    accounting_entries: [{ pk: entry.pk, affiliate: affiliateId }],
+    accounting_entries: [
+      {
+        pk: entry.pk,
+        account: accountToSave,
+        affiliate: affiliateId
+      }
+    ],
   }
 
   try {
     await ledgerStore.patchBankTransaction(payload)
+
+    // 편집 상태 초기화 (저장 완료 후)
+    if (editingState.value) {
+      ledgerStore.clearSharedPickerState()
+    }
   } finally {
     selectedEntryForAffiliate.value = null
   }
@@ -149,25 +164,62 @@ const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
   document.body.style.width = '100%'
 }
 
-const handlePickerClose = () => {
-  // 스크롤 복원 - 순서 중요!
+const handlePickerClose = async () => {
+  // 1. 관계회사가 필요한 계정인지 확인
+  if (editingState.value?.field === 'account_affiliate' && editValue.value) {
+    const selectedAccount = getAccountById(editValue.value.account)
+
+    // 관계회사가 필요 없는 계정으로 변경한 경우 → affiliate를 null로 초기화
+    if (!selectedAccount?.req_affiliate && editValue.value.affiliate) {
+      editValue.value.affiliate = null
+    }
+
+    // 관계회사가 필요한데 설정되지 않은 경우
+    if (selectedAccount?.req_affiliate && !editValue.value.affiliate) {
+      // 스크롤 복원
+      const scrollY = document.body.style.top
+      const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
+      document.body.style.position = ''
+      document.body.style.top = ''
+      window.scrollTo(0, scrollValue)
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+      document.body.style.width = ''
+
+      // 현재 편집 중인 entry 찾기
+      const entry = props.transaction.accounting_entries?.find(
+        e => e.pk === editingState.value?.pk
+      )
+
+      if (entry) {
+        // 관계회사 모달 열기 (상태는 유지)
+        openAffiliateModal(entry)
+      }
+      return
+    }
+  }
+
+  // 2. 변경 사항 저장 (상태가 초기화되기 전에)
+  await handleUpdate()
+
+  // 3. 스크롤 복원 - 순서 중요!
   const scrollY = document.body.style.top
   const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
 
-  // 1. position을 해제하기 전에 스크롤 위치를 먼저 저장
+  // position을 해제하기 전에 스크롤 위치를 먼저 저장
   document.body.style.position = ''
   document.body.style.top = ''
 
-  // 2. 스크롤 복원
+  // 스크롤 복원
   window.scrollTo(0, scrollValue)
 
-  // 3. 나머지 스타일 복원
+  // 나머지 스타일 복원
   document.documentElement.style.overflow = ''
   document.body.style.overflow = ''
   document.body.style.width = ''
 
-  ledgerStore.clearSharedPickerState() // 공유 상태 초기화
-  handleUpdate() // 변경 사항 저장 시도 (handleUpdate 내부에서 editingState.value가 null이면 저장 안 함)
+  // 4. 마지막으로 공유 상태 초기화
+  ledgerStore.clearSharedPickerState()
 }
 
 const handleUpdate = async () => {

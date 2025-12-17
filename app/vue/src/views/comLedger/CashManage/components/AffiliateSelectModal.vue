@@ -45,7 +45,7 @@ const handleCancel = () => {
 </script>
 
 <template>
-  <v-dialog :model-value="modelValue" max-width="500" persistent @update:model-value="closeModal">
+  <v-dialog :model-value="modelValue" max-width="500" persistent z-index="10100" @update:model-value="closeModal">
     <v-card>
       <v-card-title class="d-flex justify-space-between align-center bg-primary text-white">
         <span>관계회사/프로젝트 선택</span>
