@@ -105,12 +105,39 @@ JOB_NAME="postgres-backup-manual-$(date +%Y%m%d-%H%M%S)"
 
 # CronJob 존재 확인
 CRONJOB_NAME="postgres-backup"
-if kubectl get cronjob -n "$NAMESPACE" "$CRONJOB_NAME" &>/dev/null; then
-    echo "✅ CronJob '$CRONJOB_NAME' found, creating job from CronJob..."
-    kubectl create job -n "$NAMESPACE" "$JOB_NAME" --from="cronjob/$CRONJOB_NAME"
-else
+# kubectl alias 우회를 위해 출력 결과를 직접 체크
+CRONJOB_CHECK=$(kubectl get cronjob -n "$NAMESPACE" "$CRONJOB_NAME" 2>&1)
+if echo "$CRONJOB_CHECK" | grep -q "NotFound"; then
     echo "⚠️  CronJob not found, creating standalone backup job..."
     echo "This is normal for dev environment (manual backup only)"
+    echo ""
+elif [ -z "$CRONJOB_CHECK" ]; then
+    echo "⚠️  Cannot check CronJob, creating standalone backup job..."
+    echo ""
+else
+    echo "✅ CronJob '$CRONJOB_NAME' found, creating job from CronJob..."
+    kubectl create job -n "$NAMESPACE" "$JOB_NAME" --from="cronjob/$CRONJOB_NAME"
+
+    # Job 생성 성공 확인
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo "✅ Backup job created successfully!"
+        echo ""
+        echo "Monitor progress with:"
+        echo "  kubectl get jobs -n $NAMESPACE"
+        echo "  kubectl logs -n $NAMESPACE job/$JOB_NAME -f"
+        echo ""
+
+        # 자동으로 로그 따라가기 (옵션)
+        if [ "${FOLLOW_LOGS:-true}" = "true" ]; then
+            echo "Following logs (Ctrl+C to stop)..."
+            echo "----------------------------------------"
+            kubectl wait --for=condition=ready pod -n "$NAMESPACE" -l "job-name=$JOB_NAME" --timeout=30s
+            kubectl logs -n "$NAMESPACE" -l "job-name=$JOB_NAME" -f
+        fi
+        exit 0
+    fi
+    echo "⚠️  Failed to create job from CronJob, falling back to standalone job..."
     echo ""
 
     # 직접 Job manifest 생성
