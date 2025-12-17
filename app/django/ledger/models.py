@@ -451,8 +451,8 @@ class BankTransaction(models.Model):
     note = models.TextField(blank=True, default='', verbose_name='비고', help_text='추가 설명')
 
     # 균형 여부
-    is_balanced = models.BooleanField(default=True, verbose_name='균형여부',
-                                     help_text='은행거래 금액과 회계분개 금액 합계가 일치하는지 여부')
+    is_balanced = models.BooleanField(default=False, verbose_name='균형여부',
+                                      help_text='은행거래 금액과 회계분개 금액 합계가 일치하는지 여부')
 
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
@@ -476,9 +476,32 @@ class BankTransaction(models.Model):
             raise ValidationError({'deal_date': '미래 날짜로 거래를 생성할 수 없습니다.'})
 
     def save(self, *args, **kwargs):
-        """저장 전 유효성 검증"""
+        """저장 전 유효성 검증 및 is_balanced 값 자동 계산"""
         self.full_clean()
+
+        # 먼저 저장 (transaction_id가 필요하므로)
         super().save(*args, **kwargs)
+
+        # is_balanced 값 업데이트 (하위 클래스에서 validate_accounting_entries가 구현된 경우에만)
+        try:
+            validation_result = self.validate_accounting_entries()
+            new_is_balanced = validation_result['is_valid']
+
+            # 값이 변경된 경우에만 업데이트
+            if self.is_balanced != new_is_balanced:
+                self.is_balanced = new_is_balanced
+                super().save(update_fields=['is_balanced'])
+        except NotImplementedError:
+            # 추상 모델에서는 validate_accounting_entries가 구현되지 않음
+            pass
+
+    @property
+    def accounting_entries(self):
+        """
+        이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다.
+        하위 클래스에서 구현해야 합니다.
+        """
+        raise NotImplementedError('하위 클래스에서 구현해야 합니다.')
 
     def validate_accounting_entries(self):
         """
@@ -487,9 +510,17 @@ class BankTransaction(models.Model):
         Returns:
             dict: {'is_valid': bool, 'bank_amount': int, 'accounting_total': int, 'difference': int}
         """
-        # 하위 클래스에서 구현해야 함
-        raise NotImplementedError('하위 클래스에서 구현해야 합니다.')
+        entries = self.accounting_entries
+        accounting_total = sum(e.amount for e in entries) if entries.exists() else 0
+        difference = self.amount - accounting_total
 
+        return {
+            'is_valid': difference == 0,
+            'bank_amount': self.amount,
+            'accounting_total': accounting_total,
+            'difference': difference,
+            'entry_count': entries.count(),
+        }
 
     def __str__(self):
         return f"{self.sort.name} - {self.amount:,}원 ({self.deal_date})"
@@ -516,39 +547,6 @@ class CompanyBankTransaction(BankTransaction):
     def accounting_entries(self):
         """이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다."""
         return CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
-
-    def validate_accounting_entries(self):
-        """
-        본사 회계 분개 금액 합계 검증
-
-        Returns:
-            dict: 검증 결과
-        """
-        entries = CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
-        accounting_total = sum(e.amount for e in entries) if entries.exists() else 0
-        difference = self.amount - accounting_total
-
-        return {
-            'is_valid': difference == 0,
-            'bank_amount': self.amount,
-            'accounting_total': accounting_total,
-            'difference': difference,
-            'entry_count': entries.count(),
-        }
-
-    def save(self, *args, **kwargs):
-        """저장시 is_balanced 값을 자동으로 계산합니다."""
-        # 먼저 저장 (transaction_id가 필요하므로)
-        super().save(*args, **kwargs)
-
-        # is_balanced 값 업데이트
-        validation_result = self.validate_accounting_entries()
-        new_is_balanced = validation_result['is_valid']
-
-        # 값이 변경된 경우에만 업데이트
-        if self.is_balanced != new_is_balanced:
-            self.is_balanced = new_is_balanced
-            super().save(update_fields=['is_balanced'])
 
 
 class CompanyLedgerCalculation(models.Model):
@@ -595,24 +593,10 @@ class ProjectBankTransaction(BankTransaction):
             models.Index(fields=['bank_account', 'deal_date']),
         ]
 
-    def validate_accounting_entries(self):
-        """
-        프로젝트 회계 분개 금액 합계 검증
-
-        Returns:
-            dict: 검증 결과
-        """
-        entries = ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
-        accounting_total = sum(e.amount for e in entries) if entries.exists() else 0
-        difference = self.amount - accounting_total
-
-        return {
-            'is_valid': difference == 0,
-            'bank_amount': self.amount,
-            'accounting_total': accounting_total,
-            'difference': difference,
-            'entry_count': entries.count(),
-        }
+    @property
+    def accounting_entries(self):
+        """이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다."""
+        return ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
 
 
 # ============================================
