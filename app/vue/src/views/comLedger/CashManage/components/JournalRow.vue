@@ -87,7 +87,7 @@ const removeEntry = (index: number) => {
         <LedgerAccount
           v-model="row.account"
           :options="comAccounts ?? []"
-          :filter-type="accountFilterType"
+          :sort-type="accountFilterType"
         />
         <!-- affiliate 필드가 필요한 경우 추가 드롭다운 표시 -->
         <div v-if="row.account && getAccountById(row.account)?.req_affiliate" class="pt-0 px-2">
