@@ -33,15 +33,6 @@ jobs:
           source: 'volume/backups'
           target: ${{ secrets.NFS_PATH }}/prod/
 
-#      - name: Fix permissions after copy
-#        uses: garygrossgarten/github-action-ssh@release
-#        with:
-#          host: ${{ secrets.NFS_HOST }}
-#          username: ${{ secrets.NFS_USER }}
-#          password: ${{ secrets.NFS_PASS }}
-#          command: |
-#            chmod 775 ${{ secrets.NFS_PATH }}/prod/volume/backups/*.sh
-      
       # slack --> notification
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
