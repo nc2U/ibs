@@ -16,8 +16,18 @@ interface NewEntryForm {
 interface Props {
   sort: 1 | 2
   displayRows: NewEntryForm[]
+  transAmount: number | null
 }
 const props = defineProps<Props>() // Assign defineProps to a variable
+
+watch(
+  () => props.transAmount,
+  newValue => {
+    if (props.displayRows.length === 1) {
+      props.displayRows[0].amount = newValue || undefined
+    }
+  },
+)
 
 interface Emits {
   (e: 'removeEntry', index: number): void

@@ -491,6 +491,7 @@ onBeforeRouteLeave((to, from, next) => {
           <JournalRow
             :sort="bankForm.sort"
             :display-rows="displayRows"
+            :trans-amount="bankForm.amount"
             @remove-entry="removeEntry"
           />
         </CTableDataCell>
