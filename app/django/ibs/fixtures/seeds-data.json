@@ -2193,8 +2193,8 @@
     "pk": 105,
     "fields": {
       "code": "4011",
-      "name": "선수금",
-      "description": "청약금, 계약부채",
+      "name": "부가세 예수금",
+      "description": "부가세 예수금, 세금과공과",
       "parent": 16,
       "depth": 3,
       "category": "liability",
@@ -2210,8 +2210,25 @@
     "pk": 106,
     "fields": {
       "code": "4012",
+      "name": "선수금",
+      "description": "선수금, 청약금 등 계약부채",
+      "parent": 16,
+      "depth": 3,
+      "category": "liability",
+      "is_category_only": false,
+      "direction": "deposit",
+      "is_active": true,
+      "requires_affiliate": false,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 107,
+    "fields": {
+      "code": "4013",
       "name": "선수금 반환",
-      "description": "청약금 등 환불",
+      "description": "선급금, 청약금, 매출취소 등 환불",
       "parent": 16,
       "depth": 3,
       "category": "liability",
