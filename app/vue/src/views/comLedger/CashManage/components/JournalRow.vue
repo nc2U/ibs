@@ -3,6 +3,7 @@ import { computed, type ComputedRef, inject, watch } from 'vue'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import type { Account } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
+import { CTable } from '@coreui/vue'
 
 interface NewEntryForm {
   pk?: number
@@ -115,6 +116,7 @@ const removeEntry = (index: number) => {
         <CFormSelect
           v-model="row.evidence_type"
           :disabled="sort === 1"
+          :required="sort === 2"
           size="sm"
           placeholder="지출 증빙"
         >
