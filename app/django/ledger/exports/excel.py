@@ -1118,6 +1118,7 @@ def export_com_transaction_xls(request):
     # --- 데이터 조회 로직 (공용 서비스 함수 직접 호출) ---
     # request.GET을 직접 전달하여 모든 필터 파라미터를 서비스 함수가 처리하도록 함
     obj_list = get_company_transactions(request.GET)
+    obj_list = obj_list.order_by('deal_date', 'created_at')
     # -----------------------------------------
 
     # --- N+1 문제 해결을 위한 수동 Prefetch ---
