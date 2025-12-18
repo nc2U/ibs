@@ -402,24 +402,21 @@ onUnmounted(() => {
 }
 :global(body.dark-theme .account-item) {
   color: #eee;
-}
-
-:global(body.dark-theme .account-item) {
   &:hover:not(.category-only):not(.no-result) {
-    background-color: #282933;
+    background-color: #313240;
   }
 }
 
-:global(body.dark-theme .account-item &.category-only) {
+:global(body.dark-theme .account-item.category-only) {
   color: #a8a8a8;
   background-color: #404252;
 }
 
-:global(body.dark-theme .account-item &.selected-item span) {
+:global(body.dark-theme .account-item.selected-item span) {
   color: #eee !important;
 }
 
-:global(body.dark-theme .account-item &.no-result) {
+:global(body.dark-theme .account-item.no-result) {
   color: #a0aec0;
 }
 </style>
