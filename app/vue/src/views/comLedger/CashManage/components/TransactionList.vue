@@ -87,8 +87,8 @@ const accCallModal = () => {
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">분개일치</CTableHeaderCell>
-        <CTableHeaderCell scope="col">
+        <CTableHeaderCell scope="col">확인</CTableHeaderCell>
+        <CTableHeaderCell class="pl-0" scope="col">
           <span class="text-grey mr-2">|</span> 계정
           <a href="javascript:void(0)" class="ml-1">
             <CIcon name="cilCog" @click="refAccDepth.callModal()" />
