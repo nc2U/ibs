@@ -73,15 +73,8 @@ const AppSidebarNav = defineComponent({
         const companyMenus = new Set(['본사 문서 관리', '본사 인사 관리'])
         list.push(it => (it.name || '') !== '본사 관리' && !companyMenus.has(it.name || ''))
       } else if (!isComCash.value) {
-        list.push(it => (it.name || '') !== '본사 자금 관리')
-        // com_ledger: user_id=1 인 경우에만 표시
-        if (userInfo.value?.pk !== 1) {
-          list.push(it => (it.name || '') !== '본사 회계 관리')
-        }
-      }
-      // project_ledger: user_id=1 인 경우에만 표시
-      if (userInfo.value?.pk !== 1) {
-        list.push(it => (it.name || '') !== 'PR 회계 관리')
+        // list.push(it => (it.name || '') !== '본사 자금 관리')
+        list.push(it => (it.name || '') !== '본사 회계 관리')
       }
       return list
     })

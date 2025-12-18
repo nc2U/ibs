@@ -470,7 +470,7 @@ const nav = [
     component: 'CNavTitle',
     name: '본사 관리',
   },
-  company_cash,
+  // company_cash,
   company_ledger,
   company_docs,
   human_resource,
