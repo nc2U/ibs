@@ -404,9 +404,9 @@ onBeforeRouteLeave((to, from, next) => {
         <col style="width: 12%" />
         <col style="width: 10%" />
 
-        <col style="width: 13%" />
-        <col style="width: 13%" />
-        <col style="width: 10%" />
+        <col style="width: 15%" />
+        <col style="width: 12%" />
+        <col style="width: 9%" />
         <col style="width: 11%" />
         <col v-if="write_company_cash" style="width: 3%" />
       </colgroup>
