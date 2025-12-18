@@ -1791,7 +1791,7 @@
       "depth": 2,
       "category": "asset",
       "is_category_only": false,
-      "direction": "deposit",
+      "direction": "withdraw",
       "is_active": true,
       "requires_affiliate": false,
       "order": 0
@@ -2097,7 +2097,7 @@
       "depth": 3,
       "category": "asset",
       "is_category_only": false,
-      "direction": "deposit",
+      "direction": "withdraw",
       "is_active": true,
       "requires_affiliate": true,
       "order": 0
