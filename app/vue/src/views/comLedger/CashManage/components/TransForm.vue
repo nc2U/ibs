@@ -10,6 +10,7 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
 import AccDepth from './AccDepth.vue'
+import { isValidate } from '@/utils/helper.ts'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -47,6 +48,7 @@ interface BankTransactionForm {
   amount: number | null
 }
 
+const validated = ref(false)
 const bankForm = reactive<BankTransactionForm>({
   deal_date: getToday(),
   sort: 1,
@@ -264,27 +266,31 @@ const buildUpdatePayload = () => {
 }
 
 // 저장 처리
-const saveTransaction = async () => {
-  if (isSaving.value) return
+const saveTransaction = async (event: Event) => {
+  if (isValidate(event)) {
+    validated.value = true
+  } else {
+    if (isSaving.value) return
 
-  try {
-    isSaving.value = true
+    try {
+      isSaving.value = true
 
-    if (isCreateMode.value) {
-      const payload = buildCreatePayload()
-      await ledgerStore.createBankTransaction(payload)
-    } else {
-      const payload = buildUpdatePayload()
-      await ledgerStore.updateBankTransaction(payload)
+      if (isCreateMode.value) {
+        const payload = buildCreatePayload()
+        await ledgerStore.createBankTransaction(payload)
+      } else {
+        const payload = buildUpdatePayload()
+        await ledgerStore.updateBankTransaction(payload)
+      }
+
+      // 성공 시 거래 목록 페이지로 이동
+      await router.push({ name: '본사 거래 내역' })
+    } catch (error: any) {
+      console.error('저장 실패:', error)
+      alert(error.message || '저장 중 오류가 발생했습니다.')
+    } finally {
+      isSaving.value = false
     }
-
-    // 성공 시 거래 목록 페이지로 이동
-    await router.push({ name: '본사 거래 내역' })
-  } catch (error: any) {
-    console.error('저장 실패:', error)
-    alert(error.message || '저장 중 오류가 발생했습니다.')
-  } finally {
-    isSaving.value = false
   }
 }
 
@@ -310,15 +316,8 @@ onBeforeMount(async () => {
 
 // 폼 유효성 검사 상태
 const isFormValid = computed(() => {
-  const hasRequiredFields = !!(
-    bankForm.deal_date &&
-    bankForm.bank_account &&
-    bankForm.amount &&
-    bankForm.content
-  )
-
+  const hasRequiredFields = !!(bankForm.deal_date && bankForm.bank_account && bankForm.amount)
   const hasValidEntries = editableEntries.value.some(e => (e.amount || 0) > 0)
-
   return hasRequiredFields && hasValidEntries && isBalanced.value
 })
 
@@ -347,157 +346,164 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-  <CRow
-    class="text-right py-2 mb-1 mx-1"
-    :class="isCreateMode ? 'bg-light-blue-lighten-5' : 'bg-light-green-lighten-5'"
+  <CForm
+    class="needs-validation"
+    novalidate
+    :validated="validated"
+    @submit.prevent="saveTransaction"
   >
-    <CCol class="text-left">
-      <template v-if="isCreateMode">
-        <span class="text-primary strong">신규 거래 등록 중...</span>
-      </template>
-      <template v-else>
-        {{ transaction?.deal_date }} ∙ {{ transaction?.bank_account_name }} ∙
-        {{ transaction?.content }}
-        <span class="ml-2 text-success strong">분할 중...</span>
-      </template>
-    </CCol>
-    <CCol col="2">
-      <span> 거래내역 금액: {{ sortName }} {{ numFormat(bankAmount, 0, '0') }} </span>
-      ∙
-      <span>분류 금액 합계: {{ sortName }} {{ numFormat(totalEntryAmount, 0, '0') }}</span> ∙
-      <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
-        차액: {{ sortName }} {{ numFormat(Math.abs(difference), 0, '0') }}
-      </span>
-      <v-btn
-        color="light"
-        size="small"
-        :disabled="isSaving"
-        @click="router.push({ name: '본사 거래 내역' })"
-      >
-        취소
-      </v-btn>
-      <v-btn
-        :color="isCreateMode ? 'primary' : 'success'"
-        size="small"
-        :disabled="isSaveDisabled"
-        :loading="isSaving"
-        @click="saveTransaction"
-      >
-        {{
-          isSaving ? (isCreateMode ? '생성 중...' : '저장 중...') : isCreateMode ? '생성' : '저장'
-        }}
-      </v-btn>
-    </CCol>
-  </CRow>
+    <CRow
+      class="text-right py-2 mb-1 mx-1"
+      :class="isCreateMode ? 'bg-light-blue-lighten-5' : 'bg-light-green-lighten-5'"
+    >
+      <CCol class="text-left">
+        <template v-if="isCreateMode">
+          <span class="text-primary strong">신규 거래 등록 중...</span>
+        </template>
+        <template v-else>
+          {{ transaction?.deal_date }} ∙ {{ transaction?.bank_account_name }} ∙
+          {{ transaction?.content }}
+          <span class="ml-2 text-success strong">분할 중...</span>
+        </template>
+      </CCol>
+      <CCol col="2">
+        <span> 거래내역 금액: {{ sortName }} {{ numFormat(bankAmount, 0, '0') }} </span>
+        ∙
+        <span>분류 금액 합계: {{ sortName }} {{ numFormat(totalEntryAmount, 0, '0') }}</span> ∙
+        <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
+          차액: {{ sortName }} {{ numFormat(Math.abs(difference), 0, '0') }}
+        </span>
+        <v-btn
+          color="light"
+          size="small"
+          :disabled="isSaving"
+          @click="router.push({ name: '본사 거래 내역' })"
+        >
+          취소
+        </v-btn>
+        <v-btn
+          type="submit"
+          :color="isCreateMode ? 'primary' : 'success'"
+          size="small"
+          :disabled="isSaveDisabled"
+          :loading="isSaving"
+        >
+          {{
+            isSaving ? (isCreateMode ? '생성 중...' : '저장 중...') : isCreateMode ? '생성' : '저장'
+          }}
+        </v-btn>
+      </CCol>
+    </CRow>
 
-  <hr class="mb-0" />
-  <CTable class="mb-5">
-    <colgroup>
-      <col style="width: 8%" />
-      <col style="width: 12%" />
-      <col style="width: 8%" />
-      <col style="width: 12%" />
-      <col style="width: 10%" />
+    <hr class="mb-0" />
+    <CTable class="mb-5">
+      <colgroup>
+        <col style="width: 8%" />
+        <col style="width: 12%" />
+        <col style="width: 8%" />
+        <col style="width: 12%" />
+        <col style="width: 10%" />
 
-      <col style="width: 13%" />
-      <col style="width: 13%" />
-      <col style="width: 10%" />
-      <col style="width: 11%" />
-      <col v-if="write_company_cash" style="width: 3%" />
-    </colgroup>
+        <col style="width: 13%" />
+        <col style="width: 13%" />
+        <col style="width: 10%" />
+        <col style="width: 11%" />
+        <col v-if="write_company_cash" style="width: 3%" />
+      </colgroup>
 
-    <CTableHead class="sticky-table-head">
-      <CTableRow :color="TableSecondary" class="sticky-header-row-1">
-        <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 5 : 4">
-          <span class="text-grey mr-2">|</span> 분류 내역
-        </CTableHeaderCell>
-      </CTableRow>
+      <CTableHead class="sticky-table-head">
+        <CTableRow :color="TableSecondary" class="sticky-header-row-1">
+          <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
+          <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 5 : 4">
+            <span class="text-grey mr-2">|</span> 분류 내역
+          </CTableHeaderCell>
+        </CTableRow>
 
-      <CTableRow :color="TableSecondary" class="sticky-header-row-2">
-        <CTableHeaderCell scope="col">거래일자</CTableHeaderCell>
-        <CTableHeaderCell scope="col">메모</CTableHeaderCell>
-        <CTableHeaderCell scope="col">
-          거래계좌
-          <a href="javascript:void(0)">
-            <CIcon name="cilCog" @click="accCallModal" />
-          </a>
-        </CTableHeaderCell>
-        <CTableHeaderCell scope="col">적요</CTableHeaderCell>
-        <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">
-          계정
-          <a href="javascript:void(0)">
-            <CIcon name="cilCog" @click="refAccDepth.callModal()" />
-          </a>
-        </CTableHeaderCell>
-        <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
-        <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_company_cash" scope="col"></CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
+        <CTableRow :color="TableSecondary" class="sticky-header-row-2">
+          <CTableHeaderCell scope="col">거래일자</CTableHeaderCell>
+          <CTableHeaderCell scope="col">메모</CTableHeaderCell>
+          <CTableHeaderCell scope="col">
+            거래계좌
+            <a href="javascript:void(0)">
+              <CIcon name="cilCog" @click="accCallModal" />
+            </a>
+          </CTableHeaderCell>
+          <CTableHeaderCell scope="col">적요</CTableHeaderCell>
+          <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
+          <CTableHeaderCell scope="col">
+            계정
+            <a href="javascript:void(0)">
+              <CIcon name="cilCog" @click="refAccDepth.callModal()" />
+            </a>
+          </CTableHeaderCell>
+          <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
+          <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
+          <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
+          <CTableHeaderCell v-if="write_company_cash" scope="col"></CTableHeaderCell>
+        </CTableRow>
+      </CTableHead>
 
-    <CTableBody>
-      <CTableRow class="sticky-bank-row">
-        <!-- 거래일자 -->
-        <CTableDataCell>
-          <DatePicker v-model="bankForm.deal_date" required />
-        </CTableDataCell>
+      <CTableBody>
+        <CTableRow class="sticky-bank-row">
+          <!-- 거래일자 -->
+          <CTableDataCell>
+            <DatePicker v-model="bankForm.deal_date" required />
+          </CTableDataCell>
 
-        <!-- 메모 -->
-        <CTableDataCell>
-          <CFormInput v-model="bankForm.note" placeholder="메모" maxlength="50" />
-        </CTableDataCell>
+          <!-- 메모 -->
+          <CTableDataCell>
+            <CFormInput v-model="bankForm.note" placeholder="메모" maxlength="50" />
+          </CTableDataCell>
 
-        <!-- 거래계좌 -->
-        <CTableDataCell>
-          <CFormSelect v-model.number="bankForm.bank_account" required>
-            <option :value="null">---------</option>
-            <option v-for="ba in formBankAccounts" :key="ba.value" :value="ba.value">
-              {{ ba.label }}
-            </option>
-          </CFormSelect>
-        </CTableDataCell>
-
-        <!-- 적요 -->
-        <CTableDataCell>
-          <CFormInput v-model="bankForm.content" placeholder="적요" maxlength="100" required />
-        </CTableDataCell>
-
-        <!-- 입출금액 -->
-        <CTableDataCell class="text-right">
-          <div class="d-flex align-items-center justify-content-end">
-            <CFormSelect v-model.number="bankForm.sort" style="width: 70px" required class="mr-2">
-              <option :value="1">입금</option>
-              <option :value="2">출금</option>
+          <!-- 거래계좌 -->
+          <CTableDataCell>
+            <CFormSelect v-model.number="bankForm.bank_account" required>
+              <option :value="null">---------</option>
+              <option v-for="ba in formBankAccounts" :key="ba.value" :value="ba.value">
+                {{ ba.label }}
+              </option>
             </CFormSelect>
-            <CFormInput
-              v-model.number="bankForm.amount"
-              type="number"
-              min="0"
-              placeholder="금액"
-              required
-              style="width: 120px"
-              class="text-right"
-            />
-            <v-btn density="compact" rounded="1" size="22" class="ml-2 pointer" @click="addRow">
-              <v-icon icon="mdi-plus" color="success" />
-            </v-btn>
-          </div>
-        </CTableDataCell>
+          </CTableDataCell>
 
-        <CTableDataCell colspan="7" class="p-0">
-          <JournalRow
-            :sort="bankForm.sort"
-            :display-rows="displayRows"
-            :trans-amount="bankForm.amount"
-            @remove-entry="removeEntry"
-          />
-        </CTableDataCell>
-      </CTableRow>
-    </CTableBody>
-  </CTable>
+          <!-- 적요 -->
+          <CTableDataCell>
+            <CFormInput v-model="bankForm.content" placeholder="적요" maxlength="100" required />
+          </CTableDataCell>
+
+          <!-- 입출금액 -->
+          <CTableDataCell class="text-right">
+            <div class="d-flex align-items-center justify-content-end">
+              <CFormSelect v-model.number="bankForm.sort" style="width: 70px" required class="mr-2">
+                <option :value="1">입금</option>
+                <option :value="2">출금</option>
+              </CFormSelect>
+              <CFormInput
+                v-model.number="bankForm.amount"
+                type="number"
+                min="0"
+                placeholder="금액"
+                required
+                style="width: 120px"
+                class="text-right"
+              />
+              <v-btn density="compact" rounded="1" size="22" class="ml-2 pointer" @click="addRow">
+                <v-icon icon="mdi-plus" color="success" />
+              </v-btn>
+            </div>
+          </CTableDataCell>
+
+          <CTableDataCell colspan="7" class="p-0">
+            <JournalRow
+              :sort="bankForm.sort"
+              :display-rows="displayRows"
+              :trans-amount="bankForm.amount"
+              @remove-entry="removeEntry"
+            />
+          </CTableDataCell>
+        </CTableRow>
+      </CTableBody>
+    </CTable>
+  </CForm>
 
   <AccDepth ref="refAccDepth" @patch-d3-hide="patchD3Hide" />
 
