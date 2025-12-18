@@ -480,15 +480,14 @@ onUnmounted(() => {
 }
 
 /* Dark theme support */
-
 :global(body.dark-theme .search-container) {
-  background-color: #3b3c45 !important;
+  background-color: #363740 !important;
 }
 
 :global(body.dark-theme .category-only),
-:global(body.dark-theme .dropdown-item-disabled) {
+:global(body.dark-theme .dropdown-item.text-muted) {
   color: #a8a8a8 !important;
-  background-color: #2c2d38 !important;
+  background-color: #474850 !important;
 }
 
 :global(body.dark-theme) {

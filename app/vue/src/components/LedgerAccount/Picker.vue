@@ -376,12 +376,12 @@ onUnmounted(() => {
 
 // 다크 테마 지원
 :global(body.dark-theme .ledger-account-picker) {
-  background-color: #282933;
+  background-color: #363740;
   border-color: #4a5568;
 }
 
 :global(body.dark-theme .search-input) {
-  background-color: #3b3c45;
+  background-color: #363740;
   border-bottom-color: #4a5568;
 
   input.form-control {
@@ -400,23 +400,17 @@ onUnmounted(() => {
     }
   }
 }
+
 :global(body.dark-theme .account-item) {
-  color: #eee;
-  &:hover:not(.category-only):not(.no-result) {
-    background-color: #313240;
-  }
+  color: #eeeeff !important;
+}
+
+:global(body.dark-theme .account-item:hover:not(.category-only):not(.no-result)) {
+  background-color: #3b3c45;
 }
 
 :global(body.dark-theme .account-item.category-only) {
-  color: #a8a8a8;
-  background-color: #404252;
-}
-
-:global(body.dark-theme .account-item.selected-item span) {
-  color: #eee !important;
-}
-
-:global(body.dark-theme .account-item.no-result) {
-  color: #a0aec0;
+  color: #a8a8a8 !important;
+  background-color: #474850 !important;
 }
 </style>
