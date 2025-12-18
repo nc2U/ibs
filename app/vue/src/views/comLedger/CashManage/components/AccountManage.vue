@@ -24,7 +24,10 @@ const searchedAccounts = computed(() =>
   searchQuery.value
     ? comAccountList.value
         .filter(acc => acc.depth > 1)
-        .filter(acc => acc.name.includes(searchQuery.value))
+        .filter(
+          acc =>
+            acc.name.includes(searchQuery.value) || acc.description.includes(searchQuery.value),
+        )
     : null,
 )
 
@@ -46,7 +49,7 @@ defineExpose({ callModal })
         <v-text-field
           v-model="searchQuery"
           density="compact"
-          placeholder="계정 이름 검색..."
+          placeholder="계정 검색..."
           prepend-inner-icon="mdi-magnify"
           clearable
           hide-details
@@ -95,7 +98,10 @@ defineExpose({ callModal })
       <div v-else style="min-height: 800px">
         <v-divider class="my-4" />
         <CRow v-for="acc in searchedAccounts" :key="acc.pk" class="pl-3 my-3">
-          <CCol>{{ acc.full_path }}</CCol>
+          <CCol>
+            {{ acc.full_path }}
+            <span class="text-muted ml-3">({{ acc.description }})</span>
+          </CCol>
         </CRow>
       </div>
     </template>
