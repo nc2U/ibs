@@ -2189,6 +2189,40 @@
     }
   },
   {
+    "model": "ledger.companyaccount",
+    "pk": 105,
+    "fields": {
+      "code": "4011",
+      "name": "선수금",
+      "description": "청약금, 계약부채",
+      "parent": 16,
+      "depth": 3,
+      "category": "liability",
+      "is_category_only": false,
+      "direction": "deposit",
+      "is_active": true,
+      "requires_affiliate": false,
+      "order": 0
+    }
+  },
+  {
+    "model": "ledger.companyaccount",
+    "pk": 106,
+    "fields": {
+      "code": "4012",
+      "name": "선수금 반환",
+      "description": "청약금 등 환불",
+      "parent": 16,
+      "depth": 3,
+      "category": "liability",
+      "is_category_only": false,
+      "direction": "withdraw",
+      "is_active": true,
+      "requires_affiliate": false,
+      "order": 0
+    }
+  },
+  {
     "model": "ledger.projectaccount",
     "pk": 1,
     "fields": {
