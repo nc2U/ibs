@@ -192,11 +192,18 @@ onBeforeMount(async () => {
         <div v-if="route.name === `${mainViewName}`" class="pt-3">
           <ListController
             ref="fController"
+            :project="project"
             :case-filter="caseFilter"
             @list-filter="listFiltering"
           />
 
-          <TableTitleRow title="PR 소송 사건 목록" excel :url="excelUrl" filename="PR소송_사건내역.xlsx" :disabled="!project" />
+          <TableTitleRow
+            title="PR 소송 사건 목록"
+            excel
+            :url="excelUrl"
+            filename="PR소송_사건내역.xlsx"
+            :disabled="!project"
+          />
 
           <CaseList
             :company="company || undefined"
