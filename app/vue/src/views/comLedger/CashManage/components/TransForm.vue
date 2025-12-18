@@ -1,16 +1,17 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { isValidate } from '@/utils/helper.ts'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
 import AccDepth from './AccDepth.vue'
-import { isValidate } from '@/utils/helper.ts'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -26,6 +27,7 @@ watch(
 
 const emit = defineEmits(['patch-d3-hide', 'on-bank-create', 'on-bank-update'])
 
+const confirmModal = ref()
 const refAccDepth = ref()
 const refBankAcc = ref()
 
@@ -294,6 +296,12 @@ const saveTransaction = async (event: Event) => {
   }
 }
 
+const delTransaction = async () => {
+  confirmModal.value.close()
+  await ledgerStore.deleteBankTransaction(transaction.value?.pk!)
+  await router.replace({ name: '본사 거래 내역' })
+}
+
 const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
 const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 
@@ -503,7 +511,30 @@ onBeforeRouteLeave((to, from, next) => {
         </CTableRow>
       </CTableBody>
     </CTable>
+
+    <CRow v-if="!isCreateMode" class="text-right px-2">
+      <CCol>
+        <v-btn
+          color="warning"
+          size="small"
+          @click="confirmModal.callModal()"
+          :disabled="!write_company_cash"
+        >
+          삭제
+        </v-btn>
+      </CCol>
+    </CRow>
   </CForm>
+
+  <ConfirmModal ref="confirmModal">
+    <template #header>본서 거래 내역 삭제</template>
+    <template #default>
+      삭제한 데이터는 복구할 수 없습니다. 해당 입출금 거래 정보를 삭제하시겠습니까?
+    </template>
+    <template #footer>
+      <v-btn size="small" color="warning" @click="delTransaction">저장</v-btn>
+    </template>
+  </ConfirmModal>
 
   <AccDepth ref="refAccDepth" @patch-d3-hide="patchD3Hide" />
 

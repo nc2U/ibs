@@ -273,7 +273,7 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(async res => {
         return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data))
   }
 
   const patchBankTransaction = async (
@@ -285,19 +285,18 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(async res => {
         return await fetchBankTransactionList(bankTransactionFilter.value)
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data))
   }
 
-  const deleteBankTransaction = async (payload: BankTransaction & { filters: DataFilter }) => {
-    const { pk } = payload
+  const deleteBankTransaction = async (pk: number) => {
     return await api
-      .delete(`//ledger/company-transaction/${pk}/`)
-      .then(() =>
-        fetchBankTransactionList(bankTransactionFilter.value).then(() =>
-          message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.'),
-        ),
-      )
-      .catch(err => errorHandle(err.response.data))
+      .delete(`/ledger/company-composite-transaction/${pk}/`)
+      .then(async () => {
+        return await fetchBankTransactionList(bankTransactionFilter.value).then(() =>
+          message('warning', '알림!', '본사 거래 데이터가 삭제되었습니다.'),
+        )
+      })
+      .catch(err => errorHandle(err.response?.data))
   }
 
   // state & getters - comLedgerCalc
