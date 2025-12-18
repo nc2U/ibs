@@ -936,7 +936,7 @@
     "fields": {
       "code": "5150",
       "name": "복리후생비",
-      "description": "직원의 복지 향상을 위해 회사가 제공하는 비금전적 보상과 서비스에 발생한 비용",
+      "description": "직원의 복지를 위해 회사가 제공하는 비금전적 보상과 서비스 비용, 직원 경조사비",
       "parent": 4,
       "depth": 2,
       "category": "expense",
@@ -1055,7 +1055,7 @@
     "fields": {
       "code": "5220",
       "name": "업무추진비",
-      "description": "업무와 관련하여 접대, 교제, 사례 등의 명목 하에 지불한 비용",
+      "description": "업무와 관련하여 접대비, 교제, 사례 등의 명목 하에 지불한 비용, 거래처 경조사비",
       "parent": 4,
       "depth": 2,
       "category": "expense",
