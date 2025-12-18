@@ -112,7 +112,12 @@ const removeEntry = (index: number) => {
         />
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormSelect v-model="row.evidence_type" size="sm" placeholder="지출 증빙">
+        <CFormSelect
+          v-model="row.evidence_type"
+          :disabled="sort === 1"
+          size="sm"
+          placeholder="지출 증빙"
+        >
           <option value="">---------</option>
           <option value="0">증빙없음</option>
           <option value="1">세금계산서</option>
