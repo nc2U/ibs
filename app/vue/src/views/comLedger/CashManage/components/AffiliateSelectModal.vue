@@ -45,7 +45,13 @@ const handleCancel = () => {
 </script>
 
 <template>
-  <v-dialog :model-value="modelValue" max-width="500" persistent z-index="10100" @update:model-value="closeModal">
+  <v-dialog
+    :model-value="modelValue"
+    max-width="500"
+    persistent
+    z-index="10100"
+    @update:model-value="closeModal"
+  >
     <v-card>
       <v-card-title class="d-flex justify-space-between align-center bg-primary text-white">
         <span>관계회사/프로젝트 선택</span>
@@ -62,7 +68,6 @@ const handleCancel = () => {
           <div class="text-caption text-grey mb-2">관계회사/프로젝트</div>
           <CFormSelect
             v-model.number="selectedAffiliate"
-            size="lg"
             placeholder="관계회사를 선택하세요"
             class="mb-2"
           >
@@ -71,9 +76,7 @@ const handleCancel = () => {
               {{ aff.label }}
             </option>
           </CFormSelect>
-          <div class="text-caption text-grey-darken-1">
-            이 계정은 관계회사 정보가 필요합니다.
-          </div>
+          <div class="text-caption text-grey-darken-1">이 계정은 관계회사 정보가 필요합니다.</div>
         </div>
       </v-card-text>
 
