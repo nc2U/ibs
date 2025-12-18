@@ -64,8 +64,8 @@ export interface CompanyAccount {
   category_display: '자산' | '부채' | '자본' | '수익' | '비용' | '대체' | '취소'
   direction: 'deposit' | 'withdraw'
   direction_display: '입금' | '출금'
-  computed_direction: 'deposit' | 'withdraw'
-  computed_direction_display: '입금' | '출금'
+  computed_direction: 'deposit' | 'withdraw' | 'both'
+  computed_direction_display: '입금' | '출금' | '입금/출금'
   is_category_only: boolean
   is_active: boolean
   requires_affiliate: boolean
