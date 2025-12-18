@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from django.db.models import Sum, F, Case, When, Prefetch
+from django.db import transaction as db_transaction
+from django.db.models import Sum, F, Case, When
 from django_filters import DateFilter, CharFilter, NumberFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import permissions
@@ -842,12 +843,20 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
         # 삭제 전 정보 저장 (로깅용)
         transaction_id = bank_transaction.transaction_id
 
-        # CASCADE로 연결된 CompanyAccountingEntry들도 자동 삭제됨
-        bank_transaction.delete()
+        # 트랜잭션으로 묶어서 원자적으로 삭제
+        with db_transaction.atomic():
+            # 1. 연결된 회계분개 먼저 삭제
+            deleted_entries_count, _ = CompanyAccountingEntry.objects.filter(
+                transaction_id=transaction_id
+            ).delete()
+
+            # 2. 은행거래 삭제
+            bank_transaction.delete()
 
         return Response({
             'message': '거래가 삭제되었습니다.',
-            'transaction_id': transaction_id
+            'transaction_id': str(transaction_id),
+            'deleted_entries': deleted_entries_count
         }, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -965,10 +974,18 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
         # 삭제 전 정보 저장 (로깅용)
         transaction_id = bank_transaction.transaction_id
 
-        # CASCADE로 연결된 ProjectAccountingEntry와 ContractPayment들도 자동 삭제됨
-        bank_transaction.delete()
+        # 트랜잭션으로 묶어서 원자적으로 삭제
+        with db_transaction.atomic():
+            # 1. 연결된 회계분개 삭제 (CASCADE로 ContractPayment도 자동 삭제됨)
+            deleted_entries_count, _ = ProjectAccountingEntry.objects.filter(
+                transaction_id=transaction_id
+            ).delete()
+
+            # 2. 은행거래 삭제
+            bank_transaction.delete()
 
         return Response({
             'message': '거래가 삭제되었습니다.',
-            'transaction_id': transaction_id
+            'transaction_id': str(transaction_id),
+            'deleted_entries': deleted_entries_count
         }, status=status.HTTP_204_NO_CONTENT)
