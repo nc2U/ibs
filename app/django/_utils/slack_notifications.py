@@ -249,6 +249,10 @@ def get_service_url(model_instance):
         return f"{base_url}/#/cashes/index?highlight_id={model_instance.id}&company={model_instance.company_id}"
     elif isinstance(model_instance, ProjectCashBook):
         return f"{base_url}/#/project-cash/index?highlight_id={model_instance.id}&project={model_instance.project_id}"
+    elif isinstance(model_instance, CompanyBankTransaction):
+        return f"{base_url}/#/ledger/index?highlight_id={model_instance.id}&company={model_instance.company_id}"
+    elif isinstance(model_instance, ProjectBankTransaction):
+        return f"{base_url}/#/project-ledger/index?highlight_id={model_instance.id}&project={model_instance.project_id}"
     elif isinstance(model_instance, LawsuitCase):
         return f"{base_url}/#/{prefix}docs/lawsuit/case/{model_instance.id}?company={model_instance.issue_project.company_id}"
     elif isinstance(model_instance, Document):
