@@ -831,6 +831,25 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @staticmethod
+    def destroy(request, pk=None):
+        """본사 거래 삭제 (은행거래 + 회계분개 일괄 삭제)"""
+        try:
+            bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
+        except CompanyBankTransaction.DoesNotExist:
+            return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 삭제 전 정보 저장 (로깅용)
+        transaction_id = bank_transaction.transaction_id
+
+        # CASCADE로 연결된 CompanyAccountingEntry들도 자동 삭제됨
+        bank_transaction.delete()
+
+        return Response({
+            'message': '거래가 삭제되었습니다.',
+            'transaction_id': transaction_id
+        }, status=status.HTTP_204_NO_CONTENT)
+
 
 class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
     """
@@ -934,3 +953,22 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
                 ]
             return Response(response_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def destroy(request, pk=None):
+        """프로젝트 거래 삭제 (은행거래 + 회계분개 + 계약결제 일괄 삭제)"""
+        try:
+            bank_transaction = ProjectBankTransaction.objects.get(pk=pk)
+        except ProjectBankTransaction.DoesNotExist:
+            return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 삭제 전 정보 저장 (로깅용)
+        transaction_id = bank_transaction.transaction_id
+
+        # CASCADE로 연결된 ProjectAccountingEntry와 ContractPayment들도 자동 삭제됨
+        bank_transaction.delete()
+
+        return Response({
+            'message': '거래가 삭제되었습니다.',
+            'transaction_id': transaction_id
+        }, status=status.HTTP_204_NO_CONTENT)
