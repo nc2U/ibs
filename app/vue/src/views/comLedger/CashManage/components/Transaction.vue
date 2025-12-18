@@ -414,8 +414,8 @@ const handleUpdate = async () => {
       <CTableDataCell colspan="6" class="p-0">
         <CTable class="m-0 p-0">
           <colgroup>
-            <col style="width: 20%" />
-            <col style="width: 32%" />
+            <col style="width: 24%" />
+            <col style="width: 28%" />
             <col style="width: 16%" />
             <col style="width: 26%" />
             <col v-if="write_company_cash" style="width: 6%" />
@@ -431,6 +431,7 @@ const handleUpdate = async () => {
                 'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_affiliate'),
                 pointer: !isEditing('entry', entry.pk!, 'account_affiliate'),
               }"
+              class="bg-yellow-lighten-4"
               style="position: relative"
             >
               <div
@@ -526,6 +527,7 @@ const handleUpdate = async () => {
                 'editable-cell-hint',
                 isEditing('entry', entry.pk!, 'trader') ? '' : 'pointer',
               ]"
+              class="text-truncate"
               @dblclick="setEditing('entry', entry.pk!, 'trader', entry.trader)"
             >
               <CFormInput
@@ -537,7 +539,7 @@ const handleUpdate = async () => {
                 @keydown.enter="handleUpdate"
               />
               <span v-else class="bg-transparent">
-                {{ cutString(entry.trader, 20) }}
+                {{ cutString(entry.trader, 18) }}
                 <v-icon
                   icon="mdi-pencil-outline"
                   size="14"

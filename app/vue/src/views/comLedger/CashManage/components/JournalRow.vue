@@ -75,9 +75,9 @@ const removeEntry = (index: number) => {
 <template>
   <CTable class="m-0">
     <colgroup>
-      <col style="width: 30%" />
+      <col style="width: 32%" />
       <col style="width: 24%" />
-      <col style="width: 18%" />
+      <col style="width: 16%" />
       <col style="width: 22%" />
       <col v-if="write_company_cash" style="width: 6%" />
     </colgroup>
