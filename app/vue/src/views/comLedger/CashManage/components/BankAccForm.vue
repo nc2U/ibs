@@ -52,6 +52,8 @@ const getSlugDeparts = computed(() => comStore.getSlugDeparts)
 
 const ledgerStore = useComLedger()
 const bankCodeList = computed(() => ledgerStore.bankCodeList)
+const createComBankAcc = (payload: CompanyBank) => ledgerStore.createComBankAcc(payload)
+const updateComBankAcc = (payload: CompanyBank) => ledgerStore.updateComBankAcc(payload)
 
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
@@ -65,8 +67,8 @@ const onSubmit = (event: Event) => {
 }
 
 const onBankAccSubmit = () => {
-  if (props.bankAcc) emit('on-bank-update', { ...form })
-  else emit('on-bank-create', { ...form })
+  if (props.bankAcc) updateComBankAcc({ ...form })
+  else createComBankAcc({ ...form })
   refConfirmModal.value.close()
   dataReset()
 }

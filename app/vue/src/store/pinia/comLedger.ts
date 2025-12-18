@@ -56,62 +56,6 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(res => (bankCodeList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  // state & getters - Affiliate
-  const affiliateList = ref<Affiliate[]>([])
-  const affiliates = computed(() =>
-    affiliateList.value.map(aff => ({
-      value: aff.pk,
-      label: `[${aff.sort === 'company' ? 'CO' : 'PR'}]${aff.company_name ?? aff.project_name}`,
-      sort: aff.sort,
-      id: aff.company ?? aff.project,
-    })),
-  )
-
-  const fetchAffiliateList = async (payload?: { sort?: 'company' | 'project' }) => {
-    const params = payload?.sort ? { sort: payload.sort } : {}
-    return await api
-      .get('/ledger/affiliate/', { params })
-      .then(res => (affiliateList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  // state & getters - Accounts
-  const comAccountList = ref<CompanyAccount[]>([])
-  const comAccountFilter = ref<ComAccountFilter>({})
-  const comAccounts = computed(() =>
-    comAccountList.value
-      .filter(acc => acc.is_active && acc.pk !== undefined)
-      .map(acc => ({
-        value: acc.pk!,
-        label: acc.name,
-        parent: acc.parent,
-        depth: acc.depth,
-        category: acc.category,
-        direction: acc.direction_display,
-        is_cate_only: acc.is_category_only,
-        req_affiliate: acc.requires_affiliate,
-      })),
-  )
-
-  const fetchCompanyAccounts = async (payload: ComAccountFilter = {}) => {
-    comAccountFilter.value = payload
-    const params = cleanupParams({
-      category: payload.category,
-      direction: payload.direction,
-      parent: payload.parent,
-      is_category_only: payload.is_category_only,
-      is_active: payload.is_active,
-      search: payload.search,
-    })
-
-    return await api
-      .get('/ledger/company-account/', { params })
-      .then(res => {
-        comAccountList.value = res.data.results
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
-
   // state & getters - comBankList
   const comBankList = ref<CompanyBank[]>([])
   const getComBanks = computed(() =>
@@ -167,6 +111,62 @@ export const useComLedger = defineStore('comLedger', () => {
         message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.')
       })
       .catch(err => errorHandle(err.response.data))
+
+  // state & getters - Affiliate
+  const affiliateList = ref<Affiliate[]>([])
+  const affiliates = computed(() =>
+    affiliateList.value.map(aff => ({
+      value: aff.pk,
+      label: `[${aff.sort === 'company' ? 'CO' : 'PR'}]${aff.company_name ?? aff.project_name}`,
+      sort: aff.sort,
+      id: aff.company ?? aff.project,
+    })),
+  )
+
+  const fetchAffiliateList = async (payload?: { sort?: 'company' | 'project' }) => {
+    const params = payload?.sort ? { sort: payload.sort } : {}
+    return await api
+      .get('/ledger/affiliate/', { params })
+      .then(res => (affiliateList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  // state & getters - Accounts
+  const comAccountList = ref<CompanyAccount[]>([])
+  const comAccountFilter = ref<ComAccountFilter>({})
+  const comAccounts = computed(() =>
+    comAccountList.value
+      .filter(acc => acc.is_active && acc.pk !== undefined)
+      .map(acc => ({
+        value: acc.pk!,
+        label: acc.name,
+        parent: acc.parent,
+        depth: acc.depth,
+        category: acc.category,
+        direction: acc.direction_display,
+        is_cate_only: acc.is_category_only,
+        req_affiliate: acc.requires_affiliate,
+      })),
+  )
+
+  const fetchCompanyAccounts = async (payload: ComAccountFilter = {}) => {
+    comAccountFilter.value = payload
+    const params = cleanupParams({
+      category: payload.category,
+      direction: payload.direction,
+      parent: payload.parent,
+      is_category_only: payload.is_category_only,
+      is_active: payload.is_active,
+      search: payload.search,
+    })
+
+    return await api
+      .get('/ledger/company-account/', { params })
+      .then(res => {
+        comAccountList.value = res.data.results
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
 
   const comBalanceByAccList = ref<BalanceByAccount[]>([])
 
@@ -433,15 +433,6 @@ export const useComLedger = defineStore('comLedger', () => {
     bankCodeList,
     fetchBankCodeList,
 
-    affiliateList,
-    affiliates,
-    fetchAffiliateList,
-
-    comAccountList,
-    comAccountFilter,
-    comAccounts,
-    fetchCompanyAccounts,
-
     comBankList,
     getComBanks,
     allComBankList,
@@ -451,6 +442,15 @@ export const useComLedger = defineStore('comLedger', () => {
     updateComBankAcc,
     patchComBankAcc,
     deleteComBankAcc,
+
+    affiliateList,
+    affiliates,
+    fetchAffiliateList,
+
+    comAccountList,
+    comAccountFilter,
+    comAccounts,
+    fetchCompanyAccounts,
 
     comBalanceByAccList,
     fetchComBalanceByAccList,
