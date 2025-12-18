@@ -1,12 +1,11 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useComLedger } from '@/store/pinia/comLedger'
-import type { AccountingEntry, BankTransaction, CompanyBank } from '@/store/types/comLedger'
 import { TableSecondary } from '@/utils/cssMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import Pagination from '@/components/Pagination'
 import BankAcc from './BankAcc.vue'
-import AccDepth from './AccDepth.vue'
+import AccountManage from './AccountManage.vue'
 import Transaction from './Transaction.vue'
 
 const props = defineProps({
@@ -15,17 +14,9 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
 })
 
-const emit = defineEmits([
-  'page-select',
-  'multi-submit',
-  'on-delete',
-  'patch-d3-hide',
-  'patch-bank-hide',
-  'on-bank-create',
-  'on-bank-update',
-])
+const emit = defineEmits(['page-select'])
 
-const refAccDepth = ref()
+const refAccountManage = ref()
 const refBankAcc = ref()
 
 const ledgerStore = useComLedger()
@@ -34,16 +25,6 @@ const bankTransactionList = computed(() => ledgerStore.bankTransactionList)
 const comCalculated = computed(() => ledgerStore.comCalculated) // 최종 정산 일자
 
 const pageSelect = (page: number) => emit('page-select', page)
-
-const multiSubmit = (payload: { formData: BankTransaction; sepData: AccountingEntry | null }) =>
-  emit('multi-submit', payload)
-
-const onDelete = (pk: number) => emit('on-delete', pk)
-
-const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => emit('patch-d3-hide', payload)
-
-const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
-const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
 
 const accCallModal = () => {
   if (props.company) refBankAcc.value.callModal()
@@ -91,7 +72,7 @@ const accCallModal = () => {
         <CTableHeaderCell class="pl-0" scope="col">
           <span class="text-grey mr-2">|</span> 계정
           <a href="javascript:void(0)" class="ml-1">
-            <CIcon name="cilCog" @click="refAccDepth.callModal()" />
+            <CIcon name="cilCog" @click="refAccountManage.callModal()" />
           </a>
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
@@ -108,13 +89,7 @@ const accCallModal = () => {
         :transaction="transaction"
         :calculated="comCalculated?.calculated"
         :is-highlighted="props.highlightId === transaction.pk"
-        @multi-submit="multiSubmit"
-        @on-delete="onDelete"
-        @patch-d3-hide="patchD3Hide"
-        @on-bank-create="onBankCreate"
-        @on-bank-update="onBankUpdate"
       />
-      <!--        :has-children="transaction.has_children || false"-->
     </CTableBody>
   </CTable>
 
@@ -126,7 +101,7 @@ const accCallModal = () => {
     @active-page-change="pageSelect"
   />
 
-  <AccDepth ref="refAccDepth" @patch-d3-hide="patchD3Hide" />
+  <AccountManage ref="refAccountManage" />
 
-  <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
+  <BankAcc ref="refBankAcc" />
 </template>

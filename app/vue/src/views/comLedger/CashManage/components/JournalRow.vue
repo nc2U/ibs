@@ -3,7 +3,6 @@ import { computed, type ComputedRef, inject, watch } from 'vue'
 import { write_company_cash } from '@/utils/pageAuth.ts'
 import type { Account } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
-import { CTable } from '@coreui/vue'
 
 interface NewEntryForm {
   pk?: number

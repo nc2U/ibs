@@ -11,7 +11,7 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
-import AccDepth from './AccDepth.vue'
+import AccountManage from './AccountManage.vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -25,10 +25,8 @@ watch(
   },
 )
 
-const emit = defineEmits(['patch-d3-hide', 'on-bank-create', 'on-bank-update'])
-
 const confirmModal = ref()
-const refAccDepth = ref()
+const refAccountManage = ref()
 const refBankAcc = ref()
 
 const [route, router] = [useRoute(), useRouter()]
@@ -302,14 +300,9 @@ const delTransaction = async () => {
   await router.replace({ name: '본사 거래 내역' })
 }
 
-const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
-const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
-
 const accCallModal = () => {
   if (props.company) refBankAcc.value.callModal()
 }
-
-const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => emit('patch-d3-hide', payload)
 
 onBeforeMount(async () => {
   if (isCreateMode.value) {
@@ -441,7 +434,7 @@ onBeforeRouteLeave((to, from, next) => {
           <CTableHeaderCell scope="col">
             계정
             <a href="javascript:void(0)">
-              <CIcon name="cilCog" @click="refAccDepth.callModal()" />
+              <CIcon name="cilCog" @click="refAccountManage.callModal()" />
             </a>
           </CTableHeaderCell>
           <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
@@ -536,7 +529,7 @@ onBeforeRouteLeave((to, from, next) => {
     </template>
   </ConfirmModal>
 
-  <AccDepth ref="refAccDepth" @patch-d3-hide="patchD3Hide" />
+  <AccountManage ref="refAccountManage" />
 
-  <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
+  <BankAcc ref="refBankAcc" />
 </template>

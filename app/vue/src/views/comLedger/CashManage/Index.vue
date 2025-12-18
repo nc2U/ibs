@@ -72,9 +72,6 @@ const fetchCompanyAccounts = () => ledgerStore.fetchCompanyAccounts()
 const fetchComBankAccList = (pk: number) => ledgerStore.fetchComBankAccList(pk)
 const fetchAllComBankAccList = (pk: number) => ledgerStore.fetchAllComBankAccList(pk)
 
-const createComBankAcc = (payload: CompanyBank) => ledgerStore.createComBankAcc(payload)
-const patchComBankAcc = (payload: CompanyBank) => ledgerStore.patchComBankAcc(payload)
-
 const fetchBankTransactionList = (payload: Filter) => ledgerStore.fetchBankTransactionList(payload)
 const findBankTransactionPage = (highlightId: number, filters: Filter) =>
   ledgerStore.findBankTransactionPage(highlightId, filters)
@@ -88,14 +85,6 @@ const listFiltering = (payload: Filter) => {
   if (company.value) payload.company = company.value
   if (company.value) fetchBankTransactionList(payload)
 }
-
-const patchD3Hide = (payload: { pk: number; is_hide: boolean }) => 1 // patchAccD3(payload)
-
-const onBankCreate = (payload: CompanyBank) => {
-  payload.company = company.value as number
-  createComBankAcc(payload)
-}
-const onBankUpdate = (payload: CompanyBank) => patchComBankAcc(payload)
 
 const dataSetup = async (pk: number) => {
   await fetchCompany(pk)
@@ -228,13 +217,7 @@ onBeforeRouteLeave(() => {
             @list-filtering="listFiltering"
           />
 
-          <AddTransaction
-            v-if="write_company_cash"
-            :company="company as number"
-            @on-bank-create="onBankCreate"
-            @on-bank-update="onBankUpdate"
-          />
-          <!--          @patch-d3-hide="patchD3Hide"-->
+          <AddTransaction v-if="write_company_cash" :company="company as number" />
 
           <TableTitleRow
             title="본사 입출금 관리"
@@ -249,10 +232,7 @@ onBeforeRouteLeave(() => {
             :highlight-id="highlightId ?? undefined"
             :current-page="dataFilter.page || 1"
             @page-select="pageSelect"
-            @on-bank-create="onBankCreate"
-            @on-bank-update="onBankUpdate"
           />
-          <!--          @patch-d3-hide="patchD3Hide"-->
         </div>
 
         <div
@@ -260,13 +240,7 @@ onBeforeRouteLeave(() => {
             route.name === '본사 거래 내역 - 수정' || route.name === '본사 거래 내역 - 생성'
           "
         >
-          <TransForm
-            :company="company as number"
-            @patch-d3-hide="patchD3Hide"
-            @on-bank-create="onBankCreate"
-            @on-bank-update="onBankUpdate"
-          />
-          <!--          @patch-d3-hide="patchD3Hide"-->
+          <TransForm :company="company as number" />
         </div>
       </CCardBody>
     </ContentBody>
