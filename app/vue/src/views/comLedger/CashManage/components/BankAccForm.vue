@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onBeforeUpdate, type PropType, reactive, ref } from 'vue'
 import { useCompany } from '@/store/pinia/company'
-import { useComCash } from '@/store/pinia/comCash'
+import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { CompanyBank } from '@/store/types/comCash'
 import { write_company_cash } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
@@ -12,7 +12,6 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 const props = defineProps({
   bankAcc: { type: Object as PropType<CompanyBank>, default: () => null },
 })
-const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -51,8 +50,8 @@ const formsCheck = computed(() => {
 const comStore = useCompany()
 const getSlugDeparts = computed(() => comStore.getSlugDeparts)
 
-const comCashStore = useComCash()
-const bankCodeList = computed(() => comCashStore.bankCodeList)
+const ledgerStore = useComLedger()
+const bankCodeList = computed(() => ledgerStore.bankCodeList)
 
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {

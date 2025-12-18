@@ -1,20 +1,14 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
-import { useComCash } from '@/store/pinia/comCash'
-import type { CompanyBank } from '@/store/types/comCash'
+import { computed, ref } from 'vue'
+import { useComLedger } from '@/store/pinia/comLedger.ts'
 import BankAccForm from './BankAccForm.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-
-const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 
 const comBankAcc = ref()
 const bankAccAdd = ref(false)
 
-const comCashStore = useComCash()
-const allComBankList = computed(() => comCashStore.allComBankList)
-
-const onBankCreate = (payload: CompanyBank) => emit('on-bank-create', payload)
-const onBankUpdate = (payload: CompanyBank) => emit('on-bank-update', payload)
+const ledgerStore = useComLedger()
+const allComBankList = computed(() => ledgerStore.allComBankList)
 
 const callModal = () => comBankAcc.value.callModal()
 
@@ -31,7 +25,7 @@ defineExpose({ callModal })
             {{ `${bank.alias_name}  :: ${bank.number}` }}
           </CAccordionHeader>
           <CAccordionBody class="pl-3">
-            <BankAccForm :bank-acc="bank" @on-bank-update="onBankUpdate" />
+            <BankAccForm :bank-acc="bank" />
           </CAccordionBody>
         </CAccordionItem>
       </CAccordion>
@@ -42,7 +36,7 @@ defineExpose({ callModal })
             <v-icon icon="mdi-plus-circle" color="primary" class="mr-1" />
             계좌 추가
           </h5>
-          <BankAccForm @on-bank-create="onBankCreate" />
+          <BankAccForm />
         </CCol>
       </CRow>
 
