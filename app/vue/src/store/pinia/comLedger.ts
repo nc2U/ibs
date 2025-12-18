@@ -293,7 +293,7 @@ export const useComLedger = defineStore('comLedger', () => {
     return await api
       .delete(`//ledger/company-transaction/${pk}/`)
       .then(() =>
-        fetchBankTransactionList({ company, ...filters }).then(() =>
+        fetchBankTransactionList(bankTransactionFilter.value).then(() =>
           message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
@@ -311,7 +311,6 @@ export const useComLedger = defineStore('comLedger', () => {
     sharedEditingState.value = null
     sharedPickerPosition.value = null
   }
-
 
   const fetchComLedgerCalc = async (com: number) =>
     await api
