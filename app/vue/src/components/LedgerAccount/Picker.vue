@@ -375,52 +375,51 @@ onUnmounted(() => {
 }
 
 // 다크 테마 지원
-:global(body.dark-theme) {
-  .ledger-account-picker {
-    background-color: #2d3748;
+:global(body.dark-theme .ledger-account-picker) {
+  background-color: #282933;
+  border-color: #4a5568;
+}
+
+:global(body.dark-theme .search-input) {
+  background-color: #3b3c45;
+  border-bottom-color: #4a5568;
+
+  input.form-control {
+    background-color: #282933;
     border-color: #4a5568;
-  }
-
-  .search-input {
-    background-color: #3b3c45;
-    border-bottom-color: #4a5568;
-
-    input.form-control {
-      background-color: #2d3748;
-      border-color: #4a5568;
-      color: #e2e8f0;
-
-      &::placeholder {
-        color: #a0aec0;
-      }
-
-      &:focus {
-        background-color: #2d3748;
-        border-color: #86b7fe;
-        color: #e2e8f0;
-      }
-    }
-  }
-
-  .account-item {
     color: #e2e8f0;
 
-    &:hover:not(.category-only):not(.no-result) {
-      background-color: #4a5568;
-    }
-
-    &.category-only {
-      color: #a8a8a8;
-      background-color: #2c2d38;
-    }
-
-    &.selected-item span {
-      color: #63e6be !important;
-    }
-
-    &.no-result {
+    &::placeholder {
       color: #a0aec0;
     }
+
+    &:focus {
+      background-color: #2d3748;
+      border-color: #3e3e3e;
+      color: #e2e8f0;
+    }
   }
+}
+:global(body.dark-theme .account-item) {
+  color: #eee;
+}
+
+:global(body.dark-theme .account-item) {
+  &:hover:not(.category-only):not(.no-result) {
+    background-color: #282933;
+  }
+}
+
+:global(body.dark-theme .account-item &.category-only) {
+  color: #a8a8a8;
+  background-color: #404252;
+}
+
+:global(body.dark-theme .account-item &.selected-item span) {
+  color: #eee !important;
+}
+
+:global(body.dark-theme .account-item &.no-result) {
+  color: #a0aec0;
 }
 </style>
