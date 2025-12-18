@@ -289,7 +289,7 @@ export const useComLedger = defineStore('comLedger', () => {
   }
 
   const deleteBankTransaction = async (payload: BankTransaction & { filters: DataFilter }) => {
-    const { pk, filters, company } = payload
+    const { pk } = payload
     return await api
       .delete(`//ledger/company-transaction/${pk}/`)
       .then(() =>
