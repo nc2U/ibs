@@ -6,7 +6,7 @@ import { TableSecondary } from '@/utils/cssMixins'
 import { write_project_cash } from '@/utils/pageAuth'
 import ProImprest from '@/views/proCash/Imprest/components/ProImprest.vue'
 import Pagination from '@/components/Pagination'
-import AccDepth from '../../Manage/components/AccDepth.vue'
+import AccountManage from '../../Manage/components/AccountManage.vue'
 import BankAcc from '../../Manage/components/BankAcc.vue'
 
 const props = defineProps({ project: Number, default: () => null })
@@ -104,7 +104,7 @@ const accCallModal = () => {
     @active-page-change="pageSelect"
   />
 
-  <AccDepth ref="refAccDepth" />
+  <AccountManage ref="refAccDepth" />
 
   <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
 </template>

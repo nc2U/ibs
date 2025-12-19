@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { AlertLight } from '@/utils/cssMixins'
 import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
 import FormModal from '@/components/Modals/FormModal.vue'
-import ProCashForm from '@/views/proCash/Manage/components/ProCashForm.vue'
+import ProTransForm from '@/views/proLedger/Manage/components/ProTransForm.vue'
 
 defineProps({ project: { type: Number, default: null } })
 const emit = defineEmits(['multi-submit', 'on-bank-create', 'on-bank-update'])
@@ -27,12 +27,7 @@ const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
   <FormModal ref="createFormModal" size="lg">
     <template #header>프로젝트 입출금 거래 건별 등록</template>
     <template #default>
-      <ProCashForm
-        @multi-submit="multiSubmit"
-        @on-bank-create="onBankCreate"
-        @on-bank-update="onBankUpdate"
-        @close="createFormModal.close()"
-      />
+      <ProTransForm @close="createFormModal.close()" />
     </template>
   </FormModal>
 </template>

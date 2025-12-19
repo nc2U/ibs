@@ -20,13 +20,12 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProCashAuthGuard from '@/components/AuthGuard/ProCashAuthGuard.vue'
 import ListController from '@/views/proCash/Manage/components/ListController.vue'
-import AddProCash from '@/views/proCash/Manage/components/AddProCash.vue'
+import AddProTrans from '@/views/proLedger/Manage/components/AddProTrans.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
-import ProCashList from '@/views/proCash/Manage/components/ProCashList.vue'
+import ProTransList from '@/views/proLedger/Manage/components/ProTransList.vue'
 
 const listControl = ref()
-const route = useRoute()
-const router = useRouter()
+const [route, router] = [useRoute(), useRouter()]
 
 const highlightId = computed(() => {
   const id = route.query.highlight_id
@@ -414,13 +413,7 @@ onBeforeRouteLeave(() => {
     <ContentBody>
       <CCardBody class="pb-5">
         <ListController ref="listControl" @list-filtering="listFiltering" />
-        <AddProCash
-          v-if="write_project_cash"
-          :project="project"
-          @multi-submit="multiSubmit"
-          @on-bank-create="onBankCreate"
-          @on-bank-update="onBankUpdate"
-        />
+        <AddProTrans v-if="write_project_cash" :project="project" />
         <TableTitleRow
           title="프로젝트 입출금 내역"
           color="indigo"
@@ -439,18 +432,14 @@ onBeforeRouteLeave(() => {
               id="all-list-view"
               @click="setImprest"
               :disabled="!project"
-            ></CFormSwitch>
+            />
           </div>
         </TableTitleRow>
-        <ProCashList
+        <ProTransList
           :project="project as number"
           :highlight-id="highlightId ?? undefined"
           :current-page="dataFilter.page || 1"
           @page-select="pageSelect"
-          @multi-submit="multiSubmit"
-          @on-delete="onDelete"
-          @on-bank-create="onBankCreate"
-          @on-bank-update="onBankUpdate"
         />
       </CCardBody>
     </ContentBody>

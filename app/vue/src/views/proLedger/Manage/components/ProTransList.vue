@@ -4,9 +4,9 @@ import { useProCash } from '@/store/pinia/proCash'
 import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
 import { TableSecondary } from '@/utils/cssMixins'
 import { write_project_cash } from '@/utils/pageAuth'
-import ProCash from '@/views/proCash/Manage/components/ProCash.vue'
 import Pagination from '@/components/Pagination'
-import AccDepth from './AccDepth.vue'
+import ProTrans from './ProTrans.vue'
+import AccountManage from './AccountManage.vue'
 import BankAcc from './BankAcc.vue'
 
 const props = defineProps({
@@ -88,17 +88,13 @@ const accCallModal = () => {
     </CTableHead>
 
     <CTableBody>
-      <ProCash
+      <ProTrans
         v-for="proCash in proCashBookList"
         :key="proCash.pk as number"
         :pro-cash="proCash"
         :calculated="proCalculated?.calculated"
         :is-highlighted="props.highlightId === proCash.pk"
         :has-children="proCash.has_children || false"
-        @multi-submit="multiSubmit"
-        @on-delete="onDelete"
-        @on-bank-create="onBankCreate"
-        @on-bank-update="onBankUpdate"
       />
     </CTableBody>
   </CTable>
@@ -110,7 +106,7 @@ const accCallModal = () => {
     class="mt-3"
     @active-page-change="pageSelect"
   />
-  <AccDepth ref="refAccDepth" />
+  <AccountManage ref="refAccDepth" />
 
   <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
 </template>

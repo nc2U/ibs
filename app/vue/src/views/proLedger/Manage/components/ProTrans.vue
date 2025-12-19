@@ -6,8 +6,8 @@ import { useProCash } from '@/store/pinia/proCash'
 import { write_project_cash } from '@/utils/pageAuth'
 import { numFormat, cutString, diffDate } from '@/utils/baseMixins'
 import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
+import ProTransForm from '@/views/proLedger/Manage/components/ProTransForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
-import ProCashForm from '@/views/proCash/Manage/components/ProCashForm.vue'
 
 const props = defineProps({
   proCash: { type: Object as PropType<ProjectCashBook>, required: true },
@@ -287,14 +287,7 @@ const childrenTotalPages = computed(() => Math.ceil(totalChildren.value / 15))
   <FormModal ref="updateFormModal" size="lg">
     <template #header>프로젝트 입출금 거래 건별 관리</template>
     <template #default>
-      <ProCashForm
-        :pro-cash="selectedCash || proCash"
-        @multi-submit="multiSubmit"
-        @on-delete="onDelete"
-        @close="updateFormModal.close()"
-        @on-bank-create="onBankCreate"
-        @on-bank-update="onBankUpdate"
-      />
+      <ProTransForm :pro-cash="selectedCash || proCash" />
     </template>
   </FormModal>
 </template>
