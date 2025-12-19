@@ -26,7 +26,7 @@ const isBalance = ref<'' | 'true'>('true')
 const compName = ref('StatusByAccount')
 
 const { downloadExcel } = useDownload()
-const handleDownload = (url, fileName) => {
+const handleDownload = (url: string, fileName: string) => {
   downloadExcel(url, fileName)
 }
 
@@ -123,7 +123,10 @@ const filename = computed(() => {
   }
 })
 
-const showTab = (num: number) => (compName.value = comp[num])
+const showTab = (num: number) => {
+  compName.value = comp[num]
+  Cookies.set('proLedgerStatus', `${num}`)
+}
 
 const setDate = (dt: string) => {
   date.value = dt
