@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useComLedger } from '@/store/pinia/comLedger'
 import { numFormat } from '@/utils/baseMixins'
+import { useComLedger } from '@/store/pinia/comLedger'
 import { TableSecondary } from '@/utils/cssMixins'
 
 defineProps({ date: { type: String, default: '' } })
@@ -51,8 +51,9 @@ const getSumTotal = () => {
 
 const isExistBalance = (val: boolean) => emit('is-exist-balance', val ? 'true' : '')
 
-onMounted(() => getSumTotal())
 watch(comBalanceByAccList, () => getSumTotal())
+
+onMounted(() => getSumTotal())
 </script>
 
 <template>

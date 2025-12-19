@@ -3,7 +3,6 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
-import { type BalanceByAccount } from '@/store/types/proCash'
 
 defineProps({ date: { type: String, default: '' }, isBalance: { type: String, default: 'true' } })
 
@@ -14,37 +13,33 @@ const dateIncSum = ref(0)
 const dateOutSum = ref(0)
 const dateBalance = ref(0)
 
-const proLedgerStore = useProLedger()
-const balanceByAccList = computed(() => proLedgerStore.proLedgerBalanceByAccList)
-
-watch(balanceByAccList, () => getSumTotal())
-
-onBeforeMount(() => getSumTotal())
+const pLedgerStore = useProLedger()
+const proBalanceByAccList = computed(() => pLedgerStore.proLedgerBalanceByAccList)
 
 const getSumTotal = () => {
   const dateIncSumCalc =
-    balanceByAccList.value.length !== 0
-      ? balanceByAccList.value
-          .map((i: BalanceByAccount) => i.date_inc)
+    proBalanceByAccList.value.length !== 0
+      ? proBalanceByAccList.value
+          .map((i: any) => i.date_inc)
           .reduce((x: number, y: number) => x + y, 0)
       : 0
   const dateOutSumCalc =
-    balanceByAccList.value.length !== 0
-      ? balanceByAccList.value
-          .map((o: BalanceByAccount) => o.date_out)
+    proBalanceByAccList.value.length !== 0
+      ? proBalanceByAccList.value
+          .map((o: any) => o.date_out)
           .reduce((x: number, y: number) => x + y, 0)
       : 0
   const dateIncTotalCalc =
-    balanceByAccList.value.length !== 0
-      ? balanceByAccList.value
-          .filter((i: BalanceByAccount) => i.inc_sum !== null)
+    proBalanceByAccList.value.length !== 0
+      ? proBalanceByAccList.value
+          .filter((i: any) => i.inc_sum !== null)
           .map(i => i.inc_sum || 0)
           .reduce((x: number, y: number) => x + y, 0)
       : 0
   const dateOutTotalCalc =
-    balanceByAccList.value.length !== 0
-      ? balanceByAccList.value
-          .filter((o: BalanceByAccount) => o.out_sum !== null)
+    proBalanceByAccList.value.length !== 0
+      ? proBalanceByAccList.value
+          .filter((o: any) => o.out_sum !== null)
           .map(o => o.out_sum || 0)
           .reduce((x: number, y: number) => x + y, 0)
       : 0
@@ -55,7 +50,12 @@ const getSumTotal = () => {
 }
 
 const isExistBalance = async (val: boolean) => emit('is-exist-balance', val)
+
 const directBalance = (val: boolean) => emit('direct-balance', val)
+
+watch(proBalanceByAccList, () => getSumTotal())
+
+onBeforeMount(() => getSumTotal())
 </script>
 
 <template>
@@ -105,8 +105,8 @@ const directBalance = (val: boolean) => emit('direct-balance', val)
     </CTableHead>
 
     <CTableBody>
-      <CTableRow v-for="(bal, i) in balanceByAccList" :key="i" class="text-right">
-        <CTableDataCell v-if="i === 0" class="text-center" :rowspan="balanceByAccList.length">
+      <CTableRow v-for="(bal, i) in proBalanceByAccList" :key="i" class="text-right">
+        <CTableDataCell v-if="i === 0" class="text-center" :rowspan="proBalanceByAccList.length">
           보통예금
         </CTableDataCell>
         <CTableDataCell class="text-left">{{ bal.bank_acc }}</CTableDataCell>
