@@ -17,22 +17,24 @@ export const useProLedger = defineStore('proLedger', () => {
   // state & getters
   const proAccountList = ref<ProjectAccount[]>([])
   const proAccountFilter = ref<ProAccountFilter>({})
-  // const proAccounts = computed(() =>
-  //   proAccountList.value
-  //     .filter(acc => acc.is_active && acc.pk !== undefined)
-  //     .map(acc => ({
-  //       value: acc.pk!,
-  //       label: acc.name,
-  //       parent: acc.parent,
-  //       depth: acc.depth,
-  //       category: acc.category,
-  //       direction: acc.direction_display,
-  //       is_cate_only: acc.is_category_only,
-  //     })),
-  // )
+  const proAccounts = computed(() =>
+    proAccountList.value
+      .filter(acc => acc.is_active && acc.pk !== undefined)
+      .map(acc => ({
+        value: acc.pk!,
+        label: acc.name,
+        parent: acc.parent,
+        depth: acc.depth,
+        category: acc.category,
+        direction: acc.direction_display,
+        is_cate_only: acc.is_category_only,
+        is_payment: acc.is_payment,
+        is_related_contract: acc.is_related_contract,
+      })),
+  )
 
-  const fetchProjectAccounts = async (payload: ComAccountFilter = {}) => {
-    comAccountFilter.value = payload
+  const fetchProjectAccounts = async (payload: ProAccountFilter = {}) => {
+    proAccountFilter.value = payload
     const params = cleanupParams({
       category: payload.category,
       direction: payload.direction,
@@ -43,9 +45,9 @@ export const useProLedger = defineStore('proLedger', () => {
     })
 
     return await api
-      .get('/ledger/company-account/', { params })
+      .get('/ledger/project-account/', { params })
       .then(res => {
-        comAccountList.value = res.data.results
+        proAccountList.value = res.data.results
       })
       .catch(err => errorHandle(err.response.data))
   }
@@ -53,7 +55,7 @@ export const useProLedger = defineStore('proLedger', () => {
   return {
     proAccountList,
     proAccountFilter,
-    // proAccounts,
+    proAccounts,
 
     fetchProjectAccounts,
   }
