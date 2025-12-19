@@ -3,7 +3,7 @@ from datetime import datetime
 
 from django.db import transaction as db_transaction
 from django.db.models import Sum, F, Case, When
-from django_filters import DateFilter, CharFilter, NumberFilter
+from django_filters import DateFilter, CharFilter, NumberFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import permissions
 from rest_framework import viewsets, status
@@ -518,13 +518,13 @@ class ProjectBankTransactionFilterSet(FilterSet):
     account = NumberFilter(method='filter_by_account', label='계정 과목')
     account_category = CharFilter(method='filter_by_category', label='계정 카테고리')
     account_name = CharFilter(method='filter_by_name', label='계정 이름')
-    affiliate = NumberFilter(method='filter_by_affiliate', label='관계회사/프로젝트')
+    is_imprest = BooleanFilter(method='filter_by_imprest', label='운영비 여부')
 
     class Meta:
         model = ProjectBankTransaction
-        fields = ('project', 'bank_account', 'sort', 'is_imprest',
+        fields = ('project', 'bank_account', 'sort',
                   'from_deal_date', 'to_deal_date',
-                  'account', 'account_category', 'account_name', 'affiliate')
+                  'account', 'account_category', 'account_name', 'is_imprest')
 
     @staticmethod
     def filter_by_account(queryset, name, value):
@@ -592,11 +592,11 @@ class ProjectBankTransactionFilterSet(FilterSet):
         return queryset.filter(transaction_id__in=transaction_ids)
 
     @staticmethod
-    def filter_by_affiliate(queryset, name, value):
-        """관계회사/프로젝트로 필터링"""
-        # 해당 affiliate를 사용하는 회계분개의 transaction_id 조회
+    def filter_by_imprest(queryset, name, value):
+        """운영비 여부로 필터링"""
+        # 운영비 여부가 value인 회계분개의 transaction_id 조회
         transaction_ids = ProjectAccountingEntry.objects.filter(
-            affiliate_id=value
+            is_imprest=value
         ).values_list('transaction_id', flat=True)
 
         return queryset.filter(transaction_id__in=transaction_ids)
@@ -793,13 +793,13 @@ class ProjectAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('project', 'account', 'affiliate', 'evidence_type', 'transaction_id')
+        fields = ('project', 'account', 'is_imprest', 'evidence_type', 'transaction_id')
 
 
 class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     """프로젝트 회계 분개 ViewSet"""
     queryset = ProjectAccountingEntry.objects.select_related(
-        'project', 'account', 'affiliate', 'affiliate__company', 'affiliate__project'
+        'project', 'account'
     ).all()
     serializer_class = ProjectAccountingEntrySerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)

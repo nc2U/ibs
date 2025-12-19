@@ -354,9 +354,9 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectBankTransactionResource
     list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date',
-                    'sort', 'formatted_amount', 'content', 'is_balanced', 'is_imprest', 'creator', 'created_at')
+                    'sort', 'formatted_amount', 'content', 'is_balanced', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'bank_account', 'sort', 'is_balanced', 'is_imprest', ('deal_date', DateRangeFilter))
+    list_filter = ('project', 'bank_account', 'sort', 'is_balanced', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note', 'project__name')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')
@@ -529,20 +529,20 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'project', 'account_display',
-                    'affiliate_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
+                    'is_imprest', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'account__category', 'evidence_type', 'affiliate__sort')
+    list_filter = ('project', 'account__category', 'evidence_type', 'is_imprest')
     search_fields = ('transaction_id', 'trader', 'project__name', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')
-    autocomplete_fields = ['account', 'affiliate']
+    autocomplete_fields = ['account']
 
     fieldsets = (
         ('거래 정보', {
             'fields': ('transaction_id', 'project', 'amount', 'trader')
         }),
         ('계정 정보', {
-            'fields': ('account', 'affiliate')
+            'fields': ('account', 'is_imprest')
         }),
         ('증빙 정보', {
             'fields': ('evidence_type',)
@@ -568,12 +568,6 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     def account_display(self, obj):
         if obj.account:
             return f"{obj.account.code} {obj.account.name}"
-        return '-'
-
-    @admin.display(description='관계회사/프로젝트')
-    def affiliate_display(self, obj):
-        if obj.affiliate:
-            return str(obj.affiliate)
         return '-'
 
 
