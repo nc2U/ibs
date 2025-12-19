@@ -20,7 +20,7 @@ const refAccountManage = ref()
 const refBankAcc = ref()
 
 const ledgerStore = useComLedger()
-const cashesPages = computed(() => ledgerStore.cashesPages)
+const transPages = computed(() => ledgerStore.transPages)
 const bankTransactionList = computed(() => ledgerStore.bankTransactionList)
 const comCalculated = computed(() => ledgerStore.comCalculated) // 최종 정산 일자
 
@@ -96,7 +96,7 @@ const accCallModal = () => {
   <Pagination
     :active-page="props.currentPage"
     :limit="8"
-    :pages="cashesPages(15)"
+    :pages="transPages(15)"
     class="mt-3"
     @active-page-change="pageSelect"
   />

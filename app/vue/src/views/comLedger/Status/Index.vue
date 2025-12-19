@@ -34,9 +34,9 @@ const fetchComLedgerBalanceByAccList = (com: {
 const fetchDateLedgerTransactionList = (payload: { company: number; date: string }) =>
   ledgerStore.fetchDateLedgerTransactionList(payload)
 
+const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalc(com)
 const createComLedgerCalc = (payload: ComCalculated) => ledgerStore.createComLedgerCalc(payload)
 const patchComLedgerCalc = (payload: ComCalculated) => ledgerStore.patchComLedgerCalc(payload)
-const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalc(com)
 const fetchComLedgerLastDeal = (com: number) => ledgerStore.fetchComLedgerLastDealDate(com)
 
 const comLedgerCalculated = computed(() => ledgerStore.comLedgerCalculated) // 최종 정산 일자

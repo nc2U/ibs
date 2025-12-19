@@ -166,39 +166,13 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const comBalanceByAccList = ref<BalanceByAccount[]>([])
-
-  const fetchComBalanceByAccList = async (payload: {
-    company: number
-    date: string
-    is_balance?: '' | 'true'
-  }) => {
-    const { company, date } = payload
-    const is_balance = payload.is_balance ?? ''
-    const dateUri = date ? `&is_balance=${is_balance}&date=${date}` : ''
-    return await api
-      .get(`/balance-by-acc/?company=${company}${dateUri}`)
-      .then(res => (comBalanceByAccList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const dateCashBook = ref<BankTransaction[]>([])
-
-  const fetchDateCashBookList = async (payload: { company: number; date: string }) => {
-    const { company, date } = payload
-    return await api
-      .get(`/date-cashbook/?company=${company}&date=${date}`)
-      .then(res => (dateCashBook.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
+  // state & getters - bankTransaction
   const bankTransactionFilter = ref<DataFilter>({})
   const bankTransaction = ref<BankTransaction | null>(null)
   const bankTransactionList = ref<BankTransaction[]>([])
   const bankTransactionCount = ref<number>(0)
-  // const childrenCache = ref<Map<number, BankTransaction[]>>(new Map())
 
-  const cashesPages = (itemsPerPage: number) => Math.ceil(bankTransactionCount.value / itemsPerPage)
+  const transPages = (itemsPerPage: number) => Math.ceil(bankTransactionCount.value / itemsPerPage)
 
   const fetchBankTransaction = async (pk: number) =>
     await api
@@ -299,15 +273,9 @@ export const useComLedger = defineStore('comLedger', () => {
 
   // state & getters - comLedgerCalc
   const comLedgerCalc = ref<ComCalculated[]>([])
-
-  // --- Picker 공유 상태 및 로직 ---
-  const sharedEditingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)
-  const sharedPickerPosition = ref<{ top: number; left: number; width: number } | null>(null)
-
-  const clearSharedPickerState = () => {
-    sharedEditingState.value = null
-    sharedPickerPosition.value = null
-  }
+  const comCalculated = computed(() => (comLedgerCalc.value.length ? comLedgerCalc.value[0] : null))
+  const comLastDeal = ref<{ deal_date: string }[]>([])
+  const comLastDealDate = computed(() => (comLastDeal.value.length ? comLastDeal.value[0] : null))
 
   const fetchComLedgerCalc = async (com: number) =>
     await api
@@ -327,15 +295,11 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(res => fetchComLedgerCalc(res.data.company).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
-  const comLastDeal = ref<{ deal_date: string }[]>([])
   const fetchComLastDeal = async (com: number) =>
     await api
       .get(`/com-last-deal/?company=${com}`)
       .then(res => (comLastDeal.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
-
-  const comCalculated = computed(() => (comLedgerCalc.value.length ? comLedgerCalc.value[0] : null))
-  const comLastDealDate = computed(() => (comLastDeal.value.length ? comLastDeal.value[0] : null))
 
   // ============================================
   // Status 페이지용 Ledger API (신규 추가)
@@ -420,12 +384,20 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(res => (comLedgerLastDealList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  // --- Picker 공유 상태 및 로직 ---
+  const sharedEditingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)
+  const sharedPickerPosition = ref<{ top: number; left: number; width: number } | null>(null)
+
+  const clearSharedPickerState = () => {
+    sharedEditingState.value = null
+    sharedPickerPosition.value = null
+  }
+
   return {
     bankCodeList,
     comBankList,
     getComBanks,
     allComBankList,
-
     fetchBankCodeList,
     fetchComBankAccList,
     fetchAllComBankAccList,
@@ -443,17 +415,11 @@ export const useComLedger = defineStore('comLedger', () => {
     affiliates,
     fetchAffiliateList,
 
-    comBalanceByAccList,
-    fetchComBalanceByAccList,
-
-    dateCashBook,
-    fetchDateCashBookList,
-
     bankTransaction,
     bankTransactionFilter,
     bankTransactionList,
     bankTransactionCount,
-    cashesPages,
+    transPages,
     fetchBankTransaction,
     fetchBankTransactionList,
     findBankTransactionPage,
@@ -464,18 +430,12 @@ export const useComLedger = defineStore('comLedger', () => {
 
     comLedgerCalc,
     comCalculated,
+    comLastDeal,
+    comLastDealDate,
     fetchComLedgerCalc,
     createComLedgerCalc,
     patchComLedgerCalc,
-
-    comLastDeal,
-    comLastDealDate,
     fetchComLastDeal,
-
-    // Shared Picker State
-    sharedEditingState,
-    sharedPickerPosition,
-    clearSharedPickerState,
 
     // Status 페이지용 (신규)
     comLedgerBalanceByAccList,
@@ -491,5 +451,10 @@ export const useComLedger = defineStore('comLedger', () => {
     createComLedgerCalculation,
     patchComLedgerCalculation,
     fetchComLedgerLastDealDate,
+
+    // Shared Picker State
+    sharedEditingState,
+    sharedPickerPosition,
+    clearSharedPickerState,
   }
 })
