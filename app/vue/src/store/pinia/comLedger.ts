@@ -362,25 +362,25 @@ export const useComLedger = defineStore('comLedger', () => {
 
   const fetchComLedgerCalculation = async (com: number) =>
     await api
-      .get(`/company-ledger-calculation/?company=${com}`)
+      .get(`/ledger/company-calculation/?company=${com}`)
       .then(res => (comLedgerCalculation.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   const createComLedgerCalculation = async (payload: ComCalculated) =>
     await api
-      .post(`/company-ledger-calculation/`, payload)
+      .post(`/ledger/company-calculation/`, payload)
       .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
   const patchComLedgerCalculation = async (payload: ComCalculated) =>
     await api
-      .patch(`/company-ledger-calculation/${payload.pk}/`, payload)
+      .patch(`/ledger/company-calculation/${payload.pk}/`, payload)
       .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
   const fetchComLedgerLastDealDate = async (com: number) =>
     await api
-      .get(`/ledger/company-transaction/last_deal/?company=${com}`)
+      .get(`/ledger/company-last-deal-date/?company=${com}`)
       .then(res => (comLedgerLastDealList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
