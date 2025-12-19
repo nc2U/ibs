@@ -213,11 +213,11 @@ onBeforeRouteLeave(() => {
           <AddProTrans v-if="write_project_cash" :project="project as number" />
 
           <TableTitleRow
-            title="본사 입출금 관리"
+            title="프로젝트 입출금 관리"
             color="indigo"
             excel
             :url="excelUrl"
-            filename="본사_출납내역.xls"
+            filename="PR자금_출납내역.xls"
             :disabled="!project"
           />
           <ProTransList
