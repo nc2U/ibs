@@ -80,8 +80,8 @@ class ProjectBankAccount(BankAccount):
 
     class Meta:
         ordering = ['order', 'id']
-        verbose_name = '07. 프로젝트 관리 계좌'
-        verbose_name_plural = '07. 프로젝트 관리 계좌'
+        verbose_name = '08. 프로젝트 관리 계좌'
+        verbose_name_plural = '08. 프로젝트 관리 계좌'
 
 
 # ============================================
@@ -353,8 +353,8 @@ class ProjectAccount(Account):
 
     class Meta:
         ordering = ['code', 'order']
-        verbose_name = '06. 프로젝트 계정 과목'
-        verbose_name_plural = '06. 프로젝트 계정 과목'
+        verbose_name = '07. 프로젝트 계정 과목'
+        verbose_name_plural = '07. 프로젝트 계정 과목'
         indexes = [
             models.Index(fields=['parent', 'order']),
             models.Index(fields=['category', 'is_active']),
@@ -392,8 +392,8 @@ class Affiliate(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
 
     class Meta:
-        verbose_name = '11. 관계회사/프로젝트'
-        verbose_name_plural = '11. 관계회사/프로젝트'
+        verbose_name = '06. 관계회사/프로젝트'
+        verbose_name_plural = '06. 관계회사/프로젝트'
         ordering = ['id', ]
         indexes = [
             models.Index(fields=['sort', 'company']),
@@ -551,32 +551,6 @@ class CompanyBankTransaction(BankTransaction):
         return CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
 
 
-class CompanyLedgerCalculation(models.Model):
-    """본사 원장 정산 기록"""
-    company = models.OneToOneField(
-        'company.Company',
-        on_delete=models.CASCADE,
-        unique=True,
-        verbose_name='회사'
-    )
-    calculated = models.DateField('정산일', null=True, blank=True)
-    creator = models.ForeignKey(
-        'accounts.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        verbose_name='등록자'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = '05. 본사 원장 정산'
-        verbose_name_plural = '05. 본사 원장 정산'
-
-    def __str__(self):
-        return f'{self.company} 정산일: {self.calculated}'
-
-
 class ProjectBankTransaction(BankTransaction):
     """
     프로젝트 은행 거래
@@ -590,8 +564,8 @@ class ProjectBankTransaction(BankTransaction):
                                 related_name='updated_project_transactions')
 
     class Meta:
-        verbose_name = '08. 프로젝트 은행 거래'
-        verbose_name_plural = '08. 프로젝트 은행 거래'
+        verbose_name = '09. 프로젝트 은행 거래'
+        verbose_name_plural = '09. 프로젝트 은행 거래'
         ordering = ['-deal_date', '-created_at']
         indexes = [
             models.Index(fields=['bank_account', 'deal_date']),
@@ -747,8 +721,8 @@ class ProjectAccountingEntry(AccountingEntry):
                                 limit_choices_to={'is_active': True, 'is_category_only': False})
 
     class Meta:
-        verbose_name = '09. 프로젝트 회계 분개'
-        verbose_name_plural = '09. 프로젝트 회계 분개'
+        verbose_name = '10. 프로젝트 회계 분개'
+        verbose_name_plural = '10. 프로젝트 회계 분개'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['account', 'created_at']),
@@ -780,6 +754,43 @@ class ProjectAccountingEntry(AccountingEntry):
         """저장 전 유효성 검증"""
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+# ============================================
+# Calculation Domain - 본사 / 현장 정산 확인 도메인
+# ============================================
+
+
+class CompanyLedgerCalculation(models.Model):
+    """본사 원장 정산 기록"""
+    company = models.OneToOneField('company.Company', on_delete=models.CASCADE, unique=True, verbose_name='회사')
+    calculated = models.DateField('정산일', null=True, blank=True)
+    creator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '05. 본사 원장 정산'
+        verbose_name_plural = '05. 본사 원장 정산'
+
+    def __str__(self):
+        return f'{self.company} 정산일: {self.calculated}'
+
+
+class ProjectLedgerCalculation(models.Model):
+    """본사 원장 정산 기록"""
+    project = models.OneToOneField('project.Project', on_delete=models.CASCADE, unique=True, verbose_name='프로젝트')
+    calculated = models.DateField('정산일', null=True, blank=True)
+    creator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, verbose_name='등록자')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '11. 프로젝트 원장 정산'
+        verbose_name_plural = '11. 프로젝트 원장 정산'
+
+    def __str__(self):
+        return f'{self.company} 정산일: {self.calculated}'
 
 
 # ============================================

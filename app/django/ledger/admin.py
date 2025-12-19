@@ -6,12 +6,11 @@ from rangefilter.filters import DateRangeFilter
 
 from ledger.admin_async import AsyncImportExportMixin
 from ledger.models import (
-    CompanyAccount, ProjectAccount,
+    CompanyAccount, ProjectAccount, Affiliate,
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
-    Affiliate,
-    CompanyLedgerCalculation,
+    CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
 from ledger.resources import (
     CompanyAccountResource, ProjectAccountResource,
@@ -636,6 +635,23 @@ class CompanyLedgerCalculationAdmin(admin.ModelAdmin):
     fieldsets = (
         ('정산 정보', {
             'fields': ('company', 'calculated')
+        }),
+        ('시스템 정보', {
+            'fields': ('creator', 'created_at', 'updated_at')
+        }),
+    )
+
+
+@admin.register(ProjectLedgerCalculation)
+class ProjectLedgerCalculationAdmin(admin.ModelAdmin):
+    """프로젝트 원장 정산 Admin"""
+    list_display = ('project', 'calculated', 'creator', 'created_at', 'updated_at')
+    list_filter = ('project', 'calculated')
+    readonly_fields = ('created_at', 'updated_at')
+
+    fieldsets = (
+        ('정산 정보', {
+            'fields': ('project', 'calculated')
         }),
         ('시스템 정보', {
             'fields': ('creator', 'created_at', 'updated_at')
