@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useProCash } from '@/store/pinia/proCash'
-import { type BalanceByAccount } from '@/store/types/proCash'
 import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
+import { type BalanceByAccount } from '@/store/types/proCash'
 
 defineProps({ date: { type: String, default: '' }, isBalance: { type: String, default: 'true' } })
 
@@ -14,8 +14,8 @@ const dateIncSum = ref(0)
 const dateOutSum = ref(0)
 const dateBalance = ref(0)
 
-const proCashStore = useProCash()
-const balanceByAccList = computed(() => proCashStore.balanceByAccList)
+const proLedgerStore = useProLedger()
+const balanceByAccList = computed(() => proLedgerStore.proLedgerBalanceByAccList)
 
 watch(balanceByAccList, () => getSumTotal())
 
