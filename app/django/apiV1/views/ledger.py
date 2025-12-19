@@ -710,7 +710,7 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
 
         # 1. 기본 쿼리셋 (잘못된 prefetch 제거)
         transactions = self.get_queryset().filter(
-            company_id=project,
+            project_id=project,
             deal_date=date
         ).select_related(
             'bank_account', 'sort', 'creator'
