@@ -3,17 +3,17 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { cleanupParams, errorHandle, message } from '@/utils/helper'
 import type {
+  ProjectBank,
   ProjectAccount,
   ProBankTransaction,
   ProAccountingEntry,
   BalanceByAccount,
   ProCalculated,
-  LedgerTransactionForDisplay,
 } from '@/store/types/proLedger.ts'
 
 export type DataFilter = {
   page?: number
-  company?: number | null
+  project?: number | null
   from_date?: string
   to_date?: string
   sort?: 1 | 2 | null
@@ -43,6 +43,52 @@ export type ProAccountFilter = {
 }
 
 export const useProLedger = defineStore('proLedger', () => {
+  // state & getters
+  const proBankList = ref<ProjectBank[]>([])
+  const getProBanks = computed(() =>
+    proBankList.value.map(bk => ({ value: bk.pk, label: bk.alias_name })),
+  )
+  const allProBankList = ref<ProjectBank[]>([])
+
+  const fetchProBankAccList = async (project: number) =>
+    await api
+      .get(`/ledger/project-bank-account/?project=${project}&is_hide=false&inactive=false`)
+      .then(res => (proBankList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchAllProBankAccList = async (project: number) =>
+    await api
+      .get(`/ledger/project-bank-account/?project=${project}`)
+      .then(res => (allProBankList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createProBankAcc = async (payload: ProjectBank) =>
+    await api
+      .post(`/ledger/project-bank-account/`, payload)
+      .then(async res => {
+        await fetchAllProBankAccList(res.data.project)
+        await fetchProBankAccList(res.data.project).then(() => message())
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateProBankAcc = async (payload: ProjectBank) =>
+    await api
+      .put(`/ledger/project-bank-account/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllProBankAccList(res.data.project)
+        await fetchProBankAccList(res.data.project).then(() => message())
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchProBankAcc = async (payload: ProjectBank) =>
+    await api
+      .patch(`/ledger/project-bank-account/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllProBankAccList(res.data.project)
+        await fetchProBankAccList(res.data.project).then(() => message())
+      })
+      .catch(err => errorHandle(err.response.data))
+
   // state & getters
   const proAccountList = ref<ProjectAccount[]>([])
   const proAccountFilter = ref<ProAccountFilter>({})
@@ -91,7 +137,7 @@ export const useProLedger = defineStore('proLedger', () => {
 
   const fetchBankTransaction = async (pk: number) =>
     await api
-      .get(`/ledger/company-transaction/${pk}/`)
+      .get(`/ledger/project-transaction/${pk}/`)
       .then(res => {
         bankTransaction.value = res.data
       })
@@ -99,7 +145,7 @@ export const useProLedger = defineStore('proLedger', () => {
 
   const fetchBankTransactionList = async (payload: DataFilter = {}) => {
     const params = cleanupParams({
-      company: payload.company,
+      project: payload.project,
       from_deal_date: payload.from_date,
       to_deal_date: payload.to_date,
       sort: payload.sort,
@@ -112,7 +158,7 @@ export const useProLedger = defineStore('proLedger', () => {
     })
 
     return await api
-      .get('/ledger/company-transaction/', { params })
+      .get('/ledger/project-transaction/', { params })
       .then(res => {
         bankTransactionFilter.value = payload
         bankTransactionList.value = res.data.results
@@ -122,8 +168,8 @@ export const useProLedger = defineStore('proLedger', () => {
   }
 
   const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
-    const { company } = filters
-    let url = `/ledger/company-transaction/find_page/?highlight_id=${highlightId}&company=${company}`
+    const { project } = filters
+    let url = `/ledger/project-transaction/find_page/?highlight_id=${highlightId}&project=${project}`
     if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
     if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
     if (filters.sort) url += `&sort=${filters.sort}`
@@ -145,7 +191,7 @@ export const useProLedger = defineStore('proLedger', () => {
     payload: ProBankTransaction & { accData: ProAccountingEntry | null },
   ) =>
     await api
-      .post(`/ledger/company-composite-transaction/`, payload)
+      .post(`/ledger/project-composite-transaction/`, payload)
       .then(async res => {
         return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
       })
@@ -156,7 +202,7 @@ export const useProLedger = defineStore('proLedger', () => {
   ) => {
     const { pk, ...formData } = payload
     return await api
-      .put(`/ledger/company-composite-transaction/${pk}/`, formData)
+      .put(`/ledger/project-composite-transaction/${pk}/`, formData)
       .then(async res => {
         return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
       })
@@ -168,7 +214,7 @@ export const useProLedger = defineStore('proLedger', () => {
   ) => {
     const { pk, ...formData } = payload
     return await api
-      .patch(`/ledger/company-composite-transaction/${pk}/`, formData)
+      .patch(`/ledger/project-composite-transaction/${pk}/`, formData)
       .then(async res => {
         return await fetchBankTransactionList(bankTransactionFilter.value)
       })
@@ -177,7 +223,7 @@ export const useProLedger = defineStore('proLedger', () => {
 
   const deleteBankTransaction = async (pk: number) => {
     return await api
-      .delete(`/ledger/company-composite-transaction/${pk}/`)
+      .delete(`/ledger/project-composite-transaction/${pk}/`)
       .then(async () => {
         return await fetchBankTransactionList(bankTransactionFilter.value).then(() =>
           message('warning', '알림!', '본사 거래 데이터가 삭제되었습니다.'),
@@ -189,12 +235,12 @@ export const useProLedger = defineStore('proLedger', () => {
   // ============================================
   // Status 페이지용 Ledger API (신규 추가)
   // ============================================
-  const comLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
+  const proLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
   const dateLedgerTransactions = ref<ProBankTransaction[]>([])
   // const dateLedgerForDisplay = computed<LedgerTransactionForDisplay[]>(() =>
   //   dateLedgerTransactions.value.map(tx => ({
   //     pk: tx.pk,
-  //     company: tx.company,
+  //     project: tx.project,
   //     sort: tx.sort,
   //     sort_desc: tx.sort_name,
   //     account: null,
@@ -209,63 +255,73 @@ export const useProLedger = defineStore('proLedger', () => {
   //   })),
   // )
 
-  const comLedgerCalculation = ref<ProCalculated[]>([])
-  const comLedgerCalculated = computed(() =>
-    comLedgerCalculation.value.length ? comLedgerCalculation.value[0] : null,
+  const proLedgerCalculation = ref<ProCalculated[]>([])
+  const proLedgerCalculated = computed(() =>
+    proLedgerCalculation.value.length ? proLedgerCalculation.value[0] : null,
   )
 
-  const comLedgerLastDealList = ref<{ deal_date: string }[]>([])
-  const comLedgerLastDealDate = computed(() =>
-    comLedgerLastDealList.value.length ? comLedgerLastDealList.value[0] : null,
+  const proLedgerLastDealList = ref<{ deal_date: string }[]>([])
+  const proLedgerLastDealDate = computed(() =>
+    proLedgerLastDealList.value.length ? proLedgerLastDealList.value[0] : null,
   )
 
-  const fetchComLedgerBalanceByAccList = async (payload: {
-    company: number
-    date: string
+  const fetchProLedgerBalanceByAccList = async (payload: {
+    project: number
+    direct?: string
+    date?: string
     is_balance?: '' | 'true'
   }) => {
-    const { company, date, is_balance = '' } = payload
+    const { project, date, is_balance = '' } = payload
     return await api
       .get(
-        `/ledger/company-transaction/balance_by_account/?company=${company}&date=${date}&is_balance=${is_balance}`,
+        `/ledger/project-transaction/balance_by_account/?project=${project}&date=${date}&is_balance=${is_balance}`,
       )
-      .then(res => (comLedgerBalanceByAccList.value = res.data))
+      .then(res => (proLedgerBalanceByAccList.value = res.data))
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchDateLedgerTransactionList = async (payload: { company: number; date: string }) => {
-    const { company, date } = payload
+  const fetchDateLedgerTransactionList = async (payload: { project: number; date: string }) => {
+    const { project, date } = payload
     return await api
-      .get(`/ledger/company-transaction/daily_transactions/?company=${company}&date=${date}`)
+      .get(`/ledger/project-transaction/daily_transactions/?project=${project}&date=${date}`)
       .then(res => (dateLedgerTransactions.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchComLedgerCalculation = async (com: number) =>
+  const fetchProLedgerCalculation = async (pro: number) =>
     await api
-      .get(`/ledger/company-calculation/?company=${com}`)
-      .then(res => (comLedgerCalculation.value = res.data.results))
+      .get(`/ledger/project-calculation/?project=${pro}`)
+      .then(res => (proLedgerCalculation.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createComLedgerCalculation = async (payload: ProCalculated) =>
+  const createProLedgerCalculation = async (payload: ProCalculated) =>
     await api
-      .post(`/ledger/company-calculation/`, payload)
-      .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
+      .post(`/ledger/project-calculation/`, payload)
+      .then(res => fetchProLedgerCalculation(res.data.project).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
-  const patchComLedgerCalculation = async (payload: ProCalculated) =>
+  const patchProLedgerCalculation = async (payload: ProCalculated) =>
     await api
-      .patch(`/ledger/company-calculation/${payload.pk}/`, payload)
-      .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
+      .patch(`/ledger/project-calculation/${payload.pk}/`, payload)
+      .then(res => fetchProLedgerCalculation(res.data.project).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchComLedgerLastDealDate = async (com: number) =>
+  const fetchProLedgerLastDealDate = async (pro: number) =>
     await api
-      .get(`/ledger/company-last-deal-date/?company=${com}`)
-      .then(res => (comLedgerLastDealList.value = res.data.results))
+      .get(`/ledger/project-last-deal-date/?project=${pro}`)
+      .then(res => (proLedgerLastDealList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   return {
+    proBankList,
+    getProBanks,
+    allProBankList,
+    fetchProBankAccList,
+    fetchAllProBankAccList,
+    createProBankAcc,
+    updateProBankAcc,
+    patchProBankAcc,
+
     proAccountList,
     proAccountFilter,
     proAccounts,
@@ -286,22 +342,22 @@ export const useProLedger = defineStore('proLedger', () => {
     deleteBankTransaction,
 
     // Status 페이지용 (신규)
-    comLedgerBalanceByAccList,
+    proLedgerBalanceByAccList,
     dateLedgerTransactions,
     // dateLedgerForDisplay,
 
-    comLedgerCalculation,
-    comLedgerCalculated,
+    proLedgerCalculation,
+    proLedgerCalculated,
 
-    comLedgerLastDealList,
-    comLedgerLastDealDate,
+    proLedgerLastDealList,
+    proLedgerLastDealDate,
 
-    fetchComLedgerBalanceByAccList,
+    fetchProLedgerBalanceByAccList,
     fetchDateLedgerTransactionList,
 
-    fetchComLedgerCalculation,
-    createComLedgerCalculation,
-    patchComLedgerCalculation,
-    fetchComLedgerLastDealDate,
+    fetchProLedgerCalculation,
+    createProLedgerCalculation,
+    patchProLedgerCalculation,
+    fetchProLedgerLastDealDate,
   }
 })

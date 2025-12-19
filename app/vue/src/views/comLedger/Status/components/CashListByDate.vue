@@ -22,16 +22,16 @@ const getBankAcc = (num: number) => {
     .map((b: { alias_name: string }) => b.alias_name)[0]
 }
 const setData = () => {
-  dateIncSet.value = dateCashBook.value.filter((i: LedgerTransactionForDisplay) => !!i.income)
-  dateOutSet.value = dateCashBook.value.filter((o: LedgerTransactionForDisplay) => !!o.outlay)
+  dateIncSet.value = dateCashBook.value.filter((i: LedgerTransactionForDisplay) => i.sort === 1)
+  dateOutSet.value = dateCashBook.value.filter((o: LedgerTransactionForDisplay) => o.sort === 2)
   dateIncTotal.value = dateIncSet.value
     ? dateIncSet.value
-        .map((i: LedgerTransactionForDisplay) => i.income || 0)
+        .map((i: LedgerTransactionForDisplay) => (i.sort === 1 ? i.amount : 0))
         .reduce((x: number, y: number) => x + y, 0)
     : 0
   dateOutTotal.value = dateOutSet.value
     ? dateOutSet.value
-        .map((o: LedgerTransactionForDisplay) => o.outlay || 0)
+        .map((o: LedgerTransactionForDisplay) => (o.sort === 2 ? o.amount : 0))
         .reduce((x: number, y: number) => x + y, 0)
     : 0
 }
@@ -79,7 +79,7 @@ onBeforeMount(() => setData())
         <CTableDataCell></CTableDataCell>
         <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-right" color="success">
-          {{ numFormat(inc.income || 0) }}
+          {{ numFormat(inc.sort === 1 ? inc.amount : 0) }}
         </CTableDataCell>
         <CTableDataCell>
           {{ getBankAcc(inc.bank_account as number) }}
@@ -146,7 +146,7 @@ onBeforeMount(() => setData())
         <CTableDataCell></CTableDataCell>
         <CTableDataCell></CTableDataCell>
         <CTableDataCell class="text-right" color="danger">
-          {{ numFormat(out.outlay || 0) }}
+          {{ numFormat(out.sort === 2 ? out.amount : 0) }}
         </CTableDataCell>
         <CTableDataCell>
           {{ getBankAcc(out.bank_account as number) }}

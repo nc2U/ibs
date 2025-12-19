@@ -32,54 +32,53 @@ const handleDownload = (url: string, fileName: string) => {
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
-
 const fetchStatusOutBudgetList = (proj: number) => projStore.fetchStatusOutBudgetList(proj)
-
 const patchStatusOutBudget = (payload: {
   pk: number
   project: number
   budget?: number
   revised_budget?: number
 }) => projStore.patchStatusOutBudget(payload)
-
 const fetchExecAmountList = (project: number, date?: string) =>
   projStore.fetchExecAmountList(project, date)
 
 const pLedgerStore = useProLedger()
-const fetchProAllAccD2List = () => pLedgerStore.fetchProAllAccD2List()
-const fetchProAllAccD3List = () => pLedgerStore.fetchProAllAccD3List()
+const fetchProjectAccounts = () => pLedgerStore.fetchProjectAccounts()
 const fetchProBankAccList = (proj: number) => pLedgerStore.fetchProBankAccList(proj)
 
-const fetchBalanceByAccList = (payload: {
+const fetchProLedgerBalanceByAccList = (payload: {
   project: number
   direct?: string
   date?: string
   is_balance?: '' | 'true'
-}) => pLedgerStore.fetchBalanceByAccList(payload)
-const fetchDateCashBookList = (payload: { project: number; date: string }) =>
-  pLedgerStore.fetchDateCashBookList(payload)
+}) => pLedgerStore.fetchProLedgerBalanceByAccList(payload)
+const fetchDateLedgerTransactionList = (payload: { project: number; date: string }) =>
+  pLedgerStore.fetchDateLedgerTransactionList(payload)
 
-const createProLedgerCalc = (payload: ProCalculated) => pLedgerStore.createProLedgerCalc(payload)
-const patchProLedgerCalc = (payload: ProCalculated) => pLedgerStore.patchProLedgerCalc(payload)
-const fetchProLedgerCalc = (proj: number) => pLedgerStore.fetchProLedgerCalc(proj)
-const fetchProLastDeal = (proj: number) => pLedgerStore.fetchProLastDeal(proj)
+const createProLedgerCalculation = (payload: ProCalculated) =>
+  pLedgerStore.createProLedgerCalculation(payload)
+const patchProLedgerCalculation = (payload: ProCalculated) =>
+  pLedgerStore.patchProLedgerCalculation(payload)
+const fetchProLedgerCalculation = (proj: number) => pLedgerStore.fetchProLedgerCalculation(proj)
+const fetchProLedgerLastDealDate = (proj: number) => pLedgerStore.fetchProLedgerLastDealDate(proj)
 
-const proCalculated = computed(() => pLedgerStore.proCalculated) // 최종 정산 일자
-const proLastDealDate = computed(() => pLedgerStore.proLastDealDate) // 최종 거래 일자
+const proLedgerCalculated = computed(() => pLedgerStore.proLedgerCalculated) // 최종 정산 일자
+const proLedgerLastDealDate = computed(() => pLedgerStore.proLedgerLastDealDate) // 최종 거래 일자
 
 const isCalculated = computed(
   () =>
-    !!proCalculated.value &&
-    proCalculated.value.calculated >= (proLastDealDate.value?.deal_date ?? ''),
+    !!proLedgerCalculated.value &&
+    proLedgerCalculated.value.calculated >= (proLedgerLastDealDate.value?.deal_date ?? ''),
 ) // 최종 정산 일자 이후에 거래 기록이 없음 === true
 
 const checkBalance = () => {
   const payload = {
     project: project.value as number,
-    calculated: proLastDealDate.value?.deal_date as string,
+    calculated: proLedgerLastDealDate.value?.deal_date as string,
   }
-  if (!!proCalculated.value) patchProLedgerCalc({ ...{ pk: proCalculated.value.pk }, ...payload })
-  else createProLedgerCalc(payload)
+  if (!!proLedgerCalculated.value)
+    patchProLedgerCalculation({ ...{ pk: proLedgerCalculated.value.pk }, ...payload })
+  else createProLedgerCalculation(payload)
 }
 
 const revised = ref(1)
@@ -133,8 +132,8 @@ const setDate = (dt: string) => {
   if (project.value) {
     fetchStatusOutBudgetList(project.value as number)
     fetchExecAmountList(project.value as number, dt)
-    fetchBalanceByAccList({ project: project.value as number, date: dt })
-    fetchDateCashBookList({ project: project.value as number, date: dt })
+    fetchProLedgerBalanceByAccList({ project: project.value as number, date: dt })
+    fetchDateLedgerTransactionList({ project: project.value as number, date: dt })
   }
 }
 
@@ -148,7 +147,7 @@ const patchBudget = (pk: number, budget: number, isRevised: boolean) => {
 const isExistBalance = (val: 'true' | '') => {
   isBalance.value = val ? 'true' : ''
   if (project.value) {
-    fetchBalanceByAccList({
+    fetchProLedgerBalanceByAccList({
       project: project.value as number,
       direct: direct.value,
       is_balance: isBalance.value,
@@ -161,7 +160,7 @@ const directBalance = (val: boolean) => {
   isBalance.value = ''
   direct.value = val ? 'i' : '0'
   if (project.value)
-    fetchBalanceByAccList({
+    fetchProLedgerBalanceByAccList({
       project: project.value as number,
       direct: direct.value,
       is_balance: isBalance.value,
@@ -173,20 +172,20 @@ const dataSetup = (pk: number) => {
   fetchStatusOutBudgetList(pk)
   fetchExecAmountList(pk, date.value)
   fetchProBankAccList(pk)
-  fetchBalanceByAccList({ project: pk, date: date.value, is_balance: 'true' })
-  fetchDateCashBookList({ project: pk, date: date.value })
-  fetchProLedgerCalc(pk)
-  fetchProLastDeal(pk)
+  fetchProLedgerBalanceByAccList({ project: pk, date: date.value, is_balance: 'true' })
+  fetchDateLedgerTransactionList({ project: pk, date: date.value })
+  fetchProLedgerCalculation(pk)
+  fetchProLedgerLastDealDate(pk)
 }
 
 const dataReset = () => {
   projStore.statusOutBudgetList = []
   projStore.execAmountList = []
-  pLedgerStore.proBankAccountList = []
-  pLedgerStore.balanceByAccList = []
-  pLedgerStore.proDateCashBook = []
-  pLedgerStore.proLedgerCalc = []
-  pLedgerStore.proLastDeal = []
+  pLedgerStore.proBankList = []
+  pLedgerStore.proLedgerBalanceByAccList = []
+  pLedgerStore.dateLedgerTransactions = []
+  pLedgerStore.proLedgerCalculation = []
+  pLedgerStore.proLedgerLastDealList = []
 }
 
 const projSelect = (target: number | null) => {
@@ -196,8 +195,7 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await fetchProAllAccD2List()
-  await fetchProAllAccD3List()
+  await fetchProjectAccounts()
   dataSetup(project.value || projStore.initProjId)
   compName.value = comp[Number(Cookies.get('proLedgerStatus') ?? 1)]
   loading.value = false
@@ -256,7 +254,7 @@ onBeforeMount(async () => {
         />
 
         <Calculated
-          :calc-date="proCalculated?.calculated"
+          :calc-date="proLedgerCalculated?.calculated"
           :is-calculated="isCalculated"
           @to-calculate="checkBalance"
         />

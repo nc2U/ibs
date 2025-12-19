@@ -1,3 +1,18 @@
+export interface ProjectBank {
+  pk?: number
+  company?: number
+  depart: number | null
+  bankcode: number | null
+  alias_name: string
+  number: string
+  holder: string
+  open_date: string | null
+  note: string
+  is_hide: boolean
+  inactive: boolean
+  balance?: number
+}
+
 export interface ProjectAccount {
   pk?: number
   code: string

@@ -127,14 +127,13 @@ export interface LedgerTransactionForDisplay {
   pk: number
   company: number
   sort: number
-  sort_desc?: string
-  account: null
+  sort_desc: string
+  account: string | null
   content: string
   trader: string
   bank_account: number
-  bank_account_desc?: string
-  income: number | null
-  outlay: number | null
+  bank_account_desc: string
+  amount: number
   deal_date: string
   note: string
 }
