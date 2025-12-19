@@ -18,17 +18,17 @@ from ledger.models import (
     CompanyLedgerCalculation,
     Affiliate
 )
+from ledger.services.company_transaction import get_company_transactions
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
 from ..permission import IsStaffOrReadOnly
 from ..serializers.ledger import (
-    CompanyAccountSerializer, ProjectAccountSerializer, AccountSearchResultSerializer,
-    LedgerBankCodeSerializer,
+    CompanyAccountSerializer, ProjectAccountSerializer,
+    AccountSearchResultSerializer, LedgerBankCodeSerializer,
     LedgerCompanyBankAccountSerializer, LedgerProjectBankAccountSerializer,
     CompanyBankTransactionSerializer, ProjectBankTransactionSerializer,
     CompanyAccountingEntrySerializer, ProjectAccountingEntrySerializer,
     CompanyCompositeTransactionSerializer, ProjectCompositeTransactionSerializer,
-    CompanyLedgerCalculationSerializer,
-    AffiliateSerializer,
+    CompanyLedgerCalculationSerializer, AffiliateSerializer,
 )
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
@@ -373,8 +373,6 @@ class AffiliateViewSet(viewsets.ModelViewSet):
 # ============================================
 # Bank Transaction ViewSets
 # ============================================
-
-from ledger.services.company_transaction import get_company_transactions
 
 
 class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
@@ -744,8 +742,7 @@ class ProjectAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('project', 'account', 'affiliate',
-                  'evidence_type', 'transaction_id')
+        fields = ('project', 'account', 'affiliate', 'evidence_type', 'transaction_id')
 
 
 class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
