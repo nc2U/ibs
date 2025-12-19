@@ -28,8 +28,8 @@ export type DataFilter = {
     | 'cancel'
     | ''
   account?: number | null
-  affiliate?: number | null | ''
   bank_account?: number | null
+  contract?: number | null
   search?: string
   limit?: number
 }
@@ -153,7 +153,6 @@ export const useProLedger = defineStore('proLedger', () => {
       account_category: payload.account_category,
       account: payload.account,
       bank_account: payload.bank_account,
-      affiliate: payload.affiliate,
       search: payload.search,
       page: payload.page || 1,
     })
@@ -175,7 +174,6 @@ export const useProLedger = defineStore('proLedger', () => {
     if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
     if (filters.sort) url += `&sort=${filters.sort}`
     if (filters.account) url += `&account=${filters.account}`
-    if (filters.affiliate) url += `&affiliate=${filters.affiliate}`
     if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
     if (filters.search) url += `&search=${filters.search}`
 

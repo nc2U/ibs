@@ -1,175 +1,190 @@
 <script lang="ts" setup>
-import { computed, reactive, ref, watch, nextTick } from 'vue'
-import { useComCash } from '@/store/pinia/comCash'
-import { useProCash } from '@/store/pinia/proCash'
-import { useContract } from '@/store/pinia/contract'
-import { numFormat } from '@/utils/baseMixins'
+import { computed, inject, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
+import { numFormat } from '@/utils/baseMixins'
+import { useContract } from '@/store/pinia/contract.ts'
+import { type DataFilter } from '@/store/pinia/proLedger.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
+
+const props = defineProps({
+  project: { type: Number, default: null },
+  dataFilter: { type: Object as PropType<DataFilter>, default: () => {} },
+})
+watch(
+  () => props.project,
+  () => resetForm(),
+)
 
 const emit = defineEmits(['list-filtering'])
 
-const from_date = ref('')
-const to_date = ref('')
-
-const form = reactive({
+const form = ref<DataFilter>({
   page: 1,
-  sort: '',
-  account_d1: '',
-  pro_acc_d2: '',
-  pro_acc_d3: '',
-  bank_account: '',
-  contract: '',
+  project: null,
+  from_date: '',
+  to_date: '',
+  sort: null,
+  account_category: '',
+  account: null,
+  bank_account: null,
+  contract: null,
   search: '',
 })
 
-const useComCashStore = useComCash()
-const formAccD1List = computed(() => useComCashStore.formAccD1List)
-
-const proCashStore = useProCash()
-const sortList = computed(() => proCashStore.sortList)
-const formAccD2List = computed(() => proCashStore.formAccD2List)
-const formAccD3List = computed(() => proCashStore.formAccD3List)
-const allProBankAccs = computed(() => proCashStore.allProBankAccountList)
-const proCashesCount = computed(() => proCashStore.proCashesCount)
+const formsCheck = computed(() => {
+  const a = !form.value.from_date
+  const b = !form.value.to_date
+  const c = !form.value.sort
+  const d = !form.value.account_category
+  const e = !form.value.account
+  const f = !form.value.bank_account
+  const g = !(form.value.search ?? '')?.trim()
+  return a && b && c && d && e && f && g
+})
 
 const contStore = useContract()
 const getContracts = computed(() => contStore.getContracts)
 
-const formsCheck = computed(() => {
-  const a = !from_date.value
-  const b = !to_date.value
-  const c = !form.sort
-  const d = !form.account_d1
-  const e = !form.pro_acc_d2
-  const f = !form.pro_acc_d3
-  const g = !form.bank_account
-  const h = !form.contract
-  const i = form.search.trim() === ''
-  return a && b && c && d && e && f && g && h && i
+const proAccounts = inject<any[]>('proAccounts')
+const allProBankList = inject<any[]>('allProBankList')
+const proBankTransCount = inject<any>('proBankTransCount')
+
+const sortType = computed(() => {
+  if (form.value.sort === 1) return 'deposit' // 입금
+  if (form.value.sort === 2) return 'withdraw' // 출금
+  return null // 전체
 })
 
-watch(from_date, () => listFiltering(1))
-watch(to_date, () => listFiltering(1))
+watch(
+  () => form.value.from_date,
+  () => listFiltering(1),
+)
+watch(
+  () => form.value.to_date,
+  () => listFiltering(1),
+)
 
+//   methods: {
 const sortSelect = () => {
   listFiltering(1)
-  form.account_d1 = ''
-  form.pro_acc_d2 = ''
-  form.pro_acc_d3 = ''
+  form.value.account_category = ''
+  form.value.account = null
 }
 
-const accountD1Select = () => {
+const cateSelect = () => {
   listFiltering(1)
-  form.pro_acc_d2 = ''
-  form.pro_acc_d3 = ''
-}
-
-const proAccD2Select = () => {
-  listFiltering(1)
-  form.pro_acc_d3 = ''
+  form.value.account = null
 }
 
 const listFiltering = (page = 1) => {
+  form.value.page = page
+  form.value.search = (form.value.search ?? '')?.trim()
   nextTick(() => {
-    form.page = page
-    form.search = form.search.trim()
-
-    emit('list-filtering', {
-      ...{ page, from_date: from_date.value, to_date: to_date.value },
-      ...form,
-    })
+    emit('list-filtering', { ...form.value })
   })
 }
 
 defineExpose({ listFiltering })
 
 const resetForm = () => {
-  from_date.value = ''
-  to_date.value = ''
-  form.sort = ''
-  form.account_d1 = ''
-  form.pro_acc_d2 = ''
-  form.pro_acc_d3 = ''
-  form.bank_account = ''
-  form.contract = ''
-  form.search = ''
+  form.value.from_date = ''
+  form.value.to_date = ''
+  form.value.sort = null
+  form.value.account_category = ''
+  form.value.account = null
+  form.value.bank_account = null
+  form.value.search = ''
   listFiltering(1)
 }
+
+onBeforeMount(() => {
+  if (props.dataFilter) {
+    form.value.from_date = props.dataFilter.from_date
+    form.value.to_date = props.dataFilter.to_date
+    form.value.sort = props.dataFilter.sort
+    form.value.account_category = props.dataFilter.account_category
+    form.value.account = props.dataFilter.account
+    form.value.bank_account = props.dataFilter.bank_account
+    form.value.search = props.dataFilter.search
+  }
+})
 </script>
 
 <template>
-  <CCallout color="success" class="pb-0 mb-3" :class="bgLight">
+  <CCallout color="primary" class="pb-0 mb-4" :class="bgLight">
     <CRow>
       <CCol lg="8">
         <CRow>
-          <CCol md="6" lg="2" class="mb-3">
-            <DatePicker
-              v-model="from_date"
-              placeholder="시작일 (From)"
-              @keydown.enter="listFiltering(1)"
-            />
+          <CCol lg="4">
+            <CRow>
+              <CCol md="6" class="mb-3">
+                <DatePicker
+                  v-model="form.from_date"
+                  placeholder="시작일 (From)"
+                  @keydown.enter="listFiltering(1)"
+                />
+              </CCol>
+              <CCol md="6" class="mb-3">
+                <DatePicker
+                  v-model="form.to_date"
+                  placeholder="종료일 (To)"
+                  @keydown.enter="listFiltering(1)"
+                />
+              </CCol>
+            </CRow>
           </CCol>
 
-          <CCol md="6" lg="2" class="mb-3">
-            <DatePicker
-              v-model="to_date"
-              placeholder="종료일 (To)"
-              @keydown.enter="listFiltering(1)"
-            />
-          </CCol>
+          <CCol lg="8">
+            <CRow>
+              <CCol md="6" lg="2" class="mb-3">
+                <CFormSelect v-model.number="form.sort" @change="sortSelect">
+                  <option value="">구분</option>
+                  <option :value="1">입금</option>
+                  <option :value="2">출금</option>
+                </CFormSelect>
+              </CCol>
 
-          <CCol md="6" lg="2" class="mb-3">
-            <CFormSelect v-model="form.sort" @change="sortSelect">
-              <option value="">거래구분</option>
-              <option v-for="sort in sortList" :key="sort.pk" :value="sort.pk">
-                {{ sort.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+              <CCol md="6" lg="2" class="mb-3">
+                <CFormSelect v-model.number="form.account_category" @change="cateSelect">
+                  <option value="">계정분류</option>
+                  <option value="asset">자산</option>
+                  <option value="liability">부채</option>
+                  <option value="equity">자본</option>
+                  <option value="revenue">수익</option>
+                  <option value="expense">비용</option>
+                  <option value="transfer">대체</option>
+                  <option value="cancel">취소</option>
+                </CFormSelect>
+              </CCol>
 
-          <CCol md="6" lg="2" class="mb-3">
-            <CFormSelect v-model="form.account_d1" @change="accountD1Select">
-              <option value="">계정[대분류]</option>
-              <option v-for="acc1 in formAccD1List" :key="acc1.pk" :value="acc1.pk">
-                {{ acc1.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+              <CCol md="6" lg="5" class="mb-3">
+                <LedgerAccount
+                  v-model="form.account"
+                  :options="proAccounts ?? []"
+                  :is-search="true"
+                  :cate-type="form.account_category || undefined"
+                  :sort-type="sortType"
+                  @update:modelValue="listFiltering(1)"
+                />
+              </CCol>
 
-          <CCol md="6" lg="2" class="mb-3">
-            <CFormSelect v-model="form.pro_acc_d2" @change="proAccD2Select">
-              <option value="">상위 항목</option>
-              <option v-for="d1 in formAccD2List" :key="d1.pk" :value="d1.pk">
-                {{ d1.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
-
-          <CCol md="6" lg="2" class="mb-3">
-            <CFormSelect v-model="form.pro_acc_d3" @change="listFiltering(1)">
-              <option value="">하위 항목</option>
-              <option v-for="d2 in formAccD3List" :key="d2.pk" :value="d2.pk">
-                {{ d2.name }}
-              </option>
-            </CFormSelect>
+              <CCol md="6" lg="3" class="mb-3">
+                <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">
+                  <option value="">거래계좌</option>
+                  <option v-for="acc in allProBankList" :key="acc.pk" :value="acc.pk">
+                    {{ acc.alias_name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
+            </CRow>
           </CCol>
         </CRow>
       </CCol>
 
       <CCol lg="4">
         <CRow>
-          <CCol md="6" lg="4" class="mb-3">
-            <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">
-              <option value="">거래계좌</option>
-              <option v-for="acc in allProBankAccs" :key="acc.pk as number" :value="acc.pk">
-                {{ acc.alias_name }}
-              </option>
-            </CFormSelect>
-          </CCol>
-
-          <CCol md="6" lg="4" class="mb-3">
+          <CCol md="6" lg="5" class="mb-3">
             <MultiSelect
               v-model.number="form.contract"
               mode="single"
@@ -179,8 +194,7 @@ const resetForm = () => {
               @clear="resetForm"
             />
           </CCol>
-
-          <CCol md="12" lg="4" class="mb-3">
+          <CCol md="6" lg="7" class="mb-3">
             <CInputGroup class="flex-nowrap">
               <CFormInput
                 v-model="form.search"
@@ -195,9 +209,10 @@ const resetForm = () => {
         </CRow>
       </CCol>
     </CRow>
+
     <CRow>
       <CCol color="warning" class="p-2 pl-3">
-        <strong> 거래 건수 조회 결과 : {{ numFormat(proCashesCount, 0, 0) }} 건 </strong>
+        <strong> 거래 건수 조회 결과 : {{ numFormat(proBankTransCount ?? 0, 0, 0) }} 건 </strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-right mb-0">
         <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>

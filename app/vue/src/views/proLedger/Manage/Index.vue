@@ -8,6 +8,7 @@ import {
 } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/proLedger/_menu/headermixin'
 import { useProject } from '@/store/pinia/project.ts'
+import { useContract } from '@/store/pinia/contract.ts'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { write_project_cash } from '@/utils/pageAuth'
 import { type DataFilter as Filter, useProLedger } from '@/store/pinia/proLedger.ts'
@@ -40,16 +41,18 @@ const excelUrl = computed(() => {
   const to_deal_date = dataFilter.value.to_date || ''
   const sort = dataFilter.value.sort || ''
   const account = dataFilter.value.account || ''
-  const affiliate = dataFilter.value.affiliate || ''
   const bank_account = dataFilter.value.bank_account || ''
   const search = dataFilter.value.search || ''
-  const url = `/excel/com-transaction/?project=${project.value}`
-  return `${url}&from_deal_date=${from_deal_date}&to_deal_date=${to_deal_date}&sort=${sort}&account=${account}&affiliate=${affiliate}&bank_account=${bank_account}&search=${search}`
+  const url = `/excel/pro-transaction/?project=${project.value}`
+  return `${url}&from_deal_date=${from_deal_date}&to_deal_date=${to_deal_date}&sort=${sort}&account=${account}&bank_account=${bank_account}&search=${search}`
 })
 
 const proStore = useProject()
 const project = computed(() => proStore.project?.pk)
 const fetchProject = (pk: number) => proStore.fetchProject(pk)
+
+const contStore = useContract()
+const fetchAllContracts = (projId: number) => contStore.fetchAllContracts(projId)
 
 const comLedgerStore = useComLedger()
 const fetchBankCodeList = () => comLedgerStore.fetchBankCodeList()
@@ -84,6 +87,7 @@ const listFiltering = (payload: Filter) => {
 
 const dataSetup = async (pk: number) => {
   await fetchProject(pk)
+  await fetchAllContracts(pk)
   await fetchProBankAccList(pk)
   await fetchAllProBankAccList(pk)
   await fetchProBankTransList({ project: pk })
