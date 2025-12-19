@@ -49,9 +49,7 @@ const excelUrl = computed(() => {
 
 const proStore = useProject()
 const project = computed(() => proStore.project?.pk)
-
-// const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
-// const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
+const fetchProject = (pk: number) => proStore.fetchProject(pk)
 
 const comLedgerStore = useComLedger()
 const fetchBankCodeList = () => comLedgerStore.fetchBankCodeList()
@@ -85,8 +83,7 @@ const listFiltering = (payload: Filter) => {
 }
 
 const dataSetup = async (pk: number) => {
-  // await fetchCompany(pk)
-  // await fetchAllDepartList(pk)
+  await fetchProject(pk)
   await fetchProBankAccList(pk)
   await fetchAllProBankAccList(pk)
   await fetchProBankTransList({ project: pk })
@@ -95,8 +92,7 @@ const dataSetup = async (pk: number) => {
 }
 
 const dataReset = () => {
-  // comStore.allDepartList = []
-  // comStore.removeCompany()
+  proStore.removeProject()
   proLedgerStore.proBankList = []
   proLedgerStore.allProBankList = []
   proLedgerStore.proBankTransList = []
@@ -105,13 +101,13 @@ const dataReset = () => {
 }
 
 const projSelect = async (target: number | null, skipClearQuery = false) => {
-  // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
+  // 프로젝트 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
   if (!skipClearQuery) {
     clearQueryString()
   }
   dataReset()
   if (!!target) {
-    // await fetchCompany(target)
+    await fetchProject(target)
     await dataSetup(target)
   }
 }
@@ -206,7 +202,7 @@ onBeforeRouteLeave(() => {
     />
     <ContentBody>
       <CCardBody class="pb-5">
-        <div v-if="route.name === '본사 거래 내역'">
+        <div v-if="route.name === 'PR 거래 내역'">
           <ListController
             ref="listControl"
             :project="project as number"
@@ -233,9 +229,7 @@ onBeforeRouteLeave(() => {
         </div>
 
         <div
-          v-else-if="
-            route.name === '본사 거래 내역 - 수정' || route.name === '본사 거래 내역 - 생성'
-          "
+          v-else-if="route.name === 'PR 거래 내역 - 수정' || route.name === 'PR 거래 내역 - 생성'"
         >
           <ProTransForm :project="project as number" />
         </div>
