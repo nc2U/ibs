@@ -1019,5 +1019,5 @@ class ProjectLedgerLastDealDateViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
 
     def get_queryset(self):
-        company = self.request.query_params.get('company')
-        return ProjectBankTransaction.objects.filter(company_id=company).order_by('-deal_date')[:1]
+        project = self.request.query_params.get('project')
+        return ProjectBankTransaction.objects.filter(project_id=project).order_by('-deal_date')[:1]
