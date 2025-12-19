@@ -25,7 +25,6 @@ const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
 const ledgerStore = useComLedger()
-
 const fetchComLedgerBankAccList = (com: number) => ledgerStore.fetchComLedgerBankAccList(com)
 const fetchComLedgerBalanceByAccList = (com: {
   company: number
