@@ -185,12 +185,12 @@ class ProjectAccountResource(resources.ModelResource):
         fields = (
             'id', 'code', 'name', 'description', 'parent', 'depth',
             'category', 'is_category_only', 'direction', 'is_active',
-            'requires_affiliate', 'is_payment', 'is_related_contract', 'order'
+            'is_payment', 'is_related_contract', 'order'
         )
         export_order = (
             'id', 'code', 'name', 'description', 'parent', 'depth',
             'category', 'is_category_only', 'direction', 'is_active',
-            'requires_affiliate', 'is_payment', 'is_related_contract', 'order'
+            'is_payment', 'is_related_contract', 'order'
         )
 
     def __init__(self, *args, **kwargs):
@@ -519,11 +519,11 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
         chunk_size = 1000
         import_id_fields = ('id',)
         fields = (
-            'id', 'transaction_id', 'project', 'sort', 'account', 'affiliate',
+            'id', 'transaction_id', 'project', 'sort', 'account', 'contract',
             'amount', 'trader', 'evidence_type'
         )
         export_order = (
-            'id', 'transaction_id', 'project', 'sort', 'account', 'affiliate',
+            'id', 'transaction_id', 'project', 'sort', 'account', 'contract',
             'amount', 'trader', 'evidence_type'
         )
 

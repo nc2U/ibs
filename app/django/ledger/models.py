@@ -161,11 +161,6 @@ class Account(models.Model):
     # 활성화 상태
     is_active = models.BooleanField(default=True, verbose_name='활성 여부', help_text='비활성화 시 신규 거래에 사용 불가')
 
-    # 관계회사/프로젝트 추적 필수 여부
-    requires_affiliate = models.BooleanField(default=False, verbose_name='관계회사/프로젝트 필수',
-                                             help_text='체크 시: 회계분개 입력 시 관계회사 또는 프로젝트 선택 필수<br>'
-                                                       '용도: 관계회사 대여금, 투자금 등 집계가 필요한 계정')
-
     # 정렬 순서
     order = models.PositiveIntegerField(default=0, verbose_name='정렬순서', help_text='같은 레벨 내 표시 순서')
 
@@ -329,6 +324,10 @@ class CompanyAccount(Account):
     Account 추상 모델의 모든 필드와 메서드를 상속받으며,
     본사만의 독립적인 계정 데이터를 관리합니다.
     """
+    # 관계회사/프로젝트 추적 필수 여부 (본사 전용)
+    requires_affiliate = models.BooleanField(default=False, verbose_name='관계회사/프로젝트 필수',
+                                             help_text='체크 시: 회계분개 입력 시 관계회사 또는 프로젝트 선택 필수<br>'
+                                                       '용도: 관계회사 대여금, 투자금 등 집계가 필요한 계정')
 
     class Meta:
         ordering = ['code', 'order']
@@ -337,6 +336,7 @@ class CompanyAccount(Account):
         indexes = [
             models.Index(fields=['parent', 'order']),
             models.Index(fields=['category', 'is_active']),
+            models.Index(fields=['requires_affiliate']),
         ]
 
 
