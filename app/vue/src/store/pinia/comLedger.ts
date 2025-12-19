@@ -11,7 +11,6 @@ import {
   type ComCalculated,
   type CompanyBank,
   type AccountingEntry,
-  type CompanyBankTransaction,
   type LedgerTransactionForDisplay,
 } from '@/store/types/comLedger'
 
@@ -275,26 +274,24 @@ export const useComLedger = defineStore('comLedger', () => {
   // Status 페이지용 Ledger API (신규 추가)
   // ============================================
   const comLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
-  const dateLedgerTransactions = ref<CompanyBankTransaction[]>([])
-  const dateLedgerForDisplay = computed<LedgerTransactionForDisplay[]>(() =>
-    dateLedgerTransactions.value.map(tx => ({
-      pk: tx.pk,
-      company: tx.company,
-      sort: tx.sort,
-      sort_desc: tx.sort_name,
-      account_d1: null,
-      account_d2: null,
-      account_d3: null,
-      content: tx.content,
-      trader: tx.accounting_entries?.[0]?.trader || '',
-      bank_account: tx.bank_account,
-      bank_account_desc: tx.bank_account_name,
-      income: tx.sort === 1 ? tx.amount : null,
-      outlay: tx.sort === 2 ? tx.amount : null,
-      deal_date: tx.deal_date,
-      note: tx.note,
-    })),
-  )
+  const dateLedgerTransactions = ref<BankTransaction[]>([])
+  // const dateLedgerForDisplay = computed<LedgerTransactionForDisplay[]>(() =>
+  //   dateLedgerTransactions.value.map(tx => ({
+  //     pk: tx.pk,
+  //     company: tx.company,
+  //     sort: tx.sort,
+  //     sort_desc: tx.sort_name,
+  //     account: null,
+  //     content: tx.content,
+  //     trader: tx.accounting_entries?.[0]?.trader || '',
+  //     bank_account: tx.bank_account,
+  //     bank_account_desc: tx.bank_account_name,
+  //     income: tx.sort === 1 ? tx.amount : null,
+  //     outlay: tx.sort === 2 ? tx.amount : null,
+  //     deal_date: tx.deal_date,
+  //     note: tx.note,
+  //   })),
+  // )
 
   const comLedgerCalculation = ref<ComCalculated[]>([])
   const comLedgerCalculated = computed(() =>
@@ -399,7 +396,7 @@ export const useComLedger = defineStore('comLedger', () => {
     // Status 페이지용 (신규)
     comLedgerBalanceByAccList,
     dateLedgerTransactions,
-    dateLedgerForDisplay,
+    // dateLedgerForDisplay,
 
     comLedgerCalculation,
     comLedgerCalculated,

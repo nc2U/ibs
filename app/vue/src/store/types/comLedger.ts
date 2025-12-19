@@ -122,66 +122,13 @@ export interface AccountingEntry {
   updated_at: string
 }
 
-// Ledger 전용 타입 (새로운 ledger 앱)
-export interface CompanyBankAccount {
-  pk: number
-  company: number
-  depart: number | null
-  depart_name?: string
-  bankcode: number
-  bankcode_name?: string
-  order: number | null
-  alias_name: string
-  number: string
-  holder: string
-  open_date: string | null
-  note: string
-  is_hide: boolean
-  inactive: boolean
-}
-
-export interface CompanyBankTransaction {
-  pk: number
-  transaction_id: string
-  company: number
-  bank_account: number
-  bank_account_name?: string
-  deal_date: string
-  amount: number
-  sort: number // 1=입금, 2=출금
-  sort_name?: string
-  content: string
-  note: string
-  creator?: number
-  creator_name?: string
-  created_at?: string
-  updated_at?: string
-  accounting_entries?: CompanyAccountingEntry[]
-}
-
-export interface CompanyAccountingEntry {
-  pk: number
-  transaction_id: string
-  company: number
-  sort: number
-  sort_name?: string
-  account: number
-  account_name?: string
-  account_code?: string
-  amount: number
-  trader: string
-  evidence_type: string
-}
-
 // UI 표시용 어댑터 타입 (CashBook 구조 모방)
 export interface LedgerTransactionForDisplay {
   pk: number
   company: number
   sort: number
   sort_desc?: string
-  account_d1: null
-  account_d2: null
-  account_d3: null
+  account: null
   content: string
   trader: string
   bank_account: number

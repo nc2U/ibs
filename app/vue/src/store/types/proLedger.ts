@@ -20,42 +20,72 @@ export interface ProjectAccount {
   children_count: number
 }
 
-export interface ProAccountFilter {}
+export interface ProBankTransaction {
+  pk?: number
+  transaction_id?: string
+  company: number
+  bank_account: number
+  bank_account_name: string
+  deal_date: string
+  amount: number
+  sort: 1 | 2
+  sort_name: '입금' | '출금'
+  content: string
+  note: string
+  creator: number | null
+  creator_name: string | null
+  created_at: string
+  updated_at: string
+  is_balanced: boolean
+  accounting_entries: ProAccountingEntry[]
+}
+
+export interface ProAccountingEntry {
+  pk: number
+  transaction_id: string
+  company: number
+  sort: 1 | 2
+  sort_name: '입금' | '출금'
+  account: number
+  account_name: string
+  account_code: string
+  account_full_path: string
+  affiliate: number | null
+  affiliate_display: string | null
+  amount: number
+  trader: string
+  evidence_type: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
+  evidence_type_display:
+    | ''
+    | '증빙없음'
+    | '세금계산서'
+    | '계산서(면세)'
+    | '신용/체크카드 매출전표'
+    | '현금영수증'
+    | '원천징수영수증/지급명세서'
+    | '지로용지 및 청구서'
+  created_at: string
+  updated_at: string
+}
+
+// UI 표시용 어댑터 타입 (CashBook 구조 모방)
+export interface LedgerTransactionForDisplay {
+  pk: number
+  company: number
+  sort: number
+  sort_desc?: string
+  account: null
+  content: string
+  trader: string
+  bank_account: number
+  bank_account_desc?: string
+  income: number | null
+  outlay: number | null
+  deal_date: string
+  note: string
+}
 
 // ----- old types ----------------------------------------
-
-export interface ProjectAccountD2 {
-  pk: number
-  d1: string
-  code: string
-  name: string
-  description: string
-}
-
-export interface ProjectAccountD3 {
-  pk: number
-  d2: number
-  code: string
-  is_related_contract: boolean
-  name: string
-  description: string
-}
-
-export interface ProBankAcc {
-  pk: number | null
-  project: number | null
-  bankcode: number | null
-  alias_name: string
-  number: string
-  holder: string
-  open_date: string | null
-  note: string
-  is_hide: boolean
-  inactive: boolean
-  directpay: boolean
-  is_imprest: boolean
-  balance?: number
-}
 
 export interface BalanceByAccount {
   bank_acc: string
@@ -64,70 +94,6 @@ export interface BalanceByAccount {
   date_out: number
   inc_sum: number | null
   out_sum: number | null
-}
-
-export interface ProSepItems {
-  pk?: number | null
-  project_account_d2: number | null
-  project_account_d2_desc?: string
-  project_account_d3: number | null
-  project_account_d3_desc?: string
-  separated?: number | null
-  is_imprest?: boolean
-  contract?: number | null
-  installment_order?: number | null
-  content: string
-  trader: string
-  income?: number | null
-  outlay?: number | null
-  evidence?: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | ''
-  evidence_desc?: string
-  note: string
-}
-
-export interface ProjectCashBook extends ProSepItems {
-  project: number | null
-  sort: number | null
-  sort_desc?: string
-  is_separate?: boolean
-  sepItems: Array<ProSepItems>
-  has_children?: boolean
-  is_balanced?: boolean
-  balance_info?: {
-    parent_income: number
-    parent_outlay: number
-    children_income: number
-    children_outlay: number
-  }
-  rmCont?: boolean
-  refund_contractor?: number | null
-  bank_account: number | null
-  bank_account_desc?: string
-  deal_date: string
-}
-
-export type CashBookFilter = {
-  project?: number | null
-  page?: number
-  from_date?: string
-  to_date?: string
-  order_group?: string
-  unit_type?: string
-  sort?: number | null
-  account_d1?: number | null
-  pro_acc_d2?: number | null
-  pro_acc_d3?: number | null
-  is_imprest?: '' | '0' | 'false'
-  bank_account?: number | null
-  pay_order?: string
-  pay_account?: string
-  contract?: number
-  no_contract?: boolean
-  no_install?: boolean
-  ordering?: string
-  search?: string
-  includeChildren?: boolean // 자식 레코드까지 포함한 통합 검색 모드
-  parents_only?: boolean // 부모 레코드만 조회 여부 (true: 부모만, false: 모든 레코드)
 }
 
 export interface PaymentPaid {
