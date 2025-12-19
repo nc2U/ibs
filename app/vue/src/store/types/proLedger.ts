@@ -1,3 +1,11 @@
+export interface ProjectAccount {
+  pk: number
+}
+
+export interface ProAccountFilter {}
+
+// ----- old types ----------------------------------------
+
 export interface ProjectAccountD2 {
   pk: number
   d1: string
