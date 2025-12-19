@@ -722,12 +722,18 @@ class ProjectAccountingEntry(AccountingEntry):
                                 help_text='회계 분개에 사용할 계정 과목',
                                 limit_choices_to={'is_active': True, 'is_category_only': False})
 
+    # 공급계약 연결 (프로젝트 전용)
+    contract = models.ForeignKey('contract.Contract', on_delete=models.PROTECT,
+                                 null=True, blank=True, verbose_name='공급계약',
+                                 help_text='공급계약 관련 계정 사용 시 필수 입력')
+
     class Meta:
         verbose_name = '10. 프로젝트 회계 분개'
         verbose_name_plural = '10. 프로젝트 회계 분개'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['account', 'created_at']),
+            models.Index(fields=['contract']),
         ]
 
     def clean(self):
@@ -744,6 +750,12 @@ class ProjectAccountingEntry(AccountingEntry):
         if self.account and not self.account.is_active:
             raise ValidationError({
                 'account': f'"{self.account.name}"는 비활성 계정이므로 사용할 수 없습니다.'
+            })
+
+        # is_related_contract 검증
+        if self.account and self.account.is_related_contract and not self.contract:
+            raise ValidationError({
+                'contract': f'"{self.account.name}" 계정은 공급계약 선택이 필수입니다.'
             })
 
     def save(self, *args, **kwargs):
