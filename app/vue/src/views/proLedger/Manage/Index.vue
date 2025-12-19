@@ -1,31 +1,28 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
-import { ref, computed, onBeforeMount, provide, nextTick } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
-import { pageTitle, navMenu } from '@/views/proLedger/_menu/headermixin'
-import { useComCash } from '@/store/pinia/comCash'
-import { useProCash } from '@/store/pinia/proCash'
-import { useProject } from '@/store/pinia/project'
-import { useContract } from '@/store/pinia/contract'
-import { usePayment } from '@/store/pinia/payment'
+import { computed, nextTick, onBeforeMount, provide, ref } from 'vue'
 import {
-  type CashBookFilter,
-  type ProBankAcc,
-  type ProjectCashBook as PrCashBook,
-} from '@/store/types/proCash'
-import { cutString } from '@/utils/baseMixins'
+  onBeforeRouteLeave,
+  type RouteLocationNormalizedLoaded as Loaded,
+  useRoute,
+  useRouter,
+} from 'vue-router'
+import { navMenu, pageTitle } from '@/views/proLedger/_menu/headermixin'
+import { useProject } from '@/store/pinia/project.ts'
+import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { write_project_cash } from '@/utils/pageAuth'
+import { type DataFilter as Filter, useProLedger } from '@/store/pinia/proLedger.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
-import ProCashAuthGuard from '@/components/AuthGuard/ProCashAuthGuard.vue'
-import ListController from '@/views/proCash/Manage/components/ListController.vue'
-import AddProTrans from '@/views/proLedger/Manage/components/AddProTrans.vue'
+import ProLedgerAuthGuard from '@/components/AuthGuard/ProLedgerAuthGuard.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
-import ProTransList from '@/views/proLedger/Manage/components/ProTransList.vue'
+import ListController from './components/ListController.vue'
+import AddProTrans from './components/AddProTrans.vue'
+import ProTransList from './components/ProTransList.vue'
+import ProTransForm from './components/ProTransForm.vue'
 
 const listControl = ref()
-const [route, router] = [useRoute(), useRouter()]
+const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
 const highlightId = computed(() => {
   const id = route.query.highlight_id
@@ -38,275 +35,85 @@ const urlProjectId = computed(() => {
   return id ? parseInt(id as string, 10) : null
 })
 
-const bankFees = ref([14, 61]) // 은행수수료 d2(id), d3(id)
-const transferD3 = ref([73, 74]) // 대체 출금(id), 입금(id)
-const cancelD3 = ref([75, 76]) // 취소 출금(id), 입금(id)
-
-provide('transfers', [17, 73]) // 대체 출금 d2(id), d3(id)
-provide('cancels', [18, 75]) // 취소 출금 d2(id), d3(id)
-
-const dataFilter = ref<CashBookFilter>({
-  page: 1,
-  from_date: '',
-  to_date: '',
-  sort: null,
-  account_d1: null,
-  pro_acc_d2: null,
-  pro_acc_d3: null,
-  is_imprest: 'false',
-  bank_account: null,
-  search: '',
+const excelUrl = computed(() => {
+  const from_deal_date = dataFilter.value.from_date || ''
+  const to_deal_date = dataFilter.value.to_date || ''
+  const sort = dataFilter.value.sort || ''
+  const account = dataFilter.value.account || ''
+  const affiliate = dataFilter.value.affiliate || ''
+  const bank_account = dataFilter.value.bank_account || ''
+  const search = dataFilter.value.search || ''
+  const url = `/excel/com-transaction/?project=${project.value}`
+  return `${url}&from_deal_date=${from_deal_date}&to_deal_date=${to_deal_date}&sort=${sort}&account=${account}&affiliate=${affiliate}&bank_account=${bank_account}&search=${search}`
 })
 
-const imprest = ref(false)
+const proStore = useProject()
+const project = computed(() => proStore.project?.pk)
 
-const setImprest = () => {
-  dataFilter.value.page = 1
-  imprest.value = !imprest.value
-  dataFilter.value.is_imprest = imprest.value ? '' : '0'
-  Cookies.set('get-imprest', dataFilter.value.is_imprest)
-  fetchProjectCashList({
-    ...{ project: project.value },
-    ...dataFilter.value,
-  })
-}
+// const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
+// const fetchAllDepartList = (com: number) => comStore.fetchAllDepartList(com)
 
-const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
-const fetchProject = (pk: number) => projStore.fetchProject(pk)
+const comLedgerStore = useComLedger()
+const fetchBankCodeList = () => comLedgerStore.fetchBankCodeList()
 
-const pageSelect = (page: number) => {
-  dataFilter.value.page = page
+const proLedgerStore = useProLedger()
+const proAccounts = computed(() => proLedgerStore.proAccounts)
+const allProBankList = computed(() => proLedgerStore.allProBankList)
+const dataFilter = computed(() => proLedgerStore.proBankTransFilter)
+const proBankTransCount = computed(() => proLedgerStore.proBankTransCount)
 
-  // 현재 필터링 상태 확인
-  const hasFiltering = !!(
-    dataFilter.value.search?.trim() || // 검색어
-    dataFilter.value.contract || // 계약정보
-    dataFilter.value.from_date || // 시작일
-    dataFilter.value.to_date || // 종료일
-    dataFilter.value.sort || // 거래구분
-    dataFilter.value.account_d1 || // 계정대분류
-    dataFilter.value.pro_acc_d2 || // 상위항목
-    dataFilter.value.pro_acc_d3 || // 하위항목
-    dataFilter.value.bank_account // 거래계좌
-  )
+provide('proAccounts', proAccounts)
+provide('allProBankList', allProBankList)
+provide('proBankTransCount', proBankTransCount)
 
-  fetchProjectCashList({
-    ...{ project: project.value },
-    ...dataFilter.value,
-    parents_only: !hasFiltering, // 필터링이 있으면 false (자식 포함), 없으면 true (부모만)
-  })
-}
+const fetchProjectAccounts = () => proLedgerStore.fetchProjectAccounts()
+const fetchProBankAccList = (pk: number) => proLedgerStore.fetchProBankAccList(pk)
+const fetchAllProBankAccList = (pk: number) => proLedgerStore.fetchAllProBankAccList(pk)
 
-const listFiltering = (payload: CashBookFilter) => {
+const fetchProBankTransList = (payload: Filter) => proLedgerStore.fetchProBankTransList(payload)
+const findProBankTransPage = (highlightId: number, filters: Filter) =>
+  proLedgerStore.findProBankTransPage(highlightId, filters)
+const fetchProLedgerCalculation = (com: number) => proLedgerStore.fetchProLedgerCalculation(com)
+
+const pageSelect = (page: number) => listControl.value.listFiltering(page)
+
+const listFiltering = (payload: Filter) => {
   // 필터링 시 query string 정리
   clearQueryString()
-  dataFilter.value = payload
-  const sort = payload.sort ? payload.sort : null
-  const d1 = payload.account_d1 ? payload.account_d1 : null
-  const d2 = payload.pro_acc_d2 ? payload.pro_acc_d2 : null
-
-  fetchFormAccD1List(sort)
-  fetchProFormAccD2List(d1, sort)
-  fetchProFormAccD3List(d2, sort)
-
-  if (project.value) {
-    // 필터링 조건이 있는지 확인
-    const hasFiltering = !!(
-      payload.search?.trim() || // 검색어
-      payload.contract || // 계약정보
-      payload.from_date || // 시작일
-      payload.to_date || // 종료일
-      payload.sort || // 거래구분
-      payload.account_d1 || // 계정대분류
-      payload.pro_acc_d2 || // 상위항목
-      payload.pro_acc_d3 || // 하위항목
-      payload.bank_account // 거래계좌
-    )
-
-    fetchProjectCashList({
-      ...{ project: project.value },
-      ...payload,
-      parents_only: !hasFiltering, // 필터링이 있으면 false (자식 포함), 없으면 true (부모만)
-    })
-  }
-}
-
-const excelUrl = computed(() => {
-  const pj = project.value
-  const sd = dataFilter.value.from_date
-  const ed = dataFilter.value.to_date
-  const st = dataFilter.value.sort || ''
-  const d1 = dataFilter.value.pro_acc_d2 || ''
-  const d2 = dataFilter.value.pro_acc_d3 || ''
-  const ba = dataFilter.value.bank_account || ''
-  const q = dataFilter.value.search
-  return `/excel/p-cashbook/?project=${pj}&sdate=${sd}&edate=${ed}&sort=${st}&d1=${d1}&d2=${d2}&bank_acc=${ba}&q=${q}`
-})
-
-const paymentStore = usePayment()
-const fetchPayOrderList = (project: number) => paymentStore.fetchPayOrderList(project)
-
-const comCashStore = useComCash()
-const fetchBankCodeList = () => comCashStore.fetchBankCodeList()
-const fetchFormAccD1List = (sort?: number | null) => comCashStore.fetchFormAccD1List(sort)
-
-const proCashStore = useProCash()
-const fetchProAccSortList = () => proCashStore.fetchProAccSortList()
-const fetchProAllAccD2List = () => proCashStore.fetchProAllAccD2List()
-const fetchProAllAccD3List = () => proCashStore.fetchProAllAccD3List()
-
-const fetchProFormAccD2List = (d1?: number | null, sort?: number | null) =>
-  proCashStore.fetchProFormAccD2List(d1, sort)
-const fetchProFormAccD3List = (d2?: number | null, sort?: number | null) =>
-  proCashStore.fetchProFormAccD3List(d2, sort)
-
-const fetchProBankAccList = (projId: number) => proCashStore.fetchProBankAccList(projId)
-const fetchAllProBankAccList = (projId: number) => proCashStore.fetchAllProBankAccList(projId)
-const fetchProjectCashList = (payload: CashBookFilter) => proCashStore.fetchProjectCashList(payload)
-const findProjectCashBookPage = (highlightId: number, filters: CashBookFilter) =>
-  proCashStore.findProjectCashBookPage(highlightId, filters)
-
-const createProBankAcc = (payload: ProBankAcc) => proCashStore.createProBankAcc(payload)
-const patchProBankAcc = (payload: ProBankAcc) => proCashStore.patchProBankAcc(payload)
-
-const createPrCashBook = (
-  payload: PrCashBook & { sepData: PrCashBook | null } & {
-    filters: CashBookFilter
-  },
-) => proCashStore.createPrCashBook(payload)
-
-const updatePrCashBook = (
-  payload: PrCashBook & { sepData: PrCashBook | null } & {
-    filters: CashBookFilter
-  },
-) => proCashStore.updatePrCashBook(payload)
-
-const deletePrCashBook = (
-  payload: { pk: number; project: number } & {
-    filters?: CashBookFilter
-  },
-) => proCashStore.deletePrCashBook(payload)
-const fetchProCashCalc = (proj: number) => proCashStore.fetchProCashCalc(proj)
-
-const chargeCreate = (
-  payload: PrCashBook & { sepData: PrCashBook | null } & {
-    filters: CashBookFilter
-  },
-  charge: number,
-) => {
-  payload.sort = 2
-  payload.project_account_d2 = bankFees.value[0]
-  payload.project_account_d3 = bankFees.value[1]
-  payload.content = cutString(payload.content, 8) + ' - 이체수수료'
-  payload.trader = '지급수수료'
-  payload.outlay = charge
-  payload.income = null
-  payload.evidence = '0'
-  payload.note = ''
-
-  createPrCashBook(payload)
-}
-
-const onCreate = (
-  payload: PrCashBook & { sepData: PrCashBook | null } & {
-    filters: CashBookFilter
-  } & { bank_account_to: null | number; charge: null | number },
-) => {
   if (project.value) payload.project = project.value
-  if (payload.sort === 3 && payload.bank_account_to) {
-    // 대체 거래일 때
-    const { bank_account_to, charge, ...inputData } = payload
-
-    inputData.sort = 2
-    inputData.trader = '내부대체'
-    inputData.project_account_d3 = transferD3.value[0]
-    createPrCashBook({ ...inputData })
-
-    inputData.sort = 1
-    inputData.project_account_d3 = transferD3.value[1]
-    inputData.income = inputData.outlay
-    inputData.outlay = null
-    inputData.bank_account = bank_account_to
-
-    setTimeout(() => createPrCashBook({ ...inputData }), 300)
-    if (!!charge) {
-      setTimeout(() => chargeCreate({ ...inputData }, charge), 600)
-    }
-  } else if (payload.sort === 4) {
-    // 취소 거래일 때
-    payload.sort = 2
-    payload.project_account_d3 = cancelD3.value[0]
-    payload.evidence = '0'
-    createPrCashBook(payload)
-    payload.sort = 1
-    payload.project_account_d3 = cancelD3.value[1]
-    payload.income = payload.outlay
-    delete payload.outlay
-    payload.evidence = ''
-    setTimeout(() => createPrCashBook(payload), 300)
-  } else {
-    const { charge, ...inputData } = payload
-    createPrCashBook(inputData)
-    if (!!charge) chargeCreate(inputData, charge)
-  }
+  if (project.value) fetchProBankTransList(payload)
 }
 
-const onUpdate = (
-  payload: PrCashBook & { sepData: PrCashBook | null } & {
-    filters: CashBookFilter
-  },
-) => updatePrCashBook(payload)
-
-const multiSubmit = (payload: {
-  formData: PrCashBook
-  sepData: PrCashBook | null
-  bank_account_to: null | number
-  charge: null | number
-}) => {
-  const { formData, ...sepData } = payload
-  const submitData = {
-    ...formData,
-    ...sepData,
-    ...{ filters: dataFilter.value },
-  }
-
-  if (formData.pk) onUpdate(submitData)
-  else onCreate(submitData)
-}
-
-const onDelete = (payload: { pk: number; project: number }) =>
-  deletePrCashBook({ ...{ filters: dataFilter.value }, ...payload })
-
-const onBankCreate = (payload: ProBankAcc) => {
-  payload.project = project.value as number
-  createProBankAcc(payload)
-}
-const onBankUpdate = (payload: ProBankAcc) => patchProBankAcc(payload)
-
-const dataSetup = (pk: number) => {
-  fetchProBankAccList(pk)
-  fetchAllProBankAccList(pk)
-  fetchProjectCashList({
-    project: pk,
-    ...dataFilter.value,
-    parents_only: true, // 초기 로딩 시에는 부모 레코드만
-  })
-  fetchProCashCalc(pk)
+const dataSetup = async (pk: number) => {
+  // await fetchCompany(pk)
+  // await fetchAllDepartList(pk)
+  await fetchProBankAccList(pk)
+  await fetchAllProBankAccList(pk)
+  await fetchProBankTransList({ project: pk })
+  await fetchProLedgerCalculation(pk)
+  proLedgerStore.proBankTransFilter.project = pk
 }
 
 const dataReset = () => {
-  proCashStore.proBankAccountList = []
-  proCashStore.allProBankAccountList = []
-  proCashStore.proCashBookList = []
-  proCashStore.proCashesCount = 0
+  // comStore.allDepartList = []
+  // comStore.removeCompany()
+  proLedgerStore.proBankList = []
+  proLedgerStore.allProBankList = []
+  proLedgerStore.proBankTransList = []
+  proLedgerStore.proBankTransCount = 0
+  proLedgerStore.proBankTransFilter.project = null
 }
 
-const projSelect = (target: number | null) => {
-  // 프로젝트 변경 시 query string 정리
-  clearQueryString()
+const projSelect = async (target: number | null, skipClearQuery = false) => {
+  // 회사 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
+  if (!skipClearQuery) {
+    clearQueryString()
+  }
   dataReset()
-  if (!!target) dataSetup(target)
+  if (!!target) {
+    // await fetchCompany(target)
+    await dataSetup(target)
+  }
 }
 
 // Query string 정리 함수
@@ -325,13 +132,10 @@ const clearQueryString = () => {
   }
 }
 
-const contStore = useContract()
-const fetchAllContracts = (projId: number) => contStore.fetchAllContracts(projId)
-
 const scrollToHighlight = async () => {
   if (highlightId.value) {
     await nextTick()
-    const element = document.querySelector(`[data-procash-id="${highlightId.value}"]`)
+    const element = document.querySelector(`[data-cash-id="${highlightId.value}"]`)
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' })
       // highlightId는 computed이므로 URL 파라미터가 있는 동안 자동으로 유지됩니다
@@ -343,14 +147,14 @@ const loadHighlightPage = async () => {
   if (highlightId.value && project.value) {
     try {
       // 현재 필터 조건으로 해당 항목이 몇 번째 페이지에 있는지 찾기
-      const targetPage = await findProjectCashBookPage(highlightId.value, {
+      const targetPage = await findProBankTransPage(highlightId.value, {
         ...dataFilter.value,
         project: project.value,
+        limit: 15, // Django에서 사용하는 페이지 크기와 동일하게 설정
       })
-
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
-      dataFilter.value.page = targetPage
-      await fetchProjectCashList({
+      proLedgerStore.proBankTransFilter.page = targetPage
+      await fetchProBankTransList({
         ...dataFilter.value,
         project: project.value,
       })
@@ -362,32 +166,23 @@ const loadHighlightPage = async () => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
-  let projectId = project.value || projStore.initProjId
+  // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
+  let projectId = project.value || proStore.initProjId
   if (urlProjectId.value && urlProjectId.value !== projectId) {
     console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
-    // 프로젝트 전환
-    await fetchProject(urlProjectId.value)
+    // 회사 전환 (query string 정리 건너뛰기)
+    await projSelect(urlProjectId.value, true)
     projectId = urlProjectId.value
   }
 
-  imprest.value = Cookies.get('get-imprest') === ''
-  dataFilter.value.is_imprest = imprest.value ? '' : '0'
   await fetchBankCodeList()
-  await fetchProAccSortList()
-  await fetchFormAccD1List()
-  await fetchProAllAccD2List()
-  await fetchProAllAccD3List()
-  await fetchProFormAccD2List()
-  await fetchProFormAccD3List()
-  await fetchPayOrderList(projectId)
-  await fetchAllContracts(projectId)
+  await fetchProjectAccounts()
 
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage()
   } else {
-    dataSetup(projectId)
+    await dataSetup(projectId)
   }
   await scrollToHighlight()
 
@@ -401,7 +196,7 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <ProCashAuthGuard>
+  <ProLedgerAuthGuard>
     <Loading v-model:active="loading" />
     <ContentHeader
       :page-title="pageTitle"
@@ -409,39 +204,42 @@ onBeforeRouteLeave(() => {
       selector="ProjectSelect"
       @proj-select="projSelect"
     />
-
     <ContentBody>
       <CCardBody class="pb-5">
-        <ListController ref="listControl" @list-filtering="listFiltering" />
-        <AddProTrans v-if="write_project_cash" :project="project" />
-        <TableTitleRow
-          title="프로젝트 입출금 내역"
-          color="indigo"
-          excel
-          filename="PR자금_입출금_내역.xls"
-          :disabled="!project"
-          :url="excelUrl"
+        <div v-if="route.name === '본사 거래 내역'">
+          <ListController
+            ref="listControl"
+            :project="project as number"
+            :data-filter="dataFilter"
+            @list-filtering="listFiltering"
+          />
+
+          <AddProTrans v-if="write_project_cash" :project="project as number" />
+
+          <TableTitleRow
+            title="본사 입출금 관리"
+            color="indigo"
+            excel
+            :url="excelUrl"
+            filename="본사_출납내역.xls"
+            :disabled="!project"
+          />
+          <ProTransList
+            :project="project as number"
+            :highlight-id="highlightId ?? undefined"
+            :current-page="dataFilter.page || 1"
+            @page-select="pageSelect"
+          />
+        </div>
+
+        <div
+          v-else-if="
+            route.name === '본사 거래 내역 - 수정' || route.name === '본사 거래 내역 - 생성'
+          "
         >
-          <v-tooltip activator="parent" location="top">
-            엑셀은 항상 전체(운영비용 포함) 내역 출력
-          </v-tooltip>
-          <div style="padding-top: 7px">
-            <CFormSwitch
-              v-model="imprest"
-              label="전체(운영비용 포함) 보기"
-              id="all-list-view"
-              @click="setImprest"
-              :disabled="!project"
-            />
-          </div>
-        </TableTitleRow>
-        <ProTransList
-          :project="project as number"
-          :highlight-id="highlightId ?? undefined"
-          :current-page="dataFilter.page || 1"
-          @page-select="pageSelect"
-        />
+          <ProTransForm :project="project as number" />
+        </div>
       </CCardBody>
     </ContentBody>
-  </ProCashAuthGuard>
+  </ProLedgerAuthGuard>
 </template>

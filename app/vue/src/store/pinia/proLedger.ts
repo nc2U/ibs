@@ -5,7 +5,7 @@ import { cleanupParams, errorHandle, message } from '@/utils/helper'
 import type {
   ProjectBank,
   ProjectAccount,
-  ProBankTransaction,
+  ProBankTrans,
   ProAccountingEntry,
   BalanceByAccount,
   ProCalculated,
@@ -128,23 +128,23 @@ export const useProLedger = defineStore('proLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  // state & getters - bankTransaction
-  const bankTransactionFilter = ref<DataFilter>({})
-  const bankTransaction = ref<ProBankTransaction | null>(null)
-  const bankTransactionList = ref<ProBankTransaction[]>([])
-  const bankTransactionCount = ref<number>(0)
+  // state & getters - proBankTrans
+  const proBankTransFilter = ref<DataFilter>({})
+  const proBankTrans = ref<ProBankTrans | null>(null)
+  const proBankTransList = ref<ProBankTrans[]>([])
+  const proBankTransCount = ref<number>(0)
 
-  const transPages = (itemsPerPage: number) => Math.ceil(bankTransactionCount.value / itemsPerPage)
+  const proTransPages = (itemsPerPage: number) => Math.ceil(proBankTransCount.value / itemsPerPage)
 
-  const fetchBankTransaction = async (pk: number) =>
+  const fetchProBankTrans = async (pk: number) =>
     await api
       .get(`/ledger/project-transaction/${pk}/`)
       .then(res => {
-        bankTransaction.value = res.data
+        proBankTrans.value = res.data
       })
       .catch(err => errorHandle(err.response.data))
 
-  const fetchBankTransactionList = async (payload: DataFilter = {}) => {
+  const fetchProBankTransList = async (payload: DataFilter = {}) => {
     const params = cleanupParams({
       project: payload.project,
       from_deal_date: payload.from_date,
@@ -161,14 +161,14 @@ export const useProLedger = defineStore('proLedger', () => {
     return await api
       .get('/ledger/project-transaction/', { params })
       .then(res => {
-        bankTransactionFilter.value = payload
-        bankTransactionList.value = res.data.results
-        bankTransactionCount.value = res.data.count
+        proBankTransFilter.value = payload
+        proBankTransList.value = res.data.results
+        proBankTransCount.value = res.data.count
       })
       .catch(err => errorHandle(err.response.data))
   }
 
-  const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
+  const findProBankTransPage = async (highlightId: number, filters: DataFilter) => {
     const { project } = filters
     let url = `/ledger/project-transaction/find_page/?highlight_id=${highlightId}&project=${project}`
     if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
@@ -188,45 +188,45 @@ export const useProLedger = defineStore('proLedger', () => {
     }
   }
 
-  const createBankTransaction = async (
-    payload: ProBankTransaction & { accData: ProAccountingEntry | null },
+  const createProBankTrans = async (
+    payload: ProBankTrans & { accData: ProAccountingEntry | null },
   ) =>
     await api
       .post(`/ledger/project-composite-transaction/`, payload)
       .then(async res => {
-        return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
+        return await fetchProBankTransList(proBankTransFilter.value).then(() => message())
       })
       .catch(err => errorHandle(err.response.data))
 
-  const updateBankTransaction = async (
-    payload: ProBankTransaction & { accData: ProAccountingEntry | null },
+  const updateProBankTrans = async (
+    payload: ProBankTrans & { accData: ProAccountingEntry | null },
   ) => {
     const { pk, ...formData } = payload
     return await api
       .put(`/ledger/project-composite-transaction/${pk}/`, formData)
       .then(async res => {
-        return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
+        return await fetchProBankTransList(proBankTransFilter.value).then(() => message())
       })
       .catch(err => errorHandle(err.response?.data))
   }
 
-  const patchBankTransaction = async (
-    payload: Partial<ProBankTransaction & { accData: ProAccountingEntry | null }>,
+  const patchProBankTrans = async (
+    payload: Partial<ProBankTrans & { accData: ProAccountingEntry | null }>,
   ) => {
     const { pk, ...formData } = payload
     return await api
       .patch(`/ledger/project-composite-transaction/${pk}/`, formData)
       .then(async res => {
-        return await fetchBankTransactionList(bankTransactionFilter.value)
+        return await fetchProBankTransList(proBankTransFilter.value)
       })
       .catch(err => errorHandle(err.response?.data))
   }
 
-  const deleteBankTransaction = async (pk: number) => {
+  const deleteProBankTrans = async (pk: number) => {
     return await api
       .delete(`/ledger/project-composite-transaction/${pk}/`)
       .then(async () => {
-        return await fetchBankTransactionList(bankTransactionFilter.value).then(() =>
+        return await fetchProBankTransList(proBankTransFilter.value).then(() =>
           message('warning', '알림!', '본사 거래 데이터가 삭제되었습니다.'),
         )
       })
@@ -237,7 +237,7 @@ export const useProLedger = defineStore('proLedger', () => {
   // Status 페이지용 Ledger API (신규 추가)
   // ============================================
   const proLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
-  const dateLedgerTransactions = ref<ProBankTransaction[]>([])
+  const dateLedgerTransactions = ref<ProBankTrans[]>([])
   const dateLedgerForDisplay = computed<LedgerTransactionForDisplay[]>(() =>
     dateLedgerTransactions.value.map(tx => ({
       pk: tx.pk!,
@@ -312,6 +312,15 @@ export const useProLedger = defineStore('proLedger', () => {
       .then(res => (proLedgerLastDealList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  // --- Picker 공유 상태 및 로직 ---
+  const sharedEditingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)
+  const sharedPickerPosition = ref<{ top: number; left: number; width: number } | null>(null)
+
+  const clearSharedPickerState = () => {
+    sharedEditingState.value = null
+    sharedPickerPosition.value = null
+  }
+
   return {
     proBankList,
     getProBanks,
@@ -328,18 +337,18 @@ export const useProLedger = defineStore('proLedger', () => {
 
     fetchProjectAccounts,
 
-    bankTransaction,
-    bankTransactionFilter,
-    bankTransactionList,
-    bankTransactionCount,
-    transPages,
-    fetchBankTransaction,
-    fetchBankTransactionList,
-    findBankTransactionPage,
-    createBankTransaction,
-    updateBankTransaction,
-    patchBankTransaction,
-    deleteBankTransaction,
+    proBankTrans,
+    proBankTransFilter,
+    proBankTransList,
+    proBankTransCount,
+    proTransPages,
+    fetchProBankTrans,
+    fetchProBankTransList,
+    findProBankTransPage,
+    createProBankTrans,
+    updateProBankTrans,
+    patchProBankTrans,
+    deleteProBankTrans,
 
     // Status 페이지용 (신규)
     proLedgerBalanceByAccList,
@@ -359,5 +368,10 @@ export const useProLedger = defineStore('proLedger', () => {
     createProLedgerCalculation,
     patchProLedgerCalculation,
     fetchProLedgerLastDealDate,
+
+    // Shared Picker State
+    sharedEditingState,
+    sharedPickerPosition,
+    clearSharedPickerState,
   }
 })

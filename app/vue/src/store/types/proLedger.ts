@@ -35,7 +35,7 @@ export interface ProjectAccount {
   children_count: number
 }
 
-export interface ProBankTransaction {
+export interface ProBankTrans {
   pk?: number
   transaction_id?: string
   project: number

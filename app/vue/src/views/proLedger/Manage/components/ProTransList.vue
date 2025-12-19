@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
-import { useProCash } from '@/store/pinia/proCash'
-import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
+import { computed, ref } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
 import { write_project_cash } from '@/utils/pageAuth'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import Pagination from '@/components/Pagination'
 import ProTrans from './ProTrans.vue'
 import AccountManage from './AccountManage.vue'
@@ -14,31 +13,18 @@ const props = defineProps({
   highlightId: { type: Number, default: null },
   currentPage: { type: Number, default: 1 },
 })
-const emit = defineEmits([
-  'page-select',
-  'on-delete',
-  'multi-submit',
-  'on-bank-create',
-  'on-bank-update',
-])
+const emit = defineEmits(['page-select'])
 
-const refAccDepth = ref()
+const refAccountManage = ref()
 const refBankAcc = ref()
 
-const proCashStore = useProCash()
-const proCashPages = computed(() => proCashStore.proCashPages)
-const proCashBookList = computed(() => proCashStore.proCashBookList)
-const proCalculated = computed(() => proCashStore.proCalculated) // 최종 정산 일자
+const proLedgerStore = useProLedger()
+const proTransPages = computed(() => proLedgerStore.proTransPages)
+const proBankTransList = computed(() => proLedgerStore.proBankTransList)
+const proCalculated = computed(() => proLedgerStore.proLedgerCalculated) // 최종 정산 일자
 
 const pageSelect = (page: number) => emit('page-select', page)
 
-const multiSubmit = (payload: { formData: ProjectCashBook; sepData: ProjectCashBook | null }) =>
-  emit('multi-submit', payload)
-
-const onDelete = (payload: { project: number; pk: number }) => emit('on-delete', payload)
-
-const onBankCreate = (payload: ProBankAcc) => emit('on-bank-create', payload)
-const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
 const accCallModal = () => {
   if (props.project) refBankAcc.value.callModal()
 }
@@ -78,7 +64,7 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">
           세부계정
           <a href="javascript:void(0)">
-            <CIcon name="cilCog" @click="refAccDepth.callModal()" />
+            <CIcon name="cilCog" @click="refAccountManage.callModal()" />
           </a>
         </CTableHeaderCell>
 
@@ -89,24 +75,24 @@ const accCallModal = () => {
 
     <CTableBody>
       <ProTrans
-        v-for="proCash in proCashBookList"
-        :key="proCash.pk as number"
-        :pro-cash="proCash"
+        v-for="proTrans in proBankTransList"
+        :key="proTrans.pk as number"
+        :pro-trans="proTrans"
         :calculated="proCalculated?.calculated"
-        :is-highlighted="props.highlightId === proCash.pk"
-        :has-children="proCash.has_children || false"
+        :is-highlighted="props.highlightId === proTrans.pk"
       />
+      <!--        :has-children="proTrans.has_children || false"-->
     </CTableBody>
   </CTable>
 
   <Pagination
     :active-page="props.currentPage"
     :limit="8"
-    :pages="proCashPages(15)"
+    :pages="proTransPages(15)"
     class="mt-3"
     @active-page-change="pageSelect"
   />
-  <AccountManage ref="refAccDepth" />
+  <AccountManage ref="refAccountManage" />
 
-  <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
+  <BankAcc ref="refBankAcc" />
 </template>
