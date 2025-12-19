@@ -340,7 +340,6 @@ export const useComLedger = defineStore('comLedger', () => {
   // ============================================
   // Status 페이지용 Ledger API (신규 추가)
   // ============================================
-  const comLedgerBankList = ref<CompanyBank[]>([])
   const comLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
   const dateLedgerTransactions = ref<CompanyBankTransaction[]>([])
   const comLedgerCalculation = ref<ComCalculated[]>([])
@@ -374,12 +373,6 @@ export const useComLedger = defineStore('comLedger', () => {
   const comLedgerLastDealDate = computed(() =>
     comLedgerLastDealList.value.length ? comLedgerLastDealList.value[0] : null,
   )
-
-  const fetchComLedgerBankAccList = async (company: number) =>
-    await api
-      .get(`/ledger/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
-      .then(res => (comLedgerBankList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
 
   const fetchComLedgerBalanceByAccList = async (payload: {
     company: number
@@ -485,7 +478,6 @@ export const useComLedger = defineStore('comLedger', () => {
     clearSharedPickerState,
 
     // Status 페이지용 (신규)
-    comLedgerBankList,
     comLedgerBalanceByAccList,
     dateLedgerTransactions,
     dateLedgerForDisplay,
@@ -493,7 +485,6 @@ export const useComLedger = defineStore('comLedger', () => {
     comLedgerLastDealList,
     comLedgerCalculated,
     comLedgerLastDealDate,
-    fetchComLedgerBankAccList, // 사용됨
     fetchComLedgerBalanceByAccList, // 사용됨
     fetchDateLedgerTransactionList,
     fetchComLedgerCalculation,

@@ -13,7 +13,7 @@ const dateIncTotal = ref(0)
 const dateOutTotal = ref(0)
 
 const ledgerStore = useComLedger()
-const comBankList = computed(() => ledgerStore.comLedgerBankList)
+const comBankList = computed(() => ledgerStore.comBankList)
 const dateCashBook = computed(() => ledgerStore.dateLedgerForDisplay)
 
 const getBankAcc = (num: number) => {
