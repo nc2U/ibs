@@ -75,7 +75,7 @@ const fetchAllComBankAccList = (pk: number) => ledgerStore.fetchAllComBankAccLis
 const fetchBankTransactionList = (payload: Filter) => ledgerStore.fetchBankTransactionList(payload)
 const findBankTransactionPage = (highlightId: number, filters: Filter) =>
   ledgerStore.findBankTransactionPage(highlightId, filters)
-const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalc(com)
+const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalculation(com)
 
 const pageSelect = (page: number) => listControl.value.listFiltering(page)
 

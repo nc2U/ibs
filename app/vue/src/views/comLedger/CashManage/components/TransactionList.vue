@@ -22,7 +22,7 @@ const refBankAcc = ref()
 const ledgerStore = useComLedger()
 const transPages = computed(() => ledgerStore.transPages)
 const bankTransactionList = computed(() => ledgerStore.bankTransactionList)
-const comCalculated = computed(() => ledgerStore.comCalculated) // 최종 정산 일자
+const comCalculated = computed(() => ledgerStore.comLedgerCalculated) // 최종 정산 일자
 
 const pageSelect = (page: number) => emit('page-select', page)
 

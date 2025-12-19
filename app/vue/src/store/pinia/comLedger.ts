@@ -271,42 +271,13 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response?.data))
   }
 
-  // state & getters - comLedgerCalc
-  const comLedgerCalc = ref<ComCalculated[]>([])
-  const comCalculated = computed(() => (comLedgerCalc.value.length ? comLedgerCalc.value[0] : null))
-  const comLastDeal = ref<{ deal_date: string }[]>([])
-  const comLastDealDate = computed(() => (comLastDeal.value.length ? comLastDeal.value[0] : null))
-
-  const fetchComLedgerCalc = async (com: number) =>
-    await api
-      .get(`/ledger/company-calculation/?company=${com}`)
-      .then(res => (comLedgerCalc.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
-  const createComLedgerCalc = async (payload: ComCalculated) =>
-    await api
-      .post(`/ledger/company-calculation/`, payload)
-      .then(res => fetchComLedgerCalc(res.data.company).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
-
-  const patchComLedgerCalc = async (payload: ComCalculated) =>
-    await api
-      .patch(`/ledger/company-calculation/${payload.pk}/`, payload)
-      .then(res => fetchComLedgerCalc(res.data.company).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
-
-  const fetchComLastDeal = async (com: number) =>
-    await api
-      .get(`/ledger/company-last-deal-date/?company=${com}`)
-      .then(res => (comLastDeal.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
   // ============================================
   // Status 페이지용 Ledger API (신규 추가)
   // ============================================
   const comLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
   const dateLedgerTransactions = ref<CompanyBankTransaction[]>([])
   const comLedgerCalculation = ref<ComCalculated[]>([])
+
   const comLedgerLastDealList = ref<{ deal_date: string }[]>([])
 
   // Computed - UI 호환성을 위한 어댑터
@@ -428,19 +399,11 @@ export const useComLedger = defineStore('comLedger', () => {
     patchBankTransaction,
     deleteBankTransaction,
 
-    comLedgerCalc,
-    comCalculated,
-    comLastDeal,
-    comLastDealDate,
-    fetchComLedgerCalc,
-    createComLedgerCalc,
-    patchComLedgerCalc,
-    fetchComLastDeal,
-
     // Status 페이지용 (신규)
     comLedgerBalanceByAccList,
     dateLedgerTransactions,
     dateLedgerForDisplay,
+
     comLedgerCalculation,
     comLedgerLastDealList,
     comLedgerCalculated,
