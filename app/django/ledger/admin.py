@@ -353,14 +353,15 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 @admin.register(ProjectBankTransaction)
 class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectBankTransactionResource
-    list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date',
-                    'sort', 'formatted_amount', 'content', 'is_balanced', 'creator', 'created_at')
+    list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date', 'sort',
+                    'formatted_amount', 'content', 'is_balanced', 'is_imprest', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'bank_account', 'sort', 'is_balanced', ('deal_date', DateRangeFilter))
+    list_filter = ('project', 'bank_account', 'sort', 'is_balanced', 'is_imprest', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note', 'project__name')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')
-    readonly_fields = ('transaction_id', 'created_at', 'updated_at', 'related_accounting_entries', 'validation_detail')
+    readonly_fields = ('transaction_id', 'created_at', 'updated_at',
+                       'related_accounting_entries', 'validation_detail')
 
     def related_accounting_entries(self, obj):
         """연관된 회계분개 항목들을 표시"""
@@ -529,9 +530,9 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'project', 'account_display',
-                    'is_imprest', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
+                    'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'account__category', 'evidence_type', 'is_imprest')
+    list_filter = ('project', 'account__category', 'evidence_type')
     search_fields = ('transaction_id', 'trader', 'project__name', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')
@@ -542,7 +543,7 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
             'fields': ('transaction_id', 'project', 'amount', 'trader')
         }),
         ('계정 정보', {
-            'fields': ('account', 'is_imprest')
+            'fields': ('account',)
         }),
         ('증빙 정보', {
             'fields': ('evidence_type',)

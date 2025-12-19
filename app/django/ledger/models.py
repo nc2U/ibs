@@ -559,6 +559,8 @@ class ProjectBankTransaction(BankTransaction):
     """
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     bank_account = models.ForeignKey(ProjectBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
+    is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부',
+                                     help_text='UI 분류용: 운영비 관리 화면에 표시할 거래 (회계분개 전에도 필터링 가능)')
     updator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='편집자',
                                 related_name='updated_project_transactions')
 
@@ -568,6 +570,7 @@ class ProjectBankTransaction(BankTransaction):
         ordering = ['-deal_date', '-created_at']
         indexes = [
             models.Index(fields=['bank_account', 'deal_date']),
+            models.Index(fields=['is_imprest']),
         ]
 
     @property
@@ -719,17 +722,12 @@ class ProjectAccountingEntry(AccountingEntry):
                                 help_text='회계 분개에 사용할 계정 과목',
                                 limit_choices_to={'is_active': True, 'is_category_only': False})
 
-    # 운영비 여부 (프로젝트 전용)
-    is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부',
-                                     help_text='이 분개가 운영비 항목인지 여부 (급여, 복리후생비, 사무실 관리비 등)')
-
     class Meta:
         verbose_name = '10. 프로젝트 회계 분개'
         verbose_name_plural = '10. 프로젝트 회계 분개'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['account', 'created_at']),
-            models.Index(fields=['is_imprest']),
         ]
 
     def clean(self):

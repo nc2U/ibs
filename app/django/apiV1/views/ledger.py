@@ -518,13 +518,11 @@ class ProjectBankTransactionFilterSet(FilterSet):
     account = NumberFilter(method='filter_by_account', label='계정 과목')
     account_category = CharFilter(method='filter_by_category', label='계정 카테고리')
     account_name = CharFilter(method='filter_by_name', label='계정 이름')
-    is_imprest = BooleanFilter(method='filter_by_imprest', label='운영비 여부')
 
     class Meta:
         model = ProjectBankTransaction
-        fields = ('project', 'bank_account', 'sort',
-                  'from_deal_date', 'to_deal_date',
-                  'account', 'account_category', 'account_name', 'is_imprest')
+        fields = ('project', 'bank_account', 'sort', 'is_imprest', 'from_deal_date',
+                  'to_deal_date', 'account', 'account_category', 'account_name')
 
     @staticmethod
     def filter_by_account(queryset, name, value):
@@ -587,16 +585,6 @@ class ProjectBankTransactionFilterSet(FilterSet):
         # 3. transaction_id 조회 및 필터링
         transaction_ids = ProjectAccountingEntry.objects.filter(
             account_id__in=account_ids
-        ).values_list('transaction_id', flat=True)
-
-        return queryset.filter(transaction_id__in=transaction_ids)
-
-    @staticmethod
-    def filter_by_imprest(queryset, name, value):
-        """운영비 여부로 필터링"""
-        # 운영비 여부가 value인 회계분개의 transaction_id 조회
-        transaction_ids = ProjectAccountingEntry.objects.filter(
-            is_imprest=value
         ).values_list('transaction_id', flat=True)
 
         return queryset.filter(transaction_id__in=transaction_ids)
@@ -793,7 +781,7 @@ class ProjectAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('project', 'account', 'is_imprest', 'evidence_type', 'transaction_id')
+        fields = ('project', 'account', 'evidence_type', 'transaction_id')
 
 
 class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
