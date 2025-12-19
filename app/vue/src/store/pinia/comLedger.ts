@@ -407,7 +407,7 @@ export const useComLedger = defineStore('comLedger', () => {
     comLedgerLastDealList,
     comLedgerLastDealDate,
 
-    fetchComLedgerBalanceByAccList, // 사용됨
+    fetchComLedgerBalanceByAccList,
     fetchDateLedgerTransactionList,
 
     fetchComLedgerCalculation,
