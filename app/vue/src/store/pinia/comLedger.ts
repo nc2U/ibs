@@ -276,11 +276,6 @@ export const useComLedger = defineStore('comLedger', () => {
   // ============================================
   const comLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
   const dateLedgerTransactions = ref<CompanyBankTransaction[]>([])
-  const comLedgerCalculation = ref<ComCalculated[]>([])
-
-  const comLedgerLastDealList = ref<{ deal_date: string }[]>([])
-
-  // Computed - UI 호환성을 위한 어댑터
   const dateLedgerForDisplay = computed<LedgerTransactionForDisplay[]>(() =>
     dateLedgerTransactions.value.map(tx => ({
       pk: tx.pk,
@@ -301,10 +296,12 @@ export const useComLedger = defineStore('comLedger', () => {
     })),
   )
 
+  const comLedgerCalculation = ref<ComCalculated[]>([])
   const comLedgerCalculated = computed(() =>
     comLedgerCalculation.value.length ? comLedgerCalculation.value[0] : null,
   )
 
+  const comLedgerLastDealList = ref<{ deal_date: string }[]>([])
   const comLedgerLastDealDate = computed(() =>
     comLedgerLastDealList.value.length ? comLedgerLastDealList.value[0] : null,
   )
@@ -405,11 +402,14 @@ export const useComLedger = defineStore('comLedger', () => {
     dateLedgerForDisplay,
 
     comLedgerCalculation,
-    comLedgerLastDealList,
     comLedgerCalculated,
+
+    comLedgerLastDealList,
     comLedgerLastDealDate,
+
     fetchComLedgerBalanceByAccList, // 사용됨
     fetchDateLedgerTransactionList,
+
     fetchComLedgerCalculation,
     createComLedgerCalculation,
     patchComLedgerCalculation,
