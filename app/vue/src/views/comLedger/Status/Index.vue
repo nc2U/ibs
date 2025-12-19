@@ -82,7 +82,10 @@ const filename = computed(() => {
   }
 })
 
-const showTab = (num: number) => (compName.value = comp[num])
+const showTab = (num: number) => {
+  compName.value = comp[num]
+  Cookies.set('comLedgerStatus', `${num}`)
+}
 
 const setDate = (dt: string) => {
   date.value = dt
