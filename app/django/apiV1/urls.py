@@ -125,11 +125,11 @@ router.register(r'company-bank-account', cash.ComBankAccountViewSet)
 router.register(r'ledger/company-account', ledger.CompanyAccountViewSet, basename='ledger-company-account')
 router.register(r'ledger/project-account', ledger.ProjectAccountViewSet, basename='ledger-project-account')
 router.register(r'ledger/bank-code', ledger.LedgerBankCodeViewSet, basename='ledger-bank-code')
-router.register(r'ledger/affiliate', ledger.AffiliateViewSet, basename='ledger-affiliate')
 router.register(r'ledger/company-bank-account', ledger.LedgerCompanyBankAccountViewSet,
                 basename='ledger-company-bank-account')
 router.register(r'ledger/project-bank-account', ledger.LedgerProjectBankAccountViewSet,
                 basename='ledger-project-bank-account')
+router.register(r'ledger/affiliate', ledger.AffiliateViewSet, basename='ledger-affiliate')
 router.register(r'ledger/company-transaction', ledger.CompanyBankTransactionViewSet,
                 basename='ledger-company-transaction')
 router.register(r'ledger/project-transaction', ledger.ProjectBankTransactionViewSet,
@@ -143,6 +143,9 @@ router.register(r'ledger/company-composite-transaction', ledger.CompanyComposite
 router.register(r'ledger/project-composite-transaction', ledger.ProjectCompositeTransactionViewSet,
                 basename='ledger-project-composite-transaction')
 router.register(r'company-ledger-calculation', ledger.CompanyLedgerCalculationViewSet)
+router.register(r'project-ledger-calculation', ledger.ProjectLedgerCalculationViewSet)
+
+# cash
 router.register(r'balance-by-acc', cash.BalanceByAccountViewSet, basename='balance-by-acc')  # only list
 router.register(r'cashbook', cash.CashBookViewSet)
 router.register(r'com-cash-calc', cash.CompanyCashCalcViewSet)

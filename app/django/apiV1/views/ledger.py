@@ -10,25 +10,23 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from ledger.models import (
-    BankCode,
-    CompanyAccount, ProjectAccount,
-    CompanyBankAccount, ProjectBankAccount,
+    BankCode, CompanyBankAccount, ProjectBankAccount,
+    CompanyAccount, ProjectAccount, Affiliate,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
-    CompanyLedgerCalculation,
-    Affiliate
+    CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
 from ledger.services.company_transaction import get_company_transactions
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
 from ..permission import IsStaffOrReadOnly
 from ..serializers.ledger import (
-    CompanyAccountSerializer, ProjectAccountSerializer,
+    CompanyAccountSerializer, ProjectAccountSerializer, AffiliateSerializer,
     AccountSearchResultSerializer, LedgerBankCodeSerializer,
     LedgerCompanyBankAccountSerializer, LedgerProjectBankAccountSerializer,
     CompanyBankTransactionSerializer, ProjectBankTransactionSerializer,
     CompanyAccountingEntrySerializer, ProjectAccountingEntrySerializer,
     CompanyCompositeTransactionSerializer, ProjectCompositeTransactionSerializer,
-    CompanyLedgerCalculationSerializer, AffiliateSerializer,
+    CompanyLedgerCalculationSerializer, ProjectLedgerCalculationSerializer,
 )
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
@@ -513,17 +511,6 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         return Response({'results': []})
 
 
-class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
-    """본사 원장 정산 ViewSet"""
-    queryset = CompanyLedgerCalculation.objects.select_related('company', 'creator')
-    serializer_class = CompanyLedgerCalculationSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    filterset_fields = ('company',)
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-
-
 class ProjectBankTransactionFilterSet(FilterSet):
     """프로젝트 은행 거래 필터셋"""
     from_deal_date = DateFilter(field_name='deal_date', lookup_expr='gte', label='거래일자부터')
@@ -986,3 +973,30 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             'transaction_id': str(transaction_id),
             'deleted_entries': deleted_entries_count
         }, status=status.HTTP_204_NO_CONTENT)
+
+
+# ============================================
+# Calculation ViewSets
+# ============================================
+
+
+class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
+    """본사 원장 정산 ViewSet"""
+    queryset = CompanyLedgerCalculation.objects.select_related('company', 'creator')
+    serializer_class = CompanyLedgerCalculationSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    filterset_fields = ('company',)
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+
+class ProjectLedgerCalculationViewSet(viewsets.ModelViewSet):
+    """본사 원장 정산 ViewSet"""
+    queryset = ProjectLedgerCalculation.objects.select_related('project', 'creator')
+    serializer_class = ProjectLedgerCalculationSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    filterset_fields = ('project',)
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)

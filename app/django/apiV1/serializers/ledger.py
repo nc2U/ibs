@@ -3,12 +3,11 @@ from rest_framework import serializers
 
 from ledger.models import (
     BankCode,
-    CompanyAccount, ProjectAccount,
+    CompanyAccount, ProjectAccount, Affiliate,
     CompanyBankAccount, ProjectBankAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
-    CompanyLedgerCalculation,
-    Affiliate,
+    CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
 from payment.models import ContractPayment
 
@@ -196,17 +195,6 @@ class CompanyBankTransactionSerializer(serializers.ModelSerializer):
             # prefetch되지 않은 경우를 위한 폴백(fallback)
             entries = CompanyAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
         return CompanyAccountingEntrySerializer(entries, many=True).data
-
-
-class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
-    """본사 원장 정산 시리얼라이저"""
-    creator_name = serializers.CharField(source='creator.username', read_only=True)
-
-    class Meta:
-        model = CompanyLedgerCalculation
-        fields = ('pk', 'company', 'calculated', 'creator', 'creator_name',
-                  'created_at', 'updated_at')
-        read_only_fields = ('created_at', 'updated_at')
 
 
 class ProjectBankTransactionSerializer(serializers.ModelSerializer):
@@ -417,7 +405,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                 # 신규 분개 추가 (수정 모드에서)
                 if amount is not None:
                     new_entry_total += amount
-        
+
         # 최종 합계 계산
         entries_total = sum(final_entry_amounts.values()) + new_entry_total
 
@@ -515,7 +503,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                             accounting_entry.evidence_type = entry_data['evidence_type']
                         if 'affiliate' in entry_data:
                             accounting_entry.affiliate_id = entry_data['affiliate']
-                        
+
                         accounting_entry.full_clean()
                         accounting_entry.save()
                         accounting_entries.append(accounting_entry)
@@ -902,3 +890,29 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         if accounting_entry.account and accounting_entry.account.is_payment:
             return self._create_contract_payment(accounting_entry, project_id, entry_data)
         return None
+
+
+# ============================================
+# Calculation Serializers
+# ============================================
+
+class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
+    """본사 원장 정산 시리얼라이저"""
+    creator_name = serializers.CharField(source='creator.username', read_only=True)
+
+    class Meta:
+        model = CompanyLedgerCalculation
+        fields = ('pk', 'company', 'calculated', 'creator', 'creator_name',
+                  'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
+
+
+class ProjectLedgerCalculationSerializer(serializers.ModelSerializer):
+    """본사 원장 정산 시리얼라이저"""
+    creator_name = serializers.CharField(source='creator.username', read_only=True)
+
+    class Meta:
+        model = ProjectLedgerCalculation
+        fields = ('pk', 'project', 'calculated', 'creator', 'creator_name',
+                  'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
