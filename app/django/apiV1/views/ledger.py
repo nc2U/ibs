@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 
 from django.db import transaction as db_transaction
@@ -449,8 +450,6 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def daily_transactions(self, request):
         """특정일 거래 내역 조회"""
-        from collections import defaultdict
-
         date = request.query_params.get('date', TODAY)
         company = request.query_params.get('company')
 
@@ -695,6 +694,70 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
         )
 
         return Response(list(result))
+
+    @action(detail=False, methods=['get'])
+    def daily_transactions(self, request):
+        """특정일 거래 내역 조회"""
+
+        date = request.query_params.get('date', TODAY)
+        project = request.query_params.get('project')
+
+        if not project:
+            return Response(
+                {'error': 'project parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 1. 기본 쿼리셋 (잘못된 prefetch 제거)
+        transactions = self.get_queryset().filter(
+            company_id=project,
+            deal_date=date
+        ).select_related(
+            'bank_account', 'sort', 'creator'
+        ).order_by('sort_id', 'created_at')
+
+        # 2. 수동으로 prefetch 하기
+        transaction_ids = [t.transaction_id for t in transactions]
+
+        if transaction_ids:
+            # 관련된 모든 회계 분개를 한 번의 쿼리로 가져오기
+            accounting_entries = ProjectAccountingEntry.objects.filter(
+                transaction_id__in=transaction_ids
+            ).select_related('account')
+
+            # transaction_id를 키로 하는 딕셔너리 생성
+            entries_map = defaultdict(list)
+            for entry in accounting_entries:
+                entries_map[entry.transaction_id].append(entry)
+
+            # 각 거래 객체에 미리 가져온 분개 리스트를 할당
+            for transaction in transactions:
+                transaction.prefetched_accounting_entries = entries_map.get(transaction.transaction_id, [])
+        else:
+            for transaction in transactions:
+                transaction.prefetched_accounting_entries = []
+
+        serializer = ProjectBankTransactionSerializer(transactions, many=True)
+        return Response({'results': serializer.data})
+
+    @action(detail=False, methods=['get'])
+    def last_deal(self, request):
+        """최종 거래 일자 조회"""
+        project = request.query_params.get('project')
+
+        if not project:
+            return Response(
+                {'error': 'project parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        last_transaction = ProjectBankTransaction.objects.filter(
+            project_id=project
+        ).order_by('-deal_date', '-created_at').first()
+
+        if last_transaction:
+            return Response({'results': [{'deal_date': last_transaction.deal_date}]})
+        return Response({'results': []})
 
 
 # ============================================
