@@ -1,14 +1,13 @@
+import logging
 import os
 import tempfile
-from typing import Optional
+
 from celery import shared_task
-from celery.exceptions import Retry
-from django.core.files.storage import default_storage
-from django.db import transaction
-from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from django.conf import settings
-import logging
+from django.contrib.auth import get_user_model
+from django.core.files.storage import default_storage
+from django.core.mail import send_mail
+from django.db import transaction
 
 from .models import (
     CompanyAccount, ProjectAccount,
@@ -99,7 +98,8 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
             'updated_records': result.totals.get('update', 0),
             'skipped_records': result.totals.get('skip', 0),
             'error_count': len(result.base_errors) + len(result.error_rows),
-            'errors': [str(e) for e in result.base_errors] + [', '.join([str(e) for e in err_row.errors]) for err_row in result.error_rows],
+            'errors': [str(e) for e in result.base_errors] + [', '.join([str(e) for e in err_row.errors]) for err_row in
+                                                              result.error_rows],
             'user_email': user.email,
         }
 
@@ -125,7 +125,8 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
         # Celery 재시도 로직
         if self.request.retries < self.max_retries:
             countdown = 2 ** self.request.retries  # 지수 백오프
-            logger.warning(f"Retrying import task in {countdown} seconds (attempt {self.request.retries + 1}/{self.max_retries})")
+            logger.warning(
+                f"Retrying import task in {countdown} seconds (attempt {self.request.retries + 1}/{self.max_retries})")
             raise self.retry(exc=e, countdown=countdown)
 
         return {
@@ -170,10 +171,14 @@ def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource
         resource_model_mapping = {
             'company_account': (CompanyAccountResource, CompanyAccount, 'CompanyAccount'),
             'project_account': (ProjectAccountResource, ProjectAccount, 'ProjectAccount'),
-            'company_bank_transaction': (CompanyBankTransactionResource, CompanyBankTransaction, 'CompanyBankTransaction'),
-            'project_bank_transaction': (ProjectBankTransactionResource, ProjectBankTransaction, 'ProjectBankTransaction'),
-            'company_accounting_entry': (CompanyAccountingEntryResource, CompanyAccountingEntry, 'CompanyAccountingEntry'),
-            'project_accounting_entry': (ProjectAccountingEntryResource, ProjectAccountingEntry, 'ProjectAccountingEntry'),
+            'company_bank_transaction': (CompanyBankTransactionResource, CompanyBankTransaction,
+                                         'CompanyBankTransaction'),
+            'project_bank_transaction': (ProjectBankTransactionResource, ProjectBankTransaction,
+                                         'ProjectBankTransaction'),
+            'company_accounting_entry': (CompanyAccountingEntryResource, CompanyAccountingEntry,
+                                         'CompanyAccountingEntry'),
+            'project_accounting_entry': (ProjectAccountingEntryResource, ProjectAccountingEntry,
+                                         'ProjectAccountingEntry'),
         }
 
         if resource_type not in resource_model_mapping:
