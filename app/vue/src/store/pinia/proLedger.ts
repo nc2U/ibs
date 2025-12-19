@@ -9,6 +9,7 @@ import type {
   ProAccountingEntry,
   BalanceByAccount,
   ProCalculated,
+  LedgerTransactionForDisplay,
 } from '@/store/types/proLedger.ts'
 
 export type DataFilter = {
@@ -237,23 +238,22 @@ export const useProLedger = defineStore('proLedger', () => {
   // ============================================
   const proLedgerBalanceByAccList = ref<BalanceByAccount[]>([])
   const dateLedgerTransactions = ref<ProBankTransaction[]>([])
-  // const dateLedgerForDisplay = computed<LedgerTransactionForDisplay[]>(() =>
-  //   dateLedgerTransactions.value.map(tx => ({
-  //     pk: tx.pk,
-  //     project: tx.project,
-  //     sort: tx.sort,
-  //     sort_desc: tx.sort_name,
-  //     account: null,
-  //     content: tx.content,
-  //     trader: tx.accounting_entries?.[0]?.trader || '',
-  //     bank_account: tx.bank_account,
-  //     bank_account_desc: tx.bank_account_name,
-  //     income: tx.sort === 1 ? tx.amount : null,
-  //     outlay: tx.sort === 2 ? tx.amount : null,
-  //     deal_date: tx.deal_date,
-  //     note: tx.note,
-  //   })),
-  // )
+  const dateLedgerForDisplay = computed<LedgerTransactionForDisplay[]>(() =>
+    dateLedgerTransactions.value.map(tx => ({
+      pk: tx.pk!,
+      project: tx.project,
+      sort: tx.sort,
+      sort_desc: tx.sort_name,
+      account: null,
+      content: tx.content,
+      trader: tx.accounting_entries?.[0]?.trader || '',
+      bank_account: tx.bank_account,
+      bank_account_desc: tx.bank_account_name,
+      amount: tx.amount,
+      deal_date: tx.deal_date,
+      note: tx.note,
+    })),
+  )
 
   const proLedgerCalculation = ref<ProCalculated[]>([])
   const proLedgerCalculated = computed(() =>
@@ -344,7 +344,7 @@ export const useProLedger = defineStore('proLedger', () => {
     // Status 페이지용 (신규)
     proLedgerBalanceByAccList,
     dateLedgerTransactions,
-    // dateLedgerForDisplay,
+    dateLedgerForDisplay,
 
     proLedgerCalculation,
     proLedgerCalculated,

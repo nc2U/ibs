@@ -38,7 +38,7 @@ export interface ProjectAccount {
 export interface ProBankTransaction {
   pk?: number
   transaction_id?: string
-  company: number
+  project: number
   bank_account: number
   bank_account_name: string
   deal_date: string
@@ -86,7 +86,7 @@ export interface ProAccountingEntry {
 // UI 표시용 어댑터 타입 (CashBook 구조 모방)
 export interface LedgerTransactionForDisplay {
   pk: number
-  company: number
+  project: number
   sort: number
   sort_desc?: string
   account: null
@@ -94,8 +94,7 @@ export interface LedgerTransactionForDisplay {
   trader: string
   bank_account: number
   bank_account_desc?: string
-  income: number | null
-  outlay: number | null
+  amount: number
   deal_date: string
   note: string
 }
