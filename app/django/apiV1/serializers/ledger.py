@@ -907,6 +907,12 @@ class CompanyLedgerCalculationSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'updated_at')
 
 
+class CompanyLedgerLastDealDateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyBankTransaction
+        fields = ('deal_date',)
+
+
 class ProjectLedgerCalculationSerializer(serializers.ModelSerializer):
     """본사 원장 정산 시리얼라이저"""
     creator_name = serializers.CharField(source='creator.username', read_only=True)
@@ -916,3 +922,9 @@ class ProjectLedgerCalculationSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'calculated', 'creator', 'creator_name',
                   'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
+
+
+class ProjectLedgerLastDealDateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectBankTransaction
+        fields = ('deal_date',)

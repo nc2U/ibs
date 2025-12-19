@@ -26,7 +26,8 @@ from ..serializers.ledger import (
     CompanyBankTransactionSerializer, ProjectBankTransactionSerializer,
     CompanyAccountingEntrySerializer, ProjectAccountingEntrySerializer,
     CompanyCompositeTransactionSerializer, ProjectCompositeTransactionSerializer,
-    CompanyLedgerCalculationSerializer, ProjectLedgerCalculationSerializer,
+    CompanyLedgerCalculationSerializer, ProjectLedgerCalculationSerializer, CompanyLedgerLastDealDateSerializer,
+    ProjectLedgerLastDealDateSerializer,
 )
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
@@ -991,6 +992,16 @@ class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
 
+class CompanyLedgerLastDealDateViewSet(viewsets.ModelViewSet):
+    queryset = CompanyBankTransaction.objects.all()
+    serializer_class = CompanyLedgerLastDealDateSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+
+    def get_queryset(self):
+        company = self.request.query_params.get('company')
+        return CompanyBankTransaction.objects.filter(company_id=company).order_by('-deal_date')[:1]
+
+
 class ProjectLedgerCalculationViewSet(viewsets.ModelViewSet):
     """본사 원장 정산 ViewSet"""
     queryset = ProjectLedgerCalculation.objects.select_related('project', 'creator')
@@ -1000,3 +1011,13 @@ class ProjectLedgerCalculationViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+
+class ProjectLedgerLastDealDateViewSet(viewsets.ModelViewSet):
+    queryset = ProjectBankTransaction.objects.all()
+    serializer_class = ProjectLedgerLastDealDateSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+
+    def get_queryset(self):
+        company = self.request.query_params.get('company')
+        return ProjectBankTransaction.objects.filter(company_id=company).order_by('-deal_date')[:1]

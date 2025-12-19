@@ -142,8 +142,10 @@ router.register(r'ledger/company-composite-transaction', ledger.CompanyComposite
                 basename='ledger-company-composite-transaction')
 router.register(r'ledger/project-composite-transaction', ledger.ProjectCompositeTransactionViewSet,
                 basename='ledger-project-composite-transaction')
-router.register(r'company-ledger-calculation', ledger.CompanyLedgerCalculationViewSet)
-router.register(r'project-ledger-calculation', ledger.ProjectLedgerCalculationViewSet)
+router.register(r'ledger/company-calculation', ledger.CompanyLedgerCalculationViewSet)
+router.register(r'ledger/project-calculation', ledger.ProjectLedgerCalculationViewSet)
+router.register(r'ledger/company-last-deal-date', ledger.CompanyLedgerLastDealDateViewSet)
+router.register(r'ledger/project-last-deal-date', ledger.ProjectLedgerLastDealDateViewSet)
 
 # cash
 router.register(r'balance-by-acc', cash.BalanceByAccountViewSet, basename='balance-by-acc')  # only list
