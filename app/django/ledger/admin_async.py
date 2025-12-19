@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.template.response import TemplateResponse
-from django.urls import path, reverse
+from django.urls import path
 from django.utils import timezone
 from django.utils.html import format_html
 from import_export.admin import ImportExportMixin
@@ -14,11 +14,6 @@ from .models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     ImportJob
-)
-from .resources import (
-    CompanyAccountResource, ProjectAccountResource,
-    CompanyBankTransactionResource, ProjectBankTransactionResource,
-    CompanyAccountingEntryResource, ProjectAccountingEntryResource
 )
 from .tasks import async_import_ledger_account, async_export_ledger_account
 
@@ -31,7 +26,7 @@ class AsyncImportExportMixin(ImportExportMixin):
     async_status_template = 'admin/ledger/async_status.html'
 
     # 파일 크기 임계값 (바이트) - 1MB 이상의 파일을 비동기 처리
-    async_threshold_size = 1 * 1024 * 1024  # 1MB
+    async_threshold_size = 0.5 * 1024 * 1024  # 0.5MB
 
     def import_action(self, request, *args, **kwargs):
         """기존 import 버튼을 async-import로 리다이렉트"""
@@ -260,7 +255,7 @@ class AsyncImportExportMixin(ImportExportMixin):
 class ImportJobAdmin(admin.ModelAdmin):
     """가져오기/내보내기 작업 관리"""
     list_display = ('id', 'job_type', 'resource_type', 'status', 'progress_bar',
-                   'success_count', 'error_count', 'creator', 'created_at', 'duration_display')
+                    'success_count', 'error_count', 'creator', 'created_at', 'duration_display')
     list_filter = ('job_type', 'resource_type', 'status', 'created_at')
     search_fields = ('task_id', 'creator__username', 'error_message')
     readonly_fields = ('task_id', 'created_at', 'started_at', 'completed_at', 'duration_display')
