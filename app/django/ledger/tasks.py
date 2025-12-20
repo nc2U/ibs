@@ -85,25 +85,45 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
             dataset = Dataset()
             dataset.load(file.read(), format='xlsx')
 
-            # 트랜잭션 내에서 가져오기 실행
+            # 1. Dry run to validate data first
+            dry_run_result = resource.import_data(dataset, dry_run=True, raise_errors=False)
+
+            if dry_run_result.has_validation_errors():
+                # If validation errors are found, do not import. Return errors.
+                errors = [str(e.error) for e in dry_run_result.base_errors] + \
+                         [f"Row {num} (Data: {row_data}): {', '.join([str(e) for e in errs])}"
+                          for num, row_data, errs in dry_run_result.row_errors()]
+                import_result = {
+                    'success': False,
+                    'model': model_name,
+                    'total_rows': len(dataset),
+                    'new_records': 0,
+                    'updated_records': 0,
+                    'skipped_records': len(dataset),
+                    'error_count': len(dry_run_result.base_errors) + len(dry_run_result.row_errors()),
+                    'errors': errors,
+                    'user_email': user.email,
+                }
+                logger.warning(f"Import validation failed for user {user.username}: {errors}")
+                # Send failure email if needed, then return
+                if hasattr(settings, 'EMAIL_HOST') and settings.EMAIL_HOST:
+                    send_import_error_email(user.email, f"Validation failed. Errors: {errors[:5]}")
+                return import_result
+
+            # 2. If dry run is successful, proceed with actual import
             with transaction.atomic():
-                result = resource.import_data(dataset, dry_run=False, raise_errors=False)
+                result = resource.import_data(dataset, dry_run=False, raise_errors=True)  # raise_errors=True for safety
 
-        has_errors = result.has_errors() or result.has_validation_errors()
-        error_count = len(result.base_errors) + len(result.row_errors())
-
-        # 결과 정리
+        # This part is now for a guaranteed successful import
         import_result = {
-            'success': not has_errors,  # 에러가 있으면 False
+            'success': True,
             'model': model_name,
             'total_rows': len(dataset),
             'new_records': result.totals.get('new', 0),
             'updated_records': result.totals.get('update', 0),
             'skipped_records': result.totals.get('skip', 0),
-            'error_count': error_count,
-            'errors': [str(e.error) for e in result.base_errors] +
-                      [f"Row {num} (Data: {row_data}): {', '.join([str(e) for e in errs])}"
-                       for num, row_data, errs in result.row_errors()],
+            'error_count': 0,
+            'errors': [],
             'user_email': user.email,
         }
 
