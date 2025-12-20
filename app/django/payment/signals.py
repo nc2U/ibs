@@ -26,27 +26,52 @@ def manage_contract_payment_auto_sync(sender, instance, created, **kwargs):
 
     if is_payment_account:
         # is_payment 계정인 경우, ContractPayment 객체를 가져오거나 생성 (get_or_create 사용)
+        defaults = {
+            'project': instance.project,
+            'is_payment_mismatch': False,
+            'creator': instance.creator,
+            'contract': instance.contract,  # Initial contract assignment
+        }
         contract_payment, created = ContractPayment.objects.get_or_create(
             accounting_entry=instance,
-            defaults={
-                'project': instance.project,
-                'is_payment_mismatch': False,
-                'creator': None,
-            }
+            defaults=defaults
         )
 
-        # 이미 존재하던 객체이고, mismatch 상태였다면 정상으로 되돌림
-        if not created and contract_payment.is_payment_mismatch:
-            contract_payment.is_payment_mismatch = False
-            contract_payment.save(update_fields=['is_payment_mismatch', 'updated_at'])
+        update_fields = []
+        # If it was not newly created, we might need to update its fields
+        if not created:
+            # Sync contract if it changed on ProjectAccountingEntry
+            if contract_payment.contract != instance.contract:
+                contract_payment.contract = instance.contract
+                update_fields.append('contract')
 
-    else:  # is_payment 계정이 아닌 경우
-        # 관련 ContractPayment가 존재하고, mismatch 상태가 아니라면 mismatch로 변경
+            # Reset mismatch flag if it was True
+            if contract_payment.is_payment_mismatch:
+                contract_payment.is_payment_mismatch = False
+                update_fields.append('is_payment_mismatch')
+
+            if update_fields:
+                contract_payment.save(update_fields=update_fields + ['updated_at'])
+
+    else:  # not is_payment_account
+        # Try to get existing contract_payment
         try:
             contract_payment = instance.contract_payment
+            # If a ContractPayment exists for a non-payment account, its contract field should sync with instance.contract
+            # and it should be flagged as mismatched if it's not already.
+            update_fields = []
             if not contract_payment.is_payment_mismatch:
                 contract_payment.is_payment_mismatch = True
-                contract_payment.save(update_fields=['is_payment_mismatch', 'updated_at'])
+                update_fields.append('is_payment_mismatch')
+
+            # Sync contract or null. This handles the user's specific request for existing ContractPayments.
+            if contract_payment.contract != instance.contract:
+                contract_payment.contract = instance.contract
+                update_fields.append('contract')
+
+            if update_fields:
+                contract_payment.save(update_fields=update_fields + ['updated_at'])
+
         except ContractPayment.DoesNotExist:
             # is_payment 계정이 아니며 ContractPayment도 없으므로 아무것도 하지 않음
             pass

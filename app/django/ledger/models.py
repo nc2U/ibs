@@ -752,11 +752,13 @@ class ProjectAccountingEntry(AccountingEntry):
                 'account': f'"{self.account.name}"는 비활성 계정이므로 사용할 수 없습니다.'
             })
 
-        # is_related_contract 검증
-        if self.account and self.account.is_related_contract and not self.contract:
-            raise ValidationError({
-                'contract': f'"{self.account.name}" 계정은 공급계약 선택이 필수입니다.'
-            })
+        # is_related_contract 검증 (수정됨)
+        # is_payment가 False이고 is_related_contract가 True인 경우에만 contract 등록을 강제
+        if self.account and self.account.is_related_contract and not self.account.is_payment:
+            if not self.contract:
+                raise ValidationError({
+                    'contract': f'"{self.account.name}" 계정은 is_payment가 아닌 계약 추적용 계정이므로 공급계약 선택이 필수입니다.'
+                })
 
     def save(self, *args, **kwargs):
         """저장 전 유효성 검증"""
