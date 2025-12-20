@@ -582,8 +582,13 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'green' if obj.sort_id == 1 else 'red'  # 1=입금, 2=출금
-        sign = '+' if obj.sort_id == 1 else '-'
+        sort_obj = obj.sort
+        if sort_obj:
+            color = 'green' if sort_obj.id == 1 else 'red'  # 1=입금, 2=출금
+            sign = '+' if sort_obj.id == 1 else '-'
+        else:
+            color = 'black'
+            sign = ''
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
