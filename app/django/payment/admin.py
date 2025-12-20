@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.humanize.templatetags.humanize import intcomma
 from django.utils.html import format_html
 from import_export.admin import ImportExportMixin
 
@@ -174,7 +175,9 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        return format_html('{:,}원', obj.amount)
+        if obj.amount is None:
+            return '-'
+        return f'{intcomma(obj.amount)}원'
 
     @admin.display(description='결제 상태')
     def payment_status_display(self, obj):

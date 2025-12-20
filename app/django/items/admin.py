@@ -17,7 +17,7 @@ class UnitTypeAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project',)
 
     def styled_color(self, obj):
-        return format_html(f'<div style="width:15px; background:{obj.color};">&nbsp;</div>')
+        return format_html('<div style="width:15px; background:{};">&nbsp;</div>', obj.color)
 
     styled_color.short_description = '타입색상'
 
