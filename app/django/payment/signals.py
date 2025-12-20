@@ -19,11 +19,11 @@ def manage_contract_payment_auto_sync(sender, instance, created, **kwargs):
     3. is_payment=False → True → mismatch 플래그 해제
     """
 
-    # project_account_d3가 없으면 처리하지 않음
-    if not instance.project_account_d3:
+    # account가 없으면 처리하지 않음
+    if not instance.account:
         return
 
-    is_payment_account = instance.project_account_d3.is_payment
+    is_payment_account = instance.account.is_payment
     has_contract_payment = hasattr(instance, 'contract_payment')
 
     if is_payment_account and not has_contract_payment:
