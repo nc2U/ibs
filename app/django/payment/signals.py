@@ -31,6 +31,8 @@ def manage_contract_payment_auto_sync(sender, instance, created, **kwargs):
             'is_payment_mismatch': False,
             'creator': instance.creator,
             'contract': instance.contract,  # Initial contract assignment
+            'installment_order': instance.installment_order,  # 데이터 이관용 코드 - 이관 후 삭제
+            'refund_contractor': instance.refund_contractor  # 데이터 이관용 코드 - 이관 후 삭제
         }
         contract_payment, created = ContractPayment.objects.get_or_create(
             accounting_entry=instance,
