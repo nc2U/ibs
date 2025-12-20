@@ -150,8 +150,8 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
             user = User.objects.get(id=user_id)
             if hasattr(settings, 'EMAIL_HOST') and settings.EMAIL_HOST:
                 send_import_error_email(user.email, error_msg)
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to send import error email: {e}")
 
         # Celery 재시도 로직
         if self.request.retries < self.max_retries:
@@ -265,8 +265,8 @@ def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource
             user = User.objects.get(id=user_id)
             if hasattr(settings, 'EMAIL_HOST') and settings.EMAIL_HOST:
                 send_export_error_email(user.email, error_msg)
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to send export error email: {e}")
 
         return {
             'success': False,
