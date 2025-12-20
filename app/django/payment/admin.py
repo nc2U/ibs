@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportMixin
 
 from .models import (InstallmentPaymentOrder, SalesPriceByGT, PaymentPerInstallment,
@@ -183,18 +184,18 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
     def payment_status_display(self, obj):
         """결제계정 일치 여부 및 완성도 표시"""
         if obj.is_payment_mismatch:
-            return format_html(
+            return mark_safe(
                 '<span style="color: red; font-weight: bold;">❌ 계정 불일치</span>'
             )
 
         # 베이스 인스턴스인지 확인 (계약 정보 미완성)
         if not obj.contract:
-            return format_html(
+            return mark_safe(
                 '<span style="color: orange;">⚠️ 세부 정보 미입력</span>'
             )
 
         # 완전한 상태
-        return format_html(
+        return mark_safe(
             '<span style="color: green;">✅ 정상</span>'
         )
 
