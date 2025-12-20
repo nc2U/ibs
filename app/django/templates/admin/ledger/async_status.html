@@ -106,6 +106,15 @@
 #status-indicator.processing { background: #007cba; color: white; }
 #status-indicator.completed { background: #28a745; color: white; }
 #status-indicator.failed { background: #dc3545; color: white; }
+
+.error-details-table table {
+    width: 100%;
+}
+.error-details-table pre {
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+}
 </style>
 {% endblock %}
 
@@ -166,9 +175,46 @@
 
 {% if job.error_message %}
 <div class="module">
-    <h2>오류 메시지</h2>
+    <h2>오류 메시지 (요약)</h2>
     <div class="error-messages">
         <pre id="error-messages">{{ job.error_message }}</pre>
+    </div>
+</div>
+{% endif %}
+
+{% if job.status == 'failed' and job.error_details %}
+<div class="module">
+    <h2>상세 오류 내역</h2>
+    <div id="changelist" class="error-details-table">
+        <div class="results">
+            <table>
+                <thead>
+                    <tr>
+                        <th><div class="text"><span>행 번호</span></div></th>
+                        <th><div class="text"><span>오류 데이터</span></div></th>
+                        <th><div class="text"><span>오류 내용</span></div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row_error in job.error_details %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <td>{{ row_error.row_number }}</td>
+                        <td>
+                            {# dict.values for Django < 4.0, or just the list for newer versions #}
+                            <pre>{% for val in row_error.row_data %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}</pre>
+                        </td>
+                        <td>
+                            <ul>
+                            {% for error in row_error.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endif %}

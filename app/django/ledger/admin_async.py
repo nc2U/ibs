@@ -165,10 +165,11 @@ class AsyncImportExportMixin(ImportExportMixin):
                     job.error_count = result.get('error_count', 0)
                     if result.get('errors'):
                         job.error_message = '\n'.join(result['errors'][:10])  # 처음 10개 오류만
-                else: # if not result or not result.get('success')
+                else:  # if not result or not result.get('success')
                     job.status = ImportJob.FAILED
                     job.error_count = result.get('error_count', 0)
-                    job.error_message = '\n'.join(result.get('errors', [])[:10]) # Get errors reported by task
+                    job.error_message = '\n'.join(result.get('errors', [])[:10])  # Keep summary
+                    job.error_details = result.get('row_errors')  # Save structured data
                 job.completed_at = timezone.now()
                 job.save()
 

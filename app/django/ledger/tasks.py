@@ -97,9 +97,12 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
 
             if dry_run_result.has_validation_errors():
                 # If validation errors are found, do not import. Return errors.
-                errors = [str(e.error) for e in dry_run_result.base_errors] + \
-                         [f"Row {num} (Data: {row_data}): {', '.join([str(e) for e in errs])}"
-                          for num, row_data, errs in dry_run_result.row_errors()]
+                base_errors = [str(e.error) for e in dry_run_result.base_errors]
+                row_errors = [
+                    {'row_number': num, 'row_data': row_data, 'errors': [str(e) for e in errs]}
+                    for num, row_data, errs in dry_run_result.row_errors()
+                ]
+
                 import_result = {
                     'success': False,
                     'model': model_name,
@@ -107,14 +110,15 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
                     'new_records': 0,
                     'updated_records': 0,
                     'skipped_records': len(dataset),
-                    'error_count': len(dry_run_result.base_errors) + len(dry_run_result.row_errors()),
-                    'errors': errors,
+                    'error_count': len(base_errors) + len(row_errors),
+                    'errors': base_errors,  # For the text summary
+                    'row_errors': row_errors,  # For the detailed table
                     'user_email': user.email,
                 }
-                logger.warning(f"Import validation failed for user {user.username}: {errors}")
+                logger.warning(f"Import validation failed for user {user.username}: {base_errors} | {row_errors}")
                 # Send failure email if needed, then return
                 if hasattr(settings, 'EMAIL_HOST') and settings.EMAIL_HOST:
-                    send_import_error_email(user.email, f"Validation failed. Errors: {errors[:5]}")
+                    send_import_error_email(user.email, f"Validation failed. Errors: {base_errors[:5]}")
                 return import_result
 
             # 2. If dry run is successful, proceed with actual import

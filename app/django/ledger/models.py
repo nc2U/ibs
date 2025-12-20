@@ -846,6 +846,7 @@ class ImportJob(models.Model):
     success_count = models.IntegerField('성공 건수', default=0)
     error_count = models.IntegerField('오류 건수', default=0)
     error_message = models.TextField('오류 메시지', blank=True)
+    error_details = models.JSONField('오류 상세', null=True, blank=True)
     result_file = models.FileField('결과 파일', upload_to='ledger_export_results/', blank=True, null=True)
     creator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, verbose_name='생성자',
                                 related_name='ledger_import_jobs')
