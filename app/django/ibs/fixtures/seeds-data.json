@@ -433,8 +433,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -450,8 +450,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -467,8 +467,8 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -484,8 +484,8 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -501,8 +501,8 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -518,8 +518,8 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -535,8 +535,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -552,8 +552,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -569,8 +569,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -586,8 +586,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -603,8 +603,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -620,8 +620,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -637,8 +637,8 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -654,8 +654,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -671,8 +671,8 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -688,8 +688,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -705,8 +705,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -722,8 +722,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -739,8 +739,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -756,8 +756,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -773,8 +773,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -790,8 +790,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -807,8 +807,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -824,8 +824,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -841,8 +841,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -858,8 +858,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -875,8 +875,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -892,8 +892,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -909,8 +909,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -926,8 +926,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -936,15 +936,15 @@
     "fields": {
       "code": "5150",
       "name": "복리후생비",
-      "description": "직원의 복지를 위해 회사가 제공하는 비금전적 보상과 서비스 비용, 직원 경조사비",
+      "description": "직원의 복지 향상을 위해 회사가 제공하는 비금전적 보상과 서비스에 발생한 비용",
       "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -960,8 +960,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -977,8 +977,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -994,8 +994,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1011,8 +1011,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1028,8 +1028,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1045,8 +1045,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1055,15 +1055,15 @@
     "fields": {
       "code": "5220",
       "name": "업무추진비",
-      "description": "업무와 관련하여 접대비, 교제, 사례 등의 명목 하에 지불한 비용, 거래처 경조사비",
+      "description": "업무와 관련하여 접대, 교제, 사례 등의 명목 하에 지불한 비용",
       "parent": 4,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1079,8 +1079,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1096,8 +1096,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1113,8 +1113,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1130,8 +1130,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1147,8 +1147,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1164,8 +1164,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1181,8 +1181,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1198,8 +1198,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1215,8 +1215,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1232,8 +1232,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1249,8 +1249,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1266,8 +1266,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1283,8 +1283,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1300,8 +1300,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1317,8 +1317,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1334,8 +1334,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1351,8 +1351,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1368,8 +1368,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1385,8 +1385,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1402,8 +1402,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1419,8 +1419,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1436,8 +1436,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1453,8 +1453,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1470,8 +1470,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1487,8 +1487,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1504,8 +1504,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1521,8 +1521,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1538,8 +1538,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1555,8 +1555,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1572,8 +1572,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1589,8 +1589,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1606,8 +1606,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1623,8 +1623,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1640,8 +1640,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1657,8 +1657,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1674,8 +1674,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1691,8 +1691,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1708,8 +1708,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1725,8 +1725,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1742,8 +1742,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1759,8 +1759,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1776,8 +1776,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1793,8 +1793,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1810,8 +1810,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1827,8 +1827,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1844,8 +1844,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1861,8 +1861,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1878,8 +1878,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1895,8 +1895,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1912,8 +1912,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1929,8 +1929,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1946,8 +1946,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1963,8 +1963,8 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1980,8 +1980,8 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -1997,8 +1997,8 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2014,8 +2014,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2031,8 +2031,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2048,8 +2048,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2065,8 +2065,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": true,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": true
     }
   },
   {
@@ -2082,8 +2082,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": true,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": true
     }
   },
   {
@@ -2099,8 +2099,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": true,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": true
     }
   },
   {
@@ -2116,8 +2116,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": true,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": true
     }
   },
   {
@@ -2133,8 +2133,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2150,8 +2150,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2167,8 +2167,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2184,8 +2184,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2201,8 +2201,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2218,8 +2218,8 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2235,8 +2235,8 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
-      "order": 0
+      "order": 0,
+      "requires_affiliate": false
     }
   },
   {
@@ -2252,7 +2252,6 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2271,7 +2270,6 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2290,7 +2288,6 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2309,7 +2306,6 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2328,7 +2324,6 @@
       "is_category_only": true,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2347,7 +2342,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2366,7 +2360,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2385,7 +2378,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2404,7 +2396,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2423,7 +2414,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2442,7 +2432,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2461,7 +2450,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2480,7 +2468,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2499,7 +2486,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2518,7 +2504,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2537,7 +2522,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2556,7 +2540,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2575,7 +2558,6 @@
       "is_category_only": true,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2594,7 +2576,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": true,
       "is_related_contract": true
@@ -2613,7 +2594,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2632,7 +2612,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2651,7 +2630,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2670,7 +2648,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": true,
       "is_related_contract": true
@@ -2689,7 +2666,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2708,7 +2684,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2727,7 +2702,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2746,7 +2720,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2765,7 +2738,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2784,7 +2756,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2803,7 +2774,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -2822,7 +2792,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2841,7 +2810,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2860,7 +2828,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2879,7 +2846,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2898,7 +2864,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2917,7 +2882,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2936,7 +2900,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2955,7 +2918,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2974,7 +2936,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -2993,7 +2954,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3012,7 +2972,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3031,7 +2990,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3050,7 +3008,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3069,7 +3026,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3088,7 +3044,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3107,7 +3062,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -3126,7 +3080,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3145,7 +3098,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3164,7 +3116,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": true
@@ -3183,7 +3134,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3202,7 +3152,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3221,7 +3170,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3240,7 +3188,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3259,7 +3206,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3278,7 +3224,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3297,7 +3242,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3316,7 +3260,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3335,7 +3278,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3354,7 +3296,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3373,7 +3314,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3392,7 +3332,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3411,7 +3350,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3430,7 +3368,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3449,7 +3386,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3468,7 +3404,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3487,7 +3422,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3506,7 +3440,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3525,7 +3458,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3544,7 +3476,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3563,7 +3494,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3582,7 +3512,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3593,15 +3522,14 @@
     "pk": 72,
     "fields": {
       "code": "5540",
-      "name": "학교용지 부담금",
-      "description": "학교용지 부담금",
+      "name": "미술 장식품비",
+      "description": "미술 장식품비",
       "parent": 13,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3612,15 +3540,14 @@
     "pk": 73,
     "fields": {
       "code": "5550",
-      "name": "과밀 부담금",
-      "description": "과밀 부담금",
+      "name": "학교용지 부담금",
+      "description": "학교용지 부담금",
       "parent": 13,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3631,15 +3558,14 @@
     "pk": 74,
     "fields": {
       "code": "5560",
-      "name": "기반시설 설치비용",
-      "description": "기반시설 설치비용",
+      "name": "과밀 부담금",
+      "description": "과밀 부담금",
       "parent": 13,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3650,15 +3576,14 @@
     "pk": 75,
     "fields": {
       "code": "5570",
-      "name": "전용 부담금",
-      "description": "농지, 산지 전용 부담금 등",
+      "name": "기반시설 설치비용",
+      "description": "기반시설 설치비용",
       "parent": 13,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3669,15 +3594,14 @@
     "pk": 76,
     "fields": {
       "code": "5580",
-      "name": "기타 부담금",
-      "description": "기타 각종 부담금 등",
+      "name": "전용 부담금",
+      "description": "농지, 산지 전용 부담금 등",
       "parent": 13,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3688,15 +3612,14 @@
     "pk": 77,
     "fields": {
       "code": "5590",
-      "name": "부가가치세",
-      "description": "부가가치세",
+      "name": "기타 부담금",
+      "description": "기타 각종 부담금 등",
       "parent": 13,
       "depth": 2,
       "category": "expense",
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3705,6 +3628,24 @@
   {
     "model": "ledger.projectaccount",
     "pk": 78,
+    "fields": {
+      "code": "5600",
+      "name": "부가가치세",
+      "description": "부가가치세",
+      "parent": 13,
+      "depth": 2,
+      "category": "expense",
+      "is_category_only": false,
+      "direction": "withdraw",
+      "is_active": true,
+      "order": 0,
+      "is_payment": false,
+      "is_related_contract": false
+    }
+  },
+  {
+    "model": "ledger.projectaccount",
+    "pk": 79,
     "fields": {
       "code": "5710",
       "name": "시행사 운영비",
@@ -3715,7 +3656,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3723,7 +3663,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 79,
+    "pk": 80,
     "fields": {
       "code": "5720",
       "name": "신탁비",
@@ -3734,7 +3674,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3742,7 +3681,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 80,
+    "pk": 81,
     "fields": {
       "code": "5730",
       "name": "운영관련 용역비",
@@ -3753,7 +3692,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3761,7 +3699,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 81,
+    "pk": 82,
     "fields": {
       "code": "5740",
       "name": "예비비",
@@ -3772,7 +3710,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3780,7 +3717,25 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 82,
+    "pk": 83,
+    "fields": {
+      "code": "5741",
+      "name": "소송비용(변호사 선임료 등)",
+      "description": "소송비용 및 비예산 패소판결금 등",
+      "parent": 81,
+      "depth": 3,
+      "category": "expense",
+      "is_category_only": false,
+      "direction": "withdraw",
+      "is_active": true,
+      "order": 0,
+      "is_payment": false,
+      "is_related_contract": false
+    }
+  },
+  {
+    "model": "ledger.projectaccount",
+    "pk": 84,
     "fields": {
       "code": "5750",
       "name": "업무대행비",
@@ -3791,7 +3746,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3799,7 +3753,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 83,
+    "pk": 85,
     "fields": {
       "code": "5810",
       "name": "B/L 수수료, 이자",
@@ -3810,7 +3764,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3818,7 +3771,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 84,
+    "pk": 86,
     "fields": {
       "code": "5820",
       "name": "P/F 수수료, 이자",
@@ -3829,7 +3782,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3837,7 +3789,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 85,
+    "pk": 87,
     "fields": {
       "code": "5830",
       "name": "중도금 이자(무이자시)",
@@ -3848,7 +3800,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3856,7 +3807,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 86,
+    "pk": 88,
     "fields": {
       "code": "5840",
       "name": "기타 금융비용",
@@ -3867,7 +3818,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3875,7 +3825,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 87,
+    "pk": 89,
     "fields": {
       "code": "5910",
       "name": "영업외 비용(원천세)",
@@ -3886,7 +3836,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3894,7 +3843,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 88,
+    "pk": 90,
     "fields": {
       "code": "5920",
       "name": "영업외 비용(기타잡손실)",
@@ -3905,7 +3854,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3913,7 +3861,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 89,
+    "pk": 91,
     "fields": {
       "code": "5930",
       "name": "영업외 비용(위약금)",
@@ -3924,7 +3872,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3932,7 +3879,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 90,
+    "pk": 92,
     "fields": {
       "code": "6010",
       "name": "대체(출금)",
@@ -3943,7 +3890,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3951,7 +3897,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 91,
+    "pk": 93,
     "fields": {
       "code": "6020",
       "name": "대체(입금)",
@@ -3962,7 +3908,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3970,7 +3915,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 92,
+    "pk": 94,
     "fields": {
       "code": "7010",
       "name": "거래취소(출금)",
@@ -3981,7 +3926,6 @@
       "is_category_only": false,
       "direction": "withdraw",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
@@ -3989,7 +3933,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 93,
+    "pk": 95,
     "fields": {
       "code": "7020",
       "name": "거래취소(입금)",
@@ -4000,7 +3944,6 @@
       "is_category_only": false,
       "direction": "deposit",
       "is_active": true,
-      "requires_affiliate": false,
       "order": 0,
       "is_payment": false,
       "is_related_contract": false
