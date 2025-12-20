@@ -129,14 +129,12 @@ class ContractPaymentQuerySet(models.QuerySet):
     def with_discount_eligible(self):
         """선납 할인 대상 필터"""
         return self.filter(
-            payment_type='PAYMENT',
             installment_order__is_prep_discount=True
         )
 
     def with_penalty_eligible(self):
         """연체 가산 대상 필터"""
         return self.filter(
-            payment_type='PAYMENT',
             installment_order__is_late_penalty=True
         )
 
@@ -194,17 +192,6 @@ class ContractPayment(models.Model):
     installment_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.SET_NULL,
                                           null=True, blank=True, verbose_name='납부회차', help_text='분할 납부 회차 정보')
 
-    # 결제 유형 (베이스 인스턴스에서는 기본값)
-    payment_type = models.CharField(max_length=10,
-                                    choices=[('PAYMENT', '납부'), ('REFUND', '환불'), ('ADJUSTMENT', '조정'), ],
-                                    default='PAYMENT',
-                                    verbose_name='결제 유형')
-
-    # 환불 정보
-    refund_contractor = models.ForeignKey('contract.Contractor', on_delete=models.SET_NULL,
-                                          null=True, blank=True, verbose_name='환불 계약자', help_text='환불 시 대상 계약자')
-    refund_reason = models.CharField(max_length=100, blank=True, default='', verbose_name='환불 사유')
-
     # 계정 불일치 플래그
     is_payment_mismatch = models.BooleanField(default=False, verbose_name='결제계정 불일치',
                                               help_text='연결된 회계분개의 is_payment=False인 경우 True로 표시')
@@ -222,7 +209,6 @@ class ContractPayment(models.Model):
         verbose_name_plural = '05. 분양 대금 납부'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['contract', 'payment_type']),
             models.Index(fields=['installment_order', 'created_at']),
         ]
 
@@ -240,61 +226,8 @@ class ContractPayment(models.Model):
         """결제 금액 조회 (하위 호환용)"""
         return self.amount
 
-    def calculate_late_penalty(self):
-        """
-        연체료 계산
-
-        납부 회차의 납부기한을 기준으로 연체료를 계산합니다.
-        실제 계산 로직은 _utils.payment_adjustment 모듈에서 처리합니다.
-        """
-        if self.payment_type != 'PAYMENT' or not self.installment_order:
-            return None
-
-        # TODO: Phase 2에서 실제 계산 로직 구현
-        # from _utils.payment_adjustment import calculate_late_penalty
-        # return calculate_late_penalty(self)
-        return {
-            'is_late': False,
-            'penalty_amount': 0,
-            'message': '연체료 계산 로직 구현 예정'
-        }
-
-    def is_prepayment_eligible(self):
-        """
-        선납 할인 대상 여부 확인
-
-        Returns:
-            bool: 선납 할인 대상이면 True
-        """
-        return (
-                self.payment_type == 'PAYMENT' and
-                self.installment_order and
-                hasattr(self.installment_order, 'is_prep_discount') and
-                self.installment_order.is_prep_discount
-        )
-
-    def is_penalty_eligible(self):
-        """
-        연체 가산 대상 여부 확인
-
-        Returns:
-            bool: 연체 가산 대상이면 True
-        """
-        return (
-                self.payment_type == 'PAYMENT' and
-                self.installment_order and
-                hasattr(self.installment_order, 'is_late_penalty') and
-                self.installment_order.is_late_penalty
-        )
-
     def clean(self):
         """모델 유효성 검증"""
-        # 환불 시 환불계약자 필수
-        if self.payment_type == 'REFUND' and not self.refund_contractor:
-            raise ValidationError({
-                'refund_contractor': '환불 시 환불계약자를 지정해야 합니다.'
-            })
-
         # 계약의 프로젝트와 일치 확인
         if self.contract and self.contract.project_id != self.project_id:
             raise ValidationError({
@@ -313,7 +246,7 @@ class ContractPayment(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.contract} - {self.get_payment_type_display()} ({self.amount:,}원)"
+        return f"{self.contract} - 납부 ({self.amount:,}원)"
 
 
 class OverDueRule(models.Model):
