@@ -447,7 +447,7 @@ class BankTransaction(models.Model):
     sort = models.ForeignKey('ibs.AccountSort', on_delete=models.PROTECT, verbose_name='거래구분',
                              help_text='입금/출금 구분', db_index=True)
     amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='거래 금액 (양수)')
-    content = models.CharField(max_length=100, verbose_name='적요', help_text='거래 기록 사항')
+    content = models.CharField(max_length=100, blank=True, default='', verbose_name='적요', help_text='거래 기록 사항')
     note = models.TextField(blank=True, default='', verbose_name='비고', help_text='추가 설명')
 
     # 균형 여부
