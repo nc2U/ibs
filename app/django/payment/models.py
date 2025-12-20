@@ -203,13 +203,7 @@ class ContractPayment(models.Model):
     # 환불 정보
     refund_contractor = models.ForeignKey('contract.Contractor', on_delete=models.SET_NULL,
                                           null=True, blank=True, verbose_name='환불 계약자', help_text='환불 시 대상 계약자')
-    refund_reason = models.CharField(max_length=100, blank=True, verbose_name='환불 사유')
-
-    # 특수 목적
-    is_special_purpose = models.BooleanField(default=False, verbose_name='특수 목적 여부')
-    special_purpose_type = models.CharField(max_length=10, blank=True,
-                                            choices=[('IMPREST', '운영비'), ('LOAN', '대여금'), ('GUARANTEE', '보증금'),
-                                                     ('OTHERS', '기타')], verbose_name='특수 목적 유형')
+    refund_reason = models.CharField(max_length=100, blank=True, default='', verbose_name='환불 사유')
 
     # 계정 불일치 플래그
     is_payment_mismatch = models.BooleanField(default=False, verbose_name='결제계정 불일치',

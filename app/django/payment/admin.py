@@ -137,9 +137,9 @@ class SpecialOverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
 class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'accounting_entry_short', 'project', 'contract', 'payment_type',
                     'formatted_amount', 'payment_status_display', 'installment_order',
-                    'is_special_purpose', 'creator', 'created_at')
+                    'creator', 'created_at')
     list_display_links = ('accounting_entry_short',)
-    list_filter = ('project', 'payment_type', 'is_special_purpose', 'special_purpose_type', 'is_payment_mismatch')
+    list_filter = ('project', 'payment_type', 'is_payment_mismatch')
     search_fields = ('contract__serial_number', 'refund_reason', 'accounting_entry__transaction_id')
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at', 'payment_mismatch_info')
@@ -154,10 +154,6 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
         }),
         ('환불 정보', {
             'fields': ('refund_contractor', 'refund_reason'),
-            'classes': ('collapse',)
-        }),
-        ('특수 목적', {
-            'fields': ('is_special_purpose', 'special_purpose_type'),
             'classes': ('collapse',)
         }),
         ('상태 정보', {
