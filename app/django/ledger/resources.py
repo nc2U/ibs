@@ -520,11 +520,11 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
         import_id_fields = ('id',)
         fields = (
             'id', 'transaction_id', 'project', 'sort', 'account', 'contract',
-            'amount', 'trader', 'evidence_type', 'installment_order', 'refund_contractor'
+            'amount', 'trader', 'evidence_type', 'installment_order'
         )
         export_order = (
             'id', 'transaction_id', 'project', 'sort', 'account', 'contract',
-            'amount', 'trader', 'evidence_type', 'installment_order', 'refund_contractor'
+            'amount', 'trader', 'evidence_type', 'installment_order'
         )
 
     def skip_row(self, instance, original, row, import_validation_errors=None):

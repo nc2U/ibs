@@ -135,26 +135,22 @@ class SpecialOverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(ContractPayment)
 class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'accounting_entry_short', 'project', 'contract', 'payment_type',
+    list_display = ('id', 'accounting_entry_short', 'project', 'contract',
                     'formatted_amount', 'payment_status_display', 'installment_order',
                     'creator', 'created_at')
     list_display_links = ('accounting_entry_short',)
-    list_filter = ('project', 'payment_type', 'is_payment_mismatch')
-    search_fields = ('contract__serial_number', 'refund_reason', 'accounting_entry__transaction_id')
+    list_filter = ('project', 'is_payment_mismatch')
+    search_fields = ('contract__serial_number', 'accounting_entry__transaction_id')
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at', 'payment_mismatch_info')
-    raw_id_fields = ('accounting_entry', 'contract', 'installment_order', 'refund_contractor')
+    raw_id_fields = ('accounting_entry', 'contract', 'installment_order')
 
     fieldsets = (
         ('기본 정보', {
             'fields': ('accounting_entry', 'project')
         }),
         ('계약 정보', {
-            'fields': ('contract', 'installment_order', 'payment_type')
-        }),
-        ('환불 정보', {
-            'fields': ('refund_contractor', 'refund_reason'),
-            'classes': ('collapse',)
+            'fields': ('contract', 'installment_order')
         }),
         ('상태 정보', {
             'fields': ('is_payment_mismatch', 'payment_mismatch_info')
@@ -178,8 +174,7 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'blue' if obj.payment_type == 'PAYMENT' else 'red'
-        return format_html('<span style="color: {};">{:,}원</span>', color, obj.amount)
+        return format_html('{:,}원', obj.amount)
 
     @admin.display(description='결제 상태')
     def payment_status_display(self, obj):
