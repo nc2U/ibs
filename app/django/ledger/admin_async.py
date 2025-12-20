@@ -156,18 +156,20 @@ class AsyncImportExportMixin(ImportExportMixin):
             task_result = AsyncResult(job.task_id)
 
             if task_result.state == 'SUCCESS':
-                job.status = ImportJob.COMPLETED
-                job.completed_at = timezone.now()
-
-                # 태스크 결과에서 상세 정보 업데이트
                 result = task_result.result
                 if result and result.get('success'):
+                    job.status = ImportJob.COMPLETED
                     job.total_records = result.get('total_rows', 0)
                     job.processed_records = result.get('new_records', 0) + result.get('updated_records', 0)
                     job.success_count = job.processed_records
                     job.error_count = result.get('error_count', 0)
                     if result.get('errors'):
                         job.error_message = '\n'.join(result['errors'][:10])  # 처음 10개 오류만
+                else: # if not result or not result.get('success')
+                    job.status = ImportJob.FAILED
+                    job.error_count = result.get('error_count', 0)
+                    job.error_message = '\n'.join(result.get('errors', [])[:10]) # Get errors reported by task
+                job.completed_at = timezone.now()
                 job.save()
 
             elif task_result.state == 'FAILURE':

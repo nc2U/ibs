@@ -89,17 +89,21 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
             with transaction.atomic():
                 result = resource.import_data(dataset, dry_run=False, raise_errors=False)
 
+        has_errors = result.has_errors() or result.has_validation_errors()
+        error_count = len(result.base_errors) + len(result.row_errors())
+
         # 결과 정리
         import_result = {
-            'success': True,
+            'success': not has_errors,  # 에러가 있으면 False
             'model': model_name,
             'total_rows': len(dataset),
             'new_records': result.totals.get('new', 0),
             'updated_records': result.totals.get('update', 0),
             'skipped_records': result.totals.get('skip', 0),
-            'error_count': len(result.base_errors) + len(result.error_rows),
-            'errors': [str(e) for e in result.base_errors] + [', '.join([str(e) for e in err_row.errors]) for err_row in
-                                                              result.error_rows],
+            'error_count': error_count,
+            'errors': [str(e.error) for e in result.base_errors] +
+                      [f"Row {num} (Data: {row_data}): {', '.join([str(e) for e in errs])}"
+                       for num, row_data, errs in result.row_errors()],
             'user_email': user.email,
         }
 
