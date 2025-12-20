@@ -210,10 +210,10 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
             return "회계분개 정보 없음"
 
         ae = obj.accounting_entry
-        if not ae.project_account_d3:
-            return "계정 분류(D3) 정보 없음"
+        if not ae.account:
+            return "계정 분류 정보 없음"
 
-        is_payment_account = ae.project_account_d3.is_payment
+        is_payment_account = ae.account.is_payment
 
         if obj.is_payment_mismatch:
             if not is_payment_account:
@@ -224,7 +224,7 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
                     '계정: {} (is_payment=False)<br>'
                     '<em>사용자가 계정 분류를 수정하거나 이 계약납부를 다른 회계분개로 이전해야 합니다.</em>'
                     '</div>',
-                    ae.project_account_d3.name
+                    ae.account.name
                 )
         else:
             if is_payment_account:
@@ -233,7 +233,7 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
                     '<strong>✅ 정상</strong><br>'
                     '계정: {} (is_payment=True)'
                     '</div>',
-                    ae.project_account_d3.name
+                    ae.account.name
                 )
             else:
                 return format_html(
@@ -242,7 +242,7 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
                     '계정이 비결제 계정이지만 mismatch 플래그가 설정되지 않았습니다.<br>'
                     '계정: {} (is_payment=False)'
                     '</div>',
-                    ae.project_account_d3.name
+                    ae.account.name
                 )
 
         return "상태 확인 불가"
@@ -252,7 +252,7 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
     def get_queryset(self, request):
         """관련 정보를 함께 로드"""
         return super().get_queryset(request).select_related(
-            'accounting_entry__project_account_d3',
+            'accounting_entry__account',
             'contract',
             'project',
             'creator'
@@ -266,8 +266,8 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
         updated_count = 0
         for payment in queryset.filter(is_payment_mismatch=True):
             if (payment.accounting_entry and
-                payment.accounting_entry.project_account_d3 and
-                payment.accounting_entry.project_account_d3.is_payment):
+                    payment.accounting_entry.account and
+                    payment.accounting_entry.account.is_payment):
                 payment.is_payment_mismatch = False
                 payment.save(update_fields=['is_payment_mismatch', 'updated_at'])
                 updated_count += 1
