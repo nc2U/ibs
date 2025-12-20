@@ -26,10 +26,12 @@ def manage_contract_payment_auto_sync(sender, instance, created, **kwargs):
 
     if is_payment_account:
         # is_payment 계정인 경우, ContractPayment 객체를 가져오거나 생성 (get_or_create 사용)
+        bank_transaction = instance.related_transaction
+        creator = bank_transaction.creator if bank_transaction else None
         defaults = {
             'project': instance.project,
             'is_payment_mismatch': False,
-            'creator': instance.creator,
+            'creator': creator,
             'contract': instance.contract,  # Initial contract assignment
             'installment_order': instance.installment_order,  # 데이터 이관용 코드 - 이관 후 삭제
             'refund_contractor': instance.refund_contractor  # 데이터 이관용 코드 - 이관 후 삭제
