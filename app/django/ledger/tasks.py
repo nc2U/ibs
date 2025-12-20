@@ -85,6 +85,13 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
             dataset = Dataset()
             dataset.load(file.read(), format='xlsx')
 
+            # Clean empty rows from the dataset
+            cleaned_dataset = Dataset(headers=dataset.headers)
+            for row in dataset:
+                if any(field is not None and str(field).strip() != '' for field in row):
+                    cleaned_dataset.append(row)
+            dataset = cleaned_dataset
+
             # 1. Dry run to validate data first
             dry_run_result = resource.import_data(dataset, dry_run=True, raise_errors=False)
 
