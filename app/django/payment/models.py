@@ -164,7 +164,7 @@ class ContractPayment(models.Model):
     ledger.ProjectAccountingEntry와 1:1로 연결되어 계약자의 납부, 환불, 조정 등을 추적합니다.
 
     생성 조건:
-        - ProjectAccountD3.is_payment=True인 회계 분개에 대해서만 생성
+        - ProjectAccount.is_payment=True인 회계 분개에 대해서만 생성
 
     금액 조회:
         - accounting_entry.amount를 통해 조회 (별도 amount 필드 불필요)
@@ -190,7 +190,7 @@ class ContractPayment(models.Model):
     # 계약 정보 (베이스 인스턴스에서는 선택사항)
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     contract = models.ForeignKey('contract.Contract', on_delete=models.CASCADE, verbose_name='계약',
-                                null=True, blank=True, help_text='분양 계약 (베이스 인스턴스 생성 시 선택사항)')
+                                 null=True, blank=True, help_text='분양 계약 (베이스 인스턴스 생성 시 선택사항)')
     installment_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.SET_NULL,
                                           null=True, blank=True, verbose_name='납부회차', help_text='분할 납부 회차 정보')
 

@@ -24,31 +24,30 @@ def manage_contract_payment_auto_sync(sender, instance, created, **kwargs):
         return
 
     is_payment_account = instance.account.is_payment
-    has_contract_payment = hasattr(instance, 'contract_payment')
 
-    if is_payment_account and not has_contract_payment:
-        # 시나리오 1: is_payment=True이지만 ContractPayment가 없는 경우 → 베이스 인스턴스 생성
-        try:
-            ContractPayment.objects.create(
-                accounting_entry=instance,
-                project=instance.project,
-                is_payment_mismatch=False,  # 새로 생성하므로 일치 상태
-                creator=None,  # Signal에서는 creator 정보가 없음
-            )
-        except ValidationError:
-            # 이미 존재하는 경우 등의 예외 상황은 무시
-            pass
+    if is_payment_account:
+        # is_payment 계정인 경우, ContractPayment 객체를 가져오거나 생성 (get_or_create 사용)
+        contract_payment, created = ContractPayment.objects.get_or_create(
+            accounting_entry=instance,
+            defaults={
+                'project': instance.project,
+                'is_payment_mismatch': False,
+                'creator': None,
+            }
+        )
 
-    elif is_payment_account and has_contract_payment:
-        # 시나리오 3: is_payment=True이고 ContractPayment가 있는 경우 → mismatch 해제
-        contract_payment = instance.contract_payment
-        if contract_payment.is_payment_mismatch:
+        # 이미 존재하던 객체이고, mismatch 상태였다면 정상으로 되돌림
+        if not created and contract_payment.is_payment_mismatch:
             contract_payment.is_payment_mismatch = False
             contract_payment.save(update_fields=['is_payment_mismatch', 'updated_at'])
 
-    elif not is_payment_account and has_contract_payment:
-        # 시나리오 2: is_payment=False이지만 ContractPayment가 있는 경우 → mismatch 플래그 표시
-        contract_payment = instance.contract_payment
-        if not contract_payment.is_payment_mismatch:
-            contract_payment.is_payment_mismatch = True
-            contract_payment.save(update_fields=['is_payment_mismatch', 'updated_at'])
+    else:  # is_payment 계정이 아닌 경우
+        # 관련 ContractPayment가 존재하고, mismatch 상태가 아니라면 mismatch로 변경
+        try:
+            contract_payment = instance.contract_payment
+            if not contract_payment.is_payment_mismatch:
+                contract_payment.is_payment_mismatch = True
+                contract_payment.save(update_fields=['is_payment_mismatch', 'updated_at'])
+        except ContractPayment.DoesNotExist:
+            # is_payment 계정이 아니며 ContractPayment도 없으므로 아무것도 하지 않음
+            pass
