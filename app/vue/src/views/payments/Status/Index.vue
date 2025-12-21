@@ -117,11 +117,16 @@ onBeforeMount(async () => {
         </v-tabs>
 
         <template v-if="menu === '수납요약'">
-          <TableTitleRow excel :url="excelUrl1" :disabled="!project" />
+          <TableTitleRow
+            excel
+            :url="excelUrl1"
+            filename="차수타입별_수납요약.xls"
+            :disabled="!project"
+          />
           <PaymentStatus :date="date" />
         </template>
         <template v-else>
-          <TableTitleRow excel :url="excelUrl2" :disabled="!project" />
+          <TableTitleRow excel :url="excelUrl2" filename="총괄집계현황.xls" :disabled="!project" />
           <OverallSummary :date="date" />
         </template>
       </CCardBody>
