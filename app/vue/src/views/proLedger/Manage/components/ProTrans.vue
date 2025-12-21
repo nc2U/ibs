@@ -494,13 +494,13 @@ const handleUpdate = async () => {
   z-index: 1;
 }
 
-.dark-theme .bg-yellow-lighten-5 {
-  background-color: #49473a !important;
+.dark-theme .bg-light-green-lighten-5 {
+  background-color: #415541 !important;
   color: #fff !important;
 }
 
-.dark-theme .bg-yellow-lighten-4 {
-  background-color: #403e33 !important;
+.dark-theme .bg-light-green-lighten-4 {
+  background-color: #364636 !important;
   color: #fff !important;
 }
 </style>
