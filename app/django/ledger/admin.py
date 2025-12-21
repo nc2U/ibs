@@ -544,7 +544,7 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
 
 @admin.register(ProjectAccountingEntry)
-class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
+class ProjectAccountingEntryAdmin(ImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'project', 'account_display', 'contract_display',
                     'installment_order', 'formatted_amount', 'trader', 'evidence_type', 'created_at')

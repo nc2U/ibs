@@ -1,17 +1,30 @@
 import threading
+
+from django.db import transaction
+
 from payment.models import ContractPayment
 
 # Thread-local storage for bulk import flags
 _thread_locals = threading.local()
 
+
+def trigger_sync_contract_payment(instance):
+    if is_bulk_import_active():
+        return
+    _sync_contract_payment_for_entry(instance)
+
+
 def is_bulk_import_active():
     """Check if bulk import is currently active in this thread"""
     return getattr(_thread_locals, 'bulk_import_active', False)
+
 
 def set_bulk_import_active(active=True):
     """Set bulk import flag for current thread"""
     _thread_locals.bulk_import_active = active
 
+
+@transaction.atomic
 def _sync_contract_payment_for_entry(instance):
     """
     Helper function to synchronize ContractPayment based on a ProjectAccountingEntry instance.
@@ -41,11 +54,11 @@ def _sync_contract_payment_for_entry(instance):
             if contract_payment.contract != instance.contract:
                 contract_payment.contract = instance.contract
                 update_fields.append('contract')
-            
+
             if contract_payment.is_payment_mismatch:
                 contract_payment.is_payment_mismatch = False
                 update_fields.append('is_payment_mismatch')
-            
+
             if update_fields:
                 contract_payment.save(update_fields=update_fields + ['updated_at'])
     else:
@@ -55,11 +68,11 @@ def _sync_contract_payment_for_entry(instance):
             if not contract_payment.is_payment_mismatch:
                 contract_payment.is_payment_mismatch = True
                 update_fields.append('is_payment_mismatch')
-            
+
             if contract_payment.contract != instance.contract:
                 contract_payment.contract = instance.contract
                 update_fields.append('contract')
-            
+
             if update_fields:
                 contract_payment.save(update_fields=update_fields + ['updated_at'])
         except ContractPayment.DoesNotExist:

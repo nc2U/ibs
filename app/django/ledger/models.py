@@ -4,7 +4,8 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 
-from ledger.services.sync_payment_contract import is_bulk_import_active, _sync_contract_payment_for_entry
+from ledger.services.sync_payment_contract import is_bulk_import_active, _sync_contract_payment_for_entry, \
+    trigger_sync_contract_payment
 
 
 # ============================================
@@ -763,10 +764,7 @@ class ProjectAccountingEntry(AccountingEntry):
         """저장 전 유효성 검증 및 ContractPayment 동기화"""
         self.full_clean()
         super().save(*args, **kwargs)
-
-        # 대량 가져오기 중에는 이 로직을 건너뜀 (resources.py의 after_save_instance에서 처리)
-        if not is_bulk_import_active():
-            _sync_contract_payment_for_entry(self)
+        trigger_sync_contract_payment(self)
 
 
 # ============================================

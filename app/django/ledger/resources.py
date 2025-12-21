@@ -1,10 +1,11 @@
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from import_export import resources, fields, widgets
+from import_export.results import Result
+from tablib import Dataset
 
-from django.contrib.auth import get_user_model
 from company.models import Company
 from ibs.models import AccountSort
-
 from ledger.services.sync_payment_contract import set_bulk_import_active, _sync_contract_payment_for_entry
 from .models import (
     CompanyBankTransaction, ProjectBankTransaction,
@@ -35,29 +36,40 @@ class BaseTransactionResource(resources.ModelResource):
 
     def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, collect_failed_rows=False,
                     **kwargs):
-        """Override to use batch processing for better performance"""
+        """
+        Entry point for import.
+        Ensures bulk import state is always correctly set and cleared.
+        """
         if use_transactions is None:
             use_transactions = getattr(self.Meta, 'use_transactions', True)
 
         batch_size = getattr(self.Meta, 'batch_size', 1000)
 
-        if not dry_run and len(dataset) > batch_size:
-            return self._batch_import_data(dataset, raise_errors, use_transactions, collect_failed_rows, **kwargs)
-        else:
+        # dry_run에서는 bulk flag를 건드리지 않음
+
+        if dry_run:
             return super().import_data(dataset, dry_run=dry_run, raise_errors=raise_errors,
-                                       use_transactions=use_transactions, collect_failed_rows=collect_failed_rows,
-                                       **kwargs)
+                                       use_transactions=use_transactions,
+                                       collect_failed_rows=collect_failed_rows, **kwargs)
+
+        set_bulk_import_active(True)
+        try:
+            if len(dataset) > batch_size:
+                return self._batch_import_data(dataset, raise_errors, use_transactions, collect_failed_rows, **kwargs)
+            else:
+                return super().import_data(dataset, dry_run=dry_run, raise_errors=raise_errors,
+                                           use_transactions=use_transactions, collect_failed_rows=collect_failed_rows,
+                                           **kwargs)
+        finally:
+            set_bulk_import_active(False)
 
     def _batch_import_data(self, dataset, raise_errors, use_transactions, collect_failed_rows, **kwargs):
         """Process large datasets in batches for better performance"""
-        from import_export.results import Result
-        from tablib import Dataset
-
         batch_size = getattr(self.Meta, 'batch_size', 1000)
         total_result = Result()
 
         for i in range(0, len(dataset), batch_size):
-            # Create new Dataset object for batch to preserve headers
+            # Create a new Dataset object for batch to preserve headers
             batch_data = Dataset()
             batch_data.headers = dataset.headers
             for row in dataset[i:i + batch_size]:
