@@ -13,7 +13,6 @@ from ledger.models import (
     CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
 from ledger.resources import (
-    CompanyAccountResource, ProjectAccountResource,
     CompanyBankTransactionResource, ProjectBankTransactionResource,
     CompanyAccountingEntryResource, ProjectAccountingEntryResource
 )

@@ -10,12 +10,10 @@ from django.core.mail import send_mail
 from django.db import transaction
 
 from .models import (
-    CompanyAccount, ProjectAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry
 )
 from .resources import (
-    CompanyAccountResource, ProjectAccountResource,
     CompanyBankTransactionResource, ProjectBankTransactionResource,
     CompanyAccountingEntryResource, ProjectAccountingEntryResource
 )
@@ -64,8 +62,6 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
 
         # 리소스 클래스 선택
         resource_mapping = {
-            'company_account': (CompanyAccountResource, 'CompanyAccount'),
-            'project_account': (ProjectAccountResource, 'ProjectAccount'),
             'company_bank_transaction': (CompanyBankTransactionResource, 'CompanyBankTransaction'),
             'project_bank_transaction': (ProjectBankTransactionResource, 'ProjectBankTransaction'),
             'company_accounting_entry': (CompanyAccountingEntryResource, 'CompanyAccountingEntry'),
@@ -204,8 +200,6 @@ def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource
 
         # 리소스 클래스 및 모델 선택
         resource_model_mapping = {
-            'company_account': (CompanyAccountResource, CompanyAccount, 'CompanyAccount'),
-            'project_account': (ProjectAccountResource, ProjectAccount, 'ProjectAccount'),
             'company_bank_transaction': (CompanyBankTransactionResource, CompanyBankTransaction,
                                          'CompanyBankTransaction'),
             'project_bank_transaction': (ProjectBankTransactionResource, ProjectBankTransaction,
