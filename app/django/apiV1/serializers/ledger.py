@@ -281,11 +281,10 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('pk', 'transaction_id', 'project', 'project_name',
-                  'sort', 'sort_name',
+        fields = ('pk', 'transaction_id', 'project', 'project_name', 'sort', 'sort_name',
                   'account', 'account_name', 'account_code', 'account_full_path',
                   'amount', 'trader', 'evidence_type', 'evidence_type_display',
-                  'created_at', 'updated_at', 'contract_payment')
+                  'contract', 'contract_payment', 'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
 
     @staticmethod
@@ -304,10 +303,6 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
                 'contract': cp.contract_id,
                 'contract_serial': cp.contract.serial_number if cp.contract else None,
                 'installment_order': cp.installment_order_id,
-                'payment_type': cp.payment_type,
-                'payment_type_display': cp.get_payment_type_display(),
-                'is_special_purpose': cp.is_special_purpose,
-                'special_purpose_type': cp.special_purpose_type,
             }
         return None
 
