@@ -1,8 +1,12 @@
 import threading
+import logging
 
 from django.db import transaction
 
 from payment.models import ContractPayment
+from ledger.models import ProjectAccountingEntry
+
+logger = logging.getLogger(__name__)
 
 # Thread-local storage for bulk import flags
 _thread_locals = threading.local()
@@ -31,6 +35,16 @@ def _sync_contract_payment_for_entry(instance):
     """
     if not instance.account:
         return
+
+    # Re-fetch an instance to ensure it's fully committed/loaded from the current transaction's perspective.
+    # This helps prevent "not a valid choice" errors in OneToOneField assignments during bulk imports.
+    if instance.pk:  # Only try to fetch if it has been saved (i.e., has a primary key)
+        try:
+            instance = ProjectAccountingEntry.objects.get(pk=instance.pk)
+        except ProjectAccountingEntry.DoesNotExist:
+            logger.error(
+                f"ProjectAccountingEntry (pk={instance.pk}) not found in DB after save. Skipping ContractPayment sync.")
+            return
 
     is_payment_account = instance.account.is_payment
 
