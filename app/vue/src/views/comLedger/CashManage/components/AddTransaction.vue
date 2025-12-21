@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
-import type { Project } from '@/store/types/project'
 import { AlertLight } from '@/utils/cssMixins'
 
 defineProps({

@@ -1,12 +1,7 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
 import { AlertLight } from '@/utils/cssMixins'
 
 defineProps({ project: { type: Number, default: null } })
-
-const createFormModal = ref()
-
-const createConfirm = () => createFormModal.value.callModal()
 </script>
 
 <template>
