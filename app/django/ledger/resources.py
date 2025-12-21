@@ -227,12 +227,15 @@ class CompanyAccountingEntryResource(BaseTransactionResource):
 class ProjectAccountingEntryResource(BaseTransactionResource):
     """Resource for ProjectAccountingEntry with bulk operations"""
 
-    def after_save_instance(self, instance, using_transactions, dry_run):
+    def after_save_instance(self, instance, *args, **kwargs):
         """
         Call the synchronization logic after each instance is saved during import.
+        Safe hook for django-import-export (handles positional & keyword calls)
         """
-        if not dry_run:
-            _sync_contract_payment_for_entry(instance)
+        dry_run = kwargs.get('dry_run', False)
+        if dry_run:
+            return
+        _sync_contract_payment_for_entry(instance)
 
     class Meta:
         model = ProjectAccountingEntry
