@@ -180,8 +180,6 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(CompanyAccount)
 class CompanyAccountAdmin(BaseAccountAdmin):
     """본사 계정 과목 Admin"""
-    resource_class = CompanyAccountResource
-
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
         'depth', 'is_category_only', 'is_active', 'requires_affiliate', 'order'
@@ -211,8 +209,6 @@ class CompanyAccountAdmin(BaseAccountAdmin):
 @admin.register(ProjectAccount)
 class ProjectAccountAdmin(BaseAccountAdmin):
     """프로젝트 계정 과목 Admin"""
-    resource_class = ProjectAccountResource
-
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
         'depth', 'is_category_only', 'is_active', 'is_payment', 'is_related_contract', 'order'

@@ -3,7 +3,7 @@ from django.dispatch import receiver
 
 from _utils.slack_notifications import send_slack_notification
 from .models import CompanyBankTransaction, ProjectBankTransaction, CompanyAccountingEntry, ProjectAccountingEntry
-from .resources import is_bulk_import_active
+from .services.sync_payment_contract import is_bulk_import_active
 
 
 @receiver(post_save, sender=CompanyBankTransaction, dispatch_uid="bank_transaction_slack_notification")
