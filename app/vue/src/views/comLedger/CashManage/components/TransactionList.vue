@@ -32,7 +32,7 @@ const accCallModal = () => {
 </script>
 
 <template>
-  <hr class="mb-0" />
+  <hr class="my-0" />
   <CTable hover responsive align="middle">
     <colgroup>
       <col style="width: 7%" />

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_company_cash, write_project_cash } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import Pagination from '@/components/Pagination'
 import ProTrans from './ProTrans.vue'
@@ -31,45 +31,53 @@ const accCallModal = () => {
 </script>
 
 <template>
+  <hr class="my-0" />
   <CTable hover responsive align="middle">
     <colgroup>
-      <col style="width: 8%" />
-      <col style="width: 6%" />
-      <col style="width: 11%" />
-      <col style="width: 11%" />
-      <col style="width: 12%" />
-      <col style="width: 10%" />
-      <col style="width: 10%" />
       <col style="width: 7%" />
-      <col style="width: 10%" />
+      <col style="width: 12%" />
+      <col style="width: 8%" />
+      <col style="width: 12%" />
       <col style="width: 9%" />
-      <col v-if="write_project_cash" style="width: 6%" />
+      <col style="width: 2%" />
+
+      <col style="width: 12%" />
+      <col style="width: 14%" />
+      <col style="width: 8%" />
+      <col style="width: 13%" />
+      <col v-if="write_company_cash" style="width: 3%" />
     </colgroup>
 
     <CTableHead>
-      <CTableRow :color="TableSecondary" class="text-center">
+      <CTableRow :color="TableSecondary">
+        <CTableHeaderCell class="pl-3" colspan="6">은행거래내역</CTableHeaderCell>
+        <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 6 : 5">
+          <span class="text-grey mr-2">|</span> 분류 내역
+        </CTableHeaderCell>
+      </CTableRow>
+
+      <CTableRow :color="TableSecondary">
         <CTableHeaderCell scope="col">거래일자</CTableHeaderCell>
-        <CTableHeaderCell scope="col">구분</CTableHeaderCell>
+        <CTableHeaderCell scope="col">메모</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           거래계좌
-          <a href="javascript:void(0)">
+          <a href="javascript:void(0)" class="ml-1">
             <CIcon name="cilCog" @click="accCallModal" />
           </a>
         </CTableHeaderCell>
-        <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
-        <CTableHeaderCell scope="col">입금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">출금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">계정</CTableHeaderCell>
-        <CTableHeaderCell scope="col">
-          세부계정
-          <a href="javascript:void(0)">
+        <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
+        <CTableHeaderCell scope="col">확인</CTableHeaderCell>
+        <CTableHeaderCell class="pl-0" scope="col">
+          <span class="text-grey mr-2">|</span> 계정
+          <a href="javascript:void(0)" class="ml-1">
             <CIcon name="cilCog" @click="refAccountManage.callModal()" />
           </a>
         </CTableHeaderCell>
-
+        <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
+        <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project_cash" scope="col">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="write_company_cash" scope="col"></CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
@@ -81,7 +89,6 @@ const accCallModal = () => {
         :calculated="proCalculated?.calculated"
         :is-highlighted="props.highlightId === proTrans.pk"
       />
-      <!--        :has-children="proTrans.has_children || false"-->
     </CTableBody>
   </CTable>
 

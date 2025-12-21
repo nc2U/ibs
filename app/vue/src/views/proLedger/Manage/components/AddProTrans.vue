@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { AlertLight } from '@/utils/cssMixins'
-import { type ProBankAcc, type ProjectCashBook } from '@/store/types/proCash'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ProTransForm from '@/views/proLedger/Manage/components/ProTransForm.vue'
 
@@ -11,12 +10,6 @@ const emit = defineEmits(['multi-submit', 'on-bank-create', 'on-bank-update'])
 const createFormModal = ref()
 
 const createConfirm = () => createFormModal.value.callModal()
-
-const multiSubmit = (payload: { formData: ProjectCashBook; sepData: ProjectCashBook | null }) =>
-  emit('multi-submit', payload)
-
-const onBankCreate = (payload: ProBankAcc) => emit('on-bank-create', payload)
-const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
 </script>
 
 <template>
