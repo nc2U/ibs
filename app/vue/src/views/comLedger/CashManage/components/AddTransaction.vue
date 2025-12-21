@@ -5,7 +5,6 @@ import { AlertLight } from '@/utils/cssMixins'
 
 defineProps({
   company: { type: Number, default: null },
-  projects: { type: Array as PropType<Project[]>, default: () => [] },
 })
 </script>
 
