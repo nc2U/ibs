@@ -1,3 +1,4 @@
+from celery.result import AsyncResult
 from django.contrib import admin
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
@@ -152,7 +153,6 @@ class AsyncImportExportMixin(ImportExportMixin):
 
         # Celery 태스크 상태 확인
         if job.task_id:
-            from celery.result import AsyncResult
             task_result = AsyncResult(job.task_id)
 
             if task_result.state == 'SUCCESS':

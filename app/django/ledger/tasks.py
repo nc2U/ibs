@@ -81,12 +81,30 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
             dataset = Dataset()
             dataset.load(file.read(), format='xlsx')
 
-            # Clean empty rows from the dataset
+            # Clean empty rows from the dataset more thoroughly
+            original_row_count = len(dataset)
             cleaned_dataset = Dataset(headers=dataset.headers)
+            removed_rows = 0
+
             for row in dataset:
-                if any(field is not None and str(field).strip() != '' for field in row):
+                # Check if row has any meaningful data
+                has_data = False
+                for field in row:
+                    if field is not None:
+                        # Convert to string and strip whitespace
+                        field_str = str(field).strip()
+                        # Check if it's not empty and not just whitespace/special chars
+                        if field_str and field_str not in ['', 'None', 'null', 'NaN']:
+                            has_data = True
+                            break
+
+                if has_data:
                     cleaned_dataset.append(row)
+                else:
+                    removed_rows += 1
+
             dataset = cleaned_dataset
+            logger.info(f"Removed {removed_rows} empty rows from {original_row_count} total rows. Final dataset: {len(dataset)} rows")
 
             # 1. Dry run to validate data first
             dry_run_result = resource.import_data(dataset, dry_run=True, raise_errors=False)
