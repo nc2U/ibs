@@ -147,7 +147,8 @@ class AsyncImportExportMixin(ImportExportMixin):
 
         return TemplateResponse(request, self.async_status_template, context)
 
-    def async_progress_api(self, request, job_id):
+    @staticmethod
+    def async_progress_api(request, job_id):
         """비동기 작업 진행률 API"""
         job = get_object_or_404(ImportJob, id=job_id, creator=request.user)
 
