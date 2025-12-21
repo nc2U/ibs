@@ -660,8 +660,9 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
         """계좌별 잔액 조회"""
         date = request.query_params.get('date', TODAY)
         project = request.query_params.get('project')
+        is_balance = request.query_params.get('is_balance', '')
 
-        queryset = ProjectBankTransaction.objects.filter(deal_date__lte=date)
+        queryset = ProjectBankTransaction.objects.filter(deal_date__lte=date).order_by('bank_account')
         if project:
             queryset = queryset.filter(project_id=project)
 
@@ -669,17 +670,29 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
             bank_acc=F('bank_account__alias_name'),
             bank_num=F('bank_account__number')
         ).annotate(
-            income_sum=Sum(Case(
+            inc_sum=Sum(Case(
                 When(sort_id=1, then=F('amount')),  # 1 = 입금
                 default=0
             )),
-            outlay_sum=Sum(Case(
+            out_sum=Sum(Case(
                 When(sort_id=2, then=F('amount')),  # 2 = 출금
                 default=0
             )),
+            # 당일 합계
+            date_inc=Sum(Case(
+                When(sort_id=1, deal_date=date, then=F('amount')),
+                default=0
+            )),
+            date_out=Sum(Case(
+                When(sort_id=2, deal_date=date, then=F('amount')),
+                default=0
+            ))
         ).annotate(
-            balance=F('income_sum') - F('outlay_sum')
+            balance=F('inc_sum') - F('out_sum')
         )
+
+        if is_balance == 'true':
+            result = result.exclude(balance=0)
 
         return Response(list(result))
 
