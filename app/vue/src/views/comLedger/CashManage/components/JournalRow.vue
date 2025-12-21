@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, watch } from 'vue'
 import { write_company_cash } from '@/utils/pageAuth.ts'
-import type { Account } from '@/store/types/comLedger.ts'
+import type { AccountPicker } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
 interface NewEntryForm {
@@ -35,7 +35,7 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
-const comAccounts = inject<ComputedRef<Account[]>>('comAccounts')
+const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
 const accountFilterType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
   if (props.sort === 2) return 'withdraw' // 출금
@@ -43,7 +43,7 @@ const accountFilterType = computed(() => {
 })
 
 // 선택된 account가 affiliate를 요구하는지 확인
-const getAccountById = (accountId: number | null | undefined): Account | undefined => {
+const getAccountById = (accountId: number | null | undefined): AccountPicker | undefined => {
   if (!accountId || !comAccounts?.value) return undefined
   return comAccounts.value.find(acc => acc.value === accountId)
 }

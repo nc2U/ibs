@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
-import type { Account } from '@/store/types/comLedger.ts'
+import type { AccountPicker } from '@/store/types/comLedger.ts'
 
 interface Props {
-  options: Array<Account>
+  options: Array<AccountPicker>
   modelValue?: number | null
   placeholder?: string
   cateType?: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel' | null

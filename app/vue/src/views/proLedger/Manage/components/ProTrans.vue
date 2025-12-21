@@ -2,7 +2,8 @@
 import { computed, type ComputedRef, inject, nextTick, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
-import type { ProAccountingEntry, ProBankTrans, ProjectAccount } from '@/store/types/proLedger.ts'
+import type { AccountPicker } from '@/store/types/comLedger.ts'
+import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger.ts'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { write_project_cash } from '@/utils/pageAuth'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
@@ -25,7 +26,7 @@ const allowedPeriod = computed(
     (write_project_cash && diffDate(props.proTrans.deal_date, new Date(props.calculated)) <= 10),
 )
 
-const proAccounts = inject<ComputedRef<ProjectAccount[]>>('proAccounts')
+const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
 
 const sortType = computed(() => {
   if (props.proTrans.sort === 1) return 'deposit' // 입금
@@ -355,42 +356,6 @@ const handleUpdate = async () => {
               >
                 <div class="d-flex align-items-center">
                   <span>{{ entry.account_name }}</span>
-                  <!-- 관계회사 정보 표시 (이미 설정된 경우) - 클릭 가능 -->
-                  <v-tooltip v-if="entry.affiliate && allowedPeriod" location="top">
-                    <template v-slot:activator="{ props: tooltipProps }">
-                      <v-icon
-                        v-bind="tooltipProps"
-                        icon="mdi-link-variant"
-                        color="primary"
-                        size="16"
-                        class="ml-1 pointer"
-                      />
-                    </template>
-                    <div class="pa-2">
-                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
-                      <div class="mb-2">{{ entry.affiliate_display }}</div>
-                      <div class="d-flex align-items-center text-primary font-weight-medium">
-                        <v-icon icon="mdi-pencil" size="14" class="mr-1" />
-                        클릭하여 변경
-                      </div>
-                    </div>
-                  </v-tooltip>
-                  <!-- 관계회사 정보 표시 (읽기 전용) -->
-                  <v-tooltip v-else-if="entry.affiliate && !allowedPeriod" location="top">
-                    <template v-slot:activator="{ props: tooltipProps }">
-                      <v-icon
-                        v-bind="tooltipProps"
-                        icon="mdi-link-variant"
-                        color="primary"
-                        size="16"
-                        class="ml-1"
-                      />
-                    </template>
-                    <div class="pa-2">
-                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
-                      <div>{{ entry.affiliate_display }}</div>
-                    </div>
-                  </v-tooltip>
                 </div>
                 <v-icon
                   v-if="!isEditing('entry', entry.pk!, 'account_affiliate')"
@@ -402,19 +367,19 @@ const handleUpdate = async () => {
 
               <!-- 계정 선택 Picker (Teleport to body) -->
               <Teleport to="body">
-                <!--                <LedgerAccountPicker-->
-                <!--                  v-if="-->
-                <!--                    isEditing('entry', entry.pk!, 'account_affiliate') &&-->
-                <!--                    editValue &&-->
-                <!--                    pickerPosition-->
-                <!--                  "-->
-                <!--                  v-model="editValue.account"-->
-                <!--                  :options="proAccounts ?? []"-->
-                <!--                  :sort-type="sortType"-->
-                <!--                  :visible="true"-->
-                <!--                  :position="pickerPosition"-->
-                <!--                  @close="handlePickerClose"-->
-                <!--                />-->
+                <LedgerAccountPicker
+                  v-if="
+                    isEditing('entry', entry.pk!, 'account_affiliate') &&
+                    editValue &&
+                    pickerPosition
+                  "
+                  v-model="editValue.account"
+                  :options="proAccounts ?? []"
+                  :sort-type="sortType"
+                  :visible="true"
+                  :position="pickerPosition"
+                  @close="handlePickerClose"
+                />
               </Teleport>
             </CTableDataCell>
             <!-- Trader 인라인 편집 -->

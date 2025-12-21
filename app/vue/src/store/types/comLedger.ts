@@ -1,4 +1,4 @@
-export interface Account {
+export interface AccountPicker {
   value: number
   label: string
   parent: number | null
@@ -6,7 +6,9 @@ export interface Account {
   depth: number
   category: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel'
   direction: '입금' | '출금'
-  req_affiliate: boolean
+  req_affiliate?: boolean
+  is_payment?: boolean
+  is_related_contract?: boolean
 }
 
 export interface BankCode {

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import type { Account } from '@/store/types/comLedger.ts'
+import type { AccountPicker } from '@/store/types/comLedger.ts'
 
 interface Props {
-  options: Array<Account>
+  options: Array<AccountPicker>
   modelValue?: number | null
   sortType?: 'deposit' | 'withdraw' | null
   visible?: boolean
@@ -123,7 +123,7 @@ const selectableOptions = computed(() => {
 })
 
 // 옵션 선택 처리
-const selectOption = (option: Account) => {
+const selectOption = (option: AccountPicker) => {
   if (!option.is_cate_only) {
     emit('update:modelValue', option.value)
     emit('close')

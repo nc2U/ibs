@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import type { Account, AccountingEntry, BankTransaction } from '@/store/types/comLedger'
+import type { AccountPicker, AccountingEntry, BankTransaction } from '@/store/types/comLedger'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
 import AffiliateSelectModal from './AffiliateSelectModal.vue'
 
@@ -26,11 +26,11 @@ const allowedPeriod = computed(
     (write_company_cash && diffDate(props.transaction.deal_date, new Date(props.calculated)) <= 10),
 )
 
-const comAccounts = inject<ComputedRef<Account[]>>('comAccounts')
+const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
 const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
 
 // 선택된 account가 affiliate를 요구하는지 확인
-const getAccountById = (accountId: number | null | undefined): Account | undefined => {
+const getAccountById = (accountId: number | null | undefined): AccountPicker | undefined => {
   if (!accountId || !comAccounts?.value) return undefined
   return comAccounts.value.find(acc => acc.value === accountId)
 }
