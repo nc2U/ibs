@@ -29,6 +29,26 @@ const proLedger = {
         auth: true,
         requiresProjectCashAuth: true,
       },
+      children: [
+        {
+          path: 'create',
+          name: 'PR 거래 내역 - 생성',
+          meta: {
+            title: 'PR 거래 내역',
+            auth: true,
+            requiresCompanyCashAuth: true,
+          },
+        },
+        {
+          path: ':transId(\\d+)/update',
+          name: 'PR 거래 내역 - 수정',
+          meta: {
+            title: 'PR 거래 내역',
+            auth: true,
+            requiresCompanyCashAuth: true,
+          },
+        },
+      ],
     },
     {
       path: 'imprest',
@@ -39,6 +59,26 @@ const proLedger = {
         auth: true,
         requiresProjectCashAuth: true,
       },
+      children: [
+        {
+          path: 'create',
+          name: '운영비 내역 - 생성',
+          meta: {
+            title: '운영비 내역',
+            auth: true,
+            requiresCompanyCashAuth: true,
+          },
+        },
+        {
+          path: ':transId(\\d+)/update',
+          name: '운영비 내역 - 수정',
+          meta: {
+            title: '운영비 내역',
+            auth: true,
+            requiresCompanyCashAuth: true,
+          },
+        },
+      ],
     },
   ],
 }
