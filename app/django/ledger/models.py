@@ -4,8 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 
-from ledger.services.sync_payment_contract import is_bulk_import_active, _sync_contract_payment_for_entry, \
-    trigger_sync_contract_payment
+from ledger.services.sync_payment_contract import trigger_sync_contract_payment
 
 
 # ============================================

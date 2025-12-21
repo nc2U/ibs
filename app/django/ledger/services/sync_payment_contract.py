@@ -1,14 +1,11 @@
+from django.apps import apps
+from django.db import transaction
 import threading
 import logging
 
-from django.db import transaction
-
 from payment.models import ContractPayment
-from ledger.models import ProjectAccountingEntry
 
 logger = logging.getLogger(__name__)
-
-# Thread-local storage for bulk import flags
 _thread_locals = threading.local()
 
 
@@ -36,14 +33,23 @@ def _sync_contract_payment_for_entry(instance):
     if not instance.account:
         return
 
+    # ✅ 런타임 안전 모델 로딩
+    ProjectAccountingEntry = apps.get_model(
+        'ledger', 'ProjectAccountingEntry'
+    )
+
     # Re-fetch an instance to ensure it's fully committed/loaded from the current transaction's perspective.
     # This helps prevent "not a valid choice" errors in OneToOneField assignments during bulk imports.
+    # ✅ PK 기준 재조회 (import-export FK validation 문제 해결)
     if instance.pk:  # Only try to fetch if it has been saved (i.e., has a primary key)
         try:
-            instance = ProjectAccountingEntry.objects.get(pk=instance.pk)
+            instance = ProjectAccountingEntry.objects.select_related(
+                'account', 'contract', 'project'
+            ).get(pk=instance.pk)
         except ProjectAccountingEntry.DoesNotExist:
-            logger.error(
-                f"ProjectAccountingEntry (pk={instance.pk}) not found in DB after save. Skipping ContractPayment sync.")
+            logger.warning(
+                f"ProjectAccountingEntry(pk={instance.pk}) not found. Skip sync."
+            )
             return
 
     is_payment_account = instance.account.is_payment
@@ -65,7 +71,7 @@ def _sync_contract_payment_for_entry(instance):
 
         update_fields = []
         if not created:
-            if contract_payment.contract != instance.contract:
+            if contract_payment.contract_id != instance.contract_id:
                 contract_payment.contract = instance.contract
                 update_fields.append('contract')
 
@@ -78,16 +84,17 @@ def _sync_contract_payment_for_entry(instance):
     else:
         try:
             contract_payment = instance.contract_payment
-            update_fields = []
-            if not contract_payment.is_payment_mismatch:
-                contract_payment.is_payment_mismatch = True
-                update_fields.append('is_payment_mismatch')
-
-            if contract_payment.contract != instance.contract:
-                contract_payment.contract = instance.contract
-                update_fields.append('contract')
-
-            if update_fields:
-                contract_payment.save(update_fields=update_fields + ['updated_at'])
         except ContractPayment.DoesNotExist:
-            pass
+            return
+
+        update_fields = []
+        if not contract_payment.is_payment_mismatch:
+            contract_payment.is_payment_mismatch = True
+            update_fields.append('is_payment_mismatch')
+
+        if contract_payment.contract_id != instance.contract_id:
+            contract_payment.contract = instance.contract
+            update_fields.append('contract')
+
+        if update_fields:
+            contract_payment.save(update_fields=update_fields + ['updated_at'])
