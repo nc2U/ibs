@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 
-from payment.models import ContractPayment
+from ledger.services.sync_payment_contract import is_bulk_import_active, _sync_contract_payment_for_entry
 
 
 # ============================================
@@ -764,62 +764,9 @@ class ProjectAccountingEntry(AccountingEntry):
         self.full_clean()
         super().save(*args, **kwargs)
 
-        # ContractPayment 자동 동기화 로직 시작
-        # 시나리오:
-        # 1. is_payment=True → ContractPayment 베이스 인스턴스 자동 생성
-        # 2. is_payment=False → 기존 ContractPayment에 mismatch 플래그 표시
-        # 3. is_payment=False → True → mismatch 플래그 해제
-        if not self.account:  # account가 없으면 처리하지 않음
-            return
-
-        is_payment_account = self.account.is_payment
-
-        if is_payment_account:  # is_payment 계정인 경우, ContractPayment 객체를 가져오거나 생성 (get_or_create 사용)
-            bank_transaction = self.related_transaction
-            creator = bank_transaction.creator if bank_transaction else None
-            defaults = {
-                'project': self.project,
-                'is_payment_mismatch': False,
-                'creator': creator,
-                'contract': self.contract,  # Initial contract assignment
-                'installment_order': self.installment_order,  # 데이터 이관용 코드 - 이관 후 삭제
-            }
-            contract_payment, created = ContractPayment.objects.get_or_create(
-                accounting_entry=self,
-                defaults=defaults
-            )
-
-            update_fields = []
-            if not created:  # If it was not newly created, we might need to update its fields
-                if contract_payment.contract != self.contract:
-                    contract_payment.contract = self.contract
-                    update_fields.append('contract')
-
-                if contract_payment.is_payment_mismatch:  # Reset mismatch flag if it was True
-                    contract_payment.is_payment_mismatch = False
-                    update_fields.append('is_payment_mismatch')
-
-                if update_fields:
-                    contract_payment.save(update_fields=update_fields + ['updated_at'])
-        else:  # not is_payment_account
-            try:  # Try to get existing contract_payment
-                contract_payment = self.contract_payment
-                # If a ContractPayment exists for a non-payment account, its contract field should sync with instance.contract
-                # and it should be flagged as mismatched if it's not already.
-                update_fields = []
-                if not contract_payment.is_payment_mismatch:
-                    contract_payment.is_payment_mismatch = True
-                    update_fields.append('is_payment_mismatch')
-
-                # Sync contract or null. This handles the user's specific request for existing ContractPayments.
-                if contract_payment.contract != self.contract:
-                    contract_payment.contract = self.contract
-                    update_fields.append('contract')
-
-                if update_fields:
-                    contract_payment.save(update_fields=update_fields + ['updated_at'])
-            except ContractPayment.DoesNotExist:
-                pass  # is_payment 계정이 아니며 ContractPayment도 없으므로 아무것도 하지 않음
+        # 대량 가져오기 중에는 이 로직을 건너뜀 (resources.py의 after_save_instance에서 처리)
+        if not is_bulk_import_active():
+            _sync_contract_payment_for_entry(self)
 
 
 # ============================================

@@ -1,5 +1,3 @@
-import threading
-
 from django.db import transaction
 from import_export import resources, fields, widgets
 
@@ -7,6 +5,7 @@ from django.contrib.auth import get_user_model
 from company.models import Company
 from ibs.models import AccountSort
 
+from ledger.services.sync_payment_contract import set_bulk_import_active, _sync_contract_payment_for_entry
 from .models import (
     CompanyAccount, ProjectAccount,
     CompanyBankTransaction, ProjectBankTransaction,
@@ -14,19 +13,6 @@ from .models import (
 )
 
 User = get_user_model()
-
-# Thread-local storage for bulk import flags
-_thread_locals = threading.local()
-
-
-def is_bulk_import_active():
-    """Check if bulk import is currently active in this thread"""
-    return getattr(_thread_locals, 'bulk_import_active', False)
-
-
-def set_bulk_import_active(active=True):
-    """Set bulk import flag for current thread"""
-    _thread_locals.bulk_import_active = active
 
 
 class CompanyAccountResource(resources.ModelResource):
@@ -511,6 +497,13 @@ class CompanyAccountingEntryResource(BaseTransactionResource):
 
 class ProjectAccountingEntryResource(BaseTransactionResource):
     """Resource for ProjectAccountingEntry with bulk operations"""
+
+    def after_save_instance(self, instance, using_transactions, dry_run):
+        """
+        Call the synchronization logic after each instance is saved during import.
+        """
+        if not dry_run:
+            _sync_contract_payment_for_entry(instance)
 
     class Meta:
         model = ProjectAccountingEntry
