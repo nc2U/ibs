@@ -112,7 +112,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <CCallout color="primary" class="pb-0 mb-4" :class="bgLight">
+  <CCallout color="success" class="pb-0 mb-4" :class="bgLight">
     <CRow>
       <CCol lg="8">
         <CRow>
