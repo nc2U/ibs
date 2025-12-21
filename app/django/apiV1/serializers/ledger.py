@@ -276,7 +276,6 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
     account_name = serializers.CharField(source='account.name', read_only=True)
     account_code = serializers.CharField(source='account.code', read_only=True)
     account_full_path = serializers.CharField(source='account.get_full_path', read_only=True)
-    affiliate_display = serializers.SerializerMethodField(read_only=True)
     evidence_type_display = serializers.CharField(source='get_evidence_type_display', read_only=True)
     contract_payment = serializers.SerializerMethodField(read_only=True)
 
@@ -285,7 +284,6 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
         fields = ('pk', 'transaction_id', 'project', 'project_name',
                   'sort', 'sort_name',
                   'account', 'account_name', 'account_code', 'account_full_path',
-                  'affiliate', 'affiliate_display',
                   'amount', 'trader', 'evidence_type', 'evidence_type_display',
                   'created_at', 'updated_at', 'contract_payment')
         read_only_fields = ('created_at', 'updated_at')
@@ -295,13 +293,6 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
         """BankTransaction의 sort ID 반환"""
         transaction = obj.related_transaction
         return transaction.sort_id if transaction else None
-
-    @staticmethod
-    def get_affiliate_display(obj):
-        """관계회사/프로젝트 표시"""
-        if obj.affiliate:
-            return str(obj.affiliate)
-        return None
 
     @staticmethod
     def get_contract_payment(obj):
