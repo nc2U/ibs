@@ -215,8 +215,10 @@ class CompanyAccountingEntryResource(BaseTransactionResource):
         )
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
-        """Skip rows with validation errors"""
-        # Skip if required fields are missing
+        """
+        Skip required fields are missing or rows that cannot produce accounting integrity.
+        Skipped rows will NOT be synchronized to ContractPayment.
+        """
         if not instance.transaction_id or not instance.account:
             return True
         return super().skip_row(instance, original, row, import_validation_errors)
