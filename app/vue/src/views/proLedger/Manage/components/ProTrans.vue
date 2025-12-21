@@ -338,7 +338,7 @@ const handleUpdate = async () => {
           <CTableRow
             v-for="entry in proTrans.accounting_entries"
             :key="entry.pk"
-            class="bg-yellow-lighten-5"
+            class="bg-light-green-lighten-5"
           >
             <CTableDataCell
               :class="{
@@ -346,7 +346,7 @@ const handleUpdate = async () => {
                 'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_affiliate'),
                 pointer: !isEditing('entry', entry.pk!, 'account_affiliate'),
               }"
-              class="bg-yellow-lighten-4"
+              class="bg-light-green-lighten-4"
               style="position: relative"
             >
               <div
