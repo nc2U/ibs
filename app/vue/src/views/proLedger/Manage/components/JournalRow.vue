@@ -33,8 +33,7 @@ interface Emits {
 }
 const emit = defineEmits<Emits>()
 
-const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
-const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
+const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
 const accountFilterType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
   if (props.sort === 2) return 'withdraw' // 출금
@@ -61,7 +60,7 @@ const removeEntry = (index: number) => {
       <CTableDataCell>
         <LedgerAccount
           v-model="row.account"
-          :options="comAccounts ?? []"
+          :options="proAccounts ?? []"
           :sort-type="accountFilterType"
         />
       </CTableDataCell>
