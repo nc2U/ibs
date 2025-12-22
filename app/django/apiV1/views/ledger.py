@@ -934,13 +934,8 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             # 계약 결제 정보가 있는 경우 포함
             if 'contract_payments' in result:
                 response_data['contract_payments'] = [
-                    {
-                        'pk': cp.pk,
-                        'contract': cp.contract_id,
-                        'installment_order': cp.installment_order_id,
-                    }
-                    for cp in result['contract_payments']
-                ]
+                    {'pk': cp.pk, 'contract': cp.contract_id, 'installment_order': cp.installment_order_id, }
+                    for cp in result['contract_payments']]
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -966,13 +961,8 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             # 계약 결제 정보가 있는 경우 포함
             if 'contract_payments' in result:
                 response_data['contract_payments'] = [
-                    {
-                        'pk': cp.pk,
-                        'contract': cp.contract_id,
-                        'installment_order': cp.installment_order_id,
-                    }
-                    for cp in result['contract_payments']
-                ]
+                    {'pk': cp.pk, 'contract': cp.contract_id, 'installment_order': cp.installment_order_id, } for cp in
+                    result['contract_payments']]
             return Response(response_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -999,13 +989,8 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             # 계약 결제 정보가 있는 경우 포함
             if 'contract_payments' in result:
                 response_data['contract_payments'] = [
-                    {
-                        'pk': cp.pk,
-                        'contract': cp.contract_id,
-                        'installment_order': cp.installment_order_id,
-                    }
-                    for cp in result['contract_payments']
-                ]
+                    {'pk': cp.pk, 'contract': cp.contract_id, 'installment_order': cp.installment_order_id, } for cp in
+                    result['contract_payments']]
             return Response(response_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
