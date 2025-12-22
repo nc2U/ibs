@@ -646,7 +646,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 project_id=validated_data['project'],
                 account_id=entry_data['account'],
                 contract_id=entry_data.get('contract'),
-                installment_order=entry_data.get('installment_order'),
+                installment_order_id=entry_data.get('installment_order'),
                 amount=entry_data['amount'],
                 trader=entry_data.get('trader', ''),
                 evidence_type=entry_data.get('evidence_type'),
@@ -748,9 +748,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                         )
 
                         # 회계분개 필드 업데이트
-                        # accounting_entry.sort_id = instance.sort_id # CompanyAccountingEntry 모델에 sort_id 필드가 없어 불필요함
                         accounting_entry.account_id = entry_data['account']
-                        accounting_entry.affiliate_id = entry_data.get('affiliate')
                         accounting_entry.amount = entry_data['amount']
                         accounting_entry.trader = entry_data.get('trader', '')
                         accounting_entry.evidence_type = entry_data.get('evidence_type')
@@ -827,9 +825,9 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         return ProjectAccountingEntry.objects.create(
             transaction_id=instance.transaction_id,
             project_id=instance.project_id,
-            sort_id=entry_data['sort'],
             account_id=entry_data['account'],
-            affiliate_id=entry_data.get('affiliate'),
+            contract_id=entry_data.get('contract'),
+            installment_order_id=entry_data.get('installment_order'),
             amount=entry_data['amount'],
             trader=entry_data.get('trader', ''),
             evidence_type=entry_data.get('evidence_type'),
@@ -843,11 +841,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 project_id=project_id,
                 contract_id=entry_data['contract'],
                 installment_order_id=entry_data.get('installment_order'),
-                payment_type=entry_data.get('payment_type', 'PAYMENT'),
-                refund_contractor_id=entry_data.get('refund_contractor'),
-                refund_reason=entry_data.get('refund_reason', ''),
-                is_special_purpose=entry_data.get('is_special_purpose', False),
-                special_purpose_type=entry_data.get('special_purpose_type', ''),
                 creator=self.context.get('request').user if self.context.get('request') else None,
             )
         else:
