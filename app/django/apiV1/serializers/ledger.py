@@ -669,11 +669,11 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         """
-        기존 프로젝트 거래 업데이트
+        기존 프로젝트 거래 업데이트 (PATCH 지원 강화)
 
         회계분개 수정 방식:
-        1. entries_data에 'id' 포함: 기존 분개 수정
-        2. entries_data에 'id' 없음: 새 분개 생성
+        1. entries_data에 'pk' 포함: 기존 분개 수정
+        2. entries_data에 'pk' 없음: 새 분개 생성
         3. 기존에 있던 분개가 entries_data에 없으면: 삭제
 
         ContractPayment 자동 처리:
@@ -701,10 +701,10 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             ).select_related('account')
 
             # 업데이트할 분개 ID 추출
-            update_entry_ids = [entry_data.get('id') for entry_data in entries_data if entry_data.get('id')]
+            update_entry_pks = [entry_data.get('pk') for entry_data in entries_data if entry_data.get('pk')]
 
             # 삭제할 분개들 (entries_data에 없는 기존 분개들)
-            entries_to_delete = existing_entries.exclude(id__in=update_entry_ids)
+            entries_to_delete = existing_entries.exclude(id__in=update_entry_pks)
             for entry in entries_to_delete:
                 # ContractPayment가 있으면 함께 삭제됨 (CASCADE)
                 entry.delete()
@@ -712,21 +712,28 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             accounting_entries = []
 
             for entry_data in entries_data:
-                entry_id = entry_data.get('id')
+                entry_pk = entry_data.get('pk')
 
-                if entry_id:
+                if entry_pk:
                     # 기존 회계분개 수정
                     try:
                         accounting_entry = ProjectAccountingEntry.objects.get(
-                            id=entry_id,
-                            transaction_id=instance.transaction_id
+                            pk=entry_pk, transaction_id=instance.transaction_id
                         )
 
                         # 회계분개 필드 업데이트
-                        accounting_entry.account_id = entry_data['account']
-                        accounting_entry.amount = entry_data['amount']
-                        accounting_entry.trader = entry_data.get('trader', '')
-                        accounting_entry.evidence_type = entry_data.get('evidence_type')
+                        if 'account' in entry_data:
+                            accounting_entry.account_id = entry_data['account']
+                        if 'amount' in entry_data:
+                            accounting_entry.amount = entry_data['amount']
+                        if 'trader' in entry_data:
+                            accounting_entry.trader = entry_data['trader']
+                        if 'evidence_type' in entry_data:
+                            accounting_entry.evidence_type = entry_data['evidence_type']
+                        if 'contract' in entry_data:
+                            accounting_entry.contract_id = entry_data['contract']
+
+                        accounting_entry.full_clean()
                         accounting_entry.save()  # Model의 save가 trigger를 호출
 
                     except ProjectAccountingEntry.DoesNotExist:
