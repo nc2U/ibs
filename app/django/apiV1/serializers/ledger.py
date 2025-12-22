@@ -637,7 +637,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
 
         # 3. 회계 분개 배열 생성
         accounting_entries = []
-        contract_payments = []
 
         for entry_data in entries_data:
             # 회계 분개 생성
@@ -653,41 +652,10 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             )
             accounting_entries.append(accounting_entry)
 
-            # ContractPayment 베이스 인스턴스 자동 생성 (is_payment=True인 경우)
-            if accounting_entry.account and accounting_entry.account.is_payment:
-                # 계약 정보가 제공된 경우: 완전한 인스턴스 생성
-                if entry_data.get('contract'):
-                    contract_payment = ContractPayment.objects.create(
-                        accounting_entry=accounting_entry,
-                        project_id=validated_data['project'],
-                        contract_id=entry_data['contract'],
-                        installment_order_id=entry_data.get('installment_order'),
-                        payment_type=entry_data.get('payment_type', 'PAYMENT'),
-                        refund_contractor_id=entry_data.get('refund_contractor'),
-                        refund_reason=entry_data.get('refund_reason', ''),
-                        is_special_purpose=entry_data.get('is_special_purpose', False),
-                        special_purpose_type=entry_data.get('special_purpose_type', ''),
-                        creator=self.context.get('request').user if self.context.get('request') else None,
-                    )
-                else:
-                    # 계약 정보 없는 경우: 베이스 인스턴스만 생성 (나중에 관리자에서 세부 정보 입력)
-                    contract_payment = ContractPayment.objects.create(
-                        accounting_entry=accounting_entry,
-                        project_id=validated_data['project'],
-                        creator=self.context.get('request').user if self.context.get('request') else None,
-                    )
-
-                contract_payments.append(contract_payment)
-
         result = {
             'bank_transaction': bank_tx,
             'accounting_entries': accounting_entries,
         }
-
-        # 계약 결제가 생성된 경우 포함
-        if contract_payments:
-            result['contract_payments'] = contract_payments
-
         return result
 
     @transaction.atomic
@@ -701,7 +669,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         3. 기존에 있던 분개가 entries_data에 없으면: 삭제
 
         ContractPayment 자동 처리:
-        - is_payment 변경 감지하여 자동 생성/수정/삭제
+        - Model의 save()에서 trigger_sync_contract_payment가 호출되어 처리
         """
         # 1. 회계분개 데이터 추출
         entries_data = validated_data.pop('accounting_entries', None)
@@ -728,7 +696,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 entry.delete()
 
             accounting_entries = []
-            contract_payments = []
 
             for entry_data in entries_data:
                 entry_id = entry_data.get('id')
@@ -741,70 +708,19 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                             transaction_id=instance.transaction_id
                         )
 
-                        # 이전 is_payment 상태 저장
-                        old_is_payment = (
-                                accounting_entry.account and
-                                accounting_entry.account.is_payment
-                        )
-
                         # 회계분개 필드 업데이트
                         accounting_entry.account_id = entry_data['account']
                         accounting_entry.amount = entry_data['amount']
                         accounting_entry.trader = entry_data.get('trader', '')
                         accounting_entry.evidence_type = entry_data.get('evidence_type')
-                        accounting_entry.save()
-
-                        # 새로운 is_payment 상태 확인
-                        new_is_payment = (
-                                accounting_entry.account and
-                                accounting_entry.account.is_payment
-                        )
-
-                        # ContractPayment 처리
-                        has_contract_payment = hasattr(accounting_entry, 'contract_payment')
-
-                        if not old_is_payment and new_is_payment:
-                            # False → True: 새 ContractPayment 생성
-                            if not has_contract_payment:
-                                contract_payment = self._create_contract_payment(
-                                    accounting_entry, instance.project_id, entry_data
-                                )
-                                contract_payments.append(contract_payment)
-
-                        elif old_is_payment and not new_is_payment:
-                            # True → False: Signal이 mismatch 플래그 설정 처리
-                            pass  # Signal에서 자동 처리
-
-                        elif old_is_payment and new_is_payment and has_contract_payment:
-                            # True → True: 기존 ContractPayment 업데이트 (계약 정보가 있는 경우)
-                            if entry_data.get('contract'):
-                                contract_payment = accounting_entry.contract_payment
-                                contract_payment.contract_id = entry_data['contract']
-                                contract_payment.installment_order_id = entry_data.get('installment_order')
-                                contract_payment.payment_type = entry_data.get('payment_type', 'PAYMENT')
-                                contract_payment.refund_contractor_id = entry_data.get('refund_contractor')
-                                contract_payment.refund_reason = entry_data.get('refund_reason', '')
-                                contract_payment.is_special_purpose = entry_data.get('is_special_purpose', False)
-                                contract_payment.special_purpose_type = entry_data.get('special_purpose_type', '')
-                                contract_payment.save()
-                                contract_payments.append(contract_payment)
+                        accounting_entry.save() # Model의 save가 trigger를 호출
 
                     except ProjectAccountingEntry.DoesNotExist:
                         # ID가 잘못된 경우 새로 생성
                         accounting_entry = self._create_accounting_entry(instance, entry_data)
-                        contract_payment = self._handle_new_accounting_entry_payment(
-                            accounting_entry, instance.project_id, entry_data
-                        )
-                        if contract_payment:
-                            contract_payments.append(contract_payment)
                 else:
                     # 새 회계분개 생성
                     accounting_entry = self._create_accounting_entry(instance, entry_data)
-                    contract_payment = self._handle_new_accounting_entry_payment(
-                        accounting_entry, instance.project_id, entry_data
-                    )
-                    if contract_payment:
-                        contract_payments.append(contract_payment)
 
                 accounting_entries.append(accounting_entry)
 
@@ -812,11 +728,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             'bank_transaction': instance,
             'accounting_entries': accounting_entries if entries_data else [],
         }
-
-        # 계약 결제가 생성/수정된 경우 포함
-        if entries_data and contract_payments:
-            result['contract_payments'] = contract_payments
-
         return result
 
     @staticmethod
@@ -832,29 +743,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             trader=entry_data.get('trader', ''),
             evidence_type=entry_data.get('evidence_type'),
         )
-
-    def _create_contract_payment(self, accounting_entry, project_id, entry_data):
-        """ContractPayment 생성 헬퍼 메서드"""
-        if entry_data.get('contract'):
-            return ContractPayment.objects.create(
-                accounting_entry=accounting_entry,
-                project_id=project_id,
-                contract_id=entry_data['contract'],
-                installment_order_id=entry_data.get('installment_order'),
-                creator=self.context.get('request').user if self.context.get('request') else None,
-            )
-        else:
-            return ContractPayment.objects.create(
-                accounting_entry=accounting_entry,
-                project_id=project_id,
-                creator=self.context.get('request').user if self.context.get('request') else None,
-            )
-
-    def _handle_new_accounting_entry_payment(self, accounting_entry, project_id, entry_data):
-        """새 회계분개의 ContractPayment 처리 헬퍼 메서드"""
-        if accounting_entry.account and accounting_entry.account.is_payment:
-            return self._create_contract_payment(accounting_entry, project_id, entry_data)
-        return None
 
 
 # ============================================
