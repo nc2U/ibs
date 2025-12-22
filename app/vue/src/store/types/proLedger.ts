@@ -58,15 +58,15 @@ export interface ProBankTrans {
 export interface ProAccountingEntry {
   pk: number
   transaction_id: string
-  company: number
+  project: number
   sort: 1 | 2
   sort_name: '입금' | '출금'
   account: number
   account_name: string
   account_code: string
   account_full_path: string
-  affiliate: number | null
-  affiliate_display: string | null
+  contract: number | null
+  contract_display: string | null
   amount: number
   trader: string
   evidence_type: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
@@ -79,6 +79,12 @@ export interface ProAccountingEntry {
     | '현금영수증'
     | '원천징수영수증/지급명세서'
     | '지로용지 및 청구서'
+  contract_payment: {
+    pk: number
+    contract: number
+    contract_serial: string | null
+    installment_order: number | null
+  } | null
   created_at: string
   updated_at: string
 }

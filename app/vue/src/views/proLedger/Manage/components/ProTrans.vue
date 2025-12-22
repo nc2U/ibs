@@ -27,6 +27,13 @@ const allowedPeriod = computed(
 )
 
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
+const getContracts = inject<ComputedRef<{ value: number; label: string }[]>>('getContracts')
+
+// 선택된 account가 contract를 요구하는지 확인
+const getAccountById = (accountId: number | null | undefined): AccountPicker | undefined => {
+  if (!accountId || !proAccounts?.value) return undefined
+  return proAccounts.value.find(acc => acc.value === accountId)
+}
 
 const sortType = computed(() => {
   if (props.proTrans.sort === 1) return 'deposit' // 입금
@@ -62,7 +69,7 @@ const handleAccountClick = (entry: ProAccountingEntry, event: MouseEvent) => {
 
   // 현재 항목이 이미 편집 중이라면 → 닫기 (토글)
   // 이 경우 handlePickerClose()는 상태 초기화와 동시에 handleUpdate()를 호출하여 저장 시도
-  if (isEditing('entry', entry.pk!, 'account_affiliate')) {
+  if (isEditing('entry', entry.pk!, 'account_contract')) {
     handlePickerClose()
     return
   }
@@ -101,7 +108,7 @@ const handleAccountClick = (entry: ProAccountingEntry, event: MouseEvent) => {
   }
 
   // setEditing 함수를 통해 공유 editingState 업데이트
-  setEditing('entry', entry.pk!, 'account_affiliate', {
+  setEditing('entry', entry.pk!, 'account_contract', {
     account: entry.account,
     affiliate: entry.affiliate,
   })
@@ -116,7 +123,33 @@ const handleAccountClick = (entry: ProAccountingEntry, event: MouseEvent) => {
 }
 
 const handlePickerClose = async () => {
-  // 1. 관계회사가 필요한 계정인지 확인 -- deprecated
+  // 1. 계약 건 등록이 필요한 계정인지 확인
+  if (editingState.value?.field === 'account_contract' && editValue.value) {
+    const selectedAccount = getAccountById(editValue.value.account)
+
+    // 계약건 등록이 필요 없는 계정으로 변경한 경우 → affiliate를 null로 초기화
+    if (!selectedAccount?.is_related_contract && editValue.value.contract) {
+      editValue.value.contract = null
+    }
+
+    // 계약건 등록이 필요한데 설정되지 않은 경우
+    if (selectedAccount?.is_related_contract && !editValue.value.contract) {
+      // 스크롤 복원
+      const scrollY = document.body.style.top
+      const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
+      document.body.style.position = ''
+      document.body.style.top = ''
+      window.scrollTo(0, scrollValue)
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+      document.body.style.width = ''
+
+      // 현재 편집 중인 entry 찾기
+      const entry = props.proTrans.accounting_entries?.find(e => e.pk === editingState.value?.pk)
+
+      return
+    }
+  }
 
   // 2. 변경 사항 저장 (상태가 초기화되기 전에)
   await handleUpdate()
@@ -181,13 +214,13 @@ const handleUpdate = async () => {
         proLedgerStore.sharedEditingState = null
         return
       }
-    } else if (field === 'account_affiliate') {
+    } else if (field === 'account_contract') {
       const originalAccount = entry.account
-      const originalAffiliate = entry.affiliate
+      const originalContract = entry.contract
       const newAccount = editValue.value.account
-      const newAffiliate = editValue.value.affiliate
+      const newContract = editValue.value.contract
 
-      if (newAccount === originalAccount && newAffiliate === originalAffiliate) {
+      if (newAccount === originalAccount && newContract === originalContract) {
         proLedgerStore.sharedEditingState = null
         return
       }
@@ -343,22 +376,74 @@ const handleUpdate = async () => {
             <CTableDataCell
               :class="{
                 'account-cell': true,
-                'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_affiliate'),
-                pointer: !isEditing('entry', entry.pk!, 'account_affiliate'),
+                'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_contract'),
+                pointer: !isEditing('entry', entry.pk!, 'account_contract'),
               }"
               class="bg-light-green-lighten-4"
               style="position: relative"
             >
               <div
                 class="d-flex align-items-center justify-content-between bg-transparent"
-                :class="{ pointer: !isEditing('entry', entry.pk!, 'account_affiliate') }"
+                :class="{ pointer: !isEditing('entry', entry.pk!, 'account_contract') }"
                 @click="handleAccountClick(entry, $event)"
               >
                 <div class="d-flex align-items-center">
                   <span>{{ entry.account_name }}</span>
+                  <!--                  &lt;!&ndash; 관계회사 정보 표시 (이미 설정된 경우) - 클릭 가능 &ndash;&gt;-->
+                  <!--                  <v-tooltip v-if="entry.affiliate && allowedPeriod" location="top">-->
+                  <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
+                  <!--                      <v-icon-->
+                  <!--                        v-bind="tooltipProps"-->
+                  <!--                        icon="mdi-link-variant"-->
+                  <!--                        color="primary"-->
+                  <!--                        size="16"-->
+                  <!--                        class="ml-1 pointer"-->
+                  <!--                      />-->
+                  <!--                    </template>-->
+                  <!--                    <div class="pa-2">-->
+                  <!--                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>-->
+                  <!--                      <div class="mb-2">{{ entry.affiliate_display }}</div>-->
+                  <!--                      <div class="d-flex align-items-center text-primary font-weight-medium">-->
+                  <!--                        <v-icon icon="mdi-pencil" size="14" class="mr-1" />-->
+                  <!--                        클릭하여 변경-->
+                  <!--                      </div>-->
+                  <!--                    </div>-->
+                  <!--                  </v-tooltip>-->
+                  <!--                  &lt;!&ndash; 관계회사 정보 표시 (읽기 전용) &ndash;&gt;-->
+                  <!--                  <v-tooltip v-else-if="entry.affiliate && !allowedPeriod" location="top">-->
+                  <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
+                  <!--                      <v-icon-->
+                  <!--                        v-bind="tooltipProps"-->
+                  <!--                        icon="mdi-link-variant"-->
+                  <!--                        color="primary"-->
+                  <!--                        size="16"-->
+                  <!--                        class="ml-1"-->
+                  <!--                      />-->
+                  <!--                    </template>-->
+                  <!--                    <div class="pa-2">-->
+                  <!--                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>-->
+                  <!--                      <div>{{ entry.affiliate_display }}</div>-->
+                  <!--                    </div>-->
+                  <!--                  </v-tooltip>-->
+                  <!--                  &lt;!&ndash; 관계회사 설정 필요 아이콘 (설정 필요하지만 없는 경우) &ndash;&gt;-->
+                  <!--                  <v-tooltip-->
+                  <!--                    v-else-if="getAccountById(entry.account)?.req_affiliate && allowedPeriod"-->
+                  <!--                    location="top"-->
+                  <!--                  >-->
+                  <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
+                  <!--                      <v-icon-->
+                  <!--                        v-bind="tooltipProps"-->
+                  <!--                        icon="mdi-link-variant-plus"-->
+                  <!--                        color="warning"-->
+                  <!--                        size="16"-->
+                  <!--                        class="ml-1 pointer"-->
+                  <!--                      />-->
+                  <!--                    </template>-->
+                  <!--                    <span>관계회사를 선택하세요</span>-->
+                  <!--                  </v-tooltip>-->
                 </div>
                 <v-icon
-                  v-if="!isEditing('entry', entry.pk!, 'account_affiliate')"
+                  v-if="!isEditing('entry', entry.pk!, 'account_contract')"
                   icon="mdi-chevron-down"
                   size="16"
                   color="grey"
@@ -369,9 +454,7 @@ const handleUpdate = async () => {
               <Teleport to="body">
                 <LedgerAccountPicker
                   v-if="
-                    isEditing('entry', entry.pk!, 'account_affiliate') &&
-                    editValue &&
-                    pickerPosition
+                    isEditing('entry', entry.pk!, 'account_contract') && editValue && pickerPosition
                   "
                   v-model="editValue.account"
                   :options="proAccounts ?? []"

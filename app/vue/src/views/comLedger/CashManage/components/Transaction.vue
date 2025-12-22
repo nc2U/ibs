@@ -27,7 +27,6 @@ const allowedPeriod = computed(
 )
 
 const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
-const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
 
 // 선택된 account가 affiliate를 요구하는지 확인
 const getAccountById = (accountId: number | null | undefined): AccountPicker | undefined => {
