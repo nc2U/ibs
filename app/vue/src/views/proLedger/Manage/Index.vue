@@ -52,6 +52,7 @@ const project = computed(() => proStore.project?.pk)
 const fetchProject = (pk: number) => proStore.fetchProject(pk)
 
 const contStore = useContract()
+const getContracts = computed(() => contStore.getContracts)
 const fetchAllContracts = (projId: number) => contStore.fetchAllContracts(projId)
 
 const comLedgerStore = useComLedger()
@@ -64,6 +65,7 @@ const dataFilter = computed(() => proLedgerStore.proBankTransFilter)
 const proBankTransCount = computed(() => proLedgerStore.proBankTransCount)
 
 provide('proAccounts', proAccounts)
+provide('getContracts', getContracts)
 provide('allProBankList', allProBankList)
 provide('proBankTransCount', proBankTransCount)
 

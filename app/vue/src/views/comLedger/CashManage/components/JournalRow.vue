@@ -36,7 +36,7 @@ const emit = defineEmits<Emits>()
 
 const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
 const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
-const accountFilterType = computed(() => {
+const sortType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
   if (props.sort === 2) return 'withdraw' // 출금
   return null // 전체
@@ -84,11 +84,7 @@ const removeEntry = (index: number) => {
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell>
-        <LedgerAccount
-          v-model="row.account"
-          :options="comAccounts ?? []"
-          :sort-type="accountFilterType"
-        />
+        <LedgerAccount v-model="row.account" :options="comAccounts ?? []" :sort-type="sortType" />
         <!-- affiliate 필드가 필요한 경우 추가 드롭다운 표시 -->
         <div v-if="row.account && getAccountById(row.account)?.req_affiliate" class="pt-0 px-2">
           <CFormSelect v-model.number="row.affiliate" class="" placeholder="관계회사 선택">
