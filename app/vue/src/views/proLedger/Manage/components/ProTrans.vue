@@ -500,7 +500,7 @@ const handleUpdate = async () => {
 }
 
 .dark-theme .bg-light-green-lighten-4 {
-  background-color: #364636 !important;
+  background-color: #3d4b3d !important;
   color: #fff !important;
 }
 </style>
