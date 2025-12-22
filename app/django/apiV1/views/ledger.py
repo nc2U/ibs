@@ -926,7 +926,7 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             context={'request': request}
         )
         if serializer.is_valid():
-            result = serializer.save()
+            result = serializer.save(creator=request.user)  # creator를 serializer.save()로 전달
             response_data = {
                 'bank_transaction': ProjectBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': ProjectAccountingEntrySerializer(result['accounting_entries'], many=True).data,
@@ -938,7 +938,6 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
                         'pk': cp.pk,
                         'contract': cp.contract_id,
                         'installment_order': cp.installment_order_id,
-                        'payment_type': cp.payment_type,
                     }
                     for cp in result['contract_payments']
                 ]
@@ -971,7 +970,6 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
                         'pk': cp.pk,
                         'contract': cp.contract_id,
                         'installment_order': cp.installment_order_id,
-                        'payment_type': cp.payment_type,
                     }
                     for cp in result['contract_payments']
                 ]
@@ -1005,7 +1003,6 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
                         'pk': cp.pk,
                         'contract': cp.contract_id,
                         'installment_order': cp.installment_order_id,
-                        'payment_type': cp.payment_type,
                     }
                     for cp in result['contract_payments']
                 ]
