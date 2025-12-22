@@ -525,7 +525,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
 
 class ProjectAccountingEntryInputSerializer(serializers.Serializer):
     """프로젝트 회계분개 입력 시리얼라이저"""
-    # sort = serializers.IntegerField()
+    pk = serializers.IntegerField(required=False, allow_null=True)
     account = serializers.IntegerField()
     amount = serializers.IntegerField()
     trader = serializers.CharField(max_length=50, required=False, allow_blank=True)
@@ -713,7 +713,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                         accounting_entry.amount = entry_data['amount']
                         accounting_entry.trader = entry_data.get('trader', '')
                         accounting_entry.evidence_type = entry_data.get('evidence_type')
-                        accounting_entry.save() # Model의 save가 trigger를 호출
+                        accounting_entry.save()  # Model의 save가 trigger를 호출
 
                     except ProjectAccountingEntry.DoesNotExist:
                         # ID가 잘못된 경우 새로 생성
