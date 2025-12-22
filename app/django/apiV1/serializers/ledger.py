@@ -675,8 +675,14 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         entries_data = validated_data.pop('accounting_entries', None)
 
         # 2. 은행 거래 업데이트
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+        instance.project_id = validated_data.get('project', instance.project_id)
+        instance.bank_account_id = validated_data.get('bank_account', instance.bank_account_id)
+        instance.deal_date = validated_data.get('deal_date', instance.deal_date)
+        instance.sort_id = validated_data.get('sort', instance.sort_id)
+        instance.amount = validated_data.get('amount', instance.amount)
+        instance.content = validated_data.get('content', instance.content)
+        instance.note = validated_data.get('note', instance.note)
+        instance.is_imprest = validated_data.get('is_imprest', instance.is_imprest)
         instance.save()
 
         # 3. 회계분개 업데이트 (제공된 경우)
