@@ -34,7 +34,7 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
-const accountFilterType = computed(() => {
+const sortType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
   if (props.sort === 2) return 'withdraw' // 출금
   return null // 전체
@@ -58,11 +58,7 @@ const removeEntry = (index: number) => {
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell>
-        <LedgerAccount
-          v-model="row.account"
-          :options="proAccounts ?? []"
-          :sort-type="accountFilterType"
-        />
+        <LedgerAccount v-model="row.account" :options="proAccounts ?? []" :sort-type="sortType" />
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />
