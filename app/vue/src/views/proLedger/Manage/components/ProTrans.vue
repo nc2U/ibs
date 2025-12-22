@@ -110,7 +110,7 @@ const handleAccountClick = (entry: ProAccountingEntry, event: MouseEvent) => {
   // setEditing 함수를 통해 공유 editingState 업데이트
   setEditing('entry', entry.pk!, 'account_contract', {
     account: entry.account,
-    affiliate: entry.affiliate,
+    contract: entry.contract,
   })
 
   // 스크롤 제한 - body와 html 모두 제어
@@ -127,7 +127,7 @@ const handlePickerClose = async () => {
   if (editingState.value?.field === 'account_contract' && editValue.value) {
     const selectedAccount = getAccountById(editValue.value.account)
 
-    // 계약건 등록이 필요 없는 계정으로 변경한 경우 → affiliate를 null로 초기화
+    // 계약건 등록이 필요 없는 계정으로 변경한 경우 → contract를 null로 초기화
     if (!selectedAccount?.is_related_contract && editValue.value.contract) {
       editValue.value.contract = null
     }
@@ -390,7 +390,7 @@ const handleUpdate = async () => {
                 <div class="d-flex align-items-center">
                   <span>{{ entry.account_name }}</span>
                   <!--                  &lt;!&ndash; 관계회사 정보 표시 (이미 설정된 경우) - 클릭 가능 &ndash;&gt;-->
-                  <!--                  <v-tooltip v-if="entry.affiliate && allowedPeriod" location="top">-->
+                  <!--                  <v-tooltip v-if="entry.contract && allowedPeriod" location="top">-->
                   <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
                   <!--                      <v-icon-->
                   <!--                        v-bind="tooltipProps"-->
@@ -402,7 +402,7 @@ const handleUpdate = async () => {
                   <!--                    </template>-->
                   <!--                    <div class="pa-2">-->
                   <!--                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>-->
-                  <!--                      <div class="mb-2">{{ entry.affiliate_display }}</div>-->
+                  <!--                      <div class="mb-2">{{ entry.contract_display }}</div>-->
                   <!--                      <div class="d-flex align-items-center text-primary font-weight-medium">-->
                   <!--                        <v-icon icon="mdi-pencil" size="14" class="mr-1" />-->
                   <!--                        클릭하여 변경-->
@@ -410,7 +410,7 @@ const handleUpdate = async () => {
                   <!--                    </div>-->
                   <!--                  </v-tooltip>-->
                   <!--                  &lt;!&ndash; 관계회사 정보 표시 (읽기 전용) &ndash;&gt;-->
-                  <!--                  <v-tooltip v-else-if="entry.affiliate && !allowedPeriod" location="top">-->
+                  <!--                  <v-tooltip v-else-if="entry.contract && !allowedPeriod" location="top">-->
                   <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
                   <!--                      <v-icon-->
                   <!--                        v-bind="tooltipProps"-->
@@ -422,12 +422,12 @@ const handleUpdate = async () => {
                   <!--                    </template>-->
                   <!--                    <div class="pa-2">-->
                   <!--                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>-->
-                  <!--                      <div>{{ entry.affiliate_display }}</div>-->
+                  <!--                      <div>{{ entry.contract_display }}</div>-->
                   <!--                    </div>-->
                   <!--                  </v-tooltip>-->
                   <!--                  &lt;!&ndash; 관계회사 설정 필요 아이콘 (설정 필요하지만 없는 경우) &ndash;&gt;-->
                   <!--                  <v-tooltip-->
-                  <!--                    v-else-if="getAccountById(entry.account)?.req_affiliate && allowedPeriod"-->
+                  <!--                    v-else-if="getAccountById(entry.account)?.req_contract && allowedPeriod"-->
                   <!--                    location="top"-->
                   <!--                  >-->
                   <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
@@ -572,7 +572,7 @@ const handleUpdate = async () => {
   opacity: 1;
 }
 
-.affiliate-select {
+.contract-select {
   position: relative;
   z-index: 1;
 }
