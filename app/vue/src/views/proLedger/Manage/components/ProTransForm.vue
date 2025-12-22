@@ -116,10 +116,8 @@ const initializeEditForm = () => {
 // 표시할 행 목록
 const displayRows = computed(() => editableEntries.value)
 
-// 은행 거래 금액 - 생성/수정 모드에 따라 다른 소스
-const bankAmount = computed(() => {
-  return isCreateMode.value ? bankForm.amount || 0 : transaction.value?.amount || 0
-})
+// 은행 거래 금액
+const bankAmount = computed(() => bankForm.amount || 0)
 
 // 거래 구분 이름
 const sortName = computed(() => {
