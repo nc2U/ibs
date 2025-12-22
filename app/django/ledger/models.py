@@ -601,8 +601,8 @@ class AccountingEntry(models.Model):
     # Banking Domain 연결 (UUID 참조)
     transaction_id = models.UUIDField(db_index=True, verbose_name='거래 ID',
                                       help_text='BankTransaction.transaction_id 참조')
-    trader = models.CharField(max_length=50, verbose_name='거래처', help_text='거래 상대방', null=True, blank=True)
     amount = models.PositiveBigIntegerField(verbose_name='금액', help_text='이 회계 분개의 금액 (분할 시 일부 금액)')
+    trader = models.CharField(max_length=50, verbose_name='거래처', help_text='거래 상대방', null=True, blank=True)
     evidence_type = models.CharField(
         max_length=1,
         choices=[
