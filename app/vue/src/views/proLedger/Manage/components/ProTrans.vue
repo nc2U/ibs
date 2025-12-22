@@ -329,10 +329,10 @@ const handleUpdate = async () => {
       <CTableDataCell colspan="6" class="p-0">
         <CTable class="m-0 p-0">
           <colgroup>
-            <col style="width: 24%" />
             <col style="width: 28%" />
-            <col style="width: 16%" />
             <col style="width: 26%" />
+            <col style="width: 16%" />
+            <col style="width: 24%" />
             <col v-if="write_project_cash" style="width: 6%" />
           </colgroup>
           <CTableRow
@@ -495,12 +495,12 @@ const handleUpdate = async () => {
 }
 
 .dark-theme .bg-light-green-lighten-5 {
-  background-color: #415541 !important;
+  background-color: #384b38 !important;
   color: #fff !important;
 }
 
 .dark-theme .bg-light-green-lighten-4 {
-  background-color: #3d4b3d !important;
+  background-color: #2e402e !important;
   color: #fff !important;
 }
 </style>
