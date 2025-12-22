@@ -525,9 +525,8 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
 
 class ProjectAccountingEntryInputSerializer(serializers.Serializer):
     """프로젝트 회계분개 입력 시리얼라이저"""
-    sort = serializers.IntegerField()
+    # sort = serializers.IntegerField()
     account = serializers.IntegerField()
-    affiliate = serializers.IntegerField(required=False, allow_null=True)
     amount = serializers.IntegerField()
     trader = serializers.CharField(max_length=50, required=False, allow_blank=True)
     evidence_type = serializers.ChoiceField(choices=['0', '1', '2', '3', '4', '5', '6'], required=False,
@@ -536,19 +535,6 @@ class ProjectAccountingEntryInputSerializer(serializers.Serializer):
     # Contract Payment 필드 (선택적 - 이 회계분개가 계약 결제와 연결되는 경우)
     contract = serializers.IntegerField(required=False, allow_null=True)
     installment_order = serializers.IntegerField(required=False, allow_null=True)
-    payment_type = serializers.ChoiceField(
-        choices=['PAYMENT', 'REFUND', 'ADJUSTMENT'],
-        required=False,
-        allow_null=True
-    )
-    refund_contractor = serializers.IntegerField(required=False, allow_null=True)
-    refund_reason = serializers.CharField(required=False, allow_blank=True, default='')
-    is_special_purpose = serializers.BooleanField(default=False)
-    special_purpose_type = serializers.ChoiceField(
-        choices=['IMPREST', 'LOAN', 'GUARANTEE', 'OTHERS', ''],
-        required=False,
-        allow_blank=True
-    )
 
 
 class ProjectCompositeTransactionSerializer(serializers.Serializer):
@@ -658,9 +644,9 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             accounting_entry = ProjectAccountingEntry.objects.create(
                 transaction_id=bank_tx.transaction_id,
                 project_id=validated_data['project'],
-                sort_id=entry_data['sort'],
                 account_id=entry_data['account'],
-                affiliate_id=entry_data.get('affiliate'),
+                contract_id=entry_data.get('contract'),
+                installment_order=entry_data.get('installment_order'),
                 amount=entry_data['amount'],
                 trader=entry_data.get('trader', ''),
                 evidence_type=entry_data.get('evidence_type'),
