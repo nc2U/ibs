@@ -71,12 +71,9 @@ const handleAffiliateSelect = async (affiliateId: number | null) => {
 
   try {
     await ledgerStore.patchBankTransaction(payload)
-
-    // 편집 상태 초기화 (저장 완료 후)
-    if (editingState.value) {
-      ledgerStore.clearSharedPickerState()
-    }
   } finally {
+    // 편집 상태 초기화 (Picker는 이미 닫혔으므로 editValue만 초기화)
+    editValue.value = null
     selectedEntryForAffiliate.value = null
   }
 }
@@ -163,6 +160,9 @@ const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
 }
 
 const handlePickerClose = async () => {
+  // v-model 업데이트 완료를 보장하기 위해 nextTick 사용
+  await nextTick()
+
   // 1. 관계회사가 필요한 계정인지 확인
   if (editingState.value?.field === 'account_affiliate' && editValue.value) {
     const selectedAccount = getAccountById(editValue.value.account)
@@ -184,12 +184,18 @@ const handlePickerClose = async () => {
       document.body.style.overflow = ''
       document.body.style.width = ''
 
-      // 현재 편집 중인 entry 찾기
-      const entry = props.transaction.accounting_entries?.find(e => e.pk === editingState.value?.pk)
+      // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk 저장)
+      const entryPk = editingState.value?.pk
+      const entry = props.transaction.accounting_entries?.find(e => e.pk === entryPk)
 
+      // Picker 상태 정리 (Picker를 닫음)
+      ledgerStore.clearSharedPickerState()
+
+      // 관계회사 모달 열기
       if (entry) {
-        // 관계회사 모달 열기 (상태는 유지)
-        openAffiliateModal(entry)
+        // editingState가 초기화되었으므로 entry를 직접 사용
+        selectedEntryForAffiliate.value = entry
+        affiliateModalVisible.value = true
       }
       return
     }

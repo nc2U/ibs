@@ -126,7 +126,10 @@ const selectableOptions = computed(() => {
 const selectOption = (option: AccountPicker) => {
   if (!option.is_cate_only) {
     emit('update:modelValue', option.value)
-    emit('close')
+    // v-model 업데이트가 완료된 후 close 이벤트 발생
+    nextTick(() => {
+      emit('close')
+    })
   }
 }
 
@@ -296,7 +299,7 @@ onUnmounted(() => {
           'selected-item': option.value === modelValue,
           'keyboard-active': selectableOptions[selectedIndex]?.value === option.value,
         }"
-        @click="selectOption(option)"
+        @click.stop="selectOption(option)"
       >
         <span :style="`padding-left: ${(option.depth || 0) * 12}px`">
           {{ option.label }}

@@ -72,12 +72,9 @@ const handleContractSelect = async (contractId: number | null) => {
 
   try {
     await proLedgerStore.patchProBankTrans(payload)
-
-    // 편집 상태 초기화 (저장 완료 후)
-    if (editingState.value) {
-      proLedgerStore.clearSharedPickerState()
-    }
   } finally {
+    // 편집 상태 초기화 (Picker는 이미 닫혔으므로 editValue만 초기화)
+    editValue.value = null
     selectedEntryForContract.value = null
   }
 }
@@ -164,9 +161,19 @@ const handleAccountClick = (entry: ProAccountingEntry, event: MouseEvent) => {
 }
 
 const handlePickerClose = async () => {
+  // v-model 업데이트 완료를 보장하기 위해 nextTick 사용
+  await nextTick()
+
   // 1. 계약 건 등록이 필요한 계정인지 확인
   if (editingState.value?.field === 'account_contract' && editValue.value) {
     const selectedAccount = getAccountById(editValue.value.account)
+
+    console.log('ProTrans handlePickerClose:', {
+      accountId: editValue.value.account,
+      selectedAccount: selectedAccount,
+      is_related_contract: selectedAccount?.is_related_contract,
+      currentContract: editValue.value.contract,
+    })
 
     // 계약정보가 필요 없는 계정으로 변경한 경우 → contract를 null로 초기화
     if (!selectedAccount?.is_related_contract && editValue.value.contract) {
@@ -175,6 +182,8 @@ const handlePickerClose = async () => {
 
     // 계약정보가 필요한데 설정되지 않은 경우
     if (selectedAccount?.is_related_contract && !editValue.value.contract) {
+      console.log('ProTrans: Opening contract modal')
+
       // 스크롤 복원
       const scrollY = document.body.style.top
       const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
@@ -185,13 +194,32 @@ const handlePickerClose = async () => {
       document.body.style.overflow = ''
       document.body.style.width = ''
 
-      // 현재 편집 중인 entry 찾기
-      const entry = props.proTrans.accounting_entries?.find(e => e.pk === editingState.value?.pk)
+      // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk와 account 저장)
+      const entryPk = editingState.value?.pk
+      const selectedAccountId = editValue.value.account
+      const entry = props.proTrans.accounting_entries?.find(e => e.pk === entryPk)
 
-      if (entry) {
-        // 계약정보 모달 열기 (상태는 유지)
-        openContractModal(entry)
-      }
+      console.log('ProTrans: Entry found:', { entryPk, entry, selectedAccountId })
+
+      // Picker 상태 정리 (Picker를 닫음)
+      proLedgerStore.clearSharedPickerState()
+
+      // Picker가 완전히 닫힌 후 모달 열기
+      nextTick(() => {
+        if (entry) {
+          console.log('ProTrans: Setting modal state')
+          // editingState가 초기화되었으므로 entry를 직접 사용
+          // 새로 선택한 account를 entry에 반영
+          selectedEntryForContract.value = { ...entry, account: selectedAccountId }
+          contractModalVisible.value = true
+          console.log('ProTrans: Modal state set:', {
+            selectedEntryForContract: selectedEntryForContract.value,
+            contractModalVisible: contractModalVisible.value,
+          })
+        } else {
+          console.error('ProTrans: Entry not found, cannot open modal')
+        }
+      })
       return
     }
   }
@@ -573,6 +601,14 @@ const handleUpdate = async () => {
         </CTable>
       </CTableDataCell>
     </CTableRow>
+
+    <!-- 계약정보 선택 모달 -->
+    <ContractSelectModal
+      v-model="contractModalVisible"
+      :contract="selectedEntryForContract?.contract"
+      :account-name="selectedEntryForContract?.account_name"
+      @select="handleContractSelect"
+    />
   </template>
 </template>
 
