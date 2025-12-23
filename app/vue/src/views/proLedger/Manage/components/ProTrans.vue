@@ -389,58 +389,58 @@ const handleUpdate = async () => {
               >
                 <div class="d-flex align-items-center">
                   <span>{{ entry.account_name }}</span>
-                  <!--                  &lt;!&ndash; 관계회사 정보 표시 (이미 설정된 경우) - 클릭 가능 &ndash;&gt;-->
-                  <!--                  <v-tooltip v-if="entry.contract && allowedPeriod" location="top">-->
-                  <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
-                  <!--                      <v-icon-->
-                  <!--                        v-bind="tooltipProps"-->
-                  <!--                        icon="mdi-link-variant"-->
-                  <!--                        color="primary"-->
-                  <!--                        size="16"-->
-                  <!--                        class="ml-1 pointer"-->
-                  <!--                      />-->
-                  <!--                    </template>-->
-                  <!--                    <div class="pa-2">-->
-                  <!--                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>-->
-                  <!--                      <div class="mb-2">{{ entry.contract_display }}</div>-->
-                  <!--                      <div class="d-flex align-items-center text-primary font-weight-medium">-->
-                  <!--                        <v-icon icon="mdi-pencil" size="14" class="mr-1" />-->
-                  <!--                        클릭하여 변경-->
-                  <!--                      </div>-->
-                  <!--                    </div>-->
-                  <!--                  </v-tooltip>-->
-                  <!--                  &lt;!&ndash; 관계회사 정보 표시 (읽기 전용) &ndash;&gt;-->
-                  <!--                  <v-tooltip v-else-if="entry.contract && !allowedPeriod" location="top">-->
-                  <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
-                  <!--                      <v-icon-->
-                  <!--                        v-bind="tooltipProps"-->
-                  <!--                        icon="mdi-link-variant"-->
-                  <!--                        color="primary"-->
-                  <!--                        size="16"-->
-                  <!--                        class="ml-1"-->
-                  <!--                      />-->
-                  <!--                    </template>-->
-                  <!--                    <div class="pa-2">-->
-                  <!--                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>-->
-                  <!--                      <div>{{ entry.contract_display }}</div>-->
-                  <!--                    </div>-->
-                  <!--                  </v-tooltip>-->
-                  <!--                  &lt;!&ndash; 관계회사 설정 필요 아이콘 (설정 필요하지만 없는 경우) &ndash;&gt;-->
-                  <!--                  <v-tooltip-->
-                  <!--                    v-else-if="getAccountById(entry.account)?.req_contract && allowedPeriod"-->
-                  <!--                    location="top"-->
-                  <!--                  >-->
-                  <!--                    <template v-slot:activator="{ props: tooltipProps }">-->
-                  <!--                      <v-icon-->
-                  <!--                        v-bind="tooltipProps"-->
-                  <!--                        icon="mdi-link-variant-plus"-->
-                  <!--                        color="warning"-->
-                  <!--                        size="16"-->
-                  <!--                        class="ml-1 pointer"-->
-                  <!--                      />-->
-                  <!--                    </template>-->
-                  <!--                    <span>관계회사를 선택하세요</span>-->
-                  <!--                  </v-tooltip>-->
+                  <!-- 계약정보 정보 표시 (이미 설정된 경우) - 클릭 가능 -->
+                  <v-tooltip v-if="entry.contract && allowedPeriod" location="top">
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-file-sign"
+                        color="info"
+                        size="16"
+                        class="ml-1 pointer"
+                      />
+                    </template>
+                    <div class="pa-2">
+                      <div class="font-weight-bold mb-1">관련 계약정보</div>
+                      <div class="mb-2">{{ entry.contract_display }}</div>
+                      <div class="d-flex align-items-center text-amber font-weight-medium">
+                        <v-icon icon="mdi-pencil" size="14" class="mr-1" />
+                        클릭하여 변경
+                      </div>
+                    </div>
+                  </v-tooltip>
+                  <!-- 계약 정보 표시 (읽기 전용) -->
+                  <v-tooltip v-else-if="entry.contract && !allowedPeriod" location="top">
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-file-sign"
+                        color="info"
+                        size="16"
+                        class="ml-1"
+                      />
+                    </template>
+                    <div class="pa-2">
+                      <div class="font-weight-bold mb-1">관련 계약정보</div>
+                      <div>{{ entry.contract_display }}</div>
+                    </div>
+                  </v-tooltip>
+                  <!-- 계약정보 설정 필요 아이콘 (설정 필요하지만 없는 경우) -->
+                  <v-tooltip
+                    v-else-if="getAccountById(entry.account)?.is_related_contract && allowedPeriod"
+                    location="top"
+                  >
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-link-variant-plus"
+                        color="warning"
+                        size="16"
+                        class="ml-1 pointer"
+                      />
+                    </template>
+                    <span>계약정보를 선택하세요</span>
+                  </v-tooltip>
                 </div>
                 <v-icon
                   v-if="!isEditing('entry', entry.pk!, 'account_contract')"
