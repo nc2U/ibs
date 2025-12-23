@@ -54,7 +54,7 @@ const handleCancel = () => {
     @update:model-value="closeModal"
   >
     <v-card>
-      <v-card-title class="d-flex justify-space-between align-center bg-primary text-white">
+      <v-card-title class="d-flex justify-space-between align-center bg-success text-white">
         <span>관련 계약정보 선택</span>
         <v-btn icon="mdi-close" variant="text" size="small" @click="handleCancel" />
       </v-card-title>
@@ -80,7 +80,7 @@ const handleCancel = () => {
       <v-card-actions class="px-4 pb-4">
         <v-spacer />
         <v-btn color="grey" variant="text" @click="handleCancel">취소</v-btn>
-        <v-btn color="primary" variant="elevated" @click="handleSelect">확인</v-btn>
+        <v-btn color="success" variant="elevated" @click="handleSelect">확인</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
