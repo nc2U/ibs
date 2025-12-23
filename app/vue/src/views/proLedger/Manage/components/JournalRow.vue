@@ -3,7 +3,7 @@ import { computed, type ComputedRef, inject, watch } from 'vue'
 import { write_project_cash } from '@/utils/pageAuth.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
-import SelectContract from './SelectContract.vue'
+import MultiSelect from '@/components/MultiSelect/index.vue'
 
 interface NewEntryForm {
   pk?: number
@@ -91,7 +91,12 @@ const removeEntry = (index: number) => {
           v-if="row.account && getAccountById(row.account)?.is_related_contract"
           class="pt-0 px-2"
         >
-          <SelectContract v-model.number="row.contract" />
+          <MultiSelect
+            v-model.number="row.contract"
+            mode="single"
+            :options="getContracts"
+            placeholder="계약 정보 선택"
+          />
         </div>
       </CTableDataCell>
       <CTableDataCell class="px-1">
