@@ -168,13 +168,6 @@ const handlePickerClose = async () => {
   if (editingState.value?.field === 'account_contract' && editValue.value) {
     const selectedAccount = getAccountById(editValue.value.account)
 
-    console.log('ProTrans handlePickerClose:', {
-      accountId: editValue.value.account,
-      selectedAccount: selectedAccount,
-      is_related_contract: selectedAccount?.is_related_contract,
-      currentContract: editValue.value.contract,
-    })
-
     // 계약정보가 필요 없는 계정으로 변경한 경우 → contract를 null로 초기화
     if (!selectedAccount?.is_related_contract && editValue.value.contract) {
       editValue.value.contract = null
@@ -182,8 +175,6 @@ const handlePickerClose = async () => {
 
     // 계약정보가 필요한데 설정되지 않은 경우
     if (selectedAccount?.is_related_contract && !editValue.value.contract) {
-      console.log('ProTrans: Opening contract modal')
-
       // 스크롤 복원
       const scrollY = document.body.style.top
       const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
@@ -199,27 +190,17 @@ const handlePickerClose = async () => {
       const selectedAccountId = editValue.value.account
       const entry = props.proTrans.accounting_entries?.find(e => e.pk === entryPk)
 
-      console.log('ProTrans: Entry found:', { entryPk, entry, selectedAccountId })
-
       // Picker 상태 정리 (Picker를 닫음)
       proLedgerStore.clearSharedPickerState()
 
       // Picker가 완전히 닫힌 후 모달 열기
-      nextTick(() => {
-        if (entry) {
-          console.log('ProTrans: Setting modal state')
-          // editingState가 초기화되었으므로 entry를 직접 사용
+      if (entry) {
+        nextTick(() => {
           // 새로 선택한 account를 entry에 반영
           selectedEntryForContract.value = { ...entry, account: selectedAccountId }
           contractModalVisible.value = true
-          console.log('ProTrans: Modal state set:', {
-            selectedEntryForContract: selectedEntryForContract.value,
-            contractModalVisible: contractModalVisible.value,
-          })
-        } else {
-          console.error('ProTrans: Entry not found, cannot open modal')
-        }
-      })
+        })
+      }
       return
     }
   }
@@ -248,7 +229,6 @@ const handlePickerClose = async () => {
 }
 
 const handleUpdate = async () => {
-  console.log('handleUpdate called, editingState:', editingState.value)
   if (!editingState.value) return
 
   const { type, pk, field } = editingState.value

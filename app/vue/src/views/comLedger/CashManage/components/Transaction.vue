@@ -184,18 +184,21 @@ const handlePickerClose = async () => {
       document.body.style.overflow = ''
       document.body.style.width = ''
 
-      // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk 저장)
+      // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk와 account 저장)
       const entryPk = editingState.value?.pk
+      const selectedAccountId = editValue.value.account
       const entry = props.transaction.accounting_entries?.find(e => e.pk === entryPk)
 
       // Picker 상태 정리 (Picker를 닫음)
       ledgerStore.clearSharedPickerState()
 
-      // 관계회사 모달 열기
+      // Picker가 완전히 닫힌 후 모달 열기
       if (entry) {
-        // editingState가 초기화되었으므로 entry를 직접 사용
-        selectedEntryForAffiliate.value = entry
-        affiliateModalVisible.value = true
+        nextTick(() => {
+          // 새로 선택한 account를 entry에 반영
+          selectedEntryForAffiliate.value = { ...entry, account: selectedAccountId }
+          affiliateModalVisible.value = true
+        })
       }
       return
     }
@@ -225,7 +228,6 @@ const handlePickerClose = async () => {
 }
 
 const handleUpdate = async () => {
-  console.log('handleUpdate called, editingState:', editingState.value)
   if (!editingState.value) return
 
   const { type, pk, field } = editingState.value
