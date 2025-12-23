@@ -298,7 +298,7 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
     def get_contract_display(obj):
         """계약건 표시"""
         if obj.contract:
-            return str(obj.contract)
+            return str(obj.contract.contractor)
         return None
 
     @staticmethod
