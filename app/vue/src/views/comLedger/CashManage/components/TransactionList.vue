@@ -42,10 +42,10 @@ const accCallModal = () => {
       <col style="width: 9%" />
       <col style="width: 2%" />
 
-      <col style="width: 12%" />
       <col style="width: 14%" />
-      <col style="width: 8%" />
       <col style="width: 13%" />
+      <col style="width: 8%" />
+      <col style="width: 12%" />
       <col v-if="write_company_cash" style="width: 3%" />
     </colgroup>
 

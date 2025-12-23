@@ -419,10 +419,10 @@ const handleUpdate = async () => {
       <CTableDataCell colspan="6" class="p-0">
         <CTable class="m-0 p-0">
           <colgroup>
-            <col style="width: 24%" />
             <col style="width: 28%" />
-            <col style="width: 16%" />
             <col style="width: 26%" />
+            <col style="width: 16%" />
+            <col style="width: 24%" />
             <col v-if="write_company_cash" style="width: 6%" />
           </colgroup>
           <CTableRow
