@@ -39,7 +39,7 @@ export interface BalanceByAccount {
   out_sum: number | null
 }
 
-// 기존 comLedger 타입 (CashManage 페이지에서 사용)
+// 기존 comLedger 타입 (Manage 페이지에서 사용)
 export interface CompanyBank {
   pk?: number
   company?: number

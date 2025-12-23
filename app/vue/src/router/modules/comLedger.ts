@@ -23,7 +23,7 @@ const comLedger = {
     {
       path: 'index',
       name: '본사 거래 내역',
-      component: () => import('@/views/comLedger/CashManage/Index.vue'),
+      component: () => import('@/views/comLedger/Manage/Index.vue'),
       meta: {
         title: '본사 거래 내역',
         auth: true,
