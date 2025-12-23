@@ -3,6 +3,7 @@ import { computed, type ComputedRef, inject, watch } from 'vue'
 import { write_project_cash } from '@/utils/pageAuth.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
+import SelectContract from './SelectContract.vue'
 
 interface NewEntryForm {
   pk?: number
@@ -90,12 +91,7 @@ const removeEntry = (index: number) => {
           v-if="row.account && getAccountById(row.account)?.is_related_contract"
           class="pt-0 px-2"
         >
-          <CFormSelect v-model.number="row.contract" class="" placeholder="계약건 선택">
-            <option :value="null">계약건을 선택하세요</option>
-            <option v-for="aff in getContracts" :value="aff.value" :key="aff.value">
-              {{ aff.label }}
-            </option>
-          </CFormSelect>
+          <SelectContract v-model.number="row.contract" />
         </div>
       </CTableDataCell>
       <CTableDataCell class="px-1">
