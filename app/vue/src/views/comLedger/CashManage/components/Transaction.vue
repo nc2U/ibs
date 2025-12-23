@@ -461,7 +461,7 @@ const handleUpdate = async () => {
                     <div class="pa-2">
                       <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
                       <div class="mb-2">{{ entry.affiliate_display }}</div>
-                      <div class="d-flex align-items-center text-primary font-weight-medium">
+                      <div class="d-flex align-items-center text-amber font-weight-medium">
                         <v-icon icon="mdi-pencil" size="14" class="mr-1" />
                         클릭하여 변경
                       </div>

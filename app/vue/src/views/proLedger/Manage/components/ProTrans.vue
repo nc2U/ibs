@@ -474,8 +474,8 @@ const handleUpdate = async () => {
                     <template v-slot:activator="{ props: tooltipProps }">
                       <v-icon
                         v-bind="tooltipProps"
-                        icon="mdi-file-sign"
-                        color="info"
+                        icon="mdi-account-cog"
+                        color="indigo-lighten-2"
                         size="16"
                         class="ml-1 pointer"
                         @click.stop="openContractModal(entry)"
@@ -495,8 +495,8 @@ const handleUpdate = async () => {
                     <template v-slot:activator="{ props: tooltipProps }">
                       <v-icon
                         v-bind="tooltipProps"
-                        icon="mdi-file-sign"
-                        color="info"
+                        icon="mdi-account-cog"
+                        color="indigo-lighten-2"
                         size="16"
                         class="ml-1"
                       />
