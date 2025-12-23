@@ -175,84 +175,85 @@ const handlePickerClose = async () => {
 }
 
 const handleUpdate = async () => {
-  if (!editingState.value) return
-
-  const { type, pk, field } = editingState.value
-
-  if (type === 'tran') {
-    if (field === 'sort_amount') {
-      const originalSort = props.proTrans.sort
-      const originalAmount = props.proTrans.amount || 0
-      const newSort = editValue.value.sort
-      const newAmount = Number(editValue.value.amount) || 0
-
-      if (newSort === originalSort && newAmount === originalAmount) {
-        proLedgerStore.sharedEditingState = null
-        return
-      }
-    } else {
-      const originalValue = props.proTrans[field as keyof ProBankTrans]
-      if (editValue.value === originalValue) {
-        proLedgerStore.sharedEditingState = null
-        return
-      }
-    }
-  } else {
-    const entry = props.proTrans.accounting_entries?.find(e => e.pk === pk)
-    if (!entry) {
-      proLedgerStore.sharedEditingState = null // No entry found, cancel editing
-      return
-    }
-
-    if (field === 'sort_amount') {
-      const originalSort = props.proTrans.sort
-      const originalAmount = props.proTrans.amount || 0
-      const newSort = editValue.value.sort
-      const newAmount = Number(editValue.value.amount) || 0
-
-      if (newSort === originalSort && newAmount === originalAmount) {
-        proLedgerStore.sharedEditingState = null
-        return
-      }
-    } else if (field === 'account_contract') {
-      const originalAccount = entry.account
-      const originalContract = entry.contract
-      const newAccount = editValue.value.account
-      const newContract = editValue.value.contract
-
-      if (newAccount === originalAccount && newContract === originalContract) {
-        proLedgerStore.sharedEditingState = null
-        return
-      }
-    } else {
-      // For other single entry fields
-      const originalValue = entry[field as keyof ProAccountingEntry]
-      if (editValue.value === originalValue) {
-        proLedgerStore.sharedEditingState = null
-        return
-      }
-    }
-  }
-
-  const payload: { pk: number; [key: string]: any } = { pk: props.proTrans.pk! }
-
-  if (type === 'tran') {
-    if (field === 'sort_amount') {
-      payload.sort = editValue.value.sort
-      payload.amount = Number(editValue.value.amount) || 0
-    } else {
-      payload[field] = editValue.value
-    }
-  } else {
-    // type === 'entry'
-    payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
-  }
-
-  try {
-    await proLedgerStore.patchProBankTrans(payload)
-  } finally {
-    proLedgerStore.sharedEditingState = null
-  }
+  console.log(editingState)
+  // if (!editingState.value) return
+  //
+  // const { type, pk, field } = editingState.value
+  //
+  // if (type === 'tran') {
+  //   if (field === 'sort_amount') {
+  //     const originalSort = props.proTrans.sort
+  //     const originalAmount = props.proTrans.amount || 0
+  //     const newSort = editValue.value.sort
+  //     const newAmount = Number(editValue.value.amount) || 0
+  //
+  //     if (newSort === originalSort && newAmount === originalAmount) {
+  //       proLedgerStore.sharedEditingState = null
+  //       return
+  //     }
+  //   } else {
+  //     const originalValue = props.proTrans[field as keyof ProBankTrans]
+  //     if (editValue.value === originalValue) {
+  //       proLedgerStore.sharedEditingState = null
+  //       return
+  //     }
+  //   }
+  // } else {
+  //   const entry = props.proTrans.accounting_entries?.find(e => e.pk === pk)
+  //   if (!entry) {
+  //     proLedgerStore.sharedEditingState = null // No entry found, cancel editing
+  //     return
+  //   }
+  //
+  //   if (field === 'sort_amount') {
+  //     const originalSort = props.proTrans.sort
+  //     const originalAmount = props.proTrans.amount || 0
+  //     const newSort = editValue.value.sort
+  //     const newAmount = Number(editValue.value.amount) || 0
+  //
+  //     if (newSort === originalSort && newAmount === originalAmount) {
+  //       proLedgerStore.sharedEditingState = null
+  //       return
+  //     }
+  //   } else if (field === 'account_contract') {
+  //     const originalAccount = entry.account
+  //     const originalContract = entry.contract
+  //     const newAccount = editValue.value.account
+  //     const newContract = editValue.value.contract
+  //
+  //     if (newAccount === originalAccount && newContract === originalContract) {
+  //       proLedgerStore.sharedEditingState = null
+  //       return
+  //     }
+  //   } else {
+  //     // For other single entry fields
+  //     const originalValue = entry[field as keyof ProAccountingEntry]
+  //     if (editValue.value === originalValue) {
+  //       proLedgerStore.sharedEditingState = null
+  //       return
+  //     }
+  //   }
+  // }
+  //
+  // const payload: { pk: number; [key: string]: any } = { pk: props.proTrans.pk! }
+  //
+  // if (type === 'tran') {
+  //   if (field === 'sort_amount') {
+  //     payload.sort = editValue.value.sort
+  //     payload.amount = Number(editValue.value.amount) || 0
+  //   } else {
+  //     payload[field] = editValue.value
+  //   }
+  // } else {
+  //   // type === 'entry'
+  //   payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
+  // }
+  //
+  // try {
+  //   await proLedgerStore.patchProBankTrans(payload)
+  // } finally {
+  //   proLedgerStore.sharedEditingState = null
+  // }
 }
 </script>
 
