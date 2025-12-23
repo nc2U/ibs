@@ -2,11 +2,12 @@
 import { computed, type ComputedRef, inject, nextTick, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
+import { write_project_cash } from '@/utils/pageAuth'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger.ts'
-import { useProLedger } from '@/store/pinia/proLedger.ts'
-import { write_project_cash } from '@/utils/pageAuth'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
+import ContractSelectModal from './ContractSelectModal.vue'
 
 const props = defineProps({
   proTrans: { type: Object as PropType<ProBankTrans>, required: true },
@@ -27,7 +28,6 @@ const allowedPeriod = computed(
 )
 
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
-const getContracts = inject<ComputedRef<{ value: number; label: string }[]>>('getContracts')
 
 // 선택된 account가 contract를 요구하는지 확인
 const getAccountById = (accountId: number | null | undefined): AccountPicker | undefined => {
@@ -40,6 +40,47 @@ const sortType = computed(() => {
   if (props.proTrans.sort === 2) return 'withdraw' // 출금
   return null // 전체
 })
+
+// --- 계약정보 선택 모달 ---
+const contractModalVisible = ref(false)
+const selectedEntryForContract = ref<ProAccountingEntry | null>(null)
+
+const openContractModal = (entry: ProAccountingEntry) => {
+  if (!allowedPeriod.value) return
+  selectedEntryForContract.value = entry
+  contractModalVisible.value = true
+}
+
+const handleContractSelect = async (contractId: number | null) => {
+  if (!selectedEntryForContract.value) return
+
+  const entry = selectedEntryForContract.value
+
+  // 계정 피커에서 관계회사 모달로 넘어온 경우, 계정도 함께 저장
+  const accountToSave = editValue.value?.account || entry.account
+
+  const payload: any = {
+    pk: props.proTrans.pk!,
+    accounting_entries: [
+      {
+        pk: entry.pk,
+        account: accountToSave,
+        contract: contractId,
+      },
+    ],
+  }
+
+  try {
+    await proLedgerStore.patchProBankTrans(payload)
+
+    // 편집 상태 초기화 (저장 완료 후)
+    if (editingState.value) {
+      proLedgerStore.clearSharedPickerState()
+    }
+  } finally {
+    selectedEntryForContract.value = null
+  }
+}
 
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
 const editingState = computed(() => proLedgerStore.sharedEditingState) // Use computed for reactivity
@@ -127,12 +168,12 @@ const handlePickerClose = async () => {
   if (editingState.value?.field === 'account_contract' && editValue.value) {
     const selectedAccount = getAccountById(editValue.value.account)
 
-    // 계약건 등록이 필요 없는 계정으로 변경한 경우 → contract를 null로 초기화
+    // 계약정보가 필요 없는 계정으로 변경한 경우 → contract를 null로 초기화
     if (!selectedAccount?.is_related_contract && editValue.value.contract) {
       editValue.value.contract = null
     }
 
-    // 계약건 등록이 필요한데 설정되지 않은 경우
+    // 계약정보가 필요한데 설정되지 않은 경우
     if (selectedAccount?.is_related_contract && !editValue.value.contract) {
       // 스크롤 복원
       const scrollY = document.body.style.top
@@ -147,6 +188,10 @@ const handlePickerClose = async () => {
       // 현재 편집 중인 entry 찾기
       const entry = props.proTrans.accounting_entries?.find(e => e.pk === editingState.value?.pk)
 
+      if (entry) {
+        // 계약정보 모달 열기 (상태는 유지)
+        openContractModal(entry)
+      }
       return
     }
   }
@@ -175,85 +220,91 @@ const handlePickerClose = async () => {
 }
 
 const handleUpdate = async () => {
-  console.log(editingState)
-  // if (!editingState.value) return
-  //
-  // const { type, pk, field } = editingState.value
-  //
-  // if (type === 'tran') {
-  //   if (field === 'sort_amount') {
-  //     const originalSort = props.proTrans.sort
-  //     const originalAmount = props.proTrans.amount || 0
-  //     const newSort = editValue.value.sort
-  //     const newAmount = Number(editValue.value.amount) || 0
-  //
-  //     if (newSort === originalSort && newAmount === originalAmount) {
-  //       proLedgerStore.sharedEditingState = null
-  //       return
-  //     }
-  //   } else {
-  //     const originalValue = props.proTrans[field as keyof ProBankTrans]
-  //     if (editValue.value === originalValue) {
-  //       proLedgerStore.sharedEditingState = null
-  //       return
-  //     }
-  //   }
-  // } else {
-  //   const entry = props.proTrans.accounting_entries?.find(e => e.pk === pk)
-  //   if (!entry) {
-  //     proLedgerStore.sharedEditingState = null // No entry found, cancel editing
-  //     return
-  //   }
-  //
-  //   if (field === 'sort_amount') {
-  //     const originalSort = props.proTrans.sort
-  //     const originalAmount = props.proTrans.amount || 0
-  //     const newSort = editValue.value.sort
-  //     const newAmount = Number(editValue.value.amount) || 0
-  //
-  //     if (newSort === originalSort && newAmount === originalAmount) {
-  //       proLedgerStore.sharedEditingState = null
-  //       return
-  //     }
-  //   } else if (field === 'account_contract') {
-  //     const originalAccount = entry.account
-  //     const originalContract = entry.contract
-  //     const newAccount = editValue.value.account
-  //     const newContract = editValue.value.contract
-  //
-  //     if (newAccount === originalAccount && newContract === originalContract) {
-  //       proLedgerStore.sharedEditingState = null
-  //       return
-  //     }
-  //   } else {
-  //     // For other single entry fields
-  //     const originalValue = entry[field as keyof ProAccountingEntry]
-  //     if (editValue.value === originalValue) {
-  //       proLedgerStore.sharedEditingState = null
-  //       return
-  //     }
-  //   }
-  // }
-  //
-  // const payload: { pk: number; [key: string]: any } = { pk: props.proTrans.pk! }
-  //
-  // if (type === 'tran') {
-  //   if (field === 'sort_amount') {
-  //     payload.sort = editValue.value.sort
-  //     payload.amount = Number(editValue.value.amount) || 0
-  //   } else {
-  //     payload[field] = editValue.value
-  //   }
-  // } else {
-  //   // type === 'entry'
-  //   payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
-  // }
-  //
-  // try {
-  //   await proLedgerStore.patchProBankTrans(payload)
-  // } finally {
-  //   proLedgerStore.sharedEditingState = null
-  // }
+  console.log('handleUpdate called, editingState:', editingState.value)
+  if (!editingState.value) return
+
+  const { type, pk, field } = editingState.value
+
+  if (type === 'tran') {
+    if (field === 'sort_amount') {
+      const originalSort = props.proTrans.sort
+      const originalAmount = props.proTrans.amount || 0
+      const newSort = editValue.value.sort
+      const newAmount = Number(editValue.value.amount) || 0
+
+      if (newSort === originalSort && newAmount === originalAmount) {
+        proLedgerStore.sharedEditingState = null
+        return
+      }
+    } else {
+      const originalValue = props.proTrans[field as keyof ProBankTrans]
+      if (editValue.value === originalValue) {
+        proLedgerStore.sharedEditingState = null
+        return
+      }
+    }
+  } else {
+    const entry = props.proTrans.accounting_entries?.find(e => e.pk === pk)
+    if (!entry) {
+      proLedgerStore.sharedEditingState = null // No entry found, cancel editing
+      return
+    }
+
+    if (field === 'sort_amount') {
+      const originalSort = props.proTrans.sort
+      const originalAmount = props.proTrans.amount || 0
+      const newSort = editValue.value.sort
+      const newAmount = Number(editValue.value.amount) || 0
+
+      if (newSort === originalSort && newAmount === originalAmount) {
+        proLedgerStore.sharedEditingState = null
+        return
+      }
+    } else if (field === 'account_contract') {
+      const originalAccount = entry.account
+      const originalContract = entry.contract
+      const newAccount = editValue.value.account
+      const newContract = editValue.value.contract
+
+      if (newAccount === originalAccount && newContract === originalContract) {
+        proLedgerStore.sharedEditingState = null
+        return
+      }
+    } else {
+      // For other single entry fields
+      const originalValue = entry[field as keyof ProAccountingEntry]
+      if (editValue.value === originalValue) {
+        proLedgerStore.sharedEditingState = null
+        return
+      }
+    }
+  }
+
+  const payload: { pk: number; [key: string]: any } = { pk: props.proTrans.pk! }
+
+  if (type === 'tran') {
+    if (field === 'sort_amount') {
+      payload.sort = editValue.value.sort
+      payload.amount = Number(editValue.value.amount) || 0
+    } else {
+      payload[field] = editValue.value
+    }
+  } else {
+    // type === 'entry'
+    if (field === 'account_contract') {
+      payload.accounting_entries = [
+        { pk: pk, account: editValue.value.account, contract: editValue.value.contract },
+      ]
+    } else {
+      payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
+    }
+  }
+
+  try {
+    await proLedgerStore.patchProBankTrans(payload)
+  } finally {
+    proLedgerStore.sharedEditingState = null
+  }
 }
 </script>
 
@@ -399,6 +450,7 @@ const handleUpdate = async () => {
                         color="info"
                         size="16"
                         class="ml-1 pointer"
+                        @click.stop="openContractModal(entry)"
                       />
                     </template>
                     <div class="pa-2">
@@ -438,6 +490,7 @@ const handleUpdate = async () => {
                         color="warning"
                         size="16"
                         class="ml-1 pointer"
+                        @click.stop="openContractModal(entry)"
                       />
                     </template>
                     <span>계약정보를 선택하세요</span>
