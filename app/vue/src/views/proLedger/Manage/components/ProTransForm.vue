@@ -206,7 +206,6 @@ const handleDownloadTemplate = () => {
 
     return {
       account_name,
-      description: '', // Not used in NewEntryForm
       trader: entry.trader || '',
       amount: entry.amount || 0,
       evidence_type: entry.evidence_type || '',
@@ -232,11 +231,11 @@ const handleFileChange = async (event: Event) => {
   try {
     // Prepare existing entries for matching - resolve IDs to names
     const existingEntries = editableEntries.value.map(entry => {
-      // Find account name from ID
+      // Find the account name from ID
       const account = proLedgerStore.proAccounts.find(acc => acc.value === entry.account)
       const account_name = account?.label || ''
 
-      // Find contract name from ID
+      // Find a contract name from ID
       const contract = contractStore.getContracts.find(c => c.value === entry.contract)
       const contract_name = contract?.label || ''
 
@@ -244,7 +243,6 @@ const handleFileChange = async (event: Event) => {
         pk: entry.pk,
         account: entry.account ?? undefined,
         account_name,
-        description: '', // Not used in ProAccountingEntry
         trader: entry.trader || '',
         amount: entry.amount || 0,
         evidence_type: entry.evidence_type || '',
@@ -308,7 +306,7 @@ const handleUploadConfirm = () => {
     })
   })
 
-  // Step 3: Delete entries (remove from array)
+  // Step 3: Delete entries (remove from an array)
   parseResult.value.entriesToDelete.forEach(entryToDelete => {
     const index = editableEntries.value.findIndex(e => e.pk === entryToDelete.pk)
     if (index !== -1) {

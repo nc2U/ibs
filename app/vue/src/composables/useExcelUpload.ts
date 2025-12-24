@@ -6,7 +6,6 @@ export interface ParsedEntry {
   // Excel data
   account_name: string
   account?: number // resolved from picker options
-  description: string
   trader: string
   amount: number
   evidence_type: string
@@ -29,7 +28,6 @@ export interface ExistingEntry {
   pk?: number
   account?: number
   account_name?: string
-  description?: string
   trader?: string
   amount?: number
   evidence_type?: string
@@ -91,14 +89,13 @@ export function useExcelUpload() {
         // Skip empty rows
         if (!row.getCell(1).value && !row.getCell(4).value) continue
 
-        const contractOrAffiliateName = String(row.getCell(6).value || '').trim()
+        const contractOrAffiliateName = String(row.getCell(5).value || '').trim()
 
         const entry: ParsedEntry = {
           account_name: String(row.getCell(1).value || '').trim(),
-          description: String(row.getCell(2).value || '').trim(),
-          trader: String(row.getCell(3).value || '').trim(),
-          amount: parseFloat(String(row.getCell(4).value || '0')),
-          evidence_type: String(row.getCell(5).value || '').trim(),
+          trader: String(row.getCell(2).value || '').trim(),
+          amount: parseFloat(String(row.getCell(3).value || '0')),
+          evidence_type: String(row.getCell(4).value || '').trim(),
           contract_or_affiliate_name: contractOrAffiliateName,
           rowNumber: i,
           isValid: true,
@@ -149,7 +146,7 @@ export function useExcelUpload() {
           } else {
             // Not found - add warning but don't invalidate
             entry.validationWarnings.push(
-              `⚠️ ${systemType === 'project' ? '프로젝트' : '거래처'} '${contractOrAffiliateName}'를 찾을 수 없음 - 업로드 후 선택 필요`,
+              `⚠️ ${systemType === 'project' ? '계약자' : '관계회사(프로젝트)'} '${contractOrAffiliateName}'를 찾을 수 없음 - 업로드 후 선택 필요`,
             )
           }
         }
@@ -203,7 +200,6 @@ export function useExcelUpload() {
       amount: number
       entries: Array<{
         account_name?: string
-        description?: string
         trader?: string
         amount?: number
         evidence_type?: string
@@ -218,13 +214,12 @@ export function useExcelUpload() {
 
     // Set column widths
     worksheet.columns = [
-      { header: '계정', key: 'account_name', width: 25 },
-      { header: '내역', key: 'description', width: 30 },
-      { header: '거래처', key: 'trader', width: 20 },
-      { header: '금액', key: 'amount', width: 15 },
-      { header: '증빙', key: 'evidence_type', width: 15 },
+      { header: '계정이름', key: 'account_name', width: 25 },
+      { header: '거래처', key: 'trader', width: 30 },
+      { header: '금액', key: 'amount', width: 25 },
+      { header: '지출증빙', key: 'evidence_type', width: 20 },
       {
-        header: systemType === 'project' ? '프로젝트' : '거래처',
+        header: systemType === 'project' ? '계약자' : '관계회사(프로젝트)',
         key: 'contract_or_affiliate',
         width: 25,
       },
@@ -244,7 +239,6 @@ export function useExcelUpload() {
       transactionData.entries.forEach(entry => {
         worksheet.addRow({
           account_name: entry.account_name || '',
-          description: entry.description || '',
           trader: entry.trader || '',
           amount: entry.amount || '',
           evidence_type: entry.evidence_type || '',
@@ -256,7 +250,6 @@ export function useExcelUpload() {
       // Add single empty row for template
       worksheet.addRow({
         account_name: '',
-        description: '',
         trader: '',
         amount: '',
         evidence_type: '',

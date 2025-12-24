@@ -31,7 +31,7 @@ const amountStatus = computed(() => {
 })
 
 const contractOrAffiliateLabel = computed(() => {
-  return props.systemType === 'project' ? '프로젝트' : '거래처'
+  return props.systemType === 'project' ? '계약자' : '관계회사(프로젝트)'
 })
 
 const handleConfirm = () => {
@@ -57,11 +57,7 @@ const handleCancel = () => {
 
       <v-card-text v-if="parseResult">
         <!-- Validation Summary -->
-        <v-alert
-          :type="parseResult.isValid ? 'success' : 'warning'"
-          variant="tonal"
-          class="mb-4"
-        >
+        <v-alert :type="parseResult.isValid ? 'success' : 'warning'" variant="tonal" class="mb-4">
           <div class="d-flex flex-column">
             <div>
               <strong>수정:</strong> {{ parseResult.validationSummary.updateCount }}건 |
@@ -86,18 +82,18 @@ const handleCancel = () => {
           <!-- Section 1: Entries to Update -->
           <div v-if="parseResult.entriesToUpdate.length > 0" class="mb-4">
             <div class="text-h6 mb-2 d-flex align-center">
-              <v-icon icon="mdi-pencil" class="mr-2" color="primary"></v-icon>
+              <v-icon icon="mdi-pencil" class="mr-2" color="success"></v-icon>
               수정될 항목 ({{ parseResult.entriesToUpdate.length }}건)
             </div>
             <table class="w-100" style="border-collapse: collapse">
               <thead style="position: sticky; top: 0; background: white; z-index: 1">
                 <tr style="border-bottom: 2px solid #e0e0e0; background: #f5f5f5">
                   <th class="pa-2 text-left" style="min-width: 50px">행</th>
-                  <th class="pa-2 text-left" style="min-width: 150px">계정</th>
-                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>
+                  <th class="pa-2 text-left" style="min-width: 150px">계정이름</th>
+                  <!--                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>-->
                   <th class="pa-2 text-left" style="min-width: 100px">거래처</th>
                   <th class="pa-2 text-right" style="min-width: 100px">금액</th>
-                  <th class="pa-2 text-left" style="min-width: 100px">증빙</th>
+                  <th class="pa-2 text-left" style="min-width: 100px">지출증빙</th>
                   <th class="pa-2 text-left" style="min-width: 150px">상태</th>
                 </tr>
               </thead>
@@ -105,12 +101,14 @@ const handleCancel = () => {
                 <tr
                   v-for="entry in parseResult.entriesToUpdate"
                   :key="entry.rowNumber"
-                  :class="{ 'bg-red-lighten-5': !entry.isValid, 'bg-blue-lighten-5': entry.isValid }"
+                  :class="{
+                    'bg-red-lighten-5': !entry.isValid,
+                    'bg-blue-lighten-5': entry.isValid,
+                  }"
                   style="border-bottom: 1px solid #f0f0f0"
                 >
                   <td class="pa-2">{{ entry.rowNumber }}</td>
                   <td class="pa-2">{{ entry.account_name }}</td>
-                  <td class="pa-2">{{ entry.description }}</td>
                   <td class="pa-2">{{ entry.trader }}</td>
                   <td class="pa-2 text-right">{{ entry.amount.toLocaleString() }}</td>
                   <td class="pa-2">{{ entry.evidence_type }}</td>
@@ -143,18 +141,18 @@ const handleCancel = () => {
           <!-- Section 2: Entries to Create -->
           <div v-if="parseResult.entriesToCreate.length > 0" class="mb-4">
             <div class="text-h6 mb-2 d-flex align-center">
-              <v-icon icon="mdi-plus-circle" class="mr-2" color="success"></v-icon>
+              <v-icon icon="mdi-plus-circle" class="mr-2" color="primary"></v-icon>
               추가될 항목 ({{ parseResult.entriesToCreate.length }}건)
             </div>
             <table class="w-100" style="border-collapse: collapse">
               <thead style="position: sticky; top: 0; background: white; z-index: 1">
                 <tr style="border-bottom: 2px solid #e0e0e0; background: #f5f5f5">
                   <th class="pa-2 text-left" style="min-width: 50px">행</th>
-                  <th class="pa-2 text-left" style="min-width: 150px">계정</th>
-                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>
+                  <th class="pa-2 text-left" style="min-width: 150px">계정이름</th>
+                  <!--                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>-->
                   <th class="pa-2 text-left" style="min-width: 100px">거래처</th>
                   <th class="pa-2 text-right" style="min-width: 100px">금액</th>
-                  <th class="pa-2 text-left" style="min-width: 100px">증빙</th>
+                  <th class="pa-2 text-left" style="min-width: 100px">지출증빙</th>
                   <th class="pa-2 text-left" style="min-width: 150px">상태</th>
                 </tr>
               </thead>
@@ -162,12 +160,14 @@ const handleCancel = () => {
                 <tr
                   v-for="entry in parseResult.entriesToCreate"
                   :key="entry.rowNumber"
-                  :class="{ 'bg-red-lighten-5': !entry.isValid, 'bg-green-lighten-5': entry.isValid }"
+                  :class="{
+                    'bg-red-lighten-5': !entry.isValid,
+                    'bg-green-lighten-5': entry.isValid,
+                  }"
                   style="border-bottom: 1px solid #f0f0f0"
                 >
                   <td class="pa-2">{{ entry.rowNumber }}</td>
                   <td class="pa-2">{{ entry.account_name }}</td>
-                  <td class="pa-2">{{ entry.description }}</td>
                   <td class="pa-2">{{ entry.trader }}</td>
                   <td class="pa-2 text-right">{{ entry.amount.toLocaleString() }}</td>
                   <td class="pa-2">{{ entry.evidence_type }}</td>
@@ -209,11 +209,11 @@ const handleCancel = () => {
             <table class="w-100" style="border-collapse: collapse">
               <thead style="position: sticky; top: 0; background: white; z-index: 1">
                 <tr style="border-bottom: 2px solid #e0e0e0; background: #f5f5f5">
-                  <th class="pa-2 text-left" style="min-width: 150px">계정</th>
-                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>
+                  <th class="pa-2 text-left" style="min-width: 150px">계정이름</th>
+                  <!--                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>-->
                   <th class="pa-2 text-left" style="min-width: 100px">거래처</th>
                   <th class="pa-2 text-right" style="min-width: 100px">금액</th>
-                  <th class="pa-2 text-left" style="min-width: 100px">증빙</th>
+                  <th class="pa-2 text-left" style="min-width: 100px">지출증빙</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,7 +224,6 @@ const handleCancel = () => {
                   style="border-bottom: 1px solid #f0f0f0"
                 >
                   <td class="pa-2">{{ entry.account_name }}</td>
-                  <td class="pa-2">{{ entry.description }}</td>
                   <td class="pa-2">{{ entry.trader }}</td>
                   <td class="pa-2 text-right">{{ entry.amount?.toLocaleString() }}</td>
                   <td class="pa-2">{{ entry.evidence_type }}</td>
