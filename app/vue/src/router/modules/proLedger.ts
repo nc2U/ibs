@@ -52,28 +52,28 @@ const proLedger = {
     },
     {
       path: 'imprest',
-      name: '운영비 내역',
+      name: '운영 계좌 내역',
       component: () => import('@/views/proLedger/Imprest/Index.vue'),
       meta: {
-        title: '운영비 내역',
+        title: '운영 계좌 내역',
         auth: true,
         requiresProjectCashAuth: true,
       },
       children: [
         {
           path: 'create',
-          name: '운영비 내역 - 생성',
+          name: '운영 계좌 내역 - 생성',
           meta: {
-            title: '운영비 내역',
+            title: '운영 계좌 내역',
             auth: true,
             requiresCompanyCashAuth: true,
           },
         },
         {
           path: ':transId(\\d+)/update',
-          name: '운영비 내역 - 수정',
+          name: '운영 계좌 내역 - 수정',
           meta: {
-            title: '운영비 내역',
+            title: '운영 계좌 내역',
             auth: true,
             requiresCompanyCashAuth: true,
           },

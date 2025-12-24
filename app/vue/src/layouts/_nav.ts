@@ -289,7 +289,7 @@ const project_ledger = {
     },
     {
       component: 'CNavItem',
-      name: '운영비 내역',
+      name: '운영 계좌 내역',
       to: '/project-ledger/imprest',
     },
   ],
