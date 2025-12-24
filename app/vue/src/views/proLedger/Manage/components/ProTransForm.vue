@@ -535,7 +535,7 @@ onBeforeRouteLeave((to, from, next) => {
     </CRow>
 
     <hr class="mb-0" />
-    <CTable class="mb-5" responsive>
+    <CTable class="mb-5">
       <colgroup>
         <col style="width: 8%" />
         <col style="width: 12%" />
