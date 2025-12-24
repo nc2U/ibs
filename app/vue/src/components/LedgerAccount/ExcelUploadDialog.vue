@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import type { ParseResult } from '@/composables/useExcelUpload'
+import type { ParseResult, ParsedEntry, ExistingEntry } from '@/composables/useExcelUpload'
 
 interface Props {
   modelValue: boolean
@@ -18,6 +18,28 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
+const EVIDENCE_TYPE_REVERSE_MAP: { [key: string]: string } = {
+  '0': '증빙없음',
+  '1': '세금계산서',
+  '2': '계산서(면세)',
+  '3': '신용/체크카드 매출전표',
+  '4': '현금영수증',
+  '5': '원천징수영수증/지급명세서',
+  '6': '지로용지 및 청구서',
+}
+
+const getEvidenceDisplayName = (entry: ParsedEntry | ExistingEntry) => {
+  // ParsedEntry has raw_evidence_type from the Excel file
+  if ('raw_evidence_type' in entry && entry.raw_evidence_type) {
+    return entry.raw_evidence_type
+  }
+  // ExistingEntry (for deletion) only has the code, so we map it back
+  if (entry.evidence_type && EVIDENCE_TYPE_REVERSE_MAP[entry.evidence_type]) {
+    return EVIDENCE_TYPE_REVERSE_MAP[entry.evidence_type]
+  }
+  return entry.evidence_type || '' // Fallback
+}
+
 const amountDiff = computed(() => {
   if (!props.parseResult) return 0
   return props.parseResult.totalAmount - props.transactionAmount
@@ -28,10 +50,6 @@ const amountStatus = computed(() => {
   const diff = Math.abs(amountDiff.value)
   if (diff === 0) return 'valid'
   return 'invalid'
-})
-
-const contractOrAffiliateLabel = computed(() => {
-  return props.systemType === 'project' ? '계약자' : '관계회사(프로젝트)'
 })
 
 const handleConfirm = () => {
@@ -90,7 +108,6 @@ const handleCancel = () => {
                 <tr style="border-bottom: 2px solid #e0e0e0; background: #f5f5f5">
                   <th class="pa-2 text-left" style="min-width: 50px">행</th>
                   <th class="pa-2 text-left" style="min-width: 150px">계정이름</th>
-                  <!--                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>-->
                   <th class="pa-2 text-left" style="min-width: 100px">거래처</th>
                   <th class="pa-2 text-right" style="min-width: 100px">금액</th>
                   <th class="pa-2 text-left" style="min-width: 100px">지출증빙</th>
@@ -111,7 +128,7 @@ const handleCancel = () => {
                   <td class="pa-2">{{ entry.account_name }}</td>
                   <td class="pa-2">{{ entry.trader }}</td>
                   <td class="pa-2 text-right">{{ entry.amount.toLocaleString() }}</td>
-                  <td class="pa-2">{{ entry.evidence_type }}</td>
+                  <td class="pa-2">{{ getEvidenceDisplayName(entry) }}</td>
                   <td class="pa-2">
                     <div v-if="entry.isValid">
                       <v-icon color="success" size="small">mdi-check-circle</v-icon>
@@ -149,7 +166,6 @@ const handleCancel = () => {
                 <tr style="border-bottom: 2px solid #e0e0e0; background: #f5f5f5">
                   <th class="pa-2 text-left" style="min-width: 50px">행</th>
                   <th class="pa-2 text-left" style="min-width: 150px">계정이름</th>
-                  <!--                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>-->
                   <th class="pa-2 text-left" style="min-width: 100px">거래처</th>
                   <th class="pa-2 text-right" style="min-width: 100px">금액</th>
                   <th class="pa-2 text-left" style="min-width: 100px">지출증빙</th>
@@ -170,7 +186,7 @@ const handleCancel = () => {
                   <td class="pa-2">{{ entry.account_name }}</td>
                   <td class="pa-2">{{ entry.trader }}</td>
                   <td class="pa-2 text-right">{{ entry.amount.toLocaleString() }}</td>
-                  <td class="pa-2">{{ entry.evidence_type }}</td>
+                  <td class="pa-2">{{ getEvidenceDisplayName(entry) }}</td>
                   <td class="pa-2">
                     <div v-if="entry.isValid">
                       <v-icon color="success" size="small">mdi-check-circle</v-icon>
@@ -210,7 +226,6 @@ const handleCancel = () => {
               <thead style="position: sticky; top: 0; background: white; z-index: 1">
                 <tr style="border-bottom: 2px solid #e0e0e0; background: #f5f5f5">
                   <th class="pa-2 text-left" style="min-width: 150px">계정이름</th>
-                  <!--                  <th class="pa-2 text-left" style="min-width: 150px">내역</th>-->
                   <th class="pa-2 text-left" style="min-width: 100px">거래처</th>
                   <th class="pa-2 text-right" style="min-width: 100px">금액</th>
                   <th class="pa-2 text-left" style="min-width: 100px">지출증빙</th>
@@ -226,7 +241,7 @@ const handleCancel = () => {
                   <td class="pa-2">{{ entry.account_name }}</td>
                   <td class="pa-2">{{ entry.trader }}</td>
                   <td class="pa-2 text-right">{{ entry.amount?.toLocaleString() }}</td>
-                  <td class="pa-2">{{ entry.evidence_type }}</td>
+                  <td class="pa-2">{{ getEvidenceDisplayName(entry) }}</td>
                 </tr>
               </tbody>
             </table>

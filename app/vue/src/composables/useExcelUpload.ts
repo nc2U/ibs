@@ -8,7 +8,8 @@ export interface ParsedEntry {
   account?: number // resolved from picker options
   trader: string
   amount: number
-  evidence_type: string
+  evidence_type: string // This will hold the code '0', '1', etc.
+  raw_evidence_type: string // This will hold the original Korean name from Excel
   contract_or_affiliate_name?: string
   contract?: number // for 프로젝트 (resolved if name matches)
   affiliate?: number // for 본사 (resolved if name matches)
@@ -54,11 +55,11 @@ export interface ParseResult {
 }
 
 const EVIDENCE_TYPE_MAP: { [key: string]: string } = {
-  '증빙없음': '0',
-  '세금계산서': '1',
+  증빙없음: '0',
+  세금계산서: '1',
   '계산서(면세)': '2',
   '신용/체크카드 매출전표': '3',
-  '현금영수증': '4',
+  현금영수증: '4',
   '원천징수영수증/지급명세서': '5',
   '지로용지 및 청구서': '6',
 }
@@ -99,13 +100,16 @@ export function useExcelUpload() {
         // Skip empty rows
         if (!row.getCell(1).value && !row.getCell(4).value) continue
 
+        const rawEvidenceType = String(row.getCell(4).value || '').trim()
         const contractOrAffiliateName = String(row.getCell(5).value || '').trim()
 
         const entry: ParsedEntry = {
           account_name: String(row.getCell(1).value || '').trim(),
+          // description: String(row.getCell(2).value || '').trim(),
           trader: String(row.getCell(2).value || '').trim(),
           amount: parseFloat(String(row.getCell(3).value || '0')),
-          evidence_type: String(row.getCell(4).value || '').trim(), // <-- 여기에서 한글 문자열을 읽어옴
+          evidence_type: '', // Will be replaced by code
+          raw_evidence_type: rawEvidenceType, // Keep original string for display
           contract_or_affiliate_name: contractOrAffiliateName,
           rowNumber: i,
           isValid: true,
@@ -115,11 +119,10 @@ export function useExcelUpload() {
         }
 
         // Validate and convert evidence_type
-        const rawEvidenceType = entry.evidence_type
         const mappedEvidenceType = EVIDENCE_TYPE_MAP[rawEvidenceType]
         if (rawEvidenceType && !mappedEvidenceType) {
           entry.isValid = false
-          entry.validationErrors.push(`지출증빙 '${rawEvidenceType}'은 유효하지 않습니다. (허용: ${Object.keys(EVIDENCE_TYPE_MAP).join(', ')})`)
+          entry.validationErrors.push(`지출증빙 '${rawEvidenceType}'은 유효하지 않습니다.`)
         } else {
           entry.evidence_type = mappedEvidenceType || '' // 매핑된 값 또는 빈 문자열 (rawEvidenceType이 빈 경우)
         }
@@ -163,8 +166,7 @@ export function useExcelUpload() {
             } else {
               entry.affiliate = matchingContractOrAffiliate.value
             }
-          }
-          else {
+          } else {
             // Not found - add warning but don't invalidate
             entry.validationWarnings.push(
               `⚠️ ${systemType === 'project' ? '계약자' : '관계회사(프로젝트)'} '${contractOrAffiliateName}'를 찾을 수 없음 - 업로드 후 선택 필요`,
