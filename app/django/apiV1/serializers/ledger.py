@@ -210,7 +210,7 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
         model = ProjectBankTransaction
         fields = ('pk', 'transaction_id', 'project', 'project_name', 'bank_account',
                   'bank_account_name', 'deal_date', 'amount', 'sort', 'sort_name',
-                  'content', 'note', 'is_imprest',
+                  'content', 'note',
                   'creator', 'creator_name', 'created_at', 'updated_at',
                   'is_balanced', 'accounting_entries')
         read_only_fields = ('transaction_id', 'created_at', 'updated_at')

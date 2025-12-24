@@ -558,11 +558,10 @@ class ProjectBankTransaction(BankTransaction):
     프로젝트 은행 거래
 
     프로젝트별 은행 거래를 관리합니다.
+    운영비 여부는 bank_account.is_imprest를 통해 판단합니다.
     """
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     bank_account = models.ForeignKey(ProjectBankAccount, on_delete=models.PROTECT, verbose_name='거래계좌')
-    is_imprest = models.BooleanField(default=False, verbose_name='운영비 여부',
-                                     help_text='UI 분류용: 운영비 관리 화면에 표시할 거래 (회계분개 전에도 필터링 가능)')
     updator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='편집자',
                                 related_name='updated_project_transactions')
 
@@ -572,7 +571,6 @@ class ProjectBankTransaction(BankTransaction):
         ordering = ['-deal_date', '-created_at']
         indexes = [
             models.Index(fields=['bank_account', 'deal_date']),
-            models.Index(fields=['is_imprest']),
         ]
 
     @property

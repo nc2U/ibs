@@ -371,9 +371,9 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectBankTransactionResource
     list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date', 'sort',
-                    'formatted_amount', 'content', 'is_balanced', 'is_imprest', 'creator', 'created_at')
+                    'formatted_amount', 'content', 'is_balanced', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'bank_account', 'sort', 'is_balanced', 'is_imprest', ('deal_date', DateRangeFilter))
+    list_filter = ('project', 'bank_account', 'sort', 'is_balanced', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note', 'project__name')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')

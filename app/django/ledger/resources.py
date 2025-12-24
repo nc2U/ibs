@@ -181,11 +181,11 @@ class ProjectBankTransactionResource(BaseTransactionResource):
         import_id_fields = ('id',)
         fields = (
             'id', 'transaction_id', 'project', 'bank_account', 'deal_date',
-            'sort', 'amount', 'balance', 'content', 'note', 'is_imprest', 'creator'
+            'sort', 'amount', 'balance', 'content', 'note', 'creator'
         )
         export_order = (
             'id', 'transaction_id', 'project', 'bank_account', 'deal_date',
-            'sort', 'amount', 'balance', 'content', 'note', 'is_imprest', 'creator'
+            'sort', 'amount', 'balance', 'content', 'note', 'creator'
         )
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
