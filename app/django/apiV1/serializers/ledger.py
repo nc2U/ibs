@@ -560,7 +560,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
     sort = serializers.IntegerField(help_text='거래구분 ID (1=입금, 2=출금)')
     content = serializers.CharField(max_length=100)
     note = serializers.CharField(required=False, allow_blank=True, default='')
-    is_imprest = serializers.BooleanField(default=False)
 
     # Accounting Entries 필드 (배열)
     accounting_entries = ProjectAccountingEntryInputSerializer(many=True)
@@ -639,7 +638,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             sort_id=validated_data['sort'],
             content=validated_data['content'],
             note=validated_data.get('note', ''),
-            is_imprest=validated_data.get('is_imprest', False),
             creator=kwargs.get('creator'),  # creator를 kwargs에서 가져옴
         )
 
@@ -690,7 +688,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         instance.amount = validated_data.get('amount', instance.amount)
         instance.content = validated_data.get('content', instance.content)
         instance.note = validated_data.get('note', instance.note)
-        instance.is_imprest = validated_data.get('is_imprest', instance.is_imprest)
         instance.save()
 
         # 3. 회계분개 업데이트 (제공된 경우)
