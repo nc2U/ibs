@@ -533,7 +533,7 @@ onBeforeRouteLeave((to, from, next) => {
     </CRow>
 
     <hr class="mb-0" />
-    <CTable class="mb-5">
+    <CTable class="mb-5" responsive>
       <colgroup>
         <col style="width: 8%" />
         <col style="width: 12%" />
@@ -554,7 +554,7 @@ onBeforeRouteLeave((to, from, next) => {
           <CTableHeaderCell class="pl-0" :colspan="write_company_cash ? 4 : 3">
             <span class="text-grey mr-2">|</span> 분류 내역
           </CTableHeaderCell>
-          <CTableHeaderCell class="text-right">
+          <CTableHeaderCell class="px-0">
             <!-- Download Template -->
             <v-icon
               icon="mdi-download"
@@ -570,12 +570,11 @@ onBeforeRouteLeave((to, from, next) => {
             <v-icon
               icon="mdi-upload"
               size="16"
-              color="primary"
+              color="info"
               class="pointer"
               @click="handleUploadClick"
-            >
-              <v-tooltip activator="parent">회계 계정 정보 엑셀 업로드</v-tooltip>
-            </v-icon>
+              v-tooltip="'회계 계정 정보 템플릿 다운로드'"
+            />
 
             <!-- Hidden file input -->
             <input
@@ -584,6 +583,7 @@ onBeforeRouteLeave((to, from, next) => {
               accept=".xlsx,.xls"
               style="display: none"
               @change="handleFileChange"
+              v-tooltip="'회계 계정 정보 엑셀 업로드'"
             />
           </CTableHeaderCell>
         </CTableRow>
