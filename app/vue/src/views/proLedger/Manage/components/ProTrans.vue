@@ -494,7 +494,7 @@ const handleUpdate = async () => {
                     <template v-slot:activator="{ props: tooltipProps }">
                       <v-icon
                         v-bind="tooltipProps"
-                        icon="mdi-link-variant-plus"
+                        icon="mdi-account-cog"
                         color="warning"
                         size="16"
                         class="ml-1 pointer"
