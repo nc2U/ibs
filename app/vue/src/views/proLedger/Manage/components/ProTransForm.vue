@@ -4,6 +4,7 @@ import { isValidate } from '@/utils/helper.ts'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
+import { useContract } from '@/store/pinia/contract.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_project_cash } from '@/utils/pageAuth.ts'
 import type { ProBankTrans } from '@/store/types/proLedger.ts'
@@ -12,6 +13,10 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
 import AccountManage from './AccountManage.vue'
+import { CForm, CTableHeaderCell } from '@coreui/vue'
+import { useExcelUpload } from '@/composables/useExcelUpload'
+import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
+import type { ParseResult } from '@/composables/useExcelUpload'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -36,6 +41,7 @@ const isCreateMode = computed(() => !transId.value)
 const isSaving = ref(false)
 
 const proLedgerStore = useProLedger()
+const contractStore = useContract()
 const transaction = computed(() => proLedgerStore.proBankTrans as ProBankTrans | null)
 
 // 은행 거래 폼 데이터 (생성 모드용)
@@ -180,6 +186,140 @@ const formBankAccounts = computed(() => {
 
   return activeBanks // 혹시 전체 목록에도 없으면 활성 목록만 반환
 })
+
+// Excel upload state
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const uploadDialogVisible = ref(false)
+const parseResult = ref<ParseResult | null>(null)
+const { parseExcelFile, downloadTemplate } = useExcelUpload()
+
+// Download template handler
+const handleDownloadTemplate = () => {
+  // Resolve account and contract IDs to names
+  const entries = editableEntries.value.map(entry => {
+    // Find account name from ID
+    const account = proLedgerStore.proAccounts.find(acc => acc.value === entry.account)
+    const account_name = account?.label || ''
+
+    // Find contract name from ID
+    const contract = contractStore.getContracts.find(c => c.value === entry.contract)
+    const contract_name = contract?.label || ''
+
+    return {
+      account_name,
+      description: '', // Not used in NewEntryForm
+      trader: entry.trader || '',
+      amount: entry.amount || 0,
+      evidence_type: entry.evidence_type || '',
+      contract_name,
+    }
+  })
+
+  downloadTemplate({ amount: bankForm.amount || 0, entries }, 'project')
+}
+
+// Upload click handler
+const handleUploadClick = () => {
+  fileInputRef.value?.click()
+}
+
+// File change handler
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) return
+
+  try {
+    // Prepare existing entries for matching - resolve IDs to names
+    const existingEntries = editableEntries.value.map(entry => {
+      // Find account name from ID
+      const account = proLedgerStore.proAccounts.find(acc => acc.value === entry.account)
+      const account_name = account?.label || ''
+
+      // Find contract name from ID
+      const contract = contractStore.getContracts.find(c => c.value === entry.contract)
+      const contract_name = contract?.label || ''
+
+      return {
+        pk: entry.pk,
+        account: entry.account ?? undefined,
+        account_name,
+        description: '', // Not used in ProAccountingEntry
+        trader: entry.trader || '',
+        amount: entry.amount || 0,
+        evidence_type: entry.evidence_type || '',
+        contract: entry.contract ?? undefined, // Convert null to undefined
+        contract_name,
+      }
+    })
+
+    // Parse Excel file with matching
+    await parseExcelFile(
+      file,
+      proLedgerStore.proAccounts,
+      existingEntries,
+      bankForm.amount || 0,
+      'project',
+      contractStore.getContracts,
+    ).then(result => {
+      parseResult.value = result
+      uploadDialogVisible.value = true
+    })
+  } catch (error) {
+    console.error('Excel parsing error:', error)
+    alert('엑셀 파일 파싱 중 오류가 발생했습니다.')
+  } finally {
+    // Reset file input
+    target.value = ''
+  }
+}
+
+// Confirm upload handler
+const handleUploadConfirm = () => {
+  if (!parseResult.value) return
+
+  // Step 1: Update existing entries (preserve pk)
+  parseResult.value.entriesToUpdate.forEach(parsedEntry => {
+    if (!parsedEntry.isValid) return // Skip invalid
+
+    const existingEntry = editableEntries.value.find(e => e.pk === parsedEntry.existingPk)
+
+    if (existingEntry) {
+      // Update fields (keep pk)
+      existingEntry.account = parsedEntry.account ?? null
+      existingEntry.trader = parsedEntry.trader
+      existingEntry.amount = parsedEntry.amount
+      existingEntry.evidence_type = parsedEntry.evidence_type as NewEntryForm['evidence_type']
+      existingEntry.contract = parsedEntry.contract ?? null
+    }
+  })
+
+  // Step 2: Create new entries (no pk)
+  parseResult.value.entriesToCreate.forEach(parsedEntry => {
+    if (!parsedEntry.isValid) return // Skip invalid
+
+    editableEntries.value.push({
+      pk: undefined,
+      account: parsedEntry.account ?? null,
+      trader: parsedEntry.trader,
+      amount: parsedEntry.amount,
+      evidence_type: parsedEntry.evidence_type as NewEntryForm['evidence_type'],
+      contract: parsedEntry.contract ?? null,
+    })
+  })
+
+  // Step 3: Delete entries (remove from array)
+  parseResult.value.entriesToDelete.forEach(entryToDelete => {
+    const index = editableEntries.value.findIndex(e => e.pk === entryToDelete.pk)
+    if (index !== -1) {
+      editableEntries.value.splice(index, 1)
+    }
+  })
+
+  uploadDialogVisible.value = false
+  parseResult.value = null
+}
 
 const addRow = () => {
   editableEntries.value.push({})
@@ -413,8 +553,40 @@ onBeforeRouteLeave((to, from, next) => {
       <CTableHead class="sticky-table-head">
         <CTableRow :color="TableSecondary" class="sticky-header-row-1">
           <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
-          <CTableHeaderCell class="pl-0" :colspan="write_project_cash ? 5 : 4">
+          <CTableHeaderCell class="pl-0" :colspan="write_project_cash ? 4 : 3">
             <span class="text-grey mr-2">|</span> 분류 내역
+          </CTableHeaderCell>
+          <CTableHeaderCell class="text-right">
+            <!-- Download Template -->
+            <v-icon
+              icon="mdi-download"
+              size="16"
+              color="success"
+              class="mr-2 pointer"
+              @click="handleDownloadTemplate"
+            >
+              <v-tooltip activator="parent">회계 계정 정보 템플릿 다운로드</v-tooltip>
+            </v-icon>
+
+            <!-- Upload Excel -->
+            <v-icon
+              icon="mdi-upload"
+              size="16"
+              color="primary"
+              class="pointer"
+              @click="handleUploadClick"
+            >
+              <v-tooltip activator="parent">회계 계정 정보 엑셀 업로드</v-tooltip>
+            </v-icon>
+
+            <!-- Hidden file input -->
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept=".xlsx,.xls"
+              style="display: none"
+              @change="handleFileChange"
+            />
           </CTableHeaderCell>
         </CTableRow>
 
@@ -530,4 +702,12 @@ onBeforeRouteLeave((to, from, next) => {
   <AccountManage ref="refAccountManage" />
 
   <BankAcc ref="refBankAcc" />
+
+  <ExcelUploadDialog
+    v-model="uploadDialogVisible"
+    :parse-result="parseResult"
+    :transaction-amount="bankForm.amount ?? 0"
+    system-type="project"
+    @confirm="handleUploadConfirm"
+  />
 </template>
