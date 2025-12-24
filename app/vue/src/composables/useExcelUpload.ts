@@ -53,6 +53,16 @@ export interface ParseResult {
   }
 }
 
+const EVIDENCE_TYPE_MAP: { [key: string]: string } = {
+  '증빙없음': '0',
+  '세금계산서': '1',
+  '계산서(면세)': '2',
+  '신용/체크카드 매출전표': '3',
+  '현금영수증': '4',
+  '원천징수영수증/지급명세서': '5',
+  '지로용지 및 청구서': '6',
+}
+
 export function useExcelUpload() {
   const isUploading = ref(false)
   const uploadError = ref<string | null>(null)
@@ -95,13 +105,23 @@ export function useExcelUpload() {
           account_name: String(row.getCell(1).value || '').trim(),
           trader: String(row.getCell(2).value || '').trim(),
           amount: parseFloat(String(row.getCell(3).value || '0')),
-          evidence_type: String(row.getCell(4).value || '').trim(),
+          evidence_type: String(row.getCell(4).value || '').trim(), // <-- 여기에서 한글 문자열을 읽어옴
           contract_or_affiliate_name: contractOrAffiliateName,
           rowNumber: i,
           isValid: true,
           validationErrors: [],
           validationWarnings: [],
           operationType: 'create', // default, will be changed if matched with existing
+        }
+
+        // Validate and convert evidence_type
+        const rawEvidenceType = entry.evidence_type
+        const mappedEvidenceType = EVIDENCE_TYPE_MAP[rawEvidenceType]
+        if (rawEvidenceType && !mappedEvidenceType) {
+          entry.isValid = false
+          entry.validationErrors.push(`지출증빙 '${rawEvidenceType}'은 유효하지 않습니다. (허용: ${Object.keys(EVIDENCE_TYPE_MAP).join(', ')})`)
+        } else {
+          entry.evidence_type = mappedEvidenceType || '' // 매핑된 값 또는 빈 문자열 (rawEvidenceType이 빈 경우)
         }
 
         // Match with existing entry by order (if exists)
@@ -143,7 +163,8 @@ export function useExcelUpload() {
             } else {
               entry.affiliate = matchingContractOrAffiliate.value
             }
-          } else {
+          }
+          else {
             // Not found - add warning but don't invalidate
             entry.validationWarnings.push(
               `⚠️ ${systemType === 'project' ? '계약자' : '관계회사(프로젝트)'} '${contractOrAffiliateName}'를 찾을 수 없음 - 업로드 후 선택 필요`,
