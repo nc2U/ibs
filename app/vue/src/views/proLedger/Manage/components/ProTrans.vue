@@ -448,7 +448,7 @@ const handleUpdate = async () => {
                 @click="handleAccountClick(entry, $event)"
               >
                 <div class="d-flex align-items-center">
-                  <span>{{ entry.account_name }}</span>
+                  <span>{{ cutString(entry.account_name, 16) }}</span>
                   <!-- 계약정보 정보 표시 (이미 설정된 경우) - 클릭 가능 -->
                   <v-tooltip v-if="entry.contract && allowedPeriod" location="top">
                     <template v-slot:activator="{ props: tooltipProps }">
