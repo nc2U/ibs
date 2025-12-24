@@ -8,15 +8,14 @@ import { useContract } from '@/store/pinia/contract.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_project_cash } from '@/utils/pageAuth.ts'
 import type { ProBankTrans } from '@/store/types/proLedger.ts'
+import type { ParseResult } from '@/composables/useExcelUpload'
+import { useExcelUpload } from '@/composables/useExcelUpload'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
 import AccountManage from './AccountManage.vue'
-import { CForm, CTableHeaderCell } from '@coreui/vue'
-import { useExcelUpload } from '@/composables/useExcelUpload'
 import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
-import type { ParseResult } from '@/composables/useExcelUpload'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -197,11 +196,11 @@ const { parseExcelFile, downloadTemplate } = useExcelUpload()
 const handleDownloadTemplate = () => {
   // Resolve account and contract IDs to names
   const entries = editableEntries.value.map(entry => {
-    // Find account name from ID
+    // Find the account name from ID
     const account = proLedgerStore.proAccounts.find(acc => acc.value === entry.account)
     const account_name = account?.label || ''
 
-    // Find contract name from ID
+    // Find a contract name from ID
     const contract = contractStore.getContracts.find(c => c.value === entry.contract)
     const contract_name = contract?.label || ''
 

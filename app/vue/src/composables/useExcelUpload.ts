@@ -15,7 +15,7 @@ export interface ParsedEntry {
   affiliate?: number // for 본사 (resolved if name matches)
 
   // Matching info
-  existingPk?: number // pk from existing entry (for updates)
+  existingPk?: number // pk from an existing entry (for updates)
   rowNumber: number
   operationType: 'update' | 'create' // update = has pk, create = no pk
 
@@ -84,7 +84,7 @@ export function useExcelUpload() {
       let totalAmount = 0
       let excelRowIndex = 0
 
-      // Skip header row, start from row 2
+      // Skip the header row, start from row 2
       for (let i = 2; i <= worksheet.rowCount; i++) {
         const row = worksheet.getRow(i)
 
@@ -190,7 +190,8 @@ export function useExcelUpload() {
         },
       }
     } catch (error) {
-      uploadError.value = error instanceof Error ? error.message : '파일 파싱 중 오류가 발생했습니다.'
+      uploadError.value =
+        error instanceof Error ? error.message : '파일 파싱 중 오류가 발생했습니다.'
       throw error
     } finally {
       isUploading.value = false
@@ -248,9 +249,7 @@ export function useExcelUpload() {
           amount: entry.amount || '',
           evidence_type: entry.evidence_type || '',
           contract_or_affiliate:
-            systemType === 'project'
-              ? entry.contract_name || ''
-              : entry.affiliate_name || '',
+            systemType === 'project' ? entry.contract_name || '' : entry.affiliate_name || '',
         })
       })
     } else {

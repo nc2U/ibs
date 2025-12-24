@@ -6,16 +6,15 @@ import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { write_company_cash } from '@/utils/pageAuth.ts'
-import type { BankTransaction, CompanyBank } from '@/store/types/comLedger'
+import type { BankTransaction } from '@/store/types/comLedger'
+import type { ParseResult } from '@/composables/useExcelUpload'
+import { useExcelUpload } from '@/composables/useExcelUpload'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
 import AccountManage from './AccountManage.vue'
-import { CTableHeaderCell } from '@coreui/vue'
-import { useExcelUpload } from '@/composables/useExcelUpload'
 import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
-import type { ParseResult } from '@/composables/useExcelUpload'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -195,11 +194,11 @@ const formBankAccounts = computed(() => {
 const handleDownloadTemplate = () => {
   // Resolve account and affiliate IDs to names
   const entries = editableEntries.value.map(entry => {
-    // Find account name from ID
+    // Find the account name from ID
     const account = ledgerStore.comAccounts.find(acc => acc.value === entry.account)
     const account_name = account?.label || ''
 
-    // Find affiliate name from ID
+    // Find the affiliate name from ID
     const affiliate = ledgerStore.affiliates.find(a => a.value === entry.affiliate)
     const affiliate_name = affiliate?.label || ''
 
