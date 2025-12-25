@@ -228,6 +228,46 @@ const handlePickerClose = async () => {
   proLedgerStore.clearSharedPickerState()
 }
 
+// --- Collapse/Expand State for Accounting Entries ---
+const DEFAULT_VISIBLE_COUNT = 10
+const visibleEntryCount = ref<number>(DEFAULT_VISIBLE_COUNT)
+
+const totalEntryCount = computed(() => props.proTrans.accounting_entries?.length || 0)
+const shouldShowExpand = computed(() => totalEntryCount.value > DEFAULT_VISIBLE_COUNT)
+
+const visibleEntries = computed(() => {
+  if (!shouldShowExpand.value || visibleEntryCount.value >= totalEntryCount.value) {
+    return props.proTrans.accounting_entries
+  }
+  return props.proTrans.accounting_entries?.slice(0, visibleEntryCount.value)
+})
+
+const remainingCount = computed(() =>
+  Math.max(0, totalEntryCount.value - visibleEntryCount.value)
+)
+
+const isFullyExpanded = computed(() =>
+  visibleEntryCount.value >= totalEntryCount.value
+)
+
+const expandMore = () => {
+  const remaining = remainingCount.value
+  if (remaining <= 30) {
+    // Show all remaining if less than 30
+    visibleEntryCount.value = totalEntryCount.value
+  } else if (visibleEntryCount.value < 30) {
+    // First expansion: jump to 30
+    visibleEntryCount.value = 30
+  } else {
+    // Subsequent expansions: add 30 more
+    visibleEntryCount.value += 30
+  }
+}
+
+const collapseAll = () => {
+  visibleEntryCount.value = DEFAULT_VISIBLE_COUNT
+}
+
 const handleUpdate = async () => {
   if (!editingState.value) return
 
@@ -429,7 +469,7 @@ const handleUpdate = async () => {
             <col v-if="write_project_cash" style="width: 6%" />
           </colgroup>
           <CTableRow
-            v-for="entry in proTrans.accounting_entries"
+            v-for="entry in visibleEntries"
             :key="entry.pk"
             class="bg-lime-lighten-5"
           >
@@ -576,6 +616,40 @@ const handleUpdate = async () => {
                 "
                 class="pointer edit-icon-hover"
               />
+            </CTableDataCell>
+          </CTableRow>
+
+          <!-- Expand/Collapse Controls Row -->
+          <CTableRow v-if="shouldShowExpand" class="bg-grey-lighten-4">
+            <CTableDataCell colspan="5" class="text-center py-2">
+              <!-- Expand More Button -->
+              <v-btn
+                v-if="!isFullyExpanded"
+                variant="text"
+                size="small"
+                color="primary"
+                @click="expandMore"
+              >
+                <v-icon icon="mdi-chevron-down" size="18" class="mr-1" />
+                더보기 ({{ remainingCount }}개 항목)
+              </v-btn>
+
+              <!-- Collapse Button -->
+              <v-btn
+                v-else
+                variant="text"
+                size="small"
+                color="grey"
+                @click="collapseAll"
+              >
+                <v-icon icon="mdi-chevron-up" size="18" class="mr-1" />
+                접기
+              </v-btn>
+
+              <!-- Entry Count Indicator -->
+              <span class="text-caption text-grey ml-3">
+                {{ visibleEntryCount }} / {{ totalEntryCount }} 표시 중
+              </span>
             </CTableDataCell>
           </CTableRow>
         </CTable>
