@@ -379,8 +379,9 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
 
         # 최종 분개 금액 목록 계산
         final_entry_amounts = {}
-        if is_update:
-            # 수정 시: 기존 분개 목록을 가져와 {pk: amount} 맵으로 만듦
+        if is_update and self.partial:
+            # PATCH 요청(부분 업데이트)일 때만 기존 분개 목록을 포함
+            # PUT 요청(전체 교체)일 때는 incoming_entries만으로 합계 계산
             for entry in instance.accounting_entries.all():
                 final_entry_amounts[entry.pk] = entry.amount
 
@@ -598,8 +599,9 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
 
         # 최종 분개 금액 목록을 계산
         final_entry_amounts = {}
-        if is_update:
-            # 수정 시: 기존 분개 목록을 가져와 {pk: amount} 맵으로 만듦
+        if is_update and self.partial:
+            # PATCH 요청(부분 업데이트)일 때만 기존 분개 목록을 포함
+            # PUT 요청(전체 교체)일 때는 incoming_entries만으로 합계 계산
             for entry in instance.accounting_entries.all():
                 final_entry_amounts[entry.pk] = entry.amount
 
