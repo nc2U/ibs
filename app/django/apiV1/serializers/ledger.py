@@ -449,10 +449,13 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         """
-        기존 본사 거래 업데이트 (PATCH 지원 강화)
-        - entries_data에 'pk' 포함: 기존 분개 수정 (요청에 있는 필드만)
-        - entries_data에 'pk' 없음: 새 분개 생성
-        - 기존 분개가 entries_data에 없으면: 삭제
+        기존 본사 거래 업데이트 (PUT/PATCH 구분)
+
+        회계분개 수정 방식:
+        1. entries_data에 'pk' 포함: 기존 분개 수정 (요청에 있는 필드만)
+        2. entries_data에 'pk' 없음: 새 분개 생성
+        3. PUT 요청: 기존 분개가 entries_data에 없으면 삭제
+        4. PATCH 요청: 기존 분개가 entries_data에 없어도 유지 (부분 업데이트)
         """
         # 1. 회계분개 데이터 추출
         entries_data = validated_data.pop('accounting_entries', None)
@@ -472,10 +475,12 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
             existing_pks = [entry.pk for entry in instance.accounting_entries.all()]
             incoming_pks = {entry_data.get('pk') for entry_data in entries_data if entry_data.get('pk')}
 
-            # 삭제할 분개 처리
-            pks_to_delete = set(existing_pks) - incoming_pks
-            if pks_to_delete:
-                CompanyAccountingEntry.objects.filter(pk__in=pks_to_delete).delete()
+            # PUT 요청(전체 교체)일 때만 삭제, PATCH 요청(부분 업데이트)일 때는 유지
+            if not self.partial:
+                # 삭제할 분개 처리
+                pks_to_delete = set(existing_pks) - incoming_pks
+                if pks_to_delete:
+                    CompanyAccountingEntry.objects.filter(pk__in=pks_to_delete).delete()
 
             for entry_data in entries_data:
                 entry_pk = entry_data.get('pk')
@@ -667,12 +672,13 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         """
-        기존 프로젝트 거래 업데이트 (PATCH 지원 강화)
+        기존 프로젝트 거래 업데이트 (PUT/PATCH 구분)
 
         회계분개 수정 방식:
         1. entries_data에 'pk' 포함: 기존 분개 수정
         2. entries_data에 'pk' 없음: 새 분개 생성
-        3. 기존에 있던 분개가 entries_data에 없으면: 삭제
+        3. PUT 요청: 기존 분개가 entries_data에 없으면 삭제
+        4. PATCH 요청: 기존 분개가 entries_data에 없어도 유지 (부분 업데이트)
 
         ContractPayment 자동 처리:
         - Model의 save()에서 trigger_sync_contract_payment가 호출되어 처리
@@ -700,11 +706,13 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             # 업데이트할 분개 ID 추출
             update_entry_pks = [entry_data.get('pk') for entry_data in entries_data if entry_data.get('pk')]
 
-            # 삭제할 분개들 (entries_data에 없는 기존 분개들)
-            entries_to_delete = existing_entries.exclude(id__in=update_entry_pks)
-            for entry in entries_to_delete:
-                # ContractPayment가 있으면 함께 삭제됨 (CASCADE)
-                entry.delete()
+            # PUT 요청(전체 교체)일 때만 삭제, PATCH 요청(부분 업데이트)일 때는 유지
+            if not self.partial:
+                # 삭제할 분개들 (entries_data에 없는 기존 분개들)
+                entries_to_delete = existing_entries.exclude(id__in=update_entry_pks)
+                for entry in entries_to_delete:
+                    # ContractPayment가 있으면 함께 삭제됨 (CASCADE)
+                    entry.delete()
 
             accounting_entries = []
 
