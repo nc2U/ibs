@@ -323,11 +323,11 @@ const addRow = () => {
 }
 
 const removeEntry = (index: number) => {
-  if (index < editableEntries.value.length && editableEntries.value[index].pk) {
-    // 기존 entry는 amount를 0으로 설정 (삭제 처리)
+  if (editableEntries.value.length === 1) {
+    // entry 개수가 1개일 때는 amount를 0으로 설정 (삭제 처리)
     editableEntries.value[index].amount = 0
   } else {
-    // 새로 추가된 행은 배열에서 제거
+    // entry 행수가 2개 이상일 배열에서 제거
     editableEntries.value.splice(index, 1)
   }
 }
