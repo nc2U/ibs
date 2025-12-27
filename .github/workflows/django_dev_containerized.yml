@@ -103,6 +103,15 @@ jobs:
           # Apply Kubernetes RBAC roles
           kubectl apply -f ./deploy/kubectl/class-roles
 
+      - name: Clean up pending Helm releases
+        run: |
+          # Remove any pending Helm operations to prevent "another operation in progress" errors
+          echo "Checking for pending Helm operations..."
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-upgrade --ignore-not-found=true
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-install --ignore-not-found=true
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-rollback --ignore-not-found=true
+          echo "Pending operations cleaned up"
+
       - name: Deploy with Helm
         run: |
           # Helm upgrade with new image tag
