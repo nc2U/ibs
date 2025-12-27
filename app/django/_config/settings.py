@@ -254,12 +254,12 @@ ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password1*']
 # EMAIL SETTINGS
 DOMAIN_HOST = config('DOMAIN_HOST', default='http://localhost/')  # ex: 'https://abc.com/'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST')  # 'your-smtp-server.com'
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.example.com')  # 'your-smtp-server.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True  # 587일 경우, EMAIL_USE_SSL = True  # 465일 경우 사용
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')  # 'your accessId or accessEmail'
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')  # 'your-email-password'
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')  # 'your-email@example.com'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='user@example.com')  # 'your accessId or accessEmail'
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='placeholder')  # 'your-email-password'
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@example.com')  # 'your-email@example.com'
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
