@@ -17,7 +17,7 @@ env:
   KUBE_NAMESPACE: ibs-prod
   HELM_RELEASE_NAME: ibs
   DOCKERFILE_PATH: deploy/docker/python/Dockerfile
-  BUILD_CONTEXT: app/django
+  BUILD_CONTEXT: .
 
 jobs:
   build-and-deploy:

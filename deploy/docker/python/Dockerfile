@@ -33,12 +33,12 @@ RUN apt-get update \
  && apt-get autoremove -y
 
 # copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY deploy/docker/python/requirements.txt .
 RUN pip install --upgrade pip setuptools \
  && pip install --trusted-host pypi.python.org -r requirements.txt
 
 # copy entire Django application source code
-COPY . .
+COPY app/django/ .
 
 # collect static files (no database connection required)
 # Using DJANGO_SETTINGS_MODULE to ensure proper settings
