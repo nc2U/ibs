@@ -710,8 +710,7 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
     """
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
 
-    @staticmethod
-    def create(request):
+    def create(self, request):
         """본사 거래 생성 (은행거래 + 회계분개)"""
         serializer = CompanyCompositeTransactionSerializer(
             data=request.data,
