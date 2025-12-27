@@ -1,0 +1,205 @@
+name: Django Production Deployment (Containerized)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'app/django/**'
+      - 'deploy/docker/python/**'
+      - 'deploy/helm/**'
+      - '.github/workflows/django_prod_containerized.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: nc2u/django
+  KUBE_NAMESPACE: ibs-prod
+  HELM_RELEASE_NAME: ibs
+  DOCKERFILE_PATH: deploy/docker/python/Dockerfile
+  BUILD_CONTEXT: app/django
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full git history for accurate SHA
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate image tags
+        id: meta
+        run: |
+          # Generate short SHA (7 characters)
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "image_tag=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "Generated image tag: ${SHORT_SHA}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.BUILD_CONTEXT }}
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Configure kubectl
+        run: |
+          # GitHub Actions runner is ephemeral (clean state every run)
+          # Create kubeconfig file from GitHub Secrets to access Kubernetes cluster
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+          # Verify cluster connection
+          kubectl config use-context default
+          kubectl get nodes
+
+      - name: Setup NFS Provisioner
+        run: |
+          # Check if nfs-subdir-external-provisioner repo exists
+          if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
+            echo "Adding nfs-subdir-external-provisioner Helm repository..."
+            helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+          fi
+
+          # Update Helm repositories
+          helm repo update
+
+          # Check if nfs-subdir-external-provisioner is installed
+          if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
+            echo "Installing nfs-subdir-external-provisioner..."
+            helm upgrade --install nfs-subdir-external-provisioner \
+              nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+              -n kube-system \
+              --set nfs.server=${{ secrets.NFS_SERVER }} \
+              --set nfs.path=/mnt/nfs-subdir-external-provisioner
+          else
+            echo "nfs-subdir-external-provisioner already installed"
+          fi
+
+      - name: Apply RBAC Roles
+        run: |
+          # Apply Kubernetes RBAC roles
+          kubectl apply -f ./deploy/kubectl/class-roles
+
+      - name: Deploy with Helm
+        run: |
+          # Helm upgrade with new image tag
+          helm upgrade ${HELM_RELEASE_NAME} ./deploy/helm \
+            --install \
+            --namespace ${KUBE_NAMESPACE} \
+            --create-namespace \
+            --values ./deploy/helm/values-prod.yaml \
+            --set web.image.tag=${{ steps.meta.outputs.image_tag }} \
+            --set nginx.web.image.tag=${{ steps.meta.outputs.image_tag }} \
+            --history-max 5 \
+            --wait \
+            --timeout 10m \
+            --atomic \
+            --cleanup-on-fail
+
+      - name: Wait for rollout completion
+        run: |
+          echo "Waiting for web deployment rollout..."
+          kubectl rollout status deployment/${HELM_RELEASE_NAME}-web \
+            -n ${KUBE_NAMESPACE} \
+            --timeout=10m
+
+          echo "Waiting for celery deployment rollout..."
+          kubectl rollout status deployment/${HELM_RELEASE_NAME}-web-celery \
+            -n ${KUBE_NAMESPACE} \
+            --timeout=10m
+
+          echo "Waiting for nginx deployment rollout..."
+          kubectl rollout status deployment/${HELM_RELEASE_NAME}-nginx \
+            -n ${KUBE_NAMESPACE} \
+            --timeout=10m
+
+      - name: Verify deployment health
+        run: |
+          echo "Checking pod status..."
+          kubectl get pods -n ${KUBE_NAMESPACE} -l app.kubernetes.io/instance=${HELM_RELEASE_NAME}
+
+          echo "Checking recent events..."
+          kubectl get events -n ${KUBE_NAMESPACE} --sort-by='.lastTimestamp' | tail -20
+
+          echo "Verifying web pods are running..."
+          WEB_PODS=$(kubectl get pods -n ${KUBE_NAMESPACE} \
+            -l app.kubernetes.io/instance=${HELM_RELEASE_NAME},app.kubernetes.io/name=web \
+            --field-selector=status.phase=Running \
+            --no-headers | wc -l)
+
+          if [ "$WEB_PODS" -eq 0 ]; then
+            echo "ERROR: No web pods are running!"
+            exit 1
+          fi
+
+          echo "Deployment verification successful: $WEB_PODS web pod(s) running"
+
+      - name: Send Slack notification on success
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.SLACK_INCOMING_URL }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "✅ Django Production Deployment Successful",
+              "attachments": [{
+                "color": "good",
+                "fields": [
+                  {"title": "Environment", "value": "Production", "short": true},
+                  {"title": "Image Tag", "value": "${{ steps.meta.outputs.image_tag }}", "short": true},
+                  {"title": "Namespace", "value": "${{ env.KUBE_NAMESPACE }}", "short": true},
+                  {"title": "Release", "value": "${{ env.HELM_RELEASE_NAME }}", "short": true},
+                  {"title": "Commit", "value": "${{ github.sha }}", "short": false},
+                  {"title": "Author", "value": "${{ github.actor }}", "short": true}
+                ]
+              }]
+            }'
+
+      - name: Send Slack notification on failure
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.SLACK_INCOMING_URL }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "❌ Django Production Deployment Failed",
+              "attachments": [{
+                "color": "danger",
+                "fields": [
+                  {"title": "Environment", "value": "Production", "short": true},
+                  {"title": "Image Tag", "value": "${{ steps.meta.outputs.image_tag }}", "short": true},
+                  {"title": "Namespace", "value": "${{ env.KUBE_NAMESPACE }}", "short": true},
+                  {"title": "Release", "value": "${{ env.HELM_RELEASE_NAME }}", "short": true},
+                  {"title": "Commit", "value": "${{ github.sha }}", "short": false},
+                  {"title": "Author", "value": "${{ github.actor }}", "short": true},
+                  {"title": "Workflow", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false}
+                ]
+              }]
+            }'
+
+      - name: Rollback on critical failure
+        if: failure()
+        run: |
+          echo "Deployment failed. Consider manual rollback:"
+          echo "helm rollback ${HELM_RELEASE_NAME} --namespace ${KUBE_NAMESPACE}"
+          echo "Or check migration job logs:"
+          echo "kubectl logs -n ${KUBE_NAMESPACE} job/${HELM_RELEASE_NAME}-web-migration-\$(kubectl get jobs -n ${KUBE_NAMESPACE} -o name | grep migration | tail -1 | cut -d'/' -f2)"

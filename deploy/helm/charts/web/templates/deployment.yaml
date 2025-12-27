@@ -8,7 +8,12 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
-  revisionHistoryLimit: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       {{- include "web.selectorLabels" . | nindent 6 }}
@@ -68,8 +73,10 @@ spec:
 {{/*            timeoutSeconds: 5*/}}
 {{/*            failureThreshold: 5*/}}
           volumeMounts:
-            - name: django-source
-              mountPath: /app/django
+            - name: env-config
+              mountPath: /app/django/.env
+              subPath: .env
+              readOnly: true
             - name: media
               mountPath: /app/django/media
             - name: repos
@@ -79,9 +86,10 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: django-source
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-django-pvc
+        - name: env-config
+          nfs:
+            server: {{ .Values.global.nfsServerHost }}
+            path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django
         - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc

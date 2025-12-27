@@ -1,42 +1,59 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: {{ include "web.fullname" . }}-celery
+  name: {{ include "web.fullname" . }}-migration-{{ .Release.Revision }}
   labels:
     {{- include "web.labels" . | nindent 4 }}
-    app.kubernetes.io/component: celery
+    app.kubernetes.io/component: migration
+  annotations:
+    # Helm hook annotations
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
-  replicas: {{ .Values.celery.replicaCount | default 2 }}
-  selector:
-    matchLabels:
-      {{- include "web.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: celery
+  backoffLimit: 3
+  activeDeadlineSeconds: 600  # 10-minute timeout
   template:
     metadata:
       labels:
         {{- include "web.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: celery
+        app.kubernetes.io/component: migration
     spec:
+      restartPolicy: Never
       serviceAccountName: {{ include "web.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: celery-worker
+        - name: django-migration
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           workingDir: /app/django
-          command: [ "python" ]
+          command: [ "sh" ]
           args:
-            - "-m"
-            - "celery"
-            - "-A"
-            - "_config"
-            - "worker"
-            - "--loglevel=info"
-            - "--concurrency={{ .Values.celery.concurrency | default 4 }}"
-            - "--max-tasks-per-child={{ .Values.celery.maxTasksPerChild | default 1000 }}"
+            - "-c"
+            - |
+              echo "=========================================="
+              echo "Starting Django database migrations"
+              echo "Release: {{ .Release.Name }}"
+              echo "Revision: {{ .Release.Revision }}"
+              echo "Timestamp: $(date)"
+              echo "=========================================="
+
+              # Run migrate.sh script
+              sh migrate.sh
+
+              MIGRATION_STATUS=$?
+
+              echo "=========================================="
+              if [ $MIGRATION_STATUS -eq 0 ]; then
+                echo "Migration completed successfully!"
+              else
+                echo "Migration FAILED with exit code: $MIGRATION_STATUS"
+                exit $MIGRATION_STATUS
+              fi
+              echo "=========================================="
           envFrom:
             - configMapRef:
                 name: {{ include "web.fullname" . }}-config
@@ -45,12 +62,6 @@ spec:
           env:
             - name: REDIS_URL
               value: "redis://redis:6379/1"
-            - name: CELERY_BROKER_URL
-              value: "redis://redis:6379/0"
-            - name: CELERY_RESULT_BACKEND
-              value: "redis://redis:6379/0"
-          resources:
-            {{- toYaml (.Values.celery.resources | default .Values.resources) | nindent 12 }}
           volumeMounts:
             - name: env-config
               mountPath: /app/django/.env
@@ -60,10 +71,13 @@ spec:
               mountPath: /app/django/media
             - name: repos
               mountPath: /app/repos
-            - name: tz-seoul
-              mountPath: /etc/localtime
-            - name: logs
-              mountPath: /var/log/celery
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 512Mi
       volumes:
         - name: env-config
           nfs:
@@ -75,21 +89,3 @@ spec:
         - name: repos
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-git-repos-pvc
-        - name: tz-seoul
-          hostPath:
-            path: /etc/localtime
-            type: File
-        - name: logs
-          emptyDir: { }
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}

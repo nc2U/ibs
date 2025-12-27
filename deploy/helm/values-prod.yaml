@@ -34,6 +34,11 @@ cnpg:
 
 # Web application resource configuration
 web:
+  image:
+    repository: nc2u/django
+    tag: latest  # Overridden by GitHub Actions with git SHA
+    pullPolicy: IfNotPresent
+
   resources:
     requests:
       cpu: 500m

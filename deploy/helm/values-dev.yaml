@@ -17,6 +17,11 @@ global:
   defaultFromEmail: "email@example.com"
 
 web:
+  image:
+    repository: nc2u/django
+    tag: dev-latest  # Overridden by GitHub Actions with git SHA
+    pullPolicy: IfNotPresent
+
   celery:
     replicaCount: 1
 

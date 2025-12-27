@@ -8,7 +8,7 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
-  revisionHistoryLimit: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "nginx.selectorLabels" . | nindent 6 }}
@@ -28,6 +28,19 @@ spec:
       serviceAccountName: {{ include "nginx.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: copy-static-files
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default "latest" }}"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "Copying static files from Django image to emptyDir volume..."
+              cp -rv /app/django/static/* /static-files/ || true
+              echo "Static files copy completed."
+          volumeMounts:
+            - name: static
+              mountPath: /static-files
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -100,8 +113,7 @@ spec:
               - key: PUBLIC.CONF
                 path: public.conf
         - name: static
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-{{ include "nginx.fullname" . }}-{{ .Values.global.appMode }}-static-pvc
+          emptyDir: {}
         - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-{{ include "nginx.fullname" . }}-{{ .Values.global.appMode }}-media-pvc
