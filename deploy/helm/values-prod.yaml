@@ -16,35 +16,17 @@ global:
   emailHostPassword: "my-email-host-secret" # your-email-password
   defaultFromEmail: "email@example.com"
 
-redis:
-  enabled: true
-  replicaCount: 1
-  persistence:
-    enabled: true
-    size: 2Gi
-
-mariadb:
-  enabled: false
-
 # CloudNativePG 설정
 cnpg:
   enabled: true
   replication:
     instances: 3
 
-# Web application resource configuration
+mariadb:
+  enabled: false
+
 web:
-  image:
-    repository: nc2u/django
-    tag: latest  # Overridden by GitHub Actions with git SHA
-    pullPolicy: IfNotPresent
-
-  serviceAccount:
-    create: true
-    annotations: {}
-    name: ""
-
-  resources:
+  resources: # Web application resource configuration
     requests:
       cpu: 500m
       memory: 1Gi
@@ -52,8 +34,7 @@ web:
       cpu: 2000m
       memory: 3Gi
 
-  # Celery worker configuration
-  celery:
+  celery: # Celery worker configuration
     resources:
       requests:
         cpu: 300m
@@ -62,14 +43,14 @@ web:
         cpu: 1500m
         memory: 2Gi
 
-nginx:
-  # Django web image for init container (to copy static files)
-  web:
-    image:
-      repository: nc2u/django
-      tag: latest  # Overridden by GitHub Actions with git SHA
-      pullPolicy: IfNotPresent
+redis:
+  enabled: true
+  replicaCount: 1
+  persistence:
+    enabled: true
+    size: 2Gi
 
+nginx:
   service:
     port: 8880
 
