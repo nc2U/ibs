@@ -39,6 +39,11 @@ web:
     tag: latest  # Overridden by GitHub Actions with git SHA
     pullPolicy: IfNotPresent
 
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
   resources:
     requests:
       cpu: 500m
