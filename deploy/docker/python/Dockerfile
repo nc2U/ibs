@@ -72,6 +72,21 @@ RUN apt-get update \
       fonts-nanum \
       fonts-nanum-extra \
       libmagic1 \
+      libgobject-2.0-0 \
+      libpango-1.0-0 \
+      libpangocairo-1.0-0 \
+      libcairo2 \
+      libgdk-pixbuf-2.0-0 \
+      libffi8 \
+      libgirepository-1.0-1 \
+      libxml2 \
+      libpangoft2-1.0-0 \
+      libjpeg62-turbo \
+      libtiff6 \
+      libfreetype6 \
+      liblcms2-2 \
+      libwebp7 \
+      libopenjp2-7 \
  && apt-get autoremove -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
