@@ -97,10 +97,6 @@ spec:
               mountPath: /app/django/.env
               subPath: .env
               readOnly: true
-            - name: media
-              mountPath: /app/django/media
-            - name: repos
-              mountPath: /app/repos
           resources:
             limits:
               cpu: 1000m
@@ -113,9 +109,3 @@ spec:
           nfs:
             server: {{ .Values.global.nfsServerHost }}
             path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django
-        - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc
-        - name: repos
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-git-repos-pvc
