@@ -2,6 +2,9 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-django-pv
+  annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "-15"
 spec:
   storageClassName: {{ include "web.fullname" . }}-app-{{ .Values.global.appMode }}
   capacity:
@@ -29,6 +32,9 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ .Release.Name }}-{{ include "web.fullname" . }}-{{ .Values.global.appMode }}-git-repos-pv
+  annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "-15"
 spec:
   storageClassName: {{ include "web.fullname" . }}-repo-{{ .Values.global.appMode }}
   capacity:
