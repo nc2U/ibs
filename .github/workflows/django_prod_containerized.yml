@@ -189,7 +189,7 @@ jobs:
             --set 'nginx.ingress.tls[0].hosts[0]'=erp.${{ secrets.DOMAIN_NAME }} \
             --set 'nginx.ingress.tls[0].hosts[1]'=erp.dyibs.co.kr \
             --set 'nginx.ingress.tls[0].hosts[2]'=erp.brdnc.co.kr \
-            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
+            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert \
             --cleanup-on-fail
 
       - name: Wait for rollout completion
