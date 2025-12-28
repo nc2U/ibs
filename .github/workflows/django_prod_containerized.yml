@@ -11,6 +11,11 @@ on:
       - '.github/workflows/django_prod_containerized.yml'
   workflow_dispatch:
 
+# Prevent concurrent deployments to the same environment
+concurrency:
+  group: ibs-prod-deployment
+  cancel-in-progress: false
+
 env:
   REGISTRY: docker.io
   IMAGE_NAME: nc2u/django
