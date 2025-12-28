@@ -56,11 +56,6 @@ prod.py
 db.sqlite3
 dist
 
-# mysql & postgres data
-volume/mysql
-volume/pgdata
-init.sql
-
 # redis data
 volume/redis
 
@@ -69,8 +64,8 @@ venv/
 
 # deploy/docker
 **/nginx/dev/
-**/python/dev/
-docker-compose.yml
+deploy/docker/python/dev/.env
+deploy/docker-compose.yml
 
 # deploy/helm
 *custom.yaml
