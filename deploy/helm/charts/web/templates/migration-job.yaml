@@ -7,13 +7,14 @@ metadata:
     app.kubernetes.io/component: migration
   annotations:
     # Helm hook annotations
-    # Only run on upgrades, not on initial install (PostgreSQL must exist first)
-    "helm.sh/hook": pre-upgrade
+    # post-install: Run after PostgreSQL is created on initial install
+    # pre-upgrade: Run before deployment updates on upgrades
+    "helm.sh/hook": post-install,pre-upgrade
     "helm.sh/hook-weight": "-5"
     "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   backoffLimit: 3
-  activeDeadlineSeconds: 600  # 10-minute timeout
+  activeDeadlineSeconds: 900  # 15-minute timeout (10 min DB wait + 5 min migration)
   template:
     metadata:
       labels:
@@ -44,7 +45,7 @@ spec:
 
               # Wait for database to be ready
               echo "Waiting for database to be ready..."
-              MAX_RETRIES=30
+              MAX_RETRIES=60
               RETRY_COUNT=0
 
               while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
@@ -58,7 +59,7 @@ spec:
 
                 RETRY_COUNT=$((RETRY_COUNT + 1))
                 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-                  echo "ERROR: Database is not ready after $MAX_RETRIES attempts (5 minutes)"
+                  echo "ERROR: Database is not ready after $MAX_RETRIES attempts (10 minutes)"
                   echo "Last connection attempt output:"
                   python manage.py showmigrations --database default 2>&1 || true
                   exit 1
