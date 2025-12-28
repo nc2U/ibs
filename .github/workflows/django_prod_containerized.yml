@@ -112,30 +112,38 @@ jobs:
           kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-rollback --ignore-not-found=true
           echo "Pending operations cleaned up"
 
-          # Check if this is first install (no existing release)
-          if ! helm status ${HELM_RELEASE_NAME} -n ${KUBE_NAMESPACE} >/dev/null 2>&1; then
-            echo "No existing release found, cleaning up orphaned PV/PVC resources..."
+          # Adopt existing PV/PVC into Helm management (instead of deleting)
+          echo "Checking for existing PV/PVC resources without Helm labels..."
 
-            # Delete PVCs (this will also unbind PVs)
-            kubectl delete pvc -n ${KUBE_NAMESPACE} \
-              ibs-nginx-prod-static-pvc \
-              ibs-nginx-prod-media-pvc \
-              ibs-web-prod-django-pvc \
-              ibs-web-prod-git-repos-pvc \
-              --ignore-not-found=true
+          # Add Helm labels/annotations to existing PVCs
+          for pvc in ibs-nginx-prod-static-pvc ibs-nginx-prod-media-pvc ibs-web-prod-django-pvc ibs-web-prod-git-repos-pvc; do
+            if kubectl get pvc $pvc -n ${KUBE_NAMESPACE} >/dev/null 2>&1; then
+              echo "Adopting PVC: $pvc"
+              kubectl label pvc $pvc -n ${KUBE_NAMESPACE} \
+                app.kubernetes.io/managed-by=Helm \
+                --overwrite || true
+              kubectl annotate pvc $pvc -n ${KUBE_NAMESPACE} \
+                meta.helm.sh/release-name=${HELM_RELEASE_NAME} \
+                meta.helm.sh/release-namespace=${KUBE_NAMESPACE} \
+                --overwrite || true
+            fi
+          done
 
-            # Delete PVs (cluster-scoped, no namespace)
-            kubectl delete pv \
-              ibs-nginx-prod-static-pv \
-              ibs-nginx-prod-media-pv \
-              ibs-web-prod-django-pv \
-              ibs-web-prod-git-repos-pv \
-              --ignore-not-found=true
+          # Add Helm labels/annotations to existing PVs
+          for pv in ibs-nginx-prod-static-pv ibs-nginx-prod-media-pv ibs-web-prod-django-pv ibs-web-prod-git-repos-pv; do
+            if kubectl get pv $pv >/dev/null 2>&1; then
+              echo "Adopting PV: $pv"
+              kubectl label pv $pv \
+                app.kubernetes.io/managed-by=Helm \
+                --overwrite || true
+              kubectl annotate pv $pv \
+                meta.helm.sh/release-name=${HELM_RELEASE_NAME} \
+                meta.helm.sh/release-namespace=${KUBE_NAMESPACE} \
+                --overwrite || true
+            fi
+          done
 
-            echo "Orphaned resources cleaned up"
-          else
-            echo "Existing release found, skipping cleanup"
-          fi
+          echo "Existing resources adopted into Helm management"
 
       - name: Deploy with Helm
         run: |
