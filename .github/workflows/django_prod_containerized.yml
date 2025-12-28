@@ -195,17 +195,17 @@ jobs:
       - name: Wait for rollout completion
         run: |
           echo "Waiting for web deployment rollout..."
-          kubectl rollout status deployment/${HELM_RELEASE_NAME}-web \
+          kubectl rollout status deployment/web \
             -n ${KUBE_NAMESPACE} \
             --timeout=15m
 
           echo "Waiting for celery deployment rollout..."
-          kubectl rollout status deployment/${HELM_RELEASE_NAME}-web-celery \
+          kubectl rollout status deployment/web-celery \
             -n ${KUBE_NAMESPACE} \
             --timeout=15m
 
           echo "Waiting for nginx deployment rollout..."
-          kubectl rollout status deployment/${HELM_RELEASE_NAME}-nginx \
+          kubectl rollout status deployment/nginx \
             -n ${KUBE_NAMESPACE} \
             --timeout=15m
 
