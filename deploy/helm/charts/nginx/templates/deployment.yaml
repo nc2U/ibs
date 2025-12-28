@@ -32,7 +32,7 @@ spec:
         - name: copy-static-files
           image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default "latest" }}"
           imagePullPolicy: IfNotPresent
-          command: ["sh", "-c"]
+          command: [ "sh", "-c" ]
           args:
             - |
               echo "Copying Django static files (excluding dist/) to emptyDir volume..."
@@ -121,11 +121,11 @@ spec:
               - key: PUBLIC.CONF
                 path: public.conf
         - name: static
-          emptyDir: {}
+          emptyDir: { }
         - name: vue-frontend-nfs
           nfs:
-            server: {{ .Values.global.nfsServerHost }}
-            path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/static/dist
+            server: {{ .Values.global.cicdServerHost }}
+            path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/django/static/dist
         - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-{{ include "nginx.fullname" . }}-{{ .Values.global.appMode }}-media-pvc

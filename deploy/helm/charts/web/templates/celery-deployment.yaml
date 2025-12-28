@@ -74,8 +74,8 @@ spec:
             path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django
         - name: vue-frontend-nfs
           nfs:
-            server: {{ .Values.global.nfsServerHost }}
-            path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/static/dist
+            server: {{ .Values.global.cicdServerHost }}
+            path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/django/static/dist
         - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc
