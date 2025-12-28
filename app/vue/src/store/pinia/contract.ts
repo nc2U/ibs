@@ -224,12 +224,19 @@ export const useContract = defineStore('contract', () => {
   const isLoading = ref(false)
   const contractsCount = ref<number>(0)
   const getContracts = ref<{ value: number; label: string }[]>([])
+  const getAllContractors = ref<{ value: number; label: string }[]>([])
 
   // actions
   const fetchAllContracts = async (project: number) =>
     await api
       .get(`/simple-contract/?project=${project}`)
       .then(res => (getContracts.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchAllContractors = async (project: number) =>
+    await api
+      .get(`/simple-contractor/?project=${project}`)
+      .then(res => (getAllContractors.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   const contractPages = (itemsPerPage: number) => Math.ceil(contractsCount.value / itemsPerPage)
@@ -865,7 +872,9 @@ export const useContract = defineStore('contract', () => {
     isLoading,
     contractsCount,
     getContracts,
+    getAllContractors,
     fetchAllContracts,
+    fetchAllContractors,
     contractPages,
     fetchContract,
     removeContract,

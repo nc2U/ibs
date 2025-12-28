@@ -491,6 +491,11 @@ class ContractorViewSet(viewsets.ModelViewSet):
     #     serializer.save(creator=self.request.user)
 
 
+class SimpleContractorViewSet(ContractorViewSet):
+    serializer_class = SimpleContractorSerializer
+    pagination_class = PageNumberPaginationThreeThousand
+
+
 class ContractFileViewSet(viewsets.ModelViewSet):
     """계약서 파일 업로드 관리"""
     queryset = ContractFile.objects.all()

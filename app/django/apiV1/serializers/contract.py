@@ -741,6 +741,22 @@ class ContractorSerializer(serializers.ModelSerializer):
                   'contract_date', 'is_active', 'note', 'succession', 'contractorrelease')
 
 
+class SimpleContractorSerializer(serializers.ModelSerializer):
+    value = serializers.SerializerMethodField()
+    label = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Contractor
+        fields = ('value', 'label')
+
+    def get_value(self, obj):
+        return obj.pk
+
+    @staticmethod
+    def get_label(obj):
+        return str(obj.name)
+
+
 class ContractFileSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
 
