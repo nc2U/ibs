@@ -229,10 +229,40 @@ jobs:
               }]
             }'
 
+      - name: Check migration job logs on failure
+        if: failure()
+        run: |
+          echo "==================================================="
+          echo "Checking migration job logs for debugging..."
+          echo "==================================================="
+
+          # Get the latest migration job name
+          MIGRATION_JOB=$(kubectl get jobs -n ${KUBE_NAMESPACE} -l app.kubernetes.io/component=migration --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || echo "")
+
+          if [ -n "$MIGRATION_JOB" ]; then
+            echo "Migration Job: $MIGRATION_JOB"
+            echo ""
+            echo "Job Status:"
+            kubectl describe job -n ${KUBE_NAMESPACE} $MIGRATION_JOB || true
+            echo ""
+            echo "==================================================="
+            echo "Migration Job Logs:"
+            echo "==================================================="
+            kubectl logs -n ${KUBE_NAMESPACE} job/$MIGRATION_JOB --tail=100 || echo "No logs available"
+            echo ""
+            echo "==================================================="
+            echo "Pod Events:"
+            echo "==================================================="
+            POD_NAME=$(kubectl get pods -n ${KUBE_NAMESPACE} -l job-name=$MIGRATION_JOB -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+            if [ -n "$POD_NAME" ]; then
+              kubectl describe pod -n ${KUBE_NAMESPACE} $POD_NAME || true
+            fi
+          else
+            echo "No migration job found"
+          fi
+
       - name: Rollback on critical failure
         if: failure()
         run: |
           echo "Deployment failed. Consider manual rollback:"
           echo "helm rollback ${HELM_RELEASE_NAME} --namespace ${KUBE_NAMESPACE}"
-          echo "Or check migration job logs:"
-          echo "kubectl logs -n ${KUBE_NAMESPACE} job/${HELM_RELEASE_NAME}-web-migration-\$(kubectl get jobs -n ${KUBE_NAMESPACE} -o name | grep migration | tail -1 | cut -d'/' -f2)"
