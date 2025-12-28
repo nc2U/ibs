@@ -125,6 +125,8 @@ jobs:
             
               helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values-dev.yaml \
                 --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 20m \
+                --set web.image.tag=dev-latest \
+                --set nginx.web.image.tag=dev-latest \
                 --set global.dbPassword=${{ secrets.DATABASE_PASS }} \
                 --set global.cicdServerHost=${{ secrets.CICD_HOST }} \
                 --set global.cicdPath=${{ secrets.CICD_PATH }} \

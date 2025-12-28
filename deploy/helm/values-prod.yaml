@@ -63,6 +63,13 @@ web:
         memory: 2Gi
 
 nginx:
+  # Django web image for init container (to copy static files)
+  web:
+    image:
+      repository: nc2u/django
+      tag: latest  # Overridden by GitHub Actions with git SHA
+      pullPolicy: IfNotPresent
+
   service:
     port: 8880
 
