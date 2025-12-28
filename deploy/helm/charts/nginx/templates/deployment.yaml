@@ -35,9 +35,14 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
-              echo "Copying static files from Django image to emptyDir volume..."
-              cp -rv /app/django/static/* /static-files/ || true
-              echo "Static files copy completed."
+              echo "Copying Django static files (excluding dist/) to emptyDir volume..."
+              cd /app/django/static
+              for item in *; do
+                if [ "$item" != "dist" ]; then
+                  cp -rv "$item" /static-files/ || true
+                fi
+              done
+              echo "Django static files copy completed."
           volumeMounts:
             - name: static
               mountPath: /static-files
@@ -91,6 +96,9 @@ spec:
               readOnly: true
             - name: static
               mountPath: /django/static
+            - name: vue-frontend-nfs
+              mountPath: /django/static/dist
+              readOnly: true
             - name: media
               mountPath: /django/media
             - name: tz-seoul
@@ -114,6 +122,10 @@ spec:
                 path: public.conf
         - name: static
           emptyDir: {}
+        - name: vue-frontend-nfs
+          nfs:
+            server: {{ .Values.global.nfsServerHost }}
+            path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/static/dist
         - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-{{ include "nginx.fullname" . }}-{{ .Values.global.appMode }}-media-pvc

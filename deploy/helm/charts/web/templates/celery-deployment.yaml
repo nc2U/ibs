@@ -56,6 +56,9 @@ spec:
               mountPath: /app/django/.env
               subPath: .env
               readOnly: true
+            - name: vue-frontend-nfs
+              mountPath: /app/django/static/dist
+              readOnly: true
             - name: media
               mountPath: /app/django/media
             - name: repos
@@ -69,6 +72,10 @@ spec:
           nfs:
             server: {{ .Values.global.nfsServerHost }}
             path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django
+        - name: vue-frontend-nfs
+          nfs:
+            server: {{ .Values.global.nfsServerHost }}
+            path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django/static/dist
         - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc
