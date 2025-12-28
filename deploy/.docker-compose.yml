@@ -1,21 +1,5 @@
 services:
 
-  mariadb:
-    container_name: ibs-mariadb
-    image: mariadb
-    restart: always
-    command: [ "--character-set-server=utf8", "--collation-server=utf8_unicode_ci" ]
-    environment:
-      MYSQL_DATABASE: my-db-name # 실제 데이터로 수정
-      MYSQL_USER: my-db-user # 실제 데이터로 수정
-      MYSQL_PASSWORD: my-db-password # 실제 데이터로 수정
-      MYSQL_ROOT_PASSWORD: my-db-root-password # 실제 데이터로 수정
-      TZ: Asia/Seoul
-    volumes:
-      - mariadb_data:/var/lib/mysql
-      - ../volume/backups:/var/backups
-      - ../volume/initdb/mariadb:/docker-entrypoint-initdb.d
-
   postgres:
     container_name: ibs-postgres
     image: postgres
@@ -62,7 +46,7 @@ services:
     build: docker/python/dev  # 또는 docker/python (개발 환경에 따라)
     image: nc2u/django
     environment:
-      DATABASE_TYPE: mariadb  # mariadb | postgres (default: mariadb)
+      DATABASE_TYPE: postgres
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
@@ -84,7 +68,7 @@ services:
       - ../app/repos:/app/repos
     depends_on:
       - redis
-      - mariadb  # 또는 postgres (사용하는 DB에 따라)
+      - postgres
 
   celery:
     container_name: ibs-celery
@@ -94,7 +78,7 @@ services:
     working_dir: /app/django
     restart: always
     environment:
-      DATABASE_TYPE: mariadb  # mariadb | postgres (default: mariadb)
+      DATABASE_TYPE: postgres
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
@@ -112,10 +96,8 @@ services:
       - ../app/repos:/app/repos
     depends_on:
       - redis
-      - mariadb  # 또는 postgres (사용하는 DB에 따라)
+      - postgres
 
 volumes:
   postgres_data:
-    driver: local
-  mariadb_data:
     driver: local

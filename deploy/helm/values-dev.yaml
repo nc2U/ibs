@@ -22,9 +22,6 @@ cnpg:
   replication:
     instances: 1
 
-mariadb:
-  enabled: false
-
 web:
   image:
     tag: dev-latest  # Overridden by GitHub Actions with git SHA

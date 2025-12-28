@@ -22,9 +22,6 @@ cnpg:
   replication:
     instances: 3
 
-mariadb:
-  enabled: false
-
 web:
   resources: # Web application resource configuration
     requests:
