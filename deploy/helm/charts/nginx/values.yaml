@@ -12,6 +12,13 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "1.29.0"
 
+# Django web image for init container (to copy static files)
+web:
+  image:
+    repository: nc2u/django
+    tag: dev-latest
+    pullPolicy: IfNotPresent
+
 imagePullSecrets: [ ]
 nameOverride: ""
 fullnameOverride: "nginx"
