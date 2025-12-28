@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "web.fullname" . }}-configmap-adoption
+  labels:
+    {{- include "web.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "-20"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      name: {{ include "web.fullname" . }}-configmap-adoption
+    spec:
+      serviceAccountName: {{ include "web.serviceAccountName" . }}
+      restartPolicy: Never
+      containers:
+        - name: kubectl
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Adopting existing ConfigMap into Helm management..."
+
+              # Check if ConfigMap exists
+              if kubectl get configmap {{ include "web.fullname" . }}-config -n {{ .Release.Namespace }} >/dev/null 2>&1; then
+                echo "ConfigMap {{ include "web.fullname" . }}-config exists, adopting..."
+
+                # Add Helm management labels
+                kubectl label configmap {{ include "web.fullname" . }}-config -n {{ .Release.Namespace }} \
+                  app.kubernetes.io/managed-by=Helm \
+                  --overwrite || true
+
+                # Add Helm release annotations
+                kubectl annotate configmap {{ include "web.fullname" . }}-config -n {{ .Release.Namespace }} \
+                  meta.helm.sh/release-name={{ .Release.Name }} \
+                  meta.helm.sh/release-namespace={{ .Release.Namespace }} \
+                  --overwrite || true
+
+                # Remove hook annotations if present
+                kubectl annotate configmap {{ include "web.fullname" . }}-config -n {{ .Release.Namespace }} \
+                  helm.sh/hook- \
+                  helm.sh/hook-weight- \
+                  --overwrite || true
+
+                echo "ConfigMap adopted successfully"
+              else
+                echo "ConfigMap does not exist, will be created by Helm"
+              fi
+
+              echo "Adoption complete"
