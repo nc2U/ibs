@@ -6,7 +6,7 @@
 ![Stars](https://img.shields.io/github/stars/nc2U/ibs)
 ![Forks](https://img.shields.io/github/forks/nc2U/ibs)
 
-# Django 6.x + Vue3 using Nginx + MariaDB or PostgreSQL (deploy as Docker or Kubernetes)
+# Django 6.x + Vue3 using Nginx + PostgreSQL (deploy as Docker or Kubernetes)
 
 ## Deploy Using Docker
 
@@ -34,7 +34,7 @@ cp docker-compose.yml.tmpl docker-compose.yml
 
 #### 3. Write environments in docker-compose.yml
 
-Check what must be defined in docker-compose.yml file.
+Check what must be defined in a docker-compose.yml file.
 
 - required:
     - POSTGRES_DB
@@ -57,10 +57,10 @@ Check what must be defined in docker-compose.yml file.
     - DJANGO_SETTINGS_MODULE
 
 Enter the actual data for your environment as described in the following items.
-If you use a database image such as postgresql or mariadb with Docker, be sure to use the default port.
+If you use a database image such as postgresql with Docker, be sure to use the default port.
 
 - postgres:
-    - POSTGRES_DB: my-db-name # **postgresql database information**
+    - POSTGRES_DB: my-db-name # **postgres database information**
     - POSTGRES_USER: my-db-user # **postgresql database information**
     - POSTGRES_PASSWORD: my-db-password # **postgresql database information**
 
@@ -72,7 +72,7 @@ If you use a database image such as postgresql or mariadb with Docker, be sure t
     - TZ: Asia/Seoul # **mysql database information**
 
 - web:
-    - DATABASE_TYPE: mariadb # **mariadb | postgres, default = mariadb, db to use**
+    - DATABASE_TYPE: postgres # **postgres, default = postgres, db to use**
     - DATABASE_NAME: my-db-name # **mysql database information**
     - DATABASE_USER: my-db-user # **mysql database information**
     - DATABASE_PASSWORD: my-db-password # **mysql database information**
@@ -178,7 +178,7 @@ pnpm build    # npm run build (or) yarn build
 - CI/CD server with helm installed
 - NFS Storage server(ip)
 - domain(to deploy)
-- GitHub account(for using GitHub Actions)
+- GitHub account (for using GitHub Actions)
 - Docker hub account
 - Slack incoming url
 
@@ -205,7 +205,7 @@ Check the IP or domain that can access the ci/cd server.
 
 ###### NFS storage server
 
-For the nfs storage server, it is recommended to prepare a separate server if a large amount of data will be used in the
+For the nfs storage server, it is recommended to prepare a separate server if a large amount of data is used in the
 future, but you can also use the cluster's master node or ci/cd server.
 
 Install the necessary packages according to the operating system on the server to be used as a storage server, run it as
@@ -219,7 +219,7 @@ Secure the domain to be used for this project and connect each cluster node to t
 
 ###### installing the cert-manager Chart
 
-Full installation instructions, including details on how to configure extra functionality in cert-manager can be found
+Full installation instructions, including details on how to configure extra functionality in cert-manager, can be found
 in the [installation docs](https://cert-manager.io/docs/releases/).
 
 Before installing the chart, you must first install the cert-manager CustomResourceDefinition resources. This is
@@ -260,7 +260,7 @@ helm install ingress-nginx -n ingress-nginx ingress-nginx/ingress-nginx --create
 
 #### 2. Deploy
 
-##### Deploy using Github action (Full auto)
+##### Deploy using GitHub action (Full auto)
 
 ###### GitHub & DockerHub account, Slack incoming url
 
@@ -283,10 +283,10 @@ create Repository secrets with the keys and values below.
 - EMAIL_HOST: # your-smtp-server.com
 - EMAIL_HOST_PASSWORD: # your-access-password
 - EMAIL_HOST_USER: # your-access-id-or-email
-- NFS_HOST:  # nfs storage server host(ip or domain)
-- NFS_PASS:  # nfs storage server user password
-- NFS_PATH:  # nfs storage server path (absolute path)
-- NFS_USER:  # nfs storage server user
+- NFS_HOST: # nfs storage server host(ip or domain)
+- NFS_PASS: # nfs storage server user password
+- NFS_PATH: # nfs storage server path (absolute path)
+- NFS_USER: # nfs storage server user
 - SLACK_INCOMING_URL: # slack incoming url
 
 ###### How to Deploy
@@ -366,7 +366,7 @@ cd ../../deploy/helm
 
 ###### Deploy way 1
 
-If you know the rules of helm chart and how to set values in values.yaml , choose this method.
+If you know the rules of helm chart and how to set values in values.yaml, choose this method.
 
 ```bash
 cp values-prod.yaml values-prod-custom.yaml
@@ -476,7 +476,6 @@ pnpm build    # npm run build (or) yarn build
 - [Kubernetes](https://kubernetes.io/docs/home/)
 - [Helm](https://helm.sh/docs/)
 - [Nginx](https://www.nginx.com/)
-- [MariaDB](https://mariadb.org)
 - [PostgreSQL](https://www.postgresql.org/)
 - [Django](https://www.djangoproject.com)
 - [Django Rest Framework](https://www.django-rest-framework.org/)
