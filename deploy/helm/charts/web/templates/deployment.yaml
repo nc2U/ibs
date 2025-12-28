@@ -79,6 +79,7 @@ spec:
               readOnly: true
             - name: vue-frontend-nfs
               mountPath: /app/django/static/dist
+              subPath: dist
               readOnly: true
             - name: media
               mountPath: /app/django/media
@@ -96,7 +97,7 @@ spec:
         - name: vue-frontend-nfs
           nfs:
             server: {{ .Values.global.cicdServerHost }}
-            path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/django/static/dist
+            path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/django/static
         - name: media
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-media-pvc
