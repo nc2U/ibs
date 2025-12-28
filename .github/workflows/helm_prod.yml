@@ -6,9 +6,14 @@ on:
       - "deploy/helm/**"
       - ".github/workflows/helm_prod.yml"
     branches: [ "master" ]
-  
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+# Prevent concurrent deployments to the same environment
+concurrency:
+  group: ibs-prod-deployment
+  cancel-in-progress: false
 
 # job은 사용자가 정한 플랫폼을 통해 steps 라는 일련의 과정을 실행.
 # 여러 개의 job 을 사용할 수 있으며, 여러 개의 job 을 사용할 때는 서로 정보도 교환 가능.
@@ -118,7 +123,7 @@ jobs:
               fi
             
               helm upgrade ${{ secrets.DATABASE_USER }} . -f ./values-prod.yaml \
-                --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 10m \
+                --install -n ibs-prod --create-namespace --history-max 5 --wait --timeout 20m \
                 --set global.dbPassword=${{ secrets.DATABASE_PASS }} \
                 --set global.cicdServerHost=${{ secrets.CICD_HOST }} \
                 --set global.cicdPath=${{ secrets.CICD_PATH }} \
