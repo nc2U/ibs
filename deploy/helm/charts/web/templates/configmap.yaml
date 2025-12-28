@@ -1,4 +1,11 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "web.fullname" . }}-config
+  annotations:
+    # Helm hook to create ConfigMap before migration job
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "-10"
 data:
   DATABASE_TYPE: "{{ .Values.global.dbType }}"
   DATABASE_NAME: "{{ .Release.Name }}"
@@ -15,6 +22,3 @@ data:
   AWS_ACCESS_KEY_ID: "{{ .imageSecrets.awsAccessKeyId }}"
   AWS_SECRET_ACCESS_KEY: "{{ .imageSecrets.awsSecretAccessKey }}"
   {{- end }}
-kind: ConfigMap
-metadata:
-  name: {{ include "web.fullname" . }}-config
