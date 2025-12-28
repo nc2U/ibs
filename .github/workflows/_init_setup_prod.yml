@@ -1,0 +1,366 @@
+name: Initial Setup - Production Environment
+
+on:
+  workflow_dispatch:
+
+# Prevent concurrent deployments to the same environment
+concurrency:
+  group: ibs-prod-init-setup
+  cancel-in-progress: false
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: nc2u/django
+  KUBE_NAMESPACE: ibs-prod
+  HELM_RELEASE_NAME: ibs
+  DOCKERFILE_PATH: deploy/docker/python/Dockerfile
+  BUILD_CONTEXT: .
+
+jobs:
+  initial-setup:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      # Step 2: Create necessary NFS directories
+      - name: Create NFS directories for persistent storage
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.NFS_HOST }}
+          username: ${{ secrets.NFS_USER }}
+          password: ${{ secrets.NFS_PASS }}
+          command: |
+            cd ${{ secrets.NFS_PATH }}/prod && \
+            mkdir -p ./app/django/media && \
+            mkdir -p ./volume/backups && \
+            mkdir -p ./volume/repos && \
+            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 775 ./app/django
+
+      # Step 3: Build and push Django Docker image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate image tags
+        id: meta
+        run: |
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "image_tag=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "Generated image tag: ${SHORT_SHA}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.BUILD_CONTEXT }}
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      # Step 4: Build Vue frontend
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install Vue dependencies
+        run: cd app/vue && pnpm i
+
+      - name: Build Vue frontend
+        env:
+          NODE_ENV: production
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+        run: |
+          cd app/vue
+          export BUILD_DIR="../django/static/dist_${BUILD_TIMESTAMP}"
+          pnpm build
+          pnpm docs:build
+
+      - name: Create deployment metadata
+        env:
+          BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+        run: |
+          cd app/django/static
+          cat > dist_${BUILD_TIMESTAMP}/deploy.json << EOF
+          {
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "commit": "${{ github.sha }}",
+            "build_number": "${{ github.run_number }}",
+            "branch": "${{ github.ref_name }}",
+            "workflow": "${{ github.workflow }}",
+            "actor": "${{ github.actor }}"
+          }
+          EOF
+
+      - name: Copy Vue build to CICD server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          source: 'app/django/static/dist_${{ github.run_number }}_${{ github.sha }}'
+          target: ${{ secrets.CICD_PATH }}/prod/
+
+      - name: Create symlink on CICD server
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/prod/app/django/static
+            ln -sfn dist_${{ github.run_number }}_${{ github.sha }} dist
+            echo "Symlink created: dist -> dist_${{ github.run_number }}_${{ github.sha }}"
+            ls -la
+
+      # Step 5: Deploy infrastructure with Helm
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          cat > $HOME/.kube/config <<'EOF'
+          ${{ secrets.KUBE_CONFIG }}
+          EOF
+          chmod 600 $HOME/.kube/config
+          kubectl config use-context default
+          kubectl get nodes
+
+      - name: Setup NFS Provisioner
+        run: |
+          if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
+            echo "Adding nfs-subdir-external-provisioner Helm repository..."
+            helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+          fi
+
+          helm repo update
+
+          if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
+            echo "Installing nfs-subdir-external-provisioner..."
+            helm upgrade --install nfs-subdir-external-provisioner \
+              nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+              -n kube-system \
+              --set nfs.server=${{ secrets.NFS_SERVER }} \
+              --set nfs.path=/mnt/nfs-subdir-external-provisioner
+          else
+            echo "nfs-subdir-external-provisioner already installed"
+          fi
+
+      - name: Apply RBAC Roles
+        run: |
+          kubectl apply -f ./deploy/kubectl/class-roles
+
+      - name: Clean up pending Helm releases and orphaned resources
+        run: |
+          echo "Checking for pending Helm operations..."
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-upgrade --ignore-not-found=true
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-install --ignore-not-found=true
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-rollback --ignore-not-found=true
+          echo "Pending operations cleaned up"
+
+          echo "Checking for existing PV/PVC resources without Helm labels..."
+          for pvc in ibs-nginx-prod-static-pvc ibs-nginx-prod-media-pvc ibs-web-prod-django-pvc ibs-web-prod-git-repos-pvc; do
+            if kubectl get pvc $pvc -n ${KUBE_NAMESPACE} >/dev/null 2>&1; then
+              echo "Adopting PVC: $pvc"
+              kubectl label pvc $pvc -n ${KUBE_NAMESPACE} \
+                app.kubernetes.io/managed-by=Helm \
+                --overwrite || true
+              kubectl annotate pvc $pvc -n ${KUBE_NAMESPACE} \
+                meta.helm.sh/release-name=${HELM_RELEASE_NAME} \
+                meta.helm.sh/release-namespace=${KUBE_NAMESPACE} \
+                --overwrite || true
+            fi
+          done
+
+          for pv in ibs-nginx-prod-static-pv ibs-nginx-prod-media-pv ibs-web-prod-django-pv ibs-web-prod-git-repos-pv; do
+            if kubectl get pv $pv >/dev/null 2>&1; then
+              echo "Adopting PV: $pv"
+              kubectl label pv $pv \
+                app.kubernetes.io/managed-by=Helm \
+                --overwrite || true
+              kubectl annotate pv $pv \
+                meta.helm.sh/release-name=${HELM_RELEASE_NAME} \
+                meta.helm.sh/release-namespace=${KUBE_NAMESPACE} \
+                --overwrite || true
+            fi
+          done
+
+          echo "Existing resources adopted into Helm management"
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade ${HELM_RELEASE_NAME} ./deploy/helm \
+            --install \
+            --namespace ${KUBE_NAMESPACE} \
+            --create-namespace \
+            --values ./deploy/helm/values-prod.yaml \
+            --set web.image.tag=${{ steps.meta.outputs.image_tag }} \
+            --set nginx.web.image.tag=${{ steps.meta.outputs.image_tag }} \
+            --history-max 5 \
+            --wait \
+            --timeout 20m \
+            --atomic \
+            --set global.dbPassword=${{ secrets.DATABASE_PASS }} \
+            --set global.cicdServerHost=${{ secrets.CICD_HOST }} \
+            --set global.cicdPath=${{ secrets.CICD_PATH }} \
+            --set global.nfsServerHost=${{ secrets.NFS_HOST }} \
+            --set global.nfsPath=${{ secrets.NFS_PATH }} \
+            --set global.domainHost=https://erp.${{ secrets.DOMAIN_NAME }}/ \
+            --set global.emailHost=${{ secrets.EMAIL_HOST }} \
+            --set global.emailHostUser=${{ secrets.EMAIL_HOST_USER }} \
+            --set-string global.emailHostPassword='${{ secrets.EMAIL_HOST_PASSWORD }}' \
+            --set global.defaultFromEmail=${{ secrets.EMAIL_DEFAULT_FROM }} \
+            --set postgres.auth.postgresPassword=${{ secrets.DATABASE_PASS }} \
+            --set postgres.auth.password=${{ secrets.DATABASE_PASS }} \
+            --set postgres.auth.replicationPassword=${{ secrets.DATABASE_PASS }} \
+            --set 'nginx.ingress.hosts[0].host'=erp.${{ secrets.DOMAIN_NAME }} \
+            --set 'nginx.ingress.hosts[1].host'=erp.dyibs.co.kr \
+            --set 'nginx.ingress.hosts[2].host'=erp.brdnc.co.kr \
+            --set 'nginx.ingress.hosts[0].paths[0].path'=/ \
+            --set 'nginx.ingress.hosts[0].paths[0].pathType'=Prefix \
+            --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
+            --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
+            --set 'nginx.ingress.hosts[2].paths[0].path'=/ \
+            --set 'nginx.ingress.hosts[2].paths[0].pathType'=Prefix \
+            --set 'nginx.ingress.tls[0].hosts[0]'=erp.${{ secrets.DOMAIN_NAME }} \
+            --set 'nginx.ingress.tls[0].hosts[1]'=erp.dyibs.co.kr \
+            --set 'nginx.ingress.tls[0].hosts[2]'=erp.brdnc.co.kr \
+            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert \
+            --cleanup-on-fail
+
+      - name: Wait for rollout completion
+        run: |
+          echo "Waiting for web deployment rollout..."
+          kubectl rollout status deployment/web \
+            -n ${KUBE_NAMESPACE} \
+            --timeout=15m
+
+          echo "Waiting for celery deployment rollout..."
+          kubectl rollout status deployment/web-celery \
+            -n ${KUBE_NAMESPACE} \
+            --timeout=15m
+
+          echo "Waiting for nginx deployment rollout..."
+          kubectl rollout status deployment/nginx \
+            -n ${KUBE_NAMESPACE} \
+            --timeout=15m
+
+      - name: Verify deployment health
+        run: |
+          echo "Checking pod status..."
+          kubectl get pods -n ${KUBE_NAMESPACE} -l app.kubernetes.io/instance=${HELM_RELEASE_NAME}
+
+          echo "Checking recent events..."
+          kubectl get events -n ${KUBE_NAMESPACE} --sort-by='.lastTimestamp' | tail -20
+
+          echo "Verifying web pods are running..."
+          WEB_PODS=$(kubectl get pods -n ${KUBE_NAMESPACE} \
+            -l app.kubernetes.io/instance=${HELM_RELEASE_NAME},app.kubernetes.io/name=web \
+            --field-selector=status.phase=Running \
+            --no-headers | wc -l)
+
+          if [ "$WEB_PODS" -eq 0 ]; then
+            echo "ERROR: No web pods are running!"
+            exit 1
+          fi
+
+          echo "Initial setup successful: $WEB_PODS web pod(s) running"
+
+      - name: Send Slack notification on success
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.SLACK_INCOMING_URL }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "✅ Production Initial Setup Successful",
+              "attachments": [{
+                "color": "good",
+                "fields": [
+                  {"title": "Environment", "value": "Production", "short": true},
+                  {"title": "Image Tag", "value": "${{ steps.meta.outputs.image_tag }}", "short": true},
+                  {"title": "Namespace", "value": "${{ env.KUBE_NAMESPACE }}", "short": true},
+                  {"title": "Release", "value": "${{ env.HELM_RELEASE_NAME }}", "short": true},
+                  {"title": "Commit", "value": "${{ github.sha }}", "short": false},
+                  {"title": "Author", "value": "${{ github.actor }}", "short": true}
+                ]
+              }]
+            }'
+
+      - name: Send Slack notification on failure
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.SLACK_INCOMING_URL }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "❌ Production Initial Setup Failed",
+              "attachments": [{
+                "color": "danger",
+                "fields": [
+                  {"title": "Environment", "value": "Production", "short": true},
+                  {"title": "Image Tag", "value": "${{ steps.meta.outputs.image_tag }}", "short": true},
+                  {"title": "Namespace", "value": "${{ env.KUBE_NAMESPACE }}", "short": true},
+                  {"title": "Release", "value": "${{ env.HELM_RELEASE_NAME }}", "short": true},
+                  {"title": "Commit", "value": "${{ github.sha }}", "short": false},
+                  {"title": "Author", "value": "${{ github.actor }}", "short": true},
+                  {"title": "Workflow", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false}
+                ]
+              }]
+            }'
+
+      - name: Check migration job logs on failure
+        if: failure()
+        run: |
+          echo "==================================================="
+          echo "Checking migration job logs for debugging..."
+          echo "==================================================="
+
+          MIGRATION_JOB=$(kubectl get jobs -n ${KUBE_NAMESPACE} -l app.kubernetes.io/component=migration --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || echo "")
+
+          if [ -n "$MIGRATION_JOB" ]; then
+            echo "Migration Job: $MIGRATION_JOB"
+            echo ""
+            echo "Job Status:"
+            kubectl describe job -n ${KUBE_NAMESPACE} $MIGRATION_JOB || true
+            echo ""
+            echo "==================================================="
+            echo "Migration Job Logs:"
+            echo "==================================================="
+            kubectl logs -n ${KUBE_NAMESPACE} job/$MIGRATION_JOB --tail=100 || echo "No logs available"
+            echo ""
+            echo "==================================================="
+            echo "Pod Events:"
+            echo "==================================================="
+            POD_NAME=$(kubectl get pods -n ${KUBE_NAMESPACE} -l job-name=$MIGRATION_JOB -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+            if [ -n "$POD_NAME" ]; then
+              kubectl describe pod -n ${KUBE_NAMESPACE} $POD_NAME || true
+            fi
+          else
+            echo "No migration job found"
+          fi
+
+      - name: Rollback information on failure
+        if: failure()
+        run: |
+          echo "Deployment failed. To rollback manually, run:"
+          echo "helm rollback ${HELM_RELEASE_NAME} --namespace ${KUBE_NAMESPACE}"
