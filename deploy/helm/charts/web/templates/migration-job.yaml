@@ -15,6 +15,7 @@ metadata:
 spec:
   backoffLimit: 3
   activeDeadlineSeconds: 900  # 15-minute timeout (10 min DB wait + 5 min migration)
+  ttlSecondsAfterFinished: 300  # Delete job 5 minutes after completion (allows log inspection on failure)
   template:
     metadata:
       labels:
@@ -109,5 +110,5 @@ spec:
       volumes:
         - name: env-config
           nfs:
-            server: {{ .Values.global.nfsServerHost }}
-            path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django
+            server: {{ .Values.global.cicdServerHost }}
+            path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/django
