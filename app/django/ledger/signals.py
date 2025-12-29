@@ -77,7 +77,6 @@ def _update_bank_transaction_balance(entry_instance):
             if transaction.is_balanced != new_is_balanced:
                 transaction.is_balanced = new_is_balanced
                 # update_fields 사용하여 is_balanced만 업데이트하고 signal 트리거 방지
-                from django.db.models.signals import post_save
 
                 # 거래 타입에 따라 적절한 signal handler disconnect/reconnect
                 if isinstance(transaction, CompanyBankTransaction):
