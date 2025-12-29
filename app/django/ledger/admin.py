@@ -212,10 +212,9 @@ class ProjectAccountAdmin(BaseAccountAdmin):
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
         'depth', 'is_category_only', 'is_active', 'is_payment',
-        'requires_contract', 'order'
-    )
+        'requires_contract', 'is_related_contractor', 'order')
     list_editable = ('order', 'is_category_only', 'is_active',
-                     'is_payment', 'requires_contract',)
+                     'is_payment', 'requires_contract', 'is_related_contractor')
     list_filter = ('category', 'direction', 'is_category_only',
                    'is_active', 'is_payment', 'requires_contract',)
 
@@ -227,8 +226,8 @@ class ProjectAccountAdmin(BaseAccountAdmin):
             'fields': ('category', 'direction')
         }),
         ('프로젝트 특수 속성', {
-            'fields': ('is_payment', 'requires_contract',),
-            'description': 'is_payment: 분양대금 항목 여부 / requires_contract: 공급계약 관련 항목 여부'
+            'fields': ('is_payment', 'requires_contract', 'is_related_contractor'),
+            'description': 'is_payment: 분양대금 항목 여부 / requires_contract: 계약 관련 항목 여부 / is_related_contractor: 계약자 관련 항목 여부'
         }),
         ('사용 제한', {
             'fields': ('is_active', 'is_category_only'),

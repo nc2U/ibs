@@ -352,6 +352,7 @@ class ProjectAccount(Account):
     """
     is_payment = models.BooleanField('공급대금 여부', default=False)
     requires_contract = models.BooleanField('계약 관련 여부', default=False)
+    is_related_contractor = models.BooleanField('계약자 관련 여부', default=False)
 
     class Meta:
         ordering = ['code', 'order']

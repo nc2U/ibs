@@ -200,8 +200,8 @@ class ProjectAccountFilter(FilterSet):
 
     class Meta:
         model = ProjectAccount
-        fields = ['category', 'direction', 'parent', 'is_category_only', 'is_active',
-                  'is_payment', 'requires_contract']
+        fields = ('category', 'direction', 'parent', 'is_category_only', 'is_active',
+                  'is_payment', 'requires_contract', 'is_related_contractor')
 
 
 class ProjectAccountViewSet(viewsets.ModelViewSet):

@@ -98,12 +98,10 @@ class ProjectAccountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectAccount
-        fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name',
-                  'depth', 'category', 'category_display', 'direction', 'direction_display',
-                  'computed_direction', 'computed_direction_display',
-                  'is_category_only', 'is_active', 'order',
-                  'is_payment', 'requires_contract',
-                  'full_path', 'children_count')
+        fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name', 'depth', 'category',
+                  'category_display', 'direction', 'direction_display', 'computed_direction',
+                  'computed_direction_display', 'is_category_only', 'is_active', 'order', 'is_payment',
+                  'requires_contract', 'is_related_contractor', 'full_path', 'children_count')
         read_only_fields = ('depth',)
 
     @staticmethod
@@ -137,6 +135,7 @@ class AccountSearchResultSerializer(serializers.Serializer):
     # ProjectAccount 전용 필드
     is_payment = serializers.BooleanField(required=False)
     requires_contract = serializers.BooleanField(required=False)
+    is_related_contractor = serializers.BooleanField(required=False)
 
 
 # ============================================

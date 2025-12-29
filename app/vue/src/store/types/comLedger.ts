@@ -9,6 +9,7 @@ export interface AccountPicker {
   req_affiliate?: boolean
   is_payment?: boolean
   requires_contract?: boolean
+  is_related_contractor?: boolean
 }
 
 export interface BankCode {

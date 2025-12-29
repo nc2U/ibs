@@ -106,6 +106,7 @@ export const useProLedger = defineStore('proLedger', () => {
         is_cate_only: acc.is_category_only,
         is_payment: acc.is_payment,
         requires_contract: acc.requires_contract,
+        is_related_contractor: acc.is_related_contractor,
       })),
   )
 

@@ -31,6 +31,7 @@ export interface ProjectAccount {
   order: number
   is_payment: boolean
   requires_contract: boolean
+  is_related_contractor: boolean
   full_path: string
   children_count: number
 }
