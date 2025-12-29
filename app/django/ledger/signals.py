@@ -69,7 +69,8 @@ def _update_bank_transaction_balance(entry_instance):
     transaction = entry_instance.related_transaction
     if transaction:
         # BankTransaction의 save 메서드를 호출하여 is_balanced를 재계산하고 저장
-        transaction.save()
+        # is_balanced 필드만 업데이트하여 다른 필드 덮어쓰기 방지
+        transaction.save(update_fields=['is_balanced'])
 
 
 @receiver(post_save, sender=CompanyAccountingEntry)

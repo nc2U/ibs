@@ -412,11 +412,9 @@ const saveTransaction = async (event: Event) => {
 
       if (isCreateMode.value) {
         const payload = buildCreatePayload()
-        console.log(payload)
         await proLedgerStore.createProBankTrans(payload)
       } else {
         const payload = buildUpdatePayload()
-        console.log(payload)
         await proLedgerStore.updateProBankTrans(payload)
       }
 
