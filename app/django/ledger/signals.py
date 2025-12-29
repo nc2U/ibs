@@ -68,9 +68,29 @@ def _update_bank_transaction_balance(entry_instance):
 
     transaction = entry_instance.related_transaction
     if transaction:
-        # BankTransaction의 save 메서드를 호출하여 is_balanced를 재계산하고 저장
-        # is_balanced 필드만 업데이트하여 다른 필드 덮어쓰기 방지
-        transaction.save(update_fields=['is_balanced'])
+        # is_balanced 값 계산
+        try:
+            validation_result = transaction.validate_accounting_entries()
+            new_is_balanced = validation_result['is_valid']
+
+            # 값이 실제로 변경된 경우에만 업데이트 (Slack 알림 중복 방지)
+            if transaction.is_balanced != new_is_balanced:
+                transaction.is_balanced = new_is_balanced
+                # update_fields 사용하여 is_balanced만 업데이트하고 signal 트리거 방지
+                from django.db.models.signals import post_save
+
+                # 거래 타입에 따라 적절한 signal handler disconnect/reconnect
+                if isinstance(transaction, CompanyBankTransaction):
+                    post_save.disconnect(notify_bank_transaction_change, sender=CompanyBankTransaction)
+                    transaction.save(update_fields=['is_balanced'])
+                    post_save.connect(notify_bank_transaction_change, sender=CompanyBankTransaction)
+                elif isinstance(transaction, ProjectBankTransaction):
+                    post_save.disconnect(notify_project_bank_transaction_change, sender=ProjectBankTransaction)
+                    transaction.save(update_fields=['is_balanced'])
+                    post_save.connect(notify_project_bank_transaction_change, sender=ProjectBankTransaction)
+        except (AttributeError, NotImplementedError):
+            # validate_accounting_entries가 구현되지 않은 경우 무시
+            pass
 
 
 @receiver(post_save, sender=CompanyAccountingEntry)
