@@ -201,7 +201,9 @@ class ProjectAccountFilter(FilterSet):
     class Meta:
         model = ProjectAccount
         fields = ('category', 'direction', 'parent', 'is_category_only', 'is_active',
-                  'is_payment', 'requires_contract', 'is_related_contractor')
+                  'is_payment',
+                  # 'requires_contract', 'is_related_contractor'
+                  )
 
 
 class ProjectAccountViewSet(viewsets.ModelViewSet):
@@ -226,7 +228,7 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
         query = request.query_params.get('q', '')
         direction = request.query_params.get('direction', '')
         is_payment = request.query_params.get('is_payment')
-        requires_contract = request.query_params.get('requires_contract')
+        # requires_contract = request.query_params.get('requires_contract')
 
         if not query:
             return Response({'results': []})
@@ -242,9 +244,9 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
             is_payment_bool = is_payment.lower() in ('true', '1', 'yes')
             matched_accounts = matched_accounts.filter(is_payment=is_payment_bool)
 
-        if requires_contract is not None:
-            requires_contract_bool = requires_contract.lower() in ('true', '1', 'yes')
-            matched_accounts = matched_accounts.filter(requires_contract=requires_contract_bool)
+        # if requires_contract is not None:
+        #     requires_contract_bool = requires_contract.lower() in ('true', '1', 'yes')
+        #     matched_accounts = matched_accounts.filter(requires_contract=requires_contract_bool)
 
         # 3. direction 필터링 (computed_direction 기반)
         if direction:
@@ -277,7 +279,7 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
                 'is_parent_of_matches': False,
                 'match_reason': '직접 매치',
                 'is_payment': account.is_payment,
-                'requires_contract': account.requires_contract,
+                # 'requires_contract': account.requires_contract,
             })
 
         # 부모 계정들
@@ -299,7 +301,7 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
                 'is_parent_of_matches': True,
                 'match_reason': '상위 계정',
                 'is_payment': parent.is_payment,
-                'requires_contract': parent.requires_contract,
+                # 'requires_contract': parent.requires_contract,
             })
 
         # 중복 제거 (pk 기준)
@@ -341,7 +343,7 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
     def contract_accounts(self, request):
         """공급계약 관련 계정만 조회"""
         accounts = ProjectAccount.objects.filter(
-            requires_contract=True,
+            # requires_contract=True,
             is_active=True
         ).select_related('parent').order_by('code', 'order')
 
