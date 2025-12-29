@@ -68,6 +68,8 @@ export interface ProAccountingEntry {
   account_full_path: string
   contract: number | null
   contract_display: string | null
+  contractor: number | null
+  contractor_display: string | null
   amount: number
   trader: string
   evidence_type: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'

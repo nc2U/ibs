@@ -550,21 +550,22 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'project', 'account_display', 'contract_display',
-                    'installment_order', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
+                    'contractor_display', 'installment_order', 'formatted_amount', 'trader', 'evidence_type',
+                    'created_at')
     list_display_links = ('transaction_id_short',)
     list_editable = ('evidence_type',)
-    list_filter = ('project', 'account__category', 'account__requires_contract', 'evidence_type')
+    list_filter = ('project', 'account__category', 'evidence_type')
     search_fields = ('transaction_id', 'trader', 'project__name', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')
-    autocomplete_fields = ['account', 'contract']
+    autocomplete_fields = ['account', 'contract', 'contractor']
 
     fieldsets = (
         ('거래 정보', {
             'fields': ('transaction_id', 'project', 'amount', 'trader')
         }),
         ('계정 정보', {
-            'fields': ('account', 'contract')
+            'fields': ('account', 'contract', 'contractor')
         }),
         ('증빙 정보', {
             'fields': ('evidence_type',)
@@ -596,6 +597,12 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     def contract_display(self, obj):
         if obj.contract:
             return str(obj.contract)
+        return '-'
+
+    @admin.display(description='계약자')
+    def contractor_display(self, obj):
+        if obj.contractor:
+            return str(obj.contractor)
         return '-'
 
 

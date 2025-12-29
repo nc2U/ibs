@@ -681,13 +681,13 @@ class ProjectAccountingEntryFilterSet(FilterSet):
 
     class Meta:
         model = ProjectAccountingEntry
-        fields = ('project', 'account', 'contract', 'evidence_type', 'transaction_id')
+        fields = ('project', 'account', 'contract', 'contractor', 'evidence_type', 'transaction_id')
 
 
 class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     """프로젝트 회계 분개 ViewSet"""
     queryset = ProjectAccountingEntry.objects.select_related(
-        'project', 'account', 'contract'
+        'project', 'account', 'contract', 'contractor'
     ).all()
     serializer_class = ProjectAccountingEntrySerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)

@@ -723,10 +723,12 @@ class ProjectAccountingEntry(AccountingEntry):
                                 help_text='회계 분개에 사용할 계정 과목',
                                 limit_choices_to={'is_active': True, 'is_category_only': False})
 
-    # 공급계약 연결 (프로젝트 전용)
+    # 공급계약 및 계약자 연결 (프로젝트 전용)
     contract = models.ForeignKey('contract.Contract', on_delete=models.PROTECT,
                                  null=True, blank=True, verbose_name='공급계약',
                                  help_text='공급계약 관련 계정 사용 시 필수 입력')
+    contractor = models.ForeignKey('contract.Contractor', on_delete=models.PROTECT, null=True, blank=True,
+                                   verbose_name='계약자', help_text='계정 관련 계약자')
 
     # 데이터 이관용 임시 컬럼 - 이관 후 삭제
     installment_order = models.ForeignKey('payment.InstallmentPaymentOrder', on_delete=models.SET_NULL,

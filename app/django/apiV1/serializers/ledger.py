@@ -276,6 +276,7 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
     account_code = serializers.CharField(source='account.code', read_only=True)
     account_full_path = serializers.CharField(source='account.get_full_path', read_only=True)
     contract_display = serializers.SerializerMethodField(read_only=True)
+    contractor_display = serializers.SerializerMethodField(read_only=True)
     evidence_type_display = serializers.CharField(source='get_evidence_type_display', read_only=True)
     contract_payment = serializers.SerializerMethodField(read_only=True)
 
@@ -283,8 +284,8 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
         model = ProjectAccountingEntry
         fields = ('pk', 'transaction_id', 'project', 'project_name', 'sort', 'sort_name',
                   'account', 'account_name', 'account_code', 'account_full_path', 'contract',
-                  'contract_display', 'amount', 'trader', 'evidence_type', 'evidence_type_display',
-                  'contract', 'contract_payment', 'created_at', 'updated_at')
+                  'contract_display', 'contractor', 'contractor_display', 'amount', 'trader',
+                  'evidence_type', 'evidence_type_display', 'contract_payment', 'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
 
     @staticmethod
@@ -298,6 +299,13 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
         """계약건 표시"""
         if obj.contract and hasattr(obj.contract, 'contractor'):
             return str(obj.contract.contractor)
+        return None
+
+    @staticmethod
+    def get_contractor_display(obj):
+        """계약자 표시"""
+        if obj.contractor:
+            return str(obj.contractor)
         return None
 
     @staticmethod
@@ -547,6 +555,7 @@ class ProjectAccountingEntryInputSerializer(serializers.Serializer):
 
     # Contract Payment 필드 (선택적 - 이 회계분개가 계약 결제와 연결되는 경우)
     contract = serializers.IntegerField(required=False, allow_null=True)
+    contractor = serializers.IntegerField(required=False, allow_null=True)
     installment_order = serializers.IntegerField(required=False, allow_null=True)
 
 
@@ -657,6 +666,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 project_id=validated_data['project'],
                 account_id=entry_data['account'],
                 contract_id=entry_data.get('contract'),
+                contractor_id=entry_data.get('contractor'),
                 installment_order_id=entry_data.get('installment_order'),
                 amount=entry_data['amount'],
                 trader=entry_data.get('trader', ''),
@@ -738,6 +748,8 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                             accounting_entry.evidence_type = entry_data['evidence_type']
                         if 'contract' in entry_data:
                             accounting_entry.contract_id = entry_data['contract']
+                        if 'contractor' in entry_data:
+                            accounting_entry.contractor_id = entry_data['contractor']
 
                         accounting_entry.full_clean()
                         accounting_entry.save()  # Model의 save가 trigger를 호출
@@ -765,6 +777,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             project_id=instance.project_id,
             account_id=entry_data['account'],
             contract_id=entry_data.get('contract'),
+            contractor_id=entry_data.get('contractor'),
             installment_order_id=entry_data.get('installment_order'),
             amount=entry_data['amount'],
             trader=entry_data.get('trader', ''),
