@@ -24,7 +24,6 @@ RUN apt-get update \
  && apt-get upgrade -y \
  && apt-get install -y \
       python3-dev \
-      default-libmysqlclient-dev \
       build-essential \
       libpq-dev \
       gcc \
@@ -67,7 +66,6 @@ ENV LC_ALL=ko_KR.UTF-8
 # install runtime dependencies only
 RUN apt-get update \
  && apt-get install -y \
-      default-libmysqlclient-dev \
       libpq-dev \
       fonts-nanum \
       fonts-nanum-extra \

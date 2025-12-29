@@ -21,7 +21,6 @@ djangorestframework-simplejwt==5.5.1
 GitPython==3.1.45
 gunicorn>=21.2
 
-mysqlclient==2.2.7
 psycopg2==2.9.11
 
 openpyxl==3.1.5

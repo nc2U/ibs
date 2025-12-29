@@ -24,7 +24,6 @@ RUN apt-get update \
  && apt-get upgrade -y \
  && apt-get install -y \
       python3-dev \
-      default-libmysqlclient-dev \
       build-essential \
       libpq-dev \
       gcc \
