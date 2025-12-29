@@ -328,13 +328,9 @@ const visibleEntries = computed(() => {
   return props.transaction.accounting_entries?.slice(0, visibleEntryCount.value)
 })
 
-const remainingCount = computed(() =>
-  Math.max(0, totalEntryCount.value - visibleEntryCount.value)
-)
+const remainingCount = computed(() => Math.max(0, totalEntryCount.value - visibleEntryCount.value))
 
-const isFullyExpanded = computed(() =>
-  visibleEntryCount.value >= totalEntryCount.value
-)
+const isFullyExpanded = computed(() => visibleEntryCount.value >= totalEntryCount.value)
 
 const expandMore = () => {
   const remaining = remainingCount.value
@@ -467,11 +463,7 @@ const collapseAll = () => {
             <col style="width: 24%" />
             <col v-if="write_company_cash" style="width: 6%" />
           </colgroup>
-          <CTableRow
-            v-for="entry in visibleEntries"
-            :key="entry.pk"
-            class="bg-yellow-lighten-5"
-          >
+          <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-yellow-lighten-5">
             <CTableDataCell
               :class="{
                 'account-cell': true,
@@ -487,7 +479,7 @@ const collapseAll = () => {
                 @click="handleAccountClick(entry, $event)"
               >
                 <div class="d-flex align-items-center">
-                  <span>{{ cutString(entry.account_name, 16) }}</span>
+                  <span>{{ cutString(entry.account_name, 12) }}</span>
                   <!-- 관계회사 정보 표시 (이미 설정된 경우) - 클릭 가능 -->
                   <v-tooltip v-if="entry.affiliate && allowedPeriod" location="top">
                     <template v-slot:activator="{ props: tooltipProps }">
@@ -586,7 +578,7 @@ const collapseAll = () => {
                 @keydown.enter="handleUpdate"
               />
               <span v-else class="bg-transparent">
-                {{ cutString(entry.trader, 18) }}
+                {{ cutString(entry.trader, 12) }}
                 <v-icon
                   icon="mdi-pencil-outline"
                   size="14"
@@ -636,13 +628,7 @@ const collapseAll = () => {
               </v-btn>
 
               <!-- Collapse Button -->
-              <v-btn
-                v-else
-                variant="text"
-                size="small"
-                color="grey"
-                @click="collapseAll"
-              >
+              <v-btn v-else variant="text" size="small" color="grey" @click="collapseAll">
                 <v-icon icon="mdi-chevron-up" size="18" class="mr-1" />
                 접기
               </v-btn>

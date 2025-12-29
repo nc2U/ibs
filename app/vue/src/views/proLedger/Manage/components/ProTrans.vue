@@ -242,13 +242,9 @@ const visibleEntries = computed(() => {
   return props.proTrans.accounting_entries?.slice(0, visibleEntryCount.value)
 })
 
-const remainingCount = computed(() =>
-  Math.max(0, totalEntryCount.value - visibleEntryCount.value)
-)
+const remainingCount = computed(() => Math.max(0, totalEntryCount.value - visibleEntryCount.value))
 
-const isFullyExpanded = computed(() =>
-  visibleEntryCount.value >= totalEntryCount.value
-)
+const isFullyExpanded = computed(() => visibleEntryCount.value >= totalEntryCount.value)
 
 const expandMore = () => {
   const remaining = remainingCount.value
@@ -468,11 +464,7 @@ const handleUpdate = async () => {
             <col style="width: 24%" />
             <col v-if="write_project_cash" style="width: 6%" />
           </colgroup>
-          <CTableRow
-            v-for="entry in visibleEntries"
-            :key="entry.pk"
-            class="bg-lime-lighten-5"
-          >
+          <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-lime-lighten-5">
             <CTableDataCell
               :class="{
                 'account-cell': true,
@@ -488,7 +480,7 @@ const handleUpdate = async () => {
                 @click="handleAccountClick(entry, $event)"
               >
                 <div class="d-flex align-items-center">
-                  <span>{{ cutString(entry.account_name, 16) }}</span>
+                  <span>{{ cutString(entry.account_name, 12) }}</span>
                   <!-- 계약정보 정보 표시 (이미 설정된 경우) - 클릭 가능 -->
                   <v-tooltip v-if="entry.contract && allowedPeriod" location="top">
                     <template v-slot:activator="{ props: tooltipProps }">
@@ -585,7 +577,7 @@ const handleUpdate = async () => {
                 @keydown.enter="handleUpdate"
               />
               <span v-else class="bg-transparent">
-                {{ cutString(entry.trader, 18) }}
+                {{ cutString(entry.trader, 12) }}
                 <v-icon
                   icon="mdi-pencil-outline"
                   size="14"
@@ -635,13 +627,7 @@ const handleUpdate = async () => {
               </v-btn>
 
               <!-- Collapse Button -->
-              <v-btn
-                v-else
-                variant="text"
-                size="small"
-                color="grey"
-                @click="collapseAll"
-              >
+              <v-btn v-else variant="text" size="small" color="grey" @click="collapseAll">
                 <v-icon icon="mdi-chevron-up" size="18" class="mr-1" />
                 접기
               </v-btn>
