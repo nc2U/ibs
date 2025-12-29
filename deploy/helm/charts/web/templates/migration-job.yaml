@@ -10,11 +10,11 @@ metadata:
     # post-install: Run after PostgreSQL is created on initial install
     # pre-upgrade: Run before deployment updates on upgrades
     "helm.sh/hook": post-install,pre-upgrade
-    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-weight": "5"
     "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   backoffLimit: 3
-  activeDeadlineSeconds: 900  # 15-minute timeout (10 min DB wait + 5 min migration)
+  activeDeadlineSeconds: 1200  # 20-minute timeout (15 min CNPG wait + 5 min migration)
   ttlSecondsAfterFinished: 300  # Delete job 5 minutes after completion (allows log inspection on failure)
   template:
     metadata:
@@ -44,23 +44,58 @@ spec:
               echo "Timestamp: $(date)"
               echo "=========================================="
 
-              # Wait for database to be ready
-              echo "Waiting for database to be ready..."
-              MAX_RETRIES=60
+              # Wait for CNPG cluster to be ready
+              echo "Waiting for CNPG cluster to be ready..."
+              MAX_RETRIES=90
               RETRY_COUNT=0
 
-              while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-                echo "Checking database connection (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
+              # Check if we're in Kubernetes environment with CNPG
+              if [ -n "$KUBERNETES_SERVICE_HOST" ]; then
+                echo "Kubernetes environment detected, checking CNPG cluster status..."
+
+                while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+                  echo "Checking CNPG cluster ready status (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
+
+                  # Check CNPG cluster status using kubectl
+                  if kubectl get cluster {{ .Values.global.database.type }} -n {{ .Release.Namespace }} -o jsonpath='{.status.phase}' 2>/dev/null | grep -q "Cluster in healthy state"; then
+                    echo "CNPG cluster is healthy!"
+                    break
+                  fi
+
+                  # Fallback: Check if primary pod is ready
+                  if kubectl get pods -n {{ .Release.Namespace }} -l cnpg.io/cluster={{ .Values.global.database.type }},role=primary -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q "Running"; then
+                    echo "CNPG primary pod is running!"
+                    break
+                  fi
+
+                  RETRY_COUNT=$((RETRY_COUNT + 1))
+                  if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+                    echo "WARNING: CNPG cluster not ready after $MAX_RETRIES attempts (15 minutes), trying direct connection..."
+                    break
+                  fi
+
+                  echo "CNPG cluster not ready, waiting 10 seconds..."
+                  sleep 10
+                done
+              fi
+
+              # Wait for database connection
+              echo "Waiting for database connection..."
+              DB_RETRIES=60
+              DB_RETRY_COUNT=0
+
+              while [ $DB_RETRY_COUNT -lt $DB_RETRIES ]; do
+                echo "Checking database connection (attempt $((DB_RETRY_COUNT + 1))/$DB_RETRIES)..."
 
                 # Try to connect to database using Django's showmigrations command
                 if python manage.py showmigrations --database default > /dev/null 2>&1; then
-                  echo "Database is ready!"
+                  echo "Database connection successful!"
                   break
                 fi
 
-                RETRY_COUNT=$((RETRY_COUNT + 1))
-                if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-                  echo "ERROR: Database is not ready after $MAX_RETRIES attempts (10 minutes)"
+                DB_RETRY_COUNT=$((DB_RETRY_COUNT + 1))
+                if [ $DB_RETRY_COUNT -eq $DB_RETRIES ]; then
+                  echo "ERROR: Database is not ready after $DB_RETRIES attempts (10 minutes)"
                   echo "Last connection attempt output:"
                   python manage.py showmigrations --database default 2>&1 || true
                   exit 1
@@ -95,6 +130,11 @@ spec:
           env:
             - name: REDIS_URL
               value: "redis://redis:6379/1"
+            {{- if .Values.global.database.cnpg.directConnection }}
+            # Override database host for direct CNPG primary pod connection
+            - name: DATABASE_HOST_OVERRIDE
+              value: "{{ .Values.global.database.type }}-1.{{ .Values.global.database.type }}-pods.{{ .Release.Namespace }}.svc.cluster.local"
+            {{- end }}
           volumeMounts:
             - name: env-config
               mountPath: /app/django/.env

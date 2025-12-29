@@ -15,6 +15,10 @@ global:
   emailHostUser: "email@example.com" # 'your-email@example.com
   emailHostPassword: "my-email-host-secret" # your-email-password
   defaultFromEmail: "email@example.com"
+  database:
+    type: "postgres"
+    cnpg:
+      directConnection: true  # Enable direct primary pod connection for migrations
 
 # CloudNativePG 설정
 cnpg:

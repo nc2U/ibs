@@ -145,8 +145,12 @@ NAMESPACE = config('NAMESPACE', default='default')
 KUBERNETES_SERVICE_HOST = config('KUBERNETES_SERVICE_HOST', default=None)
 
 # CloudNativePG uses -rw suffix for read-write service, Bitnami uses -primary
-MASTER_HOST = f'{DATABASE_TYPE}-rw.{NAMESPACE}.svc.cluster.local' \
+# Support direct primary pod connection for migrations
+DATABASE_HOST_OVERRIDE = config('DATABASE_HOST_OVERRIDE', default=None)
+MASTER_HOST = DATABASE_HOST_OVERRIDE or (
+    f'{DATABASE_TYPE}-rw.{NAMESPACE}.svc.cluster.local'
     if KUBERNETES_SERVICE_HOST else DATABASE_TYPE
+)
 DEFAULT_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
     if DATABASE_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
