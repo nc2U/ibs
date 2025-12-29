@@ -53,7 +53,9 @@ const fetchProject = (pk: number) => proStore.fetchProject(pk)
 
 const contStore = useContract()
 const getContracts = computed(() => contStore.getContracts)
+const getAllContractors = computed(() => contStore.getAllContractors)
 const fetchAllContracts = (projId: number) => contStore.fetchAllContracts(projId)
+const fetchAllContractors = (projId: number) => contStore.fetchAllContractors(projId)
 
 const comLedgerStore = useComLedger()
 const fetchBankCodeList = () => comLedgerStore.fetchBankCodeList()
@@ -65,9 +67,10 @@ const dataFilter = computed(() => proLedgerStore.proBankTransFilter)
 const proBankTransCount = computed(() => proLedgerStore.proBankTransCount)
 
 provide('proAccounts', proAccounts)
-provide('getContracts', getContracts)
 provide('allProBankList', allProBankList)
 provide('proBankTransCount', proBankTransCount)
+provide('getContracts', getContracts)
+provide('getAllContractors', getAllContractors)
 
 const fetchProjectAccounts = () => proLedgerStore.fetchProjectAccounts()
 const fetchProBankAccList = (pk: number) => proLedgerStore.fetchProBankAccList(pk)
@@ -90,6 +93,7 @@ const listFiltering = (payload: Filter) => {
 const dataSetup = async (pk: number) => {
   await fetchProject(pk)
   await fetchAllContracts(pk)
+  await fetchAllContractors(pk)
   await fetchProBankAccList(pk)
   await fetchAllProBankAccList(pk)
   await fetchProBankTransList({ project: pk })

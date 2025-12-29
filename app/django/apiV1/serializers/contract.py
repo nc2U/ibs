@@ -754,7 +754,7 @@ class SimpleContractorSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_label(obj):
-        return str(obj.name)
+        return str(obj)
 
 
 class ContractFileSerializer(serializers.ModelSerializer):

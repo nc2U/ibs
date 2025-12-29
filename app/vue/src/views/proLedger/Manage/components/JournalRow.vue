@@ -12,6 +12,7 @@ interface NewEntryForm {
   amount?: number
   evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
   contract?: number | null
+  contractor?: number | null
 }
 
 interface Props {
@@ -36,6 +37,7 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 const getContracts = inject<ComputedRef<{ value: number; label: string }[]>>('getContracts')
+const getContractors = inject<ComputedRef<{ value: number; label: string }[]>>('getAllContractors')
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
 const sortType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
@@ -50,6 +52,7 @@ const getAccountById = (accountId: number | null | undefined): AccountPicker | u
 }
 
 // account 변경 시 requires_contract 가 false면 contract 를 null로 초기화
+// is_related_contractor 가 false면 contractor 를 null로 초기화
 watch(
   () => props.displayRows.map(row => row.account),
   (newAccounts, oldAccounts) => {
@@ -57,9 +60,15 @@ watch(
       // account가 변경된 경우에만 처리
       if (newAccounts[index] !== oldAccounts?.[index]) {
         const account = getAccountById(row.account)
+
         // account가 없거나 requires_contract가 false인 경우 contract를 null로 초기화
         if (!account || !account.requires_contract) {
           row.contract = null
+        }
+
+        // account가 없거나 is_related_contractor가 false인 경우 contractor를 null로 초기화
+        if (!account || !account.is_related_contractor) {
+          row.contractor = null
         }
       }
     })
@@ -93,6 +102,17 @@ const removeEntry = (index: number) => {
             mode="single"
             :options="getContracts"
             placeholder="계약 정보 선택"
+          />
+        </div>
+        <div
+          v-if="row.account && getAccountById(row.account)?.is_related_contractor"
+          class="pt-0 px-2"
+        >
+          <MultiSelect
+            v-model.number="row.contractor"
+            mode="single"
+            :options="getContractors"
+            placeholder="계약자 정보 선택"
           />
         </div>
       </CTableDataCell>

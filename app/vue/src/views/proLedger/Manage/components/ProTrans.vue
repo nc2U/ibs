@@ -7,7 +7,7 @@ import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger.ts'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
-import ContractSelectModal from './ContractSelectModal.vue'
+import BaseSelectModal from './BaseSelectModal.vue'
 
 const props = defineProps({
   proTrans: { type: Object as PropType<ProBankTrans>, required: true },
@@ -41,23 +41,24 @@ const sortType = computed(() => {
   return null // 전체
 })
 
-// --- 계약정보 선택 모달 ---
-const contractModalVisible = ref(false)
-const selectedEntryForContract = ref<ProAccountingEntry | null>(null)
+// --- 계약/계약자 정보 선택 모달 (통합) ---
+const selectModalVisible = ref(false)
+const selectModalType = ref<'contract' | 'contractor'>('contract')
+const selectedEntryForSelect = ref<ProAccountingEntry | null>(null)
 
-const openContractModal = (entry: ProAccountingEntry) => {
+const openSelectModal = (entry: ProAccountingEntry, type: 'contract' | 'contractor') => {
   if (!allowedPeriod.value) return
-  selectedEntryForContract.value = entry
-  contractModalVisible.value = true
+  selectedEntryForSelect.value = entry
+  selectModalType.value = type
+  selectModalVisible.value = true
 }
 
-const handleContractSelect = async (contractId: number | null) => {
-  if (!selectedEntryForContract.value) return
+const handleSelect = async (id: number | null) => {
+  if (!selectedEntryForSelect.value) return
 
-  const entry = selectedEntryForContract.value
-
-  // 계정 피커에서 관계회사 모달로 넘어온 경우, 계정도 함께 저장
+  const entry = selectedEntryForSelect.value
   const accountToSave = editValue.value?.account || entry.account
+  const type = selectModalType.value
 
   const payload: any = {
     pk: props.proTrans.pk!,
@@ -65,7 +66,7 @@ const handleContractSelect = async (contractId: number | null) => {
       {
         pk: entry.pk,
         account: accountToSave,
-        contract: contractId,
+        [type]: id, // 'contract' 또는 'contractor'
       },
     ],
   }
@@ -73,9 +74,8 @@ const handleContractSelect = async (contractId: number | null) => {
   try {
     await proLedgerStore.patchProBankTrans(payload)
   } finally {
-    // 편집 상태 초기화 (Picker는 이미 닫혔으므로 editValue만 초기화)
     editValue.value = null
-    selectedEntryForContract.value = null
+    selectedEntryForSelect.value = null
   }
 }
 
@@ -149,6 +149,7 @@ const handleAccountClick = (entry: ProAccountingEntry, event: MouseEvent) => {
   setEditing('entry', entry.pk!, 'account_contract', {
     account: entry.account,
     contract: entry.contract,
+    contractor: entry.contractor,
   })
 
   // 스크롤 제한 - body와 html 모두 제어
@@ -160,11 +161,36 @@ const handleAccountClick = (entry: ProAccountingEntry, event: MouseEvent) => {
   document.body.style.width = '100%'
 }
 
+// 스크롤 복원 + 모달 열기 (공통 로직)
+const restoreScrollAndOpenModal = (type: 'contract' | 'contractor') => {
+  const scrollY = document.body.style.top
+  const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
+
+  document.body.style.position = ''
+  document.body.style.top = ''
+  window.scrollTo(0, scrollValue)
+  document.documentElement.style.overflow = ''
+  document.body.style.overflow = ''
+  document.body.style.width = ''
+
+  const entryPk = editingState.value?.pk
+  const selectedAccountId = editValue.value.account
+  const entry = props.proTrans.accounting_entries?.find(e => e.pk === entryPk)
+
+  proLedgerStore.clearSharedPickerState()
+
+  if (entry) {
+    nextTick(() => {
+      selectedEntryForSelect.value = { ...entry, account: selectedAccountId }
+      selectModalType.value = type
+      selectModalVisible.value = true
+    })
+  }
+}
+
 const handlePickerClose = async () => {
-  // v-model 업데이트 완료를 보장하기 위해 nextTick 사용
   await nextTick()
 
-  // 1. 계약 건 등록이 필요한 계정인지 확인
   if (editingState.value?.field === 'account_contract' && editValue.value) {
     const selectedAccount = getAccountById(editValue.value.account)
 
@@ -173,58 +199,37 @@ const handlePickerClose = async () => {
       editValue.value.contract = null
     }
 
+    // 계약자 정보가 필요 없는 계정으로 변경한 경우 → contractor를 null로 초기화
+    if (!selectedAccount?.is_related_contractor && editValue.value.contractor) {
+      editValue.value.contractor = null
+    }
+
     // 계약정보가 필요한데 설정되지 않은 경우
     if (selectedAccount?.requires_contract && !editValue.value.contract) {
-      // 스크롤 복원
-      const scrollY = document.body.style.top
-      const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
-      document.body.style.position = ''
-      document.body.style.top = ''
-      window.scrollTo(0, scrollValue)
-      document.documentElement.style.overflow = ''
-      document.body.style.overflow = ''
-      document.body.style.width = ''
+      restoreScrollAndOpenModal('contract')
+      return
+    }
 
-      // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk와 account 저장)
-      const entryPk = editingState.value?.pk
-      const selectedAccountId = editValue.value.account
-      const entry = props.proTrans.accounting_entries?.find(e => e.pk === entryPk)
-
-      // Picker 상태 정리 (Picker를 닫음)
-      proLedgerStore.clearSharedPickerState()
-
-      // Picker가 완전히 닫힌 후 모달 열기
-      if (entry) {
-        nextTick(() => {
-          // 새로 선택한 account를 entry에 반영
-          selectedEntryForContract.value = { ...entry, account: selectedAccountId }
-          contractModalVisible.value = true
-        })
-      }
+    // 계약자 정보가 필요한데 설정되지 않은 경우
+    if (selectedAccount?.is_related_contractor && !editValue.value.contractor) {
+      restoreScrollAndOpenModal('contractor')
       return
     }
   }
 
-  // 2. 변경 사항 저장 (상태가 초기화되기 전에)
   await handleUpdate()
 
-  // 3. 스크롤 복원 - 순서 중요!
+  // 스크롤 복원
   const scrollY = document.body.style.top
   const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
 
-  // position을 해제하기 전에 스크롤 위치를 먼저 저장
   document.body.style.position = ''
   document.body.style.top = ''
-
-  // 스크롤 복원
   window.scrollTo(0, scrollValue)
-
-  // 나머지 스타일 복원
   document.documentElement.style.overflow = ''
   document.body.style.overflow = ''
   document.body.style.width = ''
 
-  // 4. 마지막으로 공유 상태 초기화
   proLedgerStore.clearSharedPickerState()
 }
 
@@ -307,10 +312,16 @@ const handleUpdate = async () => {
     } else if (field === 'account_contract') {
       const originalAccount = entry.account
       const originalContract = entry.contract
+      const originalContractor = entry.contractor
       const newAccount = editValue.value.account
       const newContract = editValue.value.contract
+      const newContractor = editValue.value.contractor
 
-      if (newAccount === originalAccount && newContract === originalContract) {
+      if (
+        newAccount === originalAccount &&
+        newContract === originalContract &&
+        newContractor === originalContractor
+      ) {
         proLedgerStore.sharedEditingState = null
         return
       }
@@ -337,7 +348,12 @@ const handleUpdate = async () => {
     // type === 'entry'
     if (field === 'account_contract') {
       payload.accounting_entries = [
-        { pk: pk, account: editValue.value.account, contract: editValue.value.contract },
+        {
+          pk: pk,
+          account: editValue.value.account,
+          contract: editValue.value.contract,
+          contractor: editValue.value.contractor,
+        },
       ]
     } else {
       payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
@@ -486,11 +502,11 @@ const handleUpdate = async () => {
                     <template v-slot:activator="{ props: tooltipProps }">
                       <v-icon
                         v-bind="tooltipProps"
-                        icon="mdi-account-cog"
+                        icon="mdi-book-open"
                         color="indigo-lighten-2"
                         size="16"
                         class="ml-1 pointer"
-                        @click.stop="openContractModal(entry)"
+                        @click.stop="openSelectModal(entry, 'contract')"
                       />
                     </template>
                     <div class="pa-2">
@@ -507,7 +523,7 @@ const handleUpdate = async () => {
                     <template v-slot:activator="{ props: tooltipProps }">
                       <v-icon
                         v-bind="tooltipProps"
-                        icon="mdi-account-cog"
+                        icon="mdi-book-open"
                         color="indigo-lighten-2"
                         size="16"
                         class="ml-1"
@@ -526,14 +542,71 @@ const handleUpdate = async () => {
                     <template v-slot:activator="{ props: tooltipProps }">
                       <v-icon
                         v-bind="tooltipProps"
+                        icon="mdi-book-open"
+                        color="warning"
+                        size="16"
+                        class="ml-1 pointer"
+                        @click.stop="openSelectModal(entry, 'contract')"
+                      />
+                    </template>
+                    <span>계약정보를 선택하세요</span>
+                  </v-tooltip>
+
+                  <!-- 계약자 정보 표시 (이미 설정된 경우) - 클릭 가능 -->
+                  <v-tooltip v-if="entry.contractor && allowedPeriod" location="top">
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-account-cog"
+                        color="purple-lighten-2"
+                        size="16"
+                        class="ml-1 pointer"
+                        @click.stop="openSelectModal(entry, 'contractor')"
+                      />
+                    </template>
+                    <div class="pa-2">
+                      <div class="font-weight-bold mb-1">관련 계약자</div>
+                      <div class="mb-2">{{ entry.contractor_display }}</div>
+                      <div class="d-flex align-items-center text-amber font-weight-medium">
+                        <v-icon icon="mdi-pencil" size="14" class="mr-1" />
+                        클릭하여 변경
+                      </div>
+                    </div>
+                  </v-tooltip>
+                  <!-- 계약자 정보 표시 (읽기 전용) -->
+                  <v-tooltip v-else-if="entry.contractor && !allowedPeriod" location="top">
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-account-cog"
+                        color="purple-lighten-2"
+                        size="16"
+                        class="ml-1"
+                      />
+                    </template>
+                    <div class="pa-2">
+                      <div class="font-weight-bold mb-1">관련 계약자</div>
+                      <div>{{ entry.contractor_display }}</div>
+                    </div>
+                  </v-tooltip>
+                  <!-- 계약자 설정 필요 아이콘 (설정 필요하지만 없는 경우) -->
+                  <v-tooltip
+                    v-else-if="
+                      getAccountById(entry.account)?.is_related_contractor && allowedPeriod
+                    "
+                    location="top"
+                  >
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
                         icon="mdi-account-cog"
                         color="warning"
                         size="16"
                         class="ml-1 pointer"
-                        @click.stop="openContractModal(entry)"
+                        @click.stop="openSelectModal(entry, 'contractor')"
                       />
                     </template>
-                    <span>계약정보를 선택하세요</span>
+                    <span>계약자를 선택하세요</span>
                   </v-tooltip>
                 </div>
                 <v-icon
@@ -642,12 +715,14 @@ const handleUpdate = async () => {
       </CTableDataCell>
     </CTableRow>
 
-    <!-- 계약정보 선택 모달 -->
-    <ContractSelectModal
-      v-model="contractModalVisible"
-      :contract="selectedEntryForContract?.contract"
-      :account-name="selectedEntryForContract?.account_name"
-      @select="handleContractSelect"
+    <!-- 계약정보/계약자 선택 모달 -->
+    <BaseSelectModal
+      v-model="selectModalVisible"
+      :type="selectModalType"
+      :contract="selectedEntryForSelect?.contract"
+      :contractor="selectedEntryForSelect?.contractor"
+      :account-name="selectedEntryForSelect?.account_name"
+      @select="handleSelect"
     />
   </template>
 </template>
