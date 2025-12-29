@@ -48,11 +48,9 @@ __pycache__
 
 # django etc
 app/repos
-migrations
+#migrations
 media
 static
-settings/prod.py
-prod.py
 db.sqlite3
 dist
 
