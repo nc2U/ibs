@@ -3108,8 +3108,8 @@
       "direction": "withdraw",
       "is_active": true,
       "order": 0,
-      "is_payment": true,
-      "requires_contract": false,
+      "is_payment": false,
+      "requires_contract": true,
       "is_related_contractor": false
     }
   },
@@ -3165,8 +3165,8 @@
       "direction": "deposit",
       "is_active": true,
       "order": 0,
-      "is_payment": true,
-      "requires_contract": false,
+      "is_payment": false,
+      "requires_contract": true,
       "is_related_contractor": false
     }
   },
