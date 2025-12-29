@@ -3954,8 +3954,8 @@
     "pk": 91,
     "fields": {
       "code": "5930",
-      "name": "영업외 비용(위약금)",
-      "description": "위약금 손실",
+      "name": "영업외 비용(위약금/가산금)",
+      "description": "위약금/가산금 손실",
       "parent": 16,
       "depth": 2,
       "category": "expense",
@@ -3965,7 +3965,7 @@
       "order": 0,
       "is_payment": false,
       "requires_contract": false,
-      "is_related_contractor": false
+      "is_related_contractor": true
     }
   },
   {
