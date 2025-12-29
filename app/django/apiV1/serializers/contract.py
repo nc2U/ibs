@@ -5,13 +5,14 @@ from django.db import transaction
 from rest_framework import serializers
 
 from _utils.contract_price import get_sales_price_by_gt, get_contract_price, get_contract_payment_plan
-from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractPrice,
                              Contractor, ContractFile, ContractDocument, ContractDocumentFile,
                              ContractorAddress, ContractorContact, ContractorConsultationLogs,
                              Succession, ContractorRelease)
 from contract.services import ContractPriceUpdateService
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
+from cash.models import ProjectBankAccount, ProjectCashBook
+# from ledger.models import ProjectBankAccount, ProjectAccountingEntry
 from items.models import HouseUnit, KeyUnit
 from payment.models import InstallmentPaymentOrder
 from project.models import Project
