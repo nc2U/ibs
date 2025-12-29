@@ -95,11 +95,9 @@ spec:
           env:
             - name: REDIS_URL
               value: "redis://redis:6379/1"
-            {{- if .Values.global.database.cnpg.directConnection }}
-            # Override database host for direct CNPG primary pod connection
-            - name: DATABASE_HOST_OVERRIDE
-              value: "{{ .Values.global.database.type }}-1.{{ .Values.global.database.type }}-pods.{{ .Release.Namespace }}.svc.cluster.local"
-            {{- end }}
+            # Use CNPG read-write service (same as web pods)
+            - name: DATABASE_HOST
+              value: "postgres-rw.{{ .Release.Namespace }}.svc.cluster.local"
           volumeMounts:
             - name: env-config
               mountPath: /app/django/.env
