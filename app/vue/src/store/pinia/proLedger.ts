@@ -105,7 +105,7 @@ export const useProLedger = defineStore('proLedger', () => {
         direction: acc.direction_display,
         is_cate_only: acc.is_category_only,
         is_payment: acc.is_payment,
-        is_related_contract: acc.is_related_contract,
+        requires_contract: acc.requires_contract,
       })),
   )
 

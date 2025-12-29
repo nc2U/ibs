@@ -102,7 +102,7 @@ class ProjectAccountSerializer(serializers.ModelSerializer):
                   'depth', 'category', 'category_display', 'direction', 'direction_display',
                   'computed_direction', 'computed_direction_display',
                   'is_category_only', 'is_active', 'order',
-                  'is_payment', 'is_related_contract',
+                  'is_payment', 'requires_contract',
                   'full_path', 'children_count')
         read_only_fields = ('depth',)
 
@@ -136,7 +136,7 @@ class AccountSearchResultSerializer(serializers.Serializer):
 
     # ProjectAccount 전용 필드
     is_payment = serializers.BooleanField(required=False)
-    is_related_contract = serializers.BooleanField(required=False)
+    requires_contract = serializers.BooleanField(required=False)
 
 
 # ============================================

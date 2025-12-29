@@ -211,10 +211,13 @@ class ProjectAccountAdmin(BaseAccountAdmin):
     """프로젝트 계정 과목 Admin"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
-        'depth', 'is_category_only', 'is_active', 'is_payment', 'is_related_contract', 'order'
+        'depth', 'is_category_only', 'is_active', 'is_payment',
+        'requires_contract', 'order'
     )
-    list_editable = ('order', 'is_category_only', 'is_active', 'is_payment', 'is_related_contract')
-    list_filter = ('category', 'direction', 'is_category_only', 'is_active', 'is_payment', 'is_related_contract')
+    list_editable = ('order', 'is_category_only', 'is_active',
+                     'is_payment', 'requires_contract',)
+    list_filter = ('category', 'direction', 'is_category_only',
+                   'is_active', 'is_payment', 'requires_contract',)
 
     fieldsets = (
         ('기본 정보', {
@@ -224,8 +227,8 @@ class ProjectAccountAdmin(BaseAccountAdmin):
             'fields': ('category', 'direction')
         }),
         ('프로젝트 특수 속성', {
-            'fields': ('is_payment', 'is_related_contract'),
-            'description': 'is_payment: 분양대금 항목 여부 / is_related_contract: 공급계약 관련 항목 여부'
+            'fields': ('is_payment', 'requires_contract',),
+            'description': 'is_payment: 분양대금 항목 여부 / requires_contract: 공급계약 관련 항목 여부'
         }),
         ('사용 제한', {
             'fields': ('is_active', 'is_category_only'),
@@ -551,7 +554,7 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
                     'installment_order', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
     list_editable = ('evidence_type',)
-    list_filter = ('project', 'account__category', 'account__is_related_contract', 'evidence_type')
+    list_filter = ('project', 'account__category', 'account__requires_contract', 'evidence_type')
     search_fields = ('transaction_id', 'trader', 'project__name', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')

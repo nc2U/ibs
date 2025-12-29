@@ -49,7 +49,7 @@ const getAccountById = (accountId: number | null | undefined): AccountPicker | u
   return proAccounts.value.find(acc => acc.value === accountId)
 }
 
-// account 변경 시 is_related_contract 가 false면 contract 를 null로 초기화
+// account 변경 시 requires_contract 가 false면 contract 를 null로 초기화
 watch(
   () => props.displayRows.map(row => row.account),
   (newAccounts, oldAccounts) => {
@@ -57,8 +57,8 @@ watch(
       // account가 변경된 경우에만 처리
       if (newAccounts[index] !== oldAccounts?.[index]) {
         const account = getAccountById(row.account)
-        // account가 없거나 is_related_contract가 false인 경우 contract를 null로 초기화
-        if (!account || !account.is_related_contract) {
+        // account가 없거나 requires_contract가 false인 경우 contract를 null로 초기화
+        if (!account || !account.requires_contract) {
           row.contract = null
         }
       }
@@ -87,10 +87,7 @@ const removeEntry = (index: number) => {
       <CTableDataCell>
         <LedgerAccount v-model="row.account" :options="proAccounts ?? []" :sort-type="sortType" />
         <!-- contract 필드가 필요한 경우 추가 드롭다운 표시 -->
-        <div
-          v-if="row.account && getAccountById(row.account)?.is_related_contract"
-          class="pt-0 px-2"
-        >
+        <div v-if="row.account && getAccountById(row.account)?.requires_contract" class="pt-0 px-2">
           <MultiSelect
             v-model.number="row.contract"
             mode="single"

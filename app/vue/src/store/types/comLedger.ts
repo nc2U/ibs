@@ -8,7 +8,7 @@ export interface AccountPicker {
   direction: '입금' | '출금'
   req_affiliate?: boolean
   is_payment?: boolean
-  is_related_contract?: boolean
+  requires_contract?: boolean
 }
 
 export interface BankCode {

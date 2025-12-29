@@ -30,7 +30,7 @@ export interface ProjectAccount {
   is_active: boolean
   order: number
   is_payment: boolean
-  is_related_contract: boolean
+  requires_contract: boolean
   full_path: string
   children_count: number
 }

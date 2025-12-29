@@ -2254,7 +2254,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2272,7 +2272,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2290,7 +2290,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2308,7 +2308,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2326,7 +2326,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2344,7 +2344,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2362,7 +2362,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2380,7 +2380,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2398,7 +2398,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2416,7 +2416,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2434,7 +2434,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2452,7 +2452,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2470,7 +2470,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2488,7 +2488,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2506,7 +2506,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2524,7 +2524,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2542,7 +2542,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2560,7 +2560,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2578,7 +2578,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": true,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2596,7 +2596,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2614,7 +2614,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2632,7 +2632,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2650,7 +2650,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": true,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2668,7 +2668,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2686,7 +2686,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2704,7 +2704,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2722,7 +2722,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2740,7 +2740,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2758,7 +2758,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2776,7 +2776,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -2794,7 +2794,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2812,7 +2812,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2830,7 +2830,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2848,7 +2848,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2866,7 +2866,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2884,7 +2884,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2902,7 +2902,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2920,7 +2920,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2938,7 +2938,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2956,7 +2956,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2974,7 +2974,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -2992,7 +2992,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3010,7 +3010,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3028,7 +3028,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3046,7 +3046,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3064,7 +3064,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -3082,7 +3082,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3100,7 +3100,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3118,7 +3118,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": true
+      "requires_contract": true
     }
   },
   {
@@ -3136,7 +3136,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3154,7 +3154,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3172,7 +3172,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3190,7 +3190,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3208,7 +3208,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3226,7 +3226,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3244,7 +3244,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3262,7 +3262,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3280,7 +3280,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3298,7 +3298,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3316,7 +3316,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3334,7 +3334,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3352,7 +3352,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3370,7 +3370,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3388,7 +3388,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3406,7 +3406,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3424,7 +3424,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3442,7 +3442,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3460,7 +3460,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3478,7 +3478,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3496,7 +3496,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3514,7 +3514,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3532,7 +3532,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3550,7 +3550,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3568,7 +3568,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3586,7 +3586,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3604,7 +3604,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3622,7 +3622,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3640,7 +3640,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3658,7 +3658,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3676,7 +3676,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3694,7 +3694,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3712,7 +3712,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3730,7 +3730,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3748,7 +3748,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3766,7 +3766,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3784,7 +3784,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3802,7 +3802,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3820,7 +3820,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3838,7 +3838,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3856,7 +3856,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3874,7 +3874,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3892,7 +3892,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3910,7 +3910,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3928,7 +3928,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -3946,7 +3946,7 @@
       "is_active": true,
       "order": 0,
       "is_payment": false,
-      "is_related_contract": false
+      "requires_contract": false
     }
   },
   {
@@ -7732,7 +7732,7 @@
       "d2": 1,
       "code": "111",
       "is_payment": true,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "분(부)담금",
       "description": "출자금 (조합 등 형태인 경우)"
     }
@@ -7745,7 +7745,7 @@
       "d2": 1,
       "code": "112",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "분(부)담금(해지자 납부건)",
       "description": "해지 조합원 분담금 입금 건"
     }
@@ -7758,7 +7758,7 @@
       "d2": 1,
       "code": "113",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "[환불]→분(부)담금(해지)",
       "description": "계약 해지 등으로 인한 환불"
     }
@@ -7771,7 +7771,7 @@
       "d2": 1,
       "code": "114",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "[환불]→분(부)담금(과오납)",
       "description": "단순 과오납에 의한 환불"
     }
@@ -7784,7 +7784,7 @@
       "d2": 2,
       "code": "811",
       "is_payment": true,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "분양매출금",
       "description": "매출금 - 일반분양 등"
     }
@@ -7797,7 +7797,7 @@
       "d2": 2,
       "code": "812",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "분양매출금(해지자 납부건)",
       "description": "해지 계약자 분양매출금 입금 건"
     }
@@ -7810,7 +7810,7 @@
       "d2": 2,
       "code": "813",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "[환불]→분양매출금(해지)",
       "description": "계약 해지 등으로 인한 환불"
     }
@@ -7823,7 +7823,7 @@
       "d2": 2,
       "code": "814",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "[환불]→분양매출금(과오납)",
       "description": "단순 과오납에 의한 환불"
     }
@@ -7836,7 +7836,7 @@
       "d2": 3,
       "code": "821",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "영업외 수익(출자금 - 위약금수입)",
       "description": "출자금에 대한 위약금 수익"
     }
@@ -7849,7 +7849,7 @@
       "d2": 3,
       "code": "822",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "영업외 수익(출자금 - 가산금수입)",
       "description": "출자금에 대한 가산금 수익"
     }
@@ -7862,7 +7862,7 @@
       "d2": 3,
       "code": "823",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "영업외 수익(매출금 - 위약금수입)",
       "description": "매출금에 대한 위약금 수익"
     }
@@ -7875,7 +7875,7 @@
       "d2": 3,
       "code": "824",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "영업외 수익(매출금 - 가산금수입)",
       "description": "매출금에 대한 가산금 수익"
     }
@@ -7888,7 +7888,7 @@
       "d2": 3,
       "code": "825",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "영업외 수익(이자수입)",
       "description": "영업외 수익(이자수입)"
     }
@@ -7901,7 +7901,7 @@
       "d2": 3,
       "code": "826",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "영업외 수익(기타잡수입)",
       "description": "영업외 수익(기타잡수입, 전기 국세 환급 등)"
     }
@@ -7914,7 +7914,7 @@
       "d2": 3,
       "code": "694",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "당기 비용 환급 (차감)",
       "description": "당기 국세 환급 등 비용 차감액"
     }
@@ -7927,7 +7927,7 @@
       "d2": 4,
       "code": "211",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "차입금(브리지)",
       "description": "브리지 대출"
     }
@@ -7940,7 +7940,7 @@
       "d2": 4,
       "code": "212",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "차입금(PF대출)",
       "description": "PF 대출"
     }
@@ -7953,7 +7953,7 @@
       "d2": 4,
       "code": "213",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "차입금(기타)",
       "description": "기타 차입금"
     }
@@ -7966,7 +7966,7 @@
       "d2": 4,
       "code": "214",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "[상환]→차입금(브리지)",
       "description": "브리지 대출 상환"
     }
@@ -7979,7 +7979,7 @@
       "d2": 4,
       "code": "215",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "[상환]→차입금(PF대출)",
       "description": "PF 대출 상환"
     }
@@ -7992,7 +7992,7 @@
       "d2": 4,
       "code": "216",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "[상환]→차입금(기타)",
       "description": "기타 차입금 상환"
     }
@@ -8005,7 +8005,7 @@
       "d2": 5,
       "code": "221",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기타부채(보증금 등)",
       "description": "기타부채(보증금 등)"
     }
@@ -8018,7 +8018,7 @@
       "d2": 5,
       "code": "222",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "[반환]→기타부채(보증금 등)",
       "description": "보증금, 예치금 등 반환"
     }
@@ -8031,7 +8031,7 @@
       "d2": 6,
       "code": "311",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "대여금",
       "description": "대여금 등"
     }
@@ -8044,7 +8044,7 @@
       "d2": 6,
       "code": "312",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "[회수]→대여금",
       "description": "대여금 회수"
     }
@@ -8057,7 +8057,7 @@
       "d2": 7,
       "code": "326",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기타자산(법원공탁금)",
       "description": "가압류, 강제집행 정지 신청 공탁금 등"
     }
@@ -8070,7 +8070,7 @@
       "d2": 7,
       "code": "327",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기타자산(보증금·예치금)",
       "description": "보증금, 예치금 등 회수 예정 자산"
     }
@@ -8083,7 +8083,7 @@
       "d2": 7,
       "code": "328",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "기타자산(중도금이자대납)",
       "description": "중도금 후불제 이자대납 채권"
     }
@@ -8096,7 +8096,7 @@
       "d2": 7,
       "code": "321",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "[회수]→기타자산(법원공탁금)",
       "description": "공탁금 회수"
     }
@@ -8109,7 +8109,7 @@
       "d2": 7,
       "code": "322",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "[회수]→기타자산(보증금·예치금)",
       "description": "보증금 등 회수"
     }
@@ -8122,7 +8122,7 @@
       "d2": 7,
       "code": "323",
       "is_payment": false,
-      "is_related_contract": true,
+      "requires_contract": true,
       "name": "[회수]→기타자산(중도금이자대납)",
       "description": "중대금 후불제 대납이자 회수"
     }
@@ -8135,7 +8135,7 @@
       "d2": 8,
       "code": "611",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "토지 매입비",
       "description": "토지 매입비용"
     }
@@ -8148,7 +8148,7 @@
       "d2": 8,
       "code": "612",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "이전 등기비",
       "description": "취등록세 및 법무사 비용 등"
     }
@@ -8161,7 +8161,7 @@
       "d2": 8,
       "code": "613",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기타 토지비용",
       "description": "매입관련 용역비 등"
     }
@@ -8174,7 +8174,7 @@
       "d2": 8,
       "code": "614",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "보유세",
       "description": "재산세, 도시계획세, 지방교육세 등"
     }
@@ -8187,7 +8187,7 @@
       "d2": 9,
       "code": "621",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "도급 공사비",
       "description": "건축 도급 공사비"
     }
@@ -8200,7 +8200,7 @@
       "d2": 9,
       "code": "622",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "소방 공사비",
       "description": "소방 시설 공사비"
     }
@@ -8213,7 +8213,7 @@
       "d2": 9,
       "code": "623",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "외부 공사비",
       "description": "단지 외부 건축허가조건이행공사비"
     }
@@ -8226,7 +8226,7 @@
       "d2": 9,
       "code": "624",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "이주 철거비",
       "description": "이주 관련비용 및 철거 공사비"
     }
@@ -8239,7 +8239,7 @@
       "d2": 10,
       "code": "631",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "인입 공사비",
       "description": "각종 인입 공사비"
     }
@@ -8252,7 +8252,7 @@
       "d2": 10,
       "code": "632",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "설계 용역비",
       "description": "설계 관련 용역비"
     }
@@ -8265,7 +8265,7 @@
       "d2": 10,
       "code": "633",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "감리 용역비",
       "description": "감리 용역비 등"
     }
@@ -8278,7 +8278,7 @@
       "d2": 10,
       "code": "634",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기타 용역비",
       "description": "인허가 관련 기타 용역비"
     }
@@ -8291,7 +8291,7 @@
       "d2": 11,
       "code": "641",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "광고 홍보비",
       "description": "언론피알, 광고 홍보비 등"
     }
@@ -8304,7 +8304,7 @@
       "d2": 11,
       "code": "642",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "분양 수수료",
       "description": "분양대행 용역 수수료"
     }
@@ -8317,7 +8317,7 @@
       "d2": 11,
       "code": "643",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "상가분양 수수료",
       "description": "단지내 상가 등 분양 수수료"
     }
@@ -8330,7 +8330,7 @@
       "d2": 11,
       "code": "644",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "분양 예비비",
       "description": "해지분 추가모집, 교체 관련 비용"
     }
@@ -8343,7 +8343,7 @@
       "d2": 11,
       "code": "645",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "분양보증 수수료",
       "description": "아파트, 상가 등 분양보증 수수료"
     }
@@ -8356,7 +8356,7 @@
       "d2": 12,
       "code": "651",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "M/H 건립운영비",
       "description": "M/H 건립/해체 및 운영비 등"
     }
@@ -8369,7 +8369,7 @@
       "d2": 12,
       "code": "652",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "M/H 부지임차료",
       "description": "M/H 부지 임차료 등 관련 비용"
     }
@@ -8382,7 +8382,7 @@
       "d2": 13,
       "code": "661",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "상하수도 부담금",
       "description": "상하수도 원인자 부담금"
     }
@@ -8395,7 +8395,7 @@
       "d2": 13,
       "code": "662",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "보존 등기비",
       "description": "보존등기비"
     }
@@ -8408,7 +8408,7 @@
       "d2": 13,
       "code": "663",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "광역교통 부담금",
       "description": "광역교통 시설 부담금"
     }
@@ -8421,7 +8421,7 @@
       "d2": 13,
       "code": "664",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "미술 장식품비",
       "description": "미술 장식품 설치비"
     }
@@ -8434,7 +8434,7 @@
       "d2": 13,
       "code": "665",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "학교용지 부담금",
       "description": "학교용지 부담금"
     }
@@ -8447,7 +8447,7 @@
       "d2": 13,
       "code": "666",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "과밀 부담금",
       "description": "과밀 부담금"
     }
@@ -8460,7 +8460,7 @@
       "d2": 13,
       "code": "667",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기반시설 설치비용",
       "description": "기반시설 설치비용"
     }
@@ -8473,7 +8473,7 @@
       "d2": 13,
       "code": "668",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "전용 부담금",
       "description": "농지, 산지 전용 부담금 등"
     }
@@ -8486,7 +8486,7 @@
       "d2": 13,
       "code": "669",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기타 부담금",
       "description": "기타 각종 부담금 등"
     }
@@ -8499,7 +8499,7 @@
       "d2": 13,
       "code": "609",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "부가가치세",
       "description": "부가가치세"
     }
@@ -8512,7 +8512,7 @@
       "d2": 14,
       "code": "671",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "시행자 운영비",
       "description": "시행사(조합) 운영비"
     }
@@ -8525,7 +8525,7 @@
       "d2": 14,
       "code": "672",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "신탁비",
       "description": "신탁 관련 수수료"
     }
@@ -8538,7 +8538,7 @@
       "d2": 14,
       "code": "673",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기타 사업비",
       "description": "감평, 법무, 회계 비용 등"
     }
@@ -8551,7 +8551,7 @@
       "d2": 14,
       "code": "674",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "예비비",
       "description": "예비비 및 민원처리비 등"
     }
@@ -8564,7 +8564,7 @@
       "d2": 14,
       "code": "675",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "업무대행비",
       "description": "업무대행 용역 수수료"
     }
@@ -8577,7 +8577,7 @@
       "d2": 15,
       "code": "681",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "B/L 수수료, 이자",
       "description": "B/L 수수료 및 이자 비용"
     }
@@ -8590,7 +8590,7 @@
       "d2": 15,
       "code": "682",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "P/F 수수료, 이자",
       "description": "P/F 수수료 및 이자 비용"
     }
@@ -8603,7 +8603,7 @@
       "d2": 15,
       "code": "683",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "중도금 무이자",
       "description": "중도금 무이자 비용"
     }
@@ -8616,7 +8616,7 @@
       "d2": 15,
       "code": "684",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "기타 금융비용",
       "description": "기타 차입 관련 금융비용"
     }
@@ -8629,7 +8629,7 @@
       "d2": 16,
       "code": "691",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "영업외 비용(원천세)",
       "description": "원천세"
     }
@@ -8642,7 +8642,7 @@
       "d2": 16,
       "code": "692",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "영업외 비용(기타잡손실)",
       "description": "기타 잡손실"
     }
@@ -8655,7 +8655,7 @@
       "d2": 16,
       "code": "693",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "영업외 비용(위약금)",
       "description": "위약금 손실"
     }
@@ -8668,7 +8668,7 @@
       "d2": 17,
       "code": "512",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "대체(출금)",
       "description": "계좌간 이체로 인한 출금 거래"
     }
@@ -8681,7 +8681,7 @@
       "d2": 17,
       "code": "511",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "대체(입금)",
       "description": "계좌간 이체로 인한 입금 거래"
     }
@@ -8694,7 +8694,7 @@
       "d2": 18,
       "code": "412",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "거래취소(출금)",
       "description": "거래 취소로 인한 출금거래"
     }
@@ -8707,7 +8707,7 @@
       "d2": 18,
       "code": "411",
       "is_payment": false,
-      "is_related_contract": false,
+      "requires_contract": false,
       "name": "거래취소(입금)",
       "description": "거래 취소로 인한 입금거래"
     }

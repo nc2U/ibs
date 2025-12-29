@@ -169,12 +169,12 @@ const handlePickerClose = async () => {
     const selectedAccount = getAccountById(editValue.value.account)
 
     // 계약정보가 필요 없는 계정으로 변경한 경우 → contract를 null로 초기화
-    if (!selectedAccount?.is_related_contract && editValue.value.contract) {
+    if (!selectedAccount?.requires_contract && editValue.value.contract) {
       editValue.value.contract = null
     }
 
     // 계약정보가 필요한데 설정되지 않은 경우
-    if (selectedAccount?.is_related_contract && !editValue.value.contract) {
+    if (selectedAccount?.requires_contract && !editValue.value.contract) {
       // 스크롤 복원
       const scrollY = document.body.style.top
       const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
@@ -520,7 +520,7 @@ const handleUpdate = async () => {
                   </v-tooltip>
                   <!-- 계약정보 설정 필요 아이콘 (설정 필요하지만 없는 경우) -->
                   <v-tooltip
-                    v-else-if="getAccountById(entry.account)?.is_related_contract && allowedPeriod"
+                    v-else-if="getAccountById(entry.account)?.requires_contract && allowedPeriod"
                     location="top"
                   >
                     <template v-slot:activator="{ props: tooltipProps }">
