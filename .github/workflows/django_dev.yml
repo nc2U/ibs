@@ -8,7 +8,7 @@ on:
       - 'app/django/**'
       - 'deploy/docker/python/**'
       - 'deploy/helm/**'
-      - '.github/workflows/django_dev_containerized.yml'
+      - '.github/workflows/django_dev.yml'
   workflow_dispatch:
 
 # Prevent concurrent deployments to the same environment
