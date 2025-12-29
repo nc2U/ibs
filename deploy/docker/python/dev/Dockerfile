@@ -30,6 +30,7 @@ RUN apt-get update \
       gcc \
       fonts-nanum \
       fonts-nanum-extra \
+      libmagic1 \
  && apt-get autoremove -y \
  && pip install --upgrade pip setuptools \
  && pip install --trusted-host pypi.python.org -r requirements.txt
