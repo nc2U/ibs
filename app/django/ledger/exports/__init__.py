@@ -13,6 +13,7 @@ from .excel import (
     ExportProjectBalance,
     ExportProjectDateCashbook,
     export_project_cash_xls,
+    export_pro_transaction_xls,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     'ExportProjectBalance',
     'ExportProjectDateCashbook',
     'export_project_cash_xls',
+    'export_pro_transaction_xls'
 ]

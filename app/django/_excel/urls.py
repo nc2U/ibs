@@ -8,7 +8,7 @@ from payment.exports import ExportPayments, ExportPaymentsByCont, ExportPaymentS
 from cash.exports import (ExportProjectBalance, ExportProjectDateCashbook, ExportBalanceByAcc,
                           ExportBudgetExecutionStatus, ExportCashFlowForm, ExportDateCashbook,
                           export_cashbook_xls, export_project_cash_xls)
-from ledger.exports import export_com_transaction_xls
+from ledger.exports import export_pro_transaction_xls, export_com_transaction_xls
 
 from docs.exports import ExportSuitCases, ExportSuitCase
 
@@ -44,7 +44,7 @@ urlpatterns = [
     path('p-daily-cash/', ExportProjectDateCashbook.as_view(), name='project-daily-cash'),
     path('p-budget/', ExportBudgetExecutionStatus.as_view(), name='budget'),
     path('cash-flow-form/', ExportCashFlowForm.as_view(), name='cash-flow-form'),
-    path('p-cashbook/', export_project_cash_xls, name='project-cash'),
+    path('pro-transaction/', export_pro_transaction_xls, name='pro-transaction'),
     path('balance/', ExportBalanceByAcc.as_view(), name='balance'),
     path('daily-cash/', ExportDateCashbook.as_view(), name='daily-cash'),
     path('cashbook/', export_cashbook_xls, name='cashbook'),
