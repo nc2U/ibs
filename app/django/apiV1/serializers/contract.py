@@ -747,7 +747,7 @@ class SimpleContractorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Contractor
-        fields = ('value', 'label')
+        fields = ('value', 'label', 'contract')
 
     def get_value(self, obj):
         return obj.pk

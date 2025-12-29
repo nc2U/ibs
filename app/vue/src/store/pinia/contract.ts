@@ -224,7 +224,7 @@ export const useContract = defineStore('contract', () => {
   const isLoading = ref(false)
   const contractsCount = ref<number>(0)
   const getContracts = ref<{ value: number; label: string }[]>([])
-  const getAllContractors = ref<{ value: number; label: string }[]>([])
+  const getAllContractors = ref<{ value: number; label: string; contract: number | null }[]>([])
 
   // actions
   const fetchAllContracts = async (project: number) =>
