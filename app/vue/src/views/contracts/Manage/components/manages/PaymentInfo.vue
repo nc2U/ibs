@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
-import type { Contract } from '@/store/types/contract'
 import { useDownload } from '@/utils/useDownload.ts'
+import type { Contract } from '@/store/types/contract'
 
 defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
