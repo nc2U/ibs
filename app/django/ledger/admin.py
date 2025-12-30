@@ -557,7 +557,7 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
                     'created_at')
     list_display_links = ('transaction_id_short',)
     list_editable = ('evidence_type',)
-    list_filter = ('project', 'account__category', 'evidence_type')
+    list_filter = ('project', 'account__category', 'account__is_payment', 'evidence_type')
     search_fields = ('transaction_id', 'trader', 'project__name', 'account__name', 'account__code')
     ordering = ('-created_at',)
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')

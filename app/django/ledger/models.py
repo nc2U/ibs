@@ -638,12 +638,12 @@ class AccountingEntry(models.Model):
     @property
     def sort(self):
         """BankTransaction의 sort 접근 (하위 호환성)"""
-        transaction = self.related_transaction
-        return transaction.sort if transaction else None
+        trans = self.related_transaction
+        return trans.sort if trans else None
 
     def __str__(self):
-        transaction = self.related_transaction
-        sort_name = transaction.sort.name if transaction and transaction.sort else '미분류'
+        trans = self.related_transaction
+        sort_name = trans.sort.name if trans and trans.sort else '미분류'
         return f"{sort_name} - {self.amount:,} ({self.trader or '거래처 미지정'})"
 
 

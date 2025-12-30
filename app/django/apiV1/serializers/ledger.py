@@ -9,7 +9,6 @@ from ledger.models import (
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
-from payment.models import ContractPayment
 
 
 # ============================================
