@@ -7,11 +7,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers
 
-from _utils.contract_price import get_contract_price
-from ledger.models import ProjectAccount, ProjectBankAccount, ProjectBankTransaction, ProjectAccountingEntry
+from _utils.contract_price import get_contract_price, get_sales_price_by_gt
 from contract.models import (Contract, ContractPrice, OrderGroup, ContractFile,
                              Contractor, ContractorAddress, ContractorContact)
 from items.models import KeyUnit, HouseUnit
+from ledger.models import ProjectAccount, ProjectBankAccount, ProjectBankTransaction, ProjectAccountingEntry
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, ContractPayment
 from project.models import Project
 
@@ -574,9 +574,11 @@ class PaymentProcessingService:
         contractor = Contractor.objects.get(contract=contract)
         order_group_sort = int(data.get('order_group_sort'))
 
-        # is_payment=True인 계정 선택 (order_group_sort 에 따라 출자금 / 분양대금)
+        # is_payment=True인 계정 선택 (order_group_sort 에 따라 출자금 / 매출금=분양대금)
+        index = order_group_sort - 1
+        category = ('equity', 'revenue')
         payment_accounts = ProjectAccount.objects.filter(is_payment=True)
-        account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
+        account = payment_accounts.get(category=category[index]) or payment_accounts[index]
 
         # 납부 정보
         installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
@@ -632,7 +634,6 @@ class PaymentProcessingService:
                 bank_tx = accounting_entry.related_transaction
 
                 # 기본 정보 조회
-                project = Project.objects.get(pk=data.get('project'))
                 contractor = Contractor.objects.get(contract=contract)
                 order_group_sort = int(data.get('order_group_sort'))
 
@@ -693,7 +694,7 @@ class ContractCreationService:
         contract = self._create_base_contract(data)
 
         # 2. 유닛 할당
-        house_unit = self.unit_service.assign_unit(
+        self.unit_service.assign_unit(
             contract,
             data.get('key_unit'),
             data.get('houseunit')
@@ -795,3 +796,204 @@ class ContractUpdateService:
         self.payment_service.process_payment_update(instance, data)
 
         return instance
+
+
+class ContractorReleaseService:
+    """
+    계약자 해지 처리 서비스
+
+    계약자 해지 시 필요한 모든 비즈니스 로직을 처리합니다:
+    - 계약 상태 변경 및 비활성화
+    - 동호수/키유닛 연결 해제
+    - 계약가격 미계약 상태로 전환
+    - 납부분담금 환불 처리
+    - 계약자 정보 해지 상태로 변경
+    """
+
+    @staticmethod
+    @transaction.atomic
+    def process_release_completion(contractor_release, completion_date):
+        """
+        계약자 해지 최종 완결 처리
+
+        Args:
+            contractor_release: ContractorRelease 인스턴스
+            completion_date: 해지 완료 일자
+
+        Returns:
+            dict: 처리 결과 정보
+        """
+        contractor = contractor_release.contractor
+        contract = contractor.contract
+
+        result = {
+            'contract_updated': False,
+            'unit_detached': False,
+            'price_reset': False,
+            'payments_refunded': 0,
+            'contractor_updated': False,
+        }
+
+        # 1. 계약 상태 변경
+        contract.serial_number = f"{contract.serial_number}-terminated-{completion_date}"
+        contract.activation = False
+        result['contract_updated'] = True
+
+        # 2. 동호수 연결 해제
+        unit = ContractorReleaseService._detach_house_unit(contract)
+        if unit:
+            result['unit_detached'] = True
+
+        # 3. 키유닛 연결 해제
+        contract.key_unit = None
+        contract.save()
+
+        # 4. 계약가격 미계약 상태로 전환
+        if ContractorReleaseService._reset_contract_price(contract, unit):
+            result['price_reset'] = True
+
+        # 5. 납부분담금 환불 처리
+        refund_count = ContractorReleaseService._process_payment_refunds(
+            contract,
+            contractor,
+            completion_date
+        )
+        result['payments_refunded'] = refund_count
+
+        # 6. 계약자 최종 해지 상태로 변경
+        ContractorReleaseService._update_contractor_status(contractor, contract)
+        result['contractor_updated'] = True
+
+        return result
+
+    @staticmethod
+    def _detach_house_unit(contract):
+        """동호수 연결 해제"""
+        try:
+            unit = contract.key_unit.houseunit
+            unit.key_unit = None
+            unit.save()
+            return unit
+        except (ObjectDoesNotExist, AttributeError):
+            return None
+
+    @staticmethod
+    def _reset_contract_price(contract, unit):
+        """계약가격 미계약 상태로 전환"""
+        try:
+            contract_price = contract.contractprice
+            contract_price.contract = None
+
+            # 미계약용 기본 차수가 설정된 경우 SalesPriceByGT 기준 가격으로 업데이트
+            default_order_group = OrderGroup.get_default_for_project(contract.project)
+
+            if unit and default_order_group:
+                sales_price = ContractorReleaseService._get_sales_price_for_uncontracted(
+                    contract.project,
+                    default_order_group,
+                    unit
+                )
+
+                if sales_price:
+                    contract_price.price = sales_price.price
+                    contract_price.price_build = sales_price.price_build
+                    contract_price.price_land = sales_price.price_land
+                    contract_price.price_tax = sales_price.price_tax
+
+            contract_price.save()
+            return True
+
+        except ContractPrice.DoesNotExist:
+            return False
+
+    @staticmethod
+    def _get_sales_price_for_uncontracted(project, order_group, unit):
+        """미계약 세대의 기준 가격 조회"""
+
+        # 임시 계약 객체 생성 (미계약용 기본 차수와 프로젝트 정보로)
+        class TempContract:
+            def __init__(self, proj, ord_grp, u_type):
+                self.project = proj
+                self.order_group = ord_grp
+                self.unit_type = u_type
+
+        temp_contract = TempContract(project, order_group, unit.unit_type)
+        return get_sales_price_by_gt(temp_contract, unit)
+
+    @staticmethod
+    def _process_payment_refunds(contract, contractor, completion_date):
+        """납부분담금 환불 처리"""
+        payments = ContractPayment.objects.filter(contract=contract).select_related(
+            'accounting_entry__account'
+        )
+
+        refund_count = 0
+        for payment in payments:
+            entry = payment.accounting_entry
+
+            # 회계 분개의 계정을 환불 계정으로 변경
+            if ContractorReleaseService._change_to_refund_account(entry):
+                refund_count += 1
+
+            # 은행 거래 note에 환불 정보 추가
+            if completion_date:
+                ContractorReleaseService._add_refund_note_to_bank_transaction(
+                    entry,
+                    contract,
+                    contractor,
+                    completion_date
+                )
+
+        return refund_count
+
+    @staticmethod
+    def _change_to_refund_account(accounting_entry):
+        """
+        회계 분개의 계정을 환불 계정으로 변경
+
+        우선순위:
+        1. 같은 parent 하위의 입금(deposit) + 계약자 관련 계정
+        2. Fallback: account.pk + 1 계정
+        """
+        # 1순위: 더 정확한 환불 계정 찾기
+        refund_account = ProjectAccount.objects.filter(
+            parent=accounting_entry.account.parent,
+            direction='deposit',
+            is_related_contractor=True
+        ).first()
+
+        # 2순위: Fallback - pk + 1 방식
+        if not refund_account:
+            try:
+                refund_account_pk = accounting_entry.account.pk + 1
+                refund_account = ProjectAccount.objects.get(pk=refund_account_pk)
+            except ProjectAccount.DoesNotExist:
+                return False
+
+        # 환불 계정 적용
+        accounting_entry.account = refund_account
+        accounting_entry.save()
+        return True
+
+    @staticmethod
+    def _add_refund_note_to_bank_transaction(entry, contract, contractor, completion_date):
+        """은행 거래 note에 환불 정보 추가"""
+        bank_tx = entry.related_transaction
+        if bank_tx:
+            msg = f'환불 계약 건 - {contract.serial_number[:13]} ({completion_date} {contractor.name} 환불완료)'
+            append_note = ', ' + msg if bank_tx.note else msg
+            bank_tx.note = bank_tx.note + append_note
+            bank_tx.save()
+
+    @staticmethod
+    def _update_contractor_status(contractor, contract):
+        """계약자 최종 해지 상태로 변경"""
+        contractor.prev_contract = contract
+        contractor.contract = None
+
+        if contractor.qualification == '3':
+            contractor.qualification = '2'  # 인가 등록 취소
+
+        contractor.is_active = False  # 비활성 상태로 변경
+        contractor.status = '4'  # 해지 상태로 변경
+        contractor.save()

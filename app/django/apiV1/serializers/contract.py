@@ -1,18 +1,20 @@
+import logging
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import OuterRef, Subquery
 from rest_framework import serializers
 
-from _utils.contract_price import get_sales_price_by_gt, get_contract_payment_plan
+from _utils.contract_price import get_contract_payment_plan
 from contract.models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractPrice,
                              Contractor, ContractFile, ContractDocument, ContractDocumentFile,
                              ContractorAddress, ContractorContact, ContractorConsultationLogs,
                              Succession, ContractorRelease)
-from contract.services import ContractPriceUpdateService, ContractCreationService, ContractUpdateService
+from contract.services import (ContractPriceUpdateService, ContractCreationService,
+                               ContractUpdateService, ContractorReleaseService)
 from items.models import HouseUnit, KeyUnit
-from ledger.models import ProjectAccount
 from ledger.models import ProjectBankTransaction
-from payment.models import InstallmentPaymentOrder, ContractPayment
+from payment.models import InstallmentPaymentOrder
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
 from .payment import SimpleInstallmentOrderSerializer, SimpleOrderGroupSerializer
@@ -687,6 +689,12 @@ class SuccessionSerializer(serializers.ModelSerializer):
 
 
 class ContractorReleaseSerializer(serializers.ModelSerializer):
+    """
+    계약자 해지 정보 Serializer
+
+    비즈니스 로직은 ContractorReleaseService로 분리되어 있습니다.
+    """
+
     class Meta:
         model = ContractorRelease
         fields = ('pk', 'project', 'contractor', '__str__', 'status', 'refund_amount',
@@ -695,120 +703,32 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        contractor = instance.contractor  # 계약자 오브젝트
-        released_done = True if instance.status in ('4', '5') else False  # 해지완결 여부
+        """
+        계약자 해지 정보 업데이트
 
-        # 미완료인 상태에서 4 -> 처리완료, 5 -> 자격상실 :: 최초의 최종 해지 확정 처리 1회 실행
-        if not released_done and validated_data.get('status') in ('4', '5'):
-            # 1. 계약 상태 변경
+        해지 최종 완결 처리(status 4 또는 5)는 ContractorReleaseService에 위임
+        """
+
+        released_done = instance.status in ('4', '5')  # 이미 해지 완결 여부
+        new_status = validated_data.get('status')
+
+        # 미완료 → 최종 완결 (처리완료:4 또는 자격상실:5)로 변경
+        if not released_done and new_status in ('4', '5'):
             completion_date = self.initial_data.get('completion_date')
-            contract = contractor.contract
-            contract.serial_number = f"{contract.serial_number}-terminated-{completion_date}"
-            contract.activation = False  # 일련번호 활성 해제
 
-            # 2. 동호수 연결 해제
-            unit = None
-            try:  # 동호수 존재 여부 확인
-                unit = contract.key_unit.houseunit
-            except ObjectDoesNotExist:
-                pass
-            if unit:  # 동호수 존재 시 삭제
-                unit.key_unit = None
-                unit.save()
-
-            # 3. 키유닛과 계약 간 연결 해제
-            contract.key_unit = None
-            contract.save()
-
-            # 3-1. 계약가격 정보 해지 처리 - 미계약 상태로 전환
-            try:
-                contract_price = contract.contractprice
-                # contract를 None으로 설정하여 미계약 상태로 전환
-                contract_price.contract = None
-
-                # house_unit이 있고 미계약용 기본 차수가 설정된 경우 SalesPriceByGT 기준 가격으로 업데이트
-                default_order_group = OrderGroup.get_default_for_project(contract.project)
-                if unit and default_order_group:
-                    # 임시 계약 객체 생성 (미계약용 기본 차수와 프로젝트 정보로)
-                    # get_sales_price_by_gt 함수에서 필요한 contract 속성들을 제공
-                    class TempContract:
-                        def __init__(self, project, order_group, unit_type):
-                            self.project = project
-                            self.order_group = order_group
-                            self.unit_type = unit_type
-
-                    temp_contract = TempContract(
-                        contract.project,
-                        default_order_group,
-                        unit.unit_type
-                    )
-
-                    # get_sales_price_by_gt 함수로 기준 가격 조회
-                    sales_price = get_sales_price_by_gt(temp_contract, unit)
-
-                    if sales_price:
-                        # 미계약 기준 가격으로 업데이트
-                        contract_price.price = sales_price.price
-                        contract_price.price_build = sales_price.price_build
-                        contract_price.price_land = sales_price.price_land
-                        contract_price.price_tax = sales_price.price_tax
-
-                contract_price.save()
-
-            except ContractPrice.DoesNotExist:
-                # ContractPrice가 없는 경우 무시
-                pass
-
-            # 4. 해당 납부분담금 환불처리 (ContractPayment 기반)
-            payments = ContractPayment.objects.filter(contract=contract).select_related(
-                'accounting_entry__account'
+            # Service로 해지 처리 위임
+            result = ContractorReleaseService.process_release_completion(
+                contractor_release=instance,
+                completion_date=completion_date
             )
 
-            for payment in payments:
-                entry = payment.accounting_entry
+            # 처리 결과 로깅 (선택사항)
+            if not all(result.values()):
+                logger = logging.getLogger(__name__)
+                logger.warning(f"ContractorRelease {instance.pk} 일부 처리 실패: {result}")
 
-                if not released_done:  # 해지 확정 전일 때만 실행
-                    # 회계 분개의 계정을 환불 계정으로 변경
-                    # Note: 환불 계정 매핑 로직은 ProjectAccount 구조에 따라 조정 필요
-                    # 기존: project_account_d3.id + 1 로 환불 계정 설정
-                    # 신규: account.code 기반 또는 name 기반 환불 계정 매핑 필요
-                    # TODO: 환불 계정 매핑 로직 구현 필요
-                    # 예시: "분양대금" -> "분양대금 환불", "분담금" -> "분담금 환불"
-
-                    # 임시 구현: account.pk + 1 방식 유지 (기존 로직과 동일)
-                    try:
-                        refund_account_pk = entry.account.pk + 1
-                        refund_account = ProjectAccount.objects.get(pk=refund_account_pk)
-                        entry.account = refund_account
-                        entry.save()
-                    except ProjectAccount.DoesNotExist:
-                        # 환불 계정이 없는 경우 로그만 남기고 계속 진행
-                        pass
-
-                    # Note: refund_contractor 필드는 ContractPayment 모델에 아직 구현되지 않음
-                    # TODO: ContractPayment 모델에 payment_type, refund_contractor 필드 추가 필요
-
-                if completion_date:  # 최종 해지(환불)처리일 정보가 있으면
-                    # 연관된 은행 거래의 note에 환불 정보 추가
-                    bank_tx = entry.related_transaction
-                    if bank_tx:
-                        msg = f'환불 계약 건 - {contract.serial_number[:13]} ({completion_date} {contractor.name} 환불완료)'
-                        append_note = ', ' + msg if bank_tx.note else msg
-                        bank_tx.note = bank_tx.note + append_note
-                        bank_tx.save()
-
-            # 5.  계약자 정보 최종 해지상태로 변경
-            contractor.prev_contract = contract
-            contractor.contract = None
-            if contractor.qualification == '3':
-                contractor.qualification = '2'  # 인가 등록 취소
-            contractor.is_active = False  # 비활성 상태로 변경
-            contractor.status = '4'  # 해지 상태로 변경
-            contractor.save()
-
-        # 1. 해지정보 테이블 입력
+        # 해지정보 테이블 업데이트
         instance.__dict__.update(**validated_data)
-        # updator 설정
         instance.updator = self.context['request'].user
         instance.save()
 
