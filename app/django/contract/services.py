@@ -9,7 +9,7 @@ from rest_framework import serializers
 
 from _utils.contract_price import get_contract_price
 from cash.models import ProjectCashBook
-from ledger.models import ProjectBankAccount, ProjectAccountingEntry
+from ledger.models import ProjectAccount, ProjectBankAccount, ProjectAccountingEntry
 from contract.models import (Contract, ContractPrice, OrderGroup, ContractFile,
                              Contractor, ContractorAddress, ContractorContact)
 from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
@@ -557,6 +557,10 @@ class PaymentProcessingService:
         account_d2 = ProjectAccountD2.objects.get(pk=order_group_sort)
         acc_d3 = 1 if order_group_sort == 1 else 4
         account_d3 = ProjectAccountD3.objects.get(pk=acc_d3)
+
+        payment_accounts = ProjectAccount.objects.filter(is_payment=True)
+        account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
+        # ing ...
 
         # 납부 정보
         installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
