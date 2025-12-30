@@ -275,7 +275,7 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'transaction_id_short', 'company', 'bank_account', 'deal_date',
                     'sort', 'formatted_amount', 'content', 'is_balanced', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('company', 'bank_account', 'sort', 'is_balanced', ('deal_date', DateRangeFilter))
+    list_filter = ('company', 'bank_account', 'sort', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')
@@ -291,17 +291,18 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
             return format_html(
                 '<a href="/admin/ledger/companyaccountingentry/add/?transaction_id={}" target="_blank">'
                 '+ 회계분개 추가</a>',
-                obj.transaction_id
+                str(obj.transaction_id)
             )
 
         links = []
         for entry in entries:
             account_name = f"{entry.account.code} {entry.account.name}" if entry.account else "계정 없음"
+            sort_display = entry.sort.name if entry.sort else '미분류'
             links.append(format_html(
                 '<a href="/admin/ledger/companyaccountingentry/{}/change/" target="_blank">'
                 '{} - {}원 ({})</a>',
                 entry.pk,
-                entry.sort,
+                sort_display,
                 f"{entry.amount:,}",
                 account_name
             ))
@@ -309,7 +310,7 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
         add_link = format_html(
             '<a href="/admin/ledger/companyaccountingentry/add/?transaction_id={}" target="_blank">'
             '+ 추가</a>',
-            obj.transaction_id
+            str(obj.transaction_id)
         )
 
         return mark_safe('<br>'.join(links) + '<br>' + add_link)
@@ -375,7 +376,7 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date', 'sort',
                     'formatted_amount', 'content', 'is_balanced', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
-    list_filter = ('project', 'bank_account', 'sort', 'is_balanced', ('deal_date', DateRangeFilter))
+    list_filter = ('project', 'bank_account', 'sort', ('deal_date', DateRangeFilter))
     search_fields = ('transaction_id', 'content', 'note', 'project__name')
     date_hierarchy = 'deal_date'
     ordering = ('-deal_date', '-created_at')
@@ -392,17 +393,18 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
             return format_html(
                 '<a href="/admin/ledger/projectaccountingentry/add/?transaction_id={}" target="_blank">'
                 '+ 회계분개 추가</a>',
-                obj.transaction_id
+                str(obj.transaction_id)
             )
 
         links = []
         for entry in entries:
             account_name = f"{entry.account.code} {entry.account.name}" if entry.account else "계정 없음"
+            sort_display = entry.sort.name if entry.sort else '미분류'
             links.append(format_html(
                 '<a href="/admin/ledger/projectaccountingentry/{}/change/" target="_blank">'
                 '{} - {}원 ({})</a>',
                 entry.pk,
-                entry.sort,
+                sort_display,
                 f"{entry.amount:,}",
                 account_name
             ))
@@ -410,10 +412,10 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
         add_link = format_html(
             '<a href="/admin/ledger/projectaccountingentry/add/?transaction_id={}" target="_blank">'
             '+ 추가</a>',
-            obj.transaction_id
+            str(obj.transaction_id)
         )
 
-        return format_html('<br>'.join(links) + '<br>' + add_link)
+        return mark_safe('<br>'.join(links) + '<br>' + add_link)
 
     related_accounting_entries.short_description = '연관 회계분개'
 
@@ -528,8 +530,9 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'green' if obj.sort.id == 1 else 'red'  # 1=입금, 2=출금
-        sign = '+' if obj.sort.id == 1 else '-'
+        sort_id = obj.sort.id if obj.sort else None
+        color = 'green' if sort_id == 1 else 'red'  # 1=입금, 2=출금
+        sign = '+' if sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 
@@ -582,8 +585,9 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
     @admin.display(description='금액')
     def formatted_amount(self, obj):
-        color = 'green' if obj.sort.id == 1 else 'red'  # 1=입금, 2=출금
-        sign = '+' if obj.sort.id == 1 else '-'
+        sort_id = obj.sort.id if obj.sort else None
+        color = 'green' if sort_id == 1 else 'red'  # 1=입금, 2=출금
+        sign = '+' if sort_id == 1 else '-'
         formatted_amount = f"{obj.amount:,}"
         return format_html('<span style="color: {};">{} {}원</span>', color, sign, formatted_amount)
 

@@ -453,10 +453,6 @@ class BankTransaction(models.Model):
     content = models.CharField(max_length=100, blank=True, default='', verbose_name='적요', help_text='거래 기록 사항')
     note = models.TextField(blank=True, default='', verbose_name='비고', help_text='추가 설명')
 
-    # 균형 여부
-    is_balanced = models.BooleanField(default=False, verbose_name='분개일치',
-                                      help_text='은행거래 금액과 회계분개 금액 합계가 일치하는지 여부')
-
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
@@ -479,24 +475,22 @@ class BankTransaction(models.Model):
             raise ValidationError({'deal_date': '미래 날짜로 거래를 생성할 수 없습니다.'})
 
     def save(self, *args, **kwargs):
-        """저장 전 유효성 검증 및 is_balanced 값 자동 계산"""
+        """저장 전 유효성 검증"""
         self.full_clean()
-
-        # 먼저 저장 (transaction_id가 필요하므로)
         super().save(*args, **kwargs)
 
-        # is_balanced 값 업데이트 (하위 클래스에서 validate_accounting_entries가 구현된 경우에만)
-        try:
-            validation_result = self.validate_accounting_entries()
-            new_is_balanced = validation_result['is_valid']
+    @property
+    def is_balanced(self):
+        """
+        회계 분개 금액 균형 여부 (실시간 계산)
 
-            # 값이 변경된 경우에만 업데이트
-            if self.is_balanced != new_is_balanced:
-                self.is_balanced = new_is_balanced
-                super().save(update_fields=['is_balanced'])
-        except NotImplementedError:
-            # 추상 모델에서는 validate_accounting_entries가 구현되지 않음
-            pass
+        은행 거래 금액과 회계 분개 금액 합계가 일치하는지 실시간으로 검증합니다.
+        """
+        try:
+            result = self.validate_accounting_entries()
+            return result['is_valid']
+        except (AttributeError, NotImplementedError):
+            return False
 
     @property
     def accounting_entries(self):

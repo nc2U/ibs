@@ -159,77 +159,6 @@ class AffiliateSerializer(serializers.ModelSerializer):
 
 
 # ============================================
-# Bank Transaction Serializers
-# ============================================
-
-class CompanyBankTransactionSerializer(serializers.ModelSerializer):
-    """본사 은행 거래 시리얼라이저"""
-    bank_account_name = serializers.CharField(source='bank_account.alias_name', read_only=True)
-    sort_name = serializers.CharField(source='sort.name', read_only=True)
-    creator_name = serializers.CharField(source='creator.username', read_only=True)
-    is_balanced = serializers.SerializerMethodField(read_only=True)
-    accounting_entries = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = CompanyBankTransaction
-        fields = ('pk', 'transaction_id', 'company', 'bank_account', 'bank_account_name',
-                  'deal_date', 'amount', 'sort', 'sort_name',
-                  'content', 'note', 'creator', 'creator_name', 'created_at', 'updated_at',
-                  'is_balanced', 'accounting_entries')
-        read_only_fields = ('transaction_id', 'created_at', 'updated_at')
-
-    @staticmethod
-    def get_is_balanced(obj):
-        """회계 분개 금액 균형 여부"""
-        result = obj.validate_accounting_entries()
-        return result['is_valid']
-
-    @staticmethod
-    def get_accounting_entries(obj):
-        """연관된 회계 분개 목록"""
-        # 뷰에서 수동으로 prefetch한 데이터가 있는지 확인
-        if hasattr(obj, 'prefetched_accounting_entries'):
-            entries = obj.prefetched_accounting_entries
-        else:
-            # prefetch되지 않은 경우를 위한 폴백(fallback)
-            entries = CompanyAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
-        return CompanyAccountingEntrySerializer(entries, many=True).data
-
-
-class ProjectBankTransactionSerializer(serializers.ModelSerializer):
-    """프로젝트 은행 거래 시리얼라이저"""
-    bank_account_name = serializers.CharField(source='bank_account.alias_name', read_only=True)
-    project_name = serializers.CharField(source='project.name', read_only=True)
-    sort_name = serializers.CharField(source='sort.name', read_only=True)
-    creator_name = serializers.CharField(source='creator.username', read_only=True)
-    is_balanced = serializers.SerializerMethodField(read_only=True)
-    accounting_entries = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = ProjectBankTransaction
-        fields = ('pk', 'transaction_id', 'project', 'project_name', 'bank_account',
-                  'bank_account_name', 'deal_date', 'amount', 'sort', 'sort_name',
-                  'content', 'note',
-                  'creator', 'creator_name', 'created_at', 'updated_at',
-                  'is_balanced', 'accounting_entries')
-        read_only_fields = ('transaction_id', 'created_at', 'updated_at')
-
-    @staticmethod
-    def get_is_balanced(obj):
-        """회계 분개 금액 균형 여부"""
-        result = obj.validate_accounting_entries()
-        return result['is_valid']
-
-    @staticmethod
-    def get_accounting_entries(obj):
-        """연관된 회계 분개 목록 (계약 결제 정보 포함)"""
-        entries = ProjectAccountingEntry.objects.filter(
-            transaction_id=obj.transaction_id
-        ).select_related('contract_payment')
-        return ProjectAccountingEntrySerializer(entries, many=True).data
-
-
-# ============================================
 # Accounting Entry Serializers
 # ============================================
 
@@ -320,6 +249,46 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
                 'installment_order': cp.installment_order_id,
             }
         return None
+
+
+# ============================================
+# Bank Transaction Serializers
+# ============================================
+
+class CompanyBankTransactionSerializer(serializers.ModelSerializer):
+    """본사 은행 거래 시리얼라이저"""
+    bank_account_name = serializers.CharField(source='bank_account.alias_name', read_only=True)
+    sort_name = serializers.CharField(source='sort.name', read_only=True)
+    creator_name = serializers.CharField(source='creator.username', read_only=True)
+    is_balanced = serializers.ReadOnlyField()
+    accounting_entries = CompanyAccountingEntrySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CompanyBankTransaction
+        fields = ('pk', 'transaction_id', 'company', 'bank_account', 'bank_account_name',
+                  'deal_date', 'amount', 'sort', 'sort_name',
+                  'content', 'note', 'creator', 'creator_name', 'created_at', 'updated_at',
+                  'is_balanced', 'accounting_entries')
+        read_only_fields = ('transaction_id', 'created_at', 'updated_at')
+
+
+class ProjectBankTransactionSerializer(serializers.ModelSerializer):
+    """프로젝트 은행 거래 시리얼라이저"""
+    bank_account_name = serializers.CharField(source='bank_account.alias_name', read_only=True)
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    sort_name = serializers.CharField(source='sort.name', read_only=True)
+    creator_name = serializers.CharField(source='creator.username', read_only=True)
+    is_balanced = serializers.ReadOnlyField()
+    accounting_entries = ProjectAccountingEntrySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ProjectBankTransaction
+        fields = ('pk', 'transaction_id', 'project', 'project_name', 'bank_account',
+                  'bank_account_name', 'deal_date', 'amount', 'sort', 'sort_name',
+                  'content', 'note',
+                  'creator', 'creator_name', 'created_at', 'updated_at',
+                  'is_balanced', 'accounting_entries')
+        read_only_fields = ('transaction_id', 'created_at', 'updated_at')
 
 
 # ============================================
