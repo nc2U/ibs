@@ -95,8 +95,8 @@ export interface Contract {
   contractprice: ContPrice | null
   contractor: ContractorInContract | null
   payments: Payment[]
-  total_paid: number
   last_paid_order: InstallmentOrder | null
+  total_paid: number
   order_group_desc: {
     pk: number
     sort: string

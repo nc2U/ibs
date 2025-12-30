@@ -10,9 +10,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary
+from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, get_contract_price
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
+from project.models import Project
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationFifty
 from ..permission import *
 from ..serializers.contract import *
@@ -145,7 +146,7 @@ class ContractViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='payment-summary')
     def payment_summary(self, request):
         """
-        Get payment summary for contracts with installment-wise totals.
+        Get a payment summary for contracts with installment-wise totals.
 
         Query Parameters:
             - project: Project ID (required)
@@ -169,7 +170,7 @@ class ContractViewSet(viewsets.ModelViewSet):
             order_group = OrderGroup.objects.get(id=order_group_id) if order_group_id else None
             unit_type = UnitType.objects.get(id=unit_type_id) if unit_type_id else None
 
-        except (Project.DoesNotExist, OrderGroup.DoesNotExist, UnitType.DoesNotExist) as e:
+        except (Project.DoesNotExist, OrderGroup.DoesNotExist, UnitType.DoesNotExist):
             return Response(
                 {'error': 'Invalid ID provided.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -201,7 +202,7 @@ class ContractViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='payment-plan')
     def payment_plan(self, request, pk=None):
         """
-        Get payment plan for a specific contract using get_contract_payment_plan.
+        Get a payment plan for a specific contract using get_contract_payment_plan.
 
         Returns:
             List of installment orders with calculated amounts for the contract.
@@ -239,7 +240,7 @@ class ContractViewSet(viewsets.ModelViewSet):
                 {'error': 'Contract not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        except Exception as e:
+        except Exception:
             return Response(
                 {'error': 'Failed to get payment plan due to an internal error.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

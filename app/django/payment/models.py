@@ -188,7 +188,7 @@ class ContractPayment(models.Model):
     # 계약 정보 (베이스 인스턴스에서는 선택사항)
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     contract = models.ForeignKey('contract.Contract', on_delete=models.CASCADE, verbose_name='계약',
-                                 null=True, blank=True, help_text='분양 계약 (베이스 인스턴스 생성 시 선택사항)')
+                                 null=True, blank=True, related_name='payments', help_text='분양 계약 (베이스 인스턴스 생성 시 선택사항)')
     installment_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.SET_NULL,
                                           null=True, blank=True, verbose_name='납부회차', help_text='분할 납부 회차 정보')
 
@@ -211,6 +211,10 @@ class ContractPayment(models.Model):
         indexes = [
             models.Index(fields=['installment_order', 'created_at']),
         ]
+
+    @property
+    def deal_date(self):
+        return self.related_transaction.deal_date
 
     @property
     def amount(self):

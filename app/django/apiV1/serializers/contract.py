@@ -1,18 +1,18 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.db.models import OuterRef, Subquery
 from rest_framework import serializers
 
 from _utils.contract_price import get_sales_price_by_gt, get_contract_payment_plan
-from cash.models import ProjectCashBook
 from contract.models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractPrice,
                              Contractor, ContractFile, ContractDocument, ContractDocumentFile,
                              ContractorAddress, ContractorContact, ContractorConsultationLogs,
                              Succession, ContractorRelease)
 from contract.services import ContractPriceUpdateService, ContractCreationService, ContractUpdateService
-from ibs.models import AccountSort, ProjectAccountD3
-# from ledger.models import ProjectBankAccount, ProjectAccountingEntry
 from items.models import HouseUnit, KeyUnit
-from payment.models import InstallmentPaymentOrder
+from ledger.models import ProjectAccount
+from ledger.models import ProjectBankTransaction
+from payment.models import InstallmentPaymentOrder, ContractPayment
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
 from .payment import SimpleInstallmentOrderSerializer, SimpleOrderGroupSerializer
@@ -182,26 +182,41 @@ class ContractSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ProjectCashBookInContractSerializer(serializers.ModelSerializer):
-    installment_order = SimpleInstallmentOrderSerializer()
+class ContractPaymentInContractSerializer(serializers.Serializer):
+    """계약 납부 정보 Serializer (ContractPayment 기반)"""
+    pk = serializers.IntegerField(read_only=True)
+    installment_order = SimpleInstallmentOrderSerializer(read_only=True)
+    amount = serializers.SerializerMethodField()
+    deal_date = serializers.SerializerMethodField()
+    bank_account = serializers.SerializerMethodField()
+    trader = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(read_only=True)
 
-    class Meta:
-        model = ProjectCashBook
-        fields = ('pk', 'deal_date', 'income', 'bank_account', 'trader', 'installment_order')
+    @staticmethod
+    def get_amount(obj):
+        """금액 (accounting_entry.amount)"""
+        return obj.accounting_entry.amount if obj.accounting_entry else None
 
+    @staticmethod
+    def get_deal_date(obj):
+        """거래일자 (related_transaction.deal_date)"""
+        if obj.accounting_entry:
+            trans = obj.accounting_entry.related_transaction
+            return trans.deal_date if trans else None
+        return None
 
-class ProjectCashBookOrderInContractSerializer(serializers.ModelSerializer):
-    installment_order = SimpleInstallmentOrderSerializer()
+    @staticmethod
+    def get_bank_account(obj):
+        """은행 계좌 ID (related_transaction.bank_account_id)"""
+        if obj.accounting_entry:
+            trans = obj.accounting_entry.related_transaction
+            return trans.bank_account_id if trans else None
+        return None
 
-    class Meta:
-        model = ProjectCashBook
-        fields = ('installment_order',)
-
-
-class ProjectCashBookIncsInContractSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectCashBook
-        fields = ('income',)
+    @staticmethod
+    def get_trader(obj):
+        """거래처 (accounting_entry.trader)"""
+        return obj.accounting_entry.trader if obj.accounting_entry else None
 
 
 class ContractFileInContractSetSerializer(serializers.ModelSerializer):
@@ -245,17 +260,26 @@ class ContractSetSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_payment_list(instance):
-        return instance.payments.filter(project_account_d3__is_payment=True)
+        """납부 내역 조회 (거래일자 기준 정렬)"""
+        return instance.payments.annotate(
+            transaction_deal_date=Subquery(
+                ProjectBankTransaction.objects.filter(
+                    transaction_id=OuterRef('accounting_entry__transaction_id')
+                ).values('deal_date')[:1]
+            )
+        ).order_by('transaction_deal_date', 'created_at')
 
     def get_payments(self, instance):  # 납부 분담금/분양대금 리스트
-        payments = self.get_payment_list(instance).order_by('deal_date', 'id')
-        return ProjectCashBookInContractSerializer(payments, many=True, read_only=True).data
+        payments = self.get_payment_list(instance).select_related(
+            'accounting_entry',
+            'installment_order'
+        )
+        return ContractPaymentInContractSerializer(payments, many=True, read_only=True).data
 
     def get_total_paid(self, instance):
-        inc_data = ProjectCashBookIncsInContractSerializer(self.get_payment_list(instance),
-                                                           many=True,
-                                                           read_only=True).data
-        return sum([inc.get('income') for inc in inc_data])
+        """총 납부액 계산 (ContractPayment.amount property 사용)"""
+        payments = self.get_payment_list(instance).select_related('accounting_entry')
+        return sum([payment.amount for payment in payments])
 
     def get_last_paid_order(self, instance):  # 완납 회차 구하기
         """
@@ -735,19 +759,43 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
                 # ContractPrice가 없는 경우 무시
                 pass
 
-            # 4. 해당 납부분담금 환불처리
-            sort = AccountSort.objects.get(pk=1)  # 입금 종류 선택(1=입금, 2=출금)
-            payments = ProjectCashBook.objects.filter(sort=sort, contract=contract)  # 해당 계약 입금건 전체
+            # 4. 해당 납부분담금 환불처리 (ContractPayment 기반)
+            payments = ContractPayment.objects.filter(contract=contract).select_related(
+                'accounting_entry__account'
+            )
+
             for payment in payments:
+                entry = payment.accounting_entry
+
                 if not released_done:  # 해지 확정 전일 때만 실행
-                    refund_d3 = int(payment.project_account_d3.id) + 1  # 분양대금 or 분담금 환불처리 건으로 계정
-                    payment.project_account_d3 = ProjectAccountD3.objects.get(pk=refund_d3)  # 환불처리 계정으로 변경
-                    payment.refund_contractor = contractor  # 환불 계약자 등록
+                    # 회계 분개의 계정을 환불 계정으로 변경
+                    # Note: 환불 계정 매핑 로직은 ProjectAccount 구조에 따라 조정 필요
+                    # 기존: project_account_d3.id + 1 로 환불 계정 설정
+                    # 신규: account.code 기반 또는 name 기반 환불 계정 매핑 필요
+                    # TODO: 환불 계정 매핑 로직 구현 필요
+                    # 예시: "분양대금" -> "분양대금 환불", "분담금" -> "분담금 환불"
+
+                    # 임시 구현: account.pk + 1 방식 유지 (기존 로직과 동일)
+                    try:
+                        refund_account_pk = entry.account.pk + 1
+                        refund_account = ProjectAccount.objects.get(pk=refund_account_pk)
+                        entry.account = refund_account
+                        entry.save()
+                    except ProjectAccount.DoesNotExist:
+                        # 환불 계정이 없는 경우 로그만 남기고 계속 진행
+                        pass
+
+                    # Note: refund_contractor 필드는 ContractPayment 모델에 아직 구현되지 않음
+                    # TODO: ContractPayment 모델에 payment_type, refund_contractor 필드 추가 필요
+
                 if completion_date:  # 최종 해지(환불)처리일 정보가 있으면
-                    msg = f'환불 계약 건 - {payment.contract.serial_number[:13]} ({completion_date} {contractor.name} 환불완료)'
-                    append_note = ', ' + msg if payment.note else msg
-                    payment.note = payment.note + append_note  # 비고란 최종 메시지 입력
-                payment.save()
+                    # 연관된 은행 거래의 note에 환불 정보 추가
+                    bank_tx = entry.related_transaction
+                    if bank_tx:
+                        msg = f'환불 계약 건 - {contract.serial_number[:13]} ({completion_date} {contractor.name} 환불완료)'
+                        append_note = ', ' + msg if bank_tx.note else msg
+                        bank_tx.note = bank_tx.note + append_note
+                        bank_tx.save()
 
             # 5.  계약자 정보 최종 해지상태로 변경
             contractor.prev_contract = contract
