@@ -180,11 +180,11 @@ export interface ContractorContact {
 
 export interface Payment {
   pk: number
+  installment_order: InstallmentOrder
+  amount: number
   deal_date: string
-  income: number
   bank_account: number
   trader: string
-  installment_order: InstallmentOrder
 }
 
 interface InstallmentOrder {

@@ -3,7 +3,6 @@ import { type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import type { Contract } from '@/store/types/contract'
 import { useDownload } from '@/utils/useDownload.ts'
-import { CCard } from '@coreui/vue'
 
 defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -96,7 +95,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
               <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
               <CTableDataCell>{{ payment.installment_order?.__str__ }}</CTableDataCell>
               <CTableDataCell class="text-end">
-                {{ numFormat(payment.income) }}
+                {{ numFormat(payment.amount) }}
               </CTableDataCell>
             </CTableRow>
           </CTableBody>

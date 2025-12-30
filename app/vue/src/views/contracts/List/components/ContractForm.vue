@@ -102,7 +102,7 @@ const form = reactive({
   // proCash
   payment: null as number | null,
   deal_date: null as string | null, // 15
-  income: null as number | null, // 16
+  amount: null as number | null, // 16
   bank_account: null as number | null, // 17
   trader: '', // 18
   installment_order: null as number | null, // 19
@@ -170,7 +170,7 @@ const formsCheck = computed(() => {
     const o = form.other_phone === contact.value?.other_phone
     const p = form.email === contact.value?.email
     const q = !form.deal_date
-    const r = !form.income
+    const r = !form.amount
     const s = !form.bank_account
     const t = !form.trader
     const u = !form.installment_order
@@ -202,7 +202,7 @@ const payUpdate = (payment: Payment) => {
   if (allowedPeriod(payment.deal_date)) {
     form.payment = payment.pk
     form.deal_date = payment.deal_date
-    form.income = payment.income
+    form.amount = payment.amount
     form.bank_account = payment.bank_account
     form.trader = payment.trader
     form.installment_order = payment.installment_order.pk
@@ -217,7 +217,7 @@ const payUpdate = (payment: Payment) => {
 const payReset = () => {
   form.payment = null
   form.deal_date = null
-  form.income = null
+  form.amount = null
   form.bank_account = null
   form.trader = ''
   form.installment_order = null
@@ -301,7 +301,7 @@ const formDataReset = () => {
 
   form.payment = null
   form.deal_date = null
-  form.income = null
+  form.amount = null
   form.bank_account = null
   form.trader = ''
   form.installment_order = null
@@ -823,7 +823,7 @@ onBeforeRouteLeave(() => formDataReset())
                           params: { contractId: contract.pk },
                         }"
                       >
-                        {{ numFormat(payment.income) }}
+                        {{ numFormat(payment.amount) }}
                       </router-link>
                     </CTableDataCell>
                     <CTableDataCell>
@@ -865,7 +865,7 @@ onBeforeRouteLeave(() => formDataReset())
             </CCol>
             <CCol sm="12" md="6" lg="2" class="mb-3">
               <CFormInput
-                v-model.number="form.income"
+                v-model.number="form.amount"
                 type="number"
                 min="0"
                 placeholder="입금액"
