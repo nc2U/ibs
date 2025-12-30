@@ -157,8 +157,8 @@ export function useExcelUpload() {
 
         // Try to match contract/affiliate name if provided
         if (contractOrAffiliateName && contractOrAffiliateOptions) {
-          const matchingContractOrAffiliate = contractOrAffiliateOptions.find(
-            opt => opt.label?.split('(')[0] ?? '' === contractOrAffiliateName,
+          const matchingContractOrAffiliate = contractOrAffiliateOptions.find(opt =>
+            opt.label.includes(contractOrAffiliateName),
           )
           if (matchingContractOrAffiliate) {
             if (systemType === 'project') {
