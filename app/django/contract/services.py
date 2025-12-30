@@ -1,13 +1,21 @@
 """
 Contract 관련 비즈니스 로직 서비스
 """
+import os
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from rest_framework import serializers
 
 from _utils.contract_price import get_contract_price
-from contract.models import Contract, ContractPrice, OrderGroup
-from items.models import HouseUnit
-from payment.models import SalesPriceByGT
+from cash.models import ProjectCashBook
+from ledger.models import ProjectBankAccount, ProjectAccountingEntry
+from contract.models import (Contract, ContractPrice, OrderGroup, ContractFile,
+                             Contractor, ContractorAddress, ContractorContact)
+from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
+from items.models import KeyUnit, HouseUnit
+from payment.models import InstallmentPaymentOrder, SalesPriceByGT
+from project.models import Project
 
 
 class ContractPriceBulkUpdateService:
@@ -298,3 +306,447 @@ class ContractPriceUpdateService:
                 **defaults
             )
             return new_contract_price, True
+
+
+# 새로운 Contract 관리 서비스들
+class UnitAssignmentService:
+    """유닛 할당/재할당 관리 서비스"""
+
+    @staticmethod
+    def assign_unit(contract, unit_pk, house_unit_pk=None):
+        """
+        계약에 유닛 할당
+
+        Args:
+            contract: Contract 인스턴스
+            unit_pk: KeyUnit PK
+            house_unit_pk: HouseUnit PK (선택사항)
+
+        Returns:
+            HouseUnit 인스턴스 또는 None
+        """
+
+        key_unit = KeyUnit.objects.get(pk=unit_pk)
+        contract.key_unit = key_unit
+        contract.save()
+
+        if house_unit_pk:
+            house_unit = HouseUnit.objects.get(pk=house_unit_pk)
+            house_unit.key_unit = key_unit
+            house_unit.save()
+            return house_unit
+        return None
+
+    @staticmethod
+    def reassign_unit(contract, new_unit_pk, new_house_unit_pk=None):
+        """
+        계약의 유닛 재할당 (기존 연결 해제 후 새 연결)
+
+        Args:
+            contract: Contract 인스턴스
+            new_unit_pk: 새 KeyUnit PK
+            new_house_unit_pk: 새 HouseUnit PK (선택사항)
+
+        Returns:
+            dict: {'old_house_unit': HouseUnit|None, 'new_house_unit': HouseUnit|None}
+        """
+
+        old_house_unit = None
+        new_house_unit = None
+
+        # 기존 연결 해제
+        if contract.key_unit:
+            try:
+                old_house_unit = contract.key_unit.houseunit
+                if old_house_unit and (not new_house_unit_pk or old_house_unit.pk != new_house_unit_pk):
+                    old_house_unit.key_unit = None
+                    old_house_unit.save()
+            except ObjectDoesNotExist:
+                pass
+
+        # 새 연결 설정
+        new_key_unit = KeyUnit.objects.get(pk=new_unit_pk)
+        contract.key_unit = new_key_unit
+        contract.save()
+
+        if new_house_unit_pk:
+            new_house_unit = HouseUnit.objects.get(pk=new_house_unit_pk)
+            new_house_unit.key_unit = new_key_unit
+            new_house_unit.save()
+
+        return {
+            'old_house_unit': old_house_unit,
+            'new_house_unit': new_house_unit
+        }
+
+
+class ContractorRegistrationService:
+    """계약자 등록/수정 관리 서비스"""
+
+    @staticmethod
+    def register_contractor(contract, data):
+        """
+        새 계약자 등록 (계약 생성 시)
+
+        Args:
+            contract: Contract 인스턴스
+            data: 계약자 정보 딕셔너리
+
+        Returns:
+            Contractor 인스턴스
+        """
+
+        contractor = Contractor.objects.create(
+            contract=contract,
+            name=data.get('name'),
+            birth_date=data.get('birth_date') or None,
+            gender=data.get('gender'),
+            qualification=data.get('qualification') or '1',
+            status=data.get('status'),
+            reservation_date=data.get('reservation_date') or None,
+            contract_date=data.get('contract_date') or None,
+            note=data.get('note', '')
+        )
+
+        # 계약자 연락처 등록
+        ContractorContact.objects.create(
+            contractor=contractor,
+            cell_phone=data.get('cell_phone', ''),
+            home_phone=data.get('home_phone', ''),
+            other_phone=data.get('other_phone', ''),
+            email=data.get('email', '')
+        )
+
+        # 계약자 주소 등록 (계약인 경우에만)
+        if contractor.status == '2' and ContractorRegistrationService._has_address_data(data):
+            ContractorAddress.objects.create(
+                contractor=contractor,
+                id_zipcode=data.get('id_zipcode', ''),
+                id_address1=data.get('id_address1', ''),
+                id_address2=data.get('id_address2', ''),
+                id_address3=data.get('id_address3', ''),
+                dm_zipcode=data.get('dm_zipcode', ''),
+                dm_address1=data.get('dm_address1', ''),
+                dm_address2=data.get('dm_address2', ''),
+                dm_address3=data.get('dm_address3', '')
+            )
+
+        return contractor
+
+    @staticmethod
+    def update_contractor(contractor, data):
+        """
+        기존 계약자 정보 수정
+
+        Args:
+            contractor: Contractor 인스턴스
+            data: 수정할 계약자 정보 딕셔너리
+        """
+
+        # 계약자 기본 정보 수정
+        contractor.name = data.get('name')
+        contractor.birth_date = data.get('birth_date') or contractor.birth_date
+        contractor.gender = data.get('gender')
+        contractor.qualification = data.get('qualification') or '1'
+        contractor.status = data.get('status')
+        contractor.reservation_date = data.get('reservation_date') or contractor.reservation_date
+        contractor.contract_date = data.get('contract_date') or contractor.contract_date
+        contractor.note = data.get('note', '')
+        contractor.save()
+
+        # 연락처 정보 수정
+        contact = ContractorContact.objects.get(contractor=contractor)
+        contact.cell_phone = data.get('cell_phone', '')
+        contact.home_phone = data.get('home_phone', '')
+        contact.other_phone = data.get('other_phone', '')
+        contact.email = data.get('email', '')
+        contact.save()
+
+        # 주소 정보 처리 (청약→계약 전환 시에만 새로 생성)
+        if contractor.status == '2' and ContractorRegistrationService._has_address_data(data):
+            try:
+                ContractorAddress.objects.get(contractor=contractor)
+            except ContractorAddress.DoesNotExist:
+                ContractorAddress.objects.create(
+                    contractor=contractor,
+                    id_zipcode=data.get('id_zipcode', ''),
+                    id_address1=data.get('id_address1', ''),
+                    id_address2=data.get('id_address2', ''),
+                    id_address3=data.get('id_address3', ''),
+                    dm_zipcode=data.get('dm_zipcode', ''),
+                    dm_address1=data.get('dm_address1', ''),
+                    dm_address2=data.get('dm_address2', ''),
+                    dm_address3=data.get('dm_address3', '')
+                )
+
+    @staticmethod
+    def _has_address_data(data):
+        """주소 정보가 있는지 확인"""
+        address_fields = [
+            'id_zipcode', 'id_address1', 'id_address2', 'id_address3',
+            'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3'
+        ]
+        return any(data.get(field) for field in address_fields)
+
+
+class FileManagementService:
+    """계약 파일 관리 서비스"""
+
+    @staticmethod
+    def handle_new_file(contractor, file, user):
+        """새 파일 업로드 처리"""
+        if file:
+            ContractFile.objects.create(
+                contractor=contractor,
+                file=file,
+                creator=user
+            )
+
+    @staticmethod
+    def handle_file_operations(data, contractor, user):
+        """파일 수정/삭제/생성 일괄 처리"""
+
+        # 새 파일 업로드
+        new_file = data.get('newFile')
+        if new_file:
+            FileManagementService.handle_new_file(contractor, new_file, user)
+
+        # 파일 수정
+        edit_file_pk = data.get('editFile')
+        change_file = data.get('cngFile')
+        if edit_file_pk and change_file:
+            try:
+                file_to_edit = ContractFile.objects.get(pk=edit_file_pk)
+                old_file_path = file_to_edit.file.path
+                if os.path.isfile(old_file_path):
+                    os.remove(old_file_path)
+                file_to_edit.file = change_file
+                file_to_edit.save()
+            except ContractFile.DoesNotExist:
+                raise serializers.ValidationError(f"File with ID {edit_file_pk} does not exist.")
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error while replacing file: {str(e)}')
+                raise serializers.ValidationError('An error occurred while replacing the file.')
+
+        # 파일 삭제
+        del_file_pk = data.get('delFile')
+        if del_file_pk:
+            try:
+                file_to_delete = ContractFile.objects.get(pk=del_file_pk)
+                file_to_delete.delete()
+            except ContractFile.DoesNotExist:
+                raise serializers.ValidationError(f"File with ID {del_file_pk} does not exist.")
+
+
+class PaymentProcessingService:
+    """계약 관련 납부 처리 서비스"""
+
+    @staticmethod
+    def process_initial_payment(contract, data):
+        """초기 계약금 납부 처리"""
+        if not data.get('deal_date'):
+            return
+
+        project = Project.objects.get(pk=data.get('project'))
+        contractor = Contractor.objects.get(contract=contract)
+        order_group_sort = int(data.get('order_group_sort'))
+
+        # 계정 설정
+        account_d2 = ProjectAccountD2.objects.get(pk=order_group_sort)
+        acc_d3 = 1 if order_group_sort == 1 else 4
+        account_d3 = ProjectAccountD3.objects.get(pk=acc_d3)
+
+        # 납부 정보
+        installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
+        bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
+
+        ProjectCashBook.objects.create(
+            project=project,
+            sort=AccountSort.objects.get(pk=1),
+            project_account_d2=account_d2,
+            project_account_d3=account_d3,
+            contract=contract,
+            installment_order=installment_order,
+            content=f'{contractor.name}[{data.get("serial_number")}] 대금납부',
+            trader=data.get('trader'),
+            bank_account=bank_account,
+            income=data.get('income'),
+            deal_date=data.get('deal_date')
+        )
+
+    @staticmethod
+    def process_payment_update(contract, data):
+        """기존 납부 정보 수정 또는 새 납부 생성"""
+        if not data.get('deal_date'):
+            return
+
+        payment_id = data.get('payment')
+        project = Project.objects.get(pk=data.get('project'))
+        contractor = Contractor.objects.get(contract=contract)
+        order_group_sort = int(data.get('order_group_sort'))
+
+        # 계정 설정
+        account_d2 = ProjectAccountD2.objects.get(pk=order_group_sort)
+        acc_d3 = 1 if order_group_sort == 1 else 4
+        account_d3 = ProjectAccountD3.objects.get(pk=acc_d3)
+
+        # 납부 정보
+        installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
+        bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
+
+        if payment_id:
+            # 기존 납부 수정
+            payment = ProjectCashBook.objects.get(pk=payment_id)
+            payment.trader = data.get('trader')
+            payment.bank_account = bank_account
+            payment.income = data.get('income')
+            payment.deal_date = data.get('deal_date')
+            payment.save()
+        else:
+            # 새 납부 생성
+            ProjectCashBook.objects.create(
+                project=project,
+                sort=AccountSort.objects.get(pk=1),
+                project_account_d2=account_d2,
+                project_account_d3=account_d3,
+                contract=contract,
+                installment_order=installment_order,
+                content=f'{contractor.name}[{data.get("serial_number")}] 대금납부',
+                trader=data.get('trader'),
+                bank_account=bank_account,
+                income=data.get('income'),
+                deal_date=data.get('deal_date')
+            )
+
+
+# 메인 Contract 관리 서비스
+class ContractCreationService:
+    """계약 생성 전체 프로세스 관리 서비스"""
+
+    def __init__(self):
+        self.unit_service = UnitAssignmentService()
+        self.price_service = ContractPriceUpdateService()
+        self.contractor_service = ContractorRegistrationService()
+        self.file_service = FileManagementService()
+        self.payment_service = PaymentProcessingService()
+
+    @transaction.atomic
+    def create_contract(self, data, user):
+        """
+        계약 전체 생성 프로세스 실행
+
+        Args:
+            data: 계약 생성 데이터 딕셔너리
+            user: 요청 사용자
+
+        Returns:
+            Contract 인스턴스
+        """
+        # 1. 기본 계약 생성
+        contract = self._create_base_contract(data)
+
+        # 2. 유닛 할당
+        house_unit = self.unit_service.assign_unit(
+            contract,
+            data.get('key_unit'),
+            data.get('houseunit')
+        )
+
+        # 3. 계약 가격 설정
+        self.price_service.update_single_contract_price(contract)
+
+        # 4. 계약자 등록
+        contractor = self.contractor_service.register_contractor(contract, data)
+
+        # 5. 파일 처리
+        self.file_service.handle_new_file(contractor, data.get('newFile'), user)
+
+        # 6. 초기 납부 처리
+        self.payment_service.process_initial_payment(contract, data)
+
+        return contract
+
+    @staticmethod
+    def _create_base_contract(data):
+        """기본 계약 객체 생성"""
+        return Contract.objects.create(
+            project_id=data.get('project'),
+            order_group_id=data.get('order_group'),
+            unit_type_id=data.get('unit_type'),
+            serial_number=data.get('serial_number'),
+            activation=data.get('activation', True)
+        )
+
+
+class ContractUpdateService:
+    """계약 수정 전체 프로세스 관리 서비스"""
+
+    def __init__(self):
+        self.unit_service = UnitAssignmentService()
+        self.price_service = ContractPriceUpdateService()
+        self.contractor_service = ContractorRegistrationService()
+        self.file_service = FileManagementService()
+        self.payment_service = PaymentProcessingService()
+
+    @transaction.atomic
+    def update_contract(self, instance, data, user):
+        """
+        계약 전체 수정 프로세스 실행
+
+        Args:
+            instance: 수정할 Contract 인스턴스
+            data: 수정 데이터 딕셔너리
+            user: 요청 사용자
+
+        Returns:
+            Contract 인스턴스
+        """
+        # 1. 기본 계약 정보 업데이트
+        instance.order_group_id = data.get('order_group', instance.order_group_id)
+        instance.unit_type_id = data.get('unit_type', instance.unit_type_id)
+        instance.updator = user
+        instance.save()
+
+        # 2. 유닛 재할당 (필요한 경우)
+        current_unit_pk = instance.key_unit.pk if instance.key_unit else None
+        new_unit_pk = data.get('key_unit')
+
+        if current_unit_pk != new_unit_pk:
+            self.unit_service.reassign_unit(
+                instance,
+                new_unit_pk,
+                data.get('houseunit')
+            )
+        elif data.get('houseunit'):
+            # 유닛은 같지만 동호수만 변경된 경우
+            try:
+                current_house_unit = instance.key_unit.houseunit
+                if not current_house_unit or current_house_unit.pk != data.get('houseunit'):
+                    self.unit_service.reassign_unit(
+                        instance,
+                        new_unit_pk,
+                        data.get('houseunit')
+                    )
+            except ObjectDoesNotExist:
+                self.unit_service.reassign_unit(
+                    instance,
+                    new_unit_pk,
+                    data.get('houseunit')
+                )
+
+        # 3. 계약 가격 재계산
+        self.price_service.update_single_contract_price(instance)
+
+        # 4. 계약자 정보 수정
+        contractor = instance.contractor
+        self.contractor_service.update_contractor(contractor, data)
+
+        # 5. 파일 관리
+        self.file_service.handle_file_operations(data, contractor, user)
+
+        # 6. 납부 정보 처리
+        self.payment_service.process_payment_update(instance, data)
+
+        return instance
