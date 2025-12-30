@@ -225,17 +225,66 @@ class CompanyAccountingEntryResource(BaseTransactionResource):
 
 
 class ProjectAccountingEntryResource(BaseTransactionResource):
-    """Resource for ProjectAccountingEntry with bulk operations"""
+    """Resource for ProjectAccountingEntry with bulk operations and ContractPayment sync"""
 
-    def after_save_instance(self, instance, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._imported_payment_entries = []
+
+    def after_save_instance(self, instance, using_transactions, dry_run, **kwargs):
         """
-        Call the synchronization logic after each instance is saved during import.
-        Safe hook for django-import-export (handles positional & keyword calls)
+        Track ALL entries during import for later batch processing.
+        개별 저장 시에는 ContractPayment 생성을 skip하고 나중에 일괄 처리.
+
+        모든 entry를 추적하는 이유:
+        - 신규: is_payment=True면 ContractPayment 생성 필요
+        - 업데이트: is_payment 변경 시 ContractPayment 동기화 필요
+          - True → False: is_payment_mismatch 설정
+          - False → True: ContractPayment 생성
         """
-        dry_run = kwargs.get('dry_run', False)
         if dry_run:
             return
-        _sync_contract_payment_for_entry(instance)
+
+        # 모든 entry를 추적 (is_payment 여부 무관)
+        # _sync_contract_payment_for_entry가 알아서 필요한 경우만 처리
+        if instance.pk:
+            self._imported_payment_entries.append(instance.pk)
+
+    def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
+        """
+        Import 완료 후 모든 payment entries에 대해 ContractPayment를 일괄 생성.
+        이렇게 하면 bulk import 성능을 유지하면서 데이터 일관성도 보장됨.
+        """
+        # Bulk import flag 해제
+        set_bulk_import_active(False)
+
+        if dry_run:
+            return super().after_import(dataset, result, using_transactions, dry_run, **kwargs)
+
+        # Import된 payment entries에 대해 ContractPayment 일괄 생성
+        if self._imported_payment_entries:
+            from django.db import transaction
+            print(f"🔧 ContractPayment 동기화 시작: {len(self._imported_payment_entries)}건")
+
+            with transaction.atomic():
+                entries = ProjectAccountingEntry.objects.filter(
+                    pk__in=self._imported_payment_entries
+                ).select_related('account', 'contract', 'project')
+
+                synced_count = 0
+                for entry in entries:
+                    _sync_contract_payment_for_entry(entry)
+                    synced_count += 1
+
+                    if synced_count % 1000 == 0:
+                        print(f"  진행중... {synced_count}/{len(self._imported_payment_entries)}")
+
+                print(f"✅ ContractPayment 동기화 완료: {synced_count}건")
+
+            # 추적 리스트 초기화
+            self._imported_payment_entries = []
+
+        return super().after_import(dataset, result, using_transactions, dry_run, **kwargs)
 
     class Meta:
         model = ProjectAccountingEntry
