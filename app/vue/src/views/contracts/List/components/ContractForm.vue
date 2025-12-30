@@ -10,7 +10,7 @@ import {
   ref,
   watch,
 } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave } from 'vue-router'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { useAccount } from '@/store/pinia/account'
@@ -46,7 +46,6 @@ const refPostCode = ref()
 const address21 = ref()
 const address22 = ref()
 const refChangeAddr = ref()
-const refDelModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
@@ -99,7 +98,7 @@ const form = reactive({
   other_phone: '', // 13
   email: '', // 14
 
-  // proCash
+  // proLedger
   payment: null as number | null,
   deal_date: null as string | null, // 15
   amount: null as number | null, // 16
@@ -266,11 +265,6 @@ const typeSelect = () => {
       await fetchHouseUnitList({ project: props.project as number, ...payload })
     }
   })
-}
-
-const deleteContract = () => {
-  if (useAccount().superAuth) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
 }
 
 const remove_sup_cDate = () => (form.is_sup_cont ? (form.sup_cont_date = null) : null)
@@ -1092,14 +1086,6 @@ onBeforeRouteLeave(() => formDataReset())
       />
     </template>
   </FormModal>
-
-  <ConfirmModal ref="refDelModal">
-    <template #header>{{ contLabel }} 정보 삭제</template>
-    <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
-    <template #footer>
-      <v-btn color="warning" size="small" disabled>삭제</v-btn>
-    </template>
-  </ConfirmModal>
 
   <ConfirmModal ref="refConfirmModal">
     <template #header> {{ contLabel }} 정보 등록</template>
