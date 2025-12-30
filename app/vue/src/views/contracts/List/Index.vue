@@ -3,9 +3,9 @@ import { computed, nextTick, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
-import type { Project } from '@/store/types/project'
-import { useProCash } from '@/store/pinia/proCash.ts'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useProjectData } from '@/store/pinia/project_data'
+import type { Project } from '@/store/types/project'
 import { type ContFilter, type UnitFilter, useContract } from '@/store/pinia/contract'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -53,7 +53,7 @@ const excelUrl = computed(() => {
   return `/excel/contracts/?project=${pk}${filteredStr.value}&col=${items}`
 })
 
-const title = computed(() => curr_status.value === '1' ? '청약현황':'계약현황')
+const title = computed(() => (curr_status.value === '1' ? '청약현황' : '계약현황'))
 
 const projStore = useProject()
 const project = computed(() => projStore.project as Project)
@@ -77,8 +77,8 @@ const proDataStore = useProjectData()
 const fetchTypeList = (projId: number) => proDataStore.fetchTypeList(projId)
 const fetchBuildingList = (projId: number) => proDataStore.fetchBuildingList(projId)
 
-const proCashStore = useProCash()
-const fetchAllProBankAccList = (projId: number) => proCashStore.fetchAllProBankAccList(projId)
+const proLedgerStore = useProLedger()
+const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
 
 const pageSelect = (page: number) => {
   // 페이지 변경 시 query string 정리
@@ -205,7 +205,7 @@ const dataReset = () => {
   contStore.keyUnitList = []
   contStore.houseUnitList = []
   proDataStore.buildingList = []
-  proCashStore.allProBankAccountList = []
+  proLedgerStore.allProBankList = []
 }
 
 const projSelect = async (target: number | null, skipClearQuery = false) => {
@@ -324,7 +324,13 @@ onBeforeMount(async () => {
           @subscription-created="handleSubscription"
           @contract-converted="handleContract"
         />
-        <TableTitleRow :title="title" excel :url="excelUrl" :filename="`${title}.xlsx`" :disabled="!project">
+        <TableTitleRow
+          :title="title"
+          excel
+          :url="excelUrl"
+          :filename="`${title}.xlsx`"
+          :disabled="!project"
+        >
           <v-btn
             size="small"
             rounded="0"

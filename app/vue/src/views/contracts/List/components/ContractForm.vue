@@ -11,17 +11,17 @@ import {
   watch,
 } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { btnLight } from '@/utils/cssMixins.ts'
+import { write_contract } from '@/utils/pageAuth'
 import { useAccount } from '@/store/pinia/account'
-import { type UnitFilter, useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
-import { useProCash } from '@/store/pinia/proCash'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
+import { type UnitFilter, useContract } from '@/store/pinia/contract'
 import { type PayOrder } from '@/store/types/payment'
 import type { Contract, ContractFile, Payment } from '@/store/types/contract'
 import { isValidate } from '@/utils/helper'
 import { diffDate, numFormat } from '@/utils/baseMixins'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { write_contract } from '@/utils/pageAuth'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -31,7 +31,6 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AddressForm from '@/views/contracts/List/components/AddressForm.vue'
-import { CForm } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -42,8 +41,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-submit', 'close', 'subscription-created', 'contract-converted'])
-
-const router = useRouter()
 
 const refPostCode = ref()
 const address21 = ref()
@@ -131,8 +128,8 @@ const getHouseUnits = computed(() => contStore.getHouseUnits)
 const projectDataStore = useProjectData()
 const getTypes = computed(() => projectDataStore.getTypes)
 
-const proCashStore = useProCash()
-const allProBankAccountList = computed(() => proCashStore.allProBankAccountList)
+const proLedgerStore = useProLedger()
+const allProBankList = computed(() => proLedgerStore.allProBankList)
 
 const paymentStore = usePayment()
 const payOrderList = computed(() => paymentStore.payOrderList)
@@ -831,7 +828,7 @@ onBeforeRouteLeave(() => formDataReset())
                     </CTableDataCell>
                     <CTableDataCell>
                       {{
-                        allProBankAccountList
+                        allProBankList
                           .filter(b => b.pk === payment.bank_account)
                           .map(b => b.alias_name)[0]
                       }}
@@ -884,7 +881,7 @@ onBeforeRouteLeave(() => formDataReset())
                 :disabled="noStatus"
               >
                 <option value="">납부계좌 선택</option>
-                <option v-for="pb in allProBankAccountList" :key="pb.pk as number" :value="pb.pk">
+                <option v-for="pb in allProBankList" :key="pb.pk as number" :value="pb.pk">
                   {{ pb.alias_name }}
                 </option>
               </CFormSelect>

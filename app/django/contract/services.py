@@ -8,13 +8,11 @@ from django.db import transaction
 from rest_framework import serializers
 
 from _utils.contract_price import get_contract_price
-from cash.models import ProjectCashBook
-from ledger.models import ProjectAccount, ProjectBankAccount, ProjectAccountingEntry
+from ledger.models import ProjectAccount, ProjectBankAccount, ProjectBankTransaction, ProjectAccountingEntry
 from contract.models import (Contract, ContractPrice, OrderGroup, ContractFile,
                              Contractor, ContractorAddress, ContractorContact)
-from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 from items.models import KeyUnit, HouseUnit
-from payment.models import InstallmentPaymentOrder, SalesPriceByGT
+from payment.models import InstallmentPaymentOrder, SalesPriceByGT, ContractPayment
 from project.models import Project
 
 
@@ -541,88 +539,131 @@ class FileManagementService:
 
 
 class PaymentProcessingService:
-    """계약 관련 납부 처리 서비스"""
+    """
+    계약 관련 납부 처리 서비스
+
+    ProjectCompositeTransactionSerializer 패턴 기반으로 리팩토링:
+    - ProjectBankTransaction 생성 (은행 거래)
+    - ProjectAccountingEntry 생성 (회계 분개)
+    - ContractPayment는 ProjectAccountingEntry.save()에서 자동 생성
+    """
 
     @staticmethod
+    @transaction.atomic
     def process_initial_payment(contract, data):
-        """초기 계약금 납부 처리"""
+        """
+        초기 계약금 납부 처리
+
+        Args:
+            contract: Contract 인스턴스
+            data: 납부 정보 딕셔너리
+                - deal_date: 거래일
+                - income: 입금액
+                - project: 프로젝트 PK
+                - order_group_sort: 차수 sort (1 또는 2)
+                - installment_order: 납부회차 PK
+                - bank_account: 은행계좌 PK
+                - trader: 거래처 (선택)
+                - serial_number: 계약번호
+        """
         if not data.get('deal_date'):
             return
 
+        # 기본 정보 조회
         project = Project.objects.get(pk=data.get('project'))
         contractor = Contractor.objects.get(contract=contract)
         order_group_sort = int(data.get('order_group_sort'))
 
-        # 계정 설정
-        account_d2 = ProjectAccountD2.objects.get(pk=order_group_sort)
-        acc_d3 = 1 if order_group_sort == 1 else 4
-        account_d3 = ProjectAccountD3.objects.get(pk=acc_d3)
-
+        # is_payment=True인 계정 선택 (order_group_sort 에 따라 출자금 / 분양대금)
         payment_accounts = ProjectAccount.objects.filter(is_payment=True)
         account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
-        # ing ...
 
         # 납부 정보
         installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
         bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
 
-        ProjectCashBook.objects.create(
+        # 1. 은행 거래 생성 (ProjectCompositeTransactionSerializer 패턴)
+        bank_tx = ProjectBankTransaction.objects.create(
             project=project,
-            sort=AccountSort.objects.get(pk=1),
-            project_account_d2=account_d2,
-            project_account_d3=account_d3,
-            contract=contract,
-            installment_order=installment_order,
-            content=f'{contractor.name}[{data.get("serial_number")}] 대금납부',
-            trader=data.get('trader'),
             bank_account=bank_account,
-            income=data.get('income'),
-            deal_date=data.get('deal_date')
+            deal_date=data.get('deal_date'),
+            amount=data.get('income'),
+            sort_id=1,  # 입금
+            content=f'{contractor.name}[{data.get("serial_number")}] 대금납부',
+            note='',
+        )
+
+        # 2. 회계 분개 생성 (ContractPayment는 자동으로 생성됨)
+        ProjectAccountingEntry.objects.create(
+            transaction_id=bank_tx.transaction_id,
+            project=project,
+            account=account,
+            contract=contract,
+            contractor=contractor,
+            installment_order=installment_order,
+            amount=data.get('income'),
+            trader=data.get('trader', ''),
+            evidence_type=None,  # 입금은 지출증빙 불필요
         )
 
     @staticmethod
+    @transaction.atomic
     def process_payment_update(contract, data):
-        """기존 납부 정보 수정 또는 새 납부 생성"""
+        """
+        기존 납부 정보 수정 또는 새 납부 생성
+
+        Args:
+            contract: Contract 인스턴스
+            data: 납부 정보 딕셔너리
+                - payment: ContractPayment PK (기존 납부 수정 시)
+                - 기타 필드는 process_initial_payment와 동일
+        """
         if not data.get('deal_date'):
             return
 
         payment_id = data.get('payment')
-        project = Project.objects.get(pk=data.get('project'))
-        contractor = Contractor.objects.get(contract=contract)
-        order_group_sort = int(data.get('order_group_sort'))
-
-        # 계정 설정
-        account_d2 = ProjectAccountD2.objects.get(pk=order_group_sort)
-        acc_d3 = 1 if order_group_sort == 1 else 4
-        account_d3 = ProjectAccountD3.objects.get(pk=acc_d3)
-
-        # 납부 정보
-        installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
-        bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
 
         if payment_id:
             # 기존 납부 수정
-            payment = ProjectCashBook.objects.get(pk=payment_id)
-            payment.trader = data.get('trader')
-            payment.bank_account = bank_account
-            payment.income = data.get('income')
-            payment.deal_date = data.get('deal_date')
-            payment.save()
+            try:
+                # ContractPayment를 통해 ProjectAccountingEntry 찾기
+                contract_payment = ContractPayment.objects.get(pk=payment_id)
+                accounting_entry = contract_payment.accounting_entry
+                bank_tx = accounting_entry.related_transaction
+
+                # 기본 정보 조회
+                project = Project.objects.get(pk=data.get('project'))
+                contractor = Contractor.objects.get(contract=contract)
+                order_group_sort = int(data.get('order_group_sort'))
+
+                # 계정 선택
+                payment_accounts = ProjectAccount.objects.filter(is_payment=True)
+                account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
+
+                # 납부 정보
+                installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
+                bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
+
+                # 은행 거래 업데이트
+                bank_tx.bank_account = bank_account
+                bank_tx.amount = data.get('income')
+                bank_tx.deal_date = data.get('deal_date')
+                bank_tx.content = f'{contractor.name}[{data.get("serial_number")}] 대금납부'
+                bank_tx.save()
+
+                # 회계 분개 업데이트 (save()에서 ContractPayment 자동 업데이트)
+                accounting_entry.account = account
+                accounting_entry.amount = data.get('income')
+                accounting_entry.trader = data.get('trader', '')
+                accounting_entry.installment_order = installment_order
+                accounting_entry.save()
+
+            except ContractPayment.DoesNotExist:
+                # payment_id가 잘못되었거나 삭제된 경우 - 새로 생성
+                PaymentProcessingService.process_initial_payment(contract, data)
         else:
             # 새 납부 생성
-            ProjectCashBook.objects.create(
-                project=project,
-                sort=AccountSort.objects.get(pk=1),
-                project_account_d2=account_d2,
-                project_account_d3=account_d3,
-                contract=contract,
-                installment_order=installment_order,
-                content=f'{contractor.name}[{data.get("serial_number")}] 대금납부',
-                trader=data.get('trader'),
-                bank_account=bank_account,
-                income=data.get('income'),
-                deal_date=data.get('deal_date')
-            )
+            PaymentProcessingService.process_initial_payment(contract, data)
 
 
 # 메인 Contract 관리 서비스
