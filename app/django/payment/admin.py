@@ -137,7 +137,7 @@ class SpecialOverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(ContractPayment)
 class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'accounting_entry_short', 'project', 'contract',
+    list_display = ('id', 'accounting_entry_short', 'project', 'contract', 'deal_date',
                     'formatted_amount', 'payment_status_display', 'installment_order',
                     'creator', 'created_at')
     list_display_links = ('accounting_entry_short',)
