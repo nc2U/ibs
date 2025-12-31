@@ -342,8 +342,8 @@ export const usePayment = defineStore('payment', () => {
   const ledgerPaymentList = ref<AllPayment[]>([])
   const ledgerAllPaymentList = ref<AllPayment[]>([])
   const legerGetPayments = computed(() =>
-    paymentList.value
-      ? paymentList.value.map((p: AllPayment) => ({
+    ledgerPaymentList.value
+      ? ledgerPaymentList.value.map((p: AllPayment) => ({
           pk: p.pk,
           deal_date: p.deal_date,
           contract: p.contract,

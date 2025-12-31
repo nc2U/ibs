@@ -57,12 +57,14 @@ def _sync_contract_payment_for_entry(instance):
     if is_payment_account:
         bank_transaction = instance.related_transaction
         creator = bank_transaction.creator if bank_transaction else None
+        deal_date = bank_transaction.deal_date if bank_transaction else None
         defaults = {
             'project': instance.project,
             'is_payment_mismatch': False,
             'creator': creator,
             'contract': instance.contract,
             'installment_order': instance.installment_order,
+            'deal_date': deal_date,
         }
         contract_payment, created = ContractPayment.objects.get_or_create(
             accounting_entry=instance,
@@ -71,6 +73,11 @@ def _sync_contract_payment_for_entry(instance):
 
         update_fields = []
         if not created:
+            # deal_date 동기화
+            if bank_transaction and contract_payment.deal_date != bank_transaction.deal_date:
+                contract_payment.deal_date = bank_transaction.deal_date
+                update_fields.append('deal_date')
+
             if contract_payment.contract_id != instance.contract_id:
                 contract_payment.contract = instance.contract
                 update_fields.append('contract')
@@ -88,6 +95,13 @@ def _sync_contract_payment_for_entry(instance):
             return
 
         update_fields = []
+
+        # deal_date 동기화
+        bank_transaction = instance.related_transaction
+        if bank_transaction and contract_payment.deal_date != bank_transaction.deal_date:
+            contract_payment.deal_date = bank_transaction.deal_date
+            update_fields.append('deal_date')
+
         if not contract_payment.is_payment_mismatch:
             contract_payment.is_payment_mismatch = True
             update_fields.append('is_payment_mismatch')

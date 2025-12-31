@@ -196,6 +196,9 @@ class ContractPayment(models.Model):
     is_payment_mismatch = models.BooleanField(default=False, verbose_name='결제계정 불일치',
                                               help_text='연결된 회계분개의 is_payment=False인 경우 True로 표시')
 
+    # 거래일자 (비정규화 - 정렬 최적화)
+    deal_date = models.DateField(db_index=True, null=True, blank=True, verbose_name='거래일자')
+
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
@@ -207,14 +210,13 @@ class ContractPayment(models.Model):
     class Meta:
         verbose_name = '05. 분양 대금 납부'
         verbose_name_plural = '05. 분양 대금 납부'
-        ordering = ['-created_at']
+        ordering = ['-deal_date', '-created_at']
         indexes = [
+            models.Index(fields=['project', 'deal_date']),
+            models.Index(fields=['contract', 'deal_date']),
+            models.Index(fields=['deal_date', 'installment_order']),
             models.Index(fields=['installment_order', 'created_at']),
         ]
-
-    @property
-    def deal_date(self):
-        return self.related_transaction.deal_date
 
     @property
     def amount(self):

@@ -15,8 +15,8 @@ defineProps({
 })
 
 const paymentStore = usePayment()
-const getPayments = computed(() => paymentStore.getPayments)
-const paymentPages = computed(() => paymentStore.paymentPages)
+const getPayments = computed(() => paymentStore.legerGetPayments)
+const paymentPages = computed(() => paymentStore.ledgerPaymentPages)
 
 const payMatch = (payload: ProjectCashBook) => emit('pay-match', payload)
 const pageSelect = (page: number) => emit('page-select', page)
