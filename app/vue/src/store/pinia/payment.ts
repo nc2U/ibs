@@ -414,6 +414,32 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // state & getters
+  const ledgerOverallSummary = ref<OverallSummary | null>(null)
+
+  // actions
+  const fetchLedgerOverallSummary = async (project: number, date?: string) => {
+    let url = `/ledger/overall-summary/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (ledgerOverallSummary.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  // state & getters
+  const ledgerPaymentStatusByUnitType = ref<PaymentStatusByUnitType[]>([])
+
+  // actions
+  const fetchLedgerPaymentStatusByUnitType = async (project: number, date?: string) => {
+    let url = `/ledger/payment-status-by-unit-type/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (ledgerPaymentStatusByUnitType.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
   /////////////////////////////// new payment ///////////////////////////////
 
   return {
@@ -445,6 +471,7 @@ export const usePayment = defineStore('payment', () => {
     updateDownPay,
     deleteDownPay,
 
+    // old property
     paymentList,
     AllPaymentList,
     getPayments,
@@ -461,5 +488,23 @@ export const usePayment = defineStore('payment', () => {
 
     paymentStatusByUnitType,
     fetchPaymentStatusByUnitType,
+
+    // new property
+    ledgerPaymentList,
+    ledgerAllPaymentList,
+    legerGetPayments,
+    ledgerPaymentsCount,
+    fetchLedgerPaymentList,
+    fetchLedgerAllPaymentList,
+    ledgerPaymentPages,
+
+    ledgerPaymentSummaryList,
+    fetchLedgerPaymentSummaryList,
+
+    ledgerOverallSummary,
+    fetchLedgerOverallSummary,
+
+    ledgerPaymentStatusByUnitType,
+    fetchLedgerPaymentStatusByUnitType,
   }
 })
