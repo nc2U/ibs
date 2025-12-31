@@ -1714,7 +1714,7 @@ class ContractPaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 query = f"""
                         SELECT COALESCE(SUM(pae.amount), 0) as paid_amount
                         FROM payment_contractpayment cp
-                                 INNER JOIN ledger_projectaccountingentry pae ON cp.accounting_entry_id = pae.accountingentry_ptr_id
+                                 INNER JOIN ledger_projectaccountingentry pae ON cp.accounting_entry_id = pae.id
                                  INNER JOIN ledger_projectbanktransaction pbt ON pae.transaction_id = pbt.transaction_id
                                  INNER JOIN contract_contract c ON cp.contract_id = c.id
                                  INNER JOIN ledger_projectaccount pa ON pae.account_id = pa.id
