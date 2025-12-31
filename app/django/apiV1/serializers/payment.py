@@ -265,12 +265,12 @@ class ContractPaymentListSerializer(serializers.ModelSerializer):
     contract = SimpleContractSerializer(read_only=True)
     installment_order = SimpleInstallmentOrderSerializer(read_only=True)
 
-    # ProjectCashBook과 호환되는 필드명
-    deal_date = serializers.DateField(source='related_transaction.deal_date', read_only=True)
+    # ProjectCashBook과 호환되는 필드명 (모두 SerializerMethodField 사용)
+    deal_date = serializers.SerializerMethodField(read_only=True)
     income = serializers.IntegerField(source='amount', read_only=True)
     bank_account = serializers.SerializerMethodField(read_only=True)
-    trader = serializers.CharField(source='accounting_entry.trader', read_only=True)
-    note = serializers.CharField(source='accounting_entry.related_transaction.note', read_only=True)
+    trader = serializers.SerializerMethodField(read_only=True)
+    note = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ContractPayment
@@ -279,8 +279,28 @@ class ContractPaymentListSerializer(serializers.ModelSerializer):
             'bank_account', 'trader', 'note'
         )
 
-    @staticmethod
-    def get_bank_account(obj):
+    def get_deal_date(self, obj):
+        """거래일자 조회"""
+        try:
+            return obj.accounting_entry.related_transaction.deal_date
+        except (AttributeError, TypeError):
+            return None
+
+    def get_trader(self, obj):
+        """거래처 조회"""
+        try:
+            return obj.accounting_entry.trader
+        except AttributeError:
+            return None
+
+    def get_note(self, obj):
+        """비고 조회"""
+        try:
+            return obj.accounting_entry.related_transaction.note
+        except (AttributeError, TypeError):
+            return None
+
+    def get_bank_account(self, obj):
         """
         은행계좌 정보 조회
 
@@ -288,11 +308,11 @@ class ContractPaymentListSerializer(serializers.ModelSerializer):
         """
         try:
             transaction = obj.accounting_entry.related_transaction
-            if hasattr(transaction, 'bank_account') and transaction.bank_account:
+            if transaction and hasattr(transaction, 'bank_account') and transaction.bank_account:
                 return {
                     'pk': transaction.bank_account.pk,
                     'alias_name': transaction.bank_account.alias_name
                 }
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
         return None

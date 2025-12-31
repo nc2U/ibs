@@ -1314,11 +1314,11 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
     """
     queryset = ContractPayment.objects.select_related(
         'accounting_entry',
-        'accounting_entry__related_transaction',
         'accounting_entry__account',
         'contract',
         'contract__unit_type',
         'contract__order_group',
+        'contract__contractor',
         'installment_order',
         'project'
     ).all()
