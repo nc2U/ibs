@@ -157,6 +157,9 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
         ('상태 정보', {
             'fields': ('is_payment_mismatch', 'payment_mismatch_info')
         }),
+        ('거래 일자', {
+            'fields': ('deal_date',)
+        }),
         ('메타데이터', {
             'fields': ('creator', 'created_at', 'updated_at'),
             'classes': ('collapse',)
