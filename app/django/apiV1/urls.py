@@ -14,7 +14,6 @@ from .views import notice
 from .views import board
 from .views import docs
 from .views import ledger
-from .views import ledger_payment
 
 app_name = 'api'
 
@@ -107,8 +106,8 @@ router.register(r'unit-summary', items.HouseUnitSummaryViewSet, basename='unit-s
 router.register(r'option-item', items.OptionItemViewSet, basename='option-item')
 
 # payment
-router.register(r'pay-order', payment.InstallmentOrderViewSet)
 router.register(r'price', payment.SalesPriceViewSet)
+router.register(r'pay-order', payment.InstallmentOrderViewSet)
 router.register(r'payment-installment', payment.PaymentPerInstallmentViewSet)
 router.register(r'down-payment', payment.DownPaymentViewSet)
 router.register(r'payment', payment.PaymentViewSet, basename='payment')  # only list
@@ -119,12 +118,12 @@ router.register(r'payment-status-by-unit-type', payment.PaymentStatusByUnitTypeV
 router.register(r'overall-summary', payment.OverallSummaryViewSet, basename='overall-summary')  # only list
 
 # ledger-based payment (new architecture)
-router.register(r'ledger/contract-payment', ledger_payment.ContractPaymentViewSet, basename='ledger-contract-payment')
-router.register(r'ledger/payment-summary', ledger_payment.ContractPaymentSummaryViewSet,
+router.register(r'ledger/contract-payment', payment.ContractPaymentViewSet, basename='ledger-contract-payment')
+router.register(r'ledger/payment-summary', payment.ContractPaymentSummaryViewSet,
                 basename='ledger-payment-summary')
-router.register(r'ledger/payment-status-by-unit-type', ledger_payment.ContractPaymentStatusByUnitTypeViewSet,
+router.register(r'ledger/payment-status-by-unit-type', payment.ContractPaymentStatusByUnitTypeViewSet,
                 basename='ledger-payment-status-by-unit-type')
-router.register(r'ledger/overall-summary', ledger_payment.ContractPaymentOverallSummaryViewSet,
+router.register(r'ledger/overall-summary', payment.ContractPaymentOverallSummaryViewSet,
                 basename='ledger-overall-summary')
 
 # cash
