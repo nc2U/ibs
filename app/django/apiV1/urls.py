@@ -14,6 +14,7 @@ from .views import notice
 from .views import board
 from .views import docs
 from .views import ledger
+from .views import ledger_payment
 
 app_name = 'api'
 
@@ -116,6 +117,15 @@ router.register(r'payment-summary', payment.PaymentSummaryViewSet, basename='pay
 router.register(r'payment-status-by-unit-type', payment.PaymentStatusByUnitTypeViewSet,
                 basename='payment-status-by-unit-type')  # only list
 router.register(r'overall-summary', payment.OverallSummaryViewSet, basename='overall-summary')  # only list
+
+# ledger-based payment (new architecture)
+router.register(r'ledger/contract-payment', ledger_payment.ContractPaymentViewSet, basename='ledger-contract-payment')
+router.register(r'ledger/payment-summary', ledger_payment.ContractPaymentSummaryViewSet,
+                basename='ledger-payment-summary')
+router.register(r'ledger/payment-status-by-unit-type', ledger_payment.ContractPaymentStatusByUnitTypeViewSet,
+                basename='ledger-payment-status-by-unit-type')
+router.register(r'ledger/overall-summary', ledger_payment.ContractPaymentOverallSummaryViewSet,
+                basename='ledger-overall-summary')
 
 # cash
 router.register(r'bank-code', cash.BankCodeViewSet)
