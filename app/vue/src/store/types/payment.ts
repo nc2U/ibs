@@ -43,12 +43,6 @@ export interface DownPay {
   payment_amount: number
 }
 
-export interface PaySumByType {
-  order_group: number
-  unit_type: number
-  paid_sum: number
-}
-
 export interface PaymentSummaryComponent {
   unit_type_id: number
   unit_type_name: string
@@ -58,11 +52,6 @@ export interface PaymentSummaryComponent {
   total_paid_amount: number
   unpaid_amount: number
   unsold_amount: number
-}
-
-export interface ContractNum {
-  unit_type: number
-  num_cont: number
 }
 
 export interface PayOrderCollection {

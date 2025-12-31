@@ -1,19 +1,18 @@
 import api from '@/api'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { message, errorHandle } from '@/utils/helper'
+import { errorHandle, message } from '@/utils/helper'
 import { type CashBookFilter } from '@/store/types/proCash'
 import {
-  type Price,
-  type PayOrder,
-  type DownPay,
-  type PaymentSummaryComponent,
-  type ContractNum,
   type AllPayment,
+  type DownPay,
   type OverallSummary,
-  type PaymentStatusByUnitType,
   type PaymentPerInstallment,
   type PaymentPerInstallmentPayload,
+  type PaymentStatusByUnitType,
+  type PaymentSummaryComponent,
+  type PayOrder,
+  type Price,
 } from '@/store/types/payment'
 
 export type DownPayFilter = {
@@ -119,154 +118,6 @@ export const usePayment = defineStore('payment', () => {
       )
       .catch(err => errorHandle(err.response.data))
 
-  // state & getters
-  const downPayList = ref<DownPay[]>([])
-
-  // actions
-  const fetchDownPayList = async (payload: DownPayFilter) => {
-    let url = `/down-payment/?project=${payload.project}`
-    if (payload.order_group) url += `&order_group=${payload.order_group}`
-    if (payload.unit_type) url += `&unit_type=${payload.unit_type}`
-    return await api
-      .get(url)
-      .then(res => (downPayList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const createDownPay = (payload: DownPay) =>
-    api
-      .post(`/down-payment/`, payload)
-      .then(res => fetchDownPayList({ project: res.data.project }).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
-
-  const updateDownPay = (payload: DownPay) =>
-    api
-      .put(`/down-payment/${payload.pk}/`, payload)
-      .then(res => fetchDownPayList({ project: res.data.project }).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
-
-  const deleteDownPay = (pk: number, project: number) =>
-    api
-      .delete(`/down-payment/${pk}/`)
-      .then(() =>
-        fetchDownPayList({ project }).then(() =>
-          message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.'),
-        ),
-      )
-      .catch(err => errorHandle(err.response.data))
-
-  // state & getters
-  const paymentList = ref<AllPayment[]>([])
-  const AllPaymentList = ref<AllPayment[]>([])
-  const getPayments = computed(() =>
-    paymentList.value
-      ? paymentList.value.map((p: AllPayment) => ({
-          pk: p.pk,
-          deal_date: p.deal_date,
-          contract: p.contract,
-          order_group: p.contract ? p.contract.order_group.name : '-',
-          type_color: p.contract ? p.contract.unit_type.color : '-',
-          type_name: p.contract ? p.contract.unit_type.name : '-',
-          serial_number: p.contract ? p.contract.serial_number : '-',
-          contractor: p.contract ? p.contract.contractor : '-',
-          income: p.income,
-          installment_order: p.installment_order ? p.installment_order.__str__ : '-',
-          bank_account: p.bank_account.alias_name,
-          trader: p.trader,
-          note: p.note,
-        }))
-      : [],
-  )
-  const paymentsCount = ref<number>(0)
-
-  // actions
-  const fetchPaymentList = async (payload: CashBookFilter) => {
-    const { project } = payload
-    let url = `/payment/?project=${project}`
-    if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
-    if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
-    if (payload.order_group) url += `&contract__order_group=${payload.order_group}`
-    if (payload.unit_type) url += `&contract__unit_type=${payload.unit_type}`
-    if (payload.pay_order) url += `&installment_order=${payload.pay_order}`
-    if (payload.pay_account) url += `&bank_account=${payload.pay_account}`
-    if (payload.contract) url += `&contract=${payload.contract}`
-    if (payload.no_contract) url += `&no_contract=true`
-    if (payload.no_install) url += `&no_install=true&no_contract=false`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
-    if (payload.search) url += `&search=${payload.search}`
-    const page = payload.page ? payload.page : 1
-    if (payload.page) url += `&page=${page}`
-    return await api
-      .get(url)
-      .then(res => {
-        paymentList.value = res.data.results
-        paymentsCount.value = res.data.count
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const fetchAllPaymentList = async (payload: CashBookFilter) => {
-    const { project } = payload
-    let url = `/all-payment/?project=${project}`
-    if (payload.contract) url += `&contract=${payload.contract}`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
-    return await api
-      .get(url)
-      .then(res => (AllPaymentList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const paymentPages = (itemsPerPage: number) => Math.ceil(paymentsCount.value / itemsPerPage)
-
-  // state & getters - PaymentSummary Component
-  const paymentSummaryList = ref<PaymentSummaryComponent[]>([])
-
-  // actions
-  const fetchPaymentSummaryList = async (project: number, date = '') => {
-    let url = `/payment-summary/?project=${project}`
-    if (date) url += `&date=${date}`
-    return await api
-      .get(url)
-      .then(res => (paymentSummaryList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  // state & getters
-  const contNumList = ref<ContractNum[]>([])
-
-  // actions
-  const fetchContNumList = (project: number) =>
-    api
-      .get(`/cont-num-type/?project=${project}`)
-      .then(res => (contNumList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
-  // state & getters
-  const overallSummary = ref<OverallSummary | null>(null)
-
-  // actions
-  const fetchOverallSummary = async (project: number, date?: string) => {
-    let url = `/overall-summary/?project=${project}`
-    if (date) url += `&date=${date}`
-    return await api
-      .get(url)
-      .then(res => (overallSummary.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  // state & getters
-  const paymentStatusByUnitType = ref<PaymentStatusByUnitType[]>([])
-
-  // actions
-  const fetchPaymentStatusByUnitType = async (project: number, date?: string) => {
-    let url = `/payment-status-by-unit-type/?project=${project}`
-    if (date) url += `&date=${date}`
-    return await api
-      .get(url)
-      .then(res => (paymentStatusByUnitType.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-  }
-
   // PaymentPerInstallment state & getters
   const paymentPerInstallmentList = ref<PaymentPerInstallment[]>([])
 
@@ -345,9 +196,228 @@ export const usePayment = defineStore('payment', () => {
     }
   }
 
+  // state & getters
+  const downPayList = ref<DownPay[]>([])
+
+  // actions
+  const fetchDownPayList = async (payload: DownPayFilter) => {
+    let url = `/down-payment/?project=${payload.project}`
+    if (payload.order_group) url += `&order_group=${payload.order_group}`
+    if (payload.unit_type) url += `&unit_type=${payload.unit_type}`
+    return await api
+      .get(url)
+      .then(res => (downPayList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const createDownPay = (payload: DownPay) =>
+    api
+      .post(`/down-payment/`, payload)
+      .then(res => fetchDownPayList({ project: res.data.project }).then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+
+  const updateDownPay = (payload: DownPay) =>
+    api
+      .put(`/down-payment/${payload.pk}/`, payload)
+      .then(res => fetchDownPayList({ project: res.data.project }).then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteDownPay = (pk: number, project: number) =>
+    api
+      .delete(`/down-payment/${pk}/`)
+      .then(() =>
+        fetchDownPayList({ project }).then(() =>
+          message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.'),
+        ),
+      )
+      .catch(err => errorHandle(err.response.data))
+
+  /////////////////////////////// old payment ///////////////////////////////
+  // state & getters
+  const paymentList = ref<AllPayment[]>([])
+  const AllPaymentList = ref<AllPayment[]>([])
+  const getPayments = computed(() =>
+    paymentList.value
+      ? paymentList.value.map((p: AllPayment) => ({
+          pk: p.pk,
+          deal_date: p.deal_date,
+          contract: p.contract,
+          order_group: p.contract ? p.contract.order_group.name : '-',
+          type_color: p.contract ? p.contract.unit_type.color : '-',
+          type_name: p.contract ? p.contract.unit_type.name : '-',
+          serial_number: p.contract ? p.contract.serial_number : '-',
+          contractor: p.contract ? p.contract.contractor : '-',
+          income: p.income,
+          installment_order: p.installment_order ? p.installment_order.__str__ : '-',
+          bank_account: p.bank_account.alias_name,
+          trader: p.trader,
+          note: p.note,
+        }))
+      : [],
+  )
+  const paymentsCount = ref<number>(0)
+
+  // actions
+  const fetchPaymentList = async (payload: CashBookFilter) => {
+    const { project } = payload
+    let url = `/payment/?project=${project}`
+    if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
+    if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
+    if (payload.order_group) url += `&contract__order_group=${payload.order_group}`
+    if (payload.unit_type) url += `&contract__unit_type=${payload.unit_type}`
+    if (payload.pay_order) url += `&installment_order=${payload.pay_order}`
+    if (payload.pay_account) url += `&bank_account=${payload.pay_account}`
+    if (payload.contract) url += `&contract=${payload.contract}`
+    if (payload.no_contract) url += `&no_contract=true`
+    if (payload.no_install) url += `&no_install=true&no_contract=false`
+    if (payload.ordering) url += `&ordering=${payload.ordering}`
+    if (payload.search) url += `&search=${payload.search}`
+    const page = payload.page ? payload.page : 1
+    if (payload.page) url += `&page=${page}`
+    return await api
+      .get(url)
+      .then(res => {
+        paymentList.value = res.data.results
+        paymentsCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllPaymentList = async (payload: CashBookFilter) => {
+    const { project } = payload
+    let url = `/all-payment/?project=${project}`
+    if (payload.contract) url += `&contract=${payload.contract}`
+    if (payload.ordering) url += `&ordering=${payload.ordering}`
+    return await api
+      .get(url)
+      .then(res => (AllPaymentList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const paymentPages = (itemsPerPage: number) => Math.ceil(paymentsCount.value / itemsPerPage)
+
+  // state & getters - PaymentSummary Component
+  const paymentSummaryList = ref<PaymentSummaryComponent[]>([])
+
+  // actions
+  const fetchPaymentSummaryList = async (project: number, date = '') => {
+    let url = `/payment-summary/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (paymentSummaryList.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  // state & getters
+  const overallSummary = ref<OverallSummary | null>(null)
+
+  // actions
+  const fetchOverallSummary = async (project: number, date?: string) => {
+    let url = `/overall-summary/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (overallSummary.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  // state & getters
+  const paymentStatusByUnitType = ref<PaymentStatusByUnitType[]>([])
+
+  // actions
+  const fetchPaymentStatusByUnitType = async (project: number, date?: string) => {
+    let url = `/payment-status-by-unit-type/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (paymentStatusByUnitType.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  /////////////////////////////// old payment ///////////////////////////////
+
+  /////////////////////////////// new payment ///////////////////////////////
+  // state & getters
+  const ledgerPaymentList = ref<AllPayment[]>([])
+  const ledgerAllPaymentList = ref<AllPayment[]>([])
+  const legerGetPayments = computed(() =>
+    paymentList.value
+      ? paymentList.value.map((p: AllPayment) => ({
+          pk: p.pk,
+          deal_date: p.deal_date,
+          contract: p.contract,
+          order_group: p.contract ? p.contract.order_group.name : '-',
+          type_color: p.contract ? p.contract.unit_type.color : '-',
+          type_name: p.contract ? p.contract.unit_type.name : '-',
+          serial_number: p.contract ? p.contract.serial_number : '-',
+          contractor: p.contract ? p.contract.contractor : '-',
+          income: p.income,
+          installment_order: p.installment_order ? p.installment_order.__str__ : '-',
+          bank_account: p.bank_account.alias_name,
+          trader: p.trader,
+          note: p.note,
+        }))
+      : [],
+  )
+  const ledgerPaymentsCount = ref<number>(0)
+
+  // actions
+  const fetchLedgerPaymentList = async (payload: CashBookFilter) => {
+    const { project } = payload
+    let url = `/ledger/payment/?project=${project}`
+    if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
+    if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
+    if (payload.order_group) url += `&contract__order_group=${payload.order_group}`
+    if (payload.unit_type) url += `&contract__unit_type=${payload.unit_type}`
+    if (payload.pay_order) url += `&installment_order=${payload.pay_order}`
+    if (payload.pay_account) url += `&bank_account=${payload.pay_account}`
+    if (payload.contract) url += `&contract=${payload.contract}`
+    if (payload.no_contract) url += `&no_contract=true`
+    if (payload.no_install) url += `&no_install=true&no_contract=false`
+    if (payload.ordering) url += `&ordering=${payload.ordering}`
+    if (payload.search) url += `&search=${payload.search}`
+    const page = payload.page ? payload.page : 1
+    if (payload.page) url += `&page=${page}`
+    return await api
+      .get(url)
+      .then(res => {
+        ledgerPaymentList.value = res.data.results
+        ledgerPaymentsCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchLedgerAllPaymentList = async (payload: CashBookFilter) => {
+    const { project } = payload
+    let url = `/ledger/all-payment/?project=${project}`
+    if (payload.contract) url += `&contract=${payload.contract}`
+    if (payload.ordering) url += `&ordering=${payload.ordering}`
+    return await api
+      .get(url)
+      .then(res => (ledgerAllPaymentList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const ledgerPaymentPages = (itemsPerPage: number) => Math.ceil(paymentsCount.value / itemsPerPage)
+
+  // state & getters - PaymentSummary Component
+  const ledgerPaymentSummaryList = ref<PaymentSummaryComponent[]>([])
+
+  // actions
+  const fetchLedgerPaymentSummaryList = async (project: number, date = '') => {
+    let url = `/ledger/payment-summary/?project=${project}`
+    if (date) url += `&date=${date}`
+    return await api
+      .get(url)
+      .then(res => (ledgerPaymentSummaryList.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  /////////////////////////////// new payment ///////////////////////////////
+
   return {
     priceList,
-
     fetchPriceList,
     createPrice,
     updatePrice,
@@ -355,7 +425,6 @@ export const usePayment = defineStore('payment', () => {
 
     payOrderList,
     payOrder,
-
     fetchPayOrder,
     fetchPayOrderList,
     createPayOrder,
@@ -363,8 +432,14 @@ export const usePayment = defineStore('payment', () => {
     updatePayOrder,
     deletePayOrder,
 
-    downPayList,
+    paymentPerInstallmentList,
+    fetchPaymentPerInstallmentList,
+    getPaymentPerInstallmentData,
+    createPaymentPerInstallment,
+    updatePaymentPerInstallment,
+    deletePaymentPerInstallment,
 
+    downPayList,
     fetchDownPayList,
     createDownPay,
     updateDownPay,
@@ -374,7 +449,6 @@ export const usePayment = defineStore('payment', () => {
     AllPaymentList,
     getPayments,
     paymentsCount,
-
     fetchPaymentList,
     fetchAllPaymentList,
     paymentPages,
@@ -382,20 +456,10 @@ export const usePayment = defineStore('payment', () => {
     paymentSummaryList,
     fetchPaymentSummaryList,
 
-    contNumList,
-    fetchContNumList,
-
     overallSummary,
     fetchOverallSummary,
 
     paymentStatusByUnitType,
     fetchPaymentStatusByUnitType,
-
-    paymentPerInstallmentList,
-    fetchPaymentPerInstallmentList,
-    getPaymentPerInstallmentData,
-    createPaymentPerInstallment,
-    updatePaymentPerInstallment,
-    deletePaymentPerInstallment,
   }
 })
