@@ -137,7 +137,7 @@ const onContFiltering = (payload: ContFilter) => {
 
 const getContract = (cont: number) => {
   router.push({
-    name: '건별 수납 내역',
+    name: '건별 납부 관리 - 상세',
     params: { contractId: cont },
   })
 }

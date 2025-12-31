@@ -28,7 +28,7 @@ const toManage = () => (props.payment?.contract ? toRegister() : contMatching())
 
 const toRegister = () => {
   router.push({
-    name: '건별 납부 내역',
+    name: '건별 납부 관리 - 상세',
     params: { contractId: props.payment?.contract.pk },
     query: { payment: props.payment?.pk },
   })
