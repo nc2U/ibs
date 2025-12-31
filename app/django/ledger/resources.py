@@ -231,7 +231,7 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
         super().__init__(*args, **kwargs)
         self._imported_payment_entries = []
 
-    def after_save_instance(self, instance, using_transactions, dry_run, **kwargs):
+    def after_save_instance(self, instance, row, using_transactions, dry_run, **kwargs):
         """
         Track ALL entries during import for later batch processing.
         개별 저장 시에는 ContractPayment 생성을 skip하고 나중에 일괄 처리.
@@ -250,7 +250,7 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
         if instance.pk:
             self._imported_payment_entries.append(instance.pk)
 
-    def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
+    def after_import(self, dataset, result, **kwargs):
         """
         Import 완료 후 모든 payment entries에 대해 ContractPayment를 일괄 생성.
         이렇게 하면 bulk import 성능을 유지하면서 데이터 일관성도 보장됨.
@@ -258,8 +258,9 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
         # Bulk import flag 해제
         set_bulk_import_active(False)
 
+        dry_run = kwargs.get('dry_run', False)
         if dry_run:
-            return super().after_import(dataset, result, using_transactions, dry_run, **kwargs)
+            return super().after_import(dataset, result, **kwargs)
 
         # Import된 payment entries에 대해 ContractPayment 일괄 생성
         if self._imported_payment_entries:
@@ -284,7 +285,7 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
             # 추적 리스트 초기화
             self._imported_payment_entries = []
 
-        return super().after_import(dataset, result, using_transactions, dry_run, **kwargs)
+        return super().after_import(dataset, result, **kwargs)
 
     class Meta:
         model = ProjectAccountingEntry
