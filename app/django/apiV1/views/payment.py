@@ -1717,10 +1717,13 @@ class ContractPaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                                  INNER JOIN ledger_projectaccountingentry pae ON cp.accounting_entry_id = pae.accountingentry_ptr_id
                                  INNER JOIN ledger_projectbanktransaction pbt ON pae.transaction_id = pbt.transaction_id
                                  INNER JOIN contract_contract c ON cp.contract_id = c.id
+                                 INNER JOIN ledger_projectaccount pa ON pae.account_id = pa.id
                         WHERE cp.project_id = %s
                           AND c.order_group_id = %s
                           AND c.unit_type_id = %s
                           AND c.activation = true
+                          AND pa.is_payment = true
+                          AND cp.is_payment_mismatch = false
                           {date_filter}
                         """
 
