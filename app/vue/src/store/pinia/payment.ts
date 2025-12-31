@@ -5,6 +5,7 @@ import { errorHandle, message } from '@/utils/helper'
 import { type CashBookFilter } from '@/store/types/proCash'
 import {
   type AllPayment,
+  type ContPayFilter,
   type DownPay,
   type OverallSummary,
   type PaymentPerInstallment,
@@ -363,9 +364,9 @@ export const usePayment = defineStore('payment', () => {
   const ledgerPaymentsCount = ref<number>(0)
 
   // actions
-  const fetchLedgerPaymentList = async (payload: CashBookFilter) => {
+  const fetchLedgerPaymentList = async (payload: ContPayFilter) => {
     const { project } = payload
-    let url = `/ledger/payment/?project=${project}`
+    let url = `/ledger/payment/?is_payment_mismatch=false&project=${project}`
     if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
     if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
     if (payload.order_group) url += `&contract__order_group=${payload.order_group}`
@@ -388,7 +389,7 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchLedgerAllPaymentList = async (payload: CashBookFilter) => {
+  const fetchLedgerAllPaymentList = async (payload: ContPayFilter) => {
     const { project } = payload
     let url = `/ledger/all-payment/?project=${project}`
     if (payload.contract) url += `&contract=${payload.contract}`
@@ -399,7 +400,8 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const ledgerPaymentPages = (itemsPerPage: number) => Math.ceil(paymentsCount.value / itemsPerPage)
+  const ledgerPaymentPages = (itemsPerPage: number) =>
+    Math.ceil(ledgerPaymentsCount.value / itemsPerPage)
 
   // state & getters - PaymentSummary Component
   const ledgerPaymentSummaryList = ref<PaymentSummaryComponent[]>([])

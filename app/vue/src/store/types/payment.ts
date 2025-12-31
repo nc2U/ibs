@@ -170,3 +170,19 @@ export interface AllPayment {
   trader: string
   note: string
 }
+
+export type ContPayFilter = {
+  project?: number | null
+  page?: number
+  from_date?: string
+  to_date?: string
+  order_group?: string
+  unit_type?: string
+  pay_order?: string
+  pay_account?: number | null | ''
+  contract?: number
+  no_contract?: boolean
+  no_install?: boolean
+  ordering?: string
+  search?: string
+}
