@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from django.db import connection
 from django.db.models import Sum
-from django_filters import CharFilter
+from django_filters import CharFilter, BooleanFilter, DateFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
@@ -1282,35 +1282,78 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 # --------------------------------------------------------------------
 
 class ContractPaymentFilterSet(FilterSet):
-    """ContractPayment 필터셋"""
-    deal_date__gte = CharFilter(method='filter_deal_date_gte', label='거래일자 시작')
-    deal_date__lte = CharFilter(method='filter_deal_date_lte', label='거래일자 종료')
+    """
+    ContractPayment 필터셋 (구버전 ProjectCashBookFilterSet 호환)
+
+    지원 필터:
+    - from_deal_date, to_deal_date: 거래일자 범위
+    - contract__order_group, contract__unit_type: 계약 관계 필터
+    - no_contract, no_install: NULL 체크 필터
+    - bank_account: 은행 계좌 필터 (UUID JOIN)
+    - is_payment_mismatch: 납부 불일치 플래그
+    """
+    from_deal_date = DateFilter(field_name='deal_date', lookup_expr='gte', label='거래일자 시작')
+    to_deal_date = DateFilter(field_name='deal_date', lookup_expr='lte', label='거래일자 종료')
+    no_contract = BooleanFilter(field_name='contract', lookup_expr='isnull', label='계약 미등록')
+    no_install = BooleanFilter(field_name='installment_order', lookup_expr='isnull', label='회차 미등록')
+    bank_account = CharFilter(method='filter_bank_account', label='은행 계좌')
 
     class Meta:
         model = ContractPayment
-        fields = ['project', 'contract', 'installment_order']
+        fields = {
+            'project': ['exact'],
+            'contract': ['exact'],
+            'contract__order_group': ['exact'],  # 계약 차수 필터 (관계 필드)
+            'contract__unit_type': ['exact'],  # 계약 타입 필터 (관계 필드)
+            'installment_order': ['exact'],
+            'deal_date': ['exact'],
+            'is_payment_mismatch': ['exact'],
+        }
 
     @staticmethod
-    def filter_deal_date_gte(queryset, name, value):
-        """거래일자 >= value 필터링"""
-        if value:
-            # ContractPayment → accounting_entry → related_transaction.deal_date
-            return queryset.filter(accounting_entry__related_transaction__deal_date__gte=value)
-        return queryset
+    def filter_bank_account(queryset, name, value):
+        """
+        은행 계좌 필터링 (UUID JOIN 경로: accounting_entry → related_transaction → bank_account)
 
-    @staticmethod
-    def filter_deal_date_lte(queryset, name, value):
-        """거래일자 <= value 필터링"""
-        if value:
-            return queryset.filter(accounting_entry__related_transaction__deal_date__lte=value)
-        return queryset
+        ContractPayment → accounting_entry (ProjectAccountingEntry)
+                       → related_transaction (ProjectBankTransaction via UUID)
+                       → bank_account
+        """
+        # 해당 bank_account를 가진 transaction_id 목록 조회
+        transaction_ids = ProjectBankTransaction.objects.filter(
+            bank_account=value
+        ).values_list('transaction_id', flat=True)
+
+        # ContractPayment에서 해당 transaction_id를 가진 accounting_entry 필터링
+        return queryset.filter(
+            accounting_entry__transaction_id__in=list(transaction_ids)
+        )
 
 
 class ContractPaymentViewSet(viewsets.ModelViewSet):
     """
-    ContractPayment 기본 CRUD ViewSet
+    ContractPayment 기본 CRUD ViewSet (구버전 ProjectCashBook 호환)
 
     계약별 납부 내역 조회, 생성, 수정, 삭제
+
+    지원 기능:
+    - 필터링: project, contract, order_group, unit_type, deal_date 범위, bank_account
+    - 검색: 계약자명, 거래처
+    - 정렬: deal_date, created_at, amount, installment_order
+    - is_payment_mismatch 필터: 기본값 없음 (프론트엔드에서 제어)
+      * is_payment_mismatch=false: 유효한 납부만 (일반 사용, 권장)
+      * is_payment_mismatch=true: 환불/해지 내역 (감사/모니터링용)
+      * 파라미터 없음: 전체 데이터
+
+    사용 예시:
+        # 유효한 납부만 (일반 사용)
+        GET /api/v1/ledger/contract-payment/?project=1&is_payment_mismatch=false
+
+        # 환불/해지 내역 (감사용)
+        GET /api/v1/ledger/contract-payment/?project=1&is_payment_mismatch=true
+
+        # 전체 데이터 (전체 이력 조회)
+        GET /api/v1/ledger/contract-payment/?project=1
     """
     queryset = ContractPayment.objects.select_related(
         'accounting_entry',
@@ -1326,7 +1369,12 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_class = ContractPaymentFilterSet
     pagination_class = PageNumberPaginationTen
-    search_fields = ['contract__contractor__name']  # 계약자명 검색
+    search_fields = [
+        'contract__contractor__name',  # 계약자명
+        'accounting_entry__trader',  # 거래처
+    ]
+    ordering_fields = ['deal_date', 'created_at', 'installment_order']
+    ordering = ['-deal_date', '-created_at']  # 기본 정렬
 
     def get_serializer_class(self):
         """목록 조회 시 최적화된 직렬화 사용"""

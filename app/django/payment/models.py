@@ -118,6 +118,26 @@ class DownPayment(models.Model):
 class ContractPaymentQuerySet(models.QuerySet):
     """ContractPayment 전용 QuerySet - 계약별/회차별 필터링"""
 
+    def valid_payments(self):
+        """
+        유효한 납부 내역만 조회 (기본 사용 권장)
+
+        is_payment_mismatch=False인 레코드만 반환
+        - 정상 납부 계정 (111 분담금, 811 분양매출금 등)
+        - 환불, 해지, 조정 계정 제외
+        """
+        return self.filter(is_payment_mismatch=False)
+
+    def mismatched_payments(self):
+        """
+        계정 불일치 납부 내역 조회 (감사/모니터링용)
+
+        is_payment_mismatch=True인 레코드만 반환
+        - 환불, 해지, 조정 계정으로 변경된 케이스
+        - 데이터 정합성 검증용
+        """
+        return self.filter(is_payment_mismatch=True)
+
     def for_contract(self, contract):
         """특정 계약의 납부 내역"""
         return self.filter(contract=contract)
@@ -144,6 +164,14 @@ class ContractPaymentManager(models.Manager):
 
     def get_queryset(self):
         return ContractPaymentQuerySet(self.model, using=self._db)
+
+    def valid_payments(self):
+        """유효한 납부 내역만 조회 (기본 사용 권장)"""
+        return self.get_queryset().valid_payments()
+
+    def mismatched_payments(self):
+        """계정 불일치 납부 내역 조회 (감사/모니터링용)"""
+        return self.get_queryset().mismatched_payments()
 
     def for_contract(self, contract):
         """특정 계약의 납부 내역"""
