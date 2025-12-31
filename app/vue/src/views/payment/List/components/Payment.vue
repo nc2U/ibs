@@ -28,7 +28,7 @@ const toManage = () => (props.payment?.contract ? toRegister() : contMatching())
 
 const toRegister = () => {
   router.push({
-    name: '건별 수납 내역',
+    name: '건별 납부 내역',
     params: { contractId: props.payment?.contract.pk },
     query: { payment: props.payment?.pk },
   })
@@ -80,7 +80,7 @@ const payMatch = (payload: ProjectCashBook) => emit('pay-match', payload)
   </CTableRow>
 
   <FormModal ref="contMatchingModal" size="lg">
-    <template #header> 수납 건별 계약 건 매칭</template>
+    <template #header> 납부 건별 계약 건 매칭</template>
     <template #default>
       <ContChoicer
         :project="project"

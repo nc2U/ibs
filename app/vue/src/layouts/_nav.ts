@@ -173,7 +173,7 @@ const contract = {
   ],
 }
 
-const payment1 = {
+const payments = {
   component: 'CNavGroup',
   name: '분양 수납 관리',
   to: '/payments',
@@ -503,7 +503,7 @@ const nav = [
     name: '프로젝트 관리',
   },
   contract,
-  payment1,
+  payments,
   payment,
   notice,
   project_cash,
