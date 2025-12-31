@@ -1,15 +1,16 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { ref, computed, onBeforeMount, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payment/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
-import { useProCash } from '@/store/pinia/proCash'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { onBeforeRouteLeave } from 'vue-router'
 import type { Project } from '@/store/types/project.ts'
-import type { CashBookFilter, ProjectCashBook } from '@/store/types/proCash'
+import type { ProjectCashBook } from '@/store/types/proCash'
+import type { ContPayFilter } from '@/store/types/payment.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -18,10 +19,9 @@ import TableTitleRow from '@/components/TableTitleRow.vue'
 import PaymentSummary from './components/PaymentSummary.vue'
 import ListController from './components/ListController.vue'
 import PaymentList from './components/PaymentList.vue'
-import { useProLedger } from '@/store/pinia/proLedger.ts'
 
 const listControl = ref()
-const filterItems = ref<CashBookFilter>({
+const filterItems = ref<ContPayFilter>({
   page: 1,
   from_date: '',
   to_date: '',
@@ -50,18 +50,18 @@ const paymentStore = usePayment()
 const fetchPaymentSummaryList = (projId: number) =>
   paymentStore.fetchLedgerPaymentSummaryList(projId)
 const fetchPayOrderList = (projId: number) => paymentStore.fetchPayOrderList(projId)
-const fetchPaymentList = (payload: CashBookFilter) => paymentStore.fetchLedgerPaymentList(payload)
+const fetchPaymentList = (payload: ContPayFilter) => paymentStore.fetchLedgerPaymentList(payload)
 
 const proLedgerStore = useProLedger()
 const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
 
 const patchPrCashBook = (
   payload: ProjectCashBook & { isPayment?: boolean } & {
-    filters: CashBookFilter
+    filters: ContPayFilter
   },
 ) => 1 //proCashStore.patchPrCashBook(payload)
 
-const listFiltering = (payload: CashBookFilter) => {
+const listFiltering = (payload: ContPayFilter) => {
   filterItems.value = payload
   if (project.value) {
     payload.project = project.value
@@ -78,7 +78,7 @@ const pageSelect = (page: number) => {
 }
 
 const byPayment = computed(() => {
-  let pUrl = project.value ? `/excel/payments/?project=${project.value}` : ''
+  let pUrl = project.value ? `/excel/ledger-payment/?project=${project.value}` : ''
   if (filterItems.value.from_date) pUrl += `&sd=${filterItems.value.from_date}`
   if (filterItems.value.to_date) pUrl += `&ed=${filterItems.value.to_date}`
   if (filterItems.value.order_group) pUrl += `&og=${filterItems.value.order_group}`

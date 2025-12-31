@@ -3,11 +3,11 @@ import { computed, reactive, ref, nextTick, watch } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { numFormat } from '@/utils/baseMixins.ts'
 import { usePayment } from '@/store/pinia/payment'
-import { useProCash } from '@/store/pinia/proCash'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
-import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({ byCont: { type: Boolean, default: false } })
 const emit = defineEmits(['payment-filtering'])
@@ -33,10 +33,10 @@ const getTypes = computed(() => projectDataStore.getTypes)
 
 const paymentStore = usePayment()
 const payOrderList = computed(() => paymentStore.payOrderList)
-const paymentsCount = computed(() => paymentStore.paymentsCount)
+const paymentsCount = computed(() => paymentStore.ledgerPaymentsCount)
 
-const proCashStore = useProCash()
-const allProBankAccountList = computed(() => proCashStore.allProBankAccountList)
+const proLedgerStore = useProLedger()
+const allProBankList = computed(() => proLedgerStore.allProBankList)
 
 const formsCheck = computed(() => {
   const a = !from_date.value
@@ -52,7 +52,7 @@ const formsCheck = computed(() => {
 })
 
 watch(props, nVal => {
-  if (!!nVal.byCont) {
+  if (nVal.byCont) {
     from_date.value = ''
     form.order_group = ''
     form.unit_type = ''
@@ -161,7 +161,7 @@ defineExpose({ listFiltering })
           <CCol lg="6" xl="2" class="mb-3">
             <CFormSelect v-model="form.pay_account" :disabled="byCont" @change="listFiltering(1)">
               <option value="">납부계좌 선택</option>
-              <option v-for="ba in allProBankAccountList" :key="ba.pk as number" :value="ba.pk">
+              <option v-for="ba in allProBankList" :key="ba.pk as number" :value="ba.pk">
                 {{ ba.alias_name }}
               </option>
             </CFormSelect>
