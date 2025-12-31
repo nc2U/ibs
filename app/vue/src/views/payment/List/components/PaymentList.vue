@@ -4,8 +4,8 @@ import { usePayment } from '@/store/pinia/payment'
 import { type ProjectCashBook, type PaymentPaid } from '@/store/types/proCash'
 import { write_payment } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
-import Payment from '@/views/payments/List/components/Payment.vue'
 import Pagination from '@/components/Pagination'
+import Payment from './Payment.vue'
 
 const emit = defineEmits(['page-select', 'pay-match'])
 

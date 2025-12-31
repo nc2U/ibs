@@ -14,9 +14,9 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PaymentAuthGuard from '@/components/AuthGuard/PaymentAuthGuard.vue'
-import PaymentSummary from '@/views/payments/List/components/PaymentSummary.vue'
-import ListController from '@/views/payments/List/components/ListController.vue'
-import PaymentList from '@/views/payments/List/components/PaymentList.vue'
+import PaymentSummary from '@/views/payment/List/components/PaymentSummary.vue'
+import ListController from '@/views/payment/List/components/ListController.vue'
+import PaymentList from '@/views/payment/List/components/PaymentList.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 
 const listControl = ref()
