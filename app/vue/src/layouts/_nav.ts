@@ -199,7 +199,7 @@ const payment1 = {
 
 const payment = {
   component: 'CNavGroup',
-  name: '계약 수납 관리',
+  name: '계약 납부 관리',
   to: '/payment',
   icon: 'cil-calculator',
   items: [

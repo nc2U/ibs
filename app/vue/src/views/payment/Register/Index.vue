@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount, onMounted, onUpdated, watch } from 'vue'
-import { pageTitle, navMenu } from '@/views/payments/_menu/headermixin'
+import { pageTitle, navMenu } from '@/views/payment/_menu/headermixin'
 import { dateFormat } from '@/utils/baseMixins'
 import { downloadFile } from '@/utils/helper.ts'
 import { write_payment } from '@/utils/pageAuth'

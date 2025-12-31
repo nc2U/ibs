@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, watch } from 'vue'
-import { navMenu, pageTitle } from '@/views/payments/_menu/headermixin'
+import { navMenu, pageTitle } from '@/views/payment/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { usePayment } from '@/store/pinia/payment'

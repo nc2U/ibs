@@ -2,7 +2,7 @@ import { h, resolveComponent } from 'vue'
 
 const payment = {
   path: 'payment',
-  name: '계약 수납 관리',
+  name: '계약 납부 관리',
   redirect: '/payment/index',
   component: {
     render() {
