@@ -181,7 +181,7 @@ const payments = {
   items: [
     {
       component: 'CNavItem',
-      name: '전체 납부 내역',
+      name: '전체 수납 내역',
       to: '/payments/index',
     },
     {
@@ -205,7 +205,7 @@ const payment = {
   items: [
     {
       component: 'CNavItem',
-      name: '건별 납부 내역',
+      name: '전체 납부 내역',
       to: '/payment/index',
     },
     {

@@ -12,10 +12,10 @@ const payment = {
   children: [
     {
       path: 'index',
-      name: '건별 납부 내역',
+      name: '전체 납부 내역',
       component: () => import('@/views/payment/List/Index.vue'),
       meta: {
-        title: '건별 납부 내역',
+        title: '전체 납부 내역',
         auth: true,
         requiresPaymentAuth: true,
       },
