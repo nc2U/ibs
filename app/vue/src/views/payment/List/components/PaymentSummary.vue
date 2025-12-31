@@ -7,7 +7,7 @@ import { usePayment } from '@/store/pinia/payment'
 defineProps({ project: { type: Number, default: null } })
 
 const paymentStore = usePayment()
-const paymentSummaryList = computed(() => paymentStore.paymentSummaryList)
+const paymentSummaryList = computed(() => paymentStore.ledgerPaymentSummaryList)
 
 const getTotalBudget = computed(() =>
   paymentSummaryList.value.reduce((sum, item) => sum + item.total_budget, 0),

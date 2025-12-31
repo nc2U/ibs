@@ -14,10 +14,11 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PaymentAuthGuard from '@/components/AuthGuard/PaymentAuthGuard.vue'
-import PaymentSummary from '@/views/payment/List/components/PaymentSummary.vue'
-import ListController from '@/views/payment/List/components/ListController.vue'
-import PaymentList from '@/views/payment/List/components/PaymentList.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
+import PaymentSummary from './components/PaymentSummary.vue'
+import ListController from './components/ListController.vue'
+import PaymentList from './components/PaymentList.vue'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 
 const listControl = ref()
 const filterItems = ref<CashBookFilter>({
@@ -46,17 +47,19 @@ const proDataStore = useProjectData()
 const fetchTypeList = (projId: number) => proDataStore.fetchTypeList(projId)
 
 const paymentStore = usePayment()
-const fetchPaymentSummaryList = (projId: number) => paymentStore.fetchPaymentSummaryList(projId)
+const fetchPaymentSummaryList = (projId: number) =>
+  paymentStore.fetchLedgerPaymentSummaryList(projId)
 const fetchPayOrderList = (projId: number) => paymentStore.fetchPayOrderList(projId)
-const fetchPaymentList = (payload: CashBookFilter) => paymentStore.fetchPaymentList(payload)
+const fetchPaymentList = (payload: CashBookFilter) => paymentStore.fetchLedgerPaymentList(payload)
 
-const proCashStore = useProCash()
-const fetchAllProBankAccList = (projId: number) => proCashStore.fetchAllProBankAccList(projId)
+const proLedgerStore = useProLedger()
+const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
+
 const patchPrCashBook = (
   payload: ProjectCashBook & { isPayment?: boolean } & {
     filters: CashBookFilter
   },
-) => proCashStore.patchPrCashBook(payload)
+) => 1 //proCashStore.patchPrCashBook(payload)
 
 const listFiltering = (payload: CashBookFilter) => {
   filterItems.value = payload
@@ -117,13 +120,13 @@ const dataSetup = (pk: number) => {
 const dataReset = () => {
   contStore.orderGroupList = []
   proDataStore.unitTypeList = []
-  proCashStore.proBankAccountList = []
+  proLedgerStore.allProBankList = []
   projStore.proIncBudgetList = []
   contStore.contSummaryList = []
-  paymentStore.paymentSummaryList = []
-  paymentStore.paymentList = []
+  paymentStore.ledgerPaymentSummaryList = []
+  paymentStore.ledgerPaymentList = []
   paymentStore.payOrderList = []
-  paymentStore.paymentsCount = 0
+  paymentStore.ledgerPaymentsCount = 0
 }
 
 const projSelect = (target: number | null) => {
@@ -135,8 +138,8 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
 
 const loading = ref(true)
 onBeforeRouteLeave(async () => {
-  paymentStore.paymentList = []
-  paymentStore.paymentsCount = 0
+  paymentStore.ledgerPaymentList = []
+  paymentStore.ledgerPaymentsCount = 0
   loading.value = false
 })
 </script>
