@@ -7,6 +7,7 @@ import workProject from '@/router/modules/workProject'
 import workSetting from '@/router/modules/workSetting'
 import contracts from '@/router/modules/contracts'
 import payments from '@/router/modules/payments'
+import payment from '@/router/modules/payment'
 import notices from '@/router/modules/notices'
 import proCash from '@/router/modules/proCash'
 import proLedger from '@/router/modules/proLedger.ts'
@@ -41,6 +42,7 @@ const routes: Array<RouteRecordRaw> = [
       workSetting as RouteRecordRaw,
       contracts,
       payments,
+      payment,
       notices,
       proCash,
       proLedger,

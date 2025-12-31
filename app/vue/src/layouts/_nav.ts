@@ -173,7 +173,7 @@ const contract = {
   ],
 }
 
-const payment = {
+const payment1 = {
   component: 'CNavGroup',
   name: '분양 수납 관리',
   to: '/payments',
@@ -193,6 +193,30 @@ const payment = {
       component: 'CNavItem',
       name: '수납 현황 집계',
       to: '/payments/status',
+    },
+  ],
+}
+
+const payment = {
+  component: 'CNavGroup',
+  name: '계약 수납 관리',
+  to: '/payment',
+  icon: 'cil-calculator',
+  items: [
+    {
+      component: 'CNavItem',
+      name: '건별 납부 내역',
+      to: '/payment/index',
+    },
+    {
+      component: 'CNavItem',
+      name: '건별 납부 관리',
+      to: '/payment/manage',
+    },
+    {
+      component: 'CNavItem',
+      name: '납부 현황 집계',
+      to: '/payment/status',
     },
   ],
 }
@@ -479,6 +503,7 @@ const nav = [
     name: '프로젝트 관리',
   },
   contract,
+  payment1,
   payment,
   notice,
   project_cash,
