@@ -232,17 +232,6 @@ class SimpleLedgerAccountingEntrySerializer(serializers.ModelSerializer):
         fields = ('pk', 'transaction_id', 'amount', 'account', 'related_transaction')
 
 
-class SimpleContractSerializer(serializers.ModelSerializer):
-    """Contract 간단 직렬화 (Ledger용)"""
-    order_group = SimpleOrderGroupSerializer()
-    unit_type = SimpleUnitTypeSerializer()
-    contractor = serializers.SlugRelatedField(queryset=Contractor.objects.all(), slug_field='name')
-
-    class Meta:
-        model = Contract
-        fields = ('pk', 'order_group', 'unit_type', 'serial_number', 'contractor')
-
-
 class ContractPaymentSerializer(serializers.ModelSerializer):
     """
     ContractPayment 직렬화
