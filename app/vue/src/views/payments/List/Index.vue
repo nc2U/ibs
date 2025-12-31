@@ -2,14 +2,14 @@
 import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payments/_menu/headermixin'
-import type { Project } from '@/store/types/project.ts'
-import type { CashBookFilter, ProjectCashBook } from '@/store/types/proCash'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { useProCash } from '@/store/pinia/proCash'
 import { onBeforeRouteLeave } from 'vue-router'
+import type { Project } from '@/store/types/project.ts'
+import type { CashBookFilter, ProjectCashBook } from '@/store/types/proCash'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -99,7 +99,9 @@ const paymentBy = ref(Cookies.get('paymentBy') ?? '1') // 다운로드할 파일
 watch(paymentBy, newVal => Cookies.set('paymentBy', newVal))
 
 const excelUrl = computed(() => (paymentBy.value === '1' ? byPayment.value : byContract.value))
-const filename = computed(() => paymentBy.value === '1' ? '수납건별_납부현황':'계약자별_납부현황')
+const filename = computed(() =>
+  paymentBy.value === '1' ? '수납건별_납부현황' : '계약자별_납부현황',
+)
 
 const dataSetup = (pk: number) => {
   fetchOrderGroupList(pk)
@@ -158,7 +160,13 @@ onBeforeRouteLeave(async () => {
           :by-cont="paymentBy === '2'"
           @payment-filtering="listFiltering"
         />
-        <TableTitleRow title="대금 납부 현황" excel :url="excelUrl" :filename="`${filename}.xlsx`" :disabled="!project">
+        <TableTitleRow
+          title="대금 납부 현황"
+          excel
+          :url="excelUrl"
+          :filename="`${filename}.xlsx`"
+          :disabled="!project"
+        >
           <v-radio-group
             v-model="paymentBy"
             inline
