@@ -1325,7 +1325,7 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
     serializer_class = ContractPaymentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_class = ContractPaymentFilterSet
-    pagination_class = PageNumberPaginationOneHundred
+    pagination_class = PageNumberPaginationTen
     search_fields = ['contract__contractor__name']  # 계약자명 검색
 
     def get_serializer_class(self):
@@ -1333,6 +1333,10 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return ContractPaymentListSerializer
         return ContractPaymentSerializer
+
+
+class AllContractPaymentViewSet(ContractPaymentViewSet):
+    pagination_class = PageNumberPaginationOneHundred
 
 
 # Aggregation ViewSets ----------------------------------------------------------------

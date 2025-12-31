@@ -118,7 +118,8 @@ router.register(r'payment-status-by-unit-type', payment.PaymentStatusByUnitTypeV
 router.register(r'overall-summary', payment.OverallSummaryViewSet, basename='overall-summary')  # only list
 
 # ledger-based payment (new architecture)
-router.register(r'ledger/contract-payment', payment.ContractPaymentViewSet, basename='ledger-contract-payment')
+router.register(r'ledger/payment', payment.ContractPaymentViewSet, basename='ledger-payment')
+router.register(r'ledger/all-payment', payment.AllContractPaymentViewSet, basename='ledger-all-payment')  # only list
 router.register(r'ledger/payment-summary', payment.ContractPaymentSummaryViewSet,
                 basename='ledger-payment-summary')
 router.register(r'ledger/payment-status-by-unit-type', payment.ContractPaymentStatusByUnitTypeViewSet,
