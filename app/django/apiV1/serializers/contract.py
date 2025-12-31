@@ -2,7 +2,6 @@ import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import OuterRef, Subquery
 from rest_framework import serializers
 
 from _utils.contract_price import get_contract_payment_plan
@@ -13,7 +12,6 @@ from contract.models import (OrderGroup, DocumentType, RequiredDocument, Contrac
 from contract.services import (ContractPriceUpdateService, ContractCreationService,
                                ContractUpdateService, ContractorReleaseService)
 from items.models import HouseUnit, KeyUnit
-from ledger.models import ProjectBankTransaction
 from payment.models import InstallmentPaymentOrder
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
@@ -263,13 +261,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_payment_list(instance):
         """납부 내역 조회 (거래일자 기준 정렬)"""
-        return instance.payments.annotate(
-            transaction_deal_date=Subquery(
-                ProjectBankTransaction.objects.filter(
-                    transaction_id=OuterRef('accounting_entry__transaction_id')
-                ).values('deal_date')[:1]
-            )
-        ).order_by('transaction_deal_date', 'created_at')
+        return instance.payments.order_by('deal_date', 'created_at')
 
     def get_payments(self, instance):  # 납부 분담금/분양대금 리스트
         payments = self.get_payment_list(instance).select_related(
