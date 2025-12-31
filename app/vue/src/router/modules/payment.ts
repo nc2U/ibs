@@ -32,7 +32,7 @@ const payment = {
     },
     {
       path: 'manage/:contractId(\\d+)',
-      name: '건별 납부 내역',
+      name: '건별 납부 관리 - 상세',
       component: () => import('@/views/payment/Register/Index.vue'),
       meta: {
         title: '건별 납부 관리',

@@ -32,7 +32,7 @@ const payments = {
     },
     {
       path: 'manage/:contractId(\\d+)',
-      name: '건별 수납 내역',
+      name: '건별 수납 관리 - 상세',
       component: () => import('@/views/payments/Register/Index.vue'),
       meta: {
         title: '건별 수납 관리',
