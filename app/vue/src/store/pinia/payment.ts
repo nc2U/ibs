@@ -502,13 +502,15 @@ export const usePayment = defineStore('payment', () => {
   }
 
   /**
-   * 계약 납부 수정 (복합 거래)
+   * 계약 납부 수정 (복합 거래 - 전체 교체)
    *
    * 은행 거래 + 회계 분개 + 계약 결제를 한 번에 수정합니다.
    * ProjectAccountingEntry 수정 → trigger_sync_contract_payment() → ContractPayment 자동 업데이트
    *
+   * ⚠️ PUT 요청: 모든 필드 필수, accounting_entries에 없는 기존 분개는 삭제됨
+   *
    * @param bankTransactionId - 수정할 은행 거래 ID (ProjectBankTransaction.pk)
-   * @param payload - 수정할 복합 거래 데이터
+   * @param payload - 수정할 복합 거래 데이터 (전체 필드 필수)
    * @returns Promise<CompositeTransactionResponse>
    *
    * @example
@@ -530,26 +532,6 @@ export const usePayment = defineStore('payment', () => {
    *     }
    *   ]
    * })
-   *
-   * @example
-   * // 회차 변경 (1회차 → 2회차)
-   * await updateContractPayment(456, {
-   *   project: 1,
-   *   bank_account: 10,
-   *   deal_date: '2025-01-15',
-   *   amount: 50000000,
-   *   sort: 1,
-   *   content: '중도금 입금',
-   *   accounting_entries: [
-   *     {
-   *       pk: 789,
-   *       account: 111,
-   *       amount: 50000000,
-   *       contract: 123,
-   *       installment_order: 2, // 변경된 회차
-   *     }
-   *   ]
-   * })
    */
   const updateContractPayment = async (
     bankTransactionId: number,
@@ -557,6 +539,62 @@ export const usePayment = defineStore('payment', () => {
   ): Promise<CompositeTransactionResponse> => {
     try {
       const response = await api.put(
+        `/ledger/project-composite-transaction/${bankTransactionId}/`,
+        payload,
+      )
+      message('success', '', '계약 납부가 수정되었습니다.')
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
+  /**
+   * 계약 납부 부분 수정 (PATCH - installment_order 전용)
+   *
+   * ContractPayment의 installment_order만 수정하거나 일부 필드만 수정합니다.
+   * PATCH 요청 시에만 installment_order가 ContractPayment에 직접 업데이트됩니다.
+   *
+   * ⚠️ PATCH 요청: 필수 필드 없음, accounting_entries에 없는 기존 분개는 유지됨
+   *
+   * @param bankTransactionId - 수정할 은행 거래 ID (ProjectBankTransaction.pk)
+   * @param payload - 수정할 필드만 포함 (Partial)
+   * @returns Promise<CompositeTransactionResponse>
+   *
+   * @example
+   * // 회차만 수정 (가장 일반적인 사용 케이스)
+   * await patchContractPayment(456, {
+   *   accounting_entries: [
+   *     {
+   *       pk: 789,
+   *       installment_order: 2  // 1회차 → 2회차 변경
+   *     }
+   *   ]
+   * })
+   *
+   * @example
+   * // 여러 분개의 회차 동시 수정
+   * await patchContractPayment(456, {
+   *   accounting_entries: [
+   *     { pk: 789, installment_order: 2 },
+   *     { pk: 790, installment_order: 3 }
+   *   ]
+   * })
+   *
+   * @example
+   * // 은행 거래 내용만 수정 (회차는 그대로)
+   * await patchContractPayment(456, {
+   *   content: '중도금 입금 (수정)',
+   *   note: '비고 추가'
+   * })
+   */
+  const patchContractPayment = async (
+    bankTransactionId: number,
+    payload: Partial<CompositeTransactionPayload>,
+  ): Promise<CompositeTransactionResponse> => {
+    try {
+      const response = await api.patch(
         `/ledger/project-composite-transaction/${bankTransactionId}/`,
         payload,
       )
@@ -709,6 +747,7 @@ export const usePayment = defineStore('payment', () => {
     // ContractPayment CRUD (Ledger 기반)
     createContractPayment,
     updateContractPayment,
+    patchContractPayment,
     deleteContractPayment,
     fetchBankTransactionDetail,
     fetchAccountingEntriesByTransactionId,

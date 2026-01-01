@@ -103,15 +103,15 @@ const filename = computed(() =>
   paymentBy.value === '1' ? '수납건별_납부현황' : '계약자별_납부현황',
 )
 
-const dataSetup = (pk: number) => {
-  fetchOrderGroupList(pk)
-  fetchTypeList(pk)
-  fetchIncBudgetList(pk)
-  fetchContSummaryList(pk)
-  fetchPaymentSummaryList(pk)
-  fetchPaymentList({ project: pk })
-  fetchPayOrderList(pk)
-  fetchAllProBankAccList(pk)
+const dataSetup = async (pk: number) => {
+  await fetchOrderGroupList(pk)
+  await fetchTypeList(pk)
+  await fetchIncBudgetList(pk)
+  await fetchContSummaryList(pk)
+  await fetchPaymentSummaryList(pk)
+  await fetchPaymentList({ project: pk })
+  await fetchPayOrderList(pk)
+  await fetchAllProBankAccList(pk)
 }
 
 const dataReset = () => {
@@ -131,13 +131,15 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
-
 const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value || projStore.initProjId)
+  loading.value = false
+})
+
 onBeforeRouteLeave(async () => {
   paymentStore.paymentList = []
   paymentStore.paymentsCount = 0
-  loading.value = false
 })
 </script>
 

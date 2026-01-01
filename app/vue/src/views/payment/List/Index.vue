@@ -9,7 +9,6 @@ import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { onBeforeRouteLeave } from 'vue-router'
 import type { Project } from '@/store/types/project.ts'
-import type { ProjectCashBook } from '@/store/types/proCash'
 import type { ContPayFilter } from '@/store/types/payment.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -56,10 +55,10 @@ const proLedgerStore = useProLedger()
 const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
 
 const patchPrCashBook = (
-  payload: ProjectCashBook & { isPayment?: boolean } & {
+  payload: any & { isPayment?: boolean } & {
     filters: ContPayFilter
   },
-) => 1 //proCashStore.patchPrCashBook(payload)
+) => 1 // proCashStore.patchPrCashBook(payload)
 
 const listFiltering = (payload: ContPayFilter) => {
   filterItems.value = payload
@@ -69,7 +68,7 @@ const listFiltering = (payload: ContPayFilter) => {
   }
 }
 
-const payMatch = (payload: ProjectCashBook) =>
+const payMatch = (payload: any) =>
   patchPrCashBook({ ...payload, isPayment: true, filters: filterItems.value }) // const & payment 매칭
 
 const pageSelect = (page: number) => {
@@ -106,15 +105,15 @@ const filename = computed(() =>
   paymentBy.value === '1' ? '수납건별_납부현황' : '계약자별_납부현황',
 )
 
-const dataSetup = (pk: number) => {
-  fetchOrderGroupList(pk)
-  fetchTypeList(pk)
-  fetchIncBudgetList(pk)
-  fetchContSummaryList(pk)
-  fetchPaymentSummaryList(pk)
-  fetchPaymentList({ project: pk })
-  fetchPayOrderList(pk)
-  fetchAllProBankAccList(pk)
+const dataSetup = async (pk: number) => {
+  await fetchOrderGroupList(pk)
+  await fetchTypeList(pk)
+  await fetchIncBudgetList(pk)
+  await fetchContSummaryList(pk)
+  await fetchPaymentSummaryList(pk)
+  await fetchPaymentList({ project: pk })
+  await fetchPayOrderList(pk)
+  await fetchAllProBankAccList(pk)
 }
 
 const dataReset = () => {
@@ -134,13 +133,15 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
-
 const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value || projStore.initProjId)
+  loading.value = false
+})
+
 onBeforeRouteLeave(async () => {
   paymentStore.ledgerPaymentList = []
   paymentStore.ledgerPaymentsCount = 0
-  loading.value = false
 })
 </script>
 
