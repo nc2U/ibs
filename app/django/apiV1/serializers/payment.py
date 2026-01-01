@@ -271,10 +271,14 @@ class ContractPaymentListSerializer(serializers.ModelSerializer):
     trader = serializers.SerializerMethodField(read_only=True)
     note = serializers.SerializerMethodField(read_only=True)
 
+    # CRUD 작업을 위한 은행거래 PK
+    bank_transaction_id = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = ContractPayment
         fields = ('pk', 'deal_date', 'contract', 'amount',
-                  'installment_order', 'bank_account', 'trader', 'note')
+                  'installment_order', 'bank_account', 'trader', 'note',
+                  'bank_transaction_id')
 
     def get_deal_date(self, obj):
         """거래일자 조회"""
@@ -313,3 +317,17 @@ class ContractPaymentListSerializer(serializers.ModelSerializer):
         except (AttributeError, TypeError):
             pass
         return None
+
+    def get_bank_transaction_id(self, obj):
+        """
+        은행 거래 ID 조회
+
+        프론트엔드에서 수정/삭제 시 ProjectCompositeTransactionSerializer 에 필요
+        updateContractPayment(bank_transaction_id, payload)
+        patchContractPayment(bank_transaction_id, payload)
+        deleteContractPayment(bank_transaction_id)
+        """
+        try:
+            return obj.accounting_entry.related_transaction.pk
+        except (AttributeError, TypeError):
+            return None
