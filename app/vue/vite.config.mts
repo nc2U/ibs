@@ -135,7 +135,6 @@ export default defineConfig({
       '@vue/runtime-core',
       'md-editor-v3',
       'highlight.js',
-      'diff2html',
     ],
     exclude: [],
   },
