@@ -199,11 +199,13 @@ export interface AllPayment extends BasePayment {
 export interface OriginPayment extends BasePayment {
   amount: number
   bank_transaction_id: number | null // 수정/삭제용 은행거래 PK
+  accounting_entry: number | any
 }
 
 export interface PaymentList {
   pk: number
   trans_id: number
+  entry_id: number
   deal_date: string
   contract: ContractInPayment
   order_group: string
