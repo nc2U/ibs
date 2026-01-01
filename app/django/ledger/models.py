@@ -775,10 +775,6 @@ class ProjectAccountingEntry(AccountingEntry):
     contractor = models.ForeignKey('contract.Contractor', on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name='계약자', help_text='계정 관련 계약자')
 
-    # 데이터 이관용 임시 컬럼 - 이관 후 삭제
-    installment_order = models.ForeignKey('payment.InstallmentPaymentOrder', on_delete=models.SET_NULL,
-                                          null=True, blank=True, verbose_name='납부회차', help_text='분할 납부 회차 정보')
-
     class Meta:
         verbose_name = '10. 프로젝트 회계 분개'
         verbose_name_plural = '10. 프로젝트 회계 분개'
