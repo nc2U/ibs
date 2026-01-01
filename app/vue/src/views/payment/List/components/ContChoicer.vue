@@ -59,10 +59,11 @@ const contMatching = (contract: Contract) => {
 }
 
 const modalAction = () => {
-  const pk = props.payment?.trans_id
+  const trans_id = props.payment?.trans_id
+  const pk = props.payment?.entry_id
   const contract = (cont.value as Contract)?.pk
   const content = `${(cont.value as Contract)?.contractor?.name}[${(cont.value as Contract)?.serial_number}] 대금납부`
-  emit('pay-match', { pk, content, accounting_entries: [{ pk: props.payment?.pk, contract }] })
+  emit('pay-match', { trans_id, content, accounting_entries: [{ pk, contract }] })
   pageInit()
   emit('close')
 }
