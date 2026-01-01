@@ -9,7 +9,7 @@ import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { onBeforeRouteLeave } from 'vue-router'
 import type { Project } from '@/store/types/project.ts'
-import type { ContPayFilter } from '@/store/types/payment.ts'
+import type { CompositeTransactionPayload, ContPayFilter } from '@/store/types/payment.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -50,15 +50,11 @@ const fetchPaymentSummaryList = (projId: number) =>
   paymentStore.fetchLedgerPaymentSummaryList(projId)
 const fetchPayOrderList = (projId: number) => paymentStore.fetchPayOrderList(projId)
 const fetchPaymentList = (payload: ContPayFilter) => paymentStore.fetchLedgerPaymentList(payload)
+const patchContractPayment = (transPk: number, payload: Partial<CompositeTransactionPayload>) =>
+  paymentStore.patchContractPayment(transPk, payload)
 
 const proLedgerStore = useProLedger()
 const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
-
-const patchPrCashBook = (
-  payload: any & { isPayment?: boolean } & {
-    filters: ContPayFilter
-  },
-) => 1 // proCashStore.patchPrCashBook(payload)
 
 const listFiltering = (payload: ContPayFilter) => {
   filterItems.value = payload
@@ -68,8 +64,7 @@ const listFiltering = (payload: ContPayFilter) => {
   }
 }
 
-const payMatch = (payload: any) =>
-  patchPrCashBook({ ...payload, isPayment: true, filters: filterItems.value }) // const & payment 매칭
+const payMatch = (pk: number, payload: any) => patchContractPayment(pk, payload) //{ ...payload, isPayment: true, filters: filterItems.value }) // const & payment 매칭
 
 const pageSelect = (page: number) => {
   filterItems.value.page = page

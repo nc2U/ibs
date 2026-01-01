@@ -488,7 +488,6 @@ export const usePayment = defineStore('payment', () => {
    *   ]
    * })
    */
-
   const createContractPayment = async (
     payload: CompositeTransactionPayload,
   ): Promise<CompositeTransactionResponse> => {
