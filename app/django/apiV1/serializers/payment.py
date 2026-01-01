@@ -278,7 +278,7 @@ class ContractPaymentListSerializer(serializers.ModelSerializer):
         model = ContractPayment
         fields = ('pk', 'deal_date', 'contract', 'amount',
                   'installment_order', 'bank_account', 'trader', 'note',
-                  'bank_transaction_id')
+                  'bank_transaction_id', 'accounting_entry')
 
     def get_deal_date(self, obj):
         """거래일자 조회"""
@@ -328,6 +328,6 @@ class ContractPaymentListSerializer(serializers.ModelSerializer):
         deleteContractPayment(bank_transaction_id)
         """
         try:
-            return obj.accounting_entry.related_transaction.pk
+            return obj.related_transaction.pk
         except (AttributeError, TypeError):
             return None

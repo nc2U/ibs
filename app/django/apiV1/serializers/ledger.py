@@ -680,6 +680,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         instance.save()
 
         # 3. 회계분개 업데이트 (제공된 경우)
+        accounting_entries = []
         if entries_data is not None:
             # 기존 회계분개 조회
             existing_entries = ProjectAccountingEntry.objects.filter(
@@ -696,8 +697,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 for entry in entries_to_delete:
                     # ContractPayment가 있으면 함께 삭제됨 (CASCADE)
                     entry.delete()
-
-            accounting_entries = []
 
             for entry_data in entries_data:
                 entry_pk = entry_data.get('pk')
@@ -731,19 +730,23 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                             self._update_contract_payment_installment(
                                 accounting_entry, entry_data['installment_order']
                             )
+                        
+                        accounting_entries.append(accounting_entry)
 
                     except ProjectAccountingEntry.DoesNotExist:
-                        # ID가 잘못된 경우 새로 생성
-                        accounting_entry = self._create_accounting_entry(instance, entry_data)
+                        # ID가 잘못되었거나 다른 거래에 속한 경우, 이 요청에서는 무시
+                        continue
                 else:
                     # 새 회계분개 생성
                     accounting_entry = self._create_accounting_entry(instance, entry_data)
-
-                accounting_entries.append(accounting_entry)
+                    accounting_entries.append(accounting_entry)
+        else:
+            # payload에 accounting_entries가 없는 경우, 기존 분개 목록을 그대로 사용
+            accounting_entries = instance.accounting_entries.all()
 
         result = {
             'bank_transaction': instance,
-            'accounting_entries': accounting_entries if entries_data else [],
+            'accounting_entries': accounting_entries,
         }
 
         return result
