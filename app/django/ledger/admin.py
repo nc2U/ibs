@@ -553,8 +553,7 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectAccountingEntryResource
     list_display = ('id', 'transaction_id_short', 'project', 'account_display', 'contract_display',
-                    'contractor_display', 'installment_order', 'formatted_amount', 'trader', 'evidence_type',
-                    'created_at')
+                    'contractor_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
     list_editable = ('evidence_type',)
     list_filter = ('project', 'account__category', 'account__is_payment', 'evidence_type')

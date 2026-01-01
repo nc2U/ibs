@@ -203,6 +203,12 @@ class ContractPayment(models.Model):
         ProjectBankTransaction (은행 거래 1건)
             → ProjectAccountingEntry (회계 분개 N건, 회차별 분리)
                 → ContractPayment (계약 납부 정보, 1:1 연결)
+
+    ⚠️ 자동 동기화 필드 (editable=False):
+        - project: accounting_entry.project에서 동기화
+        - contract: accounting_entry.contract에서 동기화
+        - deal_date: accounting_entry.related_transaction.deal_date에서 동기화
+        → 이 필드들은 직접 수정할 수 없으며, 상위 모델을 수정해야 합니다.
     """
     # Accounting Domain 연결 (1:1)
     accounting_entry = models.OneToOneField(
@@ -214,18 +220,46 @@ class ContractPayment(models.Model):
     )
 
     # 계약 정보 (베이스 인스턴스에서는 선택사항)
-    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    contract = models.ForeignKey('contract.Contract', on_delete=models.CASCADE, verbose_name='계약',
-                                 null=True, blank=True, related_name='payments', help_text='분양 계약 (베이스 인스턴스 생성 시 선택사항)')
-    installment_order = models.ForeignKey(InstallmentPaymentOrder, on_delete=models.SET_NULL,
-                                          null=True, blank=True, verbose_name='납부회차', help_text='분할 납부 회차 정보')
+    # ⚠️ 주의: project, contract는 accounting_entry에서 자동 동기화됩니다. 직접 수정 불가.
+    project = models.ForeignKey(
+        'project.Project',
+        on_delete=models.CASCADE,
+        verbose_name='프로젝트',
+        editable=False,  # 직접 수정 불가 - accounting_entry.project와 자동 동기화
+        help_text='⚠️ accounting_entry.project에서 자동 동기화 (직접 수정 불가)'
+    )
+    contract = models.ForeignKey(
+        'contract.Contract',
+        on_delete=models.CASCADE,
+        verbose_name='계약',
+        null=True,
+        blank=True,
+        related_name='payments',
+        editable=False,  # 직접 수정 불가 - accounting_entry.contract와 자동 동기화
+        help_text='⚠️ accounting_entry.contract에서 자동 동기화 (직접 수정 불가)'
+    )
+    installment_order = models.ForeignKey(
+        InstallmentPaymentOrder,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='납부회차',
+        help_text='분할 납부 회차 정보'
+    )
+
+    # 거래일자 (비정규화 - 정렬 최적화)
+    deal_date = models.DateField(
+        db_index=True,
+        null=True,
+        blank=True,
+        verbose_name='거래일자',
+        editable=False,  # 직접 수정 불가 - related_transaction.deal_date와 자동 동기화
+        help_text='⚠️ related_transaction.deal_date에서 자동 동기화 (직접 수정 불가)'
+    )
 
     # 계정 불일치 플래그
     is_payment_mismatch = models.BooleanField(default=False, verbose_name='결제계정 불일치',
                                               help_text='연결된 회계분개의 is_payment=False인 경우 True로 표시')
-
-    # 거래일자 (비정규화 - 정렬 최적화)
-    deal_date = models.DateField(db_index=True, null=True, blank=True, verbose_name='거래일자')
 
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
@@ -246,6 +280,96 @@ class ContractPayment(models.Model):
             models.Index(fields=['installment_order', 'created_at']),
         ]
 
+    def clean(self):
+        """
+        유효성 검증
+
+        1. accounting_entry와의 데이터 일관성 확인
+        2. contract/installment_order의 project 일치 확인
+
+        ⚠️ 주의: project, contract, deal_date는 자동 동기화되므로 직접 수정할 수 없습니다.
+        - project, contract: accounting_entry에서 동기화 (editable=False)
+        - deal_date: related_transaction.deal_date에서 동기화 (editable=False)
+        """
+        super().clean()
+
+        # 1. accounting_entry와 일치 여부 확인
+        if self.accounting_entry_id:
+            # project 일치 검증
+            if self.project_id != self.accounting_entry.project_id:
+                raise ValidationError({
+                    'project': f'project는 accounting_entry.project와 자동 동기화됩니다. '
+                               f'직접 수정할 수 없습니다. ProjectAccountingEntry를 수정하세요. '
+                               f'(accounting_entry.project_id={self.accounting_entry.project_id})'
+                })
+
+            # contract 일치 검증 (둘 다 있는 경우)
+            if self.contract_id and self.accounting_entry.contract_id:
+                if self.contract_id != self.accounting_entry.contract_id:
+                    raise ValidationError({
+                        'contract': f'contract는 accounting_entry.contract와 자동 동기화됩니다. '
+                                    f'직접 수정할 수 없습니다. ProjectAccountingEntry를 수정하세요. '
+                                    f'(accounting_entry.contract_id={self.accounting_entry.contract_id})'
+                    })
+
+            # deal_date 일치 검증
+            bank_transaction = self.accounting_entry.related_transaction
+            if bank_transaction and self.deal_date and self.deal_date != bank_transaction.deal_date:
+                raise ValidationError({
+                    'deal_date': f'deal_date는 related_transaction.deal_date와 자동 동기화됩니다. '
+                                 f'직접 수정할 수 없습니다. ProjectBankTransaction을 수정하세요. '
+                                 f'(related_transaction.deal_date={bank_transaction.deal_date})'
+                })
+
+        # 2. contract의 project 일치 확인
+        if self.contract and self.contract.project_id != self.project_id:
+            raise ValidationError({
+                'contract': '계약의 프로젝트와 일치하지 않습니다.'
+            })
+
+        # 3. installment_order의 project 일치 확인
+        if self.installment_order and self.installment_order.project_id != self.project_id:
+            raise ValidationError({
+                'installment_order': '납부회차의 프로젝트와 일치하지 않습니다.'
+            })
+
+    def save(self, *args, **kwargs):
+        """
+        저장 전 유효성 검증
+
+        ⚠️ 주의: ContractPayment는 일반적으로 직접 생성/수정하지 않습니다.
+
+        올바른 사용법:
+        1. 생성: ProjectAccountingEntry 생성 → trigger_sync_contract_payment → ContractPayment 자동 생성
+        2. 수정: ProjectAccountingEntry 수정 → trigger_sync_contract_payment → ContractPayment 자동 업데이트
+        3. 삭제: ProjectBankTransaction 삭제 → CASCADE로 AccountingEntry, ContractPayment 자동 삭제
+
+        자동 동기화 필드 (editable=False):
+        - project, contract, deal_date는 상위 모델에서 자동 동기화되므로 직접 수정 불가
+        - 이 필드들을 변경하려면 ProjectBankTransaction 또는 ProjectAccountingEntry를 수정하세요.
+
+        직접 수정 시 데이터 불일치 위험이 있으므로 권장하지 않습니다.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        is_update = self.pk is not None
+
+        # 직접 수정 감지 (update_fields가 없으면 수동 호출)
+        if is_update:
+            update_fields = kwargs.get('update_fields')
+            if not update_fields:
+                logger.warning(
+                    f"⚠️ ContractPayment(pk={self.pk}) 직접 수정 감지! "
+                    f"일반적으로 ProjectAccountingEntry를 통해 수정해야 합니다. "
+                    f"데이터 불일치가 발생할 수 있습니다."
+                )
+
+        # 유효성 검증
+        self.full_clean()
+
+        super().save(*args, **kwargs)
+
     @property
     def amount(self):
         """결제 금액 (accounting_entry.amount 참조)"""
@@ -259,25 +383,6 @@ class ContractPayment(models.Model):
     def get_payment_amount(self):
         """결제 금액 조회 (하위 호환용)"""
         return self.amount
-
-    def clean(self):
-        """모델 유효성 검증"""
-        # 계약의 프로젝트와 일치 확인
-        if self.contract and self.contract.project_id != self.project_id:
-            raise ValidationError({
-                'contract': '계약의 프로젝트와 일치하지 않습니다.'
-            })
-
-        # 납부회차의 프로젝트와 일치 확인
-        if self.installment_order and self.installment_order.project_id != self.project_id:
-            raise ValidationError({
-                'installment_order': '납부회차의 프로젝트와 일치하지 않습니다.'
-            })
-
-    def save(self, *args, **kwargs):
-        """저장 전 유효성 검증"""
-        self.full_clean()
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.contract} - 납부 ({self.amount:,}원)"

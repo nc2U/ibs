@@ -573,30 +573,37 @@ class ProjectBankTransaction(BankTransaction):
 
     def save(self, *args, **kwargs):
         """
-        은행 거래 저장 시 연결된 회계 분개의 project도 동기화
+        은행 거래 저장 시 연결된 회계 분개 및 ContractPayment 동기화
 
-        project 변경 감지:
-        - 신규: 생성 후 회계 분개 생성되므로 동기화 불필요
-        - 수정: project 변경 시 연결된 AccountingEntry들의 project 업데이트
+        변경 감지 및 동기화:
+        - project 변경: AccountingEntry.project 업데이트 → ContractPayment.project 동기화
+        - deal_date 변경: ContractPayment.deal_date 동기화
         """
         # 기존 인스턴스인지 확인 (pk 존재 여부)
         is_update = self.pk is not None
 
         if is_update:
-            # 기존 project 값 조회 (변경 감지용)
+            # 기존 값 조회 (변경 감지용)
             try:
                 old_instance = ProjectBankTransaction.objects.get(pk=self.pk)
                 old_project_id = old_instance.project_id
+                old_deal_date = old_instance.deal_date
             except ProjectBankTransaction.DoesNotExist:
                 old_project_id = None
+                old_deal_date = None
         else:
             old_project_id = None
+            old_deal_date = None
 
         # 부모 클래스 save() 호출
         super().save(*args, **kwargs)
 
+        # 변경 감지 플래그
+        project_changed = is_update and old_project_id and old_project_id != self.project_id
+        deal_date_changed = is_update and old_deal_date and old_deal_date != self.deal_date
+
         # project 변경 시 연결된 회계 분개 동기화
-        if is_update and old_project_id and old_project_id != self.project_id:
+        if project_changed:
             # 연결된 모든 회계 분개의 project 업데이트
             updated_count = ProjectAccountingEntry.objects.filter(
                 transaction_id=self.transaction_id
@@ -609,10 +616,19 @@ class ProjectBankTransaction(BankTransaction):
                     f"연결된 {updated_count}개 회계분개 동기화 완료"
                 )
 
-                # 회계 분개 변경으로 인한 ContractPayment 동기화
-                # ProjectAccountingEntry의 project 변경 → trigger_sync_contract_payment 호출
-                for entry in ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id):
-                    trigger_sync_contract_payment(entry)
+        # project 또는 deal_date 변경 시 ContractPayment 동기화
+        if project_changed or deal_date_changed:
+            entries = ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+
+            for entry in entries:
+                trigger_sync_contract_payment(entry)
+
+            if deal_date_changed:
+                logger.info(
+                    f"ProjectBankTransaction(pk={self.pk}) deal_date 변경: "
+                    f"{old_deal_date} → {self.deal_date}, "
+                    f"연결된 {entries.count()}개 ContractPayment 동기화 완료"
+                )
 
     @property
     def accounting_entries(self):
