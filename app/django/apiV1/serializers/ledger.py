@@ -9,6 +9,7 @@ from ledger.models import (
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
+from payment.models import ContractPayment
 
 
 # ============================================
@@ -635,7 +636,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 account_id=entry_data['account'],
                 contract_id=entry_data.get('contract'),
                 contractor_id=entry_data.get('contractor'),
-                installment_order_id=entry_data.get('installment_order'),
                 amount=entry_data['amount'],
                 trader=entry_data.get('trader', ''),
                 evidence_type=entry_data.get('evidence_type'),
@@ -646,6 +646,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             'bank_transaction': bank_tx,
             'accounting_entries': accounting_entries,
         }
+
         return result
 
     @transaction.atomic
@@ -658,6 +659,9 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         2. entries_data에 'pk' 없음: 새 분개 생성
         3. PUT 요청: 기존 분개가 entries_data에 없으면 삭제
         4. PATCH 요청: 기존 분개가 entries_data에 없어도 유지 (부분 업데이트)
+
+        ContractPayment.installment_order 특수 처리:
+        - PATCH 요청 시에만 installment_order가 있으면 ContractPayment에 직접 패치
 
         ContractPayment 자동 처리:
         - Model의 save()에서 trigger_sync_contract_payment가 호출되어 처리
@@ -722,6 +726,12 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                         accounting_entry.full_clean()
                         accounting_entry.save()  # Model의 save가 trigger를 호출
 
+                        # PATCH 요청 시에만 installment_order 처리
+                        if self.partial and 'installment_order' in entry_data:
+                            self._update_contract_payment_installment(
+                                accounting_entry, entry_data['installment_order']
+                            )
+
                     except ProjectAccountingEntry.DoesNotExist:
                         # ID가 잘못된 경우 새로 생성
                         accounting_entry = self._create_accounting_entry(instance, entry_data)
@@ -735,22 +745,51 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             'bank_transaction': instance,
             'accounting_entries': accounting_entries if entries_data else [],
         }
+
         return result
 
     @staticmethod
     def _create_accounting_entry(instance, entry_data):
-        """회계분개 생성 헬퍼 메서드"""
+        """
+        회계분개 생성 헬퍼 메서드
+        """
         return ProjectAccountingEntry.objects.create(
             transaction_id=instance.transaction_id,
             project_id=instance.project_id,
             account_id=entry_data['account'],
             contract_id=entry_data.get('contract'),
             contractor_id=entry_data.get('contractor'),
-            installment_order_id=entry_data.get('installment_order'),
             amount=entry_data['amount'],
             trader=entry_data.get('trader', ''),
             evidence_type=entry_data.get('evidence_type'),
         )
+
+    @staticmethod
+    def _update_contract_payment_installment(accounting_entry, installment_order_id):
+        """
+        ContractPayment의 installment_order를 직접 업데이트하는 헬퍼 메서드
+
+        PATCH 요청 시에만 사용됨 (사용자가 회차만 수정하고 싶을 때)
+        ProjectAccountingEntry.installment_order는 폐기 예정 컬럼이므로 사용 안 함
+
+        Args:
+            accounting_entry: ProjectAccountingEntry 인스턴스
+            installment_order_id: 수정할 회차 ID
+        """
+        if not installment_order_id:
+            return
+
+        try:
+            contract_payment = ContractPayment.objects.get(accounting_entry=accounting_entry)
+
+            # installment_order만 업데이트
+            if contract_payment.installment_order_id != installment_order_id:
+                contract_payment.installment_order_id = installment_order_id
+                contract_payment.save(update_fields=['installment_order', 'updated_at'])
+
+        except ContractPayment.DoesNotExist:
+            # is_payment=False 계정인 경우 ContractPayment가 없을 수 있음
+            pass
 
 
 # ============================================
