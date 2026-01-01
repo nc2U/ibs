@@ -4,7 +4,7 @@ import type { DiffApi } from '@/store/types/work_git_repo.ts'
 import { useRoute } from 'vue-router'
 import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { cutString } from '@/utils/baseMixins.ts'
-import { html } from 'diff2html'
+import { html } from 'diff2html/lib-esm/src/diff2html'
 import Loading from '@/components/Loading/Index.vue'
 import DOMPurify from 'dompurify'
 
