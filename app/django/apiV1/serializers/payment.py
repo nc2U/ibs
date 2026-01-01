@@ -250,8 +250,8 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
         model = ContractPayment
         fields = (
             'pk', 'project', 'contract', 'installment_order',
-            'accounting_entry', 'deal_date', 'amount',
-            'is_payment_mismatch', 'created_at', 'updated_at', 'creator'
+            'accounting_entry', 'deal_date', 'amount', 'is_payment_mismatch',
+            'created_at', 'updated_at', 'creator'
         )
         read_only_fields = ('deal_date', 'amount', 'created_at', 'updated_at')
 
@@ -267,17 +267,14 @@ class ContractPaymentListSerializer(serializers.ModelSerializer):
 
     # ProjectCashBook과 호환되는 필드명 (모두 SerializerMethodField 사용)
     deal_date = serializers.SerializerMethodField(read_only=True)
-    income = serializers.IntegerField(source='amount', read_only=True)
     bank_account = serializers.SerializerMethodField(read_only=True)
     trader = serializers.SerializerMethodField(read_only=True)
     note = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ContractPayment
-        fields = (
-            'pk', 'deal_date', 'contract', 'income', 'installment_order',
-            'bank_account', 'trader', 'note'
-        )
+        fields = ('pk', 'deal_date', 'contract', 'amount',
+                  'installment_order', 'bank_account', 'trader', 'note')
 
     def get_deal_date(self, obj):
         """거래일자 조회"""
