@@ -5,11 +5,11 @@ import { useAccount } from '@/store/pinia/account'
 import type {
   PayOrder,
   Price,
+  PriceFilter,
   PaymentPerInstallment as PayInstallType,
   PaymentPerInstallmentPayload,
 } from '@/store/types/payment'
 import { type UnitFloorType } from '@/store/types/project'
-import type { PriceFilter } from '@/store/pinia/payment.ts'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_project } from '@/utils/pageAuth'
 import { usePayment } from '@/store/pinia/payment'
