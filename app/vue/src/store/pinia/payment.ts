@@ -14,6 +14,8 @@ import {
   type PaymentSummaryComponent,
   type PayOrder,
   type Price,
+  type CompositeTransactionPayload,
+  type CompositeTransactionResponse,
 } from '@/store/types/payment'
 
 export type DownPayFilter = {
@@ -363,7 +365,7 @@ export const usePayment = defineStore('payment', () => {
   )
   const ledgerPaymentsCount = ref<number>(0)
 
-  // actions
+  // actio
   const fetchLedgerPaymentList = async (payload: ContPayFilter) => {
     const { project } = payload
     let url = `/ledger/payment/?is_payment_mismatch=false&project=${project}`
@@ -442,6 +444,217 @@ export const usePayment = defineStore('payment', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // ============================================
+  // ContractPayment CRUD (Ledger 기반)
+  // ============================================
+
+  /**
+   * 계약 납부 생성 (복합 거래)
+   *
+   * 은행 거래 + 회계 분개 + 계약 결제를 한 번에 생성합니다.
+   * ProjectAccountingEntry.save() → trigger_sync_contract_payment() → ContractPayment 자동 생성
+   *
+   * @param payload - 복합 거래 데이터
+   * @returns Promise<CompositeTransactionResponse>
+   *
+   * @example
+   * // 단일 계약 납부 등록
+   * await createContractPayment({
+   *   project: 1,
+   *   bank_account: 10,
+   *   deal_date: '2025-01-15',
+   *   amount: 50000000,
+   *   sort: 1, // 입금
+   *   content: '계약금 입금',
+   *   note: '',
+   *   accounting_entries: [
+   *     {
+   *       account: 111, // 분담금 계정
+   *       amount: 50000000,
+   *       trader: '홍길동',
+   *       contract: 123,
+   *       installment_order: 1, // 계약금
+   *     }
+   *   ]
+   * })
+   *
+   * @example
+   * // 분할 납부 등록 (한 입금에 여러 회차)
+   * await createContractPayment({
+   *   project: 1,
+   *   bank_account: 10,
+   *   deal_date: '2025-01-15',
+   *   amount: 80000000,
+   *   sort: 1,
+   *   content: '중도금 + 잔금 입금',
+   *   accounting_entries: [
+   *     {
+   *       account: 111,
+   *       amount: 50000000,
+   *       contract: 123,
+   *       installment_order: 2, // 중도금
+   *     },
+   *     {
+   *       account: 111,
+   *       amount: 30000000,
+   *       contract: 123,
+   *       installment_order: 3, // 잔금
+   *     }
+   *   ]
+   * })
+   */
+
+  const createContractPayment = async (
+    payload: CompositeTransactionPayload,
+  ): Promise<CompositeTransactionResponse> => {
+    try {
+      const response = await api.post('/ledger/project-composite-transaction/', payload)
+      message('success', '', '계약 납부가 등록되었습니다.')
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
+  /**
+   * 계약 납부 수정 (복합 거래)
+   *
+   * 은행 거래 + 회계 분개 + 계약 결제를 한 번에 수정합니다.
+   * ProjectAccountingEntry 수정 → trigger_sync_contract_payment() → ContractPayment 자동 업데이트
+   *
+   * @param bankTransactionId - 수정할 은행 거래 ID (ProjectBankTransaction.pk)
+   * @param payload - 수정할 복합 거래 데이터
+   * @returns Promise<CompositeTransactionResponse>
+   *
+   * @example
+   * // 납부 금액 수정
+   * await updateContractPayment(456, {
+   *   project: 1,
+   *   bank_account: 10,
+   *   deal_date: '2025-01-15',
+   *   amount: 60000000, // 수정된 금액
+   *   sort: 1,
+   *   content: '계약금 입금 (수정)',
+   *   accounting_entries: [
+   *     {
+   *       pk: 789, // 기존 분개 ID
+   *       account: 111,
+   *       amount: 60000000, // 수정된 금액
+   *       contract: 123,
+   *       installment_order: 1,
+   *     }
+   *   ]
+   * })
+   *
+   * @example
+   * // 회차 변경 (1회차 → 2회차)
+   * await updateContractPayment(456, {
+   *   project: 1,
+   *   bank_account: 10,
+   *   deal_date: '2025-01-15',
+   *   amount: 50000000,
+   *   sort: 1,
+   *   content: '중도금 입금',
+   *   accounting_entries: [
+   *     {
+   *       pk: 789,
+   *       account: 111,
+   *       amount: 50000000,
+   *       contract: 123,
+   *       installment_order: 2, // 변경된 회차
+   *     }
+   *   ]
+   * })
+   */
+  const updateContractPayment = async (
+    bankTransactionId: number,
+    payload: CompositeTransactionPayload,
+  ): Promise<CompositeTransactionResponse> => {
+    try {
+      const response = await api.put(
+        `/ledger/project-composite-transaction/${bankTransactionId}/`,
+        payload,
+      )
+      message('success', '', '계약 납부가 수정되었습니다.')
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
+  /**
+   * 계약 납부 삭제 (은행 거래 삭제)
+   *
+   * 은행 거래를 삭제하면 CASCADE로 회계 분개와 계약 결제도 자동 삭제됩니다.
+   * ProjectBankTransaction 삭제 → AccountingEntry 삭제 → ContractPayment 삭제
+   *
+   * @param bankTransactionId - 삭제할 은행 거래 ID (ProjectBankTransaction.pk)
+   * @returns Promise<void>
+   *
+   * @example
+   * await deleteContractPayment(456)
+   */
+  const deleteContractPayment = async (bankTransactionId: number): Promise<void> => {
+    try {
+      await api.delete(`/ledger/project-bank-transaction/${bankTransactionId}/`)
+      message('warning', '', '계약 납부가 삭제되었습니다.')
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
+  /**
+   * 은행 거래 상세 조회 (회계 분개 포함)
+   *
+   * 특정 은행 거래의 상세 정보와 연결된 회계 분개 목록을 조회합니다.
+   *
+   * @param bankTransactionId - 조회할 은행 거래 ID
+   * @returns Promise<any>
+   *
+   * @example
+   * const detail = await fetchBankTransactionDetail(456)
+   * console.log(detail.bank_transaction) // 은행 거래 정보
+   * console.log(detail.accounting_entries) // 회계 분개 배열
+   */
+  const fetchBankTransactionDetail = async (bankTransactionId: number): Promise<any> => {
+    try {
+      const response = await api.get(`/ledger/project-bank-transaction/${bankTransactionId}/`)
+      return response.data
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
+  /**
+   * 회계 분개 목록 조회 (특정 은행 거래의 자식 분개)
+   *
+   * 특정 은행 거래(UUID)에 연결된 모든 회계 분개를 조회합니다.
+   * 분할 납부 시 여러 회차의 분개 내역을 확인할 때 유용합니다.
+   *
+   * @param transactionId - 거래 UUID (ProjectBankTransaction.transaction_id)
+   * @returns Promise<any[]>
+   *
+   * @example
+   * // UUID로 회계 분개 조회
+   * const entries = await fetchAccountingEntriesByTransactionId('uuid-string-here')
+   * console.log(entries) // [{ pk: 789, amount: 50000000, ... }, ...]
+   */
+  const fetchAccountingEntriesByTransactionId = async (transactionId: string): Promise<any[]> => {
+    try {
+      const response = await api.get(
+        `/ledger/project-accounting-entry/?transaction_id=${transactionId}`,
+      )
+      return response.data.results || response.data
+    } catch (err: any) {
+      errorHandle(err.response?.data)
+      throw err
+    }
+  }
+
   /////////////////////////////// new payment ///////////////////////////////
 
   return {
@@ -508,5 +721,12 @@ export const usePayment = defineStore('payment', () => {
 
     ledgerPaymentStatusByUnitType,
     fetchLedgerPaymentStatusByUnitType,
+
+    // ContractPayment CRUD (Ledger 기반)
+    createContractPayment,
+    updateContractPayment,
+    deleteContractPayment,
+    fetchBankTransactionDetail,
+    fetchAccountingEntriesByTransactionId,
   }
 })
