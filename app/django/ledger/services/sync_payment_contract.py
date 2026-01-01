@@ -60,11 +60,10 @@ def _sync_contract_payment_for_entry(instance):
         deal_date = bank_transaction.deal_date if bank_transaction else None
         defaults = {
             'project': instance.project,
+            'contract': instance.contract,
+            'deal_date': deal_date,
             'is_payment_mismatch': False,
             'creator': creator,
-            'contract': instance.contract,
-            'installment_order': instance.installment_order,
-            'deal_date': deal_date,
         }
         contract_payment, created = ContractPayment.objects.get_or_create(
             accounting_entry=instance,
@@ -73,14 +72,20 @@ def _sync_contract_payment_for_entry(instance):
 
         update_fields = []
         if not created:
+            # project 동기화 (데이터 정합성)
+            if contract_payment.project_id != instance.project_id:
+                contract_payment.project = instance.project
+                update_fields.append('project')
+
+            # contract 동기화
+            if contract_payment.contract_id != instance.contract_id:
+                contract_payment.contract = instance.contract
+                update_fields.append('contract')
+
             # deal_date 동기화
             if bank_transaction and contract_payment.deal_date != bank_transaction.deal_date:
                 contract_payment.deal_date = bank_transaction.deal_date
                 update_fields.append('deal_date')
-
-            if contract_payment.contract_id != instance.contract_id:
-                contract_payment.contract = instance.contract
-                update_fields.append('contract')
 
             if contract_payment.is_payment_mismatch:
                 contract_payment.is_payment_mismatch = False
@@ -96,6 +101,16 @@ def _sync_contract_payment_for_entry(instance):
 
         update_fields = []
 
+        # project 동기화 (데이터 정합성)
+        if contract_payment.project_id != instance.project_id:
+            contract_payment.project = instance.project
+            update_fields.append('project')
+
+        # contract 동기화
+        if contract_payment.contract_id != instance.contract_id:
+            contract_payment.contract = instance.contract
+            update_fields.append('contract')
+
         # deal_date 동기화
         bank_transaction = instance.related_transaction
         if bank_transaction and contract_payment.deal_date != bank_transaction.deal_date:
@@ -105,10 +120,6 @@ def _sync_contract_payment_for_entry(instance):
         if not contract_payment.is_payment_mismatch:
             contract_payment.is_payment_mismatch = True
             update_fields.append('is_payment_mismatch')
-
-        if contract_payment.contract_id != instance.contract_id:
-            contract_payment.contract = instance.contract
-            update_fields.append('contract')
 
         if update_fields:
             contract_payment.save(update_fields=update_fields + ['updated_at'])
