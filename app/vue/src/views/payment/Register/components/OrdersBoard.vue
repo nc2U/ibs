@@ -3,14 +3,14 @@ import { computed, ref, watch, type PropType } from 'vue'
 import { usePayment } from '@/store/pinia/payment'
 import { useContract } from '@/store/pinia/contract'
 import type { Contract, ContractPriceWithPaymentPlan } from '@/store/types/contract.ts'
-import { type AllPayment, type PayOrder, type Price } from '@/store/types/payment'
+import { type OriginPayment, type PayOrder, type Price } from '@/store/types/payment'
 import { numFormat, getToday } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
-import Order from '@/views/payments/Register/components/Order.vue'
+import Order from './Order.vue'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, default: null },
-  paymentList: { type: Array as PropType<AllPayment[]>, default: () => [] },
+  paymentList: { type: Array as PropType<OriginPayment[]>, default: () => [] },
 })
 
 const paymentStore = usePayment()
@@ -58,7 +58,7 @@ const thisPrice = computed(() => {
 })
 
 const paidTotal = computed(() => {
-  const paid = props.paymentList.map((p: AllPayment) => p.income)
+  const paid = props.paymentList.map((p: OriginPayment) => p.amount!)
   return paid.length === 0 ? 0 : paid.reduce((x: number, y: number) => x + y, 0)
 })
 

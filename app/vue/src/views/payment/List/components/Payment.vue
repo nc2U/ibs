@@ -1,15 +1,15 @@
 <script lang="ts" setup>
-import { ref, computed, type PropType } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins'
 import { write_payment } from '@/utils/pageAuth'
-import { type PaymentPaid, type ProjectCashBook } from '@/store/types/proCash'
+import type { PaymentList } from '@/store/types/payment.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ContChoicer from './ContChoicer.vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
-  payment: { type: Object as PropType<PaymentPaid>, required: true },
+  payment: { type: Object as PropType<PaymentList>, required: true },
 })
 
 const emit = defineEmits(['pay-match'])
@@ -38,7 +38,7 @@ const contMatching = () => {
   return
 }
 
-const payMatch = (payload: ProjectCashBook) => emit('pay-match', payload)
+const payMatch = (payload: any) => emit('pay-match', payload)
 </script>
 
 <template>
@@ -66,7 +66,7 @@ const payMatch = (payload: ProjectCashBook) => emit('pay-match', payload)
     </CTableDataCell>
     <CTableDataCell class="text-right">
       <router-link to="" @click="toManage">
-        {{ numFormat(payment.income) }}
+        {{ numFormat(payment.amount) }}
       </router-link>
     </CTableDataCell>
     <CTableDataCell :class="payment.installment_order === '-' ? 'text-danger' : ''">

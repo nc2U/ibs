@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { usePayment } from '@/store/pinia/payment'
-import { type ProjectCashBook, type PaymentPaid } from '@/store/types/proCash'
+import type { PaymentList } from '@/store/types/payment.ts'
 import { write_payment } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
 import Pagination from '@/components/Pagination'
@@ -18,7 +18,7 @@ const paymentStore = usePayment()
 const getPayments = computed(() => paymentStore.legerGetPayments)
 const paymentPages = computed(() => paymentStore.ledgerPaymentPages)
 
-const payMatch = (payload: ProjectCashBook) => emit('pay-match', payload)
+const payMatch = (payload: any) => emit('pay-match', payload)
 const pageSelect = (page: number) => emit('page-select', page)
 </script>
 
@@ -57,7 +57,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         v-for="payment in getPayments"
         :key="payment.pk"
         :project="project"
-        :payment="payment as PaymentPaid"
+        :payment="payment as PaymentList"
         @pay-match="payMatch"
       />
     </CTableBody>

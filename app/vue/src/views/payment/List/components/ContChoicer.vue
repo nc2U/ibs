@@ -2,7 +2,7 @@
 import { ref, onMounted, computed, nextTick, type PropType } from 'vue'
 import { type ContFilter, useContract } from '@/store/pinia/contract'
 import { type Contract } from '@/store/types/contract'
-import { type PaymentPaid } from '@/store/types/proCash'
+import type { PaymentList } from '@/store/types/payment.ts'
 import { write_payment } from '@/utils/pageAuth'
 import { numFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -10,7 +10,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
-  payment: { type: Object as PropType<PaymentPaid>, required: true },
+  payment: { type: Object as PropType<PaymentList>, required: true },
 })
 
 const emit = defineEmits(['pay-match', 'close'])
@@ -118,7 +118,7 @@ const modalAction = () => {
         <span>
           {{
             `[입금자] : ${payment.trader}  | [입금액] : ${numFormat(
-              payment.income,
+              payment.amount,
             )} | [입금계좌] : ${payment.bank_account} | [입금일] : ${payment.deal_date}`
           }}
         </span>

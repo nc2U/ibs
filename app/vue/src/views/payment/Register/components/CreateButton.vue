@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { type ProjectCashBook } from '@/store/types/proCash'
 import { AlertLight } from '@/utils/cssMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
-import PaymentForm from '@/views/payments/Register/components/PaymentForm.vue'
+import PaymentForm from './PaymentForm.vue'
 
 const props = defineProps({ contract: { type: Object, default: null } })
 const emit = defineEmits(['on-create'])

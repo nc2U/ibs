@@ -5,6 +5,7 @@ import { errorHandle, message } from '@/utils/helper'
 import { type CashBookFilter } from '@/store/types/proCash'
 import {
   type AllPayment,
+  type OriginPayment,
   type ContPayFilter,
   type DownPay,
   type OverallSummary,
@@ -342,11 +343,11 @@ export const usePayment = defineStore('payment', () => {
 
   /////////////////////////////// new payment ///////////////////////////////
   // state & getters
-  const ledgerPaymentList = ref<AllPayment[]>([])
-  const ledgerAllPaymentList = ref<AllPayment[]>([])
+  const ledgerPaymentList = ref<OriginPayment[]>([])
+  const ledgerAllPaymentList = ref<OriginPayment[]>([])
   const legerGetPayments = computed(() =>
     ledgerPaymentList.value
-      ? ledgerPaymentList.value.map((p: AllPayment) => ({
+      ? ledgerPaymentList.value.map((p: OriginPayment) => ({
           pk: p.pk,
           deal_date: p.deal_date,
           contract: p.contract,
@@ -355,7 +356,7 @@ export const usePayment = defineStore('payment', () => {
           type_name: p.contract ? p.contract.unit_type.name : '-',
           serial_number: p.contract ? p.contract.serial_number : '-',
           contractor: p.contract ? p.contract.contractor : '-',
-          income: p.income,
+          amount: p.amount,
           installment_order: p.installment_order ? p.installment_order.__str__ : '-',
           bank_account: p.bank_account.alias_name,
           trader: p.trader,

@@ -1,16 +1,15 @@
 <script lang="ts" setup>
 import { ref, onMounted, type PropType } from 'vue'
-import { type ProjectCashBook } from '@/store/types/proCash'
 import { useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins'
 import { write_payment } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
+import { type OriginPayment } from '@/store/types/payment'
 import FormModal from '@/components/Modals/FormModal.vue'
-import PaymentForm from '@/views/payments/Register/components/PaymentForm.vue'
-import { type AllPayment } from '@/store/types/payment'
+import PaymentForm from './PaymentForm.vue'
 
 const props = defineProps({
-  payment: { type: Object as PropType<AllPayment>, default: null },
+  payment: { type: Object as PropType<OriginPayment>, default: null },
   paymentId: { type: String, default: '' },
   contract: { type: Object, default: null },
 })
@@ -33,7 +32,7 @@ const showDetail = () => {
   updateFormModal.value.callModal()
 }
 
-const updateObject = (payload: ProjectCashBook) => {
+const updateObject = (payload: any) => {
   emit('on-update', { ...{ pk: props.payment?.pk }, ...payload })
   updateFormModal.value.close()
 }
@@ -49,7 +48,7 @@ const deleteObject = () => emit('on-delete', props.payment?.pk)
     </CTableDataCell>
     <CTableDataCell class="text-right">
       <router-link to="" @click="showDetail">
-        {{ numFormat(payment.income) }}
+        {{ numFormat(payment.amount! as number) }}
       </router-link>
     </CTableDataCell>
     <CTableDataCell>{{ payment.bank_account.alias_name }}</CTableDataCell>

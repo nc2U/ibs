@@ -136,37 +136,62 @@ export interface PaymentPerInstallmentPayload {
   amount: number | null
 }
 
-export interface AllPayment {
+interface ContractInPayment {
+  pk: number
+  order_group: {
+    pk: number
+    sort: '1' | '2'
+    name: string
+  }
+  unit_type: {
+    pk: number
+    name: string
+    color: string
+    average_price: number
+  }
+  serial_number: string
+  contractor: string
+}
+
+interface BasePayment {
   pk: number
   deal_date: string
-  contract: {
-    pk: number
-    order_group: {
-      pk: number
-      sort: string
-      name: string
-    }
-    unit_type: {
-      pk: number
-      name: string
-      color: string
-      average_price: number | null
-    }
-    serial_number: string
-    contractor: string
-  }
-  income: number
+  contract: ContractInPayment
   installment_order: {
     pk: number
     pay_sort: string
-    pay_time: number
     pay_name: string
+    pay_time: number
     __str__: string
   }
   bank_account: {
     pk: number
     alias_name: string
   }
+  trader: string
+  note: string
+}
+
+export interface AllPayment extends BasePayment {
+  income: number
+}
+
+export interface OriginPayment extends BasePayment {
+  amount: number
+}
+
+export interface PaymentList {
+  pk: number
+  deal_date: string
+  contract: ContractInPayment
+  order_group: string
+  type_color: string
+  type_name: string
+  serial_number: string
+  contractor: string
+  amount: number
+  installment_order: string
+  bank_account: string
   trader: string
   note: string
 }
