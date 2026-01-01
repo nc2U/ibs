@@ -798,9 +798,9 @@ onBeforeRouteLeave(() => formDataReset())
                     <CTableDataCell>
                       계약금
                       <router-link
-                        v-c-tooltip="'건별 수납 관리'"
+                        v-c-tooltip="'건별 납부 관리'"
                         :to="{
-                          name: '건별 수납 내역',
+                          name: '건별 납부 내역',
                           params: { contractId: contract.pk },
                         }"
                       >
@@ -811,9 +811,9 @@ onBeforeRouteLeave(() => formDataReset())
                     <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
                     <CTableDataCell class="text-right">
                       <router-link
-                        v-c-tooltip="'건별 수납 관리'"
+                        v-c-tooltip="'건별 납부 관리'"
                         :to="{
-                          name: '건별 수납 내역',
+                          name: '건별 납부 내역',
                           params: { contractId: contract.pk },
                         }"
                       >

@@ -137,7 +137,7 @@ watch(
   { immediate: false, deep: false },
 )
 
-const onContFiltering = (payload: ContFilter) => {
+const listFiltering = (payload: ContFilter) => {
   payload.project = project.value
   if (payload.project) fetchContractList({ ...payload })
 }
@@ -282,7 +282,7 @@ onBeforeRouteLeave(() => {
           :project="project || undefined"
           :contract="contract as Contract"
           :payment-url="paymentUrl"
-          @list-filtering="onContFiltering"
+          @list-filtering="listFiltering"
           @get-contract="getContract"
         />
         <TableTitleRow

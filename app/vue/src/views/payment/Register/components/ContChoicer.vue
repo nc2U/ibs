@@ -12,12 +12,12 @@ defineProps({
 
 const emit = defineEmits(['list-filtering', 'get-contract'])
 
-const contractStore = useContract()
-const contractList = computed(() => contractStore.contractList)
-
 const form = reactive({ search: '' })
 const msg = ref('')
 const textClass = ref('')
+
+const contractStore = useContract()
+const contractList = computed(() => contractStore.contractList)
 
 const pageInit = () => {
   form.search = ''
@@ -37,6 +37,7 @@ const listFiltering = (page = 1) => {
     textClass.value = 'text-danger'
   }
 }
+
 const getContract = (cont: number) => {
   emit('get-contract', cont)
   pageInit()
@@ -45,8 +46,8 @@ const getContract = (cont: number) => {
 const paymentStore = usePayment()
 const removeContract = () => {
   contractStore.contract = null
-  paymentStore.paymentList = []
-  paymentStore.paymentsCount = 0
+  paymentStore.ledgerAllPaymentList = []
+  paymentStore.ledgerPaymentsCount = 0
 }
 
 onMounted(() => pageInit())

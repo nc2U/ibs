@@ -75,7 +75,7 @@ const contChk = (ctorPk: number) => {
       </router-link>
     </CTableDataCell>
     <CTableDataCell class="text-right">
-      <router-link :to="{ name: '건별 수납 내역', params: { contractId: contract.pk } }">
+      <router-link :to="{ name: '건별 납부 내역', params: { contractId: contract.pk } }">
         {{ numFormat(contract?.total_paid || 0) }}
       </router-link>
     </CTableDataCell>
