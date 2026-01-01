@@ -12,19 +12,20 @@ import type { Project } from '@/store/types/project.ts'
 import { type ContFilter, useContract } from '@/store/pinia/contract'
 import { useProCash } from '@/store/pinia/proCash'
 import { usePayment } from '@/store/pinia/payment'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { ProjectCashBook, CashBookFilter } from '@/store/types/proCash'
-import type { DownPayFilter, PriceFilter } from '@/store/types/payment'
+import type { ContPayFilter, DownPayFilter, PriceFilter } from '@/store/types/payment'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PaymentAuthGuard from '@/components/AuthGuard/PaymentAuthGuard.vue'
-import ContChoicer from '@/views/payments/Register/components/ContChoicer.vue'
-import PaymentListAll from '@/views/payments/Register/components/PaymentListAll.vue'
-import OrdersBoard from '@/views/payments/Register/components/OrdersBoard.vue'
-import CreateButton from '@/views/payments/Register/components/CreateButton.vue'
-import TableTitleRow from '@/components/TableTitleRow.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import ContChoicer from './components/ContChoicer.vue'
+import TableTitleRow from '@/components/TableTitleRow.vue'
+import PaymentListAll from './components/PaymentListAll.vue'
+import OrdersBoard from './components/OrdersBoard.vue'
+import CreateButton from './components/CreateButton.vue'
 
 const paymentId = ref<string>('')
 const date = ref(dateFormat(new Date()))
@@ -55,22 +56,23 @@ const lateFeeUrl = computed(() => {
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
 
-const contractStore = useContract()
-const contract = computed(() => contractStore.contract as Contract | null)
-
-const paymentStore = usePayment()
-const AllPaymentList = computed(() => paymentStore.AllPaymentList)
-
 const projectDataStore = useProjectData()
 const fetchTypeList = (projId: number) => projectDataStore.fetchTypeList(projId)
 
-const fetchAllPaymentList = (payload: CashBookFilter) => paymentStore.fetchAllPaymentList(payload)
+const paymentStore = usePayment()
+const ledgerAllPaymentList = computed(() => paymentStore.ledgerAllPaymentList)
+
+const fetchLedgerAllPaymentList = (payload: ContPayFilter) =>
+  paymentStore.fetchLedgerAllPaymentList(payload)
 const fetchPayOrderList = (projId: number) => paymentStore.fetchPayOrderList(projId)
 const fetchDownPayList = (payload: DownPayFilter) => paymentStore.fetchDownPayList(payload)
 const fetchPriceList = (payload: PriceFilter) => paymentStore.fetchPriceList(payload)
 
+const proLedgerStore = useProLedger()
+const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
+
+// need change start
 const proCashStore = useProCash()
-const fetchAllProBankAccList = (projId: number) => proCashStore.fetchAllProBankAccList(projId)
 const createPrCashBook = (
   payload: ProjectCashBook & { sepData: ProjectCashBook | null } & {
     filters: CashBookFilter
@@ -88,6 +90,10 @@ const deletePrCashBook = (
     filters: CashBookFilter
   },
 ) => proCashStore.deletePrCashBook(payload)
+// need change finish
+
+const contractStore = useContract()
+const contract = computed(() => contractStore.contract as Contract | null)
 
 const fetchContractList = (payload: ContFilter) => contractStore.fetchContractList(payload)
 const fetchContract = (pk: number) => contractStore.fetchContract(pk)
@@ -114,7 +120,7 @@ watch(
       const unit_type = newContract.unit_type
       fetchPriceList({ project: newProject, order_group, unit_type })
       fetchDownPayList({ project: newProject, order_group, unit_type })
-      fetchAllPaymentList({
+      fetchLedgerAllPaymentList({
         project: newProject,
         contract: newContract.pk,
         ordering: 'deal_date',
@@ -125,7 +131,7 @@ watch(
       // contract가 null일 때만 clear (project가 없는 경우는 clear 하지 않음)
       paymentStore.priceList = []
       paymentStore.downPayList = []
-      paymentStore.AllPaymentList = []
+      paymentStore.ledgerAllPaymentList = []
     }
   },
   { immediate: false, deep: false },
@@ -180,9 +186,9 @@ const dataReset = () => {
   contractStore.contract = null
   contractStore.contractList = []
   projectDataStore.unitTypeList = []
-  paymentStore.AllPaymentList = []
+  proLedgerStore.allProBankList = []
+  paymentStore.ledgerAllPaymentList = []
   paymentStore.payOrderList = []
-  proCashStore.proBankAccountList = []
 }
 
 const projSelect = (target: number | null) => {
@@ -206,7 +212,7 @@ onMounted(async () => {
 
     // 새로고침 시 데이터가 남아있을 수 있으므로 초기화
     contractStore.contract = null
-    paymentStore.AllPaymentList = []
+    paymentStore.ledgerAllPaymentList = []
 
     isLoadingContract.value = true
     await fetchContract(cont)
@@ -221,7 +227,7 @@ onMounted(async () => {
         const unit_type = contract.value.unit_type
         await fetchPriceList({ project: project.value, order_group, unit_type })
         await fetchDownPayList({ project: project.value, order_group, unit_type })
-        await fetchAllPaymentList({
+        await fetchLedgerAllPaymentList({
           project: project.value,
           contract: contract.value.pk,
           ordering: 'deal_date',
@@ -232,7 +238,7 @@ onMounted(async () => {
     }
   } else {
     contractStore.contract = null
-    paymentStore.AllPaymentList = []
+    paymentStore.ledgerAllPaymentList = []
   }
 
   if (route.query.payment) paymentId.value = route.query.payment as string
@@ -255,7 +261,7 @@ onUpdated(async () => {
 
 onBeforeRouteLeave(() => {
   contractStore.contract = null
-  paymentStore.AllPaymentList = []
+  paymentStore.ledgerAllPaymentList = []
 })
 </script>
 
@@ -340,7 +346,7 @@ onBeforeRouteLeave(() => {
             <PaymentListAll
               :contract="contract as Contract"
               :payment-id="paymentId"
-              :payment-list="AllPaymentList"
+              :payment-list="ledgerAllPaymentList"
               @on-update="onUpdate"
               @on-delete="onDelete"
             />
@@ -352,7 +358,7 @@ onBeforeRouteLeave(() => {
             />
           </CCol>
           <CCol lg="5">
-            <OrdersBoard :contract="contract as Contract" :payment-list="AllPaymentList" />
+            <OrdersBoard :contract="contract as Contract" :payment-list="ledgerAllPaymentList" />
           </CCol>
         </CRow>
       </CCardBody>
