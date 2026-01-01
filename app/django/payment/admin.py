@@ -135,13 +135,32 @@ class SpecialOverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
 # Contract Payment Admin
 # ============================================
 
+class InstallmentOrderNullFilter(admin.SimpleListFilter):
+    """납부 회차 할당 여부 필터"""
+    title = '납부 회차 할당 여부'
+    parameter_name = 'installment_order__isnull'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('true', '할당 없음'),
+            ('false', '할당 있음'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'true':
+            return queryset.filter(installment_order__isnull=True)
+        if self.value() == 'false':
+            return queryset.filter(installment_order__isnull=False)
+        return queryset
+
+
 @admin.register(ContractPayment)
 class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'accounting_entry_short', 'project', 'contract', 'deal_date',
                     'formatted_amount', 'payment_status_display', 'installment_order',
                     'creator', 'created_at')
     list_display_links = ('accounting_entry_short',)
-    list_filter = ('project', 'is_payment_mismatch')
+    list_filter = ('project', 'is_payment_mismatch', InstallmentOrderNullFilter)
     search_fields = ('contract__serial_number', 'accounting_entry__transaction_id')
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at', 'payment_mismatch_info')
