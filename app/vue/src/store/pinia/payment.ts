@@ -3,41 +3,24 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
 import { type CashBookFilter } from '@/store/types/proCash'
-import {
-  type AllPayment,
-  type OriginPayment,
-  type ContPayFilter,
-  type DownPay,
-  type OverallSummary,
-  type PaymentPerInstallment,
-  type PaymentPerInstallmentPayload,
-  type PaymentStatusByUnitType,
-  type PaymentSummaryComponent,
-  type PayOrder,
-  type Price,
-  type CompositeTransactionPayload,
-  type CompositeTransactionResponse,
+import type {
+  AllPayment,
+  CompositeTransactionPayload,
+  CompositeTransactionResponse,
+  ContPayFilter,
+  DownPay,
+  DownPayFilter,
+  OriginPayment,
+  OverallSummary,
+  PaymentPerInstallment,
+  PaymentPerInstallmentFilter,
+  PaymentPerInstallmentPayload,
+  PaymentStatusByUnitType,
+  PaymentSummaryComponent,
+  PayOrder,
+  Price,
+  PriceFilter,
 } from '@/store/types/payment'
-
-export type DownPayFilter = {
-  project: number
-  order_group?: number
-  unit_type?: number
-}
-
-export type PriceFilter = {
-  project?: number | null
-  order_group?: number | null
-  unit_type?: number | null
-}
-
-export type PaymentPerInstallmentFilter = {
-  sales_price?: number | null
-  sales_price__project?: number | null
-  sales_price__order_group?: number | null
-  sales_price__unit_type?: number | null
-  pay_order?: number | null
-}
 
 export const usePayment = defineStore('payment', () => {
   // state & getters

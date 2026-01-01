@@ -35,12 +35,24 @@ export interface Price {
   price: number
 }
 
+export interface PriceFilter {
+  project?: number | null
+  order_group?: number | null
+  unit_type?: number | null
+}
+
 export interface DownPay {
   pk: number
   project: number
   order_group: number
   unit_type: number
   payment_amount: number
+}
+
+export interface DownPayFilter {
+  project: number
+  order_group?: number
+  unit_type?: number
 }
 
 export interface PaymentSummaryComponent {
@@ -129,6 +141,14 @@ export interface PaymentPerInstallment {
   amount: number | null
 }
 
+export interface PaymentPerInstallmentFilter {
+  sales_price?: number | null
+  sales_price__project?: number | null
+  sales_price__order_group?: number | null
+  sales_price__unit_type?: number | null
+  pay_order?: number | null
+}
+
 export interface PaymentPerInstallmentPayload {
   pk?: number
   sales_price: number
@@ -136,7 +156,7 @@ export interface PaymentPerInstallmentPayload {
   amount: number | null
 }
 
-interface ContractInPayment {
+export interface ContractInPayment {
   pk: number
   order_group: {
     pk: number
