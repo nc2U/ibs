@@ -332,6 +332,7 @@ export const usePayment = defineStore('payment', () => {
     ledgerPaymentList.value
       ? ledgerPaymentList.value.map((p: OriginPayment) => ({
           pk: p.pk,
+          trans_id: p.bank_transaction_id,
           deal_date: p.deal_date,
           contract: p.contract,
           order_group: p.contract ? p.contract.order_group.name : '-',
@@ -349,7 +350,10 @@ export const usePayment = defineStore('payment', () => {
   )
   const ledgerPaymentsCount = ref<number>(0)
 
-  // actio
+  // action
+  const ledgerPaymentPages = (itemsPerPage: number) =>
+    Math.ceil(ledgerPaymentsCount.value / itemsPerPage)
+
   const fetchLedgerPaymentList = async (payload: ContPayFilter) => {
     const { project } = payload
     let url = `/ledger/payment/?is_payment_mismatch=false&project=${project}`
@@ -385,9 +389,6 @@ export const usePayment = defineStore('payment', () => {
       .then(res => (ledgerAllPaymentList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
   }
-
-  const ledgerPaymentPages = (itemsPerPage: number) =>
-    Math.ceil(ledgerPaymentsCount.value / itemsPerPage)
 
   // state & getters - PaymentSummary Component
   const ledgerPaymentSummaryList = ref<PaymentSummaryComponent[]>([])
@@ -731,9 +732,9 @@ export const usePayment = defineStore('payment', () => {
     ledgerAllPaymentList,
     legerGetPayments,
     ledgerPaymentsCount,
+    ledgerPaymentPages,
     fetchLedgerPaymentList,
     fetchLedgerAllPaymentList,
-    ledgerPaymentPages,
 
     ledgerPaymentSummaryList,
     fetchLedgerPaymentSummaryList,
