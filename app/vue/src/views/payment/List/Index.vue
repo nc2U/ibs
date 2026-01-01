@@ -64,7 +64,10 @@ const listFiltering = (payload: ContPayFilter) => {
   }
 }
 
-const payMatch = (pk: number, payload: any) => patchContractPayment(pk, payload) //{ ...payload, isPayment: true, filters: filterItems.value }) // const & payment 매칭
+const payMatch = (payload: any) => {
+  const { pk, ...patchData } = payload
+  patchContractPayment(pk, patchData)
+}
 
 const pageSelect = (page: number) => {
   filterItems.value.page = page

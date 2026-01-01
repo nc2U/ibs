@@ -62,7 +62,7 @@ const modalAction = () => {
   const pk = props.payment?.trans_id
   const contract = (cont.value as Contract)?.pk
   const content = `${(cont.value as Contract)?.contractor?.name}[${(cont.value as Contract)?.serial_number}] 대금납부`
-  emit('pay-match', { pk, contract, content })
+  emit('pay-match', { pk, content, accounting_entries: [{ pk: props.payment?.pk, contract }] })
   pageInit()
   emit('close')
 }

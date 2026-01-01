@@ -495,9 +495,9 @@ export const usePayment = defineStore('payment', () => {
   ): Promise<CompositeTransactionResponse> => {
     try {
       const response = await api.post('/ledger/project-composite-transaction/', payload)
-      message('success', '', '계약 납부가 등록되었습니다.')
       // 계약 납부 목록 리프레시
-      await fetchLedgerPaymentList({ project: payload.project })
+      await fetchLedgerPaymentList(ledgerPaymentFilter.value)
+      message('success', '', '계약 납부가 등록되었습니다.')
       return response.data
     } catch (err: any) {
       errorHandle(err.response?.data)
@@ -546,9 +546,9 @@ export const usePayment = defineStore('payment', () => {
         `/ledger/project-composite-transaction/${bankTransactionId}/`,
         payload,
       )
-      message('success', '', '계약 납부가 수정되었습니다.')
       // 계약 납부 목록 리프레시
-      await fetchLedgerPaymentList({ project: payload.project })
+      await fetchLedgerPaymentList(ledgerPaymentFilter.value)
+      message('success', '', '계약 납부가 수정되었습니다.')
       return response.data
     } catch (err: any) {
       errorHandle(err.response?.data)
@@ -604,11 +604,9 @@ export const usePayment = defineStore('payment', () => {
         `/ledger/project-composite-transaction/${bankTransactionId}/`,
         payload,
       )
-      message('success', '', '계약 납부가 수정되었습니다.')
       // 계약 납부 목록 리프레시 (payload에 project가 있는 경우에만)
-      if (payload.project) {
-        await fetchLedgerPaymentList({ project: payload.project })
-      }
+      await fetchLedgerPaymentList(ledgerPaymentFilter.value)
+      message('success', '', '계약 납부가 수정되었습니다.')
       return response.data
     } catch (err: any) {
       errorHandle(err.response?.data)
@@ -635,15 +633,12 @@ export const usePayment = defineStore('payment', () => {
    * @example
    * await deleteContractPayment(456, 1)
    */
-  const deleteContractPayment = async (
-    bankTransactionId: number,
-    project: number,
-  ): Promise<void> => {
+  const deleteContractPayment = async (bankTransactionId: number): Promise<void> => {
     try {
       await api.delete(`/ledger/project-composite-transaction/${bankTransactionId}/`)
-      message('warning', '', '계약 납부가 삭제되었습니다.')
       // 계약 납부 목록 리프레시
-      await fetchLedgerPaymentList({ project })
+      await fetchLedgerPaymentList(ledgerPaymentFilter.value)
+      message('warning', '', '계약 납부가 삭제되었습니다.')
     } catch (err: any) {
       errorHandle(err.response?.data)
       throw err
@@ -749,6 +744,7 @@ export const usePayment = defineStore('payment', () => {
     fetchPaymentStatusByUnitType,
 
     // new property
+    ledgerPaymentFilter,
     ledgerPaymentList,
     ledgerAllPaymentList,
     legerGetPayments,
