@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from django.core.exceptions import ValidationError
@@ -5,6 +6,8 @@ from django.db import models, transaction
 from django.utils import timezone
 
 from ledger.services.sync_payment_contract import trigger_sync_contract_payment
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================
@@ -568,6 +571,49 @@ class ProjectBankTransaction(BankTransaction):
             models.Index(fields=['bank_account', 'deal_date']),
         ]
 
+    def save(self, *args, **kwargs):
+        """
+        은행 거래 저장 시 연결된 회계 분개의 project도 동기화
+
+        project 변경 감지:
+        - 신규: 생성 후 회계 분개 생성되므로 동기화 불필요
+        - 수정: project 변경 시 연결된 AccountingEntry들의 project 업데이트
+        """
+        # 기존 인스턴스인지 확인 (pk 존재 여부)
+        is_update = self.pk is not None
+
+        if is_update:
+            # 기존 project 값 조회 (변경 감지용)
+            try:
+                old_instance = ProjectBankTransaction.objects.get(pk=self.pk)
+                old_project_id = old_instance.project_id
+            except ProjectBankTransaction.DoesNotExist:
+                old_project_id = None
+        else:
+            old_project_id = None
+
+        # 부모 클래스 save() 호출
+        super().save(*args, **kwargs)
+
+        # project 변경 시 연결된 회계 분개 동기화
+        if is_update and old_project_id and old_project_id != self.project_id:
+            # 연결된 모든 회계 분개의 project 업데이트
+            updated_count = ProjectAccountingEntry.objects.filter(
+                transaction_id=self.transaction_id
+            ).update(project=self.project)
+
+            if updated_count > 0:
+                logger.info(
+                    f"ProjectBankTransaction(pk={self.pk}) project 변경: "
+                    f"{old_project_id} → {self.project_id}, "
+                    f"연결된 {updated_count}개 회계분개 동기화 완료"
+                )
+
+                # 회계 분개 변경으로 인한 ContractPayment 동기화
+                # ProjectAccountingEntry의 project 변경 → trigger_sync_contract_payment 호출
+                for entry in ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id):
+                    trigger_sync_contract_payment(entry)
+
     @property
     def accounting_entries(self):
         """이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다."""
@@ -709,6 +755,11 @@ class ProjectAccountingEntry(AccountingEntry):
 
     프로젝트 거래에 대한 회계 분개 정보를 관리합니다.
     ProjectAccount 계정 체계를 사용합니다.
+
+    ⚠️ 중요: project 변경 시 주의사항
+    - project 변경 시 연결된 BankTransaction과 ContractPayment도 함께 동기화됩니다.
+    - 일반적으로 project는 생성 시에만 지정하고, 이후 변경하지 않는 것을 권장합니다.
+    - 변경이 필요한 경우 ProjectBankTransaction.project를 변경하면 자동으로 동기화됩니다.
     """
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
 
@@ -755,9 +806,44 @@ class ProjectAccountingEntry(AccountingEntry):
 
     @transaction.atomic
     def save(self, *args, **kwargs):
-        """저장 전 유효성 검증 및 ContractPayment 동기화"""
+        """
+        저장 전 유효성 검증 및 ContractPayment 동기화
+
+        ⚠️ 권장 사항:
+        1. 생성: 복합 거래 API를 통해 BankTransaction과 함께 생성
+        2. 수정: contract, amount 등만 수정 (project 변경 권장 안 함)
+        3. project 변경 필요 시: ProjectBankTransaction.project 변경 → 자동 동기화
+
+        데이터 흐름:
+        - 저장 후 trigger_sync_contract_payment 호출
+        - ContractPayment의 project/contract 자동 업데이트
+        """
+        is_update = self.pk is not None
+        old_project_id = None
+
+        # project 변경 감지 (경고용)
+        if is_update:
+            try:
+                old_instance = ProjectAccountingEntry.objects.get(pk=self.pk)
+                old_project_id = old_instance.project_id
+            except ProjectAccountingEntry.DoesNotExist:
+                pass
+
+        # 유효성 검증
         self.full_clean()
+
+        # project 변경 시 경고 로깅
+        if is_update and old_project_id and old_project_id != self.project_id:
+            logger.warning(
+                f"⚠️ ProjectAccountingEntry(pk={self.pk}) project 직접 변경 감지: "
+                f"{old_project_id} → {self.project_id}. "
+                f"권장: ProjectBankTransaction.project를 변경하면 자동 동기화됩니다. "
+                f"현재 변경은 BankTransaction과 불일치를 유발할 수 있습니다."
+            )
+
         super().save(*args, **kwargs)
+
+        # ContractPayment 자동 동기화
         trigger_sync_contract_payment(self)
 
 
