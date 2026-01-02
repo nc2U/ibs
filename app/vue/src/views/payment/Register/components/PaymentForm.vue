@@ -656,9 +656,9 @@ onBeforeMount(() => {
       <CRow class="mb-3">
         <CCol>
           <div class="p-3 bg-light rounded">
-            <strong>금액 검증:</strong>
-            은행 금액: <strong>{{ bankAmount.toLocaleString() }}</strong
-            >원 · 분류 합계: <strong>{{ totalEntryAmount.toLocaleString() }}</strong
+            <strong>금액 검증 :</strong>
+            은행 거래금액 - <strong>{{ bankAmount.toLocaleString() }}</strong
+            >원 · 납부 합계금액 - <strong>{{ totalEntryAmount.toLocaleString() }}</strong
             >원 ·
             <span :class="{ 'text-danger fw-bold': !isBalanced, 'text-success': isBalanced }">
               차액: {{ Math.abs(difference).toLocaleString() }}원
