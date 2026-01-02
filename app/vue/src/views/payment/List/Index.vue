@@ -65,8 +65,8 @@ const listFiltering = (payload: ContPayFilter) => {
 }
 
 const payMatch = (payload: any) => {
-  const { pk, ...patchData } = payload
-  patchContractPayment(pk, patchData)
+  const { trans_id, ...patchData } = payload
+  patchContractPayment(trans_id, patchData)
 }
 
 const pageSelect = (page: number) => {

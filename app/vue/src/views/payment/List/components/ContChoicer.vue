@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed, nextTick, type PropType } from 'vue'
+import { numFormat } from '@/utils/baseMixins'
+import { write_payment } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
 import type { Contract, ContFilter } from '@/store/types/contract'
 import type { PaymentList } from '@/store/types/payment.ts'
-import { write_payment } from '@/utils/pageAuth'
-import { numFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
