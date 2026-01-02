@@ -389,7 +389,10 @@ export const usePayment = defineStore('payment', () => {
     if (payload.ordering) url += `&ordering=${payload.ordering}`
     return await api
       .get(url)
-      .then(res => (ledgerAllPaymentList.value = res.data.results))
+      .then(res => {
+        ledgerPaymentFilter.value = payload
+        ledgerAllPaymentList.value = res.data.results
+      })
       .catch(err => errorHandle(err.response.data))
   }
 
@@ -548,7 +551,7 @@ export const usePayment = defineStore('payment', () => {
         payload,
       )
       // 계약 납부 목록 리프레시
-      await fetchLedgerPaymentList(ledgerPaymentFilter.value)
+      await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
       message('success', '', '계약 납부가 수정되었습니다.')
       return response.data
     } catch (err: any) {
