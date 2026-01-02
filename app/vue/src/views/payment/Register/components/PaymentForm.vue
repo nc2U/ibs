@@ -204,23 +204,8 @@ const isBalanced = computed(() => {
   return difference.value === 0
 })
 
-const isFormValid = computed(() => {
-  const hasRequiredBankFields = !!(
-    bankForm.deal_date &&
-    bankForm.bank_account &&
-    bankForm.amount &&
-    bankForm.amount > 0
-  )
-
-  const hasValidEntries = paymentEntries.value.some(
-    entry => entry.amount && entry.amount > 0 && entry.installment_order,
-  )
-
-  return hasRequiredBankFields && hasValidEntries && isBalanced.value
-})
-
 const isSaveDisabled = computed(() => {
-  return isSaving.value || !isFormValid.value || formsCheck.value
+  return isSaving.value || !isBalanced.value || formsCheck.value
 })
 
 const formsCheck = computed(() => {
@@ -376,7 +361,7 @@ const modalAction = () => {
         throw new Error('은행 거래 ID를 찾을 수 없습니다.')
       }
 
-      // Emit with separate bankTransactionId parameter for update
+      // Emit with a separate bankTransactionId parameter for update
       emit('on-submit', bankTransactionId, payload)
     }
   } catch (error) {
