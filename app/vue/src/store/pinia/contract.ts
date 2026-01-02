@@ -1,51 +1,28 @@
 import api from '@/api'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { message, errorHandle } from '@/utils/helper'
-import {
-  type RequiredDocs,
-  type Contract,
-  type Contractor,
-  type SubsSummary,
-  type ContSummary,
-  type OrderGroup,
-  type KeyUnit,
-  type HouseUnit,
-  type SalesPrice,
-  type DownPayment,
-  type Succession,
-  type BuyerForm,
-  type ContractRelease,
-  type ContractorAddress,
-  type ContractPriceWithPaymentPlan,
-  type ContractDocument,
-  type ConsultationLog,
-  type ConsultationLogPagination,
+import { errorHandle, message } from '@/utils/helper'
+import type {
+  BuyerForm,
+  ConsultationLog,
+  ContFilter,
+  Contract,
+  ContractDocument,
+  Contractor,
+  ContractorAddress,
+  ContractPriceWithPaymentPlan,
+  ContractRelease,
+  ContSummary,
+  DownPayment,
+  HouseUnit,
+  KeyUnit,
+  OrderGroup,
+  RequiredDocs,
+  SalesPrice,
+  SubsSummary,
+  Succession,
+  UnitFilter,
 } from '@/store/types/contract'
-
-export interface ContFilter {
-  project?: number | null
-  order_group?: string
-  unit_type?: string
-  building?: string
-  status?: string
-  null_unit?: boolean
-  qualification?: string
-  is_sup_cont?: 'true' | 'false' | ''
-  ordering?: string
-  from_date?: string
-  to_date?: string
-  search?: string
-  page?: number
-  limit?: number | ''
-}
-
-export type UnitFilter = {
-  project: number
-  unit_type?: number
-  contract?: number
-  available?: 'true' | ''
-}
 
 export const useContract = defineStore('contract', () => {
   const orderGroupList = ref<OrderGroup[]>([])

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed, nextTick, type PropType } from 'vue'
-import { type ContFilter, useContract } from '@/store/pinia/contract'
-import { type Contract } from '@/store/types/contract'
+import { useContract } from '@/store/pinia/contract'
+import type { Contract, ContFilter } from '@/store/types/contract'
 import type { PaymentList } from '@/store/types/payment.ts'
 import { write_payment } from '@/utils/pageAuth'
 import { numFormat } from '@/utils/baseMixins'

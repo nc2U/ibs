@@ -7,11 +7,12 @@ import { downloadFile } from '@/utils/helper.ts'
 import { write_payment } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
-import { type Contract } from '@/store/types/contract'
-import type { Project } from '@/store/types/project.ts'
-import { type ContFilter, useContract } from '@/store/pinia/contract'
 import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
+import { useContract } from '@/store/pinia/contract'
+import type { Project } from '@/store/types/project.ts'
+import type { Contract, ContFilter } from '@/store/types/contract'
+import type { ProAccountFilter } from '@/store/types/proLedger.ts'
 import type { ContPayFilter, DownPayFilter, PriceFilter } from '@/store/types/payment'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
@@ -68,6 +69,7 @@ const fetchPriceList = (payload: PriceFilter) => paymentStore.fetchPriceList(pay
 
 const proLedgerStore = useProLedger()
 const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
+const fetchProjectAccounts = (payload: ProAccountFilter) => proLedgerStore.fetchProjectAccounts({})
 
 const contractStore = useContract()
 const contract = computed(() => contractStore.contract as Contract | null)

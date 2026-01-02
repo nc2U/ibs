@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
-import { useProjectData } from '@/store/pinia/project_data'
-import { useContract, type ContFilter } from '@/store/pinia/contract'
-import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
+import { useProjectData } from '@/store/pinia/project_data'
+import { useContract } from '@/store/pinia/contract'
+import type { ContFilter } from '@/store/types/contract'
+import { numFormat } from '@/utils/baseMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({ status: { type: String, default: '2' } })

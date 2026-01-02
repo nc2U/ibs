@@ -1,3 +1,31 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import api from '@/api'
+
+export interface ContFilter {
+  project?: number | null
+  order_group?: string
+  unit_type?: string
+  building?: string
+  status?: string
+  null_unit?: boolean
+  qualification?: string
+  is_sup_cont?: 'true' | 'false' | ''
+  ordering?: string
+  from_date?: string
+  to_date?: string
+  search?: string
+  page?: number
+  limit?: number | ''
+}
+
+export type UnitFilter = {
+  project: number
+  unit_type?: number
+  contract?: number
+  available?: 'true' | ''
+}
+
 export interface OrderGroup {
   pk: number
   project: number

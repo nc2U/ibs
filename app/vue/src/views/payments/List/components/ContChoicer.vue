@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed, nextTick, type PropType } from 'vue'
-import { type ContFilter, useContract } from '@/store/pinia/contract'
-import { type Contract } from '@/store/types/contract'
-import { type PaymentPaid } from '@/store/types/proCash'
 import { write_payment } from '@/utils/pageAuth'
+import { useContract } from '@/store/pinia/contract'
+import type { Contract, ContFilter } from '@/store/types/contract'
+import { type PaymentPaid } from '@/store/types/proCash'
 import { numFormat } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
