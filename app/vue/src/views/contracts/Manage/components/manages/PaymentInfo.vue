@@ -103,7 +103,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
         <div class="text-right">
           <router-link
             :to="{
-              name: '건별 납부 관리',
+              name: '건별 납부 관리 - 상세',
               params: { contractId: contract.pk },
             }"
           >
