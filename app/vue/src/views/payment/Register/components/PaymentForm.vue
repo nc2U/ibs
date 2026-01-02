@@ -78,6 +78,7 @@ const paymentStore = usePayment()
 const payOrderList = computed(() => paymentStore.payOrderList)
 
 const proLedgerStore = useProLedger()
+const proAccounts = computed(() => proLedgerStore.proAccounts)
 const allProBankList = computed(() => proLedgerStore.allProBankList)
 
 // ============================================
@@ -97,13 +98,11 @@ const generateContent = (): string => {
   return `${props.contract.contractor.name}[${props.contract.serial_number}] 대금납부`
 }
 
-const determinePaymentAccount = (): number | null => {
-  // TODO: 사용자가 직접 매핑 처리
+const paymentAccount = computed(() => {
   // 분담금 또는 분양대금 계정을 ProjectAccount에서 조회하여 매핑
-  // 현재는 null 반환 (임시)
-  const sort = props.contract.order_group_sort
-  return null
-}
+  const accCategory = props.contract.order_group_sort === '1' ? 'equity' : 'revenue'
+  return proAccounts.value.find(acc => acc.category === accCategory)?.value!
+})
 
 // ============================================
 // Entry Management Functions
@@ -111,7 +110,7 @@ const determinePaymentAccount = (): number | null => {
 const addEntry = () => {
   paymentEntries.value.push({
     pk: null,
-    account: determinePaymentAccount(),
+    account: paymentAccount.value,
     amount: null,
     trader: '',
     contract: props.contract?.pk || null,
@@ -151,7 +150,7 @@ const initializeCreateForm = () => {
   paymentEntries.value = [
     {
       pk: null,
-      account: determinePaymentAccount(),
+      account: paymentAccount.value,
       amount: null,
       trader: '',
       contract: props.contract?.pk || null,
@@ -177,7 +176,7 @@ const initializeEditForm = () => {
   paymentEntries.value = [
     {
       pk: props.payment.pk || null,
-      account: determinePaymentAccount(),
+      account: paymentAccount.value,
       amount: props.payment.amount,
       trader: props.payment.trader || '',
       contract: props.contract?.pk || null,

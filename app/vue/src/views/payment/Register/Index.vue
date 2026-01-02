@@ -69,7 +69,8 @@ const fetchPriceList = (payload: PriceFilter) => paymentStore.fetchPriceList(pay
 
 const proLedgerStore = useProLedger()
 const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
-const fetchProjectAccounts = (payload: ProAccountFilter) => proLedgerStore.fetchProjectAccounts({})
+const fetchProjectAccounts = (payload: ProAccountFilter) =>
+  proLedgerStore.fetchProjectAccounts(payload)
 
 const contractStore = useContract()
 const contract = computed(() => contractStore.contract as Contract | null)
@@ -178,6 +179,7 @@ const isLoadingContract = ref(false)
 const isLoadingPaymentList = ref(false)
 
 onBeforeMount(async () => {
+  await fetchProjectAccounts({ is_payment: true })
   dataSetup(project.value || projStore.initProjId)
   loading.value = false
 })
