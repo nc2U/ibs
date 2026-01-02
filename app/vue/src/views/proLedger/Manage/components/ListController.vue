@@ -3,7 +3,7 @@ import { computed, inject, nextTick, onBeforeMount, type PropType, ref, watch } 
 import { bgLight } from '@/utils/cssMixins'
 import { numFormat } from '@/utils/baseMixins'
 import { useContract } from '@/store/pinia/contract.ts'
-import { type DataFilter } from '@/store/pinia/proLedger.ts'
+import { type DataFilter } from '@/store/types/proLedger.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
