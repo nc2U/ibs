@@ -24,7 +24,8 @@ const paymentSum = computed(() => {
     : 0
 })
 
-const onUpdate = (payload: ProjectCashBook) => emit('on-update', payload)
+const onUpdate = (bankTransactionId: number, payload: any) =>
+  emit('on-update', bankTransactionId, payload)
 const onDelete = (pk: number) => emit('on-delete', pk)
 </script>
 

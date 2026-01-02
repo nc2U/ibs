@@ -662,7 +662,8 @@ onBeforeMount(() => {
               <CFormCheck
                 :id="`cont-change`"
                 v-model="removeCont"
-                label="계약건 변경 (현재 계약 건 귀속에서 해제 되며 전체 납부 내역에서 재 지정요)"
+                label="계약 건 변경 (현재 계약 건 귀속에서 해제 되며 전체 납부 내역에서 재 지정요)"
+                class="text-grey"
               />
             </CCol>
           </CRow>

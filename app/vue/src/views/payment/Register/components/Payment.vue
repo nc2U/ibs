@@ -32,8 +32,8 @@ const showDetail = () => {
   updateFormModal.value.callModal()
 }
 
-const updateObject = (payload: any) => {
-  emit('on-update', { ...{ pk: props.payment?.pk }, ...payload })
+const updateObject = (bankTransactionId: number, payload: any) => {
+  emit('on-update', bankTransactionId, payload)
   updateFormModal.value.close()
 }
 
