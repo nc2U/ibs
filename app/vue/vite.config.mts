@@ -26,40 +26,27 @@ export default defineConfig({
           }
 
           if (id.includes('node_modules')) {
-            // Load order enforced by numbered prefixes (1 → 2 → 3 → 4)
-
-            // Step 1: Vue core (MUST load first)
+            // Vue ecosystem (keep together to avoid circular dependency issues)
             if (
               id.match(/\/node_modules\/vue\//) ||
               id.match(/\/node_modules\/.pnpm\/vue@/) ||
-              id.match(/\/.pnpm\/vue@/)
-            ) {
-              return 'vendor-1-vue-core'
-            }
-
-            // Step 2: Vue ecosystem (@vue/* packages)
-            if (
+              id.match(/\/.pnpm\/vue@/) ||
               id.includes('@vue/') ||
               id.includes('vue-demi') ||
-              id.match(/\/.pnpm\/@vue\//)
-            ) {
-              return 'vendor-2-vue-ecosystem'
-            }
-
-            // Step 3: Vue router and Pinia (depends on Vue core)
-            if (
+              id.match(/\/.pnpm\/@vue\//) ||
               id.includes('vue-router') ||
               id.includes('pinia') ||
               id.match(/\/.pnpm\/vue-router@/) ||
               id.match(/\/.pnpm\/pinia@/)
             ) {
-              return 'vendor-3-vue-router-pinia'
+              return 'vendor-vue'
             }
 
-            // Step 4: Vuetify (depends on Vue ecosystem) - separate chunk with enforced load order
-            if (id.includes('vuetify') || id.includes('@mdi/font')) {
-              return 'vendor-4-vuetify'
-            }
+            // Vuetify - let Vite handle automatic bundling (removed from manualChunks)
+            // This prevents circular dependency TDZ errors
+            // if (id.includes('vuetify') || id.includes('@mdi/font')) {
+            //   return undefined // Let Vite auto-optimize
+            // }
 
             // CoreUI framework
             if (id.includes('@coreui')) {
