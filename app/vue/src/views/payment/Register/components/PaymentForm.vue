@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, onBeforeMount } from 'vue'
+import { ref, reactive, computed, onBeforeMount, watch } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
@@ -11,20 +11,6 @@ import type { AccountingEntryInput, CompositeTransactionPayload } from '@/store/
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import {
-  CCol,
-  CForm,
-  CFormInput,
-  CFormTextarea,
-  CModalBody,
-  CRow,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-} from '@coreui/vue'
 
 const props = defineProps({
   contract: { type: Object, default: null },
@@ -126,7 +112,7 @@ const addEntry = () => {
     pk: null,
     account: paymentAccount.value,
     amount: null,
-    trader: '',
+    trader: paymentEntries.value[0]?.trader || '',
     contract: props.contract?.pk || null,
     installment_order: null,
   })
@@ -429,6 +415,36 @@ const onDelete = () => {
     refAlertModal.value.callModal(null, errorMessage)
   }
 }
+
+// ============================================
+// Watchers - Auto-copy functionality
+// ============================================
+// 1. 은행 거래 금액을 첫 번째 entry.amount에 자동 복사
+// 조건: 두 번째 이상의 항목들이 모두 금액 0일 때만 자동 복사
+watch(
+  () => bankForm.amount,
+  newAmount => {
+    const otherEntriesEmpty = paymentEntries.value
+      .slice(1)
+      .every(entry => !entry.amount || entry.amount === 0)
+
+    if (newAmount !== null && otherEntriesEmpty) {
+      paymentEntries.value[0].amount = newAmount
+    }
+  },
+)
+
+// 2. 첫 번째 entry.trader를 나머지 모든 entry의 trader에 자동 복사
+watch(
+  () => paymentEntries.value[0]?.trader,
+  newTrader => {
+    if (paymentEntries.value.length > 1) {
+      for (let i = 1; i < paymentEntries.value.length; i++) {
+        paymentEntries.value[i].trader = newTrader || ''
+      }
+    }
+  },
+)
 
 // ============================================
 // Lifecycle
