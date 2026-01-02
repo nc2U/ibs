@@ -26,9 +26,33 @@ export default defineConfig({
           }
 
           if (id.includes('node_modules')) {
-            // Vuetify UI framework (large) - check first
+            // Vue ecosystem - check FIRST to ensure proper initialization order
+            if (
+              id.match(/\/node_modules\/vue\//) ||
+              id.match(/\/node_modules\/.pnpm\/vue@/) ||
+              id.match(/\/.pnpm\/vue@/)
+            ) {
+              return 'vendor-vue-core'
+            }
+            if (
+              id.includes('vue-router') ||
+              id.includes('pinia') ||
+              id.match(/\/.pnpm\/vue-router@/) ||
+              id.match(/\/.pnpm\/pinia@/)
+            ) {
+              return 'vendor-vue-router-pinia'
+            }
+            if (
+              id.includes('@vue/') ||
+              id.includes('vue-demi') ||
+              id.match(/\/.pnpm\/@vue\//)
+            ) {
+              return 'vendor-vue-ecosystem'
+            }
+
+            // Vuetify + Vue ecosystem (moved after Vue core to prevent initialization errors)
             if (id.includes('vuetify') || id.includes('@mdi/font')) {
-              return 'vendor-vuetify'
+              return 'vendor-vue-ecosystem'
             }
 
             // CoreUI framework
@@ -64,30 +88,6 @@ export default defineConfig({
             // Utilities and helpers
             if (id.includes('axios') || id.includes('lodash') || id.includes('@vueuse')) {
               return 'vendor-utils'
-            }
-
-            // Vue ecosystem - more comprehensive matching for pnpm
-            if (
-              id.match(/\/node_modules\/vue\//) ||
-              id.match(/\/node_modules\/.pnpm\/vue@/) ||
-              id.match(/\/.pnpm\/vue@/)
-            ) {
-              return 'vendor-vue-core'
-            }
-            if (
-              id.includes('vue-router') ||
-              id.includes('pinia') ||
-              id.match(/\/.pnpm\/vue-router@/) ||
-              id.match(/\/.pnpm\/pinia@/)
-            ) {
-              return 'vendor-vue-router-pinia'
-            }
-            if (
-              id.includes('@vue/') ||
-              id.includes('vue-demi') ||
-              id.match(/\/.pnpm\/@vue\//)
-            ) {
-              return 'vendor-vue-ecosystem'
             }
 
             // Other vendor packages - avoid generic pnpm grouping
@@ -133,6 +133,7 @@ export default defineConfig({
       '@vue/shared',
       '@vue/runtime-dom',
       '@vue/runtime-core',
+      'vuetify',
       'md-editor-v3',
       'highlight.js',
     ],
