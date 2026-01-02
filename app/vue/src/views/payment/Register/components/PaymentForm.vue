@@ -2,15 +2,12 @@
 import { ref, reactive, computed, onBeforeMount } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { usePayment } from '@/store/pinia/payment'
-import { useProCash } from '@/store/pinia/proCash'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { getToday, diffDate } from '@/utils/baseMixins'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_payment } from '@/utils/pageAuth'
-import type {
-  AccountingEntryInput,
-  CompositeTransactionPayload as TransPayload,
-} from '@/store/types/payment.ts'
+import type { AccountingEntryInput, CompositeTransactionPayload } from '@/store/types/payment.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -27,63 +24,328 @@ const delConfirmModal = ref()
 const cngConfirmModal = ref()
 
 const validated = ref(false)
-
+const isSaving = ref(false)
 const removeCont = ref(false)
-const form = reactive<TransPayload>({
-  project: null, // hidden -> index 에서 처리
-  bank_account: null,
+
+// ============================================
+// Data Interfaces
+// ============================================
+interface BankTransactionForm {
+  deal_date: string
+  bank_account: number | null
+  amount: number | null
+  note: string
+  sort: 1 // Always 입금 for payment
+  content: string // Auto-generated from contract
+}
+
+interface PaymentEntryForm {
+  pk?: number | null
+  account: number | null
+  amount: number | null
+  trader: string
+  contract: number | null
+  installment_order: number | null
+}
+
+// ============================================
+// Form State - Separated Structure
+// ============================================
+const bankForm = reactive<BankTransactionForm>({
   deal_date: getToday(),
+  bank_account: null,
   amount: null,
-  sort: 1, // hidden -> always
-  content: '', // hidden
   note: '',
-  accounting_entries: [
-    {
-      pk: null,
-      account: null,
-      amount: null,
-      trader: '',
-      contract: null,
-      installment_order: null,
-    },
-  ],
+  sort: 1,
+  content: '',
 })
 
-const formsCheck = computed(() => {
-  if (props.payment) {
-    const a = form.bank_account === props.payment.bank_account.pk
-    const b = form.deal_date === props.payment.deal_date
-    const c = form.amount === props.payment.amount
-    const d = form.content === props.payment.content
-    const e = form.note === props.payment.note
-    const f = form.accounting_entries[0].account === props.payment.account
-    const g = form.accounting_entries[0].amount === props.payment.amount
-    const h = form.accounting_entries[0].trader === props.payment.trader
-    const i = props.payment.installment_order ? props.payment.installment_order.pk : null
-    const j = form.accounting_entries[0].installment_order === i
-    const k = removeCont.value === false
+const paymentEntries = ref<PaymentEntryForm[]>([
+  {
+    pk: null,
+    account: null,
+    amount: null,
+    trader: '',
+    contract: null,
+    installment_order: null,
+  },
+])
 
-    return a && b && c && d && e && f && g && h && i && j && k
-  } else return false
-})
+// ============================================
+// Store & Data
+// ============================================
+const paymentStore = usePayment()
+const payOrderList = computed(() => paymentStore.payOrderList)
+
+const proLedgerStore = useProLedger()
+const allProBankList = computed(() => proLedgerStore.allProBankList)
+
+// ============================================
+// Computed - Mode Detection
+// ============================================
+const isCreateMode = computed(() => !props.payment)
 
 const allowedPeriod = computed(() => {
   return props.payment ? useAccount().superAuth || diffDate(props.payment.deal_date) <= 90 : true
 })
 
-const paymentStore = usePayment()
-const payOrderList = computed(() => paymentStore.payOrderList)
+// ============================================
+// Helper Functions
+// ============================================
+const generateContent = (): string => {
+  if (!props.contract) return ''
+  return `${props.contract.contractor.name}[${props.contract.serial_number}] 대금납부`
+}
 
-const proCashStore = useProCash()
-const allProBankAccountList = computed(() => proCashStore.allProBankAccountList)
+const determinePaymentAccount = (): number | null => {
+  // TODO: 사용자가 직접 매핑 처리
+  // 분담금 또는 분양대금 계정을 ProjectAccount에서 조회하여 매핑
+  // 현재는 null 반환 (임시)
+  const sort = props.contract.order_group_sort
+  return null
+}
 
+// ============================================
+// Entry Management Functions
+// ============================================
+const addEntry = () => {
+  paymentEntries.value.push({
+    pk: null,
+    account: determinePaymentAccount(),
+    amount: null,
+    trader: '',
+    contract: props.contract?.pk || null,
+    installment_order: null,
+  })
+}
+
+const removeEntry = (index: number) => {
+  if (paymentEntries.value.length === 1) {
+    // 마지막 항목은 삭제하지 않고 초기화
+    Object.assign(paymentEntries.value[0], {
+      pk: null,
+      amount: null,
+      trader: '',
+      installment_order: null,
+    })
+  } else {
+    // 여러 항목 중 하나 제거
+    paymentEntries.value.splice(index, 1)
+  }
+}
+
+// ============================================
+// Initialization Functions
+// ============================================
+const initializeCreateForm = () => {
+  // 신규 등록 모드: 빈 폼 초기화
+  Object.assign(bankForm, {
+    deal_date: getToday(),
+    bank_account: null,
+    amount: null,
+    note: '',
+    sort: 1,
+    content: generateContent(),
+  })
+
+  paymentEntries.value = [
+    {
+      pk: null,
+      account: determinePaymentAccount(),
+      amount: null,
+      trader: '',
+      contract: props.contract?.pk || null,
+      installment_order: null,
+    },
+  ]
+}
+
+const initializeEditForm = () => {
+  if (!props.payment) return
+
+  // 수정 모드: 기존 데이터로 초기화
+  Object.assign(bankForm, {
+    deal_date: props.payment.deal_date,
+    bank_account: props.payment.bank_account.pk,
+    amount: props.payment.amount,
+    note: props.payment.note || '',
+    sort: 1,
+    content: generateContent(),
+  })
+
+  // 기존 납부 항목으로 초기화 (현재는 단일 항목)
+  paymentEntries.value = [
+    {
+      pk: props.payment.pk || null,
+      account: determinePaymentAccount(),
+      amount: props.payment.amount,
+      trader: props.payment.trader || '',
+      contract: props.contract?.pk || null,
+      installment_order: props.payment.installment_order?.pk || null,
+    },
+  ]
+}
+
+// ============================================
+// Computed - Amount Validation
+// ============================================
+const bankAmount = computed(() => bankForm.amount || 0)
+
+const totalEntryAmount = computed(() => {
+  return paymentEntries.value.reduce((sum, entry) => {
+    return sum + (entry.amount || 0)
+  }, 0)
+})
+
+const difference = computed(() => {
+  return bankAmount.value - totalEntryAmount.value
+})
+
+const isBalanced = computed(() => {
+  return difference.value === 0
+})
+
+const isFormValid = computed(() => {
+  const hasRequiredBankFields = !!(
+    bankForm.deal_date &&
+    bankForm.bank_account &&
+    bankForm.amount &&
+    bankForm.amount > 0
+  )
+
+  const hasValidEntries = paymentEntries.value.some(
+    entry => entry.amount && entry.amount > 0 && entry.installment_order,
+  )
+
+  return hasRequiredBankFields && hasValidEntries && isBalanced.value
+})
+
+const isSaveDisabled = computed(() => {
+  return isSaving.value || !isFormValid.value || formsCheck.value
+})
+
+const formsCheck = computed(() => {
+  if (!props.payment) return false
+
+  const bankUnchanged =
+    bankForm.bank_account === props.payment.bank_account.pk &&
+    bankForm.deal_date === props.payment.deal_date &&
+    bankForm.amount === props.payment.amount &&
+    bankForm.note === (props.payment.note || '')
+
+  const entryUnchanged =
+    paymentEntries.value.length === 1 &&
+    paymentEntries.value[0].amount === props.payment.amount &&
+    paymentEntries.value[0].trader === (props.payment.trader || '') &&
+    paymentEntries.value[0].installment_order === (props.payment.installment_order?.pk || null)
+
+  const noContractChange = removeCont.value === false
+
+  return bankUnchanged && entryUnchanged && noContractChange
+})
+
+// ============================================
+// Payload Building Functions
+// ============================================
+const buildCreatePayload = (): CompositeTransactionPayload => {
+  // 금액 일치 검증
+  if (!isBalanced.value) {
+    throw new Error('은행 거래 금액과 분류 금액 합계가 일치하지 않습니다.')
+  }
+
+  if (!props.contract?.pk) {
+    throw new Error('계약 정보가 없습니다.')
+  }
+
+  // 유효한 항목만 필터링 (amount > 0)
+  const validEntries = paymentEntries.value
+    .filter(entry => (entry.amount || 0) > 0)
+    .map(entry => ({
+      account: entry.account!,
+      amount: entry.amount!,
+      trader: entry.trader || '',
+      contract: props.contract!.pk,
+      installment_order: entry.installment_order!,
+    }))
+
+  if (validEntries.length === 0) {
+    throw new Error('최소 하나 이상의 납부 항목이 필요합니다.')
+  }
+
+  return {
+    project: null, // Parent에서 설정
+    bank_account: bankForm.bank_account!,
+    deal_date: bankForm.deal_date,
+    amount: bankForm.amount!,
+    sort: 1,
+    content: bankForm.content,
+    note: bankForm.note,
+    accounting_entries: validEntries,
+  }
+}
+
+const buildUpdatePayload = (): CompositeTransactionPayload => {
+  if (!props.payment) {
+    throw new Error('수정할 납부 정보가 없습니다.')
+  }
+
+  // 금액 일치 검증
+  if (!isBalanced.value) {
+    throw new Error('은행 거래 금액과 분류 금액 합계가 일치하지 않습니다.')
+  }
+
+  // 유효한 항목만 필터링
+  const validEntries = paymentEntries.value
+    .filter(entry => (entry.amount || 0) > 0)
+    .map(entry => {
+      const baseEntry: AccountingEntryInput = {
+        account: entry.account!,
+        amount: entry.amount!,
+        trader: entry.trader || '',
+        installment_order: entry.installment_order!,
+      }
+
+      // removeCont가 true면 contract를 null로, 아니면 기존 contract 유지
+      if (removeCont.value) {
+        baseEntry.contract = null
+      } else {
+        baseEntry.contract = props.contract?.pk || null
+      }
+
+      // 기존 항목이면 pk 포함
+      if (entry.pk) {
+        baseEntry.pk = entry.pk
+      }
+
+      return baseEntry
+    })
+
+  if (validEntries.length === 0) {
+    throw new Error('최소 하나 이상의 납부 항목이 필요합니다.')
+  }
+
+  return {
+    project: null, // Parent에서 설정
+    bank_account: bankForm.bank_account!,
+    deal_date: bankForm.deal_date,
+    amount: bankForm.amount!,
+    sort: 1,
+    content: bankForm.content,
+    note: bankForm.note,
+    accounting_entries: validEntries,
+  }
+}
+
+// ============================================
+// Event Handlers (Phase 5: CRUD Integration)
+// ============================================
 const onSubmit = (event: Event) => {
   if (write_payment.value) {
     if (allowedPeriod.value) {
       if (isValidate(event)) {
         validated.value = true
       } else {
-        if (!props.payment) modalAction()
+        if (isCreateMode.value) modalAction()
         else {
           if (removeCont.value) {
             cngConfirmModal.value.callModal()
@@ -98,7 +360,33 @@ const onSubmit = (event: Event) => {
   } else refAlertModal.value.callModal()
 }
 
-const modalAction = () => emit('on-submit', { rmCont: removeCont.value, ...form })
+const modalAction = () => {
+  try {
+    isSaving.value = true
+
+    if (isCreateMode.value) {
+      // Create mode - use buildCreatePayload
+      const payload = buildCreatePayload()
+      emit('on-submit', payload)
+    } else {
+      // Update mode - use buildUpdatePayload with bank_transaction_id
+      const payload = buildUpdatePayload()
+      const bankTransactionId = props.payment?.bank_transaction_id
+
+      if (!bankTransactionId) {
+        throw new Error('은행 거래 ID를 찾을 수 없습니다.')
+      }
+
+      // Emit with separate bankTransactionId parameter for update
+      emit('on-submit', bankTransactionId, payload)
+    }
+  } catch (error) {
+    // Handle validation errors from buildPayload functions
+    isSaving.value = false
+    const errorMessage = error instanceof Error ? error.message : '저장 중 오류가 발생했습니다.'
+    refAlertModal.value.callModal(null, errorMessage)
+  }
+}
 
 const deleteConfirm = () => {
   if (write_payment.value) {
@@ -113,116 +401,178 @@ const deleteConfirm = () => {
 }
 
 const onDelete = () => {
-  emit('on-delete')
-  emit('close')
-}
+  try {
+    const bankTransactionId = props.payment?.bank_transaction_id
 
-const formDataSet = () => {
-  if (props.payment) {
-    form.installment_order = props.payment.installment_order
-      ? props.payment.installment_order.pk
-      : null
-    form.trader = props.payment.trader
-    form.bank_account = props.payment.bank_account.pk
-    form.amount = props.payment.amount
-    form.note = props.payment.note
-    form.deal_date = props.payment.deal_date
+    if (!bankTransactionId) {
+      throw new Error('은행 거래 ID를 찾을 수 없습니다.')
+    }
+
+    // Emit bank_transaction_id for delete operation
+    emit('on-delete', bankTransactionId)
+    emit('close')
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.'
+    refAlertModal.value.callModal(null, errorMessage)
   }
-  form.project_account_d2 = props.contract.order_group_desc.sort
-  form.project_account_d3 = props.contract.order_group_desc.sort === '1' ? 1 : 4
-  form.contract = props.contract.pk
-  form.content = `${props.contract.contractor.name}[${props.contract.serial_number}] 대금납부`
 }
 
-onBeforeMount(() => formDataSet())
+// ============================================
+// Lifecycle
+// ============================================
+onBeforeMount(() => {
+  if (isCreateMode.value) {
+    initializeCreateForm()
+  } else {
+    initializeEditForm()
+  }
+})
 </script>
 
 <template>
   <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
     <CModalBody class="p-4">
-      <CRow class="mb-2">
-        <CCol xs="6">
-          <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 수납일자</CFormLabel>
-            <CCol sm="8">
-              <DatePicker v-model="form.deal_date" required placeholder="거래일자" />
-            </CCol>
-          </CRow>
-        </CCol>
-      </CRow>
-
-      <CRow class="mb-2">
-        <CCol xs="6">
-          <CRow>
-            <CFormLabel class="col-sm-4 col-form-label required">납부회차</CFormLabel>
-            <CCol sm="8">
-              <CFormSelect v-model="form.installment_order" required>
-                <option value="">---------</option>
-                <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">
-                  {{ po.__str__ }}
-                </option>
-              </CFormSelect>
-            </CCol>
-          </CRow>
-        </CCol>
-        <CCol xs="6">
-          <CRow>
-            <CFormLabel class="col-sm-4 col-form-label required">수납계좌</CFormLabel>
-            <CCol sm="8">
-              <CFormSelect v-model="form.bank_account" required>
-                <option value="">---------</option>
-                <option v-for="pb in allProBankAccountList" :key="pb.pk as number" :value="pb.pk">
-                  {{ pb.alias_name }}
-                </option>
-              </CFormSelect>
-            </CCol>
-          </CRow>
-        </CCol>
-      </CRow>
-
-      <CRow class="mb-2">
-        <CCol xs="6">
-          <CRow>
-            <CFormLabel class="col-sm-4 col-form-label required">수납금액</CFormLabel>
-            <CCol sm="8">
-              <CFormInput
-                v-model.number="form.amount"
-                type="number"
-                min="0"
-                placeholder="수납금액"
-                required
-              />
-            </CCol>
-          </CRow>
-        </CCol>
-
-        <CCol xs="6">
-          <CRow>
-            <CFormLabel class="col-sm-4 col-form-label required">입금자명</CFormLabel>
-            <CCol sm="8">
-              <CFormInput
-                v-model="form.trader"
-                maxlength="20"
-                required
-                placeholder="입금자명 (필히 계좌 입금자 기재)"
-              />
-            </CCol>
-          </CRow>
-        </CCol>
-      </CRow>
-
-      <CRow class="mb-2">
+      <!-- Section 1: 은행 거래 정보 -->
+      <CRow class="mb-3">
         <CCol>
-          <CRow>
-            <CFormLabel class="col-sm-2 col-form-label">비고</CFormLabel>
-            <CCol sm="10">
-              <CFormTextarea v-model="form.note" placeholder="기타 특이사항" />
+          <h6 class="border-bottom pb-2 mb-3">은행 거래 정보</h6>
+          <CRow class="mb-2">
+            <CCol xs="6">
+              <CRow>
+                <CFormLabel class="col-sm-4 col-form-label required">거래일자</CFormLabel>
+                <CCol sm="8">
+                  <DatePicker v-model="bankForm.deal_date" required placeholder="거래일자" />
+                </CCol>
+              </CRow>
+            </CCol>
+            <CCol xs="6">
+              <CRow>
+                <CFormLabel class="col-sm-4 col-form-label required">거래계좌</CFormLabel>
+                <CCol sm="8">
+                  <CFormSelect v-model.number="bankForm.bank_account" required>
+                    <option value="">---------</option>
+                    <option v-for="pb in allProBankList" :key="pb.pk as number" :value="pb.pk">
+                      {{ pb.alias_name }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
+              </CRow>
+            </CCol>
+          </CRow>
+          <CRow class="mb-2">
+            <CCol xs="6">
+              <CRow>
+                <CFormLabel class="col-sm-4 col-form-label required">수납금액</CFormLabel>
+                <CCol sm="8">
+                  <CFormInput
+                    v-model.number="bankForm.amount"
+                    type="number"
+                    min="0"
+                    placeholder="수납금액"
+                    required
+                  />
+                </CCol>
+              </CRow>
+            </CCol>
+            <CCol xs="6">
+              <CRow>
+                <CFormLabel class="col-sm-4 col-form-label">비고</CFormLabel>
+                <CCol sm="8">
+                  <CFormInput v-model="bankForm.note" placeholder="기타 특이사항" />
+                </CCol>
+              </CRow>
             </CCol>
           </CRow>
         </CCol>
       </CRow>
 
-      <CRow v-if="payment">
+      <!-- Section 2: 납부 내역 -->
+      <CRow class="mb-3">
+        <CCol>
+          <h6 class="border-bottom pb-2 mb-3">
+            납부 내역
+            <v-btn size="x-small" color="primary" class="ms-2" @click="addEntry"> 항목 추가 </v-btn>
+          </h6>
+          <div v-for="(entry, idx) in paymentEntries" :key="idx" class="mb-3 p-3 border rounded">
+            <CRow class="mb-2">
+              <CCol xs="6">
+                <CRow>
+                  <CFormLabel class="col-sm-4 col-form-label required">납부회차</CFormLabel>
+                  <CCol sm="8">
+                    <CFormSelect v-model.number="entry.installment_order" required>
+                      <option value="">---------</option>
+                      <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">
+                        {{ po.__str__ }}
+                      </option>
+                    </CFormSelect>
+                  </CCol>
+                </CRow>
+              </CCol>
+              <CCol xs="6">
+                <CRow>
+                  <CFormLabel class="col-sm-4 col-form-label required">분류금액</CFormLabel>
+                  <CCol sm="8">
+                    <CFormInput
+                      v-model.number="entry.amount"
+                      type="number"
+                      min="0"
+                      placeholder="분류금액"
+                      required
+                    />
+                  </CCol>
+                </CRow>
+              </CCol>
+            </CRow>
+            <CRow class="mb-2">
+              <CCol xs="6">
+                <CRow>
+                  <CFormLabel class="col-sm-4 col-form-label required">입금자명</CFormLabel>
+                  <CCol sm="8">
+                    <CFormInput
+                      v-model="entry.trader"
+                      maxlength="20"
+                      required
+                      placeholder="입금자명"
+                    />
+                  </CCol>
+                </CRow>
+              </CCol>
+              <CCol xs="6" class="d-flex align-items-end">
+                <v-btn
+                  v-if="paymentEntries.length > 1"
+                  size="small"
+                  color="error"
+                  variant="outlined"
+                  @click="removeEntry(idx)"
+                >
+                  <v-icon size="small">mdi-close</v-icon>
+                  항목 삭제
+                </v-btn>
+              </CCol>
+            </CRow>
+          </div>
+        </CCol>
+      </CRow>
+
+      <!-- Section 3: 금액 검증 표시 -->
+      <CRow class="mb-3">
+        <CCol>
+          <div class="p-3 bg-light rounded">
+            <strong>금액 검증:</strong>
+            은행 금액: <strong>{{ bankAmount.toLocaleString() }}</strong
+            >원 · 분류 합계: <strong>{{ totalEntryAmount.toLocaleString() }}</strong
+            >원 ·
+            <span :class="{ 'text-danger fw-bold': !isBalanced, 'text-success': isBalanced }">
+              차액: {{ Math.abs(difference).toLocaleString() }}원
+              <v-icon v-if="isBalanced" size="small" color="success">mdi-check-circle</v-icon>
+              <v-icon v-else size="small" color="error">mdi-alert-circle</v-icon>
+            </span>
+          </div>
+        </CCol>
+      </CRow>
+
+      <!-- Section 4: 계약건 변경 (edit mode only) -->
+      <CRow v-if="payment" class="mb-2">
         <CCol>
           <CRow>
             <CFormLabel class="col-sm-2 col-form-label"></CFormLabel>
@@ -245,7 +595,7 @@ onBeforeMount(() => formDataSet())
           type="submit"
           size="small"
           :color="payment ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="isSaveDisabled"
         >
           저장
         </v-btn>

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { ref, computed, onBeforeMount, onMounted, onUpdated, watch } from 'vue'
+import { ref, computed, onBeforeMount, onMounted, onUpdated, watch, provide } from 'vue'
 import { pageTitle, navMenu } from '@/views/payment/_menu/headermixin'
 import { dateFormat } from '@/utils/baseMixins'
 import { downloadFile } from '@/utils/helper.ts'
@@ -10,10 +10,8 @@ import { useProjectData } from '@/store/pinia/project_data'
 import { type Contract } from '@/store/types/contract'
 import type { Project } from '@/store/types/project.ts'
 import { type ContFilter, useContract } from '@/store/pinia/contract'
-import { useProCash } from '@/store/pinia/proCash'
 import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
-import type { ProjectCashBook, CashBookFilter } from '@/store/types/proCash'
 import type { ContPayFilter, DownPayFilter, PriceFilter } from '@/store/types/payment'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
@@ -70,27 +68,6 @@ const fetchPriceList = (payload: PriceFilter) => paymentStore.fetchPriceList(pay
 
 const proLedgerStore = useProLedger()
 const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBankAccList(projId)
-
-// need change start
-const proCashStore = useProCash()
-const createPrCashBook = (
-  payload: ProjectCashBook & { sepData: ProjectCashBook | null } & {
-    filters: CashBookFilter
-  },
-) => proCashStore.createPrCashBook(payload)
-const updatePrCashBook = (
-  payload: ProjectCashBook & {
-    sepData: ProjectCashBook | null
-  } & { isPayment?: boolean } & {
-    filters: CashBookFilter
-  },
-) => proCashStore.updatePrCashBook(payload)
-const deletePrCashBook = (
-  payload: { pk: number; project: number; contract: number } & {
-    filters: CashBookFilter
-  },
-) => proCashStore.deletePrCashBook(payload)
-// need change finish
 
 const contractStore = useContract()
 const contract = computed(() => contractStore.contract as Contract | null)
@@ -149,31 +126,28 @@ const getContract = (cont: number) => {
   })
 }
 
-const onCreate = (
-  payload: ProjectCashBook & { sepData: ProjectCashBook | null } & {
-    filters: CashBookFilter
-  },
-) => {
+// Ledger-based payment store methods (Phase 7)
+const createContractPayment = (payload: any) => paymentStore.createContractPayment(payload)
+const updateContractPayment = (bankTransactionId: number, payload: any) =>
+  paymentStore.updateContractPayment(bankTransactionId, payload)
+const deleteContractPayment = (bankTransactionId: number) =>
+  paymentStore.deleteContractPayment(bankTransactionId)
+
+// Phase 7: Updated handlers for ledger-based payment system
+const onCreate = (payload: any) => {
+  // Set project from current context
   if (project.value) payload.project = project.value
-  createPrCashBook(payload)
+  createContractPayment(payload)
 }
 
-const onUpdate = (
-  payload: ProjectCashBook & { sepData: ProjectCashBook | null } & {
-    filters: CashBookFilter
-  },
-) => {
+const onUpdate = (bankTransactionId: number, payload: any) => {
+  // Set project from current context
   if (project.value) payload.project = project.value
-  updatePrCashBook({ ...payload, isPayment: true })
+  updateContractPayment(bankTransactionId, payload)
 }
 
-const onDelete = (pk: number) => {
-  const delFilter = {
-    pk,
-    project: project.value || 1,
-    contract: contract.value?.pk || 1,
-  }
-  deletePrCashBook({ ...delFilter, ...{ filters: {} } })
+const onDelete = (bankTransactionId: number) => {
+  deleteContractPayment(bankTransactionId)
 }
 
 const dataSetup = (pk: number) => {
