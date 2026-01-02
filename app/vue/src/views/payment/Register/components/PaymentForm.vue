@@ -523,7 +523,9 @@ onBeforeMount(() => {
         <CCol>
           <h6 class="pb-0 mb-3">
             대금 납부 정보
-            <v-btn size="x-small" color="info" class="ml-2" @click="addEntry"> 항목 추가 </v-btn>
+            <v-btn size="x-small" color="info" class="ml-2" @click="addEntry">
+              차수 분할 등록
+            </v-btn>
           </h6>
           <div class="mb-3 px-3 border rounded">
             <CRow class="mb-0">
