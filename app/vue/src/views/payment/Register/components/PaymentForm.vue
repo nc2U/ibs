@@ -7,6 +7,10 @@ import { getToday, diffDate } from '@/utils/baseMixins'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_payment } from '@/utils/pageAuth'
+import type {
+  AccountingEntryInput,
+  CompositeTransactionPayload as TransPayload,
+} from '@/store/types/payment.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -25,33 +29,41 @@ const cngConfirmModal = ref()
 const validated = ref(false)
 
 const removeCont = ref(false)
-const form = reactive({
+const form = reactive<TransPayload>({
   project: null, // hidden -> index 에서 처리
-  sort: 1, // hidden -> always
-  project_account_d2: null as null | number, // hidden
-  project_account_d3: null as null | number, // hidden
-  contract: null, //  hidden -> 예외 및 신규 매칭 시 코드 확인
-  content: '', // hidden
-  installment_order: null,
-  trader: '',
   bank_account: null,
-  income: null,
-  note: '',
   deal_date: getToday(),
+  amount: null,
+  sort: 1, // hidden -> always
+  content: '', // hidden
+  note: '',
+  accounting_entries: [
+    {
+      pk: null,
+      account: null,
+      amount: null,
+      trader: '',
+      contract: null,
+      installment_order: null,
+    },
+  ],
 })
 
 const formsCheck = computed(() => {
   if (props.payment) {
-    const io = props.payment.installment_order ? props.payment.installment_order.pk : null
-    const a = form.installment_order === io
-    const b = form.trader === props.payment.trader
-    const c = form.bank_account === props.payment.bank_account.pk
-    const d = form.income === props.payment.income
+    const a = form.bank_account === props.payment.bank_account.pk
+    const b = form.deal_date === props.payment.deal_date
+    const c = form.amount === props.payment.amount
+    const d = form.content === props.payment.content
     const e = form.note === props.payment.note
-    const f = form.deal_date === props.payment.deal_date
-    const g = removeCont.value === false
+    const f = form.accounting_entries[0].account === props.payment.account
+    const g = form.accounting_entries[0].amount === props.payment.amount
+    const h = form.accounting_entries[0].trader === props.payment.trader
+    const i = props.payment.installment_order ? props.payment.installment_order.pk : null
+    const j = form.accounting_entries[0].installment_order === i
+    const k = removeCont.value === false
 
-    return a && b && c && d && e && f && g
+    return a && b && c && d && e && f && g && h && i && j && k
   } else return false
 })
 
@@ -112,7 +124,7 @@ const formDataSet = () => {
       : null
     form.trader = props.payment.trader
     form.bank_account = props.payment.bank_account.pk
-    form.income = props.payment.income
+    form.amount = props.payment.amount
     form.note = props.payment.note
     form.deal_date = props.payment.deal_date
   }
@@ -174,7 +186,7 @@ onBeforeMount(() => formDataSet())
             <CFormLabel class="col-sm-4 col-form-label required">수납금액</CFormLabel>
             <CCol sm="8">
               <CFormInput
-                v-model.number="form.income"
+                v-model.number="form.amount"
                 type="number"
                 min="0"
                 placeholder="수납금액"
@@ -245,7 +257,7 @@ onBeforeMount(() => formDataSet())
   </CForm>
 
   <ConfirmModal ref="cngConfirmModal">
-    <template #header> 건별 수납 정보 - [변경]</template>
+    <template #header> 건별 납부 정보 - [변경]</template>
     <template #default>
       이 수납 건에 대한 현재 계약 건 귀속을 해제합니다. <br /><br />
       해당 건별 수납 정보 계약 건 귀속 해제(변경)를 진행하시겠습니까?
@@ -256,7 +268,7 @@ onBeforeMount(() => formDataSet())
   </ConfirmModal>
 
   <ConfirmModal ref="delConfirmModal">
-    <template #header> 건별 수납 정보 - [삭제]</template>
+    <template #header> 건별 납부 정보 - [삭제]</template>
     <template #default>
       삭제 후 복구할 수 없습니다. 해당 건별 수납 정보 삭제를 진행하시겠습니까?
     </template>

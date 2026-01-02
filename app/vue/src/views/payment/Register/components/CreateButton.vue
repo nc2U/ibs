@@ -28,7 +28,7 @@ const createObject = (payload: ProjectCashBook) => {
   </CAlert>
 
   <FormModal ref="createFormModal" size="lg">
-    <template #header>건별 수납 관리 [신규 납부등록]</template>
+    <template #header>건별 납부 관리 [신규 납부등록]</template>
     <template #default>
       <PaymentForm
         :contract="contract"

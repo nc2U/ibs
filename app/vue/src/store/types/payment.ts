@@ -246,8 +246,8 @@ export type ContPayFilter = {
  */
 export interface AccountingEntryInput {
   pk?: number | null // 기존 분개 수정 시 사용
-  account: number // 계정 과목 ID
-  amount: number // 금액
+  account: number | null // 계정 과목 ID, 초기화용 null
+  amount: number | null // 금액, 초기화용 null
   trader?: string // 거래처
   evidence_type?: '0' | '1' | '2' | '3' | '4' | '5' | '6' | null // 증빙 종류
   contract?: number | null // 계약 ID (계약 결제인 경우)
@@ -261,10 +261,10 @@ export interface AccountingEntryInput {
  */
 export interface CompositeTransactionPayload {
   // Bank Transaction 필드
-  project: number
-  bank_account: number
+  project: number | null // 초기화용 null
+  bank_account: number | null // 초기화용 null
   deal_date: string // YYYY-MM-DD
-  amount: number
+  amount: number | null // 초기화용 null
   sort: number // 1=입금, 2=출금
   content: string // 적요
   note?: string // 비고
