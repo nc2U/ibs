@@ -165,17 +165,17 @@ const initializeEditForm = () => {
   // 수정 모드: 기존 데이터로 초기화
   Object.assign(bankForm, {
     deal_date: props.payment.deal_date,
-    bank_account: props.payment.bank_account.pk,
+    bank_account: props.payment.bank_account?.pk || null,
     amount: props.payment.amount,
     note: props.payment.note || '',
     sort: 1,
     content: generateContent(),
   })
 
-  // 기존 납부 항목으로 초기화 (현재는 단일 항목)
+  // 기존 납부 항목으로 초기화 (accounting_entry 사용)
   paymentEntries.value = [
     {
-      pk: props.payment.pk || null,
+      pk: props.payment.accounting_entry || null,
       account: paymentAccount.value,
       amount: props.payment.amount,
       trader: props.payment.trader || '',
@@ -578,60 +578,6 @@ onBeforeMount(() => {
                   </CTableRow>
                 </CTableBody>
               </CTable>
-              <!--              <CCol xs="6">-->
-              <!--                <CRow>-->
-              <!--                  <CFormLabel class="col-sm-4 col-form-label required">납부회차</CFormLabel>-->
-              <!--                  <CCol sm="8">-->
-              <!--                    <CFormSelect v-model.number="entry.installment_order" required>-->
-              <!--                      <option value="">-&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;</option>-->
-              <!--                      <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">-->
-              <!--                        {{ po.__str__ }}-->
-              <!--                      </option>-->
-              <!--                    </CFormSelect>-->
-              <!--                  </CCol>-->
-              <!--                </CRow>-->
-              <!--              </CCol>-->
-              <!--              <CCol xs="6">-->
-              <!--                <CRow>-->
-              <!--                  <CFormLabel class="col-sm-4 col-form-label required">분류금액</CFormLabel>-->
-              <!--                  <CCol sm="8">-->
-              <!--                    <CFormInput-->
-              <!--                      v-model.number="entry.amount as number"-->
-              <!--                      type="number"-->
-              <!--                      min="0"-->
-              <!--                      placeholder="분류금액"-->
-              <!--                      required-->
-              <!--                    />-->
-              <!--                  </CCol>-->
-              <!--                </CRow>-->
-              <!--              </CCol>-->
-              <!--            </CRow>-->
-              <!--            <CRow class="mb-2">-->
-              <!--              <CCol xs="6">-->
-              <!--                <CRow>-->
-              <!--                  <CFormLabel class="col-sm-4 col-form-label required">입금자명</CFormLabel>-->
-              <!--                  <CCol sm="8">-->
-              <!--                    <CFormInput-->
-              <!--                      v-model="entry.trader"-->
-              <!--                      maxlength="20"-->
-              <!--                      required-->
-              <!--                      placeholder="입금자명"-->
-              <!--                    />-->
-              <!--                  </CCol>-->
-              <!--                </CRow>-->
-              <!--              </CCol>-->
-              <!--              <CCol xs="6" class="d-flex align-items-end">-->
-              <!--                <v-btn-->
-              <!--                  v-if="paymentEntries.length > 1"-->
-              <!--                  size="small"-->
-              <!--                  color="error"-->
-              <!--                  variant="outlined"-->
-              <!--                  @click="removeEntry(idx)"-->
-              <!--                >-->
-              <!--                  <v-icon size="small">mdi-close</v-icon>-->
-              <!--                  항목 삭제-->
-              <!--                </v-btn>-->
-              <!--              </CCol>-->
             </CRow>
           </div>
         </CCol>

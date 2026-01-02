@@ -661,7 +661,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         4. PATCH 요청: 기존 분개가 entries_data에 없어도 유지 (부분 업데이트)
 
         ContractPayment.installment_order 특수 처리:
-        - PATCH 요청 시에만 installment_order가 있으면 ContractPayment에 직접 패치
+        - PUT/PATCH 모두 installment_order가 있으면 ContractPayment에 직접 업데이트
 
         ContractPayment 자동 처리:
         - Model의 save()에서 trigger_sync_contract_payment가 호출되어 처리
@@ -725,12 +725,12 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                         accounting_entry.full_clean()
                         accounting_entry.save()  # Model의 save가 trigger를 호출
 
-                        # PATCH 요청 시에만 installment_order 처리
-                        if self.partial and 'installment_order' in entry_data:
+                        # PUT/PATCH 모두 installment_order 처리
+                        if 'installment_order' in entry_data:
                             self._update_contract_payment_installment(
                                 accounting_entry, entry_data['installment_order']
                             )
-                        
+
                         accounting_entries.append(accounting_entry)
 
                     except ProjectAccountingEntry.DoesNotExist:
@@ -772,7 +772,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         """
         ContractPayment의 installment_order를 직접 업데이트하는 헬퍼 메서드
 
-        PATCH 요청 시에만 사용됨 (사용자가 회차만 수정하고 싶을 때)
+        PUT/PATCH 요청 모두 사용됨 (사용자가 회차를 수정할 때)
         ProjectAccountingEntry.installment_order는 폐기 예정 컬럼이므로 사용 안 함
 
         Args:
