@@ -11,6 +11,20 @@ import type { AccountingEntryInput, CompositeTransactionPayload } from '@/store/
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import {
+  CCol,
+  CForm,
+  CFormInput,
+  CFormTextarea,
+  CModalBody,
+  CRow,
+  CTable,
+  CTableBody,
+  CTableDataCell,
+  CTableHead,
+  CTableHeaderCell,
+  CTableRow,
+} from '@coreui/vue'
 
 const props = defineProps({
   contract: { type: Object, default: null },
@@ -438,12 +452,14 @@ onBeforeMount(() => {
           <CRow class="mb-2">
             <CCol xs="6">
               <CRow>
-                <CFormLabel class="col-sm-4 col-form-label required">거래일자</CFormLabel>
+                <CFormLabel class="col-sm-4 col-form-label required">납부일자</CFormLabel>
                 <CCol sm="8">
                   <DatePicker v-model="bankForm.deal_date" required placeholder="거래일자" />
                 </CCol>
               </CRow>
             </CCol>
+          </CRow>
+          <CRow class="mb-2">
             <CCol xs="6">
               <CRow>
                 <CFormLabel class="col-sm-4 col-form-label required">거래계좌</CFormLabel>
@@ -457,27 +473,27 @@ onBeforeMount(() => {
                 </CCol>
               </CRow>
             </CCol>
-          </CRow>
-          <CRow class="mb-2">
             <CCol xs="6">
               <CRow>
-                <CFormLabel class="col-sm-4 col-form-label required">수납금액</CFormLabel>
+                <CFormLabel class="col-sm-4 col-form-label required">거래금액</CFormLabel>
                 <CCol sm="8">
                   <CFormInput
-                    v-model.number="bankForm.amount"
+                    v-model.number="bankForm.amount as number"
                     type="number"
                     min="0"
-                    placeholder="수납금액"
+                    placeholder="은행 거래 금액"
                     required
                   />
                 </CCol>
               </CRow>
             </CCol>
-            <CCol xs="6">
+          </CRow>
+          <CRow>
+            <CCol xs="12">
               <CRow>
-                <CFormLabel class="col-sm-4 col-form-label">비고</CFormLabel>
-                <CCol sm="8">
-                  <CFormInput v-model="bankForm.note" placeholder="기타 특이사항" />
+                <CFormLabel class="col-sm-2 col-form-label">비고</CFormLabel>
+                <CCol sm="10">
+                  <CFormTextarea v-model="bankForm.note" placeholder="기타 특이사항" />
                 </CCol>
               </CRow>
             </CCol>
@@ -485,69 +501,134 @@ onBeforeMount(() => {
         </CCol>
       </CRow>
 
+      <v-divider class="mb-4" />
       <!-- Section 2: 납부 내역 -->
       <CRow class="mb-3">
         <CCol>
-          <h6 class="border-bottom pb-2 mb-3">
-            납부 내역
-            <v-btn size="x-small" color="primary" class="ms-2" @click="addEntry"> 항목 추가 </v-btn>
+          <h6 class="pb-0 mb-3">
+            대금 납부 정보
+            <v-btn size="x-small" color="info" class="ml-2" @click="addEntry"> 항목 추가 </v-btn>
           </h6>
-          <div v-for="(entry, idx) in paymentEntries" :key="idx" class="mb-3 p-3 border rounded">
-            <CRow class="mb-2">
-              <CCol xs="6">
-                <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label required">납부회차</CFormLabel>
-                  <CCol sm="8">
-                    <CFormSelect v-model.number="entry.installment_order" required>
-                      <option value="">---------</option>
-                      <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">
-                        {{ po.__str__ }}
-                      </option>
-                    </CFormSelect>
-                  </CCol>
-                </CRow>
-              </CCol>
-              <CCol xs="6">
-                <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label required">분류금액</CFormLabel>
-                  <CCol sm="8">
-                    <CFormInput
-                      v-model.number="entry.amount"
-                      type="number"
-                      min="0"
-                      placeholder="분류금액"
-                      required
-                    />
-                  </CCol>
-                </CRow>
-              </CCol>
-            </CRow>
-            <CRow class="mb-2">
-              <CCol xs="6">
-                <CRow>
-                  <CFormLabel class="col-sm-4 col-form-label required">입금자명</CFormLabel>
-                  <CCol sm="8">
-                    <CFormInput
-                      v-model="entry.trader"
-                      maxlength="20"
-                      required
-                      placeholder="입금자명"
-                    />
-                  </CCol>
-                </CRow>
-              </CCol>
-              <CCol xs="6" class="d-flex align-items-end">
-                <v-btn
-                  v-if="paymentEntries.length > 1"
-                  size="small"
-                  color="error"
-                  variant="outlined"
-                  @click="removeEntry(idx)"
-                >
-                  <v-icon size="small">mdi-close</v-icon>
-                  항목 삭제
-                </v-btn>
-              </CCol>
+          <div class="mb-3 px-3 border rounded">
+            <CRow class="mb-0">
+              <CTable borderless small>
+                <colgroup>
+                  <col width="32%" />
+                  <col width="32%" />
+                  <col width="32%" />
+                  <col width="4%" />
+                </colgroup>
+                <CTableHead>
+                  <CTableRow class="text-center border-bottom">
+                    <CTableHeaderCell class="py-0">
+                      <CFormLabel class="col-sm-12 col-form-label required">납부회차</CFormLabel>
+                    </CTableHeaderCell>
+                    <CTableHeaderCell class="py-0">
+                      <CFormLabel class="col-sm-12 col-form-label required">
+                        납부(분류)금액
+                      </CFormLabel>
+                    </CTableHeaderCell>
+                    <CTableHeaderCell class="py-0">
+                      <CFormLabel class="col-sm-12 col-form-label required">입금자명</CFormLabel>
+                    </CTableHeaderCell>
+                    <CTableHeaderCell class="text-center"></CTableHeaderCell>
+                  </CTableRow>
+                </CTableHead>
+                <CTableBody>
+                  <CTableRow v-for="(entry, idx) in paymentEntries" :key="idx">
+                    <CTableDataCell :class="idx === 0 ? 'pt-3' : ''">
+                      <CFormSelect v-model.number="entry.installment_order" required>
+                        <option value="">---------</option>
+                        <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">
+                          {{ po.__str__ }}
+                        </option>
+                      </CFormSelect>
+                    </CTableDataCell>
+                    <CTableDataCell :class="idx === 0 ? 'pt-3' : ''">
+                      <CFormInput
+                        v-model.number="entry.amount as number"
+                        type="number"
+                        min="0"
+                        placeholder="회차별 납부 금액"
+                        required
+                      />
+                    </CTableDataCell>
+                    <CTableDataCell :class="idx === 0 ? 'pt-3' : ''">
+                      <CFormInput
+                        v-model="entry.trader"
+                        maxlength="20"
+                        required
+                        :readonly="idx !== 0"
+                        placeholder="실제 입금자명"
+                      />
+                    </CTableDataCell>
+                    <CTableDataCell class="text-center">
+                      <v-icon
+                        v-if="paymentEntries.length > 1 && idx !== 0"
+                        icon="mdi-close"
+                        color="grey"
+                        class="mt-2"
+                        size="small"
+                        @click="removeEntry(idx)"
+                      />
+                    </CTableDataCell>
+                  </CTableRow>
+                </CTableBody>
+              </CTable>
+              <!--              <CCol xs="6">-->
+              <!--                <CRow>-->
+              <!--                  <CFormLabel class="col-sm-4 col-form-label required">납부회차</CFormLabel>-->
+              <!--                  <CCol sm="8">-->
+              <!--                    <CFormSelect v-model.number="entry.installment_order" required>-->
+              <!--                      <option value="">-&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;</option>-->
+              <!--                      <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">-->
+              <!--                        {{ po.__str__ }}-->
+              <!--                      </option>-->
+              <!--                    </CFormSelect>-->
+              <!--                  </CCol>-->
+              <!--                </CRow>-->
+              <!--              </CCol>-->
+              <!--              <CCol xs="6">-->
+              <!--                <CRow>-->
+              <!--                  <CFormLabel class="col-sm-4 col-form-label required">분류금액</CFormLabel>-->
+              <!--                  <CCol sm="8">-->
+              <!--                    <CFormInput-->
+              <!--                      v-model.number="entry.amount as number"-->
+              <!--                      type="number"-->
+              <!--                      min="0"-->
+              <!--                      placeholder="분류금액"-->
+              <!--                      required-->
+              <!--                    />-->
+              <!--                  </CCol>-->
+              <!--                </CRow>-->
+              <!--              </CCol>-->
+              <!--            </CRow>-->
+              <!--            <CRow class="mb-2">-->
+              <!--              <CCol xs="6">-->
+              <!--                <CRow>-->
+              <!--                  <CFormLabel class="col-sm-4 col-form-label required">입금자명</CFormLabel>-->
+              <!--                  <CCol sm="8">-->
+              <!--                    <CFormInput-->
+              <!--                      v-model="entry.trader"-->
+              <!--                      maxlength="20"-->
+              <!--                      required-->
+              <!--                      placeholder="입금자명"-->
+              <!--                    />-->
+              <!--                  </CCol>-->
+              <!--                </CRow>-->
+              <!--              </CCol>-->
+              <!--              <CCol xs="6" class="d-flex align-items-end">-->
+              <!--                <v-btn-->
+              <!--                  v-if="paymentEntries.length > 1"-->
+              <!--                  size="small"-->
+              <!--                  color="error"-->
+              <!--                  variant="outlined"-->
+              <!--                  @click="removeEntry(idx)"-->
+              <!--                >-->
+              <!--                  <v-icon size="small">mdi-close</v-icon>-->
+              <!--                  항목 삭제-->
+              <!--                </v-btn>-->
+              <!--              </CCol>-->
             </CRow>
           </div>
         </CCol>
@@ -574,8 +655,7 @@ onBeforeMount(() => {
       <CRow v-if="payment" class="mb-2">
         <CCol>
           <CRow>
-            <CFormLabel class="col-sm-2 col-form-label"></CFormLabel>
-            <CCol sm="10">
+            <CCol sm="12">
               <CFormCheck
                 :id="`cont-change`"
                 v-model="removeCont"
