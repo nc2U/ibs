@@ -5,43 +5,14 @@ import { cleanupParams, errorHandle, message } from '@/utils/helper'
 import type {
   ProjectBank,
   ProjectAccount,
+  DataFilter,
+  ProAccountFilter,
   ProBankTrans,
   ProAccountingEntry,
   BalanceByAccount,
   ProCalculated,
   LedgerTransactionForDisplay,
 } from '@/store/types/proLedger.ts'
-
-export type DataFilter = {
-  page?: number
-  project?: number | null
-  from_date?: string
-  to_date?: string
-  sort?: 1 | 2 | null
-  account_category?:
-    | 'asset'
-    | 'liability'
-    | 'equity'
-    | 'revenue'
-    | 'expense'
-    | 'transfer'
-    | 'cancel'
-    | ''
-  account?: number | null
-  bank_account?: number | null
-  contract?: number | null
-  search?: string
-  limit?: number
-}
-
-export type ProAccountFilter = {
-  category?: string
-  direction?: string
-  parent?: number | null
-  is_category_only?: boolean | ''
-  is_active?: boolean | ''
-  search?: string
-}
 
 export const useProLedger = defineStore('proLedger', () => {
   // state & getters
@@ -91,8 +62,8 @@ export const useProLedger = defineStore('proLedger', () => {
       .catch(err => errorHandle(err.response.data))
 
   // state & getters
-  const proAccountList = ref<ProjectAccount[]>([])
   const proAccountFilter = ref<ProAccountFilter>({})
+  const proAccountList = ref<ProjectAccount[]>([])
   const proAccounts = computed(() =>
     proAccountList.value
       .filter(acc => acc.is_active && acc.pk !== undefined)
@@ -117,6 +88,9 @@ export const useProLedger = defineStore('proLedger', () => {
       direction: payload.direction,
       parent: payload.parent,
       is_category_only: payload.is_category_only,
+      is_payment: payload.is_payment,
+      requires_contract: payload.requires_contract,
+      is_related_contractor: payload.is_related_contractor,
       is_active: payload.is_active,
       search: payload.search,
     })

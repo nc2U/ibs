@@ -108,6 +108,40 @@ export interface LedgerTransactionForDisplay {
   note: string
 }
 
+export type DataFilter = {
+  page?: number
+  project?: number | null
+  from_date?: string
+  to_date?: string
+  sort?: 1 | 2 | null
+  account_category?:
+    | 'asset'
+    | 'liability'
+    | 'equity'
+    | 'revenue'
+    | 'expense'
+    | 'transfer'
+    | 'cancel'
+    | ''
+  account?: number | null
+  bank_account?: number | null
+  contract?: number | null
+  search?: string
+  limit?: number
+}
+
+export type ProAccountFilter = {
+  category?: string
+  direction?: string
+  parent?: number | null
+  is_category_only?: boolean | ''
+  is_active?: boolean | ''
+  is_payment?: boolean | ''
+  requires_contract?: boolean | ''
+  is_related_contractor?: boolean | ''
+  search?: string
+}
+
 // ----- old types ----------------------------------------
 
 export interface BalanceByAccount {
