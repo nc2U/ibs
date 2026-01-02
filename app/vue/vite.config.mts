@@ -26,33 +26,39 @@ export default defineConfig({
           }
 
           if (id.includes('node_modules')) {
-            // Vue ecosystem - check FIRST to ensure proper initialization order
+            // Load order enforced by numbered prefixes (1 → 2 → 3 → 4)
+
+            // Step 1: Vue core (MUST load first)
             if (
               id.match(/\/node_modules\/vue\//) ||
               id.match(/\/node_modules\/.pnpm\/vue@/) ||
               id.match(/\/.pnpm\/vue@/)
             ) {
-              return 'vendor-vue-core'
+              return 'vendor-1-vue-core'
             }
+
+            // Step 2: Vue ecosystem (@vue/* packages)
+            if (
+              id.includes('@vue/') ||
+              id.includes('vue-demi') ||
+              id.match(/\/.pnpm\/@vue\//)
+            ) {
+              return 'vendor-2-vue-ecosystem'
+            }
+
+            // Step 3: Vue router and Pinia (depends on Vue core)
             if (
               id.includes('vue-router') ||
               id.includes('pinia') ||
               id.match(/\/.pnpm\/vue-router@/) ||
               id.match(/\/.pnpm\/pinia@/)
             ) {
-              return 'vendor-vue-router-pinia'
-            }
-            if (
-              id.includes('@vue/') ||
-              id.includes('vue-demi') ||
-              id.match(/\/.pnpm\/@vue\//)
-            ) {
-              return 'vendor-vue-ecosystem'
+              return 'vendor-3-vue-router-pinia'
             }
 
-            // Vuetify + Vue ecosystem (moved after Vue core to prevent initialization errors)
+            // Step 4: Vuetify (depends on Vue ecosystem) - separate chunk with enforced load order
             if (id.includes('vuetify') || id.includes('@mdi/font')) {
-              return 'vendor-vue-ecosystem'
+              return 'vendor-4-vuetify'
             }
 
             // CoreUI framework
