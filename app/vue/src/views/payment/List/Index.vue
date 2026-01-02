@@ -9,7 +9,7 @@ import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { onBeforeRouteLeave } from 'vue-router'
 import type { Project } from '@/store/types/project.ts'
-import type { CompositeTransactionPayload, ContPayFilter } from '@/store/types/payment.ts'
+import type { ContractPaymentPayload, ContPayFilter } from '@/store/types/payment.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -50,7 +50,7 @@ const fetchPaymentSummaryList = (projId: number) =>
   paymentStore.fetchLedgerPaymentSummaryList(projId)
 const fetchPayOrderList = (projId: number) => paymentStore.fetchPayOrderList(projId)
 const fetchPaymentList = (payload: ContPayFilter) => paymentStore.fetchLedgerPaymentList(payload)
-const patchContractPayment = (transPk: number, payload: Partial<CompositeTransactionPayload>) =>
+const patchContractPayment = (transPk: number, payload: Partial<ContractPaymentPayload>) =>
   paymentStore.patchContractPayment(transPk, payload)
 
 const proLedgerStore = useProLedger()

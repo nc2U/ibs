@@ -244,14 +244,12 @@ export type ContPayFilter = {
  * 회계 분개 입력 데이터
  * ProjectAccountingEntryInputSerializer와 매핑
  */
-export interface AccountingEntryInput {
+export interface PaymentAccEntryInput {
   pk?: number | null // 기존 분개 수정 시 사용
   account: number | null // 계정 과목 ID, 초기화용 null
   amount: number | null // 금액, 초기화용 null
   trader?: string // 거래처
-  evidence_type?: '0' | '1' | '2' | '3' | '4' | '5' | '6' | null // 증빙 종류
   contract?: number | null // 계약 ID (계약 결제인 경우)
-  contractor?: number | null // 계약자 ID
   installment_order?: number | null // 납부 회차 ID
 }
 
@@ -259,7 +257,7 @@ export interface AccountingEntryInput {
  * 복합 거래 생성/수정 페이로드
  * ProjectCompositeTransactionSerializer와 매핑
  */
-export interface CompositeTransactionPayload {
+export interface ContractPaymentPayload {
   // Bank Transaction 필드
   project: number | null // 초기화용 null
   bank_account: number | null // 초기화용 null
@@ -270,13 +268,13 @@ export interface CompositeTransactionPayload {
   note?: string // 비고
 
   // Accounting Entries (배열)
-  accounting_entries: AccountingEntryInput[]
+  accounting_entries: PaymentAccEntryInput[]
 }
 
 /**
  * 복합 거래 응답 데이터
  */
-export interface CompositeTransactionResponse {
+export interface ContractPaymentResponse {
   bank_transaction: {
     pk: number
     transaction_id: string

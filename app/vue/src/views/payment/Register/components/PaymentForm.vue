@@ -7,7 +7,7 @@ import { getToday, diffDate } from '@/utils/baseMixins'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_payment } from '@/utils/pageAuth'
-import type { AccountingEntryInput, CompositeTransactionPayload } from '@/store/types/payment.ts'
+import type { PaymentAccEntryInput, ContractPaymentPayload } from '@/store/types/payment.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -231,7 +231,7 @@ const formsCheck = computed(() => {
 // ============================================
 // Payload Building Functions
 // ============================================
-const buildCreatePayload = (): CompositeTransactionPayload => {
+const buildCreatePayload = (): ContractPaymentPayload => {
   // 금액 일치 검증
   if (!isBalanced.value) {
     throw new Error('은행 거래 금액과 분류 금액 합계가 일치하지 않습니다.')
@@ -268,7 +268,7 @@ const buildCreatePayload = (): CompositeTransactionPayload => {
   }
 }
 
-const buildUpdatePayload = (): CompositeTransactionPayload => {
+const buildUpdatePayload = (): ContractPaymentPayload => {
   if (!props.payment) {
     throw new Error('수정할 납부 정보가 없습니다.')
   }
@@ -282,7 +282,7 @@ const buildUpdatePayload = (): CompositeTransactionPayload => {
   const validEntries = paymentEntries.value
     .filter(entry => (entry.amount || 0) > 0)
     .map(entry => {
-      const baseEntry: AccountingEntryInput = {
+      const baseEntry: PaymentAccEntryInput = {
         account: entry.account!,
         amount: entry.amount!,
         trader: entry.trader || '',

@@ -5,8 +5,8 @@ import { errorHandle, message } from '@/utils/helper'
 import { type CashBookFilter } from '@/store/types/proCash'
 import type {
   AllPayment,
-  CompositeTransactionPayload,
-  CompositeTransactionResponse,
+  ContractPaymentPayload,
+  ContractPaymentResponse,
   ContPayFilter,
   DownPay,
   DownPayFilter,
@@ -446,7 +446,7 @@ export const usePayment = defineStore('payment', () => {
    * ProjectAccountingEntry.save() → trigger_sync_contract_payment() → ContractPayment 자동 생성
    *
    * @param payload - 복합 거래 데이터
-   * @returns Promise<CompositeTransactionResponse>
+   * @returns Promise<ContractPaymentResponse>
    *
    * @example
    * // 단일 계약 납부 등록
@@ -495,8 +495,8 @@ export const usePayment = defineStore('payment', () => {
    * })
    */
   const createContractPayment = async (
-    payload: CompositeTransactionPayload,
-  ): Promise<CompositeTransactionResponse> => {
+    payload: ContractPaymentPayload,
+  ): Promise<ContractPaymentResponse> => {
     try {
       const response = await api.post('/ledger/project-composite-transaction/', payload)
       // 계약 납부 목록 리프레시
@@ -519,7 +519,7 @@ export const usePayment = defineStore('payment', () => {
    *
    * @param bankTransactionId - 수정할 은행 거래 ID (ProjectBankTransaction.pk)
    * @param payload - 수정할 복합 거래 데이터 (전체 필드 필수)
-   * @returns Promise<CompositeTransactionResponse>
+   * @returns Promise<ContractPaymentResponse>
    *
    * @example
    * // 납부 금액 수정
@@ -543,8 +543,8 @@ export const usePayment = defineStore('payment', () => {
    */
   const updateContractPayment = async (
     bankTransactionId: number,
-    payload: CompositeTransactionPayload,
-  ): Promise<CompositeTransactionResponse> => {
+    payload: ContractPaymentPayload,
+  ): Promise<ContractPaymentResponse> => {
     try {
       const response = await api.put(
         `/ledger/project-composite-transaction/${bankTransactionId}/`,
@@ -570,7 +570,7 @@ export const usePayment = defineStore('payment', () => {
    *
    * @param bankTransactionId - 수정할 은행 거래 ID (ProjectBankTransaction.pk)
    * @param payload - 수정할 필드만 포함 (Partial)
-   * @returns Promise<CompositeTransactionResponse>
+   * @returns Promise<ContractPaymentResponse>
    *
    * @example
    * // 회차만 수정 (가장 일반적인 사용 케이스)
@@ -601,8 +601,8 @@ export const usePayment = defineStore('payment', () => {
    */
   const patchContractPayment = async (
     bankTransactionId: number,
-    payload: Partial<CompositeTransactionPayload>,
-  ): Promise<CompositeTransactionResponse> => {
+    payload: Partial<ContractPaymentPayload>,
+  ): Promise<ContractPaymentResponse> => {
     try {
       const response = await api.patch(
         `/ledger/project-composite-transaction/${bankTransactionId}/`,
