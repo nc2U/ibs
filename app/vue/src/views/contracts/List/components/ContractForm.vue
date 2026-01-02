@@ -800,7 +800,7 @@ onBeforeRouteLeave(() => formDataReset())
                       <router-link
                         v-c-tooltip="'건별 납부 관리'"
                         :to="{
-                          name: '건별 납부 내역',
+                          name: '건별 납부 관리',
                           params: { contractId: contract.pk },
                         }"
                       >
@@ -813,7 +813,7 @@ onBeforeRouteLeave(() => formDataReset())
                       <router-link
                         v-c-tooltip="'건별 납부 관리'"
                         :to="{
-                          name: '건별 납부 내역',
+                          name: '건별 납부 관리',
                           params: { contractId: contract.pk },
                         }"
                       >
