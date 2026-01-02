@@ -27,7 +27,7 @@ onMounted(() => {
 const router = useRouter()
 const showDetail = () => {
   router.replace({
-    name: '건별 수납 내역',
+    name: '건별 수납 관리 - 상세',
     params: { contractId: props.contract?.pk },
   })
   updateFormModal.value.callModal()
