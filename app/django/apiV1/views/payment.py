@@ -2080,7 +2080,7 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_non_contract_amounts_cache(project_id, pay_orders):
-        """미계약 세대 납부 금액 캐시 (pay_time별)"""
+        """미계약 세대 납부 금액 캐시 생성 (pay_time 기반) - 근린생활시설 fallback 포함"""
         pay_times = set()
         for order in pay_orders:
             pay_times.add(str(order.pay_time))
@@ -2089,24 +2089,132 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
 
         try:
             with connection.cursor() as cursor:
-                for pay_time_str in pay_times:
+                # pay_time별로 미계약 세대의 개별 금액을 집계
+                for pay_time in sorted(pay_times):
                     query = """
-                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as non_contract_amount
+                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total
                             FROM contract_contractprice, jsonb_each_text(payment_amounts)
                             WHERE contract_id IS NULL
                               AND is_cache_valid = %s
                               AND key = %s
                             """
-                    cursor.execute(query, [True, pay_time_str])
+                    cursor.execute(query, [True, pay_time])
                     result = cursor.fetchone()
-                    pay_time = int(pay_time_str)
-                    non_contract_amounts_cache[pay_time] = result[0] if result else 0
+                    total_amount = result[0] if result else 0
+
+                    # 근린생활시설 fallback 추가
+                    commercial_fallback = ContractPaymentOverallSummaryViewSet._get_commercial_fallback_for_overall(
+                        project_id, int(pay_time)
+                    )
+                    total_amount += commercial_fallback
+
+                    non_contract_amounts_cache[int(pay_time)] = total_amount
 
         except Exception as e:
+            # 실패 시 0으로 초기화
             for order in pay_orders:
                 non_contract_amounts_cache[order.pay_time] = 0
 
         return non_contract_amounts_cache
+
+    @staticmethod
+    def _get_commercial_fallback_for_overall(project_id, pay_time):
+        """
+        총괄 집계용 근린생활시설 fallback 로직 - 회차별 계산
+        근린생활시설이 있지만 ContractPrice 데이터가 없을 때 fallback 적용
+        납부회차가 없으면 기본 납부회차(잔금 100%) 적용
+        """
+        try:
+            # 프로젝트의 기본 order_group 가져오기
+            project = Project.objects.get(pk=project_id)
+            default_og = OrderGroup.get_default_for_project(project)
+
+            if not default_og:
+                return 0
+
+            # 근린생활시설 타입 찾기 (sort='5')
+            commercial_unit_types = UnitType.objects.filter(
+                project_id=project_id,
+                sort='5'
+            )
+
+            total_fallback_amount = 0
+
+            for unit_type in commercial_unit_types:
+                # 해당 타입의 HouseUnit이 있는지 확인
+                has_house_units = HouseUnit.objects.filter(unit_type_id=unit_type.pk).exists()
+
+                # 해당 타입의 SalesPriceByGT가 있는지 확인
+                has_sales_price = SalesPriceByGT.objects.filter(
+                    project_id=project_id,
+                    order_group_id=default_og.pk,
+                    unit_type_id=unit_type.pk
+                ).exists()
+
+                # HouseUnit은 있지만 SalesPriceByGT가 없을 때만 fallback 적용
+                if has_house_units and not has_sales_price:
+                    # 예산 데이터에서 기본 금액 가져오기
+                    base_amount = ContractPaymentStatusByUnitTypeViewSet._get_commercial_fallback_amount(
+                        project_id, default_og.pk, unit_type.pk
+                    )
+
+                    if base_amount > 0:
+                        # 프로젝트의 근린생활시설용 InstallmentPaymentOrder가 있는지 확인
+                        installment_orders = InstallmentPaymentOrder.objects.filter(
+                            project_id=project_id,
+                            type_sort='5'  # 근린생활시설
+                        )
+
+                        if not installment_orders.exists():
+                            # InstallmentPaymentOrder가 없으면 기본 납부회차 적용: 잔금 100%
+                            # 잔금인지 확인 (pay_sort='3')
+                            try:
+                                pay_order = InstallmentPaymentOrder.objects.get(
+                                    project_id=project_id,
+                                    pay_time=pay_time
+                                )
+                                if pay_order.pay_sort == '3':  # 잔금
+                                    installment_amount = base_amount
+                                    total_fallback_amount += installment_amount
+                            except InstallmentPaymentOrder.DoesNotExist:
+                                pass
+                        else:
+                            # InstallmentPaymentOrder가 있으면 해당 회차에 따라 계산
+                            try:
+                                pay_order = InstallmentPaymentOrder.objects.get(
+                                    project_id=project_id,
+                                    pay_time=pay_time,
+                                    type_sort='5'  # 근린생활시설용만
+                                )
+
+                                if pay_order.pay_amt:
+                                    # pay_amt가 설정된 경우 그 값 사용
+                                    installment_amount = pay_order.pay_amt
+                                    total_fallback_amount += installment_amount
+                                elif pay_order.pay_ratio:
+                                    # pay_ratio가 설정된 경우 base_amount에 비율 적용
+                                    installment_amount = int(base_amount * (pay_order.pay_ratio / 100))
+                                    total_fallback_amount += installment_amount
+                                elif pay_order.pay_name == '잔금':
+                                    # 잔금의 경우 남은 비율을 자동 계산
+                                    other_orders = InstallmentPaymentOrder.objects.filter(
+                                        project_id=project_id,
+                                        type_sort='5'
+                                    ).exclude(pay_time=pay_time)
+                                    used_ratio = sum(order.pay_ratio or 0 for order in other_orders)
+                                    remaining_ratio = 100 - used_ratio
+
+                                    if remaining_ratio > 0:
+                                        installment_amount = int(base_amount * (remaining_ratio / 100))
+                                        total_fallback_amount += installment_amount
+
+                            except InstallmentPaymentOrder.DoesNotExist:
+                                pass
+
+            return total_fallback_amount
+
+        except Exception as e:
+            return 0
 
     @staticmethod
     def _get_all_collection_data(project_id, date, pay_orders):
@@ -2129,8 +2237,16 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
                                                                       ON cp.accounting_entry_id = pae.accountingentry_ptr_id
                                                            INNER JOIN ledger_projectbanktransaction pbt
                                                                       ON pae.transaction_id = pbt.transaction_id
+                                                           INNER JOIN contract_contract c
+                                                                      ON cp.contract_id = c.id
+                                                           INNER JOIN ledger_projectaccount pa
+                                                                      ON pae.account_id = pa.id
                                                   WHERE cp.project_id = %s
                                                     AND cp.installment_order_id = %s
+                                                    AND cp.contract_id IS NOT NULL
+                                                    AND c.activation = true
+                                                    AND cp.is_payment_mismatch = false
+                                                    AND pa.is_payment = true
                                                     AND pbt.deal_date <= %s)
                             SELECT COALESCE(SUM(amount), 0)      AS collected_amount,
                                    COALESCE(SUM(discount), 0)    AS discount_amount,
