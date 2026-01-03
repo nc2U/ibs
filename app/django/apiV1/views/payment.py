@@ -1376,12 +1376,6 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
     ordering_fields = ['deal_date', 'created_at', 'installment_order']
     ordering = ['-deal_date', '-created_at']  # 기본 정렬
 
-    def get_serializer_class(self):
-        """목록 조회 시 최적화된 직렬화 사용"""
-        if self.action == 'list':
-            return ContractPaymentListSerializer
-        return ContractPaymentSerializer
-
 
 class AllContractPaymentViewSet(ContractPaymentViewSet):
     pagination_class = PageNumberPaginationOneHundred

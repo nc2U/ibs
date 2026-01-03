@@ -234,58 +234,37 @@ class SimpleLedgerAccountingEntrySerializer(serializers.ModelSerializer):
 
 class ContractPaymentSerializer(serializers.ModelSerializer):
     """
-    ContractPayment 직렬화
+    ContractPayment 통합 직렬화 (기본 + 목록)
 
-    기존 PaymentSerializer와 유사한 응답 구조 제공 (호환성 유지)
+    기존 PaymentSerializer와 호환되는 응답 구조 제공
+    retrieve, list, create, update, delete 모든 액션에서 사용
     """
+    # 관계 필드
     contract = SimpleContractSerializer(read_only=True)
     installment_order = SimpleInstallmentOrderSerializer(read_only=True)
     accounting_entry = SimpleLedgerAccountingEntrySerializer(read_only=True)
 
-    # 계산된 필드
+    # 모델 프로퍼티 (효율적)
     deal_date = serializers.DateField(read_only=True)
     amount = serializers.IntegerField(read_only=True)
 
-    class Meta:
-        model = ContractPayment
-        fields = (
-            'pk', 'project', 'contract', 'installment_order',
-            'accounting_entry', 'deal_date', 'amount', 'is_payment_mismatch',
-            'created_at', 'updated_at', 'creator'
-        )
-        read_only_fields = ('deal_date', 'amount', 'created_at', 'updated_at')
-
-
-class ContractPaymentListSerializer(serializers.ModelSerializer):
-    """
-    ContractPayment 목록용 최적화된 직렬화
-
-    기존 PaymentSerializer와 호환되는 필드 구조
-    """
-    contract = SimpleContractSerializer(read_only=True)
-    installment_order = SimpleInstallmentOrderSerializer(read_only=True)
-
-    # ProjectCashBook과 호환되는 필드명 (모두 SerializerMethodField 사용)
-    deal_date = serializers.SerializerMethodField(read_only=True)
+    # 추가 필드 (목록용 - accounting_entry를 통해 조회)
     bank_account = serializers.SerializerMethodField(read_only=True)
     trader = serializers.SerializerMethodField(read_only=True)
     note = serializers.SerializerMethodField(read_only=True)
-
-    # CRUD 작업을 위한 은행거래 PK
     bank_transaction_id = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ContractPayment
-        fields = ('pk', 'deal_date', 'contract', 'amount',
-                  'installment_order', 'bank_account', 'trader', 'note',
-                  'bank_transaction_id', 'accounting_entry')
-
-    def get_deal_date(self, obj):
-        """거래일자 조회"""
-        try:
-            return obj.accounting_entry.related_transaction.deal_date
-        except (AttributeError, TypeError):
-            return None
+        fields = (
+            # 기본 필드
+            'pk', 'project', 'contract', 'installment_order',
+            'accounting_entry', 'deal_date', 'amount', 'is_payment_mismatch',
+            'created_at', 'updated_at', 'creator',
+            # 목록용 추가 필드
+            'bank_account', 'trader', 'note', 'bank_transaction_id'
+        )
+        read_only_fields = ('deal_date', 'amount', 'created_at', 'updated_at')
 
     def get_trader(self, obj):
         """거래처 조회"""

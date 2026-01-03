@@ -197,9 +197,26 @@ export interface AllPayment extends BasePayment {
 }
 
 export interface OriginPayment extends BasePayment {
+  project: number
   amount: number
   bank_transaction_id: number | null // 수정/삭제용 은행거래 PK
-  accounting_entry: number | any
+  accounting_entry: {
+    pk: number
+    transaction_id: string // UUID
+    amount: number
+    account: number
+    related_transaction: {
+      pk: number
+      deal_date: string
+      amount: number
+      content: string
+      note: string
+    }
+  }
+  is_payment_mismatch: boolean
+  created_at: string
+  updated_at: string
+  creator: number
 }
 
 export interface PaymentList {

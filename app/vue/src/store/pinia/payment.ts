@@ -334,7 +334,7 @@ export const usePayment = defineStore('payment', () => {
       ? ledgerPaymentList.value.map((p: OriginPayment) => ({
           pk: p.pk,
           trans_id: p.bank_transaction_id,
-          entry_id: p.accounting_entry,
+          entry_id: p.accounting_entry.pk,
           deal_date: p.deal_date,
           contract: p.contract,
           order_group: p.contract ? p.contract.order_group.name : '-',
