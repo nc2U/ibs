@@ -208,7 +208,6 @@ onMounted(async () => {
         await fetchLedgerAllPaymentList({
           project: project.value,
           contract: contract.value.pk,
-          ordering: 'deal_date',
         })
       } finally {
         isLoadingPaymentList.value = false

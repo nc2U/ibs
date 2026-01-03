@@ -1385,6 +1385,7 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
 
 class AllContractPaymentViewSet(ContractPaymentViewSet):
     pagination_class = PageNumberPaginationOneHundred
+    ordering = ['installment_order', 'deal_date']
 
 
 # Aggregation ViewSets ----------------------------------------------------------------

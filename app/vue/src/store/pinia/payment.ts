@@ -1,7 +1,7 @@
 import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { errorHandle, message } from '@/utils/helper'
+import { cleanupParams, errorHandle, message } from '@/utils/helper'
 import { type CashBookFilter } from '@/store/types/proCash'
 import type {
   AllPayment,
@@ -357,21 +357,31 @@ export const usePayment = defineStore('payment', () => {
     Math.ceil(ledgerPaymentsCount.value / itemsPerPage)
 
   const fetchLedgerPaymentList = async (payload: ContPayFilter = {}) => {
-    const { project } = payload
-    let url = `/ledger/payment/?is_payment_mismatch=false&project=${project}`
-    if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
-    if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
-    if (payload.order_group) url += `&contract__order_group=${payload.order_group}`
-    if (payload.unit_type) url += `&contract__unit_type=${payload.unit_type}`
-    if (payload.pay_order) url += `&installment_order=${payload.pay_order}`
-    if (payload.pay_account) url += `&bank_account=${payload.pay_account}`
-    if (payload.contract) url += `&contract=${payload.contract}`
-    if (payload.no_contract) url += `&no_contract=true`
-    if (payload.no_install) url += `&no_install=true&no_contract=false`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
-    if (payload.search) url += `&search=${payload.search}`
-    const page = payload.page ? payload.page : 1
-    if (payload.page) url += `&page=${page}`
+    const params = cleanupParams({
+      is_payment_mismatch: false,
+      project: payload.project,
+      from_deal_date: payload.from_date,
+      to_deal_date: payload.to_date,
+      contract__order_group: payload.order_group,
+      contract__unit_type: payload.unit_type,
+      installment_order: payload.pay_order,
+      bank_account: payload.pay_account,
+      contract: payload.contract,
+      no_contract: payload.no_contract || undefined,
+      no_install: payload.no_install || undefined,
+      ordering: payload.ordering,
+      search: payload.search,
+      page: payload.page || 1,
+    })
+
+    // no_install이 true면 no_contract=false 설정
+    if (params.no_install) {
+      params.no_contract = false
+    }
+
+    const queryString = new URLSearchParams(params).toString()
+    const url = `/ledger/payment/?${queryString}`
+
     return await api
       .get(url)
       .then(res => {
@@ -383,10 +393,10 @@ export const usePayment = defineStore('payment', () => {
   }
 
   const fetchLedgerAllPaymentList = async (payload: ContPayFilter) => {
-    const { project } = payload
-    let url = `/ledger/all-payment/?project=${project}`
-    if (payload.contract) url += `&contract=${payload.contract}`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
+    const { project, contract } = payload
+    let url = `/ledger/all-payment/?is_payment_mismatch=false`
+    if (project) url += `&project=${project}`
+    if (contract) url += `&contract=${contract}`
     return await api
       .get(url)
       .then(res => {
