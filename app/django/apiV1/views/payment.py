@@ -2222,62 +2222,48 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
         회차별 수납 데이터를 배치로 조회하여 캐시 (Ledger 기반)
 
         변경점: ProjectCashBook → ContractPayment + ProjectAccountingEntry
+        is_payment_mismatch=False: 유효한 계약자 납부 (환불/해지 제외)
         """
         collection_cache = {}
 
         try:
-            with connection.cursor() as cursor:
-                for order in pay_orders:
-                    query = """
-                            WITH payment_data AS (SELECT pae.amount,
-                                                         0 AS discount,
-                                                         0 AS overdue_fee
-                                                  FROM payment_contractpayment cp
-                                                           INNER JOIN ledger_projectaccountingentry pae
-                                                                      ON cp.accounting_entry_id = pae.accountingentry_ptr_id
-                                                           INNER JOIN ledger_projectbanktransaction pbt
-                                                                      ON pae.transaction_id = pbt.transaction_id
-                                                           INNER JOIN contract_contract c
-                                                                      ON cp.contract_id = c.id
-                                                           INNER JOIN ledger_projectaccount pa
-                                                                      ON pae.account_id = pa.id
-                                                  WHERE cp.project_id = %s
-                                                    AND cp.installment_order_id = %s
-                                                    AND cp.contract_id IS NOT NULL
-                                                    AND c.activation = true
-                                                    AND cp.is_payment_mismatch = false
-                                                    AND pa.is_payment = true
-                                                    AND pbt.deal_date <= %s)
-                            SELECT COALESCE(SUM(amount), 0)      AS collected_amount,
-                                   COALESCE(SUM(discount), 0)    AS discount_amount,
-                                   COALESCE(SUM(overdue_fee), 0) AS overdue_fee,
-                                   COALESCE(SUM(amount), 0) +
-                                   COALESCE(SUM(discount), 0) +
-                                   COALESCE(SUM(overdue_fee), 0) AS actual_collected
-                            FROM payment_data
-                            """
+            # ORM을 사용한 안전하고 간단한 집계
+            order_ids = [order.pk for order in pay_orders]
 
-                    cursor.execute(query, [project_id, order.pk, date])
-                    result = cursor.fetchone()
+            payments_data = ContractPayment.objects.filter(
+                project_id=project_id,
+                installment_order__in=order_ids,
+                is_payment_mismatch=False,
+                deal_date__lte=date
+            ).values('installment_order').annotate(
+                total_collected=Sum('accounting_entry__amount')
+            )
 
-                    if result:
-                        collection_cache[order.pk] = {
-                            'collected_amount': result[0] or 0,
-                            'discount_amount': result[1] or 0,
-                            'overdue_fee': result[2] or 0,
-                            'actual_collected': result[3] or 0,
-                            'collection_rate': 0
-                        }
-                    else:
-                        collection_cache[order.pk] = {
-                            'collected_amount': 0,
-                            'discount_amount': 0,
-                            'overdue_fee': 0,
-                            'actual_collected': 0,
-                            'collection_rate': 0
-                        }
+            # 결과를 딕셔너리로 변환
+            payments_dict = {
+                item['installment_order']: item['total_collected'] or 0
+                for item in payments_data
+            }
+
+            # 각 회차별로 캐시 생성
+            for order in pay_orders:
+                collected_amount = payments_dict.get(order.pk, 0)
+
+                # TODO: 실제 할인료, 연체료 계산 로직 구현 필요
+                discount_amount = 0
+                overdue_fee = 0
+                actual_collected = collected_amount + overdue_fee - discount_amount
+
+                collection_cache[order.pk] = {
+                    'collected_amount': collected_amount,
+                    'discount_amount': discount_amount,
+                    'overdue_fee': overdue_fee,
+                    'actual_collected': actual_collected,
+                    'collection_rate': 0  # 나중에 계산
+                }
 
         except Exception as e:
+            # 오류 시 모든 회차를 0으로 초기화
             for order in pay_orders:
                 collection_cache[order.pk] = {
                     'collected_amount': 0,
@@ -2291,9 +2277,26 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_due_period_data_optimized(order, contract_amount, collection_data, date):
-        """기간도래 관련 집계"""
-        # 기간도래 여부 판정
-        if not order.pay_due_date or date < order.pay_due_date.strftime('%Y-%m-%d'):
+        """기간도래 관련 집계 (구버전 _is_due_period 로직 적용)"""
+        # 기간도래 여부 판정 (구버전과 동일한 로직)
+        from datetime import datetime
+        current_date = datetime.strptime(date, '%Y-%m-%d').date()
+
+        is_due = False
+        if order.pay_sort == '1':  # 계약금
+            # 계약금은 pay_due_date가 None이면 항상 기간도래
+            if order.pay_due_date is None:
+                is_due = True
+            else:
+                is_due = order.pay_due_date <= current_date
+        else:  # 기타 항목 (중도금, 잔금 등)
+            # 기타 항목은 pay_due_date가 None이면 항상 기간미도래
+            if order.pay_due_date is None:
+                is_due = False
+            else:
+                is_due = order.pay_due_date <= current_date
+
+        if not is_due:
             # 기간미도래
             return {
                 'contract_amount': 0,
@@ -2305,7 +2308,8 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
         else:
             # 기간도래
             actual_collected = collection_data['actual_collected']
-            unpaid_amount = max(0, contract_amount - actual_collected)
+            # 기간도래 미수금 = 계약금액 - 수납액 (음수 포함 - 초과납부 반영)
+            unpaid_amount = contract_amount - actual_collected
             unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
 
             # TODO: 기간도래분 연체료 계산 로직 구현 필요
@@ -2322,15 +2326,33 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_not_due_unpaid_cache(project_id, date, pay_orders, payment_amounts_cache, collection_cache):
-        """기간미도래 미수금 캐시 생성"""
+        """기간미도래 미수금 캐시 생성 (구버전 로직 적용)"""
+        from datetime import datetime
+        current_date = datetime.strptime(date, '%Y-%m-%d').date()
         not_due_unpaid_cache = {}
 
         for order in pay_orders:
-            if not order.pay_due_date or date < order.pay_due_date.strftime('%Y-%m-%d'):
+            # 기간도래 여부 판정 (구버전과 동일한 로직)
+            is_due = False
+            if order.pay_sort == '1':  # 계약금
+                # 계약금은 pay_due_date가 None이면 항상 기간도래
+                if order.pay_due_date is None:
+                    is_due = True
+                else:
+                    is_due = order.pay_due_date <= current_date
+            else:  # 기타 항목 (중도금, 잔금 등)
+                # 기타 항목은 pay_due_date가 None이면 항상 기간미도래
+                if order.pay_due_date is None:
+                    is_due = False
+                else:
+                    is_due = order.pay_due_date <= current_date
+
+            if not is_due:
                 # 기간미도래 회차
                 contract_amount = payment_amounts_cache.get(order.pay_time, 0)
                 actual_collected = collection_cache.get(order.pk, {}).get('actual_collected', 0)
-                not_due_unpaid = max(0, contract_amount - actual_collected)
+                # 미수금 = 계약금액 - 수납액 (음수 포함 - 초과납부 반영)
+                not_due_unpaid = contract_amount - actual_collected
                 not_due_unpaid_cache[order.pk] = not_due_unpaid
             else:
                 # 기간도래 회차
