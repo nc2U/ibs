@@ -37,7 +37,9 @@ const updateObject = (bankTransactionId: number, payload: any) => {
   updateFormModal.value.close()
 }
 
-const deleteObject = () => emit('on-delete', props.payment?.pk)
+const deleteObject = (bankTransactionId: number) => {
+  emit('on-delete', bankTransactionId)
+}
 </script>
 
 <template>

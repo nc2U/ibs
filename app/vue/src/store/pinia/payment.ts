@@ -500,7 +500,7 @@ export const usePayment = defineStore('payment', () => {
     try {
       const response = await api.post('/ledger/project-composite-transaction/', payload)
       // 계약 납부 목록 리프레시
-      await fetchLedgerPaymentList(ledgerPaymentFilter.value)
+      await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
       message('success', '', '계약 납부가 등록되었습니다.')
       return response.data
     } catch (err: any) {
@@ -641,7 +641,7 @@ export const usePayment = defineStore('payment', () => {
     try {
       await api.delete(`/ledger/project-composite-transaction/${bankTransactionId}/`)
       // 계약 납부 목록 리프레시
-      await fetchLedgerPaymentList(ledgerPaymentFilter.value)
+      await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
       message('warning', '', '계약 납부가 삭제되었습니다.')
     } catch (err: any) {
       errorHandle(err.response?.data)

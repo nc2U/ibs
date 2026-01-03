@@ -640,6 +640,14 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 trader=entry_data.get('trader', ''),
                 evidence_type=entry_data.get('evidence_type'),
             )
+
+            # installment_order가 있으면 ContractPayment에 설정
+            # trigger_sync_contract_payment()가 ContractPayment를 생성한 후 처리
+            if 'installment_order' in entry_data:
+                self._update_contract_payment_installment(
+                    accounting_entry, entry_data['installment_order']
+                )
+
             accounting_entries.append(accounting_entry)
 
         result = {
@@ -739,6 +747,13 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 else:
                     # 새 회계분개 생성
                     accounting_entry = self._create_accounting_entry(instance, entry_data)
+
+                    # installment_order가 있으면 ContractPayment에 설정
+                    if 'installment_order' in entry_data:
+                        self._update_contract_payment_installment(
+                            accounting_entry, entry_data['installment_order']
+                        )
+
                     accounting_entries.append(accounting_entry)
         else:
             # payload에 accounting_entries가 없는 경우, 기존 분개 목록을 그대로 사용
