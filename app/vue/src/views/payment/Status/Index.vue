@@ -18,8 +18,12 @@ import OverallSummary from './components/OverallSummary.vue'
 const date = ref(getToday())
 const menu = ref('수납요약')
 
-const excelUrl1 = computed(() => `/excel/paid-status/?project=${project.value}&date=${date.value}`)
-const excelUrl2 = computed(() => `/excel/overall-sum/?project=${project.value}&date=${date.value}`)
+const excelUrl1 = computed(
+  () => `/excel/ledger/paid-status/?project=${project.value}&date=${date.value}`,
+)
+const excelUrl2 = computed(
+  () => `/excel/ledger/overall-sum/?project=${project.value}&date=${date.value}`,
+)
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)

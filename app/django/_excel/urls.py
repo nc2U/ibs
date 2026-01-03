@@ -1,16 +1,16 @@
 from django.urls import path
 
-# 앱별 내보내기 모듈에서 가져오기
-from company.exports import ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades
-from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContracts
-from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
-from payment.exports import ExportPayments, ExportPaymentsByCont, ExportPaymentStatus, ExportOverallSummary
 from cash.exports import (ExportProjectBalance, ExportProjectDateCashbook, ExportBalanceByAcc,
                           ExportBudgetExecutionStatus, ExportCashFlowForm, ExportDateCashbook,
-                          export_cashbook_xls, export_project_cash_xls)
-from ledger.exports import export_pro_transaction_xls, export_com_transaction_xls
-
+                          export_cashbook_xls)
+# 앱별 내보내기 모듈에서 가져오기
+from company.exports import ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades
+from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
 from docs.exports import ExportSuitCases, ExportSuitCase
+from ledger.exports import export_pro_transaction_xls, export_com_transaction_xls
+from payment.exports import (ExportPayments, ExportPaymentsByCont, ExportPaymentStatus, ExportOverallSummary,
+                             ExportLedgerPaymentStatus, ExportLedgerOverallSummary)
+from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContracts
 
 app_name = 'excel'
 
@@ -38,6 +38,8 @@ urlpatterns = [
     path('paid-by-cont/', ExportPaymentsByCont.as_view(), name='paid-by-cont'),
     path('paid-status/', ExportPaymentStatus.as_view(), name='paid-status'),
     path('overall-sum/', ExportOverallSummary.as_view(), name='overall-summary'),
+    path('ledger/paid-status/', ExportLedgerPaymentStatus.as_view(), name='paid-status'),
+    path('ledger/overall-sum/', ExportLedgerOverallSummary.as_view(), name='overall-summary'),
 
     # Cash 관련 (새 모듈)
     path('p-balance/', ExportProjectBalance.as_view(), name='project-balance'),
