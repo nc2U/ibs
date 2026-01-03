@@ -12,13 +12,13 @@ const props = defineProps({
 
 const proStore = useProject()
 const paymentStore = usePayment()
-const paymentStatusData = computed<any[]>(() => paymentStore.paymentStatusByUnitType)
+const paymentStatusData = computed<any[]>(() => paymentStore.ledgerPaymentStatusByUnitType)
 
 // Fetch payment status data on component mount
 onMounted(async () => {
   const currentProject = (proStore.project as Project)?.pk
   if (currentProject) {
-    await paymentStore.fetchPaymentStatusByUnitType(currentProject, props.date)
+    await paymentStore.fetchLedgerPaymentStatusByUnitType(currentProject, props.date)
   }
 })
 
@@ -28,7 +28,7 @@ watch(
   async newDate => {
     const currentProject = (proStore.project as Project)?.pk
     if (currentProject) {
-      await paymentStore.fetchPaymentStatusByUnitType(currentProject, newDate)
+      await paymentStore.fetchLedgerPaymentStatusByUnitType(currentProject, newDate)
     }
   },
 )

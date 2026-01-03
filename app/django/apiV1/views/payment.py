@@ -2180,26 +2180,28 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
         if not order.pay_due_date or date < order.pay_due_date.strftime('%Y-%m-%d'):
             # 기간미도래
             return {
-                'due_amount': 0,
-                'actual_collected': 0,
+                'contract_amount': 0,
                 'unpaid_amount': 0,
                 'unpaid_rate': 0,
-                'collection_rate': 0
+                'overdue_fee': 0,
+                'subtotal': 0
             }
         else:
             # 기간도래
-            due_amount = contract_amount
             actual_collected = collection_data['actual_collected']
-            unpaid_amount = max(0, due_amount - actual_collected)
-            unpaid_rate = (unpaid_amount / due_amount * 100) if due_amount > 0 else 0
-            collection_rate = collection_data['collection_rate']
+            unpaid_amount = max(0, contract_amount - actual_collected)
+            unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
+
+            # TODO: 기간도래분 연체료 계산 로직 구현 필요
+            overdue_fee = collection_data.get('overdue_fee', 0)
+            subtotal = unpaid_amount + overdue_fee
 
             return {
-                'due_amount': due_amount,
-                'actual_collected': actual_collected,
+                'contract_amount': contract_amount,
                 'unpaid_amount': unpaid_amount,
                 'unpaid_rate': round(unpaid_rate, 2),
-                'collection_rate': collection_rate
+                'overdue_fee': overdue_fee,
+                'subtotal': subtotal
             }
 
     @staticmethod
@@ -2223,41 +2225,40 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
     @staticmethod
     def _get_aggregate_data(project_id):
         """집계 데이터 조회 (Ledger 기반)"""
-        try:
-            with connection.cursor() as cursor:
-                query = """
-                        SELECT COALESCE(SUM(cp.price), 0)   AS total_contract_amount,
-                               COUNT(DISTINCT c.id)         AS total_contracts,
-                               COALESCE(SUM(pae.amount), 0) AS total_paid_amount
-                        FROM contract_contract c
-                                 INNER JOIN contract_contractprice cp ON c.id = cp.contract_id
-                                 LEFT JOIN payment_contractpayment pcp ON c.id = pcp.contract_id
-                                 LEFT JOIN ledger_projectaccountingentry pae
-                                           ON pcp.accounting_entry_id = pae.accountingentry_ptr_id
-                        WHERE c.project_id = %s
-                          AND c.activation = TRUE
-                          AND cp.is_cache_valid = TRUE
-                        """
+        # 계약 세대수
+        conts_num = Contract.objects.filter(
+            project_id=project_id,
+            activation=True,
+            contractor__status=2
+        ).count()
 
-                cursor.execute(query, [project_id])
-                result = cursor.fetchone()
+        # 전체 세대수 (KeyUnit 기준)
+        total_units = KeyUnit.objects.filter(project_id=project_id,
+                                             unit_type__main_or_sub='1').count()
 
-                total_contract_amount = result[0] or 0
-                total_contracts = result[1] or 0
-                total_paid_amount = result[2] or 0
-                total_unpaid_amount = total_contract_amount - total_paid_amount
+        # 미계약 세대수
+        non_conts_num = total_units - conts_num
 
-                return {
-                    'total_contract_amount': total_contract_amount,
-                    'total_contracts': total_contracts,
-                    'total_paid_amount': total_paid_amount,
-                    'total_unpaid_amount': total_unpaid_amount
-                }
+        # 계약률 계산 (금액 기준): 계약금액 / 총매출액
+        # PaymentStatusByUnitTypeViewSet를 사용하여 정확한 금액 계산
+        mock_request = Mock()
+        mock_request.query_params = {'project': str(project_id)}
 
-        except Exception as e:
-            return {
-                'total_contract_amount': 0,
-                'total_contracts': 0,
-                'total_paid_amount': 0,
-                'total_unpaid_amount': 0
-            }
+        payment_status_viewset = PaymentStatusByUnitTypeViewSet()
+        payment_status_response = payment_status_viewset.list(mock_request)
+
+        contract_rate = 0
+        if payment_status_response.status_code == 200:
+            payment_status_data = payment_status_response.data
+            total_contract_amount = sum(item['contract_amount'] for item in payment_status_data)
+            total_sales_amount = sum(item['total_sales_amount'] for item in payment_status_data)
+
+            # 계약률 = 계약금액 / 총매출액 * 100
+            contract_rate = (total_contract_amount / total_sales_amount * 100) if total_sales_amount > 0 else 0
+
+        return {
+            'conts_num': conts_num,
+            'non_conts_num': non_conts_num,
+            'total_units': total_units,
+            'contract_rate': round(contract_rate, 2)
+        }

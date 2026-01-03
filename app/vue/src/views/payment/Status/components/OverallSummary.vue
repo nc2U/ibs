@@ -8,8 +8,8 @@ import type { OverallSummary as QS, OverallSummaryPayOrder as QSPO } from '@/sto
 defineProps({ date: { type: String, default: '' } })
 
 const payStore = usePayment()
-const payOrderList = computed<QSPO[]>(() => (payStore.overallSummary as QS)?.pay_orders || [])
-const contAggregate = computed(() => (payStore.overallSummary as QS)?.aggregate)
+const payOrderList = computed<QSPO[]>(() => (payStore.ledgerOverallSummary as QS)?.pay_orders || [])
+const contAggregate = computed(() => (payStore.ledgerOverallSummary as QS)?.aggregate)
 
 const total_cont_amount = computed(() =>
   payOrderList.value.reduce((acc, order) => acc + order.contract_amount, 0),

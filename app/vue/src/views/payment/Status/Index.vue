@@ -10,8 +10,8 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PaymentAuthGuard from '@/components/AuthGuard/PaymentAuthGuard.vue'
-import DateChoicer from '@/views/payments/Status/components/DateChoicer.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
+import DateChoicer from './components/DateChoicer.vue'
 import PaymentStatus from './components/PaymentStatus.vue'
 import OverallSummary from './components/OverallSummary.vue'
 
@@ -29,8 +29,8 @@ const fetchOrderGroupList = (proj: number) => contStore.fetchOrderGroupList(proj
 
 const payStore = usePayment()
 const fetchPayOrderList = (proj: number) => payStore.fetchPayOrderList(proj)
-const fetchOverallSummary = (proj: number, date?: string) =>
-  payStore.fetchOverallSummary(proj, date)
+const fetchLedgerOverallSummary = (proj: number, date?: string) =>
+  payStore.fetchLedgerOverallSummary(proj, date)
 
 const setDate = (d: string) => {
   date.value = d
@@ -39,7 +39,7 @@ const setDate = (d: string) => {
     if (menu.value === '수납요약') {
       payStore.fetchPaymentStatusByUnitType(project.value, date.value)
     } else if (menu.value === '총괄집계') {
-      fetchOverallSummary(project.value, date.value)
+      fetchLedgerOverallSummary(project.value, date.value)
     }
   }
 }
@@ -54,7 +54,7 @@ const dataSetup = (pk: number) => {
   if (menu.value === '수납요약') {
     payStore.fetchPaymentStatusByUnitType(pk, date.value)
   } else if (menu.value === '총괄집계') {
-    fetchOverallSummary(pk, date.value)
+    fetchLedgerOverallSummary(pk, date.value)
   }
 }
 
@@ -78,7 +78,7 @@ watch(menu, newMenu => {
       payStore.fetchPaymentStatusByUnitType(project.value, date.value)
     } else if (newMenu === '총괄집계') {
       // 총괄집계 탭으로 변경 시 필요한 API 호출
-      fetchOverallSummary(project.value, date.value)
+      fetchLedgerOverallSummary(project.value, date.value)
     }
   }
 })
