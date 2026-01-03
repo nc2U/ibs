@@ -254,6 +254,10 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
     note = serializers.SerializerMethodField(read_only=True)
     bank_transaction_id = serializers.SerializerMethodField(read_only=True)
 
+    # 폼 수정용 추가 필드
+    bank_transaction_amount = serializers.SerializerMethodField(read_only=True)
+    sibling_entries = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = ContractPayment
         fields = (
@@ -262,7 +266,9 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
             'accounting_entry', 'deal_date', 'amount', 'is_payment_mismatch',
             'created_at', 'updated_at', 'creator',
             # 목록용 추가 필드
-            'bank_account', 'trader', 'note', 'bank_transaction_id'
+            'bank_account', 'trader', 'note', 'bank_transaction_id',
+            # 폼 수정용 추가 필드
+            'bank_transaction_amount', 'sibling_entries'
         )
         read_only_fields = ('deal_date', 'amount', 'created_at', 'updated_at')
 
@@ -310,3 +316,78 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
             return obj.related_transaction.pk
         except (AttributeError, TypeError):
             return None
+
+    def get_bank_transaction_amount(self, obj):
+        """
+        실제 은행 거래 금액 조회
+
+        PaymentForm 수정 시 은행거래 금액을 정확히 표시하기 위해 필요
+        obj.amount는 분개 금액(분할 납부 시 일부 금액)
+        이 필드는 실제 은행 거래의 총 금액을 반환
+        """
+        try:
+            return obj.accounting_entry.related_transaction.amount
+        except (AttributeError, TypeError):
+            return None
+
+    def get_sibling_entries(self, obj):
+        """
+        같은 은행 거래에 속한 모든 형제 분개 조회
+
+        PaymentForm 수정 시 분할 납부된 모든 회차를 렌더링하기 위해 필요
+
+        예시:
+        - 은행거래: 1000원
+        - 분개1: 1차 계약금 500원 → ContractPayment #1
+        - 분개2: 2차 계약금 500원 → ContractPayment #2
+
+        ContractPayment #1 조회 시:
+        - amount: 500원 (분개 금액)
+        - bank_transaction_amount: 1000원 (실제 은행 거래 금액)
+        - sibling_entries: [분개1, 분개2] (모든 형제 분개)
+
+        Returns:
+            List[dict]: 형제 분개 정보 목록
+        """
+        try:
+            # 현재 분개의 transaction_id 가져오기
+            transaction_id = obj.accounting_entry.transaction_id
+
+            # 같은 transaction_id를 가진 모든 분개 중 계약 결제 분개만 조회
+            from ledger.models import ProjectAccountingEntry
+
+            sibling_entries = ProjectAccountingEntry.objects.filter(
+                transaction_id=transaction_id,
+                contract__isnull=False  # 계약 결제 분개만
+            ).select_related(
+                'contract',
+                'contract__order_group',
+                'contract__unit_type'
+            ).order_by('pk')
+
+            # 각 분개 정보를 직렬화
+            result = []
+            for entry in sibling_entries:
+                # 해당 분개에 연결된 ContractPayment 찾기
+                try:
+                    contract_payment = ContractPayment.objects.select_related(
+                        'installment_order'
+                    ).get(accounting_entry=entry)
+
+                    result.append({
+                        'pk': entry.pk,  # AccountingEntry PK
+                        'contract_payment_pk': contract_payment.pk,
+                        'amount': entry.amount,
+                        'trader': entry.trader,
+                        'contract': entry.contract.pk if entry.contract else None,
+                        'installment_order': contract_payment.installment_order.pk if contract_payment.installment_order else None,
+                        'installment_order_display': str(contract_payment.installment_order) if contract_payment.installment_order else None,
+                    })
+                except ContractPayment.DoesNotExist:
+                    # ContractPayment가 없는 분개는 무시
+                    continue
+
+            return result
+
+        except (AttributeError, TypeError):
+            return []

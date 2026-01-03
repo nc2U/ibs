@@ -166,23 +166,36 @@ const initializeEditForm = () => {
   Object.assign(bankForm, {
     deal_date: props.payment.deal_date,
     bank_account: props.payment.bank_account?.pk || null,
-    amount: props.payment.amount,
+    // ✅ 실제 은행 거래 금액 사용 (분할 납부 시 총액)
+    amount: props.payment.bank_transaction_amount || props.payment.amount,
     note: props.payment.note || '',
     sort: 1,
     content: generateContent(),
   })
 
-  // 기존 납부 항목으로 초기화 (accounting_entry 사용)
-  paymentEntries.value = [
-    {
-      pk: props.payment.accounting_entry || null,
+  // ✅ 형제 분개가 있으면 모두 렌더링 (분할 납부 지원)
+  if (props.payment.sibling_entries && props.payment.sibling_entries.length > 0) {
+    paymentEntries.value = props.payment.sibling_entries.map(entry => ({
+      pk: entry.pk,
       account: paymentAccount.value,
-      amount: props.payment.amount,
-      trader: props.payment.trader || '',
-      contract: props.contract?.pk || null,
-      installment_order: props.payment.installment_order?.pk || null,
-    },
-  ]
+      amount: entry.amount,
+      trader: entry.trader || '',
+      contract: entry.contract || null,
+      installment_order: entry.installment_order || null,
+    }))
+  } else {
+    // 기존 방식 (단일 분개 - 하위 호환성)
+    paymentEntries.value = [
+      {
+        pk: props.payment.accounting_entry?.pk || null,
+        account: paymentAccount.value,
+        amount: props.payment.amount,
+        trader: props.payment.trader || '',
+        contract: props.contract?.pk || null,
+        installment_order: props.payment.installment_order?.pk || null,
+      },
+    ]
+  }
 }
 
 // ============================================
@@ -211,17 +224,39 @@ const isSaveDisabled = computed(() => {
 const formsCheck = computed(() => {
   if (!props.payment) return false
 
+  // 은행 거래 정보 변경 여부 체크
   const bankUnchanged =
     bankForm.bank_account === props.payment.bank_account.pk &&
     bankForm.deal_date === props.payment.deal_date &&
-    bankForm.amount === props.payment.amount &&
+    // ✅ 실제 은행 거래 금액과 비교
+    bankForm.amount === (props.payment.bank_transaction_amount || props.payment.amount) &&
     bankForm.note === (props.payment.note || '')
 
-  const entryUnchanged =
-    paymentEntries.value.length === 1 &&
-    paymentEntries.value[0].amount === props.payment.amount &&
-    paymentEntries.value[0].trader === (props.payment.trader || '') &&
-    paymentEntries.value[0].installment_order === (props.payment.installment_order?.pk || null)
+  // 분개 항목 변경 여부 체크 (분할 납부 지원)
+  let entryUnchanged = false
+
+  if (props.payment.sibling_entries && props.payment.sibling_entries.length > 0) {
+    // ✅ 형제 분개가 있는 경우: 모든 분개 비교
+    const originalEntries = props.payment.sibling_entries
+    entryUnchanged =
+      paymentEntries.value.length === originalEntries.length &&
+      paymentEntries.value.every((entry, idx) => {
+        const original = originalEntries[idx]
+        return (
+          entry.pk === original.pk &&
+          entry.amount === original.amount &&
+          entry.trader === original.trader &&
+          entry.installment_order === original.installment_order
+        )
+      })
+  } else {
+    // 기존 방식 (단일 분개)
+    entryUnchanged =
+      paymentEntries.value.length === 1 &&
+      paymentEntries.value[0].amount === props.payment.amount &&
+      paymentEntries.value[0].trader === (props.payment.trader || '') &&
+      paymentEntries.value[0].installment_order === (props.payment.installment_order?.pk || null)
+  }
 
   const noContractChange = removeCont.value === false
 

@@ -217,6 +217,18 @@ export interface OriginPayment extends BasePayment {
   created_at: string
   updated_at: string
   creator: number
+  // 폼 수정용 추가 필드
+  bank_transaction_amount?: number // 실제 은행 거래 금액 (분할 납부 시 총액)
+  sibling_entries?: Array<{
+    // 같은 은행 거래에 속한 형제 분개들
+    pk: number // AccountingEntry PK
+    contract_payment_pk: number
+    amount: number
+    trader: string
+    contract: number | null
+    installment_order: number | null
+    installment_order_display: string | null
+  }>
 }
 
 export interface PaymentList {
