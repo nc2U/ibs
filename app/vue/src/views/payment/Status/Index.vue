@@ -41,7 +41,7 @@ const setDate = (d: string) => {
   if (project.value) {
     // 현재 선택된 메뉴에 따라 필요한 API만 호출
     if (menu.value === '수납요약') {
-      payStore.fetchPaymentStatusByUnitType(project.value, date.value)
+      payStore.fetchLedgerPaymentStatusByUnitType(project.value, date.value)
     } else if (menu.value === '총괄집계') {
       fetchLedgerOverallSummary(project.value, date.value)
     }
@@ -56,7 +56,7 @@ const dataSetup = (pk: number) => {
 
   // 현재 선택된 메뉴에 따라 필요한 데이터만 로드
   if (menu.value === '수납요약') {
-    payStore.fetchPaymentStatusByUnitType(pk, date.value)
+    payStore.fetchLedgerPaymentStatusByUnitType(pk, date.value)
   } else if (menu.value === '총괄집계') {
     fetchLedgerOverallSummary(pk, date.value)
   }
@@ -79,7 +79,7 @@ watch(menu, newMenu => {
   if (project.value) {
     if (newMenu === '수납요약') {
       // 수납요약 탭으로 변경 시 새로운 API 호출
-      payStore.fetchPaymentStatusByUnitType(project.value, date.value)
+      payStore.fetchLedgerPaymentStatusByUnitType(project.value, date.value)
     } else if (newMenu === '총괄집계') {
       // 총괄집계 탭으로 변경 시 필요한 API 호출
       fetchLedgerOverallSummary(project.value, date.value)
