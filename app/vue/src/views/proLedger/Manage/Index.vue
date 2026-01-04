@@ -22,6 +22,7 @@ import ListController from './components/ListController.vue'
 import AddProTrans from './components/AddProTrans.vue'
 import ProTransList from './components/ProTransList.vue'
 import ProTransForm from './components/ProTransForm.vue'
+import { CCardBody } from '@coreui/vue'
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
@@ -78,6 +79,11 @@ provide('getAllContractors', getAllContractors)
 const fetchProjectAccounts = () => proLedgerStore.fetchProjectAccounts()
 const fetchProBankAccList = (pk: number) => proLedgerStore.fetchProBankAccList(pk)
 const fetchAllProBankAccList = (pk: number) => proLedgerStore.fetchAllProBankAccList(pk)
+const createProBankAcc = (payload: any) => proLedgerStore.createProBankAcc(payload)
+const updateProBankAcc = (payload: any) => proLedgerStore.updateProBankAcc(payload)
+
+const onBankCreate = (payload: any) => createProBankAcc(payload)
+const onBankUpdate = (payload: any) => updateProBankAcc(payload)
 
 const fetchProBankTransList = (payload: Filter) => proLedgerStore.fetchProBankTransList(payload)
 const findProBankTransPage = (highlightId: number, filters: Filter) =>
@@ -237,6 +243,8 @@ onBeforeRouteLeave(() => {
             :project="project as number"
             :highlight-id="highlightId ?? undefined"
             :current-page="dataFilter.page || 1"
+            @on-bank-create="onBankCreate"
+            @on-bank-update="onBankUpdate"
             @page-select="pageSelect"
           />
         </div>

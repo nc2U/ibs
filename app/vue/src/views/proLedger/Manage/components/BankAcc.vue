@@ -4,6 +4,7 @@ import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
 import BankAccForm from './BankAccForm.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import { CRow } from '@coreui/vue'
 
 const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 
@@ -42,7 +43,7 @@ defineExpose({ callModal })
             <v-icon icon="mdi-plus-circle" color="primary" class="mr-1" />
             계좌 추가
           </h5>
-          <BankAccForm @on-bank-create="onBankCreate" />
+          <BankAccForm @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
         </CCol>
       </CRow>
 

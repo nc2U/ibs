@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
 import { write_project_cash } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
+import type { ProjectBank } from '@/store/types/proLedger.ts'
 import Pagination from '@/components/Pagination'
 import BankAcc from './BankAcc.vue'
 import ProTrans from './ProTrans.vue'
@@ -13,7 +14,7 @@ const props = defineProps({
   highlightId: { type: Number, default: null },
   currentPage: { type: Number, default: 1 },
 })
-const emit = defineEmits(['page-select'])
+const emit = defineEmits(['page-select', 'on-bank-create', 'on-bank-update'])
 
 const refAccountManage = ref()
 const refBankAcc = ref()
@@ -101,5 +102,9 @@ const accCallModal = () => {
   />
   <AccountManage ref="refAccountManage" />
 
-  <BankAcc ref="refBankAcc" />
+  <BankAcc
+    ref="refBankAcc"
+    @on-bank-create="emit('on-bank-create', $event as ProjectBank)"
+    @on-bank-update="emit('on-bank-update', $event as ProjectBank)"
+  />
 </template>
