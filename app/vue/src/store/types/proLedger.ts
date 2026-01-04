@@ -114,6 +114,9 @@ export type DataFilter = {
   from_date?: string
   to_date?: string
   sort?: 1 | 2 | null
+  bank_account?: number | null
+  is_imprest?: 'true' | 'false'
+  account?: number | null
   account_category?:
     | 'asset'
     | 'liability'
@@ -123,8 +126,7 @@ export type DataFilter = {
     | 'transfer'
     | 'cancel'
     | ''
-  account?: number | null
-  bank_account?: number | null
+  account_name?: string
   contract?: number | null
   search?: string
   limit?: number

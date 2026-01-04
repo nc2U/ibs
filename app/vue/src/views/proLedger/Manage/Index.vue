@@ -38,14 +38,16 @@ const urlProjectId = computed(() => {
 })
 
 const excelUrl = computed(() => {
-  const from_deal_date = dataFilter.value.from_date || ''
-  const to_deal_date = dataFilter.value.to_date || ''
+  const from_date = dataFilter.value.from_date || ''
+  const to_date = dataFilter.value.to_date || ''
   const sort = dataFilter.value.sort || ''
   const account = dataFilter.value.account || ''
+  const account_category = dataFilter.value.account_category || ''
   const bank_account = dataFilter.value.bank_account || ''
+  const contract = dataFilter.value.contract || ''
   const search = dataFilter.value.search || ''
   const url = `/excel/pro-transaction/?project=${project.value}`
-  return `${url}&from_deal_date=${from_deal_date}&to_deal_date=${to_deal_date}&sort=${sort}&account=${account}&bank_account=${bank_account}&search=${search}`
+  return `${url}&from_date=${from_date}&to_date=${to_date}&sort=${sort}&account_category=${account_category}&account=${account}&bank_account=${bank_account}&contract=${contract}&search=${search}`
 })
 
 const proStore = useProject()

@@ -16,13 +16,13 @@ def get_project_transactions(params):
         qs = qs.filter(project_id=project_id)
 
     # 기본 필터링
-    from_deal_date = params.get('from_deal_date')
-    if from_deal_date:
-        qs = qs.filter(deal_date__gte=from_deal_date)
+    from_date = params.get('from_date')
+    if from_date:
+        qs = qs.filter(deal_date__gte=from_date)
 
-    to_deal_date = params.get('to_deal_date')
-    if to_deal_date:
-        qs = qs.filter(deal_date__lte=to_deal_date)
+    to_date = params.get('to_date')
+    if to_date:
+        qs = qs.filter(deal_date__lte=to_date)
 
     sort = params.get('sort')
     if sort:
@@ -43,6 +43,7 @@ def get_project_transactions(params):
     account_id = params.get('account')
     account_category = params.get('account_category')
     account_name = params.get('account_name')
+    contract = params.get('contract')
     search = params.get('search')
 
     entry_filters = Q()
@@ -75,6 +76,9 @@ def get_project_transactions(params):
 
         account_ids = list(set(all_account_ids))
         entry_filters &= Q(account_id__in=account_ids)
+
+    if contract:
+        entry_filters &= Q(contract_id=contract)
 
     if search:
         # 계정 이름 검색

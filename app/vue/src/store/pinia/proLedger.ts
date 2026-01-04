@@ -122,12 +122,15 @@ export const useProLedger = defineStore('proLedger', () => {
   const fetchProBankTransList = async (payload: DataFilter = {}) => {
     const params = cleanupParams({
       project: payload.project,
-      from_deal_date: payload.from_date,
-      to_deal_date: payload.to_date,
+      from_date: payload.from_date,
+      to_date: payload.to_date,
       sort: payload.sort,
-      account_category: payload.account_category,
-      account: payload.account,
       bank_account: payload.bank_account,
+      is_imprest: payload.is_imprest,
+      account: payload.account,
+      account_category: payload.account_category,
+      account_name: payload.account_name,
+      contract: payload.contract,
       search: payload.search,
       page: payload.page || 1,
     })
@@ -143,17 +146,19 @@ export const useProLedger = defineStore('proLedger', () => {
   }
 
   const findProBankTransPage = async (highlightId: number, filters: DataFilter) => {
-    const { project } = filters
-    let url = `/ledger/project-transaction/find_page/?highlight_id=${highlightId}&project=${project}`
-    if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
-    if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
-    if (filters.sort) url += `&sort=${filters.sort}`
-    if (filters.account) url += `&account=${filters.account}`
-    if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
-    if (filters.search) url += `&search=${filters.search}`
+    const params = cleanupParams({
+      highlight_id: highlightId,
+      project: filters.project,
+      from_date: filters.from_date,
+      to_date: filters.to_date,
+      sort: filters.sort,
+      account: filters.account,
+      bank_account: filters.bank_account,
+      search: filters.search,
+    })
 
     try {
-      const response = await api.get(url)
+      const response = await api.get('/ledger/project-transaction/find_page/', { params })
       return response.data.page
     } catch (err: any) {
       errorHandle(err.response.data)
