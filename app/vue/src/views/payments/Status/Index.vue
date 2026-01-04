@@ -120,13 +120,13 @@ onBeforeMount(async () => {
           <TableTitleRow
             excel
             :url="excelUrl1"
-            filename="차수타입별_수납요약.xls"
+            filename="차수타입별_수납요약.xlsx"
             :disabled="!project"
           />
           <PaymentStatus :date="date" />
         </template>
         <template v-else>
-          <TableTitleRow excel :url="excelUrl2" filename="총괄집계현황.xls" :disabled="!project" />
+          <TableTitleRow excel :url="excelUrl2" filename="총괄집계현황.xlsx" :disabled="!project" />
           <OverallSummary :date="date" />
         </template>
       </CCardBody>
