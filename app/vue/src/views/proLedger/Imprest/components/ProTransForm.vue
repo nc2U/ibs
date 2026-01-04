@@ -25,7 +25,7 @@ watch(
   () => props.project,
   val => {
     if (isCreateMode.value) initializeCreateForm()
-    else router.push({ name: 'PR 거래 내역' })
+    else router.push({ name: '운영 계좌 내역' })
   },
 )
 
@@ -419,7 +419,7 @@ const saveTransaction = async (event: Event) => {
       }
 
       // 성공 시 거래 목록 페이지로 이동
-      await router.push({ name: 'PR 거래 내역' })
+      await router.push({ name: '운영 계좌 내역' })
     } catch (error: any) {
       console.error('저장 실패:', error)
       alert(error.message || '저장 중 오류가 발생했습니다.')
@@ -432,7 +432,7 @@ const saveTransaction = async (event: Event) => {
 const delTransaction = async () => {
   confirmModal.value.close()
   await proLedgerStore.deleteProBankTrans(transaction.value?.pk!)
-  await router.replace({ name: 'PR 거래 내역' })
+  await router.replace({ name: '운영 계좌 내역' })
 }
 
 const accCallModal = () => {
@@ -490,7 +490,7 @@ onBeforeRouteLeave((to, from, next) => {
   >
     <CRow
       class="text-right py-2 mb-1 mx-1"
-      :class="isCreateMode ? 'bg-light-blue-lighten-5' : 'bg-light-green-lighten-5'"
+      :class="isCreateMode ? 'bg-brown-lighten-5' : 'bg-amber-lighten-5'"
     >
       <CCol class="text-left">
         <template v-if="isCreateMode">
@@ -513,7 +513,7 @@ onBeforeRouteLeave((to, from, next) => {
           color="light"
           size="small"
           :disabled="isSaving"
-          @click="router.push({ name: 'PR 거래 내역' })"
+          @click="router.push({ name: '운영 계좌 내역' })"
         >
           취소
         </v-btn>
