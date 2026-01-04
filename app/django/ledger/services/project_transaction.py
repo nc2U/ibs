@@ -34,10 +34,22 @@ def get_project_transactions(params):
 
     # is_imprest 필터링 (bank_account의 is_imprest 속성 사용)
     is_imprest = params.get('is_imprest')
-    if is_imprest is not None:
-        is_imprest_bool = is_imprest.lower() in ('true', '1', 'yes') if isinstance(is_imprest, str) else bool(
-            is_imprest)
-        qs = qs.filter(bank_account__is_imprest=is_imprest_bool)
+
+    # is_imprest 파라미터가 없거나 빈 문자열이면 필터링하지 않음
+    if is_imprest is not None and is_imprest != 'all' and is_imprest != '':
+        is_imprest_bool = None
+        if isinstance(is_imprest, str):
+            val = is_imprest.lower()
+            if val in ('true', '1', 'yes'):
+                is_imprest_bool = True
+            elif val in ('false', '0', 'no'):
+                is_imprest_bool = False
+        else:  # bool, int 등 다른 타입 처리
+            is_imprest_bool = bool(is_imprest)
+
+        # is_imprest_bool이 결정된 경우(True 또는 False)에만 필터링 적용
+        if is_imprest_bool is not None:
+            qs = qs.filter(bank_account__is_imprest=is_imprest_bool)
 
     # 회계분개 모델을 참조해야 하는 복합 필터링
     account_id = params.get('account')
