@@ -12,10 +12,10 @@ import type { ParseResult } from '@/composables/useExcelUpload'
 import { useExcelUpload } from '@/composables/useExcelUpload'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import JournalRow from './JournalRow.vue'
-import BankAcc from './BankAcc.vue'
-import AccountManage from './AccountManage.vue'
 import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
+import BankAcc from './BankAcc.vue'
+import JournalRow from './JournalRow.vue'
+import AccountManage from './AccountManage.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },

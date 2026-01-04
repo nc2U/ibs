@@ -2,8 +2,8 @@
 import { ref, computed } from 'vue'
 import { useProCash } from '@/store/pinia/proCash'
 import { type ProBankAcc } from '@/store/types/proCash'
-import BankAccForm from './BankAccForm.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import BankAccForm from './BankAccForm.vue'
 
 const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 

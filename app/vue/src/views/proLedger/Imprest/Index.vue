@@ -90,7 +90,7 @@ const listFiltering = (payload: Filter) => {
   // 필터링 시 query string 정리
   clearQueryString()
   if (project.value) payload.project = project.value
-  if (project.value) fetchProBankTransList(payload)
+  if (project.value) fetchProBankTransList({ is_imprest: 'true', ...payload })
 }
 
 const dataSetup = async (pk: number) => {
@@ -159,6 +159,7 @@ const loadHighlightPage = async () => {
       const targetPage = await findProBankTransPage(highlightId.value, {
         ...dataFilter.value,
         project: project.value,
+        is_imprest: 'true',
         limit: 15, // Django에서 사용하는 페이지 크기와 동일하게 설정
       })
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
@@ -166,6 +167,7 @@ const loadHighlightPage = async () => {
       await fetchProBankTransList({
         ...dataFilter.value,
         project: project.value,
+        is_imprest: 'true',
       })
     } catch (error) {
       console.error('Error finding highlight page:', error)
