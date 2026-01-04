@@ -480,14 +480,14 @@ const handleUpdate = async () => {
             <col style="width: 24%" />
             <col v-if="write_project_cash" style="width: 6%" />
           </colgroup>
-          <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-lime-lighten-5">
+          <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-amber-lighten-5">
             <CTableDataCell
               :class="{
                 'account-cell': true,
                 'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_contract'),
                 pointer: !isEditing('entry', entry.pk!, 'account_contract'),
               }"
-              class="bg-lime-lighten-4"
+              class="bg-amber-lighten-4"
               style="position: relative"
             >
               <div
@@ -782,13 +782,13 @@ const handleUpdate = async () => {
   z-index: 1;
 }
 
-.dark-theme .bg-lime-lighten-5 {
-  background-color: #525342 !important;
+.dark-theme .bg-amber-lighten-5 {
+  background-color: #4c4a43 !important;
   color: #fff !important;
 }
 
-.dark-theme .bg-lime-lighten-4 {
-  background-color: #3e3f32 !important;
+.dark-theme .bg-amber-lighten-4 {
+  background-color: #43413c !important;
   color: #fff !important;
 }
 </style>

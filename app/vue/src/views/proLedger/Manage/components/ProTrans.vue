@@ -788,7 +788,7 @@ const handleUpdate = async () => {
 }
 
 .dark-theme .bg-lime-lighten-4 {
-  background-color: #3e3f32 !important;
+  background-color: #424337 !important;
   color: #fff !important;
 }
 </style>
