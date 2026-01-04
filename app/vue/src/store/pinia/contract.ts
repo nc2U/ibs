@@ -1,7 +1,7 @@
 import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { errorHandle, message } from '@/utils/helper'
+import { errorHandle, message, cleanupParams } from '@/utils/helper'
 import type {
   BuyerForm,
   ConsultationLog,
@@ -226,27 +226,35 @@ export const useContract = defineStore('contract', () => {
 
   const removeContract = () => (contract.value = null)
 
+  const getContractFilterParams = (filters: ContFilter) => {
+    const params: Record<string, any> = {
+      project: filters.project,
+      activation: true,
+      contractor__status: filters.status ?? '2',
+      limit: filters.limit ?? 10,
+      order_group: filters.order_group,
+      unit_type: filters.unit_type,
+      keyunit__houseunit__building_unit: filters.building,
+      houseunit__isnull: filters.null_unit ? true : undefined,
+      contractor__qualification: filters.qualification,
+      is_sup_cont: filters.is_sup_cont,
+      from_contract_date: filters.from_date,
+      to_contract_date: filters.to_date,
+      search: filters.search,
+      ordering: filters.ordering ?? '-created',
+    }
+    return cleanupParams(params)
+  }
+
   const fetchContractList = async (payload: ContFilter) => {
     isLoading.value = true
-    const status = payload.status ?? '2'
-    const limit = payload.limit ?? 10
-    let url = `/contract-set/`
-    url += `?project=${payload.project}&activation=true&contractor__status=${status}&limit=${limit}`
-    if (payload.order_group) url += `&order_group=${payload.order_group}`
-    if (payload.unit_type) url += `&unit_type=${payload.unit_type}`
-    if (payload.building) url += `&keyunit__houseunit__building_unit=${payload.building}`
-    if (payload.null_unit) url += '&houseunit__isnull=true'
-    if (payload.qualification) url += `&contractor__qualification=${payload.qualification}`
-    if (payload.is_sup_cont) url += `&is_sup_cont=${payload.is_sup_cont}`
-    if (payload.from_date) url += `&from_contract_date=${payload.from_date}`
-    if (payload.to_date) url += `&to_contract_date=${payload.to_date}`
-    if (payload.search) url += `&search=${payload.search}`
-    const ordering = payload.ordering ? payload.ordering : '-created'
-    const page = payload.page ? payload.page : 1
-    url += `&ordering=${ordering}&page=${page}`
+    const params = {
+      ...getContractFilterParams(payload),
+      page: payload.page ?? 1,
+    }
 
     return await api
-      .get(url)
+      .get('/contract-set/', { params })
       .then(res => {
         contractList.value = res.data.results
         contractsCount.value = res.data.count
@@ -256,24 +264,13 @@ export const useContract = defineStore('contract', () => {
   }
 
   const findContractPage = async (highlightId: number, filters: ContFilter) => {
-    const status = filters.status ?? '2'
-    const limit = filters.limit ?? 10
-    let url = `/contract-set/find_page/?highlight_id=${highlightId}`
-    url += `&project=${filters.project}&activation=true&contractor__status=${status}&limit=${limit}`
-    if (filters.order_group) url += `&order_group=${filters.order_group}`
-    if (filters.unit_type) url += `&unit_type=${filters.unit_type}`
-    if (filters.building) url += `&keyunit__houseunit__building_unit=${filters.building}`
-    if (filters.null_unit) url += '&houseunit__isnull=true'
-    if (filters.qualification) url += `&contractor__qualification=${filters.qualification}`
-    if (filters.is_sup_cont) url += `&is_sup_cont=${filters.is_sup_cont}`
-    if (filters.from_date) url += `&from_contract_date=${filters.from_date}`
-    if (filters.to_date) url += `&to_contract_date=${filters.to_date}`
-    if (filters.search) url += `&search=${filters.search}`
-    const ordering = filters.ordering ? filters.ordering : '-created'
-    url += `&ordering=${ordering}`
+    const params = {
+      ...getContractFilterParams(filters),
+      highlight_id: highlightId,
+    }
 
     try {
-      const response = await api.get(url)
+      const response = await api.get('/contract-set/find_page/', { params })
       return response.data.page
     } catch (err: any) {
       errorHandle(err.response.data)
