@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
-import { useProCash } from '@/store/pinia/proCash'
-import { type ProBankAcc } from '@/store/types/proCash'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
+import type { ProjectBank } from '@/store/types/proLedger.ts'
 import BankAccForm from './BankAccForm.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -10,11 +10,11 @@ const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 const refComBankAcc = ref()
 const bankAccAdd = ref(false)
 
-const proCashStore = useProCash()
-const allProBankAccList = computed(() => proCashStore.allProBankAccountList)
+const proLedgerStore = useProLedger()
+const allProBankAccList = computed(() => proLedgerStore.allProBankList)
 
-const onBankCreate = (payload: ProBankAcc) => emit('on-bank-create', payload)
-const onBankUpdate = (payload: ProBankAcc) => emit('on-bank-update', payload)
+const onBankCreate = (payload: ProjectBank) => emit('on-bank-create', payload)
+const onBankUpdate = (payload: ProjectBank) => emit('on-bank-update', payload)
 
 const callModal = () => refComBankAcc.value.callModal()
 

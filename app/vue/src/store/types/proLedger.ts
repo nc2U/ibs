@@ -1,7 +1,6 @@
 export interface ProjectBank {
-  pk?: number
-  company?: number
-  depart: number | null
+  pk?: number | null
+  project: number | null
   bankcode: number | null
   alias_name: string
   number: string
@@ -10,6 +9,8 @@ export interface ProjectBank {
   note: string
   is_hide: boolean
   inactive: boolean
+  directpay: boolean
+  is_imprest: boolean
   balance?: number
 }
 

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onMounted, onUpdated, type PropType } from 'vue'
 import { useComCash } from '@/store/pinia/comCash'
-import { type ProBankAcc } from '@/store/types/proCash'
+import type { ProjectBank } from '@/store/types/proLedger.ts'
 import { write_project_cash } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -9,7 +9,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
-  bankAcc: { type: Object as PropType<ProBankAcc>, default: () => null },
+  bankAcc: { type: Object as PropType<ProjectBank>, default: () => null },
 })
 const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 
@@ -18,7 +18,7 @@ const refAlertModal = ref()
 
 const validated = ref(false)
 
-const form = reactive<ProBankAcc>({
+const form = reactive<ProjectBank>({
   pk: null,
   project: null,
   bankcode: null,
