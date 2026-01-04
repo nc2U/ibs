@@ -116,7 +116,7 @@ export type DataFilter = {
   to_date?: string
   sort?: 1 | 2 | null
   bank_account?: number | null
-  is_imprest?: 'true' | 'false'
+  is_imprest?: 'true' | 'false' | 'all' | ''
   account?: number | null
   account_category?:
     | 'asset'
