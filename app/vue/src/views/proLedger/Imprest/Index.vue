@@ -22,7 +22,6 @@ import ListController from './components/ListController.vue'
 import AddProTrans from './components/AddProTrans.vue'
 import ProTransList from './components/ProTransList.vue'
 import ProTransForm from './components/ProTransForm.vue'
-import proLedger from '@/router/modules/proLedger.ts'
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
@@ -67,7 +66,7 @@ const fetchBankCodeList = () => comLedgerStore.fetchBankCodeList()
 const proLedgerStore = useProLedger()
 const proAccounts = computed(() => proLedgerStore.proAccounts)
 const allProBankList = computed(() => proLedgerStore.allProBankList)
-const dataFilter = computed(() => proLedgerStore.proBankTransFilter)
+const dataFilter = computed(() => proLedgerStore.proBankTransFilter as Filter)
 const proBankTransCount = computed(() => proLedgerStore.proBankTransCount)
 
 provide('proAccounts', proAccounts)

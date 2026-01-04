@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import Cookies from 'js-cookie'
 import { computed, nextTick, onBeforeMount, provide, ref } from 'vue'
 import {
   onBeforeRouteLeave,
@@ -22,7 +23,6 @@ import ListController from './components/ListController.vue'
 import AddProTrans from './components/AddProTrans.vue'
 import ProTransList from './components/ProTransList.vue'
 import ProTransForm from './components/ProTransForm.vue'
-import { CCardBody } from '@coreui/vue'
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
@@ -31,6 +31,16 @@ const highlightId = computed(() => {
   const id = route.query.highlight_id
   return id ? parseInt(id as string, 10) : null
 })
+
+const imprest = ref(false) // 운영계좌 내역 포함 여부
+
+const setImprest = () => {
+  dataFilter.value.page = 1
+  imprest.value = !imprest.value
+  const is_imprest = imprest.value ? 'all' : 'false'
+  Cookies.set('get-imprest', is_imprest) // all='포함', false=불포함(기본값)
+  fetchProBankTransList({ ...dataFilter.value, is_imprest })
+}
 
 // URL에서 project 파라미터 읽기
 const urlProjectId = computed(() => {
@@ -47,7 +57,7 @@ const excelUrl = computed(() => {
   const bank_account = dataFilter.value.bank_account || ''
   const contract = dataFilter.value.contract || ''
   const search = dataFilter.value.search || ''
-  const url = `/excel/pro-transaction/?project=${project.value}`
+  const url = `/excel/pro-transaction/?project=${project.value}&is_imprest=all`
   return `${url}&from_date=${from_date}&to_date=${to_date}&sort=${sort}&account_category=${account_category}&account=${account}&bank_account=${bank_account}&contract=${contract}&search=${search}`
 })
 
@@ -67,7 +77,7 @@ const fetchBankCodeList = () => comLedgerStore.fetchBankCodeList()
 const proLedgerStore = useProLedger()
 const proAccounts = computed(() => proLedgerStore.proAccounts)
 const allProBankList = computed(() => proLedgerStore.allProBankList)
-const dataFilter = computed(() => proLedgerStore.proBankTransFilter)
+const dataFilter = computed(() => proLedgerStore.proBankTransFilter as Filter)
 const proBankTransCount = computed(() => proLedgerStore.proBankTransCount)
 
 provide('proAccounts', proAccounts)
@@ -105,7 +115,8 @@ const dataSetup = async (pk: number) => {
   await fetchAllContractors(pk)
   await fetchProBankAccList(pk)
   await fetchAllProBankAccList(pk)
-  await fetchProBankTransList({ project: pk })
+  const is_imprest = (Cookies.get('get-imprest') as 'all' | 'true' | 'false') ?? 'false'
+  await fetchProBankTransList({ project: pk, ...dataFilter.value, is_imprest })
   await fetchProLedgerCalculation(pk)
   proLedgerStore.proBankTransFilter.project = pk
 }
@@ -190,6 +201,8 @@ onBeforeMount(async () => {
     projectId = urlProjectId.value
   }
 
+  imprest.value = Cookies.get('get-imprest') === 'all' // 기본값 false
+
   await fetchBankCodeList()
   await fetchProjectAccounts()
 
@@ -238,7 +251,20 @@ onBeforeRouteLeave(() => {
             :url="excelUrl"
             filename="PR자금_출납내역.xls"
             :disabled="!project"
-          />
+          >
+            <div style="padding-top: 7px">
+              <CFormSwitch
+                v-model="imprest"
+                label="전체(운영비용 포함) 보기"
+                id="all-list-view"
+                @click="setImprest"
+                :disabled="!project"
+              />
+              <v-tooltip activator="parent" location="left">
+                엑셀 다운로드 시 항상 전체(운영비용 포함) 내역 출력
+              </v-tooltip>
+            </div>
+          </TableTitleRow>
           <ProTransList
             :project="project as number"
             :highlight-id="highlightId ?? undefined"
