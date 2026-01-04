@@ -1,9 +1,18 @@
 <script lang="ts" setup>
-import { computed, inject, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
+import {
+  computed,
+  type ComputedRef,
+  inject,
+  nextTick,
+  onBeforeMount,
+  type PropType,
+  ref,
+  watch,
+} from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { numFormat } from '@/utils/baseMixins'
-import { useContract } from '@/store/pinia/contract.ts'
-import { type DataFilter } from '@/store/types/proLedger.ts'
+import { useContract } from '@/store/pinia/contract'
+import type { DataFilter, ProjectBank } from '@/store/types/proLedger'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
@@ -47,8 +56,10 @@ const contStore = useContract()
 const getContracts = computed(() => contStore.getContracts)
 
 const proAccounts = inject<any[]>('proAccounts')
-const allProBankList = inject<any[]>('allProBankList')
+const allProBankList = inject<ComputedRef<ProjectBank[]>>('allProBankList')
 const proBankTransCount = inject<any>('proBankTransCount')
+
+const imprestProBankList = computed(() => allProBankList!.value.filter(acc => acc.is_imprest))
 
 const sortType = computed(() => {
   if (form.value.sort === 1) return 'deposit' // 입금
@@ -172,7 +183,11 @@ onBeforeMount(() => {
               <CCol md="6" lg="3" class="mb-3">
                 <CFormSelect v-model="form.bank_account" @change="listFiltering(1)">
                   <option value="">거래계좌</option>
-                  <option v-for="acc in allProBankList" :key="acc.pk" :value="acc.pk">
+                  <option
+                    v-for="acc in imprestProBankList as ProjectBank[]"
+                    :key="acc.pk!"
+                    :value="acc.pk"
+                  >
                     {{ acc.alias_name }}
                   </option>
                 </CFormSelect>
