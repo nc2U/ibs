@@ -33,21 +33,21 @@ const isCalc = ref(Cookies.get('isCalc') ?? '1')
 watch(isCalc, newVal => Cookies.set('isCalc', newVal))
 
 const paymentUrl = computed(() => {
-  const url = '/pdf/payments/'
+  const url = '/pdf/ledger/payment/'
   const proj = project.value ?? ''
   const cont = contract.value?.pk ?? ''
   return `${url}?project=${proj}&contract=${cont}&is_calc=${isCalc.value}&pub_date=${date.value ?? ''}`
 })
 
 const calcUrl = computed(() => {
-  const url = '/pdf/calculation/'
+  const url = '/pdf/ledger/calculation/'
   const proj = project.value ?? ''
   const cont = contract.value?.pk ?? ''
   return `${url}?project=${proj}&contract=${cont}&pub_date=${date.value ?? ''}`
 })
 
 const lateFeeUrl = computed(() => {
-  const url = '/pdf/daily-late-fee/'
+  const url = '/pdf/ledger/daily-late-fee/'
   const cont = contract.value?.pk ?? ''
   return `${url}?contract=${cont}&pub_date=${date.value ?? ''}`
 })

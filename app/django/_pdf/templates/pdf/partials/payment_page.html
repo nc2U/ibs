@@ -153,7 +153,7 @@
                               {% if p.paid.due_date %}{{ p.paid.due_date|date:"Y-m-d" }}{% else %}
                                 {{ p.paid.deal_date|date:"Y-m-d" }}{% endif %}
                             </td>
-                            <td class="right br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.paid.income|default:"-"|intcomma }}</td>
+                            <td class="right br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{% if p.paid_amount %}{{ p.paid_amount|intcomma }}{% elif p.paid and p.paid.income %}{{ p.paid.income|intcomma }}{% else %}-{% endif %}</td>
                             <td class="center br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.order|default:"" }}</td>
                             <td class="right br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.diff|default:"-"|intcomma }}</td>
                             <td class="right br bl bt {% if forloop.last %}bb2{% else %}bb{% endif %}">{{ p.delay_days|default:"" }}</td>
