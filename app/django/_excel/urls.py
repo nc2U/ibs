@@ -38,8 +38,11 @@ urlpatterns = [
     path('paid-by-cont/', ExportPaymentsByCont.as_view(), name='paid-by-cont'),
     path('paid-status/', ExportPaymentStatus.as_view(), name='paid-status'),
     path('overall-sum/', ExportOverallSummary.as_view(), name='overall-summary'),
-    path('ledger/paid-status/', ExportLedgerPaymentStatus.as_view(), name='paid-status'),
-    path('ledger/overall-sum/', ExportLedgerOverallSummary.as_view(), name='overall-summary'),
+
+    path('ledger/payment/', ExportPayments.as_view(), name='ledger-payment'),
+    path('ledger/paid-by-cont/', ExportPaymentsByCont.as_view(), name='ledger-paid-by-cont'),
+    path('ledger/paid-status/', ExportLedgerPaymentStatus.as_view(), name='ledger-paid-status'),
+    path('ledger/overall-sum/', ExportLedgerOverallSummary.as_view(), name='ledger-overall-summary'),
 
     # Cash 관련 (새 모듈)
     path('p-balance/', ExportProjectBalance.as_view(), name='project-balance'),

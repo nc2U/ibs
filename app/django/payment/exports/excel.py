@@ -1094,6 +1094,458 @@ class ExportOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         return self.create_response(output, workbook, filename)
 
 
+class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
+    """수납건별 수납내역 리스트 (Ledger 기반 - Mixins 사용)"""
+
+    def get(self, request):
+        # Get project and date parameters
+        project = self.get_project(request)
+        if not project:
+            raise ValueError("Project ID is required")
+
+        sd = request.GET.get('sd', '1900-01-01')
+        ed = request.GET.get('ed', TODAY)
+
+        # Create a workbook with performance optimization
+        output, workbook, worksheet = self.create_workbook('수납건별_납부내역')
+
+        # Create reusable format objects
+        formats = self.create_format_objects(workbook)
+
+        # Define headers
+        header_src = [
+            ['거래일자', 'deal_date', 12],
+            ['차수', 'contract__order_group__name', 12],
+            ['타입', 'contract__key_unit__unit_type__name', 10],
+            ['일련번호', 'contract__serial_number', 12],
+            ['계약자', 'contract__contractor__name', 11],
+            ['입금 금액', 'accounting_entry__amount', 12],
+            ['납입회차', 'installment_order__pay_name', 13],
+            ['수납계좌', 'bank_account__alias_name', 20],
+            ['입금자', 'trader', 20],
+            ['공급계약체결일', 'contract__sup_cont_date', 15],
+        ]
+
+        if project.is_unit_set:
+            header_src.insert(4, ['동', 'contract__key_unit__houseunit__building_unit__name', 7])
+            header_src.insert(5, ['호수', 'contract__key_unit__houseunit__name', 7])
+
+        # Set column widths
+        widths = [h[2] for h in header_src]
+        self.set_column_widths(worksheet, widths)
+
+        # Write title
+        row_num = 0
+        col_count = len(header_src) - 1
+        row_num = self.write_title(worksheet, workbook, row_num, col_count,
+                                   f'{project} 계약자 대금 납부내역')
+
+        # Write date info
+        row_num = self.write_date_info(worksheet, workbook, row_num, col_count,
+                                       ed, formats['right_align'])
+
+        # Write complex headers
+        row_num = self._write_payment_headers(worksheet, workbook, row_num, header_src,
+                                              project.is_unit_set, formats)
+
+        # Get and write data
+        data = self._get_ledger_payment_data(request, project, sd, ed, header_src)
+        self._write_payment_data(worksheet, workbook, row_num, data, formats, project, header_src)
+
+        # Create response
+        filename = request.GET.get('filename') or 'payments'
+        filename = f'{filename}-{ed}'
+        return self.create_response(output, workbook, filename)
+
+    @staticmethod
+    def _write_payment_headers(worksheet, workbook, row_num, header_src, is_unit_set, formats):
+        """납부 내역 전용 복잡한 헤더 작성"""
+        titles = [h[0] for h in header_src]
+        us_cnt = 2 if is_unit_set else 0
+
+        # Header level 1
+        worksheet.set_row(row_num, 20)
+        for col_num, title in enumerate(titles):
+            if col_num == 5 + us_cnt:
+                worksheet.merge_range(row_num, col_num, row_num, col_num + 2,
+                                      '건별 수납 정보', formats['header'])
+            elif col_num not in [6 + us_cnt, 7 + us_cnt]:
+                worksheet.write(row_num, col_num, title, formats['header'])
+
+        # Header level 2
+        row_num += 1
+        for col_num, title in enumerate(titles):
+            if col_num in [5 + us_cnt, 6 + us_cnt, 7 + us_cnt]:
+                worksheet.write(row_num, col_num, title, formats['header'])
+            else:
+                worksheet.merge_range(row_num - 1, col_num, row_num, col_num,
+                                      title, formats['header'])
+
+        return row_num + 1
+
+    @staticmethod
+    def _get_ledger_payment_data(request, project, sd, ed, header_src):
+        """Ledger 기반 납부 데이터 조회"""
+        from payment.models import ContractPayment
+
+        params = [h[1] for h in header_src]
+
+        # Filter parameters
+        og = request.GET.get('og')
+        ut = request.GET.get('ut')
+        ipo = request.GET.get('ipo')
+        ba = request.GET.get('ba')
+        nc = request.GET.get('nc')
+        ni = request.GET.get('ni')
+        q = request.GET.get('q')
+
+        # 유효 계약자 납부내역 조회 (Ledger 기반)
+        obj_list = (
+            ContractPayment.objects
+            .select_related(
+                'contract__order_group',
+                'contract__key_unit__unit_type',
+                'contract__key_unit__houseunit__building_unit',
+                'contract__key_unit__houseunit',
+                'contract__contractor',
+                'installment_order',
+                'bank_account',
+                'accounting_entry'
+            )
+            .filter(
+                project=project,
+                deal_date__range=(sd, ed),
+                contract__isnull=False,
+                contract__activation=True,  # 유효 계약만
+                is_payment_mismatch=False  # 유효한 계약자 납부만
+            )
+            .order_by('deal_date', 'created')
+        )
+
+        # Apply filters
+        if og:
+            obj_list = obj_list.filter(contract__order_group=og)
+        if ut:
+            obj_list = obj_list.filter(contract__unit_type=ut)
+        if ipo:
+            obj_list = obj_list.filter(installment_order_id=ipo)
+        if ba:
+            obj_list = obj_list.filter(bank_account__id=ba)
+        if nc:
+            obj_list = obj_list.filter(contract__isnull=True)
+        if ni:
+            obj_list = obj_list.filter(installment_order__isnull=True, contract__isnull=False)
+        if q:
+            obj_list = obj_list.filter(
+                Q(contract__contractor__name__icontains=q) |
+                Q(accounting_entry__content__icontains=q) |
+                Q(trader__icontains=q) |
+                Q(note__icontains=q)
+            )
+
+        return obj_list.values_list(*params)
+
+    @staticmethod
+    def _write_payment_data(worksheet, workbook, row_num, data, formats, project, header_src):
+        """납부 데이터 작성"""
+        worksheet.ignore_errors({'number_stored_as_text': 'C:F'})
+
+        # 헤더 이름으로 컬럼 위치 찾기
+        header_names = [h[0] for h in header_src]
+
+        # 각 컬럼의 인덱스 찾기
+        date_columns = []
+        currency_columns = []
+
+        for i, header_name in enumerate(header_names):
+            if '일자' in header_name or '날짜' in header_name or '체결일' in header_name:
+                date_columns.append(i)
+            elif '금액' in header_name:
+                currency_columns.append(i)
+
+        for i, row in enumerate(data):
+            for col_num, cell_data in enumerate(row):
+                # Select format based on column type
+                if col_num in date_columns:
+                    cell_format = formats['date']
+                elif col_num in currency_columns:
+                    cell_format = formats['currency']
+                else:
+                    cell_format = formats['default']
+
+                worksheet.write(row_num, col_num, cell_data, cell_format)
+            row_num += 1
+
+
+class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
+    """계약자별 수납내역 리스트 (Ledger 기반 - Mixins 사용)"""
+
+    def get(self, request):
+        # Get project and date parameters using mixins
+        project = self.get_project(request)
+        if not project:
+            raise ValueError("Project ID is required")
+
+        date = request.GET.get('to_date', TODAY)
+
+        # Create a workbook with performance optimization
+        output, workbook, worksheet = self.create_workbook('계약자별_납부내역', in_memory=False)
+
+        # Create reusable format objects
+        formats = self.create_format_objects(workbook)
+
+        # 현재 납부 회차 구하기
+        now_date = datetime.date.today()
+        pay_orders = InstallmentPaymentOrder.objects.filter(project=project)
+        now_order = pay_orders.first()
+        for o in pay_orders:
+            if o.pay_due_date is None or o.pay_due_date <= now_date:
+                now_order = o
+            else:
+                break
+
+        # get pay order (Ledger 기반으로 최대 회차 확인)
+        from payment.models import ContractPayment
+
+        max_payment = (
+            ContractPayment.objects
+            .filter(project=project, installment_order__isnull=False, is_payment_mismatch=False)
+            .order_by('-installment_order__pay_code')
+            .first()
+        )
+
+        if max_payment:
+            max_order = max_payment.installment_order
+            calc_order = now_order if now_order.pay_code >= max_order.pay_code else max_order
+        else:
+            calc_order = now_order
+
+        due_pay_orders = pay_orders.filter(project=project, id__lte=calc_order.id)
+
+        add_order_cols = now_order.pay_code * 2  # 납부회차 * 2
+
+        col_cnt = 7 + add_order_cols  # 기본 컬럼수 + 납부회차 * 2
+        is_us_cn = 2 if project.is_unit_set else 0  # 동호 표시할 경우 2라인 추가
+        if project.is_unit_set:
+            col_cnt += is_us_cn
+
+        # Write title using mixin
+        row_num = 0
+        row_num = self.write_title(worksheet, workbook, row_num, col_cnt,
+                                   f'{project} 계약자별 납부내역')
+
+        # Write date info using mixin
+        row_num = self.write_date_info(worksheet, workbook, row_num, col_cnt,
+                                       date, formats['right_align'])
+
+        # 3. Header
+        worksheet.set_row(row_num, 25)
+
+        # Use header format from mixin
+        h_format = formats['header']
+
+        # Line --------------------- 1
+
+        # Write header
+        for i in range(col_cnt):
+            if i == 0:
+                worksheet.merge_range(row_num, i, row_num, i + 2, '계약자 인적사항', h_format)
+            elif i == 3:
+                worksheet.merge_range(row_num, i, row_num, i + 2 + is_us_cn, '가입 세부사항', h_format)
+            elif i == 6 + is_us_cn:
+                worksheet.merge_range(row_num, i, row_num, i + 1 + add_order_cols, '분양대금 납부내역', h_format)
+
+        # title_list
+        header_src = [
+            ['계약번호', 'serial_number', 10],
+            ['성명', 'contractor__name', 10],
+            ['차수', 'order_group__name', 10],
+            ['타입', 'key_unit__unit_type__name', 7],
+            ['계약일', 'contractor__contract_date', 12],
+            ['기납부 총액', '', 14],
+            ['미납내역', '', 13],
+        ]
+
+        if project.is_unit_set:
+            header_src.insert(4, ['동', 'key_unit__houseunit__building_unit__name', 7])
+            header_src.insert(5, ['호수', 'key_unit__houseunit__name', 7])
+
+        # PayOrders columns insert
+        for i, po in enumerate(due_pay_orders):
+            header_src.insert(6 + (i * 2) + is_us_cn, [po.pay_name, '', 12])
+            header_src.insert(7 + (i * 2) + is_us_cn, ['', '', 13])
+
+        titles = ['번호']
+        params = ['pk']
+        widths = [7]
+
+        for header in header_src:  # 요청된 컬럼 개수 만큼 반복 (1-2-3... -> i)
+            titles.append(header[0])  # 일련번호
+            params.append(header[1])  # serial_number
+            widths.append(header[2])  # 10
+
+        while '' in params:
+            params.remove('')
+
+        # Adjust the column width.
+        for i, cw in enumerate(widths):  # 각 컬럼 넙이 세팅
+            worksheet.set_column(i, i, cw)
+
+        # Line --------------------- 2
+        row_num = 3
+        worksheet.set_row(row_num, 23)
+
+        # Write header
+        digit_col = []  # 숫자(#,##0) 서식 적용 컬럼
+        date_col = []  # 날짜(yyyy-mm-dd) 서식 적용 컬럼
+
+        sum_col = None  # 기납부총액 컬럼 위치
+
+        for col_num, title in enumerate(titles):  # 헤더 줄 제목 세팅
+            if col_num < 7 + is_us_cn or col_num == col_cnt:
+                worksheet.merge_range(row_num, col_num, row_num + 1, col_num, title, h_format)
+            else:
+                if col_num % 2 == 1:
+                    worksheet.merge_range(row_num, col_num, row_num, col_num + 1, title, h_format)
+            if title == '계약일':
+                date_col.append(col_num)
+            if title in ('기납부 총액', '미납내역'):
+                digit_col.append(col_num)
+                if title == '기납부 총액':
+                    sum_col = col_num
+
+        # Line --------------------- 3
+        row_num = 4
+        worksheet.set_row(row_num, 23)
+
+        for col_num in range(col_cnt):
+            if col_num <= 7 + is_us_cn or col_num < col_cnt:
+                worksheet.write(row_num, col_num, ('금액', '거래일')[col_num % 2], h_format)
+                if col_num % 2:
+                    date_col.append(col_num)
+                else:
+                    digit_col.append(col_num)
+
+        # 4. Body
+        # Use pre-created format objects from mixin
+        default_body_format = formats['default']
+        date_body_format = formats['date']
+        digit_body_format = formats['currency']
+
+        # Turn off some of the warnings:
+        worksheet.ignore_errors({'number_stored_as_text': 'E:G'})
+
+        # ----------------- get_queryset start ----------------- #
+        # Get some data to write to the spreadsheet.
+        obj_list = Contract.objects.filter(project=project,
+                                           activation=True,
+                                           contractor__status='2',
+                                           contractor__contract_date__lte=date) \
+            .order_by('contractor__contract_date', 'created')
+
+        # ----------------- get_queryset finish ----------------- #
+
+        data = obj_list.values_list(*params)
+
+        # Write body
+        # ----------------------------------------------------------------- #
+        # Ledger 기반 납부 데이터 조회
+        paid_params = ['contract', 'accounting_entry__amount', 'installment_order', 'deal_date']
+        paid_data = (
+            ContractPayment.objects
+            .select_related('accounting_entry', 'installment_order')
+            .filter(
+                project=project,
+                deal_date__lte=date,
+                contract__isnull=False,
+                contract__activation=True,
+                is_payment_mismatch=False  # 유효한 계약자 납부만
+            )
+        )
+        paid_dict = paid_data.values_list(*paid_params)
+
+        # 계약금 분납 횟수
+        down_num = due_pay_orders.filter(pay_sort='1').count()
+        # ----------------------------------------------------------------- #
+
+        for i, row in enumerate(data):
+            row_num += 1
+            row = list(row)  # tuple -> list
+
+            paid_sum = 0  # 기납부 총액
+            if sum_col is not None:
+                paid_sum = sum([ps[1] for ps in paid_dict if ps[0] == row[0]])
+                row.insert(sum_col, paid_sum)  # 순서 삽입
+
+            next_col = sum_col
+            due_amt_sum = 0  # 납부 약정액 합계
+            unpaid_amt = 0  # 미납액
+
+            contract = Contract.objects.get(serial_number=row[1], contractor__name=row[2])
+            prices = SalesPriceByGT.objects.filter(project_id=project,
+                                                   order_group__name=row[3],
+                                                   unit_type__name=row[4])
+            try:
+                floor = contract.key_unit.houseunit.floor_type
+                cont_price = prices.get(unit_floor_type=floor).price  # 분양가
+            except ObjectDoesNotExist:
+                cont_price = ProjectIncBudget.objects.get(order_group__name=row[3],
+                                                          unit_type__name=row[4]).average_price
+            except ProjectIncBudget.DoesNotExsist:
+                price = contract.key_unit.unit_type.average_price
+                cont_price = price if price else 0  # 분양가
+
+            for pi, po in enumerate(due_pay_orders):  # 회차별 납입 내역 삽입
+                dates = [p[3] for p in paid_dict if p[0] == row[0] and p[2] == po.pay_code]
+                paid_date = max(dates).strftime('%Y-%m-%d') if dates else None
+                paid_amount = sum([p[1] for p in paid_dict if p[0] == row[0] and p[2] == po.pay_code])
+
+                row.insert(next_col + 1 + pi, paid_date)  # 거래일 정보 삽입
+                row.insert(next_col + 2 + pi, paid_amount)  # 납부 금액 정보 삽입
+
+                # due_amount adding
+                if po.pay_sort == '1':  # 계약금일 때
+                    try:
+                        down_pay = DownPayment.objects.get(
+                            project_id=project,
+                            order_group=contract.order_group,
+                            unit_type=contract.key_unit.unit_type)
+                        due_amt = down_pay.payment_amount
+                    except DownPayment.DoesNotExist:
+                        pn = round(down_num / 2)
+                        due_amt = int(cont_price * 0.1 / pn)
+                elif po.pay_sort == '2':  # 중도금일 때
+                    due_amt = cont_price * 0.1
+                else:  # 잔금일 때
+                    due_amt = cont_price - due_amt_sum
+
+                due_amt_sum += due_amt if po.id <= now_order.id else 0
+                unpaid_amt = due_amt_sum - paid_sum if due_amt_sum > paid_sum else 0
+                next_col += 1
+
+            row.insert(next_col + len(due_pay_orders) + 1, unpaid_amt)  # 미납 내역 삽입
+
+            row[0] = i + 1  # pk 대신 순서 삽입
+
+            for col_num, cell_data in enumerate(row):
+                # Use pre-created format objects
+                if col_num <= 4 + is_us_cn:
+                    bf = default_body_format
+                elif col_num in date_col:  # 날짜 컬럼 일때
+                    bf = date_body_format
+                elif col_num in digit_col:  # 숫자(금액) 컬럼 일때
+                    bf = digit_body_format
+                else:
+                    bf = default_body_format
+
+                worksheet.write(row_num, col_num, cell_data, bf)
+
+        # Create a response using mixin
+        filename = request.GET.get('filename') or 'payment-by-cont'
+        filename = f'{filename}-{date}'
+        return self.create_response(output, workbook, filename)
+
+
 def get_ledger_standardized_payment_sum(project, date=None, date_range=None):
     """
     Ledger 기반 표준화된 납부액 집계 (유효 계약자 입금만)

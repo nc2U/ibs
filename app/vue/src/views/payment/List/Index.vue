@@ -75,7 +75,7 @@ const pageSelect = (page: number) => {
 }
 
 const byPayment = computed(() => {
-  let pUrl = project.value ? `/excel/ledger-payment/?project=${project.value}` : ''
+  let pUrl = project.value ? `/excel/ledger/payment/?project=${project.value}` : ''
   if (filterItems.value.from_date) pUrl += `&sd=${filterItems.value.from_date}`
   if (filterItems.value.to_date) pUrl += `&ed=${filterItems.value.to_date}`
   if (filterItems.value.order_group) pUrl += `&og=${filterItems.value.order_group}`
@@ -90,7 +90,7 @@ const byPayment = computed(() => {
 
 const byContract = computed(() =>
   project.value
-    ? `/excel/paid-by-cont/?project=${project.value}&date=${filterItems.value.to_date}`
+    ? `/excel/ledger/paid-by-cont/?project=${project.value}&date=${filterItems.value.to_date}`
     : '',
 )
 
