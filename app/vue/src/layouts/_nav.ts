@@ -180,7 +180,7 @@ const payments = {
   icon: 'cil-calculator',
   badge: {
     color: 'warning',
-    text: 'dep..',
+    text: 'old..',
   },
   items: [
     {
@@ -208,7 +208,7 @@ const payment = {
   icon: 'cil-calculator',
   badge: {
     color: 'info',
-    text: 'ref.',
+    text: 'new..',
   },
   items: [
     {
@@ -244,10 +244,6 @@ const notice = {
       component: 'CNavItem',
       name: 'SMS 발송 관리',
       to: '/notices/sms',
-      badge: {
-        color: 'info',
-        text: 'new',
-      },
     },
     // {
     //   component: 'CNavItem',
@@ -286,7 +282,7 @@ const project_cash = {
   icon: 'cil-money',
   badge: {
     color: 'warning',
-    text: 'dep..',
+    text: 'old..',
   },
   items: [
     {
@@ -314,7 +310,7 @@ const project_ledger = {
   icon: 'cil-money',
   badge: {
     color: 'info',
-    text: 'ref.',
+    text: 'new..',
   },
   items: [
     {
