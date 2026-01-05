@@ -287,7 +287,7 @@ onBeforeRouteLeave(() => {
               v-if="project === 1"
               flat
               :disabled="!project || !contract"
-              color="light"
+              variant="tonal"
               size="small"
               class="mt-1 mr-2"
               @click="downloadFile(calcUrl, '할인_가산금_내역.pdf')"
@@ -299,7 +299,7 @@ onBeforeRouteLeave(() => {
             <v-btn
               flat
               :disabled="!project || !contract"
-              color="light"
+              variant="tonal"
               size="small"
               class="mt-1 mr-2"
               @click="downloadFile(lateFeeUrl, '일자별_연체료_내역.pdf')"
