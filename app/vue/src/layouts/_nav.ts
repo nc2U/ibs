@@ -178,6 +178,10 @@ const payments = {
   name: '분양 수납 관리',
   to: '/payments',
   icon: 'cil-calculator',
+  badge: {
+    color: 'warning',
+    text: 'dep..',
+  },
   items: [
     {
       component: 'CNavItem',
@@ -202,6 +206,10 @@ const payment = {
   name: '계약 납부 관리',
   to: '/payment',
   icon: 'cil-calculator',
+  badge: {
+    color: 'info',
+    text: 'ref.',
+  },
   items: [
     {
       component: 'CNavItem',
@@ -276,6 +284,10 @@ const project_cash = {
   name: 'PR 자금 관리',
   to: '/project-cash',
   icon: 'cil-money',
+  badge: {
+    color: 'warning',
+    text: 'dep..',
+  },
   items: [
     {
       component: 'CNavItem',
@@ -300,6 +312,10 @@ const project_ledger = {
   name: 'PR 회계 관리',
   to: '/project-ledger',
   icon: 'cil-money',
+  badge: {
+    color: 'info',
+    text: 'ref.',
+  },
   items: [
     {
       component: 'CNavItem',
