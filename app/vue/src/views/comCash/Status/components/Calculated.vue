@@ -37,7 +37,7 @@ const modalAction = () => {
       등록된 최종 거래 일자로부터 10일이 경과한 거래 건은 수정 및 삭제할 수 없습니다.
     </template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">확인</v-btn>
+      <v-btn size="small" color="warning" @click="modalAction">확인</v-btn>
     </template>
   </ConfirmModal>
 </template>

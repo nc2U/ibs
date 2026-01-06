@@ -189,6 +189,20 @@ a.page-link,
   .bg-light {
     background-color: #2E2F39 !important;
   }
+
+  .alert-warning {
+    --cui-alert-color: rgb(149.4, 106.2, 12.6);
+    --cui-alert-bg: #393907; // rgb(253.8, 239.4, 208.2);
+    --cui-alert-border-color: #252506; // rgb(253.2, 231.6, 184.8);
+    --cui-alert-link-color: rgb(119.52, 84.96, 10.08);
+  }
+
+  .alert-success {
+    --cui-alert-color: #A1C6AE; // rgb(27.6, 110.4, 55.2);
+    --cui-alert-bg: #37413A; // rgb(213.2, 240.8, 222.4);
+    --cui-alert-border-color: #1E2520; // rgb(192.3, 233.7, 206.1);
+    --cui-alert-link-color: #779B83; // rgb(22.08, 88.32, 44.16);
+  }
 }
 
 input[type='number'] {
