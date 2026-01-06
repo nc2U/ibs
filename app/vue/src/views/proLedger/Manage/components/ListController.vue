@@ -10,6 +10,7 @@ import MultiSelect from '@/components/MultiSelect/index.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
+  imprest: { type: Boolean, default: false },
   dataFilter: { type: Object as PropType<DataFilter>, default: () => {} },
 })
 watch(
@@ -80,8 +81,9 @@ const cateSelect = () => {
 const listFiltering = (page = 1) => {
   form.value.page = page
   form.value.search = (form.value.search ?? '')?.trim()
+  const is_imprest = props.imprest ? 'all' : 'false'
   nextTick(() => {
-    emit('list-filtering', { ...form.value })
+    emit('list-filtering', { ...form.value, is_imprest })
   })
 }
 

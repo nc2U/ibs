@@ -238,6 +238,7 @@ onBeforeRouteLeave(() => {
           <ListController
             ref="listControl"
             :project="project as number"
+            :imprest="imprest"
             :data-filter="dataFilter"
             @list-filtering="listFiltering"
           />
