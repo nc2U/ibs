@@ -29,6 +29,17 @@ watch(
   },
 )
 
+// props.sort 변경을 감지하여 account와 evidence_type을 초기화하는 watch 추가
+watch(
+  () => props.sort,
+  () => {
+    props.displayRows.forEach(row => {
+      row.account = null // account 초기화
+      row.evidence_type = '' // evidence_type 초기화
+    })
+  },
+)
+
 interface Emits {
   (e: 'removeEntry', index: number): void
 }
