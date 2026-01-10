@@ -150,10 +150,6 @@ const contract = {
       component: 'CNavItem',
       name: '계약 상세 관리',
       to: '/contracts/detail',
-      badge: {
-        color: 'info',
-        text: 'new',
-      },
     },
     {
       component: 'CNavItem',
