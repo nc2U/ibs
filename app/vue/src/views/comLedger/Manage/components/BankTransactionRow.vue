@@ -52,7 +52,7 @@ const emit = defineEmits<Emits>()
 const localBankForm = reactive<BankForm>({ ...props.transaction.bankForm })
 const localEntries = computed({
   get: () => props.transaction.entries,
-  set: (value) => {
+  set: value => {
     emit('update:transaction', { bankForm: localBankForm, entries: value })
   },
 })
@@ -67,8 +67,14 @@ watch(
 )
 
 // provide for JournalRow
-provide('affiliates', computed(() => props.affiliates))
-provide('comAccounts', computed(() => props.comAccounts))
+provide(
+  'affiliates',
+  computed(() => props.affiliates),
+)
+provide(
+  'comAccounts',
+  computed(() => props.comAccounts),
+)
 
 // 거래 구분 이름
 const sortName = computed(() => (localBankForm.sort === 1 ? '입금' : '출금'))
@@ -164,8 +170,8 @@ watch(
     </CTableDataCell>
 
     <!-- 입출금액 -->
-    <CTableDataCell class="text-right">
-      <div class="d-flex align-items-center justify-content-end">
+    <CTableDataCell>
+      <div class="d-flex align-items-center">
         <CFormSelect v-model.number="localBankForm.sort" style="width: 70px" required class="mr-2">
           <option :value="1">입금</option>
           <option :value="2">출금</option>
