@@ -80,6 +80,23 @@ watch(
 const removeEntry = (index: number) => {
   emit('removeEntry', index)
 }
+
+// 지출증빙이 필수인지 확인하는 헬퍼 함수
+// 출금(sort===2)이지만 대체(출금) 계정일 경우 지출증빙이 필요하지 않음
+const isEvidenceRequired = (row: NewEntryForm): boolean => {
+  if (props.sort === 1) return false // 입금은 지출증빙 불필요
+
+  // 출금(sort===2)인 경우
+  const account = getAccountById(row.account)
+  if (!account) return true // 계정이 선택되지 않았으면 일단 required
+
+  // 대체(출금) 계정인 경우 지출증빙 불필요
+  if (account.category === 'transfer' && account.direction === '출금') {
+    return false
+  }
+
+  return true // 일반 출금 계정은 지출증빙 필수
+}
 </script>
 
 <template>
@@ -122,7 +139,7 @@ const removeEntry = (index: number) => {
         <CFormSelect
           v-model="row.evidence_type"
           :disabled="sort === 1"
-          :required="sort === 2"
+          :required="isEvidenceRequired(row)"
           size="sm"
           placeholder="지출 증빙"
         >
