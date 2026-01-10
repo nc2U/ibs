@@ -16,6 +16,7 @@ import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
 import BankAcc from './BankAcc.vue'
 import JournalRow from './JournalRow.vue'
 import AccountManage from './AccountManage.vue'
+import BankTransactionRow, { type BankTransactionData } from './BankTransactionRow.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -73,12 +74,30 @@ interface NewEntryForm {
   evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
 }
 
-// 수정 가능한 폼 데이터 (기존 데이터 + 새로운 데이터)
+// 수정 가능한 폼 데이터 (기존 데이터 + 새로운 데이터) - 수정 모드용
 const editableEntries = ref<NewEntryForm[]>([])
+
+// 신규 생성 모드용: 다수 은행거래건 배열
+const bankTransactions = ref<BankTransactionData[]>([])
 
 // 폼 초기화 함수들
 const initializeCreateForm = () => {
-  // 신규 모드: 기본값으로 초기화
+  // 신규 모드: 다수 거래건 구조로 초기화 (기본 1개 거래건)
+  bankTransactions.value = [
+    {
+      bankForm: {
+        deal_date: getToday(),
+        bank_account: null,
+        amount: null,
+        sort: 1,
+        content: '',
+        note: '',
+      },
+      entries: [{}],
+    },
+  ]
+
+  // 기존 단일 거래건 폼도 초기화 (하위 호환성 유지)
   Object.assign(bankForm, {
     deal_date: getToday(),
     bank_account: null,
@@ -332,6 +351,68 @@ const removeEntry = (index: number) => {
   }
 }
 
+// === 신규 모드용 다수 거래건 메서드 ===
+
+// 새 은행거래건 추가
+const addBankTransaction = () => {
+  bankTransactions.value.push({
+    bankForm: {
+      deal_date: getToday(),
+      bank_account: null,
+      amount: null,
+      sort: 1,
+      content: '',
+      note: '',
+    },
+    entries: [{}],
+  })
+}
+
+// 은행거래건 삭제
+const removeBankTransaction = (index: number) => {
+  if (bankTransactions.value.length > 1) {
+    bankTransactions.value.splice(index, 1)
+  }
+}
+
+// 거래건 업데이트
+const updateBankTransaction = (index: number, data: BankTransactionData) => {
+  bankTransactions.value[index] = data
+}
+
+// 대체(출금) 거래 감지 시 대체(입금) 거래 자동 추가
+const handleTransferWithdraw = (sourceData: BankTransactionData) => {
+  // 대체(입금) 계정 찾기 (category='transfer' && direction='입금')
+  const depositTransferAccount = proLedgerStore.proAccounts.find(
+    acc => acc.category === 'transfer' && acc.direction === '입금',
+  )
+
+  if (!depositTransferAccount) {
+    console.warn('대체(입금) 계정을 찾을 수 없습니다.')
+    return
+  }
+
+  // 새로운 대체(입금) 거래건 추가
+  bankTransactions.value.push({
+    bankForm: {
+      deal_date: sourceData.bankForm.deal_date,
+      bank_account: null, // 사용자가 선택해야 함 (출발 계좌와 달라야 함)
+      amount: sourceData.bankForm.amount,
+      sort: 1, // 입금
+      content: sourceData.bankForm.content,
+      note: sourceData.bankForm.note,
+    },
+    entries: [
+      {
+        account: depositTransferAccount.value, // 대체(입금) 계정 자동 선택
+        trader: sourceData.entries[0]?.trader || '',
+        amount: sourceData.bankForm.amount || undefined,
+        evidence_type: '',
+      },
+    ],
+  })
+}
+
 // 유효성 검사
 const validateForm = () => {
   if (!isBalanced.value) {
@@ -400,6 +481,62 @@ const buildUpdatePayload = () => {
   } as any // API 요청 타입과 ProBankTrans 타입이 다르므로 any 처리
 }
 
+// 신규 모드용: 다수 거래건 저장
+const saveMultipleTransactions = async () => {
+  // 각 거래건 검증
+  for (let i = 0; i < bankTransactions.value.length; i++) {
+    const trans = bankTransactions.value[i]
+
+    // 필수 필드 검증
+    if (
+      !trans.bankForm.deal_date ||
+      !trans.bankForm.bank_account ||
+      !trans.bankForm.amount ||
+      !trans.bankForm.content
+    ) {
+      throw new Error(`거래건 ${i + 1}: 거래일자, 거래계좌, 금액, 적요는 필수 입력 항목입니다.`)
+    }
+
+    // 금액 일치 검증
+    const bankAmount = trans.bankForm.amount || 0
+    const entryTotal = trans.entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+    if (bankAmount !== entryTotal) {
+      throw new Error(
+        `거래건 ${i + 1}: 거래 금액(${bankAmount})과 분류 금액(${entryTotal})이 일치하지 않습니다.`,
+      )
+    }
+
+    // 유효한 분개 항목 검증
+    const validEntries = trans.entries.filter(e => (e.amount || 0) > 0)
+    if (validEntries.length === 0) {
+      throw new Error(`거래건 ${i + 1}: 최소 하나 이상의 분류 항목이 필요합니다.`)
+    }
+  }
+
+  // 각 거래건을 개별적으로 API 호출
+  for (const trans of bankTransactions.value) {
+    const validEntries = trans.entries
+      .filter(e => (e.amount || 0) > 0)
+      .map(entry => ({
+        ...entry,
+        evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
+      }))
+
+    const payload = {
+      project: props.project!,
+      deal_date: trans.bankForm.deal_date,
+      bank_account: trans.bankForm.bank_account!,
+      amount: trans.bankForm.amount!,
+      sort: trans.bankForm.sort,
+      content: trans.bankForm.content,
+      note: trans.bankForm.note,
+      accounting_entries: validEntries,
+    } as any
+
+    await proLedgerStore.createProBankTrans(payload)
+  }
+}
+
 // 저장 처리
 const saveTransaction = async (event: Event) => {
   if (isValidate(event)) {
@@ -411,9 +548,10 @@ const saveTransaction = async (event: Event) => {
       isSaving.value = true
 
       if (isCreateMode.value) {
-        const payload = buildCreatePayload()
-        await proLedgerStore.createProBankTrans(payload)
+        // 신규 모드: 다수 거래건 저장
+        await saveMultipleTransactions()
       } else {
+        // 수정 모드: 기존 단일 거래건 저장
         const payload = buildUpdatePayload()
         await proLedgerStore.updateProBankTrans(payload)
       }
@@ -450,11 +588,39 @@ onBeforeMount(async () => {
   }
 })
 
+// 단일 거래건의 균형 검사 헬퍼 함수
+const isTransactionBalanced = (
+  bankAmount: number | null,
+  entries: { amount?: number | null }[],
+): boolean => {
+  if (!bankAmount) return false
+  const totalEntries = entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+  return bankAmount === totalEntries
+}
+
 // 폼 유효성 검사 상태
 const isFormValid = computed(() => {
-  const hasRequiredFields = !!(bankForm.deal_date && bankForm.bank_account && bankForm.amount)
-  const hasValidEntries = editableEntries.value.some(e => (e.amount || 0) > 0)
-  return hasRequiredFields && hasValidEntries && isBalanced.value
+  if (isCreateMode.value) {
+    // 신규 모드: 모든 거래건 검증
+    if (bankTransactions.value.length === 0) return false
+
+    return bankTransactions.value.every(trans => {
+      const hasRequiredFields = !!(
+        trans.bankForm.deal_date &&
+        trans.bankForm.bank_account &&
+        trans.bankForm.amount
+      )
+      const hasValidEntries = trans.entries.some(e => (e.amount || 0) > 0)
+      const isBalanced = isTransactionBalanced(trans.bankForm.amount, trans.entries)
+
+      return hasRequiredFields && hasValidEntries && isBalanced
+    })
+  } else {
+    // 수정 모드: 기존 단일 거래건 검증
+    const hasRequiredFields = !!(bankForm.deal_date && bankForm.bank_account && bankForm.amount)
+    const hasValidEntries = editableEntries.value.some(e => (e.amount || 0) > 0)
+    return hasRequiredFields && hasValidEntries && isBalanced.value
+  }
 })
 
 // 저장 버튼 비활성화 상태
@@ -610,63 +776,96 @@ onBeforeRouteLeave((to, from, next) => {
       </CTableHead>
 
       <CTableBody>
-        <CTableRow class="sticky-bank-row">
-          <!-- 거래일자 -->
-          <CTableDataCell>
-            <DatePicker v-model="bankForm.deal_date" required />
-          </CTableDataCell>
+        <!-- 신규 모드: 다수 거래건 입력 (BankTransactionRow 사용) -->
+        <template v-if="isCreateMode">
+          <BankTransactionRow
+            v-for="(trans, idx) in bankTransactions"
+            :key="`trans-${idx}`"
+            :transaction="trans"
+            :index="idx"
+            :bank-accounts="formBankAccounts"
+            :pro-accounts="proLedgerStore.proAccounts"
+            :get-contracts="contractStore.getContracts"
+            :get-all-contractors="contractStore.getAllContractors"
+            @update:transaction="updateBankTransaction(idx, $event)"
+            @remove="removeBankTransaction(idx)"
+            @detect-transfer-withdraw="handleTransferWithdraw"
+          />
 
-          <!-- 메모 -->
-          <CTableDataCell>
-            <CFormInput v-model="bankForm.note" placeholder="메모" maxlength="50" />
-          </CTableDataCell>
-
-          <!-- 거래계좌 -->
-          <CTableDataCell>
-            <CFormSelect v-model.number="bankForm.bank_account" required>
-              <option :value="null">---------</option>
-              <option v-for="ba in formBankAccounts" :key="ba.value!" :value="ba.value">
-                {{ ba.label }}
-              </option>
-            </CFormSelect>
-          </CTableDataCell>
-
-          <!-- 적요 -->
-          <CTableDataCell>
-            <CFormInput v-model="bankForm.content" placeholder="적요" maxlength="100" required />
-          </CTableDataCell>
-
-          <!-- 입출금액 -->
-          <CTableDataCell class="text-right">
-            <div class="d-flex align-items-center justify-content-end">
-              <CFormSelect v-model.number="bankForm.sort" style="width: 70px" required class="mr-2">
-                <option :value="1">입금</option>
-                <option :value="2">출금</option>
-              </CFormSelect>
-              <CFormInput
-                v-model.number="bankForm.amount"
-                type="number"
-                min="0"
-                placeholder="금액"
-                required
-                style="width: 120px"
-                class="text-right"
-              />
-              <v-btn density="compact" rounded="1" size="22" class="ml-2 pointer" @click="addRow">
-                <v-icon icon="mdi-plus" color="success" />
+          <!-- 거래건 추가 버튼 행 -->
+          <CTableRow class="bg-light">
+            <CTableDataCell colspan="10" class="text-center py-2">
+              <v-btn size="small" color="primary" variant="outlined" @click="addBankTransaction">
+                <v-icon icon="mdi-plus" class="mr-1" />
+                은행거래건 추가
               </v-btn>
-            </div>
-          </CTableDataCell>
+              <small class="text-muted ml-3">
+                (현재 {{ bankTransactions.length }}건의 거래를 입력 중입니다)
+              </small>
+            </CTableDataCell>
+          </CTableRow>
+        </template>
 
-          <CTableDataCell colspan="7" class="p-0">
-            <JournalRow
-              :sort="bankForm.sort"
-              :display-rows="displayRows"
-              :trans-amount="bankForm.amount"
-              @remove-entry="removeEntry"
-            />
-          </CTableDataCell>
-        </CTableRow>
+        <!-- 수정 모드: 기존 단일 거래건 입력 -->
+        <template v-else>
+          <CTableRow class="sticky-bank-row">
+            <!-- 거래일자 -->
+            <CTableDataCell>
+              <DatePicker v-model="bankForm.deal_date" required />
+            </CTableDataCell>
+
+            <!-- 메모 -->
+            <CTableDataCell>
+              <CFormInput v-model="bankForm.note" placeholder="메모" maxlength="50" />
+            </CTableDataCell>
+
+            <!-- 거래계좌 -->
+            <CTableDataCell>
+              <CFormSelect v-model.number="bankForm.bank_account" required>
+                <option :value="null">---------</option>
+                <option v-for="ba in formBankAccounts" :key="ba.value!" :value="ba.value">
+                  {{ ba.label }}
+                </option>
+              </CFormSelect>
+            </CTableDataCell>
+
+            <!-- 적요 -->
+            <CTableDataCell>
+              <CFormInput v-model="bankForm.content" placeholder="적요" maxlength="100" required />
+            </CTableDataCell>
+
+            <!-- 입출금액 -->
+            <CTableDataCell class="text-right">
+              <div class="d-flex align-items-center justify-content-end">
+                <CFormSelect v-model.number="bankForm.sort" style="width: 70px" required class="mr-2">
+                  <option :value="1">입금</option>
+                  <option :value="2">출금</option>
+                </CFormSelect>
+                <CFormInput
+                  v-model.number="bankForm.amount"
+                  type="number"
+                  min="0"
+                  placeholder="금액"
+                  required
+                  style="width: 120px"
+                  class="text-right"
+                />
+                <v-btn density="compact" rounded="1" size="22" class="ml-2 pointer" @click="addRow">
+                  <v-icon icon="mdi-plus" color="success" />
+                </v-btn>
+              </div>
+            </CTableDataCell>
+
+            <CTableDataCell colspan="7" class="p-0">
+              <JournalRow
+                :sort="bankForm.sort"
+                :display-rows="displayRows"
+                :trans-amount="bankForm.amount"
+                @remove-entry="removeEntry"
+              />
+            </CTableDataCell>
+          </CTableRow>
+        </template>
       </CTableBody>
     </CTable>
 
