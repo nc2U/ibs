@@ -174,10 +174,6 @@ const payments = {
   name: '분양 수납 관리',
   to: '/payments',
   icon: 'cil-calculator',
-  badge: {
-    color: 'warning',
-    text: 'old..',
-  },
   items: [
     {
       component: 'CNavItem',
@@ -276,10 +272,6 @@ const project_cash = {
   name: 'PR 자금 관리',
   to: '/project-cash',
   icon: 'cil-money',
-  badge: {
-    color: 'warning',
-    text: 'old..',
-  },
   items: [
     {
       component: 'CNavItem',
