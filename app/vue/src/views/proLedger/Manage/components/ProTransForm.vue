@@ -68,7 +68,7 @@ interface ProBankTransForm {
 const validated = ref(false)
 const bankForm = reactive<ProBankTransForm>({
   deal_date: getToday(),
-  sort: 1,
+  sort: 2,
   amount: null,
   content: '',
   note: '',
@@ -101,7 +101,7 @@ const initializeCreateForm = () => {
         deal_date: getToday(),
         bank_account: null,
         amount: null,
-        sort: 1,
+        sort: 2,
         content: '',
         note: '',
       },

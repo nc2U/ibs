@@ -72,7 +72,7 @@ interface BankTransactionForm {
 const validated = ref(false)
 const bankForm = reactive<BankTransactionForm>({
   deal_date: getToday(),
-  sort: 1,
+  sort: 2,
   amount: null,
   content: '',
   note: '',
@@ -102,7 +102,7 @@ const initializeCreateForm = () => {
     deal_date: getToday(),
     bank_account: null,
     amount: null,
-    sort: 1,
+    sort: 2,
     content: '',
     note: '',
   })
