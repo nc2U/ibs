@@ -114,7 +114,7 @@ const initializeCreateForm = () => {
     deal_date: getToday(),
     bank_account: null,
     amount: null,
-    sort: 1,
+    sort: 2,
     content: '',
     note: '',
   })
@@ -405,7 +405,7 @@ const addBankTransaction = () => {
       deal_date: getToday(),
       bank_account: null,
       amount: null,
-      sort: 1,
+      sort: 2,
       content: '',
       note: '',
     },

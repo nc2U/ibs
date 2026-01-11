@@ -225,20 +225,27 @@ watch(
           placeholder="금액"
           required
           style="width: 120px"
-          class="text-right"
+          class="text-right mr-2"
         />
-        <v-btn density="compact" rounded="1" size="22" class="ml-2 pointer" @click="addRow">
-          <v-icon icon="mdi-plus" color="success" />
-        </v-btn>
         <v-btn
           v-if="index > 0"
           density="compact"
           rounded="1"
           size="22"
-          class="ml-1 pointer"
+          class="ml-auto pointer"
           @click="emit('remove')"
         >
           <v-icon icon="mdi-minus" color="error" />
+        </v-btn>
+        <v-btn
+          density="compact"
+          rounded="1"
+          size="22"
+          :class="index === 0 ? 'ml-auto' : 'ml-1'"
+          class="pointer"
+          @click="addRow"
+        >
+          <v-icon icon="mdi-plus" color="success" />
         </v-btn>
       </div>
     </CTableDataCell>
