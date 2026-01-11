@@ -13,9 +13,9 @@ import BankTransactionRow, { type BankTransactionData } from './BankTransactionR
 import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import AccountManage from './AccountManage.vue'
 import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
-import AccountManage from './AccountManage.vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
