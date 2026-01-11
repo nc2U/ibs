@@ -5,9 +5,9 @@ import { write_project_cash } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
 import Pagination from '@/components/Pagination'
+import AccountManage from '@/views/proLedger/Manage/components/AccountManage.vue'
 import BankAcc from './BankAcc.vue'
 import ProTrans from './ProTrans.vue'
-import AccountManage from './AccountManage.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },

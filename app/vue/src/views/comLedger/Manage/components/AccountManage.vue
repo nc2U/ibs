@@ -3,8 +3,6 @@ import { ref, computed } from 'vue'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const emit = defineEmits(['patch-d3-hide'])
-
 const refDAccount = ref()
 
 const sort = ref<'both' | 'deposit' | 'withdraw'>('both')
