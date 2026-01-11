@@ -34,11 +34,14 @@ watch(
 // props.sort 변경을 감지하여 account와 evidence_type을 초기화하는 watch 추가
 watch(
   () => props.sort,
-  () => {
-    props.displayRows.forEach(row => {
-      row.account = null // account 초기화
-      row.evidence_type = '' // evidence_type 초기화
-    })
+  (newValue, oldValue) => {
+    // 실제로 값이 변경되었을 때만 초기화 (초기 로드 시 oldValue는 undefined)
+    if (oldValue !== undefined && newValue !== oldValue) {
+      props.displayRows.forEach(row => {
+        row.account = null // account 초기화
+        row.evidence_type = '' // evidence_type 초기화
+      })
+    }
   },
 )
 
