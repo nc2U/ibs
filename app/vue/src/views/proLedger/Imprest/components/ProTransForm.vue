@@ -42,6 +42,7 @@ const isSaving = ref(false)
 
 const proLedgerStore = useProLedger()
 const contractStore = useContract()
+const transferFeePk = computed(() => proLedgerStore.transferFeePk)
 const transaction = computed(() => proLedgerStore.proBankTrans as ProBankTrans | null)
 
 // 은행 거래 폼 데이터 (생성 모드용)
@@ -349,6 +350,39 @@ const removeEntry = (index: number) => {
     // entry 행수가 2개 이상일 배열에서 제거
     editableEntries.value.splice(index, 1)
   }
+}
+
+const insertTransferFeeEntry = (index: number) => {
+  if (transferFeePk.value === undefined) {
+    alert('이체수수료 계정이 설정되지 않았습니다.')
+    return
+  }
+
+  const currentRow = editableEntries.value[index]
+  const bankTransactionAmount = Number(bankForm.amount) || 0
+
+  // Calculate new amount based on bank transaction amount (minimum 0)
+  const newCurrentAmount = Math.max(0, bankTransactionAmount - 500)
+
+  // Modify current row amount
+  currentRow.amount = newCurrentAmount
+
+  // Create trader name (default to [] if empty)
+  const currentTrader = currentRow.trader?.trim() || '[]'
+
+  // Create new transfer fee entry
+  const newEntry: NewEntryForm = {
+    pk: undefined,
+    account: transferFeePk.value,
+    trader: `${currentTrader}-이체수수료`,
+    amount: 500,
+    contract: null,
+    contractor: null,
+    evidence_type: '',
+  }
+
+  // Insert immediately after current row
+  editableEntries.value.splice(index + 1, 0, newEntry)
 }
 
 // === 신규 모드용 다수 거래건 메서드 ===
@@ -867,6 +901,7 @@ onBeforeRouteLeave((to, from, next) => {
                 :display-rows="displayRows"
                 :trans-amount="bankForm.amount"
                 @remove-entry="removeEntry"
+                @insert-transfer-fee="insertTransferFeeEntry"
               />
             </CTableDataCell>
           </CTableRow>

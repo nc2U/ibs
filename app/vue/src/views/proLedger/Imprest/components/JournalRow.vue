@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, watch } from 'vue'
+import { computed, type ComputedRef, inject, ref, watch } from 'vue'
 import { write_project_cash } from '@/utils/pageAuth.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
@@ -44,12 +44,18 @@ watch(
 
 interface Emits {
   (e: 'removeEntry', index: number): void
+  (e: 'insertTransferFee', index: number): void
 }
 const emit = defineEmits<Emits>()
 
 const getContracts = inject<ComputedRef<{ value: number; label: string }[]>>('getContracts')
 const getContractors = inject<ComputedRef<{ value: number; label: string }[]>>('getAllContractors')
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
+const transferFeePk = inject('transferFeePk')
+
+// Track which row indexes have already inserted transfer fees
+const insertedTransferFees = ref<Set<number>>(new Set())
+
 const sortType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
   if (props.sort === 2) return 'withdraw' // 출금
@@ -89,6 +95,31 @@ watch(
 
 const removeEntry = (index: number) => {
   emit('removeEntry', index)
+}
+
+// Check if transfer fee already inserted for this row
+const hasInsertedFee = (index: number): boolean => {
+  return insertedTransferFees.value.has(index)
+}
+
+const insertTransferFee = (index: number) => {
+  // Check if already inserted for this row
+  if (hasInsertedFee(index)) {
+    return // Silently ignore (icon should be disabled)
+  }
+
+  const currentRow = props.displayRows[index]
+
+  // Validate transferFeePk exists
+  if (transferFeePk === undefined) {
+    alert('이체수수료 계정이 설정되지 않았습니다. 관리자에게 문의하세요.')
+    return
+  }
+
+  // Mark as inserted
+  insertedTransferFees.value.add(index)
+
+  emit('insertTransferFee', index)
 }
 
 // 지출증빙이 필수인지 확인하는 헬퍼 함수
@@ -175,6 +206,16 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
         </CFormSelect>
       </CTableDataCell>
       <CTableDataCell v-if="write_project_cash" class="text-right pr-2">
+        <v-icon
+          v-if="sort === 2 && row.account !== transferFeePk"
+          icon="mdi-playlist-plus"
+          size="small"
+          :color="hasInsertedFee(idx) ? 'grey' : 'indigo-lighten-1'"
+          :class="hasInsertedFee(idx) ? 'cursor-not-allowed' : 'pointer'"
+          :disabled="hasInsertedFee(idx)"
+          v-tooltip="hasInsertedFee(idx) ? '이미 이체수수료가 추가되었습니다' : '이체수수료 추가'"
+          @click="insertTransferFee(idx)"
+        />
         <v-icon icon="mdi-close" size="small" class="ml-2 pointer" @click="removeEntry(idx)" />
       </CTableDataCell>
     </CTableRow>

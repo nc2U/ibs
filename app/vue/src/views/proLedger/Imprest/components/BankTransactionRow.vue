@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, provide, reactive, watch } from 'vue'
+import { computed, type ComputedRef, inject, provide, reactive, watch } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import JournalRow from './JournalRow.vue'
 
@@ -81,6 +81,8 @@ provide(
   computed(() => props.proAccounts),
 )
 
+const transferFeePk = inject<ComputedRef<number | undefined>>('transferFeePk')
+
 // 거래 구분 이름
 const sortName = computed(() => (localBankForm.sort === 1 ? '입금' : '출금'))
 
@@ -120,6 +122,48 @@ const removeEntry = (index: number) => {
     // 2개 이상일 때는 배열에서 제거
     newEntries.splice(index, 1)
   }
+  emit('update:transaction', { bankForm: localBankForm, entries: newEntries })
+}
+
+const insertTransferFeeEntry = (index: number) => {
+  if (!transferFeePk || transferFeePk.value === undefined) {
+    alert('이체수수료 계정이 설정되지 않았습니다.')
+    return
+  }
+
+  const currentRow = props.transaction.entries[index]
+  const bankTransactionAmount = Number(props.transaction.bankForm.amount) || 0
+
+  // Calculate new amount based on bank transaction amount (minimum 0)
+  const newCurrentAmount = Math.max(0, bankTransactionAmount - 500)
+
+  // Create new entries array (immutable pattern)
+  const newEntries = [...props.transaction.entries]
+
+  // Modify current row amount
+  newEntries[index] = {
+    ...newEntries[index],
+    amount: newCurrentAmount,
+  }
+
+  // Create trader name (default to [] if empty)
+  const currentTrader = currentRow.trader?.trim() || '[]'
+
+  // Create new transfer fee entry
+  const newEntry: EntryForm = {
+    pk: undefined,
+    account: transferFeePk.value,
+    trader: `${currentTrader}-이체수수료`,
+    amount: 500,
+    contract: null,
+    contractor: null,
+    evidence_type: '',
+  }
+
+  // Insert immediately after current row
+  newEntries.splice(index + 1, 0, newEntry)
+
+  // Emit to parent
   emit('update:transaction', { bankForm: localBankForm, entries: newEntries })
 }
 
@@ -213,6 +257,7 @@ watch(
         :display-rows="displayRows"
         :trans-amount="localBankForm.amount"
         @remove-entry="removeEntry"
+        @insert-transfer-fee="insertTransferFeeEntry"
       />
     </CTableDataCell>
   </CTableRow>
