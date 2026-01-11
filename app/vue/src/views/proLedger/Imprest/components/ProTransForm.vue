@@ -385,7 +385,7 @@ const insertTransferFeeEntry = (index: number) => {
   const newEntry: NewEntryForm = {
     pk: undefined,
     account: transferFeePk.value,
-    trader: `${currentTrader}-이체수수료`,
+    trader: `[${currentTrader}]-이체수수료`,
     amount: 500,
     contract: null,
     contractor: null,
