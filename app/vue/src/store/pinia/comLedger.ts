@@ -126,6 +126,7 @@ export const useComLedger = defineStore('comLedger', () => {
         req_affiliate: acc.requires_affiliate,
       })),
   )
+  const transferFeePk = computed(() => comAccountList.value.find(acc => acc.is_transfer_fee)?.pk)
 
   const fetchCompanyAccounts = async (payload: ComAccountFilter = {}) => {
     comAccountFilter.value = payload
@@ -375,6 +376,7 @@ export const useComLedger = defineStore('comLedger', () => {
     comAccountList,
     comAccountFilter,
     comAccounts,
+    transferFeePk,
     fetchCompanyAccounts,
 
     affiliateList,

@@ -28,6 +28,7 @@ export interface ProjectAccount {
   computed_direction: 'deposit' | 'withdraw' | 'both'
   computed_direction_display: '입금' | '출금' | '입금/출금'
   is_category_only: boolean
+  is_transfer_fee: boolean
   is_active: boolean
   order: number
   is_payment: boolean

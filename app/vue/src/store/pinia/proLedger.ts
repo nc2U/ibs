@@ -80,6 +80,7 @@ export const useProLedger = defineStore('proLedger', () => {
         is_related_contractor: acc.is_related_contractor,
       })),
   )
+  const transferFeePk = computed(() => proAccountList.value.find(acc => acc.is_transfer_fee)?.pk)
 
   const fetchProjectAccounts = async (payload: ProAccountFilter = {}) => {
     proAccountFilter.value = payload
@@ -312,6 +313,7 @@ export const useProLedger = defineStore('proLedger', () => {
     proAccountList,
     proAccountFilter,
     proAccounts,
+    transferFeePk,
 
     fetchProjectAccounts,
 
