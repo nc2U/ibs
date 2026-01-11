@@ -717,12 +717,17 @@ class ContractCreationService:
     @staticmethod
     def _create_base_contract(data):
         """기본 계약 객체 생성"""
+        # Convert string 'true'/'false' to boolean
+        activation_value = data.get('activation', True)
+        if isinstance(activation_value, str):
+            activation_value = activation_value.lower() == 'true'
+
         return Contract.objects.create(
             project_id=data.get('project'),
             order_group_id=data.get('order_group'),
             unit_type_id=data.get('unit_type'),
             serial_number=data.get('serial_number'),
-            activation=data.get('activation', True)
+            activation=activation_value
         )
 
 
