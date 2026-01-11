@@ -47,6 +47,7 @@ const emit = defineEmits<Emits>()
 
 const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
 const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
+const transferFeePk = inject('transferFeePk')
 const sortType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
   if (props.sort === 2) return 'withdraw' // 출금
@@ -154,6 +155,12 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
         </CFormSelect>
       </CTableDataCell>
       <CTableDataCell v-if="write_company_cash" class="text-right pr-2">
+        <v-icon
+          v-if="sort !== 1 && row.account !== transferFeePk"
+          icon="mdi-check"
+          size="small"
+          class="pointer"
+        />
         <v-icon icon="mdi-close" size="small" class="ml-2 pointer" @click="removeEntry(idx)" />
       </CTableDataCell>
     </CTableRow>

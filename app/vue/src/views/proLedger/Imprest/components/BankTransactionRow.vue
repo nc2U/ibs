@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, provide, reactive, watch } from 'vue'
-import { write_project_cash } from '@/utils/pageAuth.ts'
+import { computed, provide, reactive, watch } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import JournalRow from './JournalRow.vue'
 

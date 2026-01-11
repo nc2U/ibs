@@ -40,6 +40,7 @@ const isCreateMode = computed(() => !transId.value)
 const isSaving = ref(false)
 
 const ledgerStore = useComLedger()
+const transferFeePk = computed(() => ledgerStore.transferFeePk)
 const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
 
 // Excel upload state
@@ -842,7 +843,12 @@ onBeforeRouteLeave((to, from, next) => {
             <!-- 입출금액 -->
             <CTableDataCell class="text-right">
               <div class="d-flex align-items-center justify-content-end">
-                <CFormSelect v-model.number="bankForm.sort" style="width: 70px" required class="mr-2">
+                <CFormSelect
+                  v-model.number="bankForm.sort"
+                  style="width: 70px"
+                  required
+                  class="mr-2"
+                >
                   <option :value="1">입금</option>
                   <option :value="2">출금</option>
                 </CFormSelect>
