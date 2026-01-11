@@ -64,10 +64,10 @@ class CompanyAccountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CompanyAccount
-        fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name',
-                  'depth', 'category', 'category_display', 'direction', 'direction_display',
-                  'computed_direction', 'computed_direction_display', 'is_category_only',
-                  'is_active', 'requires_affiliate', 'order', 'full_path', 'children_count')
+        fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name', 'depth', 'category',
+                  'category_display', 'direction', 'direction_display', 'computed_direction',
+                  'computed_direction_display', 'is_category_only', 'is_transfer_fee', 'is_active',
+                  'requires_affiliate', 'order', 'full_path', 'children_count')
         read_only_fields = ('depth',)
 
     @staticmethod
@@ -98,9 +98,9 @@ class ProjectAccountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectAccount
-        fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name', 'depth', 'category',
-                  'category_display', 'direction', 'direction_display', 'computed_direction',
-                  'computed_direction_display', 'is_category_only', 'is_active', 'order', 'is_payment',
+        fields = ('pk', 'code', 'name', 'description', 'parent', 'parent_name', 'depth', 'category', 'category_display',
+                  'direction', 'direction_display', 'computed_direction', 'computed_direction_display',
+                  'is_category_only', 'is_transfer_fee', 'is_active', 'order', 'is_payment',
                   'requires_contract', 'is_related_contractor', 'full_path', 'children_count')
         read_only_fields = ('depth',)
 
