@@ -2,17 +2,19 @@
 Contract 관련 비즈니스 로직 서비스
 """
 import os
+from datetime import date
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
 from _utils.contract_price import get_contract_price, get_sales_price_by_gt
+from apiV1.serializers.ledger import ProjectCompositeTransactionSerializer
 from contract.models import (Contract, ContractPrice, OrderGroup, ContractFile,
                              Contractor, ContractorAddress, ContractorContact)
 from items.models import KeyUnit, HouseUnit
-from ledger.models import ProjectAccount, ProjectBankAccount, ProjectBankTransaction, ProjectAccountingEntry
-from apiV1.serializers.ledger import ProjectCompositeTransactionSerializer  # Add this line
+from ledger.models import ProjectAccount, ProjectBankAccount
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, ContractPayment
 from project.models import Project
 
@@ -600,11 +602,29 @@ class PaymentProcessingService:
         # 납부 정보
         bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
 
+        # deal_date 유효성 검사 및 조정 (미래 날짜 방지)
+        deal_date_input = data.get('deal_date')
+        if deal_date_input:
+            # 문자열 날짜를 date 객체로 변환
+            if isinstance(deal_date_input, str):
+                deal_date_obj = date.fromisoformat(deal_date_input)
+            else:
+                deal_date_obj = deal_date_input
+
+            # 현재 로컬 날짜와 비교
+            today_local = timezone.localdate()
+            if deal_date_obj > today_local:
+                adjusted_deal_date = today_local.isoformat()  # ISO 8601 형식 문자열로 변환
+            else:
+                adjusted_deal_date = deal_date_input
+        else:
+            adjusted_deal_date = None
+
         # 1. ProjectCompositeTransactionSerializer가 요구하는 validated_data 형식 구성
         composite_data = {
             'project': project.pk,
             'bank_account': bank_account.pk,
-            'deal_date': data.get('deal_date'),
+            'deal_date': adjusted_deal_date,
             'amount': data.get('amount'),
             'sort': 1,  # 입금 (sort_id=1)
             'content': f'{contractor.name}[{data.get("serial_number")}] 대금납부',
