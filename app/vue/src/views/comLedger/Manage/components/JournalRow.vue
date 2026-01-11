@@ -189,13 +189,13 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
       </CTableDataCell>
       <CTableDataCell v-if="write_company_cash" class="text-right pr-2">
         <v-icon
-          v-if="sort === 2 && row.account !== transferFeePk"
+          v-if="sort === 2 && !row.trader?.includes('이체수수료')"
           icon="mdi-playlist-plus"
           size="small"
           :color="hasInsertedFee(idx) ? 'grey' : 'indigo-lighten-1'"
           :class="hasInsertedFee(idx) ? 'cursor-not-allowed' : 'pointer'"
           :disabled="hasInsertedFee(idx)"
-          v-tooltip="hasInsertedFee(idx) ? '이미 이체수수료가 추가되었습니다' : '이체수수료 추가'"
+          v-tooltip="'이체수수료 추가'"
           @click="insertTransferFee(idx)"
         />
         <v-icon
