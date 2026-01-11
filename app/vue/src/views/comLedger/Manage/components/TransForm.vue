@@ -43,6 +43,16 @@ const ledgerStore = useComLedger()
 const transferFeePk = computed(() => ledgerStore.transferFeePk)
 const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
 
+// Watch transaction data to reinitialize form when loaded
+watch(
+  () => transaction.value,
+  val => {
+    if (val && !isCreateMode.value) {
+      initializeEditForm()
+    }
+  },
+)
+
 // Excel upload state
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const uploadDialogVisible = ref(false)

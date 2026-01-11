@@ -45,6 +45,16 @@ const contractStore = useContract()
 const transferFeePk = computed(() => proLedgerStore.transferFeePk)
 const transaction = computed(() => proLedgerStore.proBankTrans as ProBankTrans | null)
 
+// Watch transaction data to reinitialize form when loaded
+watch(
+  () => transaction.value,
+  val => {
+    if (val && !isCreateMode.value) {
+      initializeEditForm()
+    }
+  },
+)
+
 // 은행 거래 폼 데이터 (생성 모드용)
 interface ProBankTransForm {
   deal_date: string
