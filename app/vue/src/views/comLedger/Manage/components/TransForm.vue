@@ -352,6 +352,38 @@ const removeEntry = (index: number) => {
   }
 }
 
+const insertTransferFeeEntry = (index: number) => {
+  if (transferFeePk.value === undefined) {
+    alert('이체수수료 계정이 설정되지 않았습니다.')
+    return
+  }
+
+  const currentRow = editableEntries.value[index]
+  const bankTransactionAmount = Number(bankForm.amount) || 0
+
+  // Calculate new amount based on bank transaction amount (minimum 0)
+  const newCurrentAmount = Math.max(0, bankTransactionAmount - 500)
+
+  // Modify current row amount
+  currentRow.amount = newCurrentAmount
+
+  // Create trader name (default to [] if empty)
+  const currentTrader = currentRow.trader?.trim() || '[]'
+
+  // Create new transfer fee entry
+  const newEntry: NewEntryForm = {
+    pk: undefined,
+    account: transferFeePk.value,
+    trader: `${currentTrader}-이체수수료`,
+    amount: 500,
+    affiliate: null,
+    evidence_type: '',
+  }
+
+  // Insert immediately after current row
+  editableEntries.value.splice(index + 1, 0, newEntry)
+}
+
 // ========== 다중 거래건 관련 메서드 ==========
 // 거래건 추가
 const addBankTransaction = () => {
@@ -873,6 +905,7 @@ onBeforeRouteLeave((to, from, next) => {
                 :display-rows="displayRows"
                 :trans-amount="bankForm.amount"
                 @remove-entry="removeEntry"
+                @insert-transfer-fee="insertTransferFeeEntry"
               />
             </CTableDataCell>
           </CTableRow>
