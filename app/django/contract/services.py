@@ -974,9 +974,16 @@ class ContractorReleaseService:
         for payment in payments:
             entry = payment.accounting_entry
 
+            # 회계 분개에서 계약정보는 삭제하고 계약자 정보는 남겨둠
+            entry.contract = None
+            entry.contractor = contractor
+
             # 회계 분개의 계정을 환불 계정으로 변경
             if ContractorReleaseService._change_to_refund_account(entry):
                 refund_count += 1
+            else:
+                # 계정 변경이 이루어지지 않은 경우에도 entry 객체의 변경사항을 저장
+                entry.save()
 
             # 은행 거래 note에 환불 정보 추가
             if completion_date:
