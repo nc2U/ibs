@@ -432,7 +432,7 @@ const handleTransferWithdraw = (sourceData: BankTransactionData) => {
 
   // 대체(입금) 계정 찾기 (category='transfer' && direction='입금')
   const depositTransferAccount = ledgerStore.comAccounts.find(
-    acc => acc.category === 'transfer' && acc.direction === '입금',
+    acc => acc.is_cate_only === false && acc.category === 'transfer' && acc.direction === '입금',
   )
 
   if (!depositTransferAccount) {
@@ -459,8 +459,6 @@ const handleTransferWithdraw = (sourceData: BankTransactionData) => {
       },
     ],
   })
-
-  alert('대체(출금) 계정이 감지되어 입금 거래가 자동으로 추가되었습니다. 도착 계좌를 선택해주세요.')
 }
 
 // 유효성 검사
