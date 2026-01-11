@@ -142,6 +142,7 @@ const initializeEditForm = () => {
       trader: entry.trader,
       amount: entry.amount,
       contract: entry.contract,
+      contractor: entry.contractor,
       evidence_type: entry.evidence_type,
     }))
   } else {
