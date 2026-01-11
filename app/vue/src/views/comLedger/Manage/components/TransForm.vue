@@ -723,8 +723,8 @@ onBeforeRouteLeave((to, from, next) => {
           차액: {{ sortName }} {{ numFormat(Math.abs(difference), 0, '0') }}
         </span>
         <v-btn
-          color="light"
           size="small"
+          variant="tonal"
           :disabled="isSaving"
           @click="router.push({ name: '본사 거래 내역' })"
         >

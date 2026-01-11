@@ -721,7 +721,7 @@ onBeforeRouteLeave((to, from, next) => {
           차액: {{ sortName }} {{ numFormat(Math.abs(difference), 0, '0') }}
         </span>
         <v-btn
-          color="light"
+          variant="tonal"
           size="small"
           :disabled="isSaving"
           @click="router.push({ name: 'PR 거래 내역' })"
