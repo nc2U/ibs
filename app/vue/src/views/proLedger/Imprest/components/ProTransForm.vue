@@ -362,16 +362,16 @@ const insertTransferFeeEntry = (index: number) => {
   const currentRow = editableEntries.value[index]
   const bankTransactionAmount = Number(bankForm.amount) || 0
 
-  // Calculate new amount based on bank transaction amount (minimum 0)
+  // Calculate a new amount based on bank transaction amount (minimum 0)
   const newCurrentAmount = Math.max(0, bankTransactionAmount - 500)
 
-  // Modify current row amount
+  // Modify the current row amount
   currentRow.amount = newCurrentAmount
 
-  // Create trader name (default to [] if empty)
+  // Create a trader name (default to [] if empty)
   const currentTrader = currentRow.trader?.trim() || '[]'
 
-  // Create new transfer fee entry
+  // Create a new transfer fee entry
   const newEntry: NewEntryForm = {
     pk: undefined,
     account: transferFeePk.value,
@@ -379,10 +379,10 @@ const insertTransferFeeEntry = (index: number) => {
     amount: 500,
     contract: null,
     contractor: null,
-    evidence_type: '',
+    evidence_type: '0',
   }
 
-  // Insert immediately after current row
+  // Insert immediately after the current row
   editableEntries.value.splice(index + 1, 0, newEntry)
 }
 
