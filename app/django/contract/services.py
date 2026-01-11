@@ -272,7 +272,7 @@ class ContractPriceUpdateService:
         price = get_contract_price(contract, house_unit, True)  # is_set=True for consistency
 
         try:
-            # 기존 ContractPrice 조회
+            # 기존 ContractPrice 조회 (contract 기준)
             existing = ContractPrice.objects.get(contract=contract)
 
             # 수정: 가격 정보만 업데이트, order_group은 유지
@@ -288,6 +288,21 @@ class ContractPriceUpdateService:
             return existing, False
 
         except ContractPrice.DoesNotExist:
+            # house_unit으로 기존 ContractPrice가 있는지 확인
+            if house_unit:
+                try:
+                    existing_by_unit = ContractPrice.objects.get(house_unit=house_unit)
+                    # 기존 레코드를 현재 contract로 업데이트
+                    existing_by_unit.contract = contract
+                    existing_by_unit.price = price[0]
+                    existing_by_unit.price_build = price[1]
+                    existing_by_unit.price_land = price[2]
+                    existing_by_unit.price_tax = price[3]
+                    existing_by_unit.save()
+                    return existing_by_unit, False
+                except ContractPrice.DoesNotExist:
+                    pass
+
             # 생성: 새로 생성 (order_group은 save()에서 자동 설정)
             defaults = {
                 'price': price[0],
@@ -558,7 +573,7 @@ class PaymentProcessingService:
             contract: Contract 인스턴스
             data: 납부 정보 딕셔너리
                 - deal_date: 거래일
-                - income: 입금액
+                - amount: 입금액
                 - project: 프로젝트 PK
                 - order_group_sort: 차수 sort (1 또는 2)
                 - installment_order: 납부회차 PK
@@ -589,7 +604,7 @@ class PaymentProcessingService:
             project=project,
             bank_account=bank_account,
             deal_date=data.get('deal_date'),
-            amount=data.get('income'),
+            amount=data.get('amount'),
             sort_id=1,  # 입금
             content=f'{contractor.name}[{data.get("serial_number")}] 대금납부',
             note='',
@@ -602,8 +617,7 @@ class PaymentProcessingService:
             account=account,
             contract=contract,
             contractor=contractor,
-            installment_order=installment_order,
-            amount=data.get('income'),
+            amount=data.get('amount'),
             trader=data.get('trader', ''),
             evidence_type=None,  # 입금은 지출증빙 불필요
         )
@@ -647,14 +661,14 @@ class PaymentProcessingService:
 
                 # 은행 거래 업데이트
                 bank_tx.bank_account = bank_account
-                bank_tx.amount = data.get('income')
+                bank_tx.amount = data.get('amount')
                 bank_tx.deal_date = data.get('deal_date')
                 bank_tx.content = f'{contractor.name}[{data.get("serial_number")}] 대금납부'
                 bank_tx.save()
 
                 # 회계 분개 업데이트 (save()에서 ContractPayment 자동 업데이트)
                 accounting_entry.account = account
-                accounting_entry.amount = data.get('income')
+                accounting_entry.amount = data.get('amount')
                 accounting_entry.trader = data.get('trader', '')
                 accounting_entry.installment_order = installment_order
                 accounting_entry.save()
