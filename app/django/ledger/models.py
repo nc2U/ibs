@@ -153,16 +153,18 @@ class Account(models.Model):
         verbose_name='계정구분',
         help_text='회계 계정의 대분류'
     )
-    # 분류 전용 계정 (거래 사용 불가)
-    is_category_only = models.BooleanField(default=False, verbose_name='분류 전용',
-                                           help_text='체크 시: 이 계정은 분류 목적으로만 사용되며 직접 거래에 사용 불가. '
-                                                     '대분류/중분류 등 상위 계정에 주로 사용')
 
     # 거래 방향
     direction = models.CharField(max_length=10, choices=[('deposit', '입금'), ('withdraw', '출금')],
                                  null=True, blank=True, verbose_name='거래방향',
                                  help_text='이 계정이 사용되는 기본 거래 방향 (분류 전용 계정은 비워둠)')
 
+    # 분류 전용 계정 (거래 사용 불가)
+    is_category_only = models.BooleanField(default=False, verbose_name='분류 전용',
+                                           help_text='체크 시: 이 계정은 분류 목적으로만 사용되며 직접 거래에 사용 불가. '
+                                                     '대분류/중분류 등 상위 계정에 주로 사용')
+    is_transfer_fee = models.BooleanField(default=False, verbose_name='이체수수료 여부',
+                                          help_text='체크 시: 이 계정은 은행 송금 이체수수료 계정임.')
     # 활성화 상태
     is_active = models.BooleanField(default=True, verbose_name='활성 여부', help_text='비활성화 시 신규 거래에 사용 불가')
 

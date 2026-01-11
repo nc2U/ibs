@@ -26,10 +26,10 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     """Account Admin 공통 기능 (CompanyAccount, ProjectAccount에서 상속)"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
-        'depth', 'is_category_only', 'is_active', 'order'
+        'depth', 'is_category_only', 'is_transfer_fee', 'is_active', 'order'
     )
     list_display_links = ('indented_name',)
-    list_editable = ('order', 'is_category_only', 'is_active')
+    list_editable = ('order', 'is_category_only', 'is_transfer_fee', 'is_active')
     list_filter = ('category', 'direction', 'is_category_only', 'is_active')
     search_fields = ('code', 'name', 'description')
     ordering = ('code', 'order')
@@ -40,7 +40,8 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
             'fields': ('code', 'name', 'description', 'parent', 'full_path_display')
         }),
         ('회계 속성', {
-            'fields': ('category', 'direction')
+            'fields': ('category', 'direction', 'is_transfer_fee'),
+            'description': '<strong>이체수수료 여부</strong>: 체크 시 이체수수료 계정'
         }),
         ('사용 제한', {
             'fields': ('is_active', 'is_category_only'),
@@ -181,17 +182,18 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 class CompanyAccountAdmin(BaseAccountAdmin):
     """본사 계정 과목 Admin"""
     list_display = (
-        'code', 'indented_name', 'category_display', 'direction_display',
-        'depth', 'is_category_only', 'is_active', 'requires_affiliate', 'order'
+        'code', 'indented_name', 'category_display', 'direction_display', 'depth',
+        'is_category_only', 'is_transfer_fee', 'is_active', 'requires_affiliate', 'order'
     )
-    list_editable = ('order', 'is_category_only', 'is_active', 'requires_affiliate')
+    list_editable = ('order', 'is_category_only', 'is_transfer_fee', 'is_active', 'requires_affiliate')
 
     fieldsets = (
         ('기본 정보', {
             'fields': ('code', 'name', 'description', 'parent', 'full_path_display')
         }),
         ('회계 속성', {
-            'fields': ('category', 'direction')
+            'fields': ('category', 'direction', 'is_transfer_fee'),
+            'description': '<strong>이체수수료 여부</strong>: 체크 시 이체수수료 계정'
         }),
         ('사용 제한', {
             'fields': ('is_active', 'is_category_only', 'requires_affiliate'),
@@ -211,9 +213,9 @@ class ProjectAccountAdmin(BaseAccountAdmin):
     """프로젝트 계정 과목 Admin"""
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
-        'depth', 'is_category_only', 'is_active', 'is_payment',
+        'depth', 'is_category_only', 'is_transfer_fee', 'is_active', 'is_payment',
         'requires_contract', 'is_related_contractor', 'order')
-    list_editable = ('order', 'is_category_only', 'is_active',
+    list_editable = ('order', 'is_category_only', 'is_transfer_fee', 'is_active',
                      'is_payment', 'requires_contract', 'is_related_contractor')
     list_filter = ('category', 'direction', 'is_category_only',
                    'is_active', 'is_payment', 'requires_contract')
@@ -223,7 +225,8 @@ class ProjectAccountAdmin(BaseAccountAdmin):
             'fields': ('code', 'name', 'description', 'parent', 'full_path_display')
         }),
         ('회계 속성', {
-            'fields': ('category', 'direction')
+            'fields': ('category', 'direction', 'is_transfer_fee'),
+            'description': '<strong>이체수수료 여부</strong>: 체크 시 이체수수료 계정'
         }),
         ('프로젝트 특수 속성', {
             'fields': ('is_payment', 'requires_contract', 'is_related_contractor'),
