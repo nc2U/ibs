@@ -76,11 +76,13 @@ const fetchBankCodeList = () => comLedgerStore.fetchBankCodeList()
 
 const proLedgerStore = useProLedger()
 const proAccounts = computed(() => proLedgerStore.proAccounts)
+const transferFeePk = computed(() => proLedgerStore.transferFeePk)
 const allProBankList = computed(() => proLedgerStore.allProBankList)
 const dataFilter = computed(() => proLedgerStore.proBankTransFilter as Filter)
 const proBankTransCount = computed(() => proLedgerStore.proBankTransCount)
 
 provide('proAccounts', proAccounts)
+provide('transferFeePk', transferFeePk)
 provide('allProBankList', allProBankList)
 provide('proBankTransCount', proBankTransCount)
 provide('getContracts', getContracts)
