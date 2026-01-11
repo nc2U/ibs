@@ -616,7 +616,6 @@ class PaymentProcessingService:
                     'trader': data.get('trader', ''),
                     'evidence_type': None,  # 입금은 지출증빙 불필요
                     'contract': contract.pk,
-                    'contractor': contractor.pk,
                     'installment_order': data.get('installment_order'),
                 }
             ]
