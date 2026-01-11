@@ -3,6 +3,7 @@ import {
   computed,
   inject,
   nextTick,
+  onBeforeMount,
   onMounted,
   onUpdated,
   type PropType,
@@ -487,6 +488,7 @@ defineExpose({ formDataReset })
 // Props 변경 감지를 위한 이전 값 저장
 const prevContractPk = ref<number | null>(null)
 
+onBeforeMount(() => paymentStore.fetchPayOrderList(props.project, '1'))
 onMounted(() => {
   formDataSetup()
   // 초기 contract pk 저장
