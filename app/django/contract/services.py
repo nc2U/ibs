@@ -12,6 +12,7 @@ from contract.models import (Contract, ContractPrice, OrderGroup, ContractFile,
                              Contractor, ContractorAddress, ContractorContact)
 from items.models import KeyUnit, HouseUnit
 from ledger.models import ProjectAccount, ProjectBankAccount, ProjectBankTransaction, ProjectAccountingEntry
+from apiV1.serializers.ledger import ProjectCompositeTransactionSerializer  # Add this line
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, ContractPayment
 from project.models import Project
 
@@ -565,7 +566,7 @@ class PaymentProcessingService:
 
     @staticmethod
     @transaction.atomic
-    def process_initial_payment(contract, data):
+    def process_initial_payment(contract, data, user):
         """
         초기 계약금 납부 처리
 
@@ -580,6 +581,7 @@ class PaymentProcessingService:
                 - bank_account: 은행계좌 PK
                 - trader: 거래처 (선택)
                 - serial_number: 계약번호
+            user: request.user
         """
         if not data.get('deal_date'):
             return
@@ -596,35 +598,38 @@ class PaymentProcessingService:
         account = payment_accounts.get(category=category[index]) or payment_accounts[index]
 
         # 납부 정보
-        installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
         bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
 
-        # 1. 은행 거래 생성 (ProjectCompositeTransactionSerializer 패턴)
-        bank_tx = ProjectBankTransaction.objects.create(
-            project=project,
-            bank_account=bank_account,
-            deal_date=data.get('deal_date'),
-            amount=data.get('amount'),
-            sort_id=1,  # 입금
-            content=f'{contractor.name}[{data.get("serial_number")}] 대금납부',
-            note='',
-        )
+        # 1. ProjectCompositeTransactionSerializer가 요구하는 validated_data 형식 구성
+        composite_data = {
+            'project': project.pk,
+            'bank_account': bank_account.pk,
+            'deal_date': data.get('deal_date'),
+            'amount': data.get('amount'),
+            'sort': 1,  # 입금 (sort_id=1)
+            'content': f'{contractor.name}[{data.get("serial_number")}] 대금납부',
+            'note': '',
+            'accounting_entries': [
+                {
+                    'account': account.pk,
+                    'amount': data.get('amount'),
+                    'trader': data.get('trader', ''),
+                    'evidence_type': None,  # 입금은 지출증빙 불필요
+                    'contract': contract.pk,
+                    'contractor': contractor.pk,
+                    'installment_order': data.get('installment_order'),
+                }
+            ]
+        }
 
-        # 2. 회계 분개 생성 (ContractPayment는 자동으로 생성됨)
-        ProjectAccountingEntry.objects.create(
-            transaction_id=bank_tx.transaction_id,
-            project=project,
-            account=account,
-            contract=contract,
-            contractor=contractor,
-            amount=data.get('amount'),
-            trader=data.get('trader', ''),
-            evidence_type=None,  # 입금은 지출증빙 불필요
-        )
+        # 2. ProjectCompositeTransactionSerializer를 사용하여 거래 생성
+        serializer = ProjectCompositeTransactionSerializer(data=composite_data)
+        serializer.is_valid(raise_exception=True)
+        serializer.create(serializer.validated_data, creator=user)
 
     @staticmethod
     @transaction.atomic
-    def process_payment_update(contract, data):
+    def process_payment_update(contract, data, user):
         """
         기존 납부 정보 수정 또는 새 납부 생성
 
@@ -675,10 +680,10 @@ class PaymentProcessingService:
 
             except ContractPayment.DoesNotExist:
                 # payment_id가 잘못되었거나 삭제된 경우 - 새로 생성
-                PaymentProcessingService.process_initial_payment(contract, data)
+                PaymentProcessingService.process_initial_payment(contract, data, user)
         else:
             # 새 납부 생성
-            PaymentProcessingService.process_initial_payment(contract, data)
+            PaymentProcessingService.process_initial_payment(contract, data, user)
 
 
 # 메인 Contract 관리 서비스
@@ -724,7 +729,7 @@ class ContractCreationService:
         self.file_service.handle_new_file(contractor, data.get('newFile'), user)
 
         # 6. 초기 납부 처리
-        self.payment_service.process_initial_payment(contract, data)
+        self.payment_service.process_initial_payment(contract, data, user)
 
         return contract
 
@@ -812,7 +817,7 @@ class ContractUpdateService:
         self.file_service.handle_file_operations(data, contractor, user)
 
         # 6. 납부 정보 처리
-        self.payment_service.process_payment_update(instance, data)
+        self.payment_service.process_payment_update(instance, data, user)
 
         return instance
 
