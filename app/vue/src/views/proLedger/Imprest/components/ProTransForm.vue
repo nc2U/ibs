@@ -72,6 +72,7 @@ interface NewEntryForm {
   trader?: string
   amount?: number
   contract?: number | null
+  contractor?: number | null
   evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
 }
 
