@@ -429,7 +429,7 @@ const updateBankTransaction = (index: number, data: BankTransactionData) => {
 const handleTransferWithdraw = (sourceData: BankTransactionData) => {
   // 대체(입금) 계정 찾기 (category='transfer' && direction='입금')
   const depositTransferAccount = proLedgerStore.proAccounts.find(
-    acc => acc.category === 'transfer' && acc.direction === '입금',
+    acc => acc.is_cate_only === false && acc.category === 'transfer' && acc.direction === '입금',
   )
 
   if (!depositTransferAccount) {
