@@ -29,7 +29,7 @@ const setContractor = (pk: number, release: number | null) => {
 </script>
 
 <template>
-  <CCallout color="danger" class="pb-0 mb-4">
+  <CCallout color="warning" class="pb-0 mb-4">
     <CRow>
       <CCol>
         <CRow>
