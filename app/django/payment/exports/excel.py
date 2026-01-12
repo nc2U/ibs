@@ -388,7 +388,7 @@ class ExportPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
                                            activation=True,
                                            contractor__status='2',
                                            contractor__contract_date__lte=date) \
-            .order_by('contractor__contract_date', 'created_at')
+            .order_by('contractor__contract_date', 'created')
 
         # ----------------- get_queryset finish ----------------- #
 
@@ -1443,7 +1443,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
                                            activation=True,
                                            contractor__status='2',
                                            contractor__contract_date__lte=date) \
-            .order_by('contractor__contract_date', 'created_at')
+            .order_by('contractor__contract_date', 'created')
 
         # ----------------- get_queryset finish ----------------- #
 
