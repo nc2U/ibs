@@ -9,7 +9,8 @@ from contract.exports import ExportContracts, ExportSuccessions, ExportReleases,
 from docs.exports import ExportSuitCases, ExportSuitCase
 from ledger.exports import export_pro_transaction_xls, export_com_transaction_xls
 from payment.exports import (ExportPayments, ExportPaymentsByCont, ExportPaymentStatus, ExportOverallSummary,
-                             ExportLedgerPaymentStatus, ExportLedgerOverallSummary)
+                             ExportLedgerPayments, ExportLedgerPaymentsByCont, ExportLedgerPaymentStatus,
+                             ExportLedgerOverallSummary)
 from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContracts
 
 app_name = 'excel'
@@ -39,8 +40,8 @@ urlpatterns = [
     path('paid-status/', ExportPaymentStatus.as_view(), name='paid-status'),
     path('overall-sum/', ExportOverallSummary.as_view(), name='overall-summary'),
 
-    path('ledger/payment/', ExportPayments.as_view(), name='ledger-payment'),
-    path('ledger/paid-by-cont/', ExportPaymentsByCont.as_view(), name='ledger-paid-by-cont'),
+    path('ledger/payment/', ExportLedgerPayments.as_view(), name='ledger-payment'),
+    path('ledger/paid-by-cont/', ExportLedgerPaymentsByCont.as_view(), name='ledger-paid-by-cont'),
     path('ledger/paid-status/', ExportLedgerPaymentStatus.as_view(), name='ledger-paid-status'),
     path('ledger/overall-sum/', ExportLedgerOverallSummary.as_view(), name='ledger-overall-summary'),
 
