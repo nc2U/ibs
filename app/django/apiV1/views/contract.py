@@ -62,8 +62,8 @@ class RequiredDocumentViewSet(viewsets.ModelViewSet):
 
 
 class ContractFilter(FilterSet):
-    houseunit__isnull = BooleanFilter(field_name='keyunit__houseunit', lookup_expr='isnull', label='동호미지정 여부')
-    keyunit__houseunit__building_unit = ModelChoiceFilter(queryset=BuildingUnit.objects.all(), label='동(건물)')
+    houseunit__isnull = BooleanFilter(field_name='key_unit__houseunit', lookup_expr='isnull', label='동호미지정 여부')
+    key_unit__houseunit__building_unit = ModelChoiceFilter(queryset=BuildingUnit.objects.all(), label='동(건물)')
     contractor__status = ChoiceFilter(field_name='contractor__status', choices=Contractor.STATUS_CHOICES, label='현재상태')
     contractor__qualification = ChoiceFilter(field_name='contractor__qualification',
                                              choices=Contractor.QUA_CHOICES, label='등록상태')
@@ -73,7 +73,7 @@ class ContractFilter(FilterSet):
     class Meta:
         model = Contract
         fields = ('project', 'activation', 'contractor__status', 'order_group', 'unit_type',
-                  'keyunit__houseunit__building_unit', 'houseunit__isnull', 'is_sup_cont',
+                  'key_unit__houseunit__building_unit', 'houseunit__isnull', 'is_sup_cont',
                   'contractor__qualification', 'from_contract_date', 'to_contract_date')
 
 

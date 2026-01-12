@@ -234,7 +234,7 @@ export const useContract = defineStore('contract', () => {
       limit: filters.limit ?? 10,
       order_group: filters.order_group,
       unit_type: filters.unit_type,
-      keyunit__houseunit__building_unit: filters.building,
+      key_unit__houseunit__building_unit: filters.building,
       houseunit__isnull: filters.null_unit ? true : undefined,
       contractor__qualification: filters.qualification,
       is_sup_cont: filters.is_sup_cont,
