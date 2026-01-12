@@ -13,6 +13,7 @@ from _excel.mixins import ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMix
 from apiV1.views.payment import PaymentStatusByUnitTypeViewSet, OverallSummaryViewSet
 from cash.models import ProjectCashBook
 from contract.models import Contract
+from ledger.models import ProjectBankAccount
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment
 from project.models import ProjectIncBudget
 
@@ -177,7 +178,7 @@ class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
                 contract__isnull=False,
                 contract__activation=True  # 유효 계약만
             )
-            .order_by('deal_date', 'created')
+            .order_by('deal_date', 'created_at')
         )
 
         # Apply filters
@@ -387,7 +388,7 @@ class ExportPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
                                            activation=True,
                                            contractor__status='2',
                                            contractor__contract_date__lte=date) \
-            .order_by('contractor__contract_date', 'created')
+            .order_by('contractor__contract_date', 'created_at')
 
         # ----------------- get_queryset finish ----------------- #
 
@@ -1121,8 +1122,7 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             ['계약자', 'contract__contractor__name', 11],
             ['입금 금액', 'accounting_entry__amount', 12],
             ['납입회차', 'installment_order__pay_name', 13],
-            ['수납계좌', 'bank_account__alias_name', 20],
-            ['입금자', 'trader', 20],
+            ['입금자', 'accounting_entry__trader', 20],
             ['공급계약체결일', 'contract__sup_cont_date', 15],
         ]
 
@@ -1209,7 +1209,6 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
                 'contract__key_unit__houseunit',
                 'contract__contractor',
                 'installment_order',
-                'bank_account',
                 'accounting_entry'
             )
             .filter(
@@ -1219,7 +1218,7 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
                 contract__activation=True,  # 유효 계약만
                 is_payment_mismatch=False  # 유효한 계약자 납부만
             )
-            .order_by('deal_date', 'created')
+            .order_by('deal_date', 'created_at')
         )
 
         # Apply filters
@@ -1229,8 +1228,12 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             obj_list = obj_list.filter(contract__unit_type=ut)
         if ipo:
             obj_list = obj_list.filter(installment_order_id=ipo)
+        # UUID-based bank_account filtering (using accounting_entry__transaction_id)
         if ba:
-            obj_list = obj_list.filter(bank_account__id=ba)
+            bank_account_uuids = ProjectBankAccount.objects.filter(
+                id=ba
+            ).values_list('account_uuid', flat=True)
+            obj_list = obj_list.filter(accounting_entry__transaction_id__in=bank_account_uuids)
         if nc:
             obj_list = obj_list.filter(contract__isnull=True)
         if ni:
@@ -1239,8 +1242,7 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             obj_list = obj_list.filter(
                 Q(contract__contractor__name__icontains=q) |
                 Q(accounting_entry__content__icontains=q) |
-                Q(trader__icontains=q) |
-                Q(note__icontains=q)
+                Q(accounting_entry__trader__icontains=q)
             )
 
         return obj_list.values_list(*params)
@@ -1441,7 +1443,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
                                            activation=True,
                                            contractor__status='2',
                                            contractor__contract_date__lte=date) \
-            .order_by('contractor__contract_date', 'created')
+            .order_by('contractor__contract_date', 'created_at')
 
         # ----------------- get_queryset finish ----------------- #
 
