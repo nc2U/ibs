@@ -687,7 +687,6 @@ onBeforeMount(() => {
                   <col width="25%" />
                   <col width="25%" />
                   <col width="25%" />
-                  <col width="25%" />
                 </colgroup>
                 <CTableHead>
                   <CTableRow class="text-center border-bottom">
@@ -700,28 +699,20 @@ onBeforeMount(() => {
                     <CTableHeaderCell class="py-1">
                       <small class="text-muted">거래처</small>
                     </CTableHeaderCell>
-                    <CTableHeaderCell class="py-1">
-                      <small class="text-muted">납부회차</small>
-                    </CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
-                <CTableBody>
+                <CTableBody class="text-center">
                   <CTableRow v-for="entry in readonlyEntries" :key="entry.pk">
                     <CTableDataCell class="py-2">
                       <small class="text-muted">{{ entry.account_name }}</small>
                     </CTableDataCell>
-                    <CTableDataCell class="py-2 text-end">
-                      <small class="text-muted fw-bold"
-                        >{{ entry.amount?.toLocaleString() }}원</small
-                      >
+                    <CTableDataCell class="py-2">
+                      <small class="text-muted fw-bold">
+                        {{ entry.amount?.toLocaleString() }}원
+                      </small>
                     </CTableDataCell>
                     <CTableDataCell class="py-2">
                       <small class="text-muted">{{ entry.trader }}</small>
-                    </CTableDataCell>
-                    <CTableDataCell class="py-2 text-center">
-                      <small class="text-muted">{{
-                        payOrderList.find(po => po.pk === entry.installment_order)?.__str__ || '-'
-                      }}</small>
                     </CTableDataCell>
                   </CTableRow>
                 </CTableBody>
