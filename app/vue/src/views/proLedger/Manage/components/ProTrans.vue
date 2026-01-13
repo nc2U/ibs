@@ -444,7 +444,13 @@ const handleUpdate = async () => {
           v-if="isEditing('tran', proTrans.pk!, 'sort_amount')"
           class="d-flex align-items-center justify-content-end"
         >
-          <v-btn-toggle v-model="editValue.sort" variant="outlined" density="compact" divided>
+          <v-btn-toggle
+            v-model="editValue.sort"
+            variant="elevated"
+            color="success"
+            density="compact"
+            divided
+          >
             <v-btn :value="1" size="x-small">입금</v-btn>
             <v-btn :value="2" size="x-small">출금</v-btn>
           </v-btn-toggle>
