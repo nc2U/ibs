@@ -54,8 +54,8 @@ interface ReadonlyEntryForm {
   account_name: string
   amount: number
   trader: string
-  contract: number | null
-  installment_order: number | null
+  // contract: number | null
+  // installment_order: number | null
 }
 
 // ============================================
@@ -187,19 +187,8 @@ const initializeEditForm = () => {
 
   // ✅ 형제 분개가 있으면 ContractPayment 연관성으로 분리하여 처리
   if (props.payment.sibling_entries && props.payment.sibling_entries.length > 0) {
-    console.log('🔍 sibling_entries 분석:', props.payment.sibling_entries)
-    console.log('🔍 current payment:', props.payment)
-
     // 편집 가능한 납부 항목들 (ContractPayment에 해당하는 분개)
     const editableEntries = props.payment.sibling_entries.filter((entry: any) => {
-      console.log(`Entry ${entry.pk}:`, {
-        account_name: entry.account?.name,
-        is_payment: entry.account?.is_payment,
-        contract: entry.contract,
-        amount: entry.amount,
-        is_contract_payment: entry.is_contract_payment
-      })
-
       return entry.is_contract_payment === true
     })
 
@@ -207,9 +196,6 @@ const initializeEditForm = () => {
     const readonlyEntriesData = props.payment.sibling_entries.filter((entry: any) => {
       return entry.is_contract_payment !== true
     })
-
-    console.log('✅ editableEntries:', editableEntries)
-    console.log('📖 readonlyEntries:', readonlyEntriesData)
 
     // 편집 가능한 항목들을 paymentEntries에 설정
     if (editableEntries.length > 0) {

@@ -334,14 +334,14 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
         """
         같은 은행 거래에 속한 모든 형제 분개 조회
 
-        PaymentForm 수정 시 모든 분개를 가져와서 ContractPayment 여부로 구분
-        - ContractPayment에 해당하는 항목: 편집 가능한 폼
-        - ContractPayment에 해당하지 않는 항목: 참조용 표시
+        account.is_payment 기준으로 편집 가능/읽기 전용 구분:
+        - account.is_payment = True: 편집 가능 (ContractPayment)
+        - account.is_payment = False: 읽기 전용 (기타 분개)
 
         예시:
         - 은행거래: 24,811,705원
-        - 분개1: 분담금 16,734,356원 → ContractPayment (편집 가능)
-        - 분개2: 영업외수익 8,077,349원 → 기타 분개 (참조용)
+        - 분개1: 분담금 16,734,356원 (account.is_payment=True) → 편집 가능
+        - 분개2: 영업외수익 8,077,349원 (account.is_payment=False) → 참조용
 
         Returns:
             List[dict]: 모든 형제 분개 정보 목록 (is_contract_payment로 구분)
@@ -363,14 +363,18 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
             # 각 분개 정보를 직렬화
             result = []
             for entry in sibling_entries:
-                # ContractPayment 존재 여부 확인
+                # account.is_payment 값으로 편집 가능 여부 결정
+                is_payment_account = getattr(entry.account, 'is_payment', False) if entry.account else False
+
+                # ContractPayment 조회 (편집 가능 항목에만 필요)
                 contract_payment = None
-                try:
-                    contract_payment = ContractPayment.objects.select_related(
-                        'installment_order'
-                    ).get(accounting_entry=entry)
-                except ContractPayment.DoesNotExist:
-                    pass
+                if is_payment_account:
+                    try:
+                        contract_payment = ContractPayment.objects.select_related(
+                            'installment_order'
+                        ).get(accounting_entry=entry)
+                    except ContractPayment.DoesNotExist:
+                        pass
 
                 # 기본 분개 정보
                 entry_data = {
@@ -381,18 +385,28 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
                     'account': {
                         'pk': entry.account.pk if entry.account else None,
                         'name': entry.account.name if entry.account else None,
-                        'is_payment': getattr(entry.account, 'is_payment', False) if entry.account else False
+                        'is_payment': is_payment_account
                     },
-                    'is_contract_payment': contract_payment is not None
+                    # account.is_payment 기준으로 구분
+                    'is_contract_payment': is_payment_account
                 }
 
-                # ContractPayment가 있는 경우 추가 정보
-                if contract_payment:
-                    entry_data.update({
-                        'contract_payment_pk': contract_payment.pk,
-                        'installment_order': contract_payment.installment_order.pk if contract_payment.installment_order else None,
-                        'installment_order_display': str(contract_payment.installment_order) if contract_payment.installment_order else None,
-                    })
+                # 편집 가능 항목 (account.is_payment = True)
+                if is_payment_account:
+                    if contract_payment:
+                        entry_data.update({
+                            'contract_payment_pk': contract_payment.pk,
+                            'installment_order': contract_payment.installment_order.pk if contract_payment.installment_order else None,
+                            'installment_order_display': str(contract_payment.installment_order) if contract_payment.installment_order else None,
+                        })
+                    else:
+                        # ContractPayment가 없는 경우 (데이터 불일치)
+                        entry_data.update({
+                            'contract_payment_pk': None,
+                            'installment_order': None,
+                            'installment_order_display': None,
+                        })
+                # 읽기 전용 항목 (account.is_payment = False)
                 else:
                     entry_data.update({
                         'contract_payment_pk': None,
