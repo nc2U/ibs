@@ -48,6 +48,16 @@ interface PaymentEntryForm {
   installment_order: number | null
 }
 
+interface ReadonlyEntryForm {
+  pk: number
+  account: number
+  account_name: string
+  amount: number
+  trader: string
+  contract: number | null
+  installment_order: number | null
+}
+
 // ============================================
 // Form State - Separated Structure
 // ============================================
@@ -70,6 +80,8 @@ const paymentEntries = ref<PaymentEntryForm[]>([
     installment_order: null,
   },
 ])
+
+const readonlyEntries = ref<ReadonlyEntryForm[]>([])
 
 // ============================================
 // Store & Data
@@ -173,11 +185,61 @@ const initializeEditForm = () => {
     content: generateContent(),
   })
 
-  // ✅ 형제 분개가 있으면 모두 렌더링 (분할 납부 지원)
+  // ✅ 형제 분개가 있으면 ContractPayment 연관성으로 분리하여 처리
   if (props.payment.sibling_entries && props.payment.sibling_entries.length > 0) {
-    paymentEntries.value = props.payment.sibling_entries.map(entry => ({
+    console.log('🔍 sibling_entries 분석:', props.payment.sibling_entries)
+    console.log('🔍 current payment:', props.payment)
+
+    // 편집 가능한 납부 항목들 (ContractPayment에 해당하는 분개)
+    const editableEntries = props.payment.sibling_entries.filter((entry: any) => {
+      console.log(`Entry ${entry.pk}:`, {
+        account_name: entry.account?.name,
+        is_payment: entry.account?.is_payment,
+        contract: entry.contract,
+        amount: entry.amount,
+        is_contract_payment: entry.is_contract_payment
+      })
+
+      return entry.is_contract_payment === true
+    })
+
+    // 읽기 전용 항목들 (기타 분개 - ContractPayment가 아닌 분개)
+    const readonlyEntriesData = props.payment.sibling_entries.filter((entry: any) => {
+      return entry.is_contract_payment !== true
+    })
+
+    console.log('✅ editableEntries:', editableEntries)
+    console.log('📖 readonlyEntries:', readonlyEntriesData)
+
+    // 편집 가능한 항목들을 paymentEntries에 설정
+    if (editableEntries.length > 0) {
+      paymentEntries.value = editableEntries.map((entry: any) => ({
+        pk: entry.pk,
+        account: paymentAccount.value,
+        amount: entry.amount, // 실제 ContractPayment의 amount 사용
+        trader: entry.trader || '',
+        contract: entry.contract || null,
+        installment_order: entry.installment_order || null,
+      }))
+    } else {
+      // 편집 가능한 항목이 없으면 기본 빈 항목 생성
+      paymentEntries.value = [
+        {
+          pk: null,
+          account: paymentAccount.value,
+          amount: null,
+          trader: '',
+          contract: props.contract?.pk || null,
+          installment_order: null,
+        },
+      ]
+    }
+
+    // 읽기 전용 항목들을 readonlyEntries에 설정
+    readonlyEntries.value = readonlyEntriesData.map((entry: any) => ({
       pk: entry.pk,
-      account: paymentAccount.value,
+      account: entry.account?.pk || 0,
+      account_name: entry.account?.name || '',
       amount: entry.amount,
       trader: entry.trader || '',
       contract: entry.contract || null,
@@ -195,6 +257,7 @@ const initializeEditForm = () => {
         installment_order: props.payment.installment_order?.pk || null,
       },
     ]
+    readonlyEntries.value = []
   }
 }
 
@@ -204,9 +267,15 @@ const initializeEditForm = () => {
 const bankAmount = computed(() => bankForm.amount || 0)
 
 const totalEntryAmount = computed(() => {
-  return paymentEntries.value.reduce((sum, entry) => {
+  const editableTotal = paymentEntries.value.reduce((sum, entry) => {
     return sum + (entry.amount || 0)
   }, 0)
+
+  const readonlyTotal = readonlyEntries.value.reduce((sum, entry) => {
+    return sum + (entry.amount || 0)
+  }, 0)
+
+  return editableTotal + readonlyTotal
 })
 
 const difference = computed(() => {
@@ -440,10 +509,13 @@ const onDelete = () => {
 // Watchers - Auto-copy functionality
 // ============================================
 // 1. 은행 거래 금액을 첫 번째 entry.amount에 자동 복사
-// 조건: 두 번째 이상의 항목들이 모두 금액 0일 때만 자동 복사
+// 조건: 신규 등록 모드이고, 두 번째 이상의 항목들이 모두 금액 0일 때만 자동 복사
 watch(
   () => bankForm.amount,
   newAmount => {
+    // 수정 모드에서는 자동 복사하지 않음 (기존 데이터 보존)
+    if (!isCreateMode.value) return
+
     const otherEntriesEmpty = paymentEntries.value
       .slice(1)
       .every(entry => !entry.amount || entry.amount === 0)
@@ -547,6 +619,8 @@ onBeforeMount(() => {
               차수 분할 등록
             </v-btn>
           </h6>
+
+          <!-- 편집 가능한 납부 항목들 -->
           <div class="mb-3 px-3 border rounded">
             <CRow class="mb-0">
               <CTable borderless small>
@@ -609,6 +683,59 @@ onBeforeMount(() => {
                         size="small"
                         @click="removeEntry(idx)"
                       />
+                    </CTableDataCell>
+                  </CTableRow>
+                </CTableBody>
+              </CTable>
+            </CRow>
+          </div>
+
+          <!-- 읽기 전용 분개 항목들 (is_payment: false) -->
+          <div v-if="readonlyEntries.length > 0" class="mb-3 px-3 border rounded bg-light">
+            <CRow class="mb-0">
+              <div class="py-2">
+                <small class="text-muted fw-bold">기타 분개 항목 (참조용)</small>
+              </div>
+              <CTable borderless small>
+                <colgroup>
+                  <col width="25%" />
+                  <col width="25%" />
+                  <col width="25%" />
+                  <col width="25%" />
+                </colgroup>
+                <CTableHead>
+                  <CTableRow class="text-center border-bottom">
+                    <CTableHeaderCell class="py-1">
+                      <small class="text-muted">계정과목</small>
+                    </CTableHeaderCell>
+                    <CTableHeaderCell class="py-1">
+                      <small class="text-muted">금액</small>
+                    </CTableHeaderCell>
+                    <CTableHeaderCell class="py-1">
+                      <small class="text-muted">거래처</small>
+                    </CTableHeaderCell>
+                    <CTableHeaderCell class="py-1">
+                      <small class="text-muted">납부회차</small>
+                    </CTableHeaderCell>
+                  </CTableRow>
+                </CTableHead>
+                <CTableBody>
+                  <CTableRow v-for="entry in readonlyEntries" :key="entry.pk">
+                    <CTableDataCell class="py-2">
+                      <small class="text-muted">{{ entry.account_name }}</small>
+                    </CTableDataCell>
+                    <CTableDataCell class="py-2 text-end">
+                      <small class="text-muted fw-bold"
+                        >{{ entry.amount?.toLocaleString() }}원</small
+                      >
+                    </CTableDataCell>
+                    <CTableDataCell class="py-2">
+                      <small class="text-muted">{{ entry.trader }}</small>
+                    </CTableDataCell>
+                    <CTableDataCell class="py-2 text-center">
+                      <small class="text-muted">{{
+                        payOrderList.find(po => po.pk === entry.installment_order)?.__str__ || '-'
+                      }}</small>
                     </CTableDataCell>
                   </CTableRow>
                 </CTableBody>

@@ -334,32 +334,27 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
         """
         같은 은행 거래에 속한 모든 형제 분개 조회
 
-        PaymentForm 수정 시 분할 납부된 모든 회차를 렌더링하기 위해 필요
+        PaymentForm 수정 시 모든 분개를 가져와서 ContractPayment 여부로 구분
+        - ContractPayment에 해당하는 항목: 편집 가능한 폼
+        - ContractPayment에 해당하지 않는 항목: 참조용 표시
 
         예시:
-        - 은행거래: 1000원
-        - 분개1: 1차 계약금 500원 → ContractPayment #1
-        - 분개2: 2차 계약금 500원 → ContractPayment #2
-
-        ContractPayment #1 조회 시:
-        - amount: 500원 (분개 금액)
-        - bank_transaction_amount: 1000원 (실제 은행 거래 금액)
-        - sibling_entries: [분개1, 분개2] (모든 형제 분개)
+        - 은행거래: 24,811,705원
+        - 분개1: 분담금 16,734,356원 → ContractPayment (편집 가능)
+        - 분개2: 영업외수익 8,077,349원 → 기타 분개 (참조용)
 
         Returns:
-            List[dict]: 형제 분개 정보 목록
+            List[dict]: 모든 형제 분개 정보 목록 (is_contract_payment로 구분)
         """
         try:
             # 현재 분개의 transaction_id 가져오기
             transaction_id = obj.accounting_entry.transaction_id
 
-            # 같은 transaction_id를 가진 모든 분개 중 계약 결제 분개만 조회
-            from ledger.models import ProjectAccountingEntry
-
+            # 같은 transaction_id를 가진 모든 분개 조회
             sibling_entries = ProjectAccountingEntry.objects.filter(
-                transaction_id=transaction_id,
-                contract__isnull=False  # 계약 결제 분개만
+                transaction_id=transaction_id
             ).select_related(
+                'account',
                 'contract',
                 'contract__order_group',
                 'contract__unit_type'
@@ -368,24 +363,44 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
             # 각 분개 정보를 직렬화
             result = []
             for entry in sibling_entries:
-                # 해당 분개에 연결된 ContractPayment 찾기
+                # ContractPayment 존재 여부 확인
+                contract_payment = None
                 try:
                     contract_payment = ContractPayment.objects.select_related(
                         'installment_order'
                     ).get(accounting_entry=entry)
+                except ContractPayment.DoesNotExist:
+                    pass
 
-                    result.append({
-                        'pk': entry.pk,  # AccountingEntry PK
+                # 기본 분개 정보
+                entry_data = {
+                    'pk': entry.pk,  # AccountingEntry PK
+                    'amount': entry.amount,
+                    'trader': entry.trader,
+                    'contract': entry.contract.pk if entry.contract else None,
+                    'account': {
+                        'pk': entry.account.pk if entry.account else None,
+                        'name': entry.account.name if entry.account else None,
+                        'is_payment': getattr(entry.account, 'is_payment', False) if entry.account else False
+                    },
+                    'is_contract_payment': contract_payment is not None
+                }
+
+                # ContractPayment가 있는 경우 추가 정보
+                if contract_payment:
+                    entry_data.update({
                         'contract_payment_pk': contract_payment.pk,
-                        'amount': entry.amount,
-                        'trader': entry.trader,
-                        'contract': entry.contract.pk if entry.contract else None,
                         'installment_order': contract_payment.installment_order.pk if contract_payment.installment_order else None,
                         'installment_order_display': str(contract_payment.installment_order) if contract_payment.installment_order else None,
                     })
-                except ContractPayment.DoesNotExist:
-                    # ContractPayment가 없는 분개는 무시
-                    continue
+                else:
+                    entry_data.update({
+                        'contract_payment_pk': None,
+                        'installment_order': None,
+                        'installment_order_display': None,
+                    })
+
+                result.append(entry_data)
 
             return result
 
