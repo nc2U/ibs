@@ -398,6 +398,17 @@ const buildUpdatePayload = (): ContractPaymentPayload => {
     throw new Error('최소 하나 이상의 납부 항목이 필요합니다.')
   }
 
+  // readonly 항목도 포함 (PUT 요청 시 전체 데이터 전송)
+  const readonlyEntriesData = readonlyEntries.value.map(entry => ({
+    pk: entry.pk,
+    account: entry.account,
+    amount: entry.amount,
+    trader: entry.trader || '',
+  }))
+
+  // 전체 분개 항목: 편집 가능 항목 + 읽기 전용 항목
+  const allEntries = [...validEntries, ...readonlyEntriesData]
+
   return {
     project: null, // Parent에서 설정
     bank_account: bankForm.bank_account!,
@@ -406,7 +417,7 @@ const buildUpdatePayload = (): ContractPaymentPayload => {
     sort: 1,
     content: bankForm.content,
     note: bankForm.note,
-    accounting_entries: validEntries,
+    accounting_entries: allEntries,
   }
 }
 

@@ -576,10 +576,10 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
 
         # 최종 분개 금액 목록을 계산
         final_entry_amounts = {}
-        if is_update and self.partial:
-            # PATCH 요청(부분 업데이트)일 때만 기존 분개 목록을 포함
-            # PUT 요청(전체 교체)일 때는 incoming_entries만으로 합계 계산
-            for entry in instance.accounting_entries.all():
+        if is_update:
+            # 수정 모드: 같은 transaction_id를 가진 모든 기존 분개 포함
+            # account.is_payment=False인 분개(읽기 전용)도 합계에 포함해야 함
+            for entry in ProjectAccountingEntry.objects.filter(transaction_id=instance.transaction_id):
                 final_entry_amounts[entry.pk] = entry.amount
 
         # 들어온 데이터로 final_entry_amounts를 업데이트
