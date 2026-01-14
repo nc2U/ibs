@@ -2751,6 +2751,26 @@
     "pk": 21,
     "fields": {
       "code": "3030",
+      "name": "분(부)담금(과오납 환불건)",
+      "description": "출자금 과오납 환불 건",
+      "parent": 1,
+      "depth": 2,
+      "category": "equity",
+      "direction": "deposit",
+      "is_category_only": false,
+      "is_transfer_fee": false,
+      "is_active": true,
+      "order": 0,
+      "is_payment": false,
+      "requires_contract": false,
+      "is_related_contractor": true
+    }
+  },
+  {
+    "model": "ledger.projectaccount",
+    "pk": 22,
+    "fields": {
+      "code": "3040",
       "name": "[환불]→분(부)담금(해지)",
       "description": "계약 해지 등으로 인한 환불",
       "parent": 1,
@@ -2768,9 +2788,9 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 22,
+    "pk": 23,
     "fields": {
-      "code": "3040",
+      "code": "3050",
       "name": "[환불]→분(부)담금(과오납)",
       "description": "단순 과오납에 의한 환불",
       "parent": 1,
@@ -2788,7 +2808,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 23,
+    "pk": 24,
     "fields": {
       "code": "4010",
       "name": "분양매출금",
@@ -2808,7 +2828,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 24,
+    "pk": 25,
     "fields": {
       "code": "4020",
       "name": "분양매출금(해지자 납부건)",
@@ -2828,9 +2848,29 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 25,
+    "pk": 26,
     "fields": {
       "code": "4030",
+      "name": "분양매출금(과오납 환불건)",
+      "description": "매출금 과오납 환불 건",
+      "parent": 2,
+      "depth": 2,
+      "category": "revenue",
+      "direction": "deposit",
+      "is_category_only": false,
+      "is_transfer_fee": false,
+      "is_active": true,
+      "order": 0,
+      "is_payment": false,
+      "requires_contract": false,
+      "is_related_contractor": true
+    }
+  },
+  {
+    "model": "ledger.projectaccount",
+    "pk": 27,
+    "fields": {
+      "code": "4040",
       "name": "[환불]→분양매출금(해지)",
       "description": "계약 해지 등으로 인한 환불",
       "parent": 2,
@@ -2848,9 +2888,9 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 26,
+    "pk": 28,
     "fields": {
-      "code": "4040",
+      "code": "4050",
       "name": "[환불]→분양매출금(과오납)",
       "description": "단순 과오납에 의한 환불",
       "parent": 2,
@@ -2868,7 +2908,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 27,
+    "pk": 29,
     "fields": {
       "code": "4110",
       "name": "영업외 수익(출자금 - 위약금수입)",
@@ -2888,7 +2928,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 28,
+    "pk": 30,
     "fields": {
       "code": "4120",
       "name": "영업외 수익(출자금 - 가산금수입)",
@@ -2908,7 +2948,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 29,
+    "pk": 31,
     "fields": {
       "code": "4130",
       "name": "영업외 수익(매출금 - 위약금수입)",
@@ -2928,7 +2968,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 30,
+    "pk": 32,
     "fields": {
       "code": "4140",
       "name": "영업외 수익(매출금 - 가산금수입)",
@@ -2948,7 +2988,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 31,
+    "pk": 33,
     "fields": {
       "code": "4150",
       "name": "영업외 수익(이자수입)",
@@ -2968,7 +3008,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 32,
+    "pk": 34,
     "fields": {
       "code": "4160",
       "name": "영업외 수익(기타잡수입)",
@@ -2988,7 +3028,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 33,
+    "pk": 35,
     "fields": {
       "code": "4170",
       "name": "당기 비용 환급 (차감)",
@@ -3008,7 +3048,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 34,
+    "pk": 36,
     "fields": {
       "code": "2010",
       "name": "차입금(브리지)",
@@ -3028,7 +3068,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 35,
+    "pk": 37,
     "fields": {
       "code": "2020",
       "name": "차입금(PF대출)",
@@ -3048,7 +3088,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 36,
+    "pk": 38,
     "fields": {
       "code": "2030",
       "name": "차입금(기타)",
@@ -3068,7 +3108,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 37,
+    "pk": 39,
     "fields": {
       "code": "2040",
       "name": "[상환]→차입금(브리지)",
@@ -3088,7 +3128,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 38,
+    "pk": 40,
     "fields": {
       "code": "2050",
       "name": "[상환]→차입금(PF대출)",
@@ -3108,7 +3148,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 39,
+    "pk": 41,
     "fields": {
       "code": "2060",
       "name": "[상환]→차입금(기타)",
@@ -3128,7 +3168,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 40,
+    "pk": 42,
     "fields": {
       "code": "2110",
       "name": "기타부채(보증금 등)",
@@ -3148,7 +3188,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 41,
+    "pk": 43,
     "fields": {
       "code": "2120",
       "name": "[반환]→기타부채(보증금 등)",
@@ -3168,7 +3208,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 42,
+    "pk": 44,
     "fields": {
       "code": "1010",
       "name": "대여금",
@@ -3188,7 +3228,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 43,
+    "pk": 45,
     "fields": {
       "code": "1020",
       "name": "[회수]→대여금",
@@ -3208,7 +3248,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 44,
+    "pk": 46,
     "fields": {
       "code": "1110",
       "name": "기타자산(법원공탁금)",
@@ -3228,7 +3268,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 45,
+    "pk": 47,
     "fields": {
       "code": "1120",
       "name": "기타자산(보증금·예치금)",
@@ -3248,7 +3288,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 46,
+    "pk": 48,
     "fields": {
       "code": "1130",
       "name": "기타자산(중도금이자대납)",
@@ -3268,7 +3308,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 47,
+    "pk": 49,
     "fields": {
       "code": "1140",
       "name": "[회수]→기타자산(법원공탁금)",
@@ -3288,7 +3328,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 48,
+    "pk": 50,
     "fields": {
       "code": "1150",
       "name": "[회수]→기타자산(보증금·예치금)",
@@ -3308,7 +3348,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 49,
+    "pk": 51,
     "fields": {
       "code": "1160",
       "name": "[회수]→기타자산(중도금이자대납)",
@@ -3328,7 +3368,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 50,
+    "pk": 52,
     "fields": {
       "code": "5010",
       "name": "토지 매입비",
@@ -3348,7 +3388,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 51,
+    "pk": 53,
     "fields": {
       "code": "5020",
       "name": "이전 등기비",
@@ -3368,7 +3408,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 52,
+    "pk": 54,
     "fields": {
       "code": "5030",
       "name": "기타 토지비용",
@@ -3388,7 +3428,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 53,
+    "pk": 55,
     "fields": {
       "code": "5040",
       "name": "보유세",
@@ -3408,7 +3448,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 54,
+    "pk": 56,
     "fields": {
       "code": "5110",
       "name": "도급 공사비",
@@ -3428,7 +3468,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 55,
+    "pk": 57,
     "fields": {
       "code": "5120",
       "name": "소방 공사비",
@@ -3448,7 +3488,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 56,
+    "pk": 58,
     "fields": {
       "code": "5130",
       "name": "외부 공사비",
@@ -3468,7 +3508,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 57,
+    "pk": 59,
     "fields": {
       "code": "5140",
       "name": "철거 공사비",
@@ -3488,7 +3528,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 58,
+    "pk": 60,
     "fields": {
       "code": "5210",
       "name": "인입 공사비",
@@ -3508,7 +3548,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 59,
+    "pk": 61,
     "fields": {
       "code": "5220",
       "name": "설계 용역비",
@@ -3528,7 +3568,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 60,
+    "pk": 62,
     "fields": {
       "code": "5230",
       "name": "감리 용역비",
@@ -3548,7 +3588,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 61,
+    "pk": 63,
     "fields": {
       "code": "5240",
       "name": "기타 용역비",
@@ -3568,7 +3608,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 62,
+    "pk": 64,
     "fields": {
       "code": "5310",
       "name": "광고 홍보비",
@@ -3588,7 +3628,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 63,
+    "pk": 65,
     "fields": {
       "code": "5320",
       "name": "분양 수수료",
@@ -3608,7 +3648,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 64,
+    "pk": 66,
     "fields": {
       "code": "5330",
       "name": "상가분양 수수료",
@@ -3628,7 +3668,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 65,
+    "pk": 67,
     "fields": {
       "code": "5340",
       "name": "분양 예비비",
@@ -3648,7 +3688,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 66,
+    "pk": 68,
     "fields": {
       "code": "5350",
       "name": "분양보증 수수료",
@@ -3668,7 +3708,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 67,
+    "pk": 69,
     "fields": {
       "code": "5410",
       "name": "M/H 건립운영비",
@@ -3688,7 +3728,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 68,
+    "pk": 70,
     "fields": {
       "code": "5420",
       "name": "M/H 부지임차료",
@@ -3708,7 +3748,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 69,
+    "pk": 71,
     "fields": {
       "code": "5510",
       "name": "상하수도 부담금",
@@ -3728,7 +3768,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 70,
+    "pk": 72,
     "fields": {
       "code": "5520",
       "name": "보존 등기비",
@@ -3748,7 +3788,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 71,
+    "pk": 73,
     "fields": {
       "code": "5530",
       "name": "광역교통 부담금",
@@ -3768,7 +3808,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 72,
+    "pk": 74,
     "fields": {
       "code": "5540",
       "name": "미술 장식품비",
@@ -3788,7 +3828,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 73,
+    "pk": 75,
     "fields": {
       "code": "5550",
       "name": "학교용지 부담금",
@@ -3808,7 +3848,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 74,
+    "pk": 76,
     "fields": {
       "code": "5560",
       "name": "과밀 부담금",
@@ -3828,7 +3868,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 75,
+    "pk": 77,
     "fields": {
       "code": "5570",
       "name": "기반시설 설치비용",
@@ -3848,7 +3888,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 76,
+    "pk": 78,
     "fields": {
       "code": "5580",
       "name": "전용 부담금",
@@ -3868,7 +3908,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 77,
+    "pk": 79,
     "fields": {
       "code": "5590",
       "name": "기타 부담금",
@@ -3888,7 +3928,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 78,
+    "pk": 80,
     "fields": {
       "code": "5600",
       "name": "부가가치세",
@@ -3908,7 +3948,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 79,
+    "pk": 81,
     "fields": {
       "code": "5710",
       "name": "시행사 운영비",
@@ -3928,7 +3968,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 80,
+    "pk": 82,
     "fields": {
       "code": "5720",
       "name": "신탁비",
@@ -3948,7 +3988,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 81,
+    "pk": 83,
     "fields": {
       "code": "5730",
       "name": "운영관련 용역비",
@@ -3968,7 +4008,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 82,
+    "pk": 84,
     "fields": {
       "code": "5740",
       "name": "예비비",
@@ -3988,7 +4028,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 83,
+    "pk": 85,
     "fields": {
       "code": "5741",
       "name": "소송비용(변호사 선임료 등)",
@@ -4008,7 +4048,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 84,
+    "pk": 86,
     "fields": {
       "code": "5750",
       "name": "업무대행비",
@@ -4028,7 +4068,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 85,
+    "pk": 87,
     "fields": {
       "code": "5810",
       "name": "B/L 수수료, 이자",
@@ -4048,7 +4088,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 86,
+    "pk": 88,
     "fields": {
       "code": "5820",
       "name": "P/F 수수료, 이자",
@@ -4068,7 +4108,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 87,
+    "pk": 89,
     "fields": {
       "code": "5830",
       "name": "중도금 이자(무이자시)",
@@ -4088,7 +4128,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 88,
+    "pk": 90,
     "fields": {
       "code": "5840",
       "name": "기타 금융비용",
@@ -4108,7 +4148,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 89,
+    "pk": 91,
     "fields": {
       "code": "5910",
       "name": "영업외 비용(원천세)",
@@ -4128,7 +4168,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 90,
+    "pk": 92,
     "fields": {
       "code": "5920",
       "name": "영업외 비용(기타잡손실)",
@@ -4148,7 +4188,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 91,
+    "pk": 93,
     "fields": {
       "code": "5930",
       "name": "영업외 비용(위약금/가산금)",
@@ -4168,7 +4208,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 92,
+    "pk": 94,
     "fields": {
       "code": "6010",
       "name": "대체(출금)",
@@ -4188,7 +4228,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 93,
+    "pk": 95,
     "fields": {
       "code": "6020",
       "name": "대체(입금)",
@@ -4208,7 +4248,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 94,
+    "pk": 96,
     "fields": {
       "code": "7010",
       "name": "거래취소(출금)",
@@ -4228,7 +4268,7 @@
   },
   {
     "model": "ledger.projectaccount",
-    "pk": 95,
+    "pk": 97,
     "fields": {
       "code": "7020",
       "name": "거래취소(입금)",
