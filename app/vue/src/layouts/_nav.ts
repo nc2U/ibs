@@ -87,8 +87,8 @@ const company_docs = {
       name: '본사 공문 발송',
       to: '/docs/official/letters',
       badge: {
-        color: 'danger',
-        text: 'u.c',
+        color: 'warning',
+        text: 'ing..',
       },
     },
   ],

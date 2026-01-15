@@ -12,6 +12,8 @@ import type {
   SimpleSuitCase,
   SuitCase,
   TrashDocs as TP,
+  OfficialLetter,
+  PatchLetter,
 } from '@/store/types/docs'
 import type { CodeValue } from '@/store/types/work_issue.ts'
 
@@ -39,6 +41,17 @@ export type DocsFilter = {
   is_notice?: boolean | ''
   category?: number | ''
   lawsuit?: number | ''
+  creator?: number | ''
+  ordering?: string
+  search?: string
+  page?: number
+  limit?: number | ''
+}
+
+export type LetterFilter = {
+  company?: number | ''
+  issue_date_from?: string
+  issue_date_to?: string
   creator?: number | ''
   ordering?: string
   search?: string
@@ -429,6 +442,104 @@ export const useDocs = defineStore('docs', () => {
       .then(() => fetchDocs(docs))
       .catch(err => errorHandle(err.response.data))
 
+  // Official Letter (공문)
+  const letter = ref<OfficialLetter | null>(null)
+  const letterList = ref<OfficialLetter[]>([])
+  const letterCount = ref(0)
+
+  const getLetterNav = computed(() =>
+    letterList.value.map(l => ({
+      pk: l.pk,
+      prev_pk: l.prev_pk,
+      next_pk: l.next_pk,
+    })),
+  )
+
+  const letterPages = (itemsPerPage: number) => Math.ceil(letterCount.value / itemsPerPage)
+
+  const fetchLetter = async (pk: number) =>
+    api
+      .get(`/official-letter/${pk}/`)
+      .then(res => (letter.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const removeLetter = () => (letter.value = null)
+
+  const fetchLetterList = async (payload: LetterFilter) => {
+    const limit = payload.limit || 10
+    const page = payload.page || 1
+    let url = `/official-letter/?limit=${limit}&page=${page}`
+
+    const { company, issue_date_from, issue_date_to, creator } = payload
+    if (company) url += `&company=${company}`
+    if (issue_date_from) url += `&issue_date_from=${issue_date_from}`
+    if (issue_date_to) url += `&issue_date_to=${issue_date_to}`
+    if (creator) url += `&creator=${creator}`
+    if (payload.ordering) url += `&ordering=${payload.ordering}`
+    if (payload.search) url += `&search=${payload.search}`
+
+    return await api
+      .get(url)
+      .then(res => {
+        letterList.value = res.data.results
+        letterCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const removeLetterList = () => (letterList.value = [])
+
+  const createLetter = (payload: OfficialLetter) =>
+    api
+      .post('/official-letter/', payload)
+      .then(async res => {
+        await fetchLetterList({ company: res.data.company, page: 1 })
+        message()
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateLetter = (pk: number, payload: OfficialLetter) =>
+    api
+      .put(`/official-letter/${pk}/`, payload)
+      .then(async res => {
+        await fetchLetterList({ company: res.data.company, page: 1 })
+        await fetchLetter(res.data.pk)
+        message()
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchLetter = async (pk: number, payload: PatchLetter) =>
+    api
+      .patch(`/official-letter/${pk}/`, payload)
+      .then(res => fetchLetter(res.data.pk))
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteLetter = (pk: number, filter: LetterFilter) =>
+    api
+      .delete(`/official-letter/${pk}/`)
+      .then(() =>
+        fetchLetterList(filter).then(() => message('warning', '', '해당 공문이 삭제되었습니다.')),
+      )
+      .catch(err => errorHandle(err.response.data))
+
+  const generatePdf = async (pk: number) =>
+    api
+      .post(`/official-letter/${pk}/generate_pdf/`)
+      .then(res => {
+        fetchLetter(pk)
+        message('success', '', 'PDF가 생성되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const getNextDocumentNumber = async (company: number) =>
+    api
+      .get(`/official-letter/next_document_number/?company=${company}`)
+      .then(res => res.data.next_document_number)
+      .catch(err => errorHandle(err.response.data))
+
   return {
     docType,
     docTypeList,
@@ -502,5 +613,23 @@ export const useDocs = defineStore('docs', () => {
     createFile,
     patchFile,
     deleteFile,
+
+    // Official Letter (공문)
+    letter,
+    letterList,
+    letterCount,
+    getLetterNav,
+
+    letterPages,
+    fetchLetter,
+    removeLetter,
+    fetchLetterList,
+    removeLetterList,
+    createLetter,
+    updateLetter,
+    patchLetter,
+    deleteLetter,
+    generatePdf,
+    getNextDocumentNumber,
   }
 })

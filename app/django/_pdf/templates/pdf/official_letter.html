@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm 2cm 2cm 2cm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nanum Gothic', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            font-size: 11pt;
+            line-height: 1.8;
+            color: #000;
+        }
+
+        .letterhead {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #333;
+        }
+
+        .company-logo {
+            max-height: 60px;
+            max-width: 200px;
+            margin-bottom: 10px;
+        }
+
+        .company-name {
+            font-size: 20pt;
+            font-weight: bold;
+            margin: 10px 0;
+            letter-spacing: 2px;
+        }
+
+        .company-info {
+            font-size: 9pt;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 25px;
+        }
+
+        .document-number-box {
+            text-align: right;
+            font-size: 10pt;
+        }
+
+        .document-number {
+            font-weight: bold;
+        }
+
+        .recipient-section {
+            margin-bottom: 30px;
+        }
+
+        .recipient-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .recipient-table td {
+            padding: 8px 10px;
+            vertical-align: top;
+        }
+
+        .recipient-table .label {
+            width: 80px;
+            font-weight: bold;
+            text-align: center;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+        }
+
+        .recipient-table .value {
+            border: 1px solid #ddd;
+        }
+
+        .title-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .title-section h1 {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 0;
+            padding: 15px 20px;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+            display: inline-block;
+            min-width: 300px;
+        }
+
+        .content-section {
+            min-height: 300px;
+            padding: 30px 10px;
+            text-align: justify;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .content-section p {
+            margin-bottom: 1em;
+            text-indent: 1em;
+        }
+
+        .signature-section {
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        .signature-date {
+            font-size: 12pt;
+            margin-bottom: 40px;
+        }
+
+        .sender-info {
+            font-size: 12pt;
+            line-height: 2;
+        }
+
+        .sender-company {
+            font-size: 16pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .sender-position {
+            font-size: 11pt;
+        }
+
+        .sender-name-line {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .stamp-placeholder {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 1px dashed #999;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-left: 10px;
+            line-height: 40px;
+            font-size: 9pt;
+            color: #999;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 9pt;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+    <title>{{ letter.document_number }} - {{ letter.title }}</title>
+</head>
+<body>
+    <!-- Letterhead -->
+    <div class="letterhead">
+        {% if logo_url %}
+        <img src="{{ logo_url }}" alt="Company Logo" class="company-logo">
+        {% endif %}
+        <div class="company-name">{{ company.name }}</div>
+        <div class="company-info">
+            {% if company.ceo %}대표이사 {{ company.ceo }}{% endif %}
+            {% if company.tax_number %} | 사업자등록번호 {{ company.tax_number }}{% endif %}
+            <br>
+            {% if company.address1 %}{{ company.address1 }}{% endif %}
+            {% if company.address2 %} {{ company.address2 }}{% endif %}
+            {% if company.address3 %} ({{ company.address3 }}){% endif %}
+            {% if company.zipcode %} [{{ company.zipcode }}]{% endif %}
+        </div>
+    </div>
+
+    <!-- Document Number and Date -->
+    <div class="document-header">
+        <div class="document-number-box">
+            <span class="document-number">문서번호: {{ letter.document_number }}</span><br>
+            <span>{{ letter.issue_date|date:"Y년 m월 d일" }}</span>
+        </div>
+    </div>
+
+    <!-- Recipient Information -->
+    <div class="recipient-section">
+        <table class="recipient-table">
+            <tr>
+                <td class="label">수 신</td>
+                <td class="value">{{ letter.recipient_name }}</td>
+            </tr>
+            {% if letter.recipient_reference %}
+            <tr>
+                <td class="label">참 조</td>
+                <td class="value">{{ letter.recipient_reference }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="label">제 목</td>
+                <td class="value"><strong>{{ letter.title }}</strong></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Content -->
+    <div class="content-section">
+        {{ letter.content|linebreaks }}
+    </div>
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+        <div class="signature-date">{{ letter.issue_date|date:"Y년 m월 d일" }}</div>
+        <div class="sender-info">
+            <div class="sender-company">{{ company.name }}</div>
+            {% if letter.sender_department %}
+            <div class="sender-position">{{ letter.sender_department }}</div>
+            {% endif %}
+            {% if letter.sender_position %}
+            <div class="sender-position">{{ letter.sender_position }}</div>
+            {% endif %}
+            <div class="sender-name-line">
+                {{ letter.sender_name }}
+                <span class="stamp-placeholder">(인)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer with Recipient Address if provided -->
+    {% if letter.recipient_address or letter.recipient_contact %}
+    <div class="footer">
+        {% if letter.recipient_address %}수신처 주소: {{ letter.recipient_address }}{% endif %}
+        {% if letter.recipient_address and letter.recipient_contact %} | {% endif %}
+        {% if letter.recipient_contact %}연락처: {{ letter.recipient_contact }}{% endif %}
+    </div>
+    {% endif %}
+</body>
+</html>

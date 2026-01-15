@@ -185,3 +185,42 @@ export interface TrashDocs {
   created: string
   deleted: string
 }
+
+// Official Letter (공문) Types
+export interface OfficialLetter {
+  pk?: number
+  company: number | null
+  company_name?: string
+  document_number?: string
+  title: string
+  recipient_name: string
+  recipient_address?: string
+  recipient_contact?: string
+  recipient_reference?: string
+  sender_name: string
+  sender_position?: string
+  sender_department?: string
+  content: string
+  issue_date: string
+  pdf_file?: string | null
+  creator?: SimpleUser
+  updator?: SimpleUser
+  created?: string
+  updated?: string
+  prev_pk?: number | null
+  next_pk?: number | null
+}
+
+export interface PatchLetter {
+  pk: number
+  title?: string
+  recipient_name?: string
+  recipient_address?: string
+  recipient_contact?: string
+  recipient_reference?: string
+  sender_name?: string
+  sender_position?: string
+  sender_department?: string
+  content?: string
+  issue_date?: string
+}

@@ -1,6 +1,9 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
-from .models import DocType, Category, LawsuitCase, Document, Link, File, Image
+from .models import (
+    DocType, Category, LawsuitCase, Document, Link, File, Image,
+    LetterSequence, OfficialLetter
+)
 
 
 @admin.register(DocType)
@@ -57,3 +60,42 @@ class DocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('title', 'content')
     list_filter = ('doc_type', 'issue_project__company', 'issue_project__project', 'issue_project', 'category')
     inlines = (LinkInline, FileInline, ImageInline)
+
+
+@admin.register(LetterSequence)
+class LetterSequenceAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'year', 'last_sequence')
+    list_display_links = ('company',)
+    list_filter = ('company', 'year')
+    search_fields = ('company__name',)
+
+
+@admin.register(OfficialLetter)
+class OfficialLetterAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'document_number', 'company', 'title', 'recipient_name', 'issue_date', 'creator')
+    list_display_links = ('document_number', 'title')
+    list_filter = ('company', 'issue_date', 'creator')
+    search_fields = ('document_number', 'title', 'recipient_name', 'sender_name', 'content')
+    readonly_fields = ('document_number', 'created', 'updated')
+    date_hierarchy = 'issue_date'
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('company', 'document_number', 'title', 'issue_date')
+        }),
+        ('수신처 정보', {
+            'fields': ('recipient_name', 'recipient_address', 'recipient_contact', 'recipient_reference')
+        }),
+        ('발신자 정보', {
+            'fields': ('sender_name', 'sender_position', 'sender_department')
+        }),
+        ('내용', {
+            'fields': ('content',)
+        }),
+        ('PDF', {
+            'fields': ('pdf_file',)
+        }),
+        ('메타데이터', {
+            'fields': ('creator', 'updator', 'created', 'updated'),
+            'classes': ('collapse',)
+        }),
+    )
