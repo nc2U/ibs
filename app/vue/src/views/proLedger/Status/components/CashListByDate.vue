@@ -1,76 +1,53 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useProCash } from '@/store/pinia/proCash'
+import { useProLedger } from '@/store/pinia/proLedger'
 import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
-import {
-  type ProBankAcc,
-  type ProjectAccountD2,
-  type ProjectAccountD3,
-  type ProjectCashBook,
-} from '@/store/types/proCash'
+import type { ProBankTrans } from '@/store/types/proLedger'
 
 defineProps({ date: { type: String, default: '' } })
 
-const dateIncSet = ref<ProjectCashBook[]>([])
-const dateOutSet = ref<ProjectCashBook[]>([])
+const dateIncSet = ref<ProBankTrans[]>([])
+const dateOutSet = ref<ProBankTrans[]>([])
 const dateIncTotal = ref<number>(0)
 const dateOutTotal = ref<number>(0)
 
-const proCashStore = useProCash()
-const allAccD2List = computed(() => proCashStore.allAccD2List)
-const allAccD3List = computed(() => proCashStore.allAccD3List)
-const proBankAccountList = computed(() => proCashStore.proBankAccountList)
-const proDateCashBook = computed(() => proCashStore.proDateCashBook)
+const proLedgerStore = useProLedger()
+const dateLedgerTransactions = computed(() => proLedgerStore.dateLedgerTransactions)
 
-watch(proDateCashBook, () => setData())
+watch(dateLedgerTransactions, () => setData())
 
 onBeforeMount(() => setData())
 
-const getD1Text = (num: number) =>
-  allAccD2List.value
-    .filter((d: ProjectAccountD2) => d.pk === num)
-    .map((d: ProjectAccountD2) => d.name)[0]
-
-const getD3Text = (num: number) =>
-  allAccD3List.value
-    .filter((d: ProjectAccountD3) => d.pk === num)
-    .map((d: ProjectAccountD3) => d.name)[0]
-
-const getBankAcc = (num: number) =>
-  proBankAccountList.value
-    .filter((b: ProBankAcc) => b.pk === num)
-    .map((b: ProBankAcc) => b.alias_name)[0]
+const getFirstEntry = (tx: ProBankTrans) => tx.accounting_entries?.[0]
 
 const setData = () => {
-  dateIncSet.value = proDateCashBook.value.filter(
-    (i: ProjectCashBook) => i.income && i.income > 0 && !i.outlay,
+  // sort === 1: 입금, sort === 2: 출금
+  dateIncSet.value = dateLedgerTransactions.value.filter((tx: ProBankTrans) => tx.sort === 1)
+  dateOutSet.value = dateLedgerTransactions.value.filter((tx: ProBankTrans) => tx.sort === 2)
+  dateIncTotal.value = dateIncSet.value.reduce(
+    (sum: number, tx: ProBankTrans) => sum + tx.amount,
+    0,
   )
-  dateOutSet.value = proDateCashBook.value.filter(
-    (o: ProjectCashBook) => o.outlay && o.outlay > 0 && !o.income,
+  dateOutTotal.value = dateOutSet.value.reduce(
+    (sum: number, tx: ProBankTrans) => sum + tx.amount,
+    0,
   )
-  dateIncTotal.value = dateIncSet.value
-    .map((i: ProjectCashBook) => i.income || 0)
-    .reduce((x: number, y: number) => x + y, 0)
-  dateOutTotal.value = dateOutSet.value
-    .map((o: ProjectCashBook) => o.outlay || 0)
-    .reduce((x: number, y: number) => x + y, 0)
 }
 </script>
 
 <template>
   <CTable hover responsive bordered align="middle">
     <colgroup>
-      <col style="width: 15%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
       <col style="width: 25%" />
+      <col style="width: 15%" />
+      <col style="width: 15%" />
+      <col style="width: 15%" />
+      <col style="width: 30%" />
     </colgroup>
     <CTableHead>
       <CTableRow>
-        <CTableDataCell colspan="5">
+        <CTableDataCell colspan="4">
           <strong>
             <CIcon name="cilFolderOpen" />
             프로젝트 당일 입금내역
@@ -80,8 +57,7 @@ const setData = () => {
         <CTableDataCell class="text-right">(단위: 원)</CTableDataCell>
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell>항목</CTableHeaderCell>
-        <CTableHeaderCell>세부 항목</CTableHeaderCell>
+        <CTableHeaderCell>계정 과목</CTableHeaderCell>
         <CTableHeaderCell>입금 금액</CTableHeaderCell>
         <CTableHeaderCell>거래 계좌</CTableHeaderCell>
         <CTableHeaderCell>거래처</CTableHeaderCell>
@@ -91,19 +67,19 @@ const setData = () => {
 
     <CTableBody>
       <CTableRow v-for="inc in dateIncSet" :key="inc.pk" class="text-center">
-        <CTableDataCell>{{ getD1Text(inc.project_account_d2 as number) }}</CTableDataCell>
-        <CTableDataCell>{{ getD3Text(inc.project_account_d3 as number) }}</CTableDataCell>
-        <CTableDataCell class="text-right" color="success">
-          {{ numFormat(inc.income || 0) }}
+        <CTableDataCell class="text-left">
+          {{ getFirstEntry(inc)?.account_name ?? '' }}
         </CTableDataCell>
-        <CTableDataCell>{{ getBankAcc(inc.bank_account as number) }}</CTableDataCell>
-        <CTableDataCell class="text-left">{{ inc.trader }}</CTableDataCell>
+        <CTableDataCell class="text-right" color="success">
+          {{ numFormat(inc.amount) }}
+        </CTableDataCell>
+        <CTableDataCell>{{ inc.bank_account_name }}</CTableDataCell>
+        <CTableDataCell class="text-left">{{ getFirstEntry(inc)?.trader ?? '' }}</CTableDataCell>
         <CTableDataCell class="text-left">{{ inc.content }}</CTableDataCell>
       </CTableRow>
 
       <CTableRow class="text-center">
         <CTableDataCell>&nbsp;</CTableDataCell>
-        <CTableDataCell></CTableDataCell>
         <CTableDataCell color="success"></CTableDataCell>
         <CTableDataCell></CTableDataCell>
         <CTableDataCell></CTableDataCell>
@@ -111,7 +87,7 @@ const setData = () => {
       </CTableRow>
 
       <CTableRow :color="TableSecondary" class="text-right">
-        <CTableHeaderCell colspan="2" class="text-center"> 합계</CTableHeaderCell>
+        <CTableHeaderCell class="text-center">합계</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(dateIncTotal) }}</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
@@ -122,16 +98,15 @@ const setData = () => {
 
   <CTable hover responsive bordered align="middle">
     <colgroup>
-      <col style="width: 15%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
       <col style="width: 25%" />
+      <col style="width: 15%" />
+      <col style="width: 15%" />
+      <col style="width: 15%" />
+      <col style="width: 30%" />
     </colgroup>
     <CTableHead>
       <CTableRow>
-        <CTableDataCell colspan="5">
+        <CTableDataCell colspan="4">
           <strong>
             <CIcon name="cilFolderOpen" />
             프로젝트 당일 출금내역
@@ -141,8 +116,7 @@ const setData = () => {
         <CTableDataCell class="text-right">(단위: 원)</CTableDataCell>
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell>항목</CTableHeaderCell>
-        <CTableHeaderCell>세부 항목</CTableHeaderCell>
+        <CTableHeaderCell>계정 과목</CTableHeaderCell>
         <CTableHeaderCell>출금 금액</CTableHeaderCell>
         <CTableHeaderCell>거래 계좌</CTableHeaderCell>
         <CTableHeaderCell>거래처</CTableHeaderCell>
@@ -152,24 +126,19 @@ const setData = () => {
 
     <CTableBody>
       <CTableRow v-for="out in dateOutSet" :key="out.pk" class="text-center">
-        <CTableDataCell>
-          {{ getD1Text(out.project_account_d2 as number) }}
-        </CTableDataCell>
-        <CTableDataCell>
-          {{ getD3Text(out.project_account_d3 as number) }}
+        <CTableDataCell class="text-left">
+          {{ getFirstEntry(out)?.account_name ?? '' }}
         </CTableDataCell>
         <CTableDataCell class="text-right" color="danger">
-          {{ numFormat(out.outlay || 0) }}
+          {{ numFormat(out.amount) }}
         </CTableDataCell>
-        <CTableDataCell>
-          {{ getBankAcc(out.bank_account as number) }}
-        </CTableDataCell>
-        <CTableDataCell class="text-left">{{ out.trader }}</CTableDataCell>
+        <CTableDataCell>{{ out.bank_account_name }}</CTableDataCell>
+        <CTableDataCell class="text-left">{{ getFirstEntry(out)?.trader ?? '' }}</CTableDataCell>
         <CTableDataCell class="text-left">{{ out.content }}</CTableDataCell>
       </CTableRow>
+
       <CTableRow class="text-center">
         <CTableDataCell>&nbsp;</CTableDataCell>
-        <CTableDataCell></CTableDataCell>
         <CTableDataCell color="danger"></CTableDataCell>
         <CTableDataCell></CTableDataCell>
         <CTableDataCell></CTableDataCell>
@@ -177,7 +146,7 @@ const setData = () => {
       </CTableRow>
 
       <CTableRow :color="TableSecondary" class="text-right">
-        <CTableHeaderCell colspan="2" class="text-center"> 합계</CTableHeaderCell>
+        <CTableHeaderCell class="text-center">합계</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(dateOutTotal) }}</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
