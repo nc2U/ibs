@@ -11,9 +11,9 @@ from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
-from cash.models import ProjectCashBook
+# ProjectCashBook import removed - using ledger app models instead
 from company.models import Company
-from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectAccountingEntry
+from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, ProjectAccountingEntry
 from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions
 from project.models import Project, ProjectOutBudget
@@ -533,8 +533,7 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
     @staticmethod
     def _get_balance_data(date):
         """잔고 데이터 조회"""
-        qs = ProjectCashBook.objects.filter(
-            is_separate=False,
+        qs = ProjectBankTransaction.objects.filter(
             bank_account__directpay=False,
             deal_date__lte=date
         ).order_by('bank_account')
@@ -543,10 +542,10 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
             bank_acc=F('bank_account__alias_name'),
             bank_num=F('bank_account__number')
         ).values('bank_acc', 'bank_num').annotate(
-            inc_sum=Sum('income'),
-            out_sum=Sum('outlay'),
-            date_inc=Sum(Case(When(deal_date=date, then=F('income')), default=0)),
-            date_out=Sum(Case(When(deal_date=date, then=F('outlay')), default=0))
+            inc_sum=Sum(Case(When(sort_id=1, then=F('amount')), default=0)),
+            out_sum=Sum(Case(When(sort_id=2, then=F('amount')), default=0)),
+            date_inc=Sum(Case(When(sort_id=1, deal_date=date, then=F('amount')), default=0)),
+            date_out=Sum(Case(When(sort_id=2, deal_date=date, then=F('amount')), default=0))
         )
 
 
@@ -602,80 +601,93 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
         worksheet.set_column(9, 9, 15)
         worksheet.write(row_num, 9, '메모', h_format)
 
-        # 4. Contents
-        date_cashes = ProjectCashBook.objects.filter(
-            deal_date__exact=date
+        # 4. Contents - ProjectBankTransaction 기반으로 변경 (회사 클래스와 동일한 패턴)
+        transactions = ProjectBankTransaction.objects.filter(
+            project_id=project.pk,
+            deal_date=date
         ).select_related(
-            'bank_account',
-            'project_account_d2',
-            'project_account_d3'
-        ).prefetch_related('sepItems').order_by('deal_date', 'created', 'id')
+            'bank_account', 'sort', 'creator'
+        ).order_by('sort_id', 'created_at')
+
+        # 수동으로 prefetch 하기 (회사 클래스와 동일)
+        transaction_ids = [t.transaction_id for t in transactions]
+        entries_map = defaultdict(list)
+
+        if transaction_ids:
+            # 관련된 모든 회계 분개를 한 번의 쿼리로 가져오기
+            accounting_entries = ProjectAccountingEntry.objects.filter(
+                transaction_id__in=transaction_ids
+            ).select_related('account')
+
+            # transaction_id를 키로 하는 딕셔너리 생성
+            for entry in accounting_entries:
+                entries_map[entry.transaction_id].append(entry)
 
         inc_sum = 0
         out_sum = 0
-        for cash in date_cashes:
-            # 합계 계산: 분리된 부모거래만 포함, 자식거래(separated가 있는 경우)는 제외
-            if not cash.separated:  # 부모거래이거나 일반거래인 경우만 합계에 포함
-                inc_sum += cash.income if cash.income else 0
-                out_sum += cash.outlay if cash.outlay else 0
 
-            if cash.is_separate and cash.sepItems.exists():
-                # 분리된 거래: 부모 + 자식들
-                children = cash.sepItems.all().order_by('id')
+        # Process each transaction (회사 클래스와 동일한 로직)
+        for trans in transactions:
+            entries = entries_map.get(trans.transaction_id, [])
 
-                for idx, child in enumerate(children):
+            # 합계 계산
+            if trans.sort_id == 1:  # 입금
+                inc_sum += trans.amount or 0
+            elif trans.sort_id == 2:  # 출금
+                out_sum += trans.amount or 0
+
+            if not entries:  # 거래는 있으나 분개가 없는 경우
+                row_num += 1
+                worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
+                worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '', left_format)
+                worksheet.write(row_num, 2, trans.trader or '', left_format)
+                worksheet.write(row_num, 3, trans.content or '', left_format)
+                worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
+                worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
+                worksheet.write(row_num, 6, '', left_format)
+                worksheet.write(row_num, 7, '', number_format)
+                worksheet.write(row_num, 8, '', center_format)
+                worksheet.write(row_num, 9, trans.note or '', left_format)
+            elif len(entries) == 1:  # 단일 분개
+                entry = entries[0]
+                row_num += 1
+                # Bank transaction columns
+                worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
+                worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '', left_format)
+                worksheet.write(row_num, 2, trans.trader or '', left_format)
+                worksheet.write(row_num, 3, trans.content or '', left_format)
+                worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
+                worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
+                # Classification columns
+                worksheet.write(row_num, 6, entry.account.name if entry.account else '', left_format)
+                worksheet.write(row_num, 7, entry.amount or 0, number_format)
+                worksheet.write(row_num, 8, entry.get_evidence_type_display() or '', center_format)
+                worksheet.write(row_num, 9, trans.note or '', left_format)
+            else:  # 복수 분개
+                for i, acc_entry in enumerate(entries):
                     row_num += 1
-
-                    if idx == 0:
-                        # 첫 번째 자식: 은행거래(부모) + 분류내역(자식)
-                        worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
-                        worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '',
-                                        left_format)
-                        worksheet.write(row_num, 2, cash.trader or '', left_format)
-                        worksheet.write(row_num, 3, cash.content or '', left_format)
-                        worksheet.write(row_num, 4, cash.income, number_format)
-                        worksheet.write(row_num, 5, cash.outlay, number_format)
-                        # 분류 내역
-                        account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
-                        worksheet.write(row_num, 6, account_name, center_format)
-                        worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
-                        worksheet.write(row_num, 8,
-                                        child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
-                                        center_format)
-                        worksheet.write(row_num, 9, cash.note or '', left_format)
+                    if i == 0:
+                        # Bank transaction columns - only on the first row
+                        worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
+                        worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '', left_format)
+                        worksheet.write(row_num, 2, trans.trader or '', left_format)
+                        worksheet.write(row_num, 3, trans.content or '', left_format)
+                        worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
+                        worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
                     else:
-                        # 나머지 자식: 은행거래 비움 + 분류내역만
+                        # Empty bank transaction columns for subsequent rows
                         worksheet.write(row_num, 0, '', center_format)
                         worksheet.write(row_num, 1, '', left_format)
                         worksheet.write(row_num, 2, '', left_format)
                         worksheet.write(row_num, 3, '', left_format)
                         worksheet.write(row_num, 4, '', number_format)
                         worksheet.write(row_num, 5, '', number_format)
-                        # 분류 내역
-                        account_name = f"{child.project_account_d2.name if child.project_account_d2 else ''}/{child.project_account_d3.name if child.project_account_d3 else ''}"
-                        worksheet.write(row_num, 6, account_name, center_format)
-                        worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
-                        worksheet.write(row_num, 8,
-                                        child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
-                                        center_format)
-                        worksheet.write(row_num, 9, '', left_format)
-            else:
-                # 일반 거래: 은행거래 + 분류내역 모두 채움
-                row_num += 1
-                worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
-                worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', left_format)
-                worksheet.write(row_num, 2, cash.trader or '', left_format)
-                worksheet.write(row_num, 3, cash.content or '', left_format)
-                worksheet.write(row_num, 4, cash.income, number_format)
-                worksheet.write(row_num, 5, cash.outlay, number_format)
-                # 분류 내역
-                account_name = f"{cash.project_account_d2.name if cash.project_account_d2 else ''}/{cash.project_account_d3.name if cash.project_account_d3 else ''}"
-                worksheet.write(row_num, 6, account_name, center_format)
-                worksheet.write(row_num, 7, cash.income or cash.outlay or 0, number_format)
-                worksheet.write(row_num, 8,
-                                cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
-                                center_format)
-                worksheet.write(row_num, 9, cash.note or '', left_format)
+
+                    # Classification columns are always written
+                    worksheet.write(row_num, 6, acc_entry.account.name if acc_entry.account else '', left_format)
+                    worksheet.write(row_num, 7, acc_entry.amount or 0, number_format)
+                    worksheet.write(row_num, 8, acc_entry.get_evidence_type_display() or '', center_format)
+                    worksheet.write(row_num, 9, trans.note or '', left_format)
 
         # 5. Sum row
         row_num += 1
@@ -765,16 +777,22 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
 
         for row, budget in enumerate(budgets):
             row_num += 1
-            co_budget = ProjectCashBook.objects.filter(project=project,
-                                                       project_account_d3=budget.account_d3,
-                                                       deal_date__lte=date)
+            # ProjectBankTransaction + ProjectAccountingEntry를 사용 (ProjectCashBook 대신)
+            # account_d3에 해당하는 회계 분개 엔트리들을 찾기
+            budget_entries = ProjectAccountingEntry.objects.filter(
+                account_id=budget.account_d3_id,
+                transaction__project_id=project.pk,
+                transaction__deal_date__lte=date
+            ).select_related('transaction')
 
-            co_budget_month = co_budget.filter(deal_date__gte=date[:8] + '01').aggregate(Sum('outlay'))['outlay__sum']
+            co_budget_month = budget_entries.filter(
+                transaction__deal_date__gte=date[:8] + '01'
+            ).aggregate(Sum('amount'))['amount__sum']
             co_budget_month = co_budget_month if co_budget_month else 0
             budget_month_sum += co_budget_month
 
             calc_budget = budget.revised_budget or budget.budget if is_revised else budget.budget
-            co_budget_total = co_budget.aggregate(Sum('outlay'))['outlay__sum']
+            co_budget_total = budget_entries.aggregate(Sum('amount'))['amount__sum']
             co_budget_total = co_budget_total if co_budget_total else 0
             budget_total_sum += co_budget_total
 
@@ -931,30 +949,28 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         budgets = ProjectOutBudget.objects.filter(project=project).order_by('order', 'id')
 
         # 6. Pre-fetch all transactions for optimization
-        # 월별집계시작일 이전 누계 (동적)
-        cumulative_data = ProjectCashBook.objects.filter(
-            project=project,
-            is_separate=False,
-            deal_date__lte=cumulative_end_date
-        ).values('project_account_d3_id').annotate(total=Sum('outlay'))
+        # 월별집계시작일 이전 누계 (동적) - ProjectAccountingEntry 기반으로 변경
+        cumulative_data = ProjectAccountingEntry.objects.filter(
+            transaction__project_id=project.pk,
+            transaction__deal_date__lte=cumulative_end_date
+        ).select_related('account', 'transaction').values('account_id').annotate(total=Sum('amount'))
 
-        cumulative_dict = {item['project_account_d3_id']: item['total'] or 0 for item in cumulative_data}
+        cumulative_dict = {item['account_id']: item['total'] or 0 for item in cumulative_data}
 
-        # 월별 데이터 (월별집계시작일 ~ 종료일) (동적)
+        # 월별 데이터 (월별집계시작일 ~ 종료일) (동적) - ProjectAccountingEntry 기반으로 변경
         monthly_end_date_obj = datetime.date(monthly_end_year, monthly_end_month, 28)
-        monthly_transactions = ProjectCashBook.objects.filter(
-            project=project,
-            is_separate=False,
-            deal_date__gte=monthly_start_date,
-            deal_date__lte=monthly_end_date_obj
-        ).annotate(
-            year=F('deal_date__year'),
-            month=F('deal_date__month')
-        ).values('project_account_d3_id', 'year', 'month').annotate(total=Sum('outlay'))
+        monthly_transactions = ProjectAccountingEntry.objects.filter(
+            transaction__project_id=project.pk,
+            transaction__deal_date__gte=monthly_start_date,
+            transaction__deal_date__lte=monthly_end_date_obj
+        ).select_related('account', 'transaction').annotate(
+            year=F('transaction__deal_date__year'),
+            month=F('transaction__deal_date__month')
+        ).values('account_id', 'year', 'month').annotate(total=Sum('amount'))
 
         monthly_dict = {}
         for item in monthly_transactions:
-            key = (item['project_account_d3_id'], item['year'], item['month'])
+            key = (item['account_id'], item['year'], item['month'])
             monthly_dict[key] = item['total'] or 0
 
         # 합계 계산을 위한 변수
