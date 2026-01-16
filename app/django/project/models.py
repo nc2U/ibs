@@ -52,8 +52,7 @@ class Project(models.Model):
 
 class ProjectIncBudget(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    account = models.ForeignKey('ledger.ProjectAccount', on_delete=models.PROTECT, null=True, blank=True,
-                                verbose_name='계정')
+    account = models.ForeignKey('ledger.ProjectAccount', on_delete=models.PROTECT, verbose_name='계정')
     account_d2 = models.ForeignKey('ibs.ProjectAccountD2', on_delete=models.PROTECT, verbose_name='대분류')
     account_d3 = models.ForeignKey('ibs.ProjectAccountD3', on_delete=models.PROTECT, verbose_name='소분류')
     order_group = models.ForeignKey('contract.OrderGroup', on_delete=models.SET_NULL, null=True, blank=True,
@@ -80,8 +79,7 @@ class ProjectIncBudget(models.Model):
 class ProjectOutBudget(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     order = models.PositiveSmallIntegerField('순서', blank=True, null=True)
-    account = models.ForeignKey('ledger.ProjectAccount', on_delete=models.PROTECT, null=True, blank=True,
-                                verbose_name='계정')
+    account = models.ForeignKey('ledger.ProjectAccount', on_delete=models.PROTECT, verbose_name='계정')
     account_d2 = models.ForeignKey('ibs.ProjectAccountD2', on_delete=models.PROTECT, verbose_name='대분류')
     account_d3 = models.ForeignKey('ibs.ProjectAccountD3', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name='소분류')
