@@ -8,7 +8,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
-from docs.models import DocType, Category, LawsuitCase, Document, Link, File, Image
+from docs.models import DocType, Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
 
 
 # Docs --------------------------------------------------------------------------
@@ -330,3 +330,41 @@ class DocumentInTrashSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.restore()
         return instance
+
+
+# Official Letter --------------------------------------------------------------------------
+class OfficialLetterSerializer(serializers.ModelSerializer):
+    company_name = serializers.SlugField(source='company', read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
+    prev_pk = serializers.SerializerMethodField(read_only=True)
+    next_pk = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = OfficialLetter
+        fields = ('pk', 'company', 'company_name', 'document_number', 'title',
+                  'recipient_name', 'recipient_address', 'recipient_contact',
+                  'recipient_reference', 'sender_name', 'sender_position',
+                  'sender_department', 'content', 'issue_date', 'pdf_file',
+                  'creator', 'updator', 'created', 'updated', 'prev_pk', 'next_pk')
+        read_only_fields = ('document_number', 'pdf_file')
+
+    def get_prev_pk(self, obj):
+        queryset = self.context['view'].filter_queryset(OfficialLetter.objects.all())
+        prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-issue_date', '-pk').first()
+        return prev_obj.pk if prev_obj else None
+
+    def get_next_pk(self, obj):
+        queryset = self.context['view'].filter_queryset(OfficialLetter.objects.all())
+        next_obj = queryset.filter(pk__gt=obj.pk).order_by('issue_date', 'pk').first()
+        return next_obj.pk if next_obj else None
+
+
+class SimpleOfficialLetterSerializer(serializers.ModelSerializer):
+    """목록 조회용 간략 시리얼라이저"""
+    creator = serializers.SlugField(read_only=True)
+
+    class Meta:
+        model = OfficialLetter
+        fields = ('pk', 'document_number', 'title', 'recipient_name',
+                  'issue_date', 'pdf_file', 'creator', 'created')

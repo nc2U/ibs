@@ -448,3 +448,113 @@ class Image(models.Model):
 
 file_cleanup_signals(Image)  # 파일인스턴스 직접 삭제시
 related_file_cleanup(Document, related_name='images', file_field_name='image')  # 연관 모델 삭제 시
+
+
+# ============================================================
+# 공문 관리 (Official Letter)
+# ============================================================
+
+class LetterSequence(models.Model):
+    """회사별 연도별 공문 번호 시퀀스 관리"""
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE,
+                                related_name='letter_sequences', verbose_name='회사')
+    year = models.PositiveIntegerField('연도')
+    last_sequence = models.PositiveIntegerField('마지막 번호', default=0)
+
+    class Meta:
+        ordering = ['-year']
+        unique_together = ['company', 'year']
+        verbose_name = '05. 공문 번호 시퀀스'
+        verbose_name_plural = '05. 공문 번호 시퀀스'
+
+    def __str__(self):
+        return f'{self.company.name} - {self.year}'
+
+    @classmethod
+    def get_next_document_number(cls, company):
+        """다음 문서번호 생성 (YYYY-NNN 형식)"""
+        current_year = timezone.now().year
+
+        sequence, created = cls.objects.get_or_create(
+            company=company,
+            year=current_year,
+            defaults={'last_sequence': 0}
+        )
+
+        sequence.last_sequence += 1
+        sequence.save()
+
+        return f'{current_year}-{sequence.last_sequence:03d}'
+
+
+def get_letter_pdf_path(instance, filename):
+    """공문 PDF 파일 저장 경로 생성"""
+    from _utils.file_upload import generate_safe_filename
+    safe_filename = generate_safe_filename(filename)
+    date_path = timezone.now().strftime('%Y/%m')
+    return f'official_letters/{instance.company.pk}/{date_path}/{safe_filename}'
+
+
+class OfficialLetter(models.Model):
+    """공문 모델"""
+    # 회사
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE,
+                                related_name='official_letters', verbose_name='회사')
+    # 문서번호 (자동 생성)
+    document_number = models.CharField('문서번호', max_length=20, unique=True,
+                                       db_index=True, editable=False)
+    # 제목
+    title = models.CharField('제목', max_length=255, db_index=True)
+
+    # 수신처 정보
+    recipient_name = models.CharField('수신처명', max_length=100)
+    recipient_address = models.CharField('수신처 주소', max_length=255, blank=True, default='')
+    recipient_contact = models.CharField('수신처 연락처', max_length=50, blank=True, default='')
+    recipient_reference = models.CharField('참조', max_length=100, blank=True, default='',
+                                           help_text='참조인 또는 부서')
+
+    # 발신자 정보
+    sender_name = models.CharField('발신자명', max_length=50)
+    sender_position = models.CharField('발신자 직위', max_length=50, blank=True, default='')
+    sender_department = models.CharField('발신 부서', max_length=50, blank=True, default='')
+
+    # 내용
+    content = models.TextField('내용')
+
+    # 발신일자
+    issue_date = models.DateField('발신일자')
+
+    # 생성된 PDF
+    pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path,
+                                null=True, blank=True)
+
+    # 메타데이터
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, verbose_name='작성자', related_name='created_letters')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='수정자',
+                                related_name='updated_letters')
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('수정일시', auto_now=True)
+
+    class Meta:
+        ordering = ['-issue_date', '-created']
+        verbose_name = '06. 공문'
+        verbose_name_plural = '06. 공문'
+
+    def __str__(self):
+        return f'{self.document_number} - {self.title}'
+
+    def save(self, *args, **kwargs):
+        # 문서번호 자동 생성
+        if not self.document_number:
+            self.document_number = LetterSequence.get_next_document_number(self.company)
+        super().save(*args, **kwargs)
+
+    def get_pdf_filename(self):
+        """PDF 다운로드용 파일명 생성"""
+        safe_title = self.title[:30].replace(' ', '_').replace('/', '_')
+        return f'{self.document_number}_{safe_title}.pdf'
+
+
+file_cleanup_signals(OfficialLetter, file_field_names=['pdf_file'])  # PDF 파일 자동 삭제

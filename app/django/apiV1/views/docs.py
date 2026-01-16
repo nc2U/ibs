@@ -1,13 +1,17 @@
 from datetime import datetime
 
 from django.db.models import Q
-from django_filters import BooleanFilter, ModelChoiceFilter, NumberFilter, CharFilter
+from django.http import FileResponse
+from django.utils import timezone
+from django_filters import BooleanFilter, ModelChoiceFilter, NumberFilter, CharFilter, DateFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from company.models import Company
 from project.models import Project
+from docs.models import LetterSequence
 from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationThreeThousand
 from ..permission import *
 from ..serializers.docs import *
@@ -184,3 +188,87 @@ class DocsInTrashViewSet(DocumentViewSet):
 
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# Official Letter --------------------------------------------------------------------------
+
+class OfficialLetterFilterSet(FilterSet):
+    company = ModelChoiceFilter(field_name='company',
+                                queryset=Company.objects.all(), label='회사')
+    issue_date_from = DateFilter(field_name='issue_date', lookup_expr='gte', label='발신일(시작)')
+    issue_date_to = DateFilter(field_name='issue_date', lookup_expr='lte', label='발신일(종료)')
+
+    class Meta:
+        model = OfficialLetter
+        fields = ('company', 'issue_date_from', 'issue_date_to', 'creator')
+
+
+class OfficialLetterViewSet(viewsets.ModelViewSet):
+    queryset = OfficialLetter.objects.all()
+    serializer_class = OfficialLetterSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    pagination_class = PageNumberPaginationOneHundred
+    filterset_class = OfficialLetterFilterSet
+    search_fields = ('document_number', 'title', 'recipient_name',
+                     'sender_name', 'content')
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def generate_pdf(self, request, pk=None):
+        """공문 PDF 생성"""
+        from docs.utils import generate_official_letter_pdf
+
+        letter = self.get_object()
+        pdf_file = generate_official_letter_pdf(letter)
+        letter.pdf_file = pdf_file
+        letter.save()
+
+        return Response({
+            'status': 'success',
+            'pdf_url': letter.pdf_file.url if letter.pdf_file else None
+        })
+
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        """PDF 파일 다운로드"""
+        letter = self.get_object()
+
+        if not letter.pdf_file:
+            return Response({'error': 'PDF가 생성되지 않았습니다.'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        return FileResponse(
+            letter.pdf_file.open('rb'),
+            as_attachment=True,
+            filename=letter.get_pdf_filename()
+        )
+
+    @action(detail=False, methods=['get'])
+    def next_document_number(self, request):
+        """다음 문서번호 미리보기"""
+        company_id = request.query_params.get('company')
+        if not company_id:
+            return Response({'error': '회사 ID가 필요합니다.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            company = Company.objects.get(pk=company_id)
+            current_year = timezone.now().year
+
+            sequence = LetterSequence.objects.filter(
+                company=company,
+                year=current_year
+            ).first()
+
+            next_seq = (sequence.last_sequence + 1) if sequence else 1
+            next_number = f'{current_year}-{next_seq:03d}'
+
+            return Response({'next_document_number': next_number})
+        except Company.DoesNotExist:
+            return Response({'error': '회사를 찾을 수 없습니다.'},
+                            status=status.HTTP_404_NOT_FOUND)
