@@ -38,20 +38,20 @@ class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(ProjectIncBudget)
 class ProjectIncBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'account_d2', 'account_d3', 'order_group',
+    list_display = ('id', 'project', 'account', 'account_d2', 'account_d3', 'order_group',
                     'unit_type', 'item_name', 'average_price', 'quantity', 'budget', 'revised_budget')
     list_display_links = ('project',)
-    list_editable = ('account_d2', 'account_d3', 'order_group', 'unit_type',
+    list_editable = ('account', 'account_d2', 'account_d3', 'order_group', 'unit_type',
                      'item_name', 'average_price', 'quantity', 'budget', 'revised_budget')
     list_filter = ('project', 'order_group', 'unit_type')
 
 
 @admin.register(ProjectOutBudget)
 class ProjectOutBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'project', 'order', 'account_d2', 'account_d3',
+    list_display = ('id', 'project', 'order', 'account', 'account_d2', 'account_d3',
                     'account_opt', 'budget', 'revised_budget', 'basis_calc')
     list_display_links = ('project',)
-    list_editable = ('order', 'account_d2', 'account_d3', 'account_opt',
+    list_editable = ('order', 'account', 'account_d2', 'account_d3', 'account_opt',
                      'budget', 'revised_budget', 'basis_calc')
     list_filter = ('project', 'account_d2', 'account_d3')
 
