@@ -39,10 +39,10 @@ const setData = () => {
 <template>
   <CTable hover responsive bordered align="middle">
     <colgroup>
+      <col style="width: 15%" />
+      <col style="width: 15%" />
+      <col style="width: 15%" />
       <col style="width: 25%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
       <col style="width: 30%" />
     </colgroup>
     <CTableHead>
@@ -57,39 +57,39 @@ const setData = () => {
         <CTableDataCell class="text-right">(단위: 원)</CTableDataCell>
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell>계정 과목</CTableHeaderCell>
-        <CTableHeaderCell>입금 금액</CTableHeaderCell>
         <CTableHeaderCell>거래 계좌</CTableHeaderCell>
         <CTableHeaderCell>거래처</CTableHeaderCell>
+        <CTableHeaderCell>입금 금액</CTableHeaderCell>
+        <CTableHeaderCell>계정 과목</CTableHeaderCell>
         <CTableHeaderCell>적요</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
     <CTableBody>
       <CTableRow v-for="inc in dateIncSet" :key="inc.pk" class="text-center">
-        <CTableDataCell class="text-left">
-          {{ getFirstEntry(inc)?.account_name ?? '' }}
-        </CTableDataCell>
+        <CTableDataCell>{{ inc.bank_account_name }}</CTableDataCell>
+        <CTableDataCell class="text-left">{{ getFirstEntry(inc)?.trader ?? '' }}</CTableDataCell>
         <CTableDataCell class="text-right" color="success">
           {{ numFormat(inc.amount) }}
         </CTableDataCell>
-        <CTableDataCell>{{ inc.bank_account_name }}</CTableDataCell>
-        <CTableDataCell class="text-left">{{ getFirstEntry(inc)?.trader ?? '' }}</CTableDataCell>
+        <CTableDataCell class="text-left">
+          {{ getFirstEntry(inc)?.account_name ?? '' }}
+        </CTableDataCell>
         <CTableDataCell class="text-left">{{ inc.content }}</CTableDataCell>
       </CTableRow>
 
       <CTableRow class="text-center">
         <CTableDataCell>&nbsp;</CTableDataCell>
-        <CTableDataCell color="success"></CTableDataCell>
         <CTableDataCell></CTableDataCell>
+        <CTableDataCell color="success"></CTableDataCell>
         <CTableDataCell></CTableDataCell>
         <CTableDataCell></CTableDataCell>
       </CTableRow>
 
       <CTableRow :color="TableSecondary" class="text-right">
         <CTableHeaderCell class="text-center">합계</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(dateIncTotal) }}</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
+        <CTableHeaderCell>{{ numFormat(dateIncTotal) }}</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
       </CTableRow>
@@ -98,10 +98,10 @@ const setData = () => {
 
   <CTable hover responsive bordered align="middle">
     <colgroup>
+      <col style="width: 15%" />
+      <col style="width: 15%" />
+      <col style="width: 15%" />
       <col style="width: 25%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
-      <col style="width: 15%" />
       <col style="width: 30%" />
     </colgroup>
     <CTableHead>
@@ -116,39 +116,39 @@ const setData = () => {
         <CTableDataCell class="text-right">(단위: 원)</CTableDataCell>
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell>계정 과목</CTableHeaderCell>
-        <CTableHeaderCell>출금 금액</CTableHeaderCell>
         <CTableHeaderCell>거래 계좌</CTableHeaderCell>
         <CTableHeaderCell>거래처</CTableHeaderCell>
+        <CTableHeaderCell>출금 금액</CTableHeaderCell>
+        <CTableHeaderCell>계정 과목</CTableHeaderCell>
         <CTableHeaderCell>적요</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
     <CTableBody>
       <CTableRow v-for="out in dateOutSet" :key="out.pk" class="text-center">
-        <CTableDataCell class="text-left">
-          {{ getFirstEntry(out)?.account_name ?? '' }}
-        </CTableDataCell>
+        <CTableDataCell>{{ out.bank_account_name }}</CTableDataCell>
+        <CTableDataCell class="text-left">{{ getFirstEntry(out)?.trader ?? '' }}</CTableDataCell>
         <CTableDataCell class="text-right" color="danger">
           {{ numFormat(out.amount) }}
         </CTableDataCell>
-        <CTableDataCell>{{ out.bank_account_name }}</CTableDataCell>
-        <CTableDataCell class="text-left">{{ getFirstEntry(out)?.trader ?? '' }}</CTableDataCell>
+        <CTableDataCell class="text-left">
+          {{ getFirstEntry(out)?.account_name ?? '' }}
+        </CTableDataCell>
         <CTableDataCell class="text-left">{{ out.content }}</CTableDataCell>
       </CTableRow>
 
       <CTableRow class="text-center">
         <CTableDataCell>&nbsp;</CTableDataCell>
-        <CTableDataCell color="danger"></CTableDataCell>
         <CTableDataCell></CTableDataCell>
+        <CTableDataCell color="danger"></CTableDataCell>
         <CTableDataCell></CTableDataCell>
         <CTableDataCell></CTableDataCell>
       </CTableRow>
 
       <CTableRow :color="TableSecondary" class="text-right">
         <CTableHeaderCell class="text-center">합계</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(dateOutTotal) }}</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
+        <CTableHeaderCell>{{ numFormat(dateOutTotal) }}</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
       </CTableRow>

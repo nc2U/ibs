@@ -270,7 +270,8 @@ class ExportLedgerDateCashbook(ExcelExportMixin):
                         # Bank transaction columns - only on the first row
                         worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
                         worksheet.write(row_num, 1, trans.note or '', left_format)
-                        worksheet.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', left_format)
+                        worksheet.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '',
+                                        left_format)
                         worksheet.write(row_num, 3, trans.content or '', left_format)
                         worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
                         worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
@@ -640,7 +641,7 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
                 row_num += 1
                 worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
                 worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '', left_format)
-                worksheet.write(row_num, 2, trans.trader or '', left_format)
+                worksheet.write(row_num, 2, '', left_format)
                 worksheet.write(row_num, 3, trans.content or '', left_format)
                 worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
                 worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
@@ -654,7 +655,7 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
                 # Bank transaction columns
                 worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
                 worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '', left_format)
-                worksheet.write(row_num, 2, trans.trader or '', left_format)
+                worksheet.write(row_num, 2, entry.trader or '', left_format)
                 worksheet.write(row_num, 3, trans.content or '', left_format)
                 worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
                 worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
@@ -669,8 +670,9 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
                     if i == 0:
                         # Bank transaction columns - only on the first row
                         worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
-                        worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '', left_format)
-                        worksheet.write(row_num, 2, trans.trader or '', left_format)
+                        worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '',
+                                        left_format)
+                        worksheet.write(row_num, 2, acc_entry.trader or '', left_format)
                         worksheet.write(row_num, 3, trans.content or '', left_format)
                         worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
                         worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
@@ -695,6 +697,7 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
         worksheet.merge_range(row_num, 0, row_num, 3, '합계', h_format)
         worksheet.write(row_num, 4, inc_sum, h_format)
         worksheet.write(row_num, 5, out_sum, h_format)
+        worksheet.write(row_num, 6, '', h_format)
         worksheet.write(row_num, 7, '', h_format)
         worksheet.write(row_num, 8, '', h_format)
         worksheet.write(row_num, 9, '', h_format)
