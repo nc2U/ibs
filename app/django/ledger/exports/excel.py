@@ -778,15 +778,30 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
         for row, budget in enumerate(budgets):
             row_num += 1
             # ProjectBankTransaction + ProjectAccountingEntry를 사용 (ProjectCashBook 대신)
-            # account_d3에 해당하는 회계 분개 엔트리들을 찾기
+            # account_d3에 해당하는 회계 분개 엔트리들을 찾기 - transaction_id로 조인
+            from django.db.models import Q
+
+            # 먼저 프로젝트의 해당 날짜 범위 transaction_id들을 찾기
+            transaction_ids = ProjectBankTransaction.objects.filter(
+                project_id=project.pk,
+                deal_date__lte=date
+            ).values_list('transaction_id', flat=True)
+
             budget_entries = ProjectAccountingEntry.objects.filter(
                 account_id=budget.account_d3_id,
-                transaction__project_id=project.pk,
-                transaction__deal_date__lte=date
-            ).select_related('transaction')
+                transaction_id__in=transaction_ids
+            )
 
-            co_budget_month = budget_entries.filter(
-                transaction__deal_date__gte=date[:8] + '01'
+            # 당월 거래를 위해 별도 조회
+            month_transaction_ids = ProjectBankTransaction.objects.filter(
+                project_id=project.pk,
+                deal_date__gte=date[:8] + '01',
+                deal_date__lte=date
+            ).values_list('transaction_id', flat=True)
+
+            co_budget_month = ProjectAccountingEntry.objects.filter(
+                account_id=budget.account_d3_id,
+                transaction_id__in=month_transaction_ids
             ).aggregate(Sum('amount'))['amount__sum']
             co_budget_month = co_budget_month if co_budget_month else 0
             budget_month_sum += co_budget_month
@@ -950,28 +965,61 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
 
         # 6. Pre-fetch all transactions for optimization
         # 월별집계시작일 이전 누계 (동적) - ProjectAccountingEntry 기반으로 변경
+        cumulative_transaction_ids = ProjectBankTransaction.objects.filter(
+            project_id=project.pk,
+            deal_date__lte=cumulative_end_date
+        ).values_list('transaction_id', flat=True)
+
         cumulative_data = ProjectAccountingEntry.objects.filter(
-            transaction__project_id=project.pk,
-            transaction__deal_date__lte=cumulative_end_date
-        ).select_related('account', 'transaction').values('account_id').annotate(total=Sum('amount'))
+            transaction_id__in=cumulative_transaction_ids
+        ).values('account_id').annotate(total=Sum('amount'))
 
         cumulative_dict = {item['account_id']: item['total'] or 0 for item in cumulative_data}
 
         # 월별 데이터 (월별집계시작일 ~ 종료일) (동적) - ProjectAccountingEntry 기반으로 변경
         monthly_end_date_obj = datetime.date(monthly_end_year, monthly_end_month, 28)
-        monthly_transactions = ProjectAccountingEntry.objects.filter(
-            transaction__project_id=project.pk,
-            transaction__deal_date__gte=monthly_start_date,
-            transaction__deal_date__lte=monthly_end_date_obj
-        ).select_related('account', 'transaction').annotate(
-            year=F('transaction__deal_date__year'),
-            month=F('transaction__deal_date__month')
-        ).values('account_id', 'year', 'month').annotate(total=Sum('amount'))
+        monthly_transaction_ids = ProjectBankTransaction.objects.filter(
+            project_id=project.pk,
+            deal_date__gte=monthly_start_date,
+            deal_date__lte=monthly_end_date_obj
+        ).values_list('transaction_id', flat=True)
 
-        monthly_dict = {}
+        # 월별 거래에서 날짜 정보를 얻기 위해 Join
+        bank_transactions_with_dates = ProjectBankTransaction.objects.filter(
+            transaction_id__in=monthly_transaction_ids
+        ).values('transaction_id', 'deal_date')
+
+        # transaction_id별 날짜 매핑
+        transaction_date_map = {t['transaction_id']: t['deal_date'] for t in bank_transactions_with_dates}
+
+        # accounting entry와 날짜 조합
+        monthly_accounting_entries = ProjectAccountingEntry.objects.filter(
+            transaction_id__in=monthly_transaction_ids
+        ).values('account_id', 'transaction_id', 'amount')
+
+        monthly_transactions = []
+        for entry in monthly_accounting_entries:
+            deal_date = transaction_date_map.get(entry['transaction_id'])
+            if deal_date:
+                monthly_transactions.append({
+                    'account_id': entry['account_id'],
+                    'year': deal_date.year,
+                    'month': deal_date.month,
+                    'amount': entry['amount'] or 0
+                })
+
+        # 집계
+        from collections import defaultdict
+        monthly_aggregated = defaultdict(lambda: defaultdict(int))
         for item in monthly_transactions:
             key = (item['account_id'], item['year'], item['month'])
-            monthly_dict[key] = item['total'] or 0
+            monthly_aggregated[key[0]][(key[1], key[2])] += item['amount']
+
+        monthly_dict = {}
+        for account_id, date_amounts in monthly_aggregated.items():
+            for (year, month), amount in date_amounts.items():
+                key = (account_id, year, month)
+                monthly_dict[key] = amount
 
         # 합계 계산을 위한 변수
         total_budget = 0
