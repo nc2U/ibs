@@ -57,7 +57,7 @@ const excelUrl = computed(() => {
   const bank_account = dataFilter.value.bank_account || ''
   const contract = dataFilter.value.contract || ''
   const search = dataFilter.value.search || ''
-  const url = `/excel/pro-transaction/?project=${project.value}&is_imprest=all`
+  const url = `/excel/pro-trans/?project=${project.value}&is_imprest=all`
   return `${url}&from_date=${from_date}&to_date=${to_date}&sort=${sort}&account_category=${account_category}&account=${account}&bank_account=${bank_account}&contract=${contract}&search=${search}`
 })
 

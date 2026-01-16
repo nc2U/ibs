@@ -2,7 +2,7 @@ from django.urls import path
 
 from cash.exports import (ExportProjectBalance, ExportProjectDateCashbook, ExportBalanceByAcc,
                           ExportBudgetExecutionStatus, ExportCashFlowForm, ExportDateCashbook,
-                          export_cashbook_xls)
+                          export_cashbook_xls, export_project_cash_xls)
 # 앱별 내보내기 모듈에서 가져오기
 from company.exports import ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades
 from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
@@ -50,11 +50,23 @@ urlpatterns = [
     path('p-daily-cash/', ExportProjectDateCashbook.as_view(), name='project-daily-cash'),
     path('p-budget/', ExportBudgetExecutionStatus.as_view(), name='budget'),
     path('cash-flow-form/', ExportCashFlowForm.as_view(), name='cash-flow-form'),
-    path('pro-transaction/', export_pro_transaction_xls, name='pro-transaction'),
+    path('pro-cashbook/', export_project_cash_xls, name='pro-cashbook'),
+
+    # ledger
+    path('pro-balance/', ExportProjectBalance.as_view(), name='ledger-pro-balance'),
+    path('pro-daily-cash/', ExportProjectDateCashbook.as_view(), name='ledger-pro-daily-cash'),
+    path('pro-budget/', ExportBudgetExecutionStatus.as_view(), name='ledger-pro-budget'),
+    path('ledger-cash-flow-form/', ExportCashFlowForm.as_view(), name='ledger-cash-flow-form'),
+    path('pro-trans/', export_pro_transaction_xls, name='pro-trans'),
+
     path('balance/', ExportBalanceByAcc.as_view(), name='balance'),
     path('daily-cash/', ExportDateCashbook.as_view(), name='daily-cash'),
     path('cashbook/', export_cashbook_xls, name='cashbook'),
-    path('com-transaction/', export_com_transaction_xls, name='com-transaction'),
+
+    # ledger
+    path('com-balance/', ExportBalanceByAcc.as_view(), name='com-balance'),
+    path('com-daily-cash/', ExportDateCashbook.as_view(), name='com-daily-cash'),
+    path('com-trans/', export_com_transaction_xls, name='com-trans'),
 
     # Docs 관련 (새 모듈)
     path('suitcases/', ExportSuitCases.as_view(), name='suitcases'),

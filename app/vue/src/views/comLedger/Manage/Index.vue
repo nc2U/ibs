@@ -43,7 +43,7 @@ const excelUrl = computed(() => {
   const affiliate = dataFilter.value.affiliate || ''
   const bank_account = dataFilter.value.bank_account || ''
   const search = dataFilter.value.search || ''
-  const url = `/excel/com-transaction/?company=${company.value}`
+  const url = `/excel/com-trans/?company=${company.value}`
   return `${url}&from_deal_date=${from_deal_date}&to_deal_date=${to_deal_date}&sort=${sort}&account=${account}&affiliate=${affiliate}&bank_account=${bank_account}&search=${search}`
 })
 
