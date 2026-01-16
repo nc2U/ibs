@@ -63,8 +63,8 @@ const checkBalance = () => {
 const excelUrl = computed(() => {
   const comp = compName.value
   let url = ''
-  if (comp === 'StatusByAccount') url = `/excel/ledger-balance/?company=${company.value}`
-  else if (comp === 'CashListByDate') url = `/excel/ledger-daily/?company=${company.value}`
+  if (comp === 'StatusByAccount') url = `/excel/com-balance/?company=${company.value}`
+  else if (comp === 'CashListByDate') url = `/excel/com-daily-cash/?company=${company.value}`
   return `${url}&date=${date.value}`
 })
 
