@@ -506,7 +506,7 @@ const nav = [
   // payments,
   payment,
   notice,
-  // project_cash,
+  project_cash,
   project_ledger,
   project_docs,
   project,
