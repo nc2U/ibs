@@ -18,7 +18,7 @@ const execAmountList = computed(() => projStore.execAmountList)
 const statusOutBudgetList = computed(() => projStore.statusOutBudgetList)
 
 const getD3sInter = (arr: number[]) => {
-  const d3s = statusOutBudgetList.value.map((b: StatusOutBudget) => b.account_d3.pk)
+  const d3s = statusOutBudgetList.value.map((b: StatusOutBudget) => b.account_d3?.pk)
   return arr.filter(x => d3s.includes(x))
 }
 const getLength = (arr: number[]) => getD3sInter(arr).length
@@ -28,7 +28,7 @@ const isFirst = (arr: number[], d3Pk: number) => getD3sInter(arr)[0] === d3Pk
 const getSubTitle = (sub: string, d2: number) =>
   sub !== ''
     ? statusOutBudgetList.value
-        .filter((b: StatusOutBudget) => b.account_opt === sub && b.account_d2.pk === d2)
+        .filter((b: StatusOutBudget) => b.account_opt === sub && b.account_d2?.pk === d2)
         .map(b => b.pk)
     : []
 
@@ -157,21 +157,23 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
           사업비
         </CTableDataCell>
         <CTableDataCell
-          v-if="isFirst(obj.account_d2.pro_d3s, obj.account_d3.pk)"
+          v-if="isFirst(obj.account_d2?.pro_d3s || [], obj.account_d3?.pk || 0)"
           class="text-center"
-          :rowspan="getLength(obj.account_d2.pro_d3s)"
+          :rowspan="getLength(obj.account_d2?.pro_d3s || [])"
         >
-          {{ obj.account_d2.name }}
+          {{ obj.account_d2?.name }}
         </CTableDataCell>
         <CTableDataCell
-          v-if="obj.account_opt && obj.pk === getSubTitle(obj.account_opt, obj.account_d2.pk)[0]"
+          v-if="
+            obj.account_opt && obj.pk === getSubTitle(obj.account_opt, obj.account_d2?.pk || 0)[0]
+          "
           class="text-left"
-          :rowspan="getSubTitle(obj.account_opt, obj.account_d2.pk).length"
+          :rowspan="getSubTitle(obj.account_opt, obj.account_d2?.pk || 0).length"
         >
           {{ obj.account_opt }}
         </CTableDataCell>
         <CTableDataCell class="text-left" :colspan="obj.account_opt ? 1 : 2">
-          {{ obj.account_d3.name }}
+          {{ obj.account_d3?.name }}
           <v-tooltip v-if="obj.basis_calc" activator="parent" location="left">
             {{ obj.basis_calc }}
           </v-tooltip>
@@ -203,27 +205,31 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
           </span>
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getEASum(obj.account_d3.pk) - getEAMonth(obj.account_d3.pk)) }}
+          {{ numFormat(getEASum(obj.account_d3?.pk || 0) - getEAMonth(obj.account_d3?.pk || 0)) }}
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getEAMonth(obj.account_d3.pk) || 0) }}
+          {{ numFormat(getEAMonth(obj.account_d3?.pk || 0) || 0) }}
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getEASum(obj.account_d3.pk) || 0) }}
+          {{ numFormat(getEASum(obj.account_d3?.pk || 0) || 0) }}
         </CTableDataCell>
         <CTableDataCell
           v-show="isRevised === '0'"
-          :class="obj.budget < getEASum(obj.account_d3.pk) ? 'text-danger' : ''"
+          :class="obj.budget < getEASum(obj.account_d3?.pk || 0) ? 'text-danger' : ''"
         >
-          {{ numFormat(obj.budget - (getEASum(obj.account_d3.pk) || 0)) }}
+          {{ numFormat(obj.budget - (getEASum(obj.account_d3?.pk || 0) || 0)) }}
         </CTableDataCell>
         <CTableDataCell
           v-show="isRevised === '1'"
           :class="
-            (obj.revised_budget || obj.budget) < getEASum(obj.account_d3.pk) ? 'text-danger' : ''
+            (obj.revised_budget || obj.budget) < getEASum(obj.account_d3?.pk || 0)
+              ? 'text-danger'
+              : ''
           "
         >
-          {{ numFormat((obj.revised_budget || obj.budget) - (getEASum(obj.account_d3.pk) || 0)) }}
+          {{
+            numFormat((obj.revised_budget || obj.budget) - (getEASum(obj.account_d3?.pk || 0) || 0))
+          }}
         </CTableDataCell>
       </CTableRow>
 

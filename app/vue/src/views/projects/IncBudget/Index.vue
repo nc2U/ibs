@@ -3,10 +3,11 @@ import { computed, onBeforeMount, provide, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin3'
 import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useProCash } from '@/store/pinia/proCash'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
-import type { ProIncBudget, Project } from '@/store/types/project'
+import type { Project, ProIncBudget } from '@/store/types/project'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -16,6 +17,9 @@ import BudgetFormList from '@/views/projects/IncBudget/components/BudgetFormList
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
+
+const pLedgerStore = useProLedger()
+const allProAccount = computed(() => pLedgerStore.proAccounts)
 
 const pCashStore = useProCash()
 const allAccD2List = computed(() => pCashStore.allAccD2List.filter(d1 => d1.pk <= 2))
