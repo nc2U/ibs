@@ -81,15 +81,15 @@ const pageSelect = (page: number) => {
 
   // 현재 필터링 상태 확인
   const hasFiltering = !!(
-    dataFilter.value.search?.trim() ||      // 검색어
-    dataFilter.value.contract ||            // 계약정보
-    dataFilter.value.from_date ||           // 시작일
-    dataFilter.value.to_date ||             // 종료일
-    dataFilter.value.sort ||                // 거래구분
-    dataFilter.value.account_d1 ||          // 계정대분류
-    dataFilter.value.pro_acc_d2 ||          // 상위항목
-    dataFilter.value.pro_acc_d3 ||          // 하위항목
-    dataFilter.value.bank_account           // 거래계좌
+    dataFilter.value.search?.trim() || // 검색어
+    dataFilter.value.contract || // 계약정보
+    dataFilter.value.from_date || // 시작일
+    dataFilter.value.to_date || // 종료일
+    dataFilter.value.sort || // 거래구분
+    dataFilter.value.account_d1 || // 계정대분류
+    dataFilter.value.pro_acc_d2 || // 상위항목
+    dataFilter.value.pro_acc_d3 || // 하위항목
+    dataFilter.value.bank_account // 거래계좌
   )
 
   fetchProjectCashList({
@@ -114,15 +114,15 @@ const listFiltering = (payload: CashBookFilter) => {
   if (project.value) {
     // 필터링 조건이 있는지 확인
     const hasFiltering = !!(
-      payload.search?.trim() ||          // 검색어
-      payload.contract ||                // 계약정보
-      payload.from_date ||               // 시작일
-      payload.to_date ||                 // 종료일
-      payload.sort ||                    // 거래구분
-      payload.account_d1 ||              // 계정대분류
-      payload.pro_acc_d2 ||              // 상위항목
-      payload.pro_acc_d3 ||              // 하위항목
-      payload.bank_account               // 거래계좌
+      payload.search?.trim() || // 검색어
+      payload.contract || // 계약정보
+      payload.from_date || // 시작일
+      payload.to_date || // 종료일
+      payload.sort || // 거래구분
+      payload.account_d1 || // 계정대분류
+      payload.pro_acc_d2 || // 상위항목
+      payload.pro_acc_d3 || // 하위항목
+      payload.bank_account // 거래계좌
     )
 
     fetchProjectCashList({
@@ -142,7 +142,7 @@ const excelUrl = computed(() => {
   const d2 = dataFilter.value.pro_acc_d3 || ''
   const ba = dataFilter.value.bank_account || ''
   const q = dataFilter.value.search
-  return `/excel/p-cashbook/?project=${pj}&sdate=${sd}&edate=${ed}&sort=${st}&d1=${d1}&d2=${d2}&bank_acc=${ba}&q=${q}`
+  return `/excel/pro-cashbook/?project=${pj}&sdate=${sd}&edate=${ed}&sort=${st}&d1=${d1}&d2=${d2}&bank_acc=${ba}&q=${q}`
 })
 
 const paymentStore = usePayment()
@@ -291,7 +291,7 @@ const dataSetup = (pk: number) => {
   fetchProjectCashList({
     project: pk,
     ...dataFilter.value,
-    parents_only: true // 초기 로딩 시에는 부모 레코드만
+    parents_only: true, // 초기 로딩 시에는 부모 레코드만
   })
   fetchProCashCalc(pk)
 }

@@ -52,7 +52,7 @@ const excelUrl = computed(() => {
   const d3 = dataFilter.value.pro_acc_d3 || ''
   const ba = dataFilter.value.bank_account || ''
   const q = dataFilter.value.search
-  return `/excel/p-cashbook/?project=${pj}&imp=1&sdate=${sd}&edate=${ed}&sort=${st}&d2=${d2}&d3=${d3}&bank_acc=${ba}&q=${q}`
+  return `/excel/pro-cashbook/?project=${pj}&imp=1&sdate=${sd}&edate=${ed}&sort=${st}&d2=${d2}&d3=${d3}&bank_acc=${ba}&q=${q}`
 })
 
 const projStore = useProject()
