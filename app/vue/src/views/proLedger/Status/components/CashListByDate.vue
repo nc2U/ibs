@@ -40,10 +40,10 @@ const setData = () => {
   <CTable hover responsive bordered align="middle">
     <colgroup>
       <col style="width: 15%" />
-      <col style="width: 15%" />
+      <col style="width: 30%" />
       <col style="width: 15%" />
       <col style="width: 25%" />
-      <col style="width: 30%" />
+      <col style="width: 15%" />
     </colgroup>
     <CTableHead>
       <CTableRow>
@@ -58,24 +58,24 @@ const setData = () => {
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-center">
         <CTableHeaderCell>거래 계좌</CTableHeaderCell>
-        <CTableHeaderCell>거래처</CTableHeaderCell>
+        <CTableHeaderCell>적요</CTableHeaderCell>
         <CTableHeaderCell>입금 금액</CTableHeaderCell>
         <CTableHeaderCell>계정 과목</CTableHeaderCell>
-        <CTableHeaderCell>적요</CTableHeaderCell>
+        <CTableHeaderCell>거래처</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
     <CTableBody>
       <CTableRow v-for="inc in dateIncSet" :key="inc.pk" class="text-center">
         <CTableDataCell>{{ inc.bank_account_name }}</CTableDataCell>
-        <CTableDataCell class="text-left">{{ getFirstEntry(inc)?.trader ?? '' }}</CTableDataCell>
+        <CTableDataCell class="text-left">{{ inc.content }}</CTableDataCell>
         <CTableDataCell class="text-right" color="success">
           {{ numFormat(inc.amount) }}
         </CTableDataCell>
         <CTableDataCell class="text-left">
           {{ getFirstEntry(inc)?.account_name ?? '' }}
         </CTableDataCell>
-        <CTableDataCell class="text-left">{{ inc.content }}</CTableDataCell>
+        <CTableDataCell class="text-left">{{ getFirstEntry(inc)?.trader ?? '' }}</CTableDataCell>
       </CTableRow>
 
       <CTableRow class="text-center">
@@ -99,10 +99,10 @@ const setData = () => {
   <CTable hover responsive bordered align="middle">
     <colgroup>
       <col style="width: 15%" />
-      <col style="width: 15%" />
+      <col style="width: 30%" />
       <col style="width: 15%" />
       <col style="width: 25%" />
-      <col style="width: 30%" />
+      <col style="width: 15%" />
     </colgroup>
     <CTableHead>
       <CTableRow>
@@ -117,24 +117,24 @@ const setData = () => {
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-center">
         <CTableHeaderCell>거래 계좌</CTableHeaderCell>
-        <CTableHeaderCell>거래처</CTableHeaderCell>
+        <CTableHeaderCell>적요</CTableHeaderCell>
         <CTableHeaderCell>출금 금액</CTableHeaderCell>
         <CTableHeaderCell>계정 과목</CTableHeaderCell>
-        <CTableHeaderCell>적요</CTableHeaderCell>
+        <CTableHeaderCell>거래처</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
     <CTableBody>
       <CTableRow v-for="out in dateOutSet" :key="out.pk" class="text-center">
         <CTableDataCell>{{ out.bank_account_name }}</CTableDataCell>
-        <CTableDataCell class="text-left">{{ getFirstEntry(out)?.trader ?? '' }}</CTableDataCell>
+        <CTableDataCell class="text-left">{{ out.content }}</CTableDataCell>
         <CTableDataCell class="text-right" color="danger">
           {{ numFormat(out.amount) }}
         </CTableDataCell>
         <CTableDataCell class="text-left">
           {{ getFirstEntry(out)?.account_name ?? '' }}
         </CTableDataCell>
-        <CTableDataCell class="text-left">{{ out.content }}</CTableDataCell>
+        <CTableDataCell class="text-left">{{ getFirstEntry(out)?.trader ?? '' }}</CTableDataCell>
       </CTableRow>
 
       <CTableRow class="text-center">
