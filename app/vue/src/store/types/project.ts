@@ -48,6 +48,7 @@ export interface UnitType {
 export interface ProIncBudget {
   pk?: number
   project?: number
+  account: number
   account_d1: number
   account_d2: number
   order_group: number | null
@@ -62,6 +63,7 @@ export interface ProIncBudget {
 export interface ProOutBudget {
   pk?: number
   project?: number
+  account: number
   account_d1: number
   account_d2: number
   account_opt: string
@@ -74,6 +76,10 @@ export interface StatusOutBudget {
   pk?: number
   project?: number
   order?: number
+  account: {
+    pk: number
+    name: string
+  }
   account_d2: {
     pk: number
     name: string

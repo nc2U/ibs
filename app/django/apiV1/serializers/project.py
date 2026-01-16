@@ -7,6 +7,7 @@ from apiV1.serializers.accounts import SimpleUserSerializer
 from cash.models import ProjectCashBook
 from contract.models import DocumentType, RequiredDocument
 from ibs.models import ProjectAccountD2, ProjectAccountD3
+from ledger.models import ProjectAccount
 from notice.models import SalesBillIssue
 from project.models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
                             SiteOwner, SiteOwnshipRelationship, SiteContract, SiteContractFile)
@@ -164,15 +165,21 @@ class ProjectSerializer(serializers.ModelSerializer):
 class ProjectIncBudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectIncBudget
-        fields = ('pk', 'project', 'account_d2', 'account_d3', 'order_group',
+        fields = ('pk', 'project', 'account', 'account_d2', 'account_d3', 'order_group',
                   'unit_type', 'item_name', 'average_price', 'quantity', 'budget', 'revised_budget')
 
 
 class ProjectOutBudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectOutBudget
-        fields = ('pk', 'project', 'order', 'account_d2', 'account_d3',
+        fields = ('pk', 'project', 'order', 'account', 'account_d2', 'account_d3',
                   'account_opt', 'basis_calc', 'budget', 'revised_budget')
+
+
+class ProAccountInBudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectAccount
+        fields = ('pk', 'name')
 
 
 class ProAccoD2InBudgetSerializer(serializers.ModelSerializer):
@@ -188,12 +195,13 @@ class ProAccoD3InBudgetSerializer(serializers.ModelSerializer):
 
 
 class StatusOutBudgetSerializer(serializers.ModelSerializer):
+    account = ProAccountInBudgetSerializer()
     account_d2 = ProAccoD2InBudgetSerializer()
     account_d3 = ProAccoD3InBudgetSerializer()
 
     class Meta:
         model = ProjectOutBudget
-        fields = ('pk', 'project', 'order', 'account_d2', 'account_d3',
+        fields = ('pk', 'project', 'order', 'account', 'account_d2', 'account_d3',
                   'account_opt', 'basis_calc', 'budget', 'revised_budget')
 
 
