@@ -11,7 +11,6 @@ from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
-# ProjectCashBook import removed - using ledger app models instead
 from company.models import Company
 from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, ProjectAccountingEntry
 from ledger.services.company_transaction import get_company_transactions
@@ -581,26 +580,26 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
         row_num += 1
 
         # 3. Header - 열 구조 변경: 은행거래 내역(6열) + 분류 내역(4열)
-        worksheet.set_column(0, 0, 15)
+        worksheet.set_column(0, 0, 12)
         worksheet.write(row_num, 0, '일시', h_format)
         worksheet.set_column(1, 1, 20)
-        worksheet.write(row_num, 1, '계좌', h_format)
-        worksheet.set_column(2, 2, 15)
-        worksheet.write(row_num, 2, '거래자', h_format)
+        worksheet.write(row_num, 1, '메모', h_format)
+        worksheet.set_column(2, 2, 20)
+        worksheet.write(row_num, 2, '계좌', h_format)
         worksheet.set_column(3, 3, 25)
         worksheet.write(row_num, 3, '적요', h_format)
-        worksheet.set_column(4, 4, 20)
+        worksheet.set_column(4, 4, 15)
         worksheet.write(row_num, 4, '입금액', h_format)
-        worksheet.set_column(5, 5, 20)
+        worksheet.set_column(5, 5, 15)
         worksheet.write(row_num, 5, '출금액', h_format)
         worksheet.set_column(6, 6, 20)
         worksheet.write(row_num, 6, '계정', h_format)
-        worksheet.set_column(7, 7, 20)
-        worksheet.write(row_num, 7, '분류금액', h_format)
+        worksheet.set_column(7, 7, 15)
+        worksheet.write(row_num, 7, '거래처', h_format)
         worksheet.set_column(8, 8, 15)
-        worksheet.write(row_num, 8, '증빙', h_format)
+        worksheet.write(row_num, 8, '분류금액', h_format)
         worksheet.set_column(9, 9, 15)
-        worksheet.write(row_num, 9, '메모', h_format)
+        worksheet.write(row_num, 9, '증빙', h_format)
 
         # 4. Contents - ProjectBankTransaction 기반으로 변경 (회사 클래스와 동일한 패턴)
         transactions = ProjectBankTransaction.objects.filter(
@@ -640,39 +639,39 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
             if not entries:  # 거래는 있으나 분개가 없는 경우
                 row_num += 1
                 worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
-                worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '', left_format)
-                worksheet.write(row_num, 2, '', left_format)
+                worksheet.write(row_num, 1, trans.note or '', left_format)
+                worksheet.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', left_format)
                 worksheet.write(row_num, 3, trans.content or '', left_format)
                 worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
                 worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
-                worksheet.write(row_num, 6, '', left_format)
-                worksheet.write(row_num, 7, '', number_format)
-                worksheet.write(row_num, 8, '', center_format)
-                worksheet.write(row_num, 9, trans.note or '', left_format)
+                worksheet.write(row_num, 6, '', left_format)  # 계정 (empty)
+                worksheet.write(row_num, 7, '', left_format)  # 거래처 (empty)
+                worksheet.write(row_num, 8, '', number_format)  # 분류금액 (empty)
+                worksheet.write(row_num, 9, '', center_format)  # 증빙 (empty)
             elif len(entries) == 1:  # 단일 분개
                 entry = entries[0]
                 row_num += 1
                 # Bank transaction columns
                 worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
-                worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '', left_format)
-                worksheet.write(row_num, 2, entry.trader or '', left_format)
+                worksheet.write(row_num, 1, trans.note or '', left_format)
+                worksheet.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', left_format)
                 worksheet.write(row_num, 3, trans.content or '', left_format)
                 worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
                 worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
                 # Classification columns
                 worksheet.write(row_num, 6, entry.account.name if entry.account else '', left_format)
-                worksheet.write(row_num, 7, entry.amount or 0, number_format)
-                worksheet.write(row_num, 8, entry.get_evidence_type_display() or '', center_format)
-                worksheet.write(row_num, 9, trans.note or '', left_format)
+                worksheet.write(row_num, 7, entry.trader or '', left_format)
+                worksheet.write(row_num, 8, entry.amount or 0, number_format)
+                worksheet.write(row_num, 9, entry.get_evidence_type_display() or '', center_format)
             else:  # 복수 분개
                 for i, acc_entry in enumerate(entries):
                     row_num += 1
                     if i == 0:
                         # Bank transaction columns - only on the first row
                         worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
-                        worksheet.write(row_num, 1, trans.bank_account.alias_name if trans.bank_account else '',
+                        worksheet.write(row_num, 1, trans.note or '', left_format)
+                        worksheet.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '',
                                         left_format)
-                        worksheet.write(row_num, 2, acc_entry.trader or '', left_format)
                         worksheet.write(row_num, 3, trans.content or '', left_format)
                         worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
                         worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
@@ -687,9 +686,9 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
 
                     # Classification columns are always written
                     worksheet.write(row_num, 6, acc_entry.account.name if acc_entry.account else '', left_format)
-                    worksheet.write(row_num, 7, acc_entry.amount or 0, number_format)
-                    worksheet.write(row_num, 8, acc_entry.get_evidence_type_display() or '', center_format)
-                    worksheet.write(row_num, 9, trans.note or '', left_format)
+                    worksheet.write(row_num, 7, acc_entry.trader or '', left_format)
+                    worksheet.write(row_num, 8, acc_entry.amount or 0, number_format)
+                    worksheet.write(row_num, 9, acc_entry.get_evidence_type_display() or '', center_format)
 
         # 5. Sum row
         row_num += 1
