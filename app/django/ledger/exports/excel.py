@@ -1,6 +1,6 @@
-"""Cash Excel Export Views
+"""Ledger Excel Export Views
 
-현금 출납 관련 Excel 내보내기 뷰들
+원장 관련 Excel 내보내기 뷰들
 """
 import datetime
 from collections import defaultdict
@@ -11,9 +11,9 @@ from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
-from cash.models import CashBook, ProjectCashBook
+from cash.models import ProjectCashBook
 from company.models import Company
-from ledger.models import CompanyAccountingEntry, ProjectAccountingEntry
+from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectAccountingEntry
 from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions
 from project.models import Project, ProjectOutBudget
@@ -22,7 +22,7 @@ TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
 class ExportLedgerBalanceByAcc(ExcelExportMixin):
-    """본사 계좌별 잔고 내역"""
+    """본사 계좌별 잔고 내역 (원장 기반)"""
 
     def get(self, request):
         # 워크북 생성
@@ -60,30 +60,40 @@ class ExportLedgerBalanceByAcc(ExcelExportMixin):
         worksheet.set_column(3, 3, 20)
         worksheet.write(row_num, 3, '전일잔고', h_format)
         worksheet.set_column(4, 4, 20)
-        worksheet.write(row_num, 4, '금알입금(증가)', h_format)
+        worksheet.write(row_num, 4, '금일입금(증가)', h_format)
         worksheet.set_column(5, 5, 20)
         worksheet.write(row_num, 5, '금일출금(감소)', h_format)
         worksheet.set_column(6, 6, 20)
         worksheet.write(row_num, 6, '금일잔고', h_format)
 
-        # 4. Contents
-        qs = CashBook.objects.filter(company=company) \
-            .order_by('bank_account') \
-            .filter(is_separate=False, deal_date__lte=date)
+        # 4. Contents - CompanyBankTransaction 기반 데이터 조회 (Vue API와 동일한 로직)
+        qs = CompanyBankTransaction.objects.filter(deal_date__lte=date).order_by('bank_account')
+        if company:
+            qs = qs.filter(company_id=company.pk)
 
-        balance_set = qs.annotate(bank_acc=F('bank_account__alias_name'),
-                                  bank_num=F('bank_account__number')) \
-            .values('bank_acc', 'bank_num') \
-            .annotate(inc_sum=Sum('income'),
-                      out_sum=Sum('outlay'),
-                      date_inc=Sum(Case(
-                          When(deal_date=date, then=F('income')),
-                          default=0
-                      )),
-                      date_out=Sum(Case(
-                          When(deal_date=date, then=F('outlay')),
-                          default=0
-                      )))
+        balance_set = qs.values(
+            bank_acc=F('bank_account__alias_name'),
+            bank_num=F('bank_account__number')
+        ).annotate(
+            # 누적 합계 (Vue API와 동일한 로직)
+            inc_sum=Sum(Case(
+                When(sort_id=1, then=F('amount')),  # 1 = 입금
+                default=0
+            )),
+            out_sum=Sum(Case(
+                When(sort_id=2, then=F('amount')),  # 2 = 출금
+                default=0
+            )),
+            # 당일 합계 (Vue API와 동일한 로직)
+            date_inc=Sum(Case(
+                When(sort_id=1, deal_date=date, then=F('amount')),
+                default=0
+            )),
+            date_out=Sum(Case(
+                When(sort_id=2, deal_date=date, then=F('amount')),
+                default=0
+            ))
+        )
 
         total_inc = 0
         total_out = 0
@@ -140,11 +150,11 @@ class ExportLedgerBalanceByAcc(ExcelExportMixin):
 
 
 class ExportLedgerDateCashbook(ExcelExportMixin):
-    """본사 일별 입출금 내역"""
+    """본사 일별 입출금 내역 (원장 기반)"""
 
     def get(self, request):
         # 워크북 생성
-        output, workbook, worksheet = self.create_workbook('계좌별_자금현황')
+        output, workbook, worksheet = self.create_workbook('당일_입출금내역')
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -167,113 +177,124 @@ class ExportLedgerDateCashbook(ExcelExportMixin):
 
         # 2. Header
         worksheet.set_row(row_num, 18)
-        # worksheet.write(row_num, 7, date + ' 현재', workbook.add_format({'align': 'right'}))
         row_num += 1
 
         # 3. Header - 10 columns: Bank Transaction (6) + Classification (4)
         worksheet.set_column(0, 0, 12)
         worksheet.write(row_num, 0, '일시', h_format)
         worksheet.set_column(1, 1, 20)
-        worksheet.write(row_num, 1, '계좌', h_format)
-        worksheet.set_column(2, 2, 15)
-        worksheet.write(row_num, 2, '거래자', h_format)
+        worksheet.write(row_num, 1, '메모', h_format)
+        worksheet.set_column(2, 2, 20)
+        worksheet.write(row_num, 2, '계좌', h_format)
         worksheet.set_column(3, 3, 25)
         worksheet.write(row_num, 3, '적요', h_format)
         worksheet.set_column(4, 4, 15)
         worksheet.write(row_num, 4, '입금액', h_format)
         worksheet.set_column(5, 5, 15)
         worksheet.write(row_num, 5, '출금액', h_format)
-        worksheet.set_column(6, 6, 25)
+        worksheet.set_column(6, 6, 20)
         worksheet.write(row_num, 6, '계정', h_format)
         worksheet.set_column(7, 7, 15)
-        worksheet.write(row_num, 7, '분류금액', h_format)
+        worksheet.write(row_num, 7, '거래처', h_format)
         worksheet.set_column(8, 8, 15)
-        worksheet.write(row_num, 8, '증빙', h_format)
+        worksheet.write(row_num, 8, '분류금액', h_format)
         worksheet.set_column(9, 9, 15)
-        worksheet.write(row_num, 9, '메모', h_format)
+        worksheet.write(row_num, 9, '증빙', h_format)
 
-        # 4. Contents
-        date_cashes = CashBook.objects.filter(
-            company=company,
-            deal_date__exact=date
+        # 4. Contents - CompanyBankTransaction 기반 데이터 조회 (Vue API daily_transactions와 동일한 로직)
+        transactions = CompanyBankTransaction.objects.filter(
+            company_id=company.pk,
+            deal_date=date
         ).select_related(
-            'bank_account',
-            'account_d1',
-            'account_d2',
-            'account_d3'
-        ).prefetch_related('sepItems').order_by('deal_date', 'created', 'id')
+            'bank_account', 'sort', 'creator'
+        ).order_by('sort_id', 'created_at')
+
+        # 수동으로 prefetch 하기 (Vue API와 동일)
+        transaction_ids = [t.transaction_id for t in transactions]
+        entries_map = defaultdict(list)
+
+        if transaction_ids:
+            # 관련된 모든 회계 분개를 한 번의 쿼리로 가져오기
+            accounting_entries = CompanyAccountingEntry.objects.filter(
+                transaction_id__in=transaction_ids
+            ).select_related('account')
+
+            # transaction_id를 키로 하는 딕셔너리 생성
+            for entry in accounting_entries:
+                entries_map[entry.transaction_id].append(entry)
 
         inc_sum = 0
         out_sum = 0
 
-        # Process data with parent-child relationship handling
-        for cash in date_cashes:
-            # 합계 계산: 분리된 부모거래만 포함, 자식거래(separated가 있는 경우)는 제외
-            if not cash.separated:  # 부모거래이거나 일반거래인 경우만 합계에 포함
-                inc_sum += cash.income if cash.income else 0
-                out_sum += cash.outlay if cash.outlay else 0
+        # Process each transaction (Vue API와 동일한 로직)
+        for trans in transactions:
+            entries = entries_map.get(trans.transaction_id, [])
 
-            if cash.is_separate and cash.sepItems.exists():
-                # Parent record with children - display parent bank info + each child classification
-                children = cash.sepItems.all().order_by('id')
-                for idx, child in enumerate(children):
-                    row_num += 1
-                    if idx == 0:
-                        # First row: Bank transaction info from parent (6 columns) + Classification from first child (4 columns)
-                        # Bank transaction columns
-                        worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
-                        worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '',
-                                        center_format)
-                        worksheet.write(row_num, 2, cash.trader or '', left_format)
-                        worksheet.write(row_num, 3, cash.content or '', left_format)
-                        worksheet.write(row_num, 4, cash.income or 0, number_format)
-                        worksheet.write(row_num, 5, cash.outlay or 0, number_format)
-                        # 대사 일별 입출금 내역에서는 여기서 합계를 계산하지 않음 (위에서 이미 처리됨)
-                        # Classification info from first child
-                        account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
-                        worksheet.write(row_num, 6, account_name, left_format)
-                        worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
-                        worksheet.write(row_num, 8,
-                                        child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
-                                        center_format)
-                        worksheet.write(row_num, 9, cash.note or '', left_format)
-                    else:
-                        # Subsequent rows: Empty bank columns (6) + Classification from child (4 columns)
-                        for col in range(6):
-                            worksheet.write(row_num, col, '', left_format)
-                        # Classification info from child
-                        account_name = f"{child.account_d1.name if child.account_d1 else ''}/{child.account_d2.name if child.account_d2 else ''}/{child.account_d3.name if child.account_d3 else ''}"
-                        worksheet.write(row_num, 6, account_name, left_format)
-                        worksheet.write(row_num, 7, child.income or child.outlay or 0, number_format)
-                        worksheet.write(row_num, 8,
-                                        child.get_evidence_display() if hasattr(child, 'get_evidence_display') else '',
-                                        center_format)
-                        worksheet.write(row_num, 9, '', left_format)
-            else:
-                # Regular transaction - fill all columns from cash itself
+            # 합계 계산
+            if trans.sort_id == 1:  # 입금
+                inc_sum += trans.amount or 0
+            elif trans.sort_id == 2:  # 출금
+                out_sum += trans.amount or 0
+
+            if not entries:  # 거래는 있으나 분개가 없는 경우
                 row_num += 1
-                # Bank transaction columns (6)
-                worksheet.write(row_num, 0, cash.deal_date.strftime('%Y-%m-%d'), center_format)
-                worksheet.write(row_num, 1, cash.bank_account.alias_name if cash.bank_account else '', center_format)
-                worksheet.write(row_num, 2, cash.trader or '', left_format)
-                worksheet.write(row_num, 3, cash.content or '', left_format)
-                worksheet.write(row_num, 4, cash.income or 0, number_format)
-                worksheet.write(row_num, 5, cash.outlay or 0, number_format)
-                # 일반 거래의 합계는 위에서 이미 계산됨
-                # Classification columns (4)
-                account_name = f"{cash.account_d1.name if cash.account_d1 else ''}/{cash.account_d2.name if cash.account_d2 else ''}/{cash.account_d3.name if cash.account_d3 else ''}"
-                worksheet.write(row_num, 6, account_name, left_format)
-                worksheet.write(row_num, 7, cash.income or cash.outlay or 0, number_format)
-                worksheet.write(row_num, 8,
-                                cash.get_evidence_display() if hasattr(cash, 'get_evidence_display') else '',
-                                center_format)
-                worksheet.write(row_num, 9, cash.note or '', left_format)
+                worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
+                worksheet.write(row_num, 1, trans.note or '', left_format)
+                worksheet.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', left_format)
+                worksheet.write(row_num, 3, trans.content or '', left_format)
+                worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
+                worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
+                worksheet.write(row_num, 6, '', left_format)
+                worksheet.write(row_num, 7, '', left_format)
+                worksheet.write(row_num, 8, '', number_format)
+                worksheet.write(row_num, 9, '', center_format)
+            elif len(entries) == 1:  # 단일 분개
+                entry = entries[0]
+                row_num += 1
+                # Bank transaction columns
+                worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
+                worksheet.write(row_num, 1, trans.note or '', left_format)
+                worksheet.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', left_format)
+                worksheet.write(row_num, 3, trans.content or '', left_format)
+                worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
+                worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
+                # Classification columns
+                worksheet.write(row_num, 6, entry.account.name if entry.account else '', left_format)
+                worksheet.write(row_num, 7, entry.trader or '', left_format)
+                worksheet.write(row_num, 8, entry.amount or 0, number_format)
+                worksheet.write(row_num, 9, entry.get_evidence_type_display() or '', center_format)
+            else:  # 복수 분개
+                for i, acc_entry in enumerate(entries):
+                    row_num += 1
+                    if i == 0:
+                        # Bank transaction columns - only on the first row
+                        worksheet.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), center_format)
+                        worksheet.write(row_num, 1, trans.note or '', left_format)
+                        worksheet.write(row_num, 2, trans.bank_account.alias_name if trans.bank_account else '', left_format)
+                        worksheet.write(row_num, 3, trans.content or '', left_format)
+                        worksheet.write(row_num, 4, trans.amount if trans.sort_id == 1 else 0, number_format)
+                        worksheet.write(row_num, 5, trans.amount if trans.sort_id == 2 else 0, number_format)
+                    else:
+                        # Empty bank transaction columns for subsequent rows
+                        worksheet.write(row_num, 0, '', center_format)
+                        worksheet.write(row_num, 1, '', left_format)
+                        worksheet.write(row_num, 2, '', left_format)
+                        worksheet.write(row_num, 3, '', left_format)
+                        worksheet.write(row_num, 4, '', number_format)
+                        worksheet.write(row_num, 5, '', number_format)
+
+                    # Classification columns are always written
+                    worksheet.write(row_num, 6, acc_entry.account.name if acc_entry.account else '', left_format)
+                    worksheet.write(row_num, 7, acc_entry.trader or '', left_format)
+                    worksheet.write(row_num, 8, acc_entry.amount or 0, number_format)
+                    worksheet.write(row_num, 9, acc_entry.get_evidence_type_display() or '', center_format)
 
         # 5. Sum row
         row_num += 1
         worksheet.merge_range(row_num, 0, row_num, 3, '합계', sum_format)
         worksheet.write(row_num, 4, inc_sum, sum_format)
         worksheet.write(row_num, 5, out_sum, sum_format)
+        worksheet.write(row_num, 6, '', sum_format)
         worksheet.write(row_num, 7, '', sum_format)
         worksheet.write(row_num, 8, '', sum_format)
         worksheet.write(row_num, 9, '', sum_format)
@@ -282,7 +303,7 @@ class ExportLedgerDateCashbook(ExcelExportMixin):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename')
-        filename = f'{filename}-{date}' if filename else f'date-cashbook-{date}'
+        filename = f'{filename}-{date}' if filename else f'date-transactions-{date}'
         return ExcelExportMixin.create_response(output, workbook, filename)
 
 
