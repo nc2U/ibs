@@ -4,7 +4,7 @@ import { useProject } from '@/store/pinia/project'
 import { write_project_cash } from '@/utils/pageAuth'
 import { numFormat } from '@/utils/baseMixins'
 import { TableInfo, TableSecondary } from '@/utils/cssMixins'
-import { type StatusOutBudget, type ExecAmountToBudget as ExeBudget } from '@/store/types/project'
+import type { StatusOutBudget, ExecAmountToBudget as ExeBudget } from '@/store/types/project'
 
 defineProps({ date: { type: String, default: '' } })
 
