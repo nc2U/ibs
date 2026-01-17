@@ -32,15 +32,16 @@ const handleDownload = (url: string, fileName: string) => {
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
-const fetchStatusOutBudgetList = (proj: number) => projStore.fetchStatusOutBudgetList(proj)
+// ledger 기반 API 호출 (useLedger=true)
+const fetchStatusOutBudgetList = (proj: number) => projStore.fetchStatusOutBudgetList(proj, true)
 const patchStatusOutBudget = (payload: {
   pk: number
   project: number
   budget?: number
   revised_budget?: number
-}) => projStore.patchStatusOutBudget(payload)
+}) => projStore.patchStatusOutBudget(payload, true)
 const fetchExecAmountList = (project: number, date?: string) =>
-  projStore.fetchExecAmountList(project, date)
+  projStore.fetchExecAmountList(project, date, true)
 
 const pLedgerStore = useProLedger()
 const fetchProjectAccounts = () => pLedgerStore.fetchProjectAccounts()
@@ -181,6 +182,7 @@ const dataSetup = (pk: number) => {
 const dataReset = () => {
   projStore.statusOutBudgetList = []
   projStore.execAmountList = []
+  projStore.ledgerExecAmountList = []
   pLedgerStore.proBankList = []
   pLedgerStore.proLedgerBalanceByAccList = []
   pLedgerStore.dateLedgerTransactions = []

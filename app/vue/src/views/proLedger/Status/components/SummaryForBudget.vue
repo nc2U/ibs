@@ -4,7 +4,10 @@ import { useProject } from '@/store/pinia/project'
 import { write_project_cash } from '@/utils/pageAuth'
 import { numFormat } from '@/utils/baseMixins'
 import { TableInfo, TableSecondary } from '@/utils/cssMixins'
-import type { StatusOutBudget, ExecAmountToBudget as ExeBudget } from '@/store/types/project'
+import type {
+  StatusOutBudget,
+  LedgerExecAmountToBudget as LedgerExecBudget,
+} from '@/store/types/project'
 
 defineProps({ date: { type: String, default: '' } })
 
@@ -14,29 +17,36 @@ const formNumber = ref(1000)
 const isRevised = ref('1')
 
 const projStore = useProject()
-const execAmountList = computed(() => projStore.execAmountList)
+// ledger 기반 집행금액 사용
+const execAmountList = computed(() => projStore.ledgerExecAmountList)
 const statusOutBudgetList = computed(() => projStore.statusOutBudgetList)
 
-const getD3sInter = (arr: number[]) => {
-  const d3s = statusOutBudgetList.value.map((b: StatusOutBudget) => b.account_d3?.pk)
-  return arr.filter(x => d3s.includes(x))
+// ledger 기반: account.parent.children_pks 사용 (기존 account_d2.pro_d3s 대체)
+const getChildrenInter = (arr: number[]) => {
+  const accountPks = statusOutBudgetList.value.map((b: StatusOutBudget) => b.account?.pk)
+  return arr.filter(x => accountPks.includes(x))
 }
-const getLength = (arr: number[]) => getD3sInter(arr).length
+const getLength = (arr: number[]) => getChildrenInter(arr).length
 
-const isFirst = (arr: number[], d3Pk: number) => getD3sInter(arr)[0] === d3Pk
+const isFirst = (arr: number[], accountPk: number) => getChildrenInter(arr)[0] === accountPk
 
-const getSubTitle = (sub: string, d2: number) =>
+// ledger 기반: account.parent.pk 사용 (기존 account_d2.pk 대체)
+const getSubTitle = (sub: string, parentPk: number) =>
   sub !== ''
     ? statusOutBudgetList.value
-        .filter((b: StatusOutBudget) => b.account_opt === sub && b.account_d2?.pk === d2)
+        .filter((b: StatusOutBudget) => b.account_opt === sub && b.account?.parent?.pk === parentPk)
         .map(b => b.pk)
     : []
 
-const getExecAmount = (d3: number) => execAmountList.value.filter((e: ExeBudget) => e.acc_d3 === d3)
+// ledger 기반: account pk로 집행금액 조회 (기존 acc_d3 대체)
+const getExecAmount = (accountPk: number) =>
+  execAmountList.value.filter((e: LedgerExecBudget) => e.account === accountPk)
 
-const getEASum = (d3: number) => getExecAmount(d3).map((e: ExeBudget) => e.all_sum)[0]
+const getEASum = (accountPk: number) =>
+  getExecAmount(accountPk).map((e: LedgerExecBudget) => e.all_sum)[0]
 
-const getEAMonth = (d3: number) => getExecAmount(d3).map((e: ExeBudget) => e.month_sum)[0]
+const getEAMonth = (accountPk: number) =>
+  getExecAmount(accountPk).map((e: LedgerExecBudget) => e.month_sum)[0]
 
 const sumTotal = computed(() => {
   const totalBudgetCalc = statusOutBudgetList.value
@@ -46,10 +56,10 @@ const sumTotal = computed(() => {
     .map((b: StatusOutBudget) => b.revised_budget || b.budget)
     .reduce((res: number, val: number) => res + val, 0)
   const monthExecAmtCalc = execAmountList.value
-    .map((a: ExeBudget) => a.month_sum)
+    .map((a: LedgerExecBudget) => a.month_sum)
     .reduce((r: number, v: number) => r + v, 0)
   const totalExecAmtCalc = execAmountList.value
-    .map((a: ExeBudget) => a.all_sum)
+    .map((a: LedgerExecBudget) => a.all_sum)
     .reduce((r: number, v: number) => r + v, 0)
 
   const preExecAmt = totalExecAmtCalc - monthExecAmtCalc
@@ -156,24 +166,25 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
         >
           사업비
         </CTableDataCell>
+        <!-- ledger 기반: account.parent.children_pks 사용 -->
         <CTableDataCell
-          v-if="isFirst(obj.account_d2?.pro_d3s || [], obj.account_d3?.pk || 0)"
+          v-if="isFirst(obj.account?.parent?.children_pks || [], obj.account?.pk || 0)"
           class="text-center"
-          :rowspan="getLength(obj.account_d2?.pro_d3s || [])"
+          :rowspan="getLength(obj.account?.parent?.children_pks || [])"
         >
-          {{ obj.account_d2?.name }}
+          {{ obj.account?.parent?.name }}
         </CTableDataCell>
         <CTableDataCell
           v-if="
-            obj.account_opt && obj.pk === getSubTitle(obj.account_opt, obj.account_d2?.pk || 0)[0]
+            obj.account_opt && obj.pk === getSubTitle(obj.account_opt, obj.account?.parent?.pk || 0)[0]
           "
           class="text-left"
-          :rowspan="getSubTitle(obj.account_opt, obj.account_d2?.pk || 0).length"
+          :rowspan="getSubTitle(obj.account_opt, obj.account?.parent?.pk || 0).length"
         >
           {{ obj.account_opt }}
         </CTableDataCell>
         <CTableDataCell class="text-left" :colspan="obj.account_opt ? 1 : 2">
-          {{ obj.account_d3?.name }}
+          {{ obj.account?.name }}
           <v-tooltip v-if="obj.basis_calc" activator="parent" location="left">
             {{ obj.basis_calc }}
           </v-tooltip>
@@ -204,31 +215,32 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
             />
           </span>
         </CTableDataCell>
+        <!-- ledger 기반: account.pk 사용 -->
         <CTableDataCell>
-          {{ numFormat(getEASum(obj.account_d3?.pk || 0) - getEAMonth(obj.account_d3?.pk || 0)) }}
+          {{ numFormat(getEASum(obj.account?.pk || 0) - getEAMonth(obj.account?.pk || 0)) }}
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getEAMonth(obj.account_d3?.pk || 0) || 0) }}
+          {{ numFormat(getEAMonth(obj.account?.pk || 0) || 0) }}
         </CTableDataCell>
         <CTableDataCell>
-          {{ numFormat(getEASum(obj.account_d3?.pk || 0) || 0) }}
+          {{ numFormat(getEASum(obj.account?.pk || 0) || 0) }}
         </CTableDataCell>
         <CTableDataCell
           v-show="isRevised === '0'"
-          :class="obj.budget < getEASum(obj.account_d3?.pk || 0) ? 'text-danger' : ''"
+          :class="obj.budget < getEASum(obj.account?.pk || 0) ? 'text-danger' : ''"
         >
-          {{ numFormat(obj.budget - (getEASum(obj.account_d3?.pk || 0) || 0)) }}
+          {{ numFormat(obj.budget - (getEASum(obj.account?.pk || 0) || 0)) }}
         </CTableDataCell>
         <CTableDataCell
           v-show="isRevised === '1'"
           :class="
-            (obj.revised_budget || obj.budget) < getEASum(obj.account_d3?.pk || 0)
+            (obj.revised_budget || obj.budget) < getEASum(obj.account?.pk || 0)
               ? 'text-danger'
               : ''
           "
         >
           {{
-            numFormat((obj.revised_budget || obj.budget) - (getEASum(obj.account_d3?.pk || 0) || 0))
+            numFormat((obj.revised_budget || obj.budget) - (getEASum(obj.account?.pk || 0) || 0))
           }}
         </CTableDataCell>
       </CTableRow>

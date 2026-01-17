@@ -79,7 +79,12 @@ export interface StatusOutBudget {
   account: {
     pk: number
     name: string
-  }
+    parent?: {
+      pk: number
+      name: string
+      children_pks: number[]
+    } | null
+  } | null
   account_d2: {
     pk: number
     name: string
@@ -95,8 +100,16 @@ export interface StatusOutBudget {
   revised_budget: number | null
 }
 
+// ibs 기반 집행금액 (acc_d3 = ProjectAccountD3.pk)
 export interface ExecAmountToBudget {
   acc_d3: number
+  all_sum: number
+  month_sum: number
+}
+
+// ledger 기반 집행금액 (account = ProjectAccount.pk)
+export interface LedgerExecAmountToBudget {
+  account: number
   all_sum: number
   month_sum: number
 }

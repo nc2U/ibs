@@ -176,10 +176,29 @@ class ProjectOutBudgetSerializer(serializers.ModelSerializer):
                   'account_opt', 'basis_calc', 'budget', 'revised_budget')
 
 
-class ProAccountInBudgetSerializer(serializers.ModelSerializer):
+class ProAccountParentSerializer(serializers.ModelSerializer):
+    """상위 계정 정보 (depth=1)"""
+    children_pks = serializers.SerializerMethodField()
+
     class Meta:
         model = ProjectAccount
-        fields = ('pk', 'name')
+        fields = ('pk', 'name', 'children_pks')
+
+    def get_children_pks(self, obj):
+        """같은 parent 아래의 하위 계정 pk 목록 (pro_d3s 대체)"""
+        return list(obj.children.filter(
+            is_active=True,
+            is_category_only=False
+        ).values_list('pk', flat=True))
+
+
+class ProAccountInBudgetSerializer(serializers.ModelSerializer):
+    """예산 항목 계정 정보 (depth=2)"""
+    parent = ProAccountParentSerializer(read_only=True)
+
+    class Meta:
+        model = ProjectAccount
+        fields = ('pk', 'name', 'parent')
 
 
 class ProAccoD2InBudgetSerializer(serializers.ModelSerializer):
@@ -213,6 +232,13 @@ class ExecAmountToBudget(serializers.ModelSerializer):
     class Meta:
         model = ProjectCashBook
         fields = ('acc_d3', 'all_sum', 'month_sum')
+
+
+class LedgerExecAmountToBudgetSerializer(serializers.Serializer):
+    """ledger 기반 집행금액 Serializer (ProjectAccountingEntry 기반)"""
+    account = serializers.IntegerField()
+    all_sum = serializers.IntegerField()
+    month_sum = serializers.IntegerField()
 
 
 class TotalSiteAreaSerializer(serializers.ModelSerializer):

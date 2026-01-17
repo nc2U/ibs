@@ -5,6 +5,8 @@ from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 from rest_framework.decorators import action
 
+from ledger.models import ProjectAccountingEntry
+
 from ..pagination import *
 from ..permission import *
 from ..serializers.project import *
@@ -46,6 +48,19 @@ class ProjectOutBudgetViewSet(viewsets.ModelViewSet):
 class StatusOutBudgetViewSet(ProjectOutBudgetViewSet):
     serializer_class = StatusOutBudgetSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        use_ledger = self.request.query_params.get('use_ledger', 'false').lower() == 'true'
+
+        if use_ledger:
+            # ledger 기반: account가 있고, depth=2, is_category_only=False인 예산만
+            queryset = queryset.select_related('account', 'account__parent').filter(
+                account__isnull=False,
+                account__depth=2,
+                account__is_category_only=False
+            )
+        return queryset
+
 
 class ExecAmountToBudgetViewSet(viewsets.ModelViewSet):
     serializer_class = ExecAmountToBudget
@@ -53,27 +68,75 @@ class ExecAmountToBudgetViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project',)
 
+    def get_serializer_class(self):
+        use_ledger = self.request.query_params.get('use_ledger', 'false').lower() == 'true'
+        if use_ledger:
+            return LedgerExecAmountToBudgetSerializer
+        return ExecAmountToBudget
+
     def get_queryset(self):
+        use_ledger = self.request.query_params.get('use_ledger', 'false').lower() == 'true'
+        project = self.request.query_params.get('project')
         request_date = self.request.query_params.get('date')
         date = request_date if request_date else TODAY
         month_first = datetime(datetime.strptime(date, '%Y-%m-%d').year,
                                datetime.strptime(date, '%Y-%m-%d').month,
                                1).strftime('%Y-%m-%d')
 
-        queryset = ProjectCashBook.objects.filter(income=None) \
-            .order_by('project_account_d3') \
-            .filter(is_separate=False,  # 상세 분리 기록 = False (중복 방지)
-                    project_account_d3__d2__gte=8,  # 비용 계정 범위 시작
-                    project_account_d3__d2__lte=15,  # 비용 계정 범위 종료
-                    deal_date__lte=date)
+        if use_ledger:
+            # ledger 기반: ProjectAccountingEntry에서 집계
+            from ledger.models import ProjectBankTransaction
 
-        return queryset.annotate(acc_d3=F('project_account_d3')) \
-            .values('acc_d3') \
-            .annotate(all_sum=Sum('outlay'),
-                      month_sum=Sum(Case(
-                          When(deal_date__gte=month_first, then=F('outlay')),
-                          default=0
-                      )))
+            queryset = ProjectAccountingEntry.objects.filter(
+                account__depth=2,
+                account__is_category_only=False,
+                account__category='expense',
+            ).select_related('account')
+
+            if project:
+                queryset = queryset.filter(project_id=project)
+
+            # 출금 거래만 (sort_id=2)
+            valid_transaction_ids = ProjectBankTransaction.objects.filter(
+                sort_id=2,
+                deal_date__lte=date
+            ).values_list('transaction_id', flat=True)
+
+            queryset = queryset.filter(transaction_id__in=valid_transaction_ids)
+
+            # 당월 거래 ID
+            month_transaction_ids = list(ProjectBankTransaction.objects.filter(
+                sort_id=2,
+                deal_date__gte=month_first,
+                deal_date__lte=date
+            ).values_list('transaction_id', flat=True))
+
+            return queryset.values('account').annotate(
+                all_sum=Sum('amount'),
+                month_sum=Sum(Case(
+                    When(transaction_id__in=month_transaction_ids, then=F('amount')),
+                    default=0
+                ))
+            )
+        else:
+            # ibs 기반: ProjectCashBook에서 집계 (기존 로직)
+            queryset = ProjectCashBook.objects.filter(income=None) \
+                .order_by('project_account_d3') \
+                .filter(is_separate=False,
+                        project_account_d3__d2__gte=8,
+                        project_account_d3__d2__lte=15,
+                        deal_date__lte=date)
+
+            if project:
+                queryset = queryset.filter(project_id=project)
+
+            return queryset.annotate(acc_d3=F('project_account_d3')) \
+                .values('acc_d3') \
+                .annotate(all_sum=Sum('outlay'),
+                          month_sum=Sum(Case(
+                              When(deal_date__gte=month_first, then=F('outlay')),
+                              default=0
+                          )))
 
 
 class TotalSiteAreaViewSet(viewsets.ModelViewSet):

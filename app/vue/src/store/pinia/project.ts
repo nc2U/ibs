@@ -6,6 +6,7 @@ import { useAccount } from '@/store/pinia/account'
 import { errorHandle, message } from '@/utils/helper'
 import {
   type ExecAmountToBudget,
+  type LedgerExecAmountToBudget,
   type ProIncBudget,
   type Project,
   type ProOutBudget,
@@ -187,30 +188,41 @@ export const useProject = defineStore('project', () => {
   const statusOutBudgetList = ref<StatusOutBudget[]>([])
 
   // actions
-  const fetchStatusOutBudgetList = (project: number) =>
+  const fetchStatusOutBudgetList = (project: number, useLedger = false) =>
     api
-      .get(`/status-budget/?project=${project}`)
+      .get(`/status-budget/?project=${project}&use_ledger=${useLedger}`)
       .then(res => (statusOutBudgetList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const patchStatusOutBudget = (payload: {
-    project: number
-    pk: number
-    budget?: number
-    revised_budget?: number
-  }) =>
+  const patchStatusOutBudget = (
+    payload: {
+      project: number
+      pk: number
+      budget?: number
+      revised_budget?: number
+    },
+    useLedger = false,
+  ) =>
     api
       .patch(`/status-budget/${payload.pk}/`, payload)
-      .then(() => fetchStatusOutBudgetList(payload.project))
+      .then(() => fetchStatusOutBudgetList(payload.project, useLedger))
 
-  // states & getters
+  // states & getters (ibs 기반)
   const execAmountList = ref<ExecAmountToBudget[]>([])
+  // states & getters (ledger 기반)
+  const ledgerExecAmountList = ref<LedgerExecAmountToBudget[]>([])
 
   // actions
-  const fetchExecAmountList = (project: number, date = '') =>
+  const fetchExecAmountList = (project: number, date = '', useLedger = false) =>
     api
-      .get(`/exec-amount/?project=${project}&date=${date}`)
-      .then(res => (execAmountList.value = res.data.results))
+      .get(`/exec-amount/?project=${project}&date=${date}&use_ledger=${useLedger}`)
+      .then(res => {
+        if (useLedger) {
+          ledgerExecAmountList.value = res.data.results
+        } else {
+          execAmountList.value = res.data.results
+        }
+      })
       .catch(err => errorHandle(err.response.data))
 
   return {
@@ -252,6 +264,7 @@ export const useProject = defineStore('project', () => {
     patchStatusOutBudget,
 
     execAmountList,
+    ledgerExecAmountList,
     fetchExecAmountList,
   }
 })
