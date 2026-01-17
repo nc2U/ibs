@@ -1,44 +1,34 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
-import { useInform } from '@/store/pinia/work_inform.ts'
-import Loading from '@/components/Loading/Index.vue'
-import MainCarousel from './components/MainCarousel.vue'
-import WiseWord from './components/WiseWord.vue'
-import MyIssue from '@/views/_Work/MyIssue/Index.vue'
-import NoticeList from './components/NoticeList.vue'
+import { ref } from 'vue'
+import DashboardGrid from './components/DashboardGrid.vue'
+import WidgetConfigPanel from './components/WidgetConfigPanel.vue'
 
-const infStore = useInform()
-const newsList = computed(() => infStore.newsList)
-
-const loading = ref(true)
-onBeforeMount(() => {
-  infStore.fetchNewsList({})
-  loading.value = false
-})
+const showConfigPanel = ref(false)
 </script>
 
 <template>
   <CContainer fluid>
-    <Loading v-model:active="loading" />
-    <CRow class="mt-3">
-      <CCol>
-        <MainCarousel />
+    <CRow class="mt-3 mb-2">
+      <CCol class="d-flex justify-content-between align-items-center">
+        <h5 class="px-3 mb-0"></h5>
+        <v-btn
+          variant="outlined"
+          color="primary"
+          size="small"
+          prepend-icon="mdi-view-dashboard-edit"
+          @click="showConfigPanel = true"
+        >
+          위젯 설정
+        </v-btn>
       </CCol>
     </CRow>
+
     <CRow>
       <CCol>
-        <WiseWord />
+        <DashboardGrid />
       </CCol>
     </CRow>
-    <CRow class="mb-3">
-      <CCol>
-        <MyIssue />
-      </CCol>
-    </CRow>
-    <CRow>
-      <CCol xl="12">
-        <NoticeList :news-list="newsList" />
-      </CCol>
-    </CRow>
+
+    <WidgetConfigPanel v-model="showConfigPanel" />
   </CContainer>
 </template>
