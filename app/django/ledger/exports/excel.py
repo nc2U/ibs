@@ -796,29 +796,31 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
         # account_opt별 첫 번째 예산 추적
         opt_first_seen = {}
 
+        # 출금 거래만 조회 (sort_id=2) - Vue API와 동일한 로직
+        all_transaction_ids = list(ProjectBankTransaction.objects.filter(
+            project_id=project.pk,
+            sort_id=2,  # 출금만
+            deal_date__lte=date
+        ).values_list('transaction_id', flat=True))
+
+        month_first = date[:8] + '01'
+        month_transaction_ids = list(ProjectBankTransaction.objects.filter(
+            project_id=project.pk,
+            sort_id=2,  # 출금만
+            deal_date__gte=month_first,
+            deal_date__lte=date
+        ).values_list('transaction_id', flat=True))
+
         for row, budget in enumerate(budgets):
             row_num += 1
 
-            # 먼저 프로젝트의 해당 날짜 범위 transaction_id들을 찾기
-            transaction_ids = ProjectBankTransaction.objects.filter(
-                project_id=project.pk,
-                deal_date__lte=date
-            ).values_list('transaction_id', flat=True)
-
-            # ledger 기반: account_id 사용
+            # ledger 기반: account_id 사용 (출금 거래만)
             budget_entries = ProjectAccountingEntry.objects.filter(
                 account_id=budget.account_id,
-                transaction_id__in=transaction_ids
+                transaction_id__in=all_transaction_ids
             )
 
-            # 당월 거래를 위해 별도 조회
-            month_transaction_ids = ProjectBankTransaction.objects.filter(
-                project_id=project.pk,
-                deal_date__gte=date[:8] + '01',
-                deal_date__lte=date
-            ).values_list('transaction_id', flat=True)
-
-            # ledger 기반: account_id 사용
+            # ledger 기반: 당월 출금 거래만
             co_budget_month = ProjectAccountingEntry.objects.filter(
                 account_id=budget.account_id,
                 transaction_id__in=month_transaction_ids
@@ -874,14 +876,25 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
                 if col == 8:
                     worksheet.write(row_num, col, calc_budget - co_budget_total, number_format)
 
-        # 5. Sum row
+        # 5. Sum row - Excel SUM 공식 사용 (실제 셀 값 합계)
         row_num += 1
-        worksheet.merge_range(row_num, 0, row_num, 3, '합 계', center_format)
-        worksheet.write(row_num, 4, calc_budget_sum, number_format)
-        worksheet.write(row_num, 5, budget_total_sum - budget_month_sum, number_format)
-        worksheet.write(row_num, 6, budget_month_sum, number_format)
-        worksheet.write(row_num, 7, budget_total_sum, number_format)
-        worksheet.write(row_num, 8, calc_budget_sum - budget_total_sum, number_format)
+        sum_format = self.create_sum_format(workbook)
+
+        # 데이터 시작 행: 4 (헤더가 3행)
+        data_start_row = 4
+        data_end_row = row_num  # 현재 row_num은 마지막 데이터 행 + 1이므로, 마지막 데이터 행은 row_num
+
+        worksheet.merge_range(row_num, 0, row_num, 3, '합 계', sum_format)
+        # Column E (4): 예산
+        worksheet.write_formula(row_num, 4, f'=SUM(E{data_start_row}:E{data_end_row})', sum_format)
+        # Column F (5): 전월 인출 금액 누계
+        worksheet.write_formula(row_num, 5, f'=SUM(F{data_start_row}:F{data_end_row})', sum_format)
+        # Column G (6): 당월 인출 금액
+        worksheet.write_formula(row_num, 6, f'=SUM(G{data_start_row}:G{data_end_row})', sum_format)
+        # Column H (7): 인출 금액 합계
+        worksheet.write_formula(row_num, 7, f'=SUM(H{data_start_row}:H{data_end_row})', sum_format)
+        # Column I (8): 가용 예산 합계
+        worksheet.write_formula(row_num, 8, f'=SUM(I{data_start_row}:I{data_end_row})', sum_format)
 
         # data end ----------------------------------------------- #
 
@@ -1004,9 +1017,10 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         ).select_related('account', 'account__parent').order_by('order', 'id')
 
         # 6. Pre-fetch all transactions for optimization
-        # 월별집계시작일 이전 누계 (동적) - ProjectAccountingEntry 기반으로 변경
+        # 월별집계시작일 이전 누계 (동적) - 출금 거래만 (sort_id=2) - Vue API와 동일한 로직
         cumulative_transaction_ids = ProjectBankTransaction.objects.filter(
             project_id=project.pk,
+            sort_id=2,  # 출금만
             deal_date__lte=cumulative_end_date
         ).values_list('transaction_id', flat=True)
 
@@ -1016,10 +1030,11 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
 
         cumulative_dict = {item['account_id']: item['total'] or 0 for item in cumulative_data}
 
-        # 월별 데이터 (월별집계시작일 ~ 종료일) (동적) - ProjectAccountingEntry 기반으로 변경
+        # 월별 데이터 (월별집계시작일 ~ 종료일) (동적) - 출금 거래만 (sort_id=2)
         monthly_end_date_obj = datetime.date(monthly_end_year, monthly_end_month, 28)
         monthly_transaction_ids = ProjectBankTransaction.objects.filter(
             project_id=project.pk,
+            sort_id=2,  # 출금만
             deal_date__gte=monthly_start_date,
             deal_date__lte=monthly_end_date_obj
         ).values_list('transaction_id', flat=True)

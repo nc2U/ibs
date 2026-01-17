@@ -49,24 +49,32 @@ const getEAMonth = (accountPk: number) =>
   getExecAmount(accountPk).map((e: LedgerExecBudget) => e.month_sum)[0]
 
 const sumTotal = computed(() => {
+  // 예산 합계 계산
   const totalBudgetCalc = statusOutBudgetList.value
     .map((b: StatusOutBudget) => b.budget)
     .reduce((res: number, val: number) => res + val, 0)
   const totalRevisedBudgetCalc = statusOutBudgetList.value
     .map((b: StatusOutBudget) => b.revised_budget || b.budget)
     .reduce((res: number, val: number) => res + val, 0)
-  const monthExecAmtCalc = execAmountList.value
-    .map((a: LedgerExecBudget) => a.month_sum)
-    .reduce((r: number, v: number) => r + v, 0)
-  const totalExecAmtCalc = execAmountList.value
-    .map((a: LedgerExecBudget) => a.all_sum)
-    .reduce((r: number, v: number) => r + v, 0)
 
-  const preExecAmt = totalExecAmtCalc - monthExecAmtCalc
-  const monthExecAmt = monthExecAmtCalc
-  const totalExecAmt = totalExecAmtCalc
-  const availableBudget = totalBudgetCalc - totalExecAmtCalc
-  const availableRevisedBudget = totalRevisedBudgetCalc - totalExecAmtCalc
+  // 집행금액 합계 계산 - Excel SUM 공식과 동일하게 각 행의 표시값 합산
+  // (기존: execAmountList 전체 합산 → statusOutBudgetList의 account만 합산)
+  let preExecAmt = 0
+  let monthExecAmt = 0
+  let totalExecAmt = 0
+
+  for (const b of statusOutBudgetList.value) {
+    const accountPk = b.account?.pk || 0
+    const allSum = getEASum(accountPk) || 0
+    const monthSum = getEAMonth(accountPk) || 0
+
+    preExecAmt += allSum - monthSum  // 전월 집행금액 누계 (각 행의 표시값 합산)
+    monthExecAmt += monthSum          // 당월 집행금액
+    totalExecAmt += allSum            // 집행금액 합계
+  }
+
+  const availableBudget = totalBudgetCalc - totalExecAmt
+  const availableRevisedBudget = totalRevisedBudgetCalc - totalExecAmt
   return {
     totalBudgetCalc,
     totalRevisedBudgetCalc,
