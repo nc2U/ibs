@@ -57,6 +57,7 @@ class StatusOutBudgetViewSet(ProjectOutBudgetViewSet):
             queryset = queryset.select_related('account', 'account__parent').filter(
                 account__isnull=False,
                 account__depth=2,
+                account__category='expense',
                 account__is_category_only=False
             )
         return queryset
