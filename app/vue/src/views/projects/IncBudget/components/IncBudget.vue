@@ -2,13 +2,11 @@
 import { ref, reactive, computed, onBeforeMount, inject } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { write_project } from '@/utils/pageAuth'
-import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/proCash'
 import { type OGroup, type UType } from './BudgetAddForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const d2List = inject<ProjectAccountD2[]>('d2List')
-const d3List = inject<ProjectAccountD3[]>('d3List')
+const accountList = inject<any>('accountList')
 const orderGroups = inject<OGroup[]>('orderGroups')
 const unitTypes = inject<UType[]>('unitTypes')
 
@@ -17,8 +15,7 @@ const emit = defineEmits(['on-update', 'on-delete'])
 
 const form = reactive({
   pk: null,
-  account_d2: null,
-  account_d3: null,
+  account: null,
   order_group: null,
   unit_type: null,
   item_name: '',
@@ -33,16 +30,15 @@ const refConfirmModal = ref()
 
 const formsCheck = computed(() => {
   const a = form.pk === props.budget.pk
-  const b = form.account_d2 === props.budget.account_d2
-  const c = form.account_d3 === props.budget.account_d3
-  const d = form.order_group === props.budget.order_group
-  const e = form.unit_type === props.budget.unit_type
-  const f = form.item_name === props.budget.item_name
-  const g = form.average_price === props.budget.average_price
-  const h = form.quantity === props.budget.quantity
-  const i = form.budget === props.budget.budget
-  const j = form.revised_budget === props.budget.revised_budget
-  return a && b && c && d && e && f && g && h && i && j
+  const b = form.account === props.budget.account
+  const c = form.order_group === props.budget.order_group
+  const d = form.unit_type === props.budget.unit_type
+  const e = form.item_name === props.budget.item_name
+  const f = form.average_price === props.budget.average_price
+  const g = form.quantity === props.budget.quantity
+  const h = form.budget === props.budget.budget
+  const i = form.revised_budget === props.budget.revised_budget
+  return a && b && c && d && e && f && g && h && i
 })
 
 const onUpdateBudget = () => {
@@ -70,8 +66,7 @@ const modalAction = () => {
 
 const dataSetup = () => {
   form.pk = props.budget.pk
-  form.account_d2 = props.budget.account_d2
-  form.account_d3 = props.budget.account_d3
+  form.account = props.budget.account
   form.order_group = props.budget.order_group
   form.unit_type = props.budget.unit_type
   form.item_name = props.budget.item_name
@@ -87,18 +82,10 @@ onBeforeMount(() => dataSetup())
 <template>
   <CTableRow>
     <CTableDataCell>
-      <CFormSelect v-model="form.account_d2" required>
-        <option value="">대분류</option>
-        <option v-for="d1 in d2List" :key="d1.pk" :value="d1.pk">
-          {{ d1.name }}
-        </option>
-      </CFormSelect>
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormSelect v-model="form.account_d3" required>
-        <option value="">중분류</option>
-        <option v-for="d2 in d3List" :key="d2.pk" :value="d2.pk">
-          {{ d2.name }}
+      <CFormSelect v-model="form.account" required>
+        <option value="">계정</option>
+        <option v-for="acc in accountList" :key="acc.value" :value="acc.value">
+          {{ acc.label }}
         </option>
       </CFormSelect>
     </CTableDataCell>

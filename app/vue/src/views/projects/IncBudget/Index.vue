@@ -8,6 +8,7 @@ import { useProCash } from '@/store/pinia/proCash'
 import { useContract } from '@/store/pinia/contract'
 import { useProjectData } from '@/store/pinia/project_data'
 import type { Project, ProIncBudget } from '@/store/types/project'
+import type { ProAccountFilter } from '@/store/types/proLedger.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -20,6 +21,8 @@ const project = computed(() => (projStore.project as Project)?.pk)
 
 const pLedgerStore = useProLedger()
 const allProAccount = computed(() => pLedgerStore.proAccounts)
+const fetchProjectAccounts = (payload: ProAccountFilter) =>
+  pLedgerStore.fetchProjectAccounts(payload)
 
 const pCashStore = useProCash()
 const allAccD2List = computed(() => pCashStore.allAccD2List.filter(d1 => d1.pk <= 2))
@@ -33,6 +36,7 @@ const getOrderGroups = computed(() => contStore.getOrderGroups)
 const pDataStore = useProjectData()
 const getTypes = computed(() => pDataStore.getTypes)
 
+provide('accountList', allProAccount)
 provide('d2List', allAccD2List)
 provide('d3List', allAccD3List)
 provide('orderGroups', getOrderGroups)
@@ -66,6 +70,7 @@ const dataSetup = (pk: number) => {
   fetchOrderGroupList(pk)
   fetchTypeList(pk)
   fetchIncBudgetList(pk)
+  fetchProjectAccounts({ direction: 'deposit', is_payment: true })
 }
 
 const dataReset = () => {

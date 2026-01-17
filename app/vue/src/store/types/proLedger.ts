@@ -136,7 +136,7 @@ export type DataFilter = {
 
 export type ProAccountFilter = {
   category?: string
-  direction?: string
+  direction?: 'deposit' | 'withdraw'
   parent?: number | null
   is_category_only?: boolean | ''
   is_active?: boolean | ''

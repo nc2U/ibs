@@ -16,8 +16,7 @@ export interface UType {
   label: string
 }
 
-const d2List = inject<ProjectAccountD2[]>('d2List')
-const d3List = inject<ProjectAccountD3[]>('d3List')
+const accountList = inject<any>('accountList')
 const orderGroups = inject<OGroup[]>('orderGroups')
 const unitTypes = inject<UType[]>('unitTypes')
 
@@ -29,8 +28,7 @@ const refConfirmModal = ref()
 
 const validated = ref(false)
 const form = reactive({
-  account_d2: null,
-  account_d3: null,
+  account: null,
   order_group: null,
   unit_type: null,
   item_name: '',
@@ -67,7 +65,7 @@ const modalAction = () => {
 }
 
 const resetForm = () => {
-  form.account_d2 = null
+  form.account = null
   form.order_group = null
   form.unit_type = null
   form.item_name = ''
@@ -83,25 +81,16 @@ const resetForm = () => {
     <CRow class="p-2" color="success">
       <CCol lg="12" xl="5">
         <CRow>
-          <CCol md="3" lg="3" class="mb-2">
-            <CFormSelect v-model="form.account_d2" required :disabled="disabled">
-              <option value="">대분류</option>
-              <option v-for="d2 in d2List" :key="d2.pk" :value="d2.pk">
-                {{ d2.name }}
+          <CCol md="3" class="mb-2">
+            <CFormSelect v-model="form.account" required :disabled="disabled">
+              <option value="">계정과목</option>
+              <option v-for="acc in accountList" :key="acc.value" :value="acc.value">
+                {{ acc.label }}
               </option>
             </CFormSelect>
           </CCol>
 
-          <CCol md="3" lg="3" class="mb-2">
-            <CFormSelect v-model="form.account_d3" required :disabled="disabled">
-              <option value="">중분류</option>
-              <option v-for="d3 in d3List" :key="d3.pk" :value="d3.pk">
-                {{ d3.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
-
-          <CCol md="3" lg="3" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormSelect v-model="form.order_group" :disabled="disabled">
               <option value="">차수</option>
               <option v-for="og in orderGroups" :key="og.value" :value="og.value">
@@ -110,7 +99,7 @@ const resetForm = () => {
             </CFormSelect>
           </CCol>
 
-          <CCol md="3" lg="3" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormSelect v-model="form.unit_type" :disabled="disabled">
               <option value="">타입</option>
               <option v-for="ut in unitTypes" :key="ut.value" :value="ut.value">
@@ -118,12 +107,8 @@ const resetForm = () => {
               </option>
             </CFormSelect>
           </CCol>
-        </CRow>
-      </CCol>
 
-      <CCol lg="12" xl="7">
-        <CRow>
-          <CCol md="4" lg="2" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormInput
               v-model="form.item_name"
               placeholder="항목명칭"
@@ -132,8 +117,12 @@ const resetForm = () => {
               :required="!form.unit_type"
             />
           </CCol>
+        </CRow>
+      </CCol>
 
-          <CCol md="4" lg="2" class="mb-2">
+      <CCol lg="12" xl="5">
+        <CRow>
+          <CCol md="3" class="mb-2">
             <CFormInput
               v-model.number="form.average_price"
               min="0"
@@ -143,7 +132,7 @@ const resetForm = () => {
               :disabled="disabled"
             />
           </CCol>
-          <CCol md="4" lg="2" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormInput
               v-model.number="form.quantity"
               min="0"
@@ -154,7 +143,7 @@ const resetForm = () => {
               :disabled="disabled"
             />
           </CCol>
-          <CCol md="4" lg="2" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormInput
               v-model.number="form.budget"
               min="0"
@@ -165,7 +154,7 @@ const resetForm = () => {
               :disabled="disabled"
             />
           </CCol>
-          <CCol md="4" lg="2" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormInput
               v-model.number="form.revised_budget"
               min="0"
@@ -175,8 +164,12 @@ const resetForm = () => {
               :disabled="disabled"
             />
           </CCol>
+        </CRow>
+      </CCol>
 
-          <CCol md="4" lg="2" class="d-grid gap-2 d-md-block mb-3">
+      <CCol lg="12" xl="2">
+        <CRow>
+          <CCol md="12" class="d-grid gap-2 d-md-block text-right mb-3">
             <v-btn color="primary" type="submit" :disabled="disabled"> 수입 예산 추가</v-btn>
           </CCol>
         </CRow>

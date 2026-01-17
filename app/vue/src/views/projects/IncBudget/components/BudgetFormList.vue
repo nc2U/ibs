@@ -24,15 +24,13 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
       <col style="width: 10%" />
       <col style="width: 10%" />
       <col style="width: 10%" />
-      <col style="width: 10%" />
       <col style="width: 11%" />
       <col style="width: 11%" />
       <col v-if="write_project" style="width: 8%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
-        <CTableHeaderCell>대분류</CTableHeaderCell>
-        <CTableHeaderCell>중분류</CTableHeaderCell>
+        <CTableHeaderCell>계정과목</CTableHeaderCell>
         <CTableHeaderCell>차수 그룹명</CTableHeaderCell>
         <CTableHeaderCell>타입명</CTableHeaderCell>
         <CTableHeaderCell>항목 명칭</CTableHeaderCell>
