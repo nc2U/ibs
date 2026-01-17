@@ -12,7 +12,7 @@ from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
 from company.models import Company
-from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, ProjectAccountingEntry
+from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, ProjectAccountingEntry, ProjectAccount
 from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions
 from project.models import Project, ProjectOutBudget
@@ -710,7 +710,7 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
 
 
 class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
-    """프로젝트 예산 대비 현황"""
+    """프로젝트 예산 대비 현황 (ledger 기반)"""
 
     def get(self, request):
         # 워크북 생성
@@ -758,8 +758,14 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
         worksheet.set_column(8, 8, 20)
         worksheet.write(row_num, 8, '가용 예산 합계', h_format)
 
-        # 4. Contents
-        budgets = ProjectOutBudget.objects.filter(project=project)
+        # 4. Contents (ledger 기반: account가 있고, depth=2, is_category_only=False인 예산만)
+        budgets = ProjectOutBudget.objects.filter(
+            project=project,
+            account__isnull=False,
+            account__depth=2,
+            account__is_category_only=False
+        ).select_related('account', 'account__parent').order_by('order', 'id')
+
         budget_sum = budgets.aggregate(Sum('budget'))['budget__sum']
         revised_budget_sum = budgets.aggregate(
             revised_budget_sum=Sum(
@@ -767,7 +773,7 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
                     When(revised_budget__isnull=True, then=F('budget')),
                     When(revised_budget=0, then=F('budget')),
                     default=F('revised_budget'),
-                    output_field=PositiveBigIntegerField()  # budget 및 revised_budget의 필드 타입에 맞게 조정
+                    output_field=PositiveBigIntegerField()
                 )
             )
         )['revised_budget_sum']
@@ -777,11 +783,21 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
         budget_month_sum = 0
         budget_total_sum = 0
 
+        # 중분류별 하위 예산 개수 계산 (ledger 기반: account.parent별 그룹)
+        parent_budget_counts = {}
+        for budget in budgets:
+            parent_pk = budget.account.parent_id if budget.account and budget.account.parent else None
+            if parent_pk:
+                parent_budget_counts[parent_pk] = parent_budget_counts.get(parent_pk, 0) + 1
+
+        # 중분류별 첫 번째 예산 여부 추적
+        parent_first_seen = set()
+
+        # account_opt별 첫 번째 예산 추적
+        opt_first_seen = {}
+
         for row, budget in enumerate(budgets):
             row_num += 1
-            # ProjectBankTransaction + ProjectAccountingEntry를 사용 (ProjectCashBook 대신)
-            # account_d3에 해당하는 회계 분개 엔트리들을 찾기 - transaction_id로 조인
-            from django.db.models import Q
 
             # 먼저 프로젝트의 해당 날짜 범위 transaction_id들을 찾기
             transaction_ids = ProjectBankTransaction.objects.filter(
@@ -789,8 +805,9 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
                 deal_date__lte=date
             ).values_list('transaction_id', flat=True)
 
+            # ledger 기반: account_id 사용
             budget_entries = ProjectAccountingEntry.objects.filter(
-                account_id=budget.account_d3_id,
+                account_id=budget.account_id,
                 transaction_id__in=transaction_ids
             )
 
@@ -801,8 +818,9 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
                 deal_date__lte=date
             ).values_list('transaction_id', flat=True)
 
+            # ledger 기반: account_id 사용
             co_budget_month = ProjectAccountingEntry.objects.filter(
-                account_id=budget.account_d3_id,
+                account_id=budget.account_id,
                 transaction_id__in=month_transaction_ids
             ).aggregate(Sum('amount'))['amount__sum']
             co_budget_month = co_budget_month if co_budget_month else 0
@@ -813,26 +831,38 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
             co_budget_total = co_budget_total if co_budget_total else 0
             budget_total_sum += co_budget_total
 
-            opt_budgets = self.get_sub_title(project, budget.account_opt, budget.account_d2.pk)
+            # ledger 기반: account.parent_id 사용
+            parent_pk = budget.account.parent_id if budget.account and budget.account.parent else None
+            opt_budgets = self.get_sub_title(project, budget.account_opt, parent_pk)
 
             for col in range(9):
                 if col == 0 and row == 0:
                     worksheet.merge_range(row_num, col, budgets.count() + 2, col, '사업비', center_format)
                 if col == 1:
-                    if int(budget.account_d3.code) == int(budget.account_d2.code) + 1:
+                    # ledger 기반: account.parent별 병합
+                    if parent_pk and parent_pk not in parent_first_seen:
+                        parent_first_seen.add(parent_pk)
+                        parent_count = parent_budget_counts.get(parent_pk, 1)
+                        parent_name = budget.account.parent.name if budget.account.parent else ''
                         worksheet.merge_range(row_num, col,
-                                              row_num + budget.account_d2.projectoutbudget_set.count() - 1,
-                                              col, budget.account_d2.name, center_format)
+                                              row_num + parent_count - 1,
+                                              col, parent_name, center_format)
                 if col == 2:
                     if budget.account_opt:
-                        if budget.account_d3.pk == opt_budgets[0][4]:
+                        # account_opt별 첫 번째 예산인지 확인
+                        opt_key = (parent_pk, budget.account_opt)
+                        if opt_key not in opt_first_seen:
+                            opt_first_seen[opt_key] = True
                             worksheet.merge_range(row_num, col, row_num + len(opt_budgets) - 1,
                                                   col, budget.account_opt, left_format)
                     else:
-                        worksheet.merge_range(row_num, col, row_num, col + 1, budget.account_d3.name, left_format)
+                        # ledger 기반: account.name 사용
+                        account_name = budget.account.name if budget.account else ''
+                        worksheet.merge_range(row_num, col, row_num, col + 1, account_name, left_format)
                 if col == 3:
                     if budget.account_opt:
-                        worksheet.write(row_num, col, budget.account_d3.name, left_format)
+                        # ledger 기반: account.name 사용
+                        worksheet.write(row_num, col, budget.account.name if budget.account else '', left_format)
                 if col == 4:
                     worksheet.write(row_num, col, calc_budget, number_format)
                 if col == 5:
@@ -861,10 +891,13 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
         return ExcelExportMixin.create_response(output, workbook, filename)
 
     @staticmethod
-    def get_sub_title(project, sub, d2):
-        return ProjectOutBudget.objects.filter(project=project,
-                                               account_opt=sub,
-                                               account_d2__id=d2).order_by('account_d3').values_list()
+    def get_sub_title(project, sub, parent_pk):
+        """ledger 기반: account.parent_id 사용"""
+        return ProjectOutBudget.objects.filter(
+            project=project,
+            account_opt=sub,
+            account__parent_id=parent_pk
+        ).order_by('account').values_list()
 
 
 class ExportLedgerCashFlowForm(ExcelExportMixin):
@@ -962,8 +995,13 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         worksheet.set_column(remaining_col, remaining_col, 15)
         worksheet.write(row_num, remaining_col, '미집행금액', h_format)
 
-        # 5. Fetch budget items
-        budgets = ProjectOutBudget.objects.filter(project=project).order_by('order', 'id')
+        # 5. Fetch budget items (ledger 기반: account가 있고, depth=2, is_category_only=False인 예산만)
+        budgets = ProjectOutBudget.objects.filter(
+            project=project,
+            account__isnull=False,
+            account__depth=2,
+            account__is_category_only=False
+        ).select_related('account', 'account__parent').order_by('order', 'id')
 
         # 6. Pre-fetch all transactions for optimization
         # 월별집계시작일 이전 누계 (동적) - ProjectAccountingEntry 기반으로 변경
@@ -1028,6 +1066,16 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         total_cumulative = 0
         total_monthly = [0] * len(months)
 
+        # 중분류별 하위 예산 개수 계산 (ledger 기반: account.parent별 그룹)
+        parent_budget_counts = {}
+        for budget in budgets:
+            parent_pk = budget.account.parent_id if budget.account and budget.account.parent else None
+            if parent_pk:
+                parent_budget_counts[parent_pk] = parent_budget_counts.get(parent_pk, 0) + 1
+
+        # 중분류별 첫 번째 예산 여부 추적
+        parent_first_seen = set()
+
         for row_idx, budget in enumerate(budgets):
             row_num += 1
 
@@ -1035,14 +1083,14 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
             calc_budget = budget.revised_budget or budget.budget if is_revised else budget.budget
             total_budget += calc_budget if calc_budget else 0
 
-            # 누계 (월별집계시작일 이전)
-            cumulative_amount = cumulative_dict.get(budget.account_d3_id, 0)
+            # 누계 (월별집계시작일 이전) - ledger 기반: account_id 사용
+            cumulative_amount = cumulative_dict.get(budget.account_id, 0)
             total_cumulative += cumulative_amount
 
-            # 월별 금액
+            # 월별 금액 - ledger 기반: account_id 사용
             monthly_amounts = []
             for year, month in months:
-                amount = monthly_dict.get((budget.account_d3_id, year, month), 0)
+                amount = monthly_dict.get((budget.account_id, year, month), 0)
                 monthly_amounts.append(amount)
 
             for idx, amount in enumerate(monthly_amounts):
@@ -1052,14 +1100,18 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
             if row_idx == 0:
                 worksheet.merge_range(row_num, 0, row_num + budgets.count() - 1, 0, '사업비', center_format)
 
-            # 중분류 (account_d2별 병합)
-            if int(budget.account_d3.code) == int(budget.account_d2.code) + 1:
+            # 중분류 (account.parent별 병합) - ledger 기반
+            parent_pk = budget.account.parent_id if budget.account and budget.account.parent else None
+            if parent_pk and parent_pk not in parent_first_seen:
+                parent_first_seen.add(parent_pk)
+                parent_count = parent_budget_counts.get(parent_pk, 1)
+                parent_name = budget.account.parent.name if budget.account.parent else ''
                 worksheet.merge_range(row_num, 1,
-                                      row_num + budget.account_d2.projectoutbudget_set.count() - 1,
-                                      1, budget.account_d2.name, center_format)
+                                      row_num + parent_count - 1,
+                                      1, parent_name, center_format)
 
-            # 소분류 (account_d3)
-            worksheet.write(row_num, 2, budget.account_d3.name, left_format)
+            # 소분류 (account) - ledger 기반
+            worksheet.write(row_num, 2, budget.account.name if budget.account else '', left_format)
 
             # 예산액
             worksheet.write(row_num, 3, calc_budget, number_format)
@@ -1128,9 +1180,13 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         return result
 
     @staticmethod
-    def get_sub_title(project, sub, d2):
-        return ProjectOutBudget.objects.filter(project=project, account_opt=sub, account_d2__id=d2).order_by(
-            'account_d3').values_list()
+    def get_sub_title(project, sub, parent_pk):
+        """ledger 기반: account.parent_id 사용"""
+        return ProjectOutBudget.objects.filter(
+            project=project,
+            account_opt=sub,
+            account__parent_id=parent_pk
+        ).order_by('account').values_list()
 
 
 def export_pro_transaction_xls(request):
